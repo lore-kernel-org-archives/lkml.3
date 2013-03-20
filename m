@@ -1,79 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757928Ab3CTDMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 23:12:23 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34963 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab3CTDMW (ORCPT
+	id S1757947Ab3CTDMr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 23:12:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43029 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757375Ab3CTDMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 23:12:22 -0400
-Date: Wed, 20 Mar 2013 14:12:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: linux-next: build failure after merge of the tty tree
-Message-Id: <20130320141211.52b44d0e202d32812c3e3c0c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__20_Mar_2013_14_12_11_+1100_.gH8qTZJLDKsY2Yz"
+	Tue, 19 Mar 2013 23:12:45 -0400
+Date: Tue, 19 Mar 2013 20:11:27 -0700
+From: tip-bot for Fenghua Yu <tipbot@zytor.com>
+Message-ID: <tip-c83a9d5e425d4678b05ca058fec6254f18601474@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        penguin-kernel@I-love.SAKURA.ne.jp, fenghua.yu@intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, penguin-kernel@I-love.SAKURA.ne.jp,
+        tglx@linutronix.de
+In-Reply-To: <1363705484-27645-1-git-send-email-fenghua.yu@intel.com>
+References: <1363705484-27645-1-git-send-email-fenghua.yu@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86-32, microcode_intel_early:
+  Fix crash with CONFIG_DEBUG_VIRTUAL
+Git-Commit-ID: c83a9d5e425d4678b05ca058fec6254f18601474
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 19 Mar 2013 20:11:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Mar_2013_14_12_11_+1100_.gH8qTZJLDKsY2Yz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  c83a9d5e425d4678b05ca058fec6254f18601474
+Gitweb:     http://git.kernel.org/tip/c83a9d5e425d4678b05ca058fec6254f18601474
+Author:     Fenghua Yu <fenghua.yu@intel.com>
+AuthorDate: Tue, 19 Mar 2013 08:04:44 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 19 Mar 2013 19:51:08 -0700
 
-Hi Greg,
+x86-32, microcode_intel_early: Fix crash with CONFIG_DEBUG_VIRTUAL
 
-After merging the tty tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+In 32-bit, __pa_symbol() in CONFIG_DEBUG_VIRTUAL accesses kernel data
+(e.g.  max_low_pfn) that not only hasn't been setup yet in such early
+boot phase, but since we are in linear mode, cannot even be detected
+as uninitialized.
 
-drivers/net/caif/caif_serial.c: In function 'update_tty_status':
-drivers/net/caif/caif_serial.c:94:11: error: 'struct tty_struct' has no mem=
-ber named 'warned'
+Thus, use __pa_nodebug() rather than __pa_symbol() to get a global
+symbol's physical address.
 
-Caused by commit 6865ff222cca ("TTY: do not warn about setting speed via
-SPD_*").
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1363705484-27645-1-git-send-email-fenghua.yu@intel.com
+Reported-and-tested-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/microcode_intel_early.c | 26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-drivers/usb/serial/quatech2.c: In function 'qt2_process_read_urb':
-drivers/usb/serial/quatech2.c:661:18: error: 'struct qt2_port_private' has =
-no member named 'is_open'
-drivers/usb/serial/quatech2.c:705:15: error: 'struct qt2_port_private' has =
-no member named 'is_open'
-
-Caused by commit e4408ce3c23f ("TTY: quatech2, remove unneeded
-is_open").  grep is your friend (or searching while editting the file).
-
-I have used the tty tree from next-20130319 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__20_Mar_2013_14_12_11_+1100_.gH8qTZJLDKsY2Yz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRSSkLAAoJEECxmPOUX5FEQ88P+wZdrxcJGsRbm8jXuLqHWuuq
-/3yQPMQ+bZ5s3pBJj51ijGjMPDU0+Asnfq9+Ae7EPDg/Mhnj+b9EdYOTtkngqWD2
-3yCLMoGsTeYU5h2bcKLdLmyZTTkXtD9qxu3asPFJmgzYdGfSJgK7AFxD9TtIDgMD
-ohTKeqhkDk6MKA0257mhIieHpgYzVPceo9wguMkZaRNrMv5HVpmRyhKQYeiVsPI2
-GkruI/jomATVtS1QS3WGRTK5CeyDh7mctheqkrYjmGBntD7Yu6hJzP1StcANLqIB
-YF8xMNmcl9Ez6cIcGiDoR0E+CuJYoWIN1i/gzkjyJmhJ6NoCYS/LrnMGpG/27sVH
-hzfP6zjfo/vQdmqIlgZn/ma/10P58weN86hzLRYQ+Yqqn6CZt1bZkpIlYF2if2IT
-jLkQJI8p9/iEo66XX8/bpfBd7ACWPt+H2SYSwhA6VlpbIFK0g5CE7w9djVab0/GG
-nsKLdTHc8LMH5anFkTWpnjWoDz/cCoWm70GYKqJ44nUucQUgp7yiMDN4iQqnJz0H
-Xr0T0qJ+G2bdPImkQ6CeqC9/3Odlobg/YgjuOyVbxfsG0el9L+JLLNXWsPGFv3RB
-gjdSGtOiS0fUP9dAkNI0rF7fRj9tTGsw0pIBiePS2dWoanNHMKSpC/gG3DiWBTPp
-Er3nko/PyPooKsezzwyX
-=FUdZ
------END PGP SIGNATURE-----
-
---Signature=_Wed__20_Mar_2013_14_12_11_+1100_.gH8qTZJLDKsY2Yz--
+diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
+index 7890bc8..5992ee8 100644
+--- a/arch/x86/kernel/microcode_intel_early.c
++++ b/arch/x86/kernel/microcode_intel_early.c
+@@ -90,13 +90,13 @@ microcode_phys(struct microcode_intel **mc_saved_tmp,
+ 	struct microcode_intel ***mc_saved;
+ 
+ 	mc_saved = (struct microcode_intel ***)
+-		   __pa_symbol(&mc_saved_data->mc_saved);
++		   __pa_nodebug(&mc_saved_data->mc_saved);
+ 	for (i = 0; i < mc_saved_data->mc_saved_count; i++) {
+ 		struct microcode_intel *p;
+ 
+ 		p = *(struct microcode_intel **)
+-			__pa(mc_saved_data->mc_saved + i);
+-		mc_saved_tmp[i] = (struct microcode_intel *)__pa(p);
++			__pa_nodebug(mc_saved_data->mc_saved + i);
++		mc_saved_tmp[i] = (struct microcode_intel *)__pa_nodebug(p);
+ 	}
+ }
+ #endif
+@@ -562,7 +562,7 @@ scan_microcode(unsigned long start, unsigned long end,
+ 	struct cpio_data cd;
+ 	long offset = 0;
+ #ifdef CONFIG_X86_32
+-	char *p = (char *)__pa_symbol(ucode_name);
++	char *p = (char *)__pa_nodebug(ucode_name);
+ #else
+ 	char *p = ucode_name;
+ #endif
+@@ -630,8 +630,8 @@ static void __cpuinit print_ucode(struct ucode_cpu_info *uci)
+ 	if (mc_intel == NULL)
+ 		return;
+ 
+-	delay_ucode_info_p = (int *)__pa_symbol(&delay_ucode_info);
+-	current_mc_date_p = (int *)__pa_symbol(&current_mc_date);
++	delay_ucode_info_p = (int *)__pa_nodebug(&delay_ucode_info);
++	current_mc_date_p = (int *)__pa_nodebug(&current_mc_date);
+ 
+ 	*delay_ucode_info_p = 1;
+ 	*current_mc_date_p = mc_intel->hdr.date;
+@@ -741,15 +741,15 @@ load_ucode_intel_bsp(void)
+ #ifdef CONFIG_X86_32
+ 	struct boot_params *boot_params_p;
+ 
+-	boot_params_p = (struct boot_params *)__pa_symbol(&boot_params);
++	boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
+ 	ramdisk_image = boot_params_p->hdr.ramdisk_image;
+ 	ramdisk_size  = boot_params_p->hdr.ramdisk_size;
+ 	initrd_start_early = ramdisk_image;
+ 	initrd_end_early = initrd_start_early + ramdisk_size;
+ 
+ 	_load_ucode_intel_bsp(
+-		(struct mc_saved_data *)__pa_symbol(&mc_saved_data),
+-		(unsigned long *)__pa_symbol(&mc_saved_in_initrd),
++		(struct mc_saved_data *)__pa_nodebug(&mc_saved_data),
++		(unsigned long *)__pa_nodebug(&mc_saved_in_initrd),
+ 		initrd_start_early, initrd_end_early, &uci);
+ #else
+ 	ramdisk_image = boot_params.hdr.ramdisk_image;
+@@ -772,10 +772,10 @@ void __cpuinit load_ucode_intel_ap(void)
+ 	unsigned long *initrd_start_p;
+ 
+ 	mc_saved_in_initrd_p =
+-		(unsigned long *)__pa_symbol(mc_saved_in_initrd);
+-	mc_saved_data_p = (struct mc_saved_data *)__pa_symbol(&mc_saved_data);
+-	initrd_start_p = (unsigned long *)__pa_symbol(&initrd_start);
+-	initrd_start_addr = (unsigned long)__pa_symbol(*initrd_start_p);
++		(unsigned long *)__pa_nodebug(mc_saved_in_initrd);
++	mc_saved_data_p = (struct mc_saved_data *)__pa_nodebug(&mc_saved_data);
++	initrd_start_p = (unsigned long *)__pa_nodebug(&initrd_start);
++	initrd_start_addr = (unsigned long)__pa_nodebug(*initrd_start_p);
+ #else
+ 	mc_saved_data_p = &mc_saved_data;
+ 	mc_saved_in_initrd_p = mc_saved_in_initrd;
