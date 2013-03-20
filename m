@@ -1,139 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab3CTI4n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 04:56:43 -0400
-Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:47047 "EHLO
-	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754703Ab3CTI4k (ORCPT
+	id S1752662Ab3CTI6n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 04:58:43 -0400
+Received: from mga11.intel.com ([192.55.52.93]:5758 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750763Ab3CTI6l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 04:56:40 -0400
-Date: Wed, 20 Mar 2013 09:59:53 +0100
-From: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>
-To: =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>
-Cc: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hverkuil@xs4all.nl, elezegarcia@gmail.com
-Subject: Re: [RFC V1 7/8] smi2021: Add smi2021_bl.c
-Message-ID: <20130320085953.GG17291@dell.arpanet.local>
-References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
- <1363270024-12127-8-git-send-email-jonarne@jonarne.no>
- <871ubd3vh9.fsf@nemi.mork.no>
+	Wed, 20 Mar 2013 04:58:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,876,1355126400"; 
+   d="scan'208";a="309352773"
+From: "Stern, Eli" <eli.stern@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Use same image for boards with RAM at different locations - ARM
+Thread-Topic: Use same image for boards with RAM at different locations - ARM
+Thread-Index: Ac4lRw24K90JXkWVRSe8qN+zjND1MgAAc/MQ
+Date: Wed, 20 Mar 2013 08:57:45 +0000
+Message-ID: <2F2D37999334844EBB941E4D6CB428B51A2EC2DB@HASMSX106.ger.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.11]
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <871ubd3vh9.fsf@nemi.mork.no>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 10:31:14AM +0100, Bjørn Mork wrote:
-> Jon Arne Jørgensen <jonarne@jonarne.no> writes:
-> 
-> > This is the smi2021-bootloader module.
-> > This module will upload the firmware for the different somagic devices.
-> 
-> I really don't understand why you want to make that a separate module.
-> Building both the bootlader driver and the real driver into the same
-> module will make sure that either both or none are available, document
-> the relationship to the end user, and allow you to tell the user that
-> firmware files may be needed for the real driver by using the
-> MODULE_FIRMWARE macro (which you should do, IMHO).
->
+We have several boards that differ in the location of RAM.
+I would like to use the same image for all boards.
+My current understanding is that some part of the kernel startup code are position dependent.
+CPU : ARM11.
+Bootloader : U-Boot
+Kernel: 2.6.39.3
 
-I made this a separate module because there is one version of this
-device that doesn't need any firmware.
-But I think it would be better to include the bootloader in the real driver
-for simplicity.
+Is this configurable somehow?
+Has anyone done this?
+Is it at all possible?
+Can anyone point me to some info/doc on the matter?
 
-> > +static unsigned int firmware_version;
-> > +module_param(firmware_version, int, 0644);
-> > +MODULE_PARM_DESC(firmware_version,
-> > +			"Firmware version to be uploaded to device\n"
-> > +			"if there are more than one firmware present");
-> > +
-> > +struct usb_device_id smi2021_bootloader_id_table[] = {
-> > +	{ USB_DEVICE(0x1c88, 0x0007) },
-> > +	{ }
-> > +};
-> > +
-> > +struct smi2021_firmware {
-> > +	int		id;
-> > +	const char	*name;
-> > +	int		found;
-> > +};
-> > +
-> > +struct smi2021_firmware available_fw[] = {
-> > +	{
-> > +		.id = 0x3c,
-> > +		.name = "smi2021_3c.bin",
-> > +	},
-> > +	{
-> > +		.id = 0x3e,
-> > +		.name = "smi2021_3e.bin",
-> > +	},
-> > +	{
-> > +		.id = 0x3f,
-> > +		.name = "smi2021_3f.bin",
-> > +	}
-> > +};
-> 
-> 
-> How does the user know which firmware to select?  Will any of them work,
-> or are they device specific? Either way I believe you should publish all
-> three names using MODULE_FIRMWARE.
-> 
->
+Thanx
 
-The problem with this device is that there is no way for the user to
-know what version of the device he's got before the firmware is uploaded
-to the device.
+Eli Stern
+---------------------------------------------------------------------
+Intel Israel (74) Limited
 
-Any device will accept any firmware, but it will not function without
-the correct firmware.
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
 
-The only way to see what version of the firmware you will need is to
-test the driver on a Windows machine with the driver that came with the
-device. I have no idea about what the windows driver will do if you have
-more than one version of this device.
-
-> > +static int smi2021_load_firmware(struct usb_device *udev,
-> > +					const struct firmware *firmware)
-> > +{
-> > +	int i, size, rc = 0;
-> > +	u8 *chunk;
-> > +	u16 ack = 0x0000;
-> > +
-> > +	if (udev == NULL)
-> > +		goto end_out;
-> 
-> Is this possible? 
-> 
-> 
-> 
-
-Probably not, I'll remove this check :)
-
-> > +	size = FIRMWARE_CHUNK_SIZE + FIRMWARE_HEADER_SIZE;
-> > +	chunk = kzalloc(size, GFP_KERNEL);
-> > +	chunk[0] = 0x05;
-> > +	chunk[1] = 0xff;
-> > +
-> > +	if (chunk == NULL) {
-> 
-> This on the other hand, will happen.  But you have already oopsed when
-> you test it here...
-> 
->
-
-Yes, that is true.
-I will fix,
-
-thank you for your review.
-
-> Bjørn
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
