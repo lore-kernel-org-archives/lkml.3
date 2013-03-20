@@ -1,202 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab3CTN7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 09:59:11 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17783 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379Ab3CTN7J (ORCPT
+	id S1754810Ab3CTOAM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 10:00:12 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51747 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab3CTOAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 09:59:09 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 20 Mar 2013 06:59:05 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@opensource.wolfsonmicro.com>
-CC: <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2] regulator: palmas: add input supply names
-Date: Wed, 20 Mar 2013 19:26:37 +0530
-Message-ID: <1363787797-20659-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Wed, 20 Mar 2013 10:00:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <5149B486.9050406@imgtec.com>
+References: <1363775108.1390.88.camel@x61.thuisdomein>
+	<51499748.8020700@monstr.eu>
+	<5149B486.9050406@imgtec.com>
+Date: Wed, 20 Mar 2013 15:00:06 +0100
+Message-ID: <CAHTX3d+ds9Cb0Z6hpDWa5cJwqR9U=N1z4KFWKTuxvxfcywSeLA@mail.gmail.com>
+Subject: Re: [PATCH] memblock: Kill ARCH_POPULATES_NODE_MAP once more
+From: Michal Simek <monstr@monstr.eu>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Tejun Heo <tj@kernel.org>,
+        microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Palmas regulator support the different input supply pins for each of
-the rails. Fill the regulator info data with their input supply pin
-names.
+2013/3/20 James Hogan <james.hogan@imgtec.com>:
+> On 20/03/13 11:02, Michal Simek wrote:
+>> On 03/20/2013 11:25 AM, Paul Bolle wrote:
+>>> The Kconfig symbol ARCH_POPULATES_NODE_MAP was killed in v3.3. After
+>>> that it popped up again in microblaze and metag. Nobody noticed,
+>>> probably because these Kconfig symbols are entirely unused and these
+>>> architectures both select HAVE_MEMBLOCK_NODE_MAP. Anyhow, these two
+>>> entries can also be killed.
+>>
+>> Ah. We have done the developing on that on earlier version and
+>> to mainline it went in 3.3 merge window that's why I didn't notice it.
+>>
+>> If James wants to take this patch through his tree, I am ok with that
+>> and here is my
+>>
+>> Acked-by: Michal Simek <monstr@monstr.eu>
+>>
+>> Or if you want to take this through my microblaze tree, I am also ok
+>> with that but please send me your ACK.
+>
+> Thanks for the patch Paul. This was added to metag when we were on
+> 2.6.34. I spotted the adding of HAVE_MEMBLOCK_NODE_MAP to SH in v3.3 and
+> did the same for metag, but didn't notice the removal of
+> ARCH_POPULATES_NODE_MAP.
+>
+> I'm happy to take this patch for v3.10.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1:
-- Passing desc->sname for input supply unconditionally.
-- If input pins are unconnected then it will be connect
-  to floating supply.
+Ok. Thanks,
+Michal
 
- drivers/regulator/palmas-regulator.c |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index 4a45942..bfca28f 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -29,6 +29,7 @@
- 
- struct regs_info {
- 	char	*name;
-+	char	*sname;
- 	u8	vsel_addr;
- 	u8	ctrl_addr;
- 	u8	tstep_addr;
-@@ -37,110 +38,131 @@ struct regs_info {
- static const struct regs_info palmas_regs_info[] = {
- 	{
- 		.name		= "SMPS12",
-+		.sname		= "smps1-in",
- 		.vsel_addr	= PALMAS_SMPS12_VOLTAGE,
- 		.ctrl_addr	= PALMAS_SMPS12_CTRL,
- 		.tstep_addr	= PALMAS_SMPS12_TSTEP,
- 	},
- 	{
- 		.name		= "SMPS123",
-+		.sname		= "smps1-in",
- 		.vsel_addr	= PALMAS_SMPS12_VOLTAGE,
- 		.ctrl_addr	= PALMAS_SMPS12_CTRL,
- 		.tstep_addr	= PALMAS_SMPS12_TSTEP,
- 	},
- 	{
- 		.name		= "SMPS3",
-+		.sname		= "smps3-in",
- 		.vsel_addr	= PALMAS_SMPS3_VOLTAGE,
- 		.ctrl_addr	= PALMAS_SMPS3_CTRL,
- 	},
- 	{
- 		.name		= "SMPS45",
-+		.sname		= "smps4-in",
- 		.vsel_addr	= PALMAS_SMPS45_VOLTAGE,
- 		.ctrl_addr	= PALMAS_SMPS45_CTRL,
- 		.tstep_addr	= PALMAS_SMPS45_TSTEP,
- 	},
- 	{
- 		.name		= "SMPS457",
-+		.sname		= "smps4-in",
- 		.vsel_addr	= PALMAS_SMPS45_VOLTAGE,
- 		.ctrl_addr	= PALMAS_SMPS45_CTRL,
- 		.tstep_addr	= PALMAS_SMPS45_TSTEP,
- 	},
- 	{
- 		.name		= "SMPS6",
-+		.sname		= "smps6-in",
- 		.vsel_addr	= PALMAS_SMPS6_VOLTAGE,
- 		.ctrl_addr	= PALMAS_SMPS6_CTRL,
- 		.tstep_addr	= PALMAS_SMPS6_TSTEP,
- 	},
- 	{
- 		.name		= "SMPS7",
-+		.sname		= "smps7-in",
- 		.vsel_addr	= PALMAS_SMPS7_VOLTAGE,
- 		.ctrl_addr	= PALMAS_SMPS7_CTRL,
- 	},
- 	{
- 		.name		= "SMPS8",
-+		.sname		= "smps8-in",
- 		.vsel_addr	= PALMAS_SMPS8_VOLTAGE,
- 		.ctrl_addr	= PALMAS_SMPS8_CTRL,
- 		.tstep_addr	= PALMAS_SMPS8_TSTEP,
- 	},
- 	{
- 		.name		= "SMPS9",
-+		.sname		= "smps9-in",
- 		.vsel_addr	= PALMAS_SMPS9_VOLTAGE,
- 		.ctrl_addr	= PALMAS_SMPS9_CTRL,
- 	},
- 	{
- 		.name		= "SMPS10",
-+		.sname		= "smps10-in",
- 	},
- 	{
- 		.name		= "LDO1",
-+		.sname		= "ldo1-in",
- 		.vsel_addr	= PALMAS_LDO1_VOLTAGE,
- 		.ctrl_addr	= PALMAS_LDO1_CTRL,
- 	},
- 	{
- 		.name		= "LDO2",
-+		.sname		= "ldo2-in",
- 		.vsel_addr	= PALMAS_LDO2_VOLTAGE,
- 		.ctrl_addr	= PALMAS_LDO2_CTRL,
- 	},
- 	{
- 		.name		= "LDO3",
-+		.sname		= "ldo3-in",
- 		.vsel_addr	= PALMAS_LDO3_VOLTAGE,
- 		.ctrl_addr	= PALMAS_LDO3_CTRL,
- 	},
- 	{
- 		.name		= "LDO4",
-+		.sname		= "ldo4-in",
- 		.vsel_addr	= PALMAS_LDO4_VOLTAGE,
- 		.ctrl_addr	= PALMAS_LDO4_CTRL,
- 	},
- 	{
- 		.name		= "LDO5",
-+		.sname		= "ldo5-in",
- 		.vsel_addr	= PALMAS_LDO5_VOLTAGE,
- 		.ctrl_addr	= PALMAS_LDO5_CTRL,
- 	},
- 	{
- 		.name		= "LDO6",
-+		.sname		= "ldo6-in",
- 		.vsel_addr	= PALMAS_LDO6_VOLTAGE,
- 		.ctrl_addr	= PALMAS_LDO6_CTRL,
- 	},
- 	{
- 		.name		= "LDO7",
-+		.sname		= "ldo7-in",
- 		.vsel_addr	= PALMAS_LDO7_VOLTAGE,
- 		.ctrl_addr	= PALMAS_LDO7_CTRL,
- 	},
- 	{
- 		.name		= "LDO8",
-+		.sname		= "ldo8-in",
- 		.vsel_addr	= PALMAS_LDO8_VOLTAGE,
- 		.ctrl_addr	= PALMAS_LDO8_CTRL,
- 	},
- 	{
- 		.name		= "LDO9",
-+		.sname		= "ldo9-in",
- 		.vsel_addr	= PALMAS_LDO9_VOLTAGE,
- 		.ctrl_addr	= PALMAS_LDO9_CTRL,
- 	},
- 	{
- 		.name		= "LDOLN",
-+		.sname		= "ldoln-in",
- 		.vsel_addr	= PALMAS_LDOLN_VOLTAGE,
- 		.ctrl_addr	= PALMAS_LDOLN_CTRL,
- 	},
- 	{
- 		.name		= "LDOUSB",
-+		.sname		= "ldousb-in",
- 		.vsel_addr	= PALMAS_LDOUSB_VOLTAGE,
- 		.ctrl_addr	= PALMAS_LDOUSB_CTRL,
- 	},
-@@ -710,6 +732,7 @@ static int palmas_regulators_probe(struct platform_device *pdev)
- 		else
- 			config.init_data = NULL;
- 
-+		pmic->desc[id].supply_name = palmas_regs_info[id].sname;
- 		config.of_node = palmas_matches[id].of_node;
- 
- 		rdev = regulator_register(&pmic->desc[id], &config);
-@@ -756,6 +779,7 @@ static int palmas_regulators_probe(struct platform_device *pdev)
- 		else
- 			config.init_data = NULL;
- 
-+		pmic->desc[id].supply_name = palmas_regs_info[id].sname;
- 		config.of_node = palmas_matches[id].of_node;
- 
- 		rdev = regulator_register(&pmic->desc[id], &config);
+
 -- 
-1.7.1.1
-
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
