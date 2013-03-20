@@ -1,175 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757773Ab3CTAbO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 20:31:14 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:53365 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755046Ab3CTAbM (ORCPT
+	id S1757776Ab3CTAcc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 20:32:32 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:33617 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757422Ab3CTAca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 20:31:12 -0400
-Message-ID: <5149034A.5050907@gmail.com>
-Date: Wed, 20 Mar 2013 08:31:06 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 19 Mar 2013 20:32:30 -0400
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/9] migrate: enable migrate_pages() to migrate hugepage
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1361475708-25991-6-git-send-email-n-horiguchi@ah.jp.nec.com> <20130318154057.GS10192@dhcp22.suse.cz> <1363651636-3lsf20se-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1363651636-3lsf20se-mutt-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAMOw1v5AOmy38KNVfxj6OO-U0UCXST50vD0g0W5fEpNfKCpGvg@mail.gmail.com>
+References: <b6b1676fd5bcd6b0ef47b0e0a1c26b1c05684135.1363291511.git.luto@amacapital.net>
+ <87ehfhtftn.fsf@rustcorp.com.au> <CALCETrU+rehQzy4vVg589CGi561X_s73Xgsfp43pYZOoKvNDXQ@mail.gmail.com>
+ <87sj3tsawh.fsf@rustcorp.com.au> <CALCETrUK54KViGex=V2pG8kAttsxOiDkeJUL48pk1NAhH-SdAA@mail.gmail.com>
+ <87hak8qfu5.fsf@rustcorp.com.au> <CAMOw1v5AOmy38KNVfxj6OO-U0UCXST50vD0g0W5fEpNfKCpGvg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 19 Mar 2013 20:32:09 -0400
+Message-ID: <CALCETrVuoa32dx0ppvwQd+gty6WTVUzDU3f7Rwuge7GArDNU9Q@mail.gmail.com>
+Subject: Re: [RFC PATCH] Allow optional module parameters
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        linux-kbuild@vger.kernel.org, Jon Masters <jcm@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naoya,
-On 03/19/2013 08:07 AM, Naoya Horiguchi wrote:
-> On Mon, Mar 18, 2013 at 04:40:57PM +0100, Michal Hocko wrote:
->> On Thu 21-02-13 14:41:44, Naoya Horiguchi wrote:
->>> This patch extends check_range() to handle vma with VM_HUGETLB set.
->>> With this changes, we can migrate hugepage with migrate_pages(2).
->>> Note that for larger hugepages (covered by pud entries, 1GB for
->>> x86_64 for example), we simply skip it now.
+On Tue, Mar 19, 2013 at 8:26 PM, Lucas De Marchi
+<lucas.demarchi@profusion.mobi> wrote:
+> Hi Rusty,
+>
+> On Mon, Mar 18, 2013 at 11:32 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> Andy Lutomirski <luto@amacapital.net> writes:
+>>> On Sun, Mar 17, 2013 at 7:24 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>>> Andy Lutomirski <luto@amacapital.net> writes:
+>>>>> On Thu, Mar 14, 2013 at 10:03 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>>>>> Err, yes.  Don't remove module parameters, they're part of the API.  Do
+>>>>>> you have a particular example?
+>>>>>
+>>>>> So things like i915.i915_enable_ppgtt, which is there to enable
+>>>>> something experimental, needs to stay forever once the relevant
+>>>>> feature becomes non-experimental and non-optional?  This seems silly.
+>> ...
+>>>>> Having the module parameter go away while still allowing the module to
+>>>>> load seems like a good solution (possibly with a warning in the logs
+>>>>> so the user can eventually delete the parameter).
+>>>>
+>>>> Why not do that for *every* missing parameter then?  Why have this weird
+>>>> notation where the user must know that the parameter might one day go
+>>>> away?
 >>>
->>> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
->>> ---
->>>  include/linux/hugetlb.h |  6 ++++--
->>>  mm/hugetlb.c            | 10 ++++++++++
->>>  mm/mempolicy.c          | 46 ++++++++++++++++++++++++++++++++++------------
->>>  3 files changed, 48 insertions(+), 14 deletions(-)
->>>
->>> diff --git v3.8.orig/include/linux/hugetlb.h v3.8/include/linux/hugetlb.h
->>> index 8f87115..eb33df5 100644
->>> --- v3.8.orig/include/linux/hugetlb.h
->>> +++ v3.8/include/linux/hugetlb.h
->>> @@ -69,6 +69,7 @@ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
->>>  int dequeue_hwpoisoned_huge_page(struct page *page);
->>>  void putback_active_hugepage(struct page *page);
->>>  void putback_active_hugepages(struct list_head *l);
->>> +void migrate_hugepage_add(struct page *page, struct list_head *list);
->>>  void copy_huge_page(struct page *dst, struct page *src);
->>>  
->>>  extern unsigned long hugepages_treat_as_movable;
->>> @@ -88,8 +89,8 @@ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
->>>  				pmd_t *pmd, int write);
->>>  struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
->>>  				pud_t *pud, int write);
->>> -int pmd_huge(pmd_t pmd);
->>> -int pud_huge(pud_t pmd);
->>> +extern int pmd_huge(pmd_t pmd);
->>> +extern int pud_huge(pud_t pmd);
->> extern is not needed here.
-> OK.
+>>> Fair enough.  What about the other approach, then?  Always warn if an
+>>> option doesn't match (built-in or otherwise) but load the module
+>>> anyways.
+>>
+>> What does everyone think of this?  Jon, Lucas, does this match your
+>> experience?
+>>
+>> Thanks,
+>> Rusty.
+>>
+>> Subject: modules: don't fail to load on unknown parameters.
+>>
+>> Although parameters are supposed to be part of the kernel API, experimental
+>> parameters are often removed.  In addition, downgrading a kernel might cause
+>> previously-working modules to fail to load.
 >
->>>  unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
->>>  		unsigned long address, unsigned long end, pgprot_t newprot);
->>>  
->>> @@ -134,6 +135,7 @@ static inline int dequeue_hwpoisoned_huge_page(struct page *page)
->>>  
->>>  #define putback_active_hugepage(p) 0
->>>  #define putback_active_hugepages(l) 0
->>> +#define migrate_hugepage_add(p, l) 0
->>>  static inline void copy_huge_page(struct page *dst, struct page *src)
->>>  {
->>>  }
->>> diff --git v3.8.orig/mm/hugetlb.c v3.8/mm/hugetlb.c
->>> index cb9d43b8..86ffcb7 100644
->>> --- v3.8.orig/mm/hugetlb.c
->>> +++ v3.8/mm/hugetlb.c
->>> @@ -3202,3 +3202,13 @@ void putback_active_hugepages(struct list_head *l)
->>>  	list_for_each_entry_safe(page, page2, l, lru)
->>>  		putback_active_hugepage(page);
->>>  }
->>> +
->>> +void migrate_hugepage_add(struct page *page, struct list_head *list)
->>> +{
->>> +	VM_BUG_ON(!PageHuge(page));
->>> +	get_page(page);
->>> +	spin_lock(&hugetlb_lock);
->> Why hugetlb_lock? Comment for this lock says that it protects
->> hugepage_freelists, nr_huge_pages, and free_huge_pages.
-> I think that this comment is out of date and hugepage_activelists,
-> which was introduced recently, should be protected because this
-> patchset adds is_hugepage_movable() which runs through the list.
-> So I'll update the comment in the next post.
+> I agree with this reasoning
 >
->>> +	list_move_tail(&page->lru, list);
->>> +	spin_unlock(&hugetlb_lock);
->>> +	return;
->>> +}
->>> diff --git v3.8.orig/mm/mempolicy.c v3.8/mm/mempolicy.c
->>> index e2df1c1..8627135 100644
->>> --- v3.8.orig/mm/mempolicy.c
->>> +++ v3.8/mm/mempolicy.c
->>> @@ -525,6 +525,27 @@ static int check_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
->>>  	return addr != end;
->>>  }
->>>  
->>> +static void check_hugetlb_pmd_range(struct vm_area_struct *vma, pmd_t *pmd,
->>> +		const nodemask_t *nodes, unsigned long flags,
->>> +				    void *private)
->>> +{
->>> +#ifdef CONFIG_HUGETLB_PAGE
->>> +	int nid;
->>> +	struct page *page;
->>> +
->>> +	spin_lock(&vma->vm_mm->page_table_lock);
->>> +	page = pte_page(huge_ptep_get((pte_t *)pmd));
->>> +	spin_unlock(&vma->vm_mm->page_table_lock);
->> I am a bit confused why page_table_lock is used here and why it doesn't
->> cover the page usage.
-> I expected this function to do the same for pmd as check_pte_range() does
-> for pte, but the above code didn't do it. I should've put spin_unlock
-> below migrate_hugepage_add(). Sorry for the confusion.
+>>
+>> On balance, it's probably better to warn, and load the module anyway.
+>
+> However loading the module anyway would bring at least one drawback:
+> if the user made a typo when passing the option the module would load
+> anyway and he will probably not even look in the log, since there's
+> was no errors from modprobe.
+>
+> For finit_module we could put a flag to trigger this behavior and
+> propagate it to modprobe, but this is not possible with init_module().
+> I can't think in any other option right now... do you have any?
 
-I still confuse! Could you explain more in details?
+Have a different finit_module return value for "successfully loaded,
+but there were warnings" perhaps?
+
+--Andy
 
 >
->>> +	nid = page_to_nid(page);
->>> +	if (node_isset(nid, *nodes) != !!(flags & MPOL_MF_INVERT)
->>> +	    && ((flags & MPOL_MF_MOVE && page_mapcount(page) == 1)
->>> +		|| flags & MPOL_MF_MOVE_ALL))
->>> +		migrate_hugepage_add(page, private);
->>> +#else
->>> +	BUG();
->>> +#endif
->>> +}
->>> +
->>>  static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
->>>  		unsigned long addr, unsigned long end,
->>>  		const nodemask_t *nodes, unsigned long flags,
->>> @@ -536,6 +557,11 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
->>>  	pmd = pmd_offset(pud, addr);
->>>  	do {
->>>  		next = pmd_addr_end(addr, end);
->>> +		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
->> Why an explicit check for is_vm_hugetlb_page here? Isn't pmd_huge()
->> sufficient?
-> I think we need both check here because if we use only pmd_huge(),
-> pmd for thp goes into this branch wrongly. 
 >
-> Thanks,
-> Naoya
->
->>> +			check_hugetlb_pmd_range(vma, pmd, nodes,
->>> +						flags, private);
->>> +			continue;
->>> +		}
->>>  		split_huge_page_pmd(vma, addr, pmd);
->>>  		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
->>>  			continue;
->> [...]
->> -- 
->> Michal Hocko
->> SUSE Labs
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Lucas De Marchi
 
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
