@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149Ab3CTKiN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 06:38:13 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:57969 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750835Ab3CTKiM (ORCPT
+	id S1755606Ab3CTKkC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 06:40:02 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:45602 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518Ab3CTKj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 06:38:12 -0400
-Message-ID: <1363775886.1390.90.camel@x61.thuisdomein>
-Subject: [PATCH] m68k: clean up unused "config ROMVECSIZE"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Ungerer <gerg@uclinux.org>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 20 Mar 2013 11:38:06 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Mar 2013 10:38:07.0123 (UTC) FILETIME=[024BD630:01CE2557]
-X-RcptDomain: vger.kernel.org
+	Wed, 20 Mar 2013 06:39:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <201303201020.14654.arnd@arndb.de>
+References: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com>
+ <201303191759.27762.arnd@arndb.de> <CAHkwnC-3_dDM3JO8y3yeNFz7=fpP=MtZ9D-3cMH8rNF9C1NZBA@mail.gmail.com>
+ <201303201020.14654.arnd@arndb.de>
+From: Fabio Porcedda <fabio.porcedda@gmail.com>
+Date: Wed, 20 Mar 2013 11:39:38 +0100
+Message-ID: <CAHkwnC-8FH0nyJ+eT=+7doP+fSdZjNYUW4zzs_r6e9wt3Yt4Fg@mail.gmail.com>
+Subject: Re: [PATCH 10/10] drivers: misc: use module_platform_driver_probe()
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kconfig symbol ROMVECSIZE is unused since commit
-f84f52a5c15db7d14a534815f27253b001735183 ("m68knommu: clean up linker
-script"). Let's clean up its Kconfig entry too.
+On Wed, Mar 20, 2013 at 11:20 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 20 March 2013, Fabio Porcedda wrote:
+>> I think we can check inside the  deferred_probe_work_func()
+>> if the dev->probe function pointer is equal to platform_drv_probe_fail().
+>
+> I think it's too late by then, because that would only warn if we try to probe
+> it again, but when platform_driver_probe() does not succeed immediately, it
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+Maybe you mean "does succeed immediately" ?
 
- arch/m68k/Kconfig.machine | 9 ---------
- 1 file changed, 9 deletions(-)
+> unregisters the driver again, so we never get there.
 
-diff --git a/arch/m68k/Kconfig.machine b/arch/m68k/Kconfig.machine
-index 7240584..28ec0c0 100644
---- a/arch/m68k/Kconfig.machine
-+++ b/arch/m68k/Kconfig.machine
-@@ -539,15 +539,6 @@ config ROMVEC
- 	  68000 type variants the vectors are at the base of the boot device
- 	  on system startup.
- 
--config ROMVECSIZE
--	hex "Size of ROM vector region (in bytes)"
--	default "0x400"
--	depends on ROM
--	help
--	  Define the size of the vector region in ROM. For most 68000
--	  variants this would be 0x400 bytes in size. Set to 0 if you do
--	  not want a vector region at the start of the ROM.
--
- config ROMSTART
- 	hex "Address of the base of system image in ROM"
- 	default "0x400"
--- 
-1.7.11.7
-
+--
+Fabio Porcedda
