@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121Ab3CTLpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 07:45:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:40026 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752093Ab3CTLpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 07:45:10 -0400
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-To: <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-mmc@vger.kernel.org>
-CC: <cjb@laptop.org>, <nsekhar@ti.com>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <hs@denx.de>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        "Manjunathappa, Prakash" <prakash.pm@ti.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v6 5/5] ARM: davinci: da850: override mmc DT node device name
-Date: Wed, 20 Mar 2013 17:14:12 +0530
-Message-ID: <1363779852-24083-6-git-send-email-prakash.pm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1363779852-24083-1-git-send-email-prakash.pm@ti.com>
-References: <1363779852-24083-1-git-send-email-prakash.pm@ti.com>
+	id S1757968Ab3CTLqs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 07:46:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60552 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617Ab3CTLqq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 07:46:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Fabio Porcedda <fabio.porcedda@gmail.com>
+Subject: Re: [PATCH 10/10] drivers: misc: use module_platform_driver_probe()
+Date: Wed, 20 Mar 2013 11:46:07 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+References: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com> <201303201020.14654.arnd@arndb.de> <CAHkwnC-8FH0nyJ+eT=+7doP+fSdZjNYUW4zzs_r6e9wt3Yt4Fg@mail.gmail.com>
+In-Reply-To: <CAHkwnC-8FH0nyJ+eT=+7doP+fSdZjNYUW4zzs_r6e9wt3Yt4Fg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303201146.07987.arnd@arndb.de>
+X-Provags-ID: V02:K0:Dx5NgLEfFpWU5Svd5c/nPezGAybMrJkU4zCAGfWu7nT
+ U55v+w2rD6s2r5gFe2gRr0wqm6W1g3aBZ3e5X2o5DLfHr2ghpr
+ 3HPopTla9OaosRxE9+XUv3VskiNkhm881rbhsND1HpkN/RrDty
+ 0+2cb5ljWICdTWz54+gFYnTDBUrEJlIOVOtQBb1VBaLr7vwlF9
+ t+gx0Ud6K88TdrVbJiXPESTvE+vCr0mU3zeljlhghX1Hlgp+a/
+ veSGbyqkueF98bftByIW51cLIw7KOeTegDuZqtrl04/RNgSGV2
+ 75SEtwBXuLuWiBIXchyhTUssKCD5lo2hxq/EoaLGl4zstjcyNg
+ C/UGY2GOSc3KJnr/hNXs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Populate OF_DEV_AUXDATA with desired device name expected by
-davinci_mmc driver. Without this clk_get of davinci_mmc DT driver
-fails.
+On Wednesday 20 March 2013, Fabio Porcedda wrote:
+> 
+> On Wed, Mar 20, 2013 at 11:20 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Wednesday 20 March 2013, Fabio Porcedda wrote:
+> >> I think we can check inside the  deferred_probe_work_func()
+> >> if the dev->probe function pointer is equal to platform_drv_probe_fail().
+> >
+> > I think it's too late by then, because that would only warn if we try to probe
+> > it again, but when platform_driver_probe() does not succeed immediately, it
+> 
+> Maybe you mean "does succeed immediately" ?
 
-Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
-Cc: linux-mmc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: davinci-linux-open-source@linux.davincidsp.com
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: cjb@laptop.org
-Cc: Sekhar Nori <nsekhar@ti.com>
----
- arch/arm/mach-davinci/da8xx-dt.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+I mean in this code (simplified for the sake of discussion)
 
-diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
-index 24146de..f581068 100644
---- a/arch/arm/mach-davinci/da8xx-dt.c
-+++ b/arch/arm/mach-davinci/da8xx-dt.c
-@@ -41,6 +41,7 @@ struct of_dev_auxdata da850_auxdata_lookup[] __initdata = {
- 	OF_DEV_AUXDATA("ti,davinci-i2c", 0x01c22000, "i2c_davinci.1", NULL),
- 	OF_DEV_AUXDATA("ti,davinci-wdt", 0x01c21000, "watchdog", NULL),
- 	OF_DEV_AUXDATA("ti,da830-spi", 0x01f0e000, "spi_davinci.1", NULL),
-+	OF_DEV_AUXDATA("ti,da830-mmc", 0x01c40000, "da830-mmc.0", NULL),
- 	{}
- };
- 
--- 
-1.7.4.1
+int __init_or_module platform_driver_probe(struct platform_driver *drv,
+                int (*probe)(struct platform_device *))
+{
+        int retval, code;
 
+        drv->probe = probe;
+        retval = code = platform_driver_register(drv);
+
+        drv->probe = NULL;
+        if (code == 0 && list_empty(&drv->driver.p->klist_devices.k_list))
+                retval = -ENODEV;
+        drv->driver.probe = platform_drv_probe_fail;
+
+        if (code != retval)
+                platform_driver_unregister(drv);
+        return retval;
+}
+
+we assume that all devices are bound to drivers during the call to
+platform_driver_register, and if the device list is empty afterwards,
+we unregister the driver and will never get to the deferred probing
+stage.
+
+	Arnd
