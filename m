@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab3CTHlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 03:41:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46466 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751422Ab3CTHlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 03:41:22 -0400
-Date: Wed, 20 Mar 2013 08:41:18 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/9] migrate: enable migrate_pages() to migrate hugepage
-Message-ID: <20130320074118.GB20045@dhcp22.suse.cz>
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1361475708-25991-6-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130318154057.GS10192@dhcp22.suse.cz>
- <1363651636-3lsf20se-mutt-n-horiguchi@ah.jp.nec.com>
- <20130319071113.GD5112@dhcp22.suse.cz>
- <1363759974-38t0k25g-mutt-n-horiguchi@ah.jp.nec.com>
+	id S1755893Ab3CTHnJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 03:43:09 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64499 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928Ab3CTHnH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 03:43:07 -0400
+X-AuditID: 9c93016f-b7cecae000004cf8-86-5149688978a5
+Date: Wed, 20 Mar 2013 16:43:30 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/8] sched: prevent to re-select dst-cpu in load_balance()
+Message-ID: <20130320074330.GE11672@lge.com>
+References: <1360820921-2513-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1360820921-2513-8-git-send-email-iamjoonsoo.kim@lge.com>
+ <1363705546.22553.61.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363759974-38t0k25g-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1363705546.22553.61.camel@laptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 20-03-13 02:12:54, Naoya Horiguchi wrote:
-> On Tue, Mar 19, 2013 at 08:11:13AM +0100, Michal Hocko wrote:
-> > On Mon 18-03-13 20:07:16, Naoya Horiguchi wrote:
-> > > On Mon, Mar 18, 2013 at 04:40:57PM +0100, Michal Hocko wrote:
-> > > > On Thu 21-02-13 14:41:44, Naoya Horiguchi wrote:
-> ...
-> > > > > @@ -536,6 +557,11 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
-> > > > >  	pmd = pmd_offset(pud, addr);
-> > > > >  	do {
-> > > > >  		next = pmd_addr_end(addr, end);
-> > > > > +		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
-> > > > 
-> > > > Why an explicit check for is_vm_hugetlb_page here? Isn't pmd_huge()
-> > > > sufficient?
-> > > 
-> > > I think we need both check here because if we use only pmd_huge(),
-> > > pmd for thp goes into this branch wrongly. 
+On Tue, Mar 19, 2013 at 04:05:46PM +0100, Peter Zijlstra wrote:
+> On Thu, 2013-02-14 at 14:48 +0900, Joonsoo Kim wrote:
+> > Commit 88b8dac0 makes load_balance() consider other cpus in its group.
+> > But, in that, there is no code for preventing to re-select dst-cpu.
+> > So, same dst-cpu can be selected over and over.
 > > 
-> > Bahh. You are right. I thought that pmd_huge is hugetlb thingy but it
-> > obviously checks only _PAGE_PSE same as pmd_large() which is really
-> > unfortunate and confusing. Can we make it hugetlb specific?
+> > This patch add functionality to load_balance() in order to exclude
+> > cpu which is selected once.
 > 
-> I agree that we had better fix this confusion.
-> 
-> What pmd_huge() (or pmd_large() in some architectures) does is just
-> checking whether a given pmd is pointing to huge/large page or not.
-> It does not say which type of hugepage it is.
-> So it shouldn't be used to decide whether the hugepage are hugetlbfs or not.
-> I think it would be better to introduce pmd_hugetlb() which has pmd and vma
-> as arguments and returns true only for hugetlbfs pmd.
-> Checking pmd_hugetlb() should come before checking pmd_trans_huge() because
-> pmd_trans_huge() implicitly assumes that the vma which covers the virtual
-> address of a given pmd is not hugetlbfs vma.
-> 
-> I'm interested in this cleanup, so will work on it after this patchset.
+> Oh man.. seriously? Did you see this happen? Also, can't we simply
+> remove it from lb->cpus?
 
-pnd_huge is used only at few places so it shouldn't be very big. On the
-other hand you do not have vma always available so it is getting tricky.
+I didn't see it, I do just logical thinking. :)
+lb->cpus is for source cpus and dst-cpu is for dest cpus. So, it doesn't
+works to remove it from lb->cpus.
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
+Thanks.
+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
