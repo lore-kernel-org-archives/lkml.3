@@ -1,68 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab3CTRuL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 13:50:11 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:32969 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755217Ab3CTRuG (ORCPT
+	id S1754926Ab3CTRve (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 13:51:34 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60815 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab3CTRvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 13:50:06 -0400
-Message-ID: <1363801796.4280.24.camel@thor.lan>
-Subject: Re: [PATCH 03/18] tty: Simplify tty buffer/ldisc interface with
- helper function
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Ilya Zykov <linux@izyk.ru>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Min Zhang <mzhang@mvista.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 20 Mar 2013 13:49:56 -0400
-In-Reply-To: <5149AFD0.8020604@izyk.ru>
-References: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>
-	  <1363724513-15604-4-git-send-email-peter@hurleysoftware.com>
-	  <5148E9D2.4030305@izyk.ru> <1363737036.3413.49.camel@thor.lan>
-	 <5149AFD0.8020604@izyk.ru>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
+	Wed, 20 Mar 2013 13:51:33 -0400
+Message-ID: <5149F722.8040901@wwwdotorg.org>
+Date: Wed, 20 Mar 2013 11:51:30 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 7/7] usb: phy: registering tegra USB PHY as platform driver
+References: <1363609781-4045-1-git-send-email-vbyravarasu@nvidia.com> <1363609781-4045-8-git-send-email-vbyravarasu@nvidia.com> <5148C8B6.90303@wwwdotorg.org> <D958900912E20642BCBC71664EFECE3E6E5092FFFA@BGMAIL02.nvidia.com>
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6E5092FFFA@BGMAIL02.nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-20 at 16:47 +0400, Ilya Zykov wrote:
-> >> I have little question about flush_to_ldisc().
-> >> Does can it be multithreaded?
-> >>
-> >> I think yes, because on SMP schedule_work() can work on different CPU paralleled.
-> > 
-> > Yes, the same work item can now run in parallel on SMP since Tejun Heo
-> > re-did the workqueue implementation on 2.6.36 [Stefan Richter, the
-> > firewire maintainer, recently explained this history to me].
+On 03/20/2013 06:43 AM, Venu Byravarasu wrote:
+> Stephen Warren wrote at Wednesday, March 20, 2013 1:51 AM:
+>> On 03/18/2013 06:29 AM, Venu Byravarasu wrote:
+>>> Registered tegra USB PHY as a separate platform driver.
+
+>>> diff --git a/drivers/usb/phy/tegra_usb_phy.c b/drivers/usb/phy/tegra_usb_phy.c
+
+>>> +static int tegra_usb_phy_probe(struct platform_device *pdev)
+>>
+>> Hmmm. Note that in order to make deferred probe work correctly, all the
+>> gpio_request(), clk_get(), etc. calls that acquire resources from other
+>> drivers must happen here in probe() and not in tegra_usb_phy_open().
+>  
+> In present code tegra_usb_phy_open() is indirectly called via usb_phy_init() from ehci-tegra.c.
+> Between obtaining PHY handle (and hence getting into deferred probe, when it is not available)
+> and calling usb_phy_init, no other USB registers were accessed. Hence I was doing this way.
 > 
-> About multi threaded delayed works:
+> Do you still think it would be better to move gpio and clk APIs to probe?
+
+Yes.
+
+What's happening right now is that the PHY driver potentially completes
+probe() before its resources are available.
+
+This just happens not to break anything because the EHCI driver's probe
+ends up getting deferred until some other PHY driver function can
+acquire those resources, so the USB port as a whole isn't registered
+until the resources are available.
+
+However, this still means that the PHY driver could be suspended after
+e.g. a driver that provides a GPIO it uses, since the PHY's probe
+completed before the GPIO driver's probe.
+
+Hence, this could easily cause some form of suspend/resume or perhaps
+even shutdown/reboot problem.
+
+>>> +struct usb_phy *tegra_usb_get_phy(struct device_node *dn)
+>>> +{
+>>> +	struct device *dev;
+>>> +	struct tegra_usb_phy *tegra_phy;
+>>> +
+>>> +	dev = driver_find_device(&tegra_usb_phy_driver.driver, NULL, dn,
+>>> +				 tegra_usb_phy_match);
+>>> +	if (!dev)
+>>> +		return ERR_PTR(-EPROBE_DEFER);
+>>> +
+>>> +	tegra_phy = dev_get_drvdata(dev);
+>>> +
+>>> +	return &tegra_phy->u_phy;
+>>> +}
+>>
+>> I think you need a module_get() somewhere in there, and also need to add
+>> a tegra_usb_put_phy() function too, so you can call module_put() from it.
 > 
-> In many cases tty layer needs single threaded delayed work for each tty instance.
-> I propose discussion about create for this purpose (tty layer)'s workqueue with WQ_NON_REENTRANT flag.
-> And use it instead common schedule_work()'s workqueue - system_wq.
-> I don't know how expensive(for system resource and CPU) it can be,
-> but for tty layer, it can be very useful.
+> Am not clear on why to add module_get here. Can you plz provide more details?
 
-Ok. I agree it makes sense to explore the possible benefit.
+Actually, I guess it isn't needed, although slightly by accident perhaps:
 
-There is another potential drawback to using non-reentrant workqueues.
+If ehci-tegra.c and phy-usb-tegra.c are built as modules, they'll be
+separate modules. Since ehci-tegra.c calls into phy-usb-tegra.c, you
+need to make sure that phy-usb-tegra.c stays loaded any time
+ehci-tegra.c is loaded.
 
-The motivation for changing the workqueue api to allow parallel work
-items on SMP was to fix a class of deadlocks where forward progress
-could not be made due to subtle dependencies between work items
-(actually that potential still exists with self-modifying work-items,
-ie., work items that change their function).
+Right now, this is ensured because ehci-tegra.c references functions in
+phy-usb-tegra.c by symbol name, so a dependency exists. So, I guess
+everything actually works out without the module_get(). So, no changes
+are needed.
 
-The tty layer would need a detailed and thorough analysis of potential
-dependencies to avoid creating problems. The drivers that use work items
-might need examination as well.
-
-Regards,
-Peter Hurley
-
-
+After this series is applied, I believe that tegra_usb_get_phy() is the
+last function that ehci-tegra.c references by symbol name. Eventually,
+that function will be replaced by devm_of_phy_get_byname() (see Kishon's
+generic PHY API patch series), so there won't be any symbol name
+dependencies, so some other mechanism must be used to ensure the PHY
+driver stays loaded while the EHCI driver is using it. At that point,
+the implementation of devm_of_phy_get_byname() should be calling
+module_get(), so again no changes should be required to your patch.
