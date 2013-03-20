@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008Ab3CTGNz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 02:13:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21597 "EHLO mx1.redhat.com"
+	id S1751812Ab3CTGTq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 02:19:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62212 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757958Ab3CTGNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 02:13:53 -0400
-Date: Wed, 20 Mar 2013 02:12:54 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Message-ID: <1363759974-38t0k25g-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130319071113.GD5112@dhcp22.suse.cz>
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1361475708-25991-6-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130318154057.GS10192@dhcp22.suse.cz>
- <1363651636-3lsf20se-mutt-n-horiguchi@ah.jp.nec.com>
- <20130319071113.GD5112@dhcp22.suse.cz>
-Subject: Re: [PATCH 5/9] migrate: enable migrate_pages() to migrate hugepage
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
+	id S1750764Ab3CTGTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 02:19:45 -0400
+Message-ID: <514954F0.2040604@redhat.com>
+Date: Wed, 20 Mar 2013 14:19:28 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mst@redhat.com, edumazet@google.com,
+        Daniel Borkmann <dborkman@redhat.com>
+Subject: Re: [PATCH net-next 1/2] net_sched: don't do precise pkt_len computation
+ for untrusted packets
+References: <1363333305-54398-1-git-send-email-jasowang@redhat.com>  <20130317.121026.733329595817911776.davem@davemloft.net>  <51482F14.9030407@redhat.com> <1363695040.21184.32.camel@edumazet-glaptop> <1363697906.21184.53.camel@edumazet-glaptop>
+In-Reply-To: <1363697906.21184.53.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 08:11:13AM +0100, Michal Hocko wrote:
-> On Mon 18-03-13 20:07:16, Naoya Horiguchi wrote:
-> > On Mon, Mar 18, 2013 at 04:40:57PM +0100, Michal Hocko wrote:
-> > > On Thu 21-02-13 14:41:44, Naoya Horiguchi wrote:
-...
-> > > > @@ -536,6 +557,11 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
-> > > >  	pmd = pmd_offset(pud, addr);
-> > > >  	do {
-> > > >  		next = pmd_addr_end(addr, end);
-> > > > +		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
-> > > 
-> > > Why an explicit check for is_vm_hugetlb_page here? Isn't pmd_huge()
-> > > sufficient?
-> > 
-> > I think we need both check here because if we use only pmd_huge(),
-> > pmd for thp goes into this branch wrongly. 
-> 
-> Bahh. You are right. I thought that pmd_huge is hugetlb thingy but it
-> obviously checks only _PAGE_PSE same as pmd_large() which is really
-> unfortunate and confusing. Can we make it hugetlb specific?
+On 03/19/2013 08:58 PM, Eric Dumazet wrote:
+> On Tue, 2013-03-19 at 05:10 -0700, Eric Dumazet wrote:
+>> On Tue, 2013-03-19 at 17:25 +0800, Jason Wang wrote:
+>>
+>>> I believe before doing header check for untrusted packets, the only
+>>> thing we can trust is skb->len and that's we've used before
+>>> 1def9238d4aa2. But after that, we're trying to use unchecked or
+>>> meaningless value (e.g gso_segs were reset to zero in
+>>> tun/macvtap/packet), and guest then can utilize this to result a very
+>>> huge (-1U) pkt_len by filling evil value in the header. Can all kinds of
+>>> packet scheduler survive this kinds of possible DOS?
+>> I would use the flow dissector to fix the transport header from all
+>> DODGY providers.
+>>
+>> Daniel Borkmann is working on a patch serie adding nhoff into flow_keys,
+>> and adding __skb_get_poff(const struct sk_buff *skb), for a BPF
+>> extension we talked about in Copenhagen / Netfilter Workshop.
+>>
+>> You could then set the transport header offset to the right value.
+>>
+>> (and drop evil packets before they go further in the stack)
+>>
+>> if (gso_packet(skb)) {
+>> 	u32 poff = __skb_get_poff(skb);
+>>
+>> 	if (!poff) {
+>> 		drop_evil_packet(skb);
+>> 	} else {
+>> 		skb_set_transport_header(skb, poff);
+>> 		...
+>> 	}
+>> }
+>
+> Oh well, no need to use __skb_get_poff() but plain skb_flow_dissect()
+> (once patched to include thoff in struct flow_keys)
+>
+> struct flow_keys keys;
+>
+> if (!skb_flow_dissect(skb, &keys))
+> 	goto drop;
+>
+> if ((gso_type & (SKB_GSO_TCPV4|SKB_GSO_TCPV6)) &&
+>     keys.ip_proto != IP_PROTO_TCP)
+> 	goto drop;
+>
+> skb_set_transport_header(skb, keys.thoff);
 
-I agree that we had better fix this confusion.
+I was consider a just skb_reset_transport_header() here. Consider the
+transport header maybe checked and reset during header check for packets
+of gso or partial checksum. And bypass precise pkt len computation.
 
-What pmd_huge() (or pmd_large() in some architectures) does is just
-checking whether a given pmd is pointing to huge/large page or not.
-It does not say which type of hugepage it is.
-So it shouldn't be used to decide whether the hugepage are hugetlbfs or not.
-I think it would be better to introduce pmd_hugetlb() which has pmd and vma
-as arguments and returns true only for hugetlbfs pmd.
-Checking pmd_hugetlb() should come before checking pmd_trans_huge() because
-pmd_trans_huge() implicitly assumes that the vma which covers the virtual
-address of a given pmd is not hugetlbfs vma.
+Some problems with skb_flow_dissect():
 
-I'm interested in this cleanup, so will work on it after this patchset.
+- it can only recognizes a subset of all ethernet protocols. The may
+blocks guest who may want to use other protocol such as IPX.
+- almost no check in the validity of the L4 protocol header which may be
+used by qdisc_pkt_len_init(), which may still give a chance to evil
+guest to use
+- gso_segs were untouched (still zero)
 
-Thanks,
-Naoya
+Another method is doing header check here which needs more work.
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
