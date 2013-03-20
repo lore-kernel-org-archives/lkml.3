@@ -1,131 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952Ab3CTTwP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 15:52:15 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:65012 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756159Ab3CTTwN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 15:52:13 -0400
-Date: Wed, 20 Mar 2013 20:52:09 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch v2] mm, hugetlb: include hugepages in meminfo
-Message-ID: <20130320195209.GA3600@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1303191714440.13526@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1303201207110.28997@chino.kir.corp.google.com>
+	id S1758029Ab3CTTw3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 15:52:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55468 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757969Ab3CTTwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 15:52:25 -0400
+Date: Wed, 20 Mar 2013 20:52:22 +0100
+From: Jan Kara <jack@suse.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jan Kara <jack@suse.cz>, David Howells <dhowells@redhat.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
+        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, sedat.dilek@googlemail.com,
+        hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
+Message-ID: <20130320195222.GG13294@quack.suse.cz>
+References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
+ <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+ <1944.1363525619@warthog.procyon.org.uk>
+ <20130318153936.GB28508@quack.suse.cz>
+ <20130318215333.GE21522@ZenIV.linux.org.uk>
+ <20130319202543.GF5222@quack.suse.cz>
+ <20130319213831.GK21522@ZenIV.linux.org.uk>
+ <20130319221032.GL21522@ZenIV.linux.org.uk>
+ <20130320023308.GM21522@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1303201207110.28997@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130320023308.GM21522@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 20-03-13 12:07:29, David Rientjes wrote:
-> mm, hugetlb: include hugepages in meminfo
+On Wed 20-03-13 02:33:08, Al Viro wrote:
+> On Tue, Mar 19, 2013 at 10:10:32PM +0000, Al Viro wrote:
 > 
-> Particularly in oom conditions, it's troublesome that hugetlb memory is 
-> not displayed.  All other meminfo that is emitted will not add up to what 
-> is expected, and there is no artifact left in the kernel log to show that 
-> a potentially significant amount of memory is actually allocated as 
-> hugepages which are not available to be reclaimed.
+> > OK, it's going to be an interesting series - aforementioned tentative patch
+> > was badly incomplete ;-/
 > 
-> Booting with hugepages=8192 on the command line, this memory is now shown 
-> in oom conditions.  For example, with echo m > /proc/sysrq-trigger:
+> The interesting question is how far do we want to lift that.  ->aio_write()
+> part is trivial - see vfs.git#experimental; the trouble begins with
+> ->splice_write().  For *everything* except default_file_splice_write(),
+> lifting into the caller (do_splice_from()) is the right thing to do.
 > 
-> Node 0 hugepages_total=2048 hugepages_free=2048 hugepages_surp=0 hugepages_size=2048kB
-> Node 1 hugepages_total=2048 hugepages_free=2048 hugepages_surp=0 hugepages_size=2048kB
-> Node 2 hugepages_total=2048 hugepages_free=2048 hugepages_surp=0 hugepages_size=2048kB
-> Node 3 hugepages_total=2048 hugepages_free=2048 hugepages_surp=0 hugepages_size=2048kB
+> default_file_splice_write(), however, it trickier; there we end up calling
+> vfs_write() (via an ugly callchain).  And _that_ is a real bitch.  Granted,
+> vfs_write() is somewhat an overkill there (we'd already done rw_verify_area()
+> and access_ok() is pointless due to set_fs() we do around vfs_write()
+> there) and we'd already lifted it up to do_sync_write().  But if we lift
+> it any further, we'll need to deal with ->write() callers in the tree.
+> Current situation:
 > 
-> Acked-by: Michal Hocko <mhocko@suse.cz>
-> Signed-off-by: David Rientjes <rientjes@google.com>
+> fs/coredump.c:662:      return access_ok(VERIFY_READ, addr, nr) && file->f_op->write(file, addr, nr, &file->f_pos) == nr;
+> arch/powerpc/platforms/cell/spufs/coredump.c:63:        written = file->f_op->write(file, addr, nr, &file->f_pos);
+> 
+> for these guys we might actually want to lift all way up to do_coredump()
+> 
+> drivers/staging/comedi/drivers/serial2002.c:91: result = f->f_op->write(f, buf, count, &f->f_pos);
+> fs/autofs4/waitq.c:73:         (wr = file->f_op->write(file,data,bytes,&file->f_pos)) > 0) {
+> 
+> not regular files, unless I'm seriously misreading the code.
+> 
+> kernel/acct.c:553:      file->f_op->write(file, (char *)&ac,
+> 
+> BTW, this is probably where we want to deal with your acct deadlock.
+> 
+> fs/compat.c:1103:               fn = (io_fn_t)file->f_op->write;
+> fs/read_write.c:435:                    ret = file->f_op->write(file, buf, count, pos);
+> fs/read_write.c:732:            fn = (io_fn_t)file->f_op->write;
+> 
+> syscalls - the question here is whether we lift it up to vfs_write/vfs_writev/
+> compat_writev, or actually take it further.
+> 
+> fs/cachefiles/rdwr.c:967:                       ret = file->f_op->write(
+> 
+> cachefiles_write_page(); no fucking idea what locks might be held by caller
+> and potentially that's a rather nasty source of PITA
+> 
+> fs/coda/file.c:84:      ret = host_file->f_op->write(host_file, buf, count, ppos);
+> 
+> coda writing to file in cache on local fs.  Potentially a nasty bugger, since
+> it's hard to lift any further - the caller has no idea that the thing is
+> on CODA, let alone what happens to hold the local cache.
+> 
+> drivers/block/loop.c:234:       bw = file->f_op->write(file, buf, len, &pos);
+> 
+> do_bio_filebacked(), with some ugliness between that and callsite.  Note,
+> BTW, that we have a pair of possible vfs_fsync() calls in there; how do those
+> interact with freeze?
+  Freezing code takes care that all dirty data is synced before fs is
+frozen and no new dirty data can be created before fs is thawed. So
+vfs_fsync() should just return without doing anything on frozen filesystem.
 
-Thank you!
-
-> ---
->  include/linux/hugetlb.h |  4 ++++
->  mm/hugetlb.c            | 15 +++++++++++++++
->  mm/page_alloc.c         |  3 +++
->  3 files changed, 22 insertions(+)
+> This does *not* touch the current callers of vfs_write()/vfs_writev(); any of
+> those called while holding ->i_mutex on a directory (or mnt_want_write(), for
+> that matter) is a deadlock right now.
 > 
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -58,6 +58,7 @@ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
->  int hugetlb_prefault(struct address_space *, struct vm_area_struct *);
->  void hugetlb_report_meminfo(struct seq_file *);
->  int hugetlb_report_node_meminfo(int, char *);
-> +void hugetlb_show_meminfo(void);
->  unsigned long hugetlb_total_pages(void);
->  int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->  			unsigned long address, unsigned int flags);
-> @@ -114,6 +115,9 @@ static inline void hugetlb_report_meminfo(struct seq_file *m)
->  {
->  }
->  #define hugetlb_report_node_meminfo(n, buf)	0
-> +static inline void hugetlb_show_meminfo(void)
-> +{
-> +}
->  #define follow_huge_pmd(mm, addr, pmd, write)	NULL
->  #define follow_huge_pud(mm, addr, pud, write)	NULL
->  #define prepare_hugepage_range(file, addr, len)	(-EINVAL)
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2121,6 +2121,21 @@ int hugetlb_report_node_meminfo(int nid, char *buf)
->  		nid, h->surplus_huge_pages_node[nid]);
->  }
->  
-> +void hugetlb_show_meminfo(void)
-> +{
-> +	struct hstate *h;
-> +	int nid;
-> +
-> +	for_each_node_state(nid, N_MEMORY)
-> +		for_each_hstate(h)
-> +			pr_info("Node %d hugepages_total=%u hugepages_free=%u hugepages_surp=%u hugepages_size=%lukB\n",
-> +		        	nid,
-> +				h->nr_huge_pages_node[nid],
-> +				h->free_huge_pages_node[nid],
-> +				h->surplus_huge_pages_node[nid],
-> +				1UL << (huge_page_order(h) + PAGE_SHIFT - 10));
-> +}
-> +
->  /* Return the number pages of memory we physically have, in PAGE_SIZE units. */
->  unsigned long hugetlb_total_pages(void)
->  {
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -58,6 +58,7 @@
->  #include <linux/prefetch.h>
->  #include <linux/migrate.h>
->  #include <linux/page-debug-flags.h>
-> +#include <linux/hugetlb.h>
->  #include <linux/sched/rt.h>
->  
->  #include <asm/tlbflush.h>
-> @@ -3105,6 +3106,8 @@ void show_free_areas(unsigned int filter)
->  		printk("= %lukB\n", K(total));
->  	}
->  
-> +	hugetlb_show_meminfo();
-> +
->  	printk("%ld total pagecache pages\n", global_page_state(NR_FILE_PAGES));
->  
->  	show_swap_cache_info();
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> And we'd better start thinking about how we'll backport that crap - deadlock
+> in e.g. xfs ->splice_write() had been there since last summer ;-/
+  Yeah but noone really noticed because in practice the code isn't
+stressed much. Much bigger problems had been there for years before they
+were fixed last summer without anybody complaining... So I'm not sure how
+hard do we want to try to backport this.
 
+								Honza
 -- 
-Michal Hocko
-SUSE Labs
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
