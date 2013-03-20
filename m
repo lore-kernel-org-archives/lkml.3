@@ -1,53 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758247Ab3CTQhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 12:37:09 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:46620 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605Ab3CTQhH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 12:37:07 -0400
+	id S933393Ab3CTQhi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 12:37:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19889 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932082Ab3CTQhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 12:37:37 -0400
+Date: Wed, 20 Mar 2013 12:37:32 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: netdev@vger.kernel.org, linux-mm@kvack.org
+Subject: trinity fuzz-tester mailing list.
+Message-ID: <20130320163732.GA12764@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+	linux-mm@kvack.org
 MIME-Version: 1.0
-In-Reply-To: <20130320.121704.1797978839297064162.davem@davemloft.net>
-References: <201303192143.r2JLhZIX020469@farm-0021.internal.tilera.com>
-	<20130320.121704.1797978839297064162.davem@davemloft.net>
-Date: Wed, 20 Mar 2013 17:37:04 +0100
-Message-ID: <CAFTL4hwUuRdxUNF0rA9DVNREyBign6FRnAXFp_W+-YfYUfzU9Q@mail.gmail.com>
-Subject: Re: [PATCH] dynticks: avoid flow_cache_flush() interrupting every core
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: cmetcalf@tilera.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gilad@benyossef.com, sasha.levin@oracle.com, akpm@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, yoshfuji@linux-ipv6.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/20 David Miller <davem@davemloft.net>:
-> From: Chris Metcalf <cmetcalf@tilera.com>
-> Date: Tue, 19 Mar 2013 17:35:58 -0400
->
->> Previously, if you did an "ifconfig down" or similar on one core, and
->> the kernel had CONFIG_XFRM enabled, every core would be interrupted to
->> check its percpu flow list for items that could be garbage collected.
->>
->> With this change, we generate a mask of cores that actually have any
->> percpu items, and only interrupt those cores.  When we are trying to
->> isolate a set of cpus from interrupts, this is important to do.
->>
->> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
->> ---
->> This change stands alone so could be taken into the net tree if
->> desired, but it is most useful in the context of Frederic Weisbecker's
->> linux-dynticks work.  So it could be taken up through either tree,
->> but it certainly needs sign-off from someone familiar with net/core/flow.c.
->
-> I'm find with this going into the dynticks changes:
->
-> Acked-by: David S. Miller <davem@davemloft.net>
+I've been getting enough private mail about the trinity fuzz-tester that
+there needs to be some coordination between people patching the same code etc.
 
-At it looks pretty self-contained, can that perhaps go through the
-networking tree?
+To this end, there's now a mailing list..
 
-Thanks.
+Send a mail with 'subscribe trinity' in the body to majordomo@vger.kernel.org to subscribe.
+
+My thanks to the folks at vger for hosting it, so I don't have to.
+
+	Dave
+
