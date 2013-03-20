@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932756Ab3CTIQb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 04:16:31 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:34150 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756167Ab3CTIQ2 (ORCPT
+	id S1757894Ab3CTIUY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 04:20:24 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:60827 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757845Ab3CTIUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 04:16:28 -0400
-Message-ID: <5149707F.5050003@suse.cz>
-Date: Wed, 20 Mar 2013 09:17:03 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Wed, 20 Mar 2013 04:20:21 -0400
+Message-ID: <51497140.9020804@gmail.com>
+Date: Wed, 20 Mar 2013 09:20:16 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: linux-next: build failure after merge of the tty tree
-References: <20130320141211.52b44d0e202d32812c3e3c0c@canb.auug.org.au>
-In-Reply-To: <20130320141211.52b44d0e202d32812c3e3c0c@canb.auug.org.au>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mike Turquette <mturquette@linaro.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Dom Cobley <popcornmix@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rabeeh Khoury <rabeeh@solid-run.com>, Daniel Mack <zonque@gmail.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3] clk: add si5351 i2c common clock driver
+References: <1360414772-12232-1-git-send-email-sebastian.hesselbarth@gmail.com> <1363603397-2762-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130320002623.8663.55217@quantum>
+In-Reply-To: <20130320002623.8663.55217@quantum>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 03/20/2013 01:26 AM, Mike Turquette wrote:
+> Quoting Sebastian Hesselbarth (2013-03-18 03:43:17)
+>> This patch adds a common clock driver for Silicon Labs Si5351a/b/c
+>> i2c programmable clock generators. Currently, the driver supports
+>> DT kernels only and VXCO feature of si5351b is not implemented. DT
+>> bindings selectively allow to overwrite stored Si5351 configuration
+>> which is very helpful for clock generators with empty eeprom
+>> configuration. Corresponding device tree binding documentation is
+>> also added.
+>>
+>> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
+>> ---
+>> Changes from v2:
+>> - add curly brackets to if-else-statements (Reported by Daniel Mack)
+>> - fix div-by-zero for clk6/clk7 (Reported by Daniel Mack)
+>> - fix parameter address calculation for clk6/clk7
+>>
+>> Changes from v1:
+>> - remove .is_enabled functions as they read from i2c
+>>    (Reported by Daniel Mack)
+>> - add CLK_SET_RATE_PARENT on clkout reparent if clkout uses
+>>    its own multisync
+>>
+>
+> I've just pushed out a new clk-next branch which includes Ulf Hansson's
+> series to introduce the .is_prepared callback.  Perhaps you can use that
+> where you were previously using .is_enabled?
 
-On 03/20/2013 04:12 AM, Stephen Rothwell wrote:
-> drivers/net/caif/caif_serial.c: In function 'update_tty_status': 
-> drivers/net/caif/caif_serial.c:94:11: error: 'struct tty_struct'
-> has no member named 'warned'
-> 
-> Caused by commit 6865ff222cca ("TTY: do not warn about setting
-> speed via SPD_*").
+Mike,
 
-I wonder why this didn't trigger locally. I have to check if I have
-debugfs enabled. In any way, I will send a patch to fix this later today.
+thanks for the info, but I think having .prepare_enable and regmap caching
+is just fine for now. When .is_prepared is in mainline, I will re-add the
+callbacks.
 
-> drivers/usb/serial/quatech2.c: In function 'qt2_process_read_urb': 
-> drivers/usb/serial/quatech2.c:661:18: error: 'struct
-> qt2_port_private' has no member named 'is_open' 
-> drivers/usb/serial/quatech2.c:705:15: error: 'struct
-> qt2_port_private' has no member named 'is_open'
-> 
-> Caused by commit e4408ce3c23f ("TTY: quatech2, remove unneeded 
-> is_open").  grep is your friend (or searching while editting the
-> file).
-
-I think this is caused by another commit. Bill added a check for
-is_open meanwhile I removed that member completely. Bill, could you
-fix that up, please?
-
-thanks,
--- 
-js
-suse labs
+Sebastian
