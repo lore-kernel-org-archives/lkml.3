@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758063Ab3CTJco (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:32:44 -0400
-Received: from mail-da0-f42.google.com ([209.85.210.42]:45205 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934526Ab3CTJcl (ORCPT
+	id S1756533Ab3CTJiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:38:55 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:61144 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab3CTJix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:32:41 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: backports@vger.kernel.org
-Cc: ben@decadent.org.uk, noelamac@gmail.com, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, andi@firstfloor.org,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [RFC 21/30] compat: embrace LINUX_BACKPORT() for v3.3
-Date: Wed, 20 Mar 2013 02:22:46 -0700
-Message-Id: <1363771375-31715-22-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
+	Wed, 20 Mar 2013 05:38:53 -0400
+MIME-Version: 1.0
+Date: Wed, 20 Mar 2013 10:38:52 +0100
+X-Google-Sender-Auth: PilsUH1xCMLkILzOLBUQGJWJra4
+Message-ID: <CAMuHMdVPNdrvOSDWNhKqOSuLJL39dMuDmDAjuKerFGnZ5WvkOQ@mail.gmail.com>
+Subject: Missing WIDE_BUS_[48] (was: Re: mmc: bfin_sdh: Add support for new
+ RSI controller in bf60x)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Sonic Zhang <sonic.zhang@analog.com>, Chris Ball <cjb@laptop.org>
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+On Wed, Oct 10, 2012 at 4:28 AM, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> Gitweb:     http://git.kernel.org/linus/;a=commit;h=4ffdcf0469f1e7e47476ee410e8dfbc6aba61b65
+> Commit:     4ffdcf0469f1e7e47476ee410e8dfbc6aba61b65
+> Parent:     0462566b1e3129b2920b63b62a653b70a1bc36fa
+> Author:     Sonic Zhang <sonic.zhang@analog.com>
+> AuthorDate: Wed Aug 8 00:13:32 2012 -0400
+> Committer:  Chris Ball <cjb@laptop.org>
+> CommitDate: Tue Sep 4 13:58:18 2012 -0400
+>
+>     mmc: bfin_sdh: Add support for new RSI controller in bf60x
 
-1   2.6.24              [  OK  ]
-2   2.6.25              [  OK  ]
-3   2.6.26              [  OK  ]
-4   2.6.27              [  OK  ]
-5   2.6.28              [  OK  ]
-6   2.6.29              [  OK  ]
-7   2.6.30              [  OK  ]
-8   2.6.31              [  OK  ]
-9   2.6.32              [  OK  ]
-10  2.6.33              [  OK  ]
-11  2.6.34              [  OK  ]
-12  2.6.35              [  OK  ]
-13  2.6.36              [  OK  ]
-14  2.6.37              [  OK  ]
-15  2.6.38              [  OK  ]
-16  2.6.39              [  OK  ]
-17  3.0.65              [  OK  ]
-18  3.1.10              [  OK  ]
-19  3.2.38              [  OK  ]
-20  3.3.8               [  OK  ]
-21  3.4.32              [  OK  ]
-22  3.5.7               [  OK  ]
-23  3.6.11              [  OK  ]
-24  3.7.9               [  OK  ]
-25  3.8.0               [  OK  ]
-26  3.9-rc1             [  OK  ]
+> +               clk_ctl |= WIDE_BUS_4;
 
-Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
----
- include/linux/compat-3.3.h |    1 +
- 1 file changed, 1 insertion(+)
+Any plans to introduce this "WIDE_BUS_4", and the corresponding "WIDE_BUS_8"
+symbols in mainline?
 
-diff --git a/include/linux/compat-3.3.h b/include/linux/compat-3.3.h
-index 84988bb..ee4b7ce 100644
---- a/include/linux/compat-3.3.h
-+++ b/include/linux/compat-3.3.h
-@@ -287,6 +287,7 @@ static inline void qdisc_cb_private_validate(const struct sk_buff *skb, int sz)
- #endif
- #endif
- 
-+#define __pskb_copy LINUX_BACKPORT(__pskb_copy)
- extern struct sk_buff *__pskb_copy(struct sk_buff *skb,
- 				   int headroom, gfp_t gfp_mask);
- 
--- 
-1.7.10.4
+http://kisskb.ellerman.id.au/kisskb/buildresult/8427478/
 
+drivers/mmc/host/bfin_sdh.c:378:14: error: 'WIDE_BUS_4' undeclared
+(first use in this function)
+drivers/mmc/host/bfin_sdh.c:387:14: error: 'BYTE_BUS_8' undeclared
+(first use in this function)
+
+Thanks!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
