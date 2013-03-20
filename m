@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065Ab3CTPwq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 11:52:46 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:51039 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab3CTPwo (ORCPT
+	id S1757621Ab3CTPxb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 11:53:31 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:46114 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090Ab3CTPx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 11:52:44 -0400
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Wed, 20 Mar 2013 10:52:42 -0500
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-iio@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] staging/iio: iio_hwmon: Use device tree node name for hwmon name attribute
-Date: Wed, 20 Mar 2013 08:52:31 -0700
-Message-Id: <1363794751-31977-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Wed, 20 Mar 2013 11:53:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130320130855.GB17274@redhat.com>
+References: <20130319133326.GB3872@redhat.com>
+	<1363705526-3197-1-git-send-email-yinghai@kernel.org>
+	<20130320130855.GB17274@redhat.com>
+Date: Wed, 20 Mar 2013 08:53:29 -0700
+X-Google-Sender-Auth: IQ597tMVcCASeo8MWz7Zc2zEuqk
+Message-ID: <CAE9FiQWNtNe1LdBVe9MJ-rhP1KymKUQDudHrUqQ3VuGh6nY-0w@mail.gmail.com>
+Subject: Re: [PATCH v5] x86, kdump: Set crashkernel_low automatically
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So far, all instances of iio_hwmon set their hwmon name attribute
-to "iio_hwmon", which is not very descriptive. Set it to the device tree
-node name if available, and only revert to iio_hwmon otherwise.
+On Wed, Mar 20, 2013 at 6:08 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
+> Have a general question about crashkernel_low. Why does it need to
+> show up as "Crash kernel low" in /proc/iomem. Will it not be better
+> that all memory reserved for crashkernel (whether high or low), shows
+> as "Crash Kernel" and let kexec-tools decide whether to load kernel
+> high or low etc.
+>
+> IOW, there should not be any need to differentiate between "Crash kernel"
+> and "Crash kernel low". There are address ranges associated and looking
+> at addresses it is obivious that certain memory is below 4G.
 
-Jonathan, can we move this driver out of staging ?
-I would like to see it in 3.10 if possible.
+yes. it is doable.
+but
+1. will need to add more code to expand parse_iomem_single to handle
+multiple "Crash kernel" in kexec-tools.
+2. also we already have "crashkernel_low=" in command line, so it is
+good to keep them consistent in /proc/iomem.
 
- drivers/staging/iio/iio_hwmon.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+Thanks
 
-diff --git a/drivers/staging/iio/iio_hwmon.c b/drivers/staging/iio/iio_hwmon.c
-index 93af756..aafa453 100644
---- a/drivers/staging/iio/iio_hwmon.c
-+++ b/drivers/staging/iio/iio_hwmon.c
-@@ -13,6 +13,7 @@
- #include <linux/err.h>
- #include <linux/platform_device.h>
- #include <linux/hwmon.h>
-+#include <linux/of.h>
- #include <linux/hwmon-sysfs.h>
- #include <linux/iio/consumer.h>
- #include <linux/iio/types.h>
-@@ -58,7 +59,12 @@ static ssize_t iio_hwmon_read_val(struct device *dev,
- static ssize_t show_name(struct device *dev, struct device_attribute *attr,
- 			 char *buf)
- {
--	return sprintf(buf, "iio_hwmon\n");
-+	const char *name = "iio_hwmon";
-+
-+	if (dev->of_node && dev->of_node->name)
-+		name = dev->of_node->name;
-+
-+	return sprintf(buf, "%s\n", name);
- }
- 
- static DEVICE_ATTR(name, S_IRUGO, show_name, NULL);
--- 
-1.7.9.7
-
+Yinghai
