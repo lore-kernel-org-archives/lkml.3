@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756996Ab3CTOq6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 10:46:58 -0400
-Received: from jonshouse.co.uk ([91.84.151.33]:37995 "EHLO
-	mail.jonshouse.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab3CTOq5 (ORCPT
+	id S1757193Ab3CTOtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 10:49:08 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:46636 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756933Ab3CTOtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 10:46:57 -0400
-Subject: 9 sata channels, 6 drives, two failing disks or controllers - no
- fucking idea how to tie the names together
-From: jon <jon@jonshouse.co.uk>
-Reply-To: jon@jonshouse.co.uk
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Mar 2013 14:46:55 +0000
-Message-ID: <1363790815.9408.7.camel@jonspc>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Mar 2013 10:49:06 -0400
+Date: Wed, 20 Mar 2013 07:48:59 -0700
+From: Tejun Heo <tj@kernel.org>
+To: JoonSoo Kim <js1304@gmail.com>
+Cc: laijs@cn.fujitsu.com, axboe@kernel.dk, jack@suse.cz,
+        fengguang.wu@intel.com, jmoyer@redhat.com, zab@redhat.com,
+        linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au,
+        davem@davemloft.net, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH 01/10] workqueue: add wq_numa_tbl_len and
+ wq_numa_possible_cpumask[]
+Message-ID: <20130320144859.GU3042@htj.dyndns.org>
+References: <1363737629-16745-1-git-send-email-tj@kernel.org>
+ <1363737629-16745-2-git-send-email-tj@kernel.org>
+ <CAAmzW4OosERgCwGnDx7HGHOf7BxbBPNYugA_V8wbegKvOiDqgQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAmzW4OosERgCwGnDx7HGHOf7BxbBPNYugA_V8wbegKvOiDqgQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I guess somebody noticed the kernel was too user friendly so you people
-have "improved" the kernel again.
+On Wed, Mar 20, 2013 at 11:08:29PM +0900, JoonSoo Kim wrote:
+> 2013/3/20 Tejun Heo <tj@kernel.org>:
+> > Unbound workqueues are going to be NUMA-affine.  Add wq_numa_tbl_len
+> > and wq_numa_possible_cpumask[] in preparation.  The former is the
+> > highest NUMA node ID + 1 and the latter is masks of possibles CPUs for
+> > each NUMA node.
+> 
+> It is better to move this code to topology.c or cpumask.c,
+> then it can be generally used.
 
-The in good old days kernel messages said things like /dev/sda bla bla 
+Yeah, it just isn't clear where it should go.  Most NUMA
+initialization happens during early boot and arch-specific and
+different archs expect NUMA information to be valid at different
+point.  We can do it from one of the early initcalls by which all NUMA
+information should be valid but, I don't know, having different NUMA
+information coming up at different times seems error-prone.  There
+would be no apparent indication that certain part is available while
+others are not.
 
-Now I get :
+We could solve this by unifying how NUMA information is represented
+and initialized.  e.g. if all NUMA archs used
+CONFIG_USE_PERCPU_NUMA_NODE_ID, we can simply modify
+set_cpu_numa_node() to build all data structures as NUMA nodes are
+discovered.  Unfortunately, this isn't true yet and it's gonna be a
+bit of work to get it in consistent state as it spans over multiple
+architectures (not too many tho, NUMA fortunately is rare), so if
+somebody can clean it up, I'll be happy to move these to topology.
+Right now, I think it's best to just carry it in workqueue.c.
 
-[ 4706.176816] ata10: exception Emask 0x10 SAct 0x0 SErr 0x910000 action 0xe frozen
-[ 4706.176827] ata9: exception Emask 0x10 SAct 0x0 SErr 0x990000 action 0xe frozen
-[ 4706.176833] ata9: irq_stat 0x00400000, PHY RDY changed
-[ 4706.176839] ata9: SError: { PHYRdyChg 10B8B Dispar LinkSeq }
-[ 4706.176850] ata9: hard resetting link
-[ 4706.193481] ata10: irq_stat 0x00400000, PHY RDY changed
-[ 4706.197875] ata10: SError: { PHYRdyChg Dispar LinkSeq }
-[ 4706.202104] ata10: hard resetting link
-[ 4711.288030] ata10: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
-[ 4711.289538] ata10.00: configured for UDMA/133
-[ 4711.289547] ata10: EH complete
-[ 4711.320032] ata9: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
-[ 4711.323494] ata9.00: configured for UDMA/33
-[ 4711.323503] ata9: EH complete
-[ 4775.368201] ata9: exception Emask 0x10 SAct 0x0 SErr 0x990000 action 0xe frozen
-[ 4775.372501] ata9: irq_stat 0x00400000, PHY RDY changed
-[ 4775.376792] ata9: SError: { PHYRdyChg 10B8B Dispar LinkSeq }
-[ 4775.380948] ata9: hard resetting link
-[ 4780.524032] ata9: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
-[ 4780.536659] ata9.00: configured for UDMA/33
-[ 4780.536667] ata9: EH complete
+Thanks.
 
-With these disks.
-root@mail:~# df -h
-Filesystem            Size  Used Avail Use% Mounted on
-/dev/sdd1             226G  3.9G  211G   2% /
-tmpfs                1009M     0 1009M   0% /lib/init/rw
-udev                 1004M  212K 1004M   1% /dev
-tmpfs                1009M     0 1009M   0% /dev/shm
-/dev/sde1             688G  336G  318G  52% /disks/vol1
-/dev/sdf              2.7T  1.7T  879G  67% /disks/vol2
-/dev/sdg              2.7T  1.8T  802G  70% /disks/vol3
-/dev/sdb              2.7T  112G  2.5T   5% /disks/vol4
-/dev/sdc1             1.4T  1.3T  2.4G 100% /disks/vol5
-/dev/sda1             1.4T  1.2T  154G  89% /disks/vol6
-
-
-Why when the kernel has the ATA=/dev/sdX can it not just tell the fucking users !
-
-
-
+-- 
+tejun
