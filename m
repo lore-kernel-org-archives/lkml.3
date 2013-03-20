@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965087Ab3CTJak (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:30:40 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:64201 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312Ab3CTJah (ORCPT
+	id S965105Ab3CTJaw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:30:52 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:42329 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752816Ab3CTJaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:30:37 -0400
+	Wed, 20 Mar 2013 05:30:46 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: ben@decadent.org.uk, noelamac@gmail.com, linux-kernel@vger.kernel.org,
         rusty@rustcorp.com.au, andi@firstfloor.org,
         "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [RFC 30/30] compat: use backport_ prefix for main compat module calls
-Date: Wed, 20 Mar 2013 02:22:55 -0700
-Message-Id: <1363771375-31715-31-git-send-email-mcgrof@do-not-panic.com>
+Subject: [RFC 09/30] compat: embrace LINUX_BACKPORT() for v2.6.31
+Date: Wed, 20 Mar 2013 02:22:34 -0700
+Message-Id: <1363771375-31715-10-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
@@ -53,251 +53,100 @@ From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
 ---
- compat/compat-2.6.34.c        |    8 ++++----
- compat/compat-2.6.34.h        |    4 ++--
- compat/main.c                 |   25 +++++++++++++------------
- compat/pm_qos_params.c        |    4 ++--
- include/linux/compat-2.6.25.h |   10 +++++-----
- include/linux/compat-2.6.34.h |    6 ------
- include/linux/compat-2.6.36.h |    8 ++++----
- include/linux/compat-2.6.h    |    8 ++++----
- 8 files changed, 34 insertions(+), 39 deletions(-)
+ include/linux/compat-2.6.31.h |   65 +++++++++++++++--------------------------
+ 1 file changed, 23 insertions(+), 42 deletions(-)
 
-diff --git a/compat/compat-2.6.34.c b/compat/compat-2.6.34.c
-index 7206007..4b23c81 100644
---- a/compat/compat-2.6.34.c
-+++ b/compat/compat-2.6.34.c
-@@ -12,16 +12,16 @@
+diff --git a/include/linux/compat-2.6.31.h b/include/linux/compat-2.6.31.h
+index ce90f0a..096c131 100644
+--- a/include/linux/compat-2.6.31.h
++++ b/include/linux/compat-2.6.31.h
+@@ -25,25 +25,19 @@
+ #define ADVERTISED_10000baseKR_Full    (1 << 19)
+ #define ADVERTISED_10000baseR_FEC      (1 << 20)
  
- #include "compat-2.6.34.h"
+-/*
+- * These macros allow us to backport rfkill without any
+- * changes on cfg80211 through compat.diff. Note that this
+- * file will be included by rfkill_backport.h so we must
+- * not conflict with things there.
+- */
+-#define rfkill_get_led_trigger_name	backport_rfkill_get_led_trigger_name
+-#define rfkill_set_led_trigger_name	backport_rfkill_set_led_trigger_name
+-#define rfkill_set_hw_state	backport_rfkill_set_hw_state
+-#define rfkill_set_sw_state	backport_rfkill_set_sw_state
+-#define rfkill_init_sw_state	backport_rfkill_init_sw_state
+-#define rfkill_set_states	backport_rfkill_set_states
+-#define rfkill_pause_polling	backport_rfkill_pause_polling
+-#define rfkill_resume_polling	backport_rfkill_resume_polling
+-#define rfkill_blocked		backport_rfkill_blocked
+-#define rfkill_alloc		backport_rfkill_alloc
+-#define rfkill_register		backport_rfkill_register
+-#define rfkill_unregister	backport_rfkill_unregister
+-#define rfkill_destroy		backport_rfkill_destroy
++#define rfkill_get_led_trigger_name LINUX_BACKPORT(rfkill_get_led_trigger_name)
++#define rfkill_set_led_trigger_name LINUX_BACKPORT(rfkill_set_led_trigger_name)
++#define rfkill_set_hw_state LINUX_BACKPORT(rfkill_set_hw_state)
++#define rfkill_set_sw_state LINUX_BACKPORT(rfkill_set_sw_state)
++#define rfkill_init_sw_state LINUX_BACKPORT(rfkill_init_sw_state)
++#define rfkill_set_states LINUX_BACKPORT(rfkill_set_states)
++#define rfkill_pause_polling LINUX_BACKPORT(rfkill_pause_polling)
++#define rfkill_resume_polling LINUX_BACKPORT(rfkill_resume_polling)
++#define rfkill_blocked LINUX_BACKPORT(rfkill_blocked)
++#define rfkill_alloc LINUX_BACKPORT(rfkill_alloc)
++#define rfkill_register LINUX_BACKPORT(rfkill_register)
++#define rfkill_unregister LINUX_BACKPORT(rfkill_unregister)
++#define rfkill_destroy LINUX_BACKPORT(rfkill_destroy)
  
--static mmc_pm_flag_t compat_mmc_pm_flags;
-+static mmc_pm_flag_t backport_mmc_pm_flags;
+ #ifndef ERFKILL
+ #if !defined(CONFIG_ALPHA) && !defined(CONFIG_MIPS) && !defined(CONFIG_PARISC) && !defined(CONFIG_SPARC)
+@@ -63,29 +57,14 @@
+ #endif
+ #endif
  
--void init_compat_mmc_pm_flags(void)
-+void backport_init_mmc_pm_flags(void)
- {
--	compat_mmc_pm_flags = 0;
-+	backport_mmc_pm_flags = 0;
- }
+-/*
+- * These changes allow us to backport and forward port
+- * the driver/net/mdio module. What we do is simply
+- * rename the exported symbols to other symbols and
+- * rely on the fact that compat-drivers will take care
+- * of renaming that module. This allows in-place drivers
+- * to use the old module and have the newer supplied
+- * drivers through compat-drivers to use the new bacported
+- * module.
+- *
+- * XXX: maybe we should have a COMPAT_EXPORT_SYMBOL() that
+- * takes care of renaming the symbols with a compat_ prefix?
+- * There are other ideas of using a separate namespace for
+- * modules supplied by compat -- someone already did the work
+- * but never sent the patches ;) who are you out there ?
+- */
+-#define mdio45_probe			compat_mdio45_probe
+-#define mdio_set_flag			compat_mdio_set_flag
+-#define mdio45_links_ok			compat_mdio45_links_ok
+-#define mdio45_nway_restart		compat_mdio45_nway_restart
+-#define mdio45_ethtool_gset_npage	compat_mdio45_ethtool_gset_npage
+-#define mdio45_ethtool_spauseparam_an	compat_mdio45_ethtool_spauseparam_an
+-#define mdio_mii_ioctl			compat_mdio_mii_ioctl
++#define mdio45_probe LINUX_BACKPORT(mdio45_probe)
++#define mdio_set_flag LINUX_BACKPORT(mdio_set_flag)
++#define mdio45_links_ok LINUX_BACKPORT(mdio45_links_ok)
++#define mdio45_nway_restart LINUX_BACKPORT(mdio45_nway_restart)
++
++#define mdio45_ethtool_gset_npage LINUX_BACKPORT(mdio45_ethtool_gset_npage)
++#define mdio45_ethtool_spauseparam_an LINUX_BACKPORT(mdio45_ethtool_spauseparam_an)
++#define mdio_mii_ioctl LINUX_BACKPORT(mdio_mii_ioctl)
  
- mmc_pm_flag_t sdio_get_host_pm_caps(struct sdio_func *func)
- {
--	return compat_mmc_pm_flags;
-+	return backport_mmc_pm_flags;
- }
+ #ifndef NETDEV_PRE_UP
+ #define NETDEV_PRE_UP		0x000D
+@@ -245,7 +224,9 @@ typedef struct {
+ 	long long counter;
+ } atomic64_t;
  
- int sdio_set_host_pm_flags(struct sdio_func *func, mmc_pm_flag_t flags)
-diff --git a/compat/compat-2.6.34.h b/compat/compat-2.6.34.h
-index 173fe52..b36b441 100644
---- a/compat/compat-2.6.34.h
-+++ b/compat/compat-2.6.34.h
-@@ -7,11 +7,11 @@
++#define atomic64_read LINUX_BACKPORT(atomic64_read)
+ extern long long atomic64_read(const atomic64_t *v);
++#define atomic64_add_return LINUX_BACKPORT(atomic64_add_return)
+ extern long long atomic64_add_return(long long a, atomic64_t *v);
  
- #include <linux/mmc/sdio_func.h>
- 
--void init_compat_mmc_pm_flags(void);
-+void backport_init_mmc_pm_flags(void);
- 
- #else /* Kernels >= 2.6.34 */
- 
--static inline void init_compat_mmc_pm_flags(void)
-+static inline void backport_init_mmc_pm_flags(void)
- {
- }
- 
-diff --git a/compat/main.c b/compat/main.c
-index 972c142..4e72ca5 100644
---- a/compat/main.c
-+++ b/compat/main.c
-@@ -1,7 +1,8 @@
- #include <linux/module.h>
-+#include "compat-2.6.34.h"
- 
- MODULE_AUTHOR("Luis R. Rodriguez");
--MODULE_DESCRIPTION("Kernel compatibility module");
-+MODULE_DESCRIPTION("Kernel backport module");
- MODULE_LICENSE("GPL");
- 
- #ifndef COMPAT_BASE
-@@ -41,17 +42,17 @@ module_param(compat_version, charp, 0400);
- MODULE_PARM_DESC(compat_version,
- 		 "Version of the kernel compat backport work");
- 
--void compat_dependency_symbol(void)
-+void backport_dependency_symbol(void)
- {
- }
--EXPORT_SYMBOL_GPL(compat_dependency_symbol);
-+EXPORT_SYMBOL_GPL(backport_dependency_symbol);
- 
- 
--static int __init compat_init(void)
-+static int __init backport_init(void)
- {
--	compat_pm_qos_power_init();
--	compat_system_workqueue_create();
--	init_compat_mmc_pm_flags();
-+	backport_pm_qos_power_init();
-+	backport_system_workqueue_create();
-+	backport_init_mmc_pm_flags();
- 
- 	printk(KERN_INFO
- 	       COMPAT_PROJECT " backport release: "
-@@ -65,14 +66,14 @@ static int __init compat_init(void)
- 
-         return 0;
- }
--module_init(compat_init);
-+module_init(backport_init);
- 
--static void __exit compat_exit(void)
-+static void __exit backport_exit(void)
- {
--	compat_pm_qos_power_deinit();
--	compat_system_workqueue_destroy();
-+	backport_pm_qos_power_deinit();
-+	backport_system_workqueue_destroy();
- 
-         return;
- }
--module_exit(compat_exit);
-+module_exit(backport_exit);
- 
-diff --git a/compat/pm_qos_params.c b/compat/pm_qos_params.c
-index 833d98c..42785ce 100644
---- a/compat/pm_qos_params.c
-+++ b/compat/pm_qos_params.c
-@@ -414,7 +414,7 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
- /*
-  * This initializes pm-qos for older kernels.
-  */
--int compat_pm_qos_power_init(void)
-+int backport_pm_qos_power_init(void)
- {
- 	int ret = 0;
- 
-@@ -442,7 +442,7 @@ int compat_pm_qos_power_init(void)
- 	return ret;
- }
- 
--int compat_pm_qos_power_deinit(void)
-+int backport_pm_qos_power_deinit(void)
- {
- 	int ret = 0;
- 
-diff --git a/include/linux/compat-2.6.25.h b/include/linux/compat-2.6.25.h
-index 5d4fe38..a08e0b2 100644
---- a/include/linux/compat-2.6.25.h
-+++ b/include/linux/compat-2.6.25.h
-@@ -193,11 +193,11 @@ typedef u32 phys_addr_t;
-  * This pm-qos implementation is copied verbatim from the kernel
-  * written by mark gross mgross@linux.intel.com. You don't have
-  * to do anythinig to use pm-qos except use the same exported
-- * routines as used in newer kernels. The compat_pm_qos_power_init()
-+ * routines as used in newer kernels. The backport_pm_qos_power_init()
-  * defned below is used by the compat module to initialize pm-qos.
-  */
--int compat_pm_qos_power_init(void);
--int compat_pm_qos_power_deinit(void);
-+int backport_pm_qos_power_init(void);
-+int backport_pm_qos_power_deinit(void);
- 
- /*
-  * 2.6.25 adds PM_EVENT_HIBERNATE as well here but
-@@ -314,12 +314,12 @@ extern int strict_strtol(const char *, unsigned int, long *);
-  * Kernels >= 2.6.25 have pm-qos and its initialized as part of
-  * the bootup process
-  */
--static inline int compat_pm_qos_power_init(void)
-+static inline int backport_pm_qos_power_init(void)
- {
- 	return 0;
- }
- 
--static inline int compat_pm_qos_power_deinit(void)
-+static inline int backport_pm_qos_power_deinit(void)
- {
- 	return 0;
- }
-diff --git a/include/linux/compat-2.6.34.h b/include/linux/compat-2.6.34.h
-index c206633..09d5922 100644
---- a/include/linux/compat-2.6.34.h
-+++ b/include/linux/compat-2.6.34.h
-@@ -25,8 +25,6 @@ typedef unsigned int mmc_pm_flag_t;
- extern mmc_pm_flag_t sdio_get_host_pm_caps(struct sdio_func *func);
- extern int sdio_set_host_pm_flags(struct sdio_func *func, mmc_pm_flag_t flags);
- 
--void init_compat_mmc_pm_flags(void);
--
- #define netdev_mc_count(dev) ((dev)->mc_count)
- #define netdev_mc_empty(dev) (netdev_mc_count(dev) == 0)
- 
-@@ -341,10 +339,6 @@ static inline struct sock *sk_entry(const struct hlist_node *node)
- 
- #else /* Kernels >= 2.6.34 */
- 
--static inline void init_compat_mmc_pm_flags(void)
--{
--}
--
- #endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,34)) */
- 
- 
-diff --git a/include/linux/compat-2.6.36.h b/include/linux/compat-2.6.36.h
-index b4d3761..d90b84f 100644
---- a/include/linux/compat-2.6.36.h
-+++ b/include/linux/compat-2.6.36.h
-@@ -161,8 +161,8 @@ extern struct workqueue_struct *system_long_wq;
- #define system_nrt_wq LINUX_BACKPORT(system_nrt_wq)
- extern struct workqueue_struct *system_nrt_wq;
- 
--void compat_system_workqueue_create(void);
--void compat_system_workqueue_destroy(void);
-+void backport_system_workqueue_create(void);
-+void backport_system_workqueue_destroy(void);
- 
- #define schedule_work LINUX_BACKPORT(schedule_work)
- int schedule_work(struct work_struct *work);
-@@ -191,11 +191,11 @@ extern unsigned int work_busy(struct work_struct *work);
- 
- #else
- 
--static inline void compat_system_workqueue_create(void)
-+static inline void backport_system_workqueue_create(void)
- {
- }
- 
--static inline void compat_system_workqueue_destroy(void)
-+static inline void backport_system_workqueue_destroy(void)
- {
- }
- 
-diff --git a/include/linux/compat-2.6.h b/include/linux/compat-2.6.h
-index d1d24d0..5d75919 100644
---- a/include/linux/compat-2.6.h
-+++ b/include/linux/compat-2.6.h
-@@ -28,16 +28,16 @@
-  * To the call to the initfn we added the symbol dependency on compat
-  * to make sure that compat.ko gets loaded for any compat modules.
-  */
--void compat_dependency_symbol(void);
-+void backport_dependency_symbol(void);
- 
- #undef module_init
- #define module_init(initfn)						\
--	static int __init __init_compat(void)				\
-+	static int __init __init_backport(void)				\
- 	{								\
--		compat_dependency_symbol();				\
-+		backport_dependency_symbol();				\
- 		return initfn();					\
- 	}								\
--	int init_module(void) __attribute__((alias("__init_compat")));
-+	int init_module(void) __attribute__((alias("__init_backport")));
- 
- /*
-  * Each compat file represents compatibility code for new kernel
+ #define atomic64_inc_return(v)          atomic64_add_return(1LL, (v))
 -- 
 1.7.10.4
 
