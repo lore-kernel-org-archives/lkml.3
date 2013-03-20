@@ -1,227 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965050Ab3CTJ3l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:29:41 -0400
-Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:47137 "EHLO
-	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750822Ab3CTJ3j (ORCPT
+	id S965074Ab3CTJaO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:30:14 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:44883 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab3CTJaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:29:39 -0400
-Date: Wed, 20 Mar 2013 10:32:58 +0100
-From: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        elezegarcia@gmail.com
-Subject: Re: [RFC V1 3/8] smi2021: Add smi2021_i2c.c
-Message-ID: <20130320093258.GJ17291@dell.arpanet.local>
-References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
- <1363270024-12127-4-git-send-email-jonarne@jonarne.no>
- <201303180904.56218.hverkuil@xs4all.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201303180904.56218.hverkuil@xs4all.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Mar 2013 05:30:11 -0400
+X-Greylist: delayed 420 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Mar 2013 05:30:10 EDT
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: backports@vger.kernel.org
+Cc: ben@decadent.org.uk, noelamac@gmail.com, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, andi@firstfloor.org,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Subject: [RFC 22/30] compat: embrace LINUX_BACKPORT() for v3.4
+Date: Wed, 20 Mar 2013 02:22:47 -0700
+Message-Id: <1363771375-31715-23-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 09:04:56AM +0100, Hans Verkuil wrote:
-> On Thu March 14 2013 15:06:59 Jon Arne Jørgensen wrote:
-> > This file is responsible for registering the device
-> > with the kernel i2c subsystem.
-> > v4l2 talks to the saa7113 chip of the device via i2c.
-> > 
-> > Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
-> > ---
-> >  drivers/media/usb/smi2021/smi2021_i2c.c | 160 ++++++++++++++++++++++++++++++++
-> >  1 file changed, 160 insertions(+)
-> >  create mode 100644 drivers/media/usb/smi2021/smi2021_i2c.c
-> > 
-> > diff --git a/drivers/media/usb/smi2021/smi2021_i2c.c b/drivers/media/usb/smi2021/smi2021_i2c.c
-> > new file mode 100644
-> > index 0000000..5b6f3f5
-> > --- /dev/null
-> > +++ b/drivers/media/usb/smi2021/smi2021_i2c.c
-> > @@ -0,0 +1,160 @@
-> > +/*******************************************************************************
-> > + * smi2021_i2c.c                                                               *
-> > + *                                                                             *
-> > + * USB Driver for SMI2021 - EasyCAP                                            *
-> > + * USB ID 1c88:003c                                                            *
-> > + *                                                                             *
-> > + * *****************************************************************************
-> > + *
-> > + * Copyright 2011-2013 Jon Arne Jørgensen
-> > + * <jonjon.arnearne--a.t--gmail.com>
-> > + *
-> > + * Copyright 2011, 2012 Tony Brown, Michal Demin, Jeffry Johnston
-> > + *
-> > + * This file is part of SMI2021
-> > + * http://code.google.com/p/easycap-somagic-linux/
-> > + *
-> > + * This program is free software: you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License as published by
-> > + * the Free Software Foundation, either version 2 of the License, or
-> > + * (at your option) any later version.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > + * GNU General Public License for more details.
-> > + *
-> > + * You should have received a copy of the GNU General Public License
-> > + * along with this program; if not, see <http://www.gnu.org/licenses/>.
-> > + *
-> > + * This driver is heavily influensed by the STK1160 driver.
-> > + * Copyright (C) 2012 Ezequiel Garcia
-> > + * <elezegarcia--a.t--gmail.com>
-> > + *
-> > + */
-> > +
-> > +#include "smi2021.h"
-> > +
-> > +/* The device will not return the chip_name on address 0x00.
-> > + * But the saa7115 i2c driver needs the chip id to match "f7113"
-> > + * if we want to use it,
-> > + * so we have to fake the return of this value
-> > + */
-> > +
-> > +static char chip_id[] = { 'x', 255, 55, 49, 49, 115, 0 };
-> > +static int id_ptr;
-> 
-> Don't do this! Instead modify saa7115.c and add a new chip_id (the name of
-> this saa7113 clone) and specify that in v4l2_i2c_new_subdev instead of "saa7113".
-> The saa7115.c driver should skip the chip ID test if that name is specified.
-> 
-> Then you don't need this hack anymore and everything will look much cleaner.
-> 
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-I'll do this.
+1   2.6.24              [  OK  ]
+2   2.6.25              [  OK  ]
+3   2.6.26              [  OK  ]
+4   2.6.27              [  OK  ]
+5   2.6.28              [  OK  ]
+6   2.6.29              [  OK  ]
+7   2.6.30              [  OK  ]
+8   2.6.31              [  OK  ]
+9   2.6.32              [  OK  ]
+10  2.6.33              [  OK  ]
+11  2.6.34              [  OK  ]
+12  2.6.35              [  OK  ]
+13  2.6.36              [  OK  ]
+14  2.6.37              [  OK  ]
+15  2.6.38              [  OK  ]
+16  2.6.39              [  OK  ]
+17  3.0.65              [  OK  ]
+18  3.1.10              [  OK  ]
+19  3.2.38              [  OK  ]
+20  3.3.8               [  OK  ]
+21  3.4.32              [  OK  ]
+22  3.5.7               [  OK  ]
+23  3.6.11              [  OK  ]
+24  3.7.9               [  OK  ]
+25  3.8.0               [  OK  ]
+26  3.9-rc1             [  OK  ]
 
-> > +
-> > +static unsigned int i2c_debug;
-> > +module_param(i2c_debug, int, 0644);
-> > +MODULE_PARM_DESC(i2c_debug, "enable debug messages [i2c]");
-> > +
-> > +#define dprint_i2c(fmt, args...)					\
-> > +do {									\
-> > +	if (i2c_debug)							\
-> > +		pr_debug("smi2021[i2c]::%s: " fmt, __func__, ##args);	\
-> > +} while (0)
-> > +
-> > +
-> > +static int i2c_xfer(struct i2c_adapter *i2c_adap,
-> > +				struct i2c_msg msgs[], int num)
-> > +{
-> > +	struct smi2021_dev *dev = i2c_adap->algo_data;
-> > +
-> > +	switch (num) {
-> > +	case 2: { /* Read reg */
-> > +		if (msgs[0].len != 1 || msgs[1].len != 1) {
-> > +			dprint_i2c("both messages must be 1 byte\n");
-> > +			goto err_out;
-> > +
-> > +		if ((msgs[1].flags & I2C_M_RD) != I2C_M_RD)
-> > +			dprint_i2c("last message should have rd flag\n");
-> > +			goto err_out;
-> > +		}
-> > +
-> > +		if (msgs[0].buf[0] == 0) {
-> > +			msgs[1].buf[0] = chip_id[id_ptr];
-> > +			if (chip_id[id_ptr] != 0)
-> > +				id_ptr += 1;
-> > +		} else {
-> > +			smi2021_read_reg(dev, msgs[0].addr, msgs[0].buf[0],
-> > +						msgs[1].buf);
-> > +		}
-> > +		break;
-> > +	}
-> > +	case 1: { /* Write reg */
-> > +		if (msgs[0].len == 0) {
-> > +			break;
-> > +		} else if (msgs[0].len != 2) {
-> > +			dprint_i2c("unsupported len\n");
-> > +			goto err_out;
-> > +		}
-> > +		if (msgs[0].buf[0] == 0) {
-> > +			/* We don't handle writing to addr 0x00 */
-> > +			break;
-> > +		}
-> > +
-> > +		smi2021_write_reg(dev, msgs[0].addr, msgs[0].buf[0],
-> > +						msgs[0].buf[1]);
-> > +		break;
-> > +	}
-> > +	default: {
-> > +		dprint_i2c("driver can only handle 1 or 2 messages\n");
-> > +		goto err_out;
-> > +	}
-> > +	}
-> > +	return num;
-> > +
-> > +err_out:
-> > +	return -EOPNOTSUPP;
-> > +}
-> > +
-> > +static u32 functionality(struct i2c_adapter *adap)
-> > +{
-> > +	return I2C_FUNC_SMBUS_EMUL;
-> > +}
-> > +
-> > +static struct i2c_algorithm algo = {
-> > +	.master_xfer = i2c_xfer,
-> > +	.functionality = functionality,
-> > +};
-> > +
-> > +static struct i2c_adapter adap_template = {
-> > +	.owner = THIS_MODULE,
-> > +	.name = "smi2021_easycap_dc60",
-> > +	.algo = &algo,
-> > +};
-> > +
-> > +static struct i2c_client client_template = {
-> > +	.name = "smi2021 internal",
-> > +};
-> > +
-> > +int smi2021_i2c_register(struct smi2021_dev *dev)
-> > +{
-> > +	int rc;
-> > +
-> > +	id_ptr = 0;
-> > +
-> > +	dev->i2c_adap = adap_template;
-> > +	dev->i2c_adap.dev.parent = dev->dev;
-> > +	strcpy(dev->i2c_adap.name, "smi2021");
-> > +	dev->i2c_adap.algo_data = dev;
-> > +
-> > +	i2c_set_adapdata(&dev->i2c_adap, &dev->v4l2_dev);
-> > +
-> > +	rc = i2c_add_adapter(&dev->i2c_adap);
-> > +	if (rc < 0) {
-> > +		smi2021_err("can't add i2c adapter, errno: %d\n", rc);
-> > +		return rc;
-> > +	}
-> > +
-> > +	dev->i2c_client = client_template;
-> > +	dev->i2c_client.adapter = &dev->i2c_adap;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +int smi2021_i2c_unregister(struct smi2021_dev *dev)
-> > +{
-> > +	i2c_del_adapter(&dev->i2c_adap);
-> > +	return 0;
-> > +}
-> > 
-> 
-> Regards,
-> 
-> 	Hans
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
+---
+ include/linux/compat-3.4.h |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/include/linux/compat-3.4.h b/include/linux/compat-3.4.h
+index fbd92a2..94d3bf7 100644
+--- a/include/linux/compat-3.4.h
++++ b/include/linux/compat-3.4.h
+@@ -51,9 +51,11 @@ static inline void *kmalloc_array(size_t n, size_t size, gfp_t flags)
+ #include <linux/skbuff.h>
+ 
+ #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34))
++#define i2c_bit_algo LINUX_BACKPORT(i2c_bit_algo)
+ extern const struct i2c_algorithm i2c_bit_algo;
+ #endif
+ 
++#define simple_open LINUX_BACKPORT(simple_open)
+ extern int simple_open(struct inode *inode, struct file *file);
+ 
+ #if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28))
+-- 
+1.7.10.4
+
