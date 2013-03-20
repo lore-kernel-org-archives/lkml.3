@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab3CTOlk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 10:41:40 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3357 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756274Ab3CTOli (ORCPT
+	id S1756676Ab3CTOmf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 10:42:35 -0400
+Received: from viridian.itc.Virginia.EDU ([128.143.12.139]:41429 "EHLO
+	viridian.itc.virginia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756125Ab3CTOmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 10:41:38 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 20 Mar 2013 07:34:21 -0700
-Message-ID: <5149CA11.2070301@nvidia.com>
-Date: Wed, 20 Mar 2013 20:09:13 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 20 Mar 2013 10:42:33 -0400
+Subject: Re: linux-next: build failure after merge of the tty tree
+To: jslaby@suse.cz (Jiri Slaby)
+Date: Wed, 20 Mar 2013 10:42:32 -0400
+Cc: sfr@canb.auug.org.au (Stephen Rothwell), greg@kroah.com (Greg KH),
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <5149C4E8.5020707@suse.cz>
+X-Mailer: ELM [version 2.5.8.59.gd925]
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd: palmas: initialise client->of_node for dummy created
- client
-References: <1363683500-24891-1-git-send-email-ldewangan@nvidia.com> <514887D8.2020606@wwwdotorg.org> <20130319165228.GC22168@opensource.wolfsonmicro.com> <51489C0A.309@wwwdotorg.org> <20130319172648.GD22168@opensource.wolfsonmicro.com>
-In-Reply-To: <20130319172648.GD22168@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20130320144233.10125800E4@viridian.itc.virginia.edu>
+From: wfp5p@viridian.itc.virginia.edu (Bill Pemberton)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 March 2013 10:56 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Tue, Mar 19, 2013 at 11:10:34AM -0600, Stephen Warren wrote:
->> On 03/19/2013 10:52 AM, Mark Brown wrote:
->>> This does then make it more complicated for all users of I2C as
->>> they need to become aware of such devices.  Not sure that's a
->>> win...
->> Presumably the existing APIs would work identically, and additional
->> APIs would be added for the complex case?
-> Right, but we'd have to add the additional APIs to things like regmap
-> and ASoC which seems like a kerfuffle.
->
+Jiri Slaby writes:
+> 
+> On 03/20/2013 01:51 PM, Bill Pemberton wrote:
+> > Jiri Slaby writes:
+> >>
+> >>> drivers/usb/serial/quatech2.c: In function 'qt2_process_read_urb': 
+> >>> drivers/usb/serial/quatech2.c:661:18: error: 'struct
+> >>> qt2_port_private' has no member named 'is_open' 
+> >>> drivers/usb/serial/quatech2.c:705:15: error: 'struct
+> >>> qt2_port_private' has no member named 'is_open'
+> >>>
+> >>> Caused by commit e4408ce3c23f ("TTY: quatech2, remove unneeded 
+> >>> is_open").  grep is your friend (or searching while editting the
+> >>> file).
+> >>
+> >> I think this is caused by another commit. Bill added a check for
+> >> is_open meanwhile I removed that member completely. Bill, could you
+> >> fix that up, please?
+> >>
+> > 
+> > Is it legal to call tty_flip_buffer_push() without an open tty?  If
+> > so, I can get rid of the is_open logic completely.  Otherwise, I need
+> > to either keep is_open or otherwise check for a valid tty before
+> > calling tty_flip_buffer_push().
+> 
+> Yeah, it is legal to call that, as long as you have a valid tty_port.
+> Now, the data are queued and later flushed. The plan is to throw the
+> data directly on ingress in a way the drivers don't need to care.
+> 
 
-Yes, to add the multiple address list in i2c_client, then adding address 
-index in i2c apis, adding address index in regmap inits etc. can require 
-lots of RFE patches in different subsystem. We can keep discussing this 
-and once conclude, we can go for implementation.
+Ok, for the unopened ports there *should* never be any actual data to
+push so the push is really doing nothing anyhow in these cases.  It's
+coming from the device sending an initial change port command.
 
-But for now, can I assume that this patch is fine for resolving my 
-interrupt issue?
+Anyhow, so my patch adding more is_open logic can be dropped and then
+yours will apply fine.  What's the best way for me to handle this?
+Send a revert for my patch so yours will apply or send an updated
+version of your patch that removes my additions?
 
-Thanks,
-Laxman
 
+-- 
+Bill
