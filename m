@@ -1,141 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab3CTJJq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:09:46 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:53102 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750763Ab3CTJJo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:09:44 -0400
-Message-ID: <1363770579.1390.82.camel@x61.thuisdomein>
-Subject: [PATCH v2] mfd: remove twelve unused Kconfig symbols
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 20 Mar 2013 10:09:39 +0100
-In-Reply-To: <20130320082427.GB28775@opensource.wolfsonmicro.com>
-References: <1363732701.1390.45.camel@x61.thuisdomein>
-	 <20130320082427.GB28775@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Mar 2013 09:09:39.0466 (UTC) FILETIME=[A6AFA6A0:01CE254A]
-X-RcptDomain: vger.kernel.org
+	id S1755726Ab3CTJNG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:13:06 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59799 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751610Ab3CTJM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 05:12:59 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
+        <akpm@linux-foundation.org>, <rob@landley.net>
+CC: <davem@davemloft.net>, <cesarb@cesarb.net>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tony@atomide.com>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <b-cousson@ti.com>,
+        <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <kishon@ti.com>, <mchehab@redhat.com>, <santosh.shilimkar@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
+        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v3 5/6] ARM: dts: omap: update usb_otg_hs data
+Date: Wed, 20 Mar 2013 14:42:04 +0530
+Message-ID: <1363770725-13717-6-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363770725-13717-1-git-send-email-kishon@ti.com>
+References: <1363770725-13717-1-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Twelve Kconfig symbols, all related to WM8350, WM8351, and WM8352, are
-unused. Commit 19d57ed5a308472a02e773f33c03ad4cb2ec6a9 ("mfd: Remove
-custom wm8350 cache implementation") removed all their (actual) users.
-Remove these symbols too.
+Updated the usb_otg_hs dt data to include the *phy* and *phy-names*
+binding in order for the driver to use the new generic PHY framework.
+Also updated the Documentation to include the binding information.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
-0) This version adds Mark's ACK. It is now also sent to the ARM
-maintainers, as Mark suggested.
+ Documentation/devicetree/bindings/usb/omap-usb.txt |    5 +++++
+ arch/arm/boot/dts/omap3.dtsi                       |    2 ++
+ arch/arm/boot/dts/omap4.dtsi                       |    2 ++
+ 3 files changed, 9 insertions(+)
 
-1) Still only eyeball tested.
-
- arch/arm/mach-imx/Kconfig     |  2 --
- arch/arm/mach-s3c64xx/Kconfig |  3 ---
- drivers/mfd/Kconfig           | 48 -------------------------------------------
- 3 files changed, 53 deletions(-)
-
-diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-index 4c9c6f9..6d9ae09 100644
---- a/arch/arm/mach-imx/Kconfig
-+++ b/arch/arm/mach-imx/Kconfig
-@@ -481,8 +481,6 @@ config MACH_MX31ADS_WM1133_EV1
- 	depends on MACH_MX31ADS
- 	depends on MFD_WM8350_I2C
- 	depends on REGULATOR_WM8350 = y
--	select MFD_WM8350_CONFIG_MODE_0
--	select MFD_WM8352_CONFIG_MODE_0
- 	help
- 	  Include support for the Wolfson Microelectronics 1133-EV1 PMU
- 	  and audio module for the MX31ADS platform.
-diff --git a/arch/arm/mach-s3c64xx/Kconfig b/arch/arm/mach-s3c64xx/Kconfig
-index 131c862..041da51 100644
---- a/arch/arm/mach-s3c64xx/Kconfig
-+++ b/arch/arm/mach-s3c64xx/Kconfig
-@@ -198,10 +198,7 @@ endchoice
- config SMDK6410_WM1190_EV1
- 	bool "Support Wolfson Microelectronics 1190-EV1 PMIC card"
- 	depends on MACH_SMDK6410
--	select MFD_WM8350_CONFIG_MODE_0
--	select MFD_WM8350_CONFIG_MODE_3
- 	select MFD_WM8350_I2C
--	select MFD_WM8352_CONFIG_MODE_0
- 	select REGULATOR
- 	select REGULATOR_WM8350
- 	select SAMSUNG_GPIO_EXTRA64
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index c346941..ebb1bed 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -687,54 +687,6 @@ config MFD_WM8350
- 	bool
- 	depends on GENERIC_HARDIRQS
+diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
+index abce256..3d6f9f6 100644
+--- a/Documentation/devicetree/bindings/usb/omap-usb.txt
++++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+@@ -19,6 +19,9 @@ OMAP MUSB GLUE
+  - power : Should be "50". This signifies the controller can supply upto
+    100mA when operating in host mode.
+  - usb-phy : the phandle for the PHY device
++ - phy : the phandle for the PHY device (used by generic PHY framework)
++ - phy-names : the names of the PHY corresponding to the PHYs present in the
++   *phy* phandle.
  
--config MFD_WM8350_CONFIG_MODE_0
--	bool
--	depends on MFD_WM8350
--
--config MFD_WM8350_CONFIG_MODE_1
--	bool
--	depends on MFD_WM8350
--
--config MFD_WM8350_CONFIG_MODE_2
--	bool
--	depends on MFD_WM8350
--
--config MFD_WM8350_CONFIG_MODE_3
--	bool
--	depends on MFD_WM8350
--
--config MFD_WM8351_CONFIG_MODE_0
--	bool
--	depends on MFD_WM8350
--
--config MFD_WM8351_CONFIG_MODE_1
--	bool
--	depends on MFD_WM8350
--
--config MFD_WM8351_CONFIG_MODE_2
--	bool
--	depends on MFD_WM8350
--
--config MFD_WM8351_CONFIG_MODE_3
--	bool
--	depends on MFD_WM8350
--
--config MFD_WM8352_CONFIG_MODE_0
--	bool
--	depends on MFD_WM8350
--
--config MFD_WM8352_CONFIG_MODE_1
--	bool
--	depends on MFD_WM8350
--
--config MFD_WM8352_CONFIG_MODE_2
--	bool
--	depends on MFD_WM8350
--
--config MFD_WM8352_CONFIG_MODE_3
--	bool
--	depends on MFD_WM8350
--
- config MFD_WM8350_I2C
- 	bool "Support Wolfson Microelectronics WM8350 with I2C"
- 	select MFD_WM8350
+ Optional properties:
+  - ctrl-module : phandle of the control module this glue uses to write to
+@@ -33,6 +36,8 @@ usb_otg_hs: usb_otg_hs@4a0ab000 {
+ 	num_eps = <16>;
+ 	ram_bits = <12>;
+ 	ctrl-module = <&omap_control_usb>;
++	phy = <&usb2_phy>;
++	phy-names = "usb2-phy";
+ };
+ 
+ Board specific device node entry
+diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+index 1e21565..cf50c18 100644
+--- a/arch/arm/boot/dts/omap3.dtsi
++++ b/arch/arm/boot/dts/omap3.dtsi
+@@ -405,6 +405,8 @@
+ 			interrupt-names = "mc", "dma";
+ 			ti,hwmods = "usb_otg_hs";
+ 			usb-phy = <&usb2_phy>;
++			phy = <&usb2_phy>;
++			phy-names = "usb2-phy";
+ 			multipoint = <1>;
+ 			num-eps = <16>;
+ 			ram-bits = <12>;
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 06d044e..188d5b8 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -550,6 +550,8 @@
+ 			interrupt-names = "mc", "dma";
+ 			ti,hwmods = "usb_otg_hs";
+ 			usb-phy = <&usb2_phy>;
++			phy = <&usb2_phy>;
++			phy-names = "usb2-phy";
+ 			multipoint = <1>;
+ 			num-eps = <16>;
+ 			ram-bits = <12>;
 -- 
-1.7.11.7
+1.7.10.4
 
