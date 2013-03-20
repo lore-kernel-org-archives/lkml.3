@@ -1,100 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246Ab3CTEni (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 00:43:38 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38864 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476Ab3CTEnh (ORCPT
+	id S1752473Ab3CTEyv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 00:54:51 -0400
+Received: from mail-db8lp0185.outbound.messaging.microsoft.com ([213.199.154.185]:47930
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752153Ab3CTEyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 00:43:37 -0400
-Date: Wed, 20 Mar 2013 15:43:28 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the final tree (cgroup
- tree related)
-Message-Id: <20130320154328.4b164061f7a58af5fb3f62e4@canb.auug.org.au>
-In-Reply-To: <51401DAB.1070602@huawei.com>
-References: <20130313161236.760c25633a4e8ea8d4847ccb@canb.auug.org.au>
-	<51401DAB.1070602@huawei.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__20_Mar_2013_15_43_28_+1100_+68QKYI28BeP_5Io"
+	Wed, 20 Mar 2013 00:54:49 -0400
+X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Mar 2013 00:54:49 EDT
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+From: Anson Huang <b20788@freescale.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>, <shawn.guo@linaro.org>
+Subject: [PATCH 2/3] ARM: imx: enable periphery well bias for suspend
+Date: Wed, 20 Mar 2013 13:39:39 -0400
+Message-ID: <1363801180-8284-2-git-send-email-b20788@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1363801180-8284-1-git-send-email-b20788@freescale.com>
+References: <1363801180-8284-1-git-send-email-b20788@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Mar_2013_15_43_28_+1100_+68QKYI28BeP_5Io
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+enable periphery charge pump for well biasing
+at suspend to reduce periphery leakage.
 
-Hi all,
+Signed-off-by: Anson Huang <b20788@freescale.com>
+---
+ arch/arm/mach-imx/clk-imx6q.c |   22 +++++++++++++++++++++-
+ arch/arm/mach-imx/common.h    |    4 ++--
+ arch/arm/mach-imx/pm-imx6q.c  |    4 +++-
+ 3 files changed, 26 insertions(+), 4 deletions(-)
 
-On Wed, 13 Mar 2013 14:33:15 +0800 Li Zefan <lizefan@huawei.com> wrote:
->
-> On 2013/3/13 13:12, Stephen Rothwell wrote:
-> >=20
-> > After merging the final tree, today's linux-next build (powerpc
-> > allnoconfig) failed like this:
-> >=20
-> > In file included from include/linux/memcontrol.h:22:0,
-> >                  from include/linux/swap.h:8,
-> >                  from include/linux/suspend.h:4,
-> >                  from arch/powerpc/kernel/asm-offsets.c:24:
-> > include/linux/cgroup.h:748:13: warning: 'struct cgroupstats' declared i=
-nside parameter list [enabled by default]
-> > include/linux/cgroup.h:748:13: warning: its scope is only this definiti=
-on or declaration, which is probably not what you want [enabled by default]
-> > cc1: all warnings being treated as errors
-> >=20
-> > and many more similar.
-> >=20
-> > Caused by commit c2c9ad164fa3 ("cgroup: remove unneeded includes from
-> > cgroup.h").
-> >=20
->=20
-> Tejun has dropped this patch.
+diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
+index 2f9ff93..b365efc 100644
+--- a/arch/arm/mach-imx/clk-imx6q.c
++++ b/arch/arm/mach-imx/clk-imx6q.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2011 Freescale Semiconductor, Inc.
++ * Copyright 2011-2013 Freescale Semiconductor, Inc.
+  * Copyright 2011 Linaro Ltd.
+  *
+  * The code contained herein is licensed under the GNU General Public
+@@ -23,6 +23,9 @@
+ #include "clk.h"
+ #include "common.h"
+ 
++#define CCR				0x0
++#define BM_CCR_WB_COUNT			(0x7 << 16)
++
+ #define CCGR0				0x68
+ #define CCGR1				0x6c
+ #define CCGR2				0x70
+@@ -67,6 +70,23 @@ void imx6q_set_chicken_bit(void)
+ 	writel_relaxed(val, ccm_base + CGPR);
+ }
+ 
++void imx6q_set_wb(bool enable)
++{
++	u32 val;
++
++	/* configurate well bias enable bit */
++	val = readl_relaxed(ccm_base + CLPCR);
++	val &= ~BM_CLPCR_WB_PER_AT_LPM;
++	val |= enable ? BM_CLPCR_WB_PER_AT_LPM : 0;
++	writel_relaxed(val, ccm_base + CLPCR);
++
++	/* configurate well bias count */
++	val = readl_relaxed(ccm_base + CCR);
++	val &= ~BM_CCR_WB_COUNT;
++	val |= enable ? BM_CCR_WB_COUNT : 0;
++	writel_relaxed(val, ccm_base + CCR);
++}
++
+ int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode)
+ {
+ 	u32 val = readl_relaxed(ccm_base + CLPCR);
+diff --git a/arch/arm/mach-imx/common.h b/arch/arm/mach-imx/common.h
+index 004c2b3..b9125cf 100644
+--- a/arch/arm/mach-imx/common.h
++++ b/arch/arm/mach-imx/common.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2004-2007 Freescale Semiconductor, Inc. All Rights Reserved.
++ * Copyright 2004-2013 Freescale Semiconductor, Inc. All Rights Reserved.
+  */
+ 
+ /*
+@@ -134,7 +134,7 @@ extern void imx_anatop_pre_suspend(void);
+ extern void imx_anatop_post_resume(void);
+ extern int imx6q_set_lpm(enum mxc_cpu_pwr_mode mode);
+ extern void imx6q_set_chicken_bit(void);
+-
++extern void imx6q_set_wb(bool enable);
+ extern void imx_cpu_die(unsigned int cpu);
+ extern int imx_cpu_kill(unsigned int cpu);
+ 
+diff --git a/arch/arm/mach-imx/pm-imx6q.c b/arch/arm/mach-imx/pm-imx6q.c
+index 05b26cd..57ca274 100644
+--- a/arch/arm/mach-imx/pm-imx6q.c
++++ b/arch/arm/mach-imx/pm-imx6q.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2011 Freescale Semiconductor, Inc.
++ * Copyright 2011-2013 Freescale Semiconductor, Inc.
+  * Copyright 2011 Linaro Ltd.
+  *
+  * The code contained herein is licensed under the GNU General Public
+@@ -36,8 +36,10 @@ static int imx6q_pm_enter(suspend_state_t state)
+ 		imx_gpc_pre_suspend();
+ 		imx_anatop_pre_suspend();
+ 		imx_set_cpu_jump(0, v7_cpu_resume);
++		imx6q_set_wb(true);
+ 		/* Zzz ... */
+ 		cpu_suspend(0, imx6q_suspend_finish);
++		imx6q_set_wb(false);
+ 		imx_smp_prepare();
+ 		imx_anatop_post_resume();
+ 		imx_gpc_post_resume();
+-- 
+1.7.9.5
 
-It has returned today.  Please be more careful.
 
-In file included from include/linux/memcontrol.h:22:0,
-                 from include/linux/swap.h:8,
-                 from include/linux/suspend.h:4,
-                 from arch/powerpc/kernel/asm-offsets.c:24:
-include/linux/cgroup.h:742:13: warning: 'struct cgroupstats' declared insid=
-e parameter list [enabled by default]
-include/linux/cgroup.h:742:13: warning: its scope is only this definition o=
-r declaration, which is probably not what you want [enabled by default]
-
-I have reverted commit c2c9ad164fa3 ("cgroup: remove unneeded includes
-from cgroup.h") for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__20_Mar_2013_15_43_28_+1100_+68QKYI28BeP_5Io
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRST5wAAoJEECxmPOUX5FEV4EP/j6pg3IX5WVPhUthkuuepFNV
-HyEHyJMM/mKAyNhgHV7w3UeWsIa/H/XTWEuF7lPtERZWBM6AFHVR5i4xLDtYLYKk
-rZ9nVLDoOM1sMBrIpUE8nr32mzSyBNHlnjetmyhbJ/2FDMozqxiCH1vIPccB+U5F
-uQiP1ydVCAP9AbK00pp8NTRJj+9oKBPk3G0mTP5TYcvBWnEJwFpzFy4hVwoC76Nq
-Y+qhFr3hoMDcgz1Xe9D8GNtdNZrcJc1DvsNhvBIYebzP3vkCtzJ+zrRpnSpSXUGq
-heceyT0c4g9OFH97/7lZIF0QAmBza7Xp4BLs4IaZasMrIaXOAJ5ZQQhEKXHQJAqm
-7F7awLxr0YzpNYZUjKGnLK3okj96gh1s5aIxFKUAAxhY9e9Y/f5By3bMconablye
-8StxfNAmd0lgbXg4zUWd5I/AQ2MBTEyQ0sFNyLsFrEIUE/nPa+nRQKVfcTQpufYY
-6Yaz0Ym7c2noP5OFbZ8iCj4SURy5YnePKVzbaWf1/TJeMEgZjzHyZw68Zj2uMK8B
-Y3nCuCutOrAfomrQXXhbgbrv5030ZGyWawM8Sx52CNdzVyNa/ViDAeine/mfE5Xy
-Q7i707l43X+jTDbrgFDv9JGNAhAaC3mGt2yuPGfLyGZuGQZvrbmiIZ1/0eO43J6c
-98JxeNRycEv/anzgadxC
-=T/6z
------END PGP SIGNATURE-----
-
---Signature=_Wed__20_Mar_2013_15_43_28_+1100_+68QKYI28BeP_5Io--
