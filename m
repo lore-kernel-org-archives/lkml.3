@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150Ab3CTS3C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 14:29:02 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34952 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755882Ab3CTS3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 14:29:00 -0400
-Message-ID: <5149FFDF.6050501@ti.com>
-Date: Wed, 20 Mar 2013 13:28:47 -0500
-From: Jon Hunter <jon-hunter@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1757368Ab3CTSav (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 14:30:51 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:61434 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755297Ab3CTSau (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 14:30:50 -0400
+Date: Wed, 20 Mar 2013 11:30:37 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/21] workqueue: cleanups and better locking for recent
+ changes
+Message-ID: <20130320183037.GE30484@htj.dyndns.org>
+References: <1363721306-2030-1-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>,
-        <linux-omap@vger.kernel.org>, <tony@atomide.com>, <khilman@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mach_omap2: use PTR_RET instead of IS_ERR + PTR_ERR
-References: <1363075109-27038-1-git-send-email-silviupopescu1990@gmail.com> <20130312110557.GF30923@n2100.arm.linux.org.uk>
-In-Reply-To: <20130312110557.GF30923@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.157.144.139]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363721306-2030-1-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+So, overall,
 
-On 03/12/2013 06:05 AM, Russell King - ARM Linux wrote:
-> On Tue, Mar 12, 2013 at 09:58:29AM +0200, Silviu-Mihai Popescu wrote:
->> This uses PTR_RET instead of IS_ERR and PTR_ERR in order to increase
->> readability.
->>
->> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
->> ---
->>  arch/arm/mach-omap2/devices.c |    4 ++--
->>  arch/arm/mach-omap2/fb.c      |    5 +----
->>  arch/arm/mach-omap2/gpmc.c    |    2 +-
->>  arch/arm/mach-omap2/pmu.c     |    5 +----
->>  4 files changed, 5 insertions(+), 11 deletions(-)
->>
->> diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
->> index 1ec7f05..2a0816e 100644
->> --- a/arch/arm/mach-omap2/devices.c
->> +++ b/arch/arm/mach-omap2/devices.c
->> @@ -66,7 +66,7 @@ static int __init omap3_l3_init(void)
->>  
->>  	WARN(IS_ERR(pdev), "could not build omap_device for %s\n", oh_name);
->>  
->> -	return IS_ERR(pdev) ? PTR_ERR(pdev) : 0;
->> +	return PTR_RET(pdev);
-> 
-> This is incorrect.
-> 
-> The return value will be tested for < 0.  Kernel pointers in general are
-> all above 3GB, and so are all "< 0".
-> 
-> I'm afraid none of these changes stuff is an improvement - they all
-> introduce bugs.
+On Wed, Mar 20, 2013 at 03:28:00AM +0800, Lai Jiangshan wrote:
+...
+> In this list, we can find that:
+> 1) wq_mutex protects too much different kind of things.
 
-Sorry I am now not sure I follow you here. Someone just pointed out to
-me that PTR_RET() is defined as ...
+I don't agree with this and unless you can come up with a much better
+reason, won't be splitting wq_mutex further.  Also, I'm not gonna
+rename it to wqs_mutex.
 
-static inline int __must_check PTR_RET(const void *ptr)
-{
-	if (IS_ERR(ptr))
-		return PTR_ERR(ptr);
-	else
-		return 0;
-}
+> 2) workqueue->pwqs are protected by both wq->flush_mutex and pwq_lock,
+>    but in many read sites, they are protected by both wq->flush_mutex and pwq_lock,
+>    in some other read sites, they are protected by pwq_lock, but can be converted
+>    to wq->flush_mutex. it means pwq_lock and wq->flush_mutex are redundancy here.
+> 3) pwq_lock is global lock, but it protects only workqueue instance fields.
 
-So the above change appears to be equivalent. Is there something that is
-wrong with the current implementation that needs to be fixed?
+A global lock protecting different instances is perfectly fine unless
+it actually causes contention in some paths.  It often actually is
+better to have a single global lock for cold paths as it pollutes less
+amount of cache, so please don't split locks for that reason.
 
-Jon
+That said, I like the fact that wq->flush_mutex can be transformed
+into wq->mutex and replaces pwq_lock making it go away, so, yeah, for
+that reason, I like pwq_lock removal, so yeah, let's replace pwq_lock
+with wq->mutex.
+
+I applied the ones I can apply at this point.  I'll rebase the NUMA
+patchset on top of the applied ones.  Please update the rest on top.
+
+Thanks.
+
+-- 
+tejun
