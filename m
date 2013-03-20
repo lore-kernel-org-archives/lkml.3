@@ -1,69 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365Ab3CTN5f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 09:57:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30100 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752615Ab3CTN5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 09:57:34 -0400
-Date: Wed, 20 Mar 2013 09:57:16 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        heiko.carstens@de.ibm.com, akpm@linux-foundation.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com
-Subject: Re: [PATCH v3 18/21] vmcore: check if vmcore objects satify mmap()'s
- page-size boundary requirement
-Message-ID: <20130320135716.GE17274@redhat.com>
-References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
- <20130316040228.15064.28019.stgit@localhost6.localdomain6>
- <877gl3koay.fsf@xmission.com>
+	id S1754806Ab3CTN7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 09:59:11 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17783 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379Ab3CTN7J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 09:59:09 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 20 Mar 2013 06:59:05 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>
+CC: <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2] regulator: palmas: add input supply names
+Date: Wed, 20 Mar 2013 19:26:37 +0530
+Message-ID: <1363787797-20659-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <877gl3koay.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 03:38:45PM -0700, Eric W. Biederman wrote:
-> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
-> 
-> > If there's some vmcore object that doesn't satisfy page-size boundary
-> > requirement, remap_pfn_range() fails to remap it to user-space.
-> >
-> > Objects that posisbly don't satisfy the requirement are ELF note
-> > segments only. The memory chunks corresponding to PT_LOAD entries are
-> > guaranteed to satisfy page-size boundary requirement by the copy from
-> > old memory to buffer in 2nd kernel done in later patch.
-> >
-> > This patch doesn't copy each note segment into the 2nd kernel since
-> > they amount to so large in total if there are multiple CPUs. For
-> > example, current maximum number of CPUs in x86_64 is 5120, where note
-> > segments exceed 1MB with NT_PRSTATUS only.
-> 
-> So you require the first kernel to reserve an additional 20MB, instead
-> of just 1.6MB.  336 bytes versus 4096 bytes.
-> 
-> That seems like completely the wrong tradeoff in memory consumption,
-> filesize, and backwards compatibility.
+Palmas regulator support the different input supply pins for each of
+the rails. Fill the regulator info data with their input supply pin
+names.
 
-Agreed. 
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+Changes from V1:
+- Passing desc->sname for input supply unconditionally.
+- If input pins are unconnected then it will be connect
+  to floating supply.
 
-So we already copy ELF headers in second kernel's memory. If we start
-copying notes too, then both headers and notes will support mmap().
+ drivers/regulator/palmas-regulator.c |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
 
-For mmap() of memory regions which are not page aligned, we can map
-extra bytes (as you suggested in one of the mails). Given the fact
-that we have one ELF header for every memory range, we can always modify
-the file offset where phdr data is starting to make space for mapping
-of extra bytes.
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 4a45942..bfca28f 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -29,6 +29,7 @@
+ 
+ struct regs_info {
+ 	char	*name;
++	char	*sname;
+ 	u8	vsel_addr;
+ 	u8	ctrl_addr;
+ 	u8	tstep_addr;
+@@ -37,110 +38,131 @@ struct regs_info {
+ static const struct regs_info palmas_regs_info[] = {
+ 	{
+ 		.name		= "SMPS12",
++		.sname		= "smps1-in",
+ 		.vsel_addr	= PALMAS_SMPS12_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS12_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS12_TSTEP,
+ 	},
+ 	{
+ 		.name		= "SMPS123",
++		.sname		= "smps1-in",
+ 		.vsel_addr	= PALMAS_SMPS12_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS12_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS12_TSTEP,
+ 	},
+ 	{
+ 		.name		= "SMPS3",
++		.sname		= "smps3-in",
+ 		.vsel_addr	= PALMAS_SMPS3_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS3_CTRL,
+ 	},
+ 	{
+ 		.name		= "SMPS45",
++		.sname		= "smps4-in",
+ 		.vsel_addr	= PALMAS_SMPS45_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS45_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS45_TSTEP,
+ 	},
+ 	{
+ 		.name		= "SMPS457",
++		.sname		= "smps4-in",
+ 		.vsel_addr	= PALMAS_SMPS45_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS45_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS45_TSTEP,
+ 	},
+ 	{
+ 		.name		= "SMPS6",
++		.sname		= "smps6-in",
+ 		.vsel_addr	= PALMAS_SMPS6_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS6_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS6_TSTEP,
+ 	},
+ 	{
+ 		.name		= "SMPS7",
++		.sname		= "smps7-in",
+ 		.vsel_addr	= PALMAS_SMPS7_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS7_CTRL,
+ 	},
+ 	{
+ 		.name		= "SMPS8",
++		.sname		= "smps8-in",
+ 		.vsel_addr	= PALMAS_SMPS8_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS8_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS8_TSTEP,
+ 	},
+ 	{
+ 		.name		= "SMPS9",
++		.sname		= "smps9-in",
+ 		.vsel_addr	= PALMAS_SMPS9_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS9_CTRL,
+ 	},
+ 	{
+ 		.name		= "SMPS10",
++		.sname		= "smps10-in",
+ 	},
+ 	{
+ 		.name		= "LDO1",
++		.sname		= "ldo1-in",
+ 		.vsel_addr	= PALMAS_LDO1_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO1_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO2",
++		.sname		= "ldo2-in",
+ 		.vsel_addr	= PALMAS_LDO2_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO2_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO3",
++		.sname		= "ldo3-in",
+ 		.vsel_addr	= PALMAS_LDO3_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO3_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO4",
++		.sname		= "ldo4-in",
+ 		.vsel_addr	= PALMAS_LDO4_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO4_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO5",
++		.sname		= "ldo5-in",
+ 		.vsel_addr	= PALMAS_LDO5_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO5_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO6",
++		.sname		= "ldo6-in",
+ 		.vsel_addr	= PALMAS_LDO6_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO6_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO7",
++		.sname		= "ldo7-in",
+ 		.vsel_addr	= PALMAS_LDO7_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO7_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO8",
++		.sname		= "ldo8-in",
+ 		.vsel_addr	= PALMAS_LDO8_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO8_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDO9",
++		.sname		= "ldo9-in",
+ 		.vsel_addr	= PALMAS_LDO9_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO9_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDOLN",
++		.sname		= "ldoln-in",
+ 		.vsel_addr	= PALMAS_LDOLN_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDOLN_CTRL,
+ 	},
+ 	{
+ 		.name		= "LDOUSB",
++		.sname		= "ldousb-in",
+ 		.vsel_addr	= PALMAS_LDOUSB_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDOUSB_CTRL,
+ 	},
+@@ -710,6 +732,7 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+ 		else
+ 			config.init_data = NULL;
+ 
++		pmic->desc[id].supply_name = palmas_regs_info[id].sname;
+ 		config.of_node = palmas_matches[id].of_node;
+ 
+ 		rdev = regulator_register(&pmic->desc[id], &config);
+@@ -756,6 +779,7 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+ 		else
+ 			config.init_data = NULL;
+ 
++		pmic->desc[id].supply_name = palmas_regs_info[id].sname;
+ 		config.of_node = palmas_matches[id].of_node;
+ 
+ 		rdev = regulator_register(&pmic->desc[id], &config);
+-- 
+1.7.1.1
 
-That way whole of vmcore should be mmappable and user does not have
-to worry about reading part of the file and mmaping the rest.
-
-Thanks
-Vivek
