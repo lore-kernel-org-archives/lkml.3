@@ -1,53 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094Ab3CTLCh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 07:02:37 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34032 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755806Ab3CTLCf (ORCPT
+	id S1757419Ab3CTLGT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 07:06:19 -0400
+Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:47400 "EHLO
+	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752093Ab3CTLGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 07:02:35 -0400
-Message-ID: <51499748.8020700@monstr.eu>
-Date: Wed, 20 Mar 2013 12:02:32 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Wed, 20 Mar 2013 07:06:17 -0400
+Date: Wed, 20 Mar 2013 12:09:30 +0100
+From: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        elezegarcia@gmail.com
+Subject: Re: [RFC V1 4/8] smi2021: Add smi2021_v4l2.c
+Message-ID: <20130320110930.GP17291@dell.arpanet.local>
+References: <1363270024-12127-1-git-send-email-jonarne@jonarne.no>
+ <201303201110.57579.hverkuil@xs4all.nl>
+ <20130320101626.GO17291@dell.arpanet.local>
+ <201303201121.48178.hverkuil@xs4all.nl>
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Tejun Heo <tj@kernel.org>, James Hogan <james.hogan@imgtec.com>,
-        microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memblock: Kill ARCH_POPULATES_NODE_MAP once more
-References: <1363775108.1390.88.camel@x61.thuisdomein>
-In-Reply-To: <1363775108.1390.88.camel@x61.thuisdomein>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201303201121.48178.hverkuil@xs4all.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 11:25 AM, Paul Bolle wrote:
-> The Kconfig symbol ARCH_POPULATES_NODE_MAP was killed in v3.3. After
-> that it popped up again in microblaze and metag. Nobody noticed,
-> probably because these Kconfig symbols are entirely unused and these
-> architectures both select HAVE_MEMBLOCK_NODE_MAP. Anyhow, these two
-> entries can also be killed.
+On Wed, Mar 20, 2013 at 11:21:48AM +0100, Hans Verkuil wrote:
+> On Wed 20 March 2013 11:16:26 Jon Arne Jørgensen wrote:
+> > On Wed, Mar 20, 2013 at 11:10:57AM +0100, Hans Verkuil wrote:
+> > > On Wed 20 March 2013 10:48:42 Jon Arne Jørgensen wrote:
+> > > > On Mon, Mar 18, 2013 at 09:29:07AM +0100, Hans Verkuil wrote:
+> > > > > On Thu March 14 2013 15:07:00 Jon Arne Jørgensen wrote:
+> > > > > > This file is responsible for registering the device with the v4l2 subsystem,
+> > > > > > and the communication with v4l2.
+> > > > > > Most of the v4l2 ioctls are just passed on to vidbuf2.
+> > > > > > 
+> > > > > > Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
+> > > > > > ---
+> > > > > >  drivers/media/usb/smi2021/smi2021_v4l2.c | 566 +++++++++++++++++++++++++++++++
+> > > > > >  1 file changed, 566 insertions(+)
+> > > > > >  create mode 100644 drivers/media/usb/smi2021/smi2021_v4l2.c
+> > > > > > 
+> > > > > > diff --git a/drivers/media/usb/smi2021/smi2021_v4l2.c b/drivers/media/usb/smi2021/smi2021_v4l2.c
+> > > > > > new file mode 100644
+> > > > > > index 0000000..d402093
+> > > > > > --- /dev/null
+> > > > > > +++ b/drivers/media/usb/smi2021/smi2021_v4l2.c
+> > > > > > @@ -0,0 +1,566 @@
+> > > > > 
+> > > > > ...
+> > > > > 
+> > > > > > +int smi2021_vb2_setup(struct smi2021_dev *dev)
+> > > > > > +{
+> > > > > > +	int rc;
+> > > > > > +	struct vb2_queue *q;
+> > > > > > +
+> > > > > > +	q = &dev->vb_vidq;
+> > > > > > +	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+> > > > > > +	q->io_modes = VB2_READ | VB2_MMAP | VB2_USERPTR;
+> > > > > > +	q->drv_priv = dev;
+> > > > > > +	q->buf_struct_size = sizeof(struct smi2021_buffer);
+> > > > > > +	q->ops = &smi2021_video_qops;
+> > > > > > +	q->mem_ops = &vb2_vmalloc_memops;
+> > > > > 
+> > > > > q->timestamp_type isn't filled in.
+> > > > >
+> > > > I'll add that
+> > > >  
+> > > > > For that matter, neither the sequence number nor the timestamp are filled in
+> > > > > in v4l2_buffer during capturing.
+> > > > > 
+> > > > > You need to add a buf_finish op to fill those in (use v4l2_timestamp() for the
+> > > > > timestamp).
+> > > > >
+> > > > 
+> > > > I'm filling these variables in the smi2021_buffer_done function in
+> > > > smi2021_video.c?
+> > > 
+> > > Ah, I missed that. Sorry about that.
+> > > 
+> > > Just replace gettimeofday with v4l2_timestamp(), though. We no longer use
+> > > gettimeofday() in new drivers, but instead we use the monotonic clock.
+> > > 
+> > 
+> > No problem,
+> > I'll fix this.
+> 
+> BTW, I've tried your driver with my somagic USB device, but it doesn't work
+> for me. I get -71 errors on the USB bus. I do seem to have all the right chips
+> including the gm7113 (saa7113 replacement).
+> 
+> I need to double-check under Windows whether it is really working...
 
-Ah. We have done the developing on that on earlier version and
-to mainline it went in 3.3 merge window that's why I didn't notice it.
+Hm, I sometimes get two of these errors when starting a capture, but
+after that my device keeps running smoothly.
 
-If James wants to take this patch through his tree, I am ok with that
-and here is my
+If you have time, can you please also test your device with the userspace
+(libusb) tool for the somagic devices.
 
-Acked-by: Michal Simek <monstr@monstr.eu>
+You'll find it here:
+http://code.google.com/p/easycap-somagic-linux/
 
-Or if you want to take this through my microblaze tree, I am also ok
-with that but please send me your ACK.
-
-Thanks for this patch,
-Michal
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+> 
+> Regards,
+> 
+> 	Hans
