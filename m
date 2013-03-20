@@ -1,96 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab3CTINC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 04:13:02 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52366 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab3CTIM6 (ORCPT
+	id S1757528Ab3CTIOi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 04:14:38 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:40575 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804Ab3CTIOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 04:12:58 -0400
-X-AuditID: 9c93016f-b7cecae000004cf8-7b-51496f8721b8
-Date: Wed, 20 Mar 2013 17:13:21 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/8] sched: reset lb_env when redo in load_balance()
-Message-ID: <20130320081321.GF11672@lge.com>
-References: <1360820921-2513-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1360820921-2513-9-git-send-email-iamjoonsoo.kim@lge.com>
- <1363706483.22553.67.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363706483.22553.67.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 20 Mar 2013 04:14:34 -0400
+Message-ID: <1363767266.3758.4.camel@phoenix>
+Subject: [PATCH 1/2] PM / devfreq: exynos4_bus: Constify clock divider table
+From: Axel Lin <axel.lin@ingics.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 20 Mar 2013 16:14:26 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 04:21:23PM +0100, Peter Zijlstra wrote:
-> On Thu, 2013-02-14 at 14:48 +0900, Joonsoo Kim wrote:
-> > Commit 88b8dac0 makes load_balance() consider other cpus in its group.
-> > So, now, When we redo in load_balance(), we should reset some fields of
-> > lb_env to ensure that load_balance() works for initial cpu, not for other
-> > cpus in its group. So correct it.
-> > 
-> > Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > 
-> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > index 70631e8..25c798c 100644
-> > --- a/kernel/sched/fair.c
-> > +++ b/kernel/sched/fair.c
-> > @@ -5014,14 +5014,20 @@ static int load_balance(int this_cpu, struct rq *this_rq,
-> >  
-> >  	struct lb_env env = {
-> >  		.sd		= sd,
-> > -		.dst_cpu	= this_cpu,
-> > -		.dst_rq		= this_rq,
-> >  		.dst_grpmask    = dst_grp,
-> >  		.idle		= idle,
-> > -		.loop_break	= sched_nr_migrate_break,
-> >  		.cpus		= cpus,
-> >  	};
-> >  
-> > +	schedstat_inc(sd, lb_count[idle]);
-> > +	cpumask_copy(cpus, cpu_active_mask);
-> > +
-> > +redo:
-> > +	env.dst_cpu = this_cpu;
-> > +	env.dst_rq = this_rq;
-> > +	env.loop = 0;
-> > +	env.loop_break = sched_nr_migrate_break;
-> > +
-> >  	/* For NEWLY_IDLE load_balancing, we don't need to consider
-> >  	 * other cpus in our group */
-> >  	if (idle == CPU_NEWLY_IDLE) {
-> 
-> OK, so this is the case where we tried to balance !this_cpu and found
-> ALL_PINNED, right?
-> 
-> You can only get here in very weird cases where people love their
-> sched_setaffinity() waaaaay too much, do we care? Why not give up?
+These tables are never modified, make them const.
 
-Now that you mentioned it, I have no enough reason for this patch.
-I think that giving up is more preferable to me.
-I will omit this patch for next spin.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/devfreq/exynos4_bus.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-> 
-> Also, looking at this, shouldn't we consider env->cpus in
-> can_migrate_task() where we compute new_dst_cpu?
+diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
+index 3f37f3b..45d00d1 100644
+--- a/drivers/devfreq/exynos4_bus.c
++++ b/drivers/devfreq/exynos4_bus.c
+@@ -177,7 +177,7 @@ static unsigned int exynos4x12_int_volt[][EX4x12_LV_NUM] = {
+ };
+ 
+ /*** Clock Divider Data for Exynos4210 ***/
+-static unsigned int exynos4210_clkdiv_dmc0[][8] = {
++static const unsigned int exynos4210_clkdiv_dmc0[][8] = {
+ 	/*
+ 	 * Clock divider value for following
+ 	 * { DIVACP, DIVACP_PCLK, DIVDPHY, DIVDMC, DIVDMCD
+@@ -191,7 +191,7 @@ static unsigned int exynos4210_clkdiv_dmc0[][8] = {
+ 	/* DMC L2: 133MHz */
+ 	{ 5, 1, 1, 5, 1, 1, 3, 1 },
+ };
+-static unsigned int exynos4210_clkdiv_top[][5] = {
++static const unsigned int exynos4210_clkdiv_top[][5] = {
+ 	/*
+ 	 * Clock divider value for following
+ 	 * { DIVACLK200, DIVACLK100, DIVACLK160, DIVACLK133, DIVONENAND }
+@@ -203,7 +203,7 @@ static unsigned int exynos4210_clkdiv_top[][5] = {
+ 	/* ACLK200 L2: 133MHz */
+ 	{ 5, 7, 7, 7, 1 },
+ };
+-static unsigned int exynos4210_clkdiv_lr_bus[][2] = {
++static const unsigned int exynos4210_clkdiv_lr_bus[][2] = {
+ 	/*
+ 	 * Clock divider value for following
+ 	 * { DIVGDL/R, DIVGPL/R }
+@@ -217,7 +217,7 @@ static unsigned int exynos4210_clkdiv_lr_bus[][2] = {
+ };
+ 
+ /*** Clock Divider Data for Exynos4212/4412 ***/
+-static unsigned int exynos4x12_clkdiv_dmc0[][6] = {
++static const unsigned int exynos4x12_clkdiv_dmc0[][6] = {
+ 	/*
+ 	 * Clock divider value for following
+ 	 * { DIVACP, DIVACP_PCLK, DIVDPHY, DIVDMC, DIVDMCD
+@@ -235,7 +235,7 @@ static unsigned int exynos4x12_clkdiv_dmc0[][6] = {
+ 	/* DMC L4: 100MHz */
+ 	{7, 1, 1, 7, 1, 1},
+ };
+-static unsigned int exynos4x12_clkdiv_dmc1[][6] = {
++static const unsigned int exynos4x12_clkdiv_dmc1[][6] = {
+ 	/*
+ 	 * Clock divider value for following
+ 	 * { G2DACP, DIVC2C, DIVC2C_ACLK }
+@@ -252,7 +252,7 @@ static unsigned int exynos4x12_clkdiv_dmc1[][6] = {
+ 	/* DMC L4: 100MHz */
+ 	{7, 7, 1},
+ };
+-static unsigned int exynos4x12_clkdiv_top[][5] = {
++static const unsigned int exynos4x12_clkdiv_top[][5] = {
+ 	/*
+ 	 * Clock divider value for following
+ 	 * { DIVACLK266_GPS, DIVACLK100, DIVACLK160,
+@@ -270,7 +270,7 @@ static unsigned int exynos4x12_clkdiv_top[][5] = {
+ 	/* ACLK_GDL/R L4: 100MHz */
+ 	{7, 7, 7, 7, 1},
+ };
+-static unsigned int exynos4x12_clkdiv_lr_bus[][2] = {
++static const unsigned int exynos4x12_clkdiv_lr_bus[][2] = {
+ 	/*
+ 	 * Clock divider value for following
+ 	 * { DIVGDL/R, DIVGPL/R }
+@@ -287,7 +287,7 @@ static unsigned int exynos4x12_clkdiv_lr_bus[][2] = {
+ 	/* ACLK_GDL/R L4: 100MHz */
+ 	{7, 1},
+ };
+-static unsigned int exynos4x12_clkdiv_sclkip[][3] = {
++static const unsigned int exynos4x12_clkdiv_sclkip[][3] = {
+ 	/*
+ 	 * Clock divider value for following
+ 	 * { DIVMFC, DIVJPEG, DIVFIMC0~3}
+-- 
+1.7.9.5
 
-As previously stated, env-cpus is for src cpus, so when we decide dst_cpu,
-it doesn't matter.
 
-Really thanks for detailed review to all this patchset.
-Thanks.
 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
