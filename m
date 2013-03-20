@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934514Ab3CTJYo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:24:44 -0400
-Received: from mail-da0-f45.google.com ([209.85.210.45]:34243 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758046Ab3CTJYl (ORCPT
+	id S1758095Ab3CTJYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:24:52 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:44487 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab3CTJYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:24:41 -0400
+	Wed, 20 Mar 2013 05:24:46 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: ben@decadent.org.uk, noelamac@gmail.com, linux-kernel@vger.kernel.org,
         rusty@rustcorp.com.au, andi@firstfloor.org,
         "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [RFC 24/30] compat: embrace LINUX_BACKPORT() for v3.8
-Date: Wed, 20 Mar 2013 02:22:49 -0700
-Message-Id: <1363771375-31715-25-git-send-email-mcgrof@do-not-panic.com>
+Subject: [RFC 25/30] compat: embrace LINUX_BACKPORT() for cordic
+Date: Wed, 20 Mar 2013 02:22:50 -0700
+Message-Id: <1363771375-31715-26-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
@@ -53,29 +53,21 @@ From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
 ---
- include/linux/compat-3.8.h |    2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/cordic.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/linux/compat-3.8.h b/include/linux/compat-3.8.h
-index 184d1d0..55fdc16 100644
---- a/include/linux/compat-3.8.h
-+++ b/include/linux/compat-3.8.h
-@@ -16,6 +16,7 @@
- #define prandom_u32_state(_state)	prandom32(_state)
+diff --git a/include/linux/cordic.h b/include/linux/cordic.h
+index f932093..2de0aa3 100644
+--- a/include/linux/cordic.h
++++ b/include/linux/cordic.h
+@@ -43,6 +43,7 @@ struct cordic_iq {
+  * for -180 degrees to +180 degrees. Passed values outside this range are
+  * converted before doing the actual calculation.
+  */
++#define cordic_calc_iq LINUX_BACKPORT(cordic_calc_iq)
+ struct cordic_iq cordic_calc_iq(s32 theta);
  
- #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,7,8))
-+#define netdev_set_default_ethtool_ops LINUX_BACKPORT(netdev_set_default_ethtool_ops)
- extern void netdev_set_default_ethtool_ops(struct net_device *dev,
- 					   const struct ethtool_ops *ops);
- #endif
-@@ -26,6 +27,7 @@ extern void netdev_set_default_ethtool_ops(struct net_device *dev,
- #define  PCI_EXP_LNKCTL_ASPM_L0S  0x01 /* L0s Enable */
- #define  PCI_EXP_LNKCTL_ASPM_L1   0x02 /* L1 Enable */
- 
-+#define hid_ignore LINUX_BACKPORT(hid_ignore)
- extern bool hid_ignore(struct hid_device *);
- 
- /* This backports:
+ #endif /* __CORDIC_H_ */
 -- 
 1.7.10.4
 
