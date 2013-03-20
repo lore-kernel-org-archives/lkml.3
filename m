@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab3CTO2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 10:28:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26868 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750839Ab3CTO2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 10:28:20 -0400
-Message-ID: <5149C76D.7090409@redhat.com>
-Date: Wed, 20 Mar 2013 10:27:57 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755029Ab3CTOaH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 10:30:07 -0400
+Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.92]:54574 "EHLO
+	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751120Ab3CTOaG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 10:30:06 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, Greg KH <greg@kroah.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: RE: linux-next: manual merge of the akpm tree with the char-misc
+ tree
+Thread-Topic: linux-next: manual merge of the akpm tree with the char-misc
+ tree
+Thread-Index: AQHOJSJm3/YRQxaQy0OOj96TXXjnsJiupBFw
+Date: Wed, 20 Mar 2013 14:29:26 +0000
+Message-ID: <960b30d6dde3492b81120985e28ff061@DFM-DB3MBX15-08.exchange.corp.microsoft.com>
+References: <20130320152007.56de4a48eaf2760ccc07f02b@canb.auug.org.au>
+In-Reply-To: <20130320152007.56de4a48eaf2760ccc07f02b@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Emmanuel Benisty <benisty.e@gmail.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v2 4/4] ipc: sem: do not hold ipc lock more than necessary
-References: <1362476179.2225.54.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1362476179.2225.54.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Forefront-Antispam-Report: CIP:131.107.1.27;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(51704002)(13464002)(377454001)(199002)(189002)(23726001)(54356001)(80022001)(16406001)(66066001)(50466001)(65816001)(69226001)(47976001)(49866001)(31966008)(33646001)(47446002)(46102001)(74502001)(74662001)(44976002)(79102001)(54316002)(51856001)(47736001)(53806001)(50986001)(20776003)(47776003)(63696002)(56816002)(59766001)(46406002)(56776001)(876001)(4396001)(77982001)(76482001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:CH1SR01MB612;H:hybrid.exchange.microsoft.com;RD:mail7.exchange.microsoft.com;A:1;MX:1;LANG:en;
+X-Forefront-PRVS: 07915F544A
+X-OriginatorOrg: DuplicateDomain-7923a859-03c9-4312-a77c-440aa45aaf52.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2013 04:36 AM, Davidlohr Bueso wrote:
 
-> @@ -1476,8 +1539,8 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
->   	queue.sleeper = current;
->
->   sleep_again:
-> -	current->state = TASK_INTERRUPTIBLE;
->   	sem_unlock(sma);
-> +	current->state = TASK_INTERRUPTIBLE;
->
->   	if (timeout)
->   		jiffies_left = schedule_timeout(jiffies_left);
 
-After modifying my test case to start with a semaphore value of 1 on
-every semaphore, and do down followed by up (to have only one process
-take each semaphore at a time), I started seeing lost wakeups and the
-test case being stuck.
+> -----Original Message-----
+> From: Stephen Rothwell [mailto:sfr@canb.auug.org.au]
+> Sent: Wednesday, March 20, 2013 12:20 AM
+> To: Andrew Morton
+> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Haiyang
+> Zhang; KY Srinivasan; Greg KH; Arnd Bergmann
+> Subject: linux-next: manual merge of the akpm tree with the char-misc
+> tree
+> 
+> Hi Andrew,
+> 
+> Today's linux-next merge of the akpm tree got a conflict in
+> include/linux/hyperv.h between commit 96dd86fa5881 ("Drivers: hv: Add a
+> new driver to support host initiated backup") from the char-misc  tree
+> and commit "drivers/video: add Hyper-V Synthetic Video Frame Buffer
+> Driver" from the akpm tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-I believe the change above is the cause of that issue.
+Thank you for fixing it!
 
-By unlocking before setting current->state to TASK_INTERRUPTIBLE,
-there is a small window where the next lock holder can grab the
-lock and wake us up, before we set ourselves to TASK_INTERRUPTIBLE
-and go to sleep.
-
-I have reverted your change in my code and am building a test kernel
-now.
-
-If things work, I'll clean up the whole patch series for a re-posting
-today.
-
--- 
-All rights reversed
+- Haiyang
