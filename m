@@ -1,72 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934078Ab3CTFvI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 01:51:08 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:43046 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933574Ab3CTFvG (ORCPT
+	id S933574Ab3CTGAK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 02:00:10 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19233 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755161Ab3CTGAI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 01:51:06 -0400
-Date: Wed, 20 Mar 2013 16:50:49 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: sedat.dilek@gmail.com
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>, postmaster@vger.kernel.org
-Subject: Re: linux-next: Tree for Mar 20
-Message-Id: <20130320165049.2f3e5c0d0897c05c24159087@canb.auug.org.au>
-In-Reply-To: <CA+icZUXHw9M0es4yT8e7uJavZ9uDrSWGNxnBA3eZ+SwkTF=SEg@mail.gmail.com>
-References: <CA+icZUXHw9M0es4yT8e7uJavZ9uDrSWGNxnBA3eZ+SwkTF=SEg@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__20_Mar_2013_16_50_49_+1100_qLgxrh+zxVD+Yxog"
+	Wed, 20 Mar 2013 02:00:08 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 19 Mar 2013 23:00:06 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Date: Wed, 20 Mar 2013 11:29:59 +0530
+Subject: RE: [PATCH 0/7] USB: PHY: Tegra: registering TEGRA USB PHY as
+ platform driver
+Thread-Topic: [PATCH 0/7] USB: PHY: Tegra: registering TEGRA USB PHY as
+ platform driver
+Thread-Index: Ac4k20FsSu4SASIBRPmi9O9pJEYdOAAUaA6Q
+Message-ID: <D958900912E20642BCBC71664EFECE3E6E5092FED0@BGMAIL02.nvidia.com>
+References: <1363609781-4045-1-git-send-email-vbyravarasu@nvidia.com>
+ <5148C1DC.1020903@wwwdotorg.org>
+In-Reply-To: <5148C1DC.1020903@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Mar_2013_16_50_49_+1100_qLgxrh+zxVD+Yxog
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Wednesday, March 20, 2013 1:22 AM
+> To: Venu Byravarasu
+> Cc: gregkh@linuxfoundation.org; stern@rowland.harvard.edu;
+> balbi@ti.com; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org;
+> linux-tegra@vger.kernel.org; devicetree-discuss@lists.ozlabs.org
+> Subject: Re: [PATCH 0/7] USB: PHY: Tegra: registering TEGRA USB PHY as
+> platform driver
+> 
+> On 03/18/2013 06:29 AM, Venu Byravarasu wrote:
+> > As part of this series, apart from patch containing changes to register
+> TEGRA
+> > USB PHY driver as platform driver, prepared below patches:
+> > 1. Re-arranging & adding new DT properties.
+> > 2. Getting various params from DT properties added.
+> > 3. code clean up.
+> 
+> Venu, I'm curious whether these patches were tested at all. I have found
+> at least two significant problems with trivial testing:
 
-Hi Sedat,
+Stephen,
+Initially started testing after applying each and every patch.
+Like that tested till first 5 patches.
+As did not see any issues till then, applied rest 2 patches at once and tested with that.
+Though did not see mouse getting vbus on the 1st boot, Vbus was coming fine after disconnect and connect.
+Hence did not test thereafter.
 
-On Wed, 20 Mar 2013 06:44:45 +0100 Sedat Dilek <sedat.dilek@gmail.com> wrot=
-e:
->
-> again I can read this offline before I have received it online (in my
-> Gmail-account).
-> Why shall I subscribe a ML when I am faster reading it offline?
-> Whom to contact in such a case (ML-admin)?
+After checking your current mail, tried now and observed that there seems to be some real issue with patch#7 only. (As tried now after applying till patch# 6 and did not see this issue).
+Will debug further on patch#7 and update with proper fix after addressing your other comments.
 
-Probably postmaster@vger.kernel.org (cc'd).  I am not sure why you have a
-problem, again the mailing list copy of the announcement was in my inbox
-10 seconds after I posted it.
+Thanks for the review & heads up,
+venu
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__20_Mar_2013_16_50_49_+1100_qLgxrh+zxVD+Yxog
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRSU45AAoJEECxmPOUX5FEmh0P/iO/UKdaIqPkM7ghs2zvKgwU
-0M3EisDDc1JpHAc8sWHxjEAEepfYEnyMp5fC3Si44ZE7BJI+Ar9bc2kIatm58IJx
-3U0mFoJ7tlMVcj09sfxdVw+xypFYyK6nicOvB7kyxZCj9rQ8V+zMKTEanUI6RG+K
-WmOW0CCm4+acECp6lgPq66TWI5Hw98TwyUkJaLj2Jky2QoU+IiRC9uZP6uliFkSA
-J/NCBIc5AqMeD73Y1u2onMDBVyuNyZP0Cw6GnL+LBo523SPJ7/xwYBwNXcD8FTYc
-kkOzcbgkVarVFV8mvohT3NQ1sNH7A5MNE+GIkTcTitM+NAXJyd6gAEbLOtUBggPl
-lruc1a08E6uvV9pWjWVZvWTvVRCjtQs9pJNhg+5lIbbbGy8/JXPxtpBX5mZlFW2i
-5uYndz/jeULIqhFVGfRQjmjQjpTAYFn+YUbqxtT6wIGD1UNXkdjtYLy3O5u+7vqQ
-T2mnvW+vBC60zhm++7KQzuj8347rtyVmsVQdZGywhHRMx3FASS+95eN5iikn+sB0
-ZzF30e7uGmo/JT8C/Nj4YIpFKuug+yFWTu6+puT5vKuke68AMhqHC2y3keKvEeVA
-8JPzHJuL82888BR4shfXwEe6MbGBiAfWgPJ4d/q74ltm6FfYuSVIZ7bZiEE4pKjO
-bkfSBhdKUnEDWoDMG984
-=k+kt
------END PGP SIGNATURE-----
-
---Signature=_Wed__20_Mar_2013_16_50_49_+1100_qLgxrh+zxVD+Yxog--
+> 
+> 1)
+> 
+> "reboot" or "shutdown -h now" both cause the following crash, with or
+> without any USB devices plugged in (or ever having been plugged in):
+> 
+> > [  355.836288] Unable to handle kernel NULL pointer dereference at virtual
+> address 00000028
+> > [  355.847961] pgd = ed620000
+> > [  355.854093] [00000028] *pgd=00000000
+> ...
+> > [  356.146728] [<c02e5978>] (tegra_ehci_hcd_shutdown+0x18/0x2c) from
+> [<c0279edc>] (platform_drv_shutdown+0x18/0x1c)
+> > [  356.160379] [<c0279edc>] (platform_drv_shutdown+0x18/0x1c) from
+> [<c027703c>] (device_shutdown+0x34/0x188)
+> > [  356.173464] [<c027703c>] (device_shutdown+0x34/0x188) from
+> [<c0034650>] (kernel_restart_prepare+0x34/0x3c)
+> > [  356.186668] [<c0034650>] (kernel_restart_prepare+0x34/0x3c) from
+> [<c0034664>] (kernel_restart+0xc/0x4c)
+> > [  356.199637] [<c0034664>] (kernel_restart+0xc/0x4c) from [<c0034858>]
+> (sys_reboot+0x1ac/0x1d8)
+> > [  356.211704] [<c0034858>] (sys_reboot+0x1ac/0x1d8) from [<c000e2c0>]
+> (ret_fast_syscall+0x0/0x30)
+> > [  356.223965] Code: ebfe4b27 e5903000 e24300e8 e5133044 (e5933028)
+> > [  356.233896] ---[ end trace 088d89482b4af176 ]---
+> 
+> 2)
+> 
+> The first time enumeration USB devices is attempted on a port fails. For
+> devices that are plugged in at boot, this means that to get them
+> working, they must be unplugged and re-plugged after boot. For devices
+> that are not plugged in at boot, this means they must be plugged,
+> unplugged, and then plugged in again.
+> 
+> This is obviously problematic in and of itself. This is especially true
+> for boards like Harmony that have a built-in USB hub and network chip. I
+> didn't actually test this, but I assume that they cannot be made to work
+> at all with this patch series, since they cannot be unplugged.
+> 
+> The failed enumeration is accompanied by the following message:
+> 
+> [    2.451530] hub 3-0:1.0: unable to enumerate USB device on port 1
+> 
+> Both of these problems reproduce on at least boards Ventana and
+> Seaboard(Springbank), although I assume that all boards are affected.
