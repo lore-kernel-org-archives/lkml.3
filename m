@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933290Ab3CTQlR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 12:41:17 -0400
-Received: from mail-ia0-f180.google.com ([209.85.210.180]:34621 "EHLO
-	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066Ab3CTQlQ (ORCPT
+	id S1758261Ab3CTQma (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 12:42:30 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49167 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066Ab3CTQm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 12:41:16 -0400
+	Wed, 20 Mar 2013 12:42:29 -0400
+Message-ID: <5149E6F2.5070205@wwwdotorg.org>
+Date: Wed, 20 Mar 2013 10:42:26 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <CACTFLAMXHA58bu_c0hRQuZ=nru63hLaixNXaiU-Xa60WD5d=ew@mail.gmail.com>
-References: <1363791074-16415-1-git-send-email-grant.likely@secretlab.ca>
- <1363791074-16415-3-git-send-email-grant.likely@secretlab.ca>
- <5149D38E.9030202@gmail.com> <CACTFLAMXHA58bu_c0hRQuZ=nru63hLaixNXaiU-Xa60WD5d=ew@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 20 Mar 2013 16:40:55 +0000
-X-Google-Sender-Auth: wiumKRcCCPC2DNh_X-HMVsf42HM
-Message-ID: <CACxGe6tm1AZo72qJ2Mq7RNAU=Z5Y9T3Dn0L1YNuMFFbExC9v5w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] of: remove /proc/device-tree
-To: Daniel Mack <daniel@zonque.org>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "David S. Miller" <davem@davemloft.net>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Laxman Dewangan <ldewangan@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "lrg@ti.com" <lrg@ti.com>
+Subject: Re: [PATCH 2/2] regulator: palmas: add input supply names
+References: <1363598989-25112-1-git-send-email-ldewangan@nvidia.com> <20130320123128.GM28775@opensource.wolfsonmicro.com> <5149B19E.90400@nvidia.com> <5149DEB5.7000709@wwwdotorg.org> <20130320163833.GT28775@opensource.wolfsonmicro.com>
+In-Reply-To: <20130320163833.GT28775@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 4:24 PM, Daniel Mack <daniel@zonque.org> wrote:
-> On Wed, Mar 20, 2013 at 4:19 PM, Rob Herring <robherring2@gmail.com> wrote:
->> On 03/20/2013 09:51 AM, Grant Likely wrote:
->>> The same data is now available in sysfs, so we can remove the code
->>> that exports it in /proc and replace it with a symlink to the sysfs
->>> version.
->>>
->>> Tested on versatile qemu model and mpc5200 eval board. More testing
->>> would be appreciated.
->>
->> I would suggest testing with lshw in particular. That's the only
->> /proc/device-tree user I've come across.
->
-> kexec is another one. Not to mention various vendor scripts that aren't
-> necessarily public.
->
-> Don't such things also fall under the "we do not break userspace
-> compatibility - ever" rule?
+On 03/20/2013 10:38 AM, Mark Brown wrote:
+> On Wed, Mar 20, 2013 at 10:07:17AM -0600, Stephen Warren wrote:
+>> On 03/20/2013 06:54 AM, Laxman Dewangan wrote:
+> 
+>>> I generally send a patches on single git-send command git
+>>> send-emal --to=ldewangan@nvidia.com 0000.patch 0001.patch
+> 
+>> Don't do that; send *.patch. If you don't, then patches 2..n
+>> don't end up being "in-reply-to" patch 1, so they won't show up
+>> as a single email thread.
+> 
+> The two should be equivalent (though the glob is much easier to
+> type)? The result of the globbing ought to be what Laxman is typing
+> by hand assuming that he's getting the order correct.
 
-Correct. I've got no intention of applying this without testing the
-major users first.
-
-g.
+If you send *.patch at once, git send-email adds an in-reply-to header
+to the email which sets up the threading. If you send the patches
+1-by-1, this header isn't added, since git send-email doesn't have a
+clue what message ID it chose for patch 1. Unless you pass the
+--in-reply-to command-line option, that is.
