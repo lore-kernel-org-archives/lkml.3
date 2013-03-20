@@ -1,57 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933448Ab3CTQ3D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 12:29:03 -0400
-Received: from mail-da0-f64.google.com ([209.85.210.64]:57598 "EHLO
-	mail-da0-f64.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932536Ab3CTQ3A convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 12:29:00 -0400
-X-Greylist: delayed 4023 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Mar 2013 12:29:00 EDT
-Path: glegroupsg2000goo.googlegroups.com!not-for-mail
-Newsgroups: fa.linux.kernel
-Date: Wed, 20 Mar 2013 06:55:35 -0700 (PDT)
-In-Reply-To: <fa.XCuSmq9Zwp3+wqFO8NEjpwADVZ0@ifi.uio.no>
-Complaints-To: groups-abuse@google.com
-Injection-Info: glegroupsg2000goo.googlegroups.com; posting-host=81.89.61.168; posting-account=Wir-NgoAAAD3fHt5R_IArUNeDZQuo489
-NNTP-Posting-Host: 81.89.61.168
-References: <fa.WZVD0OA/Ooajh6BejiLf7TwBsJ8@ifi.uio.no> <fa.iIqrS6k+Vb5mLqAeL7iTsNsbKyo@ifi.uio.no>
- <fa.L0b41q+fYFZG0WOFTGKLhn/cGPA@ifi.uio.no> <fa.XCuSmq9Zwp3+wqFO8NEjpwADVZ0@ifi.uio.no>
-User-Agent: G2/1.0
-X-Google-Web-Client: true
-X-Google-IP: 81.89.61.168
+	id S933561Ab3CTQ3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 12:29:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45888 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932082Ab3CTQ3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 12:29:39 -0400
+Date: Wed, 20 Mar 2013 17:29:29 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Greg KH <greg@kroah.com>,
+        Harald Arnesen <skogtun.linux@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Thomas Meyer <thomas@m3y3r.de>, Shawn Starr <shawn.starr@rogers.com>,
+        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Imre Deak <imre.deak@intel.com>,
+        Daniel Kurtz <djkurtz@chromium.org>, dri-devel@lists.freedesktop.org,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+Subject: Re: gm45 intel gfx can generate non-MSI irq# in MSI mode (was Re:
+ [PATCH] drm/i915: stop using GMBUS IRQs on Gen4 chips (was Re: [3.9-rc1]
+ irq 16: nobody cared (was [3.9-rc1] very poor interrupt respo
+In-Reply-To: <Pine.LNX.4.44L0.1303191417440.1302-100000@iolanthe.rowland.org>
+Message-ID: <alpine.LNX.2.00.1303201728070.17295@pobox.suse.cz>
+References: <Pine.LNX.4.44L0.1303191417440.1302-100000@iolanthe.rowland.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Message-ID: <6e120226-8a3c-415f-90f2-c44e7b6bbf96@googlegroups.com>
-Subject: Re: [PATCH v3] clk: add si5351 i2c common clock driver
-From: michal.bachraty@gmail.com
-To: fa.linux.kernel@googlegroups.com
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Dom Cobley <popcornmix@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rabeeh Khoury <rabeeh@solid-run.com>, Daniel Mack <zonque@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+On Tue, 19 Mar 2013, Alan Stern wrote:
 
-Thanks for writing this driver!
-I have tested your si5351 clock driver and his tuning capabilities. It works well, it generates proper clock frequency, but when new frequency is generated, little clock gap (1ms) is generated. Si5351 datasheet and WP claims, clock tuning can be without gaps - http://www.silabs.com/Support%20Documents/TechnicalDocs/Si5350-51-Frequency-Shifting-WP.pdf
-I made some tests with Si5351A chip and I found that when tuning touch only Multisynth registers, it can tune without gaps. There is no need for soft PLL reset. I found also, accessing Multisynth registers is not atomic, so there can be another frequency at output, while not all registers are written. Writing only to one register seems to be atomic.
-I'm using this chip for master audio clock frequency generator and tuning about +-50ppm. The question is, if driver you made has capability for tuning without gaps in +-50pmm (or any other) range with about 1ppm step and if not, it is possible to add this functionality? 
+> > > That might be misleading.  It's possible that the erroneous IRQs _are_
+> > > being issued but you're simply not aware of them.  If the kernel thinks
+> > > that no device is using IRQ 16 then it will leave that IRQ disabled.
+> > 
+> > I guess I should have phrased it more precisely, but that's exactly
+> > what I expect is happening on my machine: I don't have anything on
+> > irq16 (i.e. in non-msi mode the gfx interrupt isn't shared) and hence
+> > the irq is completely disabled. Which obviously makes it impossible
+> > for me to reproduce the issue. To test that theory, is there a quick
+> > way to force-enable a given interrupt, short of just hacking up a 2nd
+> > dummy irq handler in my driver?
+> 
+> I don't know of any way.  In fact, I have been thinking of writing a 
+> test driver module, with a module parameter telling it which IRQ number 
+> to register for.  It seems like the sort of thing that would be useful 
+> to have, from time to time.
 
-Thanks,
+Ok, so how about this?
+Daniel, is it enough to make the problem appear on your system (by 
+building this into the kernel and booting with dummy-irq.irq=16)?
 
-Michal
+Thanks.
+
+
+
+
+
+From: Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH] dummy-irq: introduce a dummy IRQ handler driver
+
+This module accepts a single 'irq' parameter, which it should register for.
+
+Its sole purpose is to help with debugging of IRQ sharing problems, by
+force-enabling IRQ that would otherwise be disabled.
+
+Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+ drivers/misc/Kconfig     |    8 ++++++
+ drivers/misc/Makefile    |    1 +
+ drivers/misc/dummy-irq.c |   59 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 68 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/dummy-irq.c
+
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index e83fdfe..db24b79 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -93,6 +93,14 @@ config ATMEL_TCB_CLKSRC_BLOCK
+ 	  TC can be used for other purposes, such as PWM generation and
+ 	  interval timing.
+ 
++config DUMMY_IRQ
++	tristate "Dummy IRQ handler"
++	default n
++	---help---
++	  This module accepts a single 'irq' parameter, which it should register for.
++	  Its sole purpose is to help with debugging of IRQ sharing problems, by
++	  force-enabling IRQ that would otherwise be disabled.
++
+ config IBM_ASM
+ 	tristate "Device driver for IBM RSA service processor"
+ 	depends on X86 && PCI && INPUT
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 35a1463..28ff261 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -13,6 +13,7 @@ obj-$(CONFIG_ATMEL_TCLIB)	+= atmel_tclib.o
+ obj-$(CONFIG_BMP085)		+= bmp085.o
+ obj-$(CONFIG_BMP085_I2C)	+= bmp085-i2c.o
+ obj-$(CONFIG_BMP085_SPI)	+= bmp085-spi.o
++obj-$(CONFIG_DUMMY_IRQ)		+= dummy-irq.o
+ obj-$(CONFIG_ICS932S401)	+= ics932s401.o
+ obj-$(CONFIG_LKDTM)		+= lkdtm.o
+ obj-$(CONFIG_TIFM_CORE)       	+= tifm_core.o
+diff --git a/drivers/misc/dummy-irq.c b/drivers/misc/dummy-irq.c
+new file mode 100644
+index 0000000..4fc13e0
+--- /dev/null
++++ b/drivers/misc/dummy-irq.c
+@@ -0,0 +1,59 @@
++/*
++ * Dummy IRQ handler driver.
++ *
++ * This module only registers itself as a handler that is specified to it
++ * by the 'irq' parameter.
++ *
++ * The sole purpose of this module is to help with debugging of systems on
++ * which spurious IRQs cause the IRQ to be disabled.
++ *
++ * Copyright (C) 2013 Jiri Kosina
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ */
++#include <linux/module.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++
++static int irq;
++
++static irqreturn_t dummy_interrupt(int irq, void *dev_id)
++{
++	static int count = 0;
++
++	if (count == 0) {
++		printk("dummy-irq: interrupt occured on IRQ %d\n", irq);
++		count++;
++	}
++
++	return IRQ_NONE;
++}
++
++static int __init dummy_irq_init(void)
++{
++	if (request_irq(irq, &dummy_interrupt, IRQF_SHARED, "dummy_irq", &irq)) {
++		printk(KERN_ERR "dummy-irq: cannot register IRQ %d\n", irq);
++		return -EIO;
++	}
++	printk(KERN_INFO "dummy-irq: registered for IRQ %d\n", irq);
++	return 0;
++}
++
++static void __exit dummy_irq_exit(void)
++{
++	printk(KERN_INFO "dummy-irq unloaded\n");
++	free_irq(irq, &irq);
++	return;
++}
++
++module_init(dummy_irq_init);
++module_exit(dummy_irq_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Jiri Kosina");
++module_param_named(irq, irq, uint, 0444);
++MODULE_PARM_DESC(irq, "The IRQ to register for");
+
+-- 
+Jiri Kosina
+SUSE Labs
