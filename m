@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757815Ab3CTA5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 20:57:37 -0400
-Received: from mga01.intel.com ([192.55.52.88]:44085 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753258Ab3CTA5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 20:57:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,876,1355126400"; 
-   d="scan'208";a="305543723"
-Date: Wed, 20 Mar 2013 01:56:52 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Simon Glass <sjg@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Rob Landley <rob@landley.net>,
-        Felipe Balbi <balbi@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Luigi Semenzato <semenzato@chromium.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Che-Liang Chiou <clchiou@chromium.org>,
-        Jonathan Kliegman <kliegs@chromium.org>, linux-input@vger.kernel.org,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Alban Bedel <alban.bedel@avionic-design.de>,
-        Roland Stigge <stigge@antcom.de>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-doc@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [PATCH v6 0/6] Add ChromeOS Embedded Controller support
-Message-ID: <20130320005652.GC26903@zurbaran>
-References: <1361830121-32284-1-git-send-email-sjg@chromium.org>
+	id S933396Ab3CTA5l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 20:57:41 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44222 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753258Ab3CTA5i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 20:57:38 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-16-5149097f3aee
+From: Namhyung Kim <namhyung@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 3/9] perf util: Get rid of write_or_die() from trace-event-info.c
+References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
+	<1363683224-28804-4-git-send-email-namhyung@kernel.org>
+	<1363703711.5938.20.camel@gandalf.local.home>
+	<1363704594.22553.56.camel@laptop>
+	<1363705197.5938.31.camel@gandalf.local.home>
+	<1363705443.22553.60.camel@laptop>
+Date: Wed, 20 Mar 2013 09:57:35 +0900
+In-Reply-To: <1363705443.22553.60.camel@laptop> (Peter Zijlstra's message of
+	"Tue, 19 Mar 2013 16:04:03 +0100")
+Message-ID: <87mwtyj3b4.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361830121-32284-1-git-send-email-sjg@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon,
+On Tue, 19 Mar 2013 16:04:03 +0100, Peter Zijlstra wrote:
+> On Tue, 2013-03-19 at 10:59 -0400, Steven Rostedt wrote:
+>> On Tue, 2013-03-19 at 15:49 +0100, Peter Zijlstra wrote:
+>> > On Tue, 2013-03-19 at 10:35 -0400, Steven Rostedt wrote:
+>> > > What about:
+>> > >         int err = 0;
+>> > > 
+>> > >         err += tracing_data_header();
+>> > >         err += read_header_files();
+>> > >         [...]
+>> > > 
+>> > >         if (err < 0) {
+>> > >                 free(tdata);
+>> > >                 tdata = NULL;
+>> > >         }
+>> > > 
+>> > > Also, is the only clean up needed be freeing tdata?
+>> > 
+>> > I always use err |= foo() and if (err) but I suppose it doesn't matter
+>> > the original error codes are lost both ways which doesn't seem to be a
+>> > problem here.
+>> 
+>> err |= foo() is fine too. Both are better that err1, err2, err3, ...,
+>> errN :-)
+>
+> <whinge>
+>
+> The += thing has a problem where functions can return both positive and
+> negative values, you could get an accidental 0 (success) but coupled
+> with the proposed <0 test you get a much larger accident space :-)
+>
+> And while totally hideous the err1..errN case preserves the actual
+> return codes if one would actually need those.
+>
+> </whinge>
+>
+> /me crawls back under his rock noaw :-)
 
-On Mon, Feb 25, 2013 at 02:08:35PM -0800, Simon Glass wrote:
-> The ChromeOS Embedded Controller (EC) is an Open Source EC implementation
-> used on ARM and Intel Chromebooks. Current implementations use a Cortex-M3
-> connected on a bus (such as I2C, SPI, LPC) to the AP. A separate interrupt
-> line is used to indicate when the EC needs service.
-All 6 patches applied to my mfd-next tree, thanks a lot.
+Sorry for the ugliness, forgot to update the code before sending ;-)
 
-Cheers,
-Samuel.
+So I'll convert them to err |= foo() style as I don't care about the
+actual return value at this time.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Thanks,
+Namhyung
