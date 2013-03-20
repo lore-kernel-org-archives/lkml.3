@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531Ab3CTT0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 15:26:50 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42293 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763Ab3CTT0s (ORCPT
+	id S1757894Ab3CTT1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 15:27:25 -0400
+Received: from madcap2.tricolour.ca ([204.225.221.36]:41816 "EHLO
+	madcap2.tricolour.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605Ab3CTT1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 15:26:48 -0400
-Date: Wed, 20 Mar 2013 19:26:04 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Oliver Neukum <oneukum@suse.de>,
-        Michal Marek <mmarek@suse.cz>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pciehp: Add pciehp_surprise module option
-Message-ID: <20130320192604.GA11660@srcf.ucam.org>
-References: <s5h38vqjhk6.wl%tiwai@suse.de>
- <20130320175234.GA8948@srcf.ucam.org>
- <s5hppytq430.wl%tiwai@suse.de>
- <20130320191250.GA11262@srcf.ucam.org>
- <s5hmwtxq3ic.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hmwtxq3ic.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 20 Mar 2013 15:27:23 -0400
+X-Greylist: delayed 491 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Mar 2013 15:27:23 EDT
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Cc: Richard Guy Briggs <rgb@redhat.com>
+Subject: [PATCH] [BZ905179] audit: omit check for uid and gid validity in audit rules and data
+Date: Wed, 20 Mar 2013 15:18:17 -0400
+Message-Id: <1363807097-13073-1-git-send-email-rgb@redhat.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 08:23:39PM +0100, Takashi Iwai wrote:
-> At Wed, 20 Mar 2013 19:12:50 +0000,
-> Matthew Garrett wrote:
-> > On Wed, Mar 20, 2013 at 08:11:15PM +0100, Takashi Iwai wrote:
-> > > I'm afraid that it's too radical to enable always.
-> > 
-> > Why?
-> 
-> Because I'm conservative :)
-> Well, dunno.  It's just my feeling without deep thought.
+audit rule additions containing "-F auid!=4294967295" were failing with EINVAL.
 
-Adding a parameter means it's broken until people discover that they 
-need to pass a parameter to make it work, and many people will just be 
-stuck with it not working. It really should be the last resort.
+UID_INVALID (and GID_INVALID) is actually a valid uid (gid) for setting and
+testing against audit rules.  Remove the check for invalid uid and gid when
+parsing rules and data for logging.
 
-> > > Or, what about to check this bit only for disable path?
-> > 
-> > What happens if you unplug the device on one of the affected machines?
-> 
-> It continues working.  I mean, the PCI device is still there after
-> unplug, but the Realtek driver unmounts it smoothly.  Re-plugging also
-> works, too.  So, the handling via pciehp is needed only for the very
-> first time to register the PCI device.
+Revert part of ca57ec0f00c3f139c41bf6b0a5b9bcc95bbb2ad7 (2012-09-11) to fix
+this.
 
-But if I plug in a different device, things will be broken, right?
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ kernel/auditfilter.c |   12 ------------
+ 1 files changed, 0 insertions(+), 12 deletions(-)
 
+diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+index f9fc54b..457ee39 100644
+--- a/kernel/auditfilter.c
++++ b/kernel/auditfilter.c
+@@ -360,10 +360,7 @@ static struct audit_entry *audit_rule_to_entry(struct audit_rule *rule)
+ 			/* bit ops not implemented for uid comparisons */
+ 			if (f->op == Audit_bitmask || f->op == Audit_bittest)
+ 				goto exit_free;
+-
+ 			f->uid = make_kuid(current_user_ns(), f->val);
+-			if (!uid_valid(f->uid))
+-				goto exit_free;
+ 			break;
+ 		case AUDIT_GID:
+ 		case AUDIT_EGID:
+@@ -372,10 +369,7 @@ static struct audit_entry *audit_rule_to_entry(struct audit_rule *rule)
+ 			/* bit ops not implemented for gid comparisons */
+ 			if (f->op == Audit_bitmask || f->op == Audit_bittest)
+ 				goto exit_free;
+-
+ 			f->gid = make_kgid(current_user_ns(), f->val);
+-			if (!gid_valid(f->gid))
+-				goto exit_free;
+ 			break;
+ 		case AUDIT_PID:
+ 		case AUDIT_PERS:
+@@ -469,10 +463,7 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+ 			/* bit ops not implemented for uid comparisons */
+ 			if (f->op == Audit_bitmask || f->op == Audit_bittest)
+ 				goto exit_free;
+-
+ 			f->uid = make_kuid(current_user_ns(), f->val);
+-			if (!uid_valid(f->uid))
+-				goto exit_free;
+ 			break;
+ 		case AUDIT_GID:
+ 		case AUDIT_EGID:
+@@ -482,10 +473,7 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+ 			/* bit ops not implemented for gid comparisons */
+ 			if (f->op == Audit_bitmask || f->op == Audit_bittest)
+ 				goto exit_free;
+-
+ 			f->gid = make_kgid(current_user_ns(), f->val);
+-			if (!gid_valid(f->gid))
+-				goto exit_free;
+ 			break;
+ 		case AUDIT_PID:
+ 		case AUDIT_PERS:
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.1
+
