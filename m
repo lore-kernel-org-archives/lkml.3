@@ -1,155 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983Ab3CTH6B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 03:58:01 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:55091 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101Ab3CTH56 (ORCPT
+	id S932338Ab3CTIAM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 04:00:12 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41500 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751962Ab3CTIAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 03:57:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130315154151.GA3887@redhat.com>
-References: <20130314182815.GB24238@redhat.com>
-	<CALLzPKZgSjtodeikffsRyZrq5eS92ziLm3NdjWmD878xL_kFVw@mail.gmail.com>
-	<20130314203028.GE24238@redhat.com>
-	<20130314203703.GF24238@redhat.com>
-	<CALLzPKb646eXYCLrgtuNFYx_Y6dWdwNWZM1whJPR1wZBxbVY6w@mail.gmail.com>
-	<20130315154151.GA3887@redhat.com>
-Date: Wed, 20 Mar 2013 09:57:57 +0200
-Message-ID: <CALLzPKa+7tmpnKt-b_g7p=pdWqutNT=71DbJSmY04TqVRdXrQw@mail.gmail.com>
-Subject: Re: [RFC PATCH] integrity: Use a new type for asymmetric signature
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 20 Mar 2013 04:00:10 -0400
+Message-ID: <1363766403.2373.3.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] x86/efi: pull NV+BS variables out before we exit boot
+ services
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-efi@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 20 Mar 2013 08:00:03 +0000
+In-Reply-To: <20130319231756.GA21071@srcf.ucam.org>
+References: <20130319014850.GA28934@srcf.ucam.org>
+	 <1363680885.2377.11.camel@dabdike.int.hansenpartnership.com>
+	 <20130319163531.GA10879@srcf.ucam.org>
+	 <1363713447.2377.60.camel@dabdike.int.hansenpartnership.com>
+	 <20130319172506.GA11969@srcf.ucam.org>
+	 <1363717411.2377.68.camel@dabdike.int.hansenpartnership.com>
+	 <20130319182810.GA13003@srcf.ucam.org>
+	 <1363718456.2377.71.camel@dabdike.int.hansenpartnership.com>
+	 <20130319185003.GA13301@srcf.ucam.org>
+	 <1363734031.2377.77.camel@dabdike.int.hansenpartnership.com>
+	 <20130319231756.GA21071@srcf.ucam.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.6.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 5:41 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Thu, Mar 14, 2013 at 11:08:45PM +0200, Kasatkin, Dmitry wrote:
->> On Thu, Mar 14, 2013 at 10:37 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> > On Thu, Mar 14, 2013 at 04:30:28PM -0400, Vivek Goyal wrote:
->> >
->> > [..]
->> >> I thought explicitly using signature format is more intutive. Exporting
->> >> signature version is not. I personally associate versioning with minor
->> >> changes like addition of some fields etc.
->> >
->> > For instance, you might want to add some fields to  signature_v2_hdr down
->> > the line. I think even after that change, it still remains "asymmetric
->> > signature" just that structure size changes and there is additional
->> > info. If there is versioning info assciated with signature type
->> > ASYMMETRIC, we could simple bump it to 1.1 or whatever and keep the
->> > version detail internal to ima/integrity subsystem.
->> >
->>
->> Yes, it will make some things cleaner.
->
-> So do you agree that every new signature format should have a new entry
-> and we can introduce new signature type for asymmetric signature.
->
+On Tue, 2013-03-19 at 23:17 +0000, Matthew Garrett wrote:
+> On Tue, Mar 19, 2013 at 11:00:31PM +0000, James Bottomley wrote:
+> > On Tue, 2013-03-19 at 18:50 +0000, Matthew Garrett wrote:
+> > > Well, that somewhat complicates implementation - we'd be encrypting the 
+> > > entire contents of memory except for the key that we're using to encrypt 
+> > > memory. Keeping the public key away from userspace avoids having to care 
+> > > about that.
+> > 
+> > I don't quite understand what you're getting at: the principle of public
+> > key cryptography is that you can make the public key, well public.  You
+> > only need to guard the private key.
+> 
+> Ok, so let's just rephrase it as asymmetric cryptography. The aim is to 
+> ensure that there's never a situation where userspace can decrypt a 
+> hibernation file, modify it and reencrypt it. So, shim (or whatever) 
+> generates a keypair. The encryption key is passed to the kernel being 
+> booted. The decryption key is stashed in a variable in order to be 
+> passed to the resume kernel.
+> 
+> If the decryption key is available to userspace then the kernel needs to 
+> discard the encryption key during image write-out - otherwise the 
+> encryption key will be in the encrypted image. If the decryption key 
+> isn't available to userspace then this isn't a concern.
+> 
+> If the decryption key *is* available to userspace (as it would be in 
+> your case), there's a requirement to discard the encryption key during 
+> the hibernation process. This isn't impossible, but it does add a little 
+> to the complexity.
 
-Hi Vivek,
+I agree with this.  But I do think the volatile secret key scheme, where
+you discard the key immediately after use is the more secure one because
+it relies on fewer secrets (and, indeed, no secrets at all after the
+event).  It's a case where transparency encourages better security
+architecture.
 
-I was/am a bit busy with responding.
-I will do it asap.
+James
 
-Thanks,
-Dmitry
 
->> We recently discussed with Mimi how to extend IMA with memory locking and
->> one of the ideas was to use a flag in the signature header to indicate
->> that we need
->> require memory locking. There we need new subversion of the asymmetric
->> signature type.
->
-> I have few concerns here.
->
-> - Whether a file should be mem locked or not is not file property. It
->   should not be stored in the file signature when file is being signed.
->   Whether file should be locked or not depends on the caller and that
->   in turn depends on the system environment.
->
->   For example, one can create a system where whole of the user space is
->   signed. (Extending secureboot fully to the user space). I think in that
->   system one might not need to lock executables/files in memory.
->
-> - IMA should not be mmaping files in process address space. IMA does not
->   know what should be mapped where. For example, executable files.
->   Respective binary loader knows what sections of the file should be
->   mapped at what address.
->
->   IIUC, do_mmap_pgoff() will map file at first suitable available address.
->
->   Secondly will IMA return with file mapped and locked or will unmap file
->   before returning. If it does not unmap then it can conflict with binary
->   loader who wants to map a section of file on a particular address which
->   is already used. And if IMA unmaps the file before returning to caller,
->   then mapping and mlocking has no benefit.
->
-> - Special hardcoded handling of BPRM_CHECK hook sounds like a kludge.
->
-> +       if (function == BPRM_CHECK && (iint->flags & IMA_DIGSIG))
-> +               iint->flags &= ~IMA_DONE_MASK;
->
->   IMA in general has the issue of direct writes to disk. If we want to solve
->   the caching issues, these should be solved in general and not be made hook
->   specific.
->
->   Even with ima_appraise_tcb policy in effect, there are vulnerabilities.
->   ima_appraise_tcb will appraise only root files and a member of group
->   "disk" can directly write to disk without being appraised and bypass all
->   the caching logic.
->
-> - Memory locking will not solve the problem of knowing what did successful
->   appraisal mean. User needs to know whether its rule got executed or not
->   and based on that it can make a decision.
->
-> I really think that it is caller who should decide whether a file should
-> be locked or not. If there is a need, caller should first map full or part
-> file at appropriate address range and lock mapped pages in memory and
-> then call into IMA for signature verification.
->
->>
->> Please have a look to 3 top patches.
->>
->> http://git.kernel.org/cgit/linux/kernel/git/kasatkin/linux-digsig.git/log/?h=working
->>
->> It is a prototype to verify signature with arbitrary hash algorithm.
->
-> Thanks. I had a quick look. Hash related improvements look fine to me.
->
->> Top patch also locks the memory if executable is verified and it has
->> asymmetric signature type.
->
-> I have concerned with ima memory locking as mentioned above. We need to
-> have some discussion here first w.r.t what problem we are solving by
-> locking files on bprm_check hook and whether it is appropriate to do
-> it in IMA or not.
->
->> This unconditional locking is just for development and we might use
->> mlock bit from signature header.
->
-> As mentioned above, I have concerns here. Whether a file should be
-> memlocked or not is not a property of file or file signature.
->
->> Notice, that patch reset appraisal status when we get BPRM check and
->> there is a signature.
->
-> This is also shouds like a kludge. Why BPRM_CHECK only is special. Same
-> problem will exist with any other measurement hook, isn't it.
->
->>
->> BTW, do you have a kernel repository somewhere.
->> It is often easier to understand and discuss when seeing "complete"
->> set of commits.
->
-> No, I don't have yet. The moment I have something (even in raw form), I
-> will post patches as RFC. If things still don't work, I will setup a
-> repository somewhere.
->
-> Thanks
-> Vivek
