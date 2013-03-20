@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab3CTWCv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 18:02:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46740 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab3CTWCu (ORCPT
+	id S1753005Ab3CTWEV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 18:04:21 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:63093 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308Ab3CTWEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 18:02:50 -0400
-Date: Wed, 20 Mar 2013 15:02:48 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Hampson, Steven T" <steven.t.hampson@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH} mm: Merging memory blocks resets mempolicy
-Message-Id: <20130320150248.116db8557253509972bcceda@linux-foundation.org>
-In-Reply-To: <CD6BFEA8.10FFB%steven.t.hampson@intel.com>
-References: <CD6BFEA8.10FFB%steven.t.hampson@intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Mar 2013 18:04:20 -0400
+MIME-Version: 1.0
+Date: Wed, 20 Mar 2013 16:04:19 -0600
+Message-ID: <CAKTPYJQeCW2fGy3bb6G2uxeQN2WYgeA63_7Lwt9ytpcwZwrnQA@mail.gmail.com>
+Subject: Re: Linux 3.0.70
+From: Andrew Collins <bsderandrew@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Mar 2013 06:13:42 +0000 "Hampson, Steven T" <steven.t.hampson@intel.com> wrote:
+Kees Cook (1):
+      signal: always clear sa_restorer on execve
 
-> Using mbind to change the mempolicy to MPOL_BIND on several adjacent
-> mmapped blocks
-> may result in a reset of the mempolicy to MPOL_DEFAULT in vma_adjust.
-> 
-> ...
->
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -820,7 +820,7 @@ again:			remove_next = 1 + (end > next->vm_end);
->  		if (next->anon_vma)
->  			anon_vma_merge(vma, next);
->  		mm->map_count--;
-> -		mpol_put(vma_policy(next));
-> +		vma_set_policy(vma, vma_policy(next));
->  		kmem_cache_free(vm_area_cachep, next);
->  		/*
->  		 * In mprotect's case 6 (see comments on vma_merge),
+This commit seems to cause the following build breakage on MIPS in 3.0.70:
 
-Is this missing an mpol_put(vma_policy(vma))?
+kernel/signal.c: In function 'flush_signal_handlers':
+kernel/signal.c:441:9: error: 'struct sigaction' has no member named
+'sa_restorer'
+make[3]: *** [kernel/signal.o] Error 1
+make[2]: *** [kernel] Error 2
+make[2]: *** Waiting for unfinished jobs....
+
+I'm testing with a variety of additional patches applied and it's a
+bit difficult to test vanilla, but this looks unrelated to my local
+patches.  Looks like MIPS defines SA_RESTORER but doesn't have a
+sa_restorer in sigaction so:
+
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -437,6 +437,9 @@ flush_signal_handlers(struct task_struct *t, int
+force_default)
+                if (force_default || ka->sa.sa_handler != SIG_IGN)
+                        ka->sa.sa_handler = SIG_DFL;
+                ka->sa.sa_flags = 0;
++#ifdef SA_RESTORER
++               ka->sa.sa_restorer = NULL;
++#endif
+                sigemptyset(&ka->sa.sa_mask);
+                ka++;
+        }
+
+goes kaboom.
+
+Andrew Collins
