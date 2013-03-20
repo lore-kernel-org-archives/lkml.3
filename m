@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933039Ab3CTSm3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 14:42:29 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:55581 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932551Ab3CTSm1 (ORCPT
+	id S932356Ab3CTSnq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 14:43:46 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60084 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754593Ab3CTSno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 14:42:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130320183523.GA29365@redhat.com>
-References: <20130307180139.GD29601@htj.dyndns.org>
-	<20130307180332.GE29601@htj.dyndns.org>
-	<20130307191242.GA18265@redhat.com>
-	<20130307193820.GB3209@htj.dyndns.org>
-	<513A9A67.60909@huawei.com>
-	<20130309032936.GT14556@mtj.dyndns.org>
-	<513AE918.7020704@huawei.com>
-	<20130319220246.GR3042@htj.dyndns.org>
-	<514909A0.4030808@huawei.com>
-	<20130320150351.GW3042@htj.dyndns.org>
-	<20130320183523.GA29365@redhat.com>
-Date: Wed, 20 Mar 2013 11:42:25 -0700
-X-Google-Sender-Auth: fIdBDEmG5TGrc3ruASB6dq5PBnM
-Message-ID: <CAOS58YPxGXt+iq1GZ4hryqm1Z_p+r7eRRC7ruUDDd=LQrWtAxg@mail.gmail.com>
-Subject: Re: [PATCH cgroup/for-3.10] cgroup: make cgroup_mutex outer to threadgroup_lock
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Li Zefan <lizefan@huawei.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, cgroups@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Mar 2013 14:43:44 -0400
+Date: Wed, 20 Mar 2013 14:43:41 -0400 (EDT)
+Message-Id: <20130320.144341.680730923044605208.davem@davemloft.net>
+To: hannes@cmpxchg.org
+Cc: x86@kernel.org, akpm@linux-foundation.org, ben@decadent.org.uk,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/5] sparse-vmemmap: specify vmemmap population range
+ in bytes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1363802612-32127-3-git-send-email-hannes@cmpxchg.org>
+References: <1363802612-32127-1-git-send-email-hannes@cmpxchg.org>
+	<1363802612-32127-3-git-send-email-hannes@cmpxchg.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 20 Mar 2013 11:43:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 11:35 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> then we need "do not abuse ->cred_guard_mutex in threadgroup_lock()"
-> acked by you and Li. Please let me know if I should resend it.
+From: Johannes Weiner <hannes@cmpxchg.org>
+Date: Wed, 20 Mar 2013 14:03:29 -0400
 
-Yeah, we want that one regardless of this one. Please feel free to add
-my Acked-by (if I hadn't acked already, that is). How should your
-patch be routed? Through -mm?
+> The sparse code, when asking the architecture to populate the vmemmap,
+> specifies the section range as a starting page and a number of pages.
+> 
+> This is an awkward interface, because none of the arch-specific code
+> actually thinks of the range in terms of 'struct page' units and
+> always translates it to bytes first.
+> 
+> In addition, later patches mix huge page and regular page backing for
+> the vmemmap.  For this, they need to call vmemmap_populate_basepages()
+> on sub-section ranges with PAGE_SIZE and PMD_SIZE in mind.  But these
+> are not necessarily multiples of the 'struct page' size and so this
+> unit is too coarse.
+> 
+> Just translate the section range into bytes once in the generic sparse
+> code, then pass byte ranges down the stack.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Thanks.
+Boot tested on sparc64:
 
--- 
-tejun
+Acked-by: David S. Miller <davem@davemloft.net>
