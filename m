@@ -1,177 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757783Ab3CTCOp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 22:14:45 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31832 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752118Ab3CTCOo convert rfc822-to-8bit (ORCPT
+	id S933830Ab3CTCTu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 22:19:50 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:4006 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab3CTCTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 22:14:44 -0400
-X-ExtLoop1: 1
+	Tue, 19 Mar 2013 22:19:48 -0400
 X-IronPort-AV: E=Sophos;i="4.84,876,1355126400"; 
-   d="scan'208";a="309214866"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>
-CC: "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tboot-devel@lists.sourceforge.net" 
-	<tboot-devel@lists.sourceforge.net>,
-        Xiaoyan Zhang <xiaoyan.zhang@intel.com>,
-        "Wei, Gang" <gang.wei@intel.com>
-Subject: RE: [PATCH v2] x86: add a new SMP bring up way for tboot case
-Thread-Topic: [PATCH v2] x86: add a new SMP bring up way for tboot case
-Thread-Index: AQHNp1ZNt+1D184rVk2ifbPrsQdETJiu0mBQ
-Date: Wed, 20 Mar 2013 02:14:35 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE4E0171@SHSMSX102.ccr.corp.intel.com>
-References: <1349950267-28328-1-git-send-email-qiaowei.ren@intel.com>
-In-Reply-To: <1349950267-28328-1-git-send-email-qiaowei.ren@intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+   d="scan'208";a="30849897"
+From: Michael Bohan <mbohan@codeaurora.org>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCH] hrtimer: Don't reinitialize a cpu_base's lock on CPU_UP
+Date: Tue, 19 Mar 2013 19:19:25 -0700
+Message-Id: <1363745965-23475-1-git-send-email-mbohan@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any comments on this patch?
+The current code makes the assumption that a cpu_base lock won't
+be held if the CPU corresponding to that cpu_base is offline,
+which isn't always true.
 
-Thanks,
-Qiaowei
+If a hrtimer is not queued, then it will not be migrated by
+migrate_hrtimers() when a CPU is offlined. Therefore, the
+hrtimer's cpu_base may still point to a CPU which has
+subsequently gone offline if the timer wasn't enqueued at the
+time the CPU went down.
 
------Original Message-----
-From: Ren, Qiaowei 
-Sent: Thursday, October 11, 2012 6:11 PM
-To: Thomas Gleixner; Ingo Molnar; H. Peter Anvin; x86@kernel.org
-Cc: Maliszewski, Richard L; linux-kernel@vger.kernel.org; tboot-devel@lists.sourceforge.net; Ren, Qiaowei; Xiaoyan Zhang; Wei, Gang
-Subject: [PATCH v2] x86: add a new SMP bring up way for tboot case
+Normally this wouldn't be a problem, but a cpu_base's lock is
+blindly reinitialized each time a CPU is brought up. If a CPU is
+brought online during the period that another thread is
+performing a hrtimer operation on a stale hrtimer, then the lock
+will be reinitialized under its feet, and a SPIN_BUG() like the
+following will be observed:
 
-tboot provides a better AP wakeup mechanism based on cpu MWAIT feature for OS/VMM. With this mechanism, system will boot faster and will NOT require VT to be enabled. But it requires that OS/VMM must have support it, otherwise system can never boot up.
+<0>[   28.082085] BUG: spinlock already unlocked on CPU#0, swapper/0/0
+<0>[   28.087078]  lock: 0xc4780b40, value 0x0 .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
+<4>[   42.451150] [<c0014398>] (unwind_backtrace+0x0/0x120) from [<c0269220>] (do_raw_spin_unlock+0x44/0xdc)
+<4>[   42.460430] [<c0269220>] (do_raw_spin_unlock+0x44/0xdc) from [<c071b5bc>] (_raw_spin_unlock+0x8/0x30)
+<4>[   42.469632] [<c071b5bc>] (_raw_spin_unlock+0x8/0x30) from [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8)
+<4>[   42.479521] [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8) from [<c00aa014>] (hrtimer_start+0x20/0x28)
+<4>[   42.489247] [<c00aa014>] (hrtimer_start+0x20/0x28) from [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320)
+<4>[   42.498709] [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320) from [<c00e6440>] (rcu_idle_enter+0xa0/0xb8)
+<4>[   42.508259] [<c00e6440>] (rcu_idle_enter+0xa0/0xb8) from [<c000f268>] (cpu_idle+0x24/0xf0)
+<4>[   42.516503] [<c000f268>] (cpu_idle+0x24/0xf0) from [<c06ed3c0>] (rest_init+0x88/0xa0)
+<4>[   42.524319] [<c06ed3c0>] (rest_init+0x88/0xa0) from [<c0c00978>] (start_kernel+0x3d0/0x434)
 
-Once this mechanism is enabled, tboot will put APs waiting in MWAIT loops before launching kernel. kernel can check the new flag field in v6 tboot shared page for the hint. If the bit TB_FLAG_AP_WAKE_SUPPORT in flag field is set, kernel BSP has to write the monitored memory (tboot->ap_wake_trigger) to bring APs out of MWAIT loops. The sipi vector should be written in
-tboot->ap_wake_addr before waking up APs.
+As an example, this particular crash occurred when
+hrtimer_start() was executed on CPU #0. The code locked the
+hrtimer's current cpu_base corresponding to CPU #1. CPU #0
+then tried to switch the hrtimer's cpu_base to an optimal CPU
+which was online. In this case, it selected the cpu_base
+corresponding to CPU #3.
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-Signed-off-by: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
-Signed-off-by: Gang Wei <gang.wei@intel.com>
+Before it could proceed, CPU #1 came online and reinitialized the
+spinlock corresponding to its cpu_base. Thus now CPU #0 held a
+lock which was reinitialized. When CPU #0 finally ended up
+unlocking the old cpu_base corresponding to CPU #1 so that it
+could switch to CPU #3, we hit this SPIN_BUG() above while in
+switch_hrtimer_base().
+
+CPU #0                            CPU #1
+----                              ----
+...                               <offline>
+hrtimer_start()
+lock_hrtimer_base(base #1)
+...                               init_hrtimers_cpu()
+switch_hrtimer_base()             ...
+...                               raw_spin_lock_init(&cpu_base->lock)
+raw_spin_unlock(&cpu_base->lock)  ...
+<spin_bug>
+
+Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
 ---
- arch/x86/kernel/smpboot.c |   21 +++++++++++----------
- arch/x86/kernel/tboot.c   |   17 +++++++++++++++++
- include/linux/tboot.h     |   17 +++++++++++++++++
- 3 files changed, 45 insertions(+), 10 deletions(-)
+ kernel/hrtimer.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c index c80a33b..884c3e7 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -662,8 +662,7 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 	/* start_ip had better be page-aligned! */
- 	unsigned long start_ip = real_mode_header->trampoline_start;
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index cc47812..14be27f 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -63,6 +63,7 @@
+ DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
+ {
  
--	unsigned long boot_error = 0;
--	int timeout;
-+	int timeout, boot_error = 0;
++	.lock = __RAW_SPIN_LOCK_UNLOCKED(hrtimer_bases.lock),
+ 	.clock_base =
+ 	{
+ 		{
+@@ -1642,8 +1643,6 @@ static void __cpuinit init_hrtimers_cpu(int cpu)
+ 	struct hrtimer_cpu_base *cpu_base = &per_cpu(hrtimer_bases, cpu);
+ 	int i;
  
- 	/* Just in case we booted with a single CPU. */
- 	alternatives_enable_smp();
-@@ -710,14 +709,16 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 		}
- 	}
- 
--	/*
--	 * Kick the secondary CPU. Use the method in the APIC driver
--	 * if it's defined - or use an INIT boot APIC message otherwise:
--	 */
--	if (apic->wakeup_secondary_cpu)
--		boot_error = apic->wakeup_secondary_cpu(apicid, start_ip);
--	else
--		boot_error = wakeup_secondary_cpu_via_init(apicid, start_ip);
-+	if (!tboot_wake_up(apicid, start_ip)) {
-+		/*
-+		 * Kick the secondary CPU. Use the method in the APIC driver
-+		 * if it's defined - or use an INIT boot APIC message otherwise:
-+		 */
-+		if (apic->wakeup_secondary_cpu)
-+			boot_error = apic->wakeup_secondary_cpu(apicid, start_ip);
-+		else
-+			boot_error = wakeup_secondary_cpu_via_init(apicid, start_ip);
-+	}
- 
- 	if (!boot_error) {
- 		/*
-diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c index f84fe00..e5e50b8 100644
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -101,6 +101,8 @@ void __init tboot_probe(void)
- 	pr_debug("shutdown_entry: 0x%x\n", tboot->shutdown_entry);
- 	pr_debug("tboot_base: 0x%08x\n", tboot->tboot_base);
- 	pr_debug("tboot_size: 0x%x\n", tboot->tboot_size);
-+	if (tboot->version >= 6)
-+		pr_info("flags: 0x%08x\n", tboot->flags);
- }
- 
- static pgd_t *tboot_pg_dir;
-@@ -453,3 +455,18 @@ int tboot_force_iommu(void)
- 
- 	return 1;
- }
-+
-+int tboot_wake_up(int apicid, unsigned long sipi_vec) {
-+	if (!tboot_enabled())
-+		return 0;
-+
-+	if ((tboot->version < 6) ||
-+	    !(tboot->flags & TB_FLAG_AP_WAKE_SUPPORT))
-+		return 0;
-+
-+	tboot->ap_wake_addr = sipi_vec;
-+	tboot->ap_wake_trigger = apicid;
-+
-+	return 1;
-+}
-diff --git a/include/linux/tboot.h b/include/linux/tboot.h index c75128b..d65f7e9 100644
---- a/include/linux/tboot.h
-+++ b/include/linux/tboot.h
-@@ -124,8 +124,23 @@ struct tboot {
- 
- 	/* number of processors in wait-for-SIPI */
- 	u32 num_in_wfs;
-+
-+	/*
-+	 * version 6+ fields:
-+	 */
-+
-+	u32 flags;
-+
-+	/* phys addr of kernel/VMM SIPI vector */
-+	u64 ap_wake_addr;
-+
-+	/* kernel/VMM writes APIC ID to wake AP */
-+	u32 ap_wake_trigger;
- } __packed;
- 
-+/* kernel/VMM use INIT-SIPI-SIPI if clear, ap_wake_* if set */ #define 
-+TB_FLAG_AP_WAKE_SUPPORT 0X00000001
-+
- /*
-  * UUID for tboot data struct to facilitate matching
-  * defined as {663C8DFF-E8B3-4b82-AABF-19EA4D057A08} by tboot, which is @@ -146,6 +161,7 @@ extern void tboot_shutdown(u32 shutdown_type);  extern struct acpi_table_header *tboot_get_dmar_table(
- 				      struct acpi_table_header *dmar_tbl);  extern int tboot_force_iommu(void);
-+extern int tboot_wake_up(int apicid, unsigned long sipi_vec);
- 
- #else
- 
-@@ -156,6 +172,7 @@ extern int tboot_force_iommu(void);
- 					do { } while (0)
- #define tboot_get_dmar_table(dmar_tbl)	(dmar_tbl)
- #define tboot_force_iommu()		0
-+#define tboot_wake_up(apicid, sipi_vec) 0
- 
- #endif /* !CONFIG_INTEL_TXT */
- 
---
-1.7.9.5
+-	raw_spin_lock_init(&cpu_base->lock);
+-
+ 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+ 		cpu_base->clock_base[i].cpu_base = cpu_base;
+ 		timerqueue_init_head(&cpu_base->clock_base[i].active);
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
