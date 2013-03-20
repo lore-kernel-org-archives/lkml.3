@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab3CTNRQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 09:17:16 -0400
-Received: from [213.199.154.205] ([213.199.154.205]:23374 "EHLO
-	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751711Ab3CTNRO (ORCPT
+	id S932377Ab3CTNWD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 09:22:03 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:42551 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756274Ab3CTNWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 09:17:14 -0400
-X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT003.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: PS-2(zz98dI936eIzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2fh2a8h668h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
-Thread-Topic: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
-Thread-Index: AQHOJCAqmvU0usyXI0yxxCAslUbX+ZitxQyAgADMzQA=
-Date: Wed, 20 Mar 2013 13:15:55 +0000
-Message-ID: <1363785354.2553.15.camel@x230.sbx07502.somerma.wayport.net>
-References: <1363642353-30749-1-git-send-email-matthew.garrett@nebula.com>
-	 <51490ABD.3050205@zytor.com>
-In-Reply-To: <51490ABD.3050205@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <DC5092F7787488468759C704BBD7BF60@namprd05.prod.outlook.com>
+	Wed, 20 Mar 2013 09:22:01 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+X-Originating-IP: [114.40.19.15]
+In-Reply-To: <1363779113-8776-1-git-send-email-richard.genoud@gmail.com>
+References: <1363779113-8776-1-git-send-email-richard.genoud@gmail.com>
+Date: Wed, 20 Mar 2013 21:21:59 +0800
+Message-ID: <CAFRkauA3_wOMvn05q4nRBA7_S2UnkUs6T1ma8H91o_uFQ-9zxg@mail.gmail.com>
+Subject: Re: [PATCH] BUG: pinmux: release only taken pins on error
+From: Axel Lin <axel.lin@ingics.com>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2KDHHGl032157
 
-On Tue, 2013-03-19 at 18:02 -0700, H. Peter Anvin wrote:
+2013/3/20 Richard Genoud <richard.genoud@gmail.com>:
+> commit e38d457de7be63e6ced1ea254aa51466deb1fef0
+> pinctrl: pinmux: Release all taken pins in pinmux_enable_setting
+>
+> Introduced a bug in the release pin mechanism.
+> All the pins (taken or not) where released.
+> For instance, if a i2c function has already taken pins 5 and 6.
+> And the pins of function PHY are requested (pins 3 4 5 6 7).
+> The pins 3 and 4 will be taken, pin 5 is already taken, so the function
+> fails.
+> And we have pins 3 and 4 release, which is ok. But also pins 5 and 6 !.
+> And also pin 7 (which will have its mux_usecount to -1...)
+>
+> This patch reset the original behaviour.
+>
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+> ---
+>  drivers/pinctrl/pinmux.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+> index 1a00658..917e830 100644
+> --- a/drivers/pinctrl/pinmux.c
+> +++ b/drivers/pinctrl/pinmux.c
+> @@ -409,6 +409,8 @@ int pinmux_enable_setting(struct pinctrl_setting const *setting)
+>                         dev_err(pctldev->dev,
+>                                 "could not request pin %d on device %s\n",
+>                                 pins[i], pinctrl_dev_get_name(pctldev));
+> +                       /* On error release *only* taken pins */
+> +                       num_pins = i - 1; /* this pin just failed */
+This seems pointless, in the goto err_pin_request path, the code does
+not use num_pins variable at all.
 
-> Looking at it in detail, EVERYTHING in CAP_SYS_RAWIO has the possibility
-> of compromising the kernel, because they let device drivers be bypassed,
-> which means arbitrary DMA, which means you have everything.
+>                         goto err_pin_request;
 
-Having checked again, I don't think this is true. The most obvious case
-is libata, which uses CAP_SYS_RAWIO to limit the ability to send raw ATA
-commands. Being able to do so clearly permits userspace to avoid any
-kind of policy the vfs has put in place, but there's no obvious way for
-the user to modify the running kernel. Are you suggesting that removing
-the CAP_SYS_RAWIO check there would be reasonable?
+see the code in err_pin_request,
+it actually does "while (--i>-0", so it won't call pin_free for the
+just failed pin.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+err_pin_request:
+        /* On error release all taken pins */
+        while (--i >= 0)
+                pin_free(pctldev, pins[i], NULL);
+
+        return ret;
