@@ -1,69 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab3CTRqe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 13:46:34 -0400
-Received: from gate.crashing.org ([63.228.1.57]:51217 "EHLO gate.crashing.org"
+	id S1753016Ab3CTRtu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 13:49:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15672 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab3CTRqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 13:46:33 -0400
-Message-ID: <1363801579.17680.3.camel@pasglop>
-Subject: Re: [PATCH 1/2] of: Make device nodes kobjects so they show up in
- sysfs
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Wed, 20 Mar 2013 18:46:19 +0100
-In-Reply-To: <20130320165620.GB28307@kroah.com>
-References: <1363791074-16415-1-git-send-email-grant.likely@secretlab.ca>
-	 <1363791074-16415-2-git-send-email-grant.likely@secretlab.ca>
-	 <1363791432.12701.8.camel@pasglop> <20130320165620.GB28307@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751223Ab3CTRtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 13:49:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,880,1355126400"; 
+   d="scan'208";a="282357441"
+Date: Wed, 20 Mar 2013 10:49:47 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH] usb: xhci: Fix TRB transfer length macro used for Event
+ TRB.
+Message-ID: <20130320174947.GB31929@xanatos>
+References: <1363774720-13187-1-git-send-email-gautam.vivek@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363774720-13187-1-git-send-email-gautam.vivek@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-20 at 09:56 -0700, Greg Kroah-Hartman wrote:
-> > Unfortunately they occasionally are... VPDs can be pretty big for
-> > example.
+On Wed, Mar 20, 2013 at 03:48:40PM +0530, Vivek Gautam wrote:
+> Use proper macro while extracting TRB transfer length from
+> Transfer event TRBs. Adding a macro EVENT_TRB_LEN (bits 0:23)
+> for the same, and use it instead of TRB_LEN (bits 0:16) in
+> case of event TRBs.
+
+Thanks for the patch!  Comments below.
+
+> Signed-off-by: Vivek gautam <gautam.vivek@samsung.com>
+> ---
+>  drivers/usb/host/xhci-ring.c |   45 +++++++++++++++++++++++------------------
+>  drivers/usb/host/xhci.h      |    4 +++
+>  2 files changed, 29 insertions(+), 20 deletions(-)
 > 
-> If the attributes are binary blobs, use the binary file capability of
-> sysfs to properly handle them.
+> diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+> index 8828754..fe59a30 100644
+> --- a/drivers/usb/host/xhci-ring.c
+> +++ b/drivers/usb/host/xhci-ring.c
+> @@ -2027,8 +2027,8 @@ static int process_ctrl_td(struct xhci_hcd *xhci, struct xhci_td *td,
+>  		if (event_trb != ep_ring->dequeue &&
+>  				event_trb != td->last_trb)
+>  			td->urb->actual_length =
+> -				td->urb->transfer_buffer_length
+> -				- TRB_LEN(le32_to_cpu(event->transfer_len));
+> +				td->urb->transfer_buffer_length -
+> +				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
 
-Except that we don't know that ... we have properties which comes all as
-"blobs", only the consumers can interpret what they contain. Tools like
-lsprop or dtc do have some built-in smarts to differentiate for example
-strings, simple numbers and blobs based roughly on heuristics of content
-& size but that's purely for the sake of pretty printing.
+This looks fine.
 
-Something like /proc/device-tree (or a sysfs equivalent) has no way
-really to know what's in there. So basically they should *all* be binary
-blobs.
+>  		else
+>  			td->urb->actual_length = 0;
+>  
+> @@ -2060,7 +2060,7 @@ static int process_ctrl_td(struct xhci_hcd *xhci, struct xhci_td *td,
+>  		/* Maybe the event was for the data stage? */
+>  			td->urb->actual_length =
+>  				td->urb->transfer_buffer_length -
+> -				TRB_LEN(le32_to_cpu(event->transfer_len));
+> +				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
 
-> > > Second, all normal sysfs attributes report their size as 4096 bytes
-> > > instead of the actual property size reported in /proc/device-tree. It is
-> > > possible that this change will cause some userspace tools to break.
-> > 
-> > This is btw a complete idiocy of sysfs and should/could be fixed.
-> 
-> How can sysfs change this?  It doesn't know the size of the attribute
-> ahead of time, and it can change depending on what happens in the
-> system.  So we default to a page size, which is the largest size an
-> attribute can be.
+Fine
 
-That's true for some attributes I suppose and I while I do understand
-the difficulty there would be in calculating all the sizes on every
-stat, it's still gross, especially for those plenty of attributes who
-do have a fixed size.
+>  			xhci_dbg(xhci, "Waiting for status "
+>  					"stage event\n");
+>  			return 0;
+> @@ -2096,7 +2096,7 @@ static int process_isoc_td(struct xhci_hcd *xhci, struct xhci_td *td,
+>  	/* handle completion code */
+>  	switch (trb_comp_code) {
+>  	case COMP_SUCCESS:
+> -		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0) {
+> +		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) == 0) {
 
-In our case, we do know the size, we should expose it.
+Fine
 
-Cheers,
-Ben.
+>  			frame->status = 0;
+>  			break;
+>  		}
+> @@ -2137,11 +2137,13 @@ static int process_isoc_td(struct xhci_hcd *xhci, struct xhci_td *td,
 
+This bit of code is looping through the endpoint ring, and cur_trb
+points to a transfer TRB on the endpoint ring.  We're adding up the
+transfer buffer lengths, up to the TRB that had a completion event.
 
+>  		     cur_seg = ep_ring->deq_seg; cur_trb != event_trb;
+>  		     next_trb(xhci, ep_ring, &cur_seg, &cur_trb)) {
+>  			if (!TRB_TYPE_NOOP_LE32(cur_trb->generic.field[3]) &&
+> -			    !TRB_TYPE_LINK_LE32(cur_trb->generic.field[3]))
+> -				len += TRB_LEN(le32_to_cpu(cur_trb->generic.field[2]));
+> +			    !TRB_TYPE_LINK_LE32(cur_trb->generic.field[3])) {
+> +				len += EVENT_TRB_LEN(le32_to_cpu
+> +						(cur_trb->generic.field[2]));
+> +			}
+
+In this case, cur_trb points to a transfer TRB, not an event TRB.  So
+this instance still needs to use the TRB_LEN macro.
+
+Adding the extra braces here makes it hard to review.  Please don't add
+extra braces, or do so in a second patch if it really bothers you.
+
+>  		}
+> -		len += TRB_LEN(le32_to_cpu(cur_trb->generic.field[2])) -
+> -			TRB_LEN(le32_to_cpu(event->transfer_len));
+> +		len += EVENT_TRB_LEN(le32_to_cpu(cur_trb->generic.field[2])) -
+> +			EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+
+Here, cur_trb points to a transfer TRB, and event points to an event
+TRB.  So you need to use the TRB_LEN macro for the first line, and the
+EVENT_TRB_LEN macro for the second line.
+
+>  
+>  		if (trb_comp_code != COMP_STOP_INVAL) {
+>  			frame->actual_length = len;
+> @@ -2199,7 +2201,7 @@ static int process_bulk_intr_td(struct xhci_hcd *xhci, struct xhci_td *td,
+>  	case COMP_SUCCESS:
+>  		/* Double check that the HW transferred everything. */
+>  		if (event_trb != td->last_trb ||
+> -				TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
+> +		    EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
+
+Fine.
+
+>  			xhci_warn(xhci, "WARN Successful completion "
+>  					"on short TX\n");
+>  			if (td->urb->transfer_flags & URB_SHORT_NOT_OK)
+> @@ -2225,20 +2227,21 @@ static int process_bulk_intr_td(struct xhci_hcd *xhci, struct xhci_td *td,
+>  	if (trb_comp_code == COMP_SHORT_TX)
+>  		xhci_dbg(xhci, "ep %#x - asked for %d bytes, "
+>  				"%d bytes untransferred\n",
+> -				td->urb->ep->desc.bEndpointAddress,
+> -				td->urb->transfer_buffer_length,
+> -				TRB_LEN(le32_to_cpu(event->transfer_len)));
+> +			      td->urb->ep->desc.bEndpointAddress,
+> +			      td->urb->transfer_buffer_length,
+> +			      EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)));
+
+Please don't change indentation.  I know it's a pain to keep lines
+within 80 chars, but I would rather have a longer line than non-standard
+indentation.  The macro change is fine.
+
+>  	/* Fast path - was this the last TRB in the TD for this URB? */
+>  	if (event_trb == td->last_trb) {
+> -		if (TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
+> +		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
+>  			td->urb->actual_length =
+>  				td->urb->transfer_buffer_length -
+> -				TRB_LEN(le32_to_cpu(event->transfer_len));
+> +				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+>  			if (td->urb->transfer_buffer_length <
+>  					td->urb->actual_length) {
+>  				xhci_warn(xhci, "HC gave bad length "
+>  						"of %d bytes left\n",
+> -					  TRB_LEN(le32_to_cpu(event->transfer_len)));
+> +					EVENT_TRB_LEN(le32_to_cpu
+> +							(event->transfer_len)));
+
+This chunk is fine.
+
+>  				td->urb->actual_length = 0;
+>  				if (td->urb->transfer_flags & URB_SHORT_NOT_OK)
+>  					*status = -EREMOTEIO;
+> @@ -2270,17 +2273,19 @@ static int process_bulk_intr_td(struct xhci_hcd *xhci, struct xhci_td *td,
+>  				cur_trb != event_trb;
+>  				next_trb(xhci, ep_ring, &cur_seg, &cur_trb)) {
+>  			if (!TRB_TYPE_NOOP_LE32(cur_trb->generic.field[3]) &&
+> -			    !TRB_TYPE_LINK_LE32(cur_trb->generic.field[3]))
+> +			    !TRB_TYPE_LINK_LE32(cur_trb->generic.field[3])) {
+>  				td->urb->actual_length +=
+> -					TRB_LEN(le32_to_cpu(cur_trb->generic.field[2]));
+> +					EVENT_TRB_LEN(le32_to_cpu
+> +						(cur_trb->generic.field[2]));
+> +		     }
+
+Again, this is walking the endpoint ring's transfer TRBs to add up the
+transferred length, and thus those last two lines should still use the
+TRB_LEN macro.
+
+Also, don't add extra braces to one-line blocks.  And why was the
+indentation on the curly braces so odd?  Please only use tabs.
+
+>  		}
+>  		/* If the ring didn't stop on a Link or No-op TRB, add
+>  		 * in the actual bytes transferred from the Normal TRB
+>  		 */
+>  		if (trb_comp_code != COMP_STOP_INVAL)
+>  			td->urb->actual_length +=
+> -				TRB_LEN(le32_to_cpu(cur_trb->generic.field[2])) -
+> -				TRB_LEN(le32_to_cpu(event->transfer_len));
+> +			  EVENT_TRB_LEN(le32_to_cpu(cur_trb->generic.field[2]))
+> +			  - EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+
+cur_trb needs to use the TRB_LEN, and event needs to use the
+EVENT_TRB_LEN macro.
+
+>  	}
+>  
+>  	return finish_td(xhci, td, event_trb, event, ep, status, false);
+> @@ -2368,7 +2373,7 @@ static int handle_tx_event(struct xhci_hcd *xhci,
+>  	 * transfer type
+>  	 */
+>  	case COMP_SUCCESS:
+> -		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0)
+> +		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) == 0)
+
+Fine.
+
+>  			break;
+>  		if (xhci->quirks & XHCI_TRUST_TX_LENGTH)
+>  			trb_comp_code = COMP_SHORT_TX;
+> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+> index f791bd0..61f71ed 100644
+> --- a/drivers/usb/host/xhci.h
+> +++ b/drivers/usb/host/xhci.h
+> @@ -972,6 +972,10 @@ struct xhci_transfer_event {
+>  	__le32	flags;
+>  };
+>  
+> +/* Transfer event TRB length bit mask */
+> +/* bits 0:23 */
+> +#define	EVENT_TRB_LEN(p)		((p) & 0xffffff)
+> +
+>  /** Transfer Event bit fields **/
+>  #define	TRB_TO_EP_ID(p)	(((p) >> 16) & 0x1f)
+>  
+> -- 
+> 1.7.6.5
+>
+
+Can you correct these and resubmit?  Thanks!
+
+Sarah Sharp
