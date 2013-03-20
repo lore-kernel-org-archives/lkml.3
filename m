@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab3CTLXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 07:23:16 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:35378 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab3CTLXP (ORCPT
+	id S932243Ab3CTLXa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 07:23:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57821 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757026Ab3CTLX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 07:23:15 -0400
-From: Richard Genoud <richard.genoud@gmail.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH] DTS at91sam9x5ek: i2c1 and i2c2 conflict with macb and lcd
-Date: Wed, 20 Mar 2013 12:22:54 +0100
-Message-Id: <1363778575-4809-1-git-send-email-richard.genoud@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Wed, 20 Mar 2013 07:23:28 -0400
+Message-ID: <51499C29.6070405@ti.com>
+Date: Wed, 20 Mar 2013 16:53:21 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>, <balbi@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <swarren@wwwdotorg.org>, <linux-tegra@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 2/7] ARM: tegra: update device trees for USB binding rework
+References: <1363609781-4045-1-git-send-email-vbyravarasu@nvidia.com> <1363609781-4045-3-git-send-email-vbyravarasu@nvidia.com>
+In-Reply-To: <1363609781-4045-3-git-send-email-vbyravarasu@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on at91sam9x5ek, macb0 is enabled, so it conflicts with i2c2 (PB4)
-same for i2c1, (conflicts with LCD).
-Moreover, only i2c0 is used on this board.
+Hi,
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
----
- arch/arm/boot/dts/at91sam9x5ek.dtsi |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
+On Monday 18 March 2013 05:59 PM, Venu Byravarasu wrote:
+> This patch updates all Tegra board files so that they contain all the
+> properties required by the updated USB DT binding. Note that this patch
+> only adds the new properties and does not yet remove the old properties,
+> in order to maintain bisectability. The old properties will be removed
+> once the driver has been updated to assume the new bindings.
+>
+> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> ---
+>   arch/arm/boot/dts/tegra20-colibri-512.dtsi |    4 +++
+>   arch/arm/boot/dts/tegra20-harmony.dts      |    8 +++---
+>   arch/arm/boot/dts/tegra20-iris-512.dts     |    4 +++
+>   arch/arm/boot/dts/tegra20-paz00.dts        |    8 +++---
+>   arch/arm/boot/dts/tegra20-seaboard.dts     |   13 +++++++---
+>   arch/arm/boot/dts/tegra20-trimslice.dts    |   12 +++++++---
+>   arch/arm/boot/dts/tegra20-ventana.dts      |    7 +++--
+>   arch/arm/boot/dts/tegra20.dtsi             |   32 +++++++++++++++++----------
+>   8 files changed, 57 insertions(+), 31 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/tegra20-colibri-512.dtsi b/arch/arm/boot/dts/tegra20-colibri-512.dtsi
+> index cb73e62..af5a7ae 100644
+> --- a/arch/arm/boot/dts/tegra20-colibri-512.dtsi
+> +++ b/arch/arm/boot/dts/tegra20-colibri-512.dtsi
+> @@ -443,6 +443,10 @@
+>   		nvidia,phy-reset-gpio = <&gpio 169 0>; /* gpio PV1 */
+>   	};
+>
+> +	usb-phy@c5004000 {
+This node doesn't have a *reg* property. So "@c5004000" is not needed. 
+This comment applies to all the nodes which doesn't have *reg* property.
 
-diff --git a/arch/arm/boot/dts/at91sam9x5ek.dtsi b/arch/arm/boot/dts/at91sam9x5ek.dtsi
-index 8a7cf1d..1128565 100644
---- a/arch/arm/boot/dts/at91sam9x5ek.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5ek.dtsi
-@@ -61,14 +61,6 @@
- 				status = "okay";
- 			};
- 
--			i2c1: i2c@f8014000 {
--				status = "okay";
--			};
--
--			i2c2: i2c@f8018000 {
--				status = "okay";
--			};
--
- 			pinctrl@fffff400 {
- 				mmc0 {
- 					pinctrl_board_mmc0: mmc0-board {
--- 
-1.7.2.5
-
+Thanks
+Kishon
