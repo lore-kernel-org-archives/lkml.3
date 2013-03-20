@@ -1,208 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933893Ab3CTHdv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 03:33:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57774 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933157Ab3CTHdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 03:33:49 -0400
-Date: Wed, 20 Mar 2013 15:33:30 +0800
-From: Asias He <asias@redhat.com>
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        rusty@rustcorp.com.au, mst@redhat.com, JBottomley@parallels.com,
-        venkateshs@google.com, pbonzini@redhat.com,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [PATCH V6 1/5] virtio-scsi: redo allocation of target data
-Message-ID: <20130320073330.GA23497@hj.localdomain>
-References: <1363762884-11000-1-git-send-email-gaowanlong@cn.fujitsu.com>
- <1363762884-11000-2-git-send-email-gaowanlong@cn.fujitsu.com>
+	id S1756087Ab3CTHeh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 03:34:37 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62346 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab3CTHeg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 03:34:36 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-e9-5149668a9fd5
+Date: Wed, 20 Mar 2013 16:35:00 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/8] sched: rename load_balance_tmpmask to
+ load_balance_cpu_active
+Message-ID: <20130320073500.GD11672@lge.com>
+References: <1360820921-2513-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1360820921-2513-7-git-send-email-iamjoonsoo.kim@lge.com>
+ <1363705261.22553.57.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363762884-11000-2-git-send-email-gaowanlong@cn.fujitsu.com>
+In-Reply-To: <1363705261.22553.57.camel@laptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 03:01:20PM +0800, Wanlong Gao wrote:
-> virtio_scsi_target_state is now empty.  We will find new uses for it in
-> the next few patches, so this patch does not drop it completely.
+On Tue, Mar 19, 2013 at 04:01:01PM +0100, Peter Zijlstra wrote:
+> On Thu, 2013-02-14 at 14:48 +0900, Joonsoo Kim wrote:
+> > This name doesn't represent specific meaning.
+> > So rename it to imply it's purpose.
+> > 
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > 
+> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > index 26058d0..e6f8783 100644
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -6814,7 +6814,7 @@ struct task_group root_task_group;
+> >  LIST_HEAD(task_groups);
+> >  #endif
+> >  
+> > -DECLARE_PER_CPU(cpumask_var_t, load_balance_tmpmask);
+> > +DECLARE_PER_CPU(cpumask_var_t, load_balance_cpu_active);
 > 
-> And as James suggested, we use entries target_alloc and target_destroy
-> in the host template to allocate and destroy the virtio_scsi_target_state
-> of each target, attach this struct to scsi_target->hostdata. Now
-> we can get at it from the sdev with scsi_target(sdev)->hostdata.
-> No messing around with fixed size arrays and bulk memory allocation
-> and no need to pass in the maximum target size as a parameter because
-> everything should now happen dynamically.
-> 
-> Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
-> Cc: linux-scsi@vger.kernel.org
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> That's not much better; how about we call it: load_balance_mask.
 
-Reviewed-by: Asias He <asias@redhat.com>
+Okay, in next spin, I will call it as load_balance_mask.
 
-> ---
->  drivers/scsi/virtio_scsi.c | 71 ++++++++++++++++------------------------------
->  1 file changed, 25 insertions(+), 46 deletions(-)
-> 
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> index b53ba9e..ffa03e8 100644
-> --- a/drivers/scsi/virtio_scsi.c
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -75,8 +75,6 @@ struct virtio_scsi {
->  
->  	/* Get some buffers ready for event vq */
->  	struct virtio_scsi_event_node event_list[VIRTIO_SCSI_EVENT_LEN];
-> -
-> -	struct virtio_scsi_target_state *tgt[];
->  };
->  
->  static struct kmem_cache *virtscsi_cmd_cache;
-> @@ -530,6 +528,25 @@ static int virtscsi_abort(struct scsi_cmnd *sc)
->  	return virtscsi_tmf(vscsi, cmd);
->  }
->  
-> +static int virtscsi_target_alloc(struct scsi_target *starget)
-> +{
-> +	struct virtio_scsi_target_state *tgt =
-> +				kmalloc(sizeof(*tgt), GFP_KERNEL);
-> +	if (!tgt)
-> +		return -ENOMEM;
-> +
-> +	spin_lock_init(&tgt->tgt_lock);
-> +
-> +	starget->hostdata = tgt;
-> +	return 0;
-> +}
-> +
-> +static void virtscsi_target_destroy(struct scsi_target *starget)
-> +{
-> +	struct virtio_scsi_target_state *tgt = starget->hostdata;
-> +	kfree(tgt);
-> +}
-> +
->  static struct scsi_host_template virtscsi_host_template = {
->  	.module = THIS_MODULE,
->  	.name = "Virtio SCSI HBA",
-> @@ -542,6 +559,8 @@ static struct scsi_host_template virtscsi_host_template = {
->  	.can_queue = 1024,
->  	.dma_boundary = UINT_MAX,
->  	.use_clustering = ENABLE_CLUSTERING,
-> +	.target_alloc = virtscsi_target_alloc,
-> +	.target_destroy = virtscsi_target_destroy,
->  };
->  
->  #define virtscsi_config_get(vdev, fld) \
-> @@ -568,20 +587,6 @@ static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
->  	virtscsi_vq->vq = vq;
->  }
->  
-> -static struct virtio_scsi_target_state *virtscsi_alloc_tgt(
-> -	struct virtio_device *vdev)
-> -{
-> -	struct virtio_scsi_target_state *tgt;
-> -	gfp_t gfp_mask = GFP_KERNEL;
-> -
-> -	tgt = kmalloc(sizeof(*tgt), gfp_mask);
-> -	if (!tgt)
-> -		return NULL;
-> -
-> -	spin_lock_init(&tgt->tgt_lock);
-> -	return tgt;
-> -}
-> -
->  static void virtscsi_scan(struct virtio_device *vdev)
->  {
->  	struct Scsi_Host *shost = (struct Scsi_Host *)vdev->priv;
-> @@ -591,28 +596,17 @@ static void virtscsi_scan(struct virtio_device *vdev)
->  
->  static void virtscsi_remove_vqs(struct virtio_device *vdev)
->  {
-> -	struct Scsi_Host *sh = virtio_scsi_host(vdev);
-> -	struct virtio_scsi *vscsi = shost_priv(sh);
-> -	u32 i, num_targets;
-> -
->  	/* Stop all the virtqueues. */
->  	vdev->config->reset(vdev);
->  
-> -	num_targets = sh->max_id;
-> -	for (i = 0; i < num_targets; i++) {
-> -		kfree(vscsi->tgt[i]);
-> -		vscsi->tgt[i] = NULL;
-> -	}
-> -
->  	vdev->config->del_vqs(vdev);
->  }
->  
->  static int virtscsi_init(struct virtio_device *vdev,
-> -			 struct virtio_scsi *vscsi, int num_targets)
-> +			 struct virtio_scsi *vscsi)
->  {
->  	int err;
->  	struct virtqueue *vqs[3];
-> -	u32 i;
->  
->  	vq_callback_t *callbacks[] = {
->  		virtscsi_ctrl_done,
-> @@ -640,18 +634,6 @@ static int virtscsi_init(struct virtio_device *vdev,
->  	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG))
->  		virtscsi_kick_event_all(vscsi);
->  
-> -	for (i = 0; i < num_targets; i++) {
-> -		vscsi->tgt[i] = virtscsi_alloc_tgt(vdev);
-> -		if (!vscsi->tgt[i]) {
-> -			err = -ENOMEM;
-> -			goto out;
-> -		}
-> -	}
-> -	err = 0;
-> -
-> -out:
-> -	if (err)
-> -		virtscsi_remove_vqs(vdev);
->  	return err;
->  }
->  
-> @@ -663,12 +645,9 @@ static int virtscsi_probe(struct virtio_device *vdev)
->  	u32 sg_elems, num_targets;
->  	u32 cmd_per_lun;
->  
-> -	/* Allocate memory and link the structs together.  */
->  	num_targets = virtscsi_config_get(vdev, max_target) + 1;
-> -	shost = scsi_host_alloc(&virtscsi_host_template,
-> -		sizeof(*vscsi)
-> -		+ num_targets * sizeof(struct virtio_scsi_target_state));
->  
-> +	shost = scsi_host_alloc(&virtscsi_host_template, sizeof(*vscsi));
->  	if (!shost)
->  		return -ENOMEM;
->  
-> @@ -678,7 +657,7 @@ static int virtscsi_probe(struct virtio_device *vdev)
->  	vscsi->vdev = vdev;
->  	vdev->priv = shost;
->  
-> -	err = virtscsi_init(vdev, vscsi, num_targets);
-> +	err = virtscsi_init(vdev, vscsi);
->  	if (err)
->  		goto virtscsi_init_failed;
->  
-> @@ -735,7 +714,7 @@ static int virtscsi_restore(struct virtio_device *vdev)
->  	struct Scsi_Host *sh = virtio_scsi_host(vdev);
->  	struct virtio_scsi *vscsi = shost_priv(sh);
->  
-> -	return virtscsi_init(vdev, vscsi, sh->max_id);
-> +	return virtscsi_init(vdev, vscsi);
->  }
->  #endif
->  
-> -- 
-> 1.8.2.rc2
-> 
+Thanks.
 
--- 
-Asias
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
