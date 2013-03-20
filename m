@@ -1,112 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab3CTIOi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 04:14:38 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:40575 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab3CTIOe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 04:14:34 -0400
-Message-ID: <1363767266.3758.4.camel@phoenix>
-Subject: [PATCH 1/2] PM / devfreq: exynos4_bus: Constify clock divider table
-From: Axel Lin <axel.lin@ingics.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 20 Mar 2013 16:14:26 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757559Ab3CTIPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 04:15:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51090 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751770Ab3CTIPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 04:15:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,876,1355126400"; 
+   d="scan'208";a="282126435"
+Date: Wed, 20 Mar 2013 09:14:56 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Simon Glass <sjg@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Rob Landley <rob@landley.net>,
+        Felipe Balbi <balbi@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Luigi Semenzato <semenzato@chromium.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Che-Liang Chiou <clchiou@chromium.org>,
+        Jonathan Kliegman <kliegs@chromium.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Sourav Poddar <sourav.poddar@ti.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Alban Bedel <alban.bedel@avionic-design.de>,
+        Roland Stigge <stigge@antcom.de>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, Bill Pemberton <wfp5p@virginia.edu>
+Subject: Re: [PATCH v6 0/6] Add ChromeOS Embedded Controller support
+Message-ID: <20130320081456.GA5939@zurbaran>
+References: <1361830121-32284-1-git-send-email-sjg@chromium.org>
+ <20130320005652.GC26903@zurbaran>
+ <20130320011211.GA5905@zurbaran>
+ <CAPnjgZ1=w5GyfGrSFG63SFTErTQQUQQiBmgC8BVMzy4kLVkPDg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPnjgZ1=w5GyfGrSFG63SFTErTQQUQQiBmgC8BVMzy4kLVkPDg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These tables are never modified, make them const.
+Hi Simon,
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/devfreq/exynos4_bus.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+On Tue, Mar 19, 2013 at 07:01:42PM -0700, Simon Glass wrote:
+> Hi Samuel,
+> 
+> On Tue, Mar 19, 2013 at 6:12 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> > On Wed, Mar 20, 2013 at 01:56:52AM +0100, Samuel Ortiz wrote:
+> >> Hi Simon,
+> >>
+> >> On Mon, Feb 25, 2013 at 02:08:35PM -0800, Simon Glass wrote:
+> >> > The ChromeOS Embedded Controller (EC) is an Open Source EC implementation
+> >> > used on ARM and Intel Chromebooks. Current implementations use a Cortex-M3
+> >> > connected on a bus (such as I2C, SPI, LPC) to the AP. A separate interrupt
+> >> > line is used to indicate when the EC needs service.
+> >> All 6 patches applied to my mfd-next tree, thanks a lot.
+> > Actually, this one fails to build when CONFIG_OF is not set:
+> >
+> > drivers/mfd/cros_ec_i2c.c:130:2: error: implicit declaration of function
+> > ‘of_device_is_available’ [-Werror=implicit-function-declaration]
+> >
+> > If the check in cros_ec_probe_i2c() is really needed then you'll need to inline
+> > of_device_is_available() into a NOP in include/linux/of.h.
+> 
+> Actually I suppose that call is not really needed. Would you like to
+> remove it, or shall I send a new patch?
+I will remove it.
 
-diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
-index 3f37f3b..45d00d1 100644
---- a/drivers/devfreq/exynos4_bus.c
-+++ b/drivers/devfreq/exynos4_bus.c
-@@ -177,7 +177,7 @@ static unsigned int exynos4x12_int_volt[][EX4x12_LV_NUM] = {
- };
- 
- /*** Clock Divider Data for Exynos4210 ***/
--static unsigned int exynos4210_clkdiv_dmc0[][8] = {
-+static const unsigned int exynos4210_clkdiv_dmc0[][8] = {
- 	/*
- 	 * Clock divider value for following
- 	 * { DIVACP, DIVACP_PCLK, DIVDPHY, DIVDMC, DIVDMCD
-@@ -191,7 +191,7 @@ static unsigned int exynos4210_clkdiv_dmc0[][8] = {
- 	/* DMC L2: 133MHz */
- 	{ 5, 1, 1, 5, 1, 1, 3, 1 },
- };
--static unsigned int exynos4210_clkdiv_top[][5] = {
-+static const unsigned int exynos4210_clkdiv_top[][5] = {
- 	/*
- 	 * Clock divider value for following
- 	 * { DIVACLK200, DIVACLK100, DIVACLK160, DIVACLK133, DIVONENAND }
-@@ -203,7 +203,7 @@ static unsigned int exynos4210_clkdiv_top[][5] = {
- 	/* ACLK200 L2: 133MHz */
- 	{ 5, 7, 7, 7, 1 },
- };
--static unsigned int exynos4210_clkdiv_lr_bus[][2] = {
-+static const unsigned int exynos4210_clkdiv_lr_bus[][2] = {
- 	/*
- 	 * Clock divider value for following
- 	 * { DIVGDL/R, DIVGPL/R }
-@@ -217,7 +217,7 @@ static unsigned int exynos4210_clkdiv_lr_bus[][2] = {
- };
- 
- /*** Clock Divider Data for Exynos4212/4412 ***/
--static unsigned int exynos4x12_clkdiv_dmc0[][6] = {
-+static const unsigned int exynos4x12_clkdiv_dmc0[][6] = {
- 	/*
- 	 * Clock divider value for following
- 	 * { DIVACP, DIVACP_PCLK, DIVDPHY, DIVDMC, DIVDMCD
-@@ -235,7 +235,7 @@ static unsigned int exynos4x12_clkdiv_dmc0[][6] = {
- 	/* DMC L4: 100MHz */
- 	{7, 1, 1, 7, 1, 1},
- };
--static unsigned int exynos4x12_clkdiv_dmc1[][6] = {
-+static const unsigned int exynos4x12_clkdiv_dmc1[][6] = {
- 	/*
- 	 * Clock divider value for following
- 	 * { G2DACP, DIVC2C, DIVC2C_ACLK }
-@@ -252,7 +252,7 @@ static unsigned int exynos4x12_clkdiv_dmc1[][6] = {
- 	/* DMC L4: 100MHz */
- 	{7, 7, 1},
- };
--static unsigned int exynos4x12_clkdiv_top[][5] = {
-+static const unsigned int exynos4x12_clkdiv_top[][5] = {
- 	/*
- 	 * Clock divider value for following
- 	 * { DIVACLK266_GPS, DIVACLK100, DIVACLK160,
-@@ -270,7 +270,7 @@ static unsigned int exynos4x12_clkdiv_top[][5] = {
- 	/* ACLK_GDL/R L4: 100MHz */
- 	{7, 7, 7, 7, 1},
- };
--static unsigned int exynos4x12_clkdiv_lr_bus[][2] = {
-+static const unsigned int exynos4x12_clkdiv_lr_bus[][2] = {
- 	/*
- 	 * Clock divider value for following
- 	 * { DIVGDL/R, DIVGPL/R }
-@@ -287,7 +287,7 @@ static unsigned int exynos4x12_clkdiv_lr_bus[][2] = {
- 	/* ACLK_GDL/R L4: 100MHz */
- 	{7, 1},
- };
--static unsigned int exynos4x12_clkdiv_sclkip[][3] = {
-+static const unsigned int exynos4x12_clkdiv_sclkip[][3] = {
- 	/*
- 	 * Clock divider value for following
- 	 * { DIVMFC, DIVJPEG, DIVFIMC0~3}
+Cheers,
+Samuel.
+
 -- 
-1.7.9.5
-
-
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
