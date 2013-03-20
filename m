@@ -1,90 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964787Ab3CTAgj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 20:36:39 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:57784 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932150Ab3CTAgh (ORCPT
+	id S933933Ab3CTAyF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 20:54:05 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43561 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932413Ab3CTAyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 20:36:37 -0400
+	Tue, 19 Mar 2013 20:54:03 -0400
+X-AuditID: 9c93016f-b7b08ae000000bbd-bd-514908a81dec
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 1/9] perf util: Let get_tracing_file() can return NULL
+References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
+	<1363683224-28804-2-git-send-email-namhyung@kernel.org>
+	<1363701261.5938.18.camel@gandalf.local.home>
+Date: Wed, 20 Mar 2013 09:53:59 +0900
+In-Reply-To: <1363701261.5938.18.camel@gandalf.local.home> (Steven Rostedt's
+	message of "Tue, 19 Mar 2013 09:54:21 -0400")
+Message-ID: <87r4jaj3h4.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CALCETrVuoa32dx0ppvwQd+gty6WTVUzDU3f7Rwuge7GArDNU9Q@mail.gmail.com>
-References: <b6b1676fd5bcd6b0ef47b0e0a1c26b1c05684135.1363291511.git.luto@amacapital.net>
- <87ehfhtftn.fsf@rustcorp.com.au> <CALCETrU+rehQzy4vVg589CGi561X_s73Xgsfp43pYZOoKvNDXQ@mail.gmail.com>
- <87sj3tsawh.fsf@rustcorp.com.au> <CALCETrUK54KViGex=V2pG8kAttsxOiDkeJUL48pk1NAhH-SdAA@mail.gmail.com>
- <87hak8qfu5.fsf@rustcorp.com.au> <CAMOw1v5AOmy38KNVfxj6OO-U0UCXST50vD0g0W5fEpNfKCpGvg@mail.gmail.com>
- <CALCETrVuoa32dx0ppvwQd+gty6WTVUzDU3f7Rwuge7GArDNU9Q@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 19 Mar 2013 20:36:16 -0400
-Message-ID: <CALCETrWLc2b+M7CP7oQVh3a03C2UqM4-MmXCN_Lcrm=QPzBwDA@mail.gmail.com>
-Subject: Re: [RFC PATCH] Allow optional module parameters
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        linux-kbuild@vger.kernel.org, Jon Masters <jcm@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 8:32 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Tue, Mar 19, 2013 at 8:26 PM, Lucas De Marchi
-> <lucas.demarchi@profusion.mobi> wrote:
->> Hi Rusty,
->>
->> On Mon, Mar 18, 2013 at 11:32 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>> Andy Lutomirski <luto@amacapital.net> writes:
->>>> On Sun, Mar 17, 2013 at 7:24 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>>>> Andy Lutomirski <luto@amacapital.net> writes:
->>>>>> On Thu, Mar 14, 2013 at 10:03 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>>>>>> Err, yes.  Don't remove module parameters, they're part of the API.  Do
->>>>>>> you have a particular example?
->>>>>>
->>>>>> So things like i915.i915_enable_ppgtt, which is there to enable
->>>>>> something experimental, needs to stay forever once the relevant
->>>>>> feature becomes non-experimental and non-optional?  This seems silly.
->>> ...
->>>>>> Having the module parameter go away while still allowing the module to
->>>>>> load seems like a good solution (possibly with a warning in the logs
->>>>>> so the user can eventually delete the parameter).
->>>>>
->>>>> Why not do that for *every* missing parameter then?  Why have this weird
->>>>> notation where the user must know that the parameter might one day go
->>>>> away?
->>>>
->>>> Fair enough.  What about the other approach, then?  Always warn if an
->>>> option doesn't match (built-in or otherwise) but load the module
->>>> anyways.
->>>
->>> What does everyone think of this?  Jon, Lucas, does this match your
->>> experience?
->>>
->>> Thanks,
->>> Rusty.
->>>
->>> Subject: modules: don't fail to load on unknown parameters.
->>>
->>> Although parameters are supposed to be part of the kernel API, experimental
->>> parameters are often removed.  In addition, downgrading a kernel might cause
->>> previously-working modules to fail to load.
->>
->> I agree with this reasoning
->>
->>>
->>> On balance, it's probably better to warn, and load the module anyway.
->>
->> However loading the module anyway would bring at least one drawback:
->> if the user made a typo when passing the option the module would load
->> anyway and he will probably not even look in the log, since there's
->> was no errors from modprobe.
->>
->> For finit_module we could put a flag to trigger this behavior and
->> propagate it to modprobe, but this is not possible with init_module().
->> I can't think in any other option right now... do you have any?
+Hi Steve,
+
+On Tue, 19 Mar 2013 09:54:21 -0400, Steven Rostedt wrote:
+> On Tue, 2013-03-19 at 17:53 +0900, Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> So that it can be used by other places.
+>> 
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>> ---
+>>  tools/perf/util/trace-event-info.c | 25 ++++++++++++++++++++++---
+>>  1 file changed, 22 insertions(+), 3 deletions(-)
+>> 
+>> diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+>> index 5729f434c5b1..f241343b7d48 100644
+>> --- a/tools/perf/util/trace-event-info.c
+>> +++ b/tools/perf/util/trace-event-info.c
+>> @@ -62,7 +62,7 @@ static const char *find_debugfs(void)
+>>  	const char *path = perf_debugfs_mount(NULL);
+>>  
+>>  	if (!path)
+>> -		die("Your kernel not support debugfs filesystem");
+>> +		pr_err("Your kernel not support debugfs filesystem");
 >
-> Have a different finit_module return value for "successfully loaded,
-> but there were warnings" perhaps?
+> "Your kernel does not support the debugfs filesystem"
+>
+> I know you just did a s/die/pr_err/ but might as well fix the grammar
+> too ;-)
 
-Never mind.  I was thinking that finit_module was new in 3.9.
+Right, will do.
 
---Andy
+>
+>>  
+>>  	return path;
+>>  }
+>> @@ -81,8 +81,12 @@ static const char *find_tracing_dir(void)
+>>  		return tracing;
+>>  
+>>  	debugfs = find_debugfs();
+>> +	if (!debugfs)
+>> +		return NULL;
+>>  
+>> -	tracing = malloc_or_die(strlen(debugfs) + 9);
+>> +	tracing = malloc(strlen(debugfs) + 9);
+>> +	if (!tracing)
+>> +		return NULL;
+>>  
+>>  	sprintf(tracing, "%s/tracing", debugfs);
+>>  
+>> @@ -99,7 +103,9 @@ static char *get_tracing_file(const char *name)
+>>  	if (!tracing)
+>>  		return NULL;
+>>  
+>> -	file = malloc_or_die(strlen(tracing) + strlen(name) + 2);
+>> +	file = malloc(strlen(tracing) + strlen(name) + 2);
+>> +	if (!file)
+>> +		return NULL;
+>
+> Should have clean up as well. That is, if file fails, we need to free
+> tracing. Otherwise there's a memory leak.
+
+Well, I'm not sure - there's a static pointer in the
+find_tracing_dir().  If we free tracing here, we'll need to reset
+tracing_found in the function also.  So I just kept it. :(
+
+>
+>>  
+>>  	sprintf(file, "%s/%s", tracing, name);
+>>  	return file;
+>> @@ -170,6 +176,9 @@ static void read_header_files(void)
+>>  	struct stat st;
+>>  
+>>  	path = get_tracing_file("events/header_page");
+>> +	if (!path)
+>> +		die("can't get tracing/events/header_page");
+>> +
+>>  	if (stat(path, &st) < 0)
+>>  		die("can't read '%s'", path);
+>>  
+>> @@ -178,6 +187,9 @@ static void read_header_files(void)
+>>  	put_tracing_file(path);
+>>  
+>>  	path = get_tracing_file("events/header_event");
+>> +	if (!path)
+>> +		die("can't get tracing/events/header_event");
+>> +
+>>  	if (stat(path, &st) < 0)
+>>  		die("can't read '%s'", path);
+>>  
+>> @@ -251,6 +263,8 @@ static void read_ftrace_files(struct tracepoint_path *tps)
+>>  	char *path;
+>>  
+>>  	path = get_tracing_file("events/ftrace");
+>> +	if (!path)
+>> +		die("can't get tracing/events/ftrace");
+>>  
+>>  	copy_event_system(path, tps);
+>>  
+>> @@ -279,6 +293,8 @@ static void read_event_files(struct tracepoint_path *tps)
+>>  	int ret;
+>>  
+>>  	path = get_tracing_file("events");
+>> +	if (!path)
+>> +		die("can't get tracing/events");
+>>  
+>>  	dir = opendir(path);
+>>  	if (!dir)
+>> @@ -343,6 +359,9 @@ static void read_ftrace_printk(void)
+>>  	int ret;
+>>  
+>>  	path = get_tracing_file("printk_formats");
+>> +	if (!path)
+>> +		die("can't get tracing/printk_formats");
+>> +
+>
+> OK, so we are just moving die to the caller? I'm fine with that. If we
+> can get the utilities to remove die, that's a big step.
+
+They'll be removed on later patches, I moved them to callers since I
+don't have proper error handling code at this time.
+
+Thanks for review,
+Namhyung
