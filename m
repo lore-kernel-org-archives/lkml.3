@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272Ab3CTB2V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 21:28:21 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:1098
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754430Ab3CTB2T (ORCPT
+	id S1757728Ab3CTB3r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 21:29:47 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56675 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754829Ab3CTB3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 21:28:19 -0400
-X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT003.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: PS2(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2fh2a8h668h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18deh18e1h1946h19b5h1ad9h1b0ah17ej1155h)
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
-Thread-Topic: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
-Thread-Index: Ac4lCiwmmvU0usyXI0yxxCAslUbX+Q==
-Date: Wed, 20 Mar 2013 01:28:06 +0000
-Message-ID: <3pfl8u1ugprwkcs5xmtjth3l.1363742692541@email.android.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [::]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <493191EDBCC13545A1048D9E1A896040@nebula.com>
+	Tue, 19 Mar 2013 21:29:46 -0400
+Message-ID: <51491107.5060001@wwwdotorg.org>
+Date: Tue, 19 Mar 2013 19:29:43 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+To: Andreas Bombe <aeb@debian.org>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Regression] process hangs due to "USB: EHCI: work around silicon
+ bug in Intels EHCI controllers"
+References: <20130320000336.GA8912@amos.fritz.box>
+In-Reply-To: <20130320000336.GA8912@amos.fritz.box>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2K1SNm5029713
 
-Mm. The question is whether we can reliably determine the ranges a device should be able to access without having to trust userspace (and, ideally, without having to worry about whether iommu vendors have done their job). It's pretty important for PCI passthrough, so we do need to care. 
--- 
-Matthew Garrett | matthew.garrett@nebula.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On 03/19/2013 06:03 PM, Andreas Bombe wrote:
+> The named commit (6402c796d3) causes a process to hang indefinitely in
+> usb_kill_urb(). Reverting it fixes the problem. The bug also prevents
+> suspend/shutdown/reboot from completing, presumably due to the hanging
+> process.
+> 
+> (Cc'ing Stephen Warren because I only found his report after I bisected
+> it myself. Do you also see a blocked process?)
+
+Yes, I believe the symptoms we're both seeing are identical.
+
+> This is the hanging process on my system:
+> [  240.364085] INFO: task colord-sane:3619 blocked for more than 120 seconds.
+...
+> [  240.364118] Call Trace:
+> [  240.364127]  [<ffffffff81685af0>] schedule+0x65/0x67
+> [  240.364132]  [<ffffffff8141a235>] usb_kill_urb+0xb5/0xd3
