@@ -1,74 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974Ab3CTWT1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 18:19:27 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60561 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662Ab3CTWT0 (ORCPT
+	id S1753101Ab3CTWWh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 18:22:37 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:35768 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab3CTWWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 18:19:26 -0400
-Message-ID: <514A35EA.2090001@wwwdotorg.org>
-Date: Wed, 20 Mar 2013 16:19:22 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] regmap: core: Split out in place value parsing
-References: <1362359680-23747-1-git-send-email-broonie@opensource.wolfsonmicro.com> <5147A63D.3040502@wwwdotorg.org> <20130319165007.GA22168@opensource.wolfsonmicro.com>
-In-Reply-To: <20130319165007.GA22168@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Mar 2013 18:22:36 -0400
+Date: Wed, 20 Mar 2013 17:21:19 -0500
+From: scameron@beardog.cce.hp.com
+To: Chayan Biswas <Chayan.Biswas@sandisk.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stephenmcameron@gmail.com" <stephenmcameron@gmail.com>,
+        "elliott@hp.com" <elliott@hp.com>,
+        Sumant Patro <Sumant.Patro@sandisk.com>, scameron@beardog.cce.hp.com
+Subject: Re: Question about make_request_fn based block drivers
+Message-ID: <20130320222119.GP30284@beardog.cce.hp.com>
+References: <20130320215838.GO30284@beardog.cce.hp.com> <E821E2F372F08945977BD15EAE588D61097E8222@SACMBXIP02.sdcorp.global.sandisk.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E821E2F372F08945977BD15EAE588D61097E8222@SACMBXIP02.sdcorp.global.sandisk.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2013 10:50 AM, Mark Brown wrote:
-> On Mon, Mar 18, 2013 at 05:41:49PM -0600, Stephen Warren wrote:
+On Wed, Mar 20, 2013 at 10:01:19PM +0000, Chayan Biswas wrote:
+> Got it! It is fixed now!!
 > 
->> It took a very quick look at the patch and couldn't see anything 
->> actively wrong. I wonder if one of the existing unconverted users
->> of .parse_val() relies on the in-place modification of the buffer
->> as well as getting the result back, and so should have been
->> converted to calling both .parse_inplace() and then
->> .parse_val()?
+> Just one line fix, like last time. The drive capacity is 1 more than the
+> value returned by READ_CAPACITY. Since the value we were setting was not a
+> multiple of 4K, all the I/O were coming  in the lowest accessible size of 512
+> bytes.  
 > 
-> Possibly, though you'd have thought that if it were just that one
-> of the other users would have noticed - my primary development
-> board uses regmap extensively for example.  Does seem the most
-> likely option though.  Can't test anything again until Friday
-> sadly.
+> Sumant gave me the idea to explore this angle and see what capacity we are
+> setting. Earlier, I created a dummy block driver (ramdrive - sbull) of 1024
+> blocks and found it always gets 4K IO. Changing the size to 1023 made us get
+> 512 byte I/O.  
 > 
-> Might also be some unusual code path WM8903 exercises, though again
-> it's pretty simple.
+> I am going to push the changes to github.
 
-I haven't thought through why the patch in question causes/exposes the
-issue yet, but I have found out what the problem is.
+Great!
 
-_regmap_bus_raw_write() formats the value into work_buf + reg_bytes +
-pad_bytes, i.e. work_buf + 1.
+Didn't I ask you before if the nvme drive and the sop drive were the same size? ;-)
 
-For the first regmap_write() that the WM8903 driver does, work_buf is
-now xx 89 03.
+-- steve
 
-_regmap_raw_write() then memcpy()s from val (i.e. work_buf + 1) to
-workbuf, and parses the value to send to the caching code:
 
-> if (!map->cache_bypass && map->format.parse_val) { unsigned int
-> ival; int val_bytes = map->format.val_bytes; for (i = 0; i <
-> val_len / val_bytes; i++) { memcpy(map->work_buf, val + (i *
-> val_bytes), val_bytes); ival =
-> map->format.parse_val(map->work_buf);
-
-This corrupts that value at work_buf + 1 since it overlaps the copy
-destination at work_buf. work_buf is now 89 03 03.
-
-_regmap_raw_write() then formats the register address into work_buf,
-yielding 00 03 03.
-
-That data stream is then sent over I2C, causing a write to register 0
-(correct) of value 03 03 (rather than 89 03).
-
-If I comment out the memcpy, and instead pass the value address
-directly to .parse_val(), everything works again.
+> 
+> Thanks,
+> Chayan
+> 
+> > -----Original Message-----
+> > From: scameron@beardog.cce.hp.com
+> > [mailto:scameron@beardog.cce.hp.com]
+> > Sent: Wednesday, March 20, 2013 2:59 PM
+> > To: linux-kernel@vger.kernel.org
+> > Cc: stephenmcameron@gmail.com; scameron@beardog.cce.hp.com; Chayan
+> > Biswas; elliott@hp.com
+> > Subject: Question about make_request_fn based block drivers
+> >
+> >
+> > When running mke2fs against the make_request_fn based block driver
+> > I'm working on, I'm seeing only single-block bios.  Other such drivers
+> > (e.g. nvme) are getting, for example, 4k bios coming in from the same
+> > mke2fs command.
+> >
+> > mke2fs /dev/sop0
+> >
+> > This is on a 3.9-rc1 kernel.
+> >
+> > I've tried setting:
+> >
+> >       blk_queue_max_hw_sectors(rq, 2048);
+> >       blk_queue_max_segments(rq, 32);
+> >       blk_queue_io_opt(rq, 4096);
+> >       blk_queue_io_min(rq, 4096);
+> >       blk_queue_physical_block_size(rq, 4096);
+> >       blk_queue_logical_block_size(h->rq, 512);
+> >       blk_queue_physical_block_size(h->rq, 4096);
+> >
+> > all to no avail.
+> >
+> > If I do this:
+> >
+> >       dd if=/dev/sop0 of=/dev/null bs=4k iflag=direct
+> >
+> > with that, I can get 4k bios coming in to the make_request_fn.
+> >
+> > Driver source is here: https://github.com/HPSmartStorage/scsi-over-pcie
+> > (still a work in progress -- that source doesn't do all the blk_queue_*
+> > settings mentioned above, those are just the things I've tried.)
+> >
+> > In /sys/block/sop0/queue...
+> >
+> > [scameron@localhost queue]$ for x in *
+> > > do
+> > > echo ===== $x ======
+> > > cat $x
+> > > done
+> > ===== add_random ======
+> > 1
+> > ===== discard_granularity ======
+> > 0
+> > ===== discard_max_bytes ======
+> > 0
+> > ===== discard_zeroes_data ======
+> > 0
+> > ===== hw_sector_size ======
+> > 512
+> > ===== iostats ======
+> > 1
+> > ===== logical_block_size ======
+> > 512
+> > ===== max_hw_sectors_kb ======
+> > 1024
+> > ===== max_integrity_segments ======
+> > 0
+> > ===== max_sectors_kb ======
+> > 512
+> > ===== max_segments ======
+> > 32
+> > ===== max_segment_size ======
+> > 65536
+> > ===== minimum_io_size ======
+> > 4096
+> > ===== nomerges ======
+> > 2
+> > ===== nr_requests ======
+> > 128
+> > ===== optimal_io_size ======
+> > 4096
+> > ===== physical_block_size ======
+> > 4096
+> > ===== read_ahead_kb ======
+> > 128
+> > ===== rotational ======
+> > 0
+> > ===== rq_affinity ======
+> > 1
+> > ===== scheduler ======
+> > none
+> > ===== write_same_max_bytes ======
+> > 0
+> > [scameron@localhost queue]$
+> >
+> > Any ideas what I'm missing to get I/O's bigger than 1 block to come in?
+> >
+> > Thanks,
+> >
+> > -- steve
+> 
+> 
+> ________________________________
+> 
+> PLEASE NOTE: The information contained in this electronic mail message is intended only for the use of the designated recipient(s) named above. If the reader of this message is not the intended recipient, you are hereby notified that you have received this message in error and that any review, dissemination, distribution, or copying of this message is strictly prohibited. If you have received this communication in error, please notify the sender by telephone or e-mail (as shown above) immediately and destroy any and all copies of this message in your possession (whether hard copies or electronically stored copies).
+> 
