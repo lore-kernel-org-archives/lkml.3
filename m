@@ -1,65 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934314Ab3CTCUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 22:20:19 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3230 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552Ab3CTCUR (ORCPT
+	id S1757797Ab3CTCdY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 22:33:24 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52735 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab3CTCdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 22:20:17 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 19 Mar 2013 19:20:08 -0700
-Subject: Re: [PATCH] ARM: tegra: fuse: add fuctions to read speedo id and
- process id
-From: Danny Huang <dahuang@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <514915DB.8060206@wwwdotorg.org>
-References: <1363660405-10668-1-git-send-email-dahuang@nvidia.com>
-	 <5148A8D6.8000002@wwwdotorg.org> <1363743557.3573.50.camel@dahuang-vm>
-	 <514915DB.8060206@wwwdotorg.org>
-Date: Wed, 20 Mar 2013 10:20:03 +0800
-Message-ID: <1363746003.3573.80.camel@dahuang-vm>
+	Tue, 19 Mar 2013 22:33:23 -0400
+Date: Wed, 20 Mar 2013 02:33:08 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jan Kara <jack@suse.cz>
+Cc: David Howells <dhowells@redhat.com>, Miklos Szeredi <miklos@szeredi.hu>,
+        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
+        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
+        sedat.dilek@googlemail.com, hooanon05@yahoo.co.jp, mszeredi@suse.cz
+Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
+Message-ID: <20130320023308.GM21522@ZenIV.linux.org.uk>
+References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
+ <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
+ <1944.1363525619@warthog.procyon.org.uk>
+ <20130318153936.GB28508@quack.suse.cz>
+ <20130318215333.GE21522@ZenIV.linux.org.uk>
+ <20130319202543.GF5222@quack.suse.cz>
+ <20130319213831.GK21522@ZenIV.linux.org.uk>
+ <20130319221032.GL21522@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130319221032.GL21522@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-20 at 09:50 +0800, Stephen Warren wrote:
-> On 03/19/2013 07:39 PM, Danny Huang wrote:
-> > On Wed, 2013-03-20 at 02:05 +0800, Stephen Warren wrote:
-> >> On 03/18/2013 08:33 PM, Danny Huang wrote:
-> >>> Add functions to read the speedo and process id of both cpu and soc.
-> >>> There might be some drivers need the information as well.
-> >>
-> >> What code wants to use these functions? It'd be best to submit this
-> >> patch with that code, so that something actually uses the functions, and
-> >> they don't look like dead code.
-> > 
-> > There are some developing drivers that are located in drivers folder
-> > needs those information.
-> 
-> Which drivers?
+On Tue, Mar 19, 2013 at 10:10:32PM +0000, Al Viro wrote:
 
-Per my understanding, there is a dvfs development that is trying to use
-the devfreq framework.
+> OK, it's going to be an interesting series - aforementioned tentative patch
+> was badly incomplete ;-/
 
-> 
-> > I think that they can't include a header file in mach-tegra folder
-> 
-> True.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The interesting question is how far do we want to lift that.  ->aio_write()
+part is trivial - see vfs.git#experimental; the trouble begins with
+->splice_write().  For *everything* except default_file_splice_write(),
+lifting into the caller (do_splice_from()) is the right thing to do.
 
+default_file_splice_write(), however, it trickier; there we end up calling
+vfs_write() (via an ugly callchain).  And _that_ is a real bitch.  Granted,
+vfs_write() is somewhat an overkill there (we'd already done rw_verify_area()
+and access_ok() is pointless due to set_fs() we do around vfs_write()
+there) and we'd already lifted it up to do_sync_write().  But if we lift
+it any further, we'll need to deal with ->write() callers in the tree.
+Current situation:
 
+fs/coredump.c:662:      return access_ok(VERIFY_READ, addr, nr) && file->f_op->write(file, addr, nr, &file->f_pos) == nr;
+arch/powerpc/platforms/cell/spufs/coredump.c:63:        written = file->f_op->write(file, addr, nr, &file->f_pos);
+
+for these guys we might actually want to lift all way up to do_coredump()
+
+drivers/staging/comedi/drivers/serial2002.c:91: result = f->f_op->write(f, buf, count, &f->f_pos);
+fs/autofs4/waitq.c:73:         (wr = file->f_op->write(file,data,bytes,&file->f_pos)) > 0) {
+
+not regular files, unless I'm seriously misreading the code.
+
+kernel/acct.c:553:      file->f_op->write(file, (char *)&ac,
+
+BTW, this is probably where we want to deal with your acct deadlock.
+
+fs/compat.c:1103:               fn = (io_fn_t)file->f_op->write;
+fs/read_write.c:435:                    ret = file->f_op->write(file, buf, count, pos);
+fs/read_write.c:732:            fn = (io_fn_t)file->f_op->write;
+
+syscalls - the question here is whether we lift it up to vfs_write/vfs_writev/
+compat_writev, or actually take it further.
+
+fs/cachefiles/rdwr.c:967:                       ret = file->f_op->write(
+
+cachefiles_write_page(); no fucking idea what locks might be held by caller
+and potentially that's a rather nasty source of PITA
+
+fs/coda/file.c:84:      ret = host_file->f_op->write(host_file, buf, count, ppos);
+
+coda writing to file in cache on local fs.  Potentially a nasty bugger, since
+it's hard to lift any further - the caller has no idea that the thing is
+on CODA, let alone what happens to hold the local cache.
+
+drivers/block/loop.c:234:       bw = file->f_op->write(file, buf, len, &pos);
+
+do_bio_filebacked(), with some ugliness between that and callsite.  Note,
+BTW, that we have a pair of possible vfs_fsync() calls in there; how do those
+interact with freeze?
+
+This does *not* touch the current callers of vfs_write()/vfs_writev(); any of
+those called while holding ->i_mutex on a directory (or mnt_want_write(), for
+that matter) is a deadlock right now.
+
+And we'd better start thinking about how we'll backport that crap - deadlock
+in e.g. xfs ->splice_write() had been there since last summer ;-/
