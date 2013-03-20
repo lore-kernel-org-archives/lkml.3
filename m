@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab3CTTIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 15:08:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53537 "EHLO mx2.suse.de"
+	id S932998Ab3CTTLS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 15:11:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53780 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757684Ab3CTTIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 15:08:04 -0400
-Date: Wed, 20 Mar 2013 20:08:02 +0100
-Message-ID: <s5hr4j9q48d.wl%tiwai@suse.de>
+	id S932209Ab3CTTLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 15:11:17 -0400
+Date: Wed, 20 Mar 2013 20:11:15 +0100
+Message-ID: <s5hppytq430.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Alex Williamson <alex.williamson@redhat.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, Oliver Neukum <oneukum@suse.de>,
         Michal Marek <mmarek@suse.cz>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] pciehp: Add pciehp_surprise module option
-In-Reply-To: <1363802953.24132.513.camel@bling.home>
+In-Reply-To: <20130320175234.GA8948@srcf.ucam.org>
 References: <s5h38vqjhk6.wl%tiwai@suse.de>
-	<1363802953.24132.513.camel@bling.home>
+	<20130320175234.GA8948@srcf.ucam.org>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -26,10 +26,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Wed, 20 Mar 2013 12:09:13 -0600,
-Alex Williamson wrote:
+At Wed, 20 Mar 2013 17:52:34 +0000,
+Matthew Garrett wrote:
 > 
-> On Wed, 2013-03-20 at 15:02 +0100, Takashi Iwai wrote:
+> On Wed, Mar 20, 2013 at 03:02:01PM +0100, Takashi Iwai wrote:
 > > We encountered a problem that on some HP machines the Realtek PCI-e
 > > card reader device appears only when you inserted a card before the
 > > cold boot.  While debugging, it turned out that the device is actually
@@ -38,93 +38,16 @@ Alex Williamson wrote:
 > > of lack of the hotplug surprise (PCI_EXP_SLTCAP_HPS) capability bit.
 > > Once when this check passes, everything starts working -- the device
 > > appears upon plugging the card properly.
-> > 
-> > There are a few other bug reports indicating the similar problems
-> > (e.g. on recent Dell laptops), and I guess the culprit is same.
-> > 
-> > This patch adds a new module option, pciehp_surprise, to pciehp as a
-> > workaround.  When pciehp_surprise=1 is given, pciehp handles the
-> > presence change as the device on/off as if PCI_EXP_SLTCAP_HPS is set.
-> > Unless it's set explicitly, there is no impact on the existing
-> > behavior.
-> > 
-> > Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> > ---
-> >  drivers/pci/hotplug/pciehp.h      | 3 ++-
-> >  drivers/pci/hotplug/pciehp_core.c | 3 +++
-> >  2 files changed, 5 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
-> > index 2c113de..314f3be 100644
-> > --- a/drivers/pci/hotplug/pciehp.h
-> > +++ b/drivers/pci/hotplug/pciehp.h
-> > @@ -44,6 +44,7 @@ extern bool pciehp_poll_mode;
-> >  extern int pciehp_poll_time;
-> >  extern bool pciehp_debug;
-> >  extern bool pciehp_force;
-> > +extern bool pciehp_surprise;
-> >  
-> >  #define dbg(format, arg...)						\
-> >  do {									\
-> > @@ -122,7 +123,7 @@ struct controller {
-> >  #define MRL_SENS(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_MRLSP)
-> >  #define ATTN_LED(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_AIP)
-> >  #define PWR_LED(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_PIP)
-> > -#define HP_SUPR_RM(ctrl)	((ctrl)->slot_cap & PCI_EXP_SLTCAP_HPS)
-> > +#define HP_SUPR_RM(ctrl)	(pciehp_surprise || ((ctrl)->slot_cap & PCI_EXP_SLTCAP_HPS))
-> >  #define EMI(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_EIP)
-> >  #define NO_CMD_CMPL(ctrl)	((ctrl)->slot_cap & PCI_EXP_SLTCAP_NCCS)
-> >  #define PSN(ctrl)		((ctrl)->slot_cap >> 19)
-> > diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
-> > index 7d72c5e..c3a574e 100644
-> > --- a/drivers/pci/hotplug/pciehp_core.c
-> > +++ b/drivers/pci/hotplug/pciehp_core.c
-> > @@ -42,6 +42,7 @@ bool pciehp_debug;
-> >  bool pciehp_poll_mode;
-> >  int pciehp_poll_time;
-> >  bool pciehp_force;
-> > +bool pciehp_surprise;
-> >  
-> >  #define DRIVER_VERSION	"0.4"
-> >  #define DRIVER_AUTHOR	"Dan Zink <dan.zink@compaq.com>, Greg Kroah-Hartman <greg@kroah.com>, Dely Sy <dely.l.sy@intel.com>"
-> > @@ -55,10 +56,12 @@ module_param(pciehp_debug, bool, 0644);
-> >  module_param(pciehp_poll_mode, bool, 0644);
-> >  module_param(pciehp_poll_time, int, 0644);
-> >  module_param(pciehp_force, bool, 0644);
-> > +module_param(pciehp_surprise, bool, 0644);
-> >  MODULE_PARM_DESC(pciehp_debug, "Debugging mode enabled or not");
-> >  MODULE_PARM_DESC(pciehp_poll_mode, "Using polling mechanism for hot-plug events or not");
-> >  MODULE_PARM_DESC(pciehp_poll_time, "Polling mechanism frequency, in seconds");
-> >  MODULE_PARM_DESC(pciehp_force, "Force pciehp, even if OSHP is missing");
-> > +MODULE_PARM_DESC(pciehp_surprise, "Force to set hotplug-surprise capability");
-> >  
-> >  #define PCIE_MODULE_NAME "pciehp"
-> >  
 > 
-> Please no.  Can we quirk just the device with the problem?
+> Well that just sounds like a bug. What's the downside to just ignoring 
+> that capability bit?
 
-It'd be good to have a static quirk in the end, yes.
+I'm afraid that it's too radical to enable always.
+Or, what about to check this bit only for disable path?
+Enabling the device is usually not to worry much.  The problematic
+part is rather the surprising device disablement.
 
-> My issue
-> with turning on surprise hotplug across the system is that secondary bus
-> resets will trigger a device hot unplug, hot re-plug.  I have a system
-> with an integrated broadcom NIC behind a root port that claims to
-> support surprise hotplug (even though this NIC is soldered to the
-> motherboard) and it's nearly impossible to use it with KVM device
-> assignment because the struct pci_dev goes away as we're trying to use
-> it.  This patch is only going to make that problem more widespread.
-
-Well, the option is provided obviously for working around a buggy
-hardware, or an easy way to investigate the bug.  The problem is that
-you can't fix it easily.  The PCI device itself doesn't appear until
-it's registered, so you can't run setpci or whatever.  (At the cold
-boot, it doesn't exist.)  Hence without such an option, the only way
-is to patch the kernel, and it's too inconvenient.
-
-Of course, I can put a big warning when the option is enabled if you
-prefer:
-   "This option might break KVM enviornment.  If you still use KVM and
-    send any bug report, Alex Williamson will curse you."
+Just my $0.02.
 
 
 thanks,
