@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab3CTNE2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 09:04:28 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:37439 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738Ab3CTNE1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 09:04:27 -0400
-Date: Wed, 20 Mar 2013 10:04:19 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 6/9] perf util: Get rid of malloc_or_die() in
- trace-event-read.c
-Message-ID: <20130320130419.GC1964@ghostprotocols.net>
-References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
- <1363683224-28804-7-git-send-email-namhyung@kernel.org>
- <1363704602.5938.26.camel@gandalf.local.home>
- <87ehfaj2ic.fsf@sejong.aot.lge.com>
- <1363744502.6345.1.camel@gandalf.local.home>
- <871ubaixlw.fsf@sejong.aot.lge.com>
- <1363749205.6345.5.camel@gandalf.local.home>
+	id S932334Ab3CTNHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 09:07:48 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:47722 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753846Ab3CTNHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 09:07:47 -0400
+Message-ID: <5149B486.9050406@imgtec.com>
+Date: Wed, 20 Mar 2013 13:07:18 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363749205.6345.5.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: <monstr@monstr.eu>, Tejun Heo <tj@kernel.org>,
+        <microblaze-uclinux@itee.uq.edu.au>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memblock: Kill ARCH_POPULATES_NODE_MAP once more
+References: <1363775108.1390.88.camel@x61.thuisdomein> <51499748.8020700@monstr.eu>
+In-Reply-To: <51499748.8020700@monstr.eu>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_03_20_13_07_45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Mar 19, 2013 at 11:13:25PM -0400, Steven Rostedt escreveu:
-> On Wed, 2013-03-20 at 12:00 +0900, Namhyung Kim wrote:
-> > On Tue, 19 Mar 2013 21:55:02 -0400, Steven Rostedt wrote:
-> > > On Wed, 2013-03-20 at 10:14 +0900, Namhyung Kim wrote:
-> > >> On Tue, 19 Mar 2013 10:50:02 -0400, Steven Rostedt wrote:
-> > >> > On Tue, 2013-03-19 at 17:53 +0900, Namhyung Kim wrote:
-> > >> > I think I like the err += func() and check for err < 0, better.
+On 20/03/13 11:02, Michal Simek wrote:
+> On 03/20/2013 11:25 AM, Paul Bolle wrote:
+>> The Kconfig symbol ARCH_POPULATES_NODE_MAP was killed in v3.3. After
+>> that it popped up again in microblaze and metag. Nobody noticed,
+>> probably because these Kconfig symbols are entirely unused and these
+>> architectures both select HAVE_MEMBLOCK_NODE_MAP. Anyhow, these two
+>> entries can also be killed.
+> 
+> Ah. We have done the developing on that on earlier version and
+> to mainline it went in 3.3 merge window that's why I didn't notice it.
+> 
+> If James wants to take this patch through his tree, I am ok with that
+> and here is my
+> 
+> Acked-by: Michal Simek <monstr@monstr.eu>
+> 
+> Or if you want to take this through my microblaze tree, I am also ok
+> with that but please send me your ACK.
 
-> > >> Okay, I'll change them to err |= func() style if you're fine as Peter
-> > >> suggested.
+Thanks for the patch Paul. This was added to metag when we were on
+2.6.34. I spotted the adding of HAVE_MEMBLOCK_NODE_MAP to SH in v3.3 and
+did the same for metag, but didn't notice the removal of
+ARCH_POPULATES_NODE_MAP.
 
-> > > += or |= I'm not picky ;-)
+I'm happy to take this patch for v3.10.
 
-> > Ah, one thing I also care was the short-circuit logic.  I think we don't
-> > need to call later functions if one fails, do we?
+Cheers
+James
 
-> Yeah, good point. It still looks ugly, but it does make sense.
-
-Yes, I dislike all this += or |=, it should be normal exception
-handling, just like everywhere in the kernel codebase:
-
-	err = foo();
-	if (err)
-		goto out_err;
-
-	err = bar();
-	if (err)
-		goto out_foo;
-
-	err = baz();
-	if (err)
-		goto out_bar;
-
-	err = new_foo();
-	if (err)
-		goto out_baz;
-
-	return 0;
-out_baz:
-	baz_cleanup();
-out_bar:
-	bar_cleanup();
-out_foo:
-	foo_cleanup();
-out_err:
-	return err;
-
-----
-
-	That way exception handling code lies at the end of the
-function, i.e. in source and binary code it has a lower chance of
-polluting brain and CPU caches, and we don't need to call N functions
-if we'll bail out when the one of them fails.
-
-	I.e. nothing new here, just follow kernel coding style, move
-along :-)
-
-- Arnaldo
