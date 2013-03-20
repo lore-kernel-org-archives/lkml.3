@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933830Ab3CTDNr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 23:13:47 -0400
-Received: from ozlabs.org ([203.10.76.45]:47604 "EHLO ozlabs.org"
+	id S1757964Ab3CTDSd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 23:18:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54696 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933340Ab3CTDNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 23:13:45 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, Jon Masters <jcm@redhat.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: Re: [RFC PATCH] Allow optional module parameters
-In-Reply-To: <1363722051.3491.29.camel@bwh-desktop.uk.solarflarecom.com>
-References: <b6b1676fd5bcd6b0ef47b0e0a1c26b1c05684135.1363291511.git.luto@amacapital.net> <87ehfhtftn.fsf@rustcorp.com.au> <CALCETrU+rehQzy4vVg589CGi561X_s73Xgsfp43pYZOoKvNDXQ@mail.gmail.com> <87sj3tsawh.fsf@rustcorp.com.au> <CALCETrUK54KViGex=V2pG8kAttsxOiDkeJUL48pk1NAhH-SdAA@mail.gmail.com> <87hak8qfu5.fsf@rustcorp.com.au> <1363722051.3491.29.camel@bwh-desktop.uk.solarflarecom.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Wed, 20 Mar 2013 13:01:01 +1030
-Message-ID: <87zjxypztm.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1750910Ab3CTDSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 23:18:31 -0400
+Message-ID: <1363749503.24132.482.camel@bling.home>
+Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Date: Tue, 19 Mar 2013 21:18:23 -0600
+In-Reply-To: <51492828.5070803@zytor.com>
+References: <3pfl8u1ugprwkcs5xmtjth3l.1363742692541@email.android.com>
+	 <51492379.3090302@zytor.com> <51492828.5070803@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Hutchings <bhutchings@solarflare.com> writes:
-> This should also go to stable, so the downgrading issue doesn't continue
-> to bite people.
+On Tue, 2013-03-19 at 20:08 -0700, H. Peter Anvin wrote:
+> On 03/19/2013 07:48 PM, H. Peter Anvin wrote:
+> > On 03/19/2013 06:28 PM, Matthew Garrett wrote:
+> >> Mm. The question is whether we can reliably determine the ranges a
+> device should be able to access without having to trust userspace
+> (and, ideally, without having to worry about whether iommu vendors
+> have done their job). It's pretty important for PCI passthrough, so we
+> do need to care. 
+> > 
+> > It is actually very simple: the device should be able to DMA into/out of:
+> > 
+> > 1. pinned pages
+> > 2. owned by the process controlling the device
+> > 
+> > ... and nothing else.
+> > 
+> 
+> The "pinning" process needs to involve a call to the kernel to process
+> the page for DMA (pinning the page and opening it in the iommu) and
+> return a transaction address, of course.
+> 
+> I think we have the interface for that in vfio, but I haven't followed
+> that work.
 
-Andy was complaining about experimental params going away: I haven't
-heard a single complaint about the downgrading issue.  I think it's a
-nice to have, which is why I mentioned it.  I also CC'd the two
-maintainers most likely to know if it *is* a current problem.  And note
-that this code has been this way for over ten years!
+Yes, vfio does this and is meant to provide a secure-boot-friendly PCI
+passthrough interface.  Thanks,
 
-No bug report, no cc:stable.
+Alex
 
-What if people were relying on detecting module parameters by the load
-failing?  I'd rather find out when they upgrade to a new kernel instead
-of poisoning the old ones, too.
-
-Cheers,
-Rusty.
