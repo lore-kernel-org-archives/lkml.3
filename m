@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757737Ab3CTAYt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 20:24:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41999 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752769Ab3CTAYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 20:24:48 -0400
-Message-ID: <514901C4.3040301@zytor.com>
-Date: Tue, 19 Mar 2013 17:24:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S934287Ab3CTAZZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 20:25:25 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:64905 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932663Ab3CTAZY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Mar 2013 20:25:24 -0400
 MIME-Version: 1.0
-To: William Hubbs <w.d.hubbs@gmail.com>
-CC: linux-kernel@vger.kernel.org, rob@landley.net, mpagano@gentoo.org,
-        ryao@gentoo.org, gregkh@gentoo.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH] init: fix name of root device in /proc/mounts
-References: <1359672699-23540-1-git-send-email-w.d.hubbs@gmail.com> <510AFCA1.5000700@zytor.com> <1360032141.12062.12@driftwood> <a6a99589-ac94-4cfc-a871-095431bfd8ef@email.android.com> <20130319222822.GA2338@linux1> <5148F1F7.7080706@zytor.com> <20130320002017.GA2810@linux1>
-In-Reply-To: <20130320002017.GA2810@linux1>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130319154326.f8fd35776086c66617a08c90@linux-foundation.org>
+References: <1363366442-11494-1-git-send-email-fweisbec@gmail.com>
+	<1363366442-11494-2-git-send-email-fweisbec@gmail.com>
+	<20130319154326.f8fd35776086c66617a08c90@linux-foundation.org>
+Date: Wed, 20 Mar 2013 01:25:22 +0100
+Message-ID: <CAFTL4hyOc62OJ6+-VRyLw8_6R4pWrNHw2k2y=U9HrAEKN8Zjww@mail.gmail.com>
+Subject: Re: [PATCH 1/4] posix_cpu_timer: Consolidate expiry time type
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2013 05:20 PM, William Hubbs wrote:
-> 
-> I'm not following what you mean.
-> 
-> The problem is that "/dev/root" should not be in /proc/mounts, 
-> since there is always another entry that points to the root file
-> system.
-> 
+2013/3/19 Andrew Morton <akpm@linux-foundation.org>:
+> On Fri, 15 Mar 2013 17:53:59 +0100 Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>
+>> The posix cpu timer expiry time is stored in a union of
+>> two types: a 64 bits field if we rely on scheduler precise
+>> accounting, or a cputime_t if we rely on jiffies.
+>>
+>> This result in quite some duplicate code and special cases
+>> to handle the two types.
+>>
+>> Just unify this into a single 64 bits field. cputime_t can
+>> always fit into it.
+>>
+>
+> x86_64 allnoconfig:
+>
+> kernel/posix-cpu-timers.c: In function 'posix_cpu_timer_schedule':
+> kernel/posix-cpu-timers.c:1127: warning: 'now' may be used uninitialized in this function
+>
+> It looks like it's always been buggy, but your switch from `union
+> cou_time_count' to `unsigned long long' made gcc notice it.
 
-You are getting the name from the root= command line option.
+Ok, from a quick view it seems what's missing is a call to
+cpu_timer_sample_group() to compute the residual time for further call
+of timer_gettime(). I'll look at it deeper and send you a fix.
 
-The other option is to take the name from the mounted device number,
-and look up the udev name (which is known by the kernel).  That way it
-works even if the user specifies a numeric device, or the default
-device is used.
-
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Thanks.
