@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757718Ab3CTQHW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 12:07:22 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46975 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808Ab3CTQHU (ORCPT
+	id S933039Ab3CTQJI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 12:09:08 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42088 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755227Ab3CTQJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 12:07:20 -0400
-Message-ID: <5149DEB5.7000709@wwwdotorg.org>
-Date: Wed, 20 Mar 2013 10:07:17 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 20 Mar 2013 12:09:06 -0400
+Date: Wed, 20 Mar 2013 16:08:53 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Shankar Brahadeeswaran <shankoo77@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [BUG] staging: android: ashmem: Deadlock during ashmem_mmap and
+ ashmem_read
+Message-ID: <20130320160853.GP21522@ZenIV.linux.org.uk>
+References: <CAJsYZ5ksvPCR2O39=sj9zeptfppP1w6FM08rw8Aw+L+2dEPCnQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "lrg@ti.com" <lrg@ti.com>
-Subject: Re: [PATCH 2/2] regulator: palmas: add input supply names
-References: <1363598989-25112-1-git-send-email-ldewangan@nvidia.com> <20130320123128.GM28775@opensource.wolfsonmicro.com> <5149B19E.90400@nvidia.com>
-In-Reply-To: <5149B19E.90400@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJsYZ5ksvPCR2O39=sj9zeptfppP1w6FM08rw8Aw+L+2dEPCnQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 06:54 AM, Laxman Dewangan wrote:
-> On Wednesday 20 March 2013 06:01 PM, Mark Brown wrote:
->> * PGP Signed by an unknown key
->>
->> On Mon, Mar 18, 2013 at 02:59:48PM +0530, Laxman Dewangan wrote:
->>
->> There's something odd about several recent patch serieses you've posted,
->> they end up with patch 2 before instead of after patch 1.  Anyway...
+On Wed, Mar 20, 2013 at 09:08:03PM +0530, Shankar Brahadeeswaran wrote:
+> Hi Greg, Dan,
 > 
-> I generally send a patches on single git-send command
-> git send-emal --to=ldewangan@nvidia.com 0000.patch 0001.patch
+> Few days back I posted a patch to fix a dead lock issue in the ashmem
+> driver that got merged in staging-next branch
+> https://lkml.org/lkml/2013/2/20/429
+> 
+> I'm seeing that there exists another path in the ashmem driver that
+> could lead to the similar issue. But this time I'm unable to think of
+> a way to fix the problem.
+> 
+> - The objects involved in the deadlock are same, mmap->sem and ashmem_mutex
 
-Don't do that; send *.patch. If you don't, then patches 2..n don't end
-up being "in-reply-to" patch 1, so they won't show up as a single email
-thread.
+Umm...  why does it need to hold that mutex past having checked that
+asma->file is non-NULL, anyway?
