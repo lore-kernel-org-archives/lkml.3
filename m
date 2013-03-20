@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934520Ab3CTJ3I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 05:29:08 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:39013 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab3CTJ3E (ORCPT
+	id S934533Ab3CTJ3b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 05:29:31 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:43020 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998Ab3CTJ32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 05:29:04 -0400
+	Wed, 20 Mar 2013 05:29:28 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: ben@decadent.org.uk, noelamac@gmail.com, linux-kernel@vger.kernel.org,
         rusty@rustcorp.com.au, andi@firstfloor.org,
         "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [RFC 02/30] compat: embrace LINUX_BACKPORT() for v2.6.23
-Date: Wed, 20 Mar 2013 02:22:27 -0700
-Message-Id: <1363771375-31715-3-git-send-email-mcgrof@do-not-panic.com>
+Subject: [RFC 19/30] compat: embrace LINUX_BACKPORT() for v3.1
+Date: Wed, 20 Mar 2013 02:22:44 -0700
+Message-Id: <1363771375-31715-20-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1363771375-31715-1-git-send-email-mcgrof@do-not-panic.com>
@@ -53,51 +53,95 @@ From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
 ---
- compat/compat-2.6.23.c        |    2 ++
- include/linux/compat-2.6.23.h |    3 +++
- 2 files changed, 5 insertions(+)
+ compat/compat-3.1.c        |   12 ++++++------
+ include/linux/compat-3.1.h |   12 +++---------
+ 2 files changed, 9 insertions(+), 15 deletions(-)
 
-diff --git a/compat/compat-2.6.23.c b/compat/compat-2.6.23.c
-index bc49e98..1a76957 100644
---- a/compat/compat-2.6.23.c
-+++ b/compat/compat-2.6.23.c
-@@ -11,6 +11,7 @@
- #include <net/compat.h>
- 
- /* On net/core/dev.c as of 2.6.24 */
-+#define __dev_addr_delete LINUX_BACKPORT(__dev_addr_delete)
- int __dev_addr_delete(struct dev_addr_list **list, int *count,
-                       void *addr, int alen, int glbl)
+diff --git a/compat/compat-3.1.c b/compat/compat-3.1.c
+index bfaf8ea..cb5d596 100644
+--- a/compat/compat-3.1.c
++++ b/compat/compat-3.1.c
+@@ -19,7 +19,7 @@
+  * 	cpufreq: expose a cpufreq_quick_get_max routine
+  */
+ #ifdef CONFIG_CPU_FREQ
+-unsigned int compat_cpufreq_quick_get_max(unsigned int cpu)
++unsigned int cpufreq_quick_get_max(unsigned int cpu)
  {
-@@ -40,6 +41,7 @@ EXPORT_SYMBOL_GPL(__dev_addr_delete);
+ 	struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
+ 	unsigned int ret_freq = 0;
+@@ -31,7 +31,7 @@ unsigned int compat_cpufreq_quick_get_max(unsigned int cpu)
  
- /* On net/core/dev.c as of 2.6.24. This is not yet used by mac80211 but
-  * might as well add it */
-+#define __dev_addr_add LINUX_BACKPORT(__dev_addr_add)
- int __dev_addr_add(struct dev_addr_list **list, int *count,
-                    void *addr, int alen, int glbl)
+ 	return ret_freq;
+ }
+-EXPORT_SYMBOL_GPL(compat_cpufreq_quick_get_max);
++EXPORT_SYMBOL_GPL(cpufreq_quick_get_max);
+ #endif
+ 
+ static DEFINE_SPINLOCK(compat_simple_ida_lock);
+@@ -48,7 +48,7 @@ static DEFINE_SPINLOCK(compat_simple_ida_lock);
+  *
+  * Use ida_simple_remove() to get rid of an id.
+  */
+-int compat_ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
++int ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
+ 		   gfp_t gfp_mask)
  {
-diff --git a/include/linux/compat-2.6.23.h b/include/linux/compat-2.6.23.h
-index fbfb470..37cbc22 100644
---- a/include/linux/compat-2.6.23.h
-+++ b/include/linux/compat-2.6.23.h
-@@ -75,6 +75,8 @@ static inline void tcf_destroy_chain_compat(struct tcf_proto **fl)
- #define __dev_set_promiscuity dev_set_promiscuity
+ 	int ret, id;
+@@ -86,14 +86,14 @@ again:
  
- /* Our own 2.6.22 port on compat.c */
-+#define dev_mc_unsync LINUX_BACKPORT(dev_mc_unsync)
-+#define dev_mc_sync LINUX_BACKPORT(dev_mc_sync)
- extern void	dev_mc_unsync(struct net_device *to, struct net_device *from);
- extern int	dev_mc_sync(struct net_device *to, struct net_device *from);
+ 	return ret;
+ }
+-EXPORT_SYMBOL_GPL(compat_ida_simple_get);
++EXPORT_SYMBOL_GPL(ida_simple_get);
  
-@@ -113,6 +115,7 @@ struct genl_multicast_group
+ /**
+  * ida_simple_remove - remove an allocated id.
+  * @ida: the (initialized) ida.
+  * @id: the id returned by ida_simple_get.
+  */
+-void compat_ida_simple_remove(struct ida *ida, unsigned int id)
++void ida_simple_remove(struct ida *ida, unsigned int id)
+ {
+ 	unsigned long flags;
  
+@@ -102,6 +102,6 @@ void compat_ida_simple_remove(struct ida *ida, unsigned int id)
+ 	ida_remove(ida, id);
+ 	spin_unlock_irqrestore(&compat_simple_ida_lock, flags);
+ }
+-EXPORT_SYMBOL_GPL(compat_ida_simple_remove);
++EXPORT_SYMBOL_GPL(ida_simple_remove);
+ /* source lib/idr.c */
  
- /* Added as of 2.6.23 */
-+#define pci_try_set_mwi LINUX_BACKPORT(pci_try_set_mwi)
- int pci_try_set_mwi(struct pci_dev *dev);
+diff --git a/include/linux/compat-3.1.h b/include/linux/compat-3.1.h
+index 2b5eb8b..3e8be33 100644
+--- a/include/linux/compat-3.1.h
++++ b/include/linux/compat-3.1.h
+@@ -88,21 +88,15 @@ static inline void security_sk_clone(const struct sock *sk, struct sock *newsk)
+ #include <asm-generic/atomic64.h>
+ #endif
  
- /* Added as of 2.6.23 */
+-/* mask ida_simple_get as RHEL6 backports this */
+-#define ida_simple_get(a,b,c,d) compat_ida_simple_get(a,b,c,d)
+-
++#define ida_simple_get LINUX_BACKPORT(ida_simple_get)
+ int ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
+ 		   gfp_t gfp_mask);
+ 
+-/* mask ida_simple_remove as RHEL6 backports this */
+-#define ida_simple_remove(a,b) compat_ida_simple_remove(a,b)
+-
++#define ida_simple_remove LINUX_BACKPORT(ida_simple_remove)
+ void ida_simple_remove(struct ida *ida, unsigned int id);
+ 
+ #ifdef CONFIG_CPU_FREQ
+-/* mask cpufreq_quick_get_max as RHEL6 backports this */
+-#define cpufreq_quick_get_max(a) compat_cpufreq_quick_get_max(a)
+-
++#define cpufreq_quick_get_max LINUX_BACKPORT(cpufreq_quick_get_max)
+ unsigned int cpufreq_quick_get_max(unsigned int cpu);
+ #endif
+ 
 -- 
 1.7.10.4
 
