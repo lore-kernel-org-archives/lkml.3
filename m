@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab3CTVfq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 17:35:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18448 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197Ab3CTVfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 17:35:45 -0400
-Date: Wed, 20 Mar 2013 17:35:26 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Message-ID: <1363815326-urchkyxr-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <5148F830.3070601@gmail.com>
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <5148F830.3070601@gmail.com>
-Subject: Re: [RFC][PATCH 0/9] extend hugepage migration
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <5148F830.3070601@gmail.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1752619Ab3CTViZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 17:38:25 -0400
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:40422 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483Ab3CTViY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 17:38:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <1363791479.12701.9.camel@pasglop>
+References: <1363791074-16415-1-git-send-email-grant.likely@secretlab.ca>
+ <1363791074-16415-3-git-send-email-grant.likely@secretlab.ca> <1363791479.12701.9.camel@pasglop>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 20 Mar 2013 21:38:03 +0000
+X-Google-Sender-Auth: qpOfVFzKeMmzTf0Tw0xbOE7wp_c
+Message-ID: <CACxGe6u2wNbPQSOPRCRO0To5UC-b8rXYanv2xv26hk5oaozvPA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] of: remove /proc/device-tree
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 07:43:44AM +0800, Simon Jeons wrote:
-...
-> >Easy patch access:
-> >   git@github.com:Naoya-Horiguchi/linux.git
-> >   branch:extend_hugepage_migration
-> >
-> >Test code:
-> >   git@github.com:Naoya-Horiguchi/test_hugepage_migration_extension.git
-> 
-> git clone
-> git@github.com:Naoya-Horiguchi/test_hugepage_migration_extension.git
-> Cloning into test_hugepage_migration_extension...
-> Permission denied (publickey).
-> fatal: The remote end hung up unexpectedly
+On Wed, Mar 20, 2013 at 2:57 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Wed, 2013-03-20 at 14:51 +0000, Grant Likely wrote:
+>> The same data is now available in sysfs, so we can remove the code
+>> that exports it in /proc and replace it with a symlink to the sysfs
+>> version.
+>>
+>> Tested on versatile qemu model and mpc5200 eval board. More testing
+>> would be appreciated.
+>
+> NAK. It should at the very least be a CONFIG option for a while before
+> completely switching over.
 
-Sorry, wrong url.
-git://github.com/Naoya-Horiguchi/test_hugepage_migration_extension.git
-or
-https://github.com/Naoya-Horiguchi/test_hugepage_migration_extension.git
-should work.
+I'll modify patch 1 to create the symlink if CONFIG_PROC_DEVICETREE is
+not set. After the first patch can be applied we can leave it for a
+release or two before applying the second.
 
-Thanks,
-Naoya
+g.
