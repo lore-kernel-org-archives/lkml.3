@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933781Ab3CTMrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 08:47:17 -0400
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:53565 "EHLO
-	mail.izyk.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932496Ab3CTMrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 08:47:15 -0400
-Message-ID: <5149AFD0.8020604@izyk.ru>
-Date: Wed, 20 Mar 2013 16:47:12 +0400
-From: Ilya Zykov <linux@izyk.ru>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S934031Ab3CTMsI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 08:48:08 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:57071 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932496Ab3CTMsF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 08:48:05 -0400
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Philip Avinash <avinashphilip@ti.com>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <prakash.pm@ti.com>
+Subject: Re: [PATCH v2 3/3] ARM: davinci: da850: add EHRPWM & ECAP DT node
+References: <1363761714-15034-1-git-send-email-avinashphilip@ti.com>
+	<1363761714-15034-4-git-send-email-avinashphilip@ti.com>
+	<51499DB4.9080907@ti.com>
+Date: Wed, 20 Mar 2013 13:47:59 +0100
+In-Reply-To: <51499DB4.9080907@ti.com> (Sekhar Nori's message of "Wed, 20 Mar
+	2013 16:59:56 +0530")
+Message-ID: <87wqt2qlts.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Min Zhang <mzhang@mvista.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/18] tty: Simplify tty buffer/ldisc interface with helper
- function
-References: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>  <1363724513-15604-4-git-send-email-peter@hurleysoftware.com>  <5148E9D2.4030305@izyk.ru> <1363737036.3413.49.camel@thor.lan>
-In-Reply-To: <1363737036.3413.49.camel@thor.lan>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I have little question about flush_to_ldisc().
->> Does can it be multithreaded?
->>
->> I think yes, because on SMP schedule_work() can work on different CPU paralleled.
-> 
-> Yes, the same work item can now run in parallel on SMP since Tejun Heo
-> re-did the workqueue implementation on 2.6.36 [Stefan Richter, the
-> firewire maintainer, recently explained this history to me].
+>>>>> "Sekhar" == Sekhar Nori <nsekhar@ti.com> writes:
 
-About multi threaded delayed works:
+ Sekhar> On 3/20/2013 12:11 PM, Philip Avinash wrote:
+ >> Add da850 EHRPWM & ECAP DT node.
+ >> Also adds OF_DEV_AUXDATA for EHRPWM & ECAP driver to use EHRPWM & ECAP
+ >> clock.
+ >> 
+ >> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+ >> ---
+ >> Changes since v1:
+ >> - Reusing ti,am33xx<ecap/ehrpwm> as compatible field as both IP's are
+ >> same with am33xx platform and da850 has no platform specific
+ >> dependency.
 
-In many cases tty layer needs single threaded delayed work for each tty instance.
-I propose discussion about create for this purpose (tty layer)'s workqueue with WQ_NON_REENTRANT flag.
-And use it instead common schedule_work()'s workqueue - system_wq.
-I don't know how expensive(for system resource and CPU) it can be,
-but for tty layer, it can be very useful.
+ Sekhar> Which is fine, but I think the binding documentation still needs to be
+ Sekhar> updated to document the ti,da850-ehrpwm binding. Looping Peter (it is
+ Sekhar> always a good idea to CC folks who reviewed your patch last time
+ Sekhar> around). Also, please Cc the DT folks and devicetree-discuss list too
+ Sekhar> for their opinion.
 
-> 
->> What do you think about this race condition?
->> https://lkml.org/lkml/2011/11/7/98
-> 
-> Yes, that is a possible race condition that could lead to some nasty
-> results. Good find.
-> 
-> If you want, I could bring that patch into this patchset or you could
-> re-submit that patch to Greg and I could rebase this patchset on top of
-> that.
+Yes, thanks for CC'ing me. I also think da850-* should be
+documented. See Documentation/devicetree/bindings/gpio/8xxx_gpio.txt for
+an similar (old) example.
 
-Peter,
-Please, do it anywhere you consider possible,
-I can't do it myself now.
-
-Thank you,
-Ilya.
-
+-- 
+Bye, Peter Korsgaard
