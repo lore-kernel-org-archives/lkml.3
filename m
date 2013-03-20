@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab3CTW2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 18:28:48 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:34762 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242Ab3CTW2q (ORCPT
+	id S1752690Ab3CTWbo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 18:31:44 -0400
+Received: from exprod8og103.obsmtp.com ([64.18.3.86]:32798 "HELO
+	exprod8og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751242Ab3CTWbn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 18:28:46 -0400
-Date: Wed, 20 Mar 2013 15:28:44 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Sven Joachim <svenjoac@gmx.de>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Stephen Thirlwall <sdt@dr.com>
-Subject: Re: [ 12/75] USB: EHCI: work around silicon bug in Intels EHCI
- controllers
-Message-ID: <20130320222844.GA9504@kroah.com>
-References: <20130320202816.GA18496@kroah.com>
- <Pine.LNX.4.44L0.1303201635230.1208-100000@iolanthe.rowland.org>
+	Wed, 20 Mar 2013 18:31:43 -0400
+X-AuditID: ac1c210f-b7f486d000000c69-bf-514a37a8a5e6
+From: Chayan Biswas <Chayan.Biswas@sandisk.com>
+To: "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stephenmcameron@gmail.com" <stephenmcameron@gmail.com>,
+        "elliott@hp.com" <elliott@hp.com>,
+        Sumant Patro <Sumant.Patro@sandisk.com>
+Subject: RE: Question about make_request_fn based block drivers
+Thread-Topic: Question about make_request_fn based block drivers
+Thread-Index: AQHOJbY+jpMRTbLTZk+zWVOZ9reTQpivISoQgAB7P4D//4vj4A==
+Date: Wed, 20 Mar 2013 22:28:54 +0000
+Message-ID: <E821E2F372F08945977BD15EAE588D61097E8272@SACMBXIP02.sdcorp.global.sandisk.com>
+References: <20130320215838.GO30284@beardog.cce.hp.com>
+ <E821E2F372F08945977BD15EAE588D61097E8222@SACMBXIP02.sdcorp.global.sandisk.com>
+ <20130320222119.GP30284@beardog.cce.hp.com>
+In-Reply-To: <20130320222119.GP30284@beardog.cce.hp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.181.8.64]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1303201635230.1208-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRobxn+4Kc69Ag0c7VSyWrNrGanF51xw2
+	i76vn1ktHk95xuzA4vHjzUtmj52z7rJ77Nq2k8nj8ya5AJYoLpuU1JzMstQifbsErox580wK
+	lnFU/OxdydLAeIKti5GTQ0LAROLrscUsELaYxIV764HiXBxCAscZJa4cOg2WEBI4xygxe6MO
+	iM0moC/RdG0dWLOIgL3Eq027wBqYBU4xSvy6+IgdJCEMlPjc/RuqyEHiyYkHjF2MHEC2k8TZ
+	mTUgYRYBVYnJWyDm8ApES7yecYYZYvF2Rol/vf2sIAlOAQuJmdNOg81kBLru+6k1TCA2s4C4
+	xK0n85kgrhaQWLLnPDOELSrx8vE/VpBdEgLyEtdP20GU60gs2P2JDcLWlli28DUzxF5BiZMz
+	n7BMYBSbhWTqLCQts5C0zELSsoCRZRWjWHFicnFuemqBoZFecWJeSmZxtl5yfu4mRnCUKfLv
+	YNw2xfwQowAHoxIPL8cTz0Ah1sSy4srcQ4wSHMxKIrzLlLwChXhTEiurUovy44tKc1KLDzEy
+	cXBKNTAKcvUdljWbf+xk24lvlYKR8zdY6yvtjq7fMi3k/Puaefqbw9e42z5+/mhbwR2//owS
+	Ttn3c9/NXcD/h39iQOIE6VmHzTKPRi/Usf9teMD1lM2DH9L/VrieNdVReZRlKVsR3DvhtfXX
+	ip95UxknbW15u+S86zPj3cfMz2ketjBaaBQbrZ+tp7pHiaU4I9FQi7moOBEA8Ws9AZACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 04:41:21PM -0400, Alan Stern wrote:
-> On Wed, 20 Mar 2013, Greg Kroah-Hartman wrote:
-> 
-> > > > Ok, I'll postpone this patch for the next stable release, in time for
-> > > > the fix to be put in at the same time.
-> > > 
-> > > I think patch 13/75 ("USB: EHCI: dont check DMA values in QH overlays")
-> > > should also be postponed then, at least Alan said so in
-> > > <Pine.LNX.4.44L0.1303191125100.15684-100000@netrider.rowland.org>.
-> > 
-> > Crap, I didn't postpone that one, hopefully it doesn't cause as many
-> > problems...
-> 
-> I haven't tested this combination of changes, except in a highly 
-> artificial setting (i.e., running the usbtest suite), so I don't know 
-> how it will behave under normal use.  In any case, it's too late to do 
-> anything now except issue another -stable release.
-> 
-> I just saw that the "dont check DMA values" patch did get into the
-> 3.0-stable and 3.4-stable releases.  I didn't realize at the time, but
-> it shouldn't be in any kernel earlier than 3.6.  I guess the best thing
-> to do is queue up a reversion for those two series.
+Hi Steve,
 
-I've now done this, thanks.
+> > I am going to push the changes to github.
+>
+> Great!
+>
+> Didn't I ask you before if the nvme drive and the sop drive were the same
+> size? ;-)
 
-greg k-h
+[CB] Right! But the value returned by the FW was same, and the utilities round that off to 400GB in both cases. So to me it was the same size....
+The devil is in the details :-(
+
+Thanks,
+Chayan
+
+
+
+________________________________
+
+PLEASE NOTE: The information contained in this electronic mail message is intended only for the use of the designated recipient(s) named above. If the reader of this message is not the intended recipient, you are hereby notified that you have received this message in error and that any review, dissemination, distribution, or copying of this message is strictly prohibited. If you have received this communication in error, please notify the sender by telephone or e-mail (as shown above) immediately and destroy any and all copies of this message in your possession (whether hard copies or electronically stored copies).
+
