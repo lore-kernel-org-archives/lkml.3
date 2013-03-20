@@ -1,122 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab3CTRoa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 13:44:30 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:49733 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046Ab3CTRo2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 13:44:28 -0400
-Message-ID: <5149F579.2080303@free-electrons.com>
-Date: Wed, 20 Mar 2013 18:44:25 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>
-Subject: Re: [PATCHv3 09/10] clocksource: time-armada-370-xp: Divorce from
- local timer API
-References: <1363198676-30417-1-git-send-email-sboyd@codeaurora.org> <1363198676-30417-10-git-send-email-sboyd@codeaurora.org> <5149ED53.5060002@free-electrons.com> <5149EFFA.1050408@codeaurora.org> <5149F13E.7060901@free-electrons.com>
-In-Reply-To: <5149F13E.7060901@free-electrons.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753586Ab3CTRqe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 13:46:34 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51217 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751222Ab3CTRqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 13:46:33 -0400
+Message-ID: <1363801579.17680.3.camel@pasglop>
+Subject: Re: [PATCH 1/2] of: Make device nodes kobjects so they show up in
+ sysfs
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 20 Mar 2013 18:46:19 +0100
+In-Reply-To: <20130320165620.GB28307@kroah.com>
+References: <1363791074-16415-1-git-send-email-grant.likely@secretlab.ca>
+	 <1363791074-16415-2-git-send-email-grant.likely@secretlab.ca>
+	 <1363791432.12701.8.camel@pasglop> <20130320165620.GB28307@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 06:26 PM, Gregory CLEMENT wrote:
-> On 03/20/2013 06:20 PM, Stephen Boyd wrote:
->> On 03/20/13 10:09, Gregory CLEMENT wrote:
->>> On 03/13/2013 07:17 PM, Stephen Boyd wrote:
->>>> Separate the armada 370xp local timers from the local timer API.
->>>> This will allow us to remove ARM local timer support in the near
->>>> future and makes this driver multi-architecture friendly.
->>> At first view the code looks good, but when I applied your patch set on
->>> linux-next, build it and run it on a Armada XP based board (AX3 with 2 cores),
->>> it crashed:
->> [...]
->>> Internal error: Oops - undefined instruction: 0 [#1] SMP ARM
->>> Modules linked in:
->>> CPU: 0    Not tainted  (3.9.0-rc3-next-20130319-00010-g728b448 #153)
->>> PC is at 0xe92d45f0
->>> LR is at armada_370_xp_timer_interrupt+0x3c/0x4c
->>> pc : [<e92d45f0>]    lr : [<c023c2bc>]    psr: 600001d3
->>> sp : c0635eb8  ip : 00000000  fp : c063c3f0
->>> r10: 000003ff  r9 : 00000000  r8 : 00000010
->>> r7 : c22b3c40  r6 : ef007c00  r5 : c0640fcc  r4 : c0053e30
->>> r3 : e92d45f0  r2 : fffffffe  r1 : c22b3c40  r0 : c0053e30
->>> Flags: nZCv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
->>> Control: 10c53c7d  Table: 0000406a  DAC: 00000015
->>> Process swapper/0 (pid: 0, stack limit = 0xc0634238)
->>> Stack: (0xc0635eb8 to 0xc0636000)
->>> 5ea0:                                                       ef004c80 c0063224
->>> 5ec0: 00000010 00000010 00000000 c0660ac0 c0635f18 c005fcb8 c0632b90 c000ed94
->>> 5ee0: c0313c60 60000153 00000001 c00085a8 c0313c54 c0313c60 60000153 ffffffff
->>> 5f00: c0635f4c 00000000 562f5842 c06360c0 00000000 c000db60 0000001a ffff8ad0
->>> 5f20: ffff8ad0 c06360c0 00000000 00000000 c04379c0 c22ad780 00000000 562f5842
->>> 5f40: c06360c0 00000000 60000153 c0635f60 c0313c54 c0313c60 60000153 ffffffff
->>> 5f60: 00000021 00000000 00000003 00000004 0000006e c065fcc0 c067924c c063ceb8
->>> 5f80: c063cc84 c006d8c0 00000005 c065fcc0 c067924c c0421764 c22ad780 c063c42c
->>> 5fa0: 562f5842 c063cca8 c06605c0 c04379c0 c22ad780 00000000 562f5842 00000000
->>> 5fc0: 00000000 c0417754 ffffffff ffffffff c04172dc 00000000 00000000 c04379c0
->>> 5fe0: 10c53c7d c063c414 c04379bc c063febc 0000406a 00008074 00000000 00000000
->>> [<c023c2bc>] (armada_370_xp_timer_interrupt+0x3c/0x4c) from [<c0063224>] (handle_percpu_devid_irq+0x64/0x80)
->>> [<c0063224>] (handle_percpu_devid_irq+0x64/0x80) from [<c005fcb8>] (generic_handle_irq+0x20/0x30)
->>> [<c005fcb8>] (generic_handle_irq+0x20/0x30) from [<c000ed94>] (handle_IRQ+0x38/0x90)
->>> [<c000ed94>] (handle_IRQ+0x38/0x90) from [<c00085a8>] (armada_370_xp_handle_irq+0xa4/0xb0)
->>> [<c00085a8>] (armada_370_xp_handle_irq+0xa4/0xb0) from [<c000db60>] (__irq_svc+0x40/0x50)
->>> Exception stack(0xc0635f18 to 0xc0635f60)
->>> 5f00:                                                       0000001a ffff8ad0
->>> 5f20: ffff8ad0 c06360c0 00000000 00000000 c04379c0 c22ad780 00000000 562f5842
->>> 5f40: c06360c0 00000000 60000153 c0635f60 c0313c54 c0313c60 60000153 ffffffff
->>> [<c000db60>] (__irq_svc+0x40/0x50) from [<c0313c60>] (calibrate_delay+0x378/0x528)
->>> [<c0313c60>] (calibrate_delay+0x378/0x528) from [<c0417754>] (start_kernel+0x250/0x2dc)
->>> [<c0417754>] (start_kernel+0x250/0x2dc) from [<00008074>] (0x8074)
->>> Code: 1fe7deb7 cd5772dd fff5692e ed55f79e (7ed5a5f7)
->>>
->>>
->>>
->>> I am trying to figure out what happened.
->>
->> Argh. Stupid casting again. Can you try this?
+On Wed, 2013-03-20 at 09:56 -0700, Greg Kroah-Hartman wrote:
+> > Unfortunately they occasionally are... VPDs can be pretty big for
+> > example.
 > 
-> Our emails  must have crossed, your fix is also fine :)
-> 
+> If the attributes are binary blobs, use the binary file capability of
+> sysfs to properly handle them.
 
-I have also tested the patch set on a Armada 370 based board (Armada 370 DB),
-and it works well.
-So with this last chunk you can add my:
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-and also my
-tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Except that we don't know that ... we have properties which comes all as
+"blobs", only the consumers can interpret what they contain. Tools like
+lsprop or dtc do have some built-in smarts to differentiate for example
+strings, simple numbers and blobs based roughly on heuristics of content
+& size but that's purely for the sake of pretty printing.
+
+Something like /proc/device-tree (or a sysfs equivalent) has no way
+really to know what's in there. So basically they should *all* be binary
+blobs.
+
+> > > Second, all normal sysfs attributes report their size as 4096 bytes
+> > > instead of the actual property size reported in /proc/device-tree. It is
+> > > possible that this change will cause some userspace tools to break.
+> > 
+> > This is btw a complete idiocy of sysfs and should/could be fixed.
+> 
+> How can sysfs change this?  It doesn't know the size of the attribute
+> ahead of time, and it can change depending on what happens in the
+> system.  So we default to a page size, which is the largest size an
+> attribute can be.
+
+That's true for some attributes I suppose and I while I do understand
+the difficulty there would be in calculating all the sizes on every
+stat, it's still gross, especially for those plenty of attributes who
+do have a fixed size.
+
+In our case, we do know the size, we should expose it.
+
+Cheers,
+Ben.
 
 
-> 
->>
->> ---8<----
->>
->> diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
->> index ee2e50c5..a9bf37a 100644
->> --- a/drivers/clocksource/time-armada-370-xp.c
->> +++ b/drivers/clocksource/time-armada-370-xp.c
->> @@ -150,7 +150,7 @@ static irqreturn_t armada_370_xp_timer_interrupt(int irq, void *dev_id)
->>         /*
->>          * ACK timer interrupt and call event handler.
->>          */
->> -       struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
->> +       struct clock_event_device *evt = dev_id;
->>  
->>         writel(TIMER0_CLR_MASK, local_base + LCL_TIMER_EVENTS_STATUS);
->>         evt->event_handler(evt);
->>
-> 
-> 
-
-
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
