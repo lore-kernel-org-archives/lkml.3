@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934225Ab3CTBZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 21:25:56 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50767 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932682Ab3CTBZz (ORCPT
+	id S932272Ab3CTB2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 21:28:21 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:1098
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754430Ab3CTB2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 21:25:55 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-f9-51491020b51c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 8/9] perf util: Get rid of die() calls in trace-data-read.c
-References: <1363683224-28804-1-git-send-email-namhyung@kernel.org>
-	<1363683224-28804-9-git-send-email-namhyung@kernel.org>
-	<1363704928.5938.29.camel@gandalf.local.home>
-Date: Wed, 20 Mar 2013 10:25:52 +0900
-In-Reply-To: <1363704928.5938.29.camel@gandalf.local.home> (Steven Rostedt's
-	message of "Tue, 19 Mar 2013 10:55:28 -0400")
-Message-ID: <87620mj1zz.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 19 Mar 2013 21:28:19 -0400
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT003.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: PS2(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2fh2a8h668h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18deh18e1h1946h19b5h1ad9h1b0ah17ej1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
+Thread-Topic: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
+Thread-Index: Ac4lCiwmmvU0usyXI0yxxCAslUbX+Q==
+Date: Wed, 20 Mar 2013 01:28:06 +0000
+Message-ID: <3pfl8u1ugprwkcs5xmtjth3l.1363742692541@email.android.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [::]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <493191EDBCC13545A1048D9E1A896040@nebula.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2K1SNm5029713
 
-On Tue, 19 Mar 2013 10:55:28 -0400, Steven Rostedt wrote:
-> On Tue, 2013-03-19 at 17:53 +0900, Namhyung Kim wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> Convert them to pr_debug() and propagate error code.
->
-> Shouldn't they be pr_err(). I mean, if the old code would kill the
-> process, why just keep it as a debug output?
-
-Please see my other reply.
-
-Arnaldo, can you give me your direction/preference?
-
-Thanks,
-Namhyung
+Mm. The question is whether we can reliably determine the ranges a device should be able to access without having to trust userspace (and, ideally, without having to worry about whether iommu vendors have done their job). It's pretty important for PCI passthrough, so we do need to care. 
+-- 
+Matthew Garrett | matthew.garrett@nebula.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
