@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757881Ab3CTURh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 16:17:37 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:38944 "EHLO
-	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756281Ab3CTUPm (ORCPT
+	id S1755610Ab3CTUSk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 16:18:40 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:48113 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab3CTUSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 16:15:42 -0400
-X-Greylist: delayed 1187 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Mar 2013 16:15:42 EDT
-From: Rik van Riel <riel@surriel.com>
-To: torvalds@linux-foundation.org
-Cc: davidlohr.bueso@hp.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
-        walken@google.com, lwoodman@redhat.com, chegu_vinod@hp.com,
-        Rik van Riel <riel@surriel.com>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH 5/7] ipc,sem: open code and rename sem_lock
-Date: Wed, 20 Mar 2013 15:55:35 -0400
-Message-Id: <1363809337-29718-6-git-send-email-riel@surriel.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1363809337-29718-1-git-send-email-riel@surriel.com>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+	Wed, 20 Mar 2013 16:18:39 -0400
+Date: Wed, 20 Mar 2013 21:18:33 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH 1/3] mm, nobootmem: fix wrong usage of max_low_pfn
+Message-ID: <20130320201833.GA26387@merkur.ravnborg.org>
+References: <1363670161-9214-1-git-send-email-iamjoonsoo.kim@lge.com> <CAE9FiQWXYGdAp82HE8Jg=HYdxWa5nPC5g63E6rNNwYyAQ-B5tg@mail.gmail.com> <20130319062522.GG8858@lge.com> <20130319064247.GH8858@lge.com> <CAE9FiQV=NWCgbV=AT1W6Y5a0jH+tk5Oi6dSDZ2XQoPgCoYZ8Cg@mail.gmail.com> <20130319080721.GI8858@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130319080721.GI8858@lge.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename sem_lock to sem_obtain_lock, so we can introduce a sem_lock
-function later that only locks the sem_array and does nothing else.
+On Tue, Mar 19, 2013 at 05:07:21PM +0900, Joonsoo Kim wrote:
+> On Tue, Mar 19, 2013 at 12:35:45AM -0700, Yinghai Lu wrote:
+> > Can you check why sparc do not need to change interface during converting
+> > to use memblock to replace bootmem?
+> 
+> Sure.
+> According to my understanding to sparc32 code(arch/sparc/mm/init_32.c),
+> they already use max_low_pfn as the maximum PFN value,
+> not as the number of pages.
 
-Open code the locking from ipc_lock in sem_obtain_lock, so we can
-introduce finer grained locking for the sem_array in the next patch.
+I assume you already know...
+sparc64 uses memblock, but sparc32 does not.
+I looked at using memblock for sparc32 some time ago but got
+distracted by other stuff.
+I recall from back then that these ackward named variables confused me,
+and some of my confusion was likely rooted in sparc32 using
+max_low_pfn for something elase than others do.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- ipc/sem.c |   23 +++++++++++++++++++----
- 1 files changed, 19 insertions(+), 4 deletions(-)
+I have no plans to look into adding memblock support for sparc32
+right now. But may eventually do so when I get some spare time.
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index ff3d4ff..d25f9b6 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -194,14 +194,29 @@ void __init sem_init (void)
-  * sem_lock_(check_) routines are called in the paths where the rw_mutex
-  * is not held.
-  */
--static inline struct sem_array *sem_lock(struct ipc_namespace *ns, int id)
-+static inline struct sem_array *sem_obtain_lock(struct ipc_namespace *ns, int id)
- {
--	struct kern_ipc_perm *ipcp = ipc_lock(&sem_ids(ns), id);
-+	struct kern_ipc_perm *ipcp;
- 
-+	rcu_read_lock();
-+	ipcp = ipc_obtain_object(&sem_ids(ns), id);
- 	if (IS_ERR(ipcp))
--		return (struct sem_array *)ipcp;
-+		goto err1;
-+
-+	spin_lock(&ipcp->lock);
-+
-+	/* ipc_rmid() may have already freed the ID while sem_lock
-+	 * was spinning: verify that the structure is still valid
-+	 */
-+	if (ipcp->deleted)
-+		goto err0;
- 
- 	return container_of(ipcp, struct sem_array, sem_perm);
-+err0:
-+	spin_unlock(&ipcp->lock);
-+err1:
-+	rcu_read_unlock();
-+	return ERR_PTR(-EINVAL);
- }
- 
- static inline struct sem_array *sem_obtain_object(struct ipc_namespace *ns, int id)
-@@ -1562,7 +1577,7 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 		goto out_free;
- 	}
- 
--	sma = sem_lock(ns, semid);
-+	sma = sem_obtain_lock(ns, semid);
- 
- 	/*
- 	 * Wait until it's guaranteed that no wakeup_sem_queue_do() is ongoing.
--- 
-1.7.7.6
-
+	Sam
