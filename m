@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab3CTSUE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 14:20:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51271 "EHLO mx2.suse.de"
+	id S1756874Ab3CTSV1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 14:21:27 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:54001 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755269Ab3CTSUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 14:20:01 -0400
-Date: Wed, 20 Mar 2013 18:19:57 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Hedi Berriche <hedi@sgi.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: page_alloc: Avoid marking zones full prematurely after
- zone_reclaim()
-Message-ID: <20130320181957.GA1878@suse.de>
+	id S1753016Ab3CTSV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 14:21:26 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: dirk.brandewie@gmail.com
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: Re: [PATCH] cpufreq/intel_pstate: Add function to check that all MSR's are valid
+Date: Wed, 20 Mar 2013 19:28:43 +0100
+Message-ID: <5818534.Fj7AtdhPq1@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1363796244-6658-1-git-send-email-dirk.brandewie@gmail.com>
+References: <1363796244-6658-1-git-send-email-dirk.brandewie@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following problem was reported against a distribution kernel when
-zone_reclaim was enabled but the same problem applies to the mainline
-kernel. The reproduction case was as follows
+On Wednesday, March 20, 2013 09:17:24 AM dirk.brandewie@gmail.com wrote:
+> From: Dirk Brandewie <dirk.brandewie@gmail.com>
+> 
+> Some VMs seem to try to implement some MSRs but not all the registers
+> the driver needs.  Check to make sure all the MSR that we need are
+> available. If any of the required MSRs are not available refuse to
+> load.
+> 
+> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-1. Run numactl -m +0 dd if=largefile of=/dev/null
-   This allocates a large number of clean pages in node 0
+Is this needed for v3.9?  Any pointers to bug reports etc.?
 
-2. numactl -N +0 memhog 0.5*Mg
-   This start a memory-using application in node 0.
+Rafael
 
-The expected behaviour is that the clean pages get reclaimed and the
-application uses node 0 for its memory. The observed behaviour was that
-the memory for the memhog application was allocated off-node since commits
-cd38b11 (mm: page allocator: initialise ZLC for first zone eligible for
-zone_reclaim) and commit 76d3fbf (mm: page allocator: reconsider zones
-for allocation after direct reclaim).
 
-The assumption of those patches was that it was always preferable to
-allocate quickly than stall for long periods of time and they were
-meant to take care that the zone was only marked full when necessary but
-an important case was missed.
-
-In the allocator fast path, only the low watermarks are checked. If the
-zones free pages are between the low and min watermark then allocations
-from the allocators slow path will succeed. However, zone_reclaim
-will only reclaim SWAP_CLUSTER_MAX or 1<<order pages. There is no
-guarantee that this will meet the low watermark causing the zone to be
-marked full prematurely.
-
-This patch will only mark the zone full after zone_reclaim if it the min
-watermarks are checked or if page reclaim failed to make sufficient
-progress.
-
-Reported-and-tested-by: Hedi Berriche <hedi@sgi.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/page_alloc.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8fcced7..adce823 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1940,9 +1940,24 @@ zonelist_scan:
- 				continue;
- 			default:
- 				/* did we reclaim enough */
--				if (!zone_watermark_ok(zone, order, mark,
-+				if (zone_watermark_ok(zone, order, mark,
- 						classzone_idx, alloc_flags))
-+					goto try_this_zone;
-+
-+				/*
-+				 * Failed to reclaim enough to meet watermark.
-+				 * Only mark the zone full if checking the min
-+				 * watermark or if we failed to reclaim just
-+				 * 1<<order pages or else the page allocator
-+				 * fastpath will prematurely mark zones full
-+				 * when the watermark is between the low and
-+				 * min watermarks.
-+				 */
-+				if ((alloc_flags & ALLOC_WMARK_MIN) ||
-+				    ret == ZONE_RECLAIM_SOME)
- 					goto this_zone_full;
-+
-+				continue;
- 			}
- 		}
- 
+> ---
+>  drivers/cpufreq/intel_pstate.c |   26 ++++++++++++++++++++++++++
+>  1 files changed, 26 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> index f6dd1e7..cd9c5f4 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -752,6 +752,29 @@ static struct cpufreq_driver intel_pstate_driver = {
+>  
+>  static int __initdata no_load;
+>  
+> +static int intel_pstate_msrs_not_valid(void)
+> +{
+> +	/* Check that all the msr's we are using are valid. */
+> +	u64 aperf, mperf, tmp;
+> +
+> +	rdmsrl(MSR_IA32_APERF, aperf);
+> +	rdmsrl(MSR_IA32_MPERF, mperf);
+> +
+> +	if (!intel_pstate_min_pstate() ||
+> +		!intel_pstate_max_pstate() ||
+> +		!intel_pstate_turbo_pstate())
+> +		return -ENODEV;
+> +
+> +	rdmsrl(MSR_IA32_APERF, tmp);
+> +	if (!(tmp - aperf))
+> +		return -ENODEV;
+> +
+> +	rdmsrl(MSR_IA32_MPERF, tmp);
+> +	if (!(tmp - mperf))
+> +		return -ENODEV;
+> +
+> +	return 0;
+> +}
+>  static int __init intel_pstate_init(void)
+>  {
+>  	int cpu, rc = 0;
+> @@ -764,6 +787,9 @@ static int __init intel_pstate_init(void)
+>  	if (!id)
+>  		return -ENODEV;
+>  
+> +	if (intel_pstate_msrs_not_valid())
+> +		return -ENODEV;
+> +
+>  	pr_info("Intel P-state driver initializing.\n");
+>  
+>  	all_cpu_data = vmalloc(sizeof(void *) * num_possible_cpus());
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
