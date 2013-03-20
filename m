@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab3CTIUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 04:20:24 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:60827 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757845Ab3CTIUV (ORCPT
+	id S1757712Ab3CTIX4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 04:23:56 -0400
+Received: from mail-da0-f48.google.com ([209.85.210.48]:49425 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab3CTIXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 04:20:21 -0400
-Message-ID: <51497140.9020804@gmail.com>
-Date: Wed, 20 Mar 2013 09:20:16 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Dom Cobley <popcornmix@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rabeeh Khoury <rabeeh@solid-run.com>, Daniel Mack <zonque@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3] clk: add si5351 i2c common clock driver
-References: <1360414772-12232-1-git-send-email-sebastian.hesselbarth@gmail.com> <1363603397-2762-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130320002623.8663.55217@quantum>
-In-Reply-To: <20130320002623.8663.55217@quantum>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 20 Mar 2013 04:23:54 -0400
+Message-ID: <1363767334.3758.5.camel@phoenix>
+Subject: [PATCH 2/2] PM / devfreq: exynos4_bus: Fix table entry size for
+ exynos4x12_clkdiv_dmc1
+From: Axel Lin <axel.lin@ingics.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>, linux-kernel@vger.kernel.org
+Date: Wed, 20 Mar 2013 16:15:34 +0800
+In-Reply-To: <1363767266.3758.4.camel@phoenix>
+References: <1363767266.3758.4.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 01:26 AM, Mike Turquette wrote:
-> Quoting Sebastian Hesselbarth (2013-03-18 03:43:17)
->> This patch adds a common clock driver for Silicon Labs Si5351a/b/c
->> i2c programmable clock generators. Currently, the driver supports
->> DT kernels only and VXCO feature of si5351b is not implemented. DT
->> bindings selectively allow to overwrite stored Si5351 configuration
->> which is very helpful for clock generators with empty eeprom
->> configuration. Corresponding device tree binding documentation is
->> also added.
->>
->> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->> ---
->> Changes from v2:
->> - add curly brackets to if-else-statements (Reported by Daniel Mack)
->> - fix div-by-zero for clk6/clk7 (Reported by Daniel Mack)
->> - fix parameter address calculation for clk6/clk7
->>
->> Changes from v1:
->> - remove .is_enabled functions as they read from i2c
->>    (Reported by Daniel Mack)
->> - add CLK_SET_RATE_PARENT on clkout reparent if clkout uses
->>    its own multisync
->>
->
-> I've just pushed out a new clk-next branch which includes Ulf Hansson's
-> series to introduce the .is_prepared callback.  Perhaps you can use that
-> where you were previously using .is_enabled?
+exynos4x12_clkdiv_dmc1 contains { G2DACP, DIVC2C, DIVC2C_ACLK }, thus
+set the size to 3 rather than 6.
 
-Mike,
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/devfreq/exynos4_bus.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-thanks for the info, but I think having .prepare_enable and regmap caching
-is just fine for now. When .is_prepared is in mainline, I will re-add the
-callbacks.
+diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
+index 45d00d1..1deee09 100644
+--- a/drivers/devfreq/exynos4_bus.c
++++ b/drivers/devfreq/exynos4_bus.c
+@@ -235,7 +235,7 @@ static const unsigned int exynos4x12_clkdiv_dmc0[][6] = {
+ 	/* DMC L4: 100MHz */
+ 	{7, 1, 1, 7, 1, 1},
+ };
+-static const unsigned int exynos4x12_clkdiv_dmc1[][6] = {
++static const unsigned int exynos4x12_clkdiv_dmc1[][3] = {
+ 	/*
+ 	 * Clock divider value for following
+ 	 * { G2DACP, DIVC2C, DIVC2C_ACLK }
+-- 
+1.7.9.5
 
-Sebastian
+
+
