@@ -1,137 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab3CTNgA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 09:36:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30978 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755874Ab3CTNf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 09:35:59 -0400
-Date: Wed, 20 Mar 2013 14:35:31 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Anton Arapov <anton@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Josh Stone <jistone@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] perf: Ensure we do not free event->parent before
- event
-Message-ID: <20130320133531.GA1036@krava.brq.redhat.com>
-References: <20130204190225.GA10840@redhat.com>
- <20130204190243.GA10858@redhat.com>
+	id S1752472Ab3CTNie (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 09:38:34 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48779 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750709Ab3CTNid (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 09:38:33 -0400
+Date: Wed, 20 Mar 2013 13:38:21 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "feng.tang@intel.com" <feng.tang@intel.com>
+Subject: Re: Perf tool won't build without libnewt
+Message-ID: <20130320133820.GA15279@e106331-lin.cambridge.arm.com>
+References: <20130320121111.GB16485@e106331-lin.cambridge.arm.com>
+ <20130320132322.GE23423@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130204190243.GA10858@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130320132322.GE23423@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 04, 2013 at 08:02:43PM +0100, Oleg Nesterov wrote:
-> __perf_event_exit_task() does:
+On Wed, Mar 20, 2013 at 01:23:22PM +0000, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Mar 20, 2013 at 12:11:11PM +0000, Mark Rutland escreveu:
+> > I attempted to cross-build v3.9-rc3's perf tool for an arm system today, and
+> > got the following out of the build system:
+> > 
+> > CHK libnewt
+> > Makefile:655: newt not found, disables TUI support. Please install newt-devel or libnewt-dev
+> > [...]
+> > builtin-report.c: In function ‘__cmd_report’:
+> > builtin-report.c:478:15: error: ‘K_SWITCH_INPUT_DATA’ undeclared (first use in this function)
+> > builtin-report.c:478:15: note: each undeclared identifier is reported only once for each function it appears in
+> > builtin-report.c: In function ‘cmd_report’:
+> > builtin-report.c:821:13: error: ‘K_SWITCH_INPUT_DATA’ undeclared (first use in this function)
+> > make: *** [builtin-report.o] Error 1
+> > make: *** Waiting for unfinished jobs....
+> > 
+> > I've bisected this down to ad0de0971b: "perf report: Enable the runtime
+> > switching of perf data file".
 > 
-> 	sync_child_event(event)
-> 	free_event(event)
+> Can you try with latest tip/perf/urgent, should go to Linus soon.
 > 
-> sync_child_event() does put_event(event->parent) which can actually
-> free ->parent. This means that event->destroy(event) is called with
-> ->parent pointing to nowhere.
-> 
-> perf_free_event() does put_parent(parent) before free_event(child)
-> too.
-> 
-> Afaics, currently this is fine. But the tracing "subclasses" (like
-> trace_uprobe) may want to track the events and their parents, and even
-> the fact that parent->destroy() is called before child->destroy() can
-> complicate this.
-> 
-> Move this put_event() from sync_child_event() to its single caller,
-> __perf_event_exit_task(). Change perf_free_event() the same way.
+> This cset should fix it:
 
-looks ok to me, could prevent future headaches ;-)
-
-jirka
-
-
+Indeed it does.
 
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/events/core.c |   24 ++++++++++++------------
->  1 files changed, 12 insertions(+), 12 deletions(-)
+> commit 5f7439e07822942f32b9e0a66f4a3cc9c3e29e67
+> Author: Michael Ellerman <michael@ellerman.id.au>
+> Date:   Tue Feb 26 16:02:03 2013 +1100
 > 
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 301079d..1b2e516 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -6787,12 +6787,6 @@ static void sync_child_event(struct perf_event *child_event,
->  	mutex_lock(&parent_event->child_mutex);
->  	list_del_init(&child_event->child_list);
->  	mutex_unlock(&parent_event->child_mutex);
-> -
-> -	/*
-> -	 * Release the parent event, if this was the last
-> -	 * reference to it.
-> -	 */
-> -	put_event(parent_event);
->  }
->  
->  static void
-> @@ -6800,7 +6794,9 @@ __perf_event_exit_task(struct perf_event *child_event,
->  			 struct perf_event_context *child_ctx,
->  			 struct task_struct *child)
->  {
-> -	if (child_event->parent) {
-> +	struct perf_event *parent_event = child_event->parent;
-> +
-> +	if (parent_event) {
->  		raw_spin_lock_irq(&child_ctx->lock);
->  		perf_group_detach(child_event);
->  		raw_spin_unlock_irq(&child_ctx->lock);
-> @@ -6813,9 +6809,14 @@ __perf_event_exit_task(struct perf_event *child_event,
->  	 * that are still around due to the child reference. These
->  	 * events need to be zapped.
->  	 */
-> -	if (child_event->parent) {
-> +	if (parent_event) {
->  		sync_child_event(child_event, child);
->  		free_event(child_event);
-> +		/*
-> +		 * Release the parent event, if this was the last
-> +		 * reference to it.
-> +		 */
-> +		put_event(parent_event);
->  	}
->  }
->  
-> @@ -6867,8 +6868,7 @@ static void perf_event_exit_task_context(struct task_struct *child, int ctxn)
->  	 * We can recurse on the same lock type through:
->  	 *
->  	 *   __perf_event_exit_task()
-> -	 *     sync_child_event()
-> -	 *       put_event()
-> +	 *       put_event(parent_event)
->  	 *         mutex_lock(&ctx->mutex)
->  	 *
->  	 * But since its the parent context it won't be the same instance.
-> @@ -6937,11 +6937,11 @@ static void perf_free_event(struct perf_event *event,
->  	list_del_init(&event->child_list);
->  	mutex_unlock(&parent->child_mutex);
->  
-> -	put_event(parent);
-> -
->  	perf_group_detach(event);
->  	list_del_event(event, ctx);
->  	free_event(event);
-> +
-> +	put_event(parent);
->  }
->  
->  /*
-> -- 
-> 1.5.5.1
+>     perf report: Fix build with NO_NEWT=1
 > 
+> ----
+> 
+> 	Thanks for reporting!
+> 
+> - Arnaldo
+
+Cheers,
+Mark.
