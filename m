@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757728Ab3CTB3r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Mar 2013 21:29:47 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56675 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754829Ab3CTB3q (ORCPT
+	id S932656Ab3CTBjb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Mar 2013 21:39:31 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12047 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754416Ab3CTBja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Mar 2013 21:29:46 -0400
-Message-ID: <51491107.5060001@wwwdotorg.org>
-Date: Tue, 19 Mar 2013 19:29:43 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Tue, 19 Mar 2013 21:39:30 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 19 Mar 2013 18:32:09 -0700
+Subject: Re: [PATCH] ARM: tegra: fuse: add fuctions to read speedo id and
+ process id
+From: Danny Huang <dahuang@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <5148A8D6.8000002@wwwdotorg.org>
+References: <1363660405-10668-1-git-send-email-dahuang@nvidia.com>
+	 <5148A8D6.8000002@wwwdotorg.org>
+Date: Wed, 20 Mar 2013 09:39:17 +0800
+Message-ID: <1363743557.3573.50.camel@dahuang-vm>
 MIME-Version: 1.0
-To: Andreas Bombe <aeb@debian.org>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Regression] process hangs due to "USB: EHCI: work around silicon
- bug in Intels EHCI controllers"
-References: <20130320000336.GA8912@amos.fritz.box>
-In-Reply-To: <20130320000336.GA8912@amos.fritz.box>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2013 06:03 PM, Andreas Bombe wrote:
-> The named commit (6402c796d3) causes a process to hang indefinitely in
-> usb_kill_urb(). Reverting it fixes the problem. The bug also prevents
-> suspend/shutdown/reboot from completing, presumably due to the hanging
-> process.
+On Wed, 2013-03-20 at 02:05 +0800, Stephen Warren wrote:
+> On 03/18/2013 08:33 PM, Danny Huang wrote:
+> > Add functions to read the speedo and process id of both cpu and soc.
+> > There might be some drivers need the information as well.
 > 
-> (Cc'ing Stephen Warren because I only found his report after I bisected
-> it myself. Do you also see a blocked process?)
+> What code wants to use these functions? It'd be best to submit this
+> patch with that code, so that something actually uses the functions, and
+> they don't look like dead code.
 
-Yes, I believe the symptoms we're both seeing are identical.
+There are some developing drivers that are located in drivers folder
+needs those information. I think that they can't include a header file
+in mach-tegra folder. Hence I'd like to provide them such functions for
+their development.
+Is there any better way to do this?
 
-> This is the hanging process on my system:
-> [  240.364085] INFO: task colord-sane:3619 blocked for more than 120 seconds.
-...
-> [  240.364118] Call Trace:
-> [  240.364127]  [<ffffffff81685af0>] schedule+0x65/0x67
-> [  240.364132]  [<ffffffff8141a235>] usb_kill_urb+0xb5/0xd3
+> 
+> In the past, functions similar to this used to exist. However, they were
+> removed and replaced by direct access to the underlying variables. Do we
+> actually need functions for this, or can code simply read from the
+> variables instead?
+
