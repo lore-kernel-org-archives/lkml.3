@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524Ab3CUJPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 05:15:35 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41007 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757068Ab3CUJPe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 05:15:34 -0400
-Date: Thu, 21 Mar 2013 10:15:31 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] clk: divider: Use DIV_ROUND_CLOSEST
-Message-ID: <20130321091531.GN20530@pengutronix.de>
-References: <2e77dfe8-8d4f-4b77-bf1b-831ad1572c23@VA3EHSMHS046.ehs.local>
- <20130320001609.8663.21043@quantum>
- <f3ff0545-52cd-4b7b-967e-f81324ba0152@CH1EHSMHS040.ehs.local>
- <20130320185051.GA28349@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130320185051.GA28349@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1758029Ab3CUJS2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 05:18:28 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61923 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757215Ab3CUJSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 05:18:22 -0400
+X-IronPort-AV: E=Sophos;i="4.84,884,1355068800"; 
+   d="scan'208";a="6917161"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        yinghai@kernel.org, akpm@linux-foundation.org, wency@cn.fujitsu.com,
+        trenn@suse.de, liwanp@linux.vnet.ibm.com, mgorman@suse.de,
+        walken@google.com, riel@redhat.com, khlebnikov@openvz.org,
+        tj@kernel.org, minchan@kernel.org, m.szyprowski@samsung.com,
+        mina86@mina86.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, linfeng@cn.fujitsu.com,
+        jiang.liu@huawei.com, kosaki.motohiro@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [RESEND PATCH part1 1/9] x86: get pg_data_t's memory from other node
+Date: Thu, 21 Mar 2013 17:20:47 +0800
+Message-Id: <1363857655-30658-2-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1363857655-30658-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1363857655-30658-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/21 17:16:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/21 17:16:50,
+	Serialize complete at 2013/03/21 17:16:50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-On Wed, Mar 20, 2013 at 07:50:51PM +0100, Sascha Hauer wrote:
-> On Wed, Mar 20, 2013 at 09:32:51AM -0700, Sören Brinkmann wrote:
-> > If the caller
-> > doesn't like the returned frequency he can request a different one.
-> > And he's eventually happy with the return value he calls
-> > clk_set_rate() requesting the frequency clk_round_rate() returned.
-> > Always rounding down seems a bit odd to me.
-> > 
-> > Another issue with the current implmentation:
-> > clk_divider_round_rate() calls clk_divider_bestdiv(), which uses the ROUND_UP macro, returning a rather low frequency.
-> 
-> And that is correct. clk_divider_bestdiv is used to calculate the
-> maximum parent frequency for which a given divider value does not
-> exceed the desired rate.
-The reason for that is that the (more?) usual constraint is like: This
-mmc card can handle up to 100 MHz. Or this i2c device can handle up to
-this and that frequency. Of course there are different constraints, e.g.
-for a UART if the target baud speed is 38400 you better run at 38402
-than at 19201.
+If system can create movable node which all memory of the
+node is allocated as ZONE_MOVABLE, setup_node_data() cannot
+allocate memory for the node's pg_data_t.
+So, use memblock_alloc_try_nid() instead of memblock_alloc_nid()
+to retry when the first allocation fails.
 
-I wonder if it depends on the clock if you want "best approximation <=
-requested value" or "best approximation" or on the caller. In the former
-case a flag for the clock would be the right thing (as suggested in this
-thread). If however it's the caller of round_rate who knows better which
-rounding is preferred than better extend the clk API.
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+---
+ arch/x86/mm/numa.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-Extending the API could just be a convenience function that doesn't
-affect the implementations of the clk API. E.g.:
-
-	long clk_round_rate_nearest(struct clk *clk, unsigned long rate)
-	{
-		long lower_limit = clk_round_rate(clk, rate);
-		long upper_limit = clk_round_rate(clk, rate + (rate - lower_limit));
-
-		if (rate - lower_limit < upper_limit - rate)
-			return lower_limit;
-		else
-			return upper_limit;
-	}
-
-Best regards
-Uwe
-
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 11acdf6..4f754e6 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -214,10 +214,9 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
+ 	 * Allocate node data.  Try node-local memory and then any node.
+ 	 * Never allocate in DMA zone.
+ 	 */
+-	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
++	nd_pa = memblock_alloc_try_nid(nd_size, SMP_CACHE_BYTES, nid);
+ 	if (!nd_pa) {
+-		pr_err("Cannot find %zu bytes in node %d\n",
+-		       nd_size, nid);
++		pr_err("Cannot find %zu bytes in any node\n", nd_size);
+ 		return;
+ 	}
+ 	nd = __va(nd_pa);
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.1
+
