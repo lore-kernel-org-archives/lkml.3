@@ -1,86 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756887Ab3CUD3O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 23:29:14 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:25621
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754086Ab3CUD3L (ORCPT
+	id S1756214Ab3CUDbv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 23:31:51 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:15396 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753792Ab3CUDbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 23:29:11 -0400
-X-Forefront-Antispam-Report: CIP:160.33.194.229;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail02v.am.sony.com;RD:mail02.sonyusa.com;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz936eI14ffIzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dh8275bhz2fh2a8h668h839h947hd25hf0ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1b0ah1155h)
-Message-ID: <514A7E81.9000501@am.sony.com>
-Date: Wed, 20 Mar 2013 20:29:05 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Wed, 20 Mar 2013 23:31:48 -0400
+Message-ID: <514A7E72.2090200@huawei.com>
+Date: Thu, 21 Mar 2013 11:28:50 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <balbi@ti.com>, <netdev@vger.kernel.org>, <steve.glendinning@smsc.com>
-Subject: [BUG] bisected: PandaBoard smsc95xx ethernet driver error from USB
- timeout
+To: Ming Lei <ming.lei@canonical.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Subject: Re: [PATCH 1/2] sysfs: fix race between readdir and lseek
+References: <1363793126-11510-1-git-send-email-ming.lei@canonical.com> <1363793126-11510-2-git-send-email-ming.lei@canonical.com> <514A7340.5040409@huawei.com> <CACVXFVN7urpLM+Q-3o9=hYQLM=544WTXh+BnSo9fBM+d07oapQ@mail.gmail.com>
+In-Reply-To: <CACVXFVN7urpLM+Q-3o9=hYQLM=544WTXh+BnSo9fBM+d07oapQ@mail.gmail.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On 2013/3/21 11:17, Ming Lei wrote:
+> On Thu, Mar 21, 2013 at 10:41 AM, Li Zefan <lizefan@huawei.com> wrote:
+>>
+>> In fact the same race exists between readdir() and read()/write()...
+> 
+> Fortunately, no read()/write() are implemented on sysfs directory, :-)
+> 
 
-Not quite sure quite where the problem is (USB, OMAP, smsc95xx driver, other???),
-so casting the nets wide...
+That's irrelevant...
 
-The PandaBoard frequently fails to boot with an eth0 error when mounting
-the root file system via NFS (ethernet driver fails due to a USB timeout;
-no ethernet means NFS won't work).  A typical set of error messages is:
+See my report:
 
-[    3.264373] smsc95xx 1-1.1:1.0: usb_probe_interface
-[    3.269500] smsc95xx 1-1.1:1.0: usb_probe_interface - got id
-[    3.275543] smsc95xx v1.0.4
-[    8.078674] smsc95xx 1-1.1:1.0: eth0: register 'smsc95xx' at usb-ehci-omap.0-1.1, smsc95xx USB 2.0 Ethernet, 82:b9:1d:fa:67:0d
-[    8.091003] hub 1-1:1.0: state 7 ports 5 chg 0000 evt 0002
-[   13.509918] usb 1-1.1: swapper/0 timed out on ep0out len=0/4
-[   13.515869] smsc95xx 1-1.1:1.0: eth0: Failed to write register index 0x00000108
-[   13.523559] smsc95xx 1-1.1:1.0: eth0: Failed to write ADDRL: -110
-[   13.529998] IP-Config: Failed to open eth0
-
-I have bisected this to:
-
-  commit 18aafe64d75d0e27dae206cacf4171e4e485d285
-  Author: Alan Stern <stern@rowland.harvard.edu>
-  Date:   Wed Jul 11 11:23:04 2012 -0400
-
-     USB: EHCI: use hrtimer for the I/O watchdog
-
-Note that to compile this version of the kernel, an additional fix must
-also be applied:
-
-  commit ba5952e0711b14d8d4fe172671f8aa6091ace3ee
-  Author: Ming Lei <ming.lei@canonical.com>
-  Date:   Fri Jul 13 17:25:24 2012 +0800
-
-     USB: ehci-omap: fix compile failure(v1)
-
-The symptom can be worked around by retrying the USB access if a timeout
-occurs.  This is clearly _not_ the fix, just a hack that I used to
-investigate the problem:
-
-  http://article.gmane.org/gmane.linux.rt.user/9773
-
-My kernel configuration is:
-
-  arch/arm/configs/omap2plus_defconfig
-
-  plus to get the ethernet driver I add:
-
-    CONFIG_USB_EHCI_HCD
-    CONFIG_USB_NET_SMSC95XX
-
-I found the problem on 3.6.11, but have not replicated it on 3.9-rcX
-yet because my config fails to build on 3.9-rc1 and 3.9-rc2.  I'll try
-to work on that issue tomorrow.
+https://patchwork.kernel.org/patch/2160771/
 
