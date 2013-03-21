@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758063Ab3CUNIw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 09:08:52 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:37632
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756333Ab3CUNIv (ORCPT
+	id S932345Ab3CUNI5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 09:08:57 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50472 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756576Ab3CUNIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 09:08:51 -0400
-Date: Thu, 21 Mar 2013 09:08:19 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, Dave Chinner <david@fromorbit.com>,
-        axboe@kernel.dk, laijs@cn.fujitsu.com, fengguang.wu@intel.com,
-        linux-kernel@vger.kernel.org, jmoyer@redhat.com
-Subject: Re: [PATCH 3/4] writeback: replace custom worker pool implementation
- with unbound workqueue
-Message-ID: <20130321130819.GA8721@infradead.org>
-References: <1362692649-25570-1-git-send-email-tj@kernel.org>
- <1362692649-25570-4-git-send-email-tj@kernel.org>
- <20130312150510.GF13152@quack.suse.cz>
- <20130318223244.GA11188@quack.suse.cz>
- <20130318223526.GH3042@htj.dyndns.org>
- <20130319154600.GC5222@quack.suse.cz>
- <CAOS58YMop8+TnCGK2+SH52WNyK011vP0BWu3XENjrGt9xks32w@mail.gmail.com>
- <20130321015721.GL17758@dastard>
- <20130321050718.GA8012@mtj.dyndns.org>
- <20130321113252.GA30777@quack.suse.cz>
+	Thu, 21 Mar 2013 09:08:55 -0400
+Message-ID: <514B0650.5070406@ti.com>
+Date: Thu, 21 Mar 2013 18:38:32 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321113252.GA30777@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Roger Quadros <rogerq@ti.com>
+CC: <tony@atomide.com>, <b-cousson@ti.com>, <linux@arm.linux.org.uk>,
+        <balbi@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support for
+ AUXCLKs
+References: <1363703220-4777-1-git-send-email-rogerq@ti.com> <1363703220-4777-2-git-send-email-rogerq@ti.com>
+In-Reply-To: <1363703220-4777-2-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 12:32:52PM +0100, Jan Kara wrote:
-> On Wed 20-03-13 22:07:18, Tejun Heo wrote:
-> > Hello, Dave.
-> > 
-> > On Thu, Mar 21, 2013 at 12:57:21PM +1100, Dave Chinner wrote:
-> > > When you have a system that has 50+ active filesystems (pretty
-> > > common in the distributed storage environments were every disk has
-> > > it's own filesystem), knowing which filesystem(s) are getting stuck
-> > > in writeback from the sysrq-w or hangcheck output is pretty damn
-> > > important....
-> > 
-> > Hmm... I guess, then, what we can do is adding a worker description
-> > which is printed out with task dump.  ie. A work function can call
-> > work_set_desc(fmt, arg....).  It won't be expensive and can be
-> > implemented relatively easily.  Does that sound good enough?
->   Yeah, that sounds good! Thanks!
+[]..
 
-How about automatically doing this based on the workqueue name?
+> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+> index 0274ff7..23f2064 100644
+> --- a/arch/arm/mach-omap2/board-generic.c
+> +++ b/arch/arm/mach-omap2/board-generic.c
+> @@ -158,7 +158,7 @@ DT_MACHINE_START(OMAP4_DT, "Generic OMAP4 (Flattened Device Tree)")
+>  	.init_irq	= omap_gic_of_init,
+>  	.init_machine	= omap_generic_init,
+>  	.init_late	= omap4430_init_late,
+> -	.init_time	= omap4_local_timer_init,
+> +	.init_time	= omap4_init_time,
+>  	.dt_compat	= omap4_boards_compat,
+>  	.restart	= omap44xx_restart,
+>  MACHINE_END
+
+[]..
+> +#ifdef CONFIG_OF
+> +int __init omap4_clk_init_dt(void)
+> +{
+> +	struct device_node *np;
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "ti,omap4-scrm");
+> +	if (np) {
+> +		scrm_data.clks = scrm_clks;
+> +		scrm_data.clk_num = ARRAY_SIZE(scrm_clks);
+> +		of_clk_add_provider(np, of_clk_src_onecell_get,	&scrm_data);
+> +	}
+> +
+> +	return 0;
+> +}
+
+[]..
+> +
+> +void __init omap4_init_time(void)
+> +{
+> +	omap4_clk_init_dt();
+> +	omap4_local_timer_init();
+> +}
+
+I guess you did all this because of_clk_add_provider() needs
+slab to be initialized. With the below patch[1], now clk inits
+happen within .init_timer already, so none of this would
+be needed.
+
+[1] http://www.spinics.net/lists/arm-kernel/msg231288.html
 
