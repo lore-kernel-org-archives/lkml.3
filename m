@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab3CUFHZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 01:07:25 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:41360 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab3CUFHX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 01:07:23 -0400
-Date: Wed, 20 Mar 2013 22:07:18 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, axboe@kernel.dk, laijs@cn.fujitsu.com,
-        fengguang.wu@intel.com, linux-kernel@vger.kernel.org,
-        jmoyer@redhat.com
-Subject: Re: [PATCH 3/4] writeback: replace custom worker pool implementation
- with unbound workqueue
-Message-ID: <20130321050718.GA8012@mtj.dyndns.org>
-References: <1362692649-25570-1-git-send-email-tj@kernel.org>
- <1362692649-25570-4-git-send-email-tj@kernel.org>
- <20130312150510.GF13152@quack.suse.cz>
- <20130318223244.GA11188@quack.suse.cz>
- <20130318223526.GH3042@htj.dyndns.org>
- <20130319154600.GC5222@quack.suse.cz>
- <CAOS58YMop8+TnCGK2+SH52WNyK011vP0BWu3XENjrGt9xks32w@mail.gmail.com>
- <20130321015721.GL17758@dastard>
+	id S1755673Ab3CUF2D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 01:28:03 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27120 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753088Ab3CUF2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 01:28:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,883,1355126400"; 
+   d="scan'208";a="305446362"
+Date: Thu, 21 Mar 2013 10:33:01 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: "Jiang, Dave" <dave.jiang@intel.com>
+Cc: "djbw@fb.com" <djbw@fb.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "Mason, Jon" <jon.mason@intel.com>
+Subject: Re: [PATCH v2] ioat: remove chanerr mask setting for IOAT v3.x
+Message-ID: <20130321050301.GB10326@intel.com>
+References: <20121127221608.11315.49374.stgit@djiang5-linux.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130321015721.GL17758@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121127221608.11315.49374.stgit@djiang5-linux.ch.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Dave.
+On Wed, Nov 28, 2012 at 03:46:08AM +0530, Jiang, Dave wrote:
+> The existing code set a value in the PCI_CHANERRMSK_INT register
+> for a workaround to address a pre-silicon bug on the Intel 5520 IO hub that
+> has been fixed when the hardware was released. There is no need for this
+> code.
+> 
+> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+> ---
+> 
+>  drivers/dma/ioat/dma_v3.c |    7 +------
+>  1 file changed, 1 insertion(+), 6 deletions(-)
+> 
+> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+> index f7f1dc6..fda3b8a1 100644
+> --- a/drivers/dma/ioat/dma_v3.c
+> +++ b/drivers/dma/ioat/dma_v3.c
+> @@ -1126,12 +1126,7 @@ static int ioat3_reset_hw(struct ioat_chan_common *chan)
+>  	chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
+>  	writel(chanerr, chan->reg_base + IOAT_CHANERR_OFFSET);
+>  
+> -	/* -= IOAT ver.3 workarounds =- */
+> -	/* Write CHANERRMSK_INT with 3E07h to mask out the errors
+> -	 * that can cause stability issues for IOAT ver.3, and clear any
+> -	 * pending errors
+> -	 */
+What is this code based against? i dont have above lines in -rc1 or my next?
 
-On Thu, Mar 21, 2013 at 12:57:21PM +1100, Dave Chinner wrote:
-> When you have a system that has 50+ active filesystems (pretty
-> common in the distributed storage environments were every disk has
-> it's own filesystem), knowing which filesystem(s) are getting stuck
-> in writeback from the sysrq-w or hangcheck output is pretty damn
-> important....
-
-Hmm... I guess, then, what we can do is adding a worker description
-which is printed out with task dump.  ie. A work function can call
-work_set_desc(fmt, arg....).  It won't be expensive and can be
-implemented relatively easily.  Does that sound good enough?
-
-Thanks.
-
--- 
-tejun
+> -	pci_write_config_dword(pdev, IOAT_PCI_CHANERRMASK_INT_OFFSET, 0x3e07);
+> +	/* clear any pending errors */
+>  	err = pci_read_config_dword(pdev, IOAT_PCI_CHANERR_INT_OFFSET, &chanerr);
+>  	if (err) {
+>  		dev_err(&pdev->dev, "channel error register unreachable\n");
+> 
