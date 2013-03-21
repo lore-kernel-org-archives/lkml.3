@@ -1,38 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408Ab3CUSSr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:18:47 -0400
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:61646 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752025Ab3CUSSq (ORCPT
+	id S1752464Ab3CUSTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:19:48 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:47635 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753Ab3CUSTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:18:46 -0400
+	Thu, 21 Mar 2013 14:19:46 -0400
+Message-ID: <514B4F3F.8000308@gmail.com>
+Date: Thu, 21 Mar 2013 13:19:43 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <20130321095415.GB26931@gondor.apana.org.au>
-References: <1362998890-7532-1-git-send-email-mihneadb@gmail.com>
-	<20130321095415.GB26931@gondor.apana.org.au>
-Date: Thu, 21 Mar 2013 19:18:45 +0100
-Message-ID: <CACRpkdbqhjm9=o5GG5Anqa5bRFL5cTdrXD=ZBd=7gntvoSSaCg@mail.gmail.com>
-Subject: Re: [PATCH] crypto: replace kmalloc and then memcpy with kmemdup
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>, linux-crypto@vger.kernel.org,
-        davem@davemloft.net, andreas.westin@stericsson.com, arnd@arndb.de,
-        rubini@unipv.it, linux-kernel@vger.kernel.org
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Lior Amsalem <alior@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Eran Ben-Avi <benavi@marvell.com>,
+        Leif Lindholm <leif.lindholm@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jon Masters <jcm@redhat.com>, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Chris Van Hoof <vanhoof@canonical.com>, linux-kernel@vger.kernel.org,
+        Maen Suleiman <maen@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>
+Subject: Re: [PATCH 2/5] arm: mvebu: Select DMA_BOUNCE when LPAE is selected
+ in Kconfig
+References: <1363883179-1361-1-git-send-email-gregory.clement@free-electrons.com> <1363883179-1361-3-git-send-email-gregory.clement@free-electrons.com>
+In-Reply-To: <1363883179-1361-3-git-send-email-gregory.clement@free-electrons.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 10:54 AM, Herbert Xu
-<herbert@gondor.apana.org.au> wrote:
-> On Mon, Mar 11, 2013 at 12:48:10PM +0200, Mihnea Dobrescu-Balaur wrote:
->> Signed-off-by: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
->
-> Patch applied.  Thanks.
+On 03/21/2013 11:26 AM, Gregory CLEMENT wrote:
+> From: Lior Amsalem <alior@marvell.com>
+> 
+> For mvebu IOs are 32 bits and we have 40 bits memory due to LPAE so
+> make sure we give 32 bits addresses to the IOs.
+> 
+> Signed-off-by: Lior Amsalem <alior@marvell.com>
+> Tested-by: Franklin <flin@marvell.com>
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> ---
+>  arch/arm/mach-mvebu/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/mach-mvebu/Kconfig b/arch/arm/mach-mvebu/Kconfig
+> index 440b13e..617da94 100644
+> --- a/arch/arm/mach-mvebu/Kconfig
+> +++ b/arch/arm/mach-mvebu/Kconfig
+> @@ -13,6 +13,7 @@ config ARCH_MVEBU
+>  	select MVEBU_CLK_CORE
+>  	select MVEBU_CLK_CPU
+>  	select MVEBU_CLK_GATING
+> +	select DMABOUNCE if ARM_LPAE
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org> FWIW, I tried to get the
-people involved with the code to ACK but somehow they must've missed it.
+This alone is not enough to use bounce buffers. Am I missing something?
 
-Thanks,
-Linus Walleij
+Rob
+
+>  
+>  if ARCH_MVEBU
+>  
+> 
+
