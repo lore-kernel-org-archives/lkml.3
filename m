@@ -1,121 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758012Ab3CULvY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:51:24 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:56252 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757950Ab3CULvV (ORCPT
+	id S933369Ab3CULvp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:51:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57034 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757998Ab3CULvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:51:21 -0400
-Date: Thu, 21 Mar 2013 12:51:16 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mike Travis <travis@sgi.com>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Steffen Persvold <sp@numascale.com>
-Subject: Re: [PATCH 13/14] x86/UV: Update UV support for external NMI signals
-Message-ID: <20130321115116.GB2659@gmail.com>
-References: <20130312193823.212544181@gulag1.americas.sgi.com>
- <20130312193825.244350065@gulag1.americas.sgi.com>
- <20130314072019.GC7869@gmail.com>
- <5149538F.2080402@sgi.com>
+	Thu, 21 Mar 2013 07:51:43 -0400
+Date: Thu, 21 Mar 2013 04:49:58 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-o219lnci04hlilxi6711wtcr@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf stat: Introduce evlist methods to allocate/
+ free the stats
+Git-Commit-ID: d134ffb919ab142b2359ae45a0cf4a5bfa1ff283
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <5149538F.2080402@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:50:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  d134ffb919ab142b2359ae45a0cf4a5bfa1ff283
+Gitweb:     http://git.kernel.org/tip/d134ffb919ab142b2359ae45a0cf4a5bfa1ff283
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 18 Mar 2013 11:24:21 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 18 Mar 2013 11:34:09 -0300
 
-* Mike Travis <travis@sgi.com> wrote:
+perf stat: Introduce evlist methods to allocate/free the stats
 
-> 
-> 
-> On 3/14/2013 12:20 AM, Ingo Molnar wrote:
-> > 
-> > * Mike Travis <travis@sgi.com> wrote:
-> > 
-> >>
-> >> There is an exception where the NMI_LOCAL notifier chain is used. When 
-> >> the perf tools are in use, it's possible that our NMI was captured by 
-> >> some other NMI handler and then ignored.  We set a per_cpu flag for 
-> >> those CPUs that ignored the initial NMI, and then send them an IPI NMI 
-> >> signal.
-> > 
-> > "Other" NMI handlers should never lose NMIs - if they do then they should 
-> > be fixed I think.
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
-> 
-> Hi Ingo,
-> 
-> I suspect that the other NMI handlers would not grab ours if we were
-> on the NMI_LOCAL chain to claim them.  The problem though is the UV
-> Hub is not designed to have that amount of traffic reading the MMRs.
-> This was handled in previous kernel versions by a.) putting us at the
-> bottom of the chain; and b.) as soon as a handler claimed an NMI as
-> it's own, the search would be stopped.
-> 
-> Neither of these are true any more as all handlers are called for
-> all NMIs.  (I measured anywhere from .5M to 4M NMIs per second on a
-> 64 socket, 1024 cpu thread system [not sure why the rate changes]).
-> This was the primary motivation for placing the UV NMI handler on the
-> NMI_UNKNOWN chain, so it would be called only if all other handlers
-> "gave up", and thus not incur the overhead of the MMR reads on every
-> NMI event.
+Reducing the noise in the main logic.
 
-That's a fair motivation.
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-o219lnci04hlilxi6711wtcr@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-stat.c | 67 ++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 43 insertions(+), 24 deletions(-)
 
-> The good news is that I haven't yet encountered a case where the
-> "missing" cpus were not called into the NMI loop.  Even better news
-> is that on the previous (3.0 vintage) kernels running two perf tops
-> would almost always cause either tons of the infamous "dazed and
-> confused" messages, or would lock up the system.  Now it results in
-> quite a few messages like:
-> 
-> [  961.119417] perf_event_intel: clearing PMU state on CPU#652
-> 
-> followed by a dump of a number of cpu PMC registers.  But the system
-> remains responsive.  (This was experienced in our Customer Training
-> Lab where multiple system admins were in the class.)
-
-I too can provoke those messages when pushing PMUs hard enough via 
-multiple perf users. I suspect there's still some PMU erratum that
-seems to have been introduced at around Nehalem CPUs.
-
-Clearing the PMU works it around, at the cost of a loss of a slight 
-amount of profiling data.
-
-> The bad news is I'm not sure why the errant NMI interrupts are lost.
-> I have noticed that restricting the 'perf tops' to separate and
-> distinct cpusets seems to lessen this "stomping on each other's perf
-> event handlers" effect, which might be more representative of actual
-> customer usage.
-> 
-> So in total the situation is vastly improved... :)
-
-Okay. My main dislike is the linecount:
-
- 4 files changed, 648 insertions(+), 41 deletions(-)
-
-... for something that should in theory work almost out of box, with 
-minimal glue!
-
-As long as it stays in the UV platform code this isn't a NAK from me - 
-just wanted to inquire whether most of that complexity could be eliminated 
-by figuring out the root cause of the lost NMIs ...
-
-Thanks,
-
-	Ingo
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 021783a..ba0bdd8 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -166,6 +166,35 @@ static void perf_evsel__free_prev_raw_counts(struct perf_evsel *evsel)
+ 	evsel->prev_raw_counts = NULL;
+ }
+ 
++static void perf_evlist__free_stats(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel;
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		perf_evsel__free_stat_priv(evsel);
++		perf_evsel__free_counts(evsel);
++		perf_evsel__free_prev_raw_counts(evsel);
++	}
++}
++
++static int perf_evlist__alloc_stats(struct perf_evlist *evlist, bool alloc_raw)
++{
++	struct perf_evsel *evsel;
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		if (perf_evsel__alloc_stat_priv(evsel) < 0 ||
++		    perf_evsel__alloc_counts(evsel, perf_evsel__nr_cpus(evsel)) < 0 ||
++		    (alloc_raw && perf_evsel__alloc_prev_raw_counts(evsel) < 0))
++			goto out_free;
++	}
++
++	return 0;
++
++out_free:
++	perf_evlist__free_stats(evlist);
++	return -1;
++}
++
+ static struct stats runtime_nsecs_stats[MAX_NR_CPUS];
+ static struct stats runtime_cycles_stats[MAX_NR_CPUS];
+ static struct stats runtime_stalled_cycles_front_stats[MAX_NR_CPUS];
+@@ -179,8 +208,15 @@ static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
+ static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
+ static struct stats walltime_nsecs_stats;
+ 
+-static void reset_stats(void)
++static void perf_stat__reset_stats(struct perf_evlist *evlist)
+ {
++	struct perf_evsel *evsel;
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		perf_evsel__reset_stat_priv(evsel);
++		perf_evsel__reset_counts(evsel, perf_evsel__nr_cpus(evsel));
++	}
++
+ 	memset(runtime_nsecs_stats, 0, sizeof(runtime_nsecs_stats));
+ 	memset(runtime_cycles_stats, 0, sizeof(runtime_cycles_stats));
+ 	memset(runtime_stalled_cycles_front_stats, 0, sizeof(runtime_stalled_cycles_front_stats));
+@@ -1308,7 +1344,6 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		"perf stat [<options>] [<command>]",
+ 		NULL
+ 	};
+-	struct perf_evsel *pos;
+ 	int status = -ENOMEM, run_idx;
+ 	const char *mode;
+ 
+@@ -1420,17 +1455,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		return -1;
+ 	}
+ 
+-	list_for_each_entry(pos, &evsel_list->entries, node) {
+-		if (perf_evsel__alloc_stat_priv(pos) < 0 ||
+-		    perf_evsel__alloc_counts(pos, perf_evsel__nr_cpus(pos)) < 0)
+-			goto out_free_fd;
+-	}
+-	if (interval) {
+-		list_for_each_entry(pos, &evsel_list->entries, node) {
+-			if (perf_evsel__alloc_prev_raw_counts(pos) < 0)
+-				goto out_free_fd;
+-		}
+-	}
++	if (perf_evlist__alloc_stats(evsel_list, interval))
++		goto out_free_maps;
+ 
+ 	/*
+ 	 * We dont want to block the signals - that would cause
+@@ -1454,22 +1480,15 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		status = run_perf_stat(argc, argv);
+ 		if (forever && status != -1) {
+ 			print_stat(argc, argv);
+-			list_for_each_entry(pos, &evsel_list->entries, node) {
+-				perf_evsel__reset_stat_priv(pos);
+-				perf_evsel__reset_counts(pos, perf_evsel__nr_cpus(pos));
+-			}
+-			reset_stats();
++			perf_stat__reset_stats(evsel_list);
+ 		}
+ 	}
+ 
+ 	if (!forever && status != -1 && !interval)
+ 		print_stat(argc, argv);
+-out_free_fd:
+-	list_for_each_entry(pos, &evsel_list->entries, node) {
+-		perf_evsel__free_stat_priv(pos);
+-		perf_evsel__free_counts(pos);
+-		perf_evsel__free_prev_raw_counts(pos);
+-	}
++
++	perf_evlist__free_stats(evsel_list);
++out_free_maps:
+ 	perf_evlist__delete_maps(evsel_list);
+ out:
+ 	perf_evlist__delete(evsel_list);
