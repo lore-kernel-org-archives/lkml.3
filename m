@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653Ab3CULkF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:40:05 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:52515 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215Ab3CULkB (ORCPT
+	id S1757426Ab3CULkX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:40:23 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:7643 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753508Ab3CULkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:40:01 -0400
-Date: Thu, 21 Mar 2013 12:39:57 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Timo Juhani Lindfors <timo.lindfors@iki.fi>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Jiri Kosina <jkosina@suse.cz>,
-        Nadia Yvette Chambers <nyc@holomorphy.com>,
-        yrl.pp-manager.tt@hitachi.com, "David S. Miller" <davem@davemloft.net>
-Subject: Re: Re: [PATCH -tip ] [BUGFIX] kprobes: Move hash_64() into
- .text.kprobe section
-Message-ID: <20130321113957.GA2659@gmail.com>
-References: <20130311142233.19885.10567.stgit@mhiramat-M0-7522>
- <CA+55aFz28CvntOMF-Te0x=gn=XQcU8Zzi6E0iAhZb9mG5J-Ppg@mail.gmail.com>
- <514023AA.4070004@hitachi.com>
- <847glb8m4i.fsf@sauna.l.org>
- <51408349.8080800@hitachi.com>
- <84li9ke88w.fsf@sauna.l.org>
- <5147D318.9060400@hitachi.com>
+	Thu, 21 Mar 2013 07:40:19 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-pcmcia@lists.infradead.org>, <linux@dominikbrodowski.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <linux-kernel@vger.kernel.org>, <manabian@gmail.com>,
+        <fabio.porcedda@gmail.com>, <laurent.navet@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v2 0/7] pcmcia: at91_cf: clean up and add DT support
+Date: Thu, 21 Mar 2013 12:40:10 +0100
+Message-ID: <cover.1363865228.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5147D318.9060400@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+These patches clean up at91_cf a bit and add DT bindings.
+It is based on a previous series from Joachim Eastwood and other cleanup
+patches by Fabio and Laurent.
+I have collected them together as they are lying around for some time.
 
-* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+Please tell me if It can go through PCMCIA tree or if Andrew or Greg can
+take them.
+Note that they are not bug fixes, so you can stack them for 3.10.
 
-> (2013/03/19 5:57), Timo Juhani Lindfors wrote:
-> > Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
-> >> Thank you for reporting!!
-> > 
-> > Thanks for fixing these! I spent some time trying to automate the
-> > process of finding sensitive functions and eventually resorted into
-> > booting a kvm instance with a minimal initrd to test every single
-> > function in a clean and reproducible environment.
-> > 
-> > I found 7 more cases where calling register_kprobe() leads to an instant
-> > kernel panic:
-> > 
-> > __flush_tlb_single
-> > native_flush_tlb
-> > native_safe_halt
-> > native_set_pgd
-> > native_set_pmd
-> > native_set_pud
-> > native_write_cr0
-> 
-> Ah, right and Great! these native_* things are too fundamental one.
-> Hmm, curiously, those are defined as inline functions, and
-> I also couldn't find some of those symbols even with your previous
-> kconfig.
-> 
-> > You can see full kernel console output for each function at
-> > http://lindi.iki.fi/lindi/linux/kprobes/panics_2013-03-18/
-> 
-> As you can see, your panic messages, most of them caused GFP.
-> This may mean that int3 software exception must not happened
-> on those sites. Not the recursive call.
-> 
-> Perhaps, I'd better add those native_* things into symbol-name
-> based blacklist, instead of adding __kprobes, because those
-> are not related to kprobes recursion.
+Thanks for your help, best regards.
 
-Blacklists are not really good in general - it's easy for a symbol to be 
-renamed and the blacklist misses them silently ...
+v2: add 2 more cleanup patches:
+	- move to module_platform_driver_probe()
+	- little trivial indentation fix
 
-symbol name and annotation should go hand in hand.
+Fabio Porcedda (1):
+  pcmcia: at91_cf: use module_platform_driver_probe()
 
-Thanks,
+Joachim Eastwood (5):
+  pcmcia: at91_cf: fix gpio_get_value in at91_cf_get_status
+  pcmcia: at91_cf: convert to dev_ print functions
+  pcmcia: at91_cf: use devm_ functions for allocations
+  pcmcia: at91_cf: clean up header includes
+  pcmcia: at91_cf: add support for DT
 
-	Ingo
+Laurent Navet (1):
+  pcmcia/trivial: at91_cf: fix checkpatch error
+
+ .../devicetree/bindings/ata/atmel-at91_cf.txt      |  19 +++
+ drivers/pcmcia/Kconfig                             |   2 +-
+ drivers/pcmcia/at91_cf.c                           | 176 ++++++++++-----------
+ 3 files changed, 108 insertions(+), 89 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/ata/atmel-at91_cf.txt
+
+-- 
+1.8.0
+
