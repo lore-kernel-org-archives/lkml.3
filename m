@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757851Ab3CULkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:40:46 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:7762 "EHLO
+	id S932546Ab3CULkx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:40:53 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:7797 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757727Ab3CULkn (ORCPT
+	with ESMTP id S1757770Ab3CULku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:40:43 -0400
+	Thu, 21 Mar 2013 07:40:50 -0400
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: <linux-arm-kernel@lists.infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -17,9 +17,9 @@ CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         <linux-kernel@vger.kernel.org>, <manabian@gmail.com>,
         <fabio.porcedda@gmail.com>, <laurent.navet@gmail.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2 2/7] pcmcia: at91_cf: convert to dev_ print functions
-Date: Thu, 21 Mar 2013 12:40:12 +0100
-Message-ID: <5bfe14c97ee9eb20976f6933169962993dafc9f4.1363865228.git.nicolas.ferre@atmel.com>
+Subject: [PATCH v2 3/7] pcmcia: at91_cf: use devm_ functions for allocations
+Date: Thu, 21 Mar 2013 12:40:13 +0100
+Message-ID: <8e1302d10aca810f9e3051ada59d27f65fd4117f.1363865228.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <cover.1363865228.git.nicolas.ferre@atmel.com>
 References: <cover.1363865228.git.nicolas.ferre@atmel.com>
@@ -31,103 +31,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joachim Eastwood <manabian@gmail.com>
 
-Convert all pr_* functions to equivalent dev_* functions and
-drop the driver_name variable.
-
 Signed-off-by: Joachim Eastwood <manabian@gmail.com>
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- drivers/pcmcia/at91_cf.c | 22 ++++++++++------------
- 1 file changed, 10 insertions(+), 12 deletions(-)
+ drivers/pcmcia/at91_cf.c | 77 +++++++++++++++---------------------------------
+ 1 file changed, 24 insertions(+), 53 deletions(-)
 
 diff --git a/drivers/pcmcia/at91_cf.c b/drivers/pcmcia/at91_cf.c
-index 1b2c631..4eec14b 100644
+index 4eec14b..43bc342 100644
 --- a/drivers/pcmcia/at91_cf.c
 +++ b/drivers/pcmcia/at91_cf.c
-@@ -41,8 +41,6 @@
+@@ -227,7 +227,7 @@ static int __init at91_cf_probe(struct platform_device *pdev)
+ 	if (!io)
+ 		return -ENODEV;
  
- /*--------------------------------------------------------------------------*/
+-	cf = kzalloc(sizeof *cf, GFP_KERNEL);
++	cf = devm_kzalloc(&pdev->dev, sizeof(*cf), GFP_KERNEL);
+ 	if (!cf)
+ 		return -ENOMEM;
  
--static const char driver_name[] = "at91_cf";
--
- struct at91_cf_socket {
- 	struct pcmcia_socket	socket;
+@@ -237,22 +237,25 @@ static int __init at91_cf_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, cf);
  
-@@ -76,7 +74,7 @@ static irqreturn_t at91_cf_irq(int irq, void *_cf)
- 		/* kick pccard as needed */
- 		if (present != cf->present) {
- 			cf->present = present;
--			pr_debug("%s: card %s\n", driver_name,
-+			dev_dbg(&cf->pdev->dev, "card %s\n",
- 					present ? "present" : "gone");
- 			pcmcia_parse_events(&cf->socket, SS_DETECT);
- 		}
-@@ -134,8 +132,8 @@ at91_cf_set_socket(struct pcmcia_socket *sock, struct socket_state_t *s)
- 	/* toggle reset if needed */
- 	gpio_set_value(cf->board->rst_pin, s->flags & SS_RESET);
- 
--	pr_debug("%s: Vcc %d, io_irq %d, flags %04x csc %04x\n",
--		driver_name, s->Vcc, s->io_irq, s->flags, s->csc_mask);
-+	dev_dbg(&cf->pdev->dev, "Vcc %d, io_irq %d, flags %04x csc %04x\n",
-+				s->Vcc, s->io_irq, s->flags, s->csc_mask);
- 
- 	return 0;
- }
-@@ -171,10 +169,10 @@ static int at91_cf_set_io_map(struct pcmcia_socket *s, struct pccard_io_map *io)
- 	 */
- 	if (!(io->flags & (MAP_16BIT | MAP_AUTOSZ))) {
- 		csr |= AT91_SMC_DBW_8;
--		pr_debug("%s: 8bit i/o bus\n", driver_name);
-+		dev_dbg(&cf->pdev->dev, "8bit i/o bus\n");
- 	} else {
- 		csr |= AT91_SMC_DBW_16;
--		pr_debug("%s: 16bit i/o bus\n", driver_name);
-+		dev_dbg(&cf->pdev->dev, "16bit i/o bus\n");
- 	}
- 	at91_ramc_write(0, AT91_SMC_CSR(cf->board->chipselect), csr);
- 
-@@ -242,7 +240,7 @@ static int __init at91_cf_probe(struct platform_device *pdev)
- 	status = gpio_request(board->det_pin, "cf_det");
+ 	/* must be a GPIO; ergo must trigger on both edges */
+-	status = gpio_request(board->det_pin, "cf_det");
++	status = devm_gpio_request(&pdev->dev, board->det_pin, "cf_det");
  	if (status < 0)
- 		goto fail0;
--	status = request_irq(gpio_to_irq(board->det_pin), at91_cf_irq, 0, driver_name, cf);
-+	status = request_irq(gpio_to_irq(board->det_pin), at91_cf_irq, 0, "at91_cf detect", cf);
+-		goto fail0;
+-	status = request_irq(gpio_to_irq(board->det_pin), at91_cf_irq, 0, "at91_cf detect", cf);
++		return status;
++
++	status = devm_request_irq(&pdev->dev, gpio_to_irq(board->det_pin),
++					at91_cf_irq, 0, "at91_cf detect", cf);
  	if (status < 0)
- 		goto fail00;
+-		goto fail00;
++		return status;
++
  	device_init_wakeup(&pdev->dev, 1);
-@@ -268,7 +266,7 @@ static int __init at91_cf_probe(struct platform_device *pdev)
+ 
+-	status = gpio_request(board->rst_pin, "cf_rst");
++	status = devm_gpio_request(&pdev->dev, board->rst_pin, "cf_rst");
+ 	if (status < 0)
+ 		goto fail0a;
+ 
+ 	if (gpio_is_valid(board->vcc_pin)) {
+-		status = gpio_request(board->vcc_pin, "cf_vcc");
++		status = devm_gpio_request(&pdev->dev, board->vcc_pin, "cf_vcc");
  		if (status < 0)
- 			goto fail0c;
- 		status = request_irq(gpio_to_irq(board->irq_pin), at91_cf_irq,
--				IRQF_SHARED, driver_name, cf);
-+				IRQF_SHARED, "at91_cf", cf);
+-			goto fail0b;
++			goto fail0a;
+ 	}
+ 
+ 	/*
+@@ -262,29 +265,30 @@ static int __init at91_cf_probe(struct platform_device *pdev)
+ 	 * (Note:  DK board doesn't wire the IRQ pin...)
+ 	 */
+ 	if (gpio_is_valid(board->irq_pin)) {
+-		status = gpio_request(board->irq_pin, "cf_irq");
++		status = devm_gpio_request(&pdev->dev, board->irq_pin, "cf_irq");
  		if (status < 0)
- 			goto fail0d;
+-			goto fail0c;
+-		status = request_irq(gpio_to_irq(board->irq_pin), at91_cf_irq,
+-				IRQF_SHARED, "at91_cf", cf);
++			goto fail0a;
++
++		status = devm_request_irq(&pdev->dev, gpio_to_irq(board->irq_pin),
++					at91_cf_irq, IRQF_SHARED, "at91_cf", cf);
+ 		if (status < 0)
+-			goto fail0d;
++			goto fail0a;
  		cf->socket.pci_irq = gpio_to_irq(board->irq_pin);
-@@ -284,12 +282,12 @@ static int __init at91_cf_probe(struct platform_device *pdev)
+ 	} else
+ 		cf->socket.pci_irq = nr_irqs + 1;
+ 
+ 	/* pcmcia layer only remaps "real" memory not iospace */
+-	cf->socket.io_offset = (unsigned long)
+-			ioremap(cf->phys_baseaddr + CF_IO_PHYS, SZ_2K);
++	cf->socket.io_offset = (unsigned long) devm_ioremap(&pdev->dev,
++					cf->phys_baseaddr + CF_IO_PHYS, SZ_2K);
+ 	if (!cf->socket.io_offset) {
+ 		status = -ENXIO;
+-		goto fail1;
++		goto fail0a;
  	}
  
  	/* reserve chip-select regions */
--	if (!request_mem_region(io->start, resource_size(io), driver_name)) {
-+	if (!request_mem_region(io->start, resource_size(io), "at91_cf")) {
+-	if (!request_mem_region(io->start, resource_size(io), "at91_cf")) {
++	if (!devm_request_mem_region(&pdev->dev, io->start, resource_size(io), "at91_cf")) {
  		status = -ENXIO;
- 		goto fail1;
+-		goto fail1;
++		goto fail0a;
  	}
  
--	pr_info("%s: irqs det #%d, io #%d\n", driver_name,
-+	dev_info(&pdev->dev, "irqs det #%d, io #%d\n",
- 		gpio_to_irq(board->det_pin), gpio_to_irq(board->irq_pin));
+ 	dev_info(&pdev->dev, "irqs det #%d, io #%d\n",
+@@ -301,55 +305,22 @@ static int __init at91_cf_probe(struct platform_device *pdev)
  
- 	cf->socket.owner = THIS_MODULE;
-@@ -391,7 +389,7 @@ static int at91_cf_resume(struct platform_device *pdev)
+ 	status = pcmcia_register_socket(&cf->socket);
+ 	if (status < 0)
+-		goto fail2;
++		goto fail0a;
  
- static struct platform_driver at91_cf_driver = {
- 	.driver = {
--		.name		= (char *) driver_name,
-+		.name		= "at91_cf",
- 		.owner		= THIS_MODULE,
- 	},
- 	.remove		= __exit_p(at91_cf_remove),
+ 	return 0;
+ 
+-fail2:
+-	release_mem_region(io->start, resource_size(io));
+-fail1:
+-	if (cf->socket.io_offset)
+-		iounmap((void __iomem *) cf->socket.io_offset);
+-	if (gpio_is_valid(board->irq_pin)) {
+-		free_irq(gpio_to_irq(board->irq_pin), cf);
+-fail0d:
+-		gpio_free(board->irq_pin);
+-	}
+-fail0c:
+-	if (gpio_is_valid(board->vcc_pin))
+-		gpio_free(board->vcc_pin);
+-fail0b:
+-	gpio_free(board->rst_pin);
+ fail0a:
+ 	device_init_wakeup(&pdev->dev, 0);
+-	free_irq(gpio_to_irq(board->det_pin), cf);
+-fail00:
+-	gpio_free(board->det_pin);
+-fail0:
+-	kfree(cf);
+ 	return status;
+ }
+ 
+ static int __exit at91_cf_remove(struct platform_device *pdev)
+ {
+ 	struct at91_cf_socket	*cf = platform_get_drvdata(pdev);
+-	struct at91_cf_data	*board = cf->board;
+-	struct resource		*io = cf->socket.io[0].res;
+ 
+ 	pcmcia_unregister_socket(&cf->socket);
+-	release_mem_region(io->start, resource_size(io));
+-	iounmap((void __iomem *) cf->socket.io_offset);
+-	if (gpio_is_valid(board->irq_pin)) {
+-		free_irq(gpio_to_irq(board->irq_pin), cf);
+-		gpio_free(board->irq_pin);
+-	}
+-	if (gpio_is_valid(board->vcc_pin))
+-		gpio_free(board->vcc_pin);
+-	gpio_free(board->rst_pin);
+ 	device_init_wakeup(&pdev->dev, 0);
+-	free_irq(gpio_to_irq(board->det_pin), cf);
+-	gpio_free(board->det_pin);
+-	kfree(cf);
++
+ 	return 0;
+ }
+ 
 -- 
 1.8.0
 
