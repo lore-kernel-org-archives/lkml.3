@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934010Ab3CUQJz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:09:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29918 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933907Ab3CUQJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:09:51 -0400
-Date: Thu, 21 Mar 2013 12:04:41 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
-Message-ID: <20130321160441.GB6575@redhat.com>
-References: <1363802506.2580.55.camel@falcor1.watson.ibm.com>
- <1363803158.2553.33.camel@x230.sbx07502.somerma.wayport.net>
- <1363806968.2580.86.camel@falcor1.watson.ibm.com>
- <1363811856.2553.37.camel@x230.sbx07502.somerma.wayport.net>
- <1363813877.2580.120.camel@falcor1.watson.ibm.com>
- <1363814289.2553.41.camel@x230.sbx07502.somerma.wayport.net>
- <20130321134348.GA3934@redhat.com>
- <20130321153725.GA3656@austin.hallyn.com>
- <20130321155220.GL3934@redhat.com>
- <20130321155823.GA4438@austin.hallyn.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321155823.GA4438@austin.hallyn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933873Ab3CUQAc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:00:32 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:39707 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933790Ab3CUQAU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 12:00:20 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        broonie@opensource.wolfsonmicro.com
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 10/46] regulator: ab8500-ext: Add suspend support
+Date: Thu, 21 Mar 2013 15:59:07 +0000
+Message-Id: <1363881583-15234-11-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
+References: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 10:58:23AM -0500, Serge E. Hallyn wrote:
-> Quoting Vivek Goyal (vgoyal@redhat.com):
-> > On Thu, Mar 21, 2013 at 10:37:25AM -0500, Serge E. Hallyn wrote:
-> > > Quoting Vivek Goyal (vgoyal@redhat.com):
-> > > ...
-> > > > Giving CAP_MODIFY_KERNEL to processess upon signature verification
-> > > > will simplify things a bit.
-> > > > 
-> > > > Only thing is that signature verification alone is not sufficient. We
-> > > > also need to make sure after signature verification executable can
-> > > > not be modified in memory in any way. So that means atleast couple of
-> > > > things.
-> > > 
-> > > Also what about context?  If I construct a mounts namespace a certain
-> > > way, can I trick this executable into loading an old singed bzImage that
-> > > I had laying around?
-> > 
-> > We were thinking that /sbin/kexec will need to verify bzImage signature
-> > before loading it. 
-> > 
-> > Key for verification is in kernel so idea was to take kernel's help
-> > in verifying signature.
-> > 
-> > Not sure how exactly the interface should look like. 
-> > 
-> > - I was thinking may be process can mmap() the bzImage with MAP_LOCKED.
-> >   We can create additional flag say MAP_VERIFY_SIG_POST, which tries
-> >   to verify signature/integrity of mapped region of file after mapping and
-> >   locking pages and mmap() fails if signature verification fails.
-> > 
-> > There have been suggestions about creating new system call altogether.
-> > 
-> > > 
-> > > ISTM the only sane thing to do, if you're going down this road,
-> > > is to have CAP_MODIFIY_KERNEL pulled from bounding set for everyone
-> > > except a getty started by init on ttyS0.  Then log in on serial
-> > > to update.  Or run a damon with CAP_MODIFIY_KERNEL which listens
-> > > to a init_net_ns netlink socket for very basic instructions, like
-> > > "find and install latest signed bzImage in /boot".  Then you can
-> > > at least trust that /boot for that daemon is not faked.
-> > 
-> > daemon does not have the key and can't verify signature of signed
-> > bzImage. Even if it had the key, it can't trust the crypto code for
-> > signature verification as none of that is signed.
-> 
-> I'm not saying not to use the kernel to verify the signature.
+From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 
-Ok. So why can't /sbin/kexec can do the verification of bzImage with
-kernel's help. Due to crafted /boot/ it might load old signed bzImage,
-but it can't load unsigned/untrusted code on secureboot system at ring 0.
+Operations regulator_suspend_enable and regulator_suspend_disable
+are added.
 
-I am hoping I did not miss your point entirely.
+Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Mattias NILSSON <mattias.i.nilsson@stericsson.com>
+Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
+---
+ drivers/regulator/ab8500-ext.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-Thanks
-Vivek
+diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
+index 303c02c..3af40fd 100644
+--- a/drivers/regulator/ab8500-ext.c
++++ b/drivers/regulator/ab8500-ext.c
+@@ -104,6 +104,13 @@ static int ab8500_ext_regulator_enable(struct regulator_dev *rdev)
+ 	return ret;
+ }
+ 
++static int ab8500_ext_regulator_set_suspend_enable(struct regulator_dev *rdev)
++{
++	dev_dbg(rdev_get_dev(rdev), "suspend: ");
++
++	return ab8500_ext_regulator_enable(rdev);
++}
++
+ static int disable(struct ab8500_ext_regulator_info *info, u8 *regval)
+ {
+ 	int ret;
+@@ -149,6 +156,13 @@ static int ab8500_ext_regulator_disable(struct regulator_dev *rdev)
+ 	return ret;
+ }
+ 
++static int ab8500_ext_regulator_set_suspend_disable(struct regulator_dev *rdev)
++{
++	dev_dbg(rdev_get_dev(rdev), "suspend: ");
++
++	return ab8500_ext_regulator_disable(rdev);
++}
++
+ static int ab8500_ext_regulator_is_enabled(struct regulator_dev *rdev)
+ {
+ 	int ret;
+@@ -274,7 +288,9 @@ static int ab8500_ext_list_voltage(struct regulator_dev *rdev,
+ 
+ static struct regulator_ops ab8500_ext_regulator_ops = {
+ 	.enable			= ab8500_ext_regulator_enable,
++	.set_suspend_enable	= ab8500_ext_regulator_set_suspend_enable,
+ 	.disable		= ab8500_ext_regulator_disable,
++	.set_suspend_disable	= ab8500_ext_regulator_set_suspend_disable,
+ 	.is_enabled		= ab8500_ext_regulator_is_enabled,
+ 	.set_mode		= ab8500_ext_regulator_set_mode,
+ 	.get_mode		= ab8500_ext_regulator_get_mode,
+-- 
+1.7.10.4
+
