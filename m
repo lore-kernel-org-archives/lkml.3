@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758297Ab3CUNru (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 09:47:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58929 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757636Ab3CUNrt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 09:47:49 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        kernel-team@lists.ubuntu.com
-Subject: [ 3.5.y.z extended stable ] Patch "HID: clean up quirk for Sony RF receivers" has been added to staging queue
-Date: Thu, 21 Mar 2013 13:47:46 +0000
-Message-Id: <1363873666-21289-1-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Extended-Stable: 3.5
+	id S1758295Ab3CUNsi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 09:48:38 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59821 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758173Ab3CUNsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 09:48:37 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <balbi@ti.com>, <rnayak@ti.com>, <t-kristo@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH] ARM: OMAP4: clock: Initialize USB DPLL
+Date: Thu, 21 Mar 2013 15:48:25 +0200
+Message-ID: <1363873705-3224-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+If the bootloader doesn't configure USB DPLL (e.g. in u-boot,
+disable CONFIG_USB_EHCI_OMAP), then we get all sorts of problems
+like
+- division by zero errors at boot [1]
+- USB DPLL fails to enter locked state
+- USB EHCI Host is non functional
+- Device can't enter OFF mode
 
-    HID: clean up quirk for Sony RF receivers
+Initializing the USB DPLL fixes all these issues.
 
-to the linux-3.5.y-queue branch of the 3.5.y.z extended stable tree 
-which can be found at:
+[1]
 
- http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.5.y-queue
+[    0.000000] clock: dpll_usb_ck failed transition to 'locked'
+[    0.000000] Division by zero in kernel.
+[    0.000000] [<c001b00c>] (unwind_backtrace+0x0/0xf0) from [<c02b2378>] (Ldiv0+0x8/0x10)
+[    0.000000] [<c02b2378>] (Ldiv0+0x8/0x10) from [<c041cf3c>] (clk_divider_set_rate+0x10/0x124)
+[    0.000000] [<c041cf3c>] (clk_divider_set_rate+0x10/0x124) from [<c041bfc4>] (clk_change_rate+0x3c/0xb4)
+[    0.000000] [<c041bfc4>] (clk_change_rate+0x3c/0xb4) from [<c041c028>] (clk_change_rate+0xa0/0xb4)
 
-If you, or anyone else, feels it should not be added to this tree, please 
-reply to this email.
-
-For more information about the 3.5.y.z tree, see
-https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
-
-Thanks.
--Luis
-
-------
-
->From 1d7c6a65f33945a0354a4ffb93ff341b74719496 Mon Sep 17 00:00:00 2001
-From: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
-Date: Tue, 22 Jan 2013 15:20:38 +0900
-Subject: [PATCH] HID: clean up quirk for Sony RF receivers
-
-commit 99d249021abd4341771523ed8dd7946276103432 upstream.
-
-Document what the fix-up is does and make it more robust by ensuring
-that it is only applied to the USB interface that corresponds to the
-mouse (sony_report_fixup() is called once per interface during probing).
-
-Cc: linux-input@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/hid/hid-sony.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ arch/arm/mach-omap2/cclock44xx_data.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
-index 963bda1..4142c21 100644
---- a/drivers/hid/hid-sony.c
-+++ b/drivers/hid/hid-sony.c
-@@ -44,9 +44,19 @@ static __u8 *sony_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- {
- 	struct sony_sc *sc = hid_get_drvdata(hdev);
-
--	if ((sc->quirks & VAIO_RDESC_CONSTANT) &&
--			*rsize >= 56 && rdesc[54] == 0x81 && rdesc[55] == 0x07) {
-+	/*
-+	 * Some Sony RF receivers wrongly declare the mouse pointer as a
-+	 * a constant non-data variable.
+diff --git a/arch/arm/mach-omap2/cclock44xx_data.c b/arch/arm/mach-omap2/cclock44xx_data.c
+index bfc46c1..6127bb9 100644
+--- a/arch/arm/mach-omap2/cclock44xx_data.c
++++ b/arch/arm/mach-omap2/cclock44xx_data.c
+@@ -53,6 +53,12 @@
+  */
+ #define OMAP4_DPLL_ABE_DEFFREQ				98304000
+ 
++/*
++ * OMAP4450 TRM Rev X, section "3.6.3.9.5 DPLL_USB Preferred Settings"
++ * states it must be at 960MHz
++ */
++#define OMAP4_DPLL_USB_DEFFREQ				960000000
++
+ /* Root clocks */
+ 
+ DEFINE_CLK_FIXED_RATE(extalt_clkin_ck, CLK_IS_ROOT, 59000000, 0x0);
+@@ -1729,6 +1735,19 @@ int __init omap4xxx_clk_init(void)
+ 	omap2_clk_disable_autoidle_all();
+ 
+ 	/*
++	 * Lock USB_DPLL to avoid issues with USB host and OFF mode
 +	 */
-+	if ((sc->quirks & VAIO_RDESC_CONSTANT) && *rsize >= 56 &&
-+	    /* usage page: generic desktop controls */
-+	    /* rdesc[0] == 0x05 && rdesc[1] == 0x01 && */
-+	    /* usage: mouse */
-+	    rdesc[2] == 0x09 && rdesc[3] == 0x02 &&
-+	    /* input (usage page for x,y axes): constant, variable, relative */
-+	    rdesc[54] == 0x81 && rdesc[55] == 0x07) {
- 		hid_info(hdev, "Fixing up Sony RF Receiver report descriptor\n");
-+		/* input: data, variable, relative */
- 		rdesc[55] = 0x06;
- 	}
++	rc = clk_set_rate(&dpll_usb_ck, OMAP4_DPLL_USB_DEFFREQ);
++	if (rc) {
++		pr_err("%s: failed to configure DPLL_USB: %d\n", __func__, rc);
++	} else {
++		rc = clk_set_rate(&dpll_usb_m2_ck, OMAP4_DPLL_USB_DEFFREQ/2);
++		if (rc)
++			pr_err("%s: failed to configure DPLL_USB_M2: %d\n",
++								__func__, rc);
++	}
++
++	/*
+ 	 * On OMAP4460 the ABE DPLL fails to turn on if in idle low-power
+ 	 * state when turning the ABE clock domain. Workaround this by
+ 	 * locking the ABE DPLL on boot.
+-- 
+1.7.4.1
 
---
-1.8.1.2
