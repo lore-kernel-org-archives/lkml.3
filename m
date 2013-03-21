@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933664Ab3CUPut (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 11:50:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38821 "EHLO mx2.suse.de"
+	id S1755966Ab3CUPwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 11:52:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10728 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755677Ab3CUPus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 11:50:48 -0400
-Date: Thu, 21 Mar 2013 16:50:45 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/10] mm: vmscan: Decide whether to compact the pgdat
- based on reclaim progress
-Message-ID: <20130321155045.GS6094@dhcp22.suse.cz>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-5-git-send-email-mgorman@suse.de>
- <20130321153231.GP6094@dhcp22.suse.cz>
- <20130321154730.GK1878@suse.de>
+	id S1753724Ab3CUPwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 11:52:37 -0400
+Date: Thu, 21 Mar 2013 11:52:20 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
+Message-ID: <20130321155220.GL3934@redhat.com>
+References: <1363797717.2580.10.camel@falcor1.watson.ibm.com>
+ <1363798166.2553.29.camel@x230.sbx07502.somerma.wayport.net>
+ <1363802506.2580.55.camel@falcor1.watson.ibm.com>
+ <1363803158.2553.33.camel@x230.sbx07502.somerma.wayport.net>
+ <1363806968.2580.86.camel@falcor1.watson.ibm.com>
+ <1363811856.2553.37.camel@x230.sbx07502.somerma.wayport.net>
+ <1363813877.2580.120.camel@falcor1.watson.ibm.com>
+ <1363814289.2553.41.camel@x230.sbx07502.somerma.wayport.net>
+ <20130321134348.GA3934@redhat.com>
+ <20130321153725.GA3656@austin.hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130321154730.GK1878@suse.de>
+In-Reply-To: <20130321153725.GA3656@austin.hallyn.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 21-03-13 15:47:31, Mel Gorman wrote:
-> On Thu, Mar 21, 2013 at 04:32:31PM +0100, Michal Hocko wrote:
-> > On Sun 17-03-13 13:04:10, Mel Gorman wrote:
-> > > In the past, kswapd makes a decision on whether to compact memory after the
-> > > pgdat was considered balanced. This more or less worked but it is late to
-> > > make such a decision and does not fit well now that kswapd makes a decision
-> > > whether to exit the zone scanning loop depending on reclaim progress.
-> > > 
-> > > This patch will compact a pgdat if at least  the requested number of pages
-> > > were reclaimed from unbalanced zones for a given priority. If any zone is
-> > > currently balanced, kswapd will not call compaction as it is expected the
-> > > necessary pages are already available.
-> > > 
-> > > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > > ---
-> > >  mm/vmscan.c | 52 +++++++++++++++++++++-------------------------------
-> > >  1 file changed, 21 insertions(+), 31 deletions(-)
-> > > 
-> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > index 279d0c2..7513bd1 100644
-> > > --- a/mm/vmscan.c
-> > > +++ b/mm/vmscan.c
-> > > @@ -2694,8 +2694,11 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
-> > >  
-> > >  	do {
-> > >  		unsigned long lru_pages = 0;
-> > > +		unsigned long nr_to_reclaim = 0;
-> > >  		unsigned long nr_reclaimed = sc.nr_reclaimed;
-> > > +		unsigned long this_reclaimed;
-> > >  		bool raise_priority = true;
-> > > +		bool pgdat_needs_compaction = true;
+On Thu, Mar 21, 2013 at 10:37:25AM -0500, Serge E. Hallyn wrote:
+> Quoting Vivek Goyal (vgoyal@redhat.com):
+> ...
+> > Giving CAP_MODIFY_KERNEL to processess upon signature verification
+> > will simplify things a bit.
 > > 
-> > I am confused. We don't want to compact for order == 0, do we?
-> > 
+> > Only thing is that signature verification alone is not sufficient. We
+> > also need to make sure after signature verification executable can
+> > not be modified in memory in any way. So that means atleast couple of
+> > things.
 > 
-> No, but an order check is made later which I felt it was clearer.  You are
-> the second person to bring it up so I'll base the initialisation on order.
+> Also what about context?  If I construct a mounts namespace a certain
+> way, can I trick this executable into loading an old singed bzImage that
+> I had laying around?
 
-Dohh. Yes compact_pgdat is called only if order != 0. I was so focused
-on pgdat_needs_compaction that I've missed it. Both checks use (order &&
-pgdat_needs_compaction) so initialization based on order would be
-probably better for readability.
--- 
-Michal Hocko
-SUSE Labs
+We were thinking that /sbin/kexec will need to verify bzImage signature
+before loading it. 
+
+Key for verification is in kernel so idea was to take kernel's help
+in verifying signature.
+
+Not sure how exactly the interface should look like. 
+
+- I was thinking may be process can mmap() the bzImage with MAP_LOCKED.
+  We can create additional flag say MAP_VERIFY_SIG_POST, which tries
+  to verify signature/integrity of mapped region of file after mapping and
+  locking pages and mmap() fails if signature verification fails.
+
+There have been suggestions about creating new system call altogether.
+
+> 
+> ISTM the only sane thing to do, if you're going down this road,
+> is to have CAP_MODIFIY_KERNEL pulled from bounding set for everyone
+> except a getty started by init on ttyS0.  Then log in on serial
+> to update.  Or run a damon with CAP_MODIFIY_KERNEL which listens
+> to a init_net_ns netlink socket for very basic instructions, like
+> "find and install latest signed bzImage in /boot".  Then you can
+> at least trust that /boot for that daemon is not faked.
+
+daemon does not have the key and can't verify signature of signed
+bzImage. Even if it had the key, it can't trust the crypto code for
+signature verification as none of that is signed.
+
+Thanks
+Vivek
