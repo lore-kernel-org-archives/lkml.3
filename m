@@ -1,91 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab3CUS3Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:29:25 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:53968 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725Ab3CUS3Y (ORCPT
+	id S1752536Ab3CUS3p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:29:45 -0400
+Received: from mail-da0-f54.google.com ([209.85.210.54]:54763 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab3CUS3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:29:24 -0400
-Date: Thu, 21 Mar 2013 11:26:30 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Rob Landley <rob@landley.net>,
-        linux-kernel@vger.kernel.org, josh@joshtriplett.org,
-        zhong@linux.vnet.ibm.com, khilman@linaro.org, geoff@infradead.org,
-        tglx@linutronix.de, Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH] nohz1: Documentation
-Message-ID: <20130321182630.GD3637@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAFTL4hybMf+9GjjyKRSEEp0x+wT7OwpKShE5sR_JqW24DGfKOw@mail.gmail.com>
- <1363636794.15703.32@driftwood>
- <CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com>
- <20130318222548.GG3656@linux.vnet.ibm.com>
- <1363822338.6345.33.camel@gandalf.local.home>
- <20130320235545.GL3637@linux.vnet.ibm.com>
- <1363825631.6345.45.camel@gandalf.local.home>
- <CAFTL4hxRDxQV0e15QvRy1rXhsn6_ZsbmWFROxJ60UgcCr_DTXg@mail.gmail.com>
+	Thu, 21 Mar 2013 14:29:43 -0400
+Date: Thu, 21 Mar 2013 11:29:37 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
+        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
+        peterz@infradead.org, rostedt@goodmis.org,
+        linaro-kernel@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, Arvind.Chauhan@arm.com,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 3/7] workqueue: Add helpers to schedule work on any cpu
+Message-ID: <20130321182937.GB20500@htj.dyndns.org>
+References: <cover.1363617402.git.viresh.kumar@linaro.org>
+ <fb2e721fc43fbc3517a7ebb905aa573b12bb83a5.1363617402.git.viresh.kumar@linaro.org>
+ <20130321001211.GC31256@htj.dyndns.org>
+ <CAKohponKUGbwEZ_edu353Y7YVZKgFOhZunTSUi04FGYWveftkw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFTL4hxRDxQV0e15QvRy1rXhsn6_ZsbmWFROxJ60UgcCr_DTXg@mail.gmail.com>
+In-Reply-To: <CAKohponKUGbwEZ_edu353Y7YVZKgFOhZunTSUi04FGYWveftkw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032118-4834-0000-0000-000004EE00AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 07:01:01PM +0100, Frederic Weisbecker wrote:
-> 2013/3/21 Steven Rostedt <rostedt@goodmis.org>:
-> > [ Added Arjan in case he as anything to add about the idle=poll below ]
-> >
-> >
-> > On Wed, 2013-03-20 at 16:55 -0700, Paul E. McKenney wrote:
-> >> On Wed, Mar 20, 2013 at 07:32:18PM -0400, Steven Rostedt wrote:
-> >> > Not a comment on this document, but on the implementation. As idle NO_HZ
-> >> > can hurt RT, but RT would want to have full NO_HZ, it's a shame that you
-> >> > can't have both (no idle but full). As we only care about not letting
-> >> > the CPU go into deep sleep, I wonder if it wouldn't be too hard to add
-> >> > something that keeps idle from going into nohz mode. Hmm, I think there
-> >> > may be an option to keep the CPU from going too deep into sleep. That
-> >> > may be a better approach.
-> >>
-> >> Would the combination of CONFIG_NO_HZ=y, CONFIG_NO_HZ_FULL=y, and
-> >> idle=poll do the trick in this case?
-> >
-> > I'm not sure I would recommend idle=poll either. It would certainly
-> > work, but it goes to the other extreme. You think NO_HZ=n drains a
-> > battery? Try idle=poll.
-> >
-> > Looking at Documentation/kernel-parameters.txt, it looks like idle=mwait
-> > may be better. It states that performance is the same as idle=poll (if
-> > supported).
-> >
-> > Also there's a kernel parameter for x86 called intel_idle.max_cstate=X.
-> >
-> > As idle=poll will most likely run the processor very hot and you will
-> > need to add more electricity not only for the computer but also for the
-> > A/C, it would be nice to still have the CPU sleep, but just at a shallow
-> > (fast wakeup) state.
-> >
-> > Perhaps Arjan can add some input here?
-> 
-> But I note that it's an interesting usecase. May be we'll want to make
-> CONFIG_NO_HZ_FULL (or whatever it's going to be called) not depend on
-> CONFIG_NO_HZ_IDLE in the long.
-> 
-> We'll see.
-> 
-> Also, just a guess, but on dynticks-idle may be wakeup from deep CPU
-> sleep state is not the only latency source. Reprogramming the timer
-> tick on idle exit may be another one? Not sure how fast it is to write
-> to the clock device. I supect it's not that free. So probably you
-> would like to get rid of the entire dynticks-idle infrastructure for
-> real time.
+Hey, Viresh.
 
-Agreed, and the first known-issues bullet calls that possibility out.
+On Thu, Mar 21, 2013 at 04:27:23PM +0530, Viresh Kumar wrote:
+> > For some reason, I've been always unsure about this patchset.  I've
+> > been thinking about it past few days and I think I now know why.
+> 
+> I knew this since the beginning and thought power numbers i showed might
+> change your view. My hard luck :)
 
-							Thanx, Paul
+Heh, sorry about the trouble but, yeah, your numbers are impressive
+and no matter how this discussion turns out, we're gonna have it in
+some form, so please don't think that your numbers didn't change
+anything.  Actually, to me, it seems that identifying which workqueues
+are good candidates for conversion and determining how much powersave
+can be gained are 90% of the work.
 
+> Now there are two things i am worried about.
+> 
+> A.
+> About the difference in behavior of scheduler and sched_select_non_idle_cpu().
+> Scheduler will treat this work as any normal task and can schedule it anywhere
+> based on what it feels is the right place and may still wake up an idle one for
+> load balancing.
+> 
+> In our approach, We aren't switching CPU for a work if that cpu (or system) is
+> busy enough, like in case of high IOPS for block layer. We will find that cpu as
+> busy, most of the time on such situations and so we will stay where we were.
+>
+> In case system is fairly idle, then also we stay on the same cpu.
+> The only time we migrate is when current cpu is idle but the whole system
+> isn't.
+
+Yes, I actually like that part a lot although I do wish the idle check
+was inlined.
+
+What I'm wondering is whether the kinda out-of-band decision via
+sched_select_cpu() is justified given that it can and is likely to go
+through full scheduling decision anyway.  For timer, we don't have
+that, so it makes sense.  For work items, it's a bit different.
+
+To rephrase, *if* the scheduler can't already make proper decisions
+regarding power consumption on an idlish system, maybe it can be
+improved to do so?  It could as well be that this CPU selection is
+special enough that it's just better to keep it separate as this
+patchset proposes.  This is something up to the scheduler people.
+Peter, Ingo, what do you guys think?
+
+> B.
+> It is sort of difficult to teach users about BOUND and UNBOUND workqueues
+> and people have used them without thinking too much about them since some
+> time. We need a straightforward API to make this more transparent. And
+> queue_work_on_any_cpu() was a good candidate here. I am not talking about
+> its implementation but about the interface.
+> 
+> Though in both suggestions we need to fix user drivers one by one to use
+> queue_work_on_any_cpu() or use WQ_UNBOUND..
+
+I don't know.  Workqueues are attribute domains and I kinda dislike
+having a completely separate set of interface for this.  Regardless of
+how the backend gets implemented, I'd really much prefer it being
+implemented as a workqueue attribute rather than another set of
+queueing interface functions.
+
+> Maybe people wouldn't suffer much because of the reasons i told you earlier.
+> On a busy system we will never switch cpus.
+> 
+> This static configuration might not work well with multiplatform images.
+
+Well, it doesn't have to be a compile time thing.  It can be
+dynamically switched with, say, static_branch(), but I think that's a
+minor point at this point.
+
+Thanks.
+
+-- 
+tejun
