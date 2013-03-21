@@ -1,81 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101Ab3CUMfJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 08:35:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57928 "EHLO mx2.suse.de"
+	id S932603Ab3CUMfQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 08:35:16 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55330 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755297Ab3CUMfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 08:35:07 -0400
-Date: Thu, 21 Mar 2013 13:35:05 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Russ Anderson <rja@sgi.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com
-Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
-Message-ID: <20130321123505.GA6051@dhcp22.suse.cz>
-References: <20130318155619.GA18828@sgi.com>
- <20130321105516.GC18484@gmail.com>
+	id S1758110Ab3CUMfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 08:35:11 -0400
+Message-ID: <514AFDD5.9020608@ti.com>
+Date: Thu, 21 Mar 2013 18:02:21 +0530
+From: Mugunthan V N <mugunthanvnm@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321105516.GC18484@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>
+CC: Richard Cochran <richardcochran@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [BUGFIX PATCH] net: ethernet: cpsw: fix erroneous condition in
+ error check
+References: <1363868411-25318-1-git-send-email-LW@KARO-electronics.de>
+In-Reply-To: <1363868411-25318-1-git-send-email-LW@KARO-electronics.de>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 21-03-13 11:55:16, Ingo Molnar wrote:
-> 
-> * Russ Anderson <rja@sgi.com> wrote:
-> 
-> > When booting on a large memory system, the kernel spends
-> > considerable time in memmap_init_zone() setting up memory zones.
-> > Analysis shows significant time spent in __early_pfn_to_nid().
-> > 
-> > The routine memmap_init_zone() checks each PFN to verify the
-> > nid is valid.  __early_pfn_to_nid() sequentially scans the list of
-> > pfn ranges to find the right range and returns the nid.  This does
-> > not scale well.  On a 4 TB (single rack) system there are 308
-> > memory ranges to scan.  The higher the PFN the more time spent
-> > sequentially spinning through memory ranges.
-> > 
-> > Since memmap_init_zone() increments pfn, it will almost always be
-> > looking for the same range as the previous pfn, so check that
-> > range first.  If it is in the same range, return that nid.
-> > If not, scan the list as before.
-> > 
-> > A 4 TB (single rack) UV1 system takes 512 seconds to get through
-> > the zone code.  This performance optimization reduces the time
-> > by 189 seconds, a 36% improvement.
-> > 
-> > A 2 TB (single rack) UV2 system goes from 212.7 seconds to 99.8 seconds,
-> > a 112.9 second (53%) reduction.
-> 
-> Nice speedup!
-> 
-> A minor nit, in addition to Andrew's suggestion about wrapping 
-> __early_pfn_to_nid():
-> 
-> > Index: linux/mm/page_alloc.c
-> > ===================================================================
-> > --- linux.orig/mm/page_alloc.c	2013-03-18 10:52:11.510988843 -0500
-> > +++ linux/mm/page_alloc.c	2013-03-18 10:52:14.214931348 -0500
-> > @@ -4161,10 +4161,19 @@ int __meminit __early_pfn_to_nid(unsigne
-> >  {
-> >  	unsigned long start_pfn, end_pfn;
-> >  	int i, nid;
-> > +	static unsigned long last_start_pfn, last_end_pfn;
-> > +	static int last_nid;
-> 
-> Please move these globals out of function local scope, to make it more 
-> apparent that they are not on-stack. I only noticed it in the second pass.
+On 3/21/2013 5:50 PM, Lothar Waßmann wrote:
+> The error check in cpsw_probe_dt() has an '&&' where an '||' is
+> meant to be. This causes a NULL pointer dereference when incomplet DT
+> data is passed to the driver ('phy_id' property for cpsw_emac1
+> missing).
+>
+>
+> Signed-off-by: Lothar Waßmann<LW@KARO-electronics.de>
+Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
 
-Wouldn't this just add more confision with other _pfn variables? (e.g.
-{min,max}_low_pfn and others)
-
-IMO the local scope is more obvious as this is and should only be used
-for caching purposes.
--- 
-Michal Hocko
-SUSE Labs
+Regards
+Mugunthan V N
