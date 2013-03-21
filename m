@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757688Ab3CUHP5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 03:15:57 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:44836 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757071Ab3CUHP4 (ORCPT
+	id S1754507Ab3CUHS2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 03:18:28 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:39637 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057Ab3CUHS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 03:15:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130321070357.GD28328@redhat.com>
-References: <20130321061838.GA28319@redhat.com> <CAL1RGDUcMj9QVsuQgK+ozw64L6-cGehL7YBUJ1_ckni6TD=Kcg@mail.gmail.com>
- <20130321070357.GD28328@redhat.com>
-From: Roland Dreier <roland@kernel.org>
-Date: Thu, 21 Mar 2013 00:15:33 -0700
-X-Google-Sender-Auth: hvQ-DchnR9TnfPQdbG5J8CJKWkY
-Message-ID: <CAG4TOxPkhOhGmzeA1K4a0Zw8HxS-QkOr-PCx7mJgA+KkuH3ZiQ@mail.gmail.com>
-Subject: Re: [PATCH] rdma: don't make pages writeable if not requiested
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 21 Mar 2013 03:18:27 -0400
+From: zwu.kernel@gmail.com
+To: linux-btrfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH] btrfs-progs: fix one bracket issue in mkfs.btrfs manpage
+Date: Thu, 21 Mar 2013 15:17:17 +0800
+Message-Id: <1363850237-21276-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032107-7282-0000-0000-0000155D2397
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I think this change will break the case where userspace tries to
->> register an MR with read-only permission, but intends locally through
->> the CPU to write to the memory.
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-> Shouldn't it set LOCAL_WRITE then?
+  In "[ \fB\-f\fP\fI ]", the "\fI" will result in the front half "["of
+"[ -f ]" doesn't the back half "]"; When you issue the command
+"man mkfs.btrfs", you will see the difference.
 
-We're talking about the permissions for the register MR operation,
-right?  (That's what the kernel RDMA driver code that does
-get_user_pages() sees)
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+---
+ man/mkfs.btrfs.8.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-In that case, no, I don't see any reason for LOCAL_WRITE, since the
-only RDMA operations that will access this memory are remote reads.
-The writing (that triggers COW) is coming from normal process access
-triggering a page fault, etc.  This is a pretty standard way of using
-RDMA... For example, I allocate some memory and register it for RDMA
-read (and pass the R_Key to the remote system) with only REMOTE_READ
-permission.  Then I fill in the memory with the results of some
-computation and the remote system does an RDMA read to get those
-results.
+diff --git a/man/mkfs.btrfs.8.in b/man/mkfs.btrfs.8.in
+index cdccd6a..a3f1503 100644
+--- a/man/mkfs.btrfs.8.in
++++ b/man/mkfs.btrfs.8.in
+@@ -6,7 +6,7 @@ mkfs.btrfs \- create a btrfs filesystem
+ [ \fB\-A\fP\fI alloc-start\fP ]
+ [ \fB\-b\fP\fI byte-count\fP ]
+ [ \fB\-d\fP\fI data-profile\fP ]
+-[ \fB\-f\fP\fI ]
++[ \fB\-f\fP ]
+ [ \fB\-l\fP\fI leafsize\fP ]
+ [ \fB\-L\fP\fI label\fP ]
+ [ \fB\-m\fP\fI metadata profile\fP ]
+-- 
+1.7.11.7
 
- - R.
