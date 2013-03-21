@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757545Ab3CUJtJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 05:49:09 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:33514 "EHLO multi.imgtec.com"
+	id S933036Ab3CUJti (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 05:49:38 -0400
+Received: from mga14.intel.com ([143.182.124.37]:30123 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755477Ab3CUJtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 05:49:08 -0400
-Message-ID: <514AD76D.2020401@imgtec.com>
-Date: Thu, 21 Mar 2013 09:48:29 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Paul Mundt <lethal@linux-sh.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Tejun Heo <tj@kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-sh@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] memblock: kill "config MAX_ACTIVE_REGIONS"
-References: <1363858076.1390.104.camel@x61.thuisdomein> <20130321093455.GA8027@linux-sh.org>
-In-Reply-To: <20130321093455.GA8027@linux-sh.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_03_21_09_48_56
+	id S1752793Ab3CUJth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 05:49:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,884,1355126400"; 
+   d="scan'208";a="217281127"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        Vinod Koul <vinod.koul@intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH] dw_dmac: don't wait for FIFO_EMPTY endlessly in dwc_chan_pause
+Date: Thu, 21 Mar 2013 11:49:17 +0200
+Message-Id: <1363859357-31545-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/03/13 09:34, Paul Mundt wrote:
-> On Thu, Mar 21, 2013 at 10:27:56AM +0100, Paul Bolle wrote:
->> The Kconfig symbol MAX_ACTIVE_REGIONS is unused. Commit
->> 0ee332c1451869963626bf9cac88f165a90990e1 ("memblock: Kill
->> early_node_map[]") removed the only place were it was actually used. But
->> it did not remove its Kconfig entries (for powerpc and sh).
->>
->> Remove those two entries (and the entry for metag, that popped up in
->> v3.9-rc1).
->>
->> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
->> ---
->> 0) Eyeball tested again.
->>
->> 1) It felt silly to split this clean up patch into three patches. But if
->> the maintainers involved disagree I'm happy to split and resend it. 
->>
-> Given that it's unused now it doesn't really matter how it gets applied,
-> it looks fine to me.
-> 
-> Acked-by: Paul Mundt <lethal@linux-sh.org>
-> 
+When we pause the channel after transfer is completed we might stuck in the
+dwc_chan_pause() because the FIFO_EMPTY flag will never be asserted. To avoid
+the endless loop we introduce a timeout here (*). The proper solution is to
+somehow get the residue in FIFO and avoid busyloop when transfer is done, but
+this task is not simple and fast.
 
-Acked-by: James Hogan <james.hogan@imgtec.com>
+Unfortunately we can't use cpu_relax() in conjunction with jiffies checker, due
+to we have interrupts disabled by spin_lock_irqsave() and there is a big chance
+that no interrupts will come to update the jiffies..
+
+(*) The worst case is
+	AHB write * FIFO size / hclk = 5.12 us,
+    where
+	AHB write = 2 cycles,
+	hclk = 100 MHz,
+	burst size = 1 byte,
+	FIFO size = 256 bytes.
+    The proposed 40us timeout might be considered as a big one, though we enter
+    to that state only when we have the transfer already completed.
+
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/dma/dw_dmac.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 43a5329..43e2e89 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1030,10 +1030,11 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
+ static inline void dwc_chan_pause(struct dw_dma_chan *dwc)
+ {
+ 	u32 cfglo = channel_readl(dwc, CFG_LO);
++	unsigned int count = 20;	/* timeout iterations */
+ 
+ 	channel_writel(dwc, CFG_LO, cfglo | DWC_CFGL_CH_SUSP);
+-	while (!(channel_readl(dwc, CFG_LO) & DWC_CFGL_FIFO_EMPTY))
+-		cpu_relax();
++	while (!(channel_readl(dwc, CFG_LO) & DWC_CFGL_FIFO_EMPTY) && count--)
++		udelay(2);
+ 
+ 	dwc->paused = true;
+ }
+-- 
+1.8.2.rc0.22.gb3600c3
 
