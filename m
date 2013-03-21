@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757714Ab3CUItO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 04:49:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6328 "EHLO mga02.intel.com"
+	id S933374Ab3CUIuu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 04:50:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43887 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755050Ab3CUItM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 04:49:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,884,1355126400"; 
-   d="scan'208";a="305507337"
-Date: Thu, 21 Mar 2013 13:54:09 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: maxin.john@enea.com, s.hauer@pengutronix.de, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] dma: ipu: ipu_idmac: Fix section mismatch
-Message-ID: <20130321082409.GI10326@intel.com>
-References: <1363132417-15273-1-git-send-email-festevam@gmail.com>
+	id S932625Ab3CUIur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 04:50:47 -0400
+Date: Thu, 21 Mar 2013 10:51:07 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Roland Dreier <roland@kernel.org>
+Cc: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
+Subject: Re: [PATCH] rdma: don't make pages writeable if not requiested
+Message-ID: <20130321085107.GE28328@redhat.com>
+References: <20130321061838.GA28319@redhat.com>
+ <CAL1RGDUcMj9QVsuQgK+ozw64L6-cGehL7YBUJ1_ckni6TD=Kcg@mail.gmail.com>
+ <20130321070357.GD28328@redhat.com>
+ <CAG4TOxPkhOhGmzeA1K4a0Zw8HxS-QkOr-PCx7mJgA+KkuH3ZiQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363132417-15273-1-git-send-email-festevam@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAG4TOxPkhOhGmzeA1K4a0Zw8HxS-QkOr-PCx7mJgA+KkuH3ZiQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 08:53:37PM -0300, Fabio Estevam wrote:
-> From: Fabio Estevam <fabio.estevam@freescale.com>
+On Thu, Mar 21, 2013 at 12:15:33AM -0700, Roland Dreier wrote:
+> >> I think this change will break the case where userspace tries to
+> >> register an MR with read-only permission, but intends locally through
+> >> the CPU to write to the memory.
 > 
-> Since commit 84c1e63c12 (dma: Remove erroneous __exit and __exit_p() references)
-> the following section mismatch happens:
+> > Shouldn't it set LOCAL_WRITE then?
 > 
-> WARNING: drivers/built-in.o(.text+0x20f94): Section mismatch in reference from the function ipu_remove() to the function .exit.text:ipu_idmac_exit()
-> The function ipu_remove() references a function in an exit section.
-> Often the function ipu_idmac_exit() has valid usage outside the exit section
-> and the fix is to remove the __exit annotation of ipu_idmac_exit.
+> We're talking about the permissions for the register MR operation,
+> right?  (That's what the kernel RDMA driver code that does
+> get_user_pages() sees)
 > 
-> Remove the '__exit' annotation from ipu_idmac_exit in order to fix it. 
-> 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Applied Thanks
+> In that case, no, I don't see any reason for LOCAL_WRITE, since the
+> only RDMA operations that will access this memory are remote reads.
 
---
-~Vinod
-> ---
->  drivers/dma/ipu/ipu_idmac.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+What is the meaning of LOCAL_WRITE then? There are no local
+RDMA writes as far as I can see.
+
+> The writing (that triggers COW) is coming from normal process access
+> triggering a page fault, etc.  This is a pretty standard way of using
+> RDMA... For example, I allocate some memory and register it for RDMA
+> read (and pass the R_Key to the remote system) with only REMOTE_READ
+> permission.  Then I fill in the memory with the results of some
+> computation and the remote system does an RDMA read to get those
+> results.
 > 
-> diff --git a/drivers/dma/ipu/ipu_idmac.c b/drivers/dma/ipu/ipu_idmac.c
-> index d6d5d7e..d39c2cd 100644
-> --- a/drivers/dma/ipu/ipu_idmac.c
-> +++ b/drivers/dma/ipu/ipu_idmac.c
-> @@ -1642,7 +1642,7 @@ static int __init ipu_idmac_init(struct ipu *ipu)
->  	return dma_async_device_register(&idmac->dma);
->  }
->  
-> -static void __exit ipu_idmac_exit(struct ipu *ipu)
-> +static void ipu_idmac_exit(struct ipu *ipu)
->  {
->  	int i;
->  	struct idmac *idmac = &ipu->idmac;
-> -- 
-> 1.7.9.5
-> 
+>  - R.
+
+OK then what we need is a new flag saying "I really do not
+intend to write into this memory please do not break
+COW or do anything else just in case I do".
+
+-- 
+MST
