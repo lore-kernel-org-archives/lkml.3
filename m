@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524Ab3CUIoq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 04:44:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46607 "EHLO mx2.suse.de"
+	id S933337Ab3CUIrQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 04:47:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:57032 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752057Ab3CUIon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 04:44:43 -0400
-Date: Thu, 21 Mar 2013 09:44:41 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Hedi Berriche <hedi@sgi.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: page_alloc: Avoid marking zones full prematurely
- after zone_reclaim()
-Message-ID: <20130321084441.GE6094@dhcp22.suse.cz>
-References: <20130320181957.GA1878@suse.de>
- <514A7163.5070700@gmail.com>
- <20130321081902.GD6094@dhcp22.suse.cz>
- <514AC583.2090909@gmail.com>
+	id S1752057Ab3CUIrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 04:47:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,884,1355126400"; 
+   d="scan'208";a="309872418"
+Date: Thu, 21 Mar 2013 10:47:07 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org, kevin@allwinnertech.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-serial@vger.kernel.org,
+        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] serial: 8250_dw: add support for clk api
+Message-ID: <20130321084707.GB2862@xps8300>
+References: <1363689316-7847-2-git-send-email-maxime.ripard@free-electrons.com>
+ <1363690369-8067-1-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <514AC583.2090909@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1363690369-8067-1-git-send-email-maxime.ripard@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 21-03-13 16:32:03, Simon Jeons wrote:
-> Hi Michal,
-> On 03/21/2013 04:19 PM, Michal Hocko wrote:
-> >On Thu 21-03-13 10:33:07, Simon Jeons wrote:
-> >>Hi Mel,
-> >>On 03/21/2013 02:19 AM, Mel Gorman wrote:
-> >>>The following problem was reported against a distribution kernel when
-> >>>zone_reclaim was enabled but the same problem applies to the mainline
-> >>>kernel. The reproduction case was as follows
-> >>>
-> >>>1. Run numactl -m +0 dd if=largefile of=/dev/null
-> >>>    This allocates a large number of clean pages in node 0
-> >>I confuse why this need allocate a large number of clean pages?
-> >It reads from file and puts pages into the page cache. The pages are not
-> >modified so they are clean. Output file is /dev/null so no pages are
-> >written. dd doesn't call fadvise(POSIX_FADV_DONTNEED) on the input file
-> >by default so pages from the file stay in the page cache
+On Tue, Mar 19, 2013 at 11:52:49AM +0100, Maxime Ripard wrote:
+> From: Emilio López <emilio@elopez.com.ar>
 > 
-> Thanks for your clarify Michal.
+> This commit implements support for using the clk api; this lets us use
+> the "clocks" property with device tree, instead of having to use
+> clock-frequency.
+> 
+> Signed-off-by: Emilio López <emilio@elopez.com.ar>
 
-This is getting off-topic.
+FWIW,
 
-> dd will use page cache instead of direct IO?
+Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 
-no by default. You can use direct option. Refer to man dd for more
-information.
-
-> Where can I got dd source codes?
-
-dd is part of coreutils: http://www.gnu.org/software/coreutils/
-Please do not be afraid to use google. Most of these answers are there
-already...
-
-> One offline question, when should use page cache and when should use
-> direct IO?
-
-And this is really off-topic. The simplest answer would be. Use direct
-IO when you want to prevent from caching because you are doing it
-yourselvef. Please try to search the web it is full of more specific
-examples.
 -- 
-Michal Hocko
-SUSE Labs
+heikki
