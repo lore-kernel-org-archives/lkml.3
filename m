@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449Ab3CUB5Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 21:57:25 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:57707 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752303Ab3CUB5Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 21:57:24 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArgZAFRoSlF5LAzK/2dsb2JhbABDwAOFMwEDAYFWF3SCJAEBBTocIxAIAw4KCSUPBSUDIROIE8JaFY1RDyAeXQeDQAOWX5EDgVSBSiiBLw
-Date: Thu, 21 Mar 2013 12:57:21 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jan Kara <jack@suse.cz>, axboe@kernel.dk, laijs@cn.fujitsu.com,
-        fengguang.wu@intel.com, linux-kernel@vger.kernel.org,
-        jmoyer@redhat.com
-Subject: Re: [PATCH 3/4] writeback: replace custom worker pool implementation
- with unbound workqueue
-Message-ID: <20130321015721.GL17758@dastard>
-References: <1362692649-25570-1-git-send-email-tj@kernel.org>
- <1362692649-25570-4-git-send-email-tj@kernel.org>
- <20130312150510.GF13152@quack.suse.cz>
- <20130318223244.GA11188@quack.suse.cz>
- <20130318223526.GH3042@htj.dyndns.org>
- <20130319154600.GC5222@quack.suse.cz>
- <CAOS58YMop8+TnCGK2+SH52WNyK011vP0BWu3XENjrGt9xks32w@mail.gmail.com>
+	id S1756546Ab3CUB6E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 21:58:04 -0400
+Received: from tundra.namei.org ([65.99.196.166]:32898 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756487Ab3CUB6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 21:58:02 -0400
+Date: Thu, 21 Mar 2013 12:58:04 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+cc: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
+        kexec@lists.infradead.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
+In-Reply-To: <1363797717.2580.10.camel@falcor1.watson.ibm.com>
+Message-ID: <alpine.LRH.2.02.1303211257420.9518@tundra.namei.org>
+References: <1363642353-30749-1-git-send-email-matthew.garrett@nebula.com>  <alpine.LRH.2.02.1303191542200.30973@tundra.namei.org> <1363797717.2580.10.camel@falcor1.watson.ibm.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOS58YMop8+TnCGK2+SH52WNyK011vP0BWu3XENjrGt9xks32w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 10:28:24AM -0700, Tejun Heo wrote:
-> Hello, Jan.
+On Wed, 20 Mar 2013, Mimi Zohar wrote:
+
+> On Tue, 2013-03-19 at 15:47 +1100, James Morris wrote:
+> > On Mon, 18 Mar 2013, Matthew Garrett wrote:
+> > 
+> > > This patch introduces CAP_COMPROMISE_KERNEL. 
+> > 
+> > I'd like to see this named CAP_MODIFY_KERNEL, which is more accurate and 
+> > less emotive.  Otherwise I think core kernel developers will be scratching 
+> > their head over where to sprinkle this.
+> > 
+> > Apart from that, I like the idea, especially when it's wired up to MAC 
+> > security.
 > 
-> On Tue, Mar 19, 2013 at 8:46 AM, Jan Kara <jack@suse.cz> wrote:
-> >   Well, but what you often get is just output of sysrq-w, or sysrq-t, or
-> > splat from scheduler about stuck task. You often don't have the comfort of
-> > tracing... Can't we somehow change 'comm' of the task when it starts
-> > processing work of some bdi?
-> 
-> You sure can but I'd prefer not to do that. If you wanna do it
-> properly, you have to grab task lock every time a work item starts
-> execution. I'm not sure how beneficial having the block device
-> identifier would be. Backtrace would be there the same. Is identifying
-> the block device that important?
+> Matthrew, perhaps you could clarify whether this will be tied to MAC
+> security.
 
-When you have a system that has 50+ active filesystems (pretty
-common in the distributed storage environments were every disk has
-it's own filesystem), knowing which filesystem(s) are getting stuck
-in writeback from the sysrq-w or hangcheck output is pretty damn
-important....
+All capabilities are, via LSM.
 
-Cheers,
 
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+James Morris
+<jmorris@namei.org>
