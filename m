@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab3CUKNV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 06:13:21 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:50717 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753647Ab3CUKNU (ORCPT
+	id S1754984Ab3CUKPu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 06:15:50 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:64286 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab3CUKPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 06:13:20 -0400
-Message-ID: <1363860797.1390.108.camel@x61.thuisdomein>
-Subject: [PATCH] Hexagon: remove two Kconfig entries
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 21 Mar 2013 11:13:17 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Mar 2013 10:13:18.0159 (UTC) FILETIME=[B537B5F0:01CE261C]
-X-RcptDomain: vger.kernel.org
+	Thu, 21 Mar 2013 06:15:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130321095542.GH26931@gondor.apana.org.au>
+References: <1363280978-24051-1-git-send-email-fabio.porcedda@gmail.com>
+ <1363280978-24051-4-git-send-email-fabio.porcedda@gmail.com> <20130321095542.GH26931@gondor.apana.org.au>
+From: Fabio Porcedda <fabio.porcedda@gmail.com>
+Date: Thu, 21 Mar 2013 11:15:26 +0100
+Message-ID: <CAHkwnC_AJpeVw2o8oJn+zMvSg1Lbmm1aXRYxCmtDYhkJG9nvig@mail.gmail.com>
+Subject: Re: [PATCH v2 3/8] drivers: char: use module_platform_driver_probe()
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-media <linux-media@vger.kernel.org>,
+        linux-ide <linux-ide@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>,
+        linux-fbdev <linux-fbdev@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig entries for HEXAGON_VM and HEXAGON_ANGEL_TRAPS were added,
-together with the configuration and makefiles for the Hexagon
-architecture, in v3.2. They have never been used. They can safely be
-removed.
+On Thu, Mar 21, 2013 at 10:55 AM, Herbert Xu
+<herbert@gondor.apana.org.au> wrote:
+> On Thu, Mar 14, 2013 at 06:09:33PM +0100, Fabio Porcedda wrote:
+>> This patch converts the drivers to use the
+>> module_platform_driver_probe() macro which makes the code smaller and
+>> a bit simpler.
+>>
+>> Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: Matt Mackall <mpm@selenic.com>
+>> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+>> Cc: Fabio Estevam <fabio.estevam@freescale.com>
+>> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+>
+> Patch applied.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+The patch is already in
+git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git.
+Are you speaking about that?
 
- arch/hexagon/Kconfig | 9 ---------
- 1 file changed, 9 deletions(-)
-
-diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
-index e4decc6..48130eb 100644
---- a/arch/hexagon/Kconfig
-+++ b/arch/hexagon/Kconfig
-@@ -109,9 +109,6 @@ config HEXAGON_COMET
- 
- endchoice
- 
--config HEXAGON_VM
--	def_bool y
--
- config CMDLINE
- 	string "Default kernel command string"
- 	default ""
-@@ -122,12 +119,6 @@ config CMDLINE
- 	  minimum, you should specify the memory size and the root device
- 	  (e.g., mem=64M root=/dev/nfs).
- 
--config HEXAGON_ANGEL_TRAPS
--	bool "Use Angel Traps"
--	default n
--	---help---
--	  Enable angel debug traps (for printk's).
--
- config SMP
- 	bool "Multi-Processing support"
- 	---help---
--- 
-1.7.11.7
-
+Best regards
+--
+Fabio Porcedda
