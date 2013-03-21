@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab3CUVxJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 17:53:09 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33033 "EHLO
+	id S932474Ab3CUVxY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 17:53:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33201 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932159Ab3CUVxA (ORCPT
+	with ESMTP id S932300Ab3CUVxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 17:53:00 -0400
-Message-Id: <20130321215233.518839807@linutronix.de>
+	Thu, 21 Mar 2013 17:53:16 -0400
+Message-Id: <20130321215234.754954871@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 21 Mar 2013 21:52:58 -0000
+Date: Thu, 21 Mar 2013 21:53:14 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
@@ -18,11 +18,11 @@ Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: [patch 03/34] idle: Implement set/clr functions for need_resched poll
+        Magnus Damm <magnus.damm@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [patch 22/34] mips: Use generic idle loop
 References: <20130321214930.752934102@linutronix.de>
-Content-Disposition: inline;
- filename=smpboot-implement-need-resched-polling-helpers.patch
+Content-Disposition: inline; filename=mips-use-generic-idle-loop.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -30,61 +30,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement set/clear functions for the idle need_resched poll
-implementation.
-
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>
 ---
- include/linux/sched.h |   23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+ arch/mips/Kconfig          |    1 
+ arch/mips/kernel/process.c |   46 ++++++++++++---------------------------------
+ arch/mips/kernel/smp.c     |    2 -
+ 3 files changed, 15 insertions(+), 34 deletions(-)
 
-Index: linux-2.6/include/linux/sched.h
+Index: linux-2.6/arch/mips/Kconfig
 ===================================================================
---- linux-2.6.orig/include/linux/sched.h
-+++ linux-2.6/include/linux/sched.h
-@@ -2473,7 +2473,7 @@ static inline unsigned long *end_of_stac
+--- linux-2.6.orig/arch/mips/Kconfig
++++ linux-2.6/arch/mips/Kconfig
+@@ -34,6 +34,7 @@ config MIPS
+ 	select HAVE_MEMBLOCK_NODE_MAP
+ 	select ARCH_DISCARD_MEMBLOCK
+ 	select GENERIC_SMP_IDLE_THREAD
++	select GENERIC_IDLE_LOOP
+ 	select BUILDTIME_EXTABLE_SORT
+ 	select GENERIC_CLOCKEVENTS
+ 	select GENERIC_CMOS_UPDATE
+Index: linux-2.6/arch/mips/kernel/process.c
+===================================================================
+--- linux-2.6.orig/arch/mips/kernel/process.c
++++ linux-2.6/arch/mips/kernel/process.c
+@@ -41,44 +41,24 @@
+ #include <asm/inst.h>
+ #include <asm/stacktrace.h>
+ 
+-/*
+- * The idle thread. There's no useful work to be done, so just try to conserve
+- * power and have a low exit latency (ie sit in a loop waiting for somebody to
+- * say that they'd like to reschedule)
+- */
+-void __noreturn cpu_idle(void)
++void arch_cpu_idle_dead(void)
+ {
+-	int cpu;
+-
+-	/* CPU is going idle. */
+-	cpu = smp_processor_id();
++	/* What the heck is this check doing ? */
++	if (!cpu_isset(cpu, cpu_callin_map))
++		play_dead();}
++}
+ 
+-	/* endless idle loop with no priority at all */
+-	while (1) {
+-		tick_nohz_idle_enter();
+-		rcu_idle_enter();
+-		while (!need_resched() && cpu_online(cpu)) {
++void arch__cpu_idle(void)
++{
+ #ifdef CONFIG_MIPS_MT_SMTC
+-			extern void smtc_idle_loop_hook(void);
++	extern void smtc_idle_loop_hook(void);
+ 
+-			smtc_idle_loop_hook();
++	smtc_idle_loop_hook();
  #endif
+-
+-			if (cpu_wait) {
+-				/* Don't trace irqs off for idle */
+-				stop_critical_timings();
+-				(*cpu_wait)();
+-				start_critical_timings();
+-			}
+-		}
+-#ifdef CONFIG_HOTPLUG_CPU
+-		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map))
+-			play_dead();
+-#endif
+-		rcu_idle_exit();
+-		tick_nohz_idle_exit();
+-		schedule_preempt_disabled();
+-	}
++	if (cpu_wait)
++		(*cpu_wait)();
++	else
++		local_irq_enable();
+ }
+ 
+ asmlinkage void ret_from_fork(void);
+Index: linux-2.6/arch/mips/kernel/smp.c
+===================================================================
+--- linux-2.6.orig/arch/mips/kernel/smp.c
++++ linux-2.6/arch/mips/kernel/smp.c
+@@ -139,7 +139,7 @@ asmlinkage __cpuinit void start_secondar
+ 	WARN_ON_ONCE(!irqs_disabled());
+ 	mp_ops->smp_finish();
+ 
+-	cpu_idle();
++	cpu_startup_entry(CPUHP_ONLINE);
+ }
  
  /*
-- * Idle thread specific functions to determine the need_resched
-+ * Idle thread specific functions for the the need_resched
-  * polling state. We have two versions, one based on TS_POLLING in
-  * thread_info.status and one based on TIF_POLLING_NRFLAG in
-  * thread_info.flags
-@@ -2483,13 +2483,34 @@ static inline int tsk_is_polling(struct 
- {
- 	return task_thread_info(p)->status & TS_POLLING;
- }
-+static inline void current_set_polling(void)
-+{
-+	current_thread_info()->status |= TS_POLLING;
-+}
-+
-+static inline void current_clr_polling(void)
-+{
-+	current_thread_info()->status &= ~TS_POLLING;
-+	smp_mb__after_clear_bit();
-+}
- #elif defined(TIF_POLLING_NRFLAG)
- static inline int tsk_is_polling(struct task_struct *p)
- {
- 	test_tsk_thread_flag(p, TIF_POLLING_NRFLAG);
- }
-+static inline void current_set_polling(void)
-+{
-+	set_thread_flag(TIF_POLLING_NRFLAG);
-+}
-+
-+static inline void current_clr_polling(void)
-+{
-+	clear_thread_flag(TIF_POLLING_NRFLAG);
-+}
- #else
- static inline int tsk_is_polling(struct task_struct *p) { return 0; }
-+static inline void current_set_polling(void) { }
-+static inline void current_clr_polling(void) { }
- #endif
- 
- static inline int object_is_on_stack(void *obj)
 
 
