@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab3CUVSR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 17:18:17 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:44063 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965Ab3CUVSP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 17:18:15 -0400
+	id S1753468Ab3CUVUs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 17:20:48 -0400
+Received: from londo.lunn.ch ([80.238.139.98]:51166 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752965Ab3CUVUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 17:20:47 -0400
+Date: Thu, 21 Mar 2013 22:20:33 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Soeren Moch <smoch@web.de>, Arnd Bergmann <arnd@arndb.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-mm@kvack.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, michael@amarulasolutions.com
+Subject: Re: [PATCH] USB: EHCI: fix for leaking isochronous data
+Message-ID: <20130321212033.GQ21478@lunn.ch>
+References: <Pine.LNX.4.44L0.1303211659080.1899-100000@iolanthe.rowland.org>
+ <Pine.LNX.4.44L0.1303211708470.1899-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20130321210255.GD16406@redhat.com>
-References: <20130321190653.GA15479@redhat.com>
-	<20130321192935.GY21522@ZenIV.linux.org.uk>
-	<CA+55aFyvwJK99YvDLDsazD4tWT6sNQO6kGM_1WyDdvwPNDxbLw@mail.gmail.com>
-	<20130321202635.GA16406@redhat.com>
-	<CA+55aFwyK4uDgSKUpXBGS5zi16qd8STtrGi3kndunYi40dnj+A@mail.gmail.com>
-	<20130321203639.GC16406@redhat.com>
-	<20130321204704.GZ21522@ZenIV.linux.org.uk>
-	<20130321210255.GD16406@redhat.com>
-Date: Thu, 21 Mar 2013 14:18:15 -0700
-X-Google-Sender-Auth: ngs5EwwxOIUbS8KDKuqRHOx-nz4
-Message-ID: <CA+55aFxysZEw6fw8+LobMgfzeHuGSSs+hyrUr_frTOjaCGJFLQ@mail.gmail.com>
-Subject: Re: VFS deadlock ?
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1303211708470.1899-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 2:02 PM, Dave Jones <davej@redhat.com> wrote:
->
-> here we go...
->
-> WARNING: at fs/namei.c:2335 lock_rename+0x156/0x160()
-> p1=irda p2=irda
+On Thu, Mar 21, 2013 at 05:12:01PM -0400, Alan Stern wrote:
+> On Thu, 21 Mar 2013, Alan Stern wrote:
+> 
+> > On Thu, 21 Mar 2013, Soeren Moch wrote:
+> > 
+> > > Now I found out what is going on here:
+> > > 
+> > > In itd_urb_transaction() we allocate 9 iTDs for each URB with 
+> > > number_of_packets == 64 in my case. The iTDs are added to 
+> > > sched->td_list. For a frame-aligned scheduling we need 8 iTDs, the 9th 
+> > > one is released back to the front of the streams free_list in 
+> > > iso_sched_free(). This iTD was cleared after allocation and has a frame 
+> > > number of 0 now. So for each allocation when now_frame == 0 we allocate 
+> > > from the dma_pool, not from the free_list.
+> > 
+> > Okay, that is a problem.  But it shouldn't be such a big problem,
+> > because now_frame should not be equal to 0 very often.
+> 
+> Oh, wait, now I get it.  We never reach a steady state, because the
+> free list never shrinks, but occasionally it does increase when
+> now_frame is equal to 0.  Even though that doesn't happen very often,
+> the effects add up.
+> 
+> Very good; tomorrow I will send your patch in.
 
-Ok, good. I ssupect it's /proc or /sys, we do have that entry there.
+Hi Alan, Soeren
 
-But in fact I suspect we do want the parent name after all, because I
-think we have multiple "irda" directories. There's the one in
-/proc/net/ (added by net/irda/irproc.c), and there's a sysctl  CTL_DIR
-"irda" directory (kernel/sysctl_binary.c). And there might even be a
-few other ones in /sys too, thanks to the ldisc called "irda" etc.
+Could you word the description a bit better. If Alan did not get it
+without a bit of thought, few others are going to understand it
+without a better explanation.
 
-I don't see where the shared inode comes from, but I suspect that
-would be easier to guess if we actually see which particular case it
-ends up being..
-
-> followed by...
-> =====================================
-> [ BUG: bad unlock balance detected! ]
-
-Oh, ok, that's just because the unlock path doesn't have the same
-logic for unlocking identical inodes that the thing just added to the
-locking path. You'd need to add a check for "same inode" and only
-unlock it once.
-
-So that was my fault in asking for a non-BUG_ON and not doing the
-complete thing. See "unlock_rename()" - you'd need to change the "p1
-!= p2" test there to "p1->d_inode != p2->d_inode" there to match the
-logic in lock_rename()
-
-            Linus
+Thanks
+	Andrew
