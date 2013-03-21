@@ -1,123 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab3CUCQX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 22:16:23 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:43813 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754146Ab3CUCQV (ORCPT
+	id S1756706Ab3CUCUR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 22:20:17 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57191 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754835Ab3CUCUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 22:16:21 -0400
-X-AuditID: cbfee68e-b7f946d000001e37-71-514a6d74eece
-Date: Thu, 21 Mar 2013 02:16:20 +0000 (GMT)
-From: Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH] drivers/rtc/rtc-tegra.c: fix build warning
-To: ldewangan@nvidia.com
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>
-Reply-to: jg1.han@samsung.com
-MIME-version: 1.0
-X-MTR: 20130321021508552@jg1.han
-Msgkey: 20130321021508552@jg1.han
-X-EPLocale: en_US.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130321021508552@jg1.han
-X-ParentMTR: 
-X-ArchiveUser: EV
-X-CPGSPASS: Y
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <12992973.303791363832178703.JavaMail.weblogic@epml11>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJsWRmVeSWpSXmKPExsVy+t8zA92SXK9Agx0PZSwu75rD5sDo8XmT
-	XABjVAOjTWJRckZmWapCal5yfkpmXrqtUmiIm66FkkJGfnGJrVK0kYGxnpGpiZ6RibmepUGs
-	lZGpkkJeYm6qrVKFLlSvkkJRcgFQbW5lMdCAnFQ9qLhecWpeikNWfinIJXrFibnFpXnpesn5
-	uUoKZYk5pUAjlPQTpjJm/Hx0h7XggUhFw6sfzA2MM0S6GDk5hASUJCad3MsIYksImEicuvSM
-	DcIWk7hwbz2QzQVUs4xR4sHv22wwRU0HnrJCJOYzSlzevRoswSKgKjHhwjV2EJtNQF1iwu9m
-	li5GDg5hAXuJtWdrQcIiArISH79vAOtlFtjGKHF1wXNWiCtkJe5Nns0MYvMKCEqcnPmEBWKZ
-	gkTzxp1sEHFFiad7DjNDxCUk7tzfzwph80rMaH8KVS8nMe3rGqgaaYnzszYwwnyz+PtjqDi/
-	xLHbO5hAbgPpfXI/GGbM7s1foH4UkJh65iAjRImqxNFDERBhPok1C99CbRKUOH2tmxmmtWHj
-	b7DPmYGunNL9EMrWkvjyYx8buq94BZwk/t8/zjqBUXkWktQsJO2zkLQjq1nAyLKKUTS1ILmg
-	OCm9yAg5sjcxQtJg3w7GmwesDzHuZwRGyURmKdHkfGAizSuJNzQ2M7IwNTE1NjK3NKNQ2MTU
-	wsLEiCrCSuK8ai3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoY5+wVSz3OKvV2mYHU4aXT
-	mF8e0JlfGmi3xr9BienlqQlhlsfbp1t3rHR+M1luU9jlzecLO/fbFbl/asv3m/bMsEljobPz
-	9gJLP58YG/f7VRef21ZFzKya/8/h5sGvyptrpiz3fHBJ4sLnSQIuiat2OnKuOrRm/4L3nuqN
-	/ImMwodzlIxr34qJKrEUZyQaajEXFScCALGz8UL2AwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e/2dN2SXK9AgyfreSwu75rD5sDo8XmT
-	XABjVIZNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
-	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrSRgbGekamJnpGxgZ6xZayVoYGBkSlQVUJG
-	xs9Hd1gLHohUNLz6wdzAOEOki5GTQ0hASWLSyb2MILaEgIlE04GnrBC2mMSFe+vZuhi5gGrm
-	M0pc3r2aDSTBIqAqMeHCNXYQm01AXWLC72aWLkYODmEBe4m1Z2tBwiICshIfv29gBellFtjG
-	KHF1wXNWiGWyEvcmz2YGsXkFBCVOznzCArFMQaJ54042iLiixNM9h5kh4hISd+7vhzqIV2JG
-	+1OoejmJaV/XQNVIS5yftYER5ujF3x9Dxfkljt3ewQRyG0jvk/vBMGN2b/7CBmELSEw9c5AR
-	okRV4uihCIgwn8SahW+hNglKnL7WzQzT2rDxN9jnzEBXTul+CGVrSXz5sY8N3Ve8Ak4S/+8f
-	Z53AKDcLSWoWkvZZSNqR1SxgZFnFKJpakFxQnJReYahXnJhbXJqXrpecn7uJEZygni3cwfjl
-	vPUhRgEORiUeXo4nnoFCrIllxZW5hxglOJiVRHiXKXkFCvGmJFZWpRblxxeV5qQWH2JMBsbf
-	RGYp0eR8YPLMK4k3NDY2MTMxNTewMLA0J01YSZz3aat1oJBAemJJanZqakFqEcwWJg5OqQZG
-	+fVVbyedec61PvG91KF8xsY9DjPm2vPkXF069yGv4buqZXWqzdfyljJYbbep2N36cqVMyMRN
-	pvf8rXuE4p4df+rWL2D+O9r6FsO0xcy/d9q3J4akrdxTamTUmCA0qVZnnffnNp+exLgFd63K
-	MlvnSy7nsxD0Mz5e8C3gj/U79osuM/bVeh5TYinOSDTUYi4qTgQA1L3bqZQDAAA=
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Wed, 20 Mar 2013 22:20:15 -0400
+Date: Thu, 21 Mar 2013 13:20:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Rientjes <rientjes@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: linux-next: Tree for Mar 20 (vmcore)
+Message-Id: <20130321132012.e6f9a10287fb171dcd05c62d@canb.auug.org.au>
+In-Reply-To: <alpine.DEB.2.02.1303201709440.23363@chino.kir.corp.google.com>
+References: <20130320160536.54e62fc11a3651494b710e3b@canb.auug.org.au>
+	<5149E813.8060307@infradead.org>
+	<alpine.DEB.2.02.1303201153330.17761@chino.kir.corp.google.com>
+	<alpine.DEB.2.02.1303201709440.23363@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__21_Mar_2013_13_20_12_+1100_3AEuIuWAOW.r+yBf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2L2GN3G003749
 
-On Wed, 20 Mar 2013 05:30:25 -0700, Laxman Dewangan wrote:
+--Signature=_Thu__21_Mar_2013_13_20_12_+1100_3AEuIuWAOW.r+yBf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+On Wed, 20 Mar 2013 17:10:30 -0700 (PDT) David Rientjes <rientjes@google.co=
+m> wrote:
 >
-> Fix the below build warning:
->
-> drivers/rtc/rtc-tegra.c: In function 'tegra_rtc_probe':
-> drivers/rtc/rtc-tegra.c:353:33: warning: passing argument 1 of 
-> 'devm_rtc_device_register' from incompatible pointer type [enabled by default]
-> include/linux/rtc.h:136:27: note: expected 'struct device *' but argument is of 
-> type 'const char *'
-> drivers/rtc/rtc-tegra.c:353:33: warning: passing argument 2 of 
-> 'devm_rtc_device_register' from incompatible pointer type [enabled by default]
-> include/linux/rtc.h:136:27: note: expected 'const char *' but argument is of 
-> type 'struct device *'
-> This warning was introduced with patch
->         commit 8a96d445e921b0d881421767fb6f7c5b6fb91b3a
->         drivers/rtc/rtc-tegra.c: use managed rtc_device_register()
->
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> On Wed, 20 Mar 2013, David Rientjes wrote:
+>=20
+> > I don't think that's it, linux/kexec.h already gets included indirectly=
+. =20
+> > The problem is that CONFIG_KEXEC isn't set so the definition in kexec.h=
+ is=20
+> > meaningless.
+> >=20
+> > This comes from "vmcore: check NT_VMCORE_PAD as a mark indicating the e=
+nd=20
+> > of ELF note buffer" merged through the -mm tree.  I've added the patch'=
+s=20
+> > author and Andrew to the cc.
+> >=20
+> > How can this be protected by CONFIG_KEXEC?
+>=20
+> These patches were removed from -mm today so it should no longer be a=20
+> problem.
 
-It looks good.
+What exactly are "these patches" so that I can remove them from my copy
+of the mmotm tree (assuming that Andrew does not get a new mmotm released
+in the next hour or so).
 
-Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Best regards,
-Jingoo Han
+--Signature=_Thu__21_Mar_2013_13_20_12_+1100_3AEuIuWAOW.r+yBf
+Content-Type: application/pgp-signature
 
-> ---
->  drivers/rtc/rtc-tegra.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
-> index 7cb3da0..a34315d 100644
-> --- a/drivers/rtc/rtc-tegra.c
-> +++ b/drivers/rtc/rtc-tegra.c
-> @@ -349,8 +349,9 @@ static int __init tegra_rtc_probe(struct platform_device 
-> *pdev)
->  
->         device_init_wakeup(&pdev->dev, 1);
->  
-> -       info->rtc_dev = devm_rtc_device_register(dev_name(&pdev->dev),
-> -                               &pdev->dev, &tegra_rtc_ops, THIS_MODULE);
-> +       info->rtc_dev = devm_rtc_device_register(&pdev->dev,
-> +                               dev_name(&pdev->dev), &tegra_rtc_ops,
-> +                               THIS_MODULE);
->         if (IS_ERR(info->rtc_dev)) {
->                 ret = PTR_ERR(info->rtc_dev);
->                 dev_err(&pdev->dev, "Unable to register device (err=%d).\n",
-> -- 
-> 1.7.1.1
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRSm5cAAoJEECxmPOUX5FEBdcP/R2QqT176pmKUS79pyIpy9Jy
+8MbrsGlgsrKmXOcYYJrhJKPYO5WVCUyppkM2KAYc/CNZdbrf9eaX/91L5jHTkFC3
+bwvVn3Ceaa1WN9VM1zP/adYogq2QPsXlcNSSRWNq9m6u/BcfTgmVVvSEwbmiq3AF
+41ruCnoYSb4YKOqdUDCt6p1ffEMPuLHN09oU8x+JQrSNzBG6ePCiph2byZVF0ojc
+IfWOscKieDVdcCj32UIDhPPK8OBJUrrST4npr2pHZBFwAnvJqXZGgyIG7WK7zoeI
+R8Ge6l46L6LaazlqNY40S9yJ8NZZj8zhNbDmxl8sR4AGiV05uKP2B4FgrmE+47/O
+9Wm+UVq2+UKNGKUJw2ZaICgqmakXc5LM7j1VnJtOFKw45P5OUQwVYZkdUdajIVJs
+FISTsL9YDMXvPof6Wqm0so0GQU9SYHNg2oB8b3vWjzglgdYQOiFje4C1ctXgqUUI
+KhCZlkobt78gStLvCXR9LEF9rzziLInEyvivzvBrRvEFdp0cYkrLZ21Frw/ACH9d
+x7zMoh2gTh1Mh9j1YYhBC44q3SbO0KKM1ebmOb2zjahmj4CdwsNjCckOdFntDhFy
+oKrAa6y9Z+2wbLMcB4fpNtsr92AZRCWNFs9SL5G4BUQD9my9RhW+1W8jXmZM0YX+
+cfoMXrlbDmtcwFV0hP/n
+=Xr1I
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__21_Mar_2013_13_20_12_+1100_3AEuIuWAOW.r+yBf--
