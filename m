@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab3CUVlr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 17:41:47 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:56843 "EHLO quartz.orcorp.ca"
+	id S1752854Ab3CUVpo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 17:45:44 -0400
+Received: from mout.web.de ([212.227.17.11]:63548 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752115Ab3CUVlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 17:41:46 -0400
-Date: Thu, 21 Mar 2013 15:41:32 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Lior Amsalem <alior@marvell.com>,
-        Ike Pan <ike.pan@canonical.com>, Nadav Haklai <nadavh@marvell.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Eran Ben-Avi <benavi@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Leif Lindholm <leif.lindholm@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        Jon Masters <jcm@redhat.com>, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 5/5] arm: dts: Convert mvebu device tree files to 64 bits
-Message-ID: <20130321214132.GB8431@obsidianresearch.com>
-References: <1363883179-1361-1-git-send-email-gregory.clement@free-electrons.com>
- <1363883179-1361-6-git-send-email-gregory.clement@free-electrons.com>
- <20130321201533.GN21478@lunn.ch>
- <20130321212236.1015295d@skate>
- <20130321205545.GA8358@obsidianresearch.com>
- <20130321221523.7ede6ccc@skate>
+	id S1751407Ab3CUVpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 17:45:43 -0400
+Message-ID: <514B7F6C.2060200@web.de>
+Date: Thu, 21 Mar 2013 22:45:16 +0100
+From: Soeren Moch <smoch@web.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321221523.7ede6ccc@skate>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Arnd Bergmann <arnd@arndb.de>, USB list <linux-usb@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-mm@kvack.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, michael@amarulasolutions.com
+Subject: Re: [PATCH] USB: EHCI: fix for leaking isochronous data
+References: <Pine.LNX.4.44L0.1303211708470.1899-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1303211708470.1899-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:AztUF3a6hA3ahee1Ho5fRSBWXNWttVt+9LLQPSPeq1M
+ GQ7+9KBj8TPzn+FKbT/rPsu+Veu0PdBcg54aoZHR4VlgXhzCV0
+ mRQdpCGl0m9VjKN0AHI0IoG+SqbWC87JE8o/XXJC2o7ZRN2Yqk
+ zJ8q6dpeR0l6j8FnN9nXUe8XE+j3eb1t52AF/LXTt29DohxEt1
+ AvxFvDVUsiCePvH/g9YFg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 10:15:23PM +0100, Thomas Petazzoni wrote:
-> Dear Jason Gunthorpe,
-> 
-> On Thu, 21 Mar 2013 14:55:45 -0600, Jason Gunthorpe wrote:
-> 
-> > Or, better, locate all the internal registers above 8G and use
-> > contiguous DRAM mapping from 0 -> 8GB
-> 
-> I see two potential issues with this idea:
-> 
->  *) It only works when LPAE is enabled, so we would have to have
->     different internal register addresses depending on whether LPAE is
->     enabled or not. Probably not impossible, but not very
->     straightforward either.
+On 03/21/13 22:12, Alan Stern wrote:
+> On Thu, 21 Mar 2013, Alan Stern wrote:
+>
+>> On Thu, 21 Mar 2013, Soeren Moch wrote:
+>>
+>>> Now I found out what is going on here:
+>>>
+>>> In itd_urb_transaction() we allocate 9 iTDs for each URB with
+>>> number_of_packets == 64 in my case. The iTDs are added to
+>>> sched->td_list. For a frame-aligned scheduling we need 8 iTDs, the 9th
+>>> one is released back to the front of the streams free_list in
+>>> iso_sched_free(). This iTD was cleared after allocation and has a frame
+>>> number of 0 now. So for each allocation when now_frame == 0 we allocate
+>>> from the dma_pool, not from the free_list.
+>>
+>> Okay, that is a problem.  But it shouldn't be such a big problem,
+>> because now_frame should not be equal to 0 very often.
+>
+> Oh, wait, now I get it.  We never reach a steady state, because the
+> free list never shrinks, but occasionally it does increase when
+> now_frame is equal to 0.  Even though that doesn't happen very often,
+> the effects add up.
 
-Ideally the internal register space address would come from the DT -
-we are getting very close to that on Marvell, I think.. Things like
-earlyprintk should ideally early parse the DT, harder I know :(
+Correct. Approximately twice a second we allocate 9 iTDs from the 
+dma_pool in my case (the frame numbers run from 0 to 511 - not up to 
+2047, which I thought they should). But since we allocate iTDs every 8 
+frames in my case (for each active stream), the pool allocations occur 
+only when we hit the allocation sequence frame 0,8,16,... (not one of 
+the other 7 opportunities frame 1,9,17,... - frame 7,15,23,...)
 
->  *) It would require Linux to change the internal registers address
->     (for now the kernel relies on the bootloader). The problem is that
->     we can't do it early enough to preserve the earlyprintk
->     functionality. Maybe you have suggestions on how to achieve that?
+> Very good; tomorrow I will send your patch in.
+>
+> Alan Stern
+>
+Thank you. And also thanks to all who helped to track down this issue.
 
-I can't forsee how Linux could do this reprogramming - not only do you
-have to move the registers, you'd also have to reprogram the DRAM
-bases, while running from the DRAM. Not only does that have to be done
-early, but the DT would need to describe the DRAM ranks, and the code
-would have to parse it.. On top of that it would have to be very
-careful not to wack any DRAM that has already been touched by the
-kernel.. Tricky stuff :)
-
-Jason
+  Soeren
