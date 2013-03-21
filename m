@@ -1,107 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab3CULbV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:31:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56643 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307Ab3CULbT (ORCPT
+	id S1757649Ab3CULcI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:32:08 -0400
+Received: from mail-ia0-f180.google.com ([209.85.210.180]:52582 "EHLO
+	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307Ab3CULcG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:31:19 -0400
-Date: Thu, 21 Mar 2013 04:30:06 -0700
-From: tip-bot for David Ahern <tipbot@zytor.com>
-Message-ID: <tip-ed8996a6d59b9eb00a50d7d30887ba9f28eb4bb0@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1363151248-16674-5-git-send-email-dsahern@gmail.com>
-References: <1363151248-16674-5-git-send-email-dsahern@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf machine:
-  Move machine__remove_thread and make static
-Git-Commit-ID: ed8996a6d59b9eb00a50d7d30887ba9f28eb4bb0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 21 Mar 2013 07:32:06 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <5149E296.1030304@wwwdotorg.org>
+References: <1363779113-8776-1-git-send-email-richard.genoud@gmail.com>
+ <1363779113-8776-3-git-send-email-richard.genoud@gmail.com> <5149E296.1030304@wwwdotorg.org>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Thu, 21 Mar 2013 12:31:44 +0100
+Message-ID: <CACQ1gAgjku1c+49H8STASg8jhKwFuLuJ_prhnkcGyknVuZUfpw@mail.gmail.com>
+Subject: Re: [PATCH] BUG: [RFC] pinctrl: pins are freed 2 times in pinctrl_bind_pins
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Axel Lin <axel.lin@ingics.com>,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:30:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ed8996a6d59b9eb00a50d7d30887ba9f28eb4bb0
-Gitweb:     http://git.kernel.org/tip/ed8996a6d59b9eb00a50d7d30887ba9f28eb4bb0
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Tue, 12 Mar 2013 23:07:28 -0600
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 15 Mar 2013 13:06:08 -0300
+2013/3/20 Stephen Warren <swarren@wwwdotorg.org>:
+> On 03/20/2013 05:31 AM, Richard Genoud wrote:
+>> If the function pinctrl_select_state() fails because one pin is already
+>> taken elsewhere, pinmux_enable_setting makes all the necessary pin_free
+>> calls (and not more than necessary).
+>> The problem here is that devm_pinctrl_put() will be called on the pin
+>> group, and each pin in this group has already been freed.
+>>
+>> Example:
+>> If a i2c function has already sucessfully taken pins 5 and 6.
+>> And now, pinctrl_bind_pins() is called for function PHY (pins 3 4 5 6 7).
+>> pinmux_enable_setting() will fail AND call pin_free on necessary pins.
+>> But if devm_pinctrl_put() is called, it will call again pin_free on pins
+>> 3 4 5 6 7.
+>> So, the pins 5 and 6 will be released (and pins 3 4 7 double freed).
+>> Which means that even if the i2c function has claim the pins, they will
+>> be available for other functions.
+>>
+>> This patch simply doesn't call devm_pinctrl_put when
+>> pinctrl_select_state fails, but I'm not sure it's the right thing to do.
+>
+> The correct fix here is not to skip the call to devm_pinctrl_put(),
+> since that undoes a lot of other things besides the current state selection.
+>
+> Instead, pinctrl_select_state_locked() needs to be fixed so that:
+>
+> a)
+>
+> Change "p->state = state;" to "p->state = NULL;" or similar, to indicate
+> that no state is selected. (Please validate if a NULL value in that
+> variable will cause problems elsewhere)
+>
+> b)
+>
+> Add back the assignment "p->state = state;" at the end of the function,
+> if no error occurred.
+>
+> c)
+>
+> Fix the list_for_each_entry() call that applies all the settings for the
+> new state so that if it fails, it undoes everything that it's applied so
+> far. That's the hard part, unless there's a
+> list_for_each_entry_before_the_current_one_that_list_for_each_entry_iterated_over_already()
+> macro!
+ok, I'll look into that.
+Thanks for your advices !
 
-perf machine: Move machine__remove_thread and make static
+PS: with its 90chars long, your macro won't please checkpatch.pl ! :)
 
-As the now only user, machine__process_exit_event, that is what tools
-use to process PERF_RECORD_EXIT events, is on the same object file.
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1363151248-16674-5-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/machine.c | 22 +++++++++++-----------
- tools/perf/util/machine.h |  1 -
- 2 files changed, 11 insertions(+), 12 deletions(-)
-
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index efdb38e..c5e3b12 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1003,6 +1003,17 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
- 	return 0;
- }
- 
-+static void machine__remove_thread(struct machine *machine, struct thread *th)
-+{
-+	machine->last_match = NULL;
-+	rb_erase(&th->rb_node, &machine->threads);
-+	/*
-+	 * We may have references to this thread, for instance in some hist_entry
-+	 * instances, so just move them to a separate list.
-+	 */
-+	list_add_tail(&th->node, &machine->dead_threads);
-+}
-+
- int machine__process_exit_event(struct machine *machine, union perf_event *event)
- {
- 	struct thread *thread = machine__find_thread(machine, event->fork.tid);
-@@ -1039,17 +1050,6 @@ int machine__process_event(struct machine *machine, union perf_event *event)
- 	return ret;
- }
- 
--void machine__remove_thread(struct machine *machine, struct thread *th)
--{
--	machine->last_match = NULL;
--	rb_erase(&th->rb_node, &machine->threads);
--	/*
--	 * We may have references to this thread, for instance in some hist_entry
--	 * instances, so just move them to a separate list.
--	 */
--	list_add_tail(&th->node, &machine->dead_threads);
--}
--
- static bool symbol__match_parent_regex(struct symbol *sym)
- {
- 	if (sym->name && !regexec(&parent_regex, sym->name, 0, NULL, 0))
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 5ac5892..e0b2c00 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -97,7 +97,6 @@ static inline bool machine__is_host(struct machine *machine)
- }
- 
- struct thread *machine__findnew_thread(struct machine *machine, pid_t pid);
--void machine__remove_thread(struct machine *machine, struct thread *th);
- 
- size_t machine__fprintf(struct machine *machine, FILE *fp);
- 
+Regards,
+Richard
