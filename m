@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006Ab3CUSpH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:45:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57259 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751406Ab3CUSpF (ORCPT
+	id S1752201Ab3CUSp3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:45:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48580 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751885Ab3CUSp2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:45:05 -0400
-Date: Thu, 21 Mar 2013 19:44:58 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Joe Perches <joe@perches.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound: max98090: Remove executable bit
-Message-ID: <20130321184458.GH15926@opensource.wolfsonmicro.com>
-References: <1363730323.16270.11.camel@joe-AO722>
- <20130320095758.GD28775@opensource.wolfsonmicro.com>
- <1363792936.16270.30.camel@joe-AO722>
- <20130320163627.GS28775@opensource.wolfsonmicro.com>
- <1363820072.16270.43.camel@joe-AO722>
- <20130321162503.GC14768@opensource.wolfsonmicro.com>
- <1363886175.30275.10.camel@joe-AO722>
- <20130321174440.GG15926@opensource.wolfsonmicro.com>
- <1363888393.30275.31.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="itqfrb9Qq3wY07cp"
-Content-Disposition: inline
-In-Reply-To: <1363888393.30275.31.camel@joe-AO722>
-X-Cookie: You will be run over by a bus.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 21 Mar 2013 14:45:28 -0400
+Date: Thu, 21 Mar 2013 15:45:09 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Janne Grunau <j@jannau.net>, linux-media <linux-media@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH] media: fix hdpvr build warning
+Message-ID: <20130321154509.46ad14e3@redhat.com>
+In-Reply-To: <513F769D.6040306@infradead.org>
+References: <alpine.DEB.2.00.1303112254140.16847@ayla.of.borg>
+	<513F769D.6040306@infradead.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Tue, 12 Mar 2013 11:40:29 -0700
+Randy Dunlap <rdunlap@infradead.org> escreveu:
 
---itqfrb9Qq3wY07cp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> From: Randy Dunlap <rdunlap@infradead.org>
+> 
+> Fix build warning in hdpvr:
+> 
+> drivers/media/usb/hdpvr/hdpvr-video.c: warning: "CONFIG_I2C_MODULE" is not defined [-Wundef]
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Janne Grunau <j@jannau.net>
 
-On Thu, Mar 21, 2013 at 10:53:13AM -0700, Joe Perches wrote:
-> On Thu, 2013-03-21 at 18:44 +0100, Mark Brown wrote:
+>From time to time, people used to write those checks wrong. So,
+we're now using a macro to avoid those problems (IS_ENABLED). The better
+is to also use it here.
 
-> > That one needs a bit more taste and thought to work out what's
-> > appropraite than can be guaranteed easily with a script, things like
-> > working out drive level prefixes for example.
+-
 
-> [perfectly useful git applypatch-msg hook script removed]
+[PATCH] Use the proper check for I2C support
 
-No, it really isn't.  Have you tried looking at the output?  It's not
-going to do the right thing for the subject line here for example, never
-mind any other cases.
+As reported by Geert Uytterhoeven <geert@linux-m68k.org>:
 
-> > No, that's going to leave essentially every commit that needs fixing up
-> > still needing manual fixup.
+	drivers/media/usb/hdpvr/hdpvr-video.c: warning: "CONFIG_I2C_MODULE" is not defined [-Wundef]
 
-> Then I'm sure that's your job as a maintainer
-> to modify whatever patches you get to suit your
-> taste.
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-One of the things I'd really expect that a frequent submitter of trivial
-patches would be doing is to make an effort to improve the quality of
-what is being sent.  If it's at the point where you're sending a lot of
-patches and it's more effort to apply them than to review them there's a
-problem.
+diff --git a/drivers/media/usb/hdpvr/hdpvr-video.c b/drivers/media/usb/hdpvr/hdpvr-video.c
+index da6b779..554d2eb 100644
+--- a/drivers/media/usb/hdpvr/hdpvr-video.c
++++ b/drivers/media/usb/hdpvr/hdpvr-video.c
+@@ -1238,7 +1238,7 @@ static void hdpvr_device_release(struct video_device *vdev)
+ 	v4l2_device_unregister(&dev->v4l2_dev);
+ 
+ 	/* deregister I2C adapter */
+-#if defined(CONFIG_I2C) || (CONFIG_I2C_MODULE)
++#if IS_ENABLED(CONFIG_I2C)
+ 	mutex_lock(&dev->i2c_mutex);
+ 	i2c_del_adapter(&dev->i2c_adapter);
+ 	mutex_unlock(&dev->i2c_mutex);
 
-This is something that generally causes no problems for submitters...
-
---itqfrb9Qq3wY07cp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRS1UhAAoJELSic+t+oim9qy8P+gKkW6aPcgmcIB0oEYuy1tRV
-QnKaB53y0s24rFLlIS4TgX/P9tDRGHFV0KRZ3WqJ+raD8gUrdH4LuMS/jfPJLh+3
-CwqWk3fV2DPxV/m1xFAGwrmcZY5/nXSXj9ZU1RmGAMp+Sqj6NKNOAJK5g9TciAYj
-/PuZyST0fypmMEQSg4bf9izhEpdxoDL6u/dE+ePXAepGamZYzOE7vg8OqUcV4u32
-c9v48lMTY+GtFN2EWK8FoG/fb5rE8zdkTFCvZTpOL7JLsusOBStdzmDzTwzBwQB3
-s5lz4SBy1WzeKhTfWsgQO5r+YCUq0ytshJmTe6+QLDYRCC4RYEfgKL3daSBiSMBU
-4Kd2Dy5due2yh7lM0uD5cW5CzyjeB8PaVtNKPtpqyjXB9xkDO5Q0I+n7rgPFPxNR
-tieywgDpM54Bl7eKXRDJ88OJpJ3NFRR4RhIEybgpOhTFAAo7IYspfYaM2E9BQOAP
-aNAkCuWPnpcG3nk8e3qxzge5e4wmgmnpGGj4zva/O9bzVhxpLLmcQZk665cth+so
-qbDHbdiEZ3Fx5/Wefz+IEVnSvUuMt00N0nMWoj9P3rfApalJzcjCGnJE4mtaIA40
-NcPtTwmAxpyeO8aNgXI7ujFvtk+OWjBBPLXo4SaVS8pBIxYfJIZ4sZSXcQrvzcy+
-OPtPMZ3tDAYnLK6qk/MC
-=4mVX
------END PGP SIGNATURE-----
-
---itqfrb9Qq3wY07cp--
+Cheers,
+Mauro
