@@ -1,128 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab3CUQXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:23:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62805 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755484Ab3CUQXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:23:45 -0400
-Date: Thu, 21 Mar 2013 17:21:38 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>
-Subject: [PATCH] do not abuse ->cred_guard_mutex in threadgroup_lock()
-Message-ID: <20130321162138.GA21859@redhat.com>
-References: <20130306223657.GA7392@redhat.com> <20130307172545.GA10353@redhat.com> <20130307180139.GD29601@htj.dyndns.org> <20130307180332.GE29601@htj.dyndns.org> <20130307191242.GA18265@redhat.com> <20130307193820.GB3209@htj.dyndns.org> <513A9A67.60909@huawei.com> <20130309032936.GT14556@mtj.dyndns.org> <513AE918.7020704@huawei.com> <20130309200046.GA8149@redhat.com>
+	id S933756Ab3CUQX5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:23:57 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:11655 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756227Ab3CUQXw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 12:23:52 -0400
+Message-ID: <1363883028.2736.7.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH net] vhost/net: fix heads usage of ubuf_info
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: David Miller <davem@davemloft.net>, <rusty@rustcorp.com.au>,
+        <jasowang@redhat.com>, <basil.gor@gmail.com>,
+        <nab@risingtidesystems.com>, <kvm@vger.kernel.org>,
+        <virtualization@lists.linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Thu, 21 Mar 2013 16:23:48 +0000
+In-Reply-To: <20130321060218.GB23908@redhat.com>
+References: <20130317124609.GA25967@redhat.com>
+	 <20130317.142955.1114572401286297685.davem@davemloft.net>
+	 <20130321060218.GB23908@redhat.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130309200046.GA8149@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19734.005
+X-TM-AS-Result: No--20.697300-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-threadgroup_lock() takes signal->cred_guard_mutex to ensure that
-thread_group_leader() is stable. This doesn't look nice, the scope
-of this lock in do_execve() is huge.
+On Thu, 2013-03-21 at 08:02 +0200, Michael S. Tsirkin wrote:
+> On Sun, Mar 17, 2013 at 02:29:55PM -0400, David Miller wrote:
+> > From: "Michael S. Tsirkin" <mst@redhat.com>
+> > Date: Sun, 17 Mar 2013 14:46:09 +0200
+> > 
+> > > ubuf info allocator uses guest controlled head as an index,
+> > > so a malicious guest could put the same head entry in the ring twice,
+> > > and we will get two callbacks on the same value.
+> > > To fix use upend_idx which is guaranteed to be unique.
+> > > 
+> > > Reported-by: Rusty Russell <rusty@rustcorp.com.au>
+> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > 
+> > Applied and queued up for -stable, thanks.
+> > 
+> > And thankfully you got the stable URL wrong,
+> 
+> Yes I wrote stable@kernel.org that's what an old copy
+> says here:
+> https://www.kernel.org/doc/Documentation/stable_kernel_rules.txt
+> 
+> I should have known better than look at it on the 'net.  The top
+> 'Everything you ever wanted to know about Linux 2.6 -stable releases.'
+> is a big hint that it's stale.
+> Any idea who maintains this? Better update it or remove it or redirect to git.
 
-And as Dave pointed out this can lead to deadlock, we have the
-following dependencies:
+Rob Landley maintains it, but he's been having trouble updating it since
+all the upload mechanisms were changed on kernel.org.
 
-	do_execve:		cred_guard_mutex -> i_mutex
-	cgroup_mount:		i_mutex -> cgroup_mutex
-	attach_task_by_pid:	cgroup_mutex -> cred_guard_mutex
+(My stable maintenance scripts still match the old address, anyway.  Not
+sure about Greg's.)
 
-Change de_thread() to take threadgroup_change_begin() around the
-switch-the-leader code and change threadgroup_lock() to avoid
-->cred_guard_mutex.
+Ben.
 
-Note that de_thread() can't sleep with ->group_rwsem held, this
-can obviously deadlock with the exiting leader if the writer is
-active, so it does threadgroup_change_end() before schedule().
-
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- fs/exec.c             |    3 +++
- include/linux/sched.h |   18 ++++--------------
- 2 files changed, 7 insertions(+), 14 deletions(-)
-
-diff --git a/fs/exec.c b/fs/exec.c
-index 20df02c..bea2f7d 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -898,11 +898,13 @@ static int de_thread(struct task_struct *tsk)
- 
- 		sig->notify_count = -1;	/* for exit_notify() */
- 		for (;;) {
-+			threadgroup_change_begin(tsk);
- 			write_lock_irq(&tasklist_lock);
- 			if (likely(leader->exit_state))
- 				break;
- 			__set_current_state(TASK_KILLABLE);
- 			write_unlock_irq(&tasklist_lock);
-+			threadgroup_change_end(tsk);
- 			schedule();
- 			if (unlikely(__fatal_signal_pending(tsk)))
- 				goto killed;
-@@ -960,6 +962,7 @@ static int de_thread(struct task_struct *tsk)
- 		if (unlikely(leader->ptrace))
- 			__wake_up_parent(leader, leader->parent);
- 		write_unlock_irq(&tasklist_lock);
-+		threadgroup_change_end(tsk);
- 
- 		release_task(leader);
- 	}
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 932a90c..67cfdb5 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2486,27 +2486,18 @@ static inline void threadgroup_change_end(struct task_struct *tsk)
-  *
-  * Lock the threadgroup @tsk belongs to.  No new task is allowed to enter
-  * and member tasks aren't allowed to exit (as indicated by PF_EXITING) or
-- * perform exec.  This is useful for cases where the threadgroup needs to
-- * stay stable across blockable operations.
-+ * change ->group_leader/pid.  This is useful for cases where the threadgroup
-+ * needs to stay stable across blockable operations.
-  *
-  * fork and exit paths explicitly call threadgroup_change_{begin|end}() for
-  * synchronization.  While held, no new task will be added to threadgroup
-  * and no existing live task will have its PF_EXITING set.
-  *
-- * During exec, a task goes and puts its thread group through unusual
-- * changes.  After de-threading, exclusive access is assumed to resources
-- * which are usually shared by tasks in the same group - e.g. sighand may
-- * be replaced with a new one.  Also, the exec'ing task takes over group
-- * leader role including its pid.  Exclude these changes while locked by
-- * grabbing cred_guard_mutex which is used to synchronize exec path.
-+ * de_thread() does threadgroup_change_{begin|end}() when a non-leader
-+ * sub-thread becomes a new leader.
-  */
- static inline void threadgroup_lock(struct task_struct *tsk)
- {
--	/*
--	 * exec uses exit for de-threading nesting group_rwsem inside
--	 * cred_guard_mutex. Grab cred_guard_mutex first.
--	 */
--	mutex_lock(&tsk->signal->cred_guard_mutex);
- 	down_write(&tsk->signal->group_rwsem);
- }
- 
-@@ -2519,7 +2510,6 @@ static inline void threadgroup_lock(struct task_struct *tsk)
- static inline void threadgroup_unlock(struct task_struct *tsk)
- {
- 	up_write(&tsk->signal->group_rwsem);
--	mutex_unlock(&tsk->signal->cred_guard_mutex);
- }
- #else
- static inline void threadgroup_change_begin(struct task_struct *tsk) {}
 -- 
-1.5.5.1
-
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
