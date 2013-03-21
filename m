@@ -1,119 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514Ab3CUPWX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 11:22:23 -0400
-Received: from www.sr71.net ([198.145.64.142]:49801 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932227Ab3CUPWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 11:22:22 -0400
-Message-ID: <514B25F5.7020207@sr71.net>
-Date: Thu, 21 Mar 2013 08:23:33 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
+	id S1755693Ab3CUPYa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 11:24:30 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:58646 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3CUPY3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 11:24:29 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2, RFC 02/30] mm: implement zero_huge_user_segment and
- friends
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-3-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1363283435-7666-3-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@linaro.org>, Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [GIT PULL] nohz: Full dynticks base interface
+Date: Thu, 21 Mar 2013 16:24:17 +0100
+Message-Id: <1363879460-21595-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
-> Let's add helpers to clear huge page segment(s). They provide the same
-> functionallity as zero_user_segment{,s} and zero_user, but for huge
-> pages
-...
-> +static inline void zero_huge_user_segments(struct page *page,
-> +		unsigned start1, unsigned end1,
-> +		unsigned start2, unsigned end2)
-> +{
-> +	zero_huge_user_segment(page, start1, end1);
-> +	zero_huge_user_segment(page, start2, end2);
-> +}
+Hi Ingo,
 
-I'm not sure that this helper saves very much code.  The one call later
-in these patches:
+This settles the initial ground to start a special full dynticks tree in -tip
+that we can iterate incrementally to accelerate the development.
+It is based on tip:sched/core.
 
-+                       zero_huge_user_segments(page, 0, from,
-+                                       from + len, HPAGE_PMD_SIZE);
+I tried to rearrange a bit the naming. We are probably not yet done with
+that but I guess we can fix it along with the rest.
 
-really only saves one line over this:
+Please pull from:
 
-			zero_huge_user_segment(page, 0, from);
-			zero_huge_user_segment(page, from + len,
-					       HPAGE_PMD_SIZE);
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	full-dynticks-for-mingo
 
-and I think the second one is much more clear to read.
+Changes on these commits since they were part of 3.9-rc1-nohz1:
 
-I do see that there's a small-page variant of this, but I think that one
-was done to save doing two kmap_atomic() operations when you wanted to
-zero two separate operations.  This variant doesn't have that kind of
-optimization, so it makes much less sense.
+* Force a timekeeping CPU over the full dynticks range
+* Rename CONFIG_NO_HZ_FULL to CONFIG_NO_HZ_EXTENDED
+* Following *_nohz_extended_* APIs renames
+* Handle CPU hotplug for timekeeping
+* Rename full_nohz= kernel parameter to nohz_extended=
+* Improve some error handling
+* Improve some documentation (comments, Kconfig, ...)
 
-> +void zero_huge_user_segment(struct page *page, unsigned start, unsigned end)
-> +{
-> +	int i;
-> +	
-> +	BUG_ON(end < start);
-> +
-> +	might_sleep();
-> +
-> +	if (start == end)
-> +		return;
+Many of these changes may have been suggested by several reviewers.
+Sorry for the missing credits, I lost a bit track...
 
-I've really got to wonder how much of an optimization this is in
-practice.  Was there a specific reason this was added?
+Thanks.
+---
+Frederic Weisbecker (3):
+  nohz: Basic full dynticks interface
+  nohz: Assign timekeeping duty to a CPU outside the full dynticks
+    range
+  nohz: Wake up full dynticks CPUs when a timer gets enqueued
 
-> +	/* start and end are on the same small page */
-> +	if ((start & PAGE_MASK) == ((end - 1) & PAGE_MASK))
-> +		return zero_user_segment(page + (start >> PAGE_SHIFT),
-> +				start & ~PAGE_MASK,
-> +				((end - 1) & ~PAGE_MASK) + 1);
+ Documentation/kernel-parameters.txt |    6 ++
+ include/linux/sched.h               |    4 +-
+ include/linux/tick.h                |    7 ++
+ kernel/sched/core.c                 |   20 ++++++-
+ kernel/time/Kconfig                 |   19 ++++++
+ kernel/time/tick-broadcast.c        |    3 +-
+ kernel/time/tick-common.c           |    5 +-
+ kernel/time/tick-sched.c            |  107 ++++++++++++++++++++++++++++++++++-
+ kernel/timer.c                      |   12 ++--
+ 9 files changed, 171 insertions(+), 12 deletions(-)
 
-It wasn't immediately obvious to me why we need to optimize the "on the
-same page" case.  I _think_ it's because using zero_user_segments()
-saves us a kmap_atomic() over the code below.  Is that right?  It might
-be worth a comment.
-
-> +	zero_user_segment(page + (start >> PAGE_SHIFT),
-> +			start & ~PAGE_MASK, PAGE_SIZE);
-> +	for (i = (start >> PAGE_SHIFT) + 1; i < (end >> PAGE_SHIFT) - 1; i++) {
-> +		cond_resched();
-> +		clear_highpage(page + i);
-
-zero_user_segments() does a flush_dcache_page(), which wouldn't get done
-on these middle pages.  Is that a problem?
-
-> +	}
-> +	zero_user_segment(page + i, 0, ((end - 1) & ~PAGE_MASK) + 1);
-> +}
-
-This code is dying for some local variables.  It could really use a
-'start_pfn_offset' and 'end_pfn_offset' or something similar.  All of
-the shifting and masking is a bit hard to read and it would be nice to
-think of some real names for what it is doing.
-
-It also desperately needs some comments about how it works.  Some
-one-liners like:
-
-	/* zero the first (possibly partial) page */
-	for()..
-		/* zero the full pages in the middle */
-	/* zero the last (possibly partial) page */
-
-would be pretty sweet.
+-- 
+1.7.5.4
 
