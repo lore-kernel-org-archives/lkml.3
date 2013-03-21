@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab3CUUVP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 16:21:15 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:53973 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751967Ab3CUUVN (ORCPT
+	id S1752923Ab3CUUV4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 16:21:56 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46678 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589Ab3CUUVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 16:21:13 -0400
-Message-ID: <1363897258.1390.153.camel@x61.thuisdomein>
-Subject: [PATCH] video: nuc900fb: remove "config FB_NUC900_DEBUG"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 21 Mar 2013 21:20:58 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Thu, 21 Mar 2013 16:21:54 -0400
+Date: Thu, 21 Mar 2013 16:21:53 -0400 (EDT)
+Message-Id: <20130321.162153.1171536447340639084.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: akpm@linux-foundation.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, liuj97@gmail.com, tkhai@yandex.ru
+Subject: Re: linux-next: manual merge of the akpm tree with the sparc-next
+ tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130321163328.2c6dccabad6a8dc8fe4b0e24@canb.auug.org.au>
+References: <20130321163328.2c6dccabad6a8dc8fe4b0e24@canb.auug.org.au>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Mar 2013 20:21:07.0762 (UTC) FILETIME=[9ECB8120:01CE2671]
-X-RcptDomain: vger.kernel.org
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Thu, 21 Mar 2013 13:21:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the NUC900 LCD Controller Driver got added (in v3.4) a Kconfig
-entry for FB_NUC900_DEBUG got added too. It has never been used. It
-appears that its users were dropped during review. Anyhow, this entry
-can be removed.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 21 Mar 2013 16:33:28 +1100
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+> Today's linux-next merge of the akpm tree got a conflict in
+> arch/sparc/mm/init_64.c between commit ce835e513a93 ("sparc64: Do not
+> change num_physpages during initmem freeing") from the sparc-next tree
+> and commit "mm/SPARC: use common help functions to free reserved pages"
+> from the akpm tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
- drivers/video/Kconfig | 7 -------
- 1 file changed, 7 deletions(-)
-
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index 4c1546f..fba178b 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -2107,13 +2107,6 @@ config GPM1040A0_320X240
-         bool "Giantplus Technology GPM1040A0 320x240 Color TFT LCD"
-         depends on FB_NUC900
- 
--config FB_NUC900_DEBUG
--        bool "NUC900 lcd debug messages"
--        depends on FB_NUC900
--        help
--          Turn on debugging messages. Note that you can set/unset at run time
--          through sysfs
--
- config FB_SM501
- 	tristate "Silicon Motion SM501 framebuffer support"
- 	depends on FB && MFD_SM501
--- 
-1.7.11.7
-
+This was expected, and the merge resolution looks fine to me,
+thanks Stephen!
