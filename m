@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932963Ab3CUJqf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 05:46:35 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:11054 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754575Ab3CUJqe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 05:46:34 -0400
-Message-ID: <514AD6F2.20701@atmel.com>
-Date: Thu, 21 Mar 2013 10:46:26 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1758299Ab3CUJrT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 05:47:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50360 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755515Ab3CUJrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 05:47:18 -0400
+Date: Thu, 21 Mar 2013 09:47:13 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd
+ reclaims at each priority
+Message-ID: <20130321094713.GD1878@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-2-git-send-email-mgorman@suse.de>
+ <20130320161847.GD27375@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <dgilbert@interlog.com>
-Subject: Re: [PATCH] rtc: rtc-at91rm9200: use a variable for storing IMR
-References: <1363369032-12639-1-git-send-email-nicolas.ferre@atmel.com> <20130320145006.f1431c1528325ff93a298790@linux-foundation.org>
-In-Reply-To: <20130320145006.f1431c1528325ff93a298790@linux-foundation.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130320161847.GD27375@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 10:50 PM, Andrew Morton :
-> On Fri, 15 Mar 2013 18:37:12 +0100 Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+On Wed, Mar 20, 2013 at 05:18:47PM +0100, Michal Hocko wrote:
+> On Sun 17-03-13 13:04:07, Mel Gorman wrote:
+> [...]
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 88c5fed..4835a7a 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -2593,6 +2593,32 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+> >  }
+> >  
+> >  /*
+> > + * kswapd shrinks the zone by the number of pages required to reach
+> > + * the high watermark.
+> > + */
+> > +static void kswapd_shrink_zone(struct zone *zone,
+> > +			       struct scan_control *sc,
+> > +			       unsigned long lru_pages)
+> > +{
+> > +	unsigned long nr_slab;
+> > +	struct reclaim_state *reclaim_state = current->reclaim_state;
+> > +	struct shrink_control shrink = {
+> > +		.gfp_mask = sc->gfp_mask,
+> > +	};
+> > +
+> > +	/* Reclaim above the high watermark. */
+> > +	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
 > 
->> On some revisions of AT91 SoCs, the RTC IMR register is not working.
->> Instead of elaborating a workaround for that specific SoC or IP version,
->> we simply use a software variable to store the Interrupt Mask Register and
->> modify it for each enabling/disabling of an interrupt. The overhead of this
->> is negligible anyway.
+> OK, so the cap is at high watermark which sounds OK to me, although I
+> would expect balance_gap being considered here. Is it not used
+> intentionally or you just wanted to have a reasonable upper bound?
 > 
-> This description doesn't really allow me or others to work out whether
-> the fix should be included in 3.9 or backported into earlier kernels.
-> 
-> So please, when fixing a bug do include a full description of the
-> user-visible effects of that bug.  And your opinion regarding the
-> -mainline and -stable decision is always useful.
 
-Yes, sure.
+It's intentional. The balance_gap is taken into account before the
+decision to shrink but not afterwards. As the watermark check after
+shrinking is based on just the high watermark, I decided to have
+shrink_zone reclaim on that basis.
 
-Concerning this patch, we can imagine to push it upstream as a bugfix
-for 3.9-rc. It is not a regression because... well... it has never
-worked properly on the affected SoC family.
-
-For -stable, we can add this tag:
-
-Cc: stable <stable@vger.kernel.org> [v3.8+]
-
-
-As this patch applies up to this revision. For other kernel releases, I
-will need to rework the patch a little bit due to files name modifications.
-
-Thanks, best regards,
 -- 
-Nicolas Ferre
+Mel Gorman
+SUSE Labs
