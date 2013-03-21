@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab3CUQDd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:03:33 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:60815 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934047Ab3CUQBV (ORCPT
+	id S934080Ab3CUQDt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:03:49 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:33196 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756399Ab3CUQBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:01:21 -0400
+	Thu, 21 Mar 2013 12:01:20 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         broonie@opensource.wolfsonmicro.com
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Zhenhua HUANG <zhenhua.huang@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 39/46] regulator: ab8500: Introduce aux5, aux6 regulators for AB8540
-Date: Thu, 21 Mar 2013 15:59:36 +0000
-Message-Id: <1363881583-15234-40-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 38/46] regulator: ab8500: Use a struct to select the good regulator configuration
+Date: Thu, 21 Mar 2013 15:59:35 +0000
+Message-Id: <1363881583-15234-39-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
 References: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
@@ -23,123 +22,253 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhenhua HUANG <zhenhua.huang@stericsson.com>
+At the probe use a structure to select the good regulator array from
+from ab9540, ab8505, ab8540 or ab8500 configuration.
 
-Introduce aux5, aux6 into ab8540 regulator framework.
-
-Signed-off-by: Zhenhua HUANG <zhenhua.huang@stericsson.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Reviewed-by: Maxime COQUELIN <maxime.coquelin@stericsson.com>
-Reviewed-by: David PARIS <david.paris@stericsson.com>
-Reviewed-by: Philippe LANGLAIS <philippe.langlais@stericsson.com>
 ---
- drivers/regulator/ab8500.c       |   65 ++++++++++++++++++++++++++++++++++++++
- include/linux/regulator/ab8500.h |    2 ++
- 2 files changed, 67 insertions(+)
+ drivers/regulator/ab8500.c |  135 +++++++++++++++++++++-----------------------
+ 1 file changed, 64 insertions(+), 71 deletions(-)
 
 diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 31aa43d..e6b77a7 100644
+index 200005e..31aa43d 100644
 --- a/drivers/regulator/ab8500.c
 +++ b/drivers/regulator/ab8500.c
-@@ -151,6 +151,21 @@ static const unsigned int ldo_vaux3_ab8540_voltages[] = {
- 	3050000,
+@@ -2852,10 +2852,19 @@ static struct ab8500_reg_init ab8540_reg_init[] = {
+ 	REG_INIT(AB8540_REGUCTRLDISCH4,		0x04, 0x49, 0x07),
  };
  
-+static const unsigned int ldo_vaux56_ab8540_voltages[] = {
-+	750000, 760000, 770000, 780000, 790000, 800000,
-+	810000, 820000, 830000, 840000, 850000, 860000,
-+	870000, 880000, 890000, 900000, 910000, 920000,
-+	930000, 940000, 950000, 960000, 970000, 980000,
-+	990000, 1000000, 1010000, 1020000, 1030000,
-+	1040000, 1050000, 1060000, 1070000, 1080000,
-+	1090000, 1100000, 1110000, 1120000, 1130000,
-+	1140000, 1150000, 1160000, 1170000, 1180000,
-+	1190000, 1200000, 1210000, 1220000, 1230000,
-+	1240000, 1250000, 1260000, 1270000, 1280000,
-+	1290000, 1300000, 1310000, 1320000, 1330000,
-+	1340000, 1350000, 1360000, 1800000, 2790000,
-+};
++static struct {
++	struct ab8500_regulator_info *info;
++	int info_size;
++	struct ab8500_reg_init *init;
++	int init_size;
++	struct of_regulator_match *match;
++	int match_size;
++} abx500_regulator;
 +
- static const unsigned int ldo_vintcore_voltages[] = {
- 	1200000,
- 	1225000,
-@@ -1561,6 +1576,54 @@ static struct ab8500_regulator_info
- 		.voltage_reg		= 0x2f,
- 		.voltage_mask		= 0x0f,
- 	},
-+	[AB8540_LDO_AUX5] = {
-+		.desc = {
-+			.name		= "LDO-AUX5",
-+			.ops		= &ab8500_regulator_volt_mode_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB8540_LDO_AUX5,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= ARRAY_SIZE(ldo_vaux56_ab8540_voltages),
-+		},
-+		.load_lp_uA		= 20000,
-+		/* values for Vaux5Regu register */
-+		.update_bank		= 0x04,
-+		.update_reg		= 0x32,
-+		.update_mask		= 0x03,
-+		.update_val		= 0x01,
-+		.update_val_idle	= 0x03,
-+		.update_val_normal	= 0x01,
-+		/* values for Vaux5SEL register */
-+		.voltage_bank		= 0x04,
-+		.voltage_reg		= 0x33,
-+		.voltage_mask		= 0x3f,
-+		.voltages		= ldo_vaux56_ab8540_voltages,
-+		.voltages_len		= ARRAY_SIZE(ldo_vaux56_ab8540_voltages),
-+	},
-+	[AB8540_LDO_AUX6] = {
-+		.desc = {
-+			.name		= "LDO-AUX6",
-+			.ops		= &ab8500_regulator_volt_mode_ops,
-+			.type		= REGULATOR_VOLTAGE,
-+			.id		= AB8540_LDO_AUX6,
-+			.owner		= THIS_MODULE,
-+			.n_voltages	= ARRAY_SIZE(ldo_vaux56_ab8540_voltages),
-+		},
-+		.load_lp_uA		= 20000,
-+		/* values for Vaux6Regu register */
-+		.update_bank		= 0x04,
-+		.update_reg		= 0x35,
-+		.update_mask		= 0x03,
-+		.update_val		= 0x01,
-+		.update_val_idle	= 0x03,
-+		.update_val_normal	= 0x01,
-+		/* values for Vaux6SEL register */
-+		.voltage_bank		= 0x04,
-+		.voltage_reg		= 0x36,
-+		.voltage_mask		= 0x3f,
-+		.voltages		= ldo_vaux56_ab8540_voltages,
-+		.voltages_len		= ARRAY_SIZE(ldo_vaux56_ab8540_voltages),
-+	},
- 	[AB8540_LDO_INTCORE] = {
- 		.desc = {
- 			.name		= "LDO-INTCORE",
-@@ -2971,6 +3034,8 @@ static struct of_regulator_match ab8540_regulator_match[] = {
- 	{ .name	= "ab8500_ldo_aux2",    .driver_data = (void *) AB8540_LDO_AUX2, },
- 	{ .name	= "ab8500_ldo_aux3",    .driver_data = (void *) AB8540_LDO_AUX3, },
- 	{ .name	= "ab8500_ldo_aux4",    .driver_data = (void *) AB8540_LDO_AUX4, },
-+	{ .name	= "ab8500_ldo_aux5",    .driver_data = (void *) AB8540_LDO_AUX5, },
-+	{ .name	= "ab8500_ldo_aux6",    .driver_data = (void *) AB8540_LDO_AUX6, },
- 	{ .name	= "ab8500_ldo_intcore", .driver_data = (void *) AB8540_LDO_INTCORE, },
- 	{ .name	= "ab8500_ldo_tvout",   .driver_data = (void *) AB8540_LDO_TVOUT, },
- 	{ .name = "ab8500_ldo_audio",   .driver_data = (void *) AB8540_LDO_AUDIO, },
-diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
-index bb0140c..b490a16 100644
---- a/include/linux/regulator/ab8500.h
-+++ b/include/linux/regulator/ab8500.h
-@@ -74,6 +74,8 @@ enum ab8540_regulator_id {
- 	AB8540_LDO_AUX2,
- 	AB8540_LDO_AUX3,
- 	AB8540_LDO_AUX4,
-+	AB8540_LDO_AUX5,
-+	AB8540_LDO_AUX6,
- 	AB8540_LDO_INTCORE,
- 	AB8540_LDO_TVOUT,
- 	AB8540_LDO_AUDIO,
+ static int ab8500_regulator_init_registers(struct platform_device *pdev,
+-					   struct ab8500_reg_init *reg_init,
+ 					   int id, int mask, int value)
+ {
++	struct ab8500_reg_init *reg_init = abx500_regulator.init;
+ 	int err;
+ 
+ 	BUG_ON(value & ~mask);
+@@ -2885,7 +2894,6 @@ static int ab8500_regulator_init_registers(struct platform_device *pdev,
+ 
+ static int ab8500_regulator_register(struct platform_device *pdev,
+ 				     struct regulator_init_data *init_data,
+-				     struct ab8500_regulator_info *regulator_info,
+ 				     int id, struct device_node *np)
+ {
+ 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
+@@ -2894,7 +2902,7 @@ static int ab8500_regulator_register(struct platform_device *pdev,
+ 	int err;
+ 
+ 	/* assign per-regulator data */
+-	info = &regulator_info[id];
++	info = &abx500_regulator.info[id];
+ 	info->dev = &pdev->dev;
+ 
+ 	config.dev = &pdev->dev;
+@@ -2920,7 +2928,7 @@ static int ab8500_regulator_register(struct platform_device *pdev,
+ 			info->desc.name);
+ 		/* when we fail, un-register all earlier regulators */
+ 		while (--id >= 0) {
+-			info = &regulator_info[id];
++			info = &abx500_regulator.info[id];
+ 			regulator_unregister(info->regulator);
+ 		}
+ 		return err;
+@@ -2987,19 +2995,49 @@ static struct of_regulator_match ab9540_regulator_match[] = {
+ 	{ .name	= "ab8500_ldo_ana",     .driver_data = (void *) AB9540_LDO_ANA, },
+ };
+ 
++static void abx500_get_regulator_info(struct ab8500 *ab8500)
++{
++	if (is_ab9540(ab8500)) {
++		abx500_regulator.info = ab9540_regulator_info;
++		abx500_regulator.info_size = ARRAY_SIZE(ab9540_regulator_info);
++		abx500_regulator.init = ab9540_reg_init;
++		abx500_regulator.init_size = AB9540_NUM_REGULATOR_REGISTERS;
++		abx500_regulator.match = ab9540_regulator_match;
++		abx500_regulator.match_size = ARRAY_SIZE(ab9540_regulator_match);
++	} else if (is_ab8505(ab8500)) {
++		abx500_regulator.info = ab8505_regulator_info;
++		abx500_regulator.info_size = ARRAY_SIZE(ab8505_regulator_info);
++		abx500_regulator.init = ab8505_reg_init;
++		abx500_regulator.init_size = AB8505_NUM_REGULATOR_REGISTERS;
++		abx500_regulator.match = ab8505_regulator_match;
++		abx500_regulator.match_size = ARRAY_SIZE(ab8505_regulator_match);
++	} else if (is_ab8540(ab8500)) {
++		abx500_regulator.info = ab8540_regulator_info;
++		abx500_regulator.info_size = ARRAY_SIZE(ab8540_regulator_info);
++		abx500_regulator.init = ab8540_reg_init;
++		abx500_regulator.init_size = AB8540_NUM_REGULATOR_REGISTERS;
++		abx500_regulator.match = ab8540_regulator_match;
++		abx500_regulator.match_size = ARRAY_SIZE(ab8540_regulator_match);
++	} else {
++		abx500_regulator.info = ab8500_regulator_info;
++		abx500_regulator.info_size = ARRAY_SIZE(ab8500_regulator_info);
++		abx500_regulator.init = ab8500_reg_init;
++		abx500_regulator.init_size = AB8500_NUM_REGULATOR_REGISTERS;
++		abx500_regulator.match = ab8500_regulator_match;
++		abx500_regulator.match_size = ARRAY_SIZE(ab8500_regulator_match);
++	}
++}
++
+ static int
+ ab8500_regulator_of_probe(struct platform_device *pdev,
+-			  struct ab8500_regulator_info *regulator_info,
+-			  int regulator_info_size,
+-			  struct of_regulator_match *match,
+ 			  struct device_node *np)
+ {
++	struct of_regulator_match *match = abx500_regulator.match;
+ 	int err, i;
+ 
+-	for (i = 0; i < regulator_info_size; i++) {
++	for (i = 0; i < abx500_regulator.info_size; i++) {
+ 		err = ab8500_regulator_register(
+-			pdev, match[i].init_data, regulator_info,
+-			i, match[i].of_node);
++			pdev, match[i].init_data, i, match[i].of_node);
+ 		if (err)
+ 			return err;
+ 	}
+@@ -3011,59 +3049,31 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
+ 	struct device_node *np = pdev->dev.of_node;
+-	struct of_regulator_match *match;
+ 	struct ab8500_platform_data *ppdata;
+ 	struct ab8500_regulator_platform_data *pdata;
+ 	int i, err;
+-	struct ab8500_regulator_info *regulator_info;
+-	int regulator_info_size;
+-	struct ab8500_reg_init *reg_init;
+-	int reg_init_size;
+ 
+-	if (is_ab9540(ab8500)) {
+-		regulator_info = ab9540_regulator_info;
+-		regulator_info_size = ARRAY_SIZE(ab9540_regulator_info);
+-		reg_init = ab9540_reg_init;
+-		reg_init_size = AB9540_NUM_REGULATOR_REGISTERS;
+-		match = ab9540_regulator_match;
+-		match_size = ARRAY_SIZE(ab9540_regulator_match)
+-	} else if (is_ab8505(ab8500)) {
+-		regulator_info = ab8505_regulator_info;
+-		regulator_info_size = ARRAY_SIZE(ab8505_regulator_info);
+-		reg_init = ab8505_reg_init;
+-		reg_init_size = AB8505_NUM_REGULATOR_REGISTERS;
+-	} else if (is_ab8540(ab8500)) {
+-		regulator_info = ab8540_regulator_info;
+-		regulator_info_size = ARRAY_SIZE(ab8540_regulator_info);
+-		reg_init = ab8540_reg_init;
+-		reg_init_size = AB8540_NUM_REGULATOR_REGISTERS;
+-	} else {
+-		regulator_info = ab8500_regulator_info;
+-		regulator_info_size = ARRAY_SIZE(ab8500_regulator_info);
+-		reg_init = ab8500_reg_init;
+-		reg_init_size = AB8500_NUM_REGULATOR_REGISTERS;
+-		match = ab8500_regulator_match;
+-		match_size = ARRAY_SIZE(ab8500_regulator_match)
++	if (!ab8500) {
++		dev_err(&pdev->dev, "null mfd parent\n");
++		return -EINVAL;
+ 	}
+ 
++	abx500_get_regulator_info(ab8500);
++
+ 	if (np) {
+-		err = of_regulator_match(&pdev->dev, np, match, match_size);
++		err = of_regulator_match(&pdev->dev, np,
++					 abx500_regulator.match,
++					 abx500_regulator.match_size);
+ 		if (err < 0) {
+ 			dev_err(&pdev->dev,
+ 				"Error parsing regulator init data: %d\n", err);
+ 			return err;
+ 		}
+ 
+-		err = ab8500_regulator_of_probe(pdev, regulator_info,
+-						regulator_info_size, match, np);
++		err = ab8500_regulator_of_probe(pdev, np);
+ 		return err;
+ 	}
+ 
+-	if (!ab8500) {
+-		dev_err(&pdev->dev, "null mfd parent\n");
+-		return -EINVAL;
+-	}
+-
+ 	ppdata = dev_get_platdata(ab8500->dev);
+ 	if (!ppdata) {
+ 		dev_err(&pdev->dev, "null parent pdata\n");
+@@ -3077,7 +3087,7 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* make sure the platform data has the correct size */
+-	if (pdata->num_regulator != regulator_info_size) {
++	if (pdata->num_regulator != abx500_regulator.info_size) {
+ 		dev_err(&pdev->dev, "Configuration error: size mismatch.\n");
+ 		return -EINVAL;
+ 	}
+@@ -3096,9 +3106,9 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ 		value = pdata->reg_init[i].value;
+ 
+ 		/* check for configuration errors */
+-		BUG_ON(id >= AB8500_NUM_REGULATOR_REGISTERS);
++		BUG_ON(id >= abx500_regulator.init_size);
+ 
+-		err = ab8500_regulator_init_registers(pdev, reg_init, id, mask, value);
++		err = ab8500_regulator_init_registers(pdev, id, mask, value);
+ 		if (err < 0)
+ 			return err;
+ 	}
+@@ -3111,9 +3121,9 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* register all regulators */
+-	for (i = 0; i < regulator_info_size; i++) {
++	for (i = 0; i < abx500_regulator.info_size; i++) {
+ 		err = ab8500_regulator_register(pdev, &pdata->regulator[i],
+-						regulator_info, i, NULL);
++						i, NULL);
+ 		if (err < 0)
+ 			return err;
+ 	}
+@@ -3125,27 +3135,10 @@ static int ab8500_regulator_remove(struct platform_device *pdev)
+ {
+ 	int i, err;
+ 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
+-	struct ab8500_regulator_info *regulator_info;
+-	int regulator_info_size;
+-
+-
+-	if (is_ab9540(ab8500)) {
+-		regulator_info = ab9540_regulator_info;
+-		regulator_info_size = ARRAY_SIZE(ab9540_regulator_info);
+-	} else if (is_ab8505(ab8500)) {
+-		regulator_info = ab8505_regulator_info;
+-		regulator_info_size = ARRAY_SIZE(ab8505_regulator_info);
+-	} else if (is_ab8540(ab8500)) {
+-		regulator_info = ab8540_regulator_info;
+-		regulator_info_size = ARRAY_SIZE(ab8540_regulator_info);
+-	} else {
+-		regulator_info = ab8500_regulator_info;
+-		regulator_info_size = ARRAY_SIZE(ab8500_regulator_info);
+-	}
+ 
+-	for (i = 0; i < regulator_info_size; i++) {
++	for (i = 0; i < abx500_regulator.info_size; i++) {
+ 		struct ab8500_regulator_info *info = NULL;
+-		info = &regulator_info[i];
++		info = &abx500_regulator.info[i];
+ 
+ 		dev_vdbg(rdev_get_dev(info->regulator),
+ 			"%s-remove\n", info->desc.name);
 -- 
 1.7.10.4
 
