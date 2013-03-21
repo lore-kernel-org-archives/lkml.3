@@ -1,103 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758363Ab3CUOVf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 10:21:35 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:41399 "EHLO relay.sw.ru"
+	id S933334Ab3CUOXK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 10:23:10 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:58750 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757729Ab3CUOVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 10:21:34 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: Thomas Graf <tgraf@suug.ch>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Cc: Andrey Vagin <avagin@openvz.org>, "David S. Miller" <davem@davemloft.net>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>
-Subject: [PATCH] net: fix *_DIAG_MAX constants
-Date: Thu, 21 Mar 2013 18:18:20 +0400
-Message-Id: <1363875500-14574-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.1.4
+	id S1757636Ab3CUOXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 10:23:08 -0400
+Date: Thu, 21 Mar 2013 07:22:54 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org, davej@redhat.com, sasha.levin@oracle.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        caiqian@redhat.com, eric.dumazet@gmail.com, lizefan@huawei.com
+Subject: [GIT PULL tip/core/urgent] Fix for hlist_entry_safe() regression
+Message-ID: <20130321142254.GA2992@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130314205307.GA27968@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130314205307.GA27968@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032114-7182-0000-0000-000005E3E822
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Follow the common pattern and define *_DIAG_MAX like:
+[Reposting with corrected subject line.]
 
-        [...]
-        __XXX_DIAG_MAX,
-};
+Hello, Ingo,
 
-Because everyone is used to do:
+This series contains a single commit that fixes a regression in
+hlist_entry_safe().  This macro references its argument twice, which
+can cause NULL-pointer errors.  This commit applies a gcc statement
+expression, creating a temporary variable to avoid the double reference.
+This has been posted to LKML at https://lkml.org/lkml/2013/3/9/75.
 
-        struct nlattr *attrs[XXX_DIAG_MAX+1];
+Kudos to CAI Qian, whose testing uncovered this, to Eric Dumazet, who
+spotted root cause, and to Li Zefan, who tested this commit.
 
-        nla_parse([...], XXX_DIAG_MAX, [...]
+This commit is available in the git repository at:
 
-Reported-by: Thomas Graf <tgraf@suug.ch>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- include/uapi/linux/netlink_diag.h | 4 +++-
- include/uapi/linux/packet_diag.h  | 4 +++-
- include/uapi/linux/unix_diag.h    | 4 +++-
- 3 files changed, 9 insertions(+), 3 deletions(-)
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
 
-diff --git a/include/uapi/linux/netlink_diag.h b/include/uapi/linux/netlink_diag.h
-index 9328866..88009a3 100644
---- a/include/uapi/linux/netlink_diag.h
-+++ b/include/uapi/linux/netlink_diag.h
-@@ -29,9 +29,11 @@ enum {
- 	NETLINK_DIAG_MEMINFO,
- 	NETLINK_DIAG_GROUPS,
- 
--	NETLINK_DIAG_MAX,
-+	__NETLINK_DIAG_MAX,
- };
- 
-+#define NETLINK_DIAG_MAX (__NETLINK_DIAG_MAX - 1)
-+
- #define NDIAG_PROTO_ALL		((__u8) ~0)
- 
- #define NDIAG_SHOW_MEMINFO	0x00000001 /* show memory info of a socket */
-diff --git a/include/uapi/linux/packet_diag.h b/include/uapi/linux/packet_diag.h
-index 93f5fa9..afafd70 100644
---- a/include/uapi/linux/packet_diag.h
-+++ b/include/uapi/linux/packet_diag.h
-@@ -33,9 +33,11 @@ enum {
- 	PACKET_DIAG_TX_RING,
- 	PACKET_DIAG_FANOUT,
- 
--	PACKET_DIAG_MAX,
-+	__PACKET_DIAG_MAX,
- };
- 
-+#define PACKET_DIAG_MAX (__PACKET_DIAG_MAX - 1)
-+
- struct packet_diag_info {
- 	__u32	pdi_index;
- 	__u32	pdi_version;
-diff --git a/include/uapi/linux/unix_diag.h b/include/uapi/linux/unix_diag.h
-index b8a2494..b9e2a6a 100644
---- a/include/uapi/linux/unix_diag.h
-+++ b/include/uapi/linux/unix_diag.h
-@@ -39,9 +39,11 @@ enum {
- 	UNIX_DIAG_MEMINFO,
- 	UNIX_DIAG_SHUTDOWN,
- 
--	UNIX_DIAG_MAX,
-+	__UNIX_DIAG_MAX,
- };
- 
-+#define UNIX_DIAG_MAX (__UNIX_DIAG_MAX - 1)
-+
- struct unix_diag_vfs {
- 	__u32	udiag_vfs_ino;
- 	__u32	udiag_vfs_dev;
--- 
-1.8.1.4
+							Thanx, Paul
+
+----------------------------------------------------------------
+Paul E. McKenney (1):
+      list: Fix double fetch of pointer in hlist_entry_safe()
+
+ include/linux/list.h | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
