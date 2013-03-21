@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726Ab3CUSo1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:44:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8269 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406Ab3CUSo0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:44:26 -0400
-X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=g1up7QdnZ3oA:10 a=355AVLq4GGmKcRNXP6MA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363891462.6345.52.camel@gandalf.local.home>
-Subject: Re: [PATCH] nohz1: Documentation
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Christoph Lameter <cl@linux.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org, zhong@linux.vnet.ibm.com, khilman@linaro.org,
-        geoff@infradead.org, tglx@linutronix.de
-Date: Thu, 21 Mar 2013 14:44:22 -0400
-In-Reply-To: <20130321171518.GW3637@linux.vnet.ibm.com>
-References: <CAFTL4hybMf+9GjjyKRSEEp0x+wT7OwpKShE5sR_JqW24DGfKOw@mail.gmail.com>
-	 <1363636794.15703.32@driftwood>
-	 <CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com>
-	 <20130318222548.GG3656@linux.vnet.ibm.com>
-	 <1363822338.6345.33.camel@gandalf.local.home>
-	 <20130320235545.GL3637@linux.vnet.ibm.com>
-	 <0000013d8db514e4-bf492080-82c9-412a-90b8-54ddc1463e4b-000000@email.amazonses.com>
-	 <20130321171518.GW3637@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+	id S1752025Ab3CUSoc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:44:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38335 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751885Ab3CUSo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 14:44:28 -0400
+Message-ID: <514B5492.4030806@redhat.com>
+Date: Thu, 21 Mar 2013 14:42:26 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/10] mm: vmscan: Block kswapd if it is encountering
+ pages under writeback
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-8-git-send-email-mgorman@suse.de>
+In-Reply-To: <1363525456-10448-8-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-21 at 10:15 -0700, Paul E. McKenney wrote:
+On 03/17/2013 09:04 AM, Mel Gorman wrote:
+> Historically, kswapd used to congestion_wait() at higher priorities if it
+> was not making forward progress. This made no sense as the failure to make
+> progress could be completely independent of IO. It was later replaced by
+> wait_iff_congested() and removed entirely by commit 258401a6 (mm: don't
+> wait on congested zones in balance_pgdat()) as it was duplicating logic
+> in shrink_inactive_list().
+>
+> This is problematic. If kswapd encounters many pages under writeback and
+> it continues to scan until it reaches the high watermark then it will
+> quickly skip over the pages under writeback and reclaim clean young
+> pages or push applications out to swap.
+>
+> The use of wait_iff_congested() is not suited to kswapd as it will only
+> stall if the underlying BDI is really congested or a direct reclaimer was
+> unable to write to the underlying BDI. kswapd bypasses the BDI congestion
+> as it sets PF_SWAPWRITE but even if this was taken into account then it
+> would cause direct reclaimers to stall on writeback which is not desirable.
+>
+> This patch sets a ZONE_WRITEBACK flag if direct reclaim or kswapd is
+> encountering too many pages under writeback. If this flag is set and
+> kswapd encounters a PageReclaim page under writeback then it'll assume
+> that the LRU lists are being recycled too quickly before IO can complete
+> and block waiting for some IO to complete.
 
-> > The OS always has some sched other tasks around that become runnable after
-> > a while (like for example the vm statistics update, or the notorious slab
-> > scanning). As long as SCHED_FIFO is active and there is no process in the
-> > same scheduling class then tick needs to be off. Also wish that this would
-> > work with SCHED_OTHER if there is only a single task with a certain renice
-> > value (-10?) and the rest is runnable at lower priorities. Maybe in that
-> > case stop the tick for a longer period and then give the lower priority
-> > tasks a chance to run but then switch off the tick again.
-> 
-> These sound to me like good future enhancements.
+I really like the concept of this patch.
 
-Exactly. Please, this is a complex enough change to something that is
-critical to the entire system (similar to RCU itself). Lets take baby
-steps here and get it right each step of the way.
+> @@ -756,9 +769,11 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>   				 */
+>   				SetPageReclaim(page);
+>   				nr_writeback++;
+> +
+>   				goto keep_locked;
+> +			} else {
+> +				wait_on_page_writeback(page);
+>   			}
+> -			wait_on_page_writeback(page);
+>   		}
+>
+>   		if (!force_reclaim)
 
-For now, no, if more than one process is scheduled on the CPU, we fall
-out of dynamic tick mode. In the future, we can add SCHED_FIFO task
-scheduled in to trigger it. But lets conquer that after we successfully
-conquer the current changes.
+This looks like an area for future improvement.
 
--- Steve
+We do not need to wait for this specific page to finish writeback,
+we only have to wait for any (bunch of) page(s) to finish writeback,
+since we do not particularly care which of the pages from near the
+end of the LRU get reclaimed first.
 
+I wonder if this is one of the causes for the high latencies that
+are sometimes observed in direct reclaim...
 
