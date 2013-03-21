@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593Ab3CUVyq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 17:54:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33277 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932204Ab3CUVxW (ORCPT
+	id S932626Ab3CUVzJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 17:55:09 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38284 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807Ab3CUVzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 17:53:22 -0400
-Message-Id: <20130321215235.280451779@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Thu, 21 Mar 2013 21:53:20 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [patch 30/34] tile: Enter idle with preemption disabled
-References: <20130321214930.752934102@linutronix.de>
-Content-Disposition: inline;
- filename=tile-enter-secondary-idle-with-preempt-disabled.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 21 Mar 2013 17:55:03 -0400
+Date: Thu, 21 Mar 2013 21:55:02 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: VFS deadlock ?
+Message-ID: <20130321215502.GC21522@ZenIV.linux.org.uk>
+References: <CA+55aFyvwJK99YvDLDsazD4tWT6sNQO6kGM_1WyDdvwPNDxbLw@mail.gmail.com>
+ <20130321202635.GA16406@redhat.com>
+ <CA+55aFwyK4uDgSKUpXBGS5zi16qd8STtrGi3kndunYi40dnj+A@mail.gmail.com>
+ <20130321203639.GC16406@redhat.com>
+ <20130321204704.GZ21522@ZenIV.linux.org.uk>
+ <20130321210255.GD16406@redhat.com>
+ <CA+55aFxysZEw6fw8+LobMgfzeHuGSSs+hyrUr_frTOjaCGJFLQ@mail.gmail.com>
+ <20130321212617.GA21522@ZenIV.linux.org.uk>
+ <20130321214118.GA25517@redhat.com>
+ <CA+55aFyKCswjX2Spg3UY8t9Uj2KwD-3Aga9epBUPR0cWnHfNqA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyKCswjX2Spg3UY8t9Uj2KwD-3Aga9epBUPR0cWnHfNqA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpu_idle() needs to be called with preemption disabled.
+On Thu, Mar 21, 2013 at 02:47:06PM -0700, Linus Torvalds wrote:
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
----
- arch/tile/kernel/smpboot.c |    2 --
- 1 file changed, 2 deletions(-)
+> It will also end up giving you
+> the information about whether the dentry is unlinked or not.
 
-Index: linux-2.6/arch/tile/kernel/smpboot.c
-===================================================================
---- linux-2.6.orig/arch/tile/kernel/smpboot.c
-+++ linux-2.6/arch/tile/kernel/smpboot.c
-@@ -207,8 +207,6 @@ void __cpuinit online_secondary(void)
- 	/* Set up tile-timer clock-event device on this cpu */
- 	setup_tile_timer();
- 
--	preempt_enable();
--
- 	cpu_idle();
- }
- 
-
-
+You also want to know if p2 is unlinked, though (and yes, it's dentry_path(),
+of course - apologies for the braino).
