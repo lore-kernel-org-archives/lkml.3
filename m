@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab3CULFk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:05:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56190 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755358Ab3CULFj (ORCPT
+	id S1756836Ab3CULGT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:06:19 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:42300 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755358Ab3CULGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:05:39 -0400
-Date: Thu, 21 Mar 2013 04:03:32 -0700
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-b28b130719af6e7f56e0bbdac38ba703a36ba5d5@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de, bp@suse.de, jolsa@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, tglx@linutronix.de, bp@suse.de, jolsa@redhat.com
-In-Reply-To: <1362338733-8718-1-git-send-email-bp@alien8.de>
-References: <1362338733-8718-1-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib lk: Fix _FORTIFY_SOURCE builds
-Git-Commit-ID: b28b130719af6e7f56e0bbdac38ba703a36ba5d5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 21 Mar 2013 07:06:17 -0400
+Message-ID: <514AE9A3.5090209@openvz.org>
+Date: Thu, 21 Mar 2013 15:06:11 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:03:41 -0700 (PDT)
+To: Richard Cochran <richardcochran@gmail.com>
+CC: Michal Marek <mmarek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH RFC 1/5] kconfig: implement weak reverse-dependencies
+References: <20130321082256.21557.68351.stgit@zurg> <20130321102200.GB2341@netboy.at.omicron.at>
+In-Reply-To: <20130321102200.GB2341@netboy.at.omicron.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b28b130719af6e7f56e0bbdac38ba703a36ba5d5
-Gitweb:     http://git.kernel.org/tip/b28b130719af6e7f56e0bbdac38ba703a36ba5d5
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Sun, 3 Mar 2013 20:25:33 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 15 Mar 2013 13:06:01 -0300
+Richard Cochran wrote:
+> On Thu, Mar 21, 2013 at 12:22:57PM +0400, Konstantin Khlebnikov wrote:
+>> This patch adds new kind of dependencies between kconfig symbols,
+>> and new kconfig keyword 'apply' for them.
+>>
+>> 'apply' works mostly like 'select', but it allows to disable target symbol.
+>> Thus target symbol will be either disabled or reachable from current symbol.
+>>
+>> This method allows to implement optional dependencies without introducing new
+>> kconfig symbol for each pair of connected kconfig options.
+>
+> I don't really understand what the point of this new keyword is, but I
+> wonder why you chose PTP Hardware Clocks as your Guinea pig.
+>
+> As discussed on the netdev list [1][2], the consensus was that if a
+> MAC driver has a PHC, then it should always be compiled in.
 
-tools lib lk: Fix _FORTIFY_SOURCE builds
+I don't like situations when really optional code becomes mandatory.
 
-Jiri Olsa triggers the following build error:
+As I see this technology requires special dedicated server in the local
+network, thus it's unusable in most situations. But it starts working
+without any actions from the user (please fix me if I'm wrong).
 
-    SUBDIR ../lib/lk/
-    CC debugfs.o
-In file included from /usr/include/errno.h:29:0,
-                 from debugfs.c:1:
-/usr/include/features.h:314:4: error: #warning _FORTIFY_SOURCE requires compiling with optimization (-O) [-Werror=cpp]
+Thus this code enables some rarely used parts of hardware.
+After seeing several weird bugs in ethernet devices I prefer to
+keep unused/unwanted features off.
 
-This is because enabling buffer overflow checks through _FORTIFY_SOURCE
-require compiler optimizations to be enabled too. However, those are
-not. Enable them by simply copying the perf optimization level. It can
-be expanded later if we want to support debug builds, etc.
+>
+> And BTW, please CC netdev for PHC patches.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Reported-by: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1362338733-8718-1-git-send-email-bp@alien8.de
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/lib/lk/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Of course, if basic logic of this RFC patchset will be approved I'll resend
+PTP part to netdev. I don't want to bother netdev guys because PTP and e1000e
+are used here just as Guinea pigs.
 
-diff --git a/tools/lib/lk/Makefile b/tools/lib/lk/Makefile
-index 8cf576f..926cbf3 100644
---- a/tools/lib/lk/Makefile
-+++ b/tools/lib/lk/Makefile
-@@ -10,7 +10,7 @@ LIB_OBJS += $(OUTPUT)debugfs.o
- 
- LIBFILE = liblk.a
- 
--CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
-+CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) $(BASIC_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
- ALL_LDFLAGS = $(LDFLAGS)
+>
+> Thanks,
+> Richard
+>
+> 1. http://marc.info/?l=linux-netdev&m=135173341101960
+> 2. http://www.spinics.net/lists/netdev/msg215379.html
+
