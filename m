@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab3CUTMW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 15:12:22 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:58368 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751645Ab3CUTMV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 15:12:21 -0400
-Message-ID: <1363893139.1390.151.camel@x61.thuisdomein>
-Subject: [PATCH] tile: remove two outdated Kconfig entries
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 21 Mar 2013 20:12:19 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Mar 2013 19:12:19.0862 (UTC) FILETIME=[025FF360:01CE2668]
-X-RcptDomain: vger.kernel.org
+	id S1752318Ab3CUTPZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 15:15:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56363 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751100Ab3CUTPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 15:15:23 -0400
+Date: Thu, 21 Mar 2013 21:15:41 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Roland Dreier <roland@kernel.org>,
+        "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
+Subject: Re: [PATCH] rdma: don't make pages writeable if not requiested
+Message-ID: <20130321191541.GB5272@redhat.com>
+References: <20130321061838.GA28319@redhat.com>
+ <CAL1RGDUcMj9QVsuQgK+ozw64L6-cGehL7YBUJ1_ckni6TD=Kcg@mail.gmail.com>
+ <20130321070357.GD28328@redhat.com>
+ <CAG4TOxPkhOhGmzeA1K4a0Zw8HxS-QkOr-PCx7mJgA+KkuH3ZiQ@mail.gmail.com>
+ <20130321085107.GE28328@redhat.com>
+ <CAL1RGDVnkLZU2Vge4o3BwDxnAfGv7TQRMqE6ha3MUt39CVp5NQ@mail.gmail.com>
+ <20130321093946.GG28328@redhat.com>
+ <20130321171115.GA653@obsidianresearch.com>
+ <20130321181633.GC4366@redhat.com>
+ <20130321184135.GA8044@obsidianresearch.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130321184135.GA8044@obsidianresearch.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tile support got added in v2.6.36. Its main Kconfig file was added with
-two outdated Kconfig entries. DEFAULT_MIGRATION_COST is unused since
-v2.6.23, and SEMAPHORE_SLEEPERS is unused since v2.6.26. Remove these
-outdated entries now.
+On Thu, Mar 21, 2013 at 12:41:35PM -0600, Jason Gunthorpe wrote:
+> On Thu, Mar 21, 2013 at 08:16:33PM +0200, Michael S. Tsirkin wrote:
+> 
+> > This is the one I find redundant. Since the write will be done by
+> > the adaptor under direct control by the application, why does it
+> > make sense to declare this beforehand?  If you don't want to allow
+> > local write access to memory, just do not post any receive WRs with
+> > this address.  If you posted and regret it, reset the QP to cancel.
+> 
+> This is to support your COW scenario - the app declares before hand to
+> the kernel that it will write to the memory and the kernel ensures
+> pages are dedicated to the app at registration time. Or the app says
+> it will only read and the kernel could leave them shared.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+Someone here is confused. LOCAL_WRITE/absence of it does not address
+COW, it breaks COW anyway.  Are you now saying we should change rdma so
+without LOCAL_WRITE it will not break COW?
 
- arch/tile/Kconfig | 9 ---------
- 1 file changed, 9 deletions(-)
+> The adaptor enforces the access control to prevent a naughty app from
+> writing to shared memory - think about mmap'ing libc.so and then using
+> RDMA to write to the shared pages. It is necessary to ensure that is
+> impossible.
+> 
+> Jason
 
-diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
-index 25877ae..2f8ccff 100644
---- a/arch/tile/Kconfig
-+++ b/arch/tile/Kconfig
-@@ -40,9 +40,6 @@ config MMU
- config GENERIC_CSUM
- 	def_bool y
- 
--config SEMAPHORE_SLEEPERS
--	def_bool y
--
- config HAVE_ARCH_ALLOC_REMAP
- 	def_bool y
- 
-@@ -67,12 +64,6 @@ config HUGETLB_SUPER_PAGES
- config RWSEM_GENERIC_SPINLOCK
- 	def_bool y
- 
--# We have a very flat architecture from a migration point of view,
--# so save boot time by presetting this (particularly useful on tile-sim).
--config DEFAULT_MIGRATION_COST
--	int
--	default "10000000"
--
- # We only support gcc 4.4 and above, so this should work.
- config ARCH_SUPPORTS_OPTIMIZED_INLINING
- 	def_bool y
+That's why it's redundant: we can't trust an application to tell us
+'this page is writeable', we must get this info from kernel.  And so
+there's apparently no need for application to tell adaptor about
+LOCAL_WRITE.
+
 -- 
-1.7.11.7
-
+MST
