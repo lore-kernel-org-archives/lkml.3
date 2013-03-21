@@ -1,44 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab3CUVIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 17:08:17 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:56502 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255Ab3CUVIQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 17:08:16 -0400
-Date: Thu, 21 Mar 2013 22:08:10 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 5/5] arm: dts: Convert mvebu device tree files to 64
- bits
-Message-ID: <20130321220810.0c055f57@skate>
-In-Reply-To: <20130321203751.GP21478@lunn.ch>
-References: <1363883179-1361-1-git-send-email-gregory.clement@free-electrons.com>
-	<1363883179-1361-6-git-send-email-gregory.clement@free-electrons.com>
-	<20130321201533.GN21478@lunn.ch>
-	<20130321212236.1015295d@skate>
-	<20130321203751.GP21478@lunn.ch>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S1753340Ab3CUVJT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 17:09:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20559 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751525Ab3CUVJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 17:09:17 -0400
+Date: Thu, 21 Mar 2013 18:08:57 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Janne Grunau <j@jannau.net>, linux-media <linux-media@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH] media: fix hdpvr build warning
+Message-ID: <20130321180857.5de49d16@redhat.com>
+In-Reply-To: <514B5814.4020309@infradead.org>
+References: <alpine.DEB.2.00.1303112254140.16847@ayla.of.borg>
+	<513F769D.6040306@infradead.org>
+	<20130321154509.46ad14e3@redhat.com>
+	<514B5814.4020309@infradead.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -46,24 +27,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Andrew Lunn,
+Em Thu, 21 Mar 2013 11:57:24 -0700
+Randy Dunlap <rdunlap@infradead.org> escreveu:
 
-On Thu, 21 Mar 2013 21:37:51 +0100, Andrew Lunn wrote:
-
-> > And I'm not sure the SDRAM address decoding windows allows to split the
-> > first 4 GB of RAM into two areas, one that would be mapped starting at
-> > physical address 0x0, and another area that would be mapped at a
-> > different address (above 4 GB).
+> On 03/21/13 11:45, Mauro Carvalho Chehab wrote:
+> > Em Tue, 12 Mar 2013 11:40:29 -0700
+> > Randy Dunlap <rdunlap@infradead.org> escreveu:
+> > 
+> >> From: Randy Dunlap <rdunlap@infradead.org>
+> >>
+> >> Fix build warning in hdpvr:
+> >>
+> >> drivers/media/usb/hdpvr/hdpvr-video.c: warning: "CONFIG_I2C_MODULE" is not defined [-Wundef]
+> >>
+> >> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> >> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> >> Cc: Janne Grunau <j@jannau.net>
+> > 
+> > From time to time, people used to write those checks wrong. So,
+> > we're now using a macro to avoid those problems (IS_ENABLED). The better
+> > is to also use it here.
+> > 
 > 
-> So why not map the whole SDRAM above 4GB physical address?
+> From time to time, people omit including header files that should be
+> included.
 
-That's a good question. The problem is most likely that this would
-require to synchronize with U-Boot modifications, which is not easy to
-achieve.
+Heh ;)
 
-Thomas
+> Please add
+> 
+> #include <linux/kconfig.h>
+> 
+> to this patch.
+
+
+Ok, I'll do it.
+> 
+> Thank you.
+> 
+> 
+> > -
+> > 
+> > [PATCH] Use the proper check for I2C support
+> > 
+> > As reported by Geert Uytterhoeven <geert@linux-m68k.org>:
+> > 
+> > 	drivers/media/usb/hdpvr/hdpvr-video.c: warning: "CONFIG_I2C_MODULE" is not defined [-Wundef]
+> > 
+> > Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> > 
+> > diff --git a/drivers/media/usb/hdpvr/hdpvr-video.c b/drivers/media/usb/hdpvr/hdpvr-video.c
+> > index da6b779..554d2eb 100644
+> > --- a/drivers/media/usb/hdpvr/hdpvr-video.c
+> > +++ b/drivers/media/usb/hdpvr/hdpvr-video.c
+> > @@ -1238,7 +1238,7 @@ static void hdpvr_device_release(struct video_device *vdev)
+> >  	v4l2_device_unregister(&dev->v4l2_dev);
+> >  
+> >  	/* deregister I2C adapter */
+> > -#if defined(CONFIG_I2C) || (CONFIG_I2C_MODULE)
+> > +#if IS_ENABLED(CONFIG_I2C)
+> >  	mutex_lock(&dev->i2c_mutex);
+> >  	i2c_del_adapter(&dev->i2c_adapter);
+> >  	mutex_unlock(&dev->i2c_mutex);
+> > 
+> > Cheers,
+> > Mauro
+> > 
+> 
+> 
+
+
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+
+Cheers,
+Mauro
