@@ -1,47 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364Ab3CUSNT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:13:19 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:27775 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab3CUSNS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:13:18 -0400
-X-IronPort-AV: E=Sophos;i="4.84,887,1355126400"; 
-   d="scan'208";a="31622448"
-Message-ID: <514B4DBD.4060403@codeaurora.org>
-Date: Thu, 21 Mar 2013 11:13:17 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1752411Ab3CUSN4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:13:56 -0400
+Received: from www.sr71.net ([198.145.64.142]:51988 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751478Ab3CUSNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 14:13:55 -0400
+Message-ID: <514B4E2B.2010506@sr71.net>
+Date: Thu, 21 Mar 2013 11:15:07 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv3 01/10] clocksource: add generic dummy timer driver
-References: <1363198676-30417-1-git-send-email-sboyd@codeaurora.org> <1363198676-30417-2-git-send-email-sboyd@codeaurora.org> <20130321180922.GB10716@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130321180922.GB10716@e106331-lin.cambridge.arm.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2, RFC 13/30] thp, mm: implement grab_cache_huge_page_write_begin()
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-14-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1363283435-7666-14-git-send-email-kirill.shutemov@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/13 11:09, Mark Rutland wrote:
-> Hi Stephen,
->
-> I've just been trying to test the dummy timer, and realised it's broken, as it
-> registers a cpu notifier from a device_initcall (after SMP's been brought up),
-> and doesn't ensure all active CPUs have been set up. Evidently no-one else has
-> attempted to test it thus far, and I'm not able to throughly test it at the
-> moment.
+On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> The function is grab_cache_page_write_begin() twin but it tries to
+> allocate huge page at given position aligned to HPAGE_CACHE_NR.
 
-Would it be sufficient to register as a pre-smp initcall?
+The obvious question, then, is whether we should just replace
+grab_cache_page_write_begin() with this code and pass in HPAGE_CACHE_NR
+or 1 based on whether we're doing a huge or normal page.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index 38fdc92..bdedb1b 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -2332,6 +2332,64 @@ found:
+>  }
+>  EXPORT_SYMBOL(grab_cache_page_write_begin);
+>  
+> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> +/*
+> + * Find or create a huge page at the given pagecache position, aligned to
+> + * HPAGE_CACHE_NR. Return the locked huge page.
+> + *
+> + * If, for some reason, it's not possible allocate a huge page at this
+> + * possition, it returns NULL. Caller should take care of fallback to small
+> + * pages.
+> + *
+> + * This function is specifically for buffered writes.
+> + */
+> +struct page *grab_cache_huge_page_write_begin(struct address_space *mapping,
+> +		pgoff_t index, unsigned flags)
+> +{
+> +	int status;
+> +	gfp_t gfp_mask;
+> +	struct page *page;
+> +	gfp_t gfp_notmask = 0;
+> +
+> +	BUG_ON(index & HPAGE_CACHE_INDEX_MASK);
+
+--
+> +	gfp_mask = mapping_gfp_mask(mapping);
+> +	BUG_ON(!(gfp_mask & __GFP_COMP));
+> +	if (mapping_cap_account_dirty(mapping))
+> +		gfp_mask |= __GFP_WRITE;
+> +	if (flags & AOP_FLAG_NOFS)
+> +		gfp_notmask = __GFP_FS;
+
+This whole hunk is both non-obvious and copy-n-pasted from
+grab_cache_page_write_begin().  That makes me worry that bugs/features
+will get added/removed in one and not the other.  I really think they
+need to get consolidated somehow.
+
+> +repeat:
+> +	page = find_lock_page(mapping, index);
+> +	if (page) {
+> +		if (!PageTransHuge(page)) {
+> +			unlock_page(page);
+> +			page_cache_release(page);
+> +			return NULL;
+> +		}
+> +		goto found;
+> +	}
+> +
+> +	page = alloc_pages(gfp_mask & ~gfp_notmask, HPAGE_PMD_ORDER);
+
+I alluded to this a second ago, but what's wrong with alloc_hugepage()?
+
+> +	if (!page) {
+> +		count_vm_event(THP_WRITE_FAILED);
+> +		return NULL;
+> +	}
+> +
+> +	count_vm_event(THP_WRITE_ALLOC);
+> +	status = add_to_page_cache_lru(page, mapping, index,
+> +			GFP_KERNEL & ~gfp_notmask);
+> +	if (unlikely(status)) {
+> +		page_cache_release(page);
+> +		if (status == -EEXIST)
+> +			goto repeat;
+> +		return NULL;
+> +	}
+
+I'm rather un-fond of sprinking likely/unlikelies around.  But, I guess
+this is really just copied from the existing one.  <sigh>
+
+> +found:
+> +	wait_on_page_writeback(page);
+> +	return page;
+> +}
+> +#endif
+
+So, I diffed :
+
+-struct page *grab_cache_page_write_begin(struct address_space
+vs.
++struct page *grab_cache_huge_page_write_begin(struct address_space
+
+They're just to similar to ignore.  Please consolidate them somehow.
 
