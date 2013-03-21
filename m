@@ -1,150 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab3CUPx4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 11:53:56 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:59816 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755938Ab3CUPxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 11:53:54 -0400
-Message-ID: <514B2D0E.808@gmail.com>
-Date: Thu, 21 Mar 2013 08:53:50 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1756016Ab3CUPyy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 11:54:54 -0400
+Received: from www.sr71.net ([198.145.64.142]:50118 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755937Ab3CUPyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 11:54:52 -0400
+Message-ID: <514B2D94.8040206@sr71.net>
+Date: Thu, 21 Mar 2013 08:56:04 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Huacai Chen <chenhc@lemote.com>, Ralf Baechle <ralf@linux-mips.org>
-CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Hongbing Hu <huhb@lemote.com>
-Subject: Re: [PATCH V2 01/02] MIPS: Build uasm-generated code only once to
- avoid CPU Hotplug problem
-References: <1363524578-3765-1-git-send-email-chenhc@lemote.com> <514A42F2.4080501@gmail.com>
-In-Reply-To: <514A42F2.4080501@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2, RFC 04/30] radix-tree: implement preload for multiple
+ contiguous elements
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-5-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1363283435-7666-5-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 04:14 PM, David Daney wrote:
-> On 03/17/2013 05:49 AM, Huacai Chen wrote:
->> This and the next patch resolve memory corruption problems while CPU
->> hotplug. Without these patches, memory corruption can triggered easily
->> as below:
->>
-[...]
->
-> We were seeing the same crashes, this patch set seems to fix the problem.
->
-> Acked-by: David Daney <david.daney@cavium.com>
+On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> Currently radix_tree_preload() only guarantees enough nodes to insert
+> one element. It's a hard limit. You cannot batch a number insert under
+> one tree_lock.
+> 
+> This patch introduces radix_tree_preload_count(). It allows to
+> preallocate nodes enough to insert a number of *contiguous* elements.
 
-On second thought...
+You don't need to write a paper on how radix trees work, but it might be
+nice to include a wee bit of text in here about how the existing preload
+works, and how this new guarantee works.
 
+> diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+> index ffc444c..81318cb 100644
+> --- a/include/linux/radix-tree.h
+> +++ b/include/linux/radix-tree.h
+> @@ -83,6 +83,8 @@ do {									\
+>  	(root)->rnode = NULL;						\
+>  } while (0)
+>  
+> +#define RADIX_TREE_PRELOAD_NR		512 /* For THP's benefit */
 
->
->> ---
->>   arch/mips/include/asm/cpu-features.h               |    3 +++
->>   .../asm/mach-loongson/cpu-feature-overrides.h      |    1 +
->>   arch/mips/mm/page.c                                |   10 ++++++++++
->>   arch/mips/mm/tlbex.c                               |   10 ++++++++--
->>   4 files changed, 22 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/mips/include/asm/cpu-features.h
->> b/arch/mips/include/asm/cpu-features.h
->> index 1a57e8b..e5ec8fc 100644
->> --- a/arch/mips/include/asm/cpu-features.h
->> +++ b/arch/mips/include/asm/cpu-features.h
->> @@ -113,6 +113,9 @@
->>   #ifndef cpu_has_pindexed_dcache
->>   #define cpu_has_pindexed_dcache (cpu_data[0].dcache.flags &
->> MIPS_CACHE_PINDEX)
->>   #endif
->> +#ifndef cpu_has_local_ebase
->> +#define cpu_has_local_ebase    1
+This eventually boils down to making the radix_tree_preload array
+larger.  Do we really want to do this unconditionally if it's only for
+THP's benefit?
 
+>  /**
+>   * Radix-tree synchronization
+>   *
+> @@ -231,6 +233,7 @@ unsigned long radix_tree_next_hole(struct radix_tree_root *root,
+>  unsigned long radix_tree_prev_hole(struct radix_tree_root *root,
+>  				unsigned long index, unsigned long max_scan);
+>  int radix_tree_preload(gfp_t gfp_mask);
+> +int radix_tree_preload_count(unsigned size, gfp_t gfp_mask);
+>  void radix_tree_init(void);
+>  void *radix_tree_tag_set(struct radix_tree_root *root,
+>  			unsigned long index, unsigned int tag);
+> diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+> index e796429..9bef0ac 100644
+> --- a/lib/radix-tree.c
+> +++ b/lib/radix-tree.c
+> @@ -81,16 +81,24 @@ static struct kmem_cache *radix_tree_node_cachep;
+>   * The worst case is a zero height tree with just a single item at index 0,
+>   * and then inserting an item at index ULONG_MAX. This requires 2 new branches
+>   * of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
+> + *
+> + * Worst case for adding N contiguous items is adding entries at indexes
+> + * (ULONG_MAX - N) to ULONG_MAX. It requires nodes to insert single worst-case
+> + * item plus extra nodes if you cross the boundary from one node to the next.
+> + *
+>   * Hence:
+>   */
+> -#define RADIX_TREE_PRELOAD_SIZE (RADIX_TREE_MAX_PATH * 2 - 1)
+> +#define RADIX_TREE_PRELOAD_MIN (RADIX_TREE_MAX_PATH * 2 - 1)
+> +#define RADIX_TREE_PRELOAD_MAX \
+> +	(RADIX_TREE_PRELOAD_MIN + \
+> +	 DIV_ROUND_UP(RADIX_TREE_PRELOAD_NR - 1, RADIX_TREE_MAP_SIZE))
+>  
+>  /*
+>   * Per-cpu pool of preloaded nodes
+>   */
+>  struct radix_tree_preload {
+>  	int nr;
+> -	struct radix_tree_node *nodes[RADIX_TREE_PRELOAD_SIZE];
+> +	struct radix_tree_node *nodes[RADIX_TREE_PRELOAD_MAX];
+>  };
 
-This really should default to 0 and only be set for (??who knows what??).
+For those of us too lazy to go compile a kernel and figure this out in
+practice, how much bigger does this make the nodes[] array?
 
-David Daney
+>  static DEFINE_PER_CPU(struct radix_tree_preload, radix_tree_preloads) = { 0, };
+>  
+> @@ -257,29 +265,34 @@ radix_tree_node_free(struct radix_tree_node *node)
+>  
+>  /*
+>   * Load up this CPU's radix_tree_node buffer with sufficient objects to
+> - * ensure that the addition of a single element in the tree cannot fail.  On
+> - * success, return zero, with preemption disabled.  On error, return -ENOMEM
+> + * ensure that the addition of *contiguous* elements in the tree cannot fail.
+> + * On success, return zero, with preemption disabled.  On error, return -ENOMEM
+>   * with preemption not disabled.
+>   *
+>   * To make use of this facility, the radix tree must be initialised without
+>   * __GFP_WAIT being passed to INIT_RADIX_TREE().
+>   */
+> -int radix_tree_preload(gfp_t gfp_mask)
+> +int radix_tree_preload_count(unsigned size, gfp_t gfp_mask)
+>  {
+>  	struct radix_tree_preload *rtp;
+>  	struct radix_tree_node *node;
+>  	int ret = -ENOMEM;
+> +	int alloc = RADIX_TREE_PRELOAD_MIN +
+> +		DIV_ROUND_UP(size - 1, RADIX_TREE_MAP_SIZE);
 
+Any chance I could talk you in to giving 'alloc' a better name?  Maybe
+"preload_target" or "preload_fill_to".
 
->> +#endif
->>
->>   /*
->>    * I-Cache snoops remote store.     This only matters on SMP.  Some
->> multiprocessors
->> diff --git
->> a/arch/mips/include/asm/mach-loongson/cpu-feature-overrides.h
->> b/arch/mips/include/asm/mach-loongson/cpu-feature-overrides.h
->> index 75fd8c0..c0f3ef4 100644
->> --- a/arch/mips/include/asm/mach-loongson/cpu-feature-overrides.h
->> +++ b/arch/mips/include/asm/mach-loongson/cpu-feature-overrides.h
->> @@ -57,5 +57,6 @@
->>   #define cpu_has_vint        0
->>   #define cpu_has_vtag_icache    0
->>   #define cpu_has_watch        1
->> +#define cpu_has_local_ebase    0
->>
->>   #endif /* __ASM_MACH_LOONGSON_CPU_FEATURE_OVERRIDES_H */
->> diff --git a/arch/mips/mm/page.c b/arch/mips/mm/page.c
->> index a29fba5..4eb8dcf 100644
->> --- a/arch/mips/mm/page.c
->> +++ b/arch/mips/mm/page.c
->> @@ -247,6 +247,11 @@ void __cpuinit build_clear_page(void)
->>       struct uasm_label *l = labels;
->>       struct uasm_reloc *r = relocs;
->>       int i;
->> +    static atomic_t run_once = ATOMIC_INIT(0);
->> +
->> +    if (atomic_xchg(&run_once, 1)) {
->> +        return;
->> +    }
->>
->>       memset(labels, 0, sizeof(labels));
->>       memset(relocs, 0, sizeof(relocs));
->> @@ -389,6 +394,11 @@ void __cpuinit build_copy_page(void)
->>       struct uasm_label *l = labels;
->>       struct uasm_reloc *r = relocs;
->>       int i;
->> +    static atomic_t run_once = ATOMIC_INIT(0);
->> +
->> +    if (atomic_xchg(&run_once, 1)) {
->> +        return;
->> +    }
->>
->>       memset(labels, 0, sizeof(labels));
->>       memset(relocs, 0, sizeof(relocs));
->> diff --git a/arch/mips/mm/tlbex.c b/arch/mips/mm/tlbex.c
->> index 820e661..6bc28b4 100644
->> --- a/arch/mips/mm/tlbex.c
->> +++ b/arch/mips/mm/tlbex.c
->> @@ -2162,8 +2162,11 @@ void __cpuinit build_tlb_refill_handler(void)
->>       case CPU_TX3922:
->>       case CPU_TX3927:
->>   #ifndef CONFIG_MIPS_PGD_C0_CONTEXT
->> -        build_r3000_tlb_refill_handler();
->> +        if (cpu_has_local_ebase)
->> +            build_r3000_tlb_refill_handler();
->>           if (!run_once) {
->> +            if (!cpu_has_local_ebase)
->> +                build_r3000_tlb_refill_handler();
->>               build_r3000_tlb_load_handler();
->>               build_r3000_tlb_store_handler();
->>               build_r3000_tlb_modify_handler();
->> @@ -2192,9 +2195,12 @@ void __cpuinit build_tlb_refill_handler(void)
->>               build_r4000_tlb_load_handler();
->>               build_r4000_tlb_store_handler();
->>               build_r4000_tlb_modify_handler();
->> +            if (!cpu_has_local_ebase)
->> +                build_r4000_tlb_refill_handler();
->>               run_once++;
->>           }
->> -        build_r4000_tlb_refill_handler();
->> +        if (cpu_has_local_ebase)
->> +            build_r4000_tlb_refill_handler();
->>       }
->>   }
->>
->>
->
+> +	if (size > RADIX_TREE_PRELOAD_NR)
+> +		return -ENOMEM;
+
+I always wonder if these deep, logical -ENOMEMs deserve a WARN_ONCE().
+We really don't expect to hit this unless something really funky is
+going on, right?
+
+>  	preempt_disable();
+>  	rtp = &__get_cpu_var(radix_tree_preloads);
+> -	while (rtp->nr < ARRAY_SIZE(rtp->nodes)) {
+> +	while (rtp->nr < alloc) {
+>  		preempt_enable();
+>  		node = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
+>  		if (node == NULL)
+>  			goto out;
+>  		preempt_disable();
+>  		rtp = &__get_cpu_var(radix_tree_preloads);
+> -		if (rtp->nr < ARRAY_SIZE(rtp->nodes))
+> +		if (rtp->nr < alloc)
+>  			rtp->nodes[rtp->nr++] = node;
+>  		else
+>  			kmem_cache_free(radix_tree_node_cachep, node);
+> @@ -288,6 +301,11 @@ int radix_tree_preload(gfp_t gfp_mask)
+>  out:
+>  	return ret;
+>  }
 
