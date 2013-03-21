@@ -1,59 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933064Ab3CUMmh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 08:42:37 -0400
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:35831 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932184Ab3CUMmg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 08:42:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363869397.17680.24.camel@pasglop>
-References: <1363791074-16415-1-git-send-email-grant.likely@secretlab.ca>
- <1363791074-16415-3-git-send-email-grant.likely@secretlab.ca>
- <1363791479.12701.9.camel@pasglop> <CACxGe6u2wNbPQSOPRCRO0To5UC-b8rXYanv2xv26hk5oaozvPA@mail.gmail.com>
- <1363839594.17680.19.camel@pasglop> <CACxGe6sXcg51VhFujsjCsMzF80pdy_QhAposdmya4-C0eEcuUw@mail.gmail.com>
- <1363851836.17680.20.camel@pasglop> <CACxGe6thdnQo6sPDccEGzUEkXFDGRD4aq_DJOop6Cincb94ODA@mail.gmail.com>
- <1363869397.17680.24.camel@pasglop>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 21 Mar 2013 12:42:15 +0000
-X-Google-Sender-Auth: cIVJC4ds8o9p-rtpiWydl3mKork
-Message-ID: <CACxGe6uTpGmNyPLYD8drGycpH=XKu3s6ngPL6RquQ0DZX3WXGw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] of: remove /proc/device-tree
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+	id S1758149Ab3CUMts (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 08:49:48 -0400
+Received: from gate.crashing.org ([63.228.1.57]:49333 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756333Ab3CUMtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 08:49:47 -0400
+Message-ID: <1363870176.17680.33.camel@pasglop>
+Subject: Re: [PATCH V2 1/2] of: Make device nodes kobjects so they show up
+ in sysfs
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
         Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, davem@davemloft.net
+Date: Thu, 21 Mar 2013 13:49:36 +0100
+In-Reply-To: <1363865097-32764-2-git-send-email-grant.likely@secretlab.ca>
+References: <1363865097-32764-1-git-send-email-grant.likely@secretlab.ca>
+	 <1363865097-32764-2-git-send-email-grant.likely@secretlab.ca>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 12:36 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Thu, 2013-03-21 at 08:16 +0000, Grant Likely wrote:
->> On Thu, Mar 21, 2013 at 7:43 AM, Benjamin Herrenschmidt
->> <benh@kernel.crashing.org> wrote:
->> > On Thu, 2013-03-21 at 07:35 +0000, Grant Likely wrote:
->> >> > Shouldn't we have the symlink just be a config option itself ?
->> >> > Eventually distros might want get rid of it completely ..
->> >>
->> >> Why? It is the cheapest thing in the world and it means the ABI
->> >> doesn't change at all.
->> >
->> > It's also gross and forces sysfs to remain in /sys which isn't a kernel
->> > enforced policy afaik.
->>
->> Documentation/sysfs-rules.txt, Line 30
->
-> Whatever... it's still gross :-)
+On Thu, 2013-03-21 at 11:24 +0000, Grant Likely wrote:
+> Device tree nodes are already treated as objects, and we already want to
+> expose them to userspace which is done using the /proc filesystem today.
+> Right now the kernel has to do a lot of work to keep the /proc view in
+> sync with the in-kernel representation. If device_nodes are switched to
+> be kobjects then the device tree code can be a whole lot simpler. It
+> also turns out that switching to using /sysfs from /proc results in
+> smaller code and data size, and the userspace ABI won't change if
+> /proc/device-tree symlinks to /sys/device-tree
 
-ptffff!
+Here you say /sys/device-tree
 
-g.
+> +What:		/sys/firmware/ofw/../device-tree/
 
---
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Here you say /sys/firmware/../device-tree/ ... (wtf are those .. ?)
+
+And further down:
+
+	proc_symlink("device-tree", NULL, "/sys/firmware/ofw/device-tree-0");
+
+Some confusion here ... at least _I_ am confused :-)
+
+Then, you do this:
+
+> +static bool of_init_complete = false;
+
+The above requires some explanations
+
+> +static int __of_node_add(struct device_node *np)
+> +{
+> +
+> +	const char *name;
+> +	struct property *pp;
+> +	static int extra = 0;
+> +	int rc;
+> +
+> +	np->kobj.kset = of_kset;
+> +	if (!np->parent) {
+> +		/* Nodes without parents are new top level trees */
+> +		rc = kobject_add(&np->kobj, NULL, "device-tree-%i", extra++);
+> +#if !defined(CONFIG_PROC_DEVICETREE)
+> +		/* Symlink to the new tree when PROC_DEVICETREE is disabled */
+> +		if (!rc && extra == 1)
+> +			proc_symlink("device-tree", NULL, "/sys/firmware/ofw/device-tree-0");
+> +#endif /* CONFIG_PROC_DEVICETREE */
+
+WTF is this business of having multiple top level trees ? Also that
+local static extra is gross. What is this all about ?
+ 
+> +	} else {
+> +		name = kbasename(np->full_name);
+> +		if (!name || !name[0])
+> +			return -EINVAL;
+> +		rc = kobject_add(&np->kobj, &np->parent->kobj, "%s", name);
+> +	}
+> +	if (rc)
+> +		return rc;
+> +
+> +	for_each_property_of_node(np, pp) {
+> +		/* Important: Don't leak passwords */
+> +		bool secure = strncmp(pp->name, "security-", 9) == 0;
+> +
+> +		pp->attr.attr.name = pp->name;
+> +		pp->attr.attr.mode = secure ? S_IRUSR : S_IRUGO;
+> +		pp->attr.size = secure ? 0 : pp->length;
+> +		pp->attr.read = of_node_property_read;
+> +		rc = sysfs_create_bin_file(&np->kobj, &pp->attr);
+> +		WARN(rc, "error creating device node attribute\n");
+
+Might want some better message (attribute name, node path, ...)
+
+We have mechanisms to deal with collisions in proc devicetree that you
+don't seem to have here (or am I missing something ?). The main source
+of pain is a property and a child node having the same name (happens
+regulary with l2-cache on macs for example).
+
+Cheers,
+Ben.
+
+
