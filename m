@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab3CUVxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 17:53:31 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33308 "EHLO
+	id S1753731Ab3CUVx3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 17:53:29 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33314 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab3CUVxZ (ORCPT
+	with ESMTP id S1752082Ab3CUVx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 17:53:25 -0400
-Message-Id: <20130321215235.415426466@linutronix.de>
+	Thu, 21 Mar 2013 17:53:26 -0400
+Message-Id: <20130321215235.546600507@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 21 Mar 2013 21:53:22 -0000
+Date: Thu, 21 Mar 2013 21:53:24 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
@@ -18,10 +18,10 @@ Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Magnus Damm <magnus.damm@gmail.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: [patch 32/34] unicore: Use generic idle loop
+        Magnus Damm <magnus.damm@gmail.com>, Chris Zankel <chris@zankel.net>
+Subject: [patch 34/34] xtensa: Use generic idle loop
 References: <20130321214930.752934102@linutronix.de>
-Content-Disposition: inline; filename=unicore-use-generic-idle-loop.patch
+Content-Disposition: inline; filename=xtensa-use-generic-idle-loop.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -29,57 +29,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
----
- arch/unicore32/Kconfig          |    1 +
- arch/unicore32/kernel/process.c |   21 +++------------------
- 2 files changed, 4 insertions(+), 18 deletions(-)
+Unfortunately this arch does not compile at all :(
 
-Index: linux-2.6/arch/unicore32/Kconfig
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Chris Zankel <chris@zankel.net>
+---
+ arch/xtensa/Kconfig          |    1 +
+ arch/xtensa/kernel/process.c |   14 ++------------
+ 2 files changed, 3 insertions(+), 12 deletions(-)
+
+Index: linux-2.6/arch/xtensa/Kconfig
 ===================================================================
---- linux-2.6.orig/arch/unicore32/Kconfig
-+++ linux-2.6/arch/unicore32/Kconfig
-@@ -17,6 +17,7 @@ config UNICORE32
- 	select ARCH_WANT_FRAME_POINTERS
- 	select GENERIC_IOMAP
- 	select MODULES_USE_ELF_REL
+--- linux-2.6.orig/arch/xtensa/Kconfig
++++ linux-2.6/arch/xtensa/Kconfig
+@@ -19,6 +19,7 @@ config XTENSA
+ 	select CLONE_BACKWARDS
+ 	select IRQ_DOMAIN
+ 	select HAVE_OPROFILE
 +	select GENERIC_IDLE_LOOP
  	help
- 	  UniCore-32 is 32-bit Instruction Set Architecture,
- 	  including a series of low-power-consumption RISC chip
-Index: linux-2.6/arch/unicore32/kernel/process.c
+ 	  Xtensa processors are 32-bit RISC machines designed by Tensilica
+ 	  primarily for embedded systems.  These processors are both
+Index: linux-2.6/arch/xtensa/kernel/process.c
 ===================================================================
---- linux-2.6.orig/arch/unicore32/kernel/process.c
-+++ linux-2.6/arch/unicore32/kernel/process.c
-@@ -45,25 +45,10 @@ static const char * const processor_mode
- 	"UK18", "UK19", "UK1A", "EXTN", "UK1C", "UK1D", "UK1E", "SUSR"
- };
- 
+--- linux-2.6.orig/arch/xtensa/kernel/process.c
++++ linux-2.6/arch/xtensa/kernel/process.c
+@@ -105,19 +105,9 @@ void coprocessor_flush_all(struct thread
+ /*
+  * Powermanagement idle function, if any is provided by the platform.
+  */
+-
 -void cpu_idle(void)
 +void arch_cpu_idle(void)
  {
+-	local_irq_enable();
+-
 -	/* endless idle loop with no priority at all */
 -	while (1) {
--		tick_nohz_idle_enter();
 -		rcu_idle_enter();
--		while (!need_resched()) {
--			local_irq_disable();
--			stop_critical_timings();
--			cpu_do_idle();
--			local_irq_enable();
--			start_critical_timings();
--		}
+-		while (!need_resched())
+-			platform_idle();
 -		rcu_idle_exit();
--		tick_nohz_idle_exit();
--		preempt_enable_no_resched();
--		schedule();
--		preempt_disable();
+-		schedule_preempt_disabled();
 -	}
-+	cpu_do_idle();
-+	local_irq_enable();
++	platform_idle();
  }
  
- static char reboot_mode = 'h';
+ /*
 
 
