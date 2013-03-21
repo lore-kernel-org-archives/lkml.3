@@ -1,95 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab3CUFs6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 01:48:58 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37525 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836Ab3CUFs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 01:48:56 -0400
-Message-ID: <514A9F1C.6080609@ti.com>
-Date: Thu, 21 Mar 2013 11:18:12 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1756867Ab3CUF4K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 01:56:10 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:3164 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473Ab3CUF4I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 01:56:08 -0400
+X-Spam-Score: -100.8
+Message-ID: <514AA0D9.1090509@asianux.com>
+Date: Thu, 21 Mar 2013 13:55:37 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
-        <akpm@linux-foundation.org>, <rob@landley.net>, <davem@davemloft.net>,
-        <cesarb@cesarb.net>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <b-cousson@ti.com>, <linux@arm.linux.org.uk>, <eballetbo@gmail.com>,
-        <javier@dowhile0.org>, <mchehab@redhat.com>,
-        <santosh.shilimkar@ti.com>, <broonie@opensource.wolfsonmicro.com>,
-        <swarren@nvidia.com>, <linux-doc@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 4/6] ARM: OMAP: USB: Add phy binding information
-References: <1363770725-13717-1-git-send-email-kishon@ti.com> <1363770725-13717-5-git-send-email-kishon@ti.com> <20130320165141.GP16413@atomide.com>
-In-Reply-To: <20130320165141.GP16413@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: sfr@canb.auug.org.au, "paulus@samba.org" <paulus@samba.org>,
+        matt@ozlabs.org, imunsie@au1.ibm.com, linuxppc-dev@lists.ozlabs.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Suggestion] PowerPC: kernel: cross compiling issue with allmodconfig
+References: <51428C81.6000204@asianux.com> <25841.1363323174@ale.ozlabs.ibm.com> <5142AE27.7060003@asianux.com>
+In-Reply-To: <5142AE27.7060003@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello All:
 
-On Wednesday 20 March 2013 10:21 PM, Tony Lindgren wrote:
-> * Kishon Vijay Abraham I <kishon@ti.com> [130320 02:17]:
->>
->> --- a/arch/arm/mach-omap2/board-2430sdp.c
->> +++ b/arch/arm/mach-omap2/board-2430sdp.c
->> @@ -265,6 +266,7 @@ static void __init omap_2430sdp_init(void)
->>
->>   	omap_mux_init_signal("usb0hs_stp", OMAP_PULL_ENA | OMAP_PULL_UP);
->>   	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
->> +	phy_bind("musb-hdrc.0.auto", 0, "twl4030_usb");
->>   	usb_musb_init(NULL);
->>
->>   	board_smc91x_init();
->> --- a/arch/arm/mach-omap2/board-3430sdp.c
->> +++ b/arch/arm/mach-omap2/board-3430sdp.c
->> @@ -601,6 +602,7 @@ static void __init omap_3430sdp_init(void)
->>   	omap_serial_init();
->>   	omap_sdrc_init(hyb18m512160af6_sdrc_params, NULL);
->>   	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
->> +	phy_bind("musb-hdrc.0.auto", 0, "twl4030_usb");
->>   	usb_musb_init(NULL);
->>   	board_smc91x_init();
->>   	board_flash_init(sdp_flash_partitions, chip_sel_3430, 0);
->
-> Can't you call phy_bind() from usb_musb_init() with the default
-> values automatically when usb_musb_init() is passed NULL?
->
-> That way you don't have to patch every board-*.c file with the
-> same lines, and don't need to include <linux/phy/phy.h> in each
-> board-*.c file.
->
->> --- a/arch/arm/mach-omap2/board-4430sdp.c
->> +++ b/arch/arm/mach-omap2/board-4430sdp.c
->> @@ -32,6 +32,7 @@
->>   #include <linux/platform_data/omap4-keypad.h>
->>   #include <linux/usb/musb.h>
->>   #include <linux/usb/phy.h>
->> +#include <linux/phy/phy.h>
->>
->>   #include <asm/mach-types.h>
->>   #include <asm/mach/arch.h>
->> @@ -725,6 +726,7 @@ static void __init omap_4430sdp_init(void)
->>   	omap4_twl6030_hsmmc_init(mmc);
->>
->>   	usb_bind_phy("musb-hdrc.0.auto", 0, "omap-usb2.1.auto");
->> +	phy_bind("musb-hdrc.0.auto", 0, "omap-usb2.1.auto");
->>   	usb_musb_init(&musb_board_data);
->>
->>   	status = omap_ethernet_init();
->
-> Here usb_musb_init() gets called with musb_board_data, so
-> keeping the phy_bind() in the board-4430sdp.c can then override
-> the default in usb_musb_init().
+summary:
+  the root cause is no enough room in exception area (0x5500 -- 0x7000).
 
-Currently phy_bind has a limitation to do that. Will change phy_bind() 
-and have your comment incorporated.
+  it is caused by the patches "for saving/restre PPR":
+    they consumed much space of this area (0x5500 -- 0x7000).
+    for pseries_defconfig and ppc64_defconfig, it is still ok.
+    but for allmodconfig and "some additional config", it will cause issue.
 
-Thanks
-Kishon
+  the solving patch "Make room in exception vector area" can make room larger.
+    it can let "some additional config" ok.
+    but for allmodconfig, it is still not enough.
+
+
+details
+  reason:
+    it is caused by:
+       commit number: 13e7a8e846c2ea38a552b986ea49332f965bbb7a
+       commit number: 44e9309f1f357794b7ae93d5f3e3e6f11d2b8a7f
+    they are "for saving/restore PPR"
+    by Haren Myneni <haren@linux.vnet.ibm.com> Thu, 6 Dec 2012
+    compiling result:
+      pseries_defconfig: pass   (cpu for POWER7)
+      ppc64_defconfig:   pass   (cpu for POWER7)
+      allmodconfig:      failed (cpu for POWER7)
+
+  analysing:
+    solving patch:
+      ------------------------------------------------------------------
+      commit number: 61383407677aef05928541a00678591abea2d84c
+      Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+      Date:   Thu Jan 10 17:44:19 2013 +1100
+
+        powerpc: Make room in exception vector area
+    
+        The FWNMI region is fixed at 0x7000 and the vector are now
+        overflowing that with some configurations. Fix that by moving
+        some hash management code out of that region as it doesn't need
+        to be that close to the call sites (isn't accessed using
+        conditional branches).
+      ------------------------------------------------------------------
+
+      but for allmodconfig (not only for "some configurations"):
+        it really can reduce much overflow bytes,
+          (maybe from hundreds bytes to dozens bytes)
+        but still not enough (still content overflow bytes)
+
+    additional trying:
+	after del CONFIG_VSX and CONFIG_PPC_970_NAP in allmodconfig,
+          (will reduce dozens bytes in the region .0x5500 -- .0x7000)
+        it can pass compiling (not overflow).
+
+
+next:
+  I am sorry:
+      I am not quite familiar with the detail features of powerpc.
+      it seems I am not the suitable member to continue trying.
+
+  I prefer Benjamin to continue trying (just like what he has done).
+
+  if Benjamin will not do it (e.g. maybe no time to do)
+    I should continue: "make additional room in exception vector area".
+      (if get no reply within a week: before 2013-03-28, I should continue)
+
+
+
+  welcome any members' (especially Benjamin) suggestions or completions.
+
+  thanks.
+
+  :-)
+
+
+On 2013年03月15日 13:14, Chen Gang wrote:
+> 于 2013年03月15日 12:52, Michael Neuling 写道:
+>> Yep it's a known problem but no one has bothered to fix it since it
+>> doesn't happen in a config that anyone cares about like
+>> pseries_defconfig and ppc64_defconfig.  We've been moving code around in
+>> this area a lot recently hence the breakage.
+>>
+>> It should be fixed though.  Patches welcome. :-)
+> 
+>   thanks, and I should try, and very glad to try.
+> 
+>   :-)  :-)
+> 
+>   excuse me, I try to provide related patch within this month (2013-03-31), is it ok ?
+>   the reason is:
+>     I am not familiar with ppc assembly code, neither ppc kernel,
+>     so need additional time resource.
+>       (originally, I worked for x86(_64) core dump analysing for kernel and user programs)
+> 
+>   thanks.
+> 
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
