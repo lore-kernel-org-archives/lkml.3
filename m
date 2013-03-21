@@ -1,78 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab3CUSBF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:01:05 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:49710 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992Ab3CUSBD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:01:03 -0400
+	id S1752088Ab3CUSCp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:02:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45071 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752016Ab3CUSCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 14:02:44 -0400
+Date: Thu, 21 Mar 2013 18:02:38 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        dormando <dormando@rydia.net>, Satoru Moriya <satoru.moriya@hds.com>,
+        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning
+ requirements for kswapd
+Message-ID: <20130321180238.GM1878@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-3-git-send-email-mgorman@suse.de>
+ <20130321162518.GB27848@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <1363825631.6345.45.camel@gandalf.local.home>
-References: <CAFTL4hybMf+9GjjyKRSEEp0x+wT7OwpKShE5sR_JqW24DGfKOw@mail.gmail.com>
-	<1363636794.15703.32@driftwood>
-	<CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com>
-	<20130318222548.GG3656@linux.vnet.ibm.com>
-	<1363822338.6345.33.camel@gandalf.local.home>
-	<20130320235545.GL3637@linux.vnet.ibm.com>
-	<1363825631.6345.45.camel@gandalf.local.home>
-Date: Thu, 21 Mar 2013 19:01:01 +0100
-Message-ID: <CAFTL4hxRDxQV0e15QvRy1rXhsn6_ZsbmWFROxJ60UgcCr_DTXg@mail.gmail.com>
-Subject: Re: [PATCH] nohz1: Documentation
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: paulmck@linux.vnet.ibm.com, Rob Landley <rob@landley.net>,
-        linux-kernel@vger.kernel.org, josh@joshtriplett.org,
-        zhong@linux.vnet.ibm.com, khilman@linaro.org, geoff@infradead.org,
-        tglx@linutronix.de, Arjan van de Ven <arjan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130321162518.GB27848@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/21 Steven Rostedt <rostedt@goodmis.org>:
-> [ Added Arjan in case he as anything to add about the idle=poll below ]
->
->
-> On Wed, 2013-03-20 at 16:55 -0700, Paul E. McKenney wrote:
->> On Wed, Mar 20, 2013 at 07:32:18PM -0400, Steven Rostedt wrote:
->> > Not a comment on this document, but on the implementation. As idle NO_HZ
->> > can hurt RT, but RT would want to have full NO_HZ, it's a shame that you
->> > can't have both (no idle but full). As we only care about not letting
->> > the CPU go into deep sleep, I wonder if it wouldn't be too hard to add
->> > something that keeps idle from going into nohz mode. Hmm, I think there
->> > may be an option to keep the CPU from going too deep into sleep. That
->> > may be a better approach.
->>
->> Would the combination of CONFIG_NO_HZ=y, CONFIG_NO_HZ_FULL=y, and
->> idle=poll do the trick in this case?
->
-> I'm not sure I would recommend idle=poll either. It would certainly
-> work, but it goes to the other extreme. You think NO_HZ=n drains a
-> battery? Try idle=poll.
->
-> Looking at Documentation/kernel-parameters.txt, it looks like idle=mwait
-> may be better. It states that performance is the same as idle=poll (if
-> supported).
->
-> Also there's a kernel parameter for x86 called intel_idle.max_cstate=X.
->
-> As idle=poll will most likely run the processor very hot and you will
-> need to add more electricity not only for the computer but also for the
-> A/C, it would be nice to still have the CPU sleep, but just at a shallow
-> (fast wakeup) state.
->
-> Perhaps Arjan can add some input here?
+On Thu, Mar 21, 2013 at 12:25:18PM -0400, Johannes Weiner wrote:
+> On Sun, Mar 17, 2013 at 01:04:08PM +0000, Mel Gorman wrote:
+> > Simplistically, the anon and file LRU lists are scanned proportionally
+> > depending on the value of vm.swappiness although there are other factors
+> > taken into account by get_scan_count().  The patch "mm: vmscan: Limit
+> > the number of pages kswapd reclaims" limits the number of pages kswapd
+> > reclaims but it breaks this proportional scanning and may evenly shrink
+> > anon/file LRUs regardless of vm.swappiness.
+> > 
+> > This patch preserves the proportional scanning and reclaim. It does mean
+> > that kswapd will reclaim more than requested but the number of pages will
+> > be related to the high watermark.
+> 
+> Swappiness is about page types, but this implementation compares all
+> LRUs against each other, and I'm not convinced that this makes sense
+> as there is no guaranteed balance between the inactive and active
+> lists.  For example, the active file LRU could get knocked out when
+> it's almost empty while the inactive file LRU has more easy cache than
+> the anon lists combined.
+> 
 
-But I note that it's an interesting usecase. May be we'll want to make
-CONFIG_NO_HZ_FULL (or whatever it's going to be called) not depend on
-CONFIG_NO_HZ_IDLE in the long.
+Ok, I see your point. I think Michal was making the same point but I
+failed to understand it the first time around.
 
-We'll see.
+> Would it be better to compare the sum of file pages with the sum of
+> anon pages and then knock out the smaller pair?
 
-Also, just a guess, but on dynticks-idle may be wakeup from deep CPU
-sleep state is not the only latency source. Reprogramming the timer
-tick on idle exit may be another one? Not sure how fast it is to write
-to the clock device. I supect it's not that free. So probably you
-would like to get rid of the entire dynticks-idle infrastructure for
-real time.
+Yes, it makes more sense but the issue then becomes how can we do that
+sensibly, The following is straight-forward and roughly in line with your
+suggestion but it does not preseve the scanning ratio between active and
+inactive of the remaining LRU lists.
+
+                /*
+                 * For kswapd and memcg, reclaim at least the number of pages
+                 * requested. Ensure that the anon and file LRUs shrink
+                 * proportionally what was requested by get_scan_count(). We
+                 * stop reclaiming one LRU and reduce the amount scanning
+                 * required on the other.
+                 */
+                nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
+                nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
+
+                if (nr_file > nr_anon) {
+                        nr[LRU_INACTIVE_FILE] -= min(nr_anon, nr[LRU_INACTIVE_FILE]);
+                        nr[LRU_ACTIVE_FILE]   -= min(nr_anon, nr[LRU_ACTIVE_FILE]);
+                        nr[LRU_INACTIVE_ANON] = nr[LRU_ACTIVE_ANON] = 0;
+                } else {
+                        nr[LRU_INACTIVE_ANON] -= min(nr_file, nr[LRU_INACTIVE_ANON]);
+                        nr[LRU_ACTIVE_ANON]   -= min(nr_file, nr[LRU_ACTIVE_ANON]);
+                        nr[LRU_INACTIVE_FILE] = nr[LRU_ACTIVE_FILE] = 0;
+                }
+                scan_adjusted = true;
+
+Preserving the ratio gets complicated and to avoid excessive branching,
+it ends up looking like the following untested code.
+
+		/*
+		 * For kswapd and memcg, reclaim at least the number of pages
+		 * requested. Ensure that the anon and file LRUs shrink
+		 * proportionally what was requested by get_scan_count(). We
+		 * stop reclaiming one LRU and reduce the amount scanning
+		 * required on the other preserving the ratio between the
+		 * active/inactive lists.
+		 *
+		 * Start by preparing to shrink the larger of the LRUs by
+		 * the size of the smaller list.
+		 */
+		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
+		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
+		nr_shrink = (nr_file > nr_anon) ? nr_anon : nr_file;
+		lru = (nr_file > nr_anon) ? LRU_FILE : 0;
+
+		/* Work out the ratio of the inactive/active list */
+		top = min(nr[LRU_ACTIVE + lru], nr[lru]);
+		bottom = max(nr[LRU_ACTIVE + lru], nr[lru]);
+		percentage = top * 100 / bottom;
+		nr_fraction = nr_shrink * percentage / 100;
+		nr_remaining = nr_anon - nr_fraction;
+
+		/* Reduce the remaining pages to scan proportionally */
+		if (nr[LRU_ACTIVE + lru] > nr[lru]) {
+			nr[LRU_ACTIVE + lru] -= min(nr_remaining, nr[LRU_ACTIVE + lru]);
+			nr[lru] -= min(nr_fraction,  nr[lru]);
+		} else {
+			nr[LRU_ACTIVE + lru] -= min(nr_fraction, nr[LRU_ACTIVE + lru]);
+			nr[lru] -= min(nr_remaining,  nr[lru]);
+		}
+
+		/* Stop scanning the smaller LRU */
+		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
+		nr[LRU_ACTIVE + lru] = 0;
+		nr[lru] = 0;
+
+Is this what you had in mind or had you something simplier in mind?
+
+-- 
+Mel Gorman
+SUSE Labs
