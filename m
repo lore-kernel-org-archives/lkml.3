@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab3CUPwj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 11:52:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10728 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753724Ab3CUPwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 11:52:37 -0400
-Date: Thu, 21 Mar 2013 11:52:20 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
-Message-ID: <20130321155220.GL3934@redhat.com>
-References: <1363797717.2580.10.camel@falcor1.watson.ibm.com>
- <1363798166.2553.29.camel@x230.sbx07502.somerma.wayport.net>
- <1363802506.2580.55.camel@falcor1.watson.ibm.com>
- <1363803158.2553.33.camel@x230.sbx07502.somerma.wayport.net>
- <1363806968.2580.86.camel@falcor1.watson.ibm.com>
- <1363811856.2553.37.camel@x230.sbx07502.somerma.wayport.net>
- <1363813877.2580.120.camel@falcor1.watson.ibm.com>
- <1363814289.2553.41.camel@x230.sbx07502.somerma.wayport.net>
- <20130321134348.GA3934@redhat.com>
- <20130321153725.GA3656@austin.hallyn.com>
+	id S933629Ab3CUPxW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 11:53:22 -0400
+Received: from mail-da0-f50.google.com ([209.85.210.50]:61311 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab3CUPxU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 11:53:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321153725.GA3656@austin.hallyn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20130315153811.GD24305@sergelap>
+References: <CAKgNAkh1TEkQiQ2g2jhbNzVTwpDYOreJt3rAukZCP9H1wh0mLQ@mail.gmail.com>
+ <20130315153811.GD24305@sergelap>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Thu, 21 Mar 2013 16:52:58 +0100
+Message-ID: <CAKgNAkiMOGtuCyvhSpku65p1ZJ5SfdYcOxxAU+H-mk-76wqOPw@mail.gmail.com>
+Subject: Re: For review: user_namespaces(7) man page
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-man <linux-man@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Vasily Kulikov <segoon@openwall.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 10:37:25AM -0500, Serge E. Hallyn wrote:
-> Quoting Vivek Goyal (vgoyal@redhat.com):
-> ...
-> > Giving CAP_MODIFY_KERNEL to processess upon signature verification
-> > will simplify things a bit.
-> > 
-> > Only thing is that signature verification alone is not sufficient. We
-> > also need to make sure after signature verification executable can
-> > not be modified in memory in any way. So that means atleast couple of
-> > things.
-> 
-> Also what about context?  If I construct a mounts namespace a certain
-> way, can I trick this executable into loading an old singed bzImage that
-> I had laying around?
+Hi Serge,
 
-We were thinking that /sbin/kexec will need to verify bzImage signature
-before loading it. 
+On Fri, Mar 15, 2013 at 4:38 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> Hi,
+>
+> you mention that after creating a new user namespace you at first have
+> all capabilities in the new ns.  You don't explicitly mention (or I
+> missed it - I did see the mention of securebits) that if you want to
+> keep those capabilities after doing an exec, you need to first have
+> something mapped to uid 0 in the userns, and do setuid(0).
 
-Key for verification is in kernel so idea was to take kernel's help
-in verifying signature.
+Good point. I'll add something on that.
 
-Not sure how exactly the interface should look like. 
+> You might not want to list manpages from other projects,
 
-- I was thinking may be process can mmap() the bzImage with MAP_LOCKED.
-  We can create additional flag say MAP_VERIFY_SIG_POST, which tries
-  to verify signature/integrity of mapped region of file after mapping and
-  locking pages and mmap() fails if signature verification fails.
+Actually, not a problem. Many of the pages in my set already do this.
 
-There have been suggestions about creating new system call altogether.
+> but Eric's
+> shadow patches introduce some good new manpages as well.  Those aren't yet
+> accepted upstream, but if/when they are then mention at least of
+> subuid(5), subgid(5), and newuidmap(1) and newgidmap(1) might be good.
 
-> 
-> ISTM the only sane thing to do, if you're going down this road,
-> is to have CAP_MODIFIY_KERNEL pulled from bounding set for everyone
-> except a getty started by init on ttyS0.  Then log in on serial
-> to update.  Or run a damon with CAP_MODIFIY_KERNEL which listens
-> to a init_net_ns netlink socket for very basic instructions, like
-> "find and install latest signed bzImage in /boot".  Then you can
-> at least trust that /boot for that daemon is not faked.
+I'll add those.
 
-daemon does not have the key and can't verify signature of signed
-bzImage. Even if it had the key, it can't trust the crypto code for
-signature verification as none of that is signed.
+Cheers,
 
-Thanks
-Vivek
+Michael
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
