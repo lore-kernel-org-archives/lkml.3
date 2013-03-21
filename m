@@ -1,148 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933291Ab3CUPYs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 11:24:48 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:39880 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932167Ab3CUPYo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 11:24:44 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+	id S1755912Ab3CUPZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 11:25:16 -0400
+Received: from www.sr71.net ([198.145.64.142]:49857 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753703Ab3CUPZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 11:25:11 -0400
+Message-ID: <514B269F.8090701@sr71.net>
+Date: Thu, 21 Mar 2013 08:26:23 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Hillf Danton <dhillf@gmail.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>, Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3/3] nohz: Wake up full dynticks CPUs when a timer gets enqueued
-Date: Thu, 21 Mar 2013 16:24:20 +0100
-Message-Id: <1363879460-21595-4-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1363879460-21595-1-git-send-email-fweisbec@gmail.com>
-References: <1363879460-21595-1-git-send-email-fweisbec@gmail.com>
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2, RFC 03/30] mm: drop actor argument of do_generic_file_read()
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-4-git-send-email-kirill.shutemov@linux.intel.com> <CAJd=RBAKGiCb_+yoFog6xao5bF8vqFwE9MGZ9EVbf1fe-dXnDQ@mail.gmail.com> <20130315132246.F0542E0085@blue.fi.intel.com>
+In-Reply-To: <20130315132246.F0542E0085@blue.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wake up a CPU when a timer list timer is enqueued there and
-the target is part of the full dynticks range. Sending an IPI
-to it makes it reconsidering the next timer to program on top
-of recent updates.
+On 03/15/2013 06:22 AM, Kirill A. Shutemov wrote:
+> Hillf Danton wrote:
+>> On Fri, Mar 15, 2013 at 1:50 AM, Kirill A. Shutemov
+>> <kirill.shutemov@linux.intel.com> wrote:
+>>>
+>>> There's only one caller of do_generic_file_read() and the only actor is
+>>> file_read_actor(). No reason to have a callback parameter.
+>>>
+>> This cleanup is not urgent if it nukes no barrier for THP cache.
+> 
+> Yes, it's not urgent. On other hand it can be applied upstream right now ;)
 
-This may later be improved by checking if the tick is really
-stopped on the target. This would need some careful
-synchronization though. So deal with such optimization later
-and start simple.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/sched.h |    4 ++--
- kernel/sched/core.c   |   20 +++++++++++++++++++-
- kernel/timer.c        |   12 ++++++------
- 3 files changed, 27 insertions(+), 9 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 9004f6e..10626e2e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1851,9 +1851,9 @@ static inline void idle_task_exit(void) {}
- #endif
- 
- #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
--extern void wake_up_idle_cpu(int cpu);
-+extern void wake_up_nohz_cpu(int cpu);
- #else
--static inline void wake_up_idle_cpu(int cpu) { }
-+static inline void wake_up_nohz_cpu(int cpu) { }
- #endif
- 
- #ifdef CONFIG_SCHED_AUTOGROUP
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 849deb9..e91ee58 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -587,7 +587,7 @@ unlock:
-  * account when the CPU goes back to idle and evaluates the timer
-  * wheel for the next timer event.
-  */
--void wake_up_idle_cpu(int cpu)
-+static void wake_up_idle_cpu(int cpu)
- {
- 	struct rq *rq = cpu_rq(cpu);
- 
-@@ -617,6 +617,24 @@ void wake_up_idle_cpu(int cpu)
- 		smp_send_reschedule(cpu);
- }
- 
-+static bool wake_up_extended_nohz_cpu(int cpu)
-+{
-+	if (tick_nohz_extended_cpu(cpu)) {
-+		if (cpu != smp_processor_id() ||
-+		    tick_nohz_tick_stopped())
-+			smp_send_reschedule(cpu);
-+		return true;
-+	}
-+
-+	return false;
-+}
-+
-+void wake_up_nohz_cpu(int cpu)
-+{
-+	if (!wake_up_extended_nohz_cpu(cpu))
-+		wake_up_idle_cpu(cpu);
-+}
-+
- static inline bool got_nohz_idle_kick(void)
- {
- 	int cpu = smp_processor_id();
-diff --git a/kernel/timer.c b/kernel/timer.c
-index dbf7a78..4e3040b 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -930,14 +930,14 @@ void add_timer_on(struct timer_list *timer, int cpu)
- 	debug_activate(timer, timer->expires);
- 	internal_add_timer(base, timer);
- 	/*
--	 * Check whether the other CPU is idle and needs to be
--	 * triggered to reevaluate the timer wheel when nohz is
--	 * active. We are protected against the other CPU fiddling
-+	 * Check whether the other CPU is in dynticks mode and needs
-+	 * to be triggered to reevaluate the timer wheel.
-+	 * We are protected against the other CPU fiddling
- 	 * with the timer by holding the timer base lock. This also
--	 * makes sure that a CPU on the way to idle can not evaluate
--	 * the timer wheel.
-+	 * makes sure that a CPU on the way to stop its tick can not
-+	 * evaluate the timer wheel.
- 	 */
--	wake_up_idle_cpu(cpu);
-+	wake_up_nohz_cpu(cpu);
- 	spin_unlock_irqrestore(&base->lock, flags);
- }
- EXPORT_SYMBOL_GPL(add_timer_on);
--- 
-1.7.5.4
-
+If someone might pick this up and merge it right away, it's probably
+best to put it very first in the series and call it out as such to the
+person you expect to pick it up, or even send it up to them separately.
