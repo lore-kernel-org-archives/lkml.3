@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934119Ab3CUQBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:01:32 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41681 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934082Ab3CUQB1 (ORCPT
+	id S934146Ab3CUQBg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:01:36 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:62014 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934112Ab3CUQBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:01:27 -0400
+	Thu, 21 Mar 2013 12:01:33 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         broonie@opensource.wolfsonmicro.com
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 42/46] regulator: ab8500: Use regulator_list_voltage_table() to look-up voltages
-Date: Thu, 21 Mar 2013 15:59:39 +0000
-Message-Id: <1363881583-15234-43-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 45/46] regulator: ab8500: Shuffle init functions into a more logical order
+Date: Thu, 21 Mar 2013 15:59:42 +0000
+Message-Id: <1363881583-15234-46-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
 References: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
@@ -22,116 +22,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regulator framework offers a generic regulator_list_voltage_table()
-function which can directly look-up a regulator's voltage capabilities
-using a table provided through the desc structure. This patch ensures
-that information is available.
+The ab*_match[] arrays should be moved out of the way, instead of
+bunched in the middle of the initialisation functions. This patch
+moves all initialisation code which currently resides above these
+arrays down to be grouped with the others. This makes the whole
+thing slightly easier to read.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/regulator/ab8500.c |   19 ++++++-------------
- 1 file changed, 6 insertions(+), 13 deletions(-)
+ drivers/regulator/ab8500.c |  170 ++++++++++++++++++++++----------------------
+ 1 file changed, 85 insertions(+), 85 deletions(-)
 
 diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 13948c8..e82b0ad 100644
+index 72d1ed7..b1170d3 100644
 --- a/drivers/regulator/ab8500.c
 +++ b/drivers/regulator/ab8500.c
-@@ -926,7 +926,7 @@ static struct ab8500_regulator_info
- 	 * Variable Voltage Regulators
- 	 *   name, min mV, max mV,
- 	 *   update bank, reg, mask, enable val
--	 *   volt bank, reg, mask, table, table length
-+	 *   volt bank, reg, mask
- 	 */
- 	[AB8505_LDO_AUX1] = {
- 		.desc = {
-@@ -1140,8 +1140,6 @@ static struct ab8500_regulator_info
- 		.voltage_reg		= 0x57,
- 		.voltage_mask		= 0x7,
- 		.voltage_shift		= 4,
--		.voltages		= ldo_vaudio_voltages,
--		.voltages_len		= ARRAY_SIZE(ldo_vaudio_voltages),
- 	},
- 	[AB8505_LDO_ANAMIC1] = {
- 		.desc = {
-@@ -1223,8 +1221,6 @@ static struct ab8500_regulator_info
- 		.voltage_bank		= 0x04,
- 		.voltage_reg		= 0x29,
- 		.voltage_mask		= 0x7,
--		.voltages		= ldo_vana_voltages,
--		.voltages_len		= ARRAY_SIZE(ldo_vana_voltages),
- 	},
+@@ -2905,91 +2905,6 @@ static struct ab8500_reg_init ab8540_reg_init[] = {
+ 	REG_INIT(AB8540_REGUCTRLDISCH4,		0x04, 0x49, 0x07),
  };
  
-@@ -1235,7 +1231,7 @@ static struct ab8500_regulator_info
- 	 * Variable Voltage Regulators
- 	 *   name, min mV, max mV,
- 	 *   update bank, reg, mask, enable val
--	 *   volt bank, reg, mask, table, table length
-+	 *   volt bank, reg, mask
- 	 */
- 	[AB9540_LDO_AUX1] = {
- 		.desc = {
-@@ -1478,7 +1474,7 @@ static struct ab8500_regulator_info
- 	 * Variable Voltage Regulators
- 	 *   name, min mV, max mV,
- 	 *   update bank, reg, mask, enable val
--	 *   volt bank, reg, mask, table, table length
-+	 *   volt bank, reg, mask
- 	 */
- 	[AB8540_LDO_AUX1] = {
- 		.desc = {
-@@ -1581,6 +1577,7 @@ static struct ab8500_regulator_info
- 			.id		= AB8540_LDO_AUX5,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vaux56_ab8540_voltages),
-+			.volt_table	= ldo_vaux56_ab8540_voltages,
- 		},
- 		.load_lp_uA		= 20000,
- 		/* values for Vaux5Regu register */
-@@ -1594,8 +1591,6 @@ static struct ab8500_regulator_info
- 		.voltage_bank		= 0x04,
- 		.voltage_reg		= 0x33,
- 		.voltage_mask		= 0x3f,
--		.voltages		= ldo_vaux56_ab8540_voltages,
--		.voltages_len		= ARRAY_SIZE(ldo_vaux56_ab8540_voltages),
- 	},
- 	[AB8540_LDO_AUX6] = {
- 		.desc = {
-@@ -1605,6 +1600,7 @@ static struct ab8500_regulator_info
- 			.id		= AB8540_LDO_AUX6,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vaux56_ab8540_voltages),
-+			.volt_table	= ldo_vaux56_ab8540_voltages,
- 		},
- 		.load_lp_uA		= 20000,
- 		/* values for Vaux6Regu register */
-@@ -1618,8 +1614,6 @@ static struct ab8500_regulator_info
- 		.voltage_bank		= 0x04,
- 		.voltage_reg		= 0x36,
- 		.voltage_mask		= 0x3f,
--		.voltages		= ldo_vaux56_ab8540_voltages,
--		.voltages_len		= ARRAY_SIZE(ldo_vaux56_ab8540_voltages),
- 	},
- 	[AB8540_LDO_INTCORE] = {
- 		.desc = {
-@@ -1732,6 +1726,7 @@ static struct ab8500_regulator_info
- 			.id		= AB8540_LDO_DMIC,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vdmic_voltages),
-+			.volt_table	= ldo_vdmic_voltages,
- 		},
- 		.load_lp_uA		= 1000,
- 		.update_bank		= 0x03,
-@@ -1741,8 +1736,6 @@ static struct ab8500_regulator_info
- 		.voltage_bank		= 0x03,
- 		.voltage_reg		= 0x83,
- 		.voltage_mask		= 0xc0,
--		.voltages		= ldo_vdmic_voltages,
--		.voltages_len		= ARRAY_SIZE(ldo_vdmic_voltages),
- 	},
+-static struct {
+-	struct ab8500_regulator_info *info;
+-	int info_size;
+-	struct ab8500_reg_init *init;
+-	int init_size;
+-	struct of_regulator_match *match;
+-	int match_size;
+-} abx500_regulator;
+-
+-static int ab8500_regulator_init_registers(struct platform_device *pdev,
+-					   int id, int mask, int value)
+-{
+-	struct ab8500_reg_init *reg_init = abx500_regulator.init;
+-	int err;
+-
+-	BUG_ON(value & ~mask);
+-	BUG_ON(mask & ~reg_init[id].mask);
+-
+-	/* initialize register */
+-	err = abx500_mask_and_set_register_interruptible(
+-		&pdev->dev,
+-		reg_init[id].bank,
+-		reg_init[id].addr,
+-		mask, value);
+-	if (err < 0) {
+-		dev_err(&pdev->dev,
+-			"Failed to initialize 0x%02x, 0x%02x.\n",
+-			reg_init[id].bank,
+-			reg_init[id].addr);
+-		return err;
+-	}
+-	dev_vdbg(&pdev->dev,
+-		 "  init: 0x%02x, 0x%02x, 0x%02x, 0x%02x\n",
+-		 reg_init[id].bank,
+-		 reg_init[id].addr,
+-		 mask, value);
+-
+-	return 0;
+-}
+-
+-static int ab8500_regulator_register(struct platform_device *pdev,
+-				     struct regulator_init_data *init_data,
+-				     int id, struct device_node *np)
+-{
+-	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
+-	struct ab8500_regulator_info *info = NULL;
+-	struct regulator_config config = { };
+-	int err;
+-
+-	/* assign per-regulator data */
+-	info = &abx500_regulator.info[id];
+-	info->dev = &pdev->dev;
+-
+-	config.dev = &pdev->dev;
+-	config.init_data = init_data;
+-	config.driver_data = info;
+-	config.of_node = np;
+-
+-	/* fix for hardware before ab8500v2.0 */
+-	if (is_ab8500_1p1_or_earlier(ab8500)) {
+-		if (info->desc.id == AB8500_LDO_AUX3) {
+-			info->desc.n_voltages =
+-				ARRAY_SIZE(ldo_vauxn_voltages);
+-			info->desc.volt_table = ldo_vauxn_voltages;
+-			info->voltage_mask = 0xf;
+-		}
+-	}
+-
+-	/* register regulator with framework */
+-	info->regulator = regulator_register(&info->desc, &config);
+-	if (IS_ERR(info->regulator)) {
+-		err = PTR_ERR(info->regulator);
+-		dev_err(&pdev->dev, "failed to register regulator %s\n",
+-			info->desc.name);
+-		/* when we fail, un-register all earlier regulators */
+-		while (--id >= 0) {
+-			info = &abx500_regulator.info[id];
+-			regulator_unregister(info->regulator);
+-		}
+-		return err;
+-	}
+-
+-	return 0;
+-}
+-
+ static struct of_regulator_match ab8500_regulator_match[] = {
+ 	{ .name	= "ab8500_ldo_aux1",    .driver_data = (void *) AB8500_LDO_AUX1, },
+ 	{ .name	= "ab8500_ldo_aux2",    .driver_data = (void *) AB8500_LDO_AUX2, },
+@@ -3050,6 +2965,15 @@ static struct of_regulator_match ab9540_regulator_match[] = {
+ 	{ .name	= "ab8500_ldo_ana",     .driver_data = (void *) AB9540_LDO_ANA, },
+ };
  
- 	/*
++static struct {
++	struct ab8500_regulator_info *info;
++	int info_size;
++	struct ab8500_reg_init *init;
++	int init_size;
++	struct of_regulator_match *match;
++	int match_size;
++} abx500_regulator;
++
+ static void abx500_get_regulator_info(struct ab8500 *ab8500)
+ {
+ 	if (is_ab9540(ab8500)) {
+@@ -3083,6 +3007,82 @@ static void abx500_get_regulator_info(struct ab8500 *ab8500)
+ 	}
+ }
+ 
++static int ab8500_regulator_init_registers(struct platform_device *pdev,
++					   int id, int mask, int value)
++{
++	struct ab8500_reg_init *reg_init = abx500_regulator.init;
++	int err;
++
++	BUG_ON(value & ~mask);
++	BUG_ON(mask & ~reg_init[id].mask);
++
++	/* initialize register */
++	err = abx500_mask_and_set_register_interruptible(
++		&pdev->dev,
++		reg_init[id].bank,
++		reg_init[id].addr,
++		mask, value);
++	if (err < 0) {
++		dev_err(&pdev->dev,
++			"Failed to initialize 0x%02x, 0x%02x.\n",
++			reg_init[id].bank,
++			reg_init[id].addr);
++		return err;
++	}
++	dev_vdbg(&pdev->dev,
++		 "  init: 0x%02x, 0x%02x, 0x%02x, 0x%02x\n",
++		 reg_init[id].bank,
++		 reg_init[id].addr,
++		 mask, value);
++
++	return 0;
++}
++
++static int ab8500_regulator_register(struct platform_device *pdev,
++				     struct regulator_init_data *init_data,
++				     int id, struct device_node *np)
++{
++	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
++	struct ab8500_regulator_info *info = NULL;
++	struct regulator_config config = { };
++	int err;
++
++	/* assign per-regulator data */
++	info = &abx500_regulator.info[id];
++	info->dev = &pdev->dev;
++
++	config.dev = &pdev->dev;
++	config.init_data = init_data;
++	config.driver_data = info;
++	config.of_node = np;
++
++	/* fix for hardware before ab8500v2.0 */
++	if (is_ab8500_1p1_or_earlier(ab8500)) {
++		if (info->desc.id == AB8500_LDO_AUX3) {
++			info->desc.n_voltages =
++				ARRAY_SIZE(ldo_vauxn_voltages);
++			info->desc.volt_table = ldo_vauxn_voltages;
++			info->voltage_mask = 0xf;
++		}
++	}
++
++	/* register regulator with framework */
++	info->regulator = regulator_register(&info->desc, &config);
++	if (IS_ERR(info->regulator)) {
++		err = PTR_ERR(info->regulator);
++		dev_err(&pdev->dev, "failed to register regulator %s\n",
++			info->desc.name);
++		/* when we fail, un-register all earlier regulators */
++		while (--id >= 0) {
++			info = &abx500_regulator.info[id];
++			regulator_unregister(info->regulator);
++		}
++		return err;
++	}
++
++	return 0;
++}
++
+ static int
+ ab8500_regulator_of_probe(struct platform_device *pdev,
+ 			  struct device_node *np)
 -- 
 1.7.10.4
 
