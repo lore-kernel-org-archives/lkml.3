@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab3CUFg6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 01:36:58 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47983 "EHLO mga11.intel.com"
+	id S1756756Ab3CUFqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 01:46:34 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13144 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753096Ab3CUFg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 01:36:57 -0400
+	id S1752271Ab3CUFqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 01:46:33 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,883,1355126400"; 
-   d="scan'208";a="306215187"
-Date: Thu, 21 Mar 2013 10:41:42 +0530
+X-IronPort-AV: E=Sophos;i="4.84,884,1355126400"; 
+   d="scan'208";a="282583852"
+Date: Thu, 21 Mar 2013 10:51:31 +0530
 From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
-Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 00/10] dmatest: update the module to use debugfs
-Message-ID: <20130321051142.GC10326@intel.com>
-References: <1362388174-3435-1-git-send-email-andriy.shevchenko@linux.intel.com>
+To: maxin.john@gmail.com
+Cc: djbw@fb.com, lars@metafoo.de, linux-kernel@vger.kernel.org,
+        "Maxin B. John" <maxin.john@enea.com>
+Subject: Re: [PATCH] dma: timb_dma: Fix compiler warning
+Message-ID: <20130321052130.GD10326@intel.com>
+References: <1361306033-22229-1-git-send-email-maxin.john@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1362388174-3435-1-git-send-email-andriy.shevchenko@linux.intel.com>
+In-Reply-To: <1361306033-22229-1-git-send-email-maxin.john@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 11:09:24AM +0200, Andy Shevchenko wrote:
-> The first approach to get dmatest module more flexible and easier to play with.
-> The amount of patches could be reduced, but I would like to get a comments
-> first on smaller pieces. The entire series creates dmatest.txt file in the
-> Documentation folder. Similar description is scattered through the commit
-> messages.
+On Tue, Feb 19, 2013 at 10:33:53PM +0200, maxin.john@gmail.com wrote:
+> From: "Maxin B. John" <maxin.john@enea.com>
 > 
-> Module was tested on Intel Medfield and Lynxpoint systems with dw_dmac DMA
-> controller embedded.
-Applied thanks...
+> Fix this compiler warning:
+> warning: 'td_remove' defined but not used [-Wunused-function]
+> 
+> Signed-off-by: Maxin B. John <maxin.john@enea.com>
+Applied, thanks
 
+> ---
+>  drivers/dma/timb_dma.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Andy Shevchenko (10):
->   dmatest: cancel thread immediately when asked for
->   dmatest: allocate memory for pq_coefs from heap
->   dmatest: create dmatest_info to keep test parameters
->   dmatest: move dmatest_channels and nr_channels to dmatest_info
->   dmatest: split test parameters to separate structure
->   dmatest: run test via debugfs
->   dmatest: return actual state in 'run' file
->   dmatest: define MAX_ERROR_COUNT constant
->   dmatest: gather test results in the linked list
->   dmatest: append verify result to results
-> 
->  Documentation/dmatest.txt |  81 +++++
->  drivers/dma/dmatest.c     | 887 +++++++++++++++++++++++++++++++++++++++-------
->  2 files changed, 832 insertions(+), 136 deletions(-)
->  create mode 100644 Documentation/dmatest.txt
-> 
+> diff --git a/drivers/dma/timb_dma.c b/drivers/dma/timb_dma.c
+> index 952f823..26107ba 100644
+> --- a/drivers/dma/timb_dma.c
+> +++ b/drivers/dma/timb_dma.c
+> @@ -823,7 +823,7 @@ static struct platform_driver td_driver = {
+>  		.owner  = THIS_MODULE,
+>  	},
+>  	.probe	= td_probe,
+> -	.remove	= __exit_p(td_remove),
+> +	.remove	= td_remove,
+>  };
+>  
+>  module_platform_driver(td_driver);
 > -- 
-> 1.8.2.rc0.22.gb3600c3
+> 1.7.7
 > 
