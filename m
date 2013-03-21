@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758229Ab3CUN3I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 09:29:08 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:64977 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755268Ab3CUN3G (ORCPT
+	id S933081Ab3CUNfF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 09:35:05 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:50753 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932450Ab3CUNfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 09:29:06 -0400
-From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-To: myungjoo.ham@samsung.com, rjw@sisk.pl, Kevin Hilman <khilman@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Rajagopal Venkat <rajagopal.venkat@linaro.org>
-Subject: [PATCH 1/2] PM / devfreq: Fix compiler warnings
-Date: Thu, 21 Mar 2013 18:58:25 +0530
-Message-Id: <1363872506-3630-2-git-send-email-rajagopal.venkat@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363872506-3630-1-git-send-email-rajagopal.venkat@linaro.org>
-References: <1363872506-3630-1-git-send-email-rajagopal.venkat@linaro.org>
+	Thu, 21 Mar 2013 09:35:01 -0400
+Message-ID: <1363872898.1390.143.camel@x61.thuisdomein>
+Subject: [PATCH] arch: remove CONFIG_GENERIC_FIND_NEXT_BIT again
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Richard Kuo <rkuo@codeaurora.org>, Jonas Bonn <jonas@southpole.se>
+Cc: linux-hexagon@vger.kernel.org, linux@openrisc.net,
+        linux-kernel@vger.kernel.org
+Date: Thu, 21 Mar 2013 14:34:58 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 21 Mar 2013 13:34:58.0440 (UTC) FILETIME=[E18C1080:01CE2638]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix compiler warnings generated when devfreq is not enabled
-(CONFIG_PM_DEVFREQ is not set).
+CONFIG_GENERIC_FIND_NEXT_BIT was removed in v3.0, but reappeared in two
+architectures. Remove it again.
 
-Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- include/linux/devfreq.h |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+0) Untested.
 
-diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-index 04ad61d..5f1ab92 100644
---- a/include/linux/devfreq.h
-+++ b/include/linux/devfreq.h
-@@ -215,7 +215,7 @@ struct devfreq_simple_ondemand_data {
- #endif
+1) See commit 63e424c84429903c92a0f1e9654c31ccaf6694d0 ("arch: remove
+CONFIG_GENERIC_FIND_{NEXT_BIT,BIT_LE,LAST_BIT}") for the removal of this
+Kconfig symbol.
+
+2) Sent as one patch. Feel free to tell me to split it up in two
+patches.
+
+ arch/hexagon/Kconfig  | 3 ---
+ arch/openrisc/Kconfig | 3 ---
+ 2 files changed, 6 deletions(-)
+
+diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
+index 48130eb..650ef81 100644
+--- a/arch/hexagon/Kconfig
++++ b/arch/hexagon/Kconfig
+@@ -81,9 +81,6 @@ config RWSEM_GENERIC_SPINLOCK
+ config RWSEM_XCHGADD_ALGORITHM
+ 	def_bool y
  
- #else /* !CONFIG_PM_DEVFREQ */
--static struct devfreq *devfreq_add_device(struct device *dev,
-+static inline struct devfreq *devfreq_add_device(struct device *dev,
- 					  struct devfreq_dev_profile *profile,
- 					  const char *governor_name,
- 					  void *data)
-@@ -223,34 +223,34 @@ static struct devfreq *devfreq_add_device(struct device *dev,
- 	return NULL;
- }
+-config GENERIC_FIND_NEXT_BIT
+-	def_bool y
+-
+ config GENERIC_HWEIGHT
+ 	def_bool y
  
--static int devfreq_remove_device(struct devfreq *devfreq)
-+static inline int devfreq_remove_device(struct devfreq *devfreq)
- {
- 	return 0;
- }
+diff --git a/arch/openrisc/Kconfig b/arch/openrisc/Kconfig
+index 9ab3bf2..81b9ddb 100644
+--- a/arch/openrisc/Kconfig
++++ b/arch/openrisc/Kconfig
+@@ -55,9 +55,6 @@ config TRACE_IRQFLAGS_SUPPORT
+ config GENERIC_CSUM
+         def_bool y
  
--static int devfreq_suspend_device(struct devfreq *devfreq)
-+static inline int devfreq_suspend_device(struct devfreq *devfreq)
- {
- 	return 0;
- }
+-config GENERIC_FIND_NEXT_BIT
+-	def_bool y
+-
+ source "init/Kconfig"
  
--static int devfreq_resume_device(struct devfreq *devfreq)
-+static inline int devfreq_resume_device(struct devfreq *devfreq)
- {
- 	return 0;
- }
- 
--static struct opp *devfreq_recommended_opp(struct device *dev,
-+static inline struct opp *devfreq_recommended_opp(struct device *dev,
- 					   unsigned long *freq, u32 flags)
- {
--	return -EINVAL;
-+	return ERR_PTR(-EINVAL);
- }
- 
--static int devfreq_register_opp_notifier(struct device *dev,
-+static inline int devfreq_register_opp_notifier(struct device *dev,
- 					 struct devfreq *devfreq)
- {
- 	return -EINVAL;
- }
- 
--static int devfreq_unregister_opp_notifier(struct device *dev,
-+static inline int devfreq_unregister_opp_notifier(struct device *dev,
- 					   struct devfreq *devfreq)
- {
- 	return -EINVAL;
+
 -- 
-1.7.10.4
+1.7.11.7
 
