@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933337Ab3CUIrQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 04:47:16 -0400
-Received: from mga11.intel.com ([192.55.52.93]:57032 "EHLO mga11.intel.com"
+	id S1757714Ab3CUItO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 04:49:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:6328 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752057Ab3CUIrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 04:47:13 -0400
+	id S1755050Ab3CUItM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 04:49:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,884,1355126400"; 
-   d="scan'208";a="309872418"
-Date: Thu, 21 Mar 2013 10:47:07 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org, kevin@allwinnertech.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-serial@vger.kernel.org,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] serial: 8250_dw: add support for clk api
-Message-ID: <20130321084707.GB2862@xps8300>
-References: <1363689316-7847-2-git-send-email-maxime.ripard@free-electrons.com>
- <1363690369-8067-1-git-send-email-maxime.ripard@free-electrons.com>
+   d="scan'208";a="305507337"
+Date: Thu, 21 Mar 2013 13:54:09 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: maxin.john@enea.com, s.hauer@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] dma: ipu: ipu_idmac: Fix section mismatch
+Message-ID: <20130321082409.GI10326@intel.com>
+References: <1363132417-15273-1-git-send-email-festevam@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1363690369-8067-1-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1363132417-15273-1-git-send-email-festevam@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 11:52:49AM +0100, Maxime Ripard wrote:
-> From: Emilio López <emilio@elopez.com.ar>
+On Tue, Mar 12, 2013 at 08:53:37PM -0300, Fabio Estevam wrote:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
 > 
-> This commit implements support for using the clk api; this lets us use
-> the "clocks" property with device tree, instead of having to use
-> clock-frequency.
+> Since commit 84c1e63c12 (dma: Remove erroneous __exit and __exit_p() references)
+> the following section mismatch happens:
 > 
-> Signed-off-by: Emilio López <emilio@elopez.com.ar>
+> WARNING: drivers/built-in.o(.text+0x20f94): Section mismatch in reference from the function ipu_remove() to the function .exit.text:ipu_idmac_exit()
+> The function ipu_remove() references a function in an exit section.
+> Often the function ipu_idmac_exit() has valid usage outside the exit section
+> and the fix is to remove the __exit annotation of ipu_idmac_exit.
+> 
+> Remove the '__exit' annotation from ipu_idmac_exit in order to fix it. 
+> 
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Applied Thanks
 
-FWIW,
-
-Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-
--- 
-heikki
+--
+~Vinod
+> ---
+>  drivers/dma/ipu/ipu_idmac.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/dma/ipu/ipu_idmac.c b/drivers/dma/ipu/ipu_idmac.c
+> index d6d5d7e..d39c2cd 100644
+> --- a/drivers/dma/ipu/ipu_idmac.c
+> +++ b/drivers/dma/ipu/ipu_idmac.c
+> @@ -1642,7 +1642,7 @@ static int __init ipu_idmac_init(struct ipu *ipu)
+>  	return dma_async_device_register(&idmac->dma);
+>  }
+>  
+> -static void __exit ipu_idmac_exit(struct ipu *ipu)
+> +static void ipu_idmac_exit(struct ipu *ipu)
+>  {
+>  	int i;
+>  	struct idmac *idmac = &ipu->idmac;
+> -- 
+> 1.7.9.5
+> 
