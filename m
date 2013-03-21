@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809Ab3CUDVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 23:21:50 -0400
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:40843
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754806Ab3CUDVs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 23:21:48 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dh8275bhz2dh2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1b0ah1155h)
-From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>, Bob Liu <lliubbo@gmail.com>
-CC: "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 20 Mar 2013 23:21:36 -0400
-Subject: RE: [PATCH] blackfin: twi: Remove bogus #endif
-Thread-Topic: [PATCH] blackfin: twi: Remove bogus #endif
-Thread-Index: Ac4lS4ku9EDyj0hWQjajIC5xHIwnUQAl44JA
-Message-ID: <DB904C5425BA6F4E8424B3B51A1414D173FF57E18D@NWD2CMBX1.ad.analog.com>
-References: <1363770951-28158-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1363770951-28158-1-git-send-email-geert@linux-m68k.org>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+	id S1756845Ab3CUDZL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 23:25:11 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46732 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151Ab3CUDZI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 23:25:08 -0400
+Date: Thu, 21 Mar 2013 12:25:01 +0900 (JST)
+Message-Id: <20130321.122501.82758179.d.hatayama@jp.fujitsu.com>
+To: ebiederm@xmission.com
+Cc: vgoyal@redhat.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
+        lisa.mitchell@hp.com, heiko.carstens@de.ibm.com,
+        akpm@linux-foundation.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
+Subject: Re: [PATCH v3 18/21] vmcore: check if vmcore objects satify
+ mmap()'s page-size boundary requirement
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+In-Reply-To: <87txo5bxk4.fsf@xmission.com>
+References: <877gl3koay.fsf@xmission.com>
+	<20130320135716.GE17274@redhat.com>
+	<87txo5bxk4.fsf@xmission.com>
+X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Sonic Zhang<sonic.zhang@analog.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH v3 18/21] vmcore: check if vmcore objects satify mmap()'s page-size boundary requirement
+Date: Wed, 20 Mar 2013 13:55:55 -0700
 
->-----Original Message-----
->From: Geert Uytterhoeven [mailto:geert@linux-m68k.org]
->Sent: Wednesday, March 20, 2013 5:16 PM
->To: Zhang, Sonic; Bob Liu
->Cc: uclinux-dist-devel@blackfin.uclinux.org; linux-kernel@vger.kernel.org; Geert
->Uytterhoeven
->Subject: [PATCH] blackfin: twi: Remove bogus #endif
->
->arch/blackfin/mach-bf538/boards/ezkit.c:768:2: error: #endif without #if
->
->Introduced by commit cf93feb3a0dee97c7896016a352a3226139fbcf4 ("blackfin:
->twi: Move TWI peripheral pin request array to platform data"), which removed the
->#if, but forgot about the #endif.
->
->Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->---
->http://kisskb.ellerman.id.au/kisskb/buildresult/8427477/
->
-> arch/blackfin/mach-bf538/boards/ezkit.c |    1 -
-> 1 files changed, 0 insertions(+), 1 deletions(-)
->
->diff --git a/arch/blackfin/mach-bf538/boards/ezkit.c b/arch/blackfin/mach-
->bf538/boards/ezkit.c
->index a4fce03..755f0dc 100644
->--- a/arch/blackfin/mach-bf538/boards/ezkit.c
->+++ b/arch/blackfin/mach-bf538/boards/ezkit.c
->@@ -764,7 +764,6 @@ static struct platform_device i2c_bfin_twi1_device = {
->       .num_resources = ARRAY_SIZE(bfin_twi1_resource),
->       .resource = bfin_twi1_resource,
-> };
->-#endif        /* CONFIG_BF542 */
-> #endif        /* CONFIG_I2C_BLACKFIN_TWI */
->
-> #if defined(CONFIG_KEYBOARD_GPIO) ||
->defined(CONFIG_KEYBOARD_GPIO_MODULE)
->--
->1.7.0.4
->
+> Vivek Goyal <vgoyal@redhat.com> writes:
+> 
+>> On Tue, Mar 19, 2013 at 03:38:45PM -0700, Eric W. Biederman wrote:
+>>> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
+>>> 
+>>> > If there's some vmcore object that doesn't satisfy page-size boundary
+>>> > requirement, remap_pfn_range() fails to remap it to user-space.
+>>> >
+>>> > Objects that posisbly don't satisfy the requirement are ELF note
+>>> > segments only. The memory chunks corresponding to PT_LOAD entries are
+>>> > guaranteed to satisfy page-size boundary requirement by the copy from
+>>> > old memory to buffer in 2nd kernel done in later patch.
+>>> >
+>>> > This patch doesn't copy each note segment into the 2nd kernel since
+>>> > they amount to so large in total if there are multiple CPUs. For
+>>> > example, current maximum number of CPUs in x86_64 is 5120, where note
+>>> > segments exceed 1MB with NT_PRSTATUS only.
+>>> 
+>>> So you require the first kernel to reserve an additional 20MB, instead
+>>> of just 1.6MB.  336 bytes versus 4096 bytes.
+>>> 
+>>> That seems like completely the wrong tradeoff in memory consumption,
+>>> filesize, and backwards compatibility.
+>>
+>> Agreed. 
+>>
+>> So we already copy ELF headers in second kernel's memory. If we start
+>> copying notes too, then both headers and notes will support mmap().
+> 
+> The only real is it could be a bit tricky to allocate all of the memory
+> for the notes section on high cpu count systems in a single allocation.
+> 
 
+Do you mean it's getting difficult on many-cpus machine to get free
+pages consequtive enough to be able to cover all the notes?
+
+If so, is it necessary to think about any care to it in the next
+patch? Or, should it be pending for now?
+
+>> For mmap() of memory regions which are not page aligned, we can map
+>> extra bytes (as you suggested in one of the mails). Given the fact
+>> that we have one ELF header for every memory range, we can always modify
+>> the file offset where phdr data is starting to make space for mapping
+>> of extra bytes.
+> 
+> Agreed ELF file offset % PAGE_SIZE should == physical address % PAGE_SIZE to
+> make mmap work.
+> 
+
+OK, your conclusion is the 1st version is better than the 2nd.
+
+The purpose of this design was not to export anything but dump target
+memory to user-space from /proc/vmcore. I think it better to do it if
+possible. it's possible for read interface to fill the corresponding
+part with 0. But it's impossible for mmap interface to data on modify
+old memory.
+
+Do you agree two vmcores seen from read and mmap interfaces are no
+longer coincide?
+
+Thanks.
+HATAYAMA, Daisuke
 
