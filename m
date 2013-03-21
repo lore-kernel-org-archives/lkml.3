@@ -1,47 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab3CUHoO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 03:44:14 -0400
-Received: from gate.crashing.org ([63.228.1.57]:51968 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752151Ab3CUHoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 03:44:13 -0400
-Message-ID: <1363851836.17680.20.camel@pasglop>
-Subject: Re: [PATCH 2/2] of: remove /proc/device-tree
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Thu, 21 Mar 2013 08:43:56 +0100
-In-Reply-To: <CACxGe6sXcg51VhFujsjCsMzF80pdy_QhAposdmya4-C0eEcuUw@mail.gmail.com>
-References: <1363791074-16415-1-git-send-email-grant.likely@secretlab.ca>
-	 <1363791074-16415-3-git-send-email-grant.likely@secretlab.ca>
-	 <1363791479.12701.9.camel@pasglop>
-	 <CACxGe6u2wNbPQSOPRCRO0To5UC-b8rXYanv2xv26hk5oaozvPA@mail.gmail.com>
-	 <1363839594.17680.19.camel@pasglop>
-	 <CACxGe6sXcg51VhFujsjCsMzF80pdy_QhAposdmya4-C0eEcuUw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932986Ab3CUHs7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 03:48:59 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:47748 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932142Ab3CUHs6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 03:48:58 -0400
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Paul Mackerras <paulus@samba.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: [PATCH] iommu: add a function to find an iommu group by id
+Date: Thu, 21 Mar 2013 18:48:42 +1100
+Message-Id: <1363852122-17974-1-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-21 at 07:35 +0000, Grant Likely wrote:
-> > Shouldn't we have the symlink just be a config option itself ?
-> > Eventually distros might want get rid of it completely ..
-> 
-> Why? It is the cheapest thing in the world and it means the ABI
-> doesn't change at all.
+As IOMMU groups are exposed to the user space by their numbers,
+the user space can use them in various kernel APIs so the kernel
+might need an API to find a group by its ID.
 
-It's also gross and forces sysfs to remain in /sys which isn't a kernel
-enforced policy afaik.
+As an example, QEMU VFIO on PPC64 platform needs it to associate
+a logical bus number (LIOBN) with a specific IOMMU group in order
+to support in-kernel handling of DMA map/unmap requests.
 
-Cheers,
-Ben.
+The patch adds the iommu_group_find(id) function which performs
+such search.
 
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+---
+ drivers/iommu/iommu.c |   26 ++++++++++++++++++++++++++
+ include/linux/iommu.h |    1 +
+ 2 files changed, 27 insertions(+)
+
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index b0afd3d..6340cac 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -205,6 +205,32 @@ printk("%s %u grp %d\n", __func__, __LINE__, iommu_group_id(group));
+ }
+ EXPORT_SYMBOL_GPL(iommu_group_alloc);
+ 
++struct iommu_group *iommu_group_find(int id)
++{
++	struct kobject *group_kobj;
++	struct iommu_group *grp;
++	const char *name;
++
++	if (!iommu_group_kset)
++		return NULL;
++
++	name = kasprintf(GFP_KERNEL, "%d", id);
++	if (!name)
++		return NULL;
++
++	group_kobj = kset_find_obj(iommu_group_kset, name);
++	kfree(name);
++
++	if (!group_kobj)
++		return NULL;
++
++	grp = container_of(group_kobj, struct iommu_group, kobj);
++	BUG_ON(grp->id != id);
++
++	return grp;
++}
++EXPORT_SYMBOL_GPL(iommu_group_find);
++
+ /**
+  * iommu_group_get_iommudata - retrieve iommu_data registered for a group
+  * @group: the group
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index f3b99e1..20281d5 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -113,6 +113,7 @@ struct iommu_ops {
+ extern int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops);
+ extern bool iommu_present(struct bus_type *bus);
+ extern struct iommu_domain *iommu_domain_alloc(struct bus_type *bus);
++extern struct iommu_group *iommu_group_find(int id);
+ extern void iommu_domain_free(struct iommu_domain *domain);
+ extern int iommu_attach_device(struct iommu_domain *domain,
+ 			       struct device *dev);
+-- 
+1.7.10.4
 
