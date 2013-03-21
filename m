@@ -1,83 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab3CUKLQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 06:11:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:12444 "EHLO mga02.intel.com"
+	id S1755673Ab3CUKMR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 06:12:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51502 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754219Ab3CUKLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 06:11:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,884,1355126400"; 
-   d="scan'208";a="305535409"
-Date: Thu, 21 Mar 2013 15:16:09 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] DMA: OF: Check properties value before running
- be32_to_cpup() on it
-Message-ID: <20130321094609.GM10326@intel.com>
-References: <0a0ef15d47393fe9d24a395c38068b871f913776.1363337257.git.viresh.kumar@linaro.org>
+	id S1752359Ab3CUKMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 06:12:15 -0400
+Date: Thu, 21 Mar 2013 10:12:11 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/10] mm: vmscan: Do not allow kswapd to scan at maximum
+ priority
+Message-ID: <20130321101210.GF1878@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-6-git-send-email-mgorman@suse.de>
+ <514A604E.40303@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <0a0ef15d47393fe9d24a395c38068b871f913776.1363337257.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <514A604E.40303@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 02:18:20PM +0530, Viresh Kumar wrote:
-> In of_dma_controller_register() routine we are calling of_get_property() as an
-> parameter to be32_to_cpup(). In case the property doesn't exist we will get a
-> crash.
+On Wed, Mar 20, 2013 at 09:20:14PM -0400, Rik van Riel wrote:
+> On 03/17/2013 09:04 AM, Mel Gorman wrote:
+> >Page reclaim at priority 0 will scan the entire LRU as priority 0 is
+> >considered to be a near OOM condition. Kswapd can reach priority 0 quite
+> >easily if it is encountering a large number of pages it cannot reclaim
+> >such as pages under writeback. When this happens, kswapd reclaims very
+> >aggressively even though there may be no real risk of allocation failure
+> >or OOM.
+> >
+> >This patch prevents kswapd reaching priority 0 and trying to reclaim
+> >the world. Direct reclaimers will still reach priority 0 in the event
+> >of an OOM situation.
+> >
+> >Signed-off-by: Mel Gorman <mgorman@suse.de>
+> >---
+> >  mm/vmscan.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> >diff --git a/mm/vmscan.c b/mm/vmscan.c
+> >index 7513bd1..af3bb6f 100644
+> >--- a/mm/vmscan.c
+> >+++ b/mm/vmscan.c
+> >@@ -2891,7 +2891,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+> >  		 */
+> >  		if (raise_priority || !this_reclaimed)
+> >  			sc.priority--;
+> >-	} while (sc.priority >= 0 &&
+> >+	} while (sc.priority >= 1 &&
+> >  		 !pgdat_balanced(pgdat, order, *classzone_idx));
+> >
+> >  out:
+> >
 > 
-> This patch changes this code to check if we got a valid property first and then
-> runs be32_to_cpup() on it.
+> If priority 0 is way way way way way too aggressive, what makes
+> priority 1 safe?
 > 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> 
-> My mails are broken, i have pushed this patch here:
-I noticed you used git send-email. Usually it will send patch properly
-independent of whatever MUA you use. So I have the patch and its applied now :)
 
---
-~Vinod 
+The fact that priority 1 selects a sensible number of pages to reclaim and
+obeys swappiness makes it a lot safer. Priority 0 does this in get_scan_count
+
+        /*
+         * Do not apply any pressure balancing cleverness when the
+         * system is close to OOM, scan both anon and file equally
+         * (unless the swappiness setting disagrees with swapping).
+         */
+        if (!sc->priority && vmscan_swappiness(sc)) {
+                scan_balance = SCAN_EQUAL;
+                goto out;
+        }
+
+.....
+
+                size = get_lru_size(lruvec, lru);
+                scan = size >> sc->priority;
+
+                if (!scan && force_scan)
+                        scan = min(size, SWAP_CLUSTER_MAX);
+
+                switch (scan_balance) {
+                case SCAN_EQUAL:
+                        /* Scan lists relative to size */
+                        break;
+
+.....
+		}
+		nr[lru] = scan;
+
+That is saying -- at priority 0, scan everything in all LRUs. When put in
+combination with patch 2 it effectively means reclaim everything in all LRUs.
+It reclaims every file page it can and swaps as much as possible resulting
+in major slowdowns.
+
+> This makes me wonder, are the priorities useful at all to kswapd?
 > 
-> http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/dma-of-fix
-> 
->  drivers/dma/of-dma.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
-> index 69d04d2..09c7ad1 100644
-> --- a/drivers/dma/of-dma.c
-> +++ b/drivers/dma/of-dma.c
-> @@ -93,6 +93,7 @@ int of_dma_controller_register(struct device_node *np,
->  {
->  	struct of_dma	*ofdma;
->  	int		nbcells;
-> +	const __be32	*prop;
->  
->  	if (!np || !of_dma_xlate) {
->  		pr_err("%s: not enough information provided\n", __func__);
-> @@ -103,8 +104,11 @@ int of_dma_controller_register(struct device_node *np,
->  	if (!ofdma)
->  		return -ENOMEM;
->  
-> -	nbcells = be32_to_cpup(of_get_property(np, "#dma-cells", NULL));
-> -	if (!nbcells) {
-> +	prop = of_get_property(np, "#dma-cells", NULL);
-> +	if (prop)
-> +		nbcells = be32_to_cpup(prop);
-> +
-> +	if (!prop || !nbcells) {
->  		pr_err("%s: #dma-cells property is missing or invalid\n",
->  		       __func__);
->  		kfree(ofdma);
-> -- 
-> 1.7.12.rc2.18.g61b472e
-> 
-> 
+
+They are not as useful as I'd like. Just a streaming writer will be
+enough to ensure that the lower priorities will never reclaim enough
+pages to move the zone from the min to high watermark making the low
+priorities almost completely useless.
+
+-- 
+Mel Gorman
+SUSE Labs
