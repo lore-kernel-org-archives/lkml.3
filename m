@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933714Ab3CUQAM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:00:12 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:58111 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756020Ab3CUQAF (ORCPT
+	id S933821Ab3CUQM6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:12:58 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:54624 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933664Ab3CUQAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:00:05 -0400
+	Thu, 21 Mar 2013 12:00:11 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         broonie@opensource.wolfsonmicro.com
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 03/46] regulator: ab8500: Added get_optimum_mode on regulators with idle mode
-Date: Thu, 21 Mar 2013 15:59:00 +0000
-Message-Id: <1363881583-15234-4-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 06/46] regulator: ab8500: Separate regulator and MFD platform data
+Date: Thu, 21 Mar 2013 15:59:03 +0000
+Message-Id: <1363881583-15234-7-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
 References: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
@@ -25,291 +25,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 
-With this change, Vtvout, Vintcore12, Vaux1, 2 and 3 regulators
-support DRMS (Dynamic Regulator Mode Switching) which will
-dynamically handle requests for max current consumption from
-several consumers and select a suitable regulator mode.
+The ab8500 MFD should not have knowledge about regulator-
+specific platform data like number of regulators and
+regulator registers. As the regulator platform data is
+about to grow with external regulators, this information
+is moved to a new structure provided by the regulator
+driver.
 
 Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Reviewed-by: Mattias WALLIN <mattias.wallin@stericsson.com>
+Reviewed-by: Yvan FILLION <yvan.fillion@stericsson.com>
 ---
- drivers/regulator/ab8500.c |  111 ++++++++++++++++++++++++++++++++++----------
- 1 file changed, 86 insertions(+), 25 deletions(-)
+ arch/arm/mach-ux500/board-mop500-regulators.c |   12 +++++++++---
+ arch/arm/mach-ux500/board-mop500-regulators.h |    4 +---
+ drivers/regulator/ab8500.c                    |   21 +++++++++++++++------
+ include/linux/regulator/ab8500.h              |    7 +++++++
+ 4 files changed, 32 insertions(+), 12 deletions(-)
 
+diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
+index a8141e3..0fd84d4 100644
+--- a/arch/arm/mach-ux500/board-mop500-regulators.c
++++ b/arch/arm/mach-ux500/board-mop500-regulators.c
+@@ -122,8 +122,7 @@ static struct regulator_consumer_supply ab8500_vana_consumers[] = {
+ };
+ 
+ /* ab8500 regulator register initialization */
+-struct ab8500_regulator_reg_init
+-ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
++static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
+ 	/*
+ 	 * VanaRequestCtrl          = HP/LP depending on VxRequest
+ 	 * VpllRequestCtrl          = HP/LP depending on VxRequest
+@@ -314,7 +313,7 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
+ };
+ 
+ /* AB8500 regulators */
+-struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
++static struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
+ 	/* supplies to the display/camera */
+ 	[AB8500_LDO_AUX1] = {
+ 		.constraints = {
+@@ -423,3 +422,10 @@ struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
+ 		.consumer_supplies = ab8500_vana_consumers,
+ 	},
+ };
++
++struct ab8500_regulator_platform_data ab8500_regulator_plat_data = {
++	.reg_init               = ab8500_reg_init,
++	.num_reg_init           = ARRAY_SIZE(ab8500_reg_init),
++	.regulator              = ab8500_regulators,
++	.num_regulator          = ARRAY_SIZE(ab8500_regulators),
++};
+diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
+index 78a0642..9ca4869 100644
+--- a/arch/arm/mach-ux500/board-mop500-regulators.h
++++ b/arch/arm/mach-ux500/board-mop500-regulators.h
+@@ -14,9 +14,7 @@
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/ab8500.h>
+ 
+-extern struct ab8500_regulator_reg_init
+-ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS];
+-extern struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS];
++extern struct ab8500_regulator_platform_data ab8500_regulator_plat_data;
+ extern struct regulator_init_data tps61052_regulator;
+ extern struct regulator_init_data gpio_en_3v3_regulator;
+ 
 diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 283d9a5..3465ac3 100644
+index c7784c4..f7d1f53 100644
 --- a/drivers/regulator/ab8500.c
 +++ b/drivers/regulator/ab8500.c
-@@ -31,6 +31,7 @@
-  * @desc: regulator description
-  * @regulator_dev: regulator device
-  * @is_enabled: status of regulator (on/off)
-+ * @load_lp_uA: maximum load in idle (low power) mode
-  * @update_bank: bank to control on/off
-  * @update_reg: register to control on/off
-  * @update_mask: mask to enable/disable and set mode of regulator
-@@ -48,6 +49,7 @@ struct ab8500_regulator_info {
- 	struct regulator_desc	desc;
- 	struct regulator_dev	*regulator;
- 	bool is_enabled;
-+	int load_lp_uA;
- 	u8 update_bank;
- 	u8 update_reg;
- 	u8 update_mask;
-@@ -156,6 +158,27 @@ static int ab8500_regulator_disable(struct regulator_dev *rdev)
- 	return ret;
- }
+@@ -939,8 +939,9 @@ ab8500_regulator_of_probe(struct platform_device *pdev, struct device_node *np)
+ static int ab8500_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
+-	struct ab8500_platform_data *pdata;
+ 	struct device_node *np = pdev->dev.of_node;
++	struct ab8500_platform_data *ppdata;
++	struct ab8500_regulator_platform_data *pdata;
+ 	int i, err;
  
-+static unsigned int ab8500_regulator_get_optimum_mode(
-+		struct regulator_dev *rdev, int input_uV,
-+		int output_uV, int load_uA)
-+{
-+	unsigned int mode;
+ 	if (np) {
+@@ -961,7 +962,14 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "null mfd parent\n");
+ 		return -EINVAL;
+ 	}
+-	pdata = dev_get_platdata(ab8500->dev);
 +
-+	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
-+
-+	if (info == NULL) {
-+		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
++	ppdata = dev_get_platdata(ab8500->dev);
++	if (!ppdata) {
++		dev_err(&pdev->dev, "null parent pdata\n");
 +		return -EINVAL;
 +	}
 +
-+	if (load_uA <= info->load_lp_uA)
-+		mode = REGULATOR_MODE_IDLE;
-+	else
-+		mode = REGULATOR_MODE_NORMAL;
-+
-+	return mode;
-+}
-+
- static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
- 				     unsigned int mode)
- {
-@@ -186,6 +209,12 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
- 		if (ret < 0)
- 			dev_err(rdev_get_dev(rdev),
- 				"couldn't set regulator mode\n");
-+
-+		dev_vdbg(rdev_get_dev(rdev),
-+			"%s-set_mode (bank, reg, mask, value): "
-+			"0x%x, 0x%x, 0x%x, 0x%x\n",
-+			info->desc.name, info->update_bank, info->update_reg,
-+			info->update_mask, info->update_val);
++	pdata = ppdata->regulator;
+ 	if (!pdata) {
+ 		dev_err(&pdev->dev, "null pdata\n");
+ 		return -EINVAL;
+@@ -974,12 +982,12 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
  	}
  
- 	return ret;
-@@ -313,23 +342,37 @@ static int ab8500_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
- 	return info->delay;
- }
+ 	/* initialize registers */
+-	for (i = 0; i < pdata->num_regulator_reg_init; i++) {
++	for (i = 0; i < pdata->num_reg_init; i++) {
+ 		int id, mask, value;
  
--static struct regulator_ops ab8500_regulator_ops = {
--	.enable		= ab8500_regulator_enable,
--	.disable	= ab8500_regulator_disable,
--	.set_mode	= ab8500_regulator_set_mode,
--	.get_mode	= ab8500_regulator_get_mode,
--	.is_enabled	= ab8500_regulator_is_enabled,
--	.get_voltage_sel = ab8500_regulator_get_voltage_sel,
--	.set_voltage_sel = ab8500_regulator_set_voltage_sel,
--	.list_voltage	= regulator_list_voltage_table,
--	.set_voltage_time_sel = ab8500_regulator_set_voltage_time_sel,
-+static struct regulator_ops ab8500_regulator_volt_mode_ops = {
-+	.enable			= ab8500_regulator_enable,
-+	.disable		= ab8500_regulator_disable,
-+	.is_enabled		= ab8500_regulator_is_enabled,
-+	.get_optimum_mode	= ab8500_regulator_get_optimum_mode,
-+	.set_mode		= ab8500_regulator_set_mode,
-+	.get_mode		= ab8500_regulator_get_mode,
-+	.get_voltage_sel 	= ab8500_regulator_get_voltage_sel,
-+	.set_voltage_sel	= ab8500_regulator_set_voltage_sel,
-+	.list_voltage		= regulator_list_voltage_table,
-+	.set_voltage_time_sel	= ab8500_regulator_set_voltage_time_sel,
+-		id = pdata->regulator_reg_init[i].id;
+-		mask = pdata->regulator_reg_init[i].mask;
+-		value = pdata->regulator_reg_init[i].value;
++		id = pdata->reg_init[i].id;
++		mask = pdata->reg_init[i].mask;
++		value = pdata->reg_init[i].value;
+ 
+ 		/* check for configuration errors */
+ 		BUG_ON(id >= AB8500_NUM_REGULATOR_REGISTERS);
+@@ -1045,5 +1053,6 @@ module_exit(ab8500_regulator_exit);
+ 
+ MODULE_LICENSE("GPL v2");
+ MODULE_AUTHOR("Sundar Iyer <sundar.iyer@stericsson.com>");
++MODULE_AUTHOR("Bengt Jonsson <bengt.g.jonsson@stericsson.com>");
+ MODULE_DESCRIPTION("Regulator Driver for ST-Ericsson AB8500 Mixed-Sig PMIC");
+ MODULE_ALIAS("platform:ab8500-regulator");
+diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
+index dd7944f..3a8e026 100644
+--- a/include/linux/regulator/ab8500.h
++++ b/include/linux/regulator/ab8500.h
+@@ -152,4 +152,11 @@ enum ab9540_regulator_reg {
+ 	AB9540_NUM_REGULATOR_REGISTERS,
  };
  
--static struct regulator_ops ab8500_regulator_fixed_ops = {
--	.enable		= ab8500_regulator_enable,
--	.disable	= ab8500_regulator_disable,
--	.is_enabled	= ab8500_regulator_is_enabled,
--	.list_voltage	= regulator_list_voltage_linear,
-+static struct regulator_ops ab8500_regulator_mode_ops = {
-+	.enable			= ab8500_regulator_enable,
-+	.disable		= ab8500_regulator_disable,
-+	.is_enabled		= ab8500_regulator_is_enabled,
-+	.get_optimum_mode	= ab8500_regulator_get_optimum_mode,
-+	.set_mode		= ab8500_regulator_set_mode,
-+	.get_mode		= ab8500_regulator_get_mode,
-+	.get_voltage_sel 	= ab8500_regulator_get_voltage_sel,
-+	.list_voltage		= regulator_list_voltage_table,
-+	.set_voltage_time_sel	= ab8500_regulator_set_voltage_time_sel,
++struct ab8500_regulator_platform_data {
++	int num_reg_init;
++	struct ab8500_regulator_reg_init *reg_init;
++	int num_regulator;
++	struct regulator_init_data *regulator;
 +};
 +
-+static struct regulator_ops ab8500_regulator_ops = {
-+	.enable			= ab8500_regulator_enable,
-+	.disable		= ab8500_regulator_disable,
-+	.is_enabled		= ab8500_regulator_is_enabled,
-+	.get_voltage_sel 	= ab8500_regulator_get_voltage_sel,
-+	.list_voltage		= regulator_list_voltage_table,
- };
- 
- static struct ab8500_regulator_info
-@@ -343,13 +386,14 @@ static struct ab8500_regulator_info
- 	[AB8500_LDO_AUX1] = {
- 		.desc = {
- 			.name		= "LDO-AUX1",
--			.ops		= &ab8500_regulator_ops,
-+			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
- 			.id		= AB8500_LDO_AUX1,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
- 			.volt_table	= ldo_vauxn_voltages,
- 		},
-+		.load_lp_uA		= 5000,
- 		.update_bank		= 0x04,
- 		.update_reg		= 0x09,
- 		.update_mask		= 0x03,
-@@ -363,13 +407,14 @@ static struct ab8500_regulator_info
- 	[AB8500_LDO_AUX2] = {
- 		.desc = {
- 			.name		= "LDO-AUX2",
--			.ops		= &ab8500_regulator_ops,
-+			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
- 			.id		= AB8500_LDO_AUX2,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
- 			.volt_table	= ldo_vauxn_voltages,
- 		},
-+		.load_lp_uA		= 5000,
- 		.update_bank		= 0x04,
- 		.update_reg		= 0x09,
- 		.update_mask		= 0x0c,
-@@ -383,13 +428,14 @@ static struct ab8500_regulator_info
- 	[AB8500_LDO_AUX3] = {
- 		.desc = {
- 			.name		= "LDO-AUX3",
--			.ops		= &ab8500_regulator_ops,
-+			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
- 			.id		= AB8500_LDO_AUX3,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vaux3_voltages),
- 			.volt_table	= ldo_vaux3_voltages,
- 		},
-+		.load_lp_uA		= 5000,
- 		.update_bank		= 0x04,
- 		.update_reg		= 0x0a,
- 		.update_mask		= 0x03,
-@@ -403,13 +449,14 @@ static struct ab8500_regulator_info
- 	[AB8500_LDO_INTCORE] = {
- 		.desc = {
- 			.name		= "LDO-INTCORE",
--			.ops		= &ab8500_regulator_ops,
-+			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
- 			.id		= AB8500_LDO_INTCORE,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vintcore_voltages),
- 			.volt_table	= ldo_vintcore_voltages,
- 		},
-+		.load_lp_uA		= 5000,
- 		.update_bank		= 0x03,
- 		.update_reg		= 0x80,
- 		.update_mask		= 0x44,
-@@ -430,7 +477,7 @@ static struct ab8500_regulator_info
- 	[AB8500_LDO_TVOUT] = {
- 		.desc = {
- 			.name		= "LDO-TVOUT",
--			.ops		= &ab8500_regulator_fixed_ops,
-+			.ops		= &ab8500_regulator_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
- 			.id		= AB8500_LDO_TVOUT,
- 			.owner		= THIS_MODULE,
-@@ -439,10 +486,13 @@ static struct ab8500_regulator_info
- 			.enable_time	= 10000,
- 		},
- 		.delay			= 10000,
-+		.load_lp_uA		= 1000,
- 		.update_bank		= 0x03,
- 		.update_reg		= 0x80,
- 		.update_mask		= 0x82,
- 		.update_val		= 0x02,
-+		.update_val_idle	= 0x82,
-+		.update_val_normal	= 0x02,
- 	},
- 	[AB8500_LDO_USB] = {
- 		.desc = {
-@@ -458,10 +508,14 @@ static struct ab8500_regulator_info
- 		.update_reg             = 0x82,
- 		.update_mask            = 0x03,
- 	},
-+
-+	/*
-+	 * Regulators with fixed voltage and normal mode
-+	 */
- 	[AB8500_LDO_AUDIO] = {
- 		.desc = {
- 			.name		= "LDO-AUDIO",
--			.ops		= &ab8500_regulator_fixed_ops,
-+			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
- 			.id		= AB8500_LDO_AUDIO,
- 			.owner		= THIS_MODULE,
-@@ -476,7 +530,7 @@ static struct ab8500_regulator_info
- 	[AB8500_LDO_ANAMIC1] = {
- 		.desc = {
- 			.name		= "LDO-ANAMIC1",
--			.ops		= &ab8500_regulator_fixed_ops,
-+			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
- 			.id		= AB8500_LDO_ANAMIC1,
- 			.owner		= THIS_MODULE,
-@@ -491,7 +545,7 @@ static struct ab8500_regulator_info
- 	[AB8500_LDO_ANAMIC2] = {
- 		.desc = {
- 			.name		= "LDO-ANAMIC2",
--			.ops		= &ab8500_regulator_fixed_ops,
-+			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
- 			.id		= AB8500_LDO_ANAMIC2,
- 			.owner		= THIS_MODULE,
-@@ -506,7 +560,7 @@ static struct ab8500_regulator_info
- 	[AB8500_LDO_DMIC] = {
- 		.desc = {
- 			.name		= "LDO-DMIC",
--			.ops		= &ab8500_regulator_fixed_ops,
-+			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
- 			.id		= AB8500_LDO_DMIC,
- 			.owner		= THIS_MODULE,
-@@ -518,20 +572,27 @@ static struct ab8500_regulator_info
- 		.update_mask		= 0x04,
- 		.update_val		= 0x04,
- 	},
-+
-+	/*
-+	 * Regulators with fixed voltage and normal/idle modes
-+	 */
- 	[AB8500_LDO_ANA] = {
- 		.desc = {
- 			.name		= "LDO-ANA",
--			.ops		= &ab8500_regulator_fixed_ops,
-+			.ops		= &ab8500_regulator_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
- 			.id		= AB8500_LDO_ANA,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.min_uV		= 1200000,
- 		},
-+		.load_lp_uA		= 1000,
- 		.update_bank		= 0x04,
- 		.update_reg		= 0x06,
- 		.update_mask		= 0x0c,
- 		.update_val		= 0x04,
-+		.update_val_idle	= 0x0c,
-+		.update_val_normal	= 0x04,
- 	},
- 
- 
+ #endif
 -- 
 1.7.10.4
 
