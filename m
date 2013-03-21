@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934213Ab3CUQgL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:36:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61105 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933869Ab3CUQgI (ORCPT
+	id S934286Ab3CUQgY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:36:24 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:56767 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934234Ab3CUQgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:36:08 -0400
+	Thu, 21 Mar 2013 12:36:18 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         akpm@linux-foundation.org
-Cc: Zach Brown <zab@redhat.com>, Kent Overstreet <koverstreet@google.com>,
+Cc: Kent Overstreet <koverstreet@google.com>, Zach Brown <zab@redhat.com>,
         Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
@@ -19,9 +19,9 @@ Cc: Zach Brown <zab@redhat.com>, Kent Overstreet <koverstreet@google.com>,
         Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
         Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
         Benjamin LaHaise <bcrl@kvack.org>, "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH 03/33] gadget: remove only user of aio retry
-Date: Thu, 21 Mar 2013 09:35:24 -0700
-Message-Id: <1363883754-27966-4-git-send-email-koverstreet@google.com>
+Subject: [PATCH 10/33] aio: do fget() after aio_get_req()
+Date: Thu, 21 Mar 2013 09:35:31 -0700
+Message-Id: <1363883754-27966-11-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1363883754-27966-1-git-send-email-koverstreet@google.com>
 References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
@@ -29,20 +29,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@redhat.com>
+aio_get_req() will fail if we have the maximum number of requests
+outstanding, which depending on the application may not be uncommon.  So
+avoid doing an unnecessary fget().
 
-This removes the only in-tree user of aio retry.  This will let us remove
-the retry code from the aio core.
-
-Removing retry is relatively easy as the USB gadget wasn't using it to
-retry IOs at all.  It always fully submitted the IO in the context of the
-initial io_submit() call.  It only used the AIO retry facility to get the
-submitter's mm context for copying the result of a read back to user
-space.  This is easy to implement with use_mm() and a work struct, much
-like kvm does with async_pf_execute() for get_user_pages().
-
-Signed-off-by: Zach Brown <zab@redhat.com>
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
+Cc: Zach Brown <zab@redhat.com>
 Cc: Felipe Balbi <balbi@ti.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Mark Fasheh <mfasheh@suse.com>
@@ -58,129 +50,73 @@ Cc: Benjamin LaHaise <bcrl@kvack.org>
 Cc: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/usb/gadget/inode.c | 38 +++++++++++++++++++++++++++++---------
- 1 file changed, 29 insertions(+), 9 deletions(-)
+ fs/aio.c | 22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-index e2b2e9c..a1aad43 100644
---- a/drivers/usb/gadget/inode.c
-+++ b/drivers/usb/gadget/inode.c
-@@ -24,6 +24,7 @@
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/poll.h>
-+#include <linux/mmu_context.h>
- 
- #include <linux/device.h>
- #include <linux/moduleparam.h>
-@@ -513,6 +514,9 @@ static long ep_ioctl(struct file *fd, unsigned code, unsigned long value)
- struct kiocb_priv {
- 	struct usb_request	*req;
- 	struct ep_data		*epdata;
-+	struct kiocb 		*iocb;
-+	struct mm_struct 	*mm;
-+	struct work_struct	work;
- 	void			*buf;
- 	const struct iovec	*iv;
- 	unsigned long		nr_segs;
-@@ -540,15 +544,12 @@ static int ep_aio_cancel(struct kiocb *iocb, struct io_event *e)
- 	return value;
- }
- 
--static ssize_t ep_aio_read_retry(struct kiocb *iocb)
-+static ssize_t ep_copy_to_user(struct kiocb_priv *priv)
+diff --git a/fs/aio.c b/fs/aio.c
+index 2637555..4f23d43 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -587,6 +587,8 @@ static inline void really_put_req(struct kioctx *ctx, struct kiocb *req)
  {
--	struct kiocb_priv	*priv = iocb->private;
- 	ssize_t			len, total;
- 	void			*to_copy;
- 	int			i;
+ 	assert_spin_locked(&ctx->ctx_lock);
  
--	/* we "retry" to get the right mm context for this: */
++	if (req->ki_filp)
++		fput(req->ki_filp);
+ 	if (req->ki_eventfd != NULL)
+ 		eventfd_ctx_put(req->ki_eventfd);
+ 	if (req->ki_dtor)
+@@ -605,9 +607,6 @@ static inline void really_put_req(struct kioctx *ctx, struct kiocb *req)
+  */
+ static void __aio_put_req(struct kioctx *ctx, struct kiocb *req)
+ {
+-	pr_debug("(%p): f_count=%ld\n",
+-		 req, atomic_long_read(&req->ki_filp->f_count));
 -
- 	/* copy stuff into user buffers */
- 	total = priv->actual;
- 	len = 0;
-@@ -568,9 +569,26 @@ static ssize_t ep_aio_read_retry(struct kiocb *iocb)
- 		if (total == 0)
- 			break;
- 	}
-+
-+	return len;
-+}
-+
-+static void ep_user_copy_worker(struct work_struct *work)
-+{
-+	struct kiocb_priv *priv = container_of(work, struct kiocb_priv, work);
-+	struct mm_struct *mm = priv->mm;
-+	struct kiocb *iocb = priv->iocb;
-+	size_t ret;
-+
-+	use_mm(mm);
-+	ret = ep_copy_to_user(priv);
-+	unuse_mm(mm);
-+
-+	/* completing the iocb can drop the ctx and mm, don't touch mm after */
-+	aio_complete(iocb, ret, ret);
-+
- 	kfree(priv->buf);
- 	kfree(priv);
--	return len;
+ 	assert_spin_locked(&ctx->ctx_lock);
+ 
+ 	req->ki_users--;
+@@ -618,8 +617,6 @@ static void __aio_put_req(struct kioctx *ctx, struct kiocb *req)
+ 	req->ki_cancel = NULL;
+ 	req->ki_retry = NULL;
+ 
+-	fput(req->ki_filp);
+-	req->ki_filp = NULL;
+ 	really_put_req(ctx, req);
  }
  
- static void ep_aio_complete(struct usb_ep *ep, struct usb_request *req)
-@@ -596,14 +614,14 @@ static void ep_aio_complete(struct usb_ep *ep, struct usb_request *req)
- 		aio_complete(iocb, req->actual ? req->actual : req->status,
- 				req->status);
- 	} else {
--		/* retry() won't report both; so we hide some faults */
-+		/* ep_copy_to_user() won't report both; we hide some faults */
- 		if (unlikely(0 != req->status))
- 			DBG(epdata->dev, "%s fault %d len %d\n",
- 				ep->name, req->status, req->actual);
+@@ -1266,7 +1263,6 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 			 bool compat)
+ {
+ 	struct kiocb *req;
+-	struct file *file;
+ 	ssize_t ret;
  
- 		priv->buf = req->buf;
- 		priv->actual = req->actual;
--		kick_iocb(iocb);
-+		schedule_work(&priv->work);
+ 	/* enforce forwards compatibility on users */
+@@ -1285,16 +1281,16 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 		return -EINVAL;
  	}
- 	spin_unlock(&epdata->dev->lock);
  
-@@ -633,8 +651,10 @@ fail:
- 		return value;
+-	file = fget(iocb->aio_fildes);
+-	if (unlikely(!file))
+-		return -EBADF;
+-
+ 	req = aio_get_req(ctx, batch);  /* returns with 2 references to req */
+-	if (unlikely(!req)) {
+-		fput(file);
++	if (unlikely(!req))
+ 		return -EAGAIN;
++
++	req->ki_filp = fget(iocb->aio_fildes);
++	if (unlikely(!req->ki_filp)) {
++		ret = -EBADF;
++		goto out_put_req;
  	}
- 	iocb->private = priv;
-+	priv->iocb = iocb;
- 	priv->iv = iv;
- 	priv->nr_segs = nr_segs;
-+	INIT_WORK(&priv->work, ep_user_copy_worker);
- 
- 	value = get_ready_ep(iocb->ki_filp->f_flags, epdata);
- 	if (unlikely(value < 0)) {
-@@ -646,6 +666,7 @@ fail:
- 	get_ep(epdata);
- 	priv->epdata = epdata;
- 	priv->actual = 0;
-+	priv->mm = current->mm; /* mm teardown waits for iocbs in exit_aio() */
- 
- 	/* each kiocb is coupled to one usb_request, but we can't
- 	 * allocate or submit those if the host disconnected.
-@@ -674,7 +695,7 @@ fail:
- 		kfree(priv);
- 		put_ep(epdata);
- 	} else
--		value = (iv ? -EIOCBRETRY : -EIOCBQUEUED);
-+		value = -EIOCBQUEUED;
- 	return value;
- }
- 
-@@ -692,7 +713,6 @@ ep_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 	if (unlikely(!buf))
- 		return -ENOMEM;
- 
--	iocb->ki_retry = ep_aio_read_retry;
- 	return ep_aio_rwtail(iocb, buf, iocb->ki_left, epdata, iov, nr_segs);
- }
- 
+-	req->ki_filp = file;
++
+ 	if (iocb->aio_flags & IOCB_FLAG_RESFD) {
+ 		/*
+ 		 * If the IOCB_FLAG_RESFD flag of aio_flags is set, get an
 -- 
 1.8.1.3
 
