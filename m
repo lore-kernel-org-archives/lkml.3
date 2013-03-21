@@ -1,57 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab3CUR5p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 13:57:45 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:56181 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751362Ab3CUR5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 13:57:43 -0400
-Date: Thu, 21 Mar 2013 11:57:32 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Roland Dreier <roland@kernel.org>,
-        "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Subject: Re: [PATCH] rdma: don't make pages writeable if not requiested
-Message-ID: <20130321175732.GA3263@obsidianresearch.com>
-References: <CAL1RGDUcMj9QVsuQgK+ozw64L6-cGehL7YBUJ1_ckni6TD=Kcg@mail.gmail.com>
- <20130321070357.GD28328@redhat.com>
- <CAG4TOxPkhOhGmzeA1K4a0Zw8HxS-QkOr-PCx7mJgA+KkuH3ZiQ@mail.gmail.com>
- <20130321085107.GE28328@redhat.com>
- <CAL1RGDVnkLZU2Vge4o3BwDxnAfGv7TQRMqE6ha3MUt39CVp5NQ@mail.gmail.com>
- <20130321093946.GG28328@redhat.com>
- <20130321171115.GA653@obsidianresearch.com>
- <20130321171525.GE2994@redhat.com>
- <20130321172150.GA3118@obsidianresearch.com>
- <20130321174237.GA4060@redhat.com>
+	id S1752007Ab3CUR6L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 13:58:11 -0400
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:44102 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab3CUR6J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 13:58:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321174237.GA4060@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+In-Reply-To: <1363820051-24428-3-git-send-email-robherring2@gmail.com>
+References: <1363820051-24428-1-git-send-email-robherring2@gmail.com>
+	<1363820051-24428-3-git-send-email-robherring2@gmail.com>
+Date: Thu, 21 Mar 2013 18:58:08 +0100
+Message-ID: <CACRpkdZLn=KjJisPTN2eHn64UuaZvpBDDhmeqQXF-TVS8VZ7pA@mail.gmail.com>
+Subject: Re: [PATCH 02/11] ARM: remove extra timer-sp control register clearing
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>, haojian.zhuang@linaro.org,
+        pawel.moll@arm.com, john.stultz@linaro.org, tglx@linutronix.de,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 07:42:37PM +0200, Michael S. Tsirkin wrote:
+On Wed, Mar 20, 2013 at 11:54 PM, Rob Herring <robherring2@gmail.com> wrote:
 
-> It doesn't actually, and our app would sometimes write to these pages.
-> It simply does not care which version does the remote get in this case
-> since we track writes and resend later.
+> From: Rob Herring <rob.herring@calxeda.com>
+>
+> The timer-sp initialization code clears the control register before
+> initializing the timers, so every platform doing this is redundant.
+>
+> For unused timers, we should not care what state they are in.
+>
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+(...)
+> diff --git a/arch/arm/mach-integrator/integrator_ap.c b/arch/arm/mach-integrator/integrator_ap.c
+> index ea96144..4cb322d 100644
+> --- a/arch/arm/mach-integrator/integrator_ap.c
+> +++ b/arch/arm/mach-integrator/integrator_ap.c
+> @@ -643,10 +643,6 @@ static void __init ap_timer_init(void)
+>         clk_prepare_enable(clk);
+>         rate = clk_get_rate(clk);
+>
+> -       writel(0, TIMER0_VA_BASE + TIMER_CTRL);
+> -       writel(0, TIMER1_VA_BASE + TIMER_CTRL);
+> -       writel(0, TIMER2_VA_BASE + TIMER_CTRL);
+> -
 
-Heh, somehow I thought you might say that :)
+As noted this is not an init function for timer-sp.c so please drop this
+hunk of the patch. Maybe this zeroing is pointless but that would
+be a separate patch that I can test.
 
-A new flag seems like the only way then - maybe:
-  IBV_ACCESS_NON_COHERENT - The adaptor and the CPU do not share
-     a coherent view of registered memory. Memory writes from the CPU
-     after ibv_reg_mr completes may not be reflected in the memory
-     viewed by the adaptor.
+> diff --git a/arch/arm/mach-integrator/integrator_cp.c b/arch/arm/mach-integrator/integrator_cp.c
+> index 2b0db82..c68e7d8 100644
+> --- a/arch/arm/mach-integrator/integrator_cp.c
+> +++ b/arch/arm/mach-integrator/integrator_cp.c
+> @@ -33,7 +33,6 @@
+>  #include <mach/platform.h>
+>  #include <asm/setup.h>
+>  #include <asm/mach-types.h>
+> -#include <asm/hardware/arm_timer.h>
 
-     Can only be combined with read only access permissions.
+What doe this change has to do with $SUBJECT?
 
-Jason
+>  #include <asm/hardware/icst.h>
+>
+>  #include <mach/cm.h>
+> @@ -267,7 +266,6 @@ static void __init cp_of_timer_init(void)
+>         base = of_iomap(node, 0);
+>         if (WARN_ON(!base))
+>                 return;
+> -       writel(0, base + TIMER_CTRL);
+>         sp804_clocksource_init(base, node->name);
+>
+>         err = of_property_read_string(of_aliases,
+> @@ -279,7 +277,6 @@ static void __init cp_of_timer_init(void)
+>         if (WARN_ON(!base))
+>                 return;
+>         irq = irq_of_parse_and_map(node, 0);
+> -       writel(0, base + TIMER_CTRL);
+>         sp804_clockevents_init(base, irq, node->name);
+>  }
+>
+> @@ -510,10 +507,6 @@ static void __init intcp_init_irq(void)
+>
+>  static void __init cp_timer_init(void)
+>  {
+> -       writel(0, TIMER0_VA_BASE + TIMER_CTRL);
+> -       writel(0, TIMER1_VA_BASE + TIMER_CTRL);
+> -       writel(0, TIMER2_VA_BASE + TIMER_CTRL);
+> -
+>         sp804_clocksource_init(TIMER2_VA_BASE, "timer2");
+>         sp804_clockevents_init(TIMER1_VA_BASE, IRQ_TIMERINT1, "timer1");
+>  }
+
+The rest of the changes to integrator_cp.c looks OK...
+
+Yours,
+Linus Walleij
