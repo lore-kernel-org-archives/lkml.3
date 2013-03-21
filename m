@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab3CUDw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 23:52:57 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33085 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab3CUDw4 (ORCPT
+	id S1756893Ab3CUDxG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 23:53:06 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:1068 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754575Ab3CUDxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 23:52:56 -0400
-Date: Thu, 21 Mar 2013 12:52:45 +0900 (JST)
-Message-Id: <20130321.125245.142520187.d.hatayama@jp.fujitsu.com>
-To: akpm@linux-foundation.org
-Cc: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
-Subject: Re: [PATCH v3 00/21] kdump, vmcore: support mmap() on /proc/vmcore
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <20130319123005.46e48e3f154acf594da5737c@linux-foundation.org>
-References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
-	<20130319123005.46e48e3f154acf594da5737c@linux-foundation.org>
-X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Mar 2013 23:53:03 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: Tony Luck <tony.luck@intel.com>, Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>,
+        Jianguo Wu <wujianguo@huawei.com>, Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH] mm/IA64: fix build error for numa_clear_node() under IA64
+Date: Thu, 21 Mar 2013 11:50:30 +0800
+Message-ID: <1363837830-41596-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v3 00/21] kdump, vmcore: support mmap() on /proc/vmcore
-Date: Tue, 19 Mar 2013 12:30:05 -0700
+numa_clear_node() function is not implemented under IA64,
+it will be called in unmap_cpu_on_node() in mm/memory_hotplug.c.
+This cause build error under IA64, this patch add numa_clear_node()
+in IA64 to fix this problem.
 
-> On Sat, 16 Mar 2013 13:00:47 +0900 HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
-> 
->> Currently, read to /proc/vmcore is done by read_oldmem() that uses
->> ioremap/iounmap per a single page. For example, if memory is 1GB,
->> ioremap/iounmap is called (1GB / 4KB)-times, that is, 262144
->> times. This causes big performance degradation.
->> 
->> In particular, the current main user of this mmap() is makedumpfile,
->> which not only reads memory from /proc/vmcore but also does other
->> processing like filtering, compression and IO work. Update of page
->> table and the following TLB flush makes such processing much slow;
->> though I have yet to make patch for makedumpfile and yet to confirm
->> how it's improved.
->> 
->> To address the issue, this patch implements mmap() on /proc/vmcore to
->> improve read performance. My simple benchmark shows the improvement
->> from 200 [MiB/sec] to over 50.0 [GiB/sec].
-> 
-> There are quite a lot of userspace-visible vmcore changes here.  Is it
-> all fully back-compatible?  Will all known userspace continue to work
-> OK on newer kernels?
-> 
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ arch/ia64/include/asm/numa.h |    5 ++---
+ arch/ia64/mm/numa.c          |    5 +++++
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-I designed it to keep backward-compatibility at least for gdb and
-binutils but not less for makedumpfile since it should follow kernel
-changes; old makedumpfile cannot use newer kernels, and this is within
-the range of this review.
+diff --git a/arch/ia64/include/asm/numa.h b/arch/ia64/include/asm/numa.h
+index 2e27ef1..2db0a6c 100644
+--- a/arch/ia64/include/asm/numa.h
++++ b/arch/ia64/include/asm/numa.h
+@@ -67,14 +67,13 @@ extern int paddr_to_nid(unsigned long paddr);
+ 
+ extern void map_cpu_to_node(int cpu, int nid);
+ extern void unmap_cpu_from_node(int cpu, int nid);
+-
++extern void numa_clear_node(int cpu);
+ 
+ #else /* !CONFIG_NUMA */
+ #define map_cpu_to_node(cpu, nid)	do{}while(0)
+ #define unmap_cpu_from_node(cpu, nid)	do{}while(0)
+-
+ #define paddr_to_nid(addr)	0
+-
++#define numa_clear_node(cpu)	do { } while (0)
+ #endif /* CONFIG_NUMA */
+ 
+ #endif /* _ASM_IA64_NUMA_H */
+diff --git a/arch/ia64/mm/numa.c b/arch/ia64/mm/numa.c
+index 3efea7d..9488922 100644
+--- a/arch/ia64/mm/numa.c
++++ b/arch/ia64/mm/numa.c
+@@ -73,6 +73,11 @@ int __meminit __early_pfn_to_nid(unsigned long pfn)
+ 	return -1;
+ }
+ 
++void numa_clear_node(int cpu)
++{
++	unmap_cpu_from_node(cpu, NUMA_NO_NODE);
++}
++
+ #ifdef CONFIG_MEMORY_HOTPLUG
+ /*
+  *  SRAT information is stored in node_memblk[], then we can use SRAT
+-- 
+1.7.1
 
-Thanks.
-HATAYAMA, Daisuke
 
