@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934496Ab3CUQnH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:43:07 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:41986 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934262Ab3CUQnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:43:01 -0400
-Date: Thu, 21 Mar 2013 18:42:04 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kent Overstreet <koverstreet@google.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-aio@kvack.org>,
-        <akpm@linux-foundation.org>, Zach Brown <zab@redhat.com>,
+	id S934309Ab3CUQnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:43:25 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:32858 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934269Ab3CUQnV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 12:43:21 -0400
+X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Mar 2013 12:43:20 EDT
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org
+Cc: Kent Overstreet <koverstreet@google.com>, Zach Brown <zab@redhat.com>,
         Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
@@ -18,218 +19,161 @@ CC: <linux-kernel@vger.kernel.org>, <linux-aio@kvack.org>,
         Asai Thambi S P <asamymuthupa@micron.com>,
         Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
         Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 03/33] gadget: remove only user of aio retry
-Message-ID: <20130321164203.GC15740@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
+        Benjamin LaHaise <bcrl@kvack.org>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: [PATCH 07/33] aio: add kiocb_cancel()
+Date: Thu, 21 Mar 2013 09:35:28 -0700
+Message-Id: <1363883754-27966-8-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1363883754-27966-1-git-send-email-koverstreet@google.com>
 References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
- <1363883754-27966-4-git-send-email-koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vEao7xgI/oilGqZ+"
-Content-Disposition: inline
-In-Reply-To: <1363883754-27966-4-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---vEao7xgI/oilGqZ+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Minor refactoring, to get rid of some duplicated code
 
-Hi,
+[akpm@linux-foundation.org: fix warning]
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+Cc: Zach Brown <zab@redhat.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Asai Thambi S P <asamymuthupa@micron.com>
+Cc: Selvan Mani <smani@micron.com>
+Cc: Sam Bradshaw <sbradshaw@micron.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+ fs/aio.c | 79 +++++++++++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 43 insertions(+), 36 deletions(-)
 
-On Thu, Mar 21, 2013 at 09:35:24AM -0700, Kent Overstreet wrote:
-> From: Zach Brown <zab@redhat.com>
->=20
-> This removes the only in-tree user of aio retry.  This will let us remove
-> the retry code from the aio core.
->=20
-> Removing retry is relatively easy as the USB gadget wasn't using it to
-> retry IOs at all.  It always fully submitted the IO in the context of the
-> initial io_submit() call.  It only used the AIO retry facility to get the
-> submitter's mm context for copying the result of a read back to user
-> space.  This is easy to implement with use_mm() and a work struct, much
-> like kvm does with async_pf_execute() for get_user_pages().
->=20
-> Signed-off-by: Zach Brown <zab@redhat.com>
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Mark Fasheh <mfasheh@suse.com>
-> Cc: Joel Becker <jlbec@evilplan.org>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Asai Thambi S P <asamymuthupa@micron.com>
-> Cc: Selvan Mani <smani@micron.com>
-> Cc: Sam Bradshaw <sbradshaw@micron.com>
-> Cc: Jeff Moyer <jmoyer@redhat.com>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: Benjamin LaHaise <bcrl@kvack.org>
-> Cc: Theodore Ts'o <tytso@mit.edu>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+diff --git a/fs/aio.c b/fs/aio.c
+index 6b29e41a..d291228 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -220,6 +220,29 @@ static inline void put_ioctx(struct kioctx *kioctx)
+ 		__put_ioctx(kioctx);
+ }
+ 
++static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
++			struct io_event *res)
++{
++	int (*cancel)(struct kiocb *, struct io_event *);
++	int ret = -EINVAL;
++
++	cancel = kiocb->ki_cancel;
++	kiocbSetCancelled(kiocb);
++	if (cancel) {
++		kiocb->ki_users++;
++		spin_unlock_irq(&ctx->ctx_lock);
++
++		memset(res, 0, sizeof(*res));
++		res->obj = (u64)(unsigned long)kiocb->ki_obj.user;
++		res->data = kiocb->ki_user_data;
++		ret = cancel(kiocb, res);
++
++		spin_lock_irq(&ctx->ctx_lock);
++	}
++
++	return ret;
++}
++
+ /* ioctx_alloc
+  *	Allocates and initializes an ioctx.  Returns an ERR_PTR if it failed.
+  */
+@@ -290,25 +313,19 @@ out_freectx:
+  */
+ static void kill_ctx(struct kioctx *ctx)
+ {
+-	int (*cancel)(struct kiocb *, struct io_event *);
+ 	struct task_struct *tsk = current;
+ 	DECLARE_WAITQUEUE(wait, tsk);
+ 	struct io_event res;
++	struct kiocb *req;
+ 
+ 	spin_lock_irq(&ctx->ctx_lock);
+ 	ctx->dead = 1;
+ 	while (!list_empty(&ctx->active_reqs)) {
+-		struct list_head *pos = ctx->active_reqs.next;
+-		struct kiocb *iocb = list_kiocb(pos);
+-		list_del_init(&iocb->ki_list);
+-		cancel = iocb->ki_cancel;
+-		kiocbSetCancelled(iocb);
+-		if (cancel) {
+-			iocb->ki_users++;
+-			spin_unlock_irq(&ctx->ctx_lock);
+-			cancel(iocb, &res);
+-			spin_lock_irq(&ctx->ctx_lock);
+-		}
++		req = list_first_entry(&ctx->active_reqs,
++					struct kiocb, ki_list);
++
++		list_del_init(&req->ki_list);
++		kiocb_cancel(ctx, req, &res);
+ 	}
+ 
+ 	if (!ctx->reqs_active)
+@@ -1411,7 +1428,7 @@ static struct kiocb *lookup_kiocb(struct kioctx *ctx, struct iocb __user *iocb,
+ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
+ 		struct io_event __user *, result)
+ {
+-	int (*cancel)(struct kiocb *iocb, struct io_event *res);
++	struct io_event res;
+ 	struct kioctx *ctx;
+ 	struct kiocb *kiocb;
+ 	u32 key;
+@@ -1426,32 +1443,22 @@ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
+ 		return -EINVAL;
+ 
+ 	spin_lock_irq(&ctx->ctx_lock);
+-	ret = -EAGAIN;
++
+ 	kiocb = lookup_kiocb(ctx, iocb, key);
+-	if (kiocb && kiocb->ki_cancel) {
+-		cancel = kiocb->ki_cancel;
+-		kiocb->ki_users ++;
+-		kiocbSetCancelled(kiocb);
+-	} else
+-		cancel = NULL;
++	if (kiocb)
++		ret = kiocb_cancel(ctx, kiocb, &res);
++	else
++		ret = -EINVAL;
++
+ 	spin_unlock_irq(&ctx->ctx_lock);
+ 
+-	if (NULL != cancel) {
+-		struct io_event tmp;
+-		pr_debug("calling cancel\n");
+-		memset(&tmp, 0, sizeof(tmp));
+-		tmp.obj = (u64)(unsigned long)kiocb->ki_obj.user;
+-		tmp.data = kiocb->ki_user_data;
+-		ret = cancel(kiocb, &tmp);
+-		if (!ret) {
+-			/* Cancellation succeeded -- copy the result
+-			 * into the user's buffer.
+-			 */
+-			if (copy_to_user(result, &tmp, sizeof(tmp)))
+-				ret = -EFAULT;
+-		}
+-	} else
+-		ret = -EINVAL;
++	if (!ret) {
++		/* Cancellation succeeded -- copy the result
++		 * into the user's buffer.
++		 */
++		if (copy_to_user(result, &res, sizeof(res)))
++			ret = -EFAULT;
++	}
+ 
+ 	put_ioctx(ctx);
+ 
+-- 
+1.8.1.3
 
-I don't have any objections with the approach. Let's see if anyone from
-linux-usb has anything to say, though
-
->  drivers/usb/gadget/inode.c | 38 +++++++++++++++++++++++++++++---------
->  1 file changed, 29 insertions(+), 9 deletions(-)
->=20
-> diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-> index e2b2e9c..a1aad43 100644
-> --- a/drivers/usb/gadget/inode.c
-> +++ b/drivers/usb/gadget/inode.c
-> @@ -24,6 +24,7 @@
->  #include <linux/sched.h>
->  #include <linux/slab.h>
->  #include <linux/poll.h>
-> +#include <linux/mmu_context.h>
-> =20
->  #include <linux/device.h>
->  #include <linux/moduleparam.h>
-> @@ -513,6 +514,9 @@ static long ep_ioctl(struct file *fd, unsigned code, =
-unsigned long value)
->  struct kiocb_priv {
->  	struct usb_request	*req;
->  	struct ep_data		*epdata;
-> +	struct kiocb 		*iocb;
-> +	struct mm_struct 	*mm;
-> +	struct work_struct	work;
->  	void			*buf;
->  	const struct iovec	*iv;
->  	unsigned long		nr_segs;
-> @@ -540,15 +544,12 @@ static int ep_aio_cancel(struct kiocb *iocb, struct=
- io_event *e)
->  	return value;
->  }
-> =20
-> -static ssize_t ep_aio_read_retry(struct kiocb *iocb)
-> +static ssize_t ep_copy_to_user(struct kiocb_priv *priv)
->  {
-> -	struct kiocb_priv	*priv =3D iocb->private;
->  	ssize_t			len, total;
->  	void			*to_copy;
->  	int			i;
-> =20
-> -	/* we "retry" to get the right mm context for this: */
-> -
->  	/* copy stuff into user buffers */
->  	total =3D priv->actual;
->  	len =3D 0;
-> @@ -568,9 +569,26 @@ static ssize_t ep_aio_read_retry(struct kiocb *iocb)
->  		if (total =3D=3D 0)
->  			break;
->  	}
-> +
-> +	return len;
-> +}
-> +
-> +static void ep_user_copy_worker(struct work_struct *work)
-> +{
-> +	struct kiocb_priv *priv =3D container_of(work, struct kiocb_priv, work);
-> +	struct mm_struct *mm =3D priv->mm;
-> +	struct kiocb *iocb =3D priv->iocb;
-> +	size_t ret;
-> +
-> +	use_mm(mm);
-> +	ret =3D ep_copy_to_user(priv);
-> +	unuse_mm(mm);
-> +
-> +	/* completing the iocb can drop the ctx and mm, don't touch mm after */
-> +	aio_complete(iocb, ret, ret);
-> +
->  	kfree(priv->buf);
->  	kfree(priv);
-> -	return len;
->  }
-> =20
->  static void ep_aio_complete(struct usb_ep *ep, struct usb_request *req)
-> @@ -596,14 +614,14 @@ static void ep_aio_complete(struct usb_ep *ep, stru=
-ct usb_request *req)
->  		aio_complete(iocb, req->actual ? req->actual : req->status,
->  				req->status);
->  	} else {
-> -		/* retry() won't report both; so we hide some faults */
-> +		/* ep_copy_to_user() won't report both; we hide some faults */
->  		if (unlikely(0 !=3D req->status))
->  			DBG(epdata->dev, "%s fault %d len %d\n",
->  				ep->name, req->status, req->actual);
-> =20
->  		priv->buf =3D req->buf;
->  		priv->actual =3D req->actual;
-> -		kick_iocb(iocb);
-> +		schedule_work(&priv->work);
->  	}
->  	spin_unlock(&epdata->dev->lock);
-> =20
-> @@ -633,8 +651,10 @@ fail:
->  		return value;
->  	}
->  	iocb->private =3D priv;
-> +	priv->iocb =3D iocb;
->  	priv->iv =3D iv;
->  	priv->nr_segs =3D nr_segs;
-> +	INIT_WORK(&priv->work, ep_user_copy_worker);
-> =20
->  	value =3D get_ready_ep(iocb->ki_filp->f_flags, epdata);
->  	if (unlikely(value < 0)) {
-> @@ -646,6 +666,7 @@ fail:
->  	get_ep(epdata);
->  	priv->epdata =3D epdata;
->  	priv->actual =3D 0;
-> +	priv->mm =3D current->mm; /* mm teardown waits for iocbs in exit_aio() =
-*/
-> =20
->  	/* each kiocb is coupled to one usb_request, but we can't
->  	 * allocate or submit those if the host disconnected.
-> @@ -674,7 +695,7 @@ fail:
->  		kfree(priv);
->  		put_ep(epdata);
->  	} else
-> -		value =3D (iv ? -EIOCBRETRY : -EIOCBQUEUED);
-> +		value =3D -EIOCBQUEUED;
->  	return value;
->  }
-> =20
-> @@ -692,7 +713,6 @@ ep_aio_read(struct kiocb *iocb, const struct iovec *i=
-ov,
->  	if (unlikely(!buf))
->  		return -ENOMEM;
-> =20
-> -	iocb->ki_retry =3D ep_aio_read_retry;
->  	return ep_aio_rwtail(iocb, buf, iocb->ki_left, epdata, iov, nr_segs);
->  }
-> =20
-> --=20
-> 1.8.1.3
->=20
-
---=20
-balbi
-
---vEao7xgI/oilGqZ+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRSzhbAAoJEIaOsuA1yqRElPcP/1IDdcz44JYvfE8qQcmJE3lu
-INwDi3x3aMmZsi5KKRg+aXCYi0aDqsySuEHcyS9IOCJdYKpqOZD9L+bpcBqg6hp+
-g8V7+zeFu+5wIxUMV0RZ/bo+d2zKuaGjZbwXDcnREIc/27BqXHEr+R0IIjXffn7V
-BGs47u4iAf/wjT9pz8uoY6zSKb2DzqRaM+y0/6/fgXe8bhln91ncvHXgUK7DAZLP
-t5JSIOxrJ+Omy8r1qDAZCTeXxUJ0eqQ6vtCSjQP5OG80jIUqaIoKN72RLn03ltJw
-Ojib9wo3Nfkhz+50lfupqPA6mAMwMDZ4Rs+TjCcH+yIh2szE9sTLYo2sHoNATbAT
-11tV9MpILvhVC7i2CWJ055AKTedWi2CIDo+NTef3A7NW/ifJqLz5sqvV5Jiaa3+f
-vqfyGQvuKCZSRuc4j4FqzHm+eZR41VfFic62evjJVHuwhCIwKObFWW+IlAxglpnh
-4kE1pc9NDxx2YWguZ/N+ZvSH4kQ2lNkDHC4sNS/oaN1Y/BgDkXjmLCs5BBVCenge
-4n1AY0Upt0q7sdkGkZ6vmmcu/kLSGDg3KgN3X2Yg5HH3Umv21r/2Occtb1N92Diy
-Is9jAsTsJ1ssfxZERgpwaCkpjuPgYJLTr0ujzjDboUaPEoEOw2uxn/NtdC9dMJoW
-jr0scp4j2q2a3J6j8mGi
-=etWw
------END PGP SIGNATURE-----
-
---vEao7xgI/oilGqZ+--
