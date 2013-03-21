@@ -1,84 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab3CUBFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 21:05:34 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52446 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab3CUBFc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 21:05:32 -0400
-Date: Thu, 21 Mar 2013 12:05:22 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: linux-next: manual merge of the v4l-dvb tree with the s390 tree
-Message-Id: <20130321120522.611e75952eb159bcf97f9cdf@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__21_Mar_2013_12_05_22_+1100_BJ6nn8pcER8gOiUd"
+	id S1756025Ab3CUBL3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 21:11:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23886 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753948Ab3CUBL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 21:11:28 -0400
+Message-ID: <514A5E07.3080501@redhat.com>
+Date: Wed, 20 Mar 2013 21:10:31 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning requirements
+ for kswapd
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-3-git-send-email-mgorman@suse.de>
+In-Reply-To: <1363525456-10448-3-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__21_Mar_2013_12_05_22_+1100_BJ6nn8pcER8gOiUd
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 03/17/2013 09:04 AM, Mel Gorman wrote:
+> Simplistically, the anon and file LRU lists are scanned proportionally
+> depending on the value of vm.swappiness although there are other factors
+> taken into account by get_scan_count().  The patch "mm: vmscan: Limit
+> the number of pages kswapd reclaims" limits the number of pages kswapd
+> reclaims but it breaks this proportional scanning and may evenly shrink
+> anon/file LRUs regardless of vm.swappiness.
+>
+> This patch preserves the proportional scanning and reclaim. It does mean
+> that kswapd will reclaim more than requested but the number of pages will
+> be related to the high watermark.
+>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>   mm/vmscan.c | 52 +++++++++++++++++++++++++++++++++++++++++-----------
+>   1 file changed, 41 insertions(+), 11 deletions(-)
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 4835a7a..182ff15 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1815,6 +1815,45 @@ out:
+>   	}
+>   }
+>
+> +static void recalculate_scan_count(unsigned long nr_reclaimed,
+> +		unsigned long nr_to_reclaim,
+> +		unsigned long nr[NR_LRU_LISTS])
+> +{
+> +	enum lru_list l;
+> +
+> +	/*
+> +	 * For direct reclaim, reclaim the number of pages requested. Less
+> +	 * care is taken to ensure that scanning for each LRU is properly
+> +	 * proportional. This is unfortunate and is improper aging but
+> +	 * minimises the amount of time a process is stalled.
+> +	 */
+> +	if (!current_is_kswapd()) {
+> +		if (nr_reclaimed >= nr_to_reclaim) {
+> +			for_each_evictable_lru(l)
+> +				nr[l] = 0;
+> +		}
+> +		return;
+> +	}
 
-Hi Mauro,
+This part is obvious.
 
-Today's linux-next merge of the v4l-dvb tree got a conflict in
-drivers/media/platform/Kconfig between commit c30f46bcf9b3
-("drivers/Kconfig: add several missing GENERIC_HARDIRQS dependencies")
-from the s390 tree and commit da508f579965 ("[media] media/v4l2:
-VIDEOBUF2_DMA_CONTIG should depend on HAS_DMA") from the v4l-dvb tree.
+> +	/*
+> +	 * For kswapd, reclaim at least the number of pages requested.
+> +	 * However, ensure that LRUs shrink by the proportion requested
+> +	 * by get_scan_count() so vm.swappiness is obeyed.
+> +	 */
+> +	if (nr_reclaimed >= nr_to_reclaim) {
+> +		unsigned long min = ULONG_MAX;
+> +
+> +		/* Find the LRU with the fewest pages to reclaim */
+> +		for_each_evictable_lru(l)
+> +			if (nr[l] < min)
+> +				min = nr[l];
+> +
+> +		/* Normalise the scan counts so kswapd scans proportionally */
+> +		for_each_evictable_lru(l)
+> +			nr[l] -= min;
+> +	}
+> +}
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+This part took me a bit longer to get.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Before getting to this point, we scanned the LRUs evenly.
+By subtracting min from all of the LRUs, we end up stopping
+the scanning of the LRU where we have the fewest pages left
+to scan.
 
-diff --cc drivers/media/platform/Kconfig
-index a0639e7,42c62aa..0000000
---- a/drivers/media/platform/Kconfig
-+++ b/drivers/media/platform/Kconfig
-@@@ -204,7 -204,7 +204,7 @@@ config VIDEO_SAMSUNG_EXYNOS_GS
- =20
-  config VIDEO_SH_VEU
-  	tristate "SuperH VEU mem2mem video processing driver"
-- 	depends on VIDEO_DEV && VIDEO_V4L2 && GENERIC_HARDIRQS
- -	depends on VIDEO_DEV && VIDEO_V4L2 && HAS_DMA
-++	depends on VIDEO_DEV && VIDEO_V4L2 && GENERIC_HARDIRQS && HAS_DMA
-  	select VIDEOBUF2_DMA_CONTIG
-  	select V4L2_MEM2MEM_DEV
-  	help
+This results in the scanning being concentrated where it
+should be - on the LRUs where we have not done nearly
+enough scanning yet.
 
---Signature=_Thu__21_Mar_2013_12_05_22_+1100_BJ6nn8pcER8gOiUd
-Content-Type: application/pgp-signature
+However, I am not sure how to document it better than
+your comment already has...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Acked-by: Rik van Riel <riel@redhat.com>
 
-iQIcBAEBCAAGBQJRSlzSAAoJEECxmPOUX5FEnpkQAJrZZNNSuiGFXge2eE94pkJM
-rsDcCehCGN7ZUjUhXZwsyVBisbQGgUppthdzovWnhBNx7UBXDJ/zy9RW+yMwKZ9i
-BQW6AK2lGMUsJsL2Yj4A631MYbL0PwejuYeSj7Tod1Ms3AdPgDi5xSwBT1Qbo+2X
-3McslkMEfqlGpcNI4frXkxcQeIxVzY9w7e9dRuUGA4UHtpcOyo7K9EzCCxZycYbx
-vP1CdjQLG66iph+1RpdULxyPxeryHbsaDZDKHS4ZlCFV5DoC70rw4t7FkfX/V3bO
-BRNSW26Xj60CTBKwOfQwbPnl0qjgv8y0IS/5d9V8bvSlk88Hn7PamYgsK+NpaI6/
-w5Z8xpz6dE8KY4UdNbtnx9FWL4xYkx6onVmrwP7Pjs2Rf6+cYpUbDa5qq7SknADv
-dWFKefUG+Nr7rFvJsgv9q2dAeh2wi7Sg1kLcZA7GlJ4d8/y6mbnFvFn8wygdA0+M
-xyNMDwJaUuI6UGWze82quN93aJqyknKwAj45/zos3TyTphseNOT6WU1I5XKy7WQh
-6qkBK5CCqA3dj64+FJw9XEsOq2EPCSz6E2POXagcyXrUQNkYP1mq5FwgvNxRIyKU
-J7aKaz8F5xHPuHUyY87NsCam4N+mDJcnGhQuH+oqt2F6z65t4BLd7WuroQGHW6km
-04YRFi0f6HAmh2fSB6Ph
-=jCN/
------END PGP SIGNATURE-----
-
---Signature=_Thu__21_Mar_2013_12_05_22_+1100_BJ6nn8pcER8gOiUd--
+-- 
+All rights reversed
