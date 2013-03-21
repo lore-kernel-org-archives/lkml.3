@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815Ab3CUSlx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:41:53 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:60334 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751286Ab3CUSlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:41:51 -0400
-Date: Thu, 21 Mar 2013 12:41:35 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Roland Dreier <roland@kernel.org>,
-        "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Subject: Re: [PATCH] rdma: don't make pages writeable if not requiested
-Message-ID: <20130321184135.GA8044@obsidianresearch.com>
-References: <20130321061838.GA28319@redhat.com>
- <CAL1RGDUcMj9QVsuQgK+ozw64L6-cGehL7YBUJ1_ckni6TD=Kcg@mail.gmail.com>
- <20130321070357.GD28328@redhat.com>
- <CAG4TOxPkhOhGmzeA1K4a0Zw8HxS-QkOr-PCx7mJgA+KkuH3ZiQ@mail.gmail.com>
- <20130321085107.GE28328@redhat.com>
- <CAL1RGDVnkLZU2Vge4o3BwDxnAfGv7TQRMqE6ha3MUt39CVp5NQ@mail.gmail.com>
- <20130321093946.GG28328@redhat.com>
- <20130321171115.GA653@obsidianresearch.com>
- <20130321181633.GC4366@redhat.com>
+	id S1751797Ab3CUSmq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:42:46 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:57532
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751406Ab3CUSmn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 14:42:43 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dh8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+Date: Thu, 21 Mar 2013 13:42:34 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH] KVM: allow host header to be included even for
+ !CONFIG_KVM
+To: Kevin Hilman <khilman@linaro.org>
+CC: Gleb Natapov <gleb@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        <linaro-kernel@lists.linaro.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "open list:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+References: <1363306426-27209-1-git-send-email-khilman@linaro.org>
+	<1363823921.25034.35@snotra> <20130321072955.GO3889@redhat.com>
+	<87ppyshlq5.fsf@linaro.org>
+In-Reply-To: <87ppyshlq5.fsf@linaro.org> (from khilman@linaro.org on Thu Mar
+	21 09:27:14 2013)
+X-Mailer: Balsa 2.4.11
+Message-ID: <1363891354.31522.17@snotra>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
 Content-Disposition: inline
-In-Reply-To: <20130321181633.GC4366@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 08:16:33PM +0200, Michael S. Tsirkin wrote:
+On 03/21/2013 09:27:14 AM, Kevin Hilman wrote:
+> Gleb Natapov <gleb@redhat.com> writes:
+> 
+> > On Wed, Mar 20, 2013 at 06:58:41PM -0500, Scott Wood wrote:
+> >> On 03/14/2013 07:13:46 PM, Kevin Hilman wrote:
+> >> >The new context tracking subsystem unconditionally includes  
+> kvm_host.h
+> >> >headers for the guest enter/exit macros.  This causes a compile
+> >> >failure when KVM is not enabled.
+> >> >
+> >> >Fix by adding an IS_ENABLED(CONFIG_KVM) check to kvm_host so it  
+> can
+> >> >be included/compiled even when KVM is not enabled.
+> >> >
+> >> >Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> >> >Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> >> >---
+> >> >Applies on v3.9-rc2
+> >> >
+> >> > include/linux/kvm_host.h | 7 ++++++-
+> >> > 1 file changed, 6 insertions(+), 1 deletion(-)
+> >>
+> >> This broke the PPC non-KVM build, which was relying on stub
+> >> functions in kvm_ppc.h, which relies on "struct vcpu" in  
+> kvm_host.h.
+> >>
+> >> Why can't the entirety kvm_host.h be included regardless of
+> >> CONFIG_KVM, just like most other feature-specific headers?  Why
+> >> can't the if/else just go around the functions that you want to  
+> stub
+> >> out for non-KVM builds?
+> >>
+> > Kevin,
+> >
+> >  What compilation failure this patch fixes? I presume something ARM
+> > related.
+> 
+> Not specficially ARM related, but more context tracking related since
+> kernel/context_tracking.c pulls in kvm_host.h, which attempts to pull  
+> in
+> <asm/kvm*.h> which may not exist on some platforms.
+> 
+> At least for ARM, KVM support was added in v3.9 so this patch can
+> probably be dropped since the non-KVM builds on ARM now work.  But any
+> platform without the <asm/kvm*.h> will still be broken when trying to
+> build the context tracker.
 
-> This is the one I find redundant. Since the write will be done by
-> the adaptor under direct control by the application, why does it
-> make sense to declare this beforehand?  If you don't want to allow
-> local write access to memory, just do not post any receive WRs with
-> this address.  If you posted and regret it, reset the QP to cancel.
+Maybe other platforms should get empty asm/kvm*.h files.  Is there  
+anything from those files that the linux/kvm*.h headers need to build?
 
-This is to support your COW scenario - the app declares before hand to
-the kernel that it will write to the memory and the kernel ensures
-pages are dedicated to the app at registration time. Or the app says
-it will only read and the kernel could leave them shared.
-
-The adaptor enforces the access control to prevent a naughty app from
-writing to shared memory - think about mmap'ing libc.so and then using
-RDMA to write to the shared pages. It is necessary to ensure that is
-impossible.
-
-Jason
+-Scott
