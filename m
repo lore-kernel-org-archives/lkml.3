@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932376Ab3CUMcS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 08:32:18 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:62483 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757991Ab3CUMcQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 08:32:16 -0400
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH v3] ARM: ux500: select WATCHDOG and MUSB for ux500
-Date: Thu, 21 Mar 2013 13:31:53 +0100
-Message-Id: <1363869113-19610-1-git-send-email-fabio.baltieri@linaro.org>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1363864186-11514-1-git-send-email-fabio.baltieri@linaro.org>
-References: <1363864186-11514-1-git-send-email-fabio.baltieri@linaro.org>
+	id S1758101Ab3CUMfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 08:35:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57928 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755297Ab3CUMfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 08:35:07 -0400
+Date: Thu, 21 Mar 2013 13:35:05 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Russ Anderson <rja@sgi.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com
+Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
+Message-ID: <20130321123505.GA6051@dhcp22.suse.cz>
+References: <20130318155619.GA18828@sgi.com>
+ <20130321105516.GC18484@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130321105516.GC18484@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable ux500 specific USB and watchdog drivers by default on
-u8500_defconfig.
+On Thu 21-03-13 11:55:16, Ingo Molnar wrote:
+> 
+> * Russ Anderson <rja@sgi.com> wrote:
+> 
+> > When booting on a large memory system, the kernel spends
+> > considerable time in memmap_init_zone() setting up memory zones.
+> > Analysis shows significant time spent in __early_pfn_to_nid().
+> > 
+> > The routine memmap_init_zone() checks each PFN to verify the
+> > nid is valid.  __early_pfn_to_nid() sequentially scans the list of
+> > pfn ranges to find the right range and returns the nid.  This does
+> > not scale well.  On a 4 TB (single rack) system there are 308
+> > memory ranges to scan.  The higher the PFN the more time spent
+> > sequentially spinning through memory ranges.
+> > 
+> > Since memmap_init_zone() increments pfn, it will almost always be
+> > looking for the same range as the previous pfn, so check that
+> > range first.  If it is in the same range, return that nid.
+> > If not, scan the list as before.
+> > 
+> > A 4 TB (single rack) UV1 system takes 512 seconds to get through
+> > the zone code.  This performance optimization reduces the time
+> > by 189 seconds, a 36% improvement.
+> > 
+> > A 2 TB (single rack) UV2 system goes from 212.7 seconds to 99.8 seconds,
+> > a 112.9 second (53%) reduction.
+> 
+> Nice speedup!
+> 
+> A minor nit, in addition to Andrew's suggestion about wrapping 
+> __early_pfn_to_nid():
+> 
+> > Index: linux/mm/page_alloc.c
+> > ===================================================================
+> > --- linux.orig/mm/page_alloc.c	2013-03-18 10:52:11.510988843 -0500
+> > +++ linux/mm/page_alloc.c	2013-03-18 10:52:14.214931348 -0500
+> > @@ -4161,10 +4161,19 @@ int __meminit __early_pfn_to_nid(unsigne
+> >  {
+> >  	unsigned long start_pfn, end_pfn;
+> >  	int i, nid;
+> > +	static unsigned long last_start_pfn, last_end_pfn;
+> > +	static int last_nid;
+> 
+> Please move these globals out of function local scope, to make it more 
+> apparent that they are not on-stack. I only noticed it in the second pass.
 
-Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
----
+Wouldn't this just add more confision with other _pfn variables? (e.g.
+{min,max}_low_pfn and others)
 
-Hi again Linus,
-
-seems like this is being harder than I thought...  In v2 I had a
-duplicated CONFIG_AB8500_USB symbol that was giving a warning in make
-u8500_defconfig, this version fixes it.  Sorry about that, I'm trying to
-keep this patch minimal, but maybe it's time for a real update to the
-savedefconfig output.
-
-Thanks,
-Fabio
-
- arch/arm/configs/u8500_defconfig | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/arch/arm/configs/u8500_defconfig b/arch/arm/configs/u8500_defconfig
-index 426270f..ecde6868 100644
---- a/arch/arm/configs/u8500_defconfig
-+++ b/arch/arm/configs/u8500_defconfig
-@@ -71,6 +71,7 @@ CONFIG_GPIO_TC3589X=y
- # CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL is not set
- CONFIG_THERMAL=y
- CONFIG_CPU_THERMAL=y
-+CONFIG_WATCHDOG=y
- CONFIG_MFD_STMPE=y
- CONFIG_MFD_TC3589X=y
- CONFIG_AB5500_CORE=y
-@@ -80,7 +81,13 @@ CONFIG_REGULATOR_AB8500=y
- CONFIG_REGULATOR_FIXED_VOLTAGE=y
- CONFIG_REGULATOR_GPIO=y
- # CONFIG_HID_SUPPORT is not set
-+CONFIG_USB=y
-+CONFIG_USB_MUSB_HDRC=y
-+CONFIG_USB_MUSB_UX500=y
-+CONFIG_USB_PHY=y
- CONFIG_USB_GADGET=y
-+CONFIG_USB_GADGET_MUSB_HDRC=y
-+CONFIG_USB_ETH=m
- CONFIG_AB8500_USB=y
- CONFIG_MMC=y
- CONFIG_MMC_CLKGATE=y
+IMO the local scope is more obvious as this is and should only be used
+for caching purposes.
 -- 
-1.8.1.3
-
+Michal Hocko
+SUSE Labs
