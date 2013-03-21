@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933591Ab3CUOdF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 10:33:05 -0400
-Received: from relay.parallels.com ([195.214.232.42]:45504 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932539Ab3CUOdA (ORCPT
+	id S933553Ab3CUOfT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 10:35:19 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10550 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933448Ab3CUOfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 10:33:00 -0400
-Date: Thu, 21 Mar 2013 18:31:19 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: Thomas Graf <tgraf@suug.ch>
-CC: Andrey Vagin <avagin@openvz.org>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Subject: Re: [PATCH 2/2] netlink: Diag core and basic socket info dumping
-Message-ID: <20130321143119.GA14763@paralelels.com>
-References: <1363857669-19990-1-git-send-email-avagin@openvz.org>
- <1363857669-19990-3-git-send-email-avagin@openvz.org>
- <20130321125230.GB9046@casper.infradead.org>
+	Thu, 21 Mar 2013 10:35:17 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 21 Mar 2013 07:34:45 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <akpm@linux-foundation.org>
+CC: <a.zummo@towertech.it>, <grant.likely@secretlab.ca>,
+        <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <rob.herring@calxeda.com>,
+        <linux-tegra@vger.kernel.org>, <swarren@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] rtc: palmas: add dt support
+Date: Thu, 21 Mar 2013 20:02:10 +0530
+Message-ID: <1363876330-26003-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="koi8-r"
-Content-Disposition: inline
-In-Reply-To: <20130321125230.GB9046@casper.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.24.21.86]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 12:52:30PM +0000, Thomas Graf wrote:
-> On 03/21/13 at 01:21pm, Andrey Vagin wrote:
-> > diff --git a/include/uapi/linux/netlink_diag.h b/include/uapi/linux/netlink_diag.h
-> > new file mode 100644
-> > index 0000000..9328866
-> > --- /dev/null
-> > +++ b/include/uapi/linux/netlink_diag.h
-> > +enum {
-> > +	NETLINK_DIAG_MEMINFO,
-> > +	NETLINK_DIAG_GROUPS,
-> > +
-> > +	NETLINK_DIAG_MAX,
-> > +};
-> 
-> Please follow the common pattern and define NETLINK_DIAG_MAX as
-> NETLINK_DIAG_GROUPS like other by doing>
-> 
-> 	[...] 
->         __NETLINK_DIAG_MAX,
-> };
->  
-> #define NETLINK_DIAG_MAX (__NETLINK_DIAG_MAX - 1)
->  
-> Everyone is used to do:
->  
->         struct nlattr *attrs[NETLINK_DIAG_MAX+1];
->          
->         nla_parse([...], NETLINK_DIAG_MAX, [...]
-> 
+Add of_device_id table for Palma RTC to be enable the
+driver from DT file.
 
-Thank you for this issue. I sent the separate patch
-"[PATCH] net: fix *_DIAG_MAX constants", because currently only
-INET_DIAG_MAX is correct.
+The driver can be registered from DT file as:
+	palmas: tps65913@58 {
+		:::::::::::
+		palmas_rtc {
+			compatible = "ti,palmas-rtc";
+			interrupt-parent = <&palmas>;
+			interrupts = <8 0>;
+		};
+	};
 
-> In fact, the follow-up patch to ss is buggy because of this.
-> UNIX_DIAG_MAX suffers from the same problem which is problem the
-> cause for this.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/rtc/rtc-palmas.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-The code in ss looks like you described:
-        struct rtattr *tb[UNIX_DIAG_MAX+1];
-...
-        parse_rtattr(tb, UNIX_DIAG_MAX, (struct rtattr*)(r+1),
-                     nlh->nlmsg_len - NLMSG_LENGTH(sizeof(*r)));
+diff --git a/drivers/rtc/rtc-palmas.c b/drivers/rtc/rtc-palmas.c
+index bbc3b9e..50204d4 100644
+--- a/drivers/rtc/rtc-palmas.c
++++ b/drivers/rtc/rtc-palmas.c
+@@ -30,6 +30,7 @@
+ #include <linux/kernel.h>
+ #include <linux/mfd/palmas.h>
+ #include <linux/module.h>
++#include <linux/of.h>
+ #include <linux/rtc.h>
+ #include <linux/types.h>
+ #include <linux/platform_device.h>
+@@ -316,6 +317,14 @@ static const struct dev_pm_ops palmas_rtc_pm_ops = {
+ 	SET_SYSTEM_SLEEP_PM_OPS(palmas_rtc_suspend, palmas_rtc_resume)
+ };
+ 
++#ifdef CONFIG_OF
++static struct of_device_id of_palmas_rtc_match[] = {
++	{ .compatible = "ti,palmas-rtc"},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, of_palmas_rtc_match);
++#endif
++
+ static struct platform_driver palmas_rtc_driver = {
+ 	.probe		= palmas_rtc_probe,
+ 	.remove		= palmas_rtc_remove,
+@@ -323,6 +332,7 @@ static struct platform_driver palmas_rtc_driver = {
+ 		.owner	= THIS_MODULE,
+ 		.name	= "palmas-rtc",
+ 		.pm	= &palmas_rtc_pm_ops,
++		.of_match_table = of_match_ptr(of_palmas_rtc_match),
+ 	},
+ };
+ 
+-- 
+1.7.1.1
 
-
-        struct rtattr *tb[NETLINK_DIAG_MAX+1];
-...
-        parse_rtattr(tb, NETLINK_DIAG_MAX, (struct rtattr*)(r+1),
-                     nlh->nlmsg_len - NLMSG_LENGTH(sizeof(*r)))
-
-I think I should only update headers... Or I don't understand something.
