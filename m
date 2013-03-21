@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248Ab3CUMbe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 08:31:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38369 "EHLO mx1.redhat.com"
+	id S932907Ab3CUMcT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 08:32:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18991 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755297Ab3CUMbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 08:31:33 -0400
-Message-ID: <514AFD71.5080509@redhat.com>
-Date: Thu, 21 Mar 2013 08:30:41 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1758047Ab3CUMcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 08:32:17 -0400
+Date: Thu, 21 Mar 2013 14:32:09 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>
+Cc: Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qemu-devel@nongnu.org
+Subject: Re: [PATCH] rdma: don't make pages writeable if not requiested
+Message-ID: <20130321123209.GB32484@redhat.com>
+References: <20130321061838.GA28319@redhat.com>
+ <514AFBD4.2050201@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/10] mm: vmscan: Do not allow kswapd to scan at maximum
- priority
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-6-git-send-email-mgorman@suse.de> <514A604E.40303@redhat.com> <20130321101210.GF1878@suse.de>
-In-Reply-To: <20130321101210.GF1878@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <514AFBD4.2050201@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2013 06:12 AM, Mel Gorman wrote:
-> On Wed, Mar 20, 2013 at 09:20:14PM -0400, Rik van Riel wrote:
->> On 03/17/2013 09:04 AM, Mel Gorman wrote:
->>> Page reclaim at priority 0 will scan the entire LRU as priority 0 is
->>> considered to be a near OOM condition. Kswapd can reach priority 0 quite
->>> easily if it is encountering a large number of pages it cannot reclaim
->>> such as pages under writeback. When this happens, kswapd reclaims very
->>> aggressively even though there may be no real risk of allocation failure
->>> or OOM.
->>>
->>> This patch prevents kswapd reaching priority 0 and trying to reclaim
->>> the world. Direct reclaimers will still reach priority 0 in the event
->>> of an OOM situation.
->>>
->>> Signed-off-by: Mel Gorman <mgorman@suse.de>
->>> ---
->>>   mm/vmscan.c | 2 +-
->>>   1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/mm/vmscan.c b/mm/vmscan.c
->>> index 7513bd1..af3bb6f 100644
->>> --- a/mm/vmscan.c
->>> +++ b/mm/vmscan.c
->>> @@ -2891,7 +2891,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->>>   		 */
->>>   		if (raise_priority || !this_reclaimed)
->>>   			sc.priority--;
->>> -	} while (sc.priority >= 0 &&
->>> +	} while (sc.priority >= 1 &&
->>>   		 !pgdat_balanced(pgdat, order, *classzone_idx));
->>>
->>>   out:
->>>
->>
->> If priority 0 is way way way way way too aggressive, what makes
->> priority 1 safe?
->>
->
-> The fact that priority 1 selects a sensible number of pages to reclaim and
-> obeys swappiness makes it a lot safer. Priority 0 does this in get_scan_count
-   ^^^^^^^^^^^^^^^^
+On Thu, Mar 21, 2013 at 08:23:48AM -0400, Michael R. Hines wrote:
+> Yes, I'd be happy to try the patch.
+> 
+> Got meetings all day...... but will dive in soon.
 
-Ahhh, good point!  We stay away from all the "emergency" code, which
-kswapd should never run.
+The patch is unlikely to be the final version. In particular
+you need to change !umem->writable to umem->writable.
 
-Acked-by: Rik van Riel <riel@redhat.com>
-
--- 
-All rights reversed
+> On 03/21/2013 02:18 AM, Michael S. Tsirkin wrote:
+> >core/umem.c seems to get the arguments to get_user_pages
+> >in the reverse order: it sets writeable flag and
+> >breaks COW for MAP_SHARED if and only if hardware needs to
+> >write the page.
+> >
+> >This breaks memory overcommit for users such as KVM:
+> >each time we try to register a page to send it to remote, this
+> >breaks COW.  It seems that for applications that only have
+> >REMOTE_READ permission, there is no reason to break COW at all.
+> >
+> >If the page that is COW has lots of copies, this makes the user process
+> >quickly exceed the cgroups memory limit.  This makes RDMA mostly useless
+> >for virtualization, thus the stable tag.
+> >
+> >Reported-by: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>
+> >Cc: stable@vger.kernel.org
+> >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >---
+> >
+> >Note: compile-tested only, I don't have RDMA hardware at the moment.
+> >Michael, could you please try this patch (also fixing your
+> >usespace code not to request write access) and report?
+> >
+> >Note2: grep for get_user_pages in infiniband drivers turns up
+> >lots of users who set write to 1 unconditionally.
+> >These might be bugs too, should be checked.
+> >
+> >  drivers/infiniband/core/umem.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> >diff --git a/drivers/infiniband/core/umem.c b/drivers/infiniband/core/umem.c
+> >index a841123..5929598 100644
+> >--- a/drivers/infiniband/core/umem.c
+> >+++ b/drivers/infiniband/core/umem.c
+> >@@ -152,7 +152,7 @@ struct ib_umem *ib_umem_get(struct ib_ucontext *context, unsigned long addr,
+> >  		ret = get_user_pages(current, current->mm, cur_base,
+> >  				     min_t(unsigned long, npages,
+> >  					   PAGE_SIZE / sizeof (struct page *)),
+> >-				     1, !umem->writable, page_list, vma_list);
+> >+				     !umem->writable, 1, page_list, vma_list);
+> >
+> >  		if (ret < 0)
+> >  			goto out;
