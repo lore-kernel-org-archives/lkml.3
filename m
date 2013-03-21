@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab3CUHS2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 03:18:28 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:39637 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057Ab3CUHS1 (ORCPT
+	id S1757729Ab3CUHSz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 03:18:55 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45112 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756089Ab3CUHSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 03:18:27 -0400
-From: zwu.kernel@gmail.com
-To: linux-btrfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH] btrfs-progs: fix one bracket issue in mkfs.btrfs manpage
-Date: Thu, 21 Mar 2013 15:17:17 +0800
-Message-Id: <1363850237-21276-1-git-send-email-zwu.kernel@gmail.com>
+	Thu, 21 Mar 2013 03:18:54 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-c1-514ab45c13b3
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCHSET 0/9] perf util: Cleanup die() and its friends (v2)
+Date: Thu, 21 Mar 2013 16:18:43 +0900
+Message-Id: <1363850332-25297-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032107-7282-0000-0000-0000155D2397
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Hi,
 
-  In "[ \fB\-f\fP\fI ]", the "\fI" will result in the front half "["of
-"[ -f ]" doesn't the back half "]"; When you issue the command
-"man mkfs.btrfs", you will see the difference.
+I updated this series with previous feedbacks from Steven, Peter and
+Arnaldo.  Thanks for all your comments.
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- man/mkfs.btrfs.8.in | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+* v2 changes
+ - fix a grammar in an error message
+ - change some pr_err() -> pr_debug()
+ - use kernel error checking style consistently
 
-diff --git a/man/mkfs.btrfs.8.in b/man/mkfs.btrfs.8.in
-index cdccd6a..a3f1503 100644
---- a/man/mkfs.btrfs.8.in
-+++ b/man/mkfs.btrfs.8.in
-@@ -6,7 +6,7 @@ mkfs.btrfs \- create a btrfs filesystem
- [ \fB\-A\fP\fI alloc-start\fP ]
- [ \fB\-b\fP\fI byte-count\fP ]
- [ \fB\-d\fP\fI data-profile\fP ]
--[ \fB\-f\fP\fI ]
-+[ \fB\-f\fP ]
- [ \fB\-l\fP\fI leafsize\fP ]
- [ \fB\-L\fP\fI label\fP ]
- [ \fB\-m\fP\fI metadata profile\fP ]
+Namhyung Kim (9):
+  perf util: Let get_tracing_file() can return NULL
+  perf util: Get rid of malloc_or_die() in trace-event-info.c
+  perf util: Get rid of write_or_die() from trace-event-info.c
+  perf util: Get rid of die() calls from trace-event-info.c
+  perf util: Handle failure case in trace_report()
+  perf util: Get rid of malloc_or_die() in trace-event-read.c
+  perf util: Get rid of read_or_die() in trace-event-read.c
+  perf util: Get rid of die() calls in trace-data-read.c
+  perf util: Cleanup calc_data_size logic
+
+ tools/perf/util/header.c           |   9 +-
+ tools/perf/util/trace-event-info.c | 347 +++++++++++++++++++++++++------------
+ tools/perf/util/trace-event-read.c | 270 +++++++++++++++++++----------
+ tools/perf/util/trace-event.h      |   2 +-
+ 4 files changed, 425 insertions(+), 203 deletions(-)
+
 -- 
 1.7.11.7
 
