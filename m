@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758077Ab3CUJSq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 05:18:46 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:45098 "EHLO song.cn.fujitsu.com"
+	id S1758117Ab3CUJTf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 05:19:35 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64631 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758052Ab3CUJSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 05:18:44 -0400
+	id S1758053Ab3CUJSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 05:18:45 -0400
 X-IronPort-AV: E=Sophos;i="4.84,884,1355068800"; 
-   d="scan'208";a="6917176"
+   d="scan'208";a="6917177"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         yinghai@kernel.org, akpm@linux-foundation.org, wency@cn.fujitsu.com,
@@ -20,104 +20,347 @@ To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         guz.fnst@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH part2 1/4] x86, mm, numa, acpi: Introduce numa_meminfo_all to store all the numa meminfo.
-Date: Thu, 21 Mar 2013 17:21:13 +0800
-Message-Id: <1363857676-30694-2-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH part2 4/4] x86, mm, numa, acpi: Sanitize movablemem_map after memory mapping initialized.
+Date: Thu, 21 Mar 2013 17:21:16 +0800
+Message-Id: <1363857676-30694-5-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1363857676-30694-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1363857676-30694-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/03/21 17:17:10,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/21 17:17:11,
-	Serialize complete at 2013/03/21 17:17:11
+ 2013/03/21 17:17:13,
+	Serialize complete at 2013/03/21 17:17:13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, Yinghai has tried to allocate pagetables and vmemmap pages in local
-node. If we limit memblock allocation in movablemem_map.map[], we have to
-exclude the pagetables and vmemmap pages.
+In order to support allocating pagetable and vmammap pages in local node,
+we should initialzie memory mapping without any limitation for memblock first,
+using memblock to reserve pagetable and vmemmap pages in local node, and then
+sanitize movablemem_map.map[] to limit memblock.
 
-So we need the following sequence:
-1) Parse SRAT, store numa_meminfo.
-2) Initialize memory mapping, allocate pagetables and vmemmap pages in local
-   node. And reserve these memory with memblock.
-3) Sanitize movablemem_map.map[], exclude the pagetables and vmemmap pages.
-
-When parsing SRAT, we added memory ranges into numa_meminfo. But in
-numa_cleanup_meminfo(), it removed all the unused memory from numa_meminfo.
-
-         const u64 low = 0;
-         const u64 high = PFN_PHYS(max_pfn);
-
-         /* first, trim all entries */
-         for (i = 0; i < mi->nr_blks; i++) {
-                 struct numa_memblk *bi = &mi->blk[i];
-
-                 /* make sure all blocks are inside the limits */
-                 bi->start = max(bi->start, low);
-                 bi->end = min(bi->end, high);
-
-                 /* and there's no empty block */
-                 if (bi->start >= bi->end)
-                         numa_remove_memblk_from(i--, mi);
-         }
-
-So numa_meminfo doesn't have the whole memory info.
-
-In order to sanitize movablemem_map.map[] after memory mapping initialziation,
-we need the whole SRAT info.
-
-So this patch introduces global variable numa_meminfo_all to store the whole
-numa memory info.
+In this way, we can prevent allocation in movable area but with pagetable
+and vmemmap pages (used by kernel) in local node.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/mm/numa.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+ arch/x86/mm/numa.c |  125 ++++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/mm/srat.c |  139 ++++++---------------------------------------------
+ 2 files changed, 142 insertions(+), 122 deletions(-)
 
 diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 4f754e6..4cf3b49 100644
+index 0c3a278..d0b9c5a 100644
 --- a/arch/x86/mm/numa.c
 +++ b/arch/x86/mm/numa.c
-@@ -28,12 +28,20 @@ nodemask_t numa_nodes_parsed __initdata;
- struct pglist_data *node_data[MAX_NUMNODES] __read_mostly;
- EXPORT_SYMBOL(node_data);
- 
-+/*e820 mapped memory info */
- static struct numa_meminfo numa_meminfo
- #ifndef CONFIG_MEMORY_HOTPLUG
- __initdata
+@@ -738,6 +738,129 @@ static void __init early_x86_numa_init_mapping(void)
+ }
  #endif
- ;
  
-+/* All memory info */
-+static struct numa_meminfo numa_meminfo_all
-+#ifndef CONFIG_MEMORY_HOTPLUG
-+__initdata
-+#endif
-+;
++#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
++static void __init movablemem_map_handle_srat(struct numa_memblk mb)
++{
++	unsigned long start_pfn = PFN_DOWN(mb.start);
++	unsigned long end_pfn = PFN_UP(mb.end);
++	int nid = mb.nid;
++	bool hotpluggable = mb.hotpluggable;
 +
- static int numa_distance_cnt;
- static u8 *numa_distance;
- 
-@@ -599,10 +607,15 @@ static int __init numa_init(int (*init_func)(void))
- 
- 	nodes_clear(numa_nodes_parsed);
- 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
-+	memset(&numa_meminfo_all, 0, sizeof(numa_meminfo));
- 
- 	ret = init_func();
- 	if (ret < 0)
- 		return ret;
++	/*
++	 * For movablemem_map=acpi:
++	 *
++	 * SRAT:                |_____| |_____| |_________| |_________| ......
++	 * node id:                0       1         1           2
++	 * hotpluggable:           n       y         y           n
++	 * movablemem_map:              |_____| |_________|
++	 *
++	 * Using movablemem_map, we can prevent memblock from allocating memory
++	 * on ZONE_MOVABLE at boot time.
++	 *
++	 * Before parsing SRAT, memblock has already reserve some memory ranges
++	 * for other purposes, such as for kernel image. We cannot prevent
++	 * kernel from using these memory. Furthermore, if all the memory is
++	 * hotpluggable, then the system won't have enough memory to boot. So
++	 * we always set the nodes which the kernel resides in as non-movable
++	 * by not calling this function in sanitize_movablemem_map().
++	 *
++	 * Known problem: We now allocate pagetable and vmemmap pages on local
++	 * node, and reserved them in memblock. But we cannot tell these pages
++	 * from other reserved memory, such as kernel image. Fortunately, the
++	 * reserved memory will not be released into buddy system, so it won't
++	 * impact the ZONE_MOVABLE limitation.
++	 */
++	if (!hotpluggable)
++		return;
 +
-+	/* Store the whole memory info before cleanup numa_meminfo. */
-+	memcpy(&numa_meminfo_all, &numa_meminfo, sizeof(numa_meminfo));
++	/* If the range is hotpluggable, insert it into movablemem_map. */
++	insert_movablemem_map(start_pfn, end_pfn);
 +
- 	ret = numa_cleanup_meminfo(&numa_meminfo);
- 	if (ret < 0)
- 		return ret;
++	if (zone_movable_limit[nid])
++		zone_movable_limit[nid] = min(zone_movable_limit[nid],
++					      start_pfn);
++	else
++		zone_movable_limit[nid] = start_pfn;
++}
++
++static void __init movablemem_map_handle_user(struct numa_memblk mb)
++{
++	int overlap;
++	unsigned long start_pfn = PFN_DOWN(mb.start);
++	unsigned long end_pfn = PFN_UP(mb.end);
++	int nid = mb.nid;
++
++	/*
++	 * For movablemem_map=nn[KMG]@ss[KMG]:
++	 *
++	 * SRAT:                |_____| |_____| |_________| |_________| ......
++	 * node id:                0       1         1           2
++	 * user specified:                |__|                 |___|
++	 * movablemem_map:                |___| |_________|    |______| ......
++	 *
++	 * Using movablemem_map, we can prevent memblock from allocating memory
++	 * on ZONE_MOVABLE at boot time.
++	 *
++	 * NOTE: In this case, SRAT info will be ingored. Even if the memory
++	 * range is not hotpluggable in SRAT, it will be inserted into
++	 * movablemem_map. This is useful if firmware is buggy.
++	 */
++	overlap = movablemem_map_overlap(start_pfn, end_pfn);
++	if (overlap >= 0) {
++		/*
++		 * If this range overlaps with movablemem_map, then update
++		 * zone_movable_limit[nid] if it has lower start pfn.
++		 */
++		start_pfn = max(start_pfn,
++				movablemem_map.map[overlap].start_pfn);
++
++		if (!zone_movable_limit[nid] ||
++		    zone_movable_limit[nid] > start_pfn)
++			zone_movable_limit[nid] = start_pfn;
++
++		/* Insert the higher part of the overlapped range. */
++		if (movablemem_map.map[overlap].end_pfn < end_pfn)
++			insert_movablemem_map(start_pfn, end_pfn);
++	} else {
++		/*
++		 * If this is a range higher than zone_movable_limit[nid],
++		 * insert it to movablemem_map because all ranges higher than
++		 * zone_movable_limit[nid] on this node will be ZONE_MOVABLE.
++		 */
++		if (zone_movable_limit[nid] &&
++		    start_pfn > zone_movable_limit[nid])
++			insert_movablemem_map(start_pfn, end_pfn);
++	}
++}
++
++static void __init sanitize_movablemem_map()
++{
++	int i;
++
++	if (movablemem_map.acpi) {
++		for (i = 0; i < numa_meminfo_all.nr_blks; i++) {
++			/*
++			 * In order to ensure the kernel has enough memory to
++			 * boot, we always set the node which the kernel
++			 * resides in as unhotpluggable.
++			 */
++			if (node_isset(numa_meminfo_all.blk[i].nid,
++					movablemem_map.numa_nodes_kernel))
++				continue;
++
++			movablemem_map_handle_srat(numa_meminfo_all.blk[i]);
++		}
++	} else {
++		for (i = 0; i < numa_meminfo_all.nr_blks; i++)
++			movablemem_map_handle_user(numa_meminfo_all.blk[i]);
++	}
++}
++#else		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
++static inline void sanitize_movablemem_map()
++{
++}
++#endif		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
++
+ void __init early_initmem_init(void)
+ {
+ 	early_x86_numa_init();
+@@ -747,6 +870,8 @@ void __init early_initmem_init(void)
+ 	load_cr3(swapper_pg_dir);
+ 	__flush_tlb_all();
+ 
++	sanitize_movablemem_map();
++
+ 	early_memtest(0, max_pfn_mapped<<PAGE_SHIFT);
+ }
+ 
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index 76c2eb4..2c1f9a6 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -141,132 +141,14 @@ static inline int save_add_info(void) {return 1;}
+ static inline int save_add_info(void) {return 0;}
+ #endif
+ 
+-#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+-static void __init sanitize_movablemem_map(int nid, u64 start, u64 end,
+-					   bool hotpluggable)
+-{
+-	int overlap, i;
+-	unsigned long start_pfn, end_pfn;
+-
+-	start_pfn = PFN_DOWN(start);
+-	end_pfn = PFN_UP(end);
+-
+-	/*
+-	 * For movablemem_map=acpi:
+-	 *
+-	 * SRAT:                |_____| |_____| |_________| |_________| ......
+-	 * node id:                0       1         1           2
+-	 * hotpluggable:           n       y         y           n
+-	 * movablemem_map:              |_____| |_________|
+-	 *
+-	 * Using movablemem_map, we can prevent memblock from allocating memory
+-	 * on ZONE_MOVABLE at boot time.
+-	 *
+-	 * Before parsing SRAT, memblock has already reserve some memory ranges
+-	 * for other purposes, such as for kernel image. We cannot prevent
+-	 * kernel from using these memory, so we need to exclude these memory
+-	 * even if it is hotpluggable.
+-	 * Furthermore, to ensure the kernel has enough memory to boot, we make
+-	 * all the memory on the node which the kernel resides in should be
+-	 * un-hotpluggable.
+-	 */
+-	if (hotpluggable && movablemem_map.acpi) {
+-		/* Exclude ranges reserved by memblock. */
+-		struct memblock_type *rgn = &memblock.reserved;
+-
+-		for (i = 0; i < rgn->cnt; i++) {
+-			if (end <= rgn->regions[i].base ||
+-			    start >= rgn->regions[i].base +
+-			    rgn->regions[i].size)
+-				continue;
+-
+-			/*
+-			 * If the memory range overlaps the memory reserved by
+-			 * memblock, then the kernel resides in this node.
+-			 */
+-			node_set(nid, movablemem_map.numa_nodes_kernel);
+-			zone_movable_limit[nid] = 0;
+-
+-			return;
+-		}
+-
+-		/*
+-		 * If the kernel resides in this node, then the whole node
+-		 * should not be hotpluggable.
+-		 */
+-		if (node_isset(nid, movablemem_map.numa_nodes_kernel)) {
+-			zone_movable_limit[nid] = 0;
+-			return;
+-		}
+-
+-		/*
+-		 * Otherwise, if the range is hotpluggable, and the kernel is
+-		 * not on this node, insert it into movablemem_map.
+-		 */
+-		insert_movablemem_map(start_pfn, end_pfn);
+-		if (zone_movable_limit[nid])
+-			zone_movable_limit[nid] = min(zone_movable_limit[nid],
+-						      start_pfn);
+-		else
+-			zone_movable_limit[nid] = start_pfn;
+-
+-		return;
+-	}
+-
+-	/*
+-	 * For movablemem_map=nn[KMG]@ss[KMG]:
+-	 *
+-	 * SRAT:                |_____| |_____| |_________| |_________| ......
+-	 * node id:                0       1         1           2
+-	 * user specified:                |__|                 |___|
+-	 * movablemem_map:                |___| |_________|    |______| ......
+-	 *
+-	 * Using movablemem_map, we can prevent memblock from allocating memory
+-	 * on ZONE_MOVABLE at boot time.
+-	 *
+-	 * NOTE: In this case, SRAT info will be ingored.
+-	 */
+-	overlap = movablemem_map_overlap(start_pfn, end_pfn);
+-	if (overlap >= 0) {
+-		/*
+-		 * If this range overlaps with movablemem_map, then update
+-		 * zone_movable_limit[nid] if it has lower start pfn.
+-		 */
+-		start_pfn = max(start_pfn,
+-				movablemem_map.map[overlap].start_pfn);
+-
+-		if (!zone_movable_limit[nid] ||
+-		    zone_movable_limit[nid] > start_pfn)
+-			zone_movable_limit[nid] = start_pfn;
+-
+-		/* Insert the higher part of the overlapped range. */
+-		if (movablemem_map.map[overlap].end_pfn < end_pfn)
+-			insert_movablemem_map(start_pfn, end_pfn);
+-	} else {
+-		/*
+-		 * If this is a range higher than zone_movable_limit[nid],
+-		 * insert it to movablemem_map because all ranges higher than
+-		 * zone_movable_limit[nid] on this node will be ZONE_MOVABLE.
+-		 */
+-		if (zone_movable_limit[nid] &&
+-		    start_pfn > zone_movable_limit[nid])
+-			insert_movablemem_map(start_pfn, end_pfn);
+-	}
+-}
+-#else		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+-static inline void sanitize_movablemem_map(int nid, u64 start, u64 end,
+-					   bool hotpluggable)
+-{
+-}
+-#endif		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+-
+ /* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
+ int __init
+ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ {
+ 	u64 start, end;
+ 	u32 hotpluggable;
+-	int node, pxm;
++	int node, pxm, i;
++	struct memblock_type *rgn = &memblock.reserved;
+ 
+ 	if (srat_disabled())
+ 		goto out_err;
+@@ -295,14 +177,27 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 
+ 	node_set(node, numa_nodes_parsed);
+ 
++	/*
++	 * The data whose life cycle is the same as the node, such as pagetable,
++	 * could be acllocated on local node by memblock. But now, none of them
++	 * has been initialized yet. So the kernel resides in the nodes on which
++	 * memblock has reserved memory.
++	 */
++	for (i = 0; i < rgn->cnt; i++) {
++		if (end <= rgn->regions[i].base ||
++		    start >= rgn->regions[i].base + rgn->regions[i].size)
++			continue;
++
++		node_set(node, movablemem_map.numa_nodes_kernel);
++	}
++
+ 	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
+ 	       node, pxm,
+ 	       (unsigned long long) start, (unsigned long long) end - 1,
+ 	       hotpluggable ? "Hot Pluggable" : "");
+ 
+-	sanitize_movablemem_map(node, start, end, hotpluggable);
+-
+ 	return 0;
++
+ out_err_bad_srat:
+ 	bad_srat();
+ out_err:
 -- 
 1.7.1
 
