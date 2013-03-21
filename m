@@ -1,186 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750941Ab3CURJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 13:09:50 -0400
-Received: from www.sr71.net ([198.145.64.142]:51326 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750698Ab3CURJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 13:09:49 -0400
-Message-ID: <514B3F24.3070006@sr71.net>
-Date: Thu, 21 Mar 2013 10:11:00 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751103Ab3CURKR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 13:10:17 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39661 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916Ab3CURKO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 13:10:14 -0400
+Message-ID: <514B3EEF.3080705@wwwdotorg.org>
+Date: Thu, 21 Mar 2013 11:10:07 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2, RFC 08/30] thp, mm: rewrite add_to_page_cache_locked()
- to support huge pages
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-9-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1363283435-7666-9-git-send-email-kirill.shutemov@linux.intel.com>
+To: kishon <kishon@ti.com>
+CC: balbi@ti.com, gregkh@linuxfoundation.org, arnd@arndb.de,
+        akpm@linux-foundation.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tony@atomide.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        b-cousson@ti.com, linux@arm.linux.org.uk, eballetbo@gmail.com,
+        javier@dowhile0.org, mchehab@redhat.com, santosh.shilimkar@ti.com,
+        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 5/6] ARM: dts: omap: update usb_otg_hs data
+References: <1363770725-13717-1-git-send-email-kishon@ti.com> <1363770725-13717-6-git-send-email-kishon@ti.com> <514A233F.8010105@wwwdotorg.org> <514AA74D.9070506@ti.com>
+In-Reply-To: <514AA74D.9070506@ti.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On 03/21/2013 12:23 AM, kishon wrote:
+> Hi,
 > 
-> For huge page we add to radix tree HPAGE_CACHE_NR pages at once: head
-> page for the specified index and HPAGE_CACHE_NR-1 tail pages for
-> following indexes.
+> On Thursday 21 March 2013 02:29 AM, Stephen Warren wrote:
+>> On 03/20/2013 03:12 AM, Kishon Vijay Abraham I wrote:
+>>> Updated the usb_otg_hs dt data to include the *phy* and *phy-names*
+>>> binding in order for the driver to use the new generic PHY framework.
+>>> Also updated the Documentation to include the binding information.
+>>
+>>> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt
+>>> b/Documentation/devicetree/bindings/usb/omap-usb.txt
+>>> index abce256..3d6f9f6 100644
+>>> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
+>>> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+>>> @@ -19,6 +19,9 @@ OMAP MUSB GLUE
+>>>    - power : Should be "50". This signifies the controller can supply
+>>> upto
+>>>      100mA when operating in host mode.
+>>>    - usb-phy : the phandle for the PHY device
+>>> + - phy : the phandle for the PHY device (used by generic PHY framework)
+>>> + - phy-names : the names of the PHY corresponding to the PHYs
+>>> present in the
+>>> +   *phy* phandle.
+>>
+>> If the intent is for those properties to be generic and used by any DT
+>> binding that refers to a PHY node, I think you'd want to define those
+>> properties in e.g. Documentation/devicetree/bindings/phy/phy.txt, just
+>> like common clock/GPIO/... properties are defined in standalone common
+>> files.
 > 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
->  mm/filemap.c |   76 ++++++++++++++++++++++++++++++++++++++++------------------
->  1 file changed, 53 insertions(+), 23 deletions(-)
+> Ok. Will add it.
+>>
+>> I think you want to require that DT nodes that represent PHYs have a
+>> #phy-cells property, and that the format of the phy property be
+>> <&phy_phandle phy_specifier*>, where #phy-cells in the referenced node
+>> defines how many cells are part of phy_specifier*, just like (almost)
+>> any other DT property that references another node by phandle. That way,
+>> if a single DT node represents a HW block that implements e.g. 3 PHYs,
+>> it can use #phy-cells = <1>, and the referencing phy property can
+>> include a cell that indicates which of those 3 PHYs is being referenced.
 > 
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 2d99191..6bac9e2 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -447,6 +447,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
->  		pgoff_t offset, gfp_t gfp_mask)
->  {
->  	int error;
-> +	int nr = 1;
->  
->  	VM_BUG_ON(!PageLocked(page));
->  	VM_BUG_ON(PageSwapBacked(page));
-> @@ -454,32 +455,61 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
->  	error = mem_cgroup_cache_charge(page, current->mm,
->  					gfp_mask & GFP_RECLAIM_MASK);
->  	if (error)
-> -		goto out;
-> +		return error;
->  
-> -	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
-> -	if (error == 0) {
-> -		page_cache_get(page);
-> -		page->mapping = mapping;
-> -		page->index = offset;
-> +	if (PageTransHuge(page)) {
-> +		BUILD_BUG_ON(HPAGE_CACHE_NR > RADIX_TREE_PRELOAD_NR);
-> +		nr = HPAGE_CACHE_NR;
-> +	}
+> Currently, if a single phandle have reference to multiple PHYs, we can
+> get PHY by passing index or by name as give in phy-names.
+> I'm not sure if we have <&phy_phandle phy_specifier*>, what could that
+> phy_specifier be? Maybe phy_type?
 
-That seems like a slightly odd place to put a BUILD_BUG_ON().  I guess
-it doesn't matter to some degree, but does putting it inside the if()
-imply anything?
+I'm not talking about the case where a consumer node references multiple
+PHYs. As you say, that is indeed handled by the driver looking at a
+particular index in the phys property, or using phy-names.
 
-> +	error = radix_tree_preload_count(nr, gfp_mask & ~__GFP_HIGHMEM);
-> +	if (error) {
-> +		mem_cgroup_uncharge_cache_page(page);
-> +		return error;
-> +	}
->  
-> -		spin_lock_irq(&mapping->tree_lock);
-> -		error = radix_tree_insert(&mapping->page_tree, offset, page);
-> -		if (likely(!error)) {
-> -			mapping->nrpages++;
-> -			__inc_zone_page_state(page, NR_FILE_PAGES);
-> -			spin_unlock_irq(&mapping->tree_lock);
-> -			trace_mm_filemap_add_to_page_cache(page);
-> -		} else {
-> -			page->mapping = NULL;
-> -			/* Leave page->index set: truncation relies upon it */
-> -			spin_unlock_irq(&mapping->tree_lock);
-> -			mem_cgroup_uncharge_cache_page(page);
-> -			page_cache_release(page);
+I'm talking about the case where a single provider provides multiple
+PHYs. For example, consider:
 
-I do really like how this rewrite de-indents this code. :)
+phys: phy {
+    compatible = "xxx";
+    reg = <...>;
+    #phy-cells = <1>;
+};
 
-> +	page_cache_get(page);
-> +	spin_lock_irq(&mapping->tree_lock);
-> +	page->mapping = mapping;
-> +	page->index = offset;
-> +	error = radix_tree_insert(&mapping->page_tree, offset, page);
-> +	if (unlikely(error))
-> +		goto err;
-> +	if (PageTransHuge(page)) {
-> +		int i;
-> +		for (i = 1; i < HPAGE_CACHE_NR; i++) {
-> +			page_cache_get(page + i);
-> +			page[i].index = offset + i;
+That node describes an IP block that implements 3 different PHYs. The
+registers are inter-mixed in such a way that you can't split it into 3
+separate nodes each with a separate device instance. If the consumers
+simply say:
 
-Is it OK to leave page->mapping unset for these?
+phys = <&phys>;
 
-> +			error = radix_tree_insert(&mapping->page_tree,
-> +					offset + i, page + i);
-> +			if (error) {
-> +				page_cache_release(page + i);
-> +				break;
-> +			}
->  		}
+then which of the 3 PHYs are you referring to?
 
-Throughout all this new code, I'd really challenge you to try as much as
-possible to minimize the code stuck under "if (PageTransHuge(page))".
+Instead, the consumer needs to say one of:
 
-For instance, could you change the for() loop a bit and have it shared
-between both cases, like:
+phys = <&phys 0>;
+phys = <&phys 1>;
+phys = <&phys 2>;
 
-> +	for (i = 0; i < nr; i++) {
-> +		page_cache_get(page + i);
-> +		page[i].index = offset + i;
-> +		error = radix_tree_insert(&mapping->page_tree,
-> +				offset + i, page + i);
-> +		if (error) {
-> +			page_cache_release(page + i);
-> +			break;
-> +		}
->  	}
+in order to specify which of the PHYs it refers to.
 
-> -		radix_tree_preload_end();
-> -	} else
-> -		mem_cgroup_uncharge_cache_page(page);
-> -out:
-> +		if (error) {
-> +			error = ENOSPC; /* no space for a huge page */
-> +			for (i--; i > 0; i--) {
-> +				radix_tree_delete(&mapping->page_tree,
-> +						offset + i);
-> +				page_cache_release(page + i);
-> +			}
-> +			radix_tree_delete(&mapping->page_tree, offset);
+The number of cells in the phy property after the phandle is specified
+by the #phy-cells property in the node referred to by the phandle. The
+meaning of all those cells is defined by the binding for the phy node.
+This could include both the PHY ID (as in my example here), or whatever
+configuration information or flags the provider needs. For example, both
+GPIOs and interrupts have specifiers than describe both of these things.
 
-I wonder if this would look any nicer if you just did all the
-page_cache_get()s for the entire huge page along with the head page, and
-then released them all in one place.  I think it might shrink the error
-handling paths here.
+For more background, take a look at almost any other binding that uses
+phandles.
 
-> +			goto err;
-> +		}
-> +	}
-> +	__mod_zone_page_state(page_zone(page), NR_FILE_PAGES, nr);
-> +	mapping->nrpages += nr;
-> +	spin_unlock_irq(&mapping->tree_lock);
-> +	trace_mm_filemap_add_to_page_cache(page);
-
-Do we need to change the tracing to make sure it notes that these were
-or weren't huge pages?
-
-> +	radix_tree_preload_end();
-> +	return 0;
-> +err:
-> +	page->mapping = NULL;
-> +	/* Leave page->index set: truncation relies upon it */
-> +	spin_unlock_irq(&mapping->tree_lock);
-> +	radix_tree_preload_end();
-> +	mem_cgroup_uncharge_cache_page(page);
-> +	page_cache_release(page);
->  	return error;
->  }
->  EXPORT_SYMBOL(add_to_page_cache_locked);
-
-Does the cgroup code know how to handle these large pages internally
-somehow?  It looks like the charge/uncharge is only being done for the
-head page.
+By the way, the property in the consumer should probably be "phys" not
+"phy" to be consistent with other similar properties (e.g. gpios,
+interrupts, ... which are all plural).
