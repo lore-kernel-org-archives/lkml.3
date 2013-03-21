@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756893Ab3CUDxG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 23:53:06 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:1068 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754575Ab3CUDxD (ORCPT
+	id S1756942Ab3CUDyh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 23:54:37 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:35006 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953Ab3CUDyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 23:53:03 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Tony Luck <tony.luck@intel.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>,
-        Jianguo Wu <wujianguo@huawei.com>, Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH] mm/IA64: fix build error for numa_clear_node() under IA64
-Date: Thu, 21 Mar 2013 11:50:30 +0800
-Message-ID: <1363837830-41596-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Wed, 20 Mar 2013 23:54:35 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: vgoyal@redhat.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
+        lisa.mitchell@hp.com, heiko.carstens@de.ibm.com,
+        akpm@linux-foundation.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
+References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
+	<20130316040223.15064.77472.stgit@localhost6.localdomain6>
+	<87ppyvp014.fsf@xmission.com>
+	<20130321.115920.339923125.d.hatayama@jp.fujitsu.com>
+Date: Wed, 20 Mar 2013 20:54:25 -0700
+In-Reply-To: <20130321.115920.339923125.d.hatayama@jp.fujitsu.com> (HATAYAMA
+	Daisuke's message of "Thu, 21 Mar 2013 11:59:20 +0900 (JST)")
+Message-ID: <87r4j98l1q.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+X-XM-AID: U2FsdGVkX1/HM/9jqaW/IQCmhuHrxYPZ6SuczEGoUP8=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v3 17/21] vmcore: check NT_VMCORE_PAD as a mark indicating the end of ELF note buffer
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-numa_clear_node() function is not implemented under IA64,
-it will be called in unmap_cpu_on_node() in mm/memory_hotplug.c.
-This cause build error under IA64, this patch add numa_clear_node()
-in IA64 to fix this problem.
+HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- arch/ia64/include/asm/numa.h |    5 ++---
- arch/ia64/mm/numa.c          |    5 +++++
- 2 files changed, 7 insertions(+), 3 deletions(-)
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
+> Subject: Re: [PATCH v3 17/21] vmcore: check NT_VMCORE_PAD as a mark indicating the end of ELF note buffer
+> Date: Tue, 19 Mar 2013 14:11:51 -0700
+>
+>> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
+>> 
+>>> Modern kernel marks the end of ELF note buffer with NT_VMCORE_PAD type
+>>> note in order to make the buffer satisfy mmap()'s page-size boundary
+>>> requirement. This patch makes finishing reading each buffer if the
+>>> note type now being read is NT_VMCORE_PAD type.
+>> 
+>> Ick.  Even with a pad header you can mark the end with an empty header,
+>> and my memory may be deceiving me but I believe an empty header is
+>> specified by the ELF ABI docs.
+>> 
+>> Beyond which I don't quite see the point of any of this as all of these
+>> headers need to be combined into a single note section before being
+>> presented to user space.
+>
+> Though this patch might get unecessary later, I cannot find part
+> explaining necessity of marking end of ELF segmetns with an empty
+> header in ELF spec. For example:
 
-diff --git a/arch/ia64/include/asm/numa.h b/arch/ia64/include/asm/numa.h
-index 2e27ef1..2db0a6c 100644
---- a/arch/ia64/include/asm/numa.h
-+++ b/arch/ia64/include/asm/numa.h
-@@ -67,14 +67,13 @@ extern int paddr_to_nid(unsigned long paddr);
- 
- extern void map_cpu_to_node(int cpu, int nid);
- extern void unmap_cpu_from_node(int cpu, int nid);
--
-+extern void numa_clear_node(int cpu);
- 
- #else /* !CONFIG_NUMA */
- #define map_cpu_to_node(cpu, nid)	do{}while(0)
- #define unmap_cpu_from_node(cpu, nid)	do{}while(0)
--
- #define paddr_to_nid(addr)	0
--
-+#define numa_clear_node(cpu)	do { } while (0)
- #endif /* CONFIG_NUMA */
- 
- #endif /* _ASM_IA64_NUMA_H */
-diff --git a/arch/ia64/mm/numa.c b/arch/ia64/mm/numa.c
-index 3efea7d..9488922 100644
---- a/arch/ia64/mm/numa.c
-+++ b/arch/ia64/mm/numa.c
-@@ -73,6 +73,11 @@ int __meminit __early_pfn_to_nid(unsigned long pfn)
- 	return -1;
- }
- 
-+void numa_clear_node(int cpu)
-+{
-+	unmap_cpu_from_node(cpu, NUMA_NO_NODE);
-+}
-+
- #ifdef CONFIG_MEMORY_HOTPLUG
- /*
-  *  SRAT information is stored in node_memblk[], then we can use SRAT
--- 
-1.7.1
+You are right.  It appears to be our own invention and just part of
+the ABI of taking a crash dump.  Something we should sit down and
+document someday.
 
+> Also, it's possible to get size of a whole part of ELF note segments
+> from p_memsz or p_filesz, and gdb and binutils are reading the note
+> segments until reaching the size.
 
+Agreed.  Except in our weird case where we generate the notes on the
+fly, and generate the NOTE segment header much earlier.
+
+Eric
