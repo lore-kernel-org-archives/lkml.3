@@ -1,124 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751103Ab3CURKR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 13:10:17 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39661 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab3CURKO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 13:10:14 -0400
-Message-ID: <514B3EEF.3080705@wwwdotorg.org>
-Date: Thu, 21 Mar 2013 11:10:07 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1751146Ab3CURKr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 13:10:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39883 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750708Ab3CURKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 13:10:46 -0400
+Date: Thu, 21 Mar 2013 18:08:27 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ming Lei <tom.leiming@gmail.com>,
+        Shaohua Li <shli@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: +
+	atomic-improve-atomic_inc_unless_negative-atomic_dec_unless_positive
+	.patch added to -mm tree
+Message-ID: <20130321170827.GA23539@redhat.com>
+References: <20130314162413.GA21344@redhat.com> <CACVXFVP+fGeWS3xwBfaQDFaH7=e_4CbgCru9DJczB2vyWuUL1g@mail.gmail.com> <20130315134632.GA18335@redhat.com> <CACVXFVOjWc4RU+A-8PeYP9RfJ1-HSiZHbbv771LXDynMs0ybMQ@mail.gmail.com> <20130315165131.GA32065@redhat.com> <20130317172621.GQ3656@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: kishon <kishon@ti.com>
-CC: balbi@ti.com, gregkh@linuxfoundation.org, arnd@arndb.de,
-        akpm@linux-foundation.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tony@atomide.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        b-cousson@ti.com, linux@arm.linux.org.uk, eballetbo@gmail.com,
-        javier@dowhile0.org, mchehab@redhat.com, santosh.shilimkar@ti.com,
-        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 5/6] ARM: dts: omap: update usb_otg_hs data
-References: <1363770725-13717-1-git-send-email-kishon@ti.com> <1363770725-13717-6-git-send-email-kishon@ti.com> <514A233F.8010105@wwwdotorg.org> <514AA74D.9070506@ti.com>
-In-Reply-To: <514AA74D.9070506@ti.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130317172621.GQ3656@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2013 12:23 AM, kishon wrote:
-> Hi,
-> 
-> On Thursday 21 March 2013 02:29 AM, Stephen Warren wrote:
->> On 03/20/2013 03:12 AM, Kishon Vijay Abraham I wrote:
->>> Updated the usb_otg_hs dt data to include the *phy* and *phy-names*
->>> binding in order for the driver to use the new generic PHY framework.
->>> Also updated the Documentation to include the binding information.
->>
->>> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt
->>> b/Documentation/devicetree/bindings/usb/omap-usb.txt
->>> index abce256..3d6f9f6 100644
->>> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
->>> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
->>> @@ -19,6 +19,9 @@ OMAP MUSB GLUE
->>>    - power : Should be "50". This signifies the controller can supply
->>> upto
->>>      100mA when operating in host mode.
->>>    - usb-phy : the phandle for the PHY device
->>> + - phy : the phandle for the PHY device (used by generic PHY framework)
->>> + - phy-names : the names of the PHY corresponding to the PHYs
->>> present in the
->>> +   *phy* phandle.
->>
->> If the intent is for those properties to be generic and used by any DT
->> binding that refers to a PHY node, I think you'd want to define those
->> properties in e.g. Documentation/devicetree/bindings/phy/phy.txt, just
->> like common clock/GPIO/... properties are defined in standalone common
->> files.
-> 
-> Ok. Will add it.
->>
->> I think you want to require that DT nodes that represent PHYs have a
->> #phy-cells property, and that the format of the phy property be
->> <&phy_phandle phy_specifier*>, where #phy-cells in the referenced node
->> defines how many cells are part of phy_specifier*, just like (almost)
->> any other DT property that references another node by phandle. That way,
->> if a single DT node represents a HW block that implements e.g. 3 PHYs,
->> it can use #phy-cells = <1>, and the referencing phy property can
->> include a cell that indicates which of those 3 PHYs is being referenced.
-> 
-> Currently, if a single phandle have reference to multiple PHYs, we can
-> get PHY by passing index or by name as give in phy-names.
-> I'm not sure if we have <&phy_phandle phy_specifier*>, what could that
-> phy_specifier be? Maybe phy_type?
+On 03/17, Paul E. McKenney wrote:
+>
+> On Sat, Mar 16, 2013 at 07:30:22PM +0100, Oleg Nesterov wrote:
+> >
+> > > The rule is that if an atomic primitive returns non-void, then there is
+> > > a full memory barrier before and after.
+> >
+> > This case is documented...
+> >
+> > > This applies to primitives
+> > > returning boolean as well, with atomic_dec_and_test() setting this
+> > > precedent from what I can see.
+> >
+> > I don't think this is the "fair" comparison. Unlike atomic_add_unless(),
+> > atomic_dec_and_test() always changes the memory even if it "fails".
+> >
+> > If atomic_add_unless() returns 0, nothing was changed and if we add
+> > the barrier it is not clear what it should be paired with.
+> >
+> > But OK. I have to agree that "keep the rules simple" makes sense, so
+> > we should change atomic_add_unless() as well.
+>
+> Agreed!
 
-I'm not talking about the case where a consumer node references multiple
-PHYs. As you say, that is indeed handled by the driver looking at a
-particular index in the phys property, or using phy-names.
+OK... since nobody volunteered to make a patch, what do you think about
+the change below?
 
-I'm talking about the case where a single provider provides multiple
-PHYs. For example, consider:
+It should "fix" atomic_add_unless() (only on x86) and optimize
+atomic_inc/dec_unless.
 
-phys: phy {
-    compatible = "xxx";
-    reg = <...>;
-    #phy-cells = <1>;
-};
+With this change atomic_*_unless() can do the unnecessary mb() after
+cmpxchg() fails, but I think this case is very unlikely.
 
-That node describes an IP block that implements 3 different PHYs. The
-registers are inter-mixed in such a way that you can't split it into 3
-separate nodes each with a separate device instance. If the consumers
-simply say:
+And, in the likely case atomic_inc/dec_unless avoids the 1st cmpxchg()
+which in most cases just reads the memory for the next cmpxchg().
 
-phys = <&phys>;
+Oleg.
 
-then which of the 3 PHYs are you referring to?
+--- x/arch/x86/include/asm/atomic.h
++++ x/arch/x86/include/asm/atomic.h
+@@ -212,15 +212,12 @@ static inline int atomic_xchg(atomic_t *
+ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
+ {
+ 	int c, old;
+-	c = atomic_read(v);
+-	for (;;) {
+-		if (unlikely(c == (u)))
+-			break;
+-		old = atomic_cmpxchg((v), c, c + (a));
++	for (c = atomic_read(v); c != u; c = old) {
++		old = atomic_cmpxchg(v, c, c + a);
+ 		if (likely(old == c))
+-			break;
+-		c = old;
++			return c;
+ 	}
++	smp_mb();
+ 	return c;
+ }
+ 
+--- x/include/linux/atomic.h
++++ x/include/linux/atomic.h
+@@ -64,11 +64,12 @@ static inline int atomic_inc_not_zero_hi
+ static inline int atomic_inc_unless_negative(atomic_t *p)
+ {
+ 	int v, v1;
+-	for (v = 0; v >= 0; v = v1) {
++	for (v = atomic_read(p); v >= 0; v = v1) {
+ 		v1 = atomic_cmpxchg(p, v, v + 1);
+ 		if (likely(v1 == v))
+ 			return 1;
+ 	}
++	smp_mb();
+ 	return 0;
+ }
+ #endif
+@@ -77,11 +78,12 @@ static inline int atomic_inc_unless_nega
+ static inline int atomic_dec_unless_positive(atomic_t *p)
+ {
+ 	int v, v1;
+-	for (v = 0; v <= 0; v = v1) {
++	for (atomic_read(p); v <= 0; v = v1) {
+ 		v1 = atomic_cmpxchg(p, v, v - 1);
+ 		if (likely(v1 == v))
+ 			return 1;
+ 	}
++	smp_mb();
+ 	return 0;
+ }
+ #endif
 
-Instead, the consumer needs to say one of:
-
-phys = <&phys 0>;
-phys = <&phys 1>;
-phys = <&phys 2>;
-
-in order to specify which of the PHYs it refers to.
-
-The number of cells in the phy property after the phandle is specified
-by the #phy-cells property in the node referred to by the phandle. The
-meaning of all those cells is defined by the binding for the phy node.
-This could include both the PHY ID (as in my example here), or whatever
-configuration information or flags the provider needs. For example, both
-GPIOs and interrupts have specifiers than describe both of these things.
-
-For more background, take a look at almost any other binding that uses
-phandles.
-
-By the way, the property in the consumer should probably be "phys" not
-"phy" to be consistent with other similar properties (e.g. gpios,
-interrupts, ... which are all plural).
