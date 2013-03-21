@@ -1,130 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab3CUVrl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 17:47:41 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:40639 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752977Ab3CUVrk (ORCPT
+	id S1753465Ab3CUVtZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 17:49:25 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41377 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752920Ab3CUVtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 17:47:40 -0400
-Message-ID: <1363902452.4488.31.camel@thor.lan>
-Subject: Re: ipc,sem: sysv semaphore scalability
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@surriel.com>, torvalds@linux-foundation.org,
-        davidlohr.bueso@hp.com, linux-kernel@vger.kernel.org,
-        hhuang@redhat.com, jason.low2@hp.com, walken@google.com,
-        lwoodman@redhat.com, chegu_vinod@hp.com, Dave Jones <davej@redhat.com>
-Date: Thu, 21 Mar 2013 17:47:32 -0400
-In-Reply-To: <20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	 <20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Thu, 21 Mar 2013 17:49:23 -0400
+Date: Thu, 21 Mar 2013 21:49:08 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        Mats Liljegren <mats.liljegren@enea.com>
+Subject: Re: [PATCH 1/4] ARM: context tracking: add exception support
+Message-ID: <20130321214908.GU4977@n2100.arm.linux.org.uk>
+References: <1363824121-26169-1-git-send-email-khilman@linaro.org> <1363824121-26169-2-git-send-email-khilman@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363824121-26169-2-git-send-email-khilman@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-21 at 14:10 -0700, Andrew Morton wrote:
-> On Wed, 20 Mar 2013 15:55:30 -0400 Rik van Riel <riel@surriel.com> wrote:
+On Wed, Mar 20, 2013 at 05:01:58PM -0700, Kevin Hilman wrote:
+> Add ARM support for the context tracking subsystem by instrumenting
+> exception entry/exit points.
 > 
-> > This series makes the sysv semaphore code more scalable,
-> > by reducing the time the semaphore lock is held, and making
-> > the locking more scalable for semaphore arrays with multiple
-> > semaphores.
-> > 
-> > The first four patches were written by Davidlohr Buesso, and
-> > reduce the hold time of the semaphore lock.
-> > 
-> > The last three patches change the sysv semaphore code locking
-> > to be more fine grained, providing a performance boost when
-> > multiple semaphores in a semaphore array are being manipulated
-> > simultaneously.
-> 
-> These patches conflict pretty badly with Peter's:
-> 
-> ipc-clamp-with-min.patch
-> ipc-separate-msg-allocation-from-userspace-copy.patch
-> ipc-tighten-msg-copy-loops.patch
-> ipc-set-efault-as-default-error-in-load_msg.patch
-> ipc-remove-msg-handling-from-queue-scan.patch
-> ipc-implement-msg_copy-as-a-new-receive-mode.patch
-> ipc-simplify-msg-list-search.patch
-> ipc-refactor-msg-list-search-into-separate-function.patch
-> ipc-refactor-msg-list-search-into-separate-function-fix.patch
-> 
-> (they're at http://ozlabs.org/~akpm/mmots/broken-out/)
-> 
-> 
-> 
-> We're in a bit of a mess at present.
-> 
-> Last month Peter sent a ten-patch series which fixed an oops (Subject:
-> "ipc MSG_COPY fixes").  The series did other stuff, so we merged into
-> mainline just two bugfix patches.  Then davej hit a trinity oops
-> (Subject: "ipc/testmsg GPF.") and testing confirmed that the remaining
-> eight patches in Peter's series fixed that up.
+> Special thanks to Mats Liljegren for testing, collaboration and adding
+> support for exceptions/faults that were missing in early test versions.
 
-Just to clarify the history.
+Not sure all of these are a good idea or are correct...
 
-A while back on linux-next both Dave and I were hitting ipc oopses on
-trinity, which was fallout from the MSG_COPY implementation.
+> @@ -405,7 +406,9 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
+>  	unsigned int instr;
+>  	siginfo_t info;
+>  	void __user *pc;
+> +	enum ctx_state prev_state;
+>  
+> +	prev_state = exception_enter();
+>  	pc = (void __user *)instruction_pointer(regs);
+>  
+>  	if (processor_mode(regs) == SVC_MODE) {
+> @@ -433,8 +436,10 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
+>  		goto die_sig;
+>  	}
+>  
+> -	if (call_undef_hook(regs, instr) == 0)
+> +	if (call_undef_hook(regs, instr) == 0) {
+> +		exception_exit(prev_state);
+>  		return;
+> +	}
+>  
+>  die_sig:
+>  #ifdef CONFIG_DEBUG_USER
+> @@ -451,12 +456,17 @@ die_sig:
+>  	info.si_addr  = pc;
+>  
+>  	arm_notify_die("Oops - undefined instruction", regs, &info, 0, 6);
+> +	exception_exit(prev_state);
 
-One of those oopses was the ipc/testmsg oops.
+So, FP emulation and VFP support happens via a separate path.  Does this
+also need to be instrumented?
 
-I was trying to push out the new tty ldisc patchset and trinity is a
-decent tool for exploring race conditions (which the tty layer was full
-of), so the oopses were in my way.
+>  }
+>  
+>  asmlinkage void do_unexp_fiq (struct pt_regs *regs)
+>  {
+> +	enum ctx_state prev_state;
+> +
+> +	prev_state = exception_enter();
+>  	printk("Hmm.  Unexpected FIQ received, but trying to continue\n");
+>  	printk("You may have a hardware problem...\n");
+> +	exception_exit(prev_state);
 
-Because it was nearly impossible to static analyze the existing ipc
-code, I just started cleaning up. As I did, I found the two
-by-then-obvious bug fixes. Also, assigning the 'msg' variable in the
-search loop looked suspicious so I factored that search loop out as
-well. That was the whole 10-patch "ipc MSG_COPY fixes" series.
+Not a good idea.  If we get here chances are things are really broken.
 
-I wasn't getting the ipc/testmsg bug anymore and I let Dave know, so all
-was good.
+>  }
+>  
+>  /*
+> @@ -467,6 +477,9 @@ asmlinkage void do_unexp_fiq (struct pt_regs *regs)
+>   */
+>  asmlinkage void bad_mode(struct pt_regs *regs, int reason)
+>  {
+> +	enum ctx_state prev_state;
+> +
+> +	prev_state = exception_enter();
+>  	console_verbose();
+>  
+>  	printk(KERN_CRIT "Bad mode in %s handler detected\n", handler[reason]);
 
-When Andrew asked me if the whole series needed to go into 3.9, I said I
-didn't know.
+Same here.  If we get here, we're probably about to die a horrid death.
 
-So when just the 2 of 10 patches went in, Dave started to hit the
-ipc/testmsg bug again on 3.9.
+> @@ -746,7 +759,9 @@ baddataabort(int code, unsigned long instr, struct pt_regs *regs)
+>  {
+>  	unsigned long addr = instruction_pointer(regs);
+>  	siginfo_t info;
+> +	enum ctx_state prev_state;
+>  
+> +	prev_state = exception_enter();
+>  #ifdef CONFIG_DEBUG_USER
+>  	if (user_debug & UDBG_BADABORT) {
+>  		printk(KERN_ERR "[%d] %s: bad data abort: code %d instr 0x%08lx\n",
+> @@ -762,6 +777,7 @@ baddataabort(int code, unsigned long instr, struct pt_regs *regs)
+>  	info.si_addr  = (void __user *)addr;
+>  
+>  	arm_notify_die("unknown data abort code", regs, &info, instr, 0);
+> +	exception_exit(prev_state);
+>  }
+>  
+>  void __readwrite_bug(const char *fn)
+> diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+> index 5dbf13f..759b70d 100644
+> --- a/arch/arm/mm/fault.c
+> +++ b/arch/arm/mm/fault.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/sched.h>
+>  #include <linux/highmem.h>
+>  #include <linux/perf_event.h>
+> +#include <linux/context_tracking.h>
+>  
+>  #include <asm/exception.h>
+>  #include <asm/pgtable.h>
+> @@ -424,9 +425,15 @@ do_translation_fault(unsigned long addr, unsigned int fsr,
+>  	pgd_t *pgd, *pgd_k;
+>  	pud_t *pud, *pud_k;
+>  	pmd_t *pmd, *pmd_k;
+> -
+> -	if (addr < TASK_SIZE)
+> -		return do_page_fault(addr, fsr, regs);
+> +	enum ctx_state prev_state;
+> +
+> +	prev_state = exception_enter();
+> +	if (addr < TASK_SIZE) {
+> +		int ret;
+> +		ret = do_page_fault(addr, fsr, regs);
+> +		exception_exit(prev_state);
+> +		return ret;
+> +	}
+>  
+>  	if (user_mode(regs))
+>  		goto bad_area;
+> @@ -472,10 +479,12 @@ do_translation_fault(unsigned long addr, unsigned int fsr,
+>  		goto bad_area;
+>  
+>  	copy_pmd(pmd, pmd_k);
+> +	exception_exit(prev_state);
+>  	return 0;
+>  
+>  bad_area:
+>  	do_bad_area(addr, fsr, regs);
+> +	exception_exit(prev_state);
+>  	return 0;
+>  }
+>  #else					/* CONFIG_MMU */
+> @@ -494,7 +503,12 @@ do_translation_fault(unsigned long addr, unsigned int fsr,
+>  static int
+>  do_sect_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+>  {
+> +	enum ctx_state prev_state;
+> +
+> +	prev_state = exception_enter();
+>  	do_bad_area(addr, fsr, regs);
+> +	exception_exit(prev_state);
+> +
+>  	return 0;
+>  }
+>  
+> @@ -542,9 +556,11 @@ do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+>  {
+>  	const struct fsr_info *inf = fsr_info + fsr_fs(fsr);
+>  	struct siginfo info;
+> +	enum ctx_state prev_state;
+>  
+> +	prev_state = exception_enter();
+>  	if (!inf->fn(addr, fsr & ~FSR_LNX_PF, regs))
+> -		return;
+> +		goto out;
+>  
+>  	printk(KERN_ALERT "Unhandled fault: %s (0x%03x) at 0x%08lx\n",
+>  		inf->name, fsr, addr);
+> @@ -554,6 +570,8 @@ do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+>  	info.si_code  = inf->code;
+>  	info.si_addr  = (void __user *)addr;
+>  	arm_notify_die("", regs, &info, fsr, 0);
+> +out:
+> +	exception_exit(prev_state);
+>  }
+>  
+>  void __init
+> @@ -574,9 +592,11 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
+>  {
+>  	const struct fsr_info *inf = ifsr_info + fsr_fs(ifsr);
+>  	struct siginfo info;
+> +	enum ctx_state prev_state;
+>  
+> +	prev_state = exception_enter();
+>  	if (!inf->fn(addr, ifsr | FSR_LNX_PF, regs))
+> -		return;
+> +		goto out;
+>  
+>  	printk(KERN_ALERT "Unhandled prefetch abort: %s (0x%03x) at 0x%08lx\n",
+>  		inf->name, ifsr, addr);
+> @@ -586,6 +606,8 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
+>  	info.si_code  = inf->code;
+>  	info.si_addr  = (void __user *)addr;
+>  	arm_notify_die("", regs, &info, ifsr, 0);
+> +out:
+> +	exception_exit(prev_state);
+>  }
+>  
+>  #ifndef CONFIG_ARM_LPAE
 
-> Nobody has yet
-> identified which of the eight does the good deed.  So we need to
-> either:
-> 
-> a) revert the original two fixes "ipc: fix potential oops when src
->    msg > 4k w/ MSG_COPY" and "ipc: don't allocate a copy larger than
->    max" or 
-> 
-> b) try reverting "ipc: don't allocate a copy larger than max", as
->    "ipc: fix potential oops when src msg > 4k w/ MSG_COPY" looks pretty
->    harmless or
-> 
-> c) work out which of the remaining 8 fixes the new oops and merge that or
-> 
-> d) merge all 8 fixes or
-> 
-> e) something else.
-
-
-The fix is in the other 8 patches. But I have to say, the base code was
-such a mess I have no idea which of the other 8 patches fixes the
-ipc/testmsg oops or how.
-
-I guarantee reverting those 2 fixes from my series will not make the
-ipc/testmsg oops go away.
-
-
-> Whichever way we go, we should get a wiggle on - this has been hanging
-> around for too long.  Dave, do you have time to determine whether
-> reverting 88b9e456b1649722673ff ("ipc: don't allocate a copy larger
-> than max") fixes things up?
-
-
-
+What is the reason for putting all this in the individual functions
+and not in the prefetch/data abort handlers -
+do_PrefetchAbort()/do_DataAbort()?
