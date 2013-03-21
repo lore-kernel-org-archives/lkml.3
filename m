@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933734Ab3CUQ0R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:26:17 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:41728 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755484Ab3CUQ0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:26:16 -0400
-Date: Thu, 21 Mar 2013 12:25:18 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        dormando <dormando@rydia.net>, Satoru Moriya <satoru.moriya@hds.com>,
-        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning
- requirements for kswapd
-Message-ID: <20130321162518.GB27848@cmpxchg.org>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-3-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363525456-10448-3-git-send-email-mgorman@suse.de>
+	id S933959Ab3CUQ0d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:26:33 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:54401 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756138Ab3CUQ03 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 12:26:29 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 2/5] arm: mvebu: Select DMA_BOUNCE when LPAE is selected in Kconfig
+Date: Thu, 21 Mar 2013 17:26:15 +0100
+Message-Id: <1363883179-1361-3-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1363883179-1361-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1363883179-1361-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 17, 2013 at 01:04:08PM +0000, Mel Gorman wrote:
-> Simplistically, the anon and file LRU lists are scanned proportionally
-> depending on the value of vm.swappiness although there are other factors
-> taken into account by get_scan_count().  The patch "mm: vmscan: Limit
-> the number of pages kswapd reclaims" limits the number of pages kswapd
-> reclaims but it breaks this proportional scanning and may evenly shrink
-> anon/file LRUs regardless of vm.swappiness.
-> 
-> This patch preserves the proportional scanning and reclaim. It does mean
-> that kswapd will reclaim more than requested but the number of pages will
-> be related to the high watermark.
+From: Lior Amsalem <alior@marvell.com>
 
-Swappiness is about page types, but this implementation compares all
-LRUs against each other, and I'm not convinced that this makes sense
-as there is no guaranteed balance between the inactive and active
-lists.  For example, the active file LRU could get knocked out when
-it's almost empty while the inactive file LRU has more easy cache than
-the anon lists combined.
+For mvebu IOs are 32 bits and we have 40 bits memory due to LPAE so
+make sure we give 32 bits addresses to the IOs.
 
-Would it be better to compare the sum of file pages with the sum of
-anon pages and then knock out the smaller pair?
+Signed-off-by: Lior Amsalem <alior@marvell.com>
+Tested-by: Franklin <flin@marvell.com>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+---
+ arch/arm/mach-mvebu/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/mach-mvebu/Kconfig b/arch/arm/mach-mvebu/Kconfig
+index 440b13e..617da94 100644
+--- a/arch/arm/mach-mvebu/Kconfig
++++ b/arch/arm/mach-mvebu/Kconfig
+@@ -13,6 +13,7 @@ config ARCH_MVEBU
+ 	select MVEBU_CLK_CORE
+ 	select MVEBU_CLK_CPU
+ 	select MVEBU_CLK_GATING
++	select DMABOUNCE if ARM_LPAE
+ 
+ if ARCH_MVEBU
+ 
+-- 
+1.7.9.5
+
