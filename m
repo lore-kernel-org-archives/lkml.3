@@ -1,264 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086Ab3CUTG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 15:06:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20521 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073Ab3CUTG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 15:06:57 -0400
-Date: Thu, 21 Mar 2013 15:06:53 -0400
-From: Dave Jones <davej@redhat.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: VFS deadlock ?
-Message-ID: <20130321190653.GA15479@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
+	id S1752263Ab3CUTHT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 15:07:19 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:42360 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab3CUTG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 15:06:58 -0400
+X-IronPort-AV: E=Sophos;i="4.84,888,1355126400"; 
+   d="scan'208";a="31640644"
+X-IronPort-AV: E=Sophos;i="4.84,887,1355126400"; 
+   d="scan'208";a="508661946"
+Date: Thu, 21 Mar 2013 12:33:31 -0700
+From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+CC: "John W. Linville" <linville@tuxdriver.com>,
+        Parag Warudkar <parag.lkml@gmail.com>,
+        Jouni Malinen <jouni@qca.qualcomm.com>,
+        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
+        <linux-wireless@vger.kernel.org>, <ath9k-devel@venema.h4ckr.net>,
+        <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        <senthilb@qca.qualcomm.com>
+Subject: Re: [PATCH] ath9k : Fix ieee80211 work while going to suspend
+Message-ID: <20130321193331.GB32416@pogo>
+References: <CAOULuOb0_40EX+6A_HM8eJN7kj9J4WhO9UhZbUUqng1Sfy_SQg@mail.gmail.com>
+ <20130318191340.GA28919@tuxdriver.com>
+ <20130318210308.GD32416@pogo>
+ <20130321114219.GB1459@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130321114219.GB1459@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al, Linus,
- I've seen this happen a few times recently.. I have a bunch of trinity processes
-that run for a few hours, and then eventually all those processes end up spinning
-waiting on each other.
+On Thu, Mar 21, 2013 at 12:42:20PM +0100, Stanislaw Gruszka wrote:
+> On Mon, Mar 18, 2013 at 02:03:08PM -0700, Luis R. Rodriguez wrote:
+> > > > --- a/drivers/net/wireless/ath/ath9k/link.c
+> > > > +++ b/drivers/net/wireless/ath/ath9k/link.c
+> > > > @@ -158,7 +158,8 @@ void ath_start_rx_poll(struct ath_softc *sc, u8 nbeacon)
+> > > >  {
+> > > >   if (!AR_SREV_9300(sc->sc_ah))
+> > > >   return;
+> > > > -
+> > > > + if (sc->suspending)
+> > > > + return;
+> > 
+> > Thanks for the patch! Please note the style issue here, you should
+> > use a tab, but other than that lets review what happened.
+> > 
+> > > >   if (!test_bit(SC_OP_PRIM_STA_VIF, &sc->sc_flags))
+> > > >   return;
+> > 
+> > Note that what this will do is call later mod_timer() for
+> > rx_poll_timer, the right thing to do then, which would
+> > be equivalent to your patch is to modify the ath_start_rx_poll()
+> > to instead use the new API mod_timer_pending() added on v2.6.30
+> > via commit 74019224. This would not re-arm the timer if it was
+> > previously removed.
+> [snip]
+> > -	mod_timer(&sc->rx_poll_timer, jiffies + msecs_to_jiffies
+> > -		  (nbeacon * sc->cur_beacon_conf.beacon_interval));
+> > +	mod_timer_pending(&sc->rx_poll_timer, jiffies + msecs_to_jiffies
+> > +			  (nbeacon * sc->cur_beacon_conf.beacon_interval));
+> 
+> But isn't this prevent to run timer in case it was not running, but
+> we want to start it ?
 
-The stack traces always seem to look like this..
+No you're right, this would never have it run, sorry about that.
+But lets look at this a little closer. The issue is at suspend
+time, and the issue is ath9k is trying to schedule work while
+going to suspend.
 
-Does this look like a real kernel deadlock, or more likely that trinity was unlucky enough
-to do something really dumb that I need to protect itself against ?
+So when does this work get called?
 
-I've only seen it happening the last week or so (but that may be because of all
-the crap that I ended up finding last week preventing me running long enough
-to hit this until now..)
+Given the trace this is hit when the timer rx_poll_timer runs,
+which in turn calls ath_rx_poll() to schedule hw_check_work work.
+The rx_poll_timer however was originally only set at the end of
+the routine that hw_check_work sets off but also at other entry
+points (ath_start_rx_poll() callers). Once ath_start_rx_poll()
+gets called though we can go on looping as follows:
 
-Tree is Linus' latest with Peter Hurley's tty patchset on top (which afair
-doesn't touch anything in these paths).
+work			timer			work
+hw_check_work	-->	rx_poll_timer	-->	hw_check_work
 
-lockdep hasn't picked up anything, which makes me wonder if it's my problem..
+At suspend time we do this though:
 
-	Dave
+ath_cancel_work(sc);                                                    
+del_timer_sync(&sc->rx_poll_timer);  
 
+So perhaps what we need is:
 
-trinity-child2  D ffff880110b3a7e0  5448  7669      1 0x00000004
- ffff8801272a7d20 0000000000000086 ffff880101874920 ffff8801272a7fd8
- ffff8801272a7fd8 ffff8801272a7fd8 ffff880128ca8000 ffff880101874920
- ffff8801039a0250 0000000000000246 ffff880101874920 ffff8801272a7fd8
-Call Trace:
- [<ffffffff816c2fd3>] schedule_preempt_disabled+0x33/0x80
- [<ffffffff816bfcc1>] mutex_lock_nested+0x1a1/0x3d0
- [<ffffffff811c7034>] ? lock_rename+0x114/0x120
- [<ffffffff811c7034>] ? lock_rename+0x114/0x120
- [<ffffffff811c7034>] lock_rename+0x114/0x120
- [<ffffffff811cd7a7>] sys_renameat+0x1f7/0x3b0
- [<ffffffff810b33a2>] ? get_lock_stats+0x22/0x70
- [<ffffffff810b6b95>] ? trace_hardirqs_on_caller+0x115/0x1a0
- [<ffffffff810b6b95>] ? trace_hardirqs_on_caller+0x115/0x1a0
- [<ffffffff8134a24e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff816cd102>] system_call_fastpath+0x16/0x1b
-
-trinity-child1  D ffff880110b3a7e0  5200  7901      1 0x00000004
- ffff8801015ddc50 0000000000000086 ffff880123fca490 ffff8801015ddfd8
- ffff8801015ddfd8 ffff8801015ddfd8 ffff880128cac920 ffff880123fca490
- ffff8801015dde60 0000000000000246 ffff880123fca490 ffff8801015ddfd8
-Call Trace:
- [<ffffffff816c2fd3>] schedule_preempt_disabled+0x33/0x80
- [<ffffffff816bfcc1>] mutex_lock_nested+0x1a1/0x3d0
- [<ffffffff816bb512>] ? lookup_slow+0x13f/0x1b8
- [<ffffffff816bb512>] ? lookup_slow+0x13f/0x1b8
- [<ffffffff816bb512>] lookup_slow+0x13f/0x1b8
- [<ffffffff811c805a>] ? lookup_fast+0x16a/0x2d0
- [<ffffffff811c9d7c>] path_lookupat+0x79c/0x7c0
- [<ffffffff8119fa87>] ? kmem_cache_alloc+0xf7/0x340
- [<ffffffff8100a144>] ? native_sched_clock+0x24/0x80
- [<ffffffff811c826a>] ? getname_flags+0x5a/0x1a0
- [<ffffffff811c9dd4>] filename_lookup+0x34/0xc0
- [<ffffffff811ccd23>] user_path_at_empty+0x63/0xa0
- [<ffffffff8100a144>] ? native_sched_clock+0x24/0x80
- [<ffffffff810b3288>] ? trace_hardirqs_off_caller+0x28/0xc0
- [<ffffffff816cd127>] ? sysret_check+0x1b/0x56
- [<ffffffff811ccd71>] user_path_at+0x11/0x20
- [<ffffffff811bb538>] sys_fchmodat+0x38/0xa0
- [<ffffffff8134a24e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff811bb5b9>] sys_chmod+0x19/0x20
- [<ffffffff816cd102>] system_call_fastpath+0x16/0x1b
-
-trinity-child1  D ffff880110b3a7e0  5528  8651  29705 0x00000004
- ffff8801187cfc60 0000000000000082 ffff880126a28000 ffff8801187cffd8
- ffff8801187cffd8 ffff8801187cffd8 ffffffff81c10440 ffff880126a28000
- ffff8801187cfe70 0000000000000246 ffff880126a28000 ffff8801187cffd8
-Call Trace:
- [<ffffffff816c2fd3>] schedule_preempt_disabled+0x33/0x80
- [<ffffffff816bfcc1>] mutex_lock_nested+0x1a1/0x3d0
- [<ffffffff816bb512>] ? lookup_slow+0x13f/0x1b8
- [<ffffffff816bb512>] ? lookup_slow+0x13f/0x1b8
- [<ffffffff816bb512>] lookup_slow+0x13f/0x1b8
- [<ffffffff811c805a>] ? lookup_fast+0x16a/0x2d0
- [<ffffffff811c9d7c>] path_lookupat+0x79c/0x7c0
- [<ffffffff8119fa87>] ? kmem_cache_alloc+0xf7/0x340
- [<ffffffff810b3288>] ? trace_hardirqs_off_caller+0x28/0xc0
- [<ffffffff811c826a>] ? getname_flags+0x5a/0x1a0
- [<ffffffff811c9dd4>] filename_lookup+0x34/0xc0
- [<ffffffff811ccd23>] user_path_at_empty+0x63/0xa0
- [<ffffffff810b3288>] ? trace_hardirqs_off_caller+0x28/0xc0
- [<ffffffff816cd127>] ? sysret_check+0x1b/0x56
- [<ffffffff811ccd71>] user_path_at+0x11/0x20
- [<ffffffff811e4904>] sys_removexattr+0x34/0xb0
- [<ffffffff816cd102>] system_call_fastpath+0x16/0x1b
-
-trinity-child3  D ffff880110b3a7e0  5312  9067      1 0x00000004
- ffff880100d29c60 0000000000000082 ffff8801271a0000 ffff880100d29fd8
- ffff880100d29fd8 ffff880100d29fd8 ffff880128cac920 ffff8801271a0000
- ffff880100d29e70 0000000000000246 ffff8801271a0000 ffff880100d29fd8
-Call Trace:
- [<ffffffff816c2fd3>] schedule_preempt_disabled+0x33/0x80
- [<ffffffff816bfcc1>] mutex_lock_nested+0x1a1/0x3d0
- [<ffffffff816bb512>] ? lookup_slow+0x13f/0x1b8
- [<ffffffff816bb512>] ? lookup_slow+0x13f/0x1b8
- [<ffffffff816bb512>] lookup_slow+0x13f/0x1b8
- [<ffffffff811c805a>] ? lookup_fast+0x16a/0x2d0
- [<ffffffff811c9d7c>] path_lookupat+0x79c/0x7c0
- [<ffffffff8119fa87>] ? kmem_cache_alloc+0xf7/0x340
- [<ffffffff811c826a>] ? getname_flags+0x5a/0x1a0
- [<ffffffff811c9dd4>] filename_lookup+0x34/0xc0
- [<ffffffff811ccd23>] user_path_at_empty+0x63/0xa0
- [<ffffffff810b3ace>] ? put_lock_stats.isra.27+0xe/0x40
- [<ffffffff810b6c2d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff816c4787>] ? _raw_spin_unlock_irq+0x37/0x60
- [<ffffffff816cd127>] ? sysret_check+0x1b/0x56
- [<ffffffff811ccd71>] user_path_at+0x11/0x20
- [<ffffffff811bb538>] sys_fchmodat+0x38/0xa0
- [<ffffffff816cd102>] system_call_fastpath+0x16/0x1b
-
-trinity-child0  D ffff880110b3a7e0  5320  9112      1 0x00000004
- ffff8801014fbc50 0000000000000086 ffff880123a94920 ffff8801014fbfd8
- ffff8801014fbfd8 ffff8801014fbfd8 ffffffff81c10440 ffff880123a94920
- ffff8801014fbe60 0000000000000246 ffff880123a94920 ffff8801014fbfd8
-Call Trace:
- [<ffffffff816c2fd3>] schedule_preempt_disabled+0x33/0x80
- [<ffffffff816bfcc1>] mutex_lock_nested+0x1a1/0x3d0
- [<ffffffff816bb512>] ? lookup_slow+0x13f/0x1b8
- [<ffffffff816bb512>] ? lookup_slow+0x13f/0x1b8
- [<ffffffff816bb512>] lookup_slow+0x13f/0x1b8
- [<ffffffff811c805a>] ? lookup_fast+0x16a/0x2d0
- [<ffffffff811c9d7c>] path_lookupat+0x79c/0x7c0
- [<ffffffff8119fa87>] ? kmem_cache_alloc+0xf7/0x340
- [<ffffffff8100a144>] ? native_sched_clock+0x24/0x80
- [<ffffffff811c826a>] ? getname_flags+0x5a/0x1a0
- [<ffffffff811c9dd4>] filename_lookup+0x34/0xc0
- [<ffffffff811ccd23>] user_path_at_empty+0x63/0xa0
- [<ffffffff8100a144>] ? native_sched_clock+0x24/0x80
- [<ffffffff810b3288>] ? trace_hardirqs_off_caller+0x28/0xc0
- [<ffffffff816cd127>] ? sysret_check+0x1b/0x56
- [<ffffffff811ccd71>] user_path_at+0x11/0x20
- [<ffffffff811babb5>] do_sys_truncate+0x35/0x90
- [<ffffffff811bad7e>] sys_truncate+0xe/0x10
- [<ffffffff816cd102>] system_call_fastpath+0x16/0x1b
-
-trinity-child3  D ffff880110b3a7e0  5304  9414  29705 0x00000004
- ffff880127b23c40 0000000000000082 ffff880128d38000 ffff880127b23fd8
- ffff880127b23fd8 ffff880127b23fd8 ffffffff81c10440 ffff880128d38000
- ffff880127b23e50 0000000000000246 ffff880128d38000 ffff880127b23fd8
-Call Trace:
- [<ffffffff816c2fd3>] schedule_preempt_disabled+0x33/0x80
- [<ffffffff816bfcc1>] mutex_lock_nested+0x1a1/0x3d0
- [<ffffffff816bb512>] ? lookup_slow+0x13f/0x1b8
- [<ffffffff816bb512>] ? lookup_slow+0x13f/0x1b8
- [<ffffffff816bb512>] lookup_slow+0x13f/0x1b8
- [<ffffffff811c805a>] ? lookup_fast+0x16a/0x2d0
- [<ffffffff811c9d7c>] path_lookupat+0x79c/0x7c0
- [<ffffffff8119fa87>] ? kmem_cache_alloc+0xf7/0x340
- [<ffffffff811c826a>] ? getname_flags+0x5a/0x1a0
- [<ffffffff811c9dd4>] filename_lookup+0x34/0xc0
- [<ffffffff811ccd23>] user_path_at_empty+0x63/0xa0
- [<ffffffff8119fa87>] ? kmem_cache_alloc+0xf7/0x340
- [<ffffffff81078c32>] ? creds_are_invalid.part.8+0x12/0x50
- [<ffffffff81078f6a>] ? prepare_creds+0x3a/0x1f0
- [<ffffffff811ccd71>] user_path_at+0x11/0x20
- [<ffffffff811bb093>] sys_faccessat+0xa3/0x230
- [<ffffffff816cd102>] system_call_fastpath+0x16/0x1b
-
-trinity-child2  D ffff880110b3a7e0  5704 10021  29705 0x00000004
- ffff8801228a7be0 0000000000000086 ffff880128c18000 ffff8801228a7fd8
- ffff8801228a7fd8 ffff8801228a7fd8 ffffffff81c10440 ffff880128c18000
- ffff8801228a7df0 0000000000000246 ffff880128c18000 ffff8801228a7fd8
-Call Trace:
- [<ffffffff816c2fd3>] schedule_preempt_disabled+0x33/0x80
- [<ffffffff816bfcc1>] mutex_lock_nested+0x1a1/0x3d0
- [<ffffffff816bb512>] ? lookup_slow+0x13f/0x1b8
- [<ffffffff816bb512>] ? lookup_slow+0x13f/0x1b8
- [<ffffffff816bb512>] lookup_slow+0x13f/0x1b8
- [<ffffffff811c805a>] ? lookup_fast+0x16a/0x2d0
- [<ffffffff8100a144>] ? native_sched_clock+0x24/0x80
- [<ffffffff811c9d7c>] path_lookupat+0x79c/0x7c0
- [<ffffffff8119fa87>] ? kmem_cache_alloc+0xf7/0x340
- [<ffffffff811c826a>] ? getname_flags+0x5a/0x1a0
- [<ffffffff811c9dd4>] filename_lookup+0x34/0xc0
- [<ffffffff811ccd23>] user_path_at_empty+0x63/0xa0
- [<ffffffff8116fbdc>] ? might_fault+0x9c/0xb0
- [<ffffffff811ccd71>] user_path_at+0x11/0x20
- [<ffffffff811c1379>] vfs_fstatat+0x49/0x90
- [<ffffffff811c1917>] sys_newlstat+0x27/0x40
- [<ffffffff810b6b95>] ? trace_hardirqs_on_caller+0x115/0x1a0
- [<ffffffff8134a24e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff816cd102>] system_call_fastpath+0x16/0x1b
-
-trinity-child0  D ffff880110b3a7e0  5624 10222  29705 0x00000004
- ffff8801005ebc50 0000000000000086 ffff880101872490 ffff8801005ebfd8
- ffff8801005ebfd8 ffff8801005ebfd8 ffffffff81c10440 ffff880101872490
- ffff8801005ebe60 0000000000000246 ffff880101872490 ffff8801005ebfd8
-Call Trace:
- [<ffffffff816c2fd3>] schedule_preempt_disabled+0x33/0x80
- [<ffffffff816bfcc1>] mutex_lock_nested+0x1a1/0x3d0
- [<ffffffff816bb512>] ? lookup_slow+0x13f/0x1b8
- [<ffffffff816bb512>] ? lookup_slow+0x13f/0x1b8
- [<ffffffff816bb512>] lookup_slow+0x13f/0x1b8
- [<ffffffff811c805a>] ? lookup_fast+0x16a/0x2d0
- [<ffffffff811c9d7c>] path_lookupat+0x79c/0x7c0
- [<ffffffff8119fa87>] ? kmem_cache_alloc+0xf7/0x340
- [<ffffffff811c826a>] ? getname_flags+0x5a/0x1a0
- [<ffffffff811c9dd4>] filename_lookup+0x34/0xc0
- [<ffffffff811ccd23>] user_path_at_empty+0x63/0xa0
- [<ffffffff810b33a2>] ? get_lock_stats+0x22/0x70
- [<ffffffff810b6c2d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff816c4787>] ? _raw_spin_unlock_irq+0x37/0x60
- [<ffffffff816cd127>] ? sysret_check+0x1b/0x56
- [<ffffffff811ccd71>] user_path_at+0x11/0x20
- [<ffffffff811bb626>] sys_fchownat+0x66/0x110
- [<ffffffff816cd102>] system_call_fastpath+0x16/0x1b
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index 6e66f9c..42bb9ea 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -2151,9 +2152,9 @@ static int ath9k_suspend(struct ieee80211_hw *hw,
+ 
+ 	mutex_lock(&sc->mutex);
+ 
++	del_timer_sync(&sc->rx_poll_timer);
+ 	ath_cancel_work(sc);
+ 	ath_stop_ani(sc);
+-	del_timer_sync(&sc->rx_poll_timer);
+ 
+ 	if (test_bit(SC_OP_INVALID, &sc->sc_flags)) {
+ 		ath_dbg(common, ANY, "Device not present\n");
 
 
-runnable tasks:
-            task   PID         tree-key  switches  prio     exec-runtime         sum-exec        sum-sleep
-----------------------------------------------------------------------------------------------------------
+The less changes needed to fix the issue for stable the easier
+to backport.
 
+Technically though then we'd need all of these changes as well then:
 
-Showing all locks held in the system:
-4 locks on stack by trinity-child2/7669:
- #0: blocked:  (sb_writers#4){.+.+.+}, instance: ffff8801292d17d8, at: [<ffffffff811df134>] mnt_want_write+0x24/0x50
- #1: held:     (&type->s_vfs_rename_key){+.+.+.}, instance: ffff8801292d1928, at: [<ffffffff811c6f5e>] lock_rename+0x3e/0x120
- #2: held:     (&type->i_mutex_dir_key#2/1){+.+.+.}, instance: ffff880110b3a858, at: [<ffffffff811c701e>] lock_rename+0xfe/0x120
- #3: blocked:  (&type->i_mutex_dir_key#2/2){+.+.+.}, instance: ffff880110b3a858, at: [<ffffffff811c7034>] lock_rename+0x114/0x120
-1 lock on stack by trinity-child1/7901:
- #0: blocked:  (&type->i_mutex_dir_key#2){+.+.+.}, instance: ffff880110b3a858, at: [<ffffffff816bb512>] lookup_slow+0x13f/0x1b8
-1 lock on stack by trinity-child1/8651:
- #0: blocked:  (&type->i_mutex_dir_key#2){+.+.+.}, instance: ffff880110b3a858, at: [<ffffffff816bb512>] lookup_slow+0x13f/0x1b8
-1 lock on stack by trinity-child3/9067:
- #0: blocked:  (&type->i_mutex_dir_key#2){+.+.+.}, instance: ffff880110b3a858, at: [<ffffffff816bb512>] lookup_slow+0x13f/0x1b8
-1 lock on stack by trinity-child0/9112:
- #0: blocked:  (&type->i_mutex_dir_key#2){+.+.+.}, instance: ffff880110b3a858, at: [<ffffffff816bb512>] lookup_slow+0x13f/0x1b8
-1 lock on stack by trinity-child3/9414:
- #0: blocked:  (&type->i_mutex_dir_key#2){+.+.+.}, instance: ffff880110b3a858, at: [<ffffffff816bb512>] lookup_slow+0x13f/0x1b8
-1 lock on stack by trinity-child2/10021:
- #0: blocked:  (&type->i_mutex_dir_key#2){+.+.+.}, instance: ffff880110b3a858, at: [<ffffffff816bb512>] lookup_slow+0x13f/0x1b8
-1 lock on stack by trinity-child0/10222:
- #0: blocked:  (&type->i_mutex_dir_key#2){+.+.+.}, instance: ffff880110b3a858, at: [<ffffffff816bb512>] lookup_slow+0x13f/0x1b8
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index 6e66f9c..42bb9ea 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -752,8 +752,8 @@ static void ath9k_stop(struct ieee80211_hw *hw)
+ 
+ 	mutex_lock(&sc->mutex);
+ 
+-	ath_cancel_work(sc);
+ 	del_timer_sync(&sc->rx_poll_timer);
++	ath_cancel_work(sc);
+ 
+ 	if (test_bit(SC_OP_INVALID, &sc->sc_flags)) {
+ 		ath_dbg(common, ANY, "Device not present\n");
+@@ -1145,6 +1145,7 @@ static int ath9k_config(struct ieee80211_hw *hw, u32 changed)
+ 	if (changed & IEEE80211_CONF_CHANGE_IDLE) {
+ 		sc->ps_idle = !!(conf->flags & IEEE80211_CONF_IDLE);
+ 		if (sc->ps_idle) {
++			del_timer_sync(&sc->rx_poll_timer);
+ 			ath_cancel_work(sc);
+ 			ath9k_stop_btcoex(sc);
+ 		} else {
+@@ -2151,9 +2152,9 @@ static int ath9k_suspend(struct ieee80211_hw *hw,
+ 
+ 	mutex_lock(&sc->mutex);
+ 
++	del_timer_sync(&sc->rx_poll_timer);
+ 	ath_cancel_work(sc);
+ 	ath_stop_ani(sc);
+-	del_timer_sync(&sc->rx_poll_timer);
+ 
+ 	if (test_bit(SC_OP_INVALID, &sc->sc_flags)) {
+ 		ath_dbg(common, ANY, "Device not present\n");
 
+But then we have the chicken and the egg problem, as the work item
+could fire off the timer so it would seem to be good to prevent
+adding new work when suspending.
 
+> > Looking at this makes me think we should review all usage of
+> > mod_timer all over our 802.11 drivers, and mac80211, cfg80211 as
+> > well.
+> 
+> In mac80211 we use local->suspended and local->quiesce booleans to
+> prevent reschedule of timers when going to suspend for example.
+> Works use ifmgd->associted to prevent reschedule when we are
+> disassociating.
+> 
+> I think on ath9k also some boolean variable should be used, not only
+> for rx_poll_timer but also for other works i.e. tx_complete_work.
+> Is possible to use SC_OP_INVALID flags, since mac80211 call ath9k_stop
+> on suspend and ath9k_start on resume.
+
+Indeed however ieee80211_queue_work() already does a suspend check for
+us, it just complains as many drivers including mac80211 were setting
+up work incorrectly. The warning was put in place to help us find the
+issues. Using SC_OP_INVALID seems fair but we could also add a routine
+ieee80211_queue_work_safe() that silently fails if we are quiescing or
+suspended and not resuming but I can see that creating very sloppy
+driver writing and everyone abusing it.
+
+OK how about this for stable for now:
+
+diff --git a/drivers/net/wireless/ath/ath9k/link.c b/drivers/net/wireless/ath/ath9k/link.c
+index 39c84ec..7fdac6c 100644
+--- a/drivers/net/wireless/ath/ath9k/link.c
++++ b/drivers/net/wireless/ath/ath9k/link.c
+@@ -170,7 +170,8 @@ void ath_rx_poll(unsigned long data)
+ {
+ 	struct ath_softc *sc = (struct ath_softc *)data;
+ 
+-	ieee80211_queue_work(sc->hw, &sc->hw_check_work);
++	if (!test_bit(SC_OP_INVALID, &sc->sc_flags))
++		ieee80211_queue_work(sc->hw, &sc->hw_check_work);
+ }
+ 
+ /*
+
+  Luis
