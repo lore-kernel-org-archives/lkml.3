@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033Ab3CULPd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:15:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56368 "EHLO
+	id S1757117Ab3CULQl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:16:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56382 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754606Ab3CULPb (ORCPT
+	with ESMTP id S1755481Ab3CULQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:15:31 -0400
-Date: Thu, 21 Mar 2013 04:13:56 -0700
+	Thu, 21 Mar 2013 07:16:40 -0400
+Date: Thu, 21 Mar 2013 04:15:06 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-3aec150af3de6c00570bdacf45bf5a999ab9cf1d@git.kernel.org>
+Message-ID: <tip-e5ccf9f45d8bff6bfeafa561d2238b0e4beb415e@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
         a.p.zijlstra@chello.nl, penberg@kernel.org, namhyung.kim@lge.com,
@@ -18,12 +18,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
         a.p.zijlstra@chello.nl, penberg@kernel.org, namhyung.kim@lge.com,
         tglx@linutronix.de, namhyung@kernel.org, jolsa@redhat.com
-In-Reply-To: <1362462812-30885-3-git-send-email-namhyung@kernel.org>
-References: <1362462812-30885-3-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1362462812-30885-4-git-send-email-namhyung@kernel.org>
+References: <1362462812-30885-4-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate:
-  Add a comment on the symbol__parse_objdump_line()
-Git-Commit-ID: 3aec150af3de6c00570bdacf45bf5a999ab9cf1d
+Subject: [tip:perf/core] perf annotate: Factor out disasm__calc_percent()
+Git-Commit-ID: e5ccf9f45d8bff6bfeafa561d2238b0e4beb415e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,23 +31,22 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:14:07 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:15:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3aec150af3de6c00570bdacf45bf5a999ab9cf1d
-Gitweb:     http://git.kernel.org/tip/3aec150af3de6c00570bdacf45bf5a999ab9cf1d
+Commit-ID:  e5ccf9f45d8bff6bfeafa561d2238b0e4beb415e
+Gitweb:     http://git.kernel.org/tip/e5ccf9f45d8bff6bfeafa561d2238b0e4beb415e
 Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Tue, 5 Mar 2013 14:53:22 +0900
+AuthorDate: Tue, 5 Mar 2013 14:53:23 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Fri, 15 Mar 2013 13:06:04 -0300
 
-perf annotate: Add a comment on the symbol__parse_objdump_line()
+perf annotate: Factor out disasm__calc_percent()
 
-The symbol__parse_objdump_line() parses result of the objdump run but
-it's hard to follow if one doesn't know the output format of the
-objdump.  Add a head comment on the function to help her.
+Factor out calculation of histogram of a symbol into
+disasm__calc_percent.  It'll be used for later changes.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>
@@ -57,40 +55,84 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1362462812-30885-3-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1362462812-30885-4-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/annotate.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ tools/perf/util/annotate.c | 49 ++++++++++++++++++++++++++++------------------
+ 1 file changed, 30 insertions(+), 19 deletions(-)
 
 diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 7eac5f0..fa347b1 100644
+index fa347b1..a91d7b1 100644
 --- a/tools/perf/util/annotate.c
 +++ b/tools/perf/util/annotate.c
-@@ -689,6 +689,26 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
- 	return 0;
+@@ -603,6 +603,33 @@ struct disasm_line *disasm__get_next_ip_line(struct list_head *head, struct disa
+ 	return NULL;
  }
  
-+/*
-+ * symbol__parse_objdump_line() parses objdump output (with -d --no-show-raw)
-+ * which looks like following
-+ *
-+ *  0000000000415500 <_init>:
-+ *    415500:       sub    $0x8,%rsp
-+ *    415504:       mov    0x2f5ad5(%rip),%rax        # 70afe0 <_DYNAMIC+0x2f8>
-+ *    41550b:       test   %rax,%rax
-+ *    41550e:       je     415515 <_init+0x15>
-+ *    415510:       callq  416e70 <__gmon_start__@plt>
-+ *    415515:       add    $0x8,%rsp
-+ *    415519:       retq
-+ *
-+ * it will be parsed and saved into struct disasm_line as
-+ *  <offset>       <name>  <ops.raw>
-+ *
-+ * The offset will be a relative offset from the start of the symbol and -1
-+ * means that it's not a disassembly line so should be treated differently.
-+ * The ops.raw part will be parsed further according to type of the instruction.
-+ */
- static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 				      FILE *file, size_t privsize)
- {
++static double disasm__calc_percent(struct disasm_line *next,
++				   struct annotation *notes, int evidx,
++				   s64 offset, u64 len, const char **path)
++{
++	struct source_line *src_line = notes->src->lines;
++	struct sym_hist *h = annotation__histogram(notes, evidx);
++	unsigned int hits = 0;
++	double percent = 0.0;
++
++	while (offset < (s64)len &&
++	       (next == NULL || offset < next->offset)) {
++		if (src_line) {
++			if (*path == NULL)
++				*path = src_line[offset].path;
++			percent += src_line[offset].percent;
++		} else
++			hits += h->addr[offset];
++
++		++offset;
++	}
++
++	if (src_line == NULL && h->sum)
++		percent = 100.0 * hits / h->sum;
++
++	return percent;
++}
++
+ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 start,
+ 		      struct perf_evsel *evsel, u64 len, int min_pcnt, int printed,
+ 		      int max_lines, struct disasm_line *queue)
+@@ -612,33 +639,17 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
+ 
+ 	if (dl->offset != -1) {
+ 		const char *path = NULL;
+-		unsigned int hits = 0;
+-		double percent = 0.0;
++		double percent;
+ 		const char *color;
+ 		struct annotation *notes = symbol__annotation(sym);
+-		struct source_line *src_line = notes->src->lines;
+-		struct sym_hist *h = annotation__histogram(notes, evsel->idx);
+ 		s64 offset = dl->offset;
+ 		const u64 addr = start + offset;
+ 		struct disasm_line *next;
+ 
+ 		next = disasm__get_next_ip_line(&notes->src->source, dl);
+ 
+-		while (offset < (s64)len &&
+-		       (next == NULL || offset < next->offset)) {
+-			if (src_line) {
+-				if (path == NULL)
+-					path = src_line[offset].path;
+-				percent += src_line[offset].percent;
+-			} else
+-				hits += h->addr[offset];
+-
+-			++offset;
+-		}
+-
+-		if (src_line == NULL && h->sum)
+-			percent = 100.0 * hits / h->sum;
+-
++		percent = disasm__calc_percent(next, notes, evsel->idx,
++					       offset, len, &path);
+ 		if (percent < min_pcnt)
+ 			return -1;
+ 
