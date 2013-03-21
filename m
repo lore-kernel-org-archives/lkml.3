@@ -1,132 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932668Ab3CUV5B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 17:57:01 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33217 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932319Ab3CUVxR (ORCPT
+	id S932481Ab3CUV5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 17:57:18 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:38829 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534Ab3CUV5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 17:53:17 -0400
-Message-Id: <20130321215234.886530981@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Thu, 21 Mar 2013 21:53:15 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: [patch 24/34] openrisc: Use generic idle loop
-References: <20130321214930.752934102@linutronix.de>
-Content-Disposition: inline; filename=openrisc-use-generic-idle-loop.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 21 Mar 2013 17:57:14 -0400
+Date: Thu, 21 Mar 2013 14:57:09 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Gerlando Falauto <gerlando.falauto@keymile.com>
+Cc: linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Simon Guinot <sguinot@lacie.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v3b 0/9] refactoring for mask_cache
+Message-ID: <20130321215709.GA27612@kroah.com>
+References: <1363885931-20571-1-git-send-email-gerlando.falauto@keymile.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363885931-20571-1-git-send-email-gerlando.falauto@keymile.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Idle poller with an extra check_pgt_cache() invocation. Use the core
-code.
+On Thu, Mar 21, 2013 at 06:12:02PM +0100, Gerlando Falauto wrote:
+> This patchset addresses a regression found with the Orion GPIO controller
+> when both Edge- and Level- based interrupts are requested within the same
+> GPIO chip. The regression was introduced by e59347a
+> "arm: orion: Use generic irq chip"
+> 
+> thereby affecting all kernel releases since 3.0.x.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/openrisc/Kconfig       |    1 
- arch/openrisc/kernel/idle.c |   73 --------------------------------------------
- 2 files changed, 1 insertion(+), 73 deletions(-)
+<formletter>
 
-Index: linux-2.6/arch/openrisc/Kconfig
-===================================================================
---- linux-2.6.orig/arch/openrisc/Kconfig
-+++ linux-2.6/arch/openrisc/Kconfig
-@@ -21,6 +21,7 @@ config OPENRISC
- 	select GENERIC_CLOCKEVENTS
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
-+	select GENERIC_IDLE_LOOP
- 	select MODULES_USE_ELF_RELA
- 
- config MMU
-Index: linux-2.6/arch/openrisc/kernel/idle.c
-===================================================================
---- linux-2.6.orig/arch/openrisc/kernel/idle.c
-+++ /dev/null
-@@ -1,73 +0,0 @@
--/*
-- * OpenRISC idle.c
-- *
-- * Linux architectural port borrowing liberally from similar works of
-- * others.  All original copyrights apply as per the original source
-- * declaration.
-- *
-- * Modifications for the OpenRISC architecture:
-- * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
-- * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
-- *
-- *      This program is free software; you can redistribute it and/or
-- *      modify it under the terms of the GNU General Public License
-- *      as published by the Free Software Foundation; either version
-- *      2 of the License, or (at your option) any later version.
-- *
-- * Idle daemon for or32.  Idle daemon will handle any action
-- * that needs to be taken when the system becomes idle.
-- */
--
--#include <linux/errno.h>
--#include <linux/sched.h>
--#include <linux/kernel.h>
--#include <linux/mm.h>
--#include <linux/smp.h>
--#include <linux/stddef.h>
--#include <linux/unistd.h>
--#include <linux/ptrace.h>
--#include <linux/slab.h>
--#include <linux/tick.h>
--
--#include <asm/pgtable.h>
--#include <asm/uaccess.h>
--#include <asm/io.h>
--#include <asm/processor.h>
--#include <asm/mmu.h>
--#include <asm/cache.h>
--#include <asm/pgalloc.h>
--
--void (*powersave) (void) = NULL;
--
--void cpu_idle(void)
--{
--	set_thread_flag(TIF_POLLING_NRFLAG);
--
--	/* endless idle loop with no priority at all */
--	while (1) {
--		tick_nohz_idle_enter();
--		rcu_idle_enter();
--
--		while (!need_resched()) {
--			check_pgt_cache();
--			rmb();
--
--			clear_thread_flag(TIF_POLLING_NRFLAG);
--
--			local_irq_disable();
--			/* Don't trace irqs off for idle */
--			stop_critical_timings();
--			if (!need_resched() && powersave != NULL)
--				powersave();
--			start_critical_timings();
--			local_irq_enable();
--			set_thread_flag(TIF_POLLING_NRFLAG);
--		}
--
--		rcu_idle_exit();
--		tick_nohz_idle_exit();
--		preempt_enable_no_resched();
--		schedule();
--		preempt_disable();
--	}
--}
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
 
-
+</formletter>
