@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244Ab3CUSWL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:22:11 -0400
-Received: from mga14.intel.com ([143.182.124.37]:65390 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073Ab3CUSWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:22:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,887,1355126400"; 
-   d="scan'208";a="217458428"
-Message-ID: <514B4FCF.7080509@intel.com>
-Date: Thu, 21 Mar 2013 11:22:07 -0700
-From: Dave Jiang <dave.jiang@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: "djbw@fb.com" <djbw@fb.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Mason, Jon" <jon.mason@intel.com>
-Subject: Re: [PATCH v2] ioat: remove chanerr mask setting for IOAT v3.x
-References: <20121127221608.11315.49374.stgit@djiang5-linux.ch.intel.com> <20130321050301.GB10326@intel.com>
-In-Reply-To: <20130321050301.GB10326@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752721Ab3CUSXc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:23:32 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41695 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613Ab3CUSXa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 14:23:30 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>
+Cc: arm@kernel.org, Shawn Guo <shawn.guo@linaro.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, linux-kbuild@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH REPOST 6/7] ARM: dt: add header to define IRQ flags
+Date: Thu, 21 Mar 2013 12:23:13 -0600
+Message-Id: <1363890194-31538-6-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1363890194-31538-1-git-send-email-swarren@wwwdotorg.org>
+References: <1363890194-31538-1-git-send-email-swarren@wwwdotorg.org>
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 10:03 PM, Vinod Koul wrote:
-> On Wed, Nov 28, 2012 at 03:46:08AM +0530, Jiang, Dave wrote:
->> The existing code set a value in the PCI_CHANERRMSK_INT register
->> for a workaround to address a pre-silicon bug on the Intel 5520 IO hub that
->> has been fixed when the hardware was released. There is no need for this
->> code.
->>
->> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
->> ---
->>
->>   drivers/dma/ioat/dma_v3.c |    7 +------
->>   1 file changed, 1 insertion(+), 6 deletions(-)
->>
->> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
->> index f7f1dc6..fda3b8a1 100644
->> --- a/drivers/dma/ioat/dma_v3.c
->> +++ b/drivers/dma/ioat/dma_v3.c
->> @@ -1126,12 +1126,7 @@ static int ioat3_reset_hw(struct ioat_chan_common *chan)
->>   	chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
->>   	writel(chanerr, chan->reg_base + IOAT_CHANERR_OFFSET);
->>   
->> -	/* -= IOAT ver.3 workarounds =- */
->> -	/* Write CHANERRMSK_INT with 3E07h to mask out the errors
->> -	 * that can cause stability issues for IOAT ver.3, and clear any
->> -	 * pending errors
->> -	 */
-> What is this code based against? i dont have above lines in -rc1 or my next?
-Looking at the Linus tree it looks like it's already upstream somehow? 
-Commit 6decffd.
+From: Stephen Warren <swarren@nvidia.com>
 
->> -	pci_write_config_dword(pdev, IOAT_PCI_CHANERRMASK_INT_OFFSET, 0x3e07);
->> +	/* clear any pending errors */
->>   	err = pci_read_config_dword(pdev, IOAT_PCI_CHANERR_INT_OFFSET, &chanerr);
->>   	if (err) {
->>   		dev_err(&pdev->dev, "channel error register unreachable\n");
->>
+Many IRQ device tree bindings use the same flags. Create a header to
+define those.
+
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+v2: Moved header. Added include guard.
+---
+ include/dt-bindings/interrupt-controller/irq.h |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+ create mode 100644 include/dt-bindings/interrupt-controller/irq.h
+
+diff --git a/include/dt-bindings/interrupt-controller/irq.h b/include/dt-bindings/interrupt-controller/irq.h
+new file mode 100644
+index 0000000..33a1003
+--- /dev/null
++++ b/include/dt-bindings/interrupt-controller/irq.h
+@@ -0,0 +1,19 @@
++/*
++ * This header provides constants for most IRQ bindings.
++ *
++ * Most IRQ bindings include a flags cell as part of the IRQ specifier.
++ * In most cases, the format of the flags cell uses the standard values
++ * defined in this header.
++ */
++
++#ifndef _DT_BINDINGS_INTERRUPT_CONTROLLER_IRQ_H
++#define _DT_BINDINGS_INTERRUPT_CONTROLLER_IRQ_H
++
++#define IRQ_TYPE_NONE		0
++#define IRQ_TYPE_EDGE_RISING	1
++#define IRQ_TYPE_EDGE_FALLING	2
++#define IRQ_TYPE_EDGE_BOTH	(IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING)
++#define IRQ_TYPE_LEVEL_HIGH	4
++#define IRQ_TYPE_LEVEL_LOW	8
++
++#endif
+-- 
+1.7.10.4
 
