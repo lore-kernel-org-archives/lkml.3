@@ -1,67 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933997Ab3CURC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 13:02:27 -0400
-Received: from vaxjo.synopsys.com ([198.182.60.75]:42288 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756043Ab3CURCZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 13:02:25 -0400
-Message-ID: <514B3D05.3070501@synopsys.com>
-Date: Thu, 21 Mar 2013 21:01:57 +0400
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+	id S934021Ab3CURGT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 13:06:19 -0400
+Received: from mout.web.de ([212.227.17.12]:53935 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755836Ab3CURGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 13:06:18 -0400
+Message-ID: <514B3DBB.3060302@web.de>
+Date: Thu, 21 Mar 2013 18:04:59 +0100
+From: Soeren Moch <smoch@web.de>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Michal Simek <monstr@monstr.eu>, Grant Likely <grant.likely@secretlab.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Geert Uytterhoeven" <geert@linux-m68k.org>,
-        <dahinds@users.sourceforge.net>
-Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
- with generic iowrite(read)8/16(be)
-References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <CACxGe6uHx4KdZRgAyL-wQ2GurojAH0eTa6YRCoSuCg89BAvBTA@mail.gmail.com> <CAHTX3dKPWg35Az8eE45AGriPZh2G6LLaQMynhFPKSZ+7UvM=9g@mail.gmail.com> <201302121725.07641.arnd@arndb.de>
-In-Reply-To: <201302121725.07641.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.121.8.30]
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Arnd Bergmann <arnd@arndb.de>, USB list <linux-usb@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-mm@kvack.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, michael@amarulasolutions.com
+Subject: Re: [PATCH] USB: EHCI: fix for leaking isochronous data
+References: <Pine.LNX.4.44L0.1303171320560.26486-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1303171320560.26486-100000@netrider.rowland.org>
+Content-Type: multipart/mixed;
+ boundary="------------000000010805030108080409"
+X-Provags-ID: V02:K0:yHkXVBl150mmsQB7SFZmNOjcHcaEffDLXXRLatz36zC
+ 26sby/zTJuqexNOtcloqRAYKdpy3LnQEprSYIFXvYlcpqVA3mw
+ AaFKNqfRmmMwFuwmCsGNq670gqMgyOBMB8N2smQatM59vgN2Am
+ MuIQbs7jqZ+IPqCt9aLV2c4O3SWT2HRt/MSdMHrvvobIJr9Dac
+ fw1NrAyVSEwZnXiTqtKnQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2013 09:25 PM, Arnd Bergmann wrote:
-> On Tuesday 12 February 2013, Michal Simek wrote:
->> But on Microblaze LE is necessary to use different datain/out_le16
->> functions as below
->> which are also not compatible with Microblaze and PPC BE.
->>
->> diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
->> index bbad046..8dd192c 100644
->> --- a/drivers/block/xsysace.c
->> +++ b/drivers/block/xsysace.c
->> @@ -314,7 +314,7 @@ static void ace_datain_le16(struct ace_device *ace)
->>          int i = ACE_FIFO_SIZE / 2;
->>          u16 *dst = ace->data_ptr;
->>          while (i--)
->> -               *dst++ = ioread16be(ace->baseaddr + 0x40);
->> +               *dst++ = ioread16(ace->baseaddr + 0x40);
->>          ace->data_ptr = dst;
->>   }
+This is a multi-part message in MIME format.
+--------------000000010805030108080409
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+
+On 03/17/13 18:36, Alan Stern wrote:
+> On Sun, 17 Mar 2013, Soeren Moch wrote:
 >
-> Hmm, that actually seems sane then: You can replace the loop around
-> ioread16be with a single ioread32_rep() call, which will use
-> the correct native endian accesses on both LE Microblaze
-> and on all the big-endian platforms. Note that the asm-generic
-> definition of that function was broken until quite recently
-> when Will Deacon repaired it in order to support ARM64.
+>> For each device only one isochronous endpoint is used (EP IN4, 1x 940
+>> Bytes, Interval 1).
+>> When the ENOMEM error occurs, a huge number of iTDs is in the free_list
+>> of one stream. This number is much higher than the 2*M entries, which
+>> should be there according to your description.
 >
-> 	Arnd
+> Okay, but how did they get there?  With each URB requiring 9 iTDs, and
+> about 5 URBs active at any time, there should be about 5*9 = 45 iTDs in
+> use and 2*9 = 18 iTDs on the free list.  By the time each URB
+> completes, it should have released all 9 iTDs back to the free list,
+> and each time an URB is submitted, it should be able to acquire all 9
+> of the iTDs that it needs from the free list -- it shouldn't have to
+> allocate any from the DMA pool.
+>
+> Looks like you'll have to investigate what's going on inside
+> itd_urb_transaction().  Print out some useful information whenever the
+> size of stream->free_list is above 50, such as the value of num_itds,
+> how many of the loop iterations could get an iTD from the free list,
+> and the value of itd->frame in the case where the "goto alloc_itd"
+> statement is followed.
+>
+> It might be a good idea also to print out the size of the free list in
+> itd_complete(), where it calls ehci_urb_done(), and include the value
+> of ehci->now_frame.
 >
 
-It seems like this thread was not updated for many weeks now.
-I'm wondering if I missed something or if I may do something to help you 
-guys move forward with proposed patch?
+Now I found out what is going on here:
 
--Alexey
+In itd_urb_transaction() we allocate 9 iTDs for each URB with 
+number_of_packets == 64 in my case. The iTDs are added to 
+sched->td_list. For a frame-aligned scheduling we need 8 iTDs, the 9th 
+one is released back to the front of the streams free_list in 
+iso_sched_free(). This iTD was cleared after allocation and has a frame 
+number of 0 now. So for each allocation when now_frame == 0 we allocate 
+from the dma_pool, not from the free_list. The attached patch 
+invalidates the frame number in each iTD before it is sent to the 
+scheduler. This fixes the problem without the need to iterate over a iTD 
+list.
+
+Signed-off-by: Soeren Moch <smoch@web.de>
+
+
+
+
+--------------000000010805030108080409
+Content-Type: text/x-patch;
+ name="ehci.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="ehci.diff"
+
+--- linux-3.9.0-rc3-guru/drivers/usb/host/ehci-sched.c.orig	2013-03-21 17:36:21.000000000 +0100
++++ linux-3.9.0-rc3-guru/drivers/usb/host/ehci-sched.c	2013-03-21 17:38:56.000000000 +0100
+@@ -1214,6 +1214,7 @@ itd_urb_transaction (
+ 
+ 		memset (itd, 0, sizeof *itd);
+ 		itd->itd_dma = itd_dma;
++		itd->frame = -1;
+ 		list_add (&itd->itd_list, &sched->td_list);
+ 	}
+ 	spin_unlock_irqrestore (&ehci->lock, flags);
+@@ -1915,6 +1916,7 @@ sitd_urb_transaction (
+ 
+ 		memset (sitd, 0, sizeof *sitd);
+ 		sitd->sitd_dma = sitd_dma;
++		sitd->frame = -1;
+ 		list_add (&sitd->sitd_list, &iso_sched->td_list);
+ 	}
+ 
+
+--------------000000010805030108080409--
