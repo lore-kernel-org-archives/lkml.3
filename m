@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933438Ab3CUOLu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 10:11:50 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53902 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932130Ab3CUOLt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 10:11:49 -0400
-Message-ID: <514B1505.30409@ti.com>
-Date: Thu, 21 Mar 2013 16:11:17 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S933412Ab3CUOMW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 10:12:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57486 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757636Ab3CUOMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 10:12:21 -0400
+Date: Thu, 21 Mar 2013 10:12:02 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: ebiederm@xmission.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
+        lisa.mitchell@hp.com, heiko.carstens@de.ibm.com,
+        akpm@linux-foundation.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
+Subject: Re: [PATCH v3 01/21] vmcore: reference e_phoff member explicitly to
+ get position of program header table
+Message-ID: <20130321141202.GF3934@redhat.com>
+References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
+ <20130316040053.15064.93652.stgit@localhost6.localdomain6>
+ <87ppyvnjyn.fsf@xmission.com>
+ <20130321.115041.225288996.d.hatayama@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Rajendra Nayak <rnayak@ti.com>
-CC: <tony@atomide.com>, <b-cousson@ti.com>, <linux@arm.linux.org.uk>,
-        <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Paul Walmsley <paul@pwsan.com>, "Menon, Nishanth" <nm@ti.com>
-Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support for
- AUXCLKs
-References: <1363703220-4777-1-git-send-email-rogerq@ti.com> <1363703220-4777-2-git-send-email-rogerq@ti.com> <514B0650.5070406@ti.com> <514B10FE.1000805@ti.com> <514B1383.1070102@ti.com>
-In-Reply-To: <514B1383.1070102@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130321.115041.225288996.d.hatayama@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2013 04:04 PM, Rajendra Nayak wrote:
-> On Thursday 21 March 2013 07:24 PM, Roger Quadros wrote:
->> On 03/21/2013 03:08 PM, Rajendra Nayak wrote:
->>> []..
->>>
->>>> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
->>>> index 0274ff7..23f2064 100644
->>>> --- a/arch/arm/mach-omap2/board-generic.c
->>>> +++ b/arch/arm/mach-omap2/board-generic.c
->>>> @@ -158,7 +158,7 @@ DT_MACHINE_START(OMAP4_DT, "Generic OMAP4 (Flattened Device Tree)")
->>>>  	.init_irq	= omap_gic_of_init,
->>>>  	.init_machine	= omap_generic_init,
->>>>  	.init_late	= omap4430_init_late,
->>>> -	.init_time	= omap4_local_timer_init,
->>>> +	.init_time	= omap4_init_time,
->>>>  	.dt_compat	= omap4_boards_compat,
->>>>  	.restart	= omap44xx_restart,
->>>>  MACHINE_END
->>>
->>> []..
->>>> +#ifdef CONFIG_OF
->>>> +int __init omap4_clk_init_dt(void)
->>>> +{
->>>> +	struct device_node *np;
->>>> +
->>>> +	np = of_find_compatible_node(NULL, NULL, "ti,omap4-scrm");
->>>> +	if (np) {
->>>> +		scrm_data.clks = scrm_clks;
->>>> +		scrm_data.clk_num = ARRAY_SIZE(scrm_clks);
->>>> +		of_clk_add_provider(np, of_clk_src_onecell_get,	&scrm_data);
->>>> +	}
->>>> +
->>>> +	return 0;
->>>> +}
->>>
->>> []..
->>>> +
->>>> +void __init omap4_init_time(void)
->>>> +{
->>>> +	omap4_clk_init_dt();
->>>> +	omap4_local_timer_init();
->>>> +}
->>>
->>> I guess you did all this because of_clk_add_provider() needs
->>> slab to be initialized. With the below patch[1], now clk inits
->>> happen within .init_timer already, so none of this would
->>> be needed.
->>>
->>> [1] http://www.spinics.net/lists/arm-kernel/msg231288.html
->>>
->>
->> Right. I can then call omap4_clk_init_dt() from within omap4xxx_clk_init().
->>
->> Any comments about the main subject? Does the approach look fine?
+On Thu, Mar 21, 2013 at 11:50:41AM +0900, HATAYAMA Daisuke wrote:
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
+> Subject: Re: [PATCH v3 01/21] vmcore: reference e_phoff member explicitly to get position of program header table
+> Date: Tue, 19 Mar 2013 14:44:16 -0700
 > 
-> It looks fine, except for the fact that I was wondering if the clock
-> provider needs to restrict itself to SCRM.
-> Nishant Menon brought up a need for specifying the mpu clock source
-> from within DT, to be able to use a generic cpufreq driver.
-> It could be a provider (not specific to scrm, but having only scrm
-> clocks for now) which we could add clocks as and when we see a need for
-> them to be specified from DT.
-
-OK, I will revise the patch to not make it SCRM specific.
-
+> > HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
+> > 
+> >> Currently, the code assumes that position of program header table is
+> >> next to ELF header. But future change can break the assumption on
+> >> kexec-tools and the 1st kernel. To avoid worst case, reference e_phoff
+> >> member explicitly to get position of program header table in
+> >> file-offset.
+> > 
+> > In principle this looks good.  However when I read this it looks like
+> > you are going a little too far.
+> > 
+> > You are changing not only the reading of the supplied headers, but
+> > you are changing the generation of the new new headers that describe
+> > the data provided by /proc/vmcore.
+> > 
+> > I get lost in following this after you mangle merge_note_headers.
+> > 
+> > In principle removing silly assumptions seems reasonable, but I think
+> > it is completely orthogonal to the task of maping vmcore mmapable.
+> > 
+> > I think it is fine to claim that the assumptions made here in vmcore are
+> > part of the kexec on panic ABI at this point, which would generally make
+> > this change unnecessary.
 > 
-> Btw, you need to copy Paul Walmsley for any clock related patches as
-> he is the OMAP clock maintainer.
+> This was suggested by Vivek. He prefers generic one.
+> 
+> Vivek, do you agree to this? Or is it better to re-post this and other
+> clean-up patches as another one separately to this patch set?
 
-OK. Thanks for letting know.
+Given the fact that current code has been working, I am fine to just
+re-post and take care of mmap() related issues. And we can take care
+of cleaning up of some assumptions about PT_NOTE headers later. Trying
+to club large cleanup with mmap() patches is making it hard to review.
 
-cheers,
--roger
+Thanks
+Vivek
