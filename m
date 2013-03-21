@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883Ab3CUR4h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 13:56:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51415 "EHLO mx1.redhat.com"
+	id S1751963Ab3CUR5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 13:57:45 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:56181 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751140Ab3CUR4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 13:56:35 -0400
-Message-ID: <514B4925.2010909@redhat.com>
-Date: Thu, 21 Mar 2013 13:53:41 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751362Ab3CUR5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 13:57:43 -0400
+Date: Thu, 21 Mar 2013 11:57:32 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Roland Dreier <roland@kernel.org>,
+        "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
+Subject: Re: [PATCH] rdma: don't make pages writeable if not requiested
+Message-ID: <20130321175732.GA3263@obsidianresearch.com>
+References: <CAL1RGDUcMj9QVsuQgK+ozw64L6-cGehL7YBUJ1_ckni6TD=Kcg@mail.gmail.com>
+ <20130321070357.GD28328@redhat.com>
+ <CAG4TOxPkhOhGmzeA1K4a0Zw8HxS-QkOr-PCx7mJgA+KkuH3ZiQ@mail.gmail.com>
+ <20130321085107.GE28328@redhat.com>
+ <CAL1RGDVnkLZU2Vge4o3BwDxnAfGv7TQRMqE6ha3MUt39CVp5NQ@mail.gmail.com>
+ <20130321093946.GG28328@redhat.com>
+ <20130321171115.GA653@obsidianresearch.com>
+ <20130321171525.GE2994@redhat.com>
+ <20130321172150.GA3118@obsidianresearch.com>
+ <20130321174237.GA4060@redhat.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andi Kleen <andi@firstfloor.org>, Linux-MM <linux-mm@kvack.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/10] mm: vmscan: Have kswapd writeback pages based on
- dirty pages encountered, not priority
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-7-git-send-email-mgorman@suse.de> <m2620qjdeo.fsf@firstfloor.org> <20130317151155.GC2026@suse.de>
-In-Reply-To: <20130317151155.GC2026@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130321174237.GA4060@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2013 11:11 AM, Mel Gorman wrote:
-> On Sun, Mar 17, 2013 at 07:42:39AM -0700, Andi Kleen wrote:
->> Mel Gorman <mgorman@suse.de> writes:
->>
->>> @@ -495,6 +495,9 @@ typedef enum {
->>>   	ZONE_CONGESTED,			/* zone has many dirty pages backed by
->>>   					 * a congested BDI
->>>   					 */
->>> +	ZONE_DIRTY,			/* reclaim scanning has recently found
->>> +					 * many dirty file pages
->>> +					 */
->>
->> Needs a better name. ZONE_DIRTY_CONGESTED ?
->>
->
-> That might be confusing. The underlying BDI is not necessarily
-> congested. I accept your point though and will try thinking of a better
-> name.
+On Thu, Mar 21, 2013 at 07:42:37PM +0200, Michael S. Tsirkin wrote:
 
-ZONE_LOTS_DIRTY ?
+> It doesn't actually, and our app would sometimes write to these pages.
+> It simply does not care which version does the remote get in this case
+> since we track writes and resend later.
 
->>> +	 * currently being written then flag that kswapd should start
->>> +	 * writing back pages.
->>> +	 */
->>> +	if (global_reclaim(sc) && nr_dirty &&
->>> +			nr_dirty >= (nr_taken >> (DEF_PRIORITY - sc->priority)))
->>> +		zone_set_flag(zone, ZONE_DIRTY);
->>> +
->>>   	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
->>
->> I suppose you want to trace the dirty case here too.
->>
->
-> I guess it wouldn't hurt to have a new tracepoint for when the flag gets
-> set. A vmstat might be helpful as well.
->
+Heh, somehow I thought you might say that :)
 
+A new flag seems like the only way then - maybe:
+  IBV_ACCESS_NON_COHERENT - The adaptor and the CPU do not share
+     a coherent view of registered memory. Memory writes from the CPU
+     after ibv_reg_mr completes may not be reflected in the memory
+     viewed by the adaptor.
+
+     Can only be combined with read only access permissions.
+
+Jason
