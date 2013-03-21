@@ -1,115 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab3CUKMR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 06:12:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51502 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752359Ab3CUKMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 06:12:15 -0400
-Date: Thu, 21 Mar 2013 10:12:11 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/10] mm: vmscan: Do not allow kswapd to scan at maximum
- priority
-Message-ID: <20130321101210.GF1878@suse.de>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-6-git-send-email-mgorman@suse.de>
- <514A604E.40303@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <514A604E.40303@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756654Ab3CUKNV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 06:13:21 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:50717 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753647Ab3CUKNU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 06:13:20 -0400
+Message-ID: <1363860797.1390.108.camel@x61.thuisdomein>
+Subject: [PATCH] Hexagon: remove two Kconfig entries
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Richard Kuo <rkuo@codeaurora.org>
+Cc: linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 21 Mar 2013 11:13:17 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 21 Mar 2013 10:13:18.0159 (UTC) FILETIME=[B537B5F0:01CE261C]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 09:20:14PM -0400, Rik van Riel wrote:
-> On 03/17/2013 09:04 AM, Mel Gorman wrote:
-> >Page reclaim at priority 0 will scan the entire LRU as priority 0 is
-> >considered to be a near OOM condition. Kswapd can reach priority 0 quite
-> >easily if it is encountering a large number of pages it cannot reclaim
-> >such as pages under writeback. When this happens, kswapd reclaims very
-> >aggressively even though there may be no real risk of allocation failure
-> >or OOM.
-> >
-> >This patch prevents kswapd reaching priority 0 and trying to reclaim
-> >the world. Direct reclaimers will still reach priority 0 in the event
-> >of an OOM situation.
-> >
-> >Signed-off-by: Mel Gorman <mgorman@suse.de>
-> >---
-> >  mm/vmscan.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> >diff --git a/mm/vmscan.c b/mm/vmscan.c
-> >index 7513bd1..af3bb6f 100644
-> >--- a/mm/vmscan.c
-> >+++ b/mm/vmscan.c
-> >@@ -2891,7 +2891,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
-> >  		 */
-> >  		if (raise_priority || !this_reclaimed)
-> >  			sc.priority--;
-> >-	} while (sc.priority >= 0 &&
-> >+	} while (sc.priority >= 1 &&
-> >  		 !pgdat_balanced(pgdat, order, *classzone_idx));
-> >
-> >  out:
-> >
-> 
-> If priority 0 is way way way way way too aggressive, what makes
-> priority 1 safe?
-> 
+The Kconfig entries for HEXAGON_VM and HEXAGON_ANGEL_TRAPS were added,
+together with the configuration and makefiles for the Hexagon
+architecture, in v3.2. They have never been used. They can safely be
+removed.
 
-The fact that priority 1 selects a sensible number of pages to reclaim and
-obeys swappiness makes it a lot safer. Priority 0 does this in get_scan_count
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-        /*
-         * Do not apply any pressure balancing cleverness when the
-         * system is close to OOM, scan both anon and file equally
-         * (unless the swappiness setting disagrees with swapping).
-         */
-        if (!sc->priority && vmscan_swappiness(sc)) {
-                scan_balance = SCAN_EQUAL;
-                goto out;
-        }
+ arch/hexagon/Kconfig | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-.....
-
-                size = get_lru_size(lruvec, lru);
-                scan = size >> sc->priority;
-
-                if (!scan && force_scan)
-                        scan = min(size, SWAP_CLUSTER_MAX);
-
-                switch (scan_balance) {
-                case SCAN_EQUAL:
-                        /* Scan lists relative to size */
-                        break;
-
-.....
-		}
-		nr[lru] = scan;
-
-That is saying -- at priority 0, scan everything in all LRUs. When put in
-combination with patch 2 it effectively means reclaim everything in all LRUs.
-It reclaims every file page it can and swaps as much as possible resulting
-in major slowdowns.
-
-> This makes me wonder, are the priorities useful at all to kswapd?
-> 
-
-They are not as useful as I'd like. Just a streaming writer will be
-enough to ensure that the lower priorities will never reclaim enough
-pages to move the zone from the min to high watermark making the low
-priorities almost completely useless.
-
+diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
+index e4decc6..48130eb 100644
+--- a/arch/hexagon/Kconfig
++++ b/arch/hexagon/Kconfig
+@@ -109,9 +109,6 @@ config HEXAGON_COMET
+ 
+ endchoice
+ 
+-config HEXAGON_VM
+-	def_bool y
+-
+ config CMDLINE
+ 	string "Default kernel command string"
+ 	default ""
+@@ -122,12 +119,6 @@ config CMDLINE
+ 	  minimum, you should specify the memory size and the root device
+ 	  (e.g., mem=64M root=/dev/nfs).
+ 
+-config HEXAGON_ANGEL_TRAPS
+-	bool "Use Angel Traps"
+-	default n
+-	---help---
+-	  Enable angel debug traps (for printk's).
+-
+ config SMP
+ 	bool "Multi-Processing support"
+ 	---help---
 -- 
-Mel Gorman
-SUSE Labs
+1.7.11.7
+
