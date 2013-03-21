@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab3CUBQA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 21:16:00 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:59164 "EHLO smtp.infotech.no"
+	id S1753955Ab3CUBVL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 21:21:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13640 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751346Ab3CUBP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 21:15:59 -0400
-Message-ID: <514A5F2B.8030707@interlog.com>
-Date: Wed, 20 Mar 2013 21:15:23 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1751699Ab3CUBVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Mar 2013 21:21:10 -0400
+Message-ID: <514A604E.40303@redhat.com>
+Date: Wed, 20 Mar 2013 21:20:14 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtc: rtc-at91rm9200: use a variable for storing IMR
-References: <1363369032-12639-1-git-send-email-nicolas.ferre@atmel.com> <20130320145006.f1431c1528325ff93a298790@linux-foundation.org>
-In-Reply-To: <20130320145006.f1431c1528325ff93a298790@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Mel Gorman <mgorman@suse.de>
+CC: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/10] mm: vmscan: Do not allow kswapd to scan at maximum
+ priority
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-6-git-send-email-mgorman@suse.de>
+In-Reply-To: <1363525456-10448-6-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-03-20 05:50 PM, Andrew Morton wrote:
-> On Fri, 15 Mar 2013 18:37:12 +0100 Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+On 03/17/2013 09:04 AM, Mel Gorman wrote:
+> Page reclaim at priority 0 will scan the entire LRU as priority 0 is
+> considered to be a near OOM condition. Kswapd can reach priority 0 quite
+> easily if it is encountering a large number of pages it cannot reclaim
+> such as pages under writeback. When this happens, kswapd reclaims very
+> aggressively even though there may be no real risk of allocation failure
+> or OOM.
 >
->> On some revisions of AT91 SoCs, the RTC IMR register is not working.
->> Instead of elaborating a workaround for that specific SoC or IP version,
->> we simply use a software variable to store the Interrupt Mask Register and
->> modify it for each enabling/disabling of an interrupt. The overhead of this
->> is negligible anyway.
+> This patch prevents kswapd reaching priority 0 and trying to reclaim
+> the world. Direct reclaimers will still reach priority 0 in the event
+> of an OOM situation.
 >
-> This description doesn't really allow me or others to work out whether
-> the fix should be included in 3.9 or backported into earlier kernels.
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>   mm/vmscan.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> So please, when fixing a bug do include a full description of the
-> user-visible effects of that bug.  And your opinion regarding the
-> -mainline and -stable decision is always useful.
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 7513bd1..af3bb6f 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2891,7 +2891,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>   		 */
+>   		if (raise_priority || !this_reclaimed)
+>   			sc.priority--;
+> -	} while (sc.priority >= 0 &&
+> +	} while (sc.priority >= 1 &&
+>   		 !pgdat_balanced(pgdat, order, *classzone_idx));
+>
+>   out:
+>
 
-The interrupt mask register (IMR) for the RTC is broken
-on the AT91SAM9x5 sub-family of SoCs (good overview of the
-members here: http://www.eewiki.net/display/linuxonarm/AT91SAM9x5 ).
-The "user visible effect" is the RTC doesn't work.
+If priority 0 is way way way way way too aggressive, what makes
+priority 1 safe?
 
-That sub-family is less than two years old and only has devicetree
-(DT) support and came online circa lk 3.7 . The dust is yet to
-settle on the DT stuff at least for AT91 SoCs (translation:
-lots of stuff is still broken, so much that it is hard to know
-where to start).
+This makes me wonder, are the priorities useful at all to kswapd?
 
-The fix in the patch is pretty simple: just shadow the silicon
-IMR register with a variable in the driver. Some older SoCs (pre-DT)
-use the the rtc-at91rm9200 driver (e.g. obviously the AT91RM9200)
-and they should not be impacted by the change. There shouldn't
-be a large volume of interrupts associated with a RTC.
-
-
-Compared to a relatively stable kernel subsystem like SCSI, what
-is happening in the ARM architecture with DT is huge and ongoing.
-So I think you either need new rules or suspend some of the stricter
-rules applied to more stable subsystems. Just my two cents worth.
-
-
-Doug Gilbert
-
-who hasn't seen that frill-necked lizard for a while
+-- 
+All rights reversed
