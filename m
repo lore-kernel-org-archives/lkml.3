@@ -1,110 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab3CUS3p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:29:45 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:54763 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab3CUS3n (ORCPT
+	id S1751268Ab3CUSag (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:30:36 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:43327 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750698Ab3CUSaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:29:43 -0400
-Date: Thu, 21 Mar 2013 11:29:37 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
-        peterz@infradead.org, rostedt@goodmis.org,
-        linaro-kernel@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, Arvind.Chauhan@arm.com,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 3/7] workqueue: Add helpers to schedule work on any cpu
-Message-ID: <20130321182937.GB20500@htj.dyndns.org>
-References: <cover.1363617402.git.viresh.kumar@linaro.org>
- <fb2e721fc43fbc3517a7ebb905aa573b12bb83a5.1363617402.git.viresh.kumar@linaro.org>
- <20130321001211.GC31256@htj.dyndns.org>
- <CAKohponKUGbwEZ_edu353Y7YVZKgFOhZunTSUi04FGYWveftkw@mail.gmail.com>
+	Thu, 21 Mar 2013 14:30:35 -0400
+Message-ID: <514B5254.50101@metafoo.de>
+Date: Thu, 21 Mar 2013 19:32:52 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohponKUGbwEZ_edu353Y7YVZKgFOhZunTSUi04FGYWveftkw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Peter Crosthwaite <pcrost@xilinx.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, git@xilinx.com,
+        =?UTF-8?B?SmFuIEzDvA==?= =?UTF-8?B?YmJl?= <jlu@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: Re: RFC v2: Zynq Clock Controller
+References: <27dae808-1d3a-4001-8eb2-b0a6e2a34b8f@AM1EHSMHS013.ehs.local>
+In-Reply-To: <27dae808-1d3a-4001-8eb2-b0a6e2a34b8f@AM1EHSMHS013.ehs.local>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Viresh.
-
-On Thu, Mar 21, 2013 at 04:27:23PM +0530, Viresh Kumar wrote:
-> > For some reason, I've been always unsure about this patchset.  I've
-> > been thinking about it past few days and I think I now know why.
+On 03/21/2013 12:56 AM, Sören Brinkmann wrote:
+> Hi,
 > 
-> I knew this since the beginning and thought power numbers i showed might
-> change your view. My hard luck :)
-
-Heh, sorry about the trouble but, yeah, your numbers are impressive
-and no matter how this discussion turns out, we're gonna have it in
-some form, so please don't think that your numbers didn't change
-anything.  Actually, to me, it seems that identifying which workqueues
-are good candidates for conversion and determining how much powersave
-can be gained are 90% of the work.
-
-> Now there are two things i am worried about.
+> I spent some time working on this and incorporating feedback. Here's an updated proposal for a clock controller for Zynq:
 > 
-> A.
-> About the difference in behavior of scheduler and sched_select_non_idle_cpu().
-> Scheduler will treat this work as any normal task and can schedule it anywhere
-> based on what it feels is the right place and may still wake up an idle one for
-> load balancing.
+> Required properties:
+>  - #clock-cells : Must be 1
+>  - compatible : "xlnx,ps7-clkc"  (this may become 'xlnx,zynq-clkc' terminology differs a bit between Xilinx internal and mainline)
+>  - ps-clk-frequency : Frequency of the oscillator providing ps_clk in HZ
+>                      (usually 33 MHz oscillators are used for Zynq platforms)
+>  - clock-output-names : List of strings used to name the clock outputs. Shall be a list of the outputs given below.
 > 
-> In our approach, We aren't switching CPU for a work if that cpu (or system) is
-> busy enough, like in case of high IOPS for block layer. We will find that cpu as
-> busy, most of the time on such situations and so we will stay where we were.
->
-> In case system is fairly idle, then also we stay on the same cpu.
-> The only time we migrate is when current cpu is idle but the whole system
-> isn't.
-
-Yes, I actually like that part a lot although I do wish the idle check
-was inlined.
-
-What I'm wondering is whether the kinda out-of-band decision via
-sched_select_cpu() is justified given that it can and is likely to go
-through full scheduling decision anyway.  For timer, we don't have
-that, so it makes sense.  For work items, it's a bit different.
-
-To rephrase, *if* the scheduler can't already make proper decisions
-regarding power consumption on an idlish system, maybe it can be
-improved to do so?  It could as well be that this CPU selection is
-special enough that it's just better to keep it separate as this
-patchset proposes.  This is something up to the scheduler people.
-Peter, Ingo, what do you guys think?
-
-> B.
-> It is sort of difficult to teach users about BOUND and UNBOUND workqueues
-> and people have used them without thinking too much about them since some
-> time. We need a straightforward API to make this more transparent. And
-> queue_work_on_any_cpu() was a good candidate here. I am not talking about
-> its implementation but about the interface.
+> Optional properties:
+>  - clocks : as described in the clock bindings
+>  - clock-names : as described in the clock bindings
 > 
-> Though in both suggestions we need to fix user drivers one by one to use
-> queue_work_on_any_cpu() or use WQ_UNBOUND..
-
-I don't know.  Workqueues are attribute domains and I kinda dislike
-having a completely separate set of interface for this.  Regardless of
-how the backend gets implemented, I'd really much prefer it being
-implemented as a workqueue attribute rather than another set of
-queueing interface functions.
-
-> Maybe people wouldn't suffer much because of the reasons i told you earlier.
-> On a busy system we will never switch cpus.
+> Clock inputs:
+> The following strings are optional parameters to the 'clock-names' property in
+> order to provide optional (E)MIO clock sources.
+>  - swdt_ext_clk
+>  - gem0_emio_clk
+>  - gem1_emio_clk
+>  - mio_clk_XX          # with XX = 00..53
 > 
-> This static configuration might not work well with multiplatform images.
+> Example:
+>         clkc: clkc {
+>                 #clock-cells = <1>;
+>                 compatible = "xlnx,ps7-clkc";
+>                 ps-clk-frequency = <33333333>;
 
-Well, it doesn't have to be a compile time thing.  It can be
-dynamically switched with, say, static_branch(), but I think that's a
-minor point at this point.
+The input frequency should be a clock as well.
 
-Thanks.
+>                 clock-output-names = "armpll", "ddrpll", "iopll", "cpu_6or4x", "cpu_3or2x", "cpu_2x", "cpu_1x", "ddr2x", "ddr3x", "dci", "lqspi", "smc", "pcap", "gem0", "gem1", "fclk0", "fclk1", "fclk2", "fclk3", "can0", "can1", "sdio0", "sdio1", "uart0", "uart1", "spi0", "spi1", "dma", "usb0_aper", "usb1_aper", "gem0_aper", "gem1_aper", "sdio0_aper", "sdio1_aper", "spi0_aper", "spi1_aper", "can0_aper", "can1_aper", "i2c0_aper", "i2c1_aper", "uart0_aper", "uart1_aper", "gpio_aper", "lqspi_aper", "smc_aper", "swdt", "dbg_trc", "dbg_apb";  /* long list... explanation below */
+>                 /* optional props */
+>                 clocks = <&clkc 16>, <&clk_foo>;
+>                 clock-names = "gem1_emio_clk", "can_mio_clk_23";
+>         };
+> 
+> With this revised bindings arbitrary upstream and downstream clock providers should be supported and it's also possible to loop back an output as input. The downside of supporting this is, that I don't see a way around explicitly listing the clock output names in the DT.
+> The reason for this is, that a downstream clock provider should use of_clk_get_parent_name() to obtain its parent clock name. For a block with multiple outputs of_clk_get_parent_name() can return a valid clock name only when 'clock-output-names' is present.
+> Probably the fclks are the only realistic use case to become parent of downstream clock providers, but I could imagine that e.g. a device driver like UART wants to use the CCF to model its internal clocks, hence it would require its parent clock name. Even though a device driver could use clk_get_parent() and __clk_get_name(), of_clk_get_parent_name() should probably work as well. I simply have a bad feeling about breaking of_clk_get_parent_name() for any clock.
+> But after all, I'm open for finding a better solution for this.
+> 
+> 
+> Similar, inputs for optional clock sources through (E)MIO pins can be defined as described in the clock bindings using the 'clocks' and 'clock-names' properties, with 'clock-names' being an arbitrary subset of the documented names. The actual parent clock names are internally resolved using of_clk_get_parent_name().
+> 
+> 
+> Regarding this monolithic solution versus a finer granular split:
+> 
+> On cost of more complex probing we would also have:
+>  - one clock driver covering the peripheral clocks
+>  - one for the CPU clock domain
+>  - one for the DDR clock domain
+>  - one for GEM
+>  - one for CAN
+>  - one for the APER clks
+>  - one for the PLLs
+>  - one for fclks
 
--- 
-tejun
+fclks are the same as peripheral clocks except for the gate bit, as far as I
+can see.
+
+>  - probably one for the debug clocks (not sure whether we need those)
+> 
+> Except for the peripheral one and probably the fclk, they would all be instantiated just once. So, there is not a lot of reuse going on.
+
+PLLs are going to be instantiated multiple times as well.
+
+> Fclks I would probably also rather put into one driver with four outputs instead of instantiating a single output driver multiple times. Same for PLLs.
+> 
+> And then there is e.g. a mux for the system watchdog input which doesn't really fit anywhere and it would be pretty much ridiculous to have another clock driver just for that one and it would also become "hidden" in one of the others.
+> 
+> In my opinion that's just not necessary. We would create a bunch of clock drivers including DT bindings for them, probing would become more complex and it doesn't really help with the probe/naming issue. So, I don't think it's beneficial to go down that road.
+> 
+> The monolithic solution would need one custom driver for the PLLs, DT bindings wouldn't be required for it though. Everything else should be internally described using the clock-primitives.
+> 
+> Other than having a much simpler probe and init process, I still think it might be beneficial to have this monolithic block with a holistic view of the clock tree. For suspend e.g. I think the clock controller could export functions like zynq_clkc_(suspend|resume) and then the controller handles the PLL bypassing/shutdown.
+> Regarding full dynamic reparenting, I don't know how exactly that could work, but with the clock controller there is at least a block where that intelligence would be going and which has knowledge of all the 'struct clk *' required to reparent clocks.
+> 
+> Regarding the DT description, it is probably controversial what is considered better. I, like the Tegra folks, think having one clock controller in there is fine and hides irrelevant implementation details.
+> 
+
+I still don't like the monolithic solution. From my point of view it is
+architecturally inferior, it is a bad abstraction. You argue that for a
+non-monolithic version you'd have to implement a clock driver for each
+different type of clock. But you still have to do this for the monolithic
+version, they'd probably just end up in one huge messy file. Unless you are
+going to duplicate huge amounts of lines you'd probably have functions like
+add_gem_clk, add_peripheral_clk, add_pll_clk and so on in your monolithic drivers.
+
+The SLCR is a virtual construct, which groups the clock units together. But the
+clock units are the actual entities. E.g. imagine a Zync 2.0, it would probably
+reuse the same clock units, but there would quite likely be different clocks
+mapped at different addresses. If you choose a non-monolithic implementation
+you'd just have to update your devicetree to make this work, with a monolithic
+version you'd have to add a almost identical driver for the v2.
+
+- Lars
