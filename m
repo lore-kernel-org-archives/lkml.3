@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933838Ab3CUQcA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:32:00 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:53138 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121Ab3CUQb4 (ORCPT
+	id S933969Ab3CUQcQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:32:16 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:34009 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932371Ab3CUQb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:31:56 -0400
+	Thu, 21 Mar 2013 12:31:59 -0400
 From: Jiang Liu <liuj97@gmail.com>
 Cc: Jiang Liu <jiang.liu@huawei.com>,
         Yoshinori Sato <ysato@users.sourceforge.jp>,
+        David Howells <dhowells@redhat.com>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] h8300: fix CROSS_COMPILE setting in arch/h8300/Makefile
-Date: Fri, 22 Mar 2013 00:31:43 +0800
-Message-Id: <1363883504-6140-1-git-send-email-jiang.liu@huawei.com>
+Subject: [PATCH 2/2] h8300: add missing definition for read_barries_depends()
+Date: Fri, 22 Mar 2013 00:31:44 +0800
+Message-Id: <1363883504-6140-2-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1363883504-6140-1-git-send-email-jiang.liu@huawei.com>
+References: <1363883504-6140-1-git-send-email-jiang.liu@huawei.com>
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Makefiles for h8300 architecture unconditionally sets CROSS_COMPILE
-to a default value, which breaks following cross compilation command:
-ARCH=h8300 CROSS_COMPILE=/ws/tool/h8300-elf/bin/h8300-elf- make arch/h8300/mm/init.o
-make: h8300-elf-gcc: Command not found
-make: h8300-elf-gcc: Command not found
-  CHK     include/generated/uapi/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CC      kernel/bounds.s
-/bin/sh: 1: h8300-elf-gcc: not found
-make[1]: *** [kernel/bounds.s] Error 127
-make: *** [prepare0] Error 2
+Add missing definition for read_barries_depends() for h8300 to fix error:
+kernel/task_work.c: In function 'task_work_cancel':
+kernel/task_work.c:38:3: error: implicit declaration of function 'read_barrier_depends' [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+make[1]: *** [kernel/task_work.o] Error 1
+make: *** [kernel] Error 2
 
-So only set CROSS_COMPILE to the default value if it's has been set yet.
-
-Also fix a typo in arch/h8300/Makefile to change "CROSS-COMPILE" to
-"CROSS_COMPILE".
-
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
+Cc: David Howells <dhowells@redhat.com>
 Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 ---
- arch/h8300/Makefile |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/h8300/include/asm/barrier.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/h8300/Makefile b/arch/h8300/Makefile
-index a556447..93d693d 100644
---- a/arch/h8300/Makefile
-+++ b/arch/h8300/Makefile
-@@ -38,8 +38,10 @@ KBUILD_CFLAGS += -DUTS_SYSNAME=\"uClinux\"
- KBUILD_AFLAGS += -DPLATFORM=$(PLATFORM) -DMODEL=$(MODEL) $(cflags-y)
- LDFLAGS += $(ldflags-y)
+diff --git a/arch/h8300/include/asm/barrier.h b/arch/h8300/include/asm/barrier.h
+index c7283c3..9e0aa9f 100644
+--- a/arch/h8300/include/asm/barrier.h
++++ b/arch/h8300/include/asm/barrier.h
+@@ -12,6 +12,8 @@
+ #define wmb()  asm volatile (""   : : :"memory")
+ #define set_mb(var, value) do { xchg(&var, value); } while (0)
  
--CROSS_COMPILE = h8300-elf-
--LIBGCC := $(shell $(CROSS-COMPILE)$(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
-+ifeq ($(CROSS_COMPILE),)
-+	CROSS_COMPILE := h8300-elf-
-+endif
-+LIBGCC := $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
- 
- head-y := arch/$(ARCH)/platform/$(PLATFORM)/$(BOARD)/crt0_$(MODEL).o
- 
++#define read_barrier_depends()	do { } while (0)
++
+ #ifdef CONFIG_SMP
+ #define smp_mb()	mb()
+ #define smp_rmb()	rmb()
 -- 
 1.7.9.5
 
