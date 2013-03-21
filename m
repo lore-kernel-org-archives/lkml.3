@@ -1,103 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab3CUR6L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 13:58:11 -0400
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:44102 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724Ab3CUR6J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 13:58:09 -0400
+	id S1752025Ab3CUR6s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 13:58:48 -0400
+Received: from www.sr71.net ([198.145.64.142]:51769 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751697Ab3CUR6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 13:58:46 -0400
+Message-ID: <514B4A9F.5090004@sr71.net>
+Date: Thu, 21 Mar 2013 10:59:59 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <1363820051-24428-3-git-send-email-robherring2@gmail.com>
-References: <1363820051-24428-1-git-send-email-robherring2@gmail.com>
-	<1363820051-24428-3-git-send-email-robherring2@gmail.com>
-Date: Thu, 21 Mar 2013 18:58:08 +0100
-Message-ID: <CACRpkdZLn=KjJisPTN2eHn64UuaZvpBDDhmeqQXF-TVS8VZ7pA@mail.gmail.com>
-Subject: Re: [PATCH 02/11] ARM: remove extra timer-sp control register clearing
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>, haojian.zhuang@linaro.org,
-        pawel.moll@arm.com, john.stultz@linaro.org, tglx@linutronix.de,
-        Rob Herring <rob.herring@calxeda.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2, RFC 12/30] thp, mm: add event counters for huge page
+ alloc on write to a file
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-13-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1363283435-7666-13-git-send-email-kirill.shutemov@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 11:54 PM, Rob Herring <robherring2@gmail.com> wrote:
+On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
+> --- a/include/linux/vm_event_item.h
+> +++ b/include/linux/vm_event_item.h
+> @@ -71,6 +71,8 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+>  		THP_FAULT_FALLBACK,
+>  		THP_COLLAPSE_ALLOC,
+>  		THP_COLLAPSE_ALLOC_FAILED,
+> +		THP_WRITE_ALLOC,
+> +		THP_WRITE_FAILED,
+>  		THP_SPLIT,
+>  		THP_ZERO_PAGE_ALLOC,
+>  		THP_ZERO_PAGE_ALLOC_FAILED,
 
-> From: Rob Herring <rob.herring@calxeda.com>
->
-> The timer-sp initialization code clears the control register before
-> initializing the timers, so every platform doing this is redundant.
->
-> For unused timers, we should not care what state they are in.
->
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-(...)
-> diff --git a/arch/arm/mach-integrator/integrator_ap.c b/arch/arm/mach-integrator/integrator_ap.c
-> index ea96144..4cb322d 100644
-> --- a/arch/arm/mach-integrator/integrator_ap.c
-> +++ b/arch/arm/mach-integrator/integrator_ap.c
-> @@ -643,10 +643,6 @@ static void __init ap_timer_init(void)
->         clk_prepare_enable(clk);
->         rate = clk_get_rate(clk);
->
-> -       writel(0, TIMER0_VA_BASE + TIMER_CTRL);
-> -       writel(0, TIMER1_VA_BASE + TIMER_CTRL);
-> -       writel(0, TIMER2_VA_BASE + TIMER_CTRL);
-> -
-
-As noted this is not an init function for timer-sp.c so please drop this
-hunk of the patch. Maybe this zeroing is pointless but that would
-be a separate patch that I can test.
-
-> diff --git a/arch/arm/mach-integrator/integrator_cp.c b/arch/arm/mach-integrator/integrator_cp.c
-> index 2b0db82..c68e7d8 100644
-> --- a/arch/arm/mach-integrator/integrator_cp.c
-> +++ b/arch/arm/mach-integrator/integrator_cp.c
-> @@ -33,7 +33,6 @@
->  #include <mach/platform.h>
->  #include <asm/setup.h>
->  #include <asm/mach-types.h>
-> -#include <asm/hardware/arm_timer.h>
-
-What doe this change has to do with $SUBJECT?
-
->  #include <asm/hardware/icst.h>
->
->  #include <mach/cm.h>
-> @@ -267,7 +266,6 @@ static void __init cp_of_timer_init(void)
->         base = of_iomap(node, 0);
->         if (WARN_ON(!base))
->                 return;
-> -       writel(0, base + TIMER_CTRL);
->         sp804_clocksource_init(base, node->name);
->
->         err = of_property_read_string(of_aliases,
-> @@ -279,7 +277,6 @@ static void __init cp_of_timer_init(void)
->         if (WARN_ON(!base))
->                 return;
->         irq = irq_of_parse_and_map(node, 0);
-> -       writel(0, base + TIMER_CTRL);
->         sp804_clockevents_init(base, irq, node->name);
->  }
->
-> @@ -510,10 +507,6 @@ static void __init intcp_init_irq(void)
->
->  static void __init cp_timer_init(void)
->  {
-> -       writel(0, TIMER0_VA_BASE + TIMER_CTRL);
-> -       writel(0, TIMER1_VA_BASE + TIMER_CTRL);
-> -       writel(0, TIMER2_VA_BASE + TIMER_CTRL);
-> -
->         sp804_clocksource_init(TIMER2_VA_BASE, "timer2");
->         sp804_clockevents_init(TIMER1_VA_BASE, IRQ_TIMERINT1, "timer1");
->  }
-
-The rest of the changes to integrator_cp.c looks OK...
-
-Yours,
-Linus Walleij
+I think these names are a bit terse.  It's certainly not _writes_ that
+are failing and "THP_WRITE_FAILED" makes it sound that way.  Also, why
+do we need to differentiate these from the existing anon-hugepage vm
+stats?  The alloc_pages() call seems to be doing the exact same thing in
+the end.  Is one more likely to succeed than the other?
