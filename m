@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932909Ab3CUWBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 18:01:52 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33063 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624Ab3CUVxE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753650Ab3CUVxE (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 21 Mar 2013 17:53:04 -0400
-Message-Id: <20130321215233.826238797@linutronix.de>
+Received: from www.linutronix.de ([62.245.132.108]:33026 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932150Ab3CUVxA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 17:53:00 -0400
+Message-Id: <20130321215233.446034505@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 21 Mar 2013 21:53:02 -0000
+Date: Thu, 21 Mar 2013 21:52:57 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
@@ -18,11 +18,10 @@ Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [patch 08/34] arm: Use generic idle loop
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: [patch 02/34] arch: Consolidate tsk_is_polling()
 References: <20130321214930.752934102@linutronix.de>
-Content-Disposition: inline; filename=arm-use-generic-idle-loop.patch
+Content-Disposition: inline; filename=arch-consolidate-tsk-is-polling.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -30,380 +29,244 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the generic idle loop and replace enable/disable_hlt with the
-respective core functions.
+Move it to a common place. Preparatory patch for implementing
+set/clear for the idle need_resched poll implementation.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>
 ---
- arch/arm/Kconfig                   |    2 
- arch/arm/include/asm/system_misc.h |    3 -
- arch/arm/kernel/process.c          |   96 ++++++++++---------------------------
- arch/arm/kernel/smp.c              |    2 
- arch/arm/mach-gemini/idle.c        |    4 +
- arch/arm/mach-gemini/irq.c         |    2 
- arch/arm/mach-ixp4xx/common.c      |    2 
- arch/arm/mach-omap1/pm.c           |    5 -
- arch/arm/mach-omap2/omap_hwmod.c   |    6 +-
- arch/arm/mach-omap2/pm.c           |    5 -
- arch/arm/mach-orion5x/board-dt.c   |    2 
- arch/arm/mach-orion5x/common.c     |    2 
- arch/arm/mach-shark/core.c         |    2 
- arch/arm/mach-shmobile/suspend.c   |    4 -
- arch/arm/mach-w90x900/dev.c        |    2 
- 15 files changed, 47 insertions(+), 92 deletions(-)
+ arch/alpha/include/asm/thread_info.h      |    2 --
+ arch/ia64/include/asm/thread_info.h       |    2 --
+ arch/metag/include/asm/thread_info.h      |    2 --
+ arch/microblaze/include/asm/thread_info.h |    1 -
+ arch/mn10300/include/asm/thread_info.h    |    2 --
+ arch/openrisc/include/asm/thread_info.h   |    2 --
+ arch/parisc/include/asm/thread_info.h     |    2 --
+ arch/powerpc/include/asm/thread_info.h    |    4 ----
+ arch/sh/include/asm/thread_info.h         |    4 ----
+ arch/sparc/include/asm/thread_info_32.h   |    2 --
+ arch/sparc/include/asm/thread_info_64.h   |    2 --
+ arch/tile/include/asm/thread_info.h       |    2 --
+ arch/x86/include/asm/thread_info.h        |    2 --
+ include/linux/sched.h                     |   20 ++++++++++++++++++++
+ kernel/sched/core.c                       |    5 -----
+ 15 files changed, 20 insertions(+), 34 deletions(-)
 
-Index: linux-2.6/arch/arm/Kconfig
+Index: linux-2.6/arch/alpha/include/asm/thread_info.h
 ===================================================================
---- linux-2.6.orig/arch/arm/Kconfig
-+++ linux-2.6/arch/arm/Kconfig
-@@ -15,6 +15,8 @@ config ARM
- 	select GENERIC_IRQ_SHOW
- 	select GENERIC_PCI_IOMAP
- 	select GENERIC_SMP_IDLE_THREAD
-+	select GENERIC_IDLE_LOOP
-+	select GENERIC_IDLE_POLL_SETUP
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
- 	select HARDIRQS_SW_RESEND
-Index: linux-2.6/arch/arm/include/asm/system_misc.h
+--- linux-2.6.orig/arch/alpha/include/asm/thread_info.h
++++ linux-2.6/arch/alpha/include/asm/thread_info.h
+@@ -95,8 +95,6 @@ register struct thread_info *__current_t
+ #define TS_POLLING		0x0010	/* idle task polling need_resched,
+ 					   skip sending interrupt */
+ 
+-#define tsk_is_polling(t) (task_thread_info(t)->status & TS_POLLING)
+-
+ #ifndef __ASSEMBLY__
+ #define HAVE_SET_RESTORE_SIGMASK	1
+ static inline void set_restore_sigmask(void)
+Index: linux-2.6/arch/ia64/include/asm/thread_info.h
 ===================================================================
---- linux-2.6.orig/arch/arm/include/asm/system_misc.h
-+++ linux-2.6/arch/arm/include/asm/system_misc.h
-@@ -21,9 +21,6 @@ extern void (*arm_pm_idle)(void);
+--- linux-2.6.orig/arch/ia64/include/asm/thread_info.h
++++ linux-2.6/arch/ia64/include/asm/thread_info.h
+@@ -131,8 +131,6 @@ struct thread_info {
+ #define TS_POLLING		1 	/* true if in idle loop and not sleeping */
+ #define TS_RESTORE_SIGMASK	2	/* restore signal mask in do_signal() */
  
- extern unsigned int user_debug;
- 
--extern void disable_hlt(void);
--extern void enable_hlt(void);
+-#define tsk_is_polling(t) (task_thread_info(t)->status & TS_POLLING)
 -
- #endif /* !__ASSEMBLY__ */
- 
- #endif /* __ASM_ARM_SYSTEM_MISC_H */
-Index: linux-2.6/arch/arm/kernel/process.c
+ #ifndef __ASSEMBLY__
+ #define HAVE_SET_RESTORE_SIGMASK	1
+ static inline void set_restore_sigmask(void)
+Index: linux-2.6/arch/metag/include/asm/thread_info.h
 ===================================================================
---- linux-2.6.orig/arch/arm/kernel/process.c
-+++ linux-2.6/arch/arm/kernel/process.c
-@@ -57,34 +57,6 @@ static const char *isa_modes[] = {
-   "ARM" , "Thumb" , "Jazelle", "ThumbEE"
- };
+--- linux-2.6.orig/arch/metag/include/asm/thread_info.h
++++ linux-2.6/arch/metag/include/asm/thread_info.h
+@@ -150,6 +150,4 @@ static inline int kstack_end(void *addr)
+ #define _TIF_WORK_MASK		(_TIF_ALLWORK_MASK & ~(_TIF_SYSCALL_TRACE | \
+ 				 _TIF_SYSCALL_AUDIT | _TIF_SINGLESTEP))
  
--static volatile int hlt_counter;
+-#define tsk_is_polling(t) test_tsk_thread_flag(t, TIF_POLLING_NRFLAG)
 -
--void disable_hlt(void)
--{
--	hlt_counter++;
--}
--
--void enable_hlt(void)
--{
--	hlt_counter--;
--	BUG_ON(hlt_counter < 0);
--}
--
--static int __init nohlt_setup(char *__unused)
--{
--	hlt_counter = 1;
--	return 1;
--}
--
--static int __init hlt_setup(char *__unused)
--{
--	hlt_counter = 0;
--	return 1;
--}
--
--__setup("nohlt", nohlt_setup);
--__setup("hlt", hlt_setup);
--
- extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
- typedef void (*phys_reset_t)(unsigned long);
+ #endif /* _ASM_THREAD_INFO_H */
+Index: linux-2.6/arch/microblaze/include/asm/thread_info.h
+===================================================================
+--- linux-2.6.orig/arch/microblaze/include/asm/thread_info.h
++++ linux-2.6/arch/microblaze/include/asm/thread_info.h
+@@ -182,7 +182,6 @@ static inline bool test_and_clear_restor
+ 	ti->status &= ~TS_RESTORE_SIGMASK;
+ 	return true;
+ }
+-#define tsk_is_polling(t) test_tsk_thread_flag(t, TIF_POLLING_NRFLAG)
+ #endif
  
-@@ -168,54 +140,38 @@ static void default_idle(void)
- 	local_irq_enable();
+ #endif /* __KERNEL__ */
+Index: linux-2.6/arch/mn10300/include/asm/thread_info.h
+===================================================================
+--- linux-2.6.orig/arch/mn10300/include/asm/thread_info.h
++++ linux-2.6/arch/mn10300/include/asm/thread_info.h
+@@ -165,8 +165,6 @@ void arch_release_thread_info(struct thr
+ #define _TIF_WORK_MASK		0x0000FFFE	/* work to do on interrupt/exception return */
+ #define _TIF_ALLWORK_MASK	0x0000FFFF	/* work to do on any return to u-space */
+ 
+-#define tsk_is_polling(t) test_tsk_thread_flag(t, TIF_POLLING_NRFLAG)
+-
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_THREAD_INFO_H */
+Index: linux-2.6/arch/openrisc/include/asm/thread_info.h
+===================================================================
+--- linux-2.6.orig/arch/openrisc/include/asm/thread_info.h
++++ linux-2.6/arch/openrisc/include/asm/thread_info.h
+@@ -128,8 +128,6 @@ register struct thread_info *current_thr
+ /* For OpenRISC, this is anything in the LSW other than syscall trace */
+ #define _TIF_WORK_MASK (0xff & ~(_TIF_SYSCALL_TRACE|_TIF_SINGLESTEP))
+ 
+-#define tsk_is_polling(t) test_tsk_thread_flag(t, TIF_POLLING_NRFLAG)
+-
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_THREAD_INFO_H */
+Index: linux-2.6/arch/parisc/include/asm/thread_info.h
+===================================================================
+--- linux-2.6.orig/arch/parisc/include/asm/thread_info.h
++++ linux-2.6/arch/parisc/include/asm/thread_info.h
+@@ -77,8 +77,6 @@ struct thread_info {
+ #define _TIF_SYSCALL_TRACE_MASK (_TIF_SYSCALL_TRACE | _TIF_SINGLESTEP |	\
+ 				 _TIF_BLOCKSTEP)
+ 
+-#define tsk_is_polling(t) test_tsk_thread_flag(t, TIF_POLLING_NRFLAG)
+-
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_PARISC_THREAD_INFO_H */
+Index: linux-2.6/arch/powerpc/include/asm/thread_info.h
+===================================================================
+--- linux-2.6.orig/arch/powerpc/include/asm/thread_info.h
++++ linux-2.6/arch/powerpc/include/asm/thread_info.h
+@@ -182,10 +182,6 @@ static inline bool test_thread_local_fla
+ #define is_32bit_task()	(1)
+ #endif
+ 
+-#define tsk_is_polling(t) test_tsk_thread_flag(t, TIF_POLLING_NRFLAG)
+-
+-#endif	/* !__ASSEMBLY__ */
+-
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_POWERPC_THREAD_INFO_H */
+Index: linux-2.6/arch/sh/include/asm/thread_info.h
+===================================================================
+--- linux-2.6.orig/arch/sh/include/asm/thread_info.h
++++ linux-2.6/arch/sh/include/asm/thread_info.h
+@@ -207,10 +207,6 @@ static inline bool test_and_clear_restor
+ 	return true;
  }
  
--/*
-- * The idle thread.
-- * We always respect 'hlt_counter' to prevent low power idle.
-- */
--void cpu_idle(void)
-+void arch_cpu_idle_prepare(void)
- {
- 	local_fiq_enable();
-+}
+-#define tsk_is_polling(t) test_tsk_thread_flag(t, TIF_POLLING_NRFLAG)
+-
+-#endif	/* !__ASSEMBLY__ */
+-
+ #endif /* __KERNEL__ */
  
--	/* endless idle loop with no priority at all */
--	while (1) {
--		tick_nohz_idle_enter();
--		rcu_idle_enter();
--		ledtrig_cpu(CPU_LED_IDLE_START);
--		while (!need_resched()) {
--#ifdef CONFIG_HOTPLUG_CPU
--			if (cpu_is_offline(smp_processor_id()))
--				cpu_die();
-+void arch_cpu_idle_enter(void)
-+{
-+	ledtrig_cpu(CPU_LED_IDLE_START);
-+#ifdef CONFIG_PL310_ERRATA_769419
-+	wmb();
- #endif
-+}
+ #endif /* __ASM_SH_THREAD_INFO_H */
+Index: linux-2.6/arch/sparc/include/asm/thread_info_32.h
+===================================================================
+--- linux-2.6.orig/arch/sparc/include/asm/thread_info_32.h
++++ linux-2.6/arch/sparc/include/asm/thread_info_32.h
+@@ -132,8 +132,6 @@ register struct thread_info *current_thr
+ #define _TIF_DO_NOTIFY_RESUME_MASK	(_TIF_NOTIFY_RESUME | \
+ 					 _TIF_SIGPENDING)
  
--			/*
--			 * We need to disable interrupts here
--			 * to ensure we don't miss a wakeup call.
--			 */
--			local_irq_disable();
--#ifdef CONFIG_PL310_ERRATA_769419
--			wmb();
-+void arch_cpu_idle_exit(void)
-+{
-+	ledtrig_cpu(CPU_LED_IDLE_END);
-+}
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+void arch_cpu_idle_dead(void)
-+{
-+	cpu_die();
-+}
+-#define tsk_is_polling(t) test_tsk_thread_flag(t, TIF_POLLING_NRFLAG)
+-
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_THREAD_INFO_H */
+Index: linux-2.6/arch/sparc/include/asm/thread_info_64.h
+===================================================================
+--- linux-2.6.orig/arch/sparc/include/asm/thread_info_64.h
++++ linux-2.6/arch/sparc/include/asm/thread_info_64.h
+@@ -256,8 +256,6 @@ static inline bool test_and_clear_restor
+ 	return true;
+ }
+ 
+-#define tsk_is_polling(t) test_tsk_thread_flag(t, TIF_POLLING_NRFLAG)
+-
+ #define thread32_stack_is_64bit(__SP) (((__SP) & 0x1) != 0)
+ #define test_thread_64bit_stack(__SP) \
+ 	((test_thread_flag(TIF_32BIT) && !thread32_stack_is_64bit(__SP)) ? \
+Index: linux-2.6/arch/tile/include/asm/thread_info.h
+===================================================================
+--- linux-2.6.orig/arch/tile/include/asm/thread_info.h
++++ linux-2.6/arch/tile/include/asm/thread_info.h
+@@ -153,8 +153,6 @@ extern void _cpu_idle(void);
+ #define TS_POLLING		0x0004	/* in idle loop but not sleeping */
+ #define TS_RESTORE_SIGMASK	0x0008	/* restore signal mask in do_signal */
+ 
+-#define tsk_is_polling(t) (task_thread_info(t)->status & TS_POLLING)
+-
+ #ifndef __ASSEMBLY__
+ #define HAVE_SET_RESTORE_SIGMASK	1
+ static inline void set_restore_sigmask(void)
+Index: linux-2.6/arch/x86/include/asm/thread_info.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/thread_info.h
++++ linux-2.6/arch/x86/include/asm/thread_info.h
+@@ -241,8 +241,6 @@ static inline struct thread_info *curren
+ 					   skip sending interrupt */
+ #define TS_RESTORE_SIGMASK	0x0008	/* restore signal mask in do_signal() */
+ 
+-#define tsk_is_polling(t) (task_thread_info(t)->status & TS_POLLING)
+-
+ #ifndef __ASSEMBLY__
+ #define HAVE_SET_RESTORE_SIGMASK	1
+ static inline void set_restore_sigmask(void)
+Index: linux-2.6/include/linux/sched.h
+===================================================================
+--- linux-2.6.orig/include/linux/sched.h
++++ linux-2.6/include/linux/sched.h
+@@ -2472,6 +2472,26 @@ static inline unsigned long *end_of_stac
+ 
  #endif
--			if (hlt_counter) {
--				local_irq_enable();
--				cpu_relax();
--			} else if (!need_resched()) {
--				stop_critical_timings();
--				if (cpuidle_idle_call())
--					default_idle();
--				start_critical_timings();
--				/*
--				 * default_idle functions must always
--				 * return with IRQs enabled.
--				 */
--				WARN_ON(irqs_disabled());
--			} else
--				local_irq_enable();
--		}
--		ledtrig_cpu(CPU_LED_IDLE_END);
--		rcu_idle_exit();
--		tick_nohz_idle_exit();
--		schedule_preempt_disabled();
--	}
-+
+ 
 +/*
-+ * Called from the core idle loop.
++ * Idle thread specific functions to determine the need_resched
++ * polling state. We have two versions, one based on TS_POLLING in
++ * thread_info.status and one based on TIF_POLLING_NRFLAG in
++ * thread_info.flags
 + */
-+void arch_cpu_idle(void)
++#ifdef TS_POLLING
++static inline int tsk_is_polling(struct task_struct *p)
 +{
-+	if (cpuidle_idle_call())
-+		default_idle();
- }
- 
- static char reboot_mode = 'h';
-Index: linux-2.6/arch/arm/kernel/smp.c
-===================================================================
---- linux-2.6.orig/arch/arm/kernel/smp.c
-+++ linux-2.6/arch/arm/kernel/smp.c
-@@ -336,7 +336,7 @@ asmlinkage void __cpuinit secondary_star
- 	/*
- 	 * OK, it's off to the idle thread for us
- 	 */
--	cpu_idle();
-+	cpu_startup_entry(CPUHP_ONLINE);
- }
- 
- void __init smp_cpus_done(unsigned int max_cpus)
-Index: linux-2.6/arch/arm/mach-gemini/idle.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-gemini/idle.c
-+++ linux-2.6/arch/arm/mach-gemini/idle.c
-@@ -13,9 +13,11 @@ static void gemini_idle(void)
- 	 * will never wakeup... Acctualy it is not very good to enable
- 	 * interrupts first since scheduler can miss a tick, but there is
- 	 * no other way around this. Platforms that needs it for power saving
--	 * should call enable_hlt() in init code, since by default it is
-+	 * should enable it in init code, since by default it is
- 	 * disabled.
- 	 */
++	return task_thread_info(p)->status & TS_POLLING;
++}
++#elif defined(TIF_POLLING_NRFLAG)
++static inline int tsk_is_polling(struct task_struct *p)
++{
++	test_tsk_thread_flag(p, TIF_POLLING_NRFLAG);
++}
++#else
++static inline int tsk_is_polling(struct task_struct *p) { return 0; }
++#endif
 +
-+	/* FIXME: Enabling interrupts here is racy! */
- 	local_irq_enable();
- 	cpu_do_idle();
- }
-Index: linux-2.6/arch/arm/mach-gemini/irq.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-gemini/irq.c
-+++ linux-2.6/arch/arm/mach-gemini/irq.c
-@@ -77,7 +77,7 @@ void __init gemini_init_irq(void)
- 	 * Disable the idle handler by default since it is buggy
- 	 * For more info see arch/arm/mach-gemini/idle.c
- 	 */
--	disable_hlt();
-+	cpu_idle_poll_ctrl(true);
- 
- 	request_resource(&iomem_resource, &irq_resource);
- 
-Index: linux-2.6/arch/arm/mach-ixp4xx/common.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-ixp4xx/common.c
-+++ linux-2.6/arch/arm/mach-ixp4xx/common.c
-@@ -239,7 +239,7 @@ void __init ixp4xx_init_irq(void)
- 	 * ixp4xx does not implement the XScale PWRMODE register
- 	 * so it must not call cpu_do_idle().
- 	 */
--	disable_hlt();
-+	cpu_idle_poll_ctrl(true);
- 
- 	/* Route all sources to IRQ instead of FIQ */
- 	*IXP4XX_ICLR = 0x0;
-Index: linux-2.6/arch/arm/mach-omap1/pm.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-omap1/pm.c
-+++ linux-2.6/arch/arm/mach-omap1/pm.c
-@@ -584,8 +584,7 @@ static void omap_pm_init_proc(void)
- static int omap_pm_prepare(void)
+ static inline int object_is_on_stack(void *obj)
  {
- 	/* We cannot sleep in idle until we have resumed */
--	disable_hlt();
+ 	void *stack = task_stack_page(current);
+Index: linux-2.6/kernel/sched/core.c
+===================================================================
+--- linux-2.6.orig/kernel/sched/core.c
++++ linux-2.6/kernel/sched/core.c
+@@ -512,11 +512,6 @@ static inline void init_hrtick(void)
+  * the target CPU.
+  */
+ #ifdef CONFIG_SMP
 -
-+	cpu_idle_poll_ctrl(true);
- 	return 0;
- }
- 
-@@ -621,7 +620,7 @@ static int omap_pm_enter(suspend_state_t
- 
- static void omap_pm_finish(void)
+-#ifndef tsk_is_polling
+-#define tsk_is_polling(t) 0
+-#endif
+-
+ void resched_task(struct task_struct *p)
  {
--	enable_hlt();
-+	cpu_idle_poll_ctrl(false);
- }
- 
- 
-Index: linux-2.6/arch/arm/mach-omap2/omap_hwmod.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-omap2/omap_hwmod.c
-+++ linux-2.6/arch/arm/mach-omap2/omap_hwmod.c
-@@ -2154,7 +2154,7 @@ static int _enable(struct omap_hwmod *oh
- 	if (soc_ops.enable_module)
- 		soc_ops.enable_module(oh);
- 	if (oh->flags & HWMOD_BLOCK_WFI)
--		disable_hlt();
-+		cpu_idle_poll_ctrl(true);
- 
- 	if (soc_ops.update_context_lost)
- 		soc_ops.update_context_lost(oh);
-@@ -2218,7 +2218,7 @@ static int _idle(struct omap_hwmod *oh)
- 	_del_initiator_dep(oh, mpu_oh);
- 
- 	if (oh->flags & HWMOD_BLOCK_WFI)
--		enable_hlt();
-+		cpu_idle_poll_ctrl(false);
- 	if (soc_ops.disable_module)
- 		soc_ops.disable_module(oh);
- 
-@@ -2328,7 +2328,7 @@ static int _shutdown(struct omap_hwmod *
- 		_del_initiator_dep(oh, mpu_oh);
- 		/* XXX what about the other system initiators here? dma, dsp */
- 		if (oh->flags & HWMOD_BLOCK_WFI)
--			enable_hlt();
-+			cpu_idle_poll_ctrl(false);
- 		if (soc_ops.disable_module)
- 			soc_ops.disable_module(oh);
- 		_disable_clocks(oh);
-Index: linux-2.6/arch/arm/mach-omap2/pm.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-omap2/pm.c
-+++ linux-2.6/arch/arm/mach-omap2/pm.c
-@@ -218,7 +218,7 @@ static int omap_pm_enter(suspend_state_t
- 
- static int omap_pm_begin(suspend_state_t state)
- {
--	disable_hlt();
-+	cpu_idle_poll_ctrl(true);
- 	if (cpu_is_omap34xx())
- 		omap_prcm_irq_prepare();
- 	return 0;
-@@ -226,8 +226,7 @@ static int omap_pm_begin(suspend_state_t
- 
- static void omap_pm_end(void)
- {
--	enable_hlt();
--	return;
-+	cpu_idle_poll_ctrl(false);
- }
- 
- static void omap_pm_finish(void)
-Index: linux-2.6/arch/arm/mach-orion5x/board-dt.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-orion5x/board-dt.c
-+++ linux-2.6/arch/arm/mach-orion5x/board-dt.c
-@@ -52,7 +52,7 @@ static void __init orion5x_dt_init(void)
- 	 */
- 	if (dev == MV88F5281_DEV_ID && rev == MV88F5281_REV_D0) {
- 		printk(KERN_INFO "Orion: Applying 5281 D0 WFI workaround.\n");
--		disable_hlt();
-+		cpu_idle_poll_ctrl(true);
- 	}
- 
- 	if (of_machine_is_compatible("lacie,ethernet-disk-mini-v2"))
-Index: linux-2.6/arch/arm/mach-orion5x/common.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-orion5x/common.c
-+++ linux-2.6/arch/arm/mach-orion5x/common.c
-@@ -293,7 +293,7 @@ void __init orion5x_init(void)
- 	 */
- 	if (dev == MV88F5281_DEV_ID && rev == MV88F5281_REV_D0) {
- 		printk(KERN_INFO "Orion: Applying 5281 D0 WFI workaround.\n");
--		disable_hlt();
-+		cpu_idle_poll_ctrl(true);
- 	}
- 
- 	/*
-Index: linux-2.6/arch/arm/mach-shark/core.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-shark/core.c
-+++ linux-2.6/arch/arm/mach-shark/core.c
-@@ -130,7 +130,7 @@ static void __init shark_timer_init(void
- 
- static void shark_init_early(void)
- {
--	disable_hlt();
-+	cpu_idle_poll_ctrl(true);
- }
- 
- MACHINE_START(SHARK, "Shark")
-Index: linux-2.6/arch/arm/mach-shmobile/suspend.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-shmobile/suspend.c
-+++ linux-2.6/arch/arm/mach-shmobile/suspend.c
-@@ -23,13 +23,13 @@ static int shmobile_suspend_default_ente
- 
- static int shmobile_suspend_begin(suspend_state_t state)
- {
--	disable_hlt();
-+	cpu_idle_poll_ctrl(true);
- 	return 0;
- }
- 
- static void shmobile_suspend_end(void)
- {
--	enable_hlt();
-+	cpu_idle_poll_ctrl(false);
- }
- 
- struct platform_suspend_ops shmobile_suspend_ops = {
-Index: linux-2.6/arch/arm/mach-w90x900/dev.c
-===================================================================
---- linux-2.6.orig/arch/arm/mach-w90x900/dev.c
-+++ linux-2.6/arch/arm/mach-w90x900/dev.c
-@@ -531,7 +531,7 @@ static struct platform_device *nuc900_pu
- 
- void __init nuc900_board_init(struct platform_device **device, int size)
- {
--	disable_hlt();
-+	cpu_idle_poll_ctrl(true);
- 	platform_add_devices(device, size);
- 	platform_add_devices(nuc900_public_dev, ARRAY_SIZE(nuc900_public_dev));
- 	spi_register_board_info(nuc900_spi_board_info,
+ 	int cpu;
 
 
