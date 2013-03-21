@@ -1,42 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab3CUUV4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 16:21:56 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46678 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589Ab3CUUVy (ORCPT
+	id S1752868Ab3CUUWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 16:22:47 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:56266 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536Ab3CUUWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 16:21:54 -0400
-Date: Thu, 21 Mar 2013 16:21:53 -0400 (EDT)
-Message-Id: <20130321.162153.1171536447340639084.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: akpm@linux-foundation.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, liuj97@gmail.com, tkhai@yandex.ru
-Subject: Re: linux-next: manual merge of the akpm tree with the sparc-next
- tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130321163328.2c6dccabad6a8dc8fe4b0e24@canb.auug.org.au>
-References: <20130321163328.2c6dccabad6a8dc8fe4b0e24@canb.auug.org.au>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 21 Mar 2013 16:22:46 -0400
+Date: Thu, 21 Mar 2013 21:22:36 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 5/5] arm: dts: Convert mvebu device tree files to 64
+ bits
+Message-ID: <20130321212236.1015295d@skate>
+In-Reply-To: <20130321201533.GN21478@lunn.ch>
+References: <1363883179-1361-1-git-send-email-gregory.clement@free-electrons.com>
+	<1363883179-1361-6-git-send-email-gregory.clement@free-electrons.com>
+	<20130321201533.GN21478@lunn.ch>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Thu, 21 Mar 2013 13:21:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 21 Mar 2013 16:33:28 +1100
+Dear Andrew Lunn,
 
-> Today's linux-next merge of the akpm tree got a conflict in
-> arch/sparc/mm/init_64.c between commit ce835e513a93 ("sparc64: Do not
-> change num_physpages during initmem freeing") from the sparc-next tree
-> and commit "mm/SPARC: use common help functions to free reserved pages"
-> from the akpm tree.
+On Thu, 21 Mar 2013 21:15:33 +0100, Andrew Lunn wrote:
+
+> Could you recommend a document which introduces LPAE.
 > 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+> Only being able to address 7GB seems a bit odd to me. I kind of
+> expected you set up the translation tables to map a page in the 32 bit
+> address range to any arbitrary page in the 40 bit address range. So
+> leaving 0xC0000000 to 0xffffffff in the 32bit address range clear is
+> easy. But why do you loose space in the 40bit address range?
 
-This was expected, and the merge resolution looks fine to me,
-thanks Stephen!
+translation tables convert virtual addresses to physical addresses.
+Here, we are only talking about physical addresses. There is an overlap
+between the physical addresses used by the RAM, and the physical
+addresses at which I/O devices are visible.
+
+And I'm not sure the SDRAM address decoding windows allows to split the
+first 4 GB of RAM into two areas, one that would be mapped starting at
+physical address 0x0, and another area that would be mapped at a
+different address (above 4 GB).
+
+However, I'm unsure why 0xC0000000 was chosen. Why not 0xD0000000,
+where the internal registers currently start?
+
+Best regards,
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
