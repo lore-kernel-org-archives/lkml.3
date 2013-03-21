@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab3CUSDA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:03:00 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:48561 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab3CUSC6 (ORCPT
+	id S1752126Ab3CUSCv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:02:51 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:36594 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab3CUSCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:02:58 -0400
+	Thu, 21 Mar 2013 14:02:47 -0400
+Date: Thu, 21 Mar 2013 11:02:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org, zhong@linux.vnet.ibm.com, khilman@linaro.org,
+        geoff@infradead.org, tglx@linutronix.de
+Subject: Re: [PATCH] nohz1: Documentation
+Message-ID: <20130321180218.GA3637@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAFTL4hybMf+9GjjyKRSEEp0x+wT7OwpKShE5sR_JqW24DGfKOw@mail.gmail.com>
+ <1363636794.15703.32@driftwood>
+ <CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com>
+ <20130318222548.GG3656@linux.vnet.ibm.com>
+ <1363822338.6345.33.camel@gandalf.local.home>
+ <20130320235545.GL3637@linux.vnet.ibm.com>
+ <1363825631.6345.45.camel@gandalf.local.home>
+ <514B2B03.4030301@linux.intel.com>
+ <20130321171806.GX3637@linux.vnet.ibm.com>
+ <514B464A.50700@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1363820051-24428-4-git-send-email-robherring2@gmail.com>
-References: <1363820051-24428-1-git-send-email-robherring2@gmail.com>
-	<1363820051-24428-4-git-send-email-robherring2@gmail.com>
-Date: Thu, 21 Mar 2013 19:02:57 +0100
-Message-ID: <CACRpkdZCF1KXgGXw2Hj91duGd6kZR8JW0CBhKHRLeXjnfFO7+Q@mail.gmail.com>
-Subject: Re: [PATCH 03/11] ARM: timer-sp: convert to use CLKSRC_OF init
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>, haojian.zhuang@linaro.org,
-        pawel.moll@arm.com, john.stultz@linaro.org, tglx@linutronix.de,
-        Rob Herring <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <514B464A.50700@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032118-3620-0000-0000-000001B86A4C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 11:54 PM, Rob Herring <robherring2@gmail.com> wrote:
+On Thu, Mar 21, 2013 at 10:41:30AM -0700, Arjan van de Ven wrote:
+> On 3/21/2013 10:18 AM, Paul E. McKenney wrote:
+> >	o	Use the "idle=poll" boot parameter.  However, please note
+> >		that use of this parameter can cause your CPU to overheat,
+> >		which may cause thermal throttling to degrade your
+> >		latencies --and that this degradation can be even worse
+> >		than that of dyntick-idle.
+> 
+> it also disables (effectively) Turbo Mode on Intel cpus... which can cost you a serious percentage of performance
 
-> From: Rob Herring <rob.herring@calxeda.com>
->
-> This adds CLKSRC_OF based init for sp804 timer. The clock initialization is
-> refactored to support retrieving the clock(s) from the DT.
->
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-(...)
-> @@ -186,6 +201,57 @@ void __init sp804_clockevents_init(void __iomem *base, unsigned int irq,
->         evt->irq = irq;
->         evt->cpumask = cpu_possible_mask;
->
-> +       writel(0, clkevt_base + TIMER_CTRL);
-> +
+Thank you, added!  Please see below for the updated list.
 
-Wait, patch 1/11 depends on this being done first, right?
+							Thanx, Paul
 
-So patch 1/11 has to be moved after this one in the series
-to avoid bisectability problems?
+------------------------------------------------------------------------
 
-Apart from that:
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+o	Dyntick-idle slows transitions to and from idle slightly.
+	In practice, this has not been a problem except for the most
+	aggressive real-time workloads, which have the option of disabling
+	dyntick-idle mode, an option that most of them take.  However,
+	some workloads will no doubt want to use adaptive ticks to
+	eliminate scheduling-clock-tick latencies.  Here are some
+	options for these workloads:
 
-Yours,
-Linus Walleij
+	a.	Use PMQOS from userspace to inform the kernel of your
+		latency requirements (preferred).
+
+	b.	Use the "idle=mwait" boot parameter.
+
+	c.	Use the "intel_idle.max_cstate=" to limit the maximum
+		depth C-state depth.
+
+	d.	Use the "idle=poll" boot parameter.  However, please note
+		that use of this parameter can cause your CPU to overheat,
+		which may cause thermal throttling to degrade your
+		latencies -- and that this degradation can be even worse
+		than that of dyntick-idle.  Furthermore, this parameter
+		effectively disables Turbo Mode on Intel CPUs, which
+		can significantly reduce maximum performance.
+
