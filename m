@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab3CUXf2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 19:35:28 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:51123 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751206Ab3CUXf0 (ORCPT
+	id S932509Ab3CUXgS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 19:36:18 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44526 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754055Ab3CUXgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 19:35:26 -0400
-Message-ID: <1363908924.1390.164.camel@x61.thuisdomein>
-Subject: [PATCH] appletalk: remove "config IPDDP_DECAP"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 22 Mar 2013 00:35:24 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Mar 2013 23:35:25.0064 (UTC) FILETIME=[C316A080:01CE268C]
-X-RcptDomain: vger.kernel.org
+	Thu, 21 Mar 2013 19:36:17 -0400
+X-Sasl-enc: 4pUvuWQejFsnr4nZDJ+uq+Cf+M2Z9+xybqD+o+fTPIBe 1363908976
+Date: Thu, 21 Mar 2013 16:36:15 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Bill Pemberton <wfp5p@viridian.itc.virginia.edu>,
+        Jiri Slaby <jslaby@suse.cz>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the tty tree
+Message-ID: <20130321233614.GA9125@kroah.com>
+References: <5149D1FD.90400@suse.cz>
+ <20130320151511.170EC8017A@viridian.itc.virginia.edu>
+ <20130321001628.GC27981@kroah.com>
+ <20130322095423.799b201fd0f6671e8127c2ac@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130322095423.799b201fd0f6671e8127c2ac@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig symbol IPDDP_DECAP got added in v2.1.75. It has never been
-used. Its entry can safely be removed.
+On Fri, Mar 22, 2013 at 09:54:23AM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> On Wed, 20 Mar 2013 17:16:28 -0700 Greg KH <greg@kroah.com> wrote:
+> >
+> > On Wed, Mar 20, 2013 at 11:15:11AM -0400, Bill Pemberton wrote:
+> > > Jiri Slaby writes:
+> > > > 
+> > > > On 03/20/2013 03:42 PM, Bill Pemberton wrote:
+> > > > 
+> > > > Asking Greg to revert should suffice. I commented on that patch, but in
+> > > > a different thread, so Greg missed the comment the patch is not needed
+> > > > IIRC. What was the title of the patch, I cannot find it immediately :/?
+> > > 
+> > > "USB: quatech2: only write to the tty if the port is open." (commit
+> > > 27b351c in v3.9-rc3).
+> > 
+> > I've now reverted this, so it should be ok.
+> 
+> That patch needed to be reverted in your tty tree, not your usb tree
+> since it breaks a patch added to your tty tree (see Subject).
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) No, v2.1.75 is not a typo.
+Ah, ok, I've done that now, sorry for the confusion.
 
-1) A follow up patch might involve some corrections to the IPDDP and
-IPDDP_ENCAP entries and to Documentation/networking/ipddp.txt. I hope to
-do that within the next 16 years.
-
-2) Untested, by the way.
-
- drivers/net/appletalk/Kconfig | 18 +-----------------
- 1 file changed, 1 insertion(+), 17 deletions(-)
-
-diff --git a/drivers/net/appletalk/Kconfig b/drivers/net/appletalk/Kconfig
-index f5a8916..4ce6ca5 100644
---- a/drivers/net/appletalk/Kconfig
-+++ b/drivers/net/appletalk/Kconfig
-@@ -106,20 +106,4 @@ config IPDDP_ENCAP
- 	  IP packets inside AppleTalk frames; this is useful if your Linux box
- 	  is stuck on an AppleTalk network (which hopefully contains a
- 	  decapsulator somewhere). Please see
--	  <file:Documentation/networking/ipddp.txt> for more information. If
--	  you said Y to "AppleTalk-IP driver support" above and you say Y
--	  here, then you cannot say Y to "AppleTalk-IP to IP Decapsulation
--	  support", below.
--
--config IPDDP_DECAP
--	bool "Appletalk-IP to IP Decapsulation support"
--	depends on IPDDP
--	help
--	  If you say Y here, the AppleTalk-IP code will be able to decapsulate
--	  AppleTalk-IP frames to IP packets; this is useful if you want your
--	  Linux box to act as an Internet gateway for an AppleTalk network.
--	  Please see <file:Documentation/networking/ipddp.txt> for more
--	  information.  If you said Y to "AppleTalk-IP driver support" above
--	  and you say Y here, then you cannot say Y to "IP to AppleTalk-IP
--	  Encapsulation support", above.
--
-+	  <file:Documentation/networking/ipddp.txt> for more information.
--- 
-1.7.11.7
-
+greg k-h
