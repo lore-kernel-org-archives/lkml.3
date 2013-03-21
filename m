@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932229Ab3CULjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:39:16 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18434 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932088Ab3CULjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:39:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,884,1355126400"; 
-   d="scan'208";a="306340343"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH] dw_dmac: fix typo in Kconfig
-Date: Thu, 21 Mar 2013 13:38:55 +0200
-Message-Id: <1363865935-2102-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
+	id S932580Ab3CULjy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:39:54 -0400
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:36110 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932475Ab3CULju (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 07:39:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1363145021-14339-1-git-send-email-s-anna@ti.com>
+References: <1363145021-14339-1-git-send-email-s-anna@ti.com>
+Date: Thu, 21 Mar 2013 12:39:49 +0100
+Message-ID: <CACRpkdYpJLdTx_sVyLj+MVzXqcyfucyP8qy_b_8jiArU+NSMfQ@mail.gmail.com>
+Subject: Re: [PATCHv3 00/14] drivers: mailbox: framework creation
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Suman Anna <s-anna@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Loic Pallardy <loic.pallardy@st.com>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit c30f46bc (drivers/Kconfig: add several missing GENERIC_HARDIRQS
-dependencies) introduced a warning on make defconfig stage.  This patch fixes a
-typo.
+On Wed, Mar 13, 2013 at 4:23 AM, Suman Anna <s-anna@ti.com> wrote:
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Please find the updated mailbox patch series for pulling into linux-next.
+> The series is rebased on top of 3.9-rc2, and includes one new patch to
+> rename an existing mailbox.h added as part of the highbank cpufreq
+> support for 3.9 merge window [1].
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index f641f57..23606b4 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -83,7 +83,7 @@ config INTEL_IOP_ADMA
- 
- config DW_DMAC
- 	tristate "Synopsys DesignWare AHB DMA support"
--	depends on GENERIQ_HARDIRQS
-+	depends on GENERIC_HARDIRQS
- 	select DMA_ENGINE
- 	default y if CPU_AT32AP7000
- 	help
--- 
-1.8.2.rc0.22.gb3600c3
+ARM SoC folks:
 
+would you consider pulling this stuff into the ARM SoC tree?
+
+It turns out that ux500 multiplatform support is sort of relying
+on this refactoring since it helps us to break apart the huge
+PRCMU driver.
+
+I am proceeding with my multiplatform work but things like
+this not being upstream will make the patches look ugly
+and I cannot quite consider it properly done before this is
+fixed too.
+
+Yours,
+Linus Walleij
