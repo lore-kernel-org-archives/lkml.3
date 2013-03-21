@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374Ab3CURQS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 13:16:18 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53177 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751041Ab3CURQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 13:16:16 -0400
-Message-ID: <1363886175.30275.10.camel@joe-AO722>
-Subject: Re: [PATCH] sound: max98090: Remove executable bit
-From: Joe Perches <joe@perches.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 21 Mar 2013 10:16:15 -0700
-In-Reply-To: <20130321162503.GC14768@opensource.wolfsonmicro.com>
-References: <1363730323.16270.11.camel@joe-AO722>
-	 <20130320095758.GD28775@opensource.wolfsonmicro.com>
-	 <1363792936.16270.30.camel@joe-AO722>
-	 <20130320163627.GS28775@opensource.wolfsonmicro.com>
-	 <1363820072.16270.43.camel@joe-AO722>
-	 <20130321162503.GC14768@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751394Ab3CURRI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 13:17:08 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36398 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750916Ab3CURRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 13:17:05 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: X86 ML <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: [PATCH] x86, cpa: Cleanup split_large_page and its callee
+Date: Thu, 21 Mar 2013 18:16:57 +0100
+Message-Id: <1363886217-24703-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.1.3.535.ga923c31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-21 at 17:25 +0100, Mark Brown wrote:
-> > I suggest you use a git pre-commit hook to your
-> > tree and use sed/perl to add a specific prefix
-> > if it doesn't exist.
-> > http://codeinthehole.com/writing/tips-for-using-a-git-pre-commit-hook/
-> 
-> I don't think you're quite understanding the issues with automation
-> here.  Or indeed the desired end result.
+From: Borislav Petkov <bp@suse.de>
 
-What issue is that?
+So basically we're generating the pte_t * from a struct page and we're
+handing it down to the __split_large_page internal version which then
+goes and gets back struct page * from it because it needs it.
 
-Maybe this would work for you...
+Change the caller to hand down struct page * directly and the callee can
+compute the pte_t itself.
 
-$ cat .git/hooks/applypatch-msg
-#!/bin/sh
+Net save is one virt_to_page() call and simpler code. While at it, make
+__split_large_page static.
 
-. git-sh-setup
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/include/asm/pgtable_types.h | 1 -
+ arch/x86/mm/pageattr.c               | 9 ++++-----
+ 2 files changed, 4 insertions(+), 6 deletions(-)
 
-perl -p -i -e 's/^(?:ASoC:\s*)?(.*)$/ASoC: $1/g if 1 .. 1' {$1+"$@"}
-
-test -x "$GIT_DIR/hooks/commit-msg" &&
-	exec "$GIT_DIR/hooks/commit-msg" ${1+"$@"}
-:
-$
-
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index 567b5d0632b2..e6423002c10b 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -351,7 +351,6 @@ static inline void update_page_count(int level, unsigned long pages) { }
+  * as a pte too.
+  */
+ extern pte_t *lookup_address(unsigned long address, unsigned int *level);
+-extern int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase);
+ extern phys_addr_t slow_virt_to_phys(void *__address);
+ 
+ #endif	/* !__ASSEMBLY__ */
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index 091934e1d0d9..25b1d35c76cb 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -542,13 +542,14 @@ out_unlock:
+ 	return do_split;
+ }
+ 
+-int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase)
++static int
++__split_large_page(pte_t *kpte, unsigned long address, struct page *base)
+ {
++	pte_t *pbase = (pte_t *)page_address(base);
+ 	unsigned long pfn, pfninc = 1;
+ 	unsigned int i, level;
+ 	pte_t *tmp;
+ 	pgprot_t ref_prot;
+-	struct page *base = virt_to_page(pbase);
+ 
+ 	spin_lock(&pgd_lock);
+ 	/*
+@@ -633,7 +634,6 @@ int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase)
+ 
+ static int split_large_page(pte_t *kpte, unsigned long address)
+ {
+-	pte_t *pbase;
+ 	struct page *base;
+ 
+ 	if (!debug_pagealloc)
+@@ -644,8 +644,7 @@ static int split_large_page(pte_t *kpte, unsigned long address)
+ 	if (!base)
+ 		return -ENOMEM;
+ 
+-	pbase = (pte_t *)page_address(base);
+-	if (__split_large_page(kpte, address, pbase))
++	if (__split_large_page(kpte, address, base))
+ 		__free_page(base);
+ 
+ 	return 0;
+-- 
+1.8.1.3.535.ga923c31
 
