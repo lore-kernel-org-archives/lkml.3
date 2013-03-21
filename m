@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab3CUSPi (ORCPT <rfc822;w@1wt.eu>);
+	id S1752589Ab3CUSPo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:15:44 -0400
+Received: from mail-ia0-f176.google.com ([209.85.210.176]:65181 "EHLO
+	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752549Ab3CUSPi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 21 Mar 2013 14:15:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45521 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752433Ab3CUSPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:15:36 -0400
-Date: Thu, 21 Mar 2013 18:15:32 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Linux-MM <linux-mm@kvack.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/10] mm: vmscan: Have kswapd writeback pages based on
- dirty pages encountered, not priority
-Message-ID: <20130321181532.GP1878@suse.de>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-7-git-send-email-mgorman@suse.de>
- <m2620qjdeo.fsf@firstfloor.org>
- <20130317151155.GC2026@suse.de>
- <514B4925.2010909@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <514B4925.2010909@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1363820051-24428-11-git-send-email-robherring2@gmail.com>
+References: <1363820051-24428-1-git-send-email-robherring2@gmail.com>
+	<1363820051-24428-11-git-send-email-robherring2@gmail.com>
+Date: Thu, 21 Mar 2013 19:15:38 +0100
+Message-ID: <CACRpkdYvY9BRAikAyyFHvg8uaWK7msOhVSDFG_zRZQJhG1cuAA@mail.gmail.com>
+Subject: Re: [PATCH 10/11] ARM: move sp804 and integrator timers to drivers/clocksource
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>, haojian.zhuang@linaro.org,
+        pawel.moll@arm.com, john.stultz@linaro.org, tglx@linutronix.de,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 01:53:41PM -0400, Rik van Riel wrote:
-> On 03/17/2013 11:11 AM, Mel Gorman wrote:
-> >On Sun, Mar 17, 2013 at 07:42:39AM -0700, Andi Kleen wrote:
-> >>Mel Gorman <mgorman@suse.de> writes:
-> >>
-> >>>@@ -495,6 +495,9 @@ typedef enum {
-> >>>  	ZONE_CONGESTED,			/* zone has many dirty pages backed by
-> >>>  					 * a congested BDI
-> >>>  					 */
-> >>>+	ZONE_DIRTY,			/* reclaim scanning has recently found
-> >>>+					 * many dirty file pages
-> >>>+					 */
-> >>
-> >>Needs a better name. ZONE_DIRTY_CONGESTED ?
-> >>
-> >
-> >That might be confusing. The underlying BDI is not necessarily
-> >congested. I accept your point though and will try thinking of a better
-> >name.
-> 
-> ZONE_LOTS_DIRTY ?
-> 
+On Wed, Mar 20, 2013 at 11:54 PM, Rob Herring <robherring2@gmail.com> wrote:
 
-I had changed it to
+> From: Rob Herring <rob.herring@calxeda.com>
+>
+> Move timer-sp and integrator-ap timer code to drivers/clocksource and
+> update timer-sp.h and arm_timer.h includes.
+>
+> This adds CLKSRC_OF support for the integrator-ap timer and removes the
+> use of "arm,timer-primary" and "arm,timer-secondary" aliases. The timer
+> selection should not be important as all 3 timers are equal capability.
+>
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
 
-        ZONE_TAIL_LRU_DIRTY,            /* reclaim scanning has recently found
-                                         * many dirty file pages at the tail
-                                         * of the LRU.
-                                         */
+Nice!
 
-Is that reasonable?
+This looks like it'll work.
 
--- 
-Mel Gorman
-SUSE Labs
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
