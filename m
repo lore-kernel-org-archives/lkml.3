@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751379Ab3CUScd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:32:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51718 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979Ab3CUScc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:32:32 -0400
-Date: Thu, 21 Mar 2013 19:30:21 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ming Lei <tom.leiming@gmail.com>, Shaohua Li <shli@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: +
-	atomic-improve-atomic_inc_unless_negative-atomic_dec_unless_positive
-	.patch added to -mm tree
-Message-ID: <20130321183021.GA27586@redhat.com>
-References: <20130314162413.GA21344@redhat.com> <CACVXFVP+fGeWS3xwBfaQDFaH7=e_4CbgCru9DJczB2vyWuUL1g@mail.gmail.com> <20130315134632.GA18335@redhat.com> <CACVXFVOjWc4RU+A-8PeYP9RfJ1-HSiZHbbv771LXDynMs0ybMQ@mail.gmail.com> <20130315165131.GA32065@redhat.com> <20130317172621.GQ3656@linux.vnet.ibm.com> <20130321170827.GA23539@redhat.com> <1363889025.4431.35.camel@edumazet-glaptop>
+	id S1751441Ab3CUSdE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:33:04 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:48359 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879Ab3CUSdB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 14:33:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363889025.4431.35.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <5149FFDF.6050501@ti.com>
+References: <1363075109-27038-1-git-send-email-silviupopescu1990@gmail.com>
+	<20130312110557.GF30923@n2100.arm.linux.org.uk>
+	<5149FFDF.6050501@ti.com>
+Date: Thu, 21 Mar 2013 20:33:01 +0200
+Message-ID: <CAPWTe+JYEZJ5Zn6Dt9mmr38raXdM8wc1eWFro2a4Czy-eCzSpQ@mail.gmail.com>
+Subject: Re: [PATCH] mach_omap2: use PTR_RET instead of IS_ERR + PTR_ERR
+From: Silviu Popescu <silviupopescu1990@gmail.com>
+To: Jon Hunter <jon-hunter@ti.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@ti.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21, Eric Dumazet wrote:
+On Wed, Mar 20, 2013 at 8:28 PM, Jon Hunter <jon-hunter@ti.com> wrote:
 >
-> On Thu, 2013-03-21 at 18:08 +0100, Oleg Nesterov wrote:
+> On 03/12/2013 06:05 AM, Russell King - ARM Linux wrote:
+>> On Tue, Mar 12, 2013 at 09:58:29AM +0200, Silviu-Mihai Popescu wrote:
+>>> This uses PTR_RET instead of IS_ERR and PTR_ERR in order to increase
+>>> readability.
+>>>
+>>> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+>>> ---
+>>>  arch/arm/mach-omap2/devices.c |    4 ++--
+>>>  arch/arm/mach-omap2/fb.c      |    5 +----
+>>>  arch/arm/mach-omap2/gpmc.c    |    2 +-
+>>>  arch/arm/mach-omap2/pmu.c     |    5 +----
+>>>  4 files changed, 5 insertions(+), 11 deletions(-)
+>>>
+>>> diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
+>>> index 1ec7f05..2a0816e 100644
+>>> --- a/arch/arm/mach-omap2/devices.c
+>>> +++ b/arch/arm/mach-omap2/devices.c
+>>> @@ -66,7 +66,7 @@ static int __init omap3_l3_init(void)
+>>>
+>>>      WARN(IS_ERR(pdev), "could not build omap_device for %s\n", oh_name);
+>>>
+>>> -    return IS_ERR(pdev) ? PTR_ERR(pdev) : 0;
+>>> +    return PTR_RET(pdev);
+>>
+>> This is incorrect.
+>>
+>> The return value will be tested for < 0.  Kernel pointers in general are
+>> all above 3GB, and so are all "< 0".
+>>
+>> I'm afraid none of these changes stuff is an improvement - they all
+>> introduce bugs.
 >
-> > OK... since nobody volunteered to make a patch, what do you think about
-> > the change below?
-> >
-> > It should "fix" atomic_add_unless() (only on x86) and optimize
-> > atomic_inc/dec_unless.
-> >
-> > With this change atomic_*_unless() can do the unnecessary mb() after
-> > cmpxchg() fails, but I think this case is very unlikely.
-> >
-> > And, in the likely case atomic_inc/dec_unless avoids the 1st cmpxchg()
-> > which in most cases just reads the memory for the next cmpxchg().
-> >
-> > Oleg.
+> Sorry I am now not sure I follow you here. Someone just pointed out to
+> me that PTR_RET() is defined as ...
 >
-> Hmm, cmpxchg() has different effect on MESI transaction, than a plain
-> read.
+> static inline int __must_check PTR_RET(const void *ptr)
+> {
+>         if (IS_ERR(ptr))
+>                 return PTR_ERR(ptr);
+>         else
+>                 return 0;
+> }
+>
+> So the above change appears to be equivalent. Is there something that is
+> wrong with the current implementation that needs to be fixed?
 
-But this doesn't matter?
 
-We will do cmpxchg() anyway. Unless we can see that it will fail.
+As the patch message says, it's just for readability purposes.
+I used make coccicheck and it suggested this minor change.
 
-Or could you explain what I missed?
-
-> maybe the 'hint' idea used in atomic_inc_not_zero_hint() could be used.
-
-To me, it would be better to kill atomic_inc_not_zero_hint() or unify
-unify it with atomic_inc_not_zero(). But this is another story.
-
-Oleg.
-
+--
+Silviu Popescu
