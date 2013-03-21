@@ -1,39 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab3CURly (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 13:41:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45292 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751837Ab3CURlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 13:41:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,887,1355126400"; 
-   d="scan'208";a="282843612"
-Message-ID: <514B464A.50700@linux.intel.com>
-Date: Thu, 21 Mar 2013 10:41:30 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1751858Ab3CURop (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 13:44:45 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59555 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751103Ab3CURoo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 13:44:44 -0400
+Date: Thu, 21 Mar 2013 18:44:40 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Joe Perches <joe@perches.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sound: max98090: Remove executable bit
+Message-ID: <20130321174440.GG15926@opensource.wolfsonmicro.com>
+References: <1363730323.16270.11.camel@joe-AO722>
+ <20130320095758.GD28775@opensource.wolfsonmicro.com>
+ <1363792936.16270.30.camel@joe-AO722>
+ <20130320163627.GS28775@opensource.wolfsonmicro.com>
+ <1363820072.16270.43.camel@joe-AO722>
+ <20130321162503.GC14768@opensource.wolfsonmicro.com>
+ <1363886175.30275.10.camel@joe-AO722>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org, zhong@linux.vnet.ibm.com, khilman@linaro.org,
-        geoff@infradead.org, tglx@linutronix.de
-Subject: Re: [PATCH] nohz1: Documentation
-References: <CAFTL4hybMf+9GjjyKRSEEp0x+wT7OwpKShE5sR_JqW24DGfKOw@mail.gmail.com> <1363636794.15703.32@driftwood> <CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com> <20130318222548.GG3656@linux.vnet.ibm.com> <1363822338.6345.33.camel@gandalf.local.home> <20130320235545.GL3637@linux.vnet.ibm.com> <1363825631.6345.45.camel@gandalf.local.home> <514B2B03.4030301@linux.intel.com> <20130321171806.GX3637@linux.vnet.ibm.com>
-In-Reply-To: <20130321171806.GX3637@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3VRmKSg17yJg2MZg"
+Content-Disposition: inline
+In-Reply-To: <1363886175.30275.10.camel@joe-AO722>
+X-Cookie: You will be run over by a bus.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/21/2013 10:18 AM, Paul E. McKenney wrote:
-> 	o	Use the "idle=poll" boot parameter.  However, please note
-> 		that use of this parameter can cause your CPU to overheat,
-> 		which may cause thermal throttling to degrade your
-> 		latencies --and that this degradation can be even worse
-> 		than that of dyntick-idle.
 
-it also disables (effectively) Turbo Mode on Intel cpus... which can cost you a serious percentage of performance
+--3VRmKSg17yJg2MZg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Thu, Mar 21, 2013 at 10:16:15AM -0700, Joe Perches wrote:
+> On Thu, 2013-03-21 at 17:25 +0100, Mark Brown wrote:
+
+> > I don't think you're quite understanding the issues with automation
+> > here.  Or indeed the desired end result.
+
+> What issue is that?
+
+That one needs a bit more taste and thought to work out what's
+appropraite than can be guaranteed easily with a script, things like
+working out drive level prefixes for example.
+
+> Maybe this would work for you...
+
+> $ cat .git/hooks/applypatch-msg
+> #!/bin/sh
+
+> . git-sh-setup
+
+> perl -p -i -e 's/^(?:ASoC:\s*)?(.*)$/ASoC: $1/g if 1 .. 1' {$1+"$@"}
+
+> test -x "$GIT_DIR/hooks/commit-msg" &&
+> 	exec "$GIT_DIR/hooks/commit-msg" ${1+"$@"}
+> :
+> $
+
+No, that's going to leave essentially every commit that needs fixing up
+still needing manual fixup.
+
+--3VRmKSg17yJg2MZg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRS0cAAAoJELSic+t+oim9fDkP/2nzeZTbxPgI0H8GZWNMOQwy
++wTQ+YXramvCTizU6lBbV16L1+OVi9CufxkCizcrued7z/gxUdcbYcX/e83JAHHf
+K2KtigiOncTCKdryuN0uwJMSQBxFKKyM/zj5i4WnVm/Hrpfd31A1IDq2p9ChoAsZ
+0L8GtJHp//6G1ddBiUH2hYQYMstcYJ9Xbr1MMRFullAILbOI3vlba7/9N260QNz3
+HTeAFymzrKEarZJj5d7grJyxiI5K1dyAvNZYesPx79JZkuVb7OdA9KA4hrmstHRd
+xvQVHHQCQaVEOnD6tXICnBpCzgpIqAqBd1JGXFzc5EcUPzxhZdvUidAS+2UrCf59
+r4sWLdlxIw3xTO+I/6KwiKggaIJWl0OsnelvkloqVqSoRJUpTrLm4NIcTJ47pGl1
+PGPN4TMoRfQmaeaPXi8MAFE5jcd9YLQZ3DJpiVV7lfMpl830aPC/doFFDFk8dkGR
+IU3RNHgQocIl+Wm8aq+EU9OwKRH/O1bqMOgy4zHJRvlmxSOTyLhiwHFA1xAEJunJ
+LKlYg+fRRL1Xz1c7Cn1NoDWUgYvyivgSD8jpPnHLnqZDeNvPv9h8F5Q1H0ajp1Yg
+W7/OjeIh4tT1ACUv/L6mj7Goq8a1ng1SACTuLpt1WPanU5mL21PRTZU0vgQtN4Tu
+a11zCGlntjfPAbD7s0Kd
+=HHzM
+-----END PGP SIGNATURE-----
+
+--3VRmKSg17yJg2MZg--
