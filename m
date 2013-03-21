@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920Ab3CUVlX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 17:41:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27453 "EHLO mx1.redhat.com"
+	id S1752473Ab3CUVlr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 17:41:47 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:56843 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268Ab3CUVlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 17:41:22 -0400
-Date: Thu, 21 Mar 2013 17:41:18 -0400
-From: Dave Jones <davej@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: VFS deadlock ?
-Message-ID: <20130321214118.GA25517@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Al Viro <viro@ZenIV.linux.org.uk>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20130321190653.GA15479@redhat.com>
- <20130321192935.GY21522@ZenIV.linux.org.uk>
- <CA+55aFyvwJK99YvDLDsazD4tWT6sNQO6kGM_1WyDdvwPNDxbLw@mail.gmail.com>
- <20130321202635.GA16406@redhat.com>
- <CA+55aFwyK4uDgSKUpXBGS5zi16qd8STtrGi3kndunYi40dnj+A@mail.gmail.com>
- <20130321203639.GC16406@redhat.com>
- <20130321204704.GZ21522@ZenIV.linux.org.uk>
- <20130321210255.GD16406@redhat.com>
- <CA+55aFxysZEw6fw8+LobMgfzeHuGSSs+hyrUr_frTOjaCGJFLQ@mail.gmail.com>
- <20130321212617.GA21522@ZenIV.linux.org.uk>
+	id S1752115Ab3CUVlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 17:41:46 -0400
+Date: Thu, 21 Mar 2013 15:41:32 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Lior Amsalem <alior@marvell.com>,
+        Ike Pan <ike.pan@canonical.com>, Nadav Haklai <nadavh@marvell.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Eran Ben-Avi <benavi@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Masters <jcm@redhat.com>, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 5/5] arm: dts: Convert mvebu device tree files to 64 bits
+Message-ID: <20130321214132.GB8431@obsidianresearch.com>
+References: <1363883179-1361-1-git-send-email-gregory.clement@free-electrons.com>
+ <1363883179-1361-6-git-send-email-gregory.clement@free-electrons.com>
+ <20130321201533.GN21478@lunn.ch>
+ <20130321212236.1015295d@skate>
+ <20130321205545.GA8358@obsidianresearch.com>
+ <20130321221523.7ede6ccc@skate>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130321212617.GA21522@ZenIV.linux.org.uk>
+In-Reply-To: <20130321221523.7ede6ccc@skate>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 09:26:17PM +0000, Al Viro wrote:
- > On Thu, Mar 21, 2013 at 02:18:15PM -0700, Linus Torvalds wrote:
- > > On Thu, Mar 21, 2013 at 2:02 PM, Dave Jones <davej@redhat.com> wrote:
- > > >
- > > > here we go...
- > > >
- > > > WARNING: at fs/namei.c:2335 lock_rename+0x156/0x160()
- > > > p1=irda p2=irda
- > > 
- > > Ok, good. I ssupect it's /proc or /sys, we do have that entry there.
- > > 
- > > But in fact I suspect we do want the parent name after all, because I
- > > think we have multiple "irda" directories. There's the one in
- > > /proc/net/ (added by net/irda/irproc.c), and there's a sysctl  CTL_DIR
- > > "irda" directory (kernel/sysctl_binary.c). And there might even be a
- > > few other ones in /sys too, thanks to the ldisc called "irda" etc.
- > > 
- > > I don't see where the shared inode comes from, but I suspect that
- > > would be easier to guess if we actually see which particular case it
- > > ends up being..
- > 
- > Well, something like
- > 	static char path[4096];
- > 	d_absolute_path(p1, path, 4096);
- > 	printk(KERN_ERR "%s %s %d %d"
- > 		path, p1->d_sb->s_type->name, d_unlinked(p1), d_unlinked(p2));
- > might be useful - pathname within fs, fs type and which of those suckers are
- > unlinked...
+On Thu, Mar 21, 2013 at 10:15:23PM +0100, Thomas Petazzoni wrote:
+> Dear Jason Gunthorpe,
+> 
+> On Thu, 21 Mar 2013 14:55:45 -0600, Jason Gunthorpe wrote:
+> 
+> > Or, better, locate all the internal registers above 8G and use
+> > contiguous DRAM mapping from 0 -> 8GB
+> 
+> I see two potential issues with this idea:
+> 
+>  *) It only works when LPAE is enabled, so we would have to have
+>     different internal register addresses depending on whether LPAE is
+>     enabled or not. Probably not impossible, but not very
+>     straightforward either.
 
-uh..
+Ideally the internal register space address would come from the DT -
+we are getting very close to that on Marvell, I think.. Things like
+earlyprintk should ideally early parse the DT, harder I know :(
 
-fs/namei.c:2342:3: warning: passing argument 1 of ‘d_absolute_path’ from incompatible pointer type [enabled by default]
-   d_absolute_path(p1, path, 4096);
-   ^
-In file included from include/linux/fs.h:8:0,
-                 from fs/namei.c:21:
-include/linux/dcache.h:337:14: note: expected ‘const struct path *’ but argument is of type ‘struct dentry *’
- extern char *d_absolute_path(const struct path *, char *, int);
-              ^
+>  *) It would require Linux to change the internal registers address
+>     (for now the kernel relies on the bootloader). The problem is that
+>     we can't do it early enough to preserve the earlyprintk
+>     functionality. Maybe you have suggestions on how to achieve that?
 
+I can't forsee how Linux could do this reprogramming - not only do you
+have to move the registers, you'd also have to reprogram the DRAM
+bases, while running from the DRAM. Not only does that have to be done
+early, but the DT would need to describe the DRAM ranks, and the code
+would have to parse it.. On top of that it would have to be very
+careful not to wack any DRAM that has already been touched by the
+kernel.. Tricky stuff :)
 
-How do I go from the dentry in p1 to the path d_absolute_path expects ?
-
-	Dave
-
+Jason
