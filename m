@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932474Ab3CUVxY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 17:53:24 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33201 "EHLO
+	id S1753769Ab3CUVxb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 17:53:31 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33308 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932300Ab3CUVxQ (ORCPT
+	with ESMTP id S1751571Ab3CUVxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 17:53:16 -0400
-Message-Id: <20130321215234.754954871@linutronix.de>
+	Thu, 21 Mar 2013 17:53:25 -0400
+Message-Id: <20130321215235.415426466@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 21 Mar 2013 21:53:14 -0000
+Date: Thu, 21 Mar 2013 21:53:22 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
@@ -18,11 +18,10 @@ Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [patch 22/34] mips: Use generic idle loop
+        Magnus Damm <magnus.damm@gmail.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: [patch 32/34] unicore: Use generic idle loop
 References: <20130321214930.752934102@linutronix.de>
-Content-Disposition: inline; filename=mips-use-generic-idle-loop.patch
+Content-Disposition: inline; filename=unicore-use-generic-idle-loop.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -31,99 +30,56 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 ---
- arch/mips/Kconfig          |    1 
- arch/mips/kernel/process.c |   46 ++++++++++++---------------------------------
- arch/mips/kernel/smp.c     |    2 -
- 3 files changed, 15 insertions(+), 34 deletions(-)
+ arch/unicore32/Kconfig          |    1 +
+ arch/unicore32/kernel/process.c |   21 +++------------------
+ 2 files changed, 4 insertions(+), 18 deletions(-)
 
-Index: linux-2.6/arch/mips/Kconfig
+Index: linux-2.6/arch/unicore32/Kconfig
 ===================================================================
---- linux-2.6.orig/arch/mips/Kconfig
-+++ linux-2.6/arch/mips/Kconfig
-@@ -34,6 +34,7 @@ config MIPS
- 	select HAVE_MEMBLOCK_NODE_MAP
- 	select ARCH_DISCARD_MEMBLOCK
- 	select GENERIC_SMP_IDLE_THREAD
+--- linux-2.6.orig/arch/unicore32/Kconfig
++++ linux-2.6/arch/unicore32/Kconfig
+@@ -17,6 +17,7 @@ config UNICORE32
+ 	select ARCH_WANT_FRAME_POINTERS
+ 	select GENERIC_IOMAP
+ 	select MODULES_USE_ELF_REL
 +	select GENERIC_IDLE_LOOP
- 	select BUILDTIME_EXTABLE_SORT
- 	select GENERIC_CLOCKEVENTS
- 	select GENERIC_CMOS_UPDATE
-Index: linux-2.6/arch/mips/kernel/process.c
+ 	help
+ 	  UniCore-32 is 32-bit Instruction Set Architecture,
+ 	  including a series of low-power-consumption RISC chip
+Index: linux-2.6/arch/unicore32/kernel/process.c
 ===================================================================
---- linux-2.6.orig/arch/mips/kernel/process.c
-+++ linux-2.6/arch/mips/kernel/process.c
-@@ -41,44 +41,24 @@
- #include <asm/inst.h>
- #include <asm/stacktrace.h>
+--- linux-2.6.orig/arch/unicore32/kernel/process.c
++++ linux-2.6/arch/unicore32/kernel/process.c
+@@ -45,25 +45,10 @@ static const char * const processor_mode
+ 	"UK18", "UK19", "UK1A", "EXTN", "UK1C", "UK1D", "UK1E", "SUSR"
+ };
  
--/*
-- * The idle thread. There's no useful work to be done, so just try to conserve
-- * power and have a low exit latency (ie sit in a loop waiting for somebody to
-- * say that they'd like to reschedule)
-- */
--void __noreturn cpu_idle(void)
-+void arch_cpu_idle_dead(void)
+-void cpu_idle(void)
++void arch_cpu_idle(void)
  {
--	int cpu;
--
--	/* CPU is going idle. */
--	cpu = smp_processor_id();
-+	/* What the heck is this check doing ? */
-+	if (!cpu_isset(cpu, cpu_callin_map))
-+		play_dead();}
-+}
- 
 -	/* endless idle loop with no priority at all */
 -	while (1) {
 -		tick_nohz_idle_enter();
 -		rcu_idle_enter();
--		while (!need_resched() && cpu_online(cpu)) {
-+void arch__cpu_idle(void)
-+{
- #ifdef CONFIG_MIPS_MT_SMTC
--			extern void smtc_idle_loop_hook(void);
-+	extern void smtc_idle_loop_hook(void);
- 
--			smtc_idle_loop_hook();
-+	smtc_idle_loop_hook();
- #endif
--
--			if (cpu_wait) {
--				/* Don't trace irqs off for idle */
--				stop_critical_timings();
--				(*cpu_wait)();
--				start_critical_timings();
--			}
+-		while (!need_resched()) {
+-			local_irq_disable();
+-			stop_critical_timings();
+-			cpu_do_idle();
+-			local_irq_enable();
+-			start_critical_timings();
 -		}
--#ifdef CONFIG_HOTPLUG_CPU
--		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map))
--			play_dead();
--#endif
 -		rcu_idle_exit();
 -		tick_nohz_idle_exit();
--		schedule_preempt_disabled();
+-		preempt_enable_no_resched();
+-		schedule();
+-		preempt_disable();
 -	}
-+	if (cpu_wait)
-+		(*cpu_wait)();
-+	else
-+		local_irq_enable();
++	cpu_do_idle();
++	local_irq_enable();
  }
  
- asmlinkage void ret_from_fork(void);
-Index: linux-2.6/arch/mips/kernel/smp.c
-===================================================================
---- linux-2.6.orig/arch/mips/kernel/smp.c
-+++ linux-2.6/arch/mips/kernel/smp.c
-@@ -139,7 +139,7 @@ asmlinkage __cpuinit void start_secondar
- 	WARN_ON_ONCE(!irqs_disabled());
- 	mp_ops->smp_finish();
- 
--	cpu_idle();
-+	cpu_startup_entry(CPUHP_ONLINE);
- }
- 
- /*
+ static char reboot_mode = 'h';
 
 
