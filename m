@@ -1,123 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab3CUUBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 16:01:32 -0400
-Received: from mga11.intel.com ([192.55.52.93]:42001 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752637Ab3CUUAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 16:00:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,888,1355126400"; 
-   d="scan'208";a="310162233"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        akpm@linux-foundation.org, tglx@linutronix.de, eranian@google.com,
-        torvalds@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 5/5] perf, x86: Support Haswell v4 LBR format
-Date: Thu, 21 Mar 2013 12:59:55 -0700
-Message-Id: <1363895995-12967-6-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1363895995-12967-1-git-send-email-andi@firstfloor.org>
-References: <1363895995-12967-1-git-send-email-andi@firstfloor.org>
+	id S1752746Ab3CUUFS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 16:05:18 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:43091 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629Ab3CUUFQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 16:05:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130320201914.GB26387@merkur.ravnborg.org>
+References: <CANeU7QkMd_evQrJL1Otp3j3CR9FAXSXO9VOKSFmESkWPZNMkEA@mail.gmail.com>
+	<20130317215812.GA23103@merkur.ravnborg.org>
+	<CANeU7Q=uQe7euVnrKExLg0yb1mDJm8NFoFzTqnTn1Gayf69gnA@mail.gmail.com>
+	<20130320201914.GB26387@merkur.ravnborg.org>
+Date: Thu, 21 Mar 2013 13:05:15 -0700
+X-Google-Sender-Auth: g9yGBVOvrWGBZY2LGQNGi12s01w
+Message-ID: <CANeU7QnZaLTOcqZ1vTwGhsQjX7BbZjQ8RV1TczWWxA9etGo=tQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] kbuild: avoid some unnecessary rebuild
+From: Christopher Li <sparse@chrisli.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Let me add a signed off in case some one want to apply it.
 
-Haswell has two additional LBR from flags for TSX: intx and abort, implemented
-as a new v4 version of the LBR format.
+Signed-Off-By: Christopher Li <sparse@chrisli.org>
 
-Handle those in and adjust the sign extension code to still correctly extend.
-The flags are exported similarly in the LBR record to the existing misprediction
-flag
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++++++++---
- include/linux/perf_event.h                 |    7 ++++++-
- 2 files changed, 21 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index da02e9c..2af6695b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -12,6 +12,7 @@ enum {
- 	LBR_FORMAT_LIP		= 0x01,
- 	LBR_FORMAT_EIP		= 0x02,
- 	LBR_FORMAT_EIP_FLAGS	= 0x03,
-+	LBR_FORMAT_EIP_FLAGS2	= 0x04,
- };
- 
- /*
-@@ -56,6 +57,8 @@ enum {
- 	 LBR_FAR)
- 
- #define LBR_FROM_FLAG_MISPRED  (1ULL << 63)
-+#define LBR_FROM_FLAG_INTX     (1ULL << 62)
-+#define LBR_FROM_FLAG_ABORT    (1ULL << 61)
- 
- #define for_each_branch_sample_type(x) \
- 	for ((x) = PERF_SAMPLE_BRANCH_USER; \
-@@ -270,21 +273,30 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
- 
- 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
- 		unsigned long lbr_idx = (tos - i) & mask;
--		u64 from, to, mis = 0, pred = 0;
-+		u64 from, to, mis = 0, pred = 0, intx = 0, abort = 0;
- 
- 		rdmsrl(x86_pmu.lbr_from + lbr_idx, from);
- 		rdmsrl(x86_pmu.lbr_to   + lbr_idx, to);
- 
--		if (lbr_format == LBR_FORMAT_EIP_FLAGS) {
-+		if (lbr_format == LBR_FORMAT_EIP_FLAGS ||
-+		    lbr_format == LBR_FORMAT_EIP_FLAGS2) {
- 			mis = !!(from & LBR_FROM_FLAG_MISPRED);
- 			pred = !mis;
--			from = (u64)((((s64)from) << 1) >> 1);
-+			if (lbr_format == LBR_FORMAT_EIP_FLAGS)
-+				from = (u64)((((s64)from) << 1) >> 1);
-+			else if (lbr_format == LBR_FORMAT_EIP_FLAGS2) {
-+				intx = !!(from & LBR_FROM_FLAG_INTX);
-+				abort = !!(from & LBR_FROM_FLAG_ABORT);
-+				from = (u64)((((s64)from) << 3) >> 3);
-+			}
- 		}
- 
- 		cpuc->lbr_entries[i].from	= from;
- 		cpuc->lbr_entries[i].to		= to;
- 		cpuc->lbr_entries[i].mispred	= mis;
- 		cpuc->lbr_entries[i].predicted	= pred;
-+		cpuc->lbr_entries[i].intx	= intx;
-+		cpuc->lbr_entries[i].abort	= abort;
- 		cpuc->lbr_entries[i].reserved	= 0;
- 	}
- 	cpuc->lbr_stack.nr = i;
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 1d795df..e1b975a 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -74,13 +74,18 @@ struct perf_raw_record {
-  *
-  * support for mispred, predicted is optional. In case it
-  * is not supported mispred = predicted = 0.
-+ *
-+ *     intx: running in a hardware transaction
-+ *     abort: aborting a hardware transaction
-  */
- struct perf_branch_entry {
- 	__u64	from;
- 	__u64	to;
- 	__u64	mispred:1,  /* target mispredicted */
- 		predicted:1,/* target predicted */
--		reserved:62;
-+		intx:1,	    /* in transaction */
-+		abort:1,    /* transaction abort */
-+		reserved:60;
- };
- 
- /*
--- 
-1.7.7.6
-
+On Wed, Mar 20, 2013 at 1:19 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+> I looked at the attached patch:
+> Acked-by: Sam Ravnborg <sam@ravnborg.org>
