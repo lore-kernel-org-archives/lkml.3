@@ -1,357 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933981Ab3CUQJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:09:45 -0400
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:49843 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933907Ab3CUQAk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:00:40 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        broonie@opensource.wolfsonmicro.com
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 18/46] regulator: ab8500: Clean out SoC registers
-Date: Thu, 21 Mar 2013 15:59:15 +0000
-Message-Id: <1363881583-15234-19-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
-References: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
+	id S934010Ab3CUQJz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:09:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29918 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933907Ab3CUQJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 12:09:51 -0400
+Date: Thu, 21 Mar 2013 12:04:41 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
+Message-ID: <20130321160441.GB6575@redhat.com>
+References: <1363802506.2580.55.camel@falcor1.watson.ibm.com>
+ <1363803158.2553.33.camel@x230.sbx07502.somerma.wayport.net>
+ <1363806968.2580.86.camel@falcor1.watson.ibm.com>
+ <1363811856.2553.37.camel@x230.sbx07502.somerma.wayport.net>
+ <1363813877.2580.120.camel@falcor1.watson.ibm.com>
+ <1363814289.2553.41.camel@x230.sbx07502.somerma.wayport.net>
+ <20130321134348.GA3934@redhat.com>
+ <20130321153725.GA3656@austin.hallyn.com>
+ <20130321155220.GL3934@redhat.com>
+ <20130321155823.GA4438@austin.hallyn.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130321155823.GA4438@austin.hallyn.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean out initialisation that is handled by SoC. Regulator
-settings for Vpll (partly), Vsmps1, Vsmps2, Vsmps3 (partly),
-Vrf1, Varm, Vape, Vbb, Vmod are cleaned out. They should not
-be touched by the kernel.
+On Thu, Mar 21, 2013 at 10:58:23AM -0500, Serge E. Hallyn wrote:
+> Quoting Vivek Goyal (vgoyal@redhat.com):
+> > On Thu, Mar 21, 2013 at 10:37:25AM -0500, Serge E. Hallyn wrote:
+> > > Quoting Vivek Goyal (vgoyal@redhat.com):
+> > > ...
+> > > > Giving CAP_MODIFY_KERNEL to processess upon signature verification
+> > > > will simplify things a bit.
+> > > > 
+> > > > Only thing is that signature verification alone is not sufficient. We
+> > > > also need to make sure after signature verification executable can
+> > > > not be modified in memory in any way. So that means atleast couple of
+> > > > things.
+> > > 
+> > > Also what about context?  If I construct a mounts namespace a certain
+> > > way, can I trick this executable into loading an old singed bzImage that
+> > > I had laying around?
+> > 
+> > We were thinking that /sbin/kexec will need to verify bzImage signature
+> > before loading it. 
+> > 
+> > Key for verification is in kernel so idea was to take kernel's help
+> > in verifying signature.
+> > 
+> > Not sure how exactly the interface should look like. 
+> > 
+> > - I was thinking may be process can mmap() the bzImage with MAP_LOCKED.
+> >   We can create additional flag say MAP_VERIFY_SIG_POST, which tries
+> >   to verify signature/integrity of mapped region of file after mapping and
+> >   locking pages and mmap() fails if signature verification fails.
+> > 
+> > There have been suggestions about creating new system call altogether.
+> > 
+> > > 
+> > > ISTM the only sane thing to do, if you're going down this road,
+> > > is to have CAP_MODIFIY_KERNEL pulled from bounding set for everyone
+> > > except a getty started by init on ttyS0.  Then log in on serial
+> > > to update.  Or run a damon with CAP_MODIFIY_KERNEL which listens
+> > > to a init_net_ns netlink socket for very basic instructions, like
+> > > "find and install latest signed bzImage in /boot".  Then you can
+> > > at least trust that /boot for that daemon is not faked.
+> > 
+> > daemon does not have the key and can't verify signature of signed
+> > bzImage. Even if it had the key, it can't trust the crypto code for
+> > signature verification as none of that is signed.
+> 
+> I'm not saying not to use the kernel to verify the signature.
 
-We also update many of the initialisation values to be more
-in-line with the current development efforts of ST-Ericsson
-internal engineers.
+Ok. So why can't /sbin/kexec can do the verification of bzImage with
+kernel's help. Due to crafted /boot/ it might load old signed bzImage,
+but it can't load unsigned/untrusted code on secureboot system at ring 0.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/mach-ux500/board-mop500-regulators.c |   28 +------
- drivers/regulator/ab8500.c                    |   98 ++++++-------------------
- include/linux/regulator/ab8500.h              |   12 ---
- 3 files changed, 28 insertions(+), 110 deletions(-)
+I am hoping I did not miss your point entirely.
 
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index b08c8c8..12d0ab0 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.c
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -140,10 +140,9 @@ static struct regulator_consumer_supply ab8500_vana_consumers[] = {
- static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
- 	/*
- 	 * VanaRequestCtrl          = HP/LP depending on VxRequest
--	 * VpllRequestCtrl          = HP/LP depending on VxRequest
- 	 * VextSupply1RequestCtrl   = HP/LP depending on VxRequest
- 	 */
--	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL2,       0xfc, 0x00),
-+	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL2,       0xf0, 0x00),
- 	/*
- 	 * VextSupply2RequestCtrl   = HP/LP depending on VxRequest
- 	 * VextSupply3RequestCtrl   = HP/LP depending on VxRequest
-@@ -157,16 +156,12 @@ static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
- 	 */
- 	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL4,       0x07, 0x00),
- 	/*
--	 * Vsmps1SysClkReq1HPValid  = enabled
--	 * Vsmps2SysClkReq1HPValid  = enabled
--	 * Vsmps3SysClkReq1HPValid  = enabled
- 	 * VanaSysClkReq1HPValid    = disabled
--	 * VpllSysClkReq1HPValid    = enabled
- 	 * Vaux1SysClkReq1HPValid   = disabled
- 	 * Vaux2SysClkReq1HPValid   = disabled
- 	 * Vaux3SysClkReq1HPValid   = disabled
- 	 */
--	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQ1HPVALID1, 0xff, 0x17),
-+	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQ1HPVALID1, 0xe8, 0x00),
- 	/*
- 	 * VextSupply1SysClkReq1HPValid = disabled
- 	 * VextSupply2SysClkReq1HPValid = disabled
-@@ -253,17 +248,7 @@ static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
- 	 */
- 	INIT_REGULATOR_REGISTER(AB8500_REGUCTRL1VAMIC,         0x03, 0x00),
- 	/*
--	 * Vsmps1Regu               = HW control
--	 * Vsmps1SelCtrl            = Vsmps1 voltage defined by Vsmsp1Sel2
--	 */
--	INIT_REGULATOR_REGISTER(AB8500_VSMPS1REGU,             0x0f, 0x06),
--	/*
--	 * Vsmps2Regu               = HW control
--	 * Vsmps2SelCtrl            = Vsmps2 voltage defined by Vsmsp2Sel2
--	 */
--	INIT_REGULATOR_REGISTER(AB8500_VSMPS2REGU,             0x0f, 0x06),
--	/*
--	 * VPll                     = Hw controlled
-+	 * VPll                     = Hw controlled (NOTE! PRCMU bits)
- 	 * VanaRegu                 = force off
- 	 */
- 	INIT_REGULATOR_REGISTER(AB8500_VPLLVANAREGU,           0x0f, 0x02),
-@@ -286,14 +271,9 @@ static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
- 	 */
- 	INIT_REGULATOR_REGISTER(AB8500_VAUX12REGU,             0x0f, 0x01),
- 	/*
--	 * Vrf1Regu                 = HW control
- 	 * Vaux3Regu                = force off
- 	 */
--	INIT_REGULATOR_REGISTER(AB8500_VRF1VAUX3REGU,          0x0f, 0x08),
--	/*
--	 * Vsmps1                   = 1.15V
--	 */
--	INIT_REGULATOR_REGISTER(AB8500_VSMPS1SEL1,             0x3f, 0x24),
-+	INIT_REGULATOR_REGISTER(AB8500_VRF1VAUX3REGU,          0x03, 0x00),
- 	/*
- 	 * Vaux1Sel                 = 2.5 V
- 	 */
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 74620cc..8c5276d 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -595,19 +595,10 @@ struct ab8500_reg_init {
- 
- static struct ab8500_reg_init ab8500_reg_init[] = {
- 	/*
--	 * 0x03, VarmRequestCtrl
--	 * 0x0c, VapeRequestCtrl
--	 * 0x30, Vsmps1RequestCtrl
--	 * 0xc0, Vsmps2RequestCtrl
--	 */
--	REG_INIT(AB8500_REGUREQUESTCTRL1,	0x03, 0x03, 0xff),
--	/*
--	 * 0x03, Vsmps3RequestCtrl
--	 * 0x0c, VpllRequestCtrl
- 	 * 0x30, VanaRequestCtrl
- 	 * 0xc0, VextSupply1RequestCtrl
- 	 */
--	REG_INIT(AB8500_REGUREQUESTCTRL2,	0x03, 0x04, 0xff),
-+	REG_INIT(AB8500_REGUREQUESTCTRL2,	0x03, 0x04, 0xf0),
- 	/*
- 	 * 0x03, VextSupply2RequestCtrl
- 	 * 0x0c, VextSupply3RequestCtrl
-@@ -621,91 +612,74 @@ static struct ab8500_reg_init ab8500_reg_init[] = {
- 	 */
- 	REG_INIT(AB8500_REGUREQUESTCTRL4,	0x03, 0x06, 0x07),
- 	/*
--	 * 0x01, Vsmps1SysClkReq1HPValid
--	 * 0x02, Vsmps2SysClkReq1HPValid
--	 * 0x04, Vsmps3SysClkReq1HPValid
- 	 * 0x08, VanaSysClkReq1HPValid
--	 * 0x10, VpllSysClkReq1HPValid
- 	 * 0x20, Vaux1SysClkReq1HPValid
- 	 * 0x40, Vaux2SysClkReq1HPValid
- 	 * 0x80, Vaux3SysClkReq1HPValid
- 	 */
--	REG_INIT(AB8500_REGUSYSCLKREQ1HPVALID1,	0x03, 0x07, 0xff),
-+	REG_INIT(AB8500_REGUSYSCLKREQ1HPVALID1,	0x03, 0x07, 0xe8),
- 	/*
--	 * 0x01, VapeSysClkReq1HPValid
--	 * 0x02, VarmSysClkReq1HPValid
--	 * 0x04, VbbSysClkReq1HPValid
--	 * 0x08, VmodSysClkReq1HPValid
- 	 * 0x10, VextSupply1SysClkReq1HPValid
- 	 * 0x20, VextSupply2SysClkReq1HPValid
- 	 * 0x40, VextSupply3SysClkReq1HPValid
- 	 */
--	REG_INIT(AB8500_REGUSYSCLKREQ1HPVALID2,	0x03, 0x08, 0x7f),
-+	REG_INIT(AB8500_REGUSYSCLKREQ1HPVALID2,	0x03, 0x08, 0x70),
- 	/*
--	 * 0x01, Vsmps1HwHPReq1Valid
--	 * 0x02, Vsmps2HwHPReq1Valid
--	 * 0x04, Vsmps3HwHPReq1Valid
- 	 * 0x08, VanaHwHPReq1Valid
--	 * 0x10, VpllHwHPReq1Valid
- 	 * 0x20, Vaux1HwHPReq1Valid
- 	 * 0x40, Vaux2HwHPReq1Valid
- 	 * 0x80, Vaux3HwHPReq1Valid
- 	 */
--	REG_INIT(AB8500_REGUHWHPREQ1VALID1,	0x03, 0x09, 0xff),
-+	REG_INIT(AB8500_REGUHWHPREQ1VALID1,	0x03, 0x09, 0xe8),
- 	/*
- 	 * 0x01, VextSupply1HwHPReq1Valid
- 	 * 0x02, VextSupply2HwHPReq1Valid
- 	 * 0x04, VextSupply3HwHPReq1Valid
--	 * 0x08, VmodHwHPReq1Valid
- 	 */
--	REG_INIT(AB8500_REGUHWHPREQ1VALID2,	0x03, 0x0a, 0x0f),
-+	REG_INIT(AB8500_REGUHWHPREQ1VALID2,	0x03, 0x0a, 0x07),
- 	/*
--	 * 0x01, Vsmps1HwHPReq2Valid
--	 * 0x02, Vsmps2HwHPReq2Valid
--	 * 0x03, Vsmps3HwHPReq2Valid
- 	 * 0x08, VanaHwHPReq2Valid
--	 * 0x10, VpllHwHPReq2Valid
- 	 * 0x20, Vaux1HwHPReq2Valid
- 	 * 0x40, Vaux2HwHPReq2Valid
- 	 * 0x80, Vaux3HwHPReq2Valid
- 	 */
--	REG_INIT(AB8500_REGUHWHPREQ2VALID1,	0x03, 0x0b, 0xff),
-+	REG_INIT(AB8500_REGUHWHPREQ2VALID1,	0x03, 0x0b, 0xe8),
- 	/*
- 	 * 0x01, VextSupply1HwHPReq2Valid
- 	 * 0x02, VextSupply2HwHPReq2Valid
- 	 * 0x04, VextSupply3HwHPReq2Valid
--	 * 0x08, VmodHwHPReq2Valid
- 	 */
--	REG_INIT(AB8500_REGUHWHPREQ2VALID2,	0x03, 0x0c, 0x0f),
-+	REG_INIT(AB8500_REGUHWHPREQ2VALID2,	0x03, 0x0c, 0x07),
- 	/*
--	 * 0x01, VapeSwHPReqValid
--	 * 0x02, VarmSwHPReqValid
--	 * 0x04, Vsmps1SwHPReqValid
--	 * 0x08, Vsmps2SwHPReqValid
--	 * 0x10, Vsmps3SwHPReqValid
- 	 * 0x20, VanaSwHPReqValid
--	 * 0x40, VpllSwHPReqValid
- 	 * 0x80, Vaux1SwHPReqValid
- 	 */
--	REG_INIT(AB8500_REGUSWHPREQVALID1,	0x03, 0x0d, 0xff),
-+	REG_INIT(AB8500_REGUSWHPREQVALID1,	0x03, 0x0d, 0xa0),
- 	/*
- 	 * 0x01, Vaux2SwHPReqValid
- 	 * 0x02, Vaux3SwHPReqValid
- 	 * 0x04, VextSupply1SwHPReqValid
- 	 * 0x08, VextSupply2SwHPReqValid
- 	 * 0x10, VextSupply3SwHPReqValid
--	 * 0x20, VmodSwHPReqValid
- 	 */
--	REG_INIT(AB8500_REGUSWHPREQVALID2,	0x03, 0x0e, 0x3f),
-+	REG_INIT(AB8500_REGUSWHPREQVALID2,	0x03, 0x0e, 0x1f),
- 	/*
- 	 * 0x02, SysClkReq2Valid1
--	 * ...
-+	 * 0x04, SysClkReq3Valid1
-+	 * 0x08, SysClkReq4Valid1
-+	 * 0x10, SysClkReq5Valid1
-+	 * 0x20, SysClkReq6Valid1
-+	 * 0x40, SysClkReq7Valid1
- 	 * 0x80, SysClkReq8Valid1
- 	 */
- 	REG_INIT(AB8500_REGUSYSCLKREQVALID1,	0x03, 0x0f, 0xfe),
- 	/*
- 	 * 0x02, SysClkReq2Valid2
--	 * ...
-+	 * 0x04, SysClkReq3Valid2
-+	 * 0x08, SysClkReq4Valid2
-+	 * 0x10, SysClkReq5Valid2
-+	 * 0x20, SysClkReq6Valid2
-+	 * 0x40, SysClkReq7Valid2
- 	 * 0x80, SysClkReq8Valid2
- 	 */
- 	REG_INIT(AB8500_REGUSYSCLKREQVALID2,	0x03, 0x10, 0xfe),
-@@ -730,21 +704,7 @@ static struct ab8500_reg_init ab8500_reg_init[] = {
- 	 */
- 	REG_INIT(AB8500_REGUCTRL1VAMIC,		0x03, 0x84, 0x03),
- 	/*
--	 * 0x03, Vsmps1Regu
--	 * 0x0c, Vsmps1SelCtrl
--	 * 0x10, Vsmps1AutoMode
--	 * 0x20, Vsmps1PWMMode
--	 */
--	REG_INIT(AB8500_VSMPS1REGU,		0x04, 0x03, 0x3f),
--	/*
--	 * 0x03, Vsmps2Regu
--	 * 0x0c, Vsmps2SelCtrl
--	 * 0x10, Vsmps2AutoMode
--	 * 0x20, Vsmps2PWMMode
--	 */
--	REG_INIT(AB8500_VSMPS2REGU,		0x04, 0x04, 0x3f),
--	/*
--	 * 0x03, VpllRegu
-+	 * 0x03, VpllRegu (NOTE! PRCMU register bits)
- 	 * 0x0c, VanaRegu
- 	 */
- 	REG_INIT(AB8500_VPLLVANAREGU,		0x04, 0x06, 0x0f),
-@@ -767,14 +727,9 @@ static struct ab8500_reg_init ab8500_reg_init[] = {
- 	 */
- 	REG_INIT(AB8500_VAUX12REGU,		0x04, 0x09, 0x0f),
- 	/*
--	 * 0x0c, Vrf1Regu
- 	 * 0x03, Vaux3Regu
- 	 */
--	REG_INIT(AB8500_VRF1VAUX3REGU,		0x04, 0x0a, 0x0f),
--	/*
--	 * 0x3f, Vsmps1Sel1
--	 */
--	REG_INIT(AB8500_VSMPS1SEL1,		0x04, 0x13, 0x3f),
-+	REG_INIT(AB8500_VRF1VAUX3REGU,		0x04, 0x0a, 0x03),
- 	/*
- 	 * 0x0f, Vaux1Sel
- 	 */
-@@ -785,16 +740,13 @@ static struct ab8500_reg_init ab8500_reg_init[] = {
- 	REG_INIT(AB8500_VAUX2SEL,		0x04, 0x20, 0x0f),
- 	/*
- 	 * 0x07, Vaux3Sel
--	 * 0x30, Vrf1Sel
- 	 */
--	REG_INIT(AB8500_VRF1VAUX3SEL,		0x04, 0x21, 0x37),
-+	REG_INIT(AB8500_VRF1VAUX3SEL,		0x04, 0x21, 0x07),
- 	/*
- 	 * 0x01, VextSupply12LP
- 	 */
- 	REG_INIT(AB8500_REGUCTRL2SPARE,		0x04, 0x22, 0x01),
- 	/*
--	 * 0x01, VpllDisch
--	 * 0x02, Vrf1Disch
- 	 * 0x04, Vaux1Disch
- 	 * 0x08, Vaux2Disch
- 	 * 0x10, Vaux3Disch
-@@ -802,15 +754,13 @@ static struct ab8500_reg_init ab8500_reg_init[] = {
- 	 * 0x40, VTVoutDisch
- 	 * 0x80, VaudioDisch
- 	 */
--	REG_INIT(AB8500_REGUCTRLDISCH,		0x04, 0x43, 0xff),
-+	REG_INIT(AB8500_REGUCTRLDISCH,		0x04, 0x43, 0xfc),
- 	/*
--	 * 0x01, VsimDisch
- 	 * 0x02, VanaDisch
- 	 * 0x04, VdmicPullDownEna
--	 * 0x08, VpllPullDownEna
- 	 * 0x10, VdmicDisch
- 	 */
--	REG_INIT(AB8500_REGUCTRLDISCH2,		0x04, 0x44, 0x1f),
-+	REG_INIT(AB8500_REGUCTRLDISCH2,		0x04, 0x44, 0x16),
- };
- 
- static int ab8500_regulator_init_registers(struct platform_device *pdev,
-diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
-index 094d24c..592a3f3 100644
---- a/include/linux/regulator/ab8500.h
-+++ b/include/linux/regulator/ab8500.h
-@@ -62,7 +62,6 @@ struct ab8500_regulator_reg_init {
- 
- /* AB8500 registers */
- enum ab8500_regulator_reg {
--	AB8500_REGUREQUESTCTRL1,
- 	AB8500_REGUREQUESTCTRL2,
- 	AB8500_REGUREQUESTCTRL3,
- 	AB8500_REGUREQUESTCTRL4,
-@@ -79,22 +78,11 @@ enum ab8500_regulator_reg {
- 	AB8500_REGUMISC1,
- 	AB8500_VAUDIOSUPPLY,
- 	AB8500_REGUCTRL1VAMIC,
--	AB8500_VSMPS1REGU,
--	AB8500_VSMPS2REGU,
--	AB8500_VSMPS3REGU, /* NOTE! PRCMU register */
- 	AB8500_VPLLVANAREGU,
- 	AB8500_VREFDDR,
- 	AB8500_EXTSUPPLYREGU,
- 	AB8500_VAUX12REGU,
- 	AB8500_VRF1VAUX3REGU,
--	AB8500_VSMPS1SEL1,
--	AB8500_VSMPS1SEL2,
--	AB8500_VSMPS1SEL3,
--	AB8500_VSMPS2SEL1,
--	AB8500_VSMPS2SEL2,
--	AB8500_VSMPS2SEL3,
--	AB8500_VSMPS3SEL1, /* NOTE! PRCMU register */
--	AB8500_VSMPS3SEL2, /* NOTE! PRCMU register */
- 	AB8500_VAUX1SEL,
- 	AB8500_VAUX2SEL,
- 	AB8500_VRF1VAUX3SEL,
--- 
-1.7.10.4
-
+Thanks
+Vivek
