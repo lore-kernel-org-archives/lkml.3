@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab3CUKPu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 06:15:50 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:64286 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790Ab3CUKPr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 06:15:47 -0400
+	id S1752933Ab3CUKQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 06:16:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41175 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751490Ab3CUKQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 06:16:56 -0400
+Date: Thu, 21 Mar 2013 11:16:50 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org, zhong@linux.vnet.ibm.com, khilman@linaro.org,
+        geoff@infradead.org, tglx@linutronix.de,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH] nohz1: Documentation
+Message-ID: <20130321101650.GA11214@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+	josh@joshtriplett.org, zhong@linux.vnet.ibm.com, khilman@linaro.org,
+	geoff@infradead.org, tglx@linutronix.de,
+	Arjan van de Ven <arjan@linux.intel.com>
+References: <CAFTL4hybMf+9GjjyKRSEEp0x+wT7OwpKShE5sR_JqW24DGfKOw@mail.gmail.com>
+ <1363636794.15703.32@driftwood>
+ <CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com>
+ <20130318222548.GG3656@linux.vnet.ibm.com>
+ <1363822338.6345.33.camel@gandalf.local.home>
+ <20130320235545.GL3637@linux.vnet.ibm.com>
+ <1363825631.6345.45.camel@gandalf.local.home>
+ <20130321022259.GM3637@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20130321095542.GH26931@gondor.apana.org.au>
-References: <1363280978-24051-1-git-send-email-fabio.porcedda@gmail.com>
- <1363280978-24051-4-git-send-email-fabio.porcedda@gmail.com> <20130321095542.GH26931@gondor.apana.org.au>
-From: Fabio Porcedda <fabio.porcedda@gmail.com>
-Date: Thu, 21 Mar 2013 11:15:26 +0100
-Message-ID: <CAHkwnC_AJpeVw2o8oJn+zMvSg1Lbmm1aXRYxCmtDYhkJG9nvig@mail.gmail.com>
-Subject: Re: [PATCH v2 3/8] drivers: char: use module_platform_driver_probe()
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-media <linux-media@vger.kernel.org>,
-        linux-ide <linux-ide@vger.kernel.org>,
-        linux-input <linux-input@vger.kernel.org>,
-        linux-fbdev <linux-fbdev@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130321022259.GM3637@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 10:55 AM, Herbert Xu
-<herbert@gondor.apana.org.au> wrote:
-> On Thu, Mar 14, 2013 at 06:09:33PM +0100, Fabio Porcedda wrote:
->> This patch converts the drivers to use the
->> module_platform_driver_probe() macro which makes the code smaller and
->> a bit simpler.
->>
->> Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Matt Mackall <mpm@selenic.com>
->> Cc: Herbert Xu <herbert@gondor.apana.org.au>
->> Cc: Fabio Estevam <fabio.estevam@freescale.com>
->> Cc: Sascha Hauer <s.hauer@pengutronix.de>
->
-> Patch applied.
+On Wed, Mar 20, 2013 at 07:22:59PM -0700, Paul E. McKenney wrote:
+> > > > > The "full_nohz=" boot parameter specifies which CPUs are to be
+> > > > > adaptive-ticks CPUs.  For example, "full_nohz=1,6-8" says that CPUs 1,
+> > > > 
+> > > > This is the first time you mention "adaptive-ticks". Probably should
+> > > > define it before just using it, even though one should be able to figure
+> > > > out what adaptive-ticks are, it does throw in a wrench when reading this
+> > > > if you have no idea what an "adaptive-tick" is.
+> > > 
+> > > Good point, changed the first sentence of this paragraph to read:
+> > > 
+> > > 	The CONFIG_NO_HZ_FULL=y Kconfig option causes the kernel to
+> > > 	avoid sending scheduling-clock interrupts to CPUs with a single
+> > > 	runnable task, and such CPUs are said to be "adaptive-ticks CPUs".
+> > 
+> > Sounds good.
 
-The patch is already in
-git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git.
-Are you speaking about that?
+Yeah,
 
-Best regards
+so I read this last night too and I have to say, very clearly written,
+even for dummies like me.
+
+But this "adaptive-ticks CPUs" reads kinda strange throughout the whole
+text, it feels a bit weird. And since the cmdline option is called
+"full_nohz", you might just as well call them the "full_nohz CPUs" or
+the "full_nohz subset of CPUs" for simplicity and so that you don't have
+yet another new term in the text denoting the same idea. I mean, all
+those names kinda suck and need the full definition of what adaptive
+ticking actually means anyway. :)
+
+Btw, congrats on coining a new noun: "Adaptive-tick mode may prevent
+this round-robining from happening."
+     ^^^^^^^^^^^^^^
+
+Funny. :-)
+
+I spose now one can say: "The kids in the garden are round-robining on
+the carousel."
+
+or
+
+"The kernel developers are round-robined for pull requests."
+
+Or maybe it wasn't you who coined it after /me doing a little search. It
+looks like technical people are pushing hard for it to be committed in
+the upstream English language repository. :-)
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
 --
-Fabio Porcedda
