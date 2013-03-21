@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757194Ab3CUHT6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 03:19:58 -0400
+	id S932811Ab3CUHUl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 03:20:41 -0400
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57775 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932608Ab3CUHTD (ORCPT
+	with ESMTP id S932584Ab3CUHTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 03:19:03 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-62-514ab46211f2
+	Thu, 21 Mar 2013 03:19:01 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-5a-514ab4621bbe
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 9/9] perf util: Cleanup calc_data_size logic
-Date: Thu, 21 Mar 2013 16:18:52 +0900
-Message-Id: <1363850332-25297-10-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 8/9] perf util: Get rid of die() calls in trace-data-read.c
+Date: Thu, 21 Mar 2013 16:18:51 +0900
+Message-Id: <1363850332-25297-9-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1363850332-25297-1-git-send-email-namhyung@kernel.org>
 References: <1363850332-25297-1-git-send-email-namhyung@kernel.org>
@@ -28,71 +28,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-It's for calculating whole trace data size during reading.  However
-relation functions are called only in this file, no need to
-conditionalize it with tricky +1 offset and rename the variable to
-more meaningful name like trace_data_size.
+Convert them to pr_debug() and propagate error code.
 
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/trace-event-read.c | 13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
+ tools/perf/util/trace-event-read.c | 44 +++++++++++++++++++++++++-------------
+ 1 file changed, 29 insertions(+), 15 deletions(-)
 
 diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index 5ca6c2cc4216..5b794f773cd0 100644
+index 3626f9d6e06e..5ca6c2cc4216 100644
 --- a/tools/perf/util/trace-event-read.c
 +++ b/tools/perf/util/trace-event-read.c
-@@ -45,7 +45,7 @@ int file_bigendian;
- int host_bigendian;
- static int long_size;
+@@ -132,17 +132,23 @@ static char *read_string(void)
  
--static ssize_t calc_data_size;
-+static ssize_t trace_data_size;
- static bool repipe;
+ 	for (;;) {
+ 		r = read(input_fd, &c, 1);
+-		if (r < 0)
+-			die("reading input file");
++		if (r < 0) {
++			pr_debug("reading input file");
++			goto out;
++		}
  
- static int __do_read(int fd, void *buf, int size)
-@@ -85,8 +85,7 @@ static int do_read(void *data, int size)
- 		return -1;
- 	}
+-		if (!r)
+-			die("no data");
++		if (!r) {
++			pr_debug("no data");
++			goto out;
++		}
  
--	if (calc_data_size)
--		calc_data_size += r;
-+	trace_data_size += r;
+ 		if (repipe) {
+ 			int retw = write(STDOUT_FILENO, &c, 1);
  
- 	return r;
- }
-@@ -157,8 +156,7 @@ static char *read_string(void)
- 			break;
- 	}
+-			if (retw <= 0 || retw != r)
+-				die("repiping input file string");
++			if (retw <= 0 || retw != r) {
++				pr_debug("repiping input file string");
++				goto out;
++			}
+ 		}
  
--	if (calc_data_size)
--		calc_data_size += size;
-+	trace_data_size += size;
- 
+ 		buf[size++] = c;
+@@ -157,7 +163,7 @@ static char *read_string(void)
  	str = malloc(size);
  	if (str)
-@@ -358,9 +356,7 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
- 
- 	*ppevent = NULL;
- 
--	calc_data_size = 1;
- 	repipe = __repipe;
+ 		memcpy(str, buf, size);
 -
- 	input_fd = fd;
++out:
+ 	return str;
+ }
+ 
+@@ -221,8 +227,10 @@ static int read_header_files(struct pevent *pevent)
+ 	if (do_read(buf, 12) < 0)
+ 		return -1;
+ 
+-	if (memcmp(buf, "header_page", 12) != 0)
+-		die("did not read header page");
++	if (memcmp(buf, "header_page", 12) != 0) {
++		pr_debug("did not read header page");
++		return -1;
++	}
+ 
+ 	size = read8(pevent);
+ 	skip(size);
+@@ -236,8 +244,10 @@ static int read_header_files(struct pevent *pevent)
+ 	if (do_read(buf, 13) < 0)
+ 		return -1;
+ 
+-	if (memcmp(buf, "header_event", 13) != 0)
+-		die("did not read header event");
++	if (memcmp(buf, "header_event", 13) != 0) {
++		pr_debug("did not read header event");
++		return -1;
++	}
+ 
+ 	size = read8(pevent);
+ 	header_event = malloc(size);
+@@ -355,13 +365,17 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
  
  	if (do_read(buf, 3) < 0)
-@@ -419,8 +415,7 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
- 	if (err)
- 		goto out;
+ 		return -1;
+-	if (memcmp(buf, test, 3) != 0)
+-		die("no trace data in the file");
++	if (memcmp(buf, test, 3) != 0) {
++		pr_debug("no trace data in the file");
++		return -1;
++	}
  
--	size = calc_data_size - 1;
--	calc_data_size = 0;
-+	size = trace_data_size;
- 	repipe = false;
+ 	if (do_read(buf, 7) < 0)
+ 		return -1;
+-	if (memcmp(buf, "tracing", 7) != 0)
+-		die("not a trace file (missing 'tracing' tag)");
++	if (memcmp(buf, "tracing", 7) != 0) {
++		pr_debug("not a trace file (missing 'tracing' tag)");
++		return -1;
++	}
  
- 	if (show_funcs) {
+ 	version = read_string();
+ 	if (version == NULL)
 -- 
 1.7.11.7
 
