@@ -1,157 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309Ab3CUEZG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 00:25:06 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:42510 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496Ab3CUEZE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 00:25:04 -0400
+	id S1754646Ab3CUEe5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 00:34:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44367 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751755Ab3CUEe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 00:34:56 -0400
+From: Myron Stowe <myron.stowe@redhat.com>
+Subject: [PATCH 0/3] PCI: Handle device quirks when accessing sysfs
+	resource<N> entries
+To: bhelgaas@google.com
+Cc: linux-pci@vger.kernel.org, yuxiangl@marvell.com, yxlraid@gmail.com,
+        greg@kroah.com, alex.williamson@redhat.com, kay@vrfy.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 20 Mar 2013 22:34:49 -0600
+Message-ID: <20130321043449.7229.81056.stgit@amt.stowe>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <20130321033344.GA4973@Krystal>
-References: <1363749497-12176-1-git-send-email-kpark3469@gmail.com>
-	<1363800712.6345.17.camel@gandalf.local.home>
-	<20130320180113.GA24537@Krystal>
-	<1363820491.6345.21.camel@gandalf.local.home>
-	<CA+KhAHaWT5FR5J8iBr_DExrNTBC50LyEo8NG-qZbF6NPEy+zFA@mail.gmail.com>
-	<20130321024502.GB3874@Krystal>
-	<CA+KhAHbbDAqdNGCPmVjN5rCKToVV+gv-mN_0ya1zEG5-RTYieA@mail.gmail.com>
-	<20130321033344.GA4973@Krystal>
-Date: Thu, 21 Mar 2013 13:25:03 +0900
-Message-ID: <CA+KhAHbq31Txj2C-XjTNfyUfd-g8Jy83q89KdGWAvw0NVKpzYQ@mail.gmail.com>
-Subject: Re: [PATCH] tracepoints: prevents null probe from being added
-From: Keun-O Park <kpark3469@gmail.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, keun-o.park@windriver.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 12:33 PM, Mathieu Desnoyers
-<mathieu.desnoyers@efficios.com> wrote:
-> * Keun-O Park (kpark3469@gmail.com) wrote:
->> On Thu, Mar 21, 2013 at 11:45 AM, Mathieu Desnoyers
->> <mathieu.desnoyers@efficios.com> wrote:
->> > * Keun-O Park (kpark3469@gmail.com) wrote:
->> >> On Thu, Mar 21, 2013 at 8:01 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> >> > On Wed, 2013-03-20 at 14:01 -0400, Mathieu Desnoyers wrote:
->> >> >> * Steven Rostedt (rostedt@goodmis.org) wrote:
->> >> >> > On Wed, 2013-03-20 at 12:18 +0900, kpark3469@gmail.com wrote:
->> >> >> > > From: Sahara <keun-o.park@windriver.com>
->> >> >> > >
->> >> >> > > Somehow tracepoint_entry_add/remove_probe functions allow a null probe
->> >> >> > > function.
->> >> >> >
->> >> >> > You actually hit this in practice, or is this just something that you
->> >> >> > observe from code review?
->> >> >> >
->> >> >> > >  Especially on getting a null probe in remove function, it seems
->> >> >> > > to be used to remove all probe functions in the entry.
->> >> >> >
->> >> >> > Hmm, that actually sounds like a feature.
->> >> >>
->> >> >> Yep. It's been a long time since I wrote this code, but the removal code
->> >> >> seems to use NULL probe pointer to remove all probes for a given
->> >> >> tracepoint.
->> >> >>
->> >> >> I'd be tempted to just validate non-NULL probe within
->> >> >> tracepoint_entry_add_probe() and let other sites as is, just in case
->> >> >> anyone would be using this feature.
->> >> >>
->> >> >> I cannot say that I have personally used this "remove all" feature much
->> >> >> though.
->> >> >>
->> >> >
->> >> > I agree. I don't see anything wrong in leaving the null probe feature in
->> >> > the removal code. But updating the add code looks like a proper change.
->> >> >
->> >> > -- Steve
->> >> >
->> >> >
->> >>
->> >> Hello Steve & Mathieu,
->> >> If we want to leave the null probe feature enabled, I think it would
->> >> be better modifying the code like the following for code efficiency.
->> >>
->> >> @@ -112,7 +112,8 @@ tracepoint_entry_add_probe(struct tracepoint_entry *entry,
->> >>         int nr_probes = 0;
->> >>         struct tracepoint_func *old, *new;
->> >>
->> >> -       WARN_ON(!probe);
->> >> +       if (WARN_ON(!probe))
->> >> +               return ERR_PTR(-EINVAL);
->> >>
->> >>         debug_print_probes(entry);
->> >>         old = entry->funcs;
->> >> @@ -152,14 +153,15 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *ent
->> >>
->> >>         debug_print_probes(entry);
->> >>         /* (N -> M), (N > 1, M >= 0) probes */
->> >> -       for (nr_probes = 0; old[nr_probes].func; nr_probes++) {
->> >> -               if (!probe ||
->> >> -                   (old[nr_probes].func == probe &&
->> >> -                    old[nr_probes].data == data))
->> >> -                       nr_del++;
->> >> +       if (probe) {
->> >> +               for (nr_probes = 0; old[nr_probes].func; nr_probes++) {
->> >> +                       if (old[nr_probes].func == probe &&
->> >> +                            old[nr_probes].data == data)
->> >> +                               nr_del++;
->> >> +               }
->> >>         }
->> >>
->> >> -       if (nr_probes - nr_del == 0) {
->> >> +       if (!probe || nr_probes - nr_del == 0) {
->> >
->> > We might want to do:
->> >
->> > if (probe) {
->> >   ...
->> > } else {
->> >   nr_del = nr_probes;
->> > }
->> >
->> > if (nr_probes - nr_del == 0) {
->> >    ...
->> > }
->>
->> This code has a problem.
->> nr_probes is initialized as zero.
->
-> yes,
->
->> And, in order to get correct count of probes,
->> we need to go through the for-loop even though probe is null.
->> So with above code, nr_del will be zero. Anyhow, the code will fall
->> through if-clause(nr_probes-nr_del==0).
->> It looks odd to me.
->
-> Ah, I see what you mean: the nr_del = nr_probes assignment is useless,
-> because both nr_probes and nr_del are equal to 0. So we could go for:
->
->         if (probe) {
->                 for (nr_probes = 0; old[nr_probes].func; nr_probes++) {
->                         if (old[nr_probes].func == probe &&
->                              old[nr_probes].data == data)
->                                 nr_del++;
->                 }
->         }
->
->         if (nr_probes - nr_del == 0) {
->                 ...
->         } else {
->                 ...
->         }
->
-> Does it look better ?
->
-> Thanks,
->
-> Mathieu
 
-Yes, it does, only if you don't think this code is hard to follow. ;-)
-Thanks.
+Xiangliang reported that a platform hangs after "udevadm info
+--attribute-walk --path=/sys/devices/pci0000:00/<...>/block/sda" is ran.
+He was then able to isolate the failure further to accesses involving a
+Marvell 9125 device's I/O BARs, or more specifically, accesses to I/O Port
+space backing the device's I/O Port BARs.  Putting these two pieces of
+information together he was able to reproduce the hang by targeting the
+device's pci-sysfs 'resource<N>' entries, where N represents an I/O Port
+Bar, via "cat /sys/devices/<...>/resource<N>" [1].
 
--- Kpark
+There are basically two issues at play here: pci-sysfs entries backing I/O
+Port BARs, which directly map to the device's control and status
+registers, being able to be accessed by userspace - which commit 8633328
+introduced as part of adding virtualization based device assignment
+functionality - and, abnormally strict access restrictions with respect to
+the Marvell 9125 device's I/O Port region(s).
+
+I proposed a patch to circumvent "udevadm info ..." from accessing these
+specific pci-sysfs entries which started an interesting conversation [2].
+While there were numerous issues brought up they basically filtered down to
+whether or not it is possible to safely have userspace access device
+registers and, if it is, how do we ensure that two or more entities can't
+access a device simultaneously (see Don Dutile's quick summary as it most
+succulently expressed the complexity of the situation we currently find
+ourselves in).
+
+There are plans for VFIO to replace the sysfs based accessing method,
+moving device register accesses behind ioctls, but for now legacy KVM
+device assignment relies on these files.
+
+
+This patch series is a possible compromise to the immediate issue; a
+quirking mechanism that can be used to detect accesses that do no meet the
+device's restrictions, letting a device specific method intervene and
+decide how to progress.
+
+If consensus is reached that it is just too unsafe to allow userspace
+access to device registers, then the series may serve as a stop gap
+solution, addressing the symptom and not the underlying issue, until VFIO
+materializes at which time commit 8633328, along with the second patch in
+*this* series, would need to be reverted.
+
+If on the other hand, consensus is that we need userspace device register
+access capabilities - say for UIO drivers or such - then, depending on the
+tact taken, we'll need this solution, or something like it, as part of
+that overall strategy.
+
+Reference(s):
+  [1] https://lkml.org/lkml/2013/3/7/242
+  [2] https://lkml.org/lkml/2013/3/16/168
+---
+
+Myron Stowe (2):
+      PCI, scsi, ahci: Unify usages of 0x1b4b vendor ID to use PCI_VENDOR_ID_MARVELL_EXT
+      PCI: Handle device quirks when accessing sysfs resource<N> entries
+
+Xiangliang Yu (1):
+      PCI: Define macro for Marvell vendor ID
+
+
+ drivers/ata/ahci.c           |   10 +++---
+ drivers/pci/pci-sysfs.c      |   11 +++----
+ drivers/pci/pci.h            |   13 ++++++++
+ drivers/pci/quirks.c         |   70 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/scsi/mvsas/mv_init.c |    6 ++--
+ drivers/scsi/mvumi.c         |    4 +-
+ drivers/scsi/mvumi.h         |    1 -
+ include/linux/pci_ids.h      |    1 +
+ 8 files changed, 99 insertions(+), 17 deletions(-)
+
+-- 
