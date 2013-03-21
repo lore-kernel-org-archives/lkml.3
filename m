@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443Ab3CUGw4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 02:52:56 -0400
-Received: from vaxjo.synopsys.com ([198.182.60.75]:36985 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752245Ab3CUGwy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 02:52:54 -0400
-Message-ID: <514AADAD.1060503@synopsys.com>
-Date: Thu, 21 Mar 2013 12:20:21 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1757470Ab3CUGxY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 02:53:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:6080 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751115Ab3CUGxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 02:53:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,884,1355126400"; 
+   d="scan'208";a="306237618"
+Date: Thu, 21 Mar 2013 11:58:23 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
+        thierry.reding@avionic-design.de
+Subject: Re: [PATCH Resend] dma: pl330: Convert to devm_ioremap_resource()
+Message-ID: <20130321062822.GE10326@intel.com>
+References: <1362387987-26718-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-To: "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Subject: host gcc 4.7 warning when generating defconfig
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.153]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362387987-26718-1-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-We do cross compile builds for ARC Linux. To avoid the env var set, we have a
-defconfig entry for CONFIG_CROSS_COMPILE.
-This worked fine so far (host gcc 4.4 i.e.). When switched to a new host distro
-(gcc 4.7), a defconfig build spews out the warning.
-
-------------------->8--------------------------
-mymake defconfig
-gcc: error: unrecognized command line option '-marc600'
-gcc: error: unrecognized command line option '-mA7'
-gcc: error: unrecognized command line option '-mno-sdata'
-gcc: error: unrecognized command line option '-mno-mpy'
-*** Default configuration is based on 'fpga_defconfig'
-#
-# configuration written to .config
-------------------->8--------------------------
-
-While the following trivial fix seems to fix this, it seems that the spew is
-coming due to LIBGCC definition line, which is strange to be called for defconfig
-generation. Any thoughts ?
-
----------------->
-diff --git a/arch/arc/Makefile b/arch/arc/Makefile
-index 4232d4e..97e6c20 100644
---- a/arch/arc/Makefile
-+++ b/arch/arc/Makefile
-@@ -8,6 +8,10 @@
- 
- UTS_MACHINE := arc
- 
-+ifeq ($(CROSS_COMPILE),)
-+#CROSS_COMPILE := arc-elf32-
-+endif
-+
- KBUILD_DEFCONFIG := fpga_defconfig
-
-Thx,
--Vineet
+On Mon, Mar 04, 2013 at 02:36:27PM +0530, Sachin Kamat wrote:
+> Use the newly introduced devm_ioremap_resource() instead of
+> devm_request_and_ioremap() which provides more consistent error handling.
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
+Applied thanks
+> ---
+>  drivers/dma/pl330.c |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> index 7181531..10005ec 100644
+> --- a/drivers/dma/pl330.c
+> +++ b/drivers/dma/pl330.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/scatterlist.h>
+>  #include <linux/of.h>
+>  #include <linux/of_dma.h>
+> +#include <linux/err.h>
+>  
+>  #include "dmaengine.h"
+>  #define PL330_MAX_CHAN		8
+> @@ -2904,9 +2905,9 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+>  	pi->mcbufsz = pdat ? pdat->mcbuf_sz : 0;
+>  
+>  	res = &adev->res;
+> -	pi->base = devm_request_and_ioremap(&adev->dev, res);
+> -	if (!pi->base)
+> -		return -ENXIO;
+> +	pi->base = devm_ioremap_resource(&adev->dev, res);
+> +	if (IS_ERR(pi->base))
+> +		return PTR_ERR(pi->base);
+>  
+>  	amba_set_drvdata(adev, pdmac);
+>  
+> -- 
+> 1.7.4.1
+> 
