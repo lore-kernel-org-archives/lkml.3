@@ -1,200 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934374Ab3CUQk6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:40:58 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:26745 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934299Ab3CUQg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:36:28 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: Pavel Emelyanov <xemul@parallels.com>, Andrey Vagin <avagin@openvz.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>, Thomas Graf <tgraf@suug.ch>
-Subject: [PATCH 2/3] net: prepare netlink code for netlink diag
-Date: Thu, 21 Mar 2013 20:33:47 +0400
-Message-Id: <1363883628-7249-3-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1363883628-7249-1-git-send-email-avagin@openvz.org>
-References: <1363883628-7249-1-git-send-email-avagin@openvz.org>
+	id S934342Ab3CUQl3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:41:29 -0400
+Received: from mail-da0-f53.google.com ([209.85.210.53]:45528 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933825Ab3CUQl0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 12:41:26 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org
+Cc: Zach Brown <zab@redhat.com>, Kent Overstreet <koverstreet@google.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: [PATCH 02/33] aio: remove dead code from aio.h
+Date: Thu, 21 Mar 2013 09:35:23 -0700
+Message-Id: <1363883754-27966-3-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move a few declarations in a header.
+From: Zach Brown <zab@redhat.com>
 
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Zach Brown <zab@redhat.com>
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Asai Thambi S P <asamymuthupa@micron.com>
+Cc: Selvan Mani <smani@micron.com>
+Cc: Sam Bradshaw <sbradshaw@micron.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- net/netlink/af_netlink.c | 59 ++++-----------------------------------------
- net/netlink/af_netlink.h | 62 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 67 insertions(+), 54 deletions(-)
- create mode 100644 net/netlink/af_netlink.h
+ include/linux/aio.h | 24 ------------------------
+ 1 file changed, 24 deletions(-)
 
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 1e3fd5b..a500ce2 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -61,28 +61,7 @@
- #include <net/scm.h>
- #include <net/netlink.h>
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 31ff6db..b46a09f 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -9,44 +9,22 @@
  
--#define NLGRPSZ(x)	(ALIGN(x, sizeof(unsigned long) * 8) / 8)
--#define NLGRPLONGS(x)	(NLGRPSZ(x)/sizeof(unsigned long))
+ #include <linux/atomic.h>
+ 
+-#define AIO_MAXSEGS		4
+-#define AIO_KIOGRP_NR_ATOMIC	8
 -
--struct netlink_sock {
--	/* struct sock has to be the first member of netlink_sock */
--	struct sock		sk;
--	u32			portid;
--	u32			dst_portid;
--	u32			dst_group;
--	u32			flags;
--	u32			subscriptions;
--	u32			ngroups;
--	unsigned long		*groups;
--	unsigned long		state;
--	wait_queue_head_t	wait;
--	struct netlink_callback	*cb;
--	struct mutex		*cb_mutex;
--	struct mutex		cb_def_mutex;
--	void			(*netlink_rcv)(struct sk_buff *skb);
--	void			(*netlink_bind)(int group);
--	struct module		*module;
--};
-+#include "af_netlink.h"
+ struct kioctx;
  
- struct listeners {
- 	struct rcu_head		rcu;
-@@ -94,48 +73,20 @@ struct listeners {
- #define NETLINK_BROADCAST_SEND_ERROR	0x4
- #define NETLINK_RECV_NO_ENOBUFS	0x8
- 
--static inline struct netlink_sock *nlk_sk(struct sock *sk)
--{
--	return container_of(sk, struct netlink_sock, sk);
--}
+-/* Notes on cancelling a kiocb:
+- *	If a kiocb is cancelled, aio_complete may return 0 to indicate 
+- *	that cancel has not yet disposed of the kiocb.  All cancel 
+- *	operations *must* call aio_put_req to dispose of the kiocb 
+- *	to guard against races with the completion code.
+- */
+-#define KIOCB_C_CANCELLED	0x01
+-#define KIOCB_C_COMPLETE	0x02
 -
- static inline int netlink_is_kernel(struct sock *sk)
- {
- 	return nlk_sk(sk)->flags & NETLINK_KERNEL_SOCKET;
- }
+ #define KIOCB_SYNC_KEY		(~0U)
  
--struct nl_portid_hash {
--	struct hlist_head	*table;
--	unsigned long		rehash_time;
--
--	unsigned int		mask;
--	unsigned int		shift;
--
--	unsigned int		entries;
--	unsigned int		max_shift;
--
--	u32			rnd;
--};
--
--struct netlink_table {
--	struct nl_portid_hash	hash;
--	struct hlist_head	mc_list;
--	struct listeners __rcu	*listeners;
--	unsigned int		flags;
--	unsigned int		groups;
--	struct mutex		*cb_mutex;
--	struct module		*module;
--	void			(*bind)(int group);
--	int			registered;
--};
--
--static struct netlink_table *nl_table;
-+struct netlink_table *nl_table;
-+EXPORT_SYMBOL_GPL(nl_table);
+ /* ki_flags bits */
+-/*
+- * This may be used for cancel/retry serialization in the future, but
+- * for now it's unused and we probably don't want modules to even
+- * think they can use it.
+- */
+-/* #define KIF_LOCKED		0 */
+ #define KIF_KICKED		1
+ #define KIF_CANCELLED		2
  
- static DECLARE_WAIT_QUEUE_HEAD(nl_table_wait);
+-#define kiocbTryLock(iocb)	test_and_set_bit(KIF_LOCKED, &(iocb)->ki_flags)
+ #define kiocbTryKick(iocb)	test_and_set_bit(KIF_KICKED, &(iocb)->ki_flags)
  
- static int netlink_dump(struct sock *sk);
+-#define kiocbSetLocked(iocb)	set_bit(KIF_LOCKED, &(iocb)->ki_flags)
+ #define kiocbSetKicked(iocb)	set_bit(KIF_KICKED, &(iocb)->ki_flags)
+ #define kiocbSetCancelled(iocb)	set_bit(KIF_CANCELLED, &(iocb)->ki_flags)
  
--static DEFINE_RWLOCK(nl_table_lock);
-+DEFINE_RWLOCK(nl_table_lock);
-+EXPORT_SYMBOL_GPL(nl_table_lock);
- static atomic_t nl_table_users = ATOMIC_INIT(0);
+-#define kiocbClearLocked(iocb)	clear_bit(KIF_LOCKED, &(iocb)->ki_flags)
+ #define kiocbClearKicked(iocb)	clear_bit(KIF_KICKED, &(iocb)->ki_flags)
+ #define kiocbClearCancelled(iocb)	clear_bit(KIF_CANCELLED, &(iocb)->ki_flags)
  
- #define nl_deref_protected(X) rcu_dereference_protected(X, lockdep_is_held(&nl_table_lock));
-diff --git a/net/netlink/af_netlink.h b/net/netlink/af_netlink.h
-new file mode 100644
-index 0000000..d9acb2a
---- /dev/null
-+++ b/net/netlink/af_netlink.h
-@@ -0,0 +1,62 @@
-+#ifndef _AF_NETLINK_H
-+#define _AF_NETLINK_H
-+
-+#include <net/sock.h>
-+
-+#define NLGRPSZ(x)	(ALIGN(x, sizeof(unsigned long) * 8) / 8)
-+#define NLGRPLONGS(x)	(NLGRPSZ(x)/sizeof(unsigned long))
-+
-+struct netlink_sock {
-+	/* struct sock has to be the first member of netlink_sock */
-+	struct sock		sk;
-+	u32			portid;
-+	u32			dst_portid;
-+	u32			dst_group;
-+	u32			flags;
-+	u32			subscriptions;
-+	u32			ngroups;
-+	unsigned long		*groups;
-+	unsigned long		state;
-+	wait_queue_head_t	wait;
-+	struct netlink_callback	*cb;
-+	struct mutex		*cb_mutex;
-+	struct mutex		cb_def_mutex;
-+	void			(*netlink_rcv)(struct sk_buff *skb);
-+	void			(*netlink_bind)(int group);
-+	struct module		*module;
-+};
-+
-+static inline struct netlink_sock *nlk_sk(struct sock *sk)
-+{
-+	return container_of(sk, struct netlink_sock, sk);
-+}
-+
-+struct nl_portid_hash {
-+	struct hlist_head	*table;
-+	unsigned long		rehash_time;
-+
-+	unsigned int		mask;
-+	unsigned int		shift;
-+
-+	unsigned int		entries;
-+	unsigned int		max_shift;
-+
-+	u32			rnd;
-+};
-+
-+struct netlink_table {
-+	struct nl_portid_hash	hash;
-+	struct hlist_head	mc_list;
-+	struct listeners __rcu	*listeners;
-+	unsigned int		flags;
-+	unsigned int		groups;
-+	struct mutex		*cb_mutex;
-+	struct module		*module;
-+	void			(*bind)(int group);
-+	int			registered;
-+};
-+
-+extern struct netlink_table *nl_table;
-+extern rwlock_t nl_table_lock;
-+
-+#endif
+-#define kiocbIsLocked(iocb)	test_bit(KIF_LOCKED, &(iocb)->ki_flags)
+ #define kiocbIsKicked(iocb)	test_bit(KIF_KICKED, &(iocb)->ki_flags)
+ #define kiocbIsCancelled(iocb)	test_bit(KIF_CANCELLED, &(iocb)->ki_flags)
+ 
+@@ -207,8 +185,6 @@ struct kioctx {
+ };
+ 
+ /* prototypes */
+-extern unsigned aio_max_size;
+-
+ #ifdef CONFIG_AIO
+ extern ssize_t wait_on_sync_kiocb(struct kiocb *iocb);
+ extern int aio_put_req(struct kiocb *iocb);
 -- 
-1.8.1.4
+1.8.1.3
 
