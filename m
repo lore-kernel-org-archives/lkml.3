@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932806Ab3CUWlT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 18:41:19 -0400
-Received: from mail-da0-f48.google.com ([209.85.210.48]:34882 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753680Ab3CUWlS (ORCPT
+	id S1753957Ab3CUWxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 18:53:15 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:35674 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab3CUWxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 18:41:18 -0400
+	Thu, 21 Mar 2013 18:53:14 -0400
 MIME-Version: 1.0
-Date: Thu, 21 Mar 2013 17:41:17 -0500
-Message-ID: <CAH2r5msOBKtD1QSoToLNbR0Uvf=z2f41+BRcxqm3fd8f1EE5jw@mail.gmail.com>
-Subject: [GIT] CIFS Fixes
-From: Steve French <smfrench@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-cifs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130321221256.GA30620@redhat.com>
+References: <20130321190653.GA15479@redhat.com>
+	<20130321192935.GY21522@ZenIV.linux.org.uk>
+	<CA+55aFyvwJK99YvDLDsazD4tWT6sNQO6kGM_1WyDdvwPNDxbLw@mail.gmail.com>
+	<20130321202635.GA16406@redhat.com>
+	<CA+55aFwyK4uDgSKUpXBGS5zi16qd8STtrGi3kndunYi40dnj+A@mail.gmail.com>
+	<20130321203639.GC16406@redhat.com>
+	<20130321204704.GZ21522@ZenIV.linux.org.uk>
+	<20130321210255.GD16406@redhat.com>
+	<CA+55aFxysZEw6fw8+LobMgfzeHuGSSs+hyrUr_frTOjaCGJFLQ@mail.gmail.com>
+	<20130321221256.GA30620@redhat.com>
+Date: Thu, 21 Mar 2013 15:53:13 -0700
+X-Google-Sender-Auth: GdMmsF0dCwXkRRiXtcDUUA6oS58
+Message-ID: <CA+55aFx+O13YuJsZyrTS6O9Kws=1ff-knsSv9rV8wTf8yBrPJg@mail.gmail.com>
+Subject: Re: VFS deadlock ?
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3 small CIFS Fixes (the most important of the three fixes a recent
-problem authenticating
-to Windows 8 using cifs rather than SMB2)
+On Thu, Mar 21, 2013 at 3:12 PM, Dave Jones <davej@redhat.com> wrote:
+>
+> it's not just irda fwiw..
+>
+> p1=rpc p2=rpc p1parent=net p2parent=net
 
-The following changes since commit 6c23cbbd5056b155401b0a2b5567d530e6c750c4:
-  Randy Dunlap (1):
-        futex: fix kernel-doc notation and spello
+Ok, good. The only rpc/irda that has something in common is
+/proc/net/, and they both use proc_mkdir() to create the directory:
 
-are available in the git repository at:
+    proc_irda = proc_mkdir("irda", init_net.proc_net);
+   ...
+    sn->proc_net_rpc = proc_mkdir("rpc", net->proc_net);
 
-  git://git.samba.org/sfrench/cifs-2.6.git for-next
+so it's almost certainly that case. What I do *not* see is how we got
+two different dentries for the same name in /proc. But if that
+happens, then yes, they will have aliased inodes (because
+proc_get_inode() will look them up by "sb,de->low_ino".
 
-Jeff Layton (1):
-      cifs: ignore everything in SPNEGO blob after mechTypes
+Al, any ideas? There shouldn't be some lookup race, because that's
+done under the parent inode lock. And multiple mount-points will have
+different superblocks, so proc_get_inode() will give them separate
+inodes. And bind mounts should have all the same dentry tree. So what
+the heck am I missing?
 
-Mateusz Guzik (1):
-      cifs: delay super block destruction until all cifsFileInfo
-objects are gone
-
-Sachin Prabhu (1):
-      cifs: map NT_STATUS_SHARING_VIOLATION to EBUSY instead of ETXTBSY
-
- fs/cifs/asn1.c    |   53 +++++------------------------------------------------
- fs/cifs/cifsfs.c  |   24 ++++++++++++++++++++++++
- fs/cifs/cifsfs.h  |    4 ++++
- fs/cifs/file.c    |    6 +++++-
- fs/cifs/inode.c   |   10 ++++------
- fs/cifs/netmisc.c |    2 +-
- 6 files changed, 43 insertions(+), 56 deletions(-)
-
--- 
-Thanks,
-
-Steve
+       Linus
