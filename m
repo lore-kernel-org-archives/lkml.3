@@ -1,89 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482Ab3CUW0X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 18:26:23 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:38241 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932084Ab3CUW0V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 18:26:21 -0400
-Message-ID: <514B8909.7090201@gmail.com>
-Date: Thu, 21 Mar 2013 23:26:17 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S932741Ab3CUW1c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 18:27:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58006 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932521Ab3CUW1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 18:27:30 -0400
+Date: Thu, 21 Mar 2013 19:21:51 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: gleb@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 0/7] KVM: MMU: fast zap all shadow pages
+Message-ID: <20130321222151.GA19821@amt.cnet>
+References: <1363768227-4782-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Lior Amsalem <alior@marvell.com>,
-        Ike Pan <ike.pan@canonical.com>, Nadav Haklai <nadavh@marvell.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Eran Ben-Avi <benavi@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Leif Lindholm <leif.lindholm@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        Jon Masters <jcm@redhat.com>, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 5/5] arm: dts: Convert mvebu device tree files to 64 bits
-References: <1363883179-1361-1-git-send-email-gregory.clement@free-electrons.com> <1363883179-1361-6-git-send-email-gregory.clement@free-electrons.com> <20130321201533.GN21478@lunn.ch> <20130321212236.1015295d@skate> <20130321205545.GA8358@obsidianresearch.com> <20130321221523.7ede6ccc@skate> <20130321214132.GB8431@obsidianresearch.com>
-In-Reply-To: <20130321214132.GB8431@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363768227-4782-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2013 10:41 PM, Jason Gunthorpe wrote:
-> On Thu, Mar 21, 2013 at 10:15:23PM +0100, Thomas Petazzoni wrote:
->> Dear Jason Gunthorpe,
->>
->> On Thu, 21 Mar 2013 14:55:45 -0600, Jason Gunthorpe wrote:
->>
->>> Or, better, locate all the internal registers above 8G and use
->>> contiguous DRAM mapping from 0 ->  8GB
->>
->> I see two potential issues with this idea:
->>
->>   *) It only works when LPAE is enabled, so we would have to have
->>      different internal register addresses depending on whether LPAE is
->>      enabled or not. Probably not impossible, but not very
->>      straightforward either.
->
-> Ideally the internal register space address would come from the DT -
-> we are getting very close to that on Marvell, I think.. Things like
-> earlyprintk should ideally early parse the DT, harder I know :(
->
->>   *) It would require Linux to change the internal registers address
->>      (for now the kernel relies on the bootloader). The problem is that
->>      we can't do it early enough to preserve the earlyprintk
->>      functionality. Maybe you have suggestions on how to achieve that?
->
-> I can't forsee how Linux could do this reprogramming - not only do you
-> have to move the registers, you'd also have to reprogram the DRAM
-> bases, while running from the DRAM. Not only does that have to be done
-> early, but the DT would need to describe the DRAM ranks, and the code
-> would have to parse it.. On top of that it would have to be very
-> careful not to wack any DRAM that has already been touched by the
-> kernel.. Tricky stuff :)
+On Wed, Mar 20, 2013 at 04:30:20PM +0800, Xiao Guangrong wrote:
+> Changlog:
+> V2:
+>   - do not reset n_requested_mmu_pages and n_max_mmu_pages
+>   - batch free root shadow pages to reduce vcpu notification and mmu-lock
+>     contention
+>   - remove the first patch that introduce kvm->arch.mmu_cache since we only
+>     'memset zero' on hashtable rather than all mmu cache members in this
+>     version
+>   - remove unnecessary kvm_reload_remote_mmus after kvm_mmu_zap_all
+> 
+> * Issue
+> The current kvm_mmu_zap_all is really slow - it is holding mmu-lock to
+> walk and zap all shadow pages one by one, also it need to zap all guest
+> page's rmap and all shadow page's parent spte list. Particularly, things
+> become worse if guest uses more memory or vcpus. It is not good for
+> scalability.
 
-Jason, Lior,
+Xiao, 
 
-at least for Dove you are missing one important fact:
+The bulk removal of shadow pages from mmu cache is nerving - it creates
+two codepaths to delete a data structure: the usual, single entry one
+and the bulk one.
 
-The Internal Registers Base Address register is within ... the internal
-registers. You can't even look it up without knowing where it is.
+There are two main usecases for kvm_mmu_zap_all(): to invalidate the
+current mmu tree (from kvm_set_memory) and to tear down all pages
+(VM shutdown).
 
-That doesn't mean we can parse the DT for the current register base
-address and move it to where we expect it. But for DRAM, I suggest not
-to mess with it. The boot loader is there for a reason.
+The first usecase can use your idea of an invalid generation number
+on shadow pages. That is, increment the VM generation number, nuke the root
+pages and thats it. 
 
-Sebastian
+The modifications should be contained to kvm_mmu_get_page() mostly,
+correct? (would also have to keep counters to increase SLAB freeing 
+ratio, relative to number of outdated shadow pages).
+
+And then have codepaths that nuke shadow pages break from the spinlock,
+such as kvm_mmu_slot_remove_write_access does now (spin_needbreak).
+That would also solve the current issues without using more memory 
+for pte_list_desc and without the delicate "Reset MMU cache" step.
+
+What you think?
+
+> * Idea
+> Since all shadow page will be zapped, we can directly zap the mmu-cache
+> and rmap so that vcpu will fault on the new mmu-cache, after that, we can
+> directly free the memory used by old mmu-cache.
+> 
+> The root shadow page is little especial since they are currently used by
+> vcpus, we can not directly free them. So, we zap the root shadow pages and
+> re-add them into the new mmu-cache.
+> 
+> * TODO
+> (1): free root shadow pages by using generation-number
+> (2): drop unnecessary @npages from kvm_arch_create_memslot
+> 
+> * Performance
+> The testcase can be found at:
+> http://www.gossamer-threads.com/lists/engine?do=post_attachment;postatt_id=54896;list=linux
+> is used to measure the time of delete / add memslot. At that time, all vcpus
+> are waiting, that means, no mmu-lock contention. I believe the result be more
+> beautiful if other vcpus and mmu notification need to hold the mmu-lock.
+> 
+> Guest VCPU:6, Mem:2048M
+> 
+> before: Run 10 times, Avg time:46078825 ns.
+> 
+> after: Run 10 times, Avg time:21558774 ns. (+ 113%)
+> 
+> Xiao Guangrong (7):
+>   KVM: MMU: introduce mmu_cache->pte_list_descs
+>   KVM: x86: introduce memslot_set_lpage_disallowed
+>   KVM: x86: introduce kvm_clear_all_gfn_page_info
+>   KVM: MMU: delete shadow page from hash list in
+>     kvm_mmu_prepare_zap_page
+>   KVM: MMU: split kvm_mmu_prepare_zap_page
+>   KVM: MMU: fast zap all shadow pages
+>   KVM: MMU: drop unnecessary kvm_reload_remote_mmus after
+>     kvm_mmu_zap_all
+> 
+>  arch/x86/include/asm/kvm_host.h |    7 ++-
+>  arch/x86/kvm/mmu.c              |  105 ++++++++++++++++++++++++++++++++++-----
+>  arch/x86/kvm/mmu.h              |    1 +
+>  arch/x86/kvm/x86.c              |   87 +++++++++++++++++++++++++-------
+>  include/linux/kvm_host.h        |    1 +
+>  5 files changed, 166 insertions(+), 35 deletions(-)
+> 
+> -- 
+> 1.7.7.6
