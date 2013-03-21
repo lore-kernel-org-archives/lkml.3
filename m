@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998Ab3CUU0m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 16:26:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56116 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752947Ab3CUU0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 16:26:40 -0400
-Date: Thu, 21 Mar 2013 16:26:35 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: VFS deadlock ?
-Message-ID: <20130321202635.GA16406@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20130321190653.GA15479@redhat.com>
- <20130321192935.GY21522@ZenIV.linux.org.uk>
- <CA+55aFyvwJK99YvDLDsazD4tWT6sNQO6kGM_1WyDdvwPNDxbLw@mail.gmail.com>
+	id S1753061Ab3CUU0r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 16:26:47 -0400
+Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:1876
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753007Ab3CUU0o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 16:26:44 -0400
+X-Forefront-Antispam-Report: CIP:160.33.194.228;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail01v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(z21eIzbb2dI98dI936eI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2fh2a8h668h839h93fhd25hf0ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1b0ah1724k1155h)
+Message-ID: <514B6CF7.4030901@am.sony.com>
+Date: Thu, 21 Mar 2013 13:26:31 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyvwJK99YvDLDsazD4tWT6sNQO6kGM_1WyDdvwPNDxbLw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
+Subject: Re: linux-3.6.11-rt30 smoke test on ARM
+References: <51396143.5060108@am.sony.com> <51396306.6090902@am.sony.com> <20130311173424.GB22286@linutronix.de> <513FCBD3.4@am.sony.com>
+In-Reply-To: <513FCBD3.4@am.sony.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 01:15:08PM -0700, Linus Torvalds wrote:
- > On Thu, Mar 21, 2013 at 12:29 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
- > >
- > > #0 oddity aside, that looks very much like directory aliased by two different
- > > dentries.  Try to add
- > >         BUG_ON(p1->d_inode == p2->d_inode);
- > > just before
- > >         mutex_lock(&p1->d_inode->i_sb->s_vfs_rename_mutex);
- > > and see if it triggers.
- > 
- > Don't do a BUG_ON(), instead do something like
- > 
- >    if (WARN_ON_ONCE(p1->d_inode == p2->d_inode)) {
- >         printk("pi=%s p2=%s\n", pi->d_name, p2->d_name);
- >         mutex_lock_nested(&p1->d_inode->i_mutex, I_MUTEX_PARENT);
- >         return NULL;
- >    }
+On 03/12/13 17:44, Frank Rowand wrote:
+> On 03/11/13 10:34, Sebastian Andrzej Siewior wrote:
+>> * Frank Rowand | 2013-03-07 20:03:18 [-0800]:
+>>
+>>> panda boot often fails due to a usb timeout, while sending a command on
+>>> behalf of the smsc95xx ethernet driver.
+>>>
+>>> This patch is a temporary hack to force a retry when the timeout occurs.
+>>
+>> It looks like you overrun the chip for some reason. Can you reproduce it
+>> on mainline? They added a few delayes on register read() it might do the
+>> trick.
+> 
+> Yes, I can reproduce it on mainline.
+> 
+> Here is the current state of my debugging:
+> 
+> The problem usually occurs within three boot attempts.  But it has also
+> taken eight boot attempts to see the problem.  I do not know what the
+> maximum number of boots is required to see the problem, so I can not
+> state with certainty that a given kernel version does not have the
+> problem.  If the boot fails then I can state with certainty that the
+> given kernel version has the problem.
+> 
+> Given that level of uncertainty, I know:
+> 
+>   v3.5      does not appear to have the problem
+>   v3.6-rc1  has the problem
+>   v3.6      has the problem
+>   v3.7      has the problem
+>   v3.8      does not appear to have the problem
+>   v3.9-rc1  fails to build
+> 
+> I thought I had bisected the problem to a specific commit, but wanting
+> to be sure of it, I did extra boots of what should have been the last
+> good commit.  On the 7th boot, that kernel version had the problem.
+> 
+> I'll probably redo the bisect, but have not had time to do so yet.
 
-those are qstr's, so I used d_name.name, right ?
+I did the bisect again, with more boot tests per bisect point, and found
+the commit to blame.  Hopefully the problem will be resolved in the
+thread where I report the bisect:
 
- > so that we actually see where it is. I'm assuming it's some sysfs oddity again..
+   https://lkml.org/lkml/2013/3/20/742
 
-I'd be surprised actually, I've got sysfs excluded from its list of victim files,
-due to unrelated issues still unresolved.  So unless it followed a symlink into
-sys from somewhere in /proc or /dev...
 
-It took a few hours to reproduce last time, I'll increase the number of child
-processes to see if I can trigger it faster now that I have the debug stuff in there.
+> 
+> The problem manifests as a timeout from at least two different locations
+> in drivers/net/usb/smsc95xx.c:
+> 
+> 
+>  656 static int smsc95xx_set_mac_address(struct usbnet *dev)
+>  657 {
+>  ...
+>  663         ret = smsc95xx_write_reg(dev, ADDRL, addr_lo);
+>  664         if (ret < 0) {
+>  665                 netdev_warn(dev->net, "Failed to write ADDRL: %d\n", ret);
+>  666                 return ret;
+>  667         }
+> 
+> 
+> 751 static int smsc95xx_reset(struct usbnet *dev)
+>  752 {
+>  ...
+>  783         write_buf = PM_CTL_PHY_RST_;
+>  784         ret = smsc95xx_write_reg(dev, PM_CTRL, write_buf);
+>  785         if (ret < 0) {
+>  786                 netdev_warn(dev->net, "Failed to write PM_CTRL: %d\n", ret);
+>  787                 return ret;
+>  788         }
+> 
+> 
+> Some of the other smsc95xx_write_reg() calls in smsc95xx_reset() are protected with
+> checks for timeout, with up to 100 retries.  I do not know if this one should have
+> the same protection.
+> 
+> -Frank
 
-	Dave
+
