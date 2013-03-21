@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab3CUKym (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 06:54:42 -0400
-Received: from sauhun.de ([89.238.76.85]:44175 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753358Ab3CUKyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 06:54:40 -0400
-Date: Thu, 21 Mar 2013 11:54:29 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Cong Ding <dinggnu@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>, linux-i2c@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] i2c: busses/i2c-pxa.c: fix potential null pointer
- dereference error
-Message-ID: <20130321105429.GE19297@the-dreams.de>
-References: <1360015899-13706-1-git-send-email-dinggnu@gmail.com>
- <CAH9JG2XSpFJeUvv7cw-JWadmi=X0-4EsN5FFKuDkwo=-mmzHSQ@mail.gmail.com>
- <20130205000517.GB9969@gmail.com>
- <CAN1soZwM6qNTJn3vvMdc6TR1eJHc=K+_c0WuWOBBuFYMWB_oCA@mail.gmail.com>
- <20130205102540.GC9969@gmail.com>
- <CAN1soZyDLtdjyOFWyVVXN-_ABrChcCR=QbifAo7cz9pYV-nHww@mail.gmail.com>
- <20130214112818.GA18774@gmail.com>
+	id S1755604Ab3CUKzW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 06:55:22 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:44618 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755288Ab3CUKzV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 06:55:21 -0400
+Date: Thu, 21 Mar 2013 11:55:16 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Russ Anderson <rja@sgi.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com
+Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
+Message-ID: <20130321105516.GC18484@gmail.com>
+References: <20130318155619.GA18828@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130214112818.GA18774@gmail.com>
+In-Reply-To: <20130318155619.GA18828@sgi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 12:28:18PM +0100, Cong Ding wrote:
-> If it goes to eclk through line 1107, the variable res would be NULL. It will
-> cause a null pointer dereference error if we call release_mem_region. The
-> correct way should be using devm_kzalloc rather than kzalloc to allocate
-> memory.
-> 
-> Signed-off-by: Cong Ding <dinggnu@gmail.com>
-> ---
->  drivers/i2c/busses/i2c-pxa.c |   22 ++++++++--------------
->  1 file changed, 8 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
-> index 1034d93..dd2d640 100644
-> --- a/drivers/i2c/busses/i2c-pxa.c
-> +++ b/drivers/i2c/busses/i2c-pxa.c
-> @@ -1094,29 +1094,23 @@ static int i2c_pxa_probe(struct platform_device *dev)
->  	struct resource *res = NULL;
->  	int ret, irq;
->  
-> -	i2c = kzalloc(sizeof(struct pxa_i2c), GFP_KERNEL);
-> -	if (!i2c) {
-> -		ret = -ENOMEM;
-> -		goto emalloc;
-> -	}
-> +	i2c = devm_kzalloc(sizeof(struct pxa_i2c), GFP_KERNEL);
 
-You are using devm_kzalloc here but plain kfree is used later. This
-won't work.
+* Russ Anderson <rja@sgi.com> wrote:
 
+> When booting on a large memory system, the kernel spends
+> considerable time in memmap_init_zone() setting up memory zones.
+> Analysis shows significant time spent in __early_pfn_to_nid().
+> 
+> The routine memmap_init_zone() checks each PFN to verify the
+> nid is valid.  __early_pfn_to_nid() sequentially scans the list of
+> pfn ranges to find the right range and returns the nid.  This does
+> not scale well.  On a 4 TB (single rack) system there are 308
+> memory ranges to scan.  The higher the PFN the more time spent
+> sequentially spinning through memory ranges.
+> 
+> Since memmap_init_zone() increments pfn, it will almost always be
+> looking for the same range as the previous pfn, so check that
+> range first.  If it is in the same range, return that nid.
+> If not, scan the list as before.
+> 
+> A 4 TB (single rack) UV1 system takes 512 seconds to get through
+> the zone code.  This performance optimization reduces the time
+> by 189 seconds, a 36% improvement.
+> 
+> A 2 TB (single rack) UV2 system goes from 212.7 seconds to 99.8 seconds,
+> a 112.9 second (53%) reduction.
+
+Nice speedup!
+
+A minor nit, in addition to Andrew's suggestion about wrapping 
+__early_pfn_to_nid():
+
+> Index: linux/mm/page_alloc.c
+> ===================================================================
+> --- linux.orig/mm/page_alloc.c	2013-03-18 10:52:11.510988843 -0500
+> +++ linux/mm/page_alloc.c	2013-03-18 10:52:14.214931348 -0500
+> @@ -4161,10 +4161,19 @@ int __meminit __early_pfn_to_nid(unsigne
+>  {
+>  	unsigned long start_pfn, end_pfn;
+>  	int i, nid;
+> +	static unsigned long last_start_pfn, last_end_pfn;
+> +	static int last_nid;
+
+Please move these globals out of function local scope, to make it more 
+apparent that they are not on-stack. I only noticed it in the second pass.
+
+Thanks,
+
+	Ingo
