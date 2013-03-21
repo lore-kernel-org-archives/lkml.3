@@ -1,96 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758209Ab3CUNXa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 09:23:30 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:43251 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756329Ab3CUNX3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 09:23:29 -0400
-Message-ID: <514B09D5.4090004@hitachi.com>
-Date: Thu, 21 Mar 2013 22:23:33 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1758231Ab3CUNXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 09:23:47 -0400
+Received: from smtp2.nethome.no ([92.62.33.12]:50250 "EHLO smtp2.nethome.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756333Ab3CUNXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 09:23:46 -0400
+X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Mar 2013 09:23:45 EDT
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>,
-        Timo Juhani Lindfors <timo.lindfors@iki.fi>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Jiri Kosina <jkosina@suse.cz>,
-        Nadia Yvette Chambers <nyc@holomorphy.com>,
-        yrl.pp-manager.tt@hitachi.com, "David S. Miller" <davem@davemloft.net>
-Subject: Re: Re: Re: [PATCH -tip ] [BUGFIX] kprobes: Move hash_64() into
- .text.kprobe section
-References: <20130311142233.19885.10567.stgit@mhiramat-M0-7522> <CA+55aFz28CvntOMF-Te0x=gn=XQcU8Zzi6E0iAhZb9mG5J-Ppg@mail.gmail.com> <514023AA.4070004@hitachi.com> <847glb8m4i.fsf@sauna.l.org> <51408349.8080800@hitachi.com> <84li9ke88w.fsf@sauna.l.org> <5147D318.9060400@hitachi.com> <20130321113957.GA2659@gmail.com>
-In-Reply-To: <20130321113957.GA2659@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
 Content-Transfer-Encoding: 7bit
+Date: Thu, 21 Mar 2013 14:17:11 +0100
+From: peterasplund@gentoo.se
+To: Luigi Semenzato <semenzato@google.com>
+Cc: Aaron Lu <aaron.lu@intel.com>, Rajiv Andrade <mail@srajiv.net>,
+        <tpmdd-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>
+Subject: Re: [tpmdd-devel] =?UTF-8?Q?tpm=5Ftis=20driver=20failed=20to=20su?=
+ =?UTF-8?Q?spend=2C=20error=20-=36=32?=
+In-Reply-To: <CAA25o9RJJ5Rkti9_fTJz2ieaHvrtSp5mE_2LTW_t16_cf_TNcg@mail.gmail.com>
+References: <20130319023440.GA12425@aaronlu.sh.intel.com>
+ <CAA25o9RJJ5Rkti9_fTJz2ieaHvrtSp5mE_2LTW_t16_cf_TNcg@mail.gmail.com>
+Message-ID: <ed364e68730267510d49b2bdc38679a0@gentoo.se>
+User-Agent: Roundcube Webmail/0.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/03/21 20:39), Ingo Molnar wrote:
-> 
-> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
->> (2013/03/19 5:57), Timo Juhani Lindfors wrote:
->>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
->>>> Thank you for reporting!!
->>>
->>> Thanks for fixing these! I spent some time trying to automate the
->>> process of finding sensitive functions and eventually resorted into
->>> booting a kvm instance with a minimal initrd to test every single
->>> function in a clean and reproducible environment.
->>>
->>> I found 7 more cases where calling register_kprobe() leads to an instant
->>> kernel panic:
->>>
->>> __flush_tlb_single
->>> native_flush_tlb
->>> native_safe_halt
->>> native_set_pgd
->>> native_set_pmd
->>> native_set_pud
->>> native_write_cr0
+Hi! Sadly, I have to say that I'm totally oblivious to power-related 
+stuff both in software and hardware, so I have no idea what you are 
+asking or proposing.. :)
+
+I don't know if you have access to the files I've included in the bug 
+report, so here are the links to them:
+https://launchpadlibrarian.net/105830773/lspci.txt
+https://launchpadlibrarian.net/95994294/AcpiTables.txt
+https://launchpadlibrarian.net/95994318/BootDmesg.txt
+https://launchpadlibrarian.net/95994354/UdevDb.txt
+
+Regarding the syslog during boot, is that the same as the BootDmesg 
+I've attached? Or should I search in another log file?
+I'm not sure about the model, but I was hoping you could deduct 
+something from the UdevDb or the lspci output above.
+
+BR,
+Peter
+
+2013-03-19 16:50 skrev Luigi Semenzato:
+> Error 62 is ETIME.  The driver is timing out during a tpm_send,
+> possibly trying to send the Tpm_SaveState command.
+>
+> It may be that you cannot talk to the TPM at all.  Have you tried
+> sending messages to the TPM before suspending?
+>
+> Are there any other tpm entries in the syslog?  Like at boot?
+>
+> What model TPM is it?
+>
+>
+> On Mon, Mar 18, 2013 at 7:34 PM, Aaron Lu <aaron.lu@intel.com> wrote:
+>> Hi Rajiv,
 >>
->> Ah, right and Great! these native_* things are too fundamental one.
->> Hmm, curiously, those are defined as inline functions, and
->> I also couldn't find some of those symbols even with your previous
->> kconfig.
+>> Not sure if I should send this to you, please kindly forward it to 
+>> the
+>> appropriate person if not, thanks.
 >>
->>> You can see full kernel console output for each function at
->>> http://lindi.iki.fi/lindi/linux/kprobes/panics_2013-03-18/
+>> Peter has encountered a problem during suspend, the tpm_tis driver's
+>> suspend callback will fail, the relevant message is:
 >>
->> As you can see, your panic messages, most of them caused GFP.
->> This may mean that int3 software exception must not happened
->> on those sites. Not the recursive call.
+>> [  192.281757] PM: Syncing filesystems ... done.
+>> [  192.692479] Freezing user space processes ... (elapsed 0.01 
+>> seconds)
+>> done.
+>> [  192.708159] Freezing remaining freezable tasks ... (elapsed 0.01
+>> seconds)
+>> done.
+>> [  192.724151] Suspending console(s) (use no_console_suspend to 
+>> debug)
+>> [  192.724612] sd 2:0:0:0: [sda] Synchronizing SCSI cache
+>> [  192.724785] sd 2:0:0:0: [sda] Stopping disk
+>> [  197.512047] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+>> [  197.512055] legacy_suspend(): pnp_bus_suspend+0x0/0xa0 returns 
+>> -62
+>> [  197.512057] PM: Device 00:08 failed to suspend: error -62
+>> [  197.512058] PM: Some devices failed to suspend
 >>
->> Perhaps, I'd better add those native_* things into symbol-name
->> based blacklist, instead of adding __kprobes, because those
->> are not related to kprobes recursion.
-> 
-> Blacklists are not really good in general - it's easy for a symbol to be 
-> renamed and the blacklist misses them silently ...
-
-Ah, right.
-
-> 
-> symbol name and annotation should go hand in hand.
-
-Thus, I think we'd better moving __kprobes into compiler.h first.
-
-Anyway, I'm still waiting for the actual kconfig from Timo,
-because I couldn't reproduce the problem yet (no such symbols).
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+>> And the problem has been there since v2.6.32(shipped in ubuntu 
+>> 10.04),
+>> and the latest upstream tree(v3.9-rcx) also has this problem. The 
+>> bug
+>> link is here:
+>> https://bugzilla.kernel.org/show_bug.cgi?id=45761
+>>
+>> Please feel free to ask for more information, thanks.
+>>
+>> -Aaron
+>>
+>>
+>> 
+>> ------------------------------------------------------------------------------
+>> Everyone hates slow websites. So do we.
+>> Make your web apps faster with AppDynamics
+>> Download AppDynamics Lite for free today:
+>> http://p.sf.net/sfu/appdyn_d2d_mar
+>> _______________________________________________
+>> tpmdd-devel mailing list
+>> tpmdd-devel@lists.sourceforge.net
+>> https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
