@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab3CUSDu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:03:50 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:62117 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab3CUSDs (ORCPT
+	id S1752306Ab3CUSEF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:04:05 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:33089 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab3CUSDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:03:48 -0400
-Message-ID: <1363889025.4431.35.camel@edumazet-glaptop>
-Subject: Re: +
- atomic-improve-atomic_inc_unless_negative-atomic_dec_unless_positive .patch
- added to -mm tree
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ming Lei <tom.leiming@gmail.com>, Shaohua Li <shli@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 21 Mar 2013 11:03:45 -0700
-In-Reply-To: <20130321170827.GA23539@redhat.com>
-References: <20130314162413.GA21344@redhat.com>
-	 <CACVXFVP+fGeWS3xwBfaQDFaH7=e_4CbgCru9DJczB2vyWuUL1g@mail.gmail.com>
-	 <20130315134632.GA18335@redhat.com>
-	 <CACVXFVOjWc4RU+A-8PeYP9RfJ1-HSiZHbbv771LXDynMs0ybMQ@mail.gmail.com>
-	 <20130315165131.GA32065@redhat.com>
-	 <20130317172621.GQ3656@linux.vnet.ibm.com>
-	 <20130321170827.GA23539@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Thu, 21 Mar 2013 14:03:49 -0400
+Message-ID: <514B4B83.60809@gmail.com>
+Date: Thu, 21 Mar 2013 13:03:47 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>, haojian.zhuang@linaro.org,
+        pawel.moll@arm.com, john.stultz@linaro.org, tglx@linutronix.de,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 02/11] ARM: remove extra timer-sp control register clearing
+References: <1363820051-24428-1-git-send-email-robherring2@gmail.com> <1363820051-24428-3-git-send-email-robherring2@gmail.com> <CACRpkdZLn=KjJisPTN2eHn64UuaZvpBDDhmeqQXF-TVS8VZ7pA@mail.gmail.com>
+In-Reply-To: <CACRpkdZLn=KjJisPTN2eHn64UuaZvpBDDhmeqQXF-TVS8VZ7pA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-21 at 18:08 +0100, Oleg Nesterov wrote:
-
-> OK... since nobody volunteered to make a patch, what do you think about
-> the change below?
+On 03/21/2013 12:58 PM, Linus Walleij wrote:
+> On Wed, Mar 20, 2013 at 11:54 PM, Rob Herring <robherring2@gmail.com> wrote:
 > 
-> It should "fix" atomic_add_unless() (only on x86) and optimize
-> atomic_inc/dec_unless.
+>> From: Rob Herring <rob.herring@calxeda.com>
+>>
+>> The timer-sp initialization code clears the control register before
+>> initializing the timers, so every platform doing this is redundant.
+>>
+>> For unused timers, we should not care what state they are in.
+>>
+>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> (...)
+>> diff --git a/arch/arm/mach-integrator/integrator_ap.c b/arch/arm/mach-integrator/integrator_ap.c
+>> index ea96144..4cb322d 100644
+>> --- a/arch/arm/mach-integrator/integrator_ap.c
+>> +++ b/arch/arm/mach-integrator/integrator_ap.c
+>> @@ -643,10 +643,6 @@ static void __init ap_timer_init(void)
+>>         clk_prepare_enable(clk);
+>>         rate = clk_get_rate(clk);
+>>
+>> -       writel(0, TIMER0_VA_BASE + TIMER_CTRL);
+>> -       writel(0, TIMER1_VA_BASE + TIMER_CTRL);
+>> -       writel(0, TIMER2_VA_BASE + TIMER_CTRL);
+>> -
 > 
-> With this change atomic_*_unless() can do the unnecessary mb() after
-> cmpxchg() fails, but I think this case is very unlikely.
+> As noted this is not an init function for timer-sp.c so please drop this
+> hunk of the patch. Maybe this zeroing is pointless but that would
+> be a separate patch that I can test.
+
+Okay. I'll split this out.
+
 > 
-> And, in the likely case atomic_inc/dec_unless avoids the 1st cmpxchg()
-> which in most cases just reads the memory for the next cmpxchg().
+>> diff --git a/arch/arm/mach-integrator/integrator_cp.c b/arch/arm/mach-integrator/integrator_cp.c
+>> index 2b0db82..c68e7d8 100644
+>> --- a/arch/arm/mach-integrator/integrator_cp.c
+>> +++ b/arch/arm/mach-integrator/integrator_cp.c
+>> @@ -33,7 +33,6 @@
+>>  #include <mach/platform.h>
+>>  #include <asm/setup.h>
+>>  #include <asm/mach-types.h>
+>> -#include <asm/hardware/arm_timer.h>
 > 
-> Oleg.
+> What doe this change has to do with $SUBJECT?
 
-Hmm, cmpxchg() has different effect on MESI transaction, than a plain
-read.
+If I remove TIMER_CTRL use, then I don't need the header that defines it
+any more.
 
-Given there is a single user of atomic_inc_unless_negative(),
-(get_write_access(struct inode *inode) )
-
-maybe the 'hint' idea used in atomic_inc_not_zero_hint() could be used.
-
-(The caller might know what is the expected current value, instead of
-using atomic_read() and possibly not use appropriate transaction)
-
-
-
+Rob
 
