@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932919Ab3CUWA0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 18:00:26 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33093 "EHLO
+	id S932895Ab3CUWAX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 18:00:23 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33083 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753680Ab3CUVxG (ORCPT
+	with ESMTP id S1753657Ab3CUVxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 21 Mar 2013 17:53:06 -0400
-Message-Id: <20130321215234.014923303@linutronix.de>
+Message-Id: <20130321215233.950290809@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 21 Mar 2013 21:53:05 -0000
+Date: Thu, 21 Mar 2013 21:53:04 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
@@ -19,10 +19,10 @@ Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Magnus Damm <magnus.damm@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: [patch 11/34] bfin: Use generic idle loop
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Subject: [patch 10/34] avr32: Use generic idle loop
 References: <20130321214930.752934102@linutronix.de>
-Content-Disposition: inline; filename=bfin-use-generic-idle-loop.patch
+Content-Disposition: inline; filename=avr32-use-generic-idle-loop.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -30,92 +30,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mike Frysinger <vapier@gentoo.org>
----
- arch/blackfin/Kconfig           |    1 +
- arch/blackfin/kernel/process.c  |   30 ++----------------------------
- arch/blackfin/mach-common/smp.c |    2 +-
- 3 files changed, 4 insertions(+), 29 deletions(-)
+Also replace the idle poll enforcement by the generic functionality.
 
-Index: linux-2.6/arch/blackfin/Kconfig
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+---
+ arch/avr32/Kconfig                       |    1 +
+ arch/avr32/kernel/process.c              |   13 ++-----------
+ arch/avr32/kernel/time.c                 |    8 ++++++--
+ arch/avr32/mach-at32ap/include/mach/pm.h |   24 ------------------------
+ arch/avr32/mach-at32ap/pm-at32ap700x.S   |    7 -------
+ 5 files changed, 9 insertions(+), 44 deletions(-)
+
+Index: linux-2.6/arch/avr32/Kconfig
 ===================================================================
---- linux-2.6.orig/arch/blackfin/Kconfig
-+++ linux-2.6/arch/blackfin/Kconfig
-@@ -41,6 +41,7 @@ config BLACKFIN
- 	select USE_GENERIC_SMP_HELPERS if SMP
- 	select HAVE_NMI_WATCHDOG if NMI_WATCHDOG
- 	select GENERIC_SMP_IDLE_THREAD
-+	select GENERIC_IDLE_LOOP
- 	select ARCH_USES_GETTIMEOFFSET if !GENERIC_CLOCKEVENTS
- 	select HAVE_MOD_ARCH_SPECIFIC
- 	select MODULES_USE_ELF_RELA
-Index: linux-2.6/arch/blackfin/kernel/process.c
+--- linux-2.6.orig/arch/avr32/Kconfig
++++ linux-2.6/arch/avr32/Kconfig
+@@ -10,6 +10,7 @@ config AVR32
+ 	select VIRT_TO_BUS
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_ATOMIC64
++	seletc GENERIC_IDLE_LOOP
+ 	select HARDIRQS_SW_RESEND
+ 	select GENERIC_IRQ_SHOW
+ 	select ARCH_HAVE_CUSTOM_GPIO_H
+Index: linux-2.6/arch/avr32/kernel/process.c
 ===================================================================
---- linux-2.6.orig/arch/blackfin/kernel/process.c
-+++ linux-2.6/arch/blackfin/kernel/process.c
-@@ -47,14 +47,14 @@ EXPORT_SYMBOL(pm_power_off);
+--- linux-2.6.orig/arch/avr32/kernel/process.c
++++ linux-2.6/arch/avr32/kernel/process.c
+@@ -30,18 +30,9 @@ EXPORT_SYMBOL(pm_power_off);
+  * This file handles the architecture-dependent parts of process handling..
   */
- #ifdef CONFIG_IDLE_L1
- static void default_idle(void)__attribute__((l1_text));
--void cpu_idle(void)__attribute__((l1_text));
-+void arch_cpu_idle(void)__attribute__((l1_text));
- #endif
  
- /*
-  * This is our default idle handler.  We need to disable
-  * interrupts here to ensure we don't miss a wakeup call.
-  */
--static void default_idle(void)
+-void cpu_idle(void)
 +void arch_cpu_idle(void)
  {
- #ifdef CONFIG_IPIPE
- 	ipipe_suspend_domain();
-@@ -67,32 +67,6 @@ static void default_idle(void)
- }
- 
- /*
-- * The idle thread.  We try to conserve power, while trying to keep
-- * overall latency low.  The architecture specific idle is passed
-- * a value to indicate the level of "idleness" of the system.
-- */
--void cpu_idle(void)
--{
 -	/* endless idle loop with no priority at all */
 -	while (1) {
--
--#ifdef CONFIG_HOTPLUG_CPU
--		if (cpu_is_offline(smp_processor_id()))
--			cpu_die();
--#endif
 -		tick_nohz_idle_enter();
 -		rcu_idle_enter();
 -		while (!need_resched())
--			default_idle();
+-			cpu_idle_sleep();
 -		rcu_idle_exit();
 -		tick_nohz_idle_exit();
--		preempt_enable_no_resched();
--		schedule();
--		preempt_disable();
+-		schedule_preempt_disabled();
 -	}
--}
--
--/*
-  * Do necessary setup to start up a newly executed thread.
-  *
-  * pass the data segment into user programs if it exists,
-Index: linux-2.6/arch/blackfin/mach-common/smp.c
-===================================================================
---- linux-2.6.orig/arch/blackfin/mach-common/smp.c
-+++ linux-2.6/arch/blackfin/mach-common/smp.c
-@@ -335,7 +335,7 @@ void __cpuinit secondary_start_kernel(vo
- 	 */
- 	calibrate_delay();
- 
--	cpu_idle();
-+	cpu_startup_entry(CPUHP_ONLINE);
++	cpu_enter_idle();
  }
  
- void __init smp_prepare_boot_cpu(void)
+ void machine_halt(void)
+Index: linux-2.6/arch/avr32/kernel/time.c
+===================================================================
+--- linux-2.6.orig/arch/avr32/kernel/time.c
++++ linux-2.6/arch/avr32/kernel/time.c
+@@ -87,13 +87,17 @@ static void comparator_mode(enum clock_e
+ 		pr_debug("%s: start\n", evdev->name);
+ 		/* FALLTHROUGH */
+ 	case CLOCK_EVT_MODE_RESUME:
+-		cpu_disable_idle_sleep();
++		/*
++		 * If we're using the COUNT and COMPARE registers we
++		 * need to force idle poll.
++		 */
++		cpu_idle_poll_ctrl(true);
+ 		break;
+ 	case CLOCK_EVT_MODE_UNUSED:
+ 	case CLOCK_EVT_MODE_SHUTDOWN:
+ 		sysreg_write(COMPARE, 0);
+ 		pr_debug("%s: stop\n", evdev->name);
+-		cpu_enable_idle_sleep();
++		cpu_idle_poll_ctrl(false);
+ 		break;
+ 	default:
+ 		BUG();
+Index: linux-2.6/arch/avr32/mach-at32ap/include/mach/pm.h
+===================================================================
+--- linux-2.6.orig/arch/avr32/mach-at32ap/include/mach/pm.h
++++ linux-2.6/arch/avr32/mach-at32ap/include/mach/pm.h
+@@ -21,30 +21,6 @@
+ extern void cpu_enter_idle(void);
+ extern void cpu_enter_standby(unsigned long sdramc_base);
+ 
+-extern bool disable_idle_sleep;
+-
+-static inline void cpu_disable_idle_sleep(void)
+-{
+-	disable_idle_sleep = true;
+-}
+-
+-static inline void cpu_enable_idle_sleep(void)
+-{
+-	disable_idle_sleep = false;
+-}
+-
+-static inline void cpu_idle_sleep(void)
+-{
+-	/*
+-	 * If we're using the COUNT and COMPARE registers for
+-	 * timekeeping, we can't use the IDLE state.
+-	 */
+-	if (disable_idle_sleep)
+-		cpu_relax();
+-	else
+-		cpu_enter_idle();
+-}
+-
+ void intc_set_suspend_handler(unsigned long offset);
+ #endif
+ 
+Index: linux-2.6/arch/avr32/mach-at32ap/pm-at32ap700x.S
+===================================================================
+--- linux-2.6.orig/arch/avr32/mach-at32ap/pm-at32ap700x.S
++++ linux-2.6/arch/avr32/mach-at32ap/pm-at32ap700x.S
+@@ -18,13 +18,6 @@
+ /* Same as 0xfff00000 but fits in a 21 bit signed immediate */
+ #define PM_BASE	-0x100000
+ 
+-	.section .bss, "wa", @nobits
+-	.global	disable_idle_sleep
+-	.type	disable_idle_sleep, @object
+-disable_idle_sleep:
+-	.int	4
+-	.size	disable_idle_sleep, . - disable_idle_sleep
+-
+ 	/* Keep this close to the irq handlers */
+ 	.section .irq.text, "ax", @progbits
+ 
 
 
