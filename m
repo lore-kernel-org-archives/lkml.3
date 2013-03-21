@@ -1,86 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab3CUU4I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 16:56:08 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:41074 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751568Ab3CUU4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 16:56:06 -0400
-Date: Thu, 21 Mar 2013 14:55:45 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Lior Amsalem <alior@marvell.com>,
-        Ike Pan <ike.pan@canonical.com>, Nadav Haklai <nadavh@marvell.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Eran Ben-Avi <benavi@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Leif Lindholm <leif.lindholm@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        Jon Masters <jcm@redhat.com>, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 5/5] arm: dts: Convert mvebu device tree files to 64 bits
-Message-ID: <20130321205545.GA8358@obsidianresearch.com>
-References: <1363883179-1361-1-git-send-email-gregory.clement@free-electrons.com>
- <1363883179-1361-6-git-send-email-gregory.clement@free-electrons.com>
- <20130321201533.GN21478@lunn.ch>
- <20130321212236.1015295d@skate>
+	id S1753353Ab3CUU6R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 16:58:17 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:54938 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753177Ab3CUU6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 16:58:16 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] ext4 updates for 3.9-rc4
+cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 21 Mar 2013 16:58:13 -0400
+Message-ID: <nsxehf8ii6y.fsf@closure.thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321212236.1015295d@skate>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@mit.edu
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 09:22:36PM +0100, Thomas Petazzoni wrote:
 
-> And I'm not sure the SDRAM address decoding windows allows to split the
-> first 4 GB of RAM into two areas, one that would be mapped starting at
-> physical address 0x0, and another area that would be mapped at a
-> different address (above 4 GB).
+The following changes since commit 9b2ff35753c0512bc8c6adae9e9c87cbeee86f82:
 
-On prior Marvell chips the SDRAM is mapped on a rank by rank basis, so
-each rank can be placed in DRAM properly.
- 
-> However, I'm unsure why 0xC0000000 was chosen. Why not 0xD0000000,
-> where the internal registers currently start?
+  ext4: enable quotas before orphan cleanup (2013-03-02 18:22:38 -0500)
 
-Probably because the 8GB is composed of 4 2GB ranks and what was done
-is to map like this:
+are available in the git repository at:
 
-  Rank 0 ->           0 ->  0x80000000 (2G)
-  Rank 1 -> 0x080000000 -> 0x0C0000000 (2G rank, 1G mapped)
-  Rank 2 -> 0x100000000 -> 0x180000000
-  Rank 3 -> 0x180000000 -> 0x300000000
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linue
 
-The ranks must be power of two sizes, and aligned to their size,
-so it isn't possible to get closer to 0xD0000000.
+for you to fetch changes up to 2b405bfa84063bfa35621d2d6879f52693c614b0:
 
-To recover the lost RAM the entire rank would need to be located
-above 4G.
+  ext4: fix data=journal fast mount/umount hang (2013-03-20 09:42:11 -0400)
 
-Or, better, locate all the internal registers above 8G and use
-contiguous DRAM mapping from 0 -> 8GB
+----------------------------------------------------------------
+Fix a number of regression and other bugs in ext4, most of which were
+relatively obscure cornercases or races that were found using
+regression tests.
 
-Linux is sensitive to the ratio of high/low memory, if that gets too
-big it struggles, maximizing low memory is desirable - I assume ARM is
-basically the same as x86 in this regard?
+----------------------------------------------------------------
+Dmitry Monakhov (6):
+      ext4: ext4_split_extent should take care of extent zeroout
+      ext4: disable merging of uninitialized extents
+      ext4: add warning to ext4_convert_unwritten_extents_endio
+      ext4: invalidate extent status tree during extent migration
+      ext4: add self-testing infrastructure to do a sanity check
+      ext4: fix memory leakage in mext_check_coverage
 
-> So why not map the whole SDRAM above 4GB physical address?
+Jan Kara (3):
+      ext4: remove unnecessary wait for extent conversion in ext4_fallocate()
+      ext4: fix WARN_ON from ext4_releasepage()
+      jbd2: fix use after free in jbd2_journal_dirty_metadata()
 
-I think the no-MMU boot mode would break if this was done?
+Lukas Czerner (5):
+      ext4: remove unused variable in ext4_free_blocks()
+      ext4: do not use yield()
+      ext4: update reserved space after the 'correction'
+      ext4: reserve metadata block for every delayed write
+      ext4: use s_extent_max_zeroout_kb value as number of kb
 
-Jason
+Theodore Ts'o (3):
+      ext4: use atomic64_t for the per-flexbg free_clusters count
+      ext4: fix ext4_evict_inode() racing against workqueue processing code
+      ext4: fix data=journal fast mount/umount hang
+
+Zheng Liu (4):
+      ext4: avoid a potential overflow in ext4_es_can_be_merged()
+      ext4: fix wrong m_len value after unwritten extent conversion
+      ext4: update extent status tree after an extent is zeroed out
+      ext4: fix the wrong number of the allocated blocks in ext4_split_extent()
+
+ fs/ext4/ext4.h           |   8 +++---
+ fs/ext4/extents.c        | 105 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++---------------
+ fs/ext4/extents_status.c | 212 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ fs/ext4/extents_status.h |   9 +++++++
+ fs/ext4/ialloc.c         |   4 +--
+ fs/ext4/inode.c          | 182 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------
+ fs/ext4/mballoc.c        |  23 ++++++----------
+ fs/ext4/move_extent.c    |  43 +++++++++++++++++++-----------
+ fs/ext4/page-io.c        |  12 ++++++++-
+ fs/ext4/resize.c         |   4 +--
+ fs/ext4/super.c          |   4 +--
+ fs/jbd2/transaction.c    |  15 +++++++----
+ 12 files changed, 540 insertions(+), 81 deletions(-)
