@@ -1,349 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934298Ab3CUQls (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:41:48 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:4242 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934292Ab3CUQg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:36:27 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: Pavel Emelyanov <xemul@parallels.com>, Andrey Vagin <avagin@openvz.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>, Thomas Graf <tgraf@suug.ch>
-Subject: [PATCH 3/3] netlink: Diag core and basic socket info dumping (v2)
-Date: Thu, 21 Mar 2013 20:33:48 +0400
-Message-Id: <1363883628-7249-4-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1363883628-7249-1-git-send-email-avagin@openvz.org>
-References: <1363883628-7249-1-git-send-email-avagin@openvz.org>
+	id S934321Ab3CUQmZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:42:25 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:43144 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934279Ab3CUQgY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 12:36:24 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org
+Cc: Kent Overstreet <koverstreet@google.com>, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: [PATCH 14/33] aio: make aio_read_evt() more efficient, convert to hrtimers
+Date: Thu, 21 Mar 2013 09:35:35 -0700
+Message-Id: <1363883754-27966-15-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The netlink_diag can be built as a module, just like it's done in
-unix sockets.
+Previously, aio_read_event() pulled a single completion off the ringbuffer
+at a time, locking and unlocking each time.  Change it to pull off as many
+events as it can at a time, and copy them directly to userspace.
 
-The core dumping message carries the basic info about netlink sockets:
-family, type and protocol, portis, dst_group, dst_portid, state.
+This also fixes a bug where if copying the event to userspace failed,
+we'd lose the event.
 
-Groups can be received as an optional parameter NETLINK_DIAG_GROUPS.
+Also convert it to wait_event_interruptible_hrtimeout(), which
+simplifies it quite a bit.
 
-Netlink sockets cab be filtered by protocols.
-
-The socket inode number and cookie is reserved for future per-socket info
-retrieving. The per-protocol filtering is also reserved for future by
-requiring the sdiag_protocol to be zero.
-
-The file /proc/net/netlink doesn't provide enough information for
-dumping netlink sockets. It doesn't provide dst_group, dst_portid,
-groups above 32.
-
-v2: fix NETLINK_DIAG_MAX. Now it's equal to the last constant.
-
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+Cc: Zach Brown <zab@redhat.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Asai Thambi S P <asamymuthupa@micron.com>
+Cc: Selvan Mani <smani@micron.com>
+Cc: Sam Bradshaw <sbradshaw@micron.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/uapi/linux/netlink_diag.h |  42 +++++++++
- net/Kconfig                       |   1 +
- net/netlink/Kconfig               |  10 ++
- net/netlink/Makefile              |   3 +
- net/netlink/diag.c                | 188 ++++++++++++++++++++++++++++++++++++++
- 5 files changed, 244 insertions(+)
- create mode 100644 include/uapi/linux/netlink_diag.h
- create mode 100644 net/netlink/Kconfig
- create mode 100644 net/netlink/diag.c
+ fs/aio.c | 238 +++++++++++++++++++++++----------------------------------------
+ 1 file changed, 88 insertions(+), 150 deletions(-)
 
-diff --git a/include/uapi/linux/netlink_diag.h b/include/uapi/linux/netlink_diag.h
-new file mode 100644
-index 0000000..88009a3
---- /dev/null
-+++ b/include/uapi/linux/netlink_diag.h
-@@ -0,0 +1,42 @@
-+#ifndef __NETLINK_DIAG_H__
-+#define __NETLINK_DIAG_H__
-+
-+#include <linux/types.h>
-+
-+struct netlink_diag_req {
-+	__u8	sdiag_family;
-+	__u8	sdiag_protocol;
-+	__u16	pad;
-+	__u32	ndiag_ino;
-+	__u32	ndiag_show;
-+	__u32	ndiag_cookie[2];
-+};
-+
-+struct netlink_diag_msg {
-+	__u8	ndiag_family;
-+	__u8	ndiag_type;
-+	__u8	ndiag_protocol;
-+	__u8	ndiag_state;
-+
-+	__u32	ndiag_portid;
-+	__u32	ndiag_dst_portid;
-+	__u32	ndiag_dst_group;
-+	__u32	ndiag_ino;
-+	__u32	ndiag_cookie[2];
-+};
-+
-+enum {
-+	NETLINK_DIAG_MEMINFO,
-+	NETLINK_DIAG_GROUPS,
-+
-+	__NETLINK_DIAG_MAX,
-+};
-+
-+#define NETLINK_DIAG_MAX (__NETLINK_DIAG_MAX - 1)
-+
-+#define NDIAG_PROTO_ALL		((__u8) ~0)
-+
-+#define NDIAG_SHOW_MEMINFO	0x00000001 /* show memory info of a socket */
-+#define NDIAG_SHOW_GROUPS	0x00000002 /* show groups of a netlink socket */
-+
-+#endif
-diff --git a/net/Kconfig b/net/Kconfig
-index 6f676ab..2ddc904 100644
---- a/net/Kconfig
-+++ b/net/Kconfig
-@@ -217,6 +217,7 @@ source "net/dns_resolver/Kconfig"
- source "net/batman-adv/Kconfig"
- source "net/openvswitch/Kconfig"
- source "net/vmw_vsock/Kconfig"
-+source "net/netlink/Kconfig"
+diff --git a/fs/aio.c b/fs/aio.c
+index 1e3f72d..e9511d4 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -63,7 +63,7 @@ struct aio_ring_info {
+ 	unsigned long		mmap_size;
  
- config RPS
- 	boolean
-diff --git a/net/netlink/Kconfig b/net/netlink/Kconfig
-new file mode 100644
-index 0000000..5d6e8c0
---- /dev/null
-+++ b/net/netlink/Kconfig
-@@ -0,0 +1,10 @@
-+#
-+# Netlink Sockets
-+#
-+
-+config NETLINK_DIAG
-+	tristate "NETLINK: socket monitoring interface"
-+	default n
-+	---help---
-+	  Support for NETLINK socket monitoring interface used by the ss tool.
-+	  If unsure, say Y.
-diff --git a/net/netlink/Makefile b/net/netlink/Makefile
-index bdd6ddf..e837917 100644
---- a/net/netlink/Makefile
-+++ b/net/netlink/Makefile
-@@ -3,3 +3,6 @@
- #
+ 	struct page		**ring_pages;
+-	spinlock_t		ring_lock;
++	struct mutex		ring_lock;
+ 	long			nr_pages;
  
- obj-y  				:= af_netlink.o genetlink.o
+ 	unsigned		nr, tail;
+@@ -344,7 +344,7 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+ 	atomic_set(&ctx->users, 2);
+ 	atomic_set(&ctx->dead, 0);
+ 	spin_lock_init(&ctx->ctx_lock);
+-	spin_lock_init(&ctx->ring_info.ring_lock);
++	mutex_init(&ctx->ring_info.ring_lock);
+ 	init_waitqueue_head(&ctx->wait);
+ 
+ 	INIT_LIST_HEAD(&ctx->active_reqs);
+@@ -747,187 +747,125 @@ put_rq:
+ }
+ EXPORT_SYMBOL(aio_complete);
+ 
+-/* aio_read_evt
+- *	Pull an event off of the ioctx's event ring.  Returns the number of 
+- *	events fetched (0 or 1 ;-)
+- *	FIXME: make this use cmpxchg.
+- *	TODO: make the ringbuffer user mmap()able (requires FIXME).
++/* aio_read_events
++ *	Pull an event off of the ioctx's event ring.  Returns the number of
++ *	events fetched
+  */
+-static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
++static long aio_read_events_ring(struct kioctx *ctx,
++				 struct io_event __user *event, long nr)
+ {
+-	struct aio_ring_info *info = &ioctx->ring_info;
++	struct aio_ring_info *info = &ctx->ring_info;
+ 	struct aio_ring *ring;
+-	unsigned long head;
+-	int ret = 0;
++	unsigned head, pos;
++	long ret = 0;
++	int copy_ret;
 +
-+obj-$(CONFIG_NETLINK_DIAG)	+= netlink_diag.o
-+netlink_diag-y			:= diag.o
-diff --git a/net/netlink/diag.c b/net/netlink/diag.c
-new file mode 100644
-index 0000000..5ffb1d1
---- /dev/null
-+++ b/net/netlink/diag.c
-@@ -0,0 +1,188 @@
-+#include <linux/module.h>
++	mutex_lock(&info->ring_lock);
+ 
+ 	ring = kmap_atomic(info->ring_pages[0]);
+-	pr_debug("h%u t%u m%u\n", ring->head, ring->tail, ring->nr);
++	head = ring->head;
++	kunmap_atomic(ring);
 +
-+#include <net/sock.h>
-+#include <linux/netlink.h>
-+#include <linux/sock_diag.h>
-+#include <linux/netlink_diag.h>
++	pr_debug("h%u t%u m%u\n", head, info->tail, info->nr);
+ 
+-	if (ring->head == ring->tail)
++	if (head == info->tail)
+ 		goto out;
+ 
+-	spin_lock(&info->ring_lock);
+-
+-	head = ring->head % info->nr;
+-	if (head != ring->tail) {
+-		struct io_event *evp = aio_ring_event(info, head);
+-		*ent = *evp;
+-		head = (head + 1) % info->nr;
+-		smp_mb(); /* finish reading the event before updatng the head */
+-		ring->head = head;
+-		ret = 1;
+-		put_aio_ring_event(evp);
++	while (ret < nr) {
++		long avail = (head <= info->tail ? info->tail : info->nr) - head;
++		struct io_event *ev;
++		struct page *page;
 +
-+#include "af_netlink.h"
++		if (head == info->tail)
++			break;
 +
-+static int sk_diag_dump_groups(struct sock *sk, struct sk_buff *nlskb)
-+{
-+	struct netlink_sock *nlk = nlk_sk(sk);
++		avail = min(avail, nr - ret);
++		avail = min_t(long, avail, AIO_EVENTS_PER_PAGE -
++			      ((head + AIO_EVENTS_OFFSET) % AIO_EVENTS_PER_PAGE));
 +
-+	if (nlk->groups == NULL)
-+		return 0;
++		pos = head + AIO_EVENTS_OFFSET;
++		page = info->ring_pages[pos / AIO_EVENTS_PER_PAGE];
++		pos %= AIO_EVENTS_PER_PAGE;
 +
-+	return nla_put(nlskb, NETLINK_DIAG_GROUPS, NLGRPSZ(nlk->ngroups),
-+		       nlk->groups);
-+}
++		ev = kmap(page);
++		copy_ret = copy_to_user(event + ret, ev + pos, sizeof(*ev) * avail);
++		kunmap(page);
 +
-+static int sk_diag_fill(struct sock *sk, struct sk_buff *skb,
-+			struct netlink_diag_req *req,
-+			u32 portid, u32 seq, u32 flags, int sk_ino)
-+{
-+	struct nlmsghdr *nlh;
-+	struct netlink_diag_msg *rep;
-+	struct netlink_sock *nlk = nlk_sk(sk);
-+
-+	nlh = nlmsg_put(skb, portid, seq, SOCK_DIAG_BY_FAMILY, sizeof(*rep),
-+			flags);
-+	if (!nlh)
-+		return -EMSGSIZE;
-+
-+	rep = nlmsg_data(nlh);
-+	rep->ndiag_family	= AF_NETLINK;
-+	rep->ndiag_type		= sk->sk_type;
-+	rep->ndiag_protocol	= sk->sk_protocol;
-+	rep->ndiag_state	= sk->sk_state;
-+
-+	rep->ndiag_ino		= sk_ino;
-+	rep->ndiag_portid	= nlk->portid;
-+	rep->ndiag_dst_portid	= nlk->dst_portid;
-+	rep->ndiag_dst_group	= nlk->dst_group;
-+	sock_diag_save_cookie(sk, rep->ndiag_cookie);
-+
-+	if ((req->ndiag_show & NDIAG_SHOW_GROUPS) &&
-+	    sk_diag_dump_groups(sk, skb))
-+		goto out_nlmsg_trim;
-+
-+	if ((req->ndiag_show & NDIAG_SHOW_MEMINFO) &&
-+	    sock_diag_put_meminfo(sk, skb, NETLINK_DIAG_MEMINFO))
-+		goto out_nlmsg_trim;
-+
-+	return nlmsg_end(skb, nlh);
-+
-+out_nlmsg_trim:
-+	nlmsg_cancel(skb, nlh);
-+	return -EMSGSIZE;
-+}
-+
-+static int __netlink_diag_dump(struct sk_buff *skb, struct netlink_callback *cb,
-+				int protocol, int s_num)
-+{
-+	struct netlink_table *tbl = &nl_table[protocol];
-+	struct nl_portid_hash *hash = &tbl->hash;
-+	struct net *net = sock_net(skb->sk);
-+	struct netlink_diag_req *req;
-+	struct sock *sk;
-+	int ret = 0, num = 0, i;
-+
-+	req = nlmsg_data(cb->nlh);
-+
-+	for (i = 0; i <= hash->mask; i++) {
-+		sk_for_each(sk, &hash->table[i]) {
-+			if (!net_eq(sock_net(sk), net))
-+				continue;
-+			if (num < s_num) {
-+				num++;
-+				continue;
-+			}
-+
-+			if (sk_diag_fill(sk, skb, req,
-+					 NETLINK_CB(cb->skb).portid,
-+					 cb->nlh->nlmsg_seq,
-+					 NLM_F_MULTI,
-+					 sock_i_ino(sk)) < 0) {
-+				ret = 1;
-+				goto done;
-+			}
-+
-+			num++;
-+		}
-+	}
-+
-+	sk_for_each_bound(sk, &tbl->mc_list) {
-+		if (sk_hashed(sk))
-+			continue;
-+		if (!net_eq(sock_net(sk), net))
-+			continue;
-+		if (num < s_num) {
-+			num++;
-+			continue;
++		if (unlikely(copy_ret)) {
++			ret = -EFAULT;
++			goto out;
 +		}
 +
-+		if (sk_diag_fill(sk, skb, req,
-+				 NETLINK_CB(cb->skb).portid,
-+				 cb->nlh->nlmsg_seq,
-+				 NLM_F_MULTI,
-+				 sock_i_ino(sk)) < 0) {
-+			ret = 1;
-+			goto done;
-+		}
-+		num++;
-+	}
-+done:
-+	cb->args[0] = num;
-+	cb->args[1] = protocol;
++		ret += avail;
++		head += avail;
++		head %= info->nr;
+ 	}
+-	spin_unlock(&info->ring_lock);
+ 
+-out:
++	ring = kmap_atomic(info->ring_pages[0]);
++	ring->head = head;
+ 	kunmap_atomic(ring);
+-	pr_debug("%d  h%u t%u\n", ret, ring->head, ring->tail);
 +
++	pr_debug("%li  h%u t%u\n", ret, head, info->tail);
++out:
++	mutex_unlock(&info->ring_lock);
++
+ 	return ret;
+ }
+ 
+-struct aio_timeout {
+-	struct timer_list	timer;
+-	int			timed_out;
+-	struct task_struct	*p;
+-};
+-
+-static void timeout_func(unsigned long data)
++static bool aio_read_events(struct kioctx *ctx, long min_nr, long nr,
++			    struct io_event __user *event, long *i)
+ {
+-	struct aio_timeout *to = (struct aio_timeout *)data;
++	long ret = aio_read_events_ring(ctx, event + *i, nr - *i);
+ 
+-	to->timed_out = 1;
+-	wake_up_process(to->p);
+-}
++	if (ret > 0)
++		*i += ret;
+ 
+-static inline void init_timeout(struct aio_timeout *to)
+-{
+-	setup_timer_on_stack(&to->timer, timeout_func, (unsigned long) to);
+-	to->timed_out = 0;
+-	to->p = current;
+-}
++	if (unlikely(atomic_read(&ctx->dead)))
++		ret = -EINVAL;
+ 
+-static inline void set_timeout(long start_jiffies, struct aio_timeout *to,
+-			       const struct timespec *ts)
+-{
+-	to->timer.expires = start_jiffies + timespec_to_jiffies(ts);
+-	if (time_after(to->timer.expires, jiffies))
+-		add_timer(&to->timer);
+-	else
+-		to->timed_out = 1;
+-}
++	if (!*i)
++		*i = ret;
+ 
+-static inline void clear_timeout(struct aio_timeout *to)
+-{
+-	del_singleshot_timer_sync(&to->timer);
++	return ret < 0 || *i >= min_nr;
+ }
+ 
+-static int read_events(struct kioctx *ctx,
+-			long min_nr, long nr,
++static long read_events(struct kioctx *ctx, long min_nr, long nr,
+ 			struct io_event __user *event,
+ 			struct timespec __user *timeout)
+ {
+-	long			start_jiffies = jiffies;
+-	struct task_struct	*tsk = current;
+-	DECLARE_WAITQUEUE(wait, tsk);
+-	int			ret;
+-	int			i = 0;
+-	struct io_event		ent;
+-	struct aio_timeout	to;
+-
+-	/* needed to zero any padding within an entry (there shouldn't be 
+-	 * any, but C is fun!
+-	 */
+-	memset(&ent, 0, sizeof(ent));
+-	ret = 0;
+-	while (likely(i < nr)) {
+-		ret = aio_read_evt(ctx, &ent);
+-		if (unlikely(ret <= 0))
+-			break;
+-
+-		pr_debug("%Lx %Lx %Lx %Lx\n",
+-			 ent.data, ent.obj, ent.res, ent.res2);
+-
+-		/* Could we split the check in two? */
+-		ret = -EFAULT;
+-		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
+-			pr_debug("lost an event due to EFAULT.\n");
+-			break;
+-		}
+-		ret = 0;
+-
+-		/* Good, event copied to userland, update counts. */
+-		event ++;
+-		i ++;
+-	}
+-
+-	if (min_nr <= i)
+-		return i;
+-	if (ret)
+-		return ret;
+-
+-	/* End fast path */
++	ktime_t until = { .tv64 = KTIME_MAX };
++	long ret = 0;
+ 
+-	init_timeout(&to);
+ 	if (timeout) {
+ 		struct timespec	ts;
+-		ret = -EFAULT;
++
+ 		if (unlikely(copy_from_user(&ts, timeout, sizeof(ts))))
+-			goto out;
++			return -EFAULT;
+ 
+-		set_timeout(start_jiffies, &to, &ts);
++		until = timespec_to_ktime(ts);
+ 	}
+ 
+-	while (likely(i < nr)) {
+-		add_wait_queue_exclusive(&ctx->wait, &wait);
+-		do {
+-			set_task_state(tsk, TASK_INTERRUPTIBLE);
+-			ret = aio_read_evt(ctx, &ent);
+-			if (ret)
+-				break;
+-			if (min_nr <= i)
+-				break;
+-			if (unlikely(atomic_read(&ctx->dead))) {
+-				ret = -EINVAL;
+-				break;
+-			}
+-			if (to.timed_out)	/* Only check after read evt */
+-				break;
+-			/* Try to only show up in io wait if there are ops
+-			 *  in flight */
+-			if (atomic_read(&ctx->reqs_active))
+-				io_schedule();
+-			else
+-				schedule();
+-			if (signal_pending(tsk)) {
+-				ret = -EINTR;
+-				break;
+-			}
+-			/*ret = aio_read_evt(ctx, &ent);*/
+-		} while (1) ;
+-
+-		set_task_state(tsk, TASK_RUNNING);
+-		remove_wait_queue(&ctx->wait, &wait);
+-
+-		if (unlikely(ret <= 0))
+-			break;
+-
+-		ret = -EFAULT;
+-		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
+-			pr_debug("lost an event due to EFAULT.\n");
+-			break;
+-		}
++	/*
++	 * Note that aio_read_events() is being called as the conditional - i.e.
++	 * we're calling it after prepare_to_wait() has set task state to
++	 * TASK_INTERRUPTIBLE.
++	 *
++	 * But aio_read_events() can block, and if it blocks it's going to flip
++	 * the task state back to TASK_RUNNING.
++	 *
++	 * This should be ok, provided it doesn't flip the state back to
++	 * TASK_RUNNING and return 0 too much - that causes us to spin. That
++	 * will only happen if the mutex_lock() call blocks, and we then find
++	 * the ringbuffer empty. So in practice we should be ok, but it's
++	 * something to be aware of when touching this code.
++	 */
++	wait_event_interruptible_hrtimeout(ctx->wait,
++			aio_read_events(ctx, min_nr, nr, event, &ret), until);
+ 
+-		/* Good, event copied to userland, update counts. */
+-		event ++;
+-		i ++;
+-	}
++	if (!ret && signal_pending(current))
++		ret = -EINTR;
+ 
+-	if (timeout)
+-		clear_timeout(&to);
+-out:
+-	destroy_timer_on_stack(&to.timer);
+-	return i ? i : ret;
 +	return ret;
-+}
-+
-+static int netlink_diag_dump(struct sk_buff *skb, struct netlink_callback *cb)
-+{
-+	struct netlink_diag_req *req;
-+	int s_num = cb->args[0];
-+
-+	req = nlmsg_data(cb->nlh);
-+
-+	read_lock(&nl_table_lock);
-+
-+	if (req->sdiag_protocol == NDIAG_PROTO_ALL) {
-+		int i;
-+
-+		for (i = cb->args[1]; i < MAX_LINKS; i++) {
-+			if (__netlink_diag_dump(skb, cb, i, s_num))
-+				break;
-+			s_num = 0;
-+		}
-+	} else {
-+		if (req->sdiag_protocol >= MAX_LINKS) {
-+			read_unlock(&nl_table_lock);
-+			return -ENOENT;
-+		}
-+
-+		__netlink_diag_dump(skb, cb, req->sdiag_protocol, s_num);
-+	}
-+
-+	read_unlock(&nl_table_lock);
-+
-+	return skb->len;
-+}
-+
-+static int netlink_diag_handler_dump(struct sk_buff *skb, struct nlmsghdr *h)
-+{
-+	int hdrlen = sizeof(struct netlink_diag_req);
-+	struct net *net = sock_net(skb->sk);
-+
-+	if (nlmsg_len(h) < hdrlen)
-+		return -EINVAL;
-+
-+	if (h->nlmsg_flags & NLM_F_DUMP) {
-+		struct netlink_dump_control c = {
-+			.dump = netlink_diag_dump,
-+		};
-+		return netlink_dump_start(net->diag_nlsk, skb, h, &c);
-+	} else
-+		return -EOPNOTSUPP;
-+}
-+
-+static const struct sock_diag_handler netlink_diag_handler = {
-+	.family = AF_NETLINK,
-+	.dump = netlink_diag_handler_dump,
-+};
-+
-+static int __init netlink_diag_init(void)
-+{
-+	return sock_diag_register(&netlink_diag_handler);
-+}
-+
-+static void __exit netlink_diag_exit(void)
-+{
-+	sock_diag_unregister(&netlink_diag_handler);
-+}
-+
-+module_init(netlink_diag_init);
-+module_exit(netlink_diag_exit);
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS_NET_PF_PROTO_TYPE(PF_NETLINK, NETLINK_SOCK_DIAG, 16 /* AF_NETLINK */);
+ }
+ 
+ /* sys_io_setup:
 -- 
-1.8.1.4
+1.8.1.3
 
