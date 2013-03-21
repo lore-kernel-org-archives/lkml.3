@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab3CUIKz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 04:10:55 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:40981 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757858Ab3CUIKt (ORCPT
+	id S1757509Ab3CUIRH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 04:17:07 -0400
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:38900 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244Ab3CUIRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 04:10:49 -0400
-Subject: [PATCH] kconfig: print each first level disjunction block from a new
- line
-To: linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Michal Marek <mmarek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org
-Date: Thu, 21 Mar 2013 12:10:44 +0400
-Message-ID: <20130321081043.21073.38947.stgit@zurg>
-User-Agent: StGit/0.15
+	Thu, 21 Mar 2013 04:17:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1363851836.17680.20.camel@pasglop>
+References: <1363791074-16415-1-git-send-email-grant.likely@secretlab.ca>
+ <1363791074-16415-3-git-send-email-grant.likely@secretlab.ca>
+ <1363791479.12701.9.camel@pasglop> <CACxGe6u2wNbPQSOPRCRO0To5UC-b8rXYanv2xv26hk5oaozvPA@mail.gmail.com>
+ <1363839594.17680.19.camel@pasglop> <CACxGe6sXcg51VhFujsjCsMzF80pdy_QhAposdmya4-C0eEcuUw@mail.gmail.com>
+ <1363851836.17680.20.camel@pasglop>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 21 Mar 2013 08:16:41 +0000
+X-Google-Sender-Auth: OSs8GpyEqzcrBIOx_Y6HG3z7sMc
+Message-ID: <CACxGe6thdnQo6sPDccEGzUEkXFDGRD4aq_DJOop6Cincb94ODA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] of: remove /proc/device-tree
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch improves readability of complicated expressions.
+On Thu, Mar 21, 2013 at 7:43 AM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Thu, 2013-03-21 at 07:35 +0000, Grant Likely wrote:
+>> > Shouldn't we have the symlink just be a config option itself ?
+>> > Eventually distros might want get rid of it completely ..
+>>
+>> Why? It is the cheapest thing in the world and it means the ABI
+>> doesn't change at all.
+>
+> It's also gross and forces sysfs to remain in /sys which isn't a kernel
+> enforced policy afaik.
 
-before:
-   Selected by: A && AA && AAA || B && BB && (BBB || BBBB) || C && CC && CCC
+Documentation/sysfs-rules.txt, Line 30
 
-after:
-   Selected by: A && AA && AAA
- || B && BB && (BBB || BBBB)
- || C && CC && CCC
-
-Modules' config options usually comes first in these blocks.
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org
----
- scripts/kconfig/expr.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
-
-diff --git a/scripts/kconfig/expr.c b/scripts/kconfig/expr.c
-index d662652..e47eb28 100644
---- a/scripts/kconfig/expr.c
-+++ b/scripts/kconfig/expr.c
-@@ -1087,9 +1087,15 @@ void expr_print(struct expr *e, void (*fn)(void *, struct symbol *, const char *
- 		fn(data, e->right.sym, e->right.sym->name);
- 		break;
- 	case E_OR:
--		expr_print(e->left.expr, fn, data, E_OR);
--		fn(data, NULL, " || ");
--		expr_print(e->right.expr, fn, data, E_OR);
-+		if (prevtoken == E_NONE) {
-+			expr_print(e->left.expr, fn, data, E_NONE);
-+			fn(data, NULL, "\n|| ");
-+			expr_print(e->right.expr, fn, data, E_NONE);
-+		} else {
-+			expr_print(e->left.expr, fn, data, E_OR);
-+			fn(data, NULL, " || ");
-+			expr_print(e->right.expr, fn, data, E_OR);
-+		}
- 		break;
- 	case E_AND:
- 		expr_print(e->left.expr, fn, data, E_AND);
-
+g.
