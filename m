@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933211Ab3CUIcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 04:32:12 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:63780 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756438Ab3CUIcJ (ORCPT
+	id S1757920Ab3CUIet (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 04:34:49 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45220 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757551Ab3CUIer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 04:32:09 -0400
-Message-ID: <514AC583.2090909@gmail.com>
-Date: Thu, 21 Mar 2013 16:32:03 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Hedi Berriche <hedi@sgi.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: page_alloc: Avoid marking zones full prematurely
- after zone_reclaim()
-References: <20130320181957.GA1878@suse.de> <514A7163.5070700@gmail.com> <20130321081902.GD6094@dhcp22.suse.cz>
-In-Reply-To: <20130321081902.GD6094@dhcp22.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Mar 2013 04:34:47 -0400
+From: zwu.kernel@gmail.com
+To: linux-btrfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, sensille@gmx.net,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH] btrfs-progs: add missing qgroup synopsis in btrfs
+Date: Thu, 21 Mar 2013 16:33:37 +0800
+Message-Id: <1363854817-22416-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032108-3620-0000-0000-000001B651D2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
-On 03/21/2013 04:19 PM, Michal Hocko wrote:
-> On Thu 21-03-13 10:33:07, Simon Jeons wrote:
->> Hi Mel,
->> On 03/21/2013 02:19 AM, Mel Gorman wrote:
->>> The following problem was reported against a distribution kernel when
->>> zone_reclaim was enabled but the same problem applies to the mainline
->>> kernel. The reproduction case was as follows
->>>
->>> 1. Run numactl -m +0 dd if=largefile of=/dev/null
->>>     This allocates a large number of clean pages in node 0
->> I confuse why this need allocate a large number of clean pages?
-> It reads from file and puts pages into the page cache. The pages are not
-> modified so they are clean. Output file is /dev/null so no pages are
-> written. dd doesn't call fadvise(POSIX_FADV_DONTNEED) on the input file
-> by default so pages from the file stay in the page cache
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-Thanks for your clarify Michal.
-dd will use page cache instead of direct IO? Where can I got dd source 
-codes?
-One offline question, when should use page cache and when should use 
-direct IO?
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+---
+ man/btrfs.8.in | 37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
+diff --git a/man/btrfs.8.in b/man/btrfs.8.in
+index 94f4ffe..54de60e 100644
+--- a/man/btrfs.8.in
++++ b/man/btrfs.8.in
+@@ -60,6 +60,18 @@ btrfs \- control a btrfs filesystem
+ \fBbtrfs\fP \fBinspect-internal logical-resolve\fP
+ [-Pv] [-s size] \fI<logical>\fP \fI<path>\fP
+ .PP
++\fBbtrfs\fP \fBqgroup assign\fP \fI<src>\fP \fI<dst>\fP \fI<path>\fP
++.PP
++\fBbtrfs\fP \fBqgroup remove\fP \fI<src>\fP \fI<dst>\fP \fI<path>\fP
++.PP
++\fBbtrfs\fP \fBqgroup create\fP \fI<qgroupid>\fP \fI<path>\fP
++.PP
++\fBbtrfs\fP \fBqgroup destroy\fP \fI<qgroupid>\fP \fI<path>\fP
++.PP
++\fBbtrfs\fP \fBqgroup show\fP \fI<path>\fP
++.PP
++\fBbtrfs\fP \fBqgroup limit\fP [options] \fI<size>\fP|\fBnone\fP [\fI<qgroupid>\fP] \fI<path>\fP
++.PP
+ \fBbtrfs\fP \fBhelp|\-\-help \fP\fI\fP
+ .PP
+ \fBbtrfs\fP \fB<command> \-\-help \fP\fI\fP
+@@ -434,6 +446,31 @@ verbose mode. print count of returned paths and all ioctl() return values
+ set inode container's size. This is used to increase inode container's size in case it is
+ not enough to read all the resolved results. The max value one can set is 64k.
+ .RE
++.TP
++
++\fBbtrfs qgroup assign\fP \fI<src>\fP \fI<dst>\fP \fI<path>\fP
++Enable subvolume qgroup support for a filesystem.
++.TP
++
++\fBbtrfs qgroup remove\fP \fI<src>\fP \fI<dst>\fP \fI<path>\fP
++Remove a subvol from a quota group.
++.TP
++
++\fBbtrfs qgroup create\fP \fI<qgroupid>\fP \fI<path>\fP
++Create a subvolume quota group.
++.TP
++
++\fBbtrfs qgroup destroy\fP \fI<qgroupid>\fP \fI<path>\fP
++Destroy a subvolume quota group.
++.TP
++
++\fBbtrfs qgroup show\fP \fI<path>\fP
++Show all subvolume quota groups.
++.TP
++
++\fBbtrfs\fP \fBqgroup limit\fP [options] \fI<size>\fP|\fBnone\fP [\fI<qgroupid>\fP] \fI<path>\fP
++Limit the size of a subvolume quota group.
++.RE
+ 
+ .SH EXIT STATUS
+ \fBbtrfs\fR returns a zero exist status if it succeeds. Non zero is returned in
+-- 
+1.7.11.7
 
