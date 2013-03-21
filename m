@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab3CUDyh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 23:54:37 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:35006 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953Ab3CUDyf (ORCPT
+	id S1756982Ab3CUD40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 23:56:26 -0400
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:54939
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753974Ab3CUD4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 23:54:35 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: vgoyal@redhat.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
-        lisa.mitchell@hp.com, heiko.carstens@de.ibm.com,
-        akpm@linux-foundation.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
-References: <20130316040003.15064.62308.stgit@localhost6.localdomain6>
-	<20130316040223.15064.77472.stgit@localhost6.localdomain6>
-	<87ppyvp014.fsf@xmission.com>
-	<20130321.115920.339923125.d.hatayama@jp.fujitsu.com>
-Date: Wed, 20 Mar 2013 20:54:25 -0700
-In-Reply-To: <20130321.115920.339923125.d.hatayama@jp.fujitsu.com> (HATAYAMA
-	Daisuke's message of "Thu, 21 Mar 2013 11:59:20 +0900 (JST)")
-Message-ID: <87r4j98l1q.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 20 Mar 2013 23:56:25 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zz98dI9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dh8275bhz2dh2a8h668h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1b0ah1155h)
+From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>, Chris Ball <cjb@laptop.org>
+CC: "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Miao, Steven" <Steven.Miao@analog.com>
+Date: Wed, 20 Mar 2013 23:56:08 -0400
+Subject: RE: Missing WIDE_BUS_[48] (was: Re: mmc: bfin_sdh: Add support for
+ new RSI controller in bf60x)
+Thread-Topic: Missing WIDE_BUS_[48] (was: Re: mmc: bfin_sdh: Add support for
+ new RSI controller in bf60x)
+Thread-Index: Ac4lTsEUwPf6ticWSlm9ALsc7B4FRwAlMMBw
+Message-ID: <DB904C5425BA6F4E8424B3B51A1414D173FF57E1AE@NWD2CMBX1.ad.analog.com>
+References: <CAMuHMdVPNdrvOSDWNhKqOSuLJL39dMuDmDAjuKerFGnZ5WvkOQ@mail.gmail.com>
+In-Reply-To: <CAMuHMdVPNdrvOSDWNhKqOSuLJL39dMuDmDAjuKerFGnZ5WvkOQ@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/HM/9jqaW/IQCmhuHrxYPZ6SuczEGoUP8=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v3 17/21] vmcore: check NT_VMCORE_PAD as a mark indicating the end of ELF note buffer
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2L3uPFR004154
 
-HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
+Hi Geert,
 
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> Subject: Re: [PATCH v3 17/21] vmcore: check NT_VMCORE_PAD as a mark indicating the end of ELF note buffer
-> Date: Tue, 19 Mar 2013 14:11:51 -0700
+>-----Original Message-----
+>From: geert.uytterhoeven@gmail.com [mailto:geert.uytterhoeven@gmail.com] On
+>Behalf Of Geert Uytterhoeven
+>Sent: Wednesday, March 20, 2013 5:39 PM
+>To: Zhang, Sonic; Chris Ball
+>Cc: uclinux-dist-devel@blackfin.uclinux.org; linux-kernel@vger.kernel.org
+>Subject: Missing WIDE_BUS_[48] (was: Re: mmc: bfin_sdh: Add support for new
+>RSI controller in bf60x)
 >
->> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
->> 
->>> Modern kernel marks the end of ELF note buffer with NT_VMCORE_PAD type
->>> note in order to make the buffer satisfy mmap()'s page-size boundary
->>> requirement. This patch makes finishing reading each buffer if the
->>> note type now being read is NT_VMCORE_PAD type.
->> 
->> Ick.  Even with a pad header you can mark the end with an empty header,
->> and my memory may be deceiving me but I believe an empty header is
->> specified by the ELF ABI docs.
->> 
->> Beyond which I don't quite see the point of any of this as all of these
->> headers need to be combined into a single note section before being
->> presented to user space.
+>On Wed, Oct 10, 2012 at 4:28 AM, Linux Kernel Mailing List <linux-
+>kernel@vger.kernel.org> wrote:
+>> Gitweb:
+>http://git.kernel.org/linus/;a=commit;h=4ffdcf0469f1e7e47476ee410e8dfbc6aba61b
+>65
+>> Commit:     4ffdcf0469f1e7e47476ee410e8dfbc6aba61b65
+>> Parent:     0462566b1e3129b2920b63b62a653b70a1bc36fa
+>> Author:     Sonic Zhang <sonic.zhang@analog.com>
+>> AuthorDate: Wed Aug 8 00:13:32 2012 -0400
+>> Committer:  Chris Ball <cjb@laptop.org>
+>> CommitDate: Tue Sep 4 13:58:18 2012 -0400
+>>
+>>     mmc: bfin_sdh: Add support for new RSI controller in bf60x
 >
-> Though this patch might get unecessary later, I cannot find part
-> explaining necessity of marking end of ELF segmetns with an empty
-> header in ELF spec. For example:
+>> +               clk_ctl |= WIDE_BUS_4;
+>
+>Any plans to introduce this "WIDE_BUS_4", and the corresponding
+>"WIDE_BUS_8"
+>symbols in mainline?
+>
 
-You are right.  It appears to be our own invention and just part of
-the ABI of taking a crash dump.  Something we should sit down and
-document someday.
+Bob forgot to push the patch against the head file to the blackfin arch tree in last merge window.
+It will be done in next merge window.
 
-> Also, it's possible to get size of a whole part of ELF note segments
-> from p_memsz or p_filesz, and gdb and binutils are reading the note
-> segments until reaching the size.
+Thanks
 
-Agreed.  Except in our weird case where we generate the notes on the
-fly, and generate the NOTE segment header much earlier.
+Sonic
 
-Eric
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
