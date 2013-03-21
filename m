@@ -1,183 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab3CULal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:30:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40624 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752155Ab3CULaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:30:39 -0400
-Date: Thu, 21 Mar 2013 13:30:47 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Roland Dreier <roland@kernel.org>
-Cc: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Subject: Re: [PATCH] rdma: don't make pages writeable if not requiested
-Message-ID: <20130321113047.GA31599@redhat.com>
-References: <20130321061838.GA28319@redhat.com>
- <CAL1RGDUcMj9QVsuQgK+ozw64L6-cGehL7YBUJ1_ckni6TD=Kcg@mail.gmail.com>
- <20130321093230.GF28328@redhat.com>
+	id S1757553Ab3CULbV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:31:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56643 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307Ab3CULbT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 07:31:19 -0400
+Date: Thu, 21 Mar 2013 04:30:06 -0700
+From: tip-bot for David Ahern <tipbot@zytor.com>
+Message-ID: <tip-ed8996a6d59b9eb00a50d7d30887ba9f28eb4bb0@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1363151248-16674-5-git-send-email-dsahern@gmail.com>
+References: <1363151248-16674-5-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf machine:
+  Move machine__remove_thread and make static
+Git-Commit-ID: ed8996a6d59b9eb00a50d7d30887ba9f28eb4bb0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130321093230.GF28328@redhat.com>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:30:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 11:32:30AM +0200, Michael S. Tsirkin wrote:
-> On Wed, Mar 20, 2013 at 11:55:54PM -0700, Roland Dreier wrote:
-> > On Wed, Mar 20, 2013 at 11:18 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> > > core/umem.c seems to get the arguments to get_user_pages
-> > > in the reverse order: it sets writeable flag and
-> > > breaks COW for MAP_SHARED if and only if hardware needs to
-> > > write the page.
-> > >
-> > > This breaks memory overcommit for users such as KVM:
-> > > each time we try to register a page to send it to remote, this
-> > > breaks COW.  It seems that for applications that only have
-> > > REMOTE_READ permission, there is no reason to break COW at all.
-> > 
-> > I proposed a similar (but not exactly the same, see below) patch a
-> > while ago: https://lkml.org/lkml/2012/1/26/7 but read the thread,
-> > especially https://lkml.org/lkml/2012/2/6/265
-> > 
-> > I think this change will break the case where userspace tries to
-> > register an MR with read-only permission, but intends locally through
-> > the CPU to write to the memory.  If the memory registration is done
-> > while the memory is mapped read-only but has VM_MAYWRITE, then
-> > userspace gets into trouble when COW happens.  In the case you're
-> > describing (although I'm not sure where in KVM we're talking about
-> > using RDMA), what happens if you register memory with only REMOTE_READ
-> > and then COW is triggered because of a local write?  (I'm assuming you
-> > don't want remote access to continue to get the old contents of the
-> > page)
-> 
-> I read that, and the above. It looks like everyone was doing tricks
-> like "register page, then modify it, then let remote read it"
-> and for some reason assumed it's ok to write into page locally from CPU
-> even if LOCAL_WRITE is not set.  I don't see why don't applications set
-> LOCAL_WRITE if they are going to write to memory locally, but assuming
-> they don't, we can't just break them.
-> 
-> So what we need is a new "no I really do not intend to write into this
-> memory" flag that avoids doing tricks in the kernel and treats the
-> page normally, just pins it so hardware can read it.
-> 
-> 
-> > I have to confess that I still haven't had a chance to implement the
-> > proposed FOLL_FOLLOW solution to all of this.
-> 
-> See a much easier to implement proposal at the bottom.
-> 
-> > > If the page that is COW has lots of copies, this makes the user process
-> > > quickly exceed the cgroups memory limit.  This makes RDMA mostly useless
-> > > for virtualization, thus the stable tag.
-> > 
-> > The actual problem description here is a bit too terse for me to
-> > understand.  How do we end up with lots of copies of a COW page?
-> 
-> Reading the links above, rdma breaks COW intentionally.
-> 
-> Imagine a page with lots of instances in the process page map.
-> For example a zero page, but not only that: we rely on KSM heavily
-> to deduplicate pages for multiple VMs.
-> There are gigabytes of these in each of the multiple VMs
-> running on a host.
-> 
-> What we are using RDMA for is VM migration so we careful not to change
-> this memory: when we do allow memory to change we are careful
-> to track what was changed, reregister and resend the data.
-> 
-> But at the moment, each time we register a virtual address referencing
-> this page, infiniband assumes we might want to change the page so it
-> does get_user_pages with writeable flag, forcing a copy.
-> Amount of used RAM explodes.
-> 
-> >  Why
-> > is RDMA registering the memory any more  special than having everyone
-> > who maps this page actually writing to it and triggering COW?
-> > 
-> > >                 ret = get_user_pages(current, current->mm, cur_base,
-> > >                                      min_t(unsigned long, npages,
-> > >                                            PAGE_SIZE / sizeof (struct page *)),
-> > > -                                    1, !umem->writable, page_list, vma_list);
-> > > +                                    !umem->writable, 1, page_list, vma_list);
-> > 
-> > The first two parameters in this line being changed are "write" and "force".
-> > 
-> > I think if we do change this, then we need to pass umem->writable (as
-> > opposed to !umem->writable) for the "write" parameter.
-> 
-> Ugh. Sure enough. Let's agree on the direction before I respin the
-> patch though.
-> 
-> > Not sure
-> > whether "force" makes sense or not.
-> > 
-> >  - R.
-> 
-> If you don't force write on read-only mappings you don't, but
-> it seems harmless for read-only gup. Still, no need to change
-> what's not broken.
-> 
-> Please comment on the below (completely untested, and needs userspace
-> patch too, but just to give you the idea)
-> 
-> --->
-> 
-> rdma: add IB_ACCESS_APP_READONLY 
+Commit-ID:  ed8996a6d59b9eb00a50d7d30887ba9f28eb4bb0
+Gitweb:     http://git.kernel.org/tip/ed8996a6d59b9eb00a50d7d30887ba9f28eb4bb0
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Tue, 12 Mar 2013 23:07:28 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 15 Mar 2013 13:06:08 -0300
 
-Or we can call it IB_ACCESS_GIFT - this is a bit like SPLICE_F_GIFT
-semantics.
+perf machine: Move machine__remove_thread and make static
 
+As the now only user, machine__process_exit_event, that is what tools
+use to process PERF_RECORD_EXIT events, is on the same object file.
 
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1363151248-16674-5-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/machine.c | 22 +++++++++++-----------
+ tools/perf/util/machine.h |  1 -
+ 2 files changed, 11 insertions(+), 12 deletions(-)
 
-> At the moment any attempt to register memory for RDMA breaks
-> COW, which hurts hosts overcomitted for memory.
-> But if the application knows it won't write into the MR after
-> registration, we can save (sometimes a lot of) memory
-> by telling the kernel not to bother breaking COW for us.
-> 
-> If the application does change memory registered with this flag, it can
-> re-register afterwards, and resend the data on the wire.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> ---
-> 
-> diff --git a/drivers/infiniband/core/umem.c b/drivers/infiniband/core/umem.c
-> index 5929598..635b57a 100644
-> --- a/drivers/infiniband/core/umem.c
-> +++ b/drivers/infiniband/core/umem.c
-> @@ -152,7 +152,9 @@ struct ib_umem *ib_umem_get(struct ib_ucontext *context, unsigned long addr,
->  		ret = get_user_pages(current, current->mm, cur_base,
->  				     min_t(unsigned long, npages,
->  					   PAGE_SIZE / sizeof (struct page *)),
-> -				     !umem->writable, 1, page_list, vma_list);
-> +				     umem->writable ||
-> +				     !(access & IB_ACCESS_APP_READONLY),
-> +				     !umem->writable, page_list, vma_list);
->  
->  		if (ret < 0)
->  			goto out;
-> diff --git a/include/rdma/ib_verbs.h b/include/rdma/ib_verbs.h
-> index 98cc4b2..3a3ba1b 100644
-> --- a/include/rdma/ib_verbs.h
-> +++ b/include/rdma/ib_verbs.h
-> @@ -871,7 +871,8 @@ enum ib_access_flags {
->  	IB_ACCESS_REMOTE_READ	= (1<<2),
->  	IB_ACCESS_REMOTE_ATOMIC	= (1<<3),
->  	IB_ACCESS_MW_BIND	= (1<<4),
-> -	IB_ZERO_BASED		= (1<<5)
-> +	IB_ZERO_BASED		= (1<<5),
-> +	IB_ACCESS_APP_READONLY	= (1<<6) /* User promises not to change the data */
->  };
->  
->  struct ib_phys_buf {
-> 
-> -- 
-> MST
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index efdb38e..c5e3b12 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1003,6 +1003,17 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
+ 	return 0;
+ }
+ 
++static void machine__remove_thread(struct machine *machine, struct thread *th)
++{
++	machine->last_match = NULL;
++	rb_erase(&th->rb_node, &machine->threads);
++	/*
++	 * We may have references to this thread, for instance in some hist_entry
++	 * instances, so just move them to a separate list.
++	 */
++	list_add_tail(&th->node, &machine->dead_threads);
++}
++
+ int machine__process_exit_event(struct machine *machine, union perf_event *event)
+ {
+ 	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+@@ -1039,17 +1050,6 @@ int machine__process_event(struct machine *machine, union perf_event *event)
+ 	return ret;
+ }
+ 
+-void machine__remove_thread(struct machine *machine, struct thread *th)
+-{
+-	machine->last_match = NULL;
+-	rb_erase(&th->rb_node, &machine->threads);
+-	/*
+-	 * We may have references to this thread, for instance in some hist_entry
+-	 * instances, so just move them to a separate list.
+-	 */
+-	list_add_tail(&th->node, &machine->dead_threads);
+-}
+-
+ static bool symbol__match_parent_regex(struct symbol *sym)
+ {
+ 	if (sym->name && !regexec(&parent_regex, sym->name, 0, NULL, 0))
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 5ac5892..e0b2c00 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -97,7 +97,6 @@ static inline bool machine__is_host(struct machine *machine)
+ }
+ 
+ struct thread *machine__findnew_thread(struct machine *machine, pid_t pid);
+-void machine__remove_thread(struct machine *machine, struct thread *th);
+ 
+ size_t machine__fprintf(struct machine *machine, FILE *fp);
+ 
