@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412Ab3CUSei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:34:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62788 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab3CUSeh (ORCPT
+	id S1751475Ab3CUSfT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:35:19 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:46238 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979Ab3CUSfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:34:37 -0400
-Subject: [PATCH] Adding an error message to indicate perf_event cgroup
- subsys not mounted.
-From: Will Auld <will.auld.intel@gmail.com>
-Reply-To: will.auld@intel.com
-To: linux-kernel@vger.kernel.org
-Cc: acme@redhat.com, eranian@google.com, andi.kleen@intel.com,
-        will.auld@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel
-Date: Thu, 21 Mar 2013 11:29:20 -0700
-Message-ID: <1363890560.21957.4.camel@WGA-RHEL6.3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Mar 2013 14:35:17 -0400
+Date: Thu, 21 Mar 2013 11:35:13 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, skinsbursky@parallels.com,
+        ebiederm@xmission.com, jmorris@namei.org, axboe@kernel.dk,
+        jlayton@redhat.com
+Subject: Re: [PATCHSET] idr: implement idr_alloc() and convert existing users
+Message-ID: <20130321183513.GC20500@htj.dyndns.org>
+References: <1359854463-2538-1-git-send-email-tj@kernel.org>
+ <20130203170241.GA24778@fieldses.org>
+ <20130204001557.GB24778@fieldses.org>
+ <20130204171031.GK27963@mtj.dyndns.org>
+ <20130204171128.GL27963@mtj.dyndns.org>
+ <20130321140618.GD27838@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130321140618.GD27838@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding an error message to indicate that there is no mounted perf_event
-cgroup while using -G or --cgroup options with perf.
+Hello,
 
-Signed-off-by: Will Auld <will.auld@intel.com>
----
- tools/perf/util/cgroup.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+On Thu, Mar 21, 2013 at 10:06:18AM -0400, J. Bruce Fields wrote:
+> > Ooh, BTW, the cyclic allocation is broken.  It's prone to -ENOSPC
+> > after the first wraparound.  There are several cyclic users in the
+> > kernel and I think it probably would be best to implement cyclic
+> > support in idr.
+> 
+> Are you looking at this, by the way, or do you have any suggestions?
+> 
+> Wondering if it's something I should try to fix or if I should look into
+> converting to some other data structure here.
 
-diff --git a/tools/perf/util/cgroup.c b/tools/perf/util/cgroup.c
-index 96bbda1..4126beb 100644
---- a/tools/perf/util/cgroup.c
-+++ b/tools/perf/util/cgroup.c
-@@ -44,8 +44,10 @@ cgroupfs_find_mountpoint(char *buf, size_t maxlen)
- 			break;
- 	}
- 	fclose(fp);
--	if (!found)
-+	if (!found) {
-+		error("No cgroup mounted with \'perf_event\' type");
- 		return -1;
-+	}
- 
- 	if (strlen(mountpoint) < maxlen) {
- 		strcpy(buf, mountpoint);
+I am not working on it at the moment but I think the logical thing to
+do would be implementing cyclic support in idr and enabling it with,
+say, a different initializer - IDR_CYCLIC_INIT() or something.  If you
+wanna fix it, please go ahead. :)
+
+Thanks.
+
 -- 
-1.7.1
-
-
-
+tejun
