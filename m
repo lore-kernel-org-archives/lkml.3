@@ -1,74 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab3CUKzW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 06:55:22 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:44618 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755288Ab3CUKzV (ORCPT
+	id S1755854Ab3CUKzy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 06:55:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56049 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755297Ab3CUKzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 06:55:21 -0400
-Date: Thu, 21 Mar 2013 11:55:16 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Russ Anderson <rja@sgi.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com
-Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
-Message-ID: <20130321105516.GC18484@gmail.com>
-References: <20130318155619.GA18828@sgi.com>
+	Thu, 21 Mar 2013 06:55:53 -0400
+Date: Thu, 21 Mar 2013 03:54:03 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-097c87582c5719adbd8b700f4250e1f1d9f15ebf@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, oleg@redhat.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, oleg@redhat.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1361785972-7431-3-git-send-email-jolsa@redhat.com>
+References: <1361785972-7431-3-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tests: Make attr script verbose friendly
+Git-Commit-ID: 097c87582c5719adbd8b700f4250e1f1d9f15ebf
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130318155619.GA18828@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 03:54:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  097c87582c5719adbd8b700f4250e1f1d9f15ebf
+Gitweb:     http://git.kernel.org/tip/097c87582c5719adbd8b700f4250e1f1d9f15ebf
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Mon, 25 Feb 2013 10:52:49 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 15 Mar 2013 13:05:59 -0300
 
-* Russ Anderson <rja@sgi.com> wrote:
+perf tests: Make attr script verbose friendly
 
-> When booting on a large memory system, the kernel spends
-> considerable time in memmap_init_zone() setting up memory zones.
-> Analysis shows significant time spent in __early_pfn_to_nid().
-> 
-> The routine memmap_init_zone() checks each PFN to verify the
-> nid is valid.  __early_pfn_to_nid() sequentially scans the list of
-> pfn ranges to find the right range and returns the nid.  This does
-> not scale well.  On a 4 TB (single rack) system there are 308
-> memory ranges to scan.  The higher the PFN the more time spent
-> sequentially spinning through memory ranges.
-> 
-> Since memmap_init_zone() increments pfn, it will almost always be
-> looking for the same range as the previous pfn, so check that
-> range first.  If it is in the same range, return that nid.
-> If not, scan the list as before.
-> 
-> A 4 TB (single rack) UV1 system takes 512 seconds to get through
-> the zone code.  This performance optimization reduces the time
-> by 189 seconds, a 36% improvement.
-> 
-> A 2 TB (single rack) UV2 system goes from 212.7 seconds to 99.8 seconds,
-> a 112.9 second (53%) reduction.
+Making the attr test script runner to pass proper verbose option. Also
+making single '-v' be more reader friendly and display just the test
+name.
 
-Nice speedup!
+Making the current output to be display for '-vv'.
 
-A minor nit, in addition to Andrew's suggestion about wrapping 
-__early_pfn_to_nid():
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1361785972-7431-3-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/tests/attr.c  | 9 +++++++--
+ tools/perf/tests/attr.py | 4 ++--
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
-> Index: linux/mm/page_alloc.c
-> ===================================================================
-> --- linux.orig/mm/page_alloc.c	2013-03-18 10:52:11.510988843 -0500
-> +++ linux/mm/page_alloc.c	2013-03-18 10:52:14.214931348 -0500
-> @@ -4161,10 +4161,19 @@ int __meminit __early_pfn_to_nid(unsigne
->  {
->  	unsigned long start_pfn, end_pfn;
->  	int i, nid;
-> +	static unsigned long last_start_pfn, last_end_pfn;
-> +	static int last_nid;
-
-Please move these globals out of function local scope, to make it more 
-apparent that they are not on-stack. I only noticed it in the second pass.
-
-Thanks,
-
-	Ingo
+diff --git a/tools/perf/tests/attr.c b/tools/perf/tests/attr.c
+index bdcceb8..038de3e 100644
+--- a/tools/perf/tests/attr.c
++++ b/tools/perf/tests/attr.c
+@@ -147,10 +147,15 @@ void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
+ 
+ static int run_dir(const char *d, const char *perf)
+ {
++	char v[] = "-vvvvv";
++	int vcnt = min(verbose, (int) sizeof(v) - 1);
+ 	char cmd[3*PATH_MAX];
+ 
+-	snprintf(cmd, 3*PATH_MAX, PYTHON " %s/attr.py -d %s/attr/ -p %s %s",
+-		 d, d, perf, verbose ? "-v" : "");
++	if (verbose)
++		vcnt++;
++
++	snprintf(cmd, 3*PATH_MAX, PYTHON " %s/attr.py -d %s/attr/ -p %s %.*s",
++		 d, d, perf, vcnt, v);
+ 
+ 	return system(cmd);
+ }
+diff --git a/tools/perf/tests/attr.py b/tools/perf/tests/attr.py
+index 2f629ca..e0ea513 100644
+--- a/tools/perf/tests/attr.py
++++ b/tools/perf/tests/attr.py
+@@ -121,7 +121,7 @@ class Test(object):
+         parser = ConfigParser.SafeConfigParser()
+         parser.read(path)
+ 
+-        log.debug("running '%s'" % path)
++        log.warning("running '%s'" % path)
+ 
+         self.path     = path
+         self.test_dir = options.test_dir
+@@ -172,7 +172,7 @@ class Test(object):
+               self.perf, self.command, tempdir, self.args)
+         ret = os.WEXITSTATUS(os.system(cmd))
+ 
+-        log.warning("  running '%s' ret %d " % (cmd, ret))
++        log.info("  '%s' ret %d " % (cmd, ret))
+ 
+         if ret != int(self.ret):
+             raise Unsup(self)
