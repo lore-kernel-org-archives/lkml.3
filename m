@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab3CUJI1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 05:08:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17011 "EHLO mx1.redhat.com"
+	id S1755509Ab3CUJIz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 05:08:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48234 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753937Ab3CUJI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 05:08:26 -0400
-Message-ID: <514ACE06.7050001@redhat.com>
-Date: Thu, 21 Mar 2013 04:08:22 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1754770Ab3CUJIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 05:08:53 -0400
+Date: Thu, 21 Mar 2013 10:08:49 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@parallels.com>
+Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
+Message-ID: <20130321090849.GF6094@dhcp22.suse.cz>
+References: <514A60CD.60208@huawei.com>
 MIME-Version: 1.0
-To: zwu.kernel@gmail.com
-CC: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [PATCH] btrfs-progs: fix one bracket issue in mkfs.btrfs manpage
-References: <1363850237-21276-1-git-send-email-zwu.kernel@gmail.com>
-In-Reply-To: <1363850237-21276-1-git-send-email-zwu.kernel@gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <514A60CD.60208@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/21/13 2:17 AM, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Thu 21-03-13 09:22:21, Li Zefan wrote:
+> As cgroup supports rename, it's unsafe to dereference dentry->d_name
+> without proper vfs locks. Fix this by using cgroup_name().
 > 
->   In "[ \fB\-f\fP\fI ]", the "\fI" will result in the front half "["of
-> "[ -f ]" doesn't the back half "]"; When you issue the command
-> "man mkfs.btrfs", you will see the difference.
-> 
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-
-Whoops, yes. Thanks for spotting that.
-
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
-
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 > ---
->  man/mkfs.btrfs.8.in | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/man/mkfs.btrfs.8.in b/man/mkfs.btrfs.8.in
-> index cdccd6a..a3f1503 100644
-> --- a/man/mkfs.btrfs.8.in
-> +++ b/man/mkfs.btrfs.8.in
-> @@ -6,7 +6,7 @@ mkfs.btrfs \- create a btrfs filesystem
->  [ \fB\-A\fP\fI alloc-start\fP ]
->  [ \fB\-b\fP\fI byte-count\fP ]
->  [ \fB\-d\fP\fI data-profile\fP ]
-> -[ \fB\-f\fP\fI ]
-> +[ \fB\-f\fP ]
->  [ \fB\-l\fP\fI leafsize\fP ]
->  [ \fB\-L\fP\fI label\fP ]
->  [ \fB\-m\fP\fI metadata profile\fP ]
+> This patch depends on "cgroup: fix cgroup_path() vs rename() race",
+> which has been queued for 3.10.
 > 
+> ---
+>  mm/memcontrol.c | 15 +++++++--------
+>  1 file changed, 7 insertions(+), 8 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 53b8201..72be5c9 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3217,17 +3217,16 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
+>  static char *memcg_cache_name(struct mem_cgroup *memcg, struct kmem_cache *s)
+>  {
+>  	char *name;
+> -	struct dentry *dentry;
+> +
+> +	name = (char *)__get_free_page(GFP_TEMPORARY);
 
+Ouch. Can we use a static temporary buffer instead? This is called from
+workqueue context so we do not have to be afraid of the deep call chain.
+It is also not a hot path AFAICS.
+
+Even GFP_ATOMIC for kasprintf would be an improvement IMO.
+
+> +	if (!name)
+> +		return NULL;
+>  
+>  	rcu_read_lock();
+> -	dentry = rcu_dereference(memcg->css.cgroup->dentry);
+> +	snprintf(name, PAGE_SIZE, "%s(%d:%s)", s->name, memcg_cache_id(memcg),
+> +		 cgroup_name(memcg->css.cgroup));
+>  	rcu_read_unlock();
+>  
+> -	BUG_ON(dentry == NULL);
+> -
+> -	name = kasprintf(GFP_KERNEL, "%s(%d:%s)", s->name,
+> -			 memcg_cache_id(memcg), dentry->d_name.name);
+> -
+>  	return name;
+>  }
+>  
+> @@ -3247,7 +3246,7 @@ static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+>  	if (new)
+>  		new->allocflags |= __GFP_KMEMCG;
+>  
+> -	kfree(name);
+> +	free_page((unsigned long)name);
+>  	return new;
+>  }
+>  
+> -- 
+> 1.8.0.2
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Michal Hocko
+SUSE Labs
