@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934205Ab3CUQrO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:47:14 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:38910 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934146Ab3CUQgF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:36:05 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        akpm@linux-foundation.org
-Cc: Zach Brown <zab@redhat.com>, Kent Overstreet <koverstreet@google.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: [PATCH 01/33] mm: remove old aio use_mm() comment
-Date: Thu, 21 Mar 2013 09:35:22 -0700
-Message-Id: <1363883754-27966-2-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1363883754-27966-1-git-send-email-koverstreet@google.com>
-References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+	id S934226Ab3CUQrm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:47:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41880 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933751Ab3CUQrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 12:47:40 -0400
+Date: Thu, 21 Mar 2013 16:47:37 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        dormando <dormando@rydia.net>, Satoru Moriya <satoru.moriya@hds.com>,
+        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd
+ reclaims at each priority
+Message-ID: <20130321164737.GL1878@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-2-git-send-email-mgorman@suse.de>
+ <20130321155705.GA27848@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130321155705.GA27848@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@redhat.com>
+On Thu, Mar 21, 2013 at 11:57:05AM -0400, Johannes Weiner wrote:
+> On Sun, Mar 17, 2013 at 01:04:07PM +0000, Mel Gorman wrote:
+> > The number of pages kswapd can reclaim is bound by the number of pages it
+> > scans which is related to the size of the zone and the scanning priority. In
+> > many cases the priority remains low because it's reset every SWAP_CLUSTER_MAX
+> > reclaimed pages but in the event kswapd scans a large number of pages it
+> > cannot reclaim, it will raise the priority and potentially discard a large
+> > percentage of the zone as sc->nr_to_reclaim is ULONG_MAX. The user-visible
+> > effect is a reclaim "spike" where a large percentage of memory is suddenly
+> > freed. It would be bad enough if this was just unused memory but because
+> > of how anon/file pages are balanced it is possible that applications get
+> > pushed to swap unnecessarily.
+> > 
+> > This patch limits the number of pages kswapd will reclaim to the high
+> > watermark. Reclaim will will overshoot due to it not being a hard limit as
+> 
+> will -> still?
+> 
+> > shrink_lruvec() will ignore the sc.nr_to_reclaim at DEF_PRIORITY but it
+> > prevents kswapd reclaiming the world at higher priorities. The number of
+> > pages it reclaims is not adjusted for high-order allocations as kswapd will
+> > reclaim excessively if it is to balance zones for high-order allocations.
+> 
+> I don't really understand this last sentence.  Is the excessive
+> reclaim a result of the patch, a description of what's happening
+> now...?
+> 
 
-use_mm() is used in more places than just aio.  There's no need to mention
-callers when describing the function.
+It's a very basic description of what happens now and with the patch
+applied. Until patch 5 is applied, kswapd can still reclaim the world if
+it reaches priority 0.
 
-Signed-off-by: Zach Brown <zab@redhat.com>
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Asai Thambi S P <asamymuthupa@micron.com>
-Cc: Selvan Mani <smani@micron.com>
-Cc: Sam Bradshaw <sbradshaw@micron.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Benjamin LaHaise <bcrl@kvack.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
- mm/mmu_context.c | 3 ---
- 1 file changed, 3 deletions(-)
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> 
+> Nice, thank you.  Using the high watermark for larger zones is more
+> reasonable than my hack that just always went with SWAP_CLUSTER_MAX,
+> what with inter-zone LRU cycle time balancing and all.
+> 
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-diff --git a/mm/mmu_context.c b/mm/mmu_context.c
-index 3dcfaf4..8a8cd02 100644
---- a/mm/mmu_context.c
-+++ b/mm/mmu_context.c
-@@ -14,9 +14,6 @@
-  * use_mm
-  *	Makes the calling kernel thread take on the specified
-  *	mm context.
-- *	Called by the retry thread execute retries within the
-- *	iocb issuer's mm context, so that copy_from/to_user
-- *	operations work seamlessly for aio.
-  *	(Note: this routine is intended to be called only
-  *	from a kernel thread context)
-  */
+Thanks.
+
 -- 
-1.8.1.3
-
+Mel Gorman
+SUSE Labs
