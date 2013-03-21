@@ -1,147 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab3CUWyu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 18:54:50 -0400
-Received: from ozlabs.org ([203.10.76.45]:46458 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932358Ab3CUWyt convert rfc822-to-8bit (ORCPT
+	id S932813Ab3CUWzt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 18:55:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25717 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932167Ab3CUWzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 18:54:49 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Chen Gang <gang.chen@asianux.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, sfr@canb.auug.org.au,
-        "paulus\@samba.org" <paulus@samba.org>, matt@ozlabs.org,
-        imunsie@au1.ibm.com, linuxppc-dev@lists.ozlabs.org,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] PowerPC: kernel: cross compiling issue with allmodconfig
-In-reply-to: <514AA0D9.1090509@asianux.com>
-References: <51428C81.6000204@asianux.com> <25841.1363323174@ale.ozlabs.ibm.com> <5142AE27.7060003@asianux.com> <514AA0D9.1090509@asianux.com>
-Comments: In-reply-to Chen Gang <gang.chen@asianux.com>
-   message dated "Thu, 21 Mar 2013 13:55:37 +0800."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 22 Mar 2013 09:54:46 +1100
-Message-ID: <10123.1363906486@ale.ozlabs.ibm.com>
+	Thu, 21 Mar 2013 18:55:48 -0400
+X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=C9_bW7JfhfAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=nCYlKkaQDMwA:10 a=zzCkzv0pq2-_bC2O4I4A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1363906545.6345.81.camel@gandalf.local.home>
+Subject: [RT LATENCY] 249 microsecond latency caused by slub's
+ unfreeze_partials() code.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <clark@redhat.com>
+Date: Thu, 21 Mar 2013 18:55:45 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chen Gang <gang.chen@asianux.com> wrote:
+Christoph,
 
-> Hello All:
-> 
-> summary:
->   the root cause is no enough room in exception area (0x5500 -- 0x7000).
-> 
->   it is caused by the patches "for saving/restre PPR":
->     they consumed much space of this area (0x5500 -- 0x7000).
->     for pseries_defconfig and ppc64_defconfig, it is still ok.
->     but for allmodconfig and "some additional config", it will cause issue.
-> 
->   the solving patch "Make room in exception vector area" can make room larger.
->     it can let "some additional config" ok.
->     but for allmodconfig, it is still not enough.
-> 
-> 
-> details
->   reason:
->     it is caused by:
->        commit number: 13e7a8e846c2ea38a552b986ea49332f965bbb7a
->        commit number: 44e9309f1f357794b7ae93d5f3e3e6f11d2b8a7f
->     they are "for saving/restore PPR"
->     by Haren Myneni <haren@linux.vnet.ibm.com> Thu, 6 Dec 2012
->     compiling result:
->       pseries_defconfig: pass   (cpu for POWER7)
->       ppc64_defconfig:   pass   (cpu for POWER7)
->       allmodconfig:      failed (cpu for POWER7)
-> 
->   analysing:
->     solving patch:
->       ------------------------------------------------------------------
->       commit number: 61383407677aef05928541a00678591abea2d84c
->       Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->       Date:   Thu Jan 10 17:44:19 2013 +1100
-> 
->         powerpc: Make room in exception vector area
->     
->         The FWNMI region is fixed at 0x7000 and the vector are now
->         overflowing that with some configurations. Fix that by moving
->         some hash management code out of that region as it doesn't need
->         to be that close to the call sites (isn't accessed using
->         conditional branches).
->       ------------------------------------------------------------------
-> 
->       but for allmodconfig (not only for "some configurations"):
->         it really can reduce much overflow bytes,
->           (maybe from hundreds bytes to dozens bytes)
->         but still not enough (still content overflow bytes)
-> 
->     additional trying:
-> 	after del CONFIG_VSX and CONFIG_PPC_970_NAP in allmodconfig,
->           (will reduce dozens bytes in the region .0x5500 -- .0x7000)
->         it can pass compiling (not overflow).
-> 
-> 
-> next:
->   I am sorry:
->       I am not quite familiar with the detail features of powerpc.
->       it seems I am not the suitable member to continue trying.
-> 
->   I prefer Benjamin to continue trying (just like what he has done).
-> 
->   if Benjamin will not do it (e.g. maybe no time to do)
->     I should continue: "make additional room in exception vector area".
->       (if get no reply within a week: before 2013-03-28, I should continue)
-> 
-> 
-> 
->   welcome any members' (especially Benjamin) suggestions or completions.
+I've been trying to hunt down a latency on a 40 core box, where funny,
+the more tracing we enabled the less likely it would hit. It would take
+up to 12 hours to hit the latency, and if we had too much tracing on, it
+never would hit :-p
 
-This is great, thanks a lot.  
+Thus I would add little by little to find where things were going bad. I
+found the timer interrupt was triggering late. I then traced with:
 
-If you want this to be picked up by the maintainer, you'll need to add
-your signed-off-by.
+trace-cmd start -p function --func-stack -e irq -e raw_syscalls -e 'sched_wakeup*' \
+  -e sched_switch -e hrtimer_start -e hrtimer_expire_entry
 
-The signed-off-by is to indicate that your happy for it to be included
-and that you're legally allowed to do so.  See
-http://gerrit.googlecode.com/svn/documentation/2.0/user-signedoffby.html
-for more info.
+I kicked off the test again, when it detected a latency it would stop
+tracing, I extract the trace data from the buffers, send it to my
+workstation and analyze it.
 
-Mikey
+I found this:
 
-> 
->   thanks.
-> 
->   :-)
-> 
-> 
-> On 2013年03月15日 13:14, Chen Gang wrote:
-> > 于 2013年03月15日 12:52, Michael Neuling 写道:
-> >> Yep it's a known problem but no one has bothered to fix it since it
-> >> doesn't happen in a config that anyone cares about like
-> >> pseries_defconfig and ppc64_defconfig.  We've been moving code around in
-> >> this area a lot recently hence the breakage.
-> >>
-> >> It should be fixed though.  Patches welcome. :-)
-> > 
-> >   thanks, and I should try, and very glad to try.
-> > 
-> >   :-)  :-)
-> > 
-> >   excuse me, I try to provide related patch within this month (2013-03-31), is it ok ?
-> >   the reason is:
-> >     I am not familiar with ppc assembly code, neither ppc kernel,
-> >     so need additional time resource.
-> >       (originally, I worked for x86(_64) core dump analysing for kernel and user programs)
-> > 
-> >   thanks.
-> > 
-> 
-> 
-> -- 
-> Chen Gang
-> 
-> Asianux Corporation
-> 
+
+hackbenc-61738  39d...0 238202.164474: function:             smp_apic_timer_interrupt
+hackbenc-61738  39d...0 238202.164484: kernel_stack:         <stack
+trace>
+=> apic_timer_interrupt (ffffffff81528077)
+=> retint_kernel (ffffffff81520967)
+=> __slab_free (ffffffff8115517a)
+=> kfree (ffffffff811554e1)
+=> skb_free_head (ffffffff8143b9ee)
+=> skb_release_data (ffffffff8143c830)
+=> __kfree_skb (ffffffff8143c8be)
+=> consume_skb (ffffffff8143c9c1)
+=> unix_stream_recvmsg (ffffffff814ecd88)
+=> sock_aio_read (ffffffff81431f6e)
+=> do_sync_read (ffffffff8115fdea)
+=> vfs_read (ffffffff811605c0)
+=> sys_read (ffffffff811606e1)
+=> tracesys (ffffffff8152778d)
+
+That __slab_free() happened here:
+
+   0xffffffff81155160 <+544>:	cmpb   $0x0,-0x55(%rbp)
+   0xffffffff81155164 <+548>:	jns    0xffffffff8115509e <__slab_free+350>
+   0xffffffff8115516a <+554>:	mov    $0x1,%edx
+   0xffffffff8115516f <+559>:	mov    %r13,%rsi
+   0xffffffff81155172 <+562>:	mov    %r15,%rdi
+   0xffffffff81155175 <+565>:	callq  0xffffffff81154d90 <put_cpu_partial>
+   0xffffffff8115517a <+570>:	jmpq   0xffffffff8115509e <__slab_free+350>
+   0xffffffff8115517f <+575>:	mov    %r8,-0xf8(%rbp)
+
+
+The ffffffff8115517a is just before put_cpu_partial() which calls
+unfreeze_partials() with irqs disabled. So I started tracing again, this
+time with:
+
+trace-cmd start -p function_graph -l smp_apic_timer_interrupt -l unfreeze_partials \
+  -e irq -e raw_syscalls -e 'sched_wakeup*' -e sched_switch -e hrtimer_start \
+  -e hrtimer_expire_entry
+
+The difference was instead of tracing the function
+smp_apic_timer_interrupt and its stack trace, I decided to trace the
+function graph of unfreeze_partials, and by only selecting that
+function, it gives me a good idea of how long that function runs. Here's
+the result:
+
+hackbenc-80563  14...10 262219.108980: sys_exit:             NR 0 = 100
+hackbenc-80563  14...10 262219.108981: sys_enter:            NR 0 (a, 7fff1b700d50, 64, 8, 7fff1b700c80, 138ef)
+hackbenc-80563  14d...0 262219.108982: funcgraph_entry:      ! 249.510 us |  unfreeze_partials();
+hackbenc-80563  14d...0 262219.109233: funcgraph_entry:                   |  smp_apic_timer_interrupt() {
+hackbenc-80563  14d.h10 262219.109234: hrtimer_expire_entry: hrtimer=0xffff881fcf731e88 now=262298497076329 function=hrtimer_wakeup/0x0
+hackbenc-80563  14d.h30 262219.109235: sched_wakeup:         cyclictest:33010 [4] success=1 CPU:014
+
+
+It ran for 249.51 microseconds!!! With interrupts disabled! This was
+what caused the interrupt to go off late. I have no idea why adding
+tracing makes this latency go away. Perhaps it changes the timings just
+enough to not let things line up?
+
+I did a report with '-R' and showing the raw events, which will show the
+exit part of the function graph we have:
+
+   <...>-80563  14d...0 262219.108982: funcgraph_entry:       func=0xffffffff81154954 depth=0
+   <...>-80563  14d...0 262219.109233: funcgraph_exit:        func=0xffffffff81154954 calltime=0xee7ca4d8200f rettime=0xee7ca4dbeeb5 overrun=0x0 depth=0
+   <...>-80563  14d...0 262219.109233: funcgraph_entry:       func=0xffffffff81528e47 depth=0
+
+The funcgraph_exit is within the same microsecond the
+smp_apic_timer_interrupt() went off, so yes this is what delayed it.
+
+Anyway, this is run on 3.6.11-rt30, but looking at the current code, it
+doesn't look like it changed in any meaningful way. The while ((page =
+c->partial)) makes me nervous. How big can this list be? Is there a way
+to limit the amount this can run?
+
+Thanks!
+
+-- Steve
+
+
