@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102Ab3CULmS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:42:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56843 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739Ab3CULmN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:42:13 -0400
-Date: Thu, 21 Mar 2013 04:40:39 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-736b05a0462aff65140865bacd5e04d1813e73e1@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1363326533-3310-2-git-send-email-namhyung@kernel.org>
-References: <1363326533-3310-2-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evsel: Cleanup perf_evsel__exit()
-Git-Commit-ID: 736b05a0462aff65140865bacd5e04d1813e73e1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S932878Ab3CULnP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:43:15 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:52828 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757636Ab3CULnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 07:43:13 -0400
+Date: Thu, 21 Mar 2013 11:43:13 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] wfcqueue: functions for local append and enqueue
+Message-ID: <20130321114313.GA17275@dcvr.yhbt.net>
+References: <20130311213602.GB9829@Krystal>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:40:50 -0700 (PDT)
+In-Reply-To: <20130311213602.GB9829@Krystal>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  736b05a0462aff65140865bacd5e04d1813e73e1
-Gitweb:     http://git.kernel.org/tip/736b05a0462aff65140865bacd5e04d1813e73e1
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Fri, 15 Mar 2013 14:48:49 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 15 Mar 2013 13:06:10 -0300
+With level-triggered epoll, append/enqueue operations to the
+local/locked queues increase performance by avoiding unnecessary atomic
+operations and barriers.  These are necessary to avoid performance
+regressions when looping through ep_send_events and appending many
+items to a queue.
 
-perf evsel: Cleanup perf_evsel__exit()
-
-Use perf_evsel__free_* because they do the same thing and ensures the
-pointer has NULL value at the end.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1363326533-3310-2-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Eric Wong <normalperson@yhbt.net>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Davide Libenzi <davidel@xmailserver.org>
 ---
- tools/perf/util/evsel.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+  Benchmark for this coming with updated epoll patches.
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index dc16231..7fde9fb 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -673,9 +673,8 @@ void perf_evsel__free_counts(struct perf_evsel *evsel)
- void perf_evsel__exit(struct perf_evsel *evsel)
- {
- 	assert(list_empty(&evsel->node));
--	xyarray__delete(evsel->fd);
--	xyarray__delete(evsel->sample_id);
--	free(evsel->id);
-+	perf_evsel__free_fd(evsel);
-+	perf_evsel__free_id(evsel);
+ include/linux/wfcqueue.h | 43 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+
+diff --git a/include/linux/wfcqueue.h b/include/linux/wfcqueue.h
+index 9464a0c..7eb2aaa 100644
+--- a/include/linux/wfcqueue.h
++++ b/include/linux/wfcqueue.h
+@@ -205,6 +205,49 @@ static inline bool wfcq_enqueue(struct wfcq_head *head,
  }
  
- void perf_evsel__delete(struct perf_evsel *evsel)
+ /*
++ * __wfcq_append_local: append one local queue to another local queue
++ *
++ * No memory barriers are issued.  Mutual exclusion is the responsibility
++ * of the caller.
++ *
++ * Returns false if the queue was empty prior to adding the node.
++ * Returns true otherwise.
++ */
++static inline bool __wfcq_append_local(struct wfcq_head *head,
++		struct wfcq_tail *tail,
++		struct wfcq_node *new_head,
++		struct wfcq_node *new_tail)
++{
++	struct wfcq_node *old_tail;
++
++	old_tail = tail->p;
++	tail->p = new_tail;
++	old_tail->next = new_head;
++
++	/*
++	 * Return false if queue was empty prior to adding the node,
++	 * else return true.
++	 */
++	return old_tail != &head->node;
++}
++
++/*
++ * wfcq_enqueue_local: enqueue a node into a local wait-free queue
++ *
++ * No memory barriers are issued.  Mutual exclusion is the responsibility
++ * of the caller.
++ *
++ * Returns false if the queue was empty prior to adding the node.
++ * Returns true otherwise.
++ */
++static inline bool wfcq_enqueue_local(struct wfcq_head *head,
++		struct wfcq_tail *tail,
++		struct wfcq_node *new_tail)
++{
++	return __wfcq_append_local(head, tail, new_tail, new_tail);
++}
++
++/*
+  * ___wfcq_busy_wait: busy-wait.
+  */
+ static inline void ___wfcq_busy_wait(void)
+-- 
+1.8.2.rc3.2.g89ce8d6
+
