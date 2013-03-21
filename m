@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772Ab3CULlI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:41:08 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:7863 "EHLO
+	id S1757882Ab3CULlO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:41:14 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:7893 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757298Ab3CULlD (ORCPT
+	with ESMTP id S1757298Ab3CULlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:41:03 -0400
+	Thu, 21 Mar 2013 07:41:10 -0400
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: <linux-arm-kernel@lists.infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -17,9 +17,9 @@ CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         <linux-kernel@vger.kernel.org>, <manabian@gmail.com>,
         <fabio.porcedda@gmail.com>, <laurent.navet@gmail.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2 5/7] pcmcia: at91_cf: add support for DT
-Date: Thu, 21 Mar 2013 12:40:15 +0100
-Message-ID: <78897f40c3e0af827536464e34888413090921e8.1363865228.git.nicolas.ferre@atmel.com>
+Subject: [PATCH v2 6/7] pcmcia: at91_cf: use module_platform_driver_probe()
+Date: Thu, 21 Mar 2013 12:40:16 +0100
+Message-ID: <694207c1820564390bcc5a0e0d798a7dc82ada44.1363865228.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <cover.1363865228.git.nicolas.ferre@atmel.com>
 References: <cover.1363865228.git.nicolas.ferre@atmel.com>
@@ -29,132 +29,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joachim Eastwood <manabian@gmail.com>
+From: Fabio Porcedda <fabio.porcedda@gmail.com>
 
-Signed-off-by: Joachim Eastwood <manabian@gmail.com>
+Use module_platform_driver_probe() macro which makes the code smaller
+and simpler.
+
+Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- .../devicetree/bindings/ata/atmel-at91_cf.txt      | 19 +++++++++
- drivers/pcmcia/Kconfig                             |  2 +-
- drivers/pcmcia/at91_cf.c                           | 45 +++++++++++++++++++++-
- 3 files changed, 64 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/ata/atmel-at91_cf.txt
+ drivers/pcmcia/at91_cf.c | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/ata/atmel-at91_cf.txt b/Documentation/devicetree/bindings/ata/atmel-at91_cf.txt
-new file mode 100644
-index 0000000..c1d22b3
---- /dev/null
-+++ b/Documentation/devicetree/bindings/ata/atmel-at91_cf.txt
-@@ -0,0 +1,19 @@
-+Atmel AT91RM9200 CompactFlash
-+
-+Required properties:
-+- compatible : "atmel,at91rm9200-cf".
-+- reg : should specify localbus address and size used.
-+- gpios : specifies the gpio pins to control the CF device. Detect
-+  and reset gpio's are mandatory while irq and vcc gpio's are
-+  optional and may be set to 0 if not present.
-+
-+Example:
-+compact-flash@50000000 {
-+	compatible = "atmel,at91rm9200-cf";
-+	reg = <0x50000000 0x30000000>;
-+	gpios = <&pioC 13 0	/* irq */
-+		 &pioC 15 0 	/* detect */
-+		 0		/* vcc */
-+		 &pioC  5 0	/* reset */
-+		>;
-+};
-diff --git a/drivers/pcmcia/Kconfig b/drivers/pcmcia/Kconfig
-index b90f85b..80faa56 100644
---- a/drivers/pcmcia/Kconfig
-+++ b/drivers/pcmcia/Kconfig
-@@ -288,7 +288,7 @@ config BFIN_CFPCMCIA
- 
- config AT91_CF
- 	tristate "AT91 CompactFlash Controller"
--	depends on PCMCIA && ARCH_AT91RM9200
-+	depends on PCMCIA && ARCH_AT91
- 	help
- 	  Say Y here to support the CompactFlash controller on AT91 chips.
- 	  Or choose M to compile the driver as a module named "at91_cf".
 diff --git a/drivers/pcmcia/at91_cf.c b/drivers/pcmcia/at91_cf.c
-index bce8a64..149b95c 100644
+index 149b95c..8ddc57c 100644
 --- a/drivers/pcmcia/at91_cf.c
 +++ b/drivers/pcmcia/at91_cf.c
-@@ -20,6 +20,9 @@
- #include <linux/platform_data/atmel.h>
- #include <linux/io.h>
- #include <linux/sizes.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
- 
- #include <pcmcia/ss.h>
- 
-@@ -211,6 +214,37 @@ static struct pccard_operations at91_cf_ops = {
+@@ -411,17 +411,7 @@ static struct platform_driver at91_cf_driver = {
  
  /*--------------------------------------------------------------------------*/
  
-+#if defined(CONFIG_OF)
-+static const struct of_device_id at91_cf_dt_ids[] = {
-+	{ .compatible = "atmel,at91rm9200-cf" },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, at91_cf_dt_ids);
-+
-+static int at91_cf_dt_init(struct platform_device *pdev)
-+{
-+	struct at91_cf_data *board;
-+
-+	board = devm_kzalloc(&pdev->dev, sizeof(*board), GFP_KERNEL);
-+	if (!board)
-+		return -ENOMEM;
-+
-+	board->irq_pin = of_get_gpio(pdev->dev.of_node, 0);
-+	board->det_pin = of_get_gpio(pdev->dev.of_node, 1);
-+	board->vcc_pin = of_get_gpio(pdev->dev.of_node, 2);
-+	board->rst_pin = of_get_gpio(pdev->dev.of_node, 3);
-+
-+	pdev->dev.platform_data = board;
-+
-+	return 0;
-+}
-+#else
-+static int at91_cf_dt_init(struct platform_device *pdev)
-+{
-+	return -ENODEV;
-+}
-+#endif
-+
- static int __init at91_cf_probe(struct platform_device *pdev)
- {
- 	struct at91_cf_socket	*cf;
-@@ -218,7 +252,15 @@ static int __init at91_cf_probe(struct platform_device *pdev)
- 	struct resource		*io;
- 	int			status;
+-static int __init at91_cf_init(void)
+-{
+-	return platform_driver_probe(&at91_cf_driver, at91_cf_probe);
+-}
+-module_init(at91_cf_init);
+-
+-static void __exit at91_cf_exit(void)
+-{
+-	platform_driver_unregister(&at91_cf_driver);
+-}
+-module_exit(at91_cf_exit);
++module_platform_driver_probe(at91_cf_driver, at91_cf_probe);
  
--	if (!board || !gpio_is_valid(board->det_pin) || !gpio_is_valid(board->rst_pin))
-+	if (!board) {
-+		status = at91_cf_dt_init(pdev);
-+		if (status)
-+			return status;
-+
-+		board = pdev->dev.platform_data;
-+	}
-+
-+	if (!gpio_is_valid(board->det_pin) || !gpio_is_valid(board->rst_pin))
- 		return -ENODEV;
- 
- 	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -360,6 +402,7 @@ static struct platform_driver at91_cf_driver = {
- 	.driver = {
- 		.name		= "at91_cf",
- 		.owner		= THIS_MODULE,
-+		.of_match_table = of_match_ptr(at91_cf_dt_ids),
- 	},
- 	.remove		= __exit_p(at91_cf_remove),
- 	.suspend	= at91_cf_suspend,
+ MODULE_DESCRIPTION("AT91 Compact Flash Driver");
+ MODULE_AUTHOR("David Brownell");
 -- 
 1.8.0
 
