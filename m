@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab3CUAPx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 20:15:53 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:50254 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab3CUAPw (ORCPT
+	id S1755383Ab3CUAQc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 20:16:32 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55098 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752030Ab3CUAQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 20:15:52 -0400
-Date: Wed, 20 Mar 2013 17:15:50 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kees Cook <keescook@chromium.org>, Andrew Collins <bsderandrew@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.0.70
-Message-ID: <20130321001550.GB27981@kroah.com>
-References: <CAKTPYJQeCW2fGy3bb6G2uxeQN2WYgeA63_7Lwt9ytpcwZwrnQA@mail.gmail.com>
+	Wed, 20 Mar 2013 20:16:30 -0400
+X-Sasl-enc: +IiB5WpsXzHool2UaeyNss6bGxLO1oFNeL3ZFHaOj19C 1363824989
+Date: Wed, 20 Mar 2013 17:16:28 -0700
+From: Greg KH <greg@kroah.com>
+To: Bill Pemberton <wfp5p@viridian.itc.virginia.edu>
+Cc: Jiri Slaby <jslaby@suse.cz>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the tty tree
+Message-ID: <20130321001628.GC27981@kroah.com>
+References: <5149D1FD.90400@suse.cz>
+ <20130320151511.170EC8017A@viridian.itc.virginia.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKTPYJQeCW2fGy3bb6G2uxeQN2WYgeA63_7Lwt9ytpcwZwrnQA@mail.gmail.com>
+In-Reply-To: <20130320151511.170EC8017A@viridian.itc.virginia.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 04:04:19PM -0600, Andrew Collins wrote:
-> Kees Cook (1):
->       signal: always clear sa_restorer on execve
+On Wed, Mar 20, 2013 at 11:15:11AM -0400, Bill Pemberton wrote:
+> Jiri Slaby writes:
+> > 
+> > On 03/20/2013 03:42 PM, Bill Pemberton wrote:
+> > > Ok, for the unopened ports there *should* never be any actual data to
+> > > push so the push is really doing nothing anyhow in these cases.  It's
+> > > coming from the device sending an initial change port command.
+> > > 
+> > > Anyhow, so my patch adding more is_open logic can be dropped and then
+> > > yours will apply fine.  What's the best way for me to handle this?
+> > > Send a revert for my patch so yours will apply or send an updated
+> > > version of your patch that removes my additions?
+> > 
+> > Asking Greg to revert should suffice. I commented on that patch, but in
+> > a different thread, so Greg missed the comment the patch is not needed
+> > IIRC. What was the title of the patch, I cannot find it immediately :/?
+> > 
 > 
-> This commit seems to cause the following build breakage on MIPS in 3.0.70:
-> 
-> kernel/signal.c: In function 'flush_signal_handlers':
-> kernel/signal.c:441:9: error: 'struct sigaction' has no member named
-> 'sa_restorer'
-> make[3]: *** [kernel/signal.o] Error 1
-> make[2]: *** [kernel] Error 2
-> make[2]: *** Waiting for unfinished jobs....
-> 
-> I'm testing with a variety of additional patches applied and it's a
-> bit difficult to test vanilla, but this looks unrelated to my local
-> patches.  Looks like MIPS defines SA_RESTORER but doesn't have a
-> sa_restorer in sigaction so:
-> 
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-> @@ -437,6 +437,9 @@ flush_signal_handlers(struct task_struct *t, int
-> force_default)
->                 if (force_default || ka->sa.sa_handler != SIG_IGN)
->                         ka->sa.sa_handler = SIG_DFL;
->                 ka->sa.sa_flags = 0;
-> +#ifdef SA_RESTORER
-> +               ka->sa.sa_restorer = NULL;
-> +#endif
->                 sigemptyset(&ka->sa.sa_mask);
->                 ka++;
->         }
-> 
-> goes kaboom.
+> "USB: quatech2: only write to the tty if the port is open." (commit
+> 27b351c in v3.9-rc3).
 
-Kees, I'm getting a number of bug reports that this patch breaks MIPS on
-all of the recent stable kernel releases (3.0, 3.4, 3.8).
-
-Any hints on a fix?
-
-thanks,
+I've now reverted this, so it should be ok.
 
 greg k-h
