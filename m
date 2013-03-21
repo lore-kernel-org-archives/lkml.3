@@ -1,43 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933489Ab3CUO3g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 10:29:36 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:65075 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932539Ab3CUO3f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 10:29:35 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-Subject: Re: [PATCH] stallion: final cleanup
-Date: Thu, 21 Mar 2013 14:29:29 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-References: <1363871896.1390.138.camel@x61.thuisdomein>
-In-Reply-To: <1363871896.1390.138.camel@x61.thuisdomein>
+	id S933511Ab3CUObV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 10:31:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35258 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932687Ab3CUObU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 10:31:20 -0400
+Date: Thu, 21 Mar 2013 14:31:15 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning
+ requirements for kswapd
+Message-ID: <20130321143114.GM2055@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-3-git-send-email-mgorman@suse.de>
+ <20130321140154.GL6094@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303211429.29502.arnd@arndb.de>
-X-Provags-ID: V02:K0:WM9BhNxp9KDymj17ekzqUJLpLN1q21NDKHHyN9VCMJK
- 22c8aoAxd842JnLZzimmjkj+BVQGEWj/ijr0E1ueB+y2y5Xbwg
- 414VgabXcuCzLM3sohyhD6MAT/1r6crUlVTHpscO3Q2YiY623H
- 7nQ9nfptoVdrkY/C9FU3F8JfHFWhpXeG8VMVmHEJryv48fkP34
- t3GI83e13603At6HzFCc9dOKpwuROSP8goqIU5Ac0sr3jOt248
- /7otyu4c1KfqbD5VU60wS5QJyhx6849yrUAfLQMefbRdy0TdzN
- hkQdD5Dkg0QCQtX9eLlTb3lQwLPDOzQsaTrZd8du7HiWWt/Gd+
- FR7FkSGXFDThvIl62THk=
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130321140154.GL6094@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 March 2013, Paul Bolle wrote:
-> Support for the Stallion multiport serial drivers was removed in v3.1.
-> Clean up their last references in the tree: mainly an outdated Kconfig
-> entry and unneeded documentation.
+On Thu, Mar 21, 2013 at 03:01:54PM +0100, Michal Hocko wrote:
+> On Sun 17-03-13 13:04:08, Mel Gorman wrote:
+> > Simplistically, the anon and file LRU lists are scanned proportionally
+> > depending on the value of vm.swappiness although there are other factors
+> > taken into account by get_scan_count().  The patch "mm: vmscan: Limit
+> > the number of pages kswapd reclaims" limits the number of pages kswapd
+> > reclaims but it breaks this proportional scanning and may evenly shrink
+> > anon/file LRUs regardless of vm.swappiness.
+> > 
+> > This patch preserves the proportional scanning and reclaim. It does mean
+> > that kswapd will reclaim more than requested but the number of pages will
+> > be related to the high watermark.
+> > 
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  mm/vmscan.c | 52 +++++++++++++++++++++++++++++++++++++++++-----------
+> >  1 file changed, 41 insertions(+), 11 deletions(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 4835a7a..182ff15 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -1815,6 +1815,45 @@ out:
+> >  	}
+> >  }
+> >  
+> > +static void recalculate_scan_count(unsigned long nr_reclaimed,
+> > +		unsigned long nr_to_reclaim,
+> > +		unsigned long nr[NR_LRU_LISTS])
+> > +{
+> > +	enum lru_list l;
+> > +
+> > +	/*
+> > +	 * For direct reclaim, reclaim the number of pages requested. Less
+> > +	 * care is taken to ensure that scanning for each LRU is properly
+> > +	 * proportional. This is unfortunate and is improper aging but
+> > +	 * minimises the amount of time a process is stalled.
+> > +	 */
+> > +	if (!current_is_kswapd()) {
+> > +		if (nr_reclaimed >= nr_to_reclaim) {
+> > +			for_each_evictable_lru(l)
+> > +				nr[l] = 0;
+> > +		}
+> > +		return;
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> Heh, this is nicely cryptically said what could be done in shrink_lruvec
+> as
+> 	if (!current_is_kswapd()) {
+> 		if (nr_reclaimed >= nr_to_reclaim)
+> 			break;
+> 	}
+> 
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Pretty much. At one point during development, this function was more
+complex and it evolved into this without me rechecking if splitting it
+out still made sense.
+
+> Besides that this is not memcg aware which I think it would break
+> targeted reclaim which is kind of direct reclaim but it still would be
+> good to stay proportional because it starts with DEF_PRIORITY.
+> 
+
+This does break memcg because it's a special sort of direct reclaim.
+
+> I would suggest moving this back to shrink_lruvec and update the test as
+> follows:
+
+I also noticed that we check whether the scan counts need to be
+normalised more than once and this reshuffling checks nr_reclaimed
+twice. How about this?
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 182ff15..320a2f4 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1815,45 +1815,6 @@ out:
+ 	}
+ }
+ 
+-static void recalculate_scan_count(unsigned long nr_reclaimed,
+-		unsigned long nr_to_reclaim,
+-		unsigned long nr[NR_LRU_LISTS])
+-{
+-	enum lru_list l;
+-
+-	/*
+-	 * For direct reclaim, reclaim the number of pages requested. Less
+-	 * care is taken to ensure that scanning for each LRU is properly
+-	 * proportional. This is unfortunate and is improper aging but
+-	 * minimises the amount of time a process is stalled.
+-	 */
+-	if (!current_is_kswapd()) {
+-		if (nr_reclaimed >= nr_to_reclaim) {
+-			for_each_evictable_lru(l)
+-				nr[l] = 0;
+-		}
+-		return;
+-	}
+-
+-	/*
+-	 * For kswapd, reclaim at least the number of pages requested.
+-	 * However, ensure that LRUs shrink by the proportion requested
+-	 * by get_scan_count() so vm.swappiness is obeyed.
+-	 */
+-	if (nr_reclaimed >= nr_to_reclaim) {
+-		unsigned long min = ULONG_MAX;
+-
+-		/* Find the LRU with the fewest pages to reclaim */
+-		for_each_evictable_lru(l)
+-			if (nr[l] < min)
+-				min = nr[l];
+-
+-		/* Normalise the scan counts so kswapd scans proportionally */
+-		for_each_evictable_lru(l)
+-			nr[l] -= min;
+-	}
+-}
+-
+ /*
+  * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
+  */
+@@ -1864,7 +1825,9 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 	enum lru_list lru;
+ 	unsigned long nr_reclaimed = 0;
+ 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
++	unsigned long min;
+ 	struct blk_plug plug;
++	bool scan_adjusted = false;
+ 
+ 	get_scan_count(lruvec, sc, nr);
+ 
+@@ -1881,7 +1844,33 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 			}
+ 		}
+ 
+-		recalculate_scan_count(nr_reclaimed, nr_to_reclaim, nr);
++		if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
++			continue;
++
++		/*
++		 * For global direct reclaim, reclaim only the number of pages
++		 * requested. Less care is taken to scan proportionally as it
++		 * is more important to minimise direct reclaim stall latency
++		 * than it is to properly age the LRU lists.
++		 */
++		if (global_reclaim(sc) && !current_is_kswapd())
++			break;
++
++		/*
++		 * For kswapd and memcg, reclaim at least the number of pages
++		 * requested. However, ensure that LRUs shrink by the
++		 * proportion requested by get_scan_count() so vm.swappiness
++		 * is obeyed. Find the smallest LRU list and normalise the
++		 * scan counts so the fewest number of pages are reclaimed
++		 * while still maintaining proportionality.
++		 */
++		min = ULONG_MAX;
++		for_each_evictable_lru(lru)
++			if (nr[lru] < min)
++				min = nr[lru];
++		for_each_evictable_lru(lru)
++			nr[lru] -= min;
++		scan_adjusted = true;
+ 	}
+ 	blk_finish_plug(&plug);
+ 	sc->nr_reclaimed += nr_reclaimed;
