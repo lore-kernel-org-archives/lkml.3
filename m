@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757509Ab3CUIRH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 04:17:07 -0400
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:38900 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753244Ab3CUIRC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 04:17:02 -0400
+	id S1757904Ab3CUITH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 04:19:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45709 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753011Ab3CUITF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 04:19:05 -0400
+Date: Thu, 21 Mar 2013 09:19:02 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Hedi Berriche <hedi@sgi.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: page_alloc: Avoid marking zones full prematurely
+ after zone_reclaim()
+Message-ID: <20130321081902.GD6094@dhcp22.suse.cz>
+References: <20130320181957.GA1878@suse.de>
+ <514A7163.5070700@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1363851836.17680.20.camel@pasglop>
-References: <1363791074-16415-1-git-send-email-grant.likely@secretlab.ca>
- <1363791074-16415-3-git-send-email-grant.likely@secretlab.ca>
- <1363791479.12701.9.camel@pasglop> <CACxGe6u2wNbPQSOPRCRO0To5UC-b8rXYanv2xv26hk5oaozvPA@mail.gmail.com>
- <1363839594.17680.19.camel@pasglop> <CACxGe6sXcg51VhFujsjCsMzF80pdy_QhAposdmya4-C0eEcuUw@mail.gmail.com>
- <1363851836.17680.20.camel@pasglop>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 21 Mar 2013 08:16:41 +0000
-X-Google-Sender-Auth: OSs8GpyEqzcrBIOx_Y6HG3z7sMc
-Message-ID: <CACxGe6thdnQo6sPDccEGzUEkXFDGRD4aq_DJOop6Cincb94ODA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] of: remove /proc/device-tree
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <514A7163.5070700@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 7:43 AM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Thu, 2013-03-21 at 07:35 +0000, Grant Likely wrote:
->> > Shouldn't we have the symlink just be a config option itself ?
->> > Eventually distros might want get rid of it completely ..
->>
->> Why? It is the cheapest thing in the world and it means the ABI
->> doesn't change at all.
->
-> It's also gross and forces sysfs to remain in /sys which isn't a kernel
-> enforced policy afaik.
+On Thu 21-03-13 10:33:07, Simon Jeons wrote:
+> Hi Mel,
+> On 03/21/2013 02:19 AM, Mel Gorman wrote:
+> >The following problem was reported against a distribution kernel when
+> >zone_reclaim was enabled but the same problem applies to the mainline
+> >kernel. The reproduction case was as follows
+> >
+> >1. Run numactl -m +0 dd if=largefile of=/dev/null
+> >    This allocates a large number of clean pages in node 0
+> 
+> I confuse why this need allocate a large number of clean pages?
 
-Documentation/sysfs-rules.txt, Line 30
-
-g.
+It reads from file and puts pages into the page cache. The pages are not
+modified so they are clean. Output file is /dev/null so no pages are
+written. dd doesn't call fadvise(POSIX_FADV_DONTNEED) on the input file
+by default so pages from the file stay in the page cache
+-- 
+Michal Hocko
+SUSE Labs
