@@ -1,148 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3CUESq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 00:18:46 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:36394 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753244Ab3CUESp (ORCPT
+	id S1753649Ab3CUEUR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 00:20:17 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49870 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab3CUEUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 00:18:45 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: vgoyal@redhat.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
-        lisa.mitchell@hp.com, heiko.carstens@de.ibm.com,
-        akpm@linux-foundation.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
-References: <877gl3koay.fsf@xmission.com> <20130320135716.GE17274@redhat.com>
-	<87txo5bxk4.fsf@xmission.com>
-	<20130321.122501.82758179.d.hatayama@jp.fujitsu.com>
-Date: Wed, 20 Mar 2013 21:18:37 -0700
-In-Reply-To: <20130321.122501.82758179.d.hatayama@jp.fujitsu.com> (HATAYAMA
-	Daisuke's message of "Thu, 21 Mar 2013 12:25:01 +0900 (JST)")
-Message-ID: <8738vp75cy.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18EUw3meHT+RztGQH54DDe8ysOWVClXhYE=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_XMDrugObfuBody_00 obfuscated drug references
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v3 18/21] vmcore: check if vmcore objects satify mmap()'s page-size boundary requirement
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Thu, 21 Mar 2013 00:20:15 -0400
+Date: Thu, 21 Mar 2013 15:20:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Bill Pemberton <wfp5p@virginia.edu>
+Subject: Re: linux-next: build failure after merge of the tty tree
+Message-Id: <20130321152004.27ac4f29e9b6caae7beb3bdb@canb.auug.org.au>
+In-Reply-To: <20130320141211.52b44d0e202d32812c3e3c0c@canb.auug.org.au>
+References: <20130320141211.52b44d0e202d32812c3e3c0c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__21_Mar_2013_15_20_04_+1100_EllBpOCoKh2GmjXM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
+--Signature=_Thu__21_Mar_2013_15_20_04_+1100_EllBpOCoKh2GmjXM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> Subject: Re: [PATCH v3 18/21] vmcore: check if vmcore objects satify mmap()'s page-size boundary requirement
-> Date: Wed, 20 Mar 2013 13:55:55 -0700
+Hi Greg,
+
+On Wed, 20 Mar 2013 14:12:11 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
 >
->> Vivek Goyal <vgoyal@redhat.com> writes:
->> 
->>> On Tue, Mar 19, 2013 at 03:38:45PM -0700, Eric W. Biederman wrote:
->>>> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
->>>> 
->>>> > If there's some vmcore object that doesn't satisfy page-size boundary
->>>> > requirement, remap_pfn_range() fails to remap it to user-space.
->>>> >
->>>> > Objects that posisbly don't satisfy the requirement are ELF note
->>>> > segments only. The memory chunks corresponding to PT_LOAD entries are
->>>> > guaranteed to satisfy page-size boundary requirement by the copy from
->>>> > old memory to buffer in 2nd kernel done in later patch.
->>>> >
->>>> > This patch doesn't copy each note segment into the 2nd kernel since
->>>> > they amount to so large in total if there are multiple CPUs. For
->>>> > example, current maximum number of CPUs in x86_64 is 5120, where note
->>>> > segments exceed 1MB with NT_PRSTATUS only.
->>>> 
->>>> So you require the first kernel to reserve an additional 20MB, instead
->>>> of just 1.6MB.  336 bytes versus 4096 bytes.
->>>> 
->>>> That seems like completely the wrong tradeoff in memory consumption,
->>>> filesize, and backwards compatibility.
->>>
->>> Agreed. 
->>>
->>> So we already copy ELF headers in second kernel's memory. If we start
->>> copying notes too, then both headers and notes will support mmap().
->> 
->> The only real is it could be a bit tricky to allocate all of the memory
->> for the notes section on high cpu count systems in a single allocation.
->> 
->
-> Do you mean it's getting difficult on many-cpus machine to get free
-> pages consequtive enough to be able to cover all the notes?
->
-> If so, is it necessary to think about any care to it in the next
-> patch? Or, should it be pending for now?
+> After merging the tty tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+>=20
+> drivers/net/caif/caif_serial.c: In function 'update_tty_status':
+> drivers/net/caif/caif_serial.c:94:11: error: 'struct tty_struct' has no m=
+ember named 'warned'
+>=20
+> Caused by commit 6865ff222cca ("TTY: do not warn about setting speed via
+> SPD_*").
 
-I meant that in general allocations > PAGE_SIZE get increasingly
-unreliable the larger they are.  And on large cpu count machines we are
-having larger allocations.  Of course large cpu count machines typically
-have more memory so the odds go up.
+I still have this error today so have still used the tty tree from
+next-20130319.
 
-Right now MAX_ORDER seems to be set to 11 which is 8MiB, and my x86_64
-machine certainly succeeded in an order 11 allocation during boot so I
-don't expect any real problems with a 2MiB allocation but it is
-something to keep an eye on with kernel memory.
+> drivers/usb/serial/quatech2.c: In function 'qt2_process_read_urb':
+> drivers/usb/serial/quatech2.c:661:18: error: 'struct qt2_port_private' ha=
+s no member named 'is_open'
+> drivers/usb/serial/quatech2.c:705:15: error: 'struct qt2_port_private' ha=
+s no member named 'is_open'
+>=20
+> Caused by commit e4408ce3c23f ("TTY: quatech2, remove unneeded
+> is_open").  grep is your friend (or searching while editting the file).
 
->>> For mmap() of memory regions which are not page aligned, we can map
->>> extra bytes (as you suggested in one of the mails). Given the fact
->>> that we have one ELF header for every memory range, we can always modify
->>> the file offset where phdr data is starting to make space for mapping
->>> of extra bytes.
->> 
->> Agreed ELF file offset % PAGE_SIZE should == physical address % PAGE_SIZE to
->> make mmap work.
->> 
->
-> OK, your conclusion is the 1st version is better than the 2nd.
->
-> The purpose of this design was not to export anything but dump target
-> memory to user-space from /proc/vmcore. I think it better to do it if
-> possible. it's possible for read interface to fill the corresponding
-> part with 0. But it's impossible for mmap interface to data on modify
-> old memory.
+As has been reported, this one is fixed by reverting commit 27b351c "USB:
+quatech2: only write to the tty if the port is open".
 
-In practice someone lied.  You can't have a chunk of memory that is
-smaller than page size.  So I don't see it doing any harm to export
-the memory that is there but some silly system lied to us about.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> Do you agree two vmcores seen from read and mmap interfaces are no
-> longer coincide?
+--Signature=_Thu__21_Mar_2013_15_20_04_+1100_EllBpOCoKh2GmjXM
+Content-Type: application/pgp-signature
 
-That is an interesting point.  I don't think there is any point in
-having read and mmap disagree, that just seems to lead to complications,
-especially since the data we are talking about adding is actually memory
-contents.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-I do think it makes sense to have logical chunks of the file that are
-not covered by PT_LOAD segments.  Logical chunks like the leading edge
-of a page inside of which a PT_LOAD segment starts, and the trailing
-edge of a page in which a PT_LOAD segment ends.
+iQIcBAEBCAAGBQJRSop0AAoJEECxmPOUX5FEQG4QAKokh4hiPEHZ0HP3nHbhtM34
+FZUqZFspq2oW6CwcYLbAVPeGLqmHlyGKovXZ5cSlriUYnVnBjV1hBxSIJoSa3GXO
+8cO+xupOU/ISP/HwKurh0RnT9zPLJioD+Pjd+6AyCTuivaj0KSAyJeJVCBO4mt12
+Kmv/kQF/DasxRw2w3AsdkiqM1U4XN9XzhGnB2Ek9ebuOT3Vkr8EBki7perAWzNh1
+q4s/cUVPhOzOZOHzuPBCmTRF4YFFL0SpqyUCcwuvQCiXU4Y8F/szgqxRht69lu+7
+nokkWE4fUyx6PAuijOkb8za45NaYbUiGsIMltzAloluofyA95neOeqzhQv8fCSPb
+/dzepYMBuKh9cGZ5S59aZGJM0TDMvJXY8T5naQLkfxhVCugT6Nm28BZZjGoUwFfN
+GJtCGRisQeRJFJafvpkV7EBpqxO+s5UNlJtgZpe+lrQKw2ExbEjSqdzZ8VTyGiA4
+w62egQgkKTKozDw3nO/yYG3g4POhuQGjMr4PPoXvda2JG3ns2KoCIVMoeNLscqps
+JX1pAzzUkS9Wk0qzZHD6949tnBcWFjkm0XC3RfzQWow1Q2JKh9zwPaVCoLcJsyHc
+CQkwB5g4EJha/tdTH8vqBgVJomWPPch+zPEJPu9x1ykIcKOCI7YgcjVS4pA8qE+a
+4H49qlUXYPBWg0++nq81
+=B0Us
+-----END PGP SIGNATURE-----
 
-Implementaton wise this would mean extending the struct vmcore entry to
-cover missing bits, by rounding down the start address and rounding up
-the end address to the nearest page size boundary.  The generated
-PT_LOAD segment would then have it's file offset adjusted to point skip
-the bytes of the page that are there but we don't care about.
-
-Eric
+--Signature=_Thu__21_Mar_2013_15_20_04_+1100_EllBpOCoKh2GmjXM--
