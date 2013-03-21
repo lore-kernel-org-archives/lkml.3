@@ -1,92 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858Ab3CURop (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 13:44:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59555 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751103Ab3CURoo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 13:44:44 -0400
-Date: Thu, 21 Mar 2013 18:44:40 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Joe Perches <joe@perches.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound: max98090: Remove executable bit
-Message-ID: <20130321174440.GG15926@opensource.wolfsonmicro.com>
-References: <1363730323.16270.11.camel@joe-AO722>
- <20130320095758.GD28775@opensource.wolfsonmicro.com>
- <1363792936.16270.30.camel@joe-AO722>
- <20130320163627.GS28775@opensource.wolfsonmicro.com>
- <1363820072.16270.43.camel@joe-AO722>
- <20130321162503.GC14768@opensource.wolfsonmicro.com>
- <1363886175.30275.10.camel@joe-AO722>
+	id S1751722Ab3CURrX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 13:47:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25778 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751103Ab3CURrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 13:47:21 -0400
+Date: Thu, 21 Mar 2013 19:42:37 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Roland Dreier <roland@kernel.org>,
+        "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
+Subject: Re: [PATCH] rdma: don't make pages writeable if not requiested
+Message-ID: <20130321174237.GA4060@redhat.com>
+References: <20130321061838.GA28319@redhat.com>
+ <CAL1RGDUcMj9QVsuQgK+ozw64L6-cGehL7YBUJ1_ckni6TD=Kcg@mail.gmail.com>
+ <20130321070357.GD28328@redhat.com>
+ <CAG4TOxPkhOhGmzeA1K4a0Zw8HxS-QkOr-PCx7mJgA+KkuH3ZiQ@mail.gmail.com>
+ <20130321085107.GE28328@redhat.com>
+ <CAL1RGDVnkLZU2Vge4o3BwDxnAfGv7TQRMqE6ha3MUt39CVp5NQ@mail.gmail.com>
+ <20130321093946.GG28328@redhat.com>
+ <20130321171115.GA653@obsidianresearch.com>
+ <20130321171525.GE2994@redhat.com>
+ <20130321172150.GA3118@obsidianresearch.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3VRmKSg17yJg2MZg"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363886175.30275.10.camel@joe-AO722>
-X-Cookie: You will be run over by a bus.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130321172150.GA3118@obsidianresearch.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 21, 2013 at 11:21:50AM -0600, Jason Gunthorpe wrote:
+> On Thu, Mar 21, 2013 at 07:15:25PM +0200, Michael S. Tsirkin wrote:
+> 
+> > No because application does this:
+> > init page
+> > 
+> > ...
+> > 
+> > after a lot of time
+> > 
+> > ..
+> > 
+> > register
+> > send
+> > unregister
+> > 
+> > so it can not be read only.
+> 
+> mprotect(READONLY)
+> register
+> send
+> unregister
+> mprotect(WRITABLE)
+> 
+> ?
+> With something like GIFT the app already has to give up writing to the
+> pages while they are moving, so changing the protection seems in line
+> with that?
+> 
+> Jason
 
---3VRmKSg17yJg2MZg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It doesn't actually, and our app would sometimes write to these pages.
+It simply does not care which version does the remote get in this case
+since we track writes and resend later.
 
-On Thu, Mar 21, 2013 at 10:16:15AM -0700, Joe Perches wrote:
-> On Thu, 2013-03-21 at 17:25 +0100, Mark Brown wrote:
+Also this is per-page, MRs have byte granularity so easier to use.
 
-> > I don't think you're quite understanding the issues with automation
-> > here.  Or indeed the desired end result.
-
-> What issue is that?
-
-That one needs a bit more taste and thought to work out what's
-appropraite than can be guaranteed easily with a script, things like
-working out drive level prefixes for example.
-
-> Maybe this would work for you...
-
-> $ cat .git/hooks/applypatch-msg
-> #!/bin/sh
-
-> . git-sh-setup
-
-> perl -p -i -e 's/^(?:ASoC:\s*)?(.*)$/ASoC: $1/g if 1 .. 1' {$1+"$@"}
-
-> test -x "$GIT_DIR/hooks/commit-msg" &&
-> 	exec "$GIT_DIR/hooks/commit-msg" ${1+"$@"}
-> :
-> $
-
-No, that's going to leave essentially every commit that needs fixing up
-still needing manual fixup.
-
---3VRmKSg17yJg2MZg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRS0cAAAoJELSic+t+oim9fDkP/2nzeZTbxPgI0H8GZWNMOQwy
-+wTQ+YXramvCTizU6lBbV16L1+OVi9CufxkCizcrued7z/gxUdcbYcX/e83JAHHf
-K2KtigiOncTCKdryuN0uwJMSQBxFKKyM/zj5i4WnVm/Hrpfd31A1IDq2p9ChoAsZ
-0L8GtJHp//6G1ddBiUH2hYQYMstcYJ9Xbr1MMRFullAILbOI3vlba7/9N260QNz3
-HTeAFymzrKEarZJj5d7grJyxiI5K1dyAvNZYesPx79JZkuVb7OdA9KA4hrmstHRd
-xvQVHHQCQaVEOnD6tXICnBpCzgpIqAqBd1JGXFzc5EcUPzxhZdvUidAS+2UrCf59
-r4sWLdlxIw3xTO+I/6KwiKggaIJWl0OsnelvkloqVqSoRJUpTrLm4NIcTJ47pGl1
-PGPN4TMoRfQmaeaPXi8MAFE5jcd9YLQZ3DJpiVV7lfMpl830aPC/doFFDFk8dkGR
-IU3RNHgQocIl+Wm8aq+EU9OwKRH/O1bqMOgy4zHJRvlmxSOTyLhiwHFA1xAEJunJ
-LKlYg+fRRL1Xz1c7Cn1NoDWUgYvyivgSD8jpPnHLnqZDeNvPv9h8F5Q1H0ajp1Yg
-W7/OjeIh4tT1ACUv/L6mj7Goq8a1ng1SACTuLpt1WPanU5mL21PRTZU0vgQtN4Tu
-a11zCGlntjfPAbD7s0Kd
-=HHzM
------END PGP SIGNATURE-----
-
---3VRmKSg17yJg2MZg--
+-- 
+MST
