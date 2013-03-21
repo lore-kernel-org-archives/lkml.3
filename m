@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932923Ab3CULmF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:42:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19177 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932102Ab3CULmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:42:01 -0400
-Date: Thu, 21 Mar 2013 12:42:20 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Parag Warudkar <parag.lkml@gmail.com>,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        senthilb@qca.qualcomm.com
-Subject: Re: [PATCH] ath9k : Fix ieee80211 work while going to suspend
-Message-ID: <20130321114219.GB1459@redhat.com>
-References: <CAOULuOb0_40EX+6A_HM8eJN7kj9J4WhO9UhZbUUqng1Sfy_SQg@mail.gmail.com>
- <20130318191340.GA28919@tuxdriver.com>
- <20130318210308.GD32416@pogo>
+	id S932102Ab3CULmS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:42:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56843 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739Ab3CULmN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 07:42:13 -0400
+Date: Thu, 21 Mar 2013 04:40:39 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-736b05a0462aff65140865bacd5e04d1813e73e1@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1363326533-3310-2-git-send-email-namhyung@kernel.org>
+References: <1363326533-3310-2-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf evsel: Cleanup perf_evsel__exit()
+Git-Commit-ID: 736b05a0462aff65140865bacd5e04d1813e73e1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130318210308.GD32416@pogo>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:40:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 02:03:08PM -0700, Luis R. Rodriguez wrote:
-> > > --- a/drivers/net/wireless/ath/ath9k/link.c
-> > > +++ b/drivers/net/wireless/ath/ath9k/link.c
-> > > @@ -158,7 +158,8 @@ void ath_start_rx_poll(struct ath_softc *sc, u8 nbeacon)
-> > >  {
-> > >   if (!AR_SREV_9300(sc->sc_ah))
-> > >   return;
-> > > -
-> > > + if (sc->suspending)
-> > > + return;
-> 
-> Thanks for the patch! Please note the style issue here, you should
-> use a tab, but other than that lets review what happened.
-> 
-> > >   if (!test_bit(SC_OP_PRIM_STA_VIF, &sc->sc_flags))
-> > >   return;
-> 
-> Note that what this will do is call later mod_timer() for
-> rx_poll_timer, the right thing to do then, which would
-> be equivalent to your patch is to modify the ath_start_rx_poll()
-> to instead use the new API mod_timer_pending() added on v2.6.30
-> via commit 74019224. This would not re-arm the timer if it was
-> previously removed.
-[snip]
-> -	mod_timer(&sc->rx_poll_timer, jiffies + msecs_to_jiffies
-> -		  (nbeacon * sc->cur_beacon_conf.beacon_interval));
-> +	mod_timer_pending(&sc->rx_poll_timer, jiffies + msecs_to_jiffies
-> +			  (nbeacon * sc->cur_beacon_conf.beacon_interval));
+Commit-ID:  736b05a0462aff65140865bacd5e04d1813e73e1
+Gitweb:     http://git.kernel.org/tip/736b05a0462aff65140865bacd5e04d1813e73e1
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Fri, 15 Mar 2013 14:48:49 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 15 Mar 2013 13:06:10 -0300
 
-But isn't this prevent to run timer in case it was not running, but
-we want to start it ?
+perf evsel: Cleanup perf_evsel__exit()
 
-> Looking at this makes me think we should review all usage of
-> mod_timer all over our 802.11 drivers, and mac80211, cfg80211 as
-> well.
+Use perf_evsel__free_* because they do the same thing and ensures the
+pointer has NULL value at the end.
 
-I mac80211 we use local->suspended and local->quiesce booleans to
-prevent reschedule of timers when going to suspend for example.
-Works use ifmgd->associted to prevent reschedule when we are
-disassociating.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1363326533-3310-2-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/evsel.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-I think on ath9k also some boolean variable should be used, not only
-for rx_poll_timer but also for other works i.e. tx_complete_work.
-Is possible to use SC_OP_INVALID flags, since mac80211 call ath9k_stop
-on suspend and ath9k_start on resume.
-
-Stanislaw
-
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index dc16231..7fde9fb 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -673,9 +673,8 @@ void perf_evsel__free_counts(struct perf_evsel *evsel)
+ void perf_evsel__exit(struct perf_evsel *evsel)
+ {
+ 	assert(list_empty(&evsel->node));
+-	xyarray__delete(evsel->fd);
+-	xyarray__delete(evsel->sample_id);
+-	free(evsel->id);
++	perf_evsel__free_fd(evsel);
++	perf_evsel__free_id(evsel);
+ }
+ 
+ void perf_evsel__delete(struct perf_evsel *evsel)
