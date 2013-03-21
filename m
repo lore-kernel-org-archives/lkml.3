@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933821Ab3CUQM6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:12:58 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:54624 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933664Ab3CUQAL (ORCPT
+	id S933865Ab3CUQNb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:13:31 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:65028 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932961Ab3CUQAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:00:11 -0400
+	Thu, 21 Mar 2013 12:00:07 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         broonie@opensource.wolfsonmicro.com
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 06/46] regulator: ab8500: Separate regulator and MFD platform data
-Date: Thu, 21 Mar 2013 15:59:03 +0000
-Message-Id: <1363881583-15234-7-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 04/46] ARM: ux500: regulators: Add mask for configuration
+Date: Thu, 21 Mar 2013 15:59:01 +0000
+Message-Id: <1363881583-15234-5-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
 References: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
@@ -23,145 +22,357 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-
-The ab8500 MFD should not have knowledge about regulator-
-specific platform data like number of regulators and
-regulator registers. As the regulator platform data is
-about to grow with external regulators, this information
-is moved to a new structure provided by the regulator
+There is already before a register mask in the regulator driver
+to allow some bits of a register to be initialized. The register
+value is defined in the board configuration. This patch puts a
+mask in the board configuration to specify which bits should
+actually be altered. The purpose with this patch is to avoid
+future mistakes when updating the allowed bits in the regulator
 driver.
 
-Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Reviewed-by: Yvan FILLION <yvan.fillion@stericsson.com>
 ---
- arch/arm/mach-ux500/board-mop500-regulators.c |   12 +++++++++---
- arch/arm/mach-ux500/board-mop500-regulators.h |    4 +---
- drivers/regulator/ab8500.c                    |   21 +++++++++++++++------
- include/linux/regulator/ab8500.h              |    7 +++++++
- 4 files changed, 32 insertions(+), 12 deletions(-)
+ arch/arm/mach-ux500/board-mop500-regulators.c |   66 ++++++++++++-------------
+ drivers/regulator/ab8500.c                    |   36 ++++++--------
+ include/linux/regulator/ab8500.h              |   10 ++--
+ 3 files changed, 53 insertions(+), 59 deletions(-)
 
 diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index a8141e3..0fd84d4 100644
+index 4b3c519..96dd174 100644
 --- a/arch/arm/mach-ux500/board-mop500-regulators.c
 +++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -122,8 +122,7 @@ static struct regulator_consumer_supply ab8500_vana_consumers[] = {
- };
- 
- /* ab8500 regulator register initialization */
--struct ab8500_regulator_reg_init
--ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
-+static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
- 	/*
- 	 * VanaRequestCtrl          = HP/LP depending on VxRequest
+@@ -129,19 +129,19 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
  	 * VpllRequestCtrl          = HP/LP depending on VxRequest
-@@ -314,7 +313,7 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
+ 	 * VextSupply1RequestCtrl   = HP/LP depending on VxRequest
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL2, 0x00),
++	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL2,       0xfc, 0x00),
+ 	/*
+ 	 * VextSupply2RequestCtrl   = HP/LP depending on VxRequest
+ 	 * VextSupply3RequestCtrl   = HP/LP depending on VxRequest
+ 	 * Vaux1RequestCtrl         = HP/LP depending on VxRequest
+ 	 * Vaux2RequestCtrl         = HP/LP depending on VxRequest
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL3, 0x00),
++	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL3,       0xff, 0x00),
+ 	/*
+ 	 * Vaux3RequestCtrl         = HP/LP depending on VxRequest
+ 	 * SwHPReq                  = Control through SWValid disabled
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL4, 0x00),
++	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL4,       0x07, 0x00),
+ 	/*
+ 	 * Vsmps1SysClkReq1HPValid  = enabled
+ 	 * Vsmps2SysClkReq1HPValid  = enabled
+@@ -152,44 +152,44 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
+ 	 * Vaux2SysClkReq1HPValid   = disabled
+ 	 * Vaux3SysClkReq1HPValid   = disabled
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQ1HPVALID1, 0x17),
++	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQ1HPVALID1, 0xff, 0x17),
+ 	/*
+ 	 * VextSupply1SysClkReq1HPValid = disabled
+ 	 * VextSupply2SysClkReq1HPValid = disabled
+ 	 * VextSupply3SysClkReq1HPValid = SysClkReq1 controlled
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQ1HPVALID2, 0x40),
++	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQ1HPVALID2, 0x70, 0x40),
+ 	/*
+ 	 * VanaHwHPReq1Valid        = disabled
+ 	 * Vaux1HwHPreq1Valid       = disabled
+ 	 * Vaux2HwHPReq1Valid       = disabled
+ 	 * Vaux3HwHPReqValid        = disabled
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ1VALID1, 0x00),
++	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ1VALID1,     0xe8, 0x00),
+ 	/*
+ 	 * VextSupply1HwHPReq1Valid = disabled
+ 	 * VextSupply2HwHPReq1Valid = disabled
+ 	 * VextSupply3HwHPReq1Valid = disabled
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ1VALID2, 0x00),
++	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ1VALID2,     0x07, 0x00),
+ 	/*
+ 	 * VanaHwHPReq2Valid        = disabled
+ 	 * Vaux1HwHPReq2Valid       = disabled
+ 	 * Vaux2HwHPReq2Valid       = disabled
+ 	 * Vaux3HwHPReq2Valid       = disabled
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ2VALID1, 0x00),
++	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ2VALID1,     0xe8, 0x00),
+ 	/*
+ 	 * VextSupply1HwHPReq2Valid = disabled
+ 	 * VextSupply2HwHPReq2Valid = disabled
+ 	 * VextSupply3HwHPReq2Valid = HWReq2 controlled
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ2VALID2, 0x04),
++	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ2VALID2,     0x07, 0x04),
+ 	/*
+ 	 * VanaSwHPReqValid         = disabled
+ 	 * Vaux1SwHPReqValid        = disabled
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUSWHPREQVALID1, 0x00),
++	INIT_REGULATOR_REGISTER(AB8500_REGUSWHPREQVALID1,      0xa0, 0x00),
+ 	/*
+ 	 * Vaux2SwHPReqValid        = disabled
+ 	 * Vaux3SwHPReqValid        = disabled
+@@ -197,7 +197,7 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
+ 	 * VextSupply2SwHPReqValid  = disabled
+ 	 * VextSupply3SwHPReqValid  = disabled
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUSWHPREQVALID2, 0x00),
++	INIT_REGULATOR_REGISTER(AB8500_REGUSWHPREQVALID2,      0x1f, 0x00),
+ 	/*
+ 	 * SysClkReq2Valid1         = SysClkReq2 controlled
+ 	 * SysClkReq3Valid1         = disabled
+@@ -207,7 +207,7 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
+ 	 * SysClkReq7Valid1         = disabled
+ 	 * SysClkReq8Valid1         = disabled
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQVALID1, 0x2a),
++	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQVALID1,    0xfe, 0x2a),
+ 	/*
+ 	 * SysClkReq2Valid2         = disabled
+ 	 * SysClkReq3Valid2         = disabled
+@@ -217,7 +217,7 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
+ 	 * SysClkReq7Valid2         = disabled
+ 	 * SysClkReq8Valid2         = disabled
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQVALID2, 0x20),
++	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQVALID2,    0xfe, 0x20),
+ 	/*
+ 	 * VTVoutEna                = disabled
+ 	 * Vintcore12Ena            = disabled
+@@ -225,57 +225,57 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
+ 	 * Vintcore12LP             = inactive (HP)
+ 	 * VTVoutLP                 = inactive (HP)
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUMISC1, 0x10),
++	INIT_REGULATOR_REGISTER(AB8500_REGUMISC1,              0xfe, 0x10),
+ 	/*
+ 	 * VaudioEna                = disabled
+ 	 * VdmicEna                 = disabled
+ 	 * Vamic1Ena                = disabled
+ 	 * Vamic2Ena                = disabled
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_VAUDIOSUPPLY, 0x00),
++	INIT_REGULATOR_REGISTER(AB8500_VAUDIOSUPPLY,           0x1e, 0x00),
+ 	/*
+ 	 * Vamic1_dzout             = high-Z when Vamic1 is disabled
+ 	 * Vamic2_dzout             = high-Z when Vamic2 is disabled
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUCTRL1VAMIC, 0x00),
++	INIT_REGULATOR_REGISTER(AB8500_REGUCTRL1VAMIC,         0x03, 0x00),
+ 	/*
+ 	 * VBBN                     = force OFF
+ 	 * VBBP                     = force OFF
+ 	 * NOTE! PRCMU register
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_ARMREGU2,               0x00),
++	INIT_REGULATOR_REGISTER(AB8500_ARMREGU2,               0x0f, 0x00),
+ 	/*
+ 	 * VBBNSel1                 = VBBP = VBBPFB
+ 	 * VBBPSel1                 = 0 V
+ 	 * NOTE! PRCMU register
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_VBBSEL1,                0x00),
++	INIT_REGULATOR_REGISTER(AB8500_VBBSEL1,                0x0f, 0x00),
+ 	/*
+ 	 * VBBNSel2                 = VBBP = VBBPFB
+ 	 * VBBPSel2                 = 0 V
+ 	 * NOTE! PRCMU register
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_VBBSEL2,                0x00),
++	INIT_REGULATOR_REGISTER(AB8500_VBBSEL2,                0x0f, 0x00),
+ 	/*
+ 	 * Vsmps1Regu               = HW control
+ 	 * Vsmps1SelCtrl            = Vsmps1 voltage defined by Vsmsp1Sel2
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_VSMPS1REGU,             0x06),
++	INIT_REGULATOR_REGISTER(AB8500_VSMPS1REGU,             0x0f, 0x06),
+ 	/*
+ 	 * Vsmps2Regu               = HW control
+ 	 * Vsmps2SelCtrl            = Vsmps2 voltage defined by Vsmsp2Sel2
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_VSMPS2REGU,             0x06),
++	INIT_REGULATOR_REGISTER(AB8500_VSMPS2REGU,             0x0f, 0x06),
+ 	/*
+ 	 * VPll                     = Hw controlled
+ 	 * VanaRegu                 = force off
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_VPLLVANAREGU, 0x02),
++	INIT_REGULATOR_REGISTER(AB8500_VPLLVANAREGU,           0x0f, 0x02),
+ 	/*
+ 	 * VrefDDREna               = disabled
+ 	 * VrefDDRSleepMode         = inactive (no pulldown)
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_VREFDDR, 0x00),
++	INIT_REGULATOR_REGISTER(AB8500_VREFDDR,                0x03, 0x00),
+ 	/*
+ 	 * VextSupply1Regu          = HW control
+ 	 * VextSupply2Regu          = HW control
+@@ -283,37 +283,37 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
+ 	 * ExtSupply2Bypass         = ExtSupply12LPn ball is 0 when Ena is 0
+ 	 * ExtSupply3Bypass         = ExtSupply3LPn ball is 0 when Ena is 0
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_EXTSUPPLYREGU, 0x2a),
++	INIT_REGULATOR_REGISTER(AB8500_EXTSUPPLYREGU,          0xff, 0x1a),
+ 	/*
+ 	 * Vaux1Regu                = force HP
+ 	 * Vaux2Regu                = force off
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_VAUX12REGU, 0x01),
++	INIT_REGULATOR_REGISTER(AB8500_VAUX12REGU,             0x0f, 0x01),
+ 	/*
+ 	 * Vrf1Regu                 = HW control
+ 	 * Vaux3Regu                = force off
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_VRF1VAUX3REGU, 0x08),
++	INIT_REGULATOR_REGISTER(AB8500_VRF1VAUX3REGU,          0x0f, 0x08),
+ 	/*
+ 	 * Vsmps1                   = 1.15V
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_VSMPS1SEL1, 0x24),
++	INIT_REGULATOR_REGISTER(AB8500_VSMPS1SEL1,             0x3f, 0x24),
+ 	/*
+ 	 * Vaux1Sel                 = 2.5 V
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_VAUX1SEL, 0x08),
++	INIT_REGULATOR_REGISTER(AB8500_VAUX1SEL,               0x0f, 0x08),
+ 	/*
+ 	 * Vaux2Sel                 = 2.9 V
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_VAUX2SEL, 0x0d),
++	INIT_REGULATOR_REGISTER(AB8500_VAUX2SEL,               0x0f, 0x0d),
+ 	/*
+ 	 * Vaux3Sel                 = 2.91 V
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_VRF1VAUX3SEL, 0x07),
++	INIT_REGULATOR_REGISTER(AB8500_VRF1VAUX3SEL,           0x07, 0x07),
+ 	/*
+ 	 * VextSupply12LP           = disabled (no LP)
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUCTRL2SPARE, 0x00),
++	INIT_REGULATOR_REGISTER(AB8500_REGUCTRL2SPARE,         0x01, 0x00),
+ 	/*
+ 	 * Vaux1Disch               = short discharge time
+ 	 * Vaux2Disch               = short discharge time
+@@ -322,13 +322,13 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
+ 	 * VTVoutDisch              = short discharge time
+ 	 * VaudioDisch              = short discharge time
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUCTRLDISCH, 0x00),
++	INIT_REGULATOR_REGISTER(AB8500_REGUCTRLDISCH,          0xfc, 0x00),
+ 	/*
+ 	 * VanaDisch                = short discharge time
+ 	 * VdmicPullDownEna         = pulldown disabled when Vdmic is disabled
+ 	 * VdmicDisch               = short discharge time
+ 	 */
+-	INIT_REGULATOR_REGISTER(AB8500_REGUCTRLDISCH2, 0x00),
++	INIT_REGULATOR_REGISTER(AB8500_REGUCTRLDISCH2,         0x16, 0x00),
  };
  
  /* AB8500 regulators */
--struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
-+static struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
- 	/* supplies to the display/camera */
- 	[AB8500_LDO_AUX1] = {
- 		.constraints = {
-@@ -423,3 +422,10 @@ struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
- 		.consumer_supplies = ab8500_vana_consumers,
- 	},
- };
-+
-+struct ab8500_regulator_platform_data ab8500_regulator_plat_data = {
-+	.reg_init               = ab8500_reg_init,
-+	.num_reg_init           = ARRAY_SIZE(ab8500_reg_init),
-+	.regulator              = ab8500_regulators,
-+	.num_regulator          = ARRAY_SIZE(ab8500_regulators),
-+};
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
-index 78a0642..9ca4869 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.h
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.h
-@@ -14,9 +14,7 @@
- #include <linux/regulator/machine.h>
- #include <linux/regulator/ab8500.h>
- 
--extern struct ab8500_regulator_reg_init
--ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS];
--extern struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS];
-+extern struct ab8500_regulator_platform_data ab8500_regulator_plat_data;
- extern struct regulator_init_data tps61052_regulator;
- extern struct regulator_init_data gpio_en_3v3_regulator;
- 
 diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index c7784c4..f7d1f53 100644
+index 3465ac3..a847744 100644
 --- a/drivers/regulator/ab8500.c
 +++ b/drivers/regulator/ab8500.c
-@@ -939,8 +939,9 @@ ab8500_regulator_of_probe(struct platform_device *pdev, struct device_node *np)
- static int ab8500_regulator_probe(struct platform_device *pdev)
- {
- 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
--	struct ab8500_platform_data *pdata;
- 	struct device_node *np = pdev->dev.of_node;
-+	struct ab8500_platform_data *ppdata;
-+	struct ab8500_regulator_platform_data *pdata;
- 	int i, err;
- 
- 	if (np) {
-@@ -961,7 +962,14 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "null mfd parent\n");
- 		return -EINVAL;
- 	}
--	pdata = dev_get_platdata(ab8500->dev);
-+
-+	ppdata = dev_get_platdata(ab8500->dev);
-+	if (!ppdata) {
-+		dev_err(&pdev->dev, "null parent pdata\n");
-+		return -EINVAL;
-+	}
-+
-+	pdata = ppdata->regulator;
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "null pdata\n");
- 		return -EINVAL;
-@@ -974,12 +982,12 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
- 	}
- 
- 	/* initialize registers */
--	for (i = 0; i < pdata->num_regulator_reg_init; i++) {
-+	for (i = 0; i < pdata->num_reg_init; i++) {
- 		int id, mask, value;
- 
--		id = pdata->regulator_reg_init[i].id;
--		mask = pdata->regulator_reg_init[i].mask;
--		value = pdata->regulator_reg_init[i].value;
-+		id = pdata->reg_init[i].id;
-+		mask = pdata->reg_init[i].mask;
-+		value = pdata->reg_init[i].value;
- 
- 		/* check for configuration errors */
- 		BUG_ON(id >= AB8500_NUM_REGULATOR_REGISTERS);
-@@ -1045,5 +1053,6 @@ module_exit(ab8500_regulator_exit);
- 
- MODULE_LICENSE("GPL v2");
- MODULE_AUTHOR("Sundar Iyer <sundar.iyer@stericsson.com>");
-+MODULE_AUTHOR("Bengt Jonsson <bengt.g.jonsson@stericsson.com>");
- MODULE_DESCRIPTION("Regulator Driver for ST-Ericsson AB8500 Mixed-Sig PMIC");
- MODULE_ALIAS("platform:ab8500-regulator");
-diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
-index dd7944f..3a8e026 100644
---- a/include/linux/regulator/ab8500.h
-+++ b/include/linux/regulator/ab8500.h
-@@ -152,4 +152,11 @@ enum ab9540_regulator_reg {
- 	AB9540_NUM_REGULATOR_REGISTERS,
+@@ -811,23 +811,20 @@ static struct ab8500_reg_init ab8500_reg_init[] = {
+ 	REG_INIT(AB8500_REGUCTRLDISCH2,		0x04, 0x44, 0x16),
  };
  
-+struct ab8500_regulator_platform_data {
-+	int num_reg_init;
-+	struct ab8500_regulator_reg_init *reg_init;
-+	int num_regulator;
-+	struct regulator_init_data *regulator;
-+};
-+
- #endif
+-static int
+-ab8500_regulator_init_registers(struct platform_device *pdev, int id, int value)
++static int ab8500_regulator_init_registers(struct platform_device *pdev,
++					   int id, int mask, int value)
+ {
+ 	int err;
+ 
+-	if (value & ~ab8500_reg_init[id].mask) {
+-		dev_err(&pdev->dev,
+-			"Configuration error: value outside mask.\n");
+-		return -EINVAL;
+-	}
++	BUG_ON(value & ~mask);
++	BUG_ON(mask & ~ab8500_reg_init[id].mask);
+ 
++	/* initialize register */
+ 	err = abx500_mask_and_set_register_interruptible(
+ 		&pdev->dev,
+ 		ab8500_reg_init[id].bank,
+ 		ab8500_reg_init[id].addr,
+-		ab8500_reg_init[id].mask,
+-		value);
++		mask, value);
+ 	if (err < 0) {
+ 		dev_err(&pdev->dev,
+ 			"Failed to initialize 0x%02x, 0x%02x.\n",
+@@ -835,13 +832,11 @@ ab8500_regulator_init_registers(struct platform_device *pdev, int id, int value)
+ 			ab8500_reg_init[id].addr);
+ 		return err;
+ 	}
+-
+ 	dev_vdbg(&pdev->dev,
+-		"init: 0x%02x, 0x%02x, 0x%02x, 0x%02x\n",
+-		ab8500_reg_init[id].bank,
+-		ab8500_reg_init[id].addr,
+-		ab8500_reg_init[id].mask,
+-		value);
++		 "  init: 0x%02x, 0x%02x, 0x%02x, 0x%02x\n",
++		 ab8500_reg_init[id].bank,
++		 ab8500_reg_init[id].addr,
++		 mask, value);
+ 
+ 	return 0;
+ }
+@@ -960,19 +955,16 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ 
+ 	/* initialize registers */
+ 	for (i = 0; i < pdata->num_regulator_reg_init; i++) {
+-		int id, value;
++		int id, mask, value;
+ 
+ 		id = pdata->regulator_reg_init[i].id;
++		mask = pdata->regulator_reg_init[i].mask;
+ 		value = pdata->regulator_reg_init[i].value;
+ 
+ 		/* check for configuration errors */
+-		if (id >= AB8500_NUM_REGULATOR_REGISTERS) {
+-			dev_err(&pdev->dev,
+-				"Configuration error: id outside range.\n");
+-			return -EINVAL;
+-		}
++		BUG_ON(id >= AB8500_NUM_REGULATOR_REGISTERS);
+ 
+-		err = ab8500_regulator_init_registers(pdev, id, value);
++		err = ab8500_regulator_init_registers(pdev, id, mask, value);
+ 		if (err < 0)
+ 			return err;
+ 	}
+diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
+index 2c6c962..a1d245f 100644
+--- a/include/linux/regulator/ab8500.h
++++ b/include/linux/regulator/ab8500.h
+@@ -48,13 +48,15 @@ enum ab9540_regulator_id {
+ /* AB8500 and AB9540 register initialization */
+ struct ab8500_regulator_reg_init {
+ 	int id;
++	u8 mask;
+ 	u8 value;
+ };
+ 
+-#define INIT_REGULATOR_REGISTER(_id, _value)	\
+-	{					\
+-		.id = _id,			\
+-		.value = _value,		\
++#define INIT_REGULATOR_REGISTER(_id, _mask, _value)	\
++	{						\
++		.id = _id,				\
++		.mask = _mask,				\
++		.value = _value,			\
+ 	}
+ 
+ /* AB8500 registers */
 -- 
 1.7.10.4
 
