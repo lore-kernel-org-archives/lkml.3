@@ -1,174 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757808Ab3CUHVU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 03:21:20 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45112 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757740Ab3CUHS5 (ORCPT
+	id S932891Ab3CUHXN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 03:23:13 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:51358 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757816Ab3CUHXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 03:18:57 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-07-514ab45f89c6
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 2/9] perf util: Get rid of malloc_or_die() in trace-event-info.c
-Date: Thu, 21 Mar 2013 16:18:45 +0900
-Message-Id: <1363850332-25297-3-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1363850332-25297-1-git-send-email-namhyung@kernel.org>
-References: <1363850332-25297-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 21 Mar 2013 03:23:11 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: vgoyal@redhat.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
+        lisa.mitchell@hp.com, heiko.carstens@de.ibm.com,
+        akpm@linux-foundation.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
+References: <87txo5bxk4.fsf@xmission.com>
+	<20130321.122501.82758179.d.hatayama@jp.fujitsu.com>
+	<8738vp75cy.fsf@xmission.com>
+	<20130321.151428.393714972.d.hatayama@jp.fujitsu.com>
+Date: Thu, 21 Mar 2013 00:22:59 -0700
+In-Reply-To: <20130321.151428.393714972.d.hatayama@jp.fujitsu.com> (HATAYAMA
+	Daisuke's message of "Thu, 21 Mar 2013 15:14:28 +0900 (JST)")
+Message-ID: <87y5dhw71o.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+CegGRvZ1IcDtKGvxq+Ats6It0oOoPgMI=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v3 18/21] vmcore: check if vmcore objects satify mmap()'s page-size boundary requirement
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
 
-Check return value of malloc and fail if NULL.
+> OK, rigorously, suceess or faliure of the requested free pages
+> allocation depends on actual memory layout at the 2nd kernel boot. To
+> increase the possibility of allocating memory, we have no method but
+> reserve more memory for the 2nd kernel now.
 
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/trace-event-info.c | 48 ++++++++++++++++++++++++--------------
- 1 file changed, 30 insertions(+), 18 deletions(-)
+Good enough.   If there are fragmentation issues that cause allocation
+problems on larger boxes we can use vmalloc and remap_vmalloc_range, but
+we certainly don't need to start there.
 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index 81c673282ed4..91db6e8e4493 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -47,16 +47,6 @@ static const char *output_file = "trace.info";
- static int output_fd;
- 
- 
--static void *malloc_or_die(unsigned int size)
--{
--	void *data;
--
--	data = malloc(size);
--	if (!data)
--		die("malloc");
--	return data;
--}
--
- static const char *find_debugfs(void)
- {
- 	const char *path = perf_debugfs_mount(NULL);
-@@ -209,7 +199,7 @@ static bool name_in_tp_list(char *sys, struct tracepoint_path *tps)
- 	return false;
- }
- 
--static void copy_event_system(const char *sys, struct tracepoint_path *tps)
-+static int copy_event_system(const char *sys, struct tracepoint_path *tps)
- {
- 	struct dirent *dent;
- 	struct stat st;
-@@ -217,6 +207,7 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
- 	DIR *dir;
- 	int count = 0;
- 	int ret;
-+	int err;
- 
- 	dir = opendir(sys);
- 	if (!dir)
-@@ -228,7 +219,11 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
- 		    strcmp(dent->d_name, "..") == 0 ||
- 		    !name_in_tp_list(dent->d_name, tps))
- 			continue;
--		format = malloc_or_die(strlen(sys) + strlen(dent->d_name) + 10);
-+		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
-+		if (!format) {
-+			err = -ENOMEM;
-+			goto out;
-+		}
- 		sprintf(format, "%s/%s/format", sys, dent->d_name);
- 		ret = stat(format, &st);
- 		free(format);
-@@ -246,16 +241,22 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
- 		    strcmp(dent->d_name, "..") == 0 ||
- 		    !name_in_tp_list(dent->d_name, tps))
- 			continue;
--		format = malloc_or_die(strlen(sys) + strlen(dent->d_name) + 10);
-+		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
-+		if (!format) {
-+			err = -ENOMEM;
-+			goto out;
-+		}
- 		sprintf(format, "%s/%s/format", sys, dent->d_name);
- 		ret = stat(format, &st);
- 
- 		if (ret >= 0)
- 			record_file(format, 8);
--
- 		free(format);
- 	}
-+	err = 0;
-+out:
- 	closedir(dir);
-+	return err;
- }
- 
- static void read_ftrace_files(struct tracepoint_path *tps)
-@@ -282,7 +283,7 @@ static bool system_in_tp_list(char *sys, struct tracepoint_path *tps)
- 	return false;
- }
- 
--static void read_event_files(struct tracepoint_path *tps)
-+static int read_event_files(struct tracepoint_path *tps)
- {
- 	struct dirent *dent;
- 	struct stat st;
-@@ -291,6 +292,7 @@ static void read_event_files(struct tracepoint_path *tps)
- 	DIR *dir;
- 	int count = 0;
- 	int ret;
-+	int err;
- 
- 	path = get_tracing_file("events");
- 	if (!path)
-@@ -320,7 +322,11 @@ static void read_event_files(struct tracepoint_path *tps)
- 		    strcmp(dent->d_name, "ftrace") == 0 ||
- 		    !system_in_tp_list(dent->d_name, tps))
- 			continue;
--		sys = malloc_or_die(strlen(path) + strlen(dent->d_name) + 2);
-+		sys = malloc(strlen(path) + strlen(dent->d_name) + 2);
-+		if (!sys) {
-+			err = -ENOMEM;
-+			goto out;
-+		}
- 		sprintf(sys, "%s/%s", path, dent->d_name);
- 		ret = stat(sys, &st);
- 		if (ret >= 0) {
-@@ -329,9 +335,12 @@ static void read_event_files(struct tracepoint_path *tps)
- 		}
- 		free(sys);
- 	}
--
-+	err = 0;
-+out:
- 	closedir(dir);
- 	put_tracing_file(path);
-+
-+	return err;
- }
- 
- static void read_proc_kallsyms(void)
-@@ -463,7 +472,10 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
- 	if (!tps)
- 		return NULL;
- 
--	tdata = malloc_or_die(sizeof(*tdata));
-+	tdata = malloc(sizeof(*tdata));
-+	if (!tdata)
-+		return NULL;
-+
- 	tdata->temp = temp;
- 	tdata->size = 0;
- 
--- 
-1.7.11.7
+Especialy as for most 8 or 16 core boxes we are talking about a 4KiB or
+an 8KiBP allocation.  Aka order 0 or order 1.
+
+Adding more memory is also useful.  It is important in general to keep
+the amount of memory needed for the kdump kernel low.
+
+Eric
 
