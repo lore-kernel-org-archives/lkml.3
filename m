@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab3CUTVs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 15:21:48 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37822 "EHLO
+	id S1752493Ab3CUT3i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 15:29:38 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37850 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418Ab3CUTVr (ORCPT
+	with ESMTP id S1751100Ab3CUT3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 15:21:47 -0400
-Date: Thu, 21 Mar 2013 19:21:46 +0000
+	Thu, 21 Mar 2013 15:29:37 -0400
+Date: Thu, 21 Mar 2013 19:29:35 +0000
 From: Al Viro <viro@ZenIV.linux.org.uk>
 To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
 Subject: Re: VFS deadlock ?
-Message-ID: <20130321192146.GX21522@ZenIV.linux.org.uk>
+Message-ID: <20130321192935.GY21522@ZenIV.linux.org.uk>
 References: <20130321190653.GA15479@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,10 +24,6 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, Mar 21, 2013 at 03:06:53PM -0400, Dave Jones wrote:
-> Al, Linus,
-
-> trinity-child2  D ffff880110b3a7e0  5448  7669      1 0x00000004
-[sits in rename(), trying to grab ->i_mutex on a parent]
 
 > Showing all locks held in the system:
 > 4 locks on stack by trinity-child2/7669:
@@ -36,5 +32,9 @@ On Thu, Mar 21, 2013 at 03:06:53PM -0400, Dave Jones wrote:
 >  #2: held:     (&type->i_mutex_dir_key#2/1){+.+.+.}, instance: ffff880110b3a858, at: [<ffffffff811c701e>] lock_rename+0xfe/0x120
 >  #3: blocked:  (&type->i_mutex_dir_key#2/2){+.+.+.}, instance: ffff880110b3a858, at: [<ffffffff811c7034>] lock_rename+0x114/0x120
 
-Wait a minute...  How the hell does it manage to sit with *two* blocked locks?
-Confused...
+#0 oddity aside, that looks very much like directory aliased by two different
+dentries.  Try to add
+	BUG_ON(p1->d_inode == p2->d_inode);
+just before
+        mutex_lock(&p1->d_inode->i_sb->s_vfs_rename_mutex);
+and see if it triggers.
