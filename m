@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610Ab3CUJSt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 05:18:49 -0400
+	id S1758077Ab3CUJSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 05:18:46 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:45098 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758047Ab3CUJSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 05:18:42 -0400
+	id S1758052Ab3CUJSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 05:18:44 -0400
 X-IronPort-AV: E=Sophos;i="4.84,884,1355068800"; 
-   d="scan'208";a="6917174"
+   d="scan'208";a="6917176"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         yinghai@kernel.org, akpm@linux-foundation.org, wency@cn.fujitsu.com,
@@ -20,10 +20,12 @@ To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         guz.fnst@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [RFC PATCH part2 0/4] Allow allocating pagetable on local node in movablemem_map.
-Date: Thu, 21 Mar 2013 17:21:12 +0800
-Message-Id: <1363857676-30694-1-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH part2 1/4] x86, mm, numa, acpi: Introduce numa_meminfo_all to store all the numa meminfo.
+Date: Thu, 21 Mar 2013 17:21:13 +0800
+Message-Id: <1363857676-30694-2-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1363857676-30694-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1363857676-30694-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/03/21 17:17:10,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
@@ -33,62 +35,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yinghai, all,
+Now, Yinghai has tried to allocate pagetables and vmemmap pages in local
+node. If we limit memblock allocation in movablemem_map.map[], we have to
+exclude the pagetables and vmemmap pages.
 
-This patch-set is based on Yinghai's tree:
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
+So we need the following sequence:
+1) Parse SRAT, store numa_meminfo.
+2) Initialize memory mapping, allocate pagetables and vmemmap pages in local
+   node. And reserve these memory with memblock.
+3) Sanitize movablemem_map.map[], exclude the pagetables and vmemmap pages.
 
-For main line, we need to apply Yinghai's
-"x86, ACPI, numa: Parse numa info early" patch-set first.
-Please refer to:
-v1: https://lkml.org/lkml/2013/3/7/642
-v2: https://lkml.org/lkml/2013/3/10/47
+When parsing SRAT, we added memory ranges into numa_meminfo. But in
+numa_cleanup_meminfo(), it removed all the unused memory from numa_meminfo.
 
+         const u64 low = 0;
+         const u64 high = PFN_PHYS(max_pfn);
 
-In this part2 patch-set, we didi the following things:
-1) Introduce a "bool hotpluggable" member into struct numa_memblk so that we are
-   able to know which memory ranges in numa_meminfo are hotpluggable.
-   All the related apis have been changed.
-2) Introduce a new global variable "numa_meminfo_all" to store all the memory ranges
-   recorded in SRAT, because numa_cleanup_meminfo() will remove ranges higher than
-   max_pfn.
-   We need full numa memory info to limit zone_movable_pfn[].
-3) Move movablemem_map sanitization after memory mapping is initialized so that
-   pagetable allocation will not be limited by movablemem_map.
+         /* first, trim all entries */
+         for (i = 0; i < mi->nr_blks; i++) {
+                 struct numa_memblk *bi = &mi->blk[i];
 
+                 /* make sure all blocks are inside the limits */
+                 bi->start = max(bi->start, low);
+                 bi->end = min(bi->end, high);
 
-On the other hand, we may have another way to solve this problem:
+                 /* and there's no empty block */
+                 if (bi->start >= bi->end)
+                         numa_remove_memblk_from(i--, mi);
+         }
 
-Not only pagetable and vmemmap pages, but also all the data whose life cycle is the
-same as a node, could be put on local node.
+So numa_meminfo doesn't have the whole memory info.
 
-1) Introduce a flag into memblock, such as "LOCAL_NODE_DATA", to mark out which
-   ranges have the same life cycle with node.
-2) Only keep existing memory ranges in movablemem_map (no need to introduce
-   numa_meminfo_all), and exclude these LOCAL_NODE_DATA ranges.
-3) When hot-removing, we are able to find out these ranges, and free them first.
-   This is very important.
+In order to sanitize movablemem_map.map[] after memory mapping initialziation,
+we need the whole SRAT info.
 
-Also, hot-add logic needs to be modified, too. As Yinghai mentioned before, I think
-we can make memblock alive when memory is hot-added. And go with the same logic
-as it is when booting.
+So this patch introduces global variable numa_meminfo_all to store the whole
+numa memory info.
 
-How do you think?
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/mm/numa.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-
-Tang Chen (4):
-  x86, mm, numa, acpi: Introduce numa_meminfo_all to store all the numa
-    meminfo.
-  x86, mm, numa, acpi: Introduce hotplug info into struct numa_meminfo.
-  x86, mm, numa, acpi: Consider hotplug info when cleanup numa_meminfo.
-  x86, mm, numa, acpi: Sanitize movablemem_map after memory mapping
-    initialized.
-
- arch/x86/include/asm/numa.h     |    3 +-
- arch/x86/kernel/apic/numaq_32.c |    2 +-
- arch/x86/mm/amdtopology.c       |    3 +-
- arch/x86/mm/numa.c              |  161 +++++++++++++++++++++++++++++++++++++--
- arch/x86/mm/numa_internal.h     |    1 +
- arch/x86/mm/srat.c              |  141 +++++-----------------------------
- 6 files changed, 178 insertions(+), 133 deletions(-)
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 4f754e6..4cf3b49 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -28,12 +28,20 @@ nodemask_t numa_nodes_parsed __initdata;
+ struct pglist_data *node_data[MAX_NUMNODES] __read_mostly;
+ EXPORT_SYMBOL(node_data);
+ 
++/*e820 mapped memory info */
+ static struct numa_meminfo numa_meminfo
+ #ifndef CONFIG_MEMORY_HOTPLUG
+ __initdata
+ #endif
+ ;
+ 
++/* All memory info */
++static struct numa_meminfo numa_meminfo_all
++#ifndef CONFIG_MEMORY_HOTPLUG
++__initdata
++#endif
++;
++
+ static int numa_distance_cnt;
+ static u8 *numa_distance;
+ 
+@@ -599,10 +607,15 @@ static int __init numa_init(int (*init_func)(void))
+ 
+ 	nodes_clear(numa_nodes_parsed);
+ 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
++	memset(&numa_meminfo_all, 0, sizeof(numa_meminfo));
+ 
+ 	ret = init_func();
+ 	if (ret < 0)
+ 		return ret;
++
++	/* Store the whole memory info before cleanup numa_meminfo. */
++	memcpy(&numa_meminfo_all, &numa_meminfo, sizeof(numa_meminfo));
++
+ 	ret = numa_cleanup_meminfo(&numa_meminfo);
+ 	if (ret < 0)
+ 		return ret;
+-- 
+1.7.1
 
