@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933553Ab3CUOfT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 10:35:19 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10550 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933448Ab3CUOfR (ORCPT
+	id S933595Ab3CUOfe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 10:35:34 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38144 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933448Ab3CUOfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 10:35:17 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 21 Mar 2013 07:34:45 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <akpm@linux-foundation.org>
-CC: <a.zummo@towertech.it>, <grant.likely@secretlab.ca>,
-        <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <rob.herring@calxeda.com>,
-        <linux-tegra@vger.kernel.org>, <swarren@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] rtc: palmas: add dt support
-Date: Thu, 21 Mar 2013 20:02:10 +0530
-Message-ID: <1363876330-26003-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Thu, 21 Mar 2013 10:35:32 -0400
+Date: Thu, 21 Mar 2013 10:35:31 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Sven Joachim <svenjoac@gmx.de>, <linux-kernel@vger.kernel.org>,
+        <stable@vger.kernel.org>, Stephen Thirlwall <sdt@dr.com>
+Subject: Re: [ 12/75] USB: EHCI: work around silicon bug in Intels EHCI
+ controllers
+In-Reply-To: <20130320222844.GA9504@kroah.com>
+Message-ID: <Pine.LNX.4.44L0.1303211034350.1899-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add of_device_id table for Palma RTC to be enable the
-driver from DT file.
+On Wed, 20 Mar 2013, Greg Kroah-Hartman wrote:
 
-The driver can be registered from DT file as:
-	palmas: tps65913@58 {
-		:::::::::::
-		palmas_rtc {
-			compatible = "ti,palmas-rtc";
-			interrupt-parent = <&palmas>;
-			interrupts = <8 0>;
-		};
-	};
+> On Wed, Mar 20, 2013 at 04:41:21PM -0400, Alan Stern wrote:
+> > On Wed, 20 Mar 2013, Greg Kroah-Hartman wrote:
+> > 
+> > > > > Ok, I'll postpone this patch for the next stable release, in time for
+> > > > > the fix to be put in at the same time.
+> > > > 
+> > > > I think patch 13/75 ("USB: EHCI: dont check DMA values in QH overlays")
+> > > > should also be postponed then, at least Alan said so in
+> > > > <Pine.LNX.4.44L0.1303191125100.15684-100000@netrider.rowland.org>.
+> > > 
+> > > Crap, I didn't postpone that one, hopefully it doesn't cause as many
+> > > problems...
+> > 
+> > I haven't tested this combination of changes, except in a highly 
+> > artificial setting (i.e., running the usbtest suite), so I don't know 
+> > how it will behave under normal use.  In any case, it's too late to do 
+> > anything now except issue another -stable release.
+> > 
+> > I just saw that the "dont check DMA values" patch did get into the
+> > 3.0-stable and 3.4-stable releases.  I didn't realize at the time, but
+> > it shouldn't be in any kernel earlier than 3.6.  I guess the best thing
+> > to do is queue up a reversion for those two series.
+> 
+> I've now done this, thanks.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/rtc/rtc-palmas.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+Sorry I didn't catch those things at the time.  I should have been 
+looking more closely at your -stable queue.
 
-diff --git a/drivers/rtc/rtc-palmas.c b/drivers/rtc/rtc-palmas.c
-index bbc3b9e..50204d4 100644
---- a/drivers/rtc/rtc-palmas.c
-+++ b/drivers/rtc/rtc-palmas.c
-@@ -30,6 +30,7 @@
- #include <linux/kernel.h>
- #include <linux/mfd/palmas.h>
- #include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/rtc.h>
- #include <linux/types.h>
- #include <linux/platform_device.h>
-@@ -316,6 +317,14 @@ static const struct dev_pm_ops palmas_rtc_pm_ops = {
- 	SET_SYSTEM_SLEEP_PM_OPS(palmas_rtc_suspend, palmas_rtc_resume)
- };
- 
-+#ifdef CONFIG_OF
-+static struct of_device_id of_palmas_rtc_match[] = {
-+	{ .compatible = "ti,palmas-rtc"},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, of_palmas_rtc_match);
-+#endif
-+
- static struct platform_driver palmas_rtc_driver = {
- 	.probe		= palmas_rtc_probe,
- 	.remove		= palmas_rtc_remove,
-@@ -323,6 +332,7 @@ static struct platform_driver palmas_rtc_driver = {
- 		.owner	= THIS_MODULE,
- 		.name	= "palmas-rtc",
- 		.pm	= &palmas_rtc_pm_ops,
-+		.of_match_table = of_match_ptr(of_palmas_rtc_match),
- 	},
- };
- 
--- 
-1.7.1.1
+Alan Stern
 
