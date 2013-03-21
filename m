@@ -1,84 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933421Ab3CUJWB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 05:22:01 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56413 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757368Ab3CUJSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 05:18:23 -0400
-X-IronPort-AV: E=Sophos;i="4.84,884,1355068800"; 
-   d="scan'208";a="6917163"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        yinghai@kernel.org, akpm@linux-foundation.org, wency@cn.fujitsu.com,
-        trenn@suse.de, liwanp@linux.vnet.ibm.com, mgorman@suse.de,
-        walken@google.com, riel@redhat.com, khlebnikov@openvz.org,
-        tj@kernel.org, minchan@kernel.org, m.szyprowski@samsung.com,
-        mina86@mina86.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, linfeng@cn.fujitsu.com,
-        jiang.liu@huawei.com, kosaki.motohiro@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [RESEND PATCH part1 2/9] acpi: Print hotplug info in SRAT.
-Date: Thu, 21 Mar 2013 17:20:48 +0800
-Message-Id: <1363857655-30658-3-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1363857655-30658-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1363857655-30658-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/21 17:16:49,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/21 17:16:50,
-	Serialize complete at 2013/03/21 17:16:50
+	id S1758200Ab3CUJXt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 05:23:49 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:16387 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753131Ab3CUJXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 05:23:47 -0400
+From: Andrey Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: Andrey Vagin <avagin@openvz.org>, "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: [PATCH 1/2] net: prepare netlink code for netlink diag
+Date: Thu, 21 Mar 2013 13:21:08 +0400
+Message-Id: <1363857669-19990-2-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1363857669-19990-1-git-send-email-avagin@openvz.org>
+References: <1363857669-19990-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Hot Pluggable field in SRAT points out if the memory could be
-hotplugged while the system is running. It is useful to print out
-this info when parsing SRAT.
+Move a few declarations in a header.
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
 ---
- arch/x86/mm/srat.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+ net/netlink/af_netlink.c | 59 ++++-----------------------------------------
+ net/netlink/af_netlink.h | 62 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 67 insertions(+), 54 deletions(-)
+ create mode 100644 net/netlink/af_netlink.h
 
-diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-index 443f9ef..5055fa7 100644
---- a/arch/x86/mm/srat.c
-+++ b/arch/x86/mm/srat.c
-@@ -146,6 +146,7 @@ int __init
- acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index 1e3fd5b..a500ce2 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -61,28 +61,7 @@
+ #include <net/scm.h>
+ #include <net/netlink.h>
+ 
+-#define NLGRPSZ(x)	(ALIGN(x, sizeof(unsigned long) * 8) / 8)
+-#define NLGRPLONGS(x)	(NLGRPSZ(x)/sizeof(unsigned long))
+-
+-struct netlink_sock {
+-	/* struct sock has to be the first member of netlink_sock */
+-	struct sock		sk;
+-	u32			portid;
+-	u32			dst_portid;
+-	u32			dst_group;
+-	u32			flags;
+-	u32			subscriptions;
+-	u32			ngroups;
+-	unsigned long		*groups;
+-	unsigned long		state;
+-	wait_queue_head_t	wait;
+-	struct netlink_callback	*cb;
+-	struct mutex		*cb_mutex;
+-	struct mutex		cb_def_mutex;
+-	void			(*netlink_rcv)(struct sk_buff *skb);
+-	void			(*netlink_bind)(int group);
+-	struct module		*module;
+-};
++#include "af_netlink.h"
+ 
+ struct listeners {
+ 	struct rcu_head		rcu;
+@@ -94,48 +73,20 @@ struct listeners {
+ #define NETLINK_BROADCAST_SEND_ERROR	0x4
+ #define NETLINK_RECV_NO_ENOBUFS	0x8
+ 
+-static inline struct netlink_sock *nlk_sk(struct sock *sk)
+-{
+-	return container_of(sk, struct netlink_sock, sk);
+-}
+-
+ static inline int netlink_is_kernel(struct sock *sk)
  {
- 	u64 start, end;
-+	u32 hotpluggable;
- 	int node, pxm;
+ 	return nlk_sk(sk)->flags & NETLINK_KERNEL_SOCKET;
+ }
  
- 	if (srat_disabled())
-@@ -154,7 +155,8 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 		goto out_err_bad_srat;
- 	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
- 		goto out_err;
--	if ((ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE) && !save_add_info())
-+	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
-+	if (hotpluggable && !save_add_info())
- 		goto out_err;
+-struct nl_portid_hash {
+-	struct hlist_head	*table;
+-	unsigned long		rehash_time;
+-
+-	unsigned int		mask;
+-	unsigned int		shift;
+-
+-	unsigned int		entries;
+-	unsigned int		max_shift;
+-
+-	u32			rnd;
+-};
+-
+-struct netlink_table {
+-	struct nl_portid_hash	hash;
+-	struct hlist_head	mc_list;
+-	struct listeners __rcu	*listeners;
+-	unsigned int		flags;
+-	unsigned int		groups;
+-	struct mutex		*cb_mutex;
+-	struct module		*module;
+-	void			(*bind)(int group);
+-	int			registered;
+-};
+-
+-static struct netlink_table *nl_table;
++struct netlink_table *nl_table;
++EXPORT_SYMBOL_GPL(nl_table);
  
- 	start = ma->base_address;
-@@ -174,9 +176,10 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ static DECLARE_WAIT_QUEUE_HEAD(nl_table_wait);
  
- 	node_set(node, numa_nodes_parsed);
+ static int netlink_dump(struct sock *sk);
  
--	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
-+	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
- 	       node, pxm,
--	       (unsigned long long) start, (unsigned long long) end - 1);
-+	       (unsigned long long) start, (unsigned long long) end - 1,
-+	       hotpluggable ? "Hot Pluggable" : "");
+-static DEFINE_RWLOCK(nl_table_lock);
++DEFINE_RWLOCK(nl_table_lock);
++EXPORT_SYMBOL_GPL(nl_table_lock);
+ static atomic_t nl_table_users = ATOMIC_INIT(0);
  
- 	return 0;
- out_err_bad_srat:
+ #define nl_deref_protected(X) rcu_dereference_protected(X, lockdep_is_held(&nl_table_lock));
+diff --git a/net/netlink/af_netlink.h b/net/netlink/af_netlink.h
+new file mode 100644
+index 0000000..d9acb2a
+--- /dev/null
++++ b/net/netlink/af_netlink.h
+@@ -0,0 +1,62 @@
++#ifndef _AF_NETLINK_H
++#define _AF_NETLINK_H
++
++#include <net/sock.h>
++
++#define NLGRPSZ(x)	(ALIGN(x, sizeof(unsigned long) * 8) / 8)
++#define NLGRPLONGS(x)	(NLGRPSZ(x)/sizeof(unsigned long))
++
++struct netlink_sock {
++	/* struct sock has to be the first member of netlink_sock */
++	struct sock		sk;
++	u32			portid;
++	u32			dst_portid;
++	u32			dst_group;
++	u32			flags;
++	u32			subscriptions;
++	u32			ngroups;
++	unsigned long		*groups;
++	unsigned long		state;
++	wait_queue_head_t	wait;
++	struct netlink_callback	*cb;
++	struct mutex		*cb_mutex;
++	struct mutex		cb_def_mutex;
++	void			(*netlink_rcv)(struct sk_buff *skb);
++	void			(*netlink_bind)(int group);
++	struct module		*module;
++};
++
++static inline struct netlink_sock *nlk_sk(struct sock *sk)
++{
++	return container_of(sk, struct netlink_sock, sk);
++}
++
++struct nl_portid_hash {
++	struct hlist_head	*table;
++	unsigned long		rehash_time;
++
++	unsigned int		mask;
++	unsigned int		shift;
++
++	unsigned int		entries;
++	unsigned int		max_shift;
++
++	u32			rnd;
++};
++
++struct netlink_table {
++	struct nl_portid_hash	hash;
++	struct hlist_head	mc_list;
++	struct listeners __rcu	*listeners;
++	unsigned int		flags;
++	unsigned int		groups;
++	struct mutex		*cb_mutex;
++	struct module		*module;
++	void			(*bind)(int group);
++	int			registered;
++};
++
++extern struct netlink_table *nl_table;
++extern rwlock_t nl_table_lock;
++
++#endif
 -- 
-1.7.1
+1.8.1.4
 
