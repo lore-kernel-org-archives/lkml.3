@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab3CUKXD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 06:23:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52065 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752275Ab3CUKXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 06:23:01 -0400
-Date: Thu, 21 Mar 2013 11:22:57 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>, linux-mm@kvack.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
-Message-ID: <20130321102257.GH6094@dhcp22.suse.cz>
-References: <514A60CD.60208@huawei.com>
- <20130321090849.GF6094@dhcp22.suse.cz>
+	id S1753647Ab3CUK2j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 06:28:39 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:59758 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289Ab3CUK2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 06:28:38 -0400
+Message-ID: <514AE07A.10100@linux.vnet.ibm.com>
+Date: Thu, 21 Mar 2013 15:57:06 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321090849.GF6094@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alex Shi <alex.shi@intel.com>
+CC: mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Subject: Re: [patch v5 14/15] sched: power aware load balance
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-15-git-send-email-alex.shi@intel.com> <514941C5.6080007@linux.vnet.ibm.com> <514ABA19.1080807@intel.com> <514AC7B2.7030400@linux.vnet.ibm.com> <514AD26F.9010905@intel.com>
+In-Reply-To: <514AD26F.9010905@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032110-5564-0000-0000-0000072A0BF3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 21-03-13 10:08:49, Michal Hocko wrote:
-> On Thu 21-03-13 09:22:21, Li Zefan wrote:
-> > As cgroup supports rename, it's unsafe to dereference dentry->d_name
-> > without proper vfs locks. Fix this by using cgroup_name().
-> > 
-> > Signed-off-by: Li Zefan <lizefan@huawei.com>
-> > ---
-> > 
-> > This patch depends on "cgroup: fix cgroup_path() vs rename() race",
-> > which has been queued for 3.10.
-> > 
-> > ---
-> >  mm/memcontrol.c | 15 +++++++--------
-> >  1 file changed, 7 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 53b8201..72be5c9 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -3217,17 +3217,16 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
-> >  static char *memcg_cache_name(struct mem_cgroup *memcg, struct kmem_cache *s)
-> >  {
-> >  	char *name;
-> > -	struct dentry *dentry;
-> > +
-> > +	name = (char *)__get_free_page(GFP_TEMPORARY);
+On 03/21/2013 02:57 PM, Alex Shi wrote:
+> On 03/21/2013 04:41 PM, Preeti U Murthy wrote:
+>>>>
+>> Yes, I did find this behaviour on a 2 socket, 8 core machine very
+>> consistently.
+>>
+>> rq->util cannot go to 0, after it has begun accumulating load right?
+>>
+>> Say a load was running on a runqueue which had its rq->util to be at
+>> 100%. After the load finishes, the runqueue goes idle. For every
+>> scheduler tick, its utilisation decays. But can never become 0.
+>>
+>> rq->util = rq->avg.runnable_avg_sum/rq->avg.runnable_avg_period
 > 
-> Ouch. Can we use a static temporary buffer instead?
-
-> This is called from workqueue context so we do not have to be afraid
-> of the deep call chain.
-
-Bahh, I was thinking about two things at the same time and that is how
-it ends... I meant a temporary buffer on the stack. But a separate
-allocation sounds even easier.
-
-> It is also not a hot path AFAICS.
 > 
-> Even GFP_ATOMIC for kasprintf would be an improvement IMO.
+> did you close all of background system services?
+> In theory the rq->avg.runnable_avg_sum should be zero if there is no
+> task a bit long, otherwise there are some bugs in kernel.
 
-What about the following (not even compile tested because I do not have
-cgroup_name in my tree yet):
----
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f608546..ede0382 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3370,13 +3370,18 @@ static char *memcg_cache_name(struct mem_cgroup *memcg, struct kmem_cache *s)
- 	struct dentry *dentry;
- 
- 	rcu_read_lock();
--	dentry = rcu_dereference(memcg->css.cgroup->dentry);
-+	name = kasprintf(GFP_ATOMIC, "%s(%d:%s)", s->name,
-+			 memcg_cache_id(memcg), cgroup_name(memcg->css.cgroup));
- 	rcu_read_unlock();
- 
--	BUG_ON(dentry == NULL);
--
--	name = kasprintf(GFP_KERNEL, "%s(%d:%s)", s->name,
--			 memcg_cache_id(memcg), dentry->d_name.name);
-+	if (!name) {
-+		name = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+		rcu_read_lock();
-+		name = snprintf(name, PAGE_SIZE, "%s(%d:%s)", s->name,
-+				memcg_cache_id(memcg),
-+				cgroup_name(memcg->css.cgroup));
-+		rcu_read_unlock();
-+	}
- 
- 	return name;
- }
--- 
-Michal Hocko
-SUSE Labs
+Could you explain why rq->avg.runnable_avg_sum should be zero? What if
+some kernel thread ran on this run queue and is now finished? Its
+utilisation would be say x.How would that ever drop to 0,even if nothing
+ran on it later?
+
+Regards
+Preeti U Murthy
+
+ Could you
+> check the value under /proc/sched_debug?
+> 
+> 
+
