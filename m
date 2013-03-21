@@ -1,55 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933466Ab3CUJ1T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 05:27:19 -0400
-Received: from mga14.intel.com ([143.182.124.37]:26285 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932084Ab3CUJ1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 05:27:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,884,1355126400"; 
-   d="scan'208";a="274002934"
-Message-ID: <514AD26F.9010905@intel.com>
-Date: Thu, 21 Mar 2013 17:27:11 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-CC: mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 14/15] sched: power aware load balance
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-15-git-send-email-alex.shi@intel.com> <514941C5.6080007@linux.vnet.ibm.com> <514ABA19.1080807@intel.com> <514AC7B2.7030400@linux.vnet.ibm.com>
-In-Reply-To: <514AC7B2.7030400@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758103Ab3CUJ2A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 05:28:00 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:51824 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753131Ab3CUJ16 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 05:27:58 -0400
+Message-ID: <1363858076.1390.104.camel@x61.thuisdomein>
+Subject: [PATCH] memblock: kill "config MAX_ACTIVE_REGIONS"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: James Hogan <james.hogan@imgtec.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Paul Mundt <lethal@linux-sh.org>
+Cc: Tejun Heo <tj@kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 21 Mar 2013 10:27:56 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 21 Mar 2013 09:27:56.0486 (UTC) FILETIME=[5EF95E60:01CE2616]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2013 04:41 PM, Preeti U Murthy wrote:
->> > 
-> Yes, I did find this behaviour on a 2 socket, 8 core machine very
-> consistently.
-> 
-> rq->util cannot go to 0, after it has begun accumulating load right?
-> 
-> Say a load was running on a runqueue which had its rq->util to be at
-> 100%. After the load finishes, the runqueue goes idle. For every
-> scheduler tick, its utilisation decays. But can never become 0.
-> 
-> rq->util = rq->avg.runnable_avg_sum/rq->avg.runnable_avg_period
+The Kconfig symbol MAX_ACTIVE_REGIONS is unused. Commit
+0ee332c1451869963626bf9cac88f165a90990e1 ("memblock: Kill
+early_node_map[]") removed the only place were it was actually used. But
+it did not remove its Kconfig entries (for powerpc and sh).
 
+Remove those two entries (and the entry for metag, that popped up in
+v3.9-rc1).
 
-did you close all of background system services?
-In theory the rq->avg.runnable_avg_sum should be zero if there is no
-task a bit long, otherwise there are some bugs in kernel. Could you
-check the value under /proc/sched_debug?
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Eyeball tested again.
 
+1) It felt silly to split this clean up patch into three patches. But if
+the maintainers involved disagree I'm happy to split and resend it. 
 
+ arch/metag/mm/Kconfig | 5 -----
+ arch/powerpc/Kconfig  | 5 -----
+ arch/sh/mm/Kconfig    | 7 -------
+ 3 files changed, 17 deletions(-)
+
+diff --git a/arch/metag/mm/Kconfig b/arch/metag/mm/Kconfig
+index 794f26a..03fb8f1 100644
+--- a/arch/metag/mm/Kconfig
++++ b/arch/metag/mm/Kconfig
+@@ -93,11 +93,6 @@ config ARCH_SPARSEMEM_ENABLE
+ config ARCH_SPARSEMEM_DEFAULT
+ 	def_bool y
+ 
+-config MAX_ACTIVE_REGIONS
+-	int
+-	default "2" if SPARSEMEM
+-	default "1"
+-
+ config ARCH_SELECT_MEMORY_MODEL
+ 	def_bool y
+ 
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 867ace7..b674397 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -427,11 +427,6 @@ config NODES_SHIFT
+ 	default "4"
+ 	depends on NEED_MULTIPLE_NODES
+ 
+-config MAX_ACTIVE_REGIONS
+-	int
+-	default "256" if PPC64
+-	default "32"
+-
+ config ARCH_SELECT_MEMORY_MODEL
+ 	def_bool y
+ 	depends on PPC64
+diff --git a/arch/sh/mm/Kconfig b/arch/sh/mm/Kconfig
+index 5a43a87..dba285e 100644
+--- a/arch/sh/mm/Kconfig
++++ b/arch/sh/mm/Kconfig
+@@ -137,13 +137,6 @@ config ARCH_SPARSEMEM_ENABLE
+ config ARCH_SPARSEMEM_DEFAULT
+ 	def_bool y
+ 
+-config MAX_ACTIVE_REGIONS
+-	int
+-	default "6" if (CPU_SUBTYPE_SHX3 && SPARSEMEM)
+-	default "2" if SPARSEMEM && (CPU_SUBTYPE_SH7722 || \
+-		       CPU_SUBTYPE_SH7785)
+-	default "1"
+-
+ config ARCH_SELECT_MEMORY_MODEL
+ 	def_bool y
+ 
 -- 
-Thanks
-    Alex
+1.7.11.7
+
