@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab3CUSHa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:07:30 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:50933 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837Ab3CUSH3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:07:29 -0400
+	id S1752300Ab3CUSHk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:07:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45278 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752061Ab3CUSHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 14:07:38 -0400
+Date: Thu, 21 Mar 2013 18:07:35 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/10] mm: vmscan: Check if kswapd should writepage once
+ per priority
+Message-ID: <20130321180735.GN1878@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-10-git-send-email-mgorman@suse.de>
+ <20130321165600.GV6094@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <1363820051-24428-10-git-send-email-robherring2@gmail.com>
-References: <1363820051-24428-1-git-send-email-robherring2@gmail.com>
-	<1363820051-24428-10-git-send-email-robherring2@gmail.com>
-Date: Thu, 21 Mar 2013 19:07:28 +0100
-Message-ID: <CACRpkdbCcvjnL4g9iUJm+1dxs28VhGnc_ibyARZNVP3MFRmNmQ@mail.gmail.com>
-Subject: Re: [PATCH 09/11] ARM: integrator-cp: convert use CLKSRC_OF for timer init
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>, haojian.zhuang@linaro.org,
-        pawel.moll@arm.com, john.stultz@linaro.org, tglx@linutronix.de,
-        Rob Herring <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130321165600.GV6094@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 11:54 PM, Rob Herring <robherring2@gmail.com> wrote:
+On Thu, Mar 21, 2013 at 05:58:37PM +0100, Michal Hocko wrote:
+> On Sun 17-03-13 13:04:15, Mel Gorman wrote:
+> > Currently kswapd checks if it should start writepage as it shrinks
+> > each zone without taking into consideration if the zone is balanced or
+> > not. This is not wrong as such but it does not make much sense either.
+> > This patch checks once per priority if kswapd should be writing pages.
+> 
+> Except it is not once per priority strictly speaking...  It doesn't make
+> any difference though.
+> 
 
-> From: Rob Herring <rob.herring@calxeda.com>
->
-> Move the integrator-cp timer init to timer-sp.c and use CLKSRC_OF. There is
-> no reason to use the aliases, so drop them from the init code.
->
-> The integrator-cp timers are mistakenly called sp804 timers in the dts, but
-> in fact they are not sp804 dual timers, but single timers with the same
-> programming model. Fix the dts to reflect this.
->
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Whoops, at one point during development it really was once per priority
+which was always raised. I reworded it to "once per pgdat scan".
 
-Looks correct to me. Throw it into linux-next and I'll
-test if it works too! :-)
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Thanks.
 
-Yours,
-Linus Walleij
+-- 
+Mel Gorman
+SUSE Labs
