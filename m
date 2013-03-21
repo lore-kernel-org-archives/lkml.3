@@ -1,86 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933963Ab3CUQdz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:33:55 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:26865 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756043Ab3CUQdx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:33:53 -0400
-Message-ID: <1363883628.2736.8.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH net] vhost/net: fix heads usage of ubuf_info
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: David Miller <davem@davemloft.net>, <rusty@rustcorp.com.au>,
-        <jasowang@redhat.com>, <basil.gor@gmail.com>,
-        <nab@risingtidesystems.com>, <kvm@vger.kernel.org>,
-        <virtualization@lists.linux-foundation.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Thu, 21 Mar 2013 16:33:48 +0000
-In-Reply-To: <20130321162813.GG1925@redhat.com>
-References: <20130317124609.GA25967@redhat.com>
-	 <20130317.142955.1114572401286297685.davem@davemloft.net>
-	 <20130321060218.GB23908@redhat.com>
-	 <1363883028.2736.7.camel@bwh-desktop.uk.solarflarecom.com>
-	 <20130321162813.GG1925@redhat.com>
-Organization: Solarflare
+	id S933878Ab3CUQfc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:35:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9861 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755484Ab3CUQfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 12:35:31 -0400
+Message-ID: <1363883719.2747.13.camel@ul30vt.home>
+Subject: Re: [PATCH] iommu: add a function to find an iommu group by id
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: Joerg Roedel <joerg.roedel@amd.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org
+Date: Thu, 21 Mar 2013 10:35:19 -0600
+In-Reply-To: <1363852122-17974-1-git-send-email-aik@ozlabs.ru>
+References: <1363852122-17974-1-git-send-email-aik@ozlabs.ru>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19734.005
-X-TM-AS-Result: No--22.915000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-21 at 18:28 +0200, Michael S. Tsirkin wrote:
-> On Thu, Mar 21, 2013 at 04:23:48PM +0000, Ben Hutchings wrote:
-> > On Thu, 2013-03-21 at 08:02 +0200, Michael S. Tsirkin wrote:
-> > > On Sun, Mar 17, 2013 at 02:29:55PM -0400, David Miller wrote:
-> > > > From: "Michael S. Tsirkin" <mst@redhat.com>
-> > > > Date: Sun, 17 Mar 2013 14:46:09 +0200
-> > > > 
-> > > > > ubuf info allocator uses guest controlled head as an index,
-> > > > > so a malicious guest could put the same head entry in the ring twice,
-> > > > > and we will get two callbacks on the same value.
-> > > > > To fix use upend_idx which is guaranteed to be unique.
-> > > > > 
-> > > > > Reported-by: Rusty Russell <rusty@rustcorp.com.au>
-> > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > > 
-> > > > Applied and queued up for -stable, thanks.
-> > > > 
-> > > > And thankfully you got the stable URL wrong,
-> > > 
-> > > Yes I wrote stable@kernel.org that's what an old copy
-> > > says here:
-> > > https://www.kernel.org/doc/Documentation/stable_kernel_rules.txt
-> > > 
-> > > I should have known better than look at it on the 'net.  The top
-> > > 'Everything you ever wanted to know about Linux 2.6 -stable releases.'
-> > > is a big hint that it's stale.
-> > > Any idea who maintains this? Better update it or remove it or redirect to git.
-> > 
-> > Rob Landley maintains it, but he's been having trouble updating it since
-> > all the upload mechanisms were changed on kernel.org.
-> > 
-> > (My stable maintenance scripts still match the old address, anyway.  Not
-> > sure about Greg's.)
-> > 
-> > Ben.
+On Thu, 2013-03-21 at 18:48 +1100, Alexey Kardashevskiy wrote:
+> As IOMMU groups are exposed to the user space by their numbers,
+> the user space can use them in various kernel APIs so the kernel
+> might need an API to find a group by its ID.
 > 
-> I hope you mean it will match both the old and the new address?
+> As an example, QEMU VFIO on PPC64 platform needs it to associate
+> a logical bus number (LIOBN) with a specific IOMMU group in order
+> to support in-kernel handling of DMA map/unmap requests.
+> 
+> The patch adds the iommu_group_find(id) function which performs
+> such search.
+> 
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> ---
+>  drivers/iommu/iommu.c |   26 ++++++++++++++++++++++++++
+>  include/linux/iommu.h |    1 +
+>  2 files changed, 27 insertions(+)
+> 
+> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+> index b0afd3d..6340cac 100644
+> --- a/drivers/iommu/iommu.c
+> +++ b/drivers/iommu/iommu.c
+> @@ -205,6 +205,32 @@ printk("%s %u grp %d\n", __func__, __LINE__, iommu_group_id(group));
+>  }
+>  EXPORT_SYMBOL_GPL(iommu_group_alloc);
+>  
+> +struct iommu_group *iommu_group_find(int id)
+> +{
+> +	struct kobject *group_kobj;
+> +	struct iommu_group *grp;
+> +	const char *name;
+> +
+> +	if (!iommu_group_kset)
+> +		return NULL;
+> +
+> +	name = kasprintf(GFP_KERNEL, "%d", id);
+> +	if (!name)
+> +		return NULL;
+> +
+> +	group_kobj = kset_find_obj(iommu_group_kset, name);
+> +	kfree(name);
+> +
+> +	if (!group_kobj)
+> +		return NULL;
+> +
+> +	grp = container_of(group_kobj, struct iommu_group, kobj);
+> +	BUG_ON(grp->id != id);
+> +
+> +	return grp;
+> +}
+> +EXPORT_SYMBOL_GPL(iommu_group_find);
 
-Yes, of course!
+Don't you need to do some reference counting here?  Otherwise there's no
+guarantee the returned pointer is still valid by the time it's used.
+The interface should probably be iommu_group_get_by_id().  Thanks,
 
-Ben.
+Alex
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+> +
+>  /**
+>   * iommu_group_get_iommudata - retrieve iommu_data registered for a group
+>   * @group: the group
+> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+> index f3b99e1..20281d5 100644
+> --- a/include/linux/iommu.h
+> +++ b/include/linux/iommu.h
+> @@ -113,6 +113,7 @@ struct iommu_ops {
+>  extern int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops);
+>  extern bool iommu_present(struct bus_type *bus);
+>  extern struct iommu_domain *iommu_domain_alloc(struct bus_type *bus);
+> +extern struct iommu_group *iommu_group_find(int id);
+>  extern void iommu_domain_free(struct iommu_domain *domain);
+>  extern int iommu_attach_device(struct iommu_domain *domain,
+>  			       struct device *dev);
+
+
 
