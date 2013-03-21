@@ -1,86 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab3CUU6R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 16:58:17 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:54938 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753177Ab3CUU6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 16:58:16 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] ext4 updates for 3.9-rc4
-cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 21 Mar 2013 16:58:13 -0400
-Message-ID: <nsxehf8ii6y.fsf@closure.thunk.org>
+	id S1753377Ab3CUVCl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 17:02:41 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:3123 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753297Ab3CUVCk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 17:02:40 -0400
+Date: Thu, 21 Mar 2013 21:02:37 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org, josh@joshtriplett.org,
+        zhong@linux.vnet.ibm.com, khilman@linaro.org, geoff@infradead.org,
+        tglx@linutronix.de
+Subject: Re: [PATCH] nohz1: Documentation
+In-Reply-To: <CAFTL4hywucK7_d2V-wYkhagu0+izYz_MTFNJEHEsaTvoZBXwMg@mail.gmail.com>
+Message-ID: <0000013d8ec2b268-851c8d6d-c4d1-42fb-b0e1-e1b90de7d911-000000@email.amazonses.com>
+References: <CAFTL4hybMf+9GjjyKRSEEp0x+wT7OwpKShE5sR_JqW24DGfKOw@mail.gmail.com> <1363636794.15703.32@driftwood> <CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com> <20130318222548.GG3656@linux.vnet.ibm.com> <1363822338.6345.33.camel@gandalf.local.home>
+ <20130320235545.GL3637@linux.vnet.ibm.com> <0000013d8db514e4-bf492080-82c9-412a-90b8-54ddc1463e4b-000000@email.amazonses.com> <20130321171518.GW3637@linux.vnet.ibm.com> <0000013d8e3f58ce-0f6ea95f-780a-49c1-a633-5aa0cf3e5040-000000@email.amazonses.com>
+ <20130321185821.GF3637@linux.vnet.ibm.com> <0000013d8e8d24fd-d2931c45-2722-46d1-8b47-2ef11e21096d-000000@email.amazonses.com> <CAFTL4hywucK7_d2V-wYkhagu0+izYz_MTFNJEHEsaTvoZBXwMg@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@mit.edu
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 21 Mar 2013, Frederic Weisbecker wrote:
 
-The following changes since commit 9b2ff35753c0512bc8c6adae9e9c87cbeee86f82:
+> Sure, for now just don't use SCHED_FIFO and you will have a much more
+> extended dynticks coverage.
 
-  ext4: enable quotas before orphan cleanup (2013-03-02 18:22:38 -0500)
+Ah. Ok. Important information. That would mean no tick for the 2 second
+intervals between the vm stats etc. Much much better than now where we
+have a tick 1000 times per second.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linue
-
-for you to fetch changes up to 2b405bfa84063bfa35621d2d6879f52693c614b0:
-
-  ext4: fix data=journal fast mount/umount hang (2013-03-20 09:42:11 -0400)
-
-----------------------------------------------------------------
-Fix a number of regression and other bugs in ext4, most of which were
-relatively obscure cornercases or races that were found using
-regression tests.
-
-----------------------------------------------------------------
-Dmitry Monakhov (6):
-      ext4: ext4_split_extent should take care of extent zeroout
-      ext4: disable merging of uninitialized extents
-      ext4: add warning to ext4_convert_unwritten_extents_endio
-      ext4: invalidate extent status tree during extent migration
-      ext4: add self-testing infrastructure to do a sanity check
-      ext4: fix memory leakage in mext_check_coverage
-
-Jan Kara (3):
-      ext4: remove unnecessary wait for extent conversion in ext4_fallocate()
-      ext4: fix WARN_ON from ext4_releasepage()
-      jbd2: fix use after free in jbd2_journal_dirty_metadata()
-
-Lukas Czerner (5):
-      ext4: remove unused variable in ext4_free_blocks()
-      ext4: do not use yield()
-      ext4: update reserved space after the 'correction'
-      ext4: reserve metadata block for every delayed write
-      ext4: use s_extent_max_zeroout_kb value as number of kb
-
-Theodore Ts'o (3):
-      ext4: use atomic64_t for the per-flexbg free_clusters count
-      ext4: fix ext4_evict_inode() racing against workqueue processing code
-      ext4: fix data=journal fast mount/umount hang
-
-Zheng Liu (4):
-      ext4: avoid a potential overflow in ext4_es_can_be_merged()
-      ext4: fix wrong m_len value after unwritten extent conversion
-      ext4: update extent status tree after an extent is zeroed out
-      ext4: fix the wrong number of the allocated blocks in ext4_split_extent()
-
- fs/ext4/ext4.h           |   8 +++---
- fs/ext4/extents.c        | 105 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++---------------
- fs/ext4/extents_status.c | 212 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
- fs/ext4/extents_status.h |   9 +++++++
- fs/ext4/ialloc.c         |   4 +--
- fs/ext4/inode.c          | 182 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------
- fs/ext4/mballoc.c        |  23 ++++++----------
- fs/ext4/move_extent.c    |  43 +++++++++++++++++++-----------
- fs/ext4/page-io.c        |  12 ++++++++-
- fs/ext4/resize.c         |   4 +--
- fs/ext4/super.c          |   4 +--
- fs/jbd2/transaction.c    |  15 +++++++----
- 12 files changed, 540 insertions(+), 81 deletions(-)
