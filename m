@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab3CUFe7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 01:34:59 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:53093 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753712Ab3CUFe5 (ORCPT
+	id S1756516Ab3CUFfM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 01:35:12 -0400
+Received: from outbound-mail04.westnet.com.au ([203.10.1.245]:12845 "EHLO
+	outbound-mail04.westnet.com.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756295Ab3CUFfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 01:34:57 -0400
-From: kpark3469@gmail.com
-To: rostedt@goodmis.org
-Cc: keun-o.park@windriver.com, linux-kernel@vger.kernel.org,
-        kpark3469@gmail.com, mathieu.desnoyers@efficios.com
-Subject: [PATCH v2] tracepoints: prevents null probe from being added
-Date: Thu, 21 Mar 2013 14:34:41 +0900
-Message-Id: <1363844081-17182-1-git-send-email-kpark3469@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 21 Mar 2013 01:35:10 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBALKbSlGVhxBY/2dsb2JhbAANNogfvRuBboMYAQEBBCMVQAEQCw4KAgIFFgsCAgkDAgECAUUGDQEFAgEBtyxxkjWBI41tB4ItgRMDqn4
+X-IronPort-AV: E=Sophos;i="4.84,883,1355068800"; 
+   d="scan'208";a="85736872"
+Message-ID: <514A9BC7.2010201@uclinux.org>
+Date: Thu, 21 Mar 2013 15:33:59 +1000
+From: Greg Ungerer <gerg@uclinux.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] m68k: clean up unused "config ROMVECSIZE"
+References: <1363775886.1390.90.camel@x61.thuisdomein>
+In-Reply-To: <1363775886.1390.90.camel@x61.thuisdomein>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sahara <keun-o.park@windriver.com>
+Hi Paul,
 
-Somehow tracepoint_entry_add_probe function allows a null probe function.
-And, this may lead to unexpected result since the number of probe
-functions in an entry can be counted by checking whether probe is null
-or not in for-loop.
-This patch prevents the null probe from being added.
-In tracepoint_entry_remove_probe function, checking probe parameter
-within for-loop is moved out for code efficiency leaving the null probe
-feature which removes all probe functions in the entry.
+On 20/03/13 20:38, Paul Bolle wrote:
+> Kconfig symbol ROMVECSIZE is unused since commit
+> f84f52a5c15db7d14a534815f27253b001735183 ("m68knommu: clean up linker
+> script"). Let's clean up its Kconfig entry too.
+>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-Signed-off-by: Sahara <keun-o.park@windriver.com>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
----
- kernel/tracepoint.c |   18 ++++++++++--------
- 1 files changed, 10 insertions(+), 8 deletions(-)
+Thanks, I'll add it to the m68knommu git tree.
 
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 0c05a45..7d69348 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -112,7 +112,8 @@ tracepoint_entry_add_probe(struct tracepoint_entry *entry,
- 	int nr_probes = 0;
- 	struct tracepoint_func *old, *new;
- 
--	WARN_ON(!probe);
-+	if (WARN_ON(!probe))
-+		return ERR_PTR(-EINVAL);
- 
- 	debug_print_probes(entry);
- 	old = entry->funcs;
-@@ -152,13 +153,15 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
- 
- 	debug_print_probes(entry);
- 	/* (N -> M), (N > 1, M >= 0) probes */
--	for (nr_probes = 0; old[nr_probes].func; nr_probes++) {
--		if (!probe ||
--		    (old[nr_probes].func == probe &&
--		     old[nr_probes].data == data))
--			nr_del++;
-+	if (probe) {
-+		for (nr_probes = 0; old[nr_probes].func; nr_probes++) {
-+			if (old[nr_probes].func == probe &&
-+			     old[nr_probes].data == data)
-+				nr_del++;
-+		}
- 	}
- 
-+	/* If probe is NULL, all funcs in the entry will be removed. */
- 	if (nr_probes - nr_del == 0) {
- 		/* N -> 0, (N > 1) */
- 		entry->funcs = NULL;
-@@ -173,8 +176,7 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
- 		if (new == NULL)
- 			return ERR_PTR(-ENOMEM);
- 		for (i = 0; old[i].func; i++)
--			if (probe &&
--			    (old[i].func != probe || old[i].data != data))
-+			if (old[i].func != probe || old[i].data != data)
- 				new[j++] = old[i];
- 		new[nr_probes - nr_del].func = NULL;
- 		entry->refcount = nr_probes - nr_del;
--- 
-1.7.1
+Regards
+Greg
+
+
+> ---
+> Untested.
+>
+>   arch/m68k/Kconfig.machine | 9 ---------
+>   1 file changed, 9 deletions(-)
+>
+> diff --git a/arch/m68k/Kconfig.machine b/arch/m68k/Kconfig.machine
+> index 7240584..28ec0c0 100644
+> --- a/arch/m68k/Kconfig.machine
+> +++ b/arch/m68k/Kconfig.machine
+> @@ -539,15 +539,6 @@ config ROMVEC
+>   	  68000 type variants the vectors are at the base of the boot device
+>   	  on system startup.
+>
+> -config ROMVECSIZE
+> -	hex "Size of ROM vector region (in bytes)"
+> -	default "0x400"
+> -	depends on ROM
+> -	help
+> -	  Define the size of the vector region in ROM. For most 68000
+> -	  variants this would be 0x400 bytes in size. Set to 0 if you do
+> -	  not want a vector region at the start of the ROM.
+> -
+>   config ROMSTART
+>   	hex "Address of the base of system image in ROM"
+>   	default "0x400"
+>
 
