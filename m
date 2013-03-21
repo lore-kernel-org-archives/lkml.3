@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757470Ab3CUGxY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 02:53:24 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6080 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751115Ab3CUGxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 02:53:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,884,1355126400"; 
-   d="scan'208";a="306237618"
-Date: Thu, 21 Mar 2013 11:58:23 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
-        thierry.reding@avionic-design.de
-Subject: Re: [PATCH Resend] dma: pl330: Convert to devm_ioremap_resource()
-Message-ID: <20130321062822.GE10326@intel.com>
-References: <1362387987-26718-1-git-send-email-sachin.kamat@linaro.org>
+	id S932319Ab3CUG4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 02:56:20 -0400
+Received: from na3sys010aog102.obsmtp.com ([74.125.245.72]:45749 "HELO
+	na3sys010aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756781Ab3CUG4R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 02:56:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362387987-26718-1-git-send-email-sachin.kamat@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130321061838.GA28319@redhat.com>
+References: <20130321061838.GA28319@redhat.com>
+From: Roland Dreier <roland@kernel.org>
+Date: Wed, 20 Mar 2013 23:55:54 -0700
+X-Google-Sender-Auth: 3S5tTe4kmBEOJrUMde_ql71x9AU
+Message-ID: <CAL1RGDUcMj9QVsuQgK+ozw64L6-cGehL7YBUJ1_ckni6TD=Kcg@mail.gmail.com>
+Subject: Re: [PATCH] rdma: don't make pages writeable if not requiested
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 02:36:27PM +0530, Sachin Kamat wrote:
-> Use the newly introduced devm_ioremap_resource() instead of
-> devm_request_and_ioremap() which provides more consistent error handling.
-> 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
-Applied thanks
-> ---
->  drivers/dma/pl330.c |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> index 7181531..10005ec 100644
-> --- a/drivers/dma/pl330.c
-> +++ b/drivers/dma/pl330.c
-> @@ -26,6 +26,7 @@
->  #include <linux/scatterlist.h>
->  #include <linux/of.h>
->  #include <linux/of_dma.h>
-> +#include <linux/err.h>
->  
->  #include "dmaengine.h"
->  #define PL330_MAX_CHAN		8
-> @@ -2904,9 +2905,9 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
->  	pi->mcbufsz = pdat ? pdat->mcbuf_sz : 0;
->  
->  	res = &adev->res;
-> -	pi->base = devm_request_and_ioremap(&adev->dev, res);
-> -	if (!pi->base)
-> -		return -ENXIO;
-> +	pi->base = devm_ioremap_resource(&adev->dev, res);
-> +	if (IS_ERR(pi->base))
-> +		return PTR_ERR(pi->base);
->  
->  	amba_set_drvdata(adev, pdmac);
->  
-> -- 
-> 1.7.4.1
-> 
+On Wed, Mar 20, 2013 at 11:18 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> core/umem.c seems to get the arguments to get_user_pages
+> in the reverse order: it sets writeable flag and
+> breaks COW for MAP_SHARED if and only if hardware needs to
+> write the page.
+>
+> This breaks memory overcommit for users such as KVM:
+> each time we try to register a page to send it to remote, this
+> breaks COW.  It seems that for applications that only have
+> REMOTE_READ permission, there is no reason to break COW at all.
+
+I proposed a similar (but not exactly the same, see below) patch a
+while ago: https://lkml.org/lkml/2012/1/26/7 but read the thread,
+especially https://lkml.org/lkml/2012/2/6/265
+
+I think this change will break the case where userspace tries to
+register an MR with read-only permission, but intends locally through
+the CPU to write to the memory.  If the memory registration is done
+while the memory is mapped read-only but has VM_MAYWRITE, then
+userspace gets into trouble when COW happens.  In the case you're
+describing (although I'm not sure where in KVM we're talking about
+using RDMA), what happens if you register memory with only REMOTE_READ
+and then COW is triggered because of a local write?  (I'm assuming you
+don't want remote access to continue to get the old contents of the
+page)
+
+I have to confess that I still haven't had a chance to implement the
+proposed FOLL_FOLLOW solution to all of this.
+
+> If the page that is COW has lots of copies, this makes the user process
+> quickly exceed the cgroups memory limit.  This makes RDMA mostly useless
+> for virtualization, thus the stable tag.
+
+The actual problem description here is a bit too terse for me to
+understand.  How do we end up with lots of copies of a COW page?  Why
+is RDMA registering the memory any more  special than having everyone
+who maps this page actually writing to it and triggering COW?
+
+>                 ret = get_user_pages(current, current->mm, cur_base,
+>                                      min_t(unsigned long, npages,
+>                                            PAGE_SIZE / sizeof (struct page *)),
+> -                                    1, !umem->writable, page_list, vma_list);
+> +                                    !umem->writable, 1, page_list, vma_list);
+
+The first two parameters in this line being changed are "write" and "force".
+
+I think if we do change this, then we need to pass umem->writable (as
+opposed to !umem->writable) for the "write" parameter.  Not sure
+whether "force" makes sense or not.
+
+ - R.
