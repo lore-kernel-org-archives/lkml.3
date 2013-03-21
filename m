@@ -1,98 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758365Ab3CUOFW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 10:05:22 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:60598 "EHLO comal.ext.ti.com"
+	id S1758374Ab3CUOGY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 10:06:24 -0400
+Received: from fieldses.org ([174.143.236.118]:37438 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756910Ab3CUOFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 10:05:20 -0400
-Message-ID: <514B1383.1070102@ti.com>
-Date: Thu, 21 Mar 2013 19:34:51 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1757623Ab3CUOGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 10:06:22 -0400
+Date: Thu, 21 Mar 2013 10:06:18 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, skinsbursky@parallels.com,
+        ebiederm@xmission.com, jmorris@namei.org, axboe@kernel.dk,
+        jlayton@redhat.com
+Subject: Re: [PATCHSET] idr: implement idr_alloc() and convert existing users
+Message-ID: <20130321140618.GD27838@fieldses.org>
+References: <1359854463-2538-1-git-send-email-tj@kernel.org>
+ <20130203170241.GA24778@fieldses.org>
+ <20130204001557.GB24778@fieldses.org>
+ <20130204171031.GK27963@mtj.dyndns.org>
+ <20130204171128.GL27963@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: <tony@atomide.com>, <b-cousson@ti.com>, <linux@arm.linux.org.uk>,
-        <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support for
- AUXCLKs
-References: <1363703220-4777-1-git-send-email-rogerq@ti.com> <1363703220-4777-2-git-send-email-rogerq@ti.com> <514B0650.5070406@ti.com> <514B10FE.1000805@ti.com>
-In-Reply-To: <514B10FE.1000805@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130204171128.GL27963@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 March 2013 07:24 PM, Roger Quadros wrote:
-> On 03/21/2013 03:08 PM, Rajendra Nayak wrote:
->> []..
->>
->>> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
->>> index 0274ff7..23f2064 100644
->>> --- a/arch/arm/mach-omap2/board-generic.c
->>> +++ b/arch/arm/mach-omap2/board-generic.c
->>> @@ -158,7 +158,7 @@ DT_MACHINE_START(OMAP4_DT, "Generic OMAP4 (Flattened Device Tree)")
->>>  	.init_irq	= omap_gic_of_init,
->>>  	.init_machine	= omap_generic_init,
->>>  	.init_late	= omap4430_init_late,
->>> -	.init_time	= omap4_local_timer_init,
->>> +	.init_time	= omap4_init_time,
->>>  	.dt_compat	= omap4_boards_compat,
->>>  	.restart	= omap44xx_restart,
->>>  MACHINE_END
->>
->> []..
->>> +#ifdef CONFIG_OF
->>> +int __init omap4_clk_init_dt(void)
->>> +{
->>> +	struct device_node *np;
->>> +
->>> +	np = of_find_compatible_node(NULL, NULL, "ti,omap4-scrm");
->>> +	if (np) {
->>> +		scrm_data.clks = scrm_clks;
->>> +		scrm_data.clk_num = ARRAY_SIZE(scrm_clks);
->>> +		of_clk_add_provider(np, of_clk_src_onecell_get,	&scrm_data);
->>> +	}
->>> +
->>> +	return 0;
->>> +}
->>
->> []..
->>> +
->>> +void __init omap4_init_time(void)
->>> +{
->>> +	omap4_clk_init_dt();
->>> +	omap4_local_timer_init();
->>> +}
->>
->> I guess you did all this because of_clk_add_provider() needs
->> slab to be initialized. With the below patch[1], now clk inits
->> happen within .init_timer already, so none of this would
->> be needed.
->>
->> [1] http://www.spinics.net/lists/arm-kernel/msg231288.html
->>
+On Mon, Feb 04, 2013 at 09:11:28AM -0800, Tejun Heo wrote:
+> On Mon, Feb 04, 2013 at 09:10:31AM -0800, Tejun Heo wrote:
+> > Yeah, that should be easily convertable to the new interface.  How
+> > should we route these changes?  Your patch can go through the usual
+> > nfs channel and the conversion and deprecation patches can be held off
+> > until after -rc1.  Does that sound okay?
 > 
-> Right. I can then call omap4_clk_init_dt() from within omap4xxx_clk_init().
-> 
-> Any comments about the main subject? Does the approach look fine?
+> Ooh, BTW, the cyclic allocation is broken.  It's prone to -ENOSPC
+> after the first wraparound.  There are several cyclic users in the
+> kernel and I think it probably would be best to implement cyclic
+> support in idr.
 
-It looks fine, except for the fact that I was wondering if the clock
-provider needs to restrict itself to SCRM.
-Nishant Menon brought up a need for specifying the mpu clock source
-from within DT, to be able to use a generic cpufreq driver.
-It could be a provider (not specific to scrm, but having only scrm
-clocks for now) which we could add clocks as and when we see a need for
-them to be specified from DT.
+Are you looking at this, by the way, or do you have any suggestions?
 
-Btw, you need to copy Paul Walmsley for any clock related patches as
-he is the OMAP clock maintainer.
+Wondering if it's something I should try to fix or if I should look into
+converting to some other data structure here.
 
-> 
-> cheers,
-> -roger
-> 
-
+--b.
