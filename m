@@ -1,103 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab3CUSXX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 14:23:23 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47094 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab3CUSXV (ORCPT
+	id S1752498Ab3CUS2U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 14:28:20 -0400
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:38366 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001Ab3CUS2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 14:23:21 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>
-Cc: arm@kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, linux-kbuild@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH REPOST 1/7] kbuild: create an "include chroot" for DT bindings
-Date: Thu, 21 Mar 2013 12:23:08 -0600
-Message-Id: <1363890194-31538-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-X-NVConfidentiality: public
+	Thu, 21 Mar 2013 14:28:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <1363864907-28351-1-git-send-email-richard.genoud@gmail.com>
+References: <5149ED25.4010309@wwwdotorg.org>
+	<1363864907-28351-1-git-send-email-richard.genoud@gmail.com>
+Date: Thu, 21 Mar 2013 19:28:19 +0100
+Message-ID: <CACRpkda7FG6ET1FGod_BVk-nM3mg6WEwvsfB=s0yQCT+1ULDaQ@mail.gmail.com>
+Subject: Re: [PATCH] BUG: pinmux: forbid mux_usecount to be set at UINT_MAX
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Stephen Warren <swarren@nvidia.com>, Axel Lin <axel.lin@ingics.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Thu, Mar 21, 2013 at 12:21 PM, Richard Genoud
+<richard.genoud@gmail.com> wrote:
 
-The recent dtc+cpp support allows header files and C pre-processor
-defines/macros to be used when compiling device tree files. These
-headers will typically define various constants that are part of the
-device tree bindings.
+> If pin_free is called on a pin already freed, mux_usecount is set to
+> UINT_MAX which is really a bad idea.
+> This will issue a warning, so that we can correct the code responsible
+> for the double free.
+>
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 
-The original patch which set up the dtc+cpp include path only considered
-using those headers from device tree files. However, most are also
-useful for kernel code which needs to interpret the device tree.
+This version of the patch applied with Stephen's Reviewed-by
+and BUG prefix stripped, it's applied to the fixes branch for
+the v3.9 release candidates.
 
-In both the DT files and the kernel, I'd like to include the DT-related
-headers in the same way, for example, <dt-bindings/gpio/tegra-gpio.h>.
-That will simplify any text which discusses the DT header locations.
-
-Creating a <dt-bindings/> for kernel source to use is as simple as
-placing files into include/dt-bindings/.
-
-However, when compiling DT files, the include path should be restricted
-so that only the dt-bindings path is available; arbitrary kernel headers
-shouldn't be exposed. For this reason, create a specific include
-directory for use by dtc+cpp, and symlink dt-bindings from there to the
-actual location of include/dt-bindings/. For want of a better location,
-place this "include chroot" into the existing dts/ directory.
-
-arch/*/boot/dts/include/dt-bindings -> ../../../../../include/dt-bindings
-
-Some headers used by device tree files may not be useful to the kernel;
-they may be used simply to aid in constructing the DT file (e.g. macros
-to create a node), but not define any information that the kernel needs
-to share. These may be placed directly into arch/*/boot/dts/ along with
-the DT files themselves.
-
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Hiroshi Doyu <hdoyu@nvidia.com>
-Acked-by: Michal Marek <mmarek@suse.cz>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-Grant, Rob, Michal, I'm hoping for acks or comments from you so this
-series can be placed into a topic branch in the arm-soc repo, for others
-to build on during the 3.10 kernel cycle. Thanks.
-
-This first patch was previously posted separately as V2. I'm including
-it here to keep it with the whole series. I hope this series can be
-applied as a topic branch in arm-soc.
-
- arch/arm/boot/dts/include/dt-bindings |    1 +
- scripts/Makefile.lib                  |    2 +-
- 2 files changed, 2 insertions(+), 1 deletion(-)
- create mode 120000 arch/arm/boot/dts/include/dt-bindings
-
-diff --git a/arch/arm/boot/dts/include/dt-bindings b/arch/arm/boot/dts/include/dt-bindings
-new file mode 120000
-index 0000000..08c00e4
---- /dev/null
-+++ b/arch/arm/boot/dts/include/dt-bindings
-@@ -0,0 +1 @@
-+../../../../../include/dt-bindings
-\ No newline at end of file
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 07125e6..af35521 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -158,7 +158,7 @@ ld_flags       = $(LDFLAGS) $(ldflags-y)
- 
- dtc_cpp_flags  = -Wp,-MD,$(depfile) -nostdinc                            \
- 		 -I$(srctree)/arch/$(SRCARCH)/boot/dts                   \
--		 -I$(srctree)/arch/$(SRCARCH)/include/dts                \
-+		 -I$(srctree)/arch/$(SRCARCH)/boot/dts/include           \
- 		 -undef -D__DTS__
- 
- # Finds the multi-part object the current object will be linked into
--- 
-1.7.10.4
-
+Yours,
+Linus Walleij
