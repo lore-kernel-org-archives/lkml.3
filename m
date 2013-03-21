@@ -1,110 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab3CUA7l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 20:59:41 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18441 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496Ab3CUA7j (ORCPT
+	id S1755050Ab3CUBFe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 21:05:34 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52446 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559Ab3CUBFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 20:59:39 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 20 Mar 2013 17:59:37 -0700
-Message-ID: <1363827789.8815.56.camel@bilhuang-vm1>
-Subject: Re: [PATCH 1/1] clk: Add notifier support in
- clk_prepare/clk_unprepare
-From: Bill Huang <bilhuang@nvidia.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
-Date: Wed, 20 Mar 2013 18:03:09 -0700
-In-Reply-To: <20130320144752.11073.653@quantum>
-References: <1363699712-8124-1-git-send-email-bilhuang@nvidia.com>
-	 <20130319170140.8663.93388@quantum> <1363748149.8815.16.camel@bilhuang-vm1>
-	 <20130320033142.11073.30097@quantum>
-	 <1363754384.8815.42.camel@bilhuang-vm1> <20130320144752.11073.653@quantum>
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-9"
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Mar 2013 21:05:32 -0400
+Date: Thu, 21 Mar 2013 12:05:22 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: linux-next: manual merge of the v4l-dvb tree with the s390 tree
+Message-Id: <20130321120522.611e75952eb159bcf97f9cdf@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__21_Mar_2013_12_05_22_+1100_BJ6nn8pcER8gOiUd"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-20 at 22:47 +0800, Mike Turquette wrote:
-> Quoting Bill Huang (2013-03-19 21:39:44)
-> > On Wed, 2013-03-20 at 11:31 +0800, Mike Turquette wrote:
-> > > Quoting Bill Huang (2013-03-19 19:55:49)
-> > > > On Wed, 2013-03-20 at 01:01 +0800, Mike Turquette wrote:
-> > > > > I'm still not sure about this approach.  Based on feedback I got from
-> > > > > Linaro Connect I am not convinced that scaling voltage through clk
-> > > > > rate-change notifiers is the right way to go.  As I understand it this
-> > > > > patch only exists for that single purpose, so if the voltage-notifier
-> > > > > idea gets dropped then I will not take this patch in.
-> > > > > 
-> > > > Thanks Mike, actually we won't use your "clk: notifier handler for
-> > > > dynamic voltage scaling" patch instead we are trying to port our DVFS
-> > > > into Non-CPU DVFS framework "devfreq" which will need to hook those
-> > > > notifiers, without the clock notifiers been extended the framework is
-> > > > useless for us since we cannot do polling due to the fact that polling
-> > > > is not in real time. If it ended up extending the notifiers cannot
-> > > > happen then the only choice for us I think would be giving up "devfreq"
-> > > > and implement them in Tegra's "clk_hw".
-> > > 
-> > > I'm familiar with the devfreq framework.  Can you explain further how
-> > > you plan to use devfreq with the clock notifiers?  What does the call
-> > > graph look like?
-> > > 
-> > The call graph will look like this, when any DVFS interested clock rate
-> > changes (including enable and disable) happen -> Tegra devfreq clock
-> > notifier is called -> call into update_devfreq if needed -> in
-> > update_devfreq it will call into .get_target_freq in Tegra
-> > "devfreq_governor" -> and then call into .target of tegra
-> > devfreq_dev_profile to set voltage and done. More details are as below.
-> > 
-> > We'll create devfreq driver for Tegra VDD_CORE rail, and the safe
-> > voltage level of the rail is determined by tens of clocks (2d, 3d,
-> > mpe,...), all the frequency ladders of those clocks are defined in DT
-> > also the operating points for VDD_CORE is declared in DT where its
-> > frequency will be more of a virtual clock or index.
-> > 
-> >         operating-points = <
-> >         /* virtual-kHz  uV */
-> >         0       950000
-> >         1       1000000
-> >         2       1050000
-> >         3       1100000
-> >         4       1150000
-> >         5       1200000
-> >         6       1250000
-> >         7       1300000
-> >         8       1350000
-> > 
-> > Register a Tegra governor where the callback .get_target_freq is the
-> > function to determine the overall frequency it can go to, and
-> > the .target callback in "devfreq_dev_profile" will be the function
-> > really do the voltage scaling.
-> > 
-> > Tegra devfreq driver will register clock notifiers on all its interested
-> > clock and hence when any of those clock rate changes, disabled, enabled,
-> > we'll specifically call update_devfreq in the notifier.
-> 
-> Thank you for the explanation.  Do you plan to use actual devfreq
-> governors (like simple-ondemand, or something custom) for changing OPPs,
-> or do you just plan to use the clock framework as a trigger for DVFS?
-> 
-I think the existing governors are all polling basis that do not work
-for us, we have only single voltage rails and have tens of clocks which
-are used by different device drivers, the voltage has to be boost before
-the frequency is increasing, and it can only be lower after all the
-interested clocks rate are allowing it to or we might crash. Clock
-notifier seem to be the only choice to build association with all those
-interested device driver (in real time) who might make changes on clock
-rate either by using runtime PM or the similar mechanism.
+--Signature=_Thu__21_Mar_2013_12_05_22_+1100_BJ6nn8pcER8gOiUd
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-We do use OPP in our devfreq driver, we just need to do some extra work
-on checking all the interested clocks for making sure we will be
-choosing the correct operating point for the power rail.
+Hi Mauro,
 
+Today's linux-next merge of the v4l-dvb tree got a conflict in
+drivers/media/platform/Kconfig between commit c30f46bcf9b3
+("drivers/Kconfig: add several missing GENERIC_HARDIRQS dependencies")
+from the s390 tree and commit da508f579965 ("[media] media/v4l2:
+VIDEOBUF2_DMA_CONTIG should depend on HAS_DMA") from the v4l-dvb tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/media/platform/Kconfig
+index a0639e7,42c62aa..0000000
+--- a/drivers/media/platform/Kconfig
++++ b/drivers/media/platform/Kconfig
+@@@ -204,7 -204,7 +204,7 @@@ config VIDEO_SAMSUNG_EXYNOS_GS
+ =20
+  config VIDEO_SH_VEU
+  	tristate "SuperH VEU mem2mem video processing driver"
+- 	depends on VIDEO_DEV && VIDEO_V4L2 && GENERIC_HARDIRQS
+ -	depends on VIDEO_DEV && VIDEO_V4L2 && HAS_DMA
+++	depends on VIDEO_DEV && VIDEO_V4L2 && GENERIC_HARDIRQS && HAS_DMA
+  	select VIDEOBUF2_DMA_CONTIG
+  	select V4L2_MEM2MEM_DEV
+  	help
+
+--Signature=_Thu__21_Mar_2013_12_05_22_+1100_BJ6nn8pcER8gOiUd
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRSlzSAAoJEECxmPOUX5FEnpkQAJrZZNNSuiGFXge2eE94pkJM
+rsDcCehCGN7ZUjUhXZwsyVBisbQGgUppthdzovWnhBNx7UBXDJ/zy9RW+yMwKZ9i
+BQW6AK2lGMUsJsL2Yj4A631MYbL0PwejuYeSj7Tod1Ms3AdPgDi5xSwBT1Qbo+2X
+3McslkMEfqlGpcNI4frXkxcQeIxVzY9w7e9dRuUGA4UHtpcOyo7K9EzCCxZycYbx
+vP1CdjQLG66iph+1RpdULxyPxeryHbsaDZDKHS4ZlCFV5DoC70rw4t7FkfX/V3bO
+BRNSW26Xj60CTBKwOfQwbPnl0qjgv8y0IS/5d9V8bvSlk88Hn7PamYgsK+NpaI6/
+w5Z8xpz6dE8KY4UdNbtnx9FWL4xYkx6onVmrwP7Pjs2Rf6+cYpUbDa5qq7SknADv
+dWFKefUG+Nr7rFvJsgv9q2dAeh2wi7Sg1kLcZA7GlJ4d8/y6mbnFvFn8wygdA0+M
+xyNMDwJaUuI6UGWze82quN93aJqyknKwAj45/zos3TyTphseNOT6WU1I5XKy7WQh
+6qkBK5CCqA3dj64+FJw9XEsOq2EPCSz6E2POXagcyXrUQNkYP1mq5FwgvNxRIyKU
+J7aKaz8F5xHPuHUyY87NsCam4N+mDJcnGhQuH+oqt2F6z65t4BLd7WuroQGHW6km
+04YRFi0f6HAmh2fSB6Ph
+=jCN/
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__21_Mar_2013_12_05_22_+1100_BJ6nn8pcER8gOiUd--
