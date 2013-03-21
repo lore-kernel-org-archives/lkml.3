@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933916Ab3CUQLN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:11:13 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:46932 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933832Ab3CUQA2 (ORCPT
+	id S933825Ab3CUQAZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:00:25 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:64840 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933485Ab3CUQAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:00:28 -0400
+	Thu, 21 Mar 2013 12:00:21 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         broonie@opensource.wolfsonmicro.com
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 13/46] ARM: ux500: Add supply for the L3G4200D Gyroscope
-Date: Thu, 21 Mar 2013 15:59:10 +0000
-Message-Id: <1363881583-15234-14-git-send-email-lee.jones@linaro.org>
+        Lee Jones <lee.jones@linaro.org>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Subject: [PATCH 11/46] regulator: ab8500: Remove USB regulator
+Date: Thu, 21 Mar 2013 15:59:08 +0000
+Message-Id: <1363881583-15234-12-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
 References: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
@@ -22,27 +23,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch lists the L3G4200D Gyroscope as a consumer of the
-AB8500 VAUX1 regulator.
+The USB regulator is controlled by hardware. The software support
+was only needed for early hardware (ED) which is no longer supported.
 
+Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-regulators.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/regulator/ab8500.c       |   19 -------------------
+ include/linux/regulator/ab8500.h |    1 -
+ 2 files changed, 20 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index 161edbc7..86c2b53 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.c
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -73,6 +73,8 @@ static struct regulator_consumer_supply ab8500_vaux1_consumers[] = {
- 	REGULATOR_SUPPLY("avdd", "3-005d"),
- 	/* Synaptics RMI4 Touchscreen device */
- 	REGULATOR_SUPPLY("vdd", "3-004b"),
-+	/* L3G4200D Gyroscope device */
-+	REGULATOR_SUPPLY("vdd", "2-0068"),
- };
- 
- static struct regulator_consumer_supply ab8500_vaux2_consumers[] = {
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index 7d4006e..dfe191c 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -494,24 +494,6 @@ static struct ab8500_regulator_info
+ 		.update_val_idle	= 0x82,
+ 		.update_val_normal	= 0x02,
+ 	},
+-	[AB8500_LDO_USB] = {
+-		.desc = {
+-			.name           = "LDO-USB",
+-			.ops            = &ab8500_regulator_fixed_ops,
+-			.type           = REGULATOR_VOLTAGE,
+-			.id             = AB8500_LDO_USB,
+-			.owner          = THIS_MODULE,
+-			.n_voltages     = 1,
+-			.min_uV		= 3300000,
+-		},
+-		.update_bank            = 0x03,
+-		.update_reg             = 0x82,
+-		.update_mask            = 0x03,
+-	},
+-
+-	/*
+-	 * Regulators with fixed voltage and normal mode
+-	 */
+ 	[AB8500_LDO_AUDIO] = {
+ 		.desc = {
+ 			.name		= "LDO-AUDIO",
+@@ -912,7 +894,6 @@ static struct of_regulator_match ab8500_regulator_matches[] = {
+ 	{ .name	= "ab8500_ldo_aux3",    .driver_data = (void *) AB8500_LDO_AUX3, },
+ 	{ .name	= "ab8500_ldo_intcore", .driver_data = (void *) AB8500_LDO_INTCORE, },
+ 	{ .name	= "ab8500_ldo_tvout",   .driver_data = (void *) AB8500_LDO_TVOUT, },
+-	{ .name = "ab8500_ldo_usb",     .driver_data = (void *) AB8500_LDO_USB, },
+ 	{ .name = "ab8500_ldo_audio",   .driver_data = (void *) AB8500_LDO_AUDIO, },
+ 	{ .name	= "ab8500_ldo_anamic1", .driver_data = (void *) AB8500_LDO_ANAMIC1, },
+ 	{ .name	= "ab8500_ldo_amamic2", .driver_data = (void *) AB8500_LDO_ANAMIC2, },
+diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
+index 0a58db2..9a2da6a 100644
+--- a/include/linux/regulator/ab8500.h
++++ b/include/linux/regulator/ab8500.h
+@@ -19,7 +19,6 @@ enum ab8500_regulator_id {
+ 	AB8500_LDO_AUX3,
+ 	AB8500_LDO_INTCORE,
+ 	AB8500_LDO_TVOUT,
+-	AB8500_LDO_USB,
+ 	AB8500_LDO_AUDIO,
+ 	AB8500_LDO_ANAMIC1,
+ 	AB8500_LDO_ANAMIC2,
 -- 
 1.7.10.4
 
