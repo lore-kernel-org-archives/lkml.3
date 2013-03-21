@@ -1,65 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932643Ab3CUXgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 19:36:36 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38832 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932566Ab3CUXgf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 19:36:35 -0400
-Date: Thu, 21 Mar 2013 23:36:30 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: VFS deadlock ?
-Message-ID: <20130321233630.GE21522@ZenIV.linux.org.uk>
-References: <20130321192935.GY21522@ZenIV.linux.org.uk>
- <CA+55aFyvwJK99YvDLDsazD4tWT6sNQO6kGM_1WyDdvwPNDxbLw@mail.gmail.com>
- <20130321202635.GA16406@redhat.com>
- <CA+55aFwyK4uDgSKUpXBGS5zi16qd8STtrGi3kndunYi40dnj+A@mail.gmail.com>
- <20130321203639.GC16406@redhat.com>
- <20130321204704.GZ21522@ZenIV.linux.org.uk>
- <20130321210255.GD16406@redhat.com>
- <CA+55aFxysZEw6fw8+LobMgfzeHuGSSs+hyrUr_frTOjaCGJFLQ@mail.gmail.com>
- <20130321221256.GA30620@redhat.com>
- <CA+55aFx+O13YuJsZyrTS6O9Kws=1ff-knsSv9rV8wTf8yBrPJg@mail.gmail.com>
+	id S932699Ab3CUXhZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 19:37:25 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:59458 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932545Ab3CUXhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 19:37:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com
+Subject: Re: [PATCH V3 2/4] cpufreq: governor: Implement per policy instances of governors
+Date: Fri, 22 Mar 2013 00:44:40 +0100
+Message-ID: <2565053.YP0dCLmaW9@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohponTZ29BX6CrUvFMy9RXV==0wRFu4C-W1xd6t1RmLASTvQ@mail.gmail.com>
+References: <cover.1362381470.git.viresh.kumar@linaro.org> <0823a96fea2d8284b7d83cee390dd5973fdaaa94.1362381470.git.viresh.kumar@linaro.org> <CAKohponTZ29BX6CrUvFMy9RXV==0wRFu4C-W1xd6t1RmLASTvQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx+O13YuJsZyrTS6O9Kws=1ff-knsSv9rV8wTf8yBrPJg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 03:53:13PM -0700, Linus Torvalds wrote:
-> Ok, good. The only rpc/irda that has something in common is
-> /proc/net/, and they both use proc_mkdir() to create the directory:
+On Wednesday, March 20, 2013 10:59:13 AM Viresh Kumar wrote:
+> On 4 March 2013 13:07, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> > Currently, there can't be multiple instances of single governor_type. If we have
+> > a multi-package system, where we have multiple instances of struct policy (per
+> > package), we can't have multiple instances of same governor. i.e. We can't have
+> > multiple instances of ondemand governor for multiple packages.
+> >
+> > Governors directory in sysfs is created at /sys/devices/system/cpu/cpufreq/
+> > governor-name/. Which again reflects that there can be only one instance of a
+> > governor_type in the system.
+> >
+> > This is a bottleneck for multicluster system, where we want different packages
+> > to use same governor type, but with different tunables.
+> >
+> > This patch uses the infrastructure provided by earlier patch and implements
+> > init/exit routines for ondemand and conservative governors.
+> >
+> > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 > 
->     proc_irda = proc_mkdir("irda", init_net.proc_net);
->    ...
->     sn->proc_net_rpc = proc_mkdir("rpc", net->proc_net);
+> As discussed in other patch thread, i dropped "cpufreq: Add Kconfig option
+> to enable/disable have_multiple_policies" patch and following is the fixup
+> to this patch:
 > 
-> so it's almost certainly that case. What I do *not* see is how we got
-> two different dentries for the same name in /proc. But if that
-> happens, then yes, they will have aliased inodes (because
-> proc_get_inode() will look them up by "sb,de->low_ino".
+> I have queued all patches i had for 3.10 here:
 > 
-> Al, any ideas? There shouldn't be some lookup race, because that's
-> done under the parent inode lock. And multiple mount-points will have
-> different superblocks, so proc_get_inode() will give them separate
-> inodes. And bind mounts should have all the same dentry tree. So what
-> the heck am I missing?
+> http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/for-3.10
 
-Some netns-related idiocy.  Oh, shit...
+OK, applied these to linux-pm.git/bleeding-edge.
 
-al@duke:~/linux/trees/vfs$ ls -lid /proc/{1,2}/net/stat
-4026531842 dr-xr-xr-x 2 root root 0 Mar 21 19:33 /proc/1/net/stat
-4026531842 dr-xr-xr-x 2 root root 0 Mar 21 19:33 /proc/2/net/stat
+At the moment bleeding-edge and linux-next diverged slightly on cpufreq, but
+I hope the bleeding-edge material won't cause build problems to occur, so I'll
+be able to move it to linux-next shortly.
 
-Eric, would you mind explaining WTF is going on here?  Again, WE CAN NOT
-HAVE SEVERAL DENTRIES OVER THE SAME DIRECTORY INODE.  Ever.  We do that,
-we are fucked.
+> commit f02fca9a2478088c4f7dadf82d998ae007a56285
+> Author: Viresh Kumar <viresh.kumar@linaro.org>
+> Date:   Wed Mar 20 10:50:33 2013 +0530
+> 
+>     fixup! cpufreq: governor: Implement per policy instances of governors
 
-Sigh...  Namespace kinds - there should've been only one...
+I'd actually prefer you to post complete updated patches instead of these
+fixups.  They are real PITA for me and probably for everybody else trying
+to follow the cpufreq development recently.
+
+Thanks,
+Rafael
+
+
+> ---
+>  drivers/cpufreq/cpufreq.c |  8 ++++++++
+>  include/linux/cpufreq.h   | 22 ++++++++--------------
+>  2 files changed, 16 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index a843855..3d83b02 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -128,6 +128,14 @@ void disable_cpufreq(void)
+>  static LIST_HEAD(cpufreq_governor_list);
+>  static DEFINE_MUTEX(cpufreq_governor_mutex);
+> 
+> +struct kobject *get_governor_parent_kobj(struct cpufreq_policy *policy)
+> +{
+> +       if (cpufreq_driver->have_multiple_policies)
+> +               return &policy->kobj;
+> +       else
+> +               return cpufreq_global_kobject;
+> +}
+> +
+>  static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, bool sysfs)
+>  {
+>         struct cpufreq_policy *data;
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index 6e1abd2..805c4d3 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -107,11 +107,6 @@ struct cpufreq_policy {
+>         unsigned int            policy; /* see above */
+>         struct cpufreq_governor *governor; /* see below */
+>         void                    *governor_data;
+> -       /* This should be set by init() of platforms having multiple
+> -        * clock-domains, i.e.  supporting multiple policies. With this sysfs
+> -        * directories of governor would be created in cpu/cpu<num>/cpufreq/
+> -        * directory */
+> -       bool                    have_multiple_policies;
+> 
+>         struct work_struct      update; /* if update_policy() needs to be
+>                                          * called, but you're in IRQ context */
+> @@ -139,15 +134,6 @@ static inline bool policy_is_shared(struct
+> cpufreq_policy *policy)
+>         return cpumask_weight(policy->cpus) > 1;
+>  }
+> 
+> -static inline struct kobject *
+> -get_governor_parent_kobj(struct cpufreq_policy *policy)
+> -{
+> -       if (policy->have_multiple_policies)
+> -               return &policy->kobj;
+> -       else
+> -               return cpufreq_global_kobject;
+> -}
+> -
+>  /******************** cpufreq transition notifiers *******************/
+> 
+>  #define CPUFREQ_PRECHANGE      (0)
+> @@ -245,6 +231,13 @@ struct cpufreq_driver {
+>         struct module           *owner;
+>         char                    name[CPUFREQ_NAME_LEN];
+>         u8                      flags;
+> +       /*
+> +        * This should be set by init() of platforms having multiple
+> +        * clock-domains, i.e.  supporting multiple policies. With this sysfs
+> +        * directories of governor would be created in cpu/cpu<num>/cpufreq/
+> +        * directory
+> +        */
+> +       bool                    have_multiple_policies;
+> 
+>         /* needed by all drivers */
+>         int     (*init)         (struct cpufreq_policy *policy);
+> @@ -329,6 +322,7 @@ const char *cpufreq_get_current_driver(void);
+>   *********************************************************************/
+>  int cpufreq_get_policy(struct cpufreq_policy *policy, unsigned int cpu);
+>  int cpufreq_update_policy(unsigned int cpu);
+> +struct kobject *get_governor_parent_kobj(struct cpufreq_policy *policy);
+> 
+>  #ifdef CONFIG_CPU_FREQ
+>  /* query the current CPU frequency (in kHz). If zero, cpufreq
+> couldn't detect it */
+> --
+> To unsubscribe from this list: send the line "unsubscribe cpufreq" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
