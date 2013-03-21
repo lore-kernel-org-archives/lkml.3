@@ -1,93 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab3CUBk4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 21:40:56 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:44191 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754651Ab3CUBkx convert rfc822-to-8bit (ORCPT
+	id S1755066Ab3CUBmE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 21:42:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57110 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754522Ab3CUBmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 21:40:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130320085241.GA10570@zurbaran>
-References: <1361830121-32284-1-git-send-email-sjg@chromium.org>
-	<20130320005652.GC26903@zurbaran>
-	<20130320011211.GA5905@zurbaran>
-	<CAPnjgZ1=w5GyfGrSFG63SFTErTQQUQQiBmgC8BVMzy4kLVkPDg@mail.gmail.com>
-	<20130320081456.GA5939@zurbaran>
-	<20130320085241.GA10570@zurbaran>
-Date: Wed, 20 Mar 2013 18:40:53 -0700
-X-Google-Sender-Auth: QqlTw-iv_zrxqHr-7ix3UocjY_o
-Message-ID: <CAPnjgZ29ZWrMU53sur1uOxrLZTWNiBNX7uHnbL5Xyd8QzGDzXg@mail.gmail.com>
-Subject: Re: [PATCH v6 0/6] Add ChromeOS Embedded Controller support
-From: Simon Glass <sjg@chromium.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Rob Landley <rob@landley.net>,
-        Felipe Balbi <balbi@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Luigi Semenzato <semenzato@chromium.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Che-Liang Chiou <clchiou@chromium.org>,
-        Jonathan Kliegman <kliegs@chromium.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Alban Bedel <alban.bedel@avionic-design.de>,
-        Roland Stigge <stigge@antcom.de>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Bill Pemberton <wfp5p@virginia.edu>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Wed, 20 Mar 2013 21:42:01 -0400
+Message-ID: <1363830108.31336.83.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 12/48] signal: always clear sa_restorer on execve
+From: Ben Hutchings <ben@decadent.org.uk>
+To: "Sebastian Gottschall (DD-WRT)" <s.gottschall@dd-wrt.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Thu, 21 Mar 2013 01:41:48 +0000
+In-Reply-To: <514A1F7A.6090407@dd-wrt.com>
+References: <514A07DC.60708@dd-wrt.com> <514A1F7A.6090407@dd-wrt.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-9fgsro0aJoxmSj4kYLx6"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:5944:e226:2c7e:1b17
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
 
-On Wed, Mar 20, 2013 at 1:52 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> Hi Simon,
->
-> On Wed, Mar 20, 2013 at 09:14:56AM +0100, Samuel Ortiz wrote:
->> On Tue, Mar 19, 2013 at 07:01:42PM -0700, Simon Glass wrote:
->> > Hi Samuel,
->> >
->> > On Tue, Mar 19, 2013 at 6:12 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
->> > > On Wed, Mar 20, 2013 at 01:56:52AM +0100, Samuel Ortiz wrote:
->> > >> Hi Simon,
->> > >>
->> > >> On Mon, Feb 25, 2013 at 02:08:35PM -0800, Simon Glass wrote:
->> > >> > The ChromeOS Embedded Controller (EC) is an Open Source EC implementation
->> > >> > used on ARM and Intel Chromebooks. Current implementations use a Cortex-M3
->> > >> > connected on a bus (such as I2C, SPI, LPC) to the AP. A separate interrupt
->> > >> > line is used to indicate when the EC needs service.
->> > >> All 6 patches applied to my mfd-next tree, thanks a lot.
->> > > Actually, this one fails to build when CONFIG_OF is not set:
->> > >
->> > > drivers/mfd/cros_ec_i2c.c:130:2: error: implicit declaration of function
->> > > ‘of_device_is_available’ [-Werror=implicit-function-declaration]
->> > >
->> > > If the check in cros_ec_probe_i2c() is really needed then you'll need to inline
->> > > of_device_is_available() into a NOP in include/linux/of.h.
->> >
->> > Actually I suppose that call is not really needed. Would you like to
->> > remove it, or shall I send a new patch?
->> I will remove it.
-> This is fixed and pushed. I also fixed some warnings and another build failure
-> for the case when all of your code is modular.
+--=-9fgsro0aJoxmSj4kYLx6
+Content-Type: multipart/mixed; boundary="=-KveZVZtVtilGnz0XZ9lo"
 
-Thank you for that. I don't think I quite understood the different
-build tests that I needed to do.
 
-Regards,
-Simon
+--=-KveZVZtVtilGnz0XZ9lo
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->
-> Cheers,
-> Samuel.
->
-> --
-> Intel Open Source Technology Centre
-> http://oss.intel.com/
+On Wed, 2013-03-20 at 21:43 +0100, Sebastian Gottschall (DD-WRT) wrote:
+> Am 20.03.2013 20:02, schrieb Sebastian Gottschall (DD-WRT):
+> > Hello
+> >
+> > The patch for sa_restorer will break mips builds, since sa_restorer=20
+> > isnt defined as field within the struct, but the MACRO is.
+> > so use the __ARCH_HAS_SA_RESTORER way which is implemented in that way=
+=20
+> > in linux 3.9 or simply revert the patch
+
+This also appears to break blackfin, ia64, parisc and tile.
+
+I think for earlier 3.x.y series we can use one of the attached
+(untested) patches to define __ARCH_HAS_SA_RESTORER appropriately, and
+then apply the upstream change:
+
+commit 522cff142d7d2f9230839c9e1f21a4d8bcc22a4a
+Author: Andrew Morton <akpm@linux-foundation.org>
+Date:   Wed Mar 13 14:59:34 2013 -0700
+
+    kernel/signal.c: use __ARCH_HAS_SA_RESTORER instead of SA_RESTORER
+
+Ben.
+
+--=20
+Ben Hutchings
+It is easier to write an incorrect program than to understand a correct one=
+.
+
+--=-KveZVZtVtilGnz0XZ9lo
+Content-Disposition: attachment;
+	filename="signal-fix-use-of-missing-sa_restorer-field-3.0-3.2-3.4.patch"
+Content-Transfer-Encoding: base64
+Content-Type: text/x-patch;
+	name="signal-fix-use-of-missing-sa_restorer-field-3.0-3.2-3.4.patch";
+	charset="UTF-8"
+
+RnJvbTogQmVuIEh1dGNoaW5ncyA8YmVuQGRlY2FkZW50Lm9yZy51az4NCkRhdGU6IFN1biwgMjUg
+Tm92IDIwMTIgMjI6MjQ6MTkgLTA1MDANClN1YmplY3Q6IHNpZ25hbDogRml4IHVzZSBvZiBtaXNz
+aW5nIHNhX3Jlc3RvcmVyIGZpZWxkDQoNCmZsdXNoX3NpZ25hbF9oYW5kbGVycygpIG5lZWRzIHRv
+IGtub3cgd2hldGhlciBzaWdhY3Rpb246OnNhX3Jlc3RvcmVyDQppcyBkZWZpbmVkLCBub3Qgd2hl
+dGhlciBTQV9SRVNUT1JFUiBpcyBkZWZpbmVkLiAgRGVmaW5lIHRoZQ0KX19BUkNIX0hBU19TQV9S
+RVNUT1JFUiBtYWNybyB0byBpbmRpY2F0ZSB0aGlzLg0KDQpWYWd1ZWx5IGJhc2VkIG9uIHVwc3Ry
+ZWFtIGNvbW1pdCA1NzRjNDg2NmUzM2QgJ2NvbnNvbGlkYXRlIGtlcm5lbC1zaWRlDQpzdHJ1Y3Qg
+c2lnYWN0aW9uIGRlY2xhcmF0aW9ucycuDQoNClNpZ25lZC1vZmYtYnk6IEJlbiBIdXRjaGluZ3Mg
+PGJlbkBkZWNhZGVudC5vcmcudWs+DQpDYzogQWwgVmlybyA8dmlyb0B6ZW5pdi5saW51eC5vcmcu
+dWs+DQotLS0NCi0tLSBhL2FyY2gvYXJtL2luY2x1ZGUvYXNtL3NpZ25hbC5oDQorKysgYi9hcmNo
+L2FybS9pbmNsdWRlL2FzbS9zaWduYWwuaA0KQEAgLTEyNyw2ICsxMjcsNyBAQCBzdHJ1Y3Qgc2ln
+YWN0aW9uIHsNCiAJX19zaWdyZXN0b3JlX3Qgc2FfcmVzdG9yZXI7DQogCXNpZ3NldF90IHNhX21h
+c2s7CQkvKiBtYXNrIGxhc3QgZm9yIGV4dGVuc2liaWxpdHkgKi8NCiB9Ow0KKyNkZWZpbmUgX19B
+UkNIX0hBU19TQV9SRVNUT1JFUg0KIA0KIHN0cnVjdCBrX3NpZ2FjdGlvbiB7DQogCXN0cnVjdCBz
+aWdhY3Rpb24gc2E7DQotLS0gYS9hcmNoL2F2cjMyL2luY2x1ZGUvYXNtL3NpZ25hbC5oDQorKysg
+Yi9hcmNoL2F2cjMyL2luY2x1ZGUvYXNtL3NpZ25hbC5oDQpAQCAtMTI4LDYgKzEyOCw3IEBAIHN0
+cnVjdCBzaWdhY3Rpb24gew0KIAlfX3NpZ3Jlc3RvcmVfdCBzYV9yZXN0b3JlcjsNCiAJc2lnc2V0
+X3Qgc2FfbWFzazsJCS8qIG1hc2sgbGFzdCBmb3IgZXh0ZW5zaWJpbGl0eSAqLw0KIH07DQorI2Rl
+ZmluZSBfX0FSQ0hfSEFTX1NBX1JFU1RPUkVSDQogDQogc3RydWN0IGtfc2lnYWN0aW9uIHsNCiAJ
+c3RydWN0IHNpZ2FjdGlvbiBzYTsNCi0tLSBhL2FyY2gvY3Jpcy9pbmNsdWRlL2FzbS9zaWduYWwu
+aA0KKysrIGIvYXJjaC9jcmlzL2luY2x1ZGUvYXNtL3NpZ25hbC5oDQpAQCAtMTIyLDYgKzEyMiw3
+IEBAIHN0cnVjdCBzaWdhY3Rpb24gew0KIAl2b2lkICgqc2FfcmVzdG9yZXIpKHZvaWQpOw0KIAlz
+aWdzZXRfdCBzYV9tYXNrOwkJLyogbWFzayBsYXN0IGZvciBleHRlbnNpYmlsaXR5ICovDQogfTsN
+CisjZGVmaW5lIF9fQVJDSF9IQVNfU0FfUkVTVE9SRVINCiANCiBzdHJ1Y3Qga19zaWdhY3Rpb24g
+ew0KIAlzdHJ1Y3Qgc2lnYWN0aW9uIHNhOw0KLS0tIGEvYXJjaC9oODMwMC9pbmNsdWRlL2FzbS9z
+aWduYWwuaA0KKysrIGIvYXJjaC9oODMwMC9pbmNsdWRlL2FzbS9zaWduYWwuaA0KQEAgLTEyMSw2
+ICsxMjEsNyBAQCBzdHJ1Y3Qgc2lnYWN0aW9uIHsNCiAJdm9pZCAoKnNhX3Jlc3RvcmVyKSh2b2lk
+KTsNCiAJc2lnc2V0X3Qgc2FfbWFzazsJCS8qIG1hc2sgbGFzdCBmb3IgZXh0ZW5zaWJpbGl0eSAq
+Lw0KIH07DQorI2RlZmluZSBfX0FSQ0hfSEFTX1NBX1JFU1RPUkVSDQogDQogc3RydWN0IGtfc2ln
+YWN0aW9uIHsNCiAJc3RydWN0IHNpZ2FjdGlvbiBzYTsNCi0tLSBhL2FyY2gvbTMyci9pbmNsdWRl
+L2FzbS9zaWduYWwuaA0KKysrIGIvYXJjaC9tMzJyL2luY2x1ZGUvYXNtL3NpZ25hbC5oDQpAQCAt
+MTIzLDYgKzEyMyw3IEBAIHN0cnVjdCBzaWdhY3Rpb24gew0KIAlfX3NpZ3Jlc3RvcmVfdCBzYV9y
+ZXN0b3JlcjsNCiAJc2lnc2V0X3Qgc2FfbWFzazsJCS8qIG1hc2sgbGFzdCBmb3IgZXh0ZW5zaWJp
+bGl0eSAqLw0KIH07DQorI2RlZmluZSBfX0FSQ0hfSEFTX1NBX1JFU1RPUkVSDQogDQogc3RydWN0
+IGtfc2lnYWN0aW9uIHsNCiAJc3RydWN0IHNpZ2FjdGlvbiBzYTsNCi0tLSBhL2FyY2gvbTY4ay9p
+bmNsdWRlL2FzbS9zaWduYWwuaA0KKysrIGIvYXJjaC9tNjhrL2luY2x1ZGUvYXNtL3NpZ25hbC5o
+DQpAQCAtMTE5LDYgKzExOSw3IEBAIHN0cnVjdCBzaWdhY3Rpb24gew0KIAlfX3NpZ3Jlc3RvcmVf
+dCBzYV9yZXN0b3JlcjsNCiAJc2lnc2V0X3Qgc2FfbWFzazsJCS8qIG1hc2sgbGFzdCBmb3IgZXh0
+ZW5zaWJpbGl0eSAqLw0KIH07DQorI2RlZmluZSBfX0FSQ0hfSEFTX1NBX1JFU1RPUkVSDQogDQog
+c3RydWN0IGtfc2lnYWN0aW9uIHsNCiAJc3RydWN0IHNpZ2FjdGlvbiBzYTsNCi0tLSBhL2FyY2gv
+bW4xMDMwMC9pbmNsdWRlL2FzbS9zaWduYWwuaA0KKysrIGIvYXJjaC9tbjEwMzAwL2luY2x1ZGUv
+YXNtL3NpZ25hbC5oDQpAQCAtMTMxLDYgKzEzMSw3IEBAIHN0cnVjdCBzaWdhY3Rpb24gew0KIAlf
+X3NpZ3Jlc3RvcmVfdCBzYV9yZXN0b3JlcjsNCiAJc2lnc2V0X3Qgc2FfbWFzazsJCS8qIG1hc2sg
+bGFzdCBmb3IgZXh0ZW5zaWJpbGl0eSAqLw0KIH07DQorI2RlZmluZSBfX0FSQ0hfSEFTX1NBX1JF
+U1RPUkVSDQogDQogc3RydWN0IGtfc2lnYWN0aW9uIHsNCiAJc3RydWN0IHNpZ2FjdGlvbiBzYTsN
+Ci0tLSBhL2FyY2gvcG93ZXJwYy9pbmNsdWRlL2FzbS9zaWduYWwuaA0KKysrIGIvYXJjaC9wb3dl
+cnBjL2luY2x1ZGUvYXNtL3NpZ25hbC5oDQpAQCAtMTA5LDYgKzEwOSw3IEBAIHN0cnVjdCBzaWdh
+Y3Rpb24gew0KIAlfX3NpZ3Jlc3RvcmVfdCBzYV9yZXN0b3JlcjsNCiAJc2lnc2V0X3Qgc2FfbWFz
+azsJCS8qIG1hc2sgbGFzdCBmb3IgZXh0ZW5zaWJpbGl0eSAqLw0KIH07DQorI2RlZmluZSBfX0FS
+Q0hfSEFTX1NBX1JFU1RPUkVSDQogDQogc3RydWN0IGtfc2lnYWN0aW9uIHsNCiAJc3RydWN0IHNp
+Z2FjdGlvbiBzYTsNCi0tLSBhL2FyY2gvczM5MC9pbmNsdWRlL2FzbS9zaWduYWwuaA0KKysrIGIv
+YXJjaC9zMzkwL2luY2x1ZGUvYXNtL3NpZ25hbC5oDQpAQCAtMTMxLDYgKzEzMSw3IEBAIHN0cnVj
+dCBzaWdhY3Rpb24gew0KICAgICAgICAgdm9pZCAoKnNhX3Jlc3RvcmVyKSh2b2lkKTsNCiAgICAg
+ICAgIHNpZ3NldF90IHNhX21hc2s7ICAgICAgICAgICAgICAgLyogbWFzayBsYXN0IGZvciBleHRl
+bnNpYmlsaXR5ICovDQogfTsNCisjZGVmaW5lIF9fQVJDSF9IQVNfU0FfUkVTVE9SRVINCiANCiBz
+dHJ1Y3Qga19zaWdhY3Rpb24gew0KICAgICAgICAgc3RydWN0IHNpZ2FjdGlvbiBzYTsNCi0tLSBh
+L2FyY2gvc3BhcmMvaW5jbHVkZS9hc20vc2lnbmFsLmgNCisrKyBiL2FyY2gvc3BhcmMvaW5jbHVk
+ZS9hc20vc2lnbmFsLmgNCkBAIC0xOTEsNiArMTkxLDcgQEAgc3RydWN0IF9fb2xkX3NpZ2FjdGlv
+biB7DQogCXVuc2lnbmVkIGxvbmcJCXNhX2ZsYWdzOw0KIAl2b2lkCQkJKCpzYV9yZXN0b3Jlciko
+dm9pZCk7ICAvKiBub3QgdXNlZCBieSBMaW51eC9TUEFSQyB5ZXQgKi8NCiB9Ow0KKyNkZWZpbmUg
+X19BUkNIX0hBU19TQV9SRVNUT1JFUg0KIA0KIHR5cGVkZWYgc3RydWN0IHNpZ2FsdHN0YWNrIHsN
+CiAJdm9pZAkJCV9fdXNlciAqc3Nfc3A7DQotLS0gYS9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9zaWdu
+YWwuaA0KKysrIGIvYXJjaC94ODYvaW5jbHVkZS9hc20vc2lnbmFsLmgNCkBAIC0xMjUsNiArMTI1
+LDggQEAgdHlwZWRlZiB1bnNpZ25lZCBsb25nIHNpZ3NldF90Ow0KIGV4dGVybiB2b2lkIGRvX25v
+dGlmeV9yZXN1bWUoc3RydWN0IHB0X3JlZ3MgKiwgdm9pZCAqLCBfX3UzMik7DQogIyBlbmRpZiAv
+KiBfX0tFUk5FTF9fICovDQogDQorI2RlZmluZSBfX0FSQ0hfSEFTX1NBX1JFU1RPUkVSDQorDQog
+I2lmZGVmIF9faTM4Nl9fDQogIyBpZmRlZiBfX0tFUk5FTF9fDQogc3RydWN0IG9sZF9zaWdhY3Rp
+b24gew0KLS0tIGEvYXJjaC94dGVuc2EvaW5jbHVkZS9hc20vc2lnbmFsLmgNCisrKyBiL2FyY2gv
+eHRlbnNhL2luY2x1ZGUvYXNtL3NpZ25hbC5oDQpAQCAtMTMzLDYgKzEzMyw3IEBAIHN0cnVjdCBz
+aWdhY3Rpb24gew0KIAl2b2lkICgqc2FfcmVzdG9yZXIpKHZvaWQpOw0KIAlzaWdzZXRfdCBzYV9t
+YXNrOwkJLyogbWFzayBsYXN0IGZvciBleHRlbnNpYmlsaXR5ICovDQogfTsNCisjZGVmaW5lIF9f
+QVJDSF9IQVNfU0FfUkVTVE9SRVINCiANCiBzdHJ1Y3Qga19zaWdhY3Rpb24gew0KIAlzdHJ1Y3Qg
+c2lnYWN0aW9uIHNhOw0KLS0tIGEvaW5jbHVkZS9hc20tZ2VuZXJpYy9zaWduYWwuaA0KKysrIGIv
+aW5jbHVkZS9hc20tZ2VuZXJpYy9zaWduYWwuaA0KQEAgLTk5LDYgKzk5LDEwIEBAIHR5cGVkZWYg
+dW5zaWduZWQgbG9uZyBvbGRfc2lnc2V0X3Q7DQogDQogI2luY2x1ZGUgPGFzbS1nZW5lcmljL3Np
+Z25hbC1kZWZzLmg+DQogDQorI2lmZGVmIFNBX1JFU1RPUkVSDQorI2RlZmluZSBfX0FSQ0hfSEFT
+X1NBX1JFU1RPUkVSDQorI2VuZGlmDQorDQogc3RydWN0IHNpZ2FjdGlvbiB7DQogCV9fc2lnaGFu
+ZGxlcl90IHNhX2hhbmRsZXI7DQogCXVuc2lnbmVkIGxvbmcgc2FfZmxhZ3M7DQo=
+
+
+--=-KveZVZtVtilGnz0XZ9lo
+Content-Disposition: attachment;
+	filename="signal-fix-use-of-missing-sa_restorer-field-3.8.patch"
+Content-Transfer-Encoding: base64
+Content-Type: text/x-patch; name="signal-fix-use-of-missing-sa_restorer-field-3.8.patch";
+	charset="UTF-8"
+
+RnJvbTogQmVuIEh1dGNoaW5ncyA8YmVuQGRlY2FkZW50Lm9yZy51az4NCkRhdGU6IFN1biwgMjUg
+Tm92IDIwMTIgMjI6MjQ6MTkgLTA1MDANClN1YmplY3Q6IHNpZ25hbDogRml4IHVzZSBvZiBtaXNz
+aW5nIHNhX3Jlc3RvcmVyIGZpZWxkDQoNCmZsdXNoX3NpZ25hbF9oYW5kbGVycygpIG5lZWRzIHRv
+IGtub3cgd2hldGhlciBzaWdhY3Rpb246OnNhX3Jlc3RvcmVyDQppcyBkZWZpbmVkLCBub3Qgd2hl
+dGhlciBTQV9SRVNUT1JFUiBpcyBkZWZpbmVkLiAgRGVmaW5lIHRoZQ0KX19BUkNIX0hBU19TQV9S
+RVNUT1JFUiBtYWNybyB0byBpbmRpY2F0ZSB0aGlzLg0KDQpWYWd1ZWx5IGJhc2VkIG9uIHVwc3Ry
+ZWFtIGNvbW1pdCA1NzRjNDg2NmUzM2QgJ2NvbnNvbGlkYXRlIGtlcm5lbC1zaWRlDQpzdHJ1Y3Qg
+c2lnYWN0aW9uIGRlY2xhcmF0aW9ucycuDQoNClNpZ25lZC1vZmYtYnk6IEJlbiBIdXRjaGluZ3Mg
+PGJlbkBkZWNhZGVudC5vcmcudWs+DQpDYzogQWwgVmlybyA8dmlyb0B6ZW5pdi5saW51eC5vcmcu
+dWs+DQotLS0NCi0tLSBhL2FyY2gvYXJtL2luY2x1ZGUvYXNtL3NpZ25hbC5oDQorKysgYi9hcmNo
+L2FybS9pbmNsdWRlL2FzbS9zaWduYWwuaA0KQEAgLTI5LDYgKzI5LDcgQEAgc3RydWN0IHNpZ2Fj
+dGlvbiB7DQogCV9fc2lncmVzdG9yZV90IHNhX3Jlc3RvcmVyOw0KIAlzaWdzZXRfdCBzYV9tYXNr
+OwkJLyogbWFzayBsYXN0IGZvciBleHRlbnNpYmlsaXR5ICovDQogfTsNCisjZGVmaW5lIF9fQVJD
+SF9IQVNfU0FfUkVTVE9SRVINCiANCiBzdHJ1Y3Qga19zaWdhY3Rpb24gew0KIAlzdHJ1Y3Qgc2ln
+YWN0aW9uIHNhOw0KLS0tIGEvYXJjaC9hdnIzMi9pbmNsdWRlL2FzbS9zaWduYWwuaA0KKysrIGIv
+YXJjaC9hdnIzMi9pbmNsdWRlL2FzbS9zaWduYWwuaA0KQEAgLTI5LDYgKzI5LDcgQEAgc3RydWN0
+IHNpZ2FjdGlvbiB7DQogCV9fc2lncmVzdG9yZV90IHNhX3Jlc3RvcmVyOw0KIAlzaWdzZXRfdCBz
+YV9tYXNrOwkJLyogbWFzayBsYXN0IGZvciBleHRlbnNpYmlsaXR5ICovDQogfTsNCisjZGVmaW5l
+IF9fQVJDSF9IQVNfU0FfUkVTVE9SRVINCiANCiBzdHJ1Y3Qga19zaWdhY3Rpb24gew0KIAlzdHJ1
+Y3Qgc2lnYWN0aW9uIHNhOw0KLS0tIGEvYXJjaC9jcmlzL2luY2x1ZGUvYXNtL3NpZ25hbC5oDQor
+KysgYi9hcmNoL2NyaXMvaW5jbHVkZS9hc20vc2lnbmFsLmgNCkBAIC0yOSw2ICsyOSw3IEBAIHN0
+cnVjdCBzaWdhY3Rpb24gew0KIAl2b2lkICgqc2FfcmVzdG9yZXIpKHZvaWQpOw0KIAlzaWdzZXRf
+dCBzYV9tYXNrOwkJLyogbWFzayBsYXN0IGZvciBleHRlbnNpYmlsaXR5ICovDQogfTsNCisjZGVm
+aW5lIF9fQVJDSF9IQVNfU0FfUkVTVE9SRVINCiANCiBzdHJ1Y3Qga19zaWdhY3Rpb24gew0KIAlz
+dHJ1Y3Qgc2lnYWN0aW9uIHNhOw0KLS0tIGEvYXJjaC9oODMwMC9pbmNsdWRlL2FzbS9zaWduYWwu
+aA0KKysrIGIvYXJjaC9oODMwMC9pbmNsdWRlL2FzbS9zaWduYWwuaA0KQEAgLTI5LDYgKzI5LDcg
+QEAgc3RydWN0IHNpZ2FjdGlvbiB7DQogCXZvaWQgKCpzYV9yZXN0b3Jlcikodm9pZCk7DQogCXNp
+Z3NldF90IHNhX21hc2s7CQkvKiBtYXNrIGxhc3QgZm9yIGV4dGVuc2liaWxpdHkgKi8NCiB9Ow0K
+KyNkZWZpbmUgX19BUkNIX0hBU19TQV9SRVNUT1JFUg0KIA0KIHN0cnVjdCBrX3NpZ2FjdGlvbiB7
+DQogCXN0cnVjdCBzaWdhY3Rpb24gc2E7DQotLS0gYS9hcmNoL20zMnIvaW5jbHVkZS9hc20vc2ln
+bmFsLmgNCisrKyBiL2FyY2gvbTMyci9pbmNsdWRlL2FzbS9zaWduYWwuaA0KQEAgLTIyLDYgKzIy
+LDcgQEAgc3RydWN0IHNpZ2FjdGlvbiB7DQogCV9fc2lncmVzdG9yZV90IHNhX3Jlc3RvcmVyOw0K
+IAlzaWdzZXRfdCBzYV9tYXNrOwkJLyogbWFzayBsYXN0IGZvciBleHRlbnNpYmlsaXR5ICovDQog
+fTsNCisjZGVmaW5lIF9fQVJDSF9IQVNfU0FfUkVTVE9SRVINCiANCiBzdHJ1Y3Qga19zaWdhY3Rp
+b24gew0KIAlzdHJ1Y3Qgc2lnYWN0aW9uIHNhOw0KLS0tIGEvYXJjaC9tNjhrL2luY2x1ZGUvYXNt
+L3NpZ25hbC5oDQorKysgYi9hcmNoL202OGsvaW5jbHVkZS9hc20vc2lnbmFsLmgNCkBAIC0yOSw2
+ICsyOSw3IEBAIHN0cnVjdCBzaWdhY3Rpb24gew0KIAlfX3NpZ3Jlc3RvcmVfdCBzYV9yZXN0b3Jl
+cjsNCiAJc2lnc2V0X3Qgc2FfbWFzazsJCS8qIG1hc2sgbGFzdCBmb3IgZXh0ZW5zaWJpbGl0eSAq
+Lw0KIH07DQorI2RlZmluZSBfX0FSQ0hfSEFTX1NBX1JFU1RPUkVSDQogDQogc3RydWN0IGtfc2ln
+YWN0aW9uIHsNCiAJc3RydWN0IHNpZ2FjdGlvbiBzYTsNCi0tLSBhL2FyY2gvbW4xMDMwMC9pbmNs
+dWRlL2FzbS9zaWduYWwuaA0KKysrIGIvYXJjaC9tbjEwMzAwL2luY2x1ZGUvYXNtL3NpZ25hbC5o
+DQpAQCAtMzksNiArMzksNyBAQCBzdHJ1Y3Qgc2lnYWN0aW9uIHsNCiAJX19zaWdyZXN0b3JlX3Qg
+c2FfcmVzdG9yZXI7DQogCXNpZ3NldF90IHNhX21hc2s7CQkvKiBtYXNrIGxhc3QgZm9yIGV4dGVu
+c2liaWxpdHkgKi8NCiB9Ow0KKyNkZWZpbmUgX19BUkNIX0hBU19TQV9SRVNUT1JFUg0KIA0KIHN0
+cnVjdCBrX3NpZ2FjdGlvbiB7DQogCXN0cnVjdCBzaWdhY3Rpb24gc2E7DQotLS0gYS9hcmNoL3Bv
+d2VycGMvaW5jbHVkZS9hc20vc2lnbmFsLmgNCisrKyBiL2FyY2gvcG93ZXJwYy9pbmNsdWRlL2Fz
+bS9zaWduYWwuaA0KQEAgLTEsNiArMSw3IEBADQogI2lmbmRlZiBfQVNNX1BPV0VSUENfU0lHTkFM
+X0gNCiAjZGVmaW5lIF9BU01fUE9XRVJQQ19TSUdOQUxfSA0KIA0KKyNkZWZpbmUgX19BUkNIX0hB
+U19TQV9SRVNUT1JFUg0KICNpbmNsdWRlIDx1YXBpL2FzbS9zaWduYWwuaD4NCiANCiAjZW5kaWYg
+LyogX0FTTV9QT1dFUlBDX1NJR05BTF9IICovDQotLS0gYS9hcmNoL3MzOTAvaW5jbHVkZS9hc20v
+c2lnbmFsLmgNCisrKyBiL2FyY2gvczM5MC9pbmNsdWRlL2FzbS9zaWduYWwuaA0KQEAgLTM0LDYg
+KzM0LDcgQEAgc3RydWN0IHNpZ2FjdGlvbiB7DQogICAgICAgICB2b2lkICgqc2FfcmVzdG9yZXIp
+KHZvaWQpOw0KICAgICAgICAgc2lnc2V0X3Qgc2FfbWFzazsgICAgICAgICAgICAgICAvKiBtYXNr
+IGxhc3QgZm9yIGV4dGVuc2liaWxpdHkgKi8NCiB9Ow0KKyNkZWZpbmUgX19BUkNIX0hBU19TQV9S
+RVNUT1JFUg0KIA0KIHN0cnVjdCBrX3NpZ2FjdGlvbiB7DQogICAgICAgICBzdHJ1Y3Qgc2lnYWN0
+aW9uIHNhOw0KLS0tIGEvYXJjaC9zcGFyYy9pbmNsdWRlL2FzbS9zaWduYWwuaA0KKysrIGIvYXJj
+aC9zcGFyYy9pbmNsdWRlL2FzbS9zaWduYWwuaA0KQEAgLTI2LDUgKzI2LDcgQEAgc3RydWN0IGtf
+c2lnYWN0aW9uIHsNCiAJdm9pZAkJCV9fdXNlciAqa2FfcmVzdG9yZXI7DQogfTsNCiANCisjZGVm
+aW5lIF9fQVJDSF9IQVNfU0FfUkVTVE9SRVINCisNCiAjZW5kaWYgLyogIShfX0FTU0VNQkxZX18p
+ICovDQogI2VuZGlmIC8qICEoX19TUEFSQ19TSUdOQUxfSCkgKi8NCi0tLSBhL2FyY2gveDg2L2lu
+Y2x1ZGUvYXNtL3NpZ25hbC5oDQorKysgYi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9zaWduYWwuaA0K
+QEAgLTMxLDYgKzMxLDkgQEAgdHlwZWRlZiBzaWdzZXRfdCBjb21wYXRfc2lnc2V0X3Q7DQogI2lu
+Y2x1ZGUgPHVhcGkvYXNtL3NpZ25hbC5oPg0KICNpZm5kZWYgX19BU1NFTUJMWV9fDQogZXh0ZXJu
+IHZvaWQgZG9fbm90aWZ5X3Jlc3VtZShzdHJ1Y3QgcHRfcmVncyAqLCB2b2lkICosIF9fdTMyKTsN
+CisNCisjZGVmaW5lIF9fQVJDSF9IQVNfU0FfUkVTVE9SRVINCisNCiAjaWZkZWYgX19pMzg2X18N
+CiBzdHJ1Y3Qgb2xkX3NpZ2FjdGlvbiB7DQogCV9fc2lnaGFuZGxlcl90IHNhX2hhbmRsZXI7DQot
+LS0gYS9hcmNoL3h0ZW5zYS9pbmNsdWRlL2FzbS9zaWduYWwuaA0KKysrIGIvYXJjaC94dGVuc2Ev
+aW5jbHVkZS9hc20vc2lnbmFsLmgNCkBAIC0yMSw2ICsyMSw3IEBAIHN0cnVjdCBzaWdhY3Rpb24g
+ew0KIAl2b2lkICgqc2FfcmVzdG9yZXIpKHZvaWQpOw0KIAlzaWdzZXRfdCBzYV9tYXNrOwkJLyog
+bWFzayBsYXN0IGZvciBleHRlbnNpYmlsaXR5ICovDQogfTsNCisjZGVmaW5lIF9fQVJDSF9IQVNf
+U0FfUkVTVE9SRVINCiANCiBzdHJ1Y3Qga19zaWdhY3Rpb24gew0KIAlzdHJ1Y3Qgc2lnYWN0aW9u
+IHNhOw0KLS0tIGEvaW5jbHVkZS91YXBpL2FzbS1nZW5lcmljL3NpZ25hbC5oDQorKysgYi9pbmNs
+dWRlL3VhcGkvYXNtLWdlbmVyaWMvc2lnbmFsLmgNCkBAIC05Myw2ICs5MywxMCBAQCB0eXBlZGVm
+IHVuc2lnbmVkIGxvbmcgb2xkX3NpZ3NldF90Ow0KIA0KICNpbmNsdWRlIDxhc20tZ2VuZXJpYy9z
+aWduYWwtZGVmcy5oPg0KIA0KKyNpZmRlZiBTQV9SRVNUT1JFUg0KKyNkZWZpbmUgX19BUkNIX0hB
+U19TQV9SRVNUT1JFUg0KKyNlbmRpZg0KKw0KIHN0cnVjdCBzaWdhY3Rpb24gew0KIAlfX3NpZ2hh
+bmRsZXJfdCBzYV9oYW5kbGVyOw0KIAl1bnNpZ25lZCBsb25nIHNhX2ZsYWdzOw0K
+
+
+--=-KveZVZtVtilGnz0XZ9lo--
+
+--=-9fgsro0aJoxmSj4kYLx6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUUplXOe/yOyVhhEJAQqIVRAAuWrkFivdMkr+oCL1E9LmDOpQPQpsUTEX
+tQAiUxi/USdXhKvOUxs+1zuXx6QUxXyRtAG/AAOhZ+FG7fM3vgBiyXPMt7BqZVXS
+IPGKs1CzwtEUCyp1Jy7xtKEe14ZXoR2/IPrEUc9BzYyTWvbDEN/fqBvQaX+DyTH5
+vLcaKNj3gKqsB6wNln3af6+zK9ZKXqydHgkoViOc/0acG00g5V6gLatNB98sIofJ
+vvIIzSi0QwPozCVbIUNCpQ0/ymY+rM+Ar2jEtnQl5nuD24dlUhXp4T2KpxJx4vKN
+Ocw1dX4Pj6RAsE/aqQuI35+vPU8vhbMVYz8ndCpav1GgzltaljpE2bsrizCgIGCv
+WUMdVZ4RHqRpcZ+Gc7mHJyXtWdcUlI5WZiPkYOR36JLBtbqwz5IXqZRfqt6UuR4p
+ioWkJQk3+OV2pkjYy/O3XPzMJ5oupicQ6NJQiKhhnDYN6blW1bVFbqQbfclBO33t
+HCtI1Pt5ppZ4ROJmPjU5wUYbaWewlUGYryb7a5lkQTB6ApNB5MKfYemcqlTLc3A8
+b+Pm5oZkBYqRpb/LQfDoqz+iBqEbmjDUKz1t6YmzmW1lsCIutmbYHggm3Coej6wA
+i4/LSmOkERHFrMCE8LPFn+Y0IC5mGycNsweBelDLivmRgUw6Bc60ATBHas8DriNH
+vlr/x/KjB3g=
+=XlsO
+-----END PGP SIGNATURE-----
+
+--=-9fgsro0aJoxmSj4kYLx6--
