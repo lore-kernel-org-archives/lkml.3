@@ -1,91 +1,431 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab3CUCUR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 22:20:17 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57191 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754835Ab3CUCUP (ORCPT
+	id S1754964Ab3CUCXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 22:23:09 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:52468 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab3CUCXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 22:20:15 -0400
-Date: Thu, 21 Mar 2013 13:20:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Rientjes <rientjes@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: linux-next: Tree for Mar 20 (vmcore)
-Message-Id: <20130321132012.e6f9a10287fb171dcd05c62d@canb.auug.org.au>
-In-Reply-To: <alpine.DEB.2.02.1303201709440.23363@chino.kir.corp.google.com>
-References: <20130320160536.54e62fc11a3651494b710e3b@canb.auug.org.au>
-	<5149E813.8060307@infradead.org>
-	<alpine.DEB.2.02.1303201153330.17761@chino.kir.corp.google.com>
-	<alpine.DEB.2.02.1303201709440.23363@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__21_Mar_2013_13_20_12_+1100_3AEuIuWAOW.r+yBf"
+	Wed, 20 Mar 2013 22:23:07 -0400
+Date: Wed, 20 Mar 2013 19:22:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org, josh@joshtriplett.org,
+        zhong@linux.vnet.ibm.com, khilman@linaro.org, geoff@infradead.org,
+        tglx@linutronix.de, Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH] nohz1: Documentation
+Message-ID: <20130321022259.GM3637@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAFTL4hybMf+9GjjyKRSEEp0x+wT7OwpKShE5sR_JqW24DGfKOw@mail.gmail.com>
+ <1363636794.15703.32@driftwood>
+ <CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com>
+ <20130318222548.GG3656@linux.vnet.ibm.com>
+ <1363822338.6345.33.camel@gandalf.local.home>
+ <20130320235545.GL3637@linux.vnet.ibm.com>
+ <1363825631.6345.45.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363825631.6345.45.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032102-3620-0000-0000-000001B5C1A0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__21_Mar_2013_13_20_12_+1100_3AEuIuWAOW.r+yBf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Mar 20, 2013 at 08:27:11PM -0400, Steven Rostedt wrote:
+> [ Added Arjan in case he as anything to add about the idle=poll below ]
 
-Hi,
+Good point!
 
-On Wed, 20 Mar 2013 17:10:30 -0700 (PDT) David Rientjes <rientjes@google.co=
-m> wrote:
->
-> On Wed, 20 Mar 2013, David Rientjes wrote:
->=20
-> > I don't think that's it, linux/kexec.h already gets included indirectly=
-. =20
-> > The problem is that CONFIG_KEXEC isn't set so the definition in kexec.h=
- is=20
-> > meaningless.
-> >=20
-> > This comes from "vmcore: check NT_VMCORE_PAD as a mark indicating the e=
-nd=20
-> > of ELF note buffer" merged through the -mm tree.  I've added the patch'=
-s=20
-> > author and Andrew to the cc.
-> >=20
-> > How can this be protected by CONFIG_KEXEC?
->=20
-> These patches were removed from -mm today so it should no longer be a=20
-> problem.
+> On Wed, 2013-03-20 at 16:55 -0700, Paul E. McKenney wrote:
+> > On Wed, Mar 20, 2013 at 07:32:18PM -0400, Steven Rostedt wrote:
+> > > On Mon, 2013-03-18 at 15:25 -0700, Paul E. McKenney wrote:
+> > > 
+> > > > ------------------------------------------------------------------------
+> > > > 
+> > > > 		NO_HZ: Reducing Scheduling-Clock Ticks
+> > > > 
+> > > > 
+> > > > This document covers Kconfig options and boot parameters used to reduce
+> > > > the number of scheduling-clock interrupts.  These reductions can be
+> > > > helpful in improving energy efficiency and in reducing "OS jitter",
+> > > > the latter being very important for some types of computationally
+> > > > intensive high-performance computing (HPC) applications and for real-time
+> > > > applications.
+> > > > 
+> > > > Within the Linux kernel, there are two major aspects of scheduling-clock
+> > > > interrupt reduction:
+> > > > 
+> > > > 1.	Idle CPUs.
+> > > > 
+> > > > 2.	CPUs having only one runnable task.
+> > > > 
+> > > > These two cases are described in the following sections.
+> > > > 
+> > > > 
+> > > > IDLE CPUs
+> > > > 
+> > > > If a CPU is idle, there is little point in sending it a scheduling-clock
+> > > > interrupt.  After all, the primary purpose of a scheduling-clock interrupt
+> > > > is to force a busy CPU to shift its attention among multiple duties,
+> > > > but an idle CPU by definition has no duties to shift its attention among.
+> > > > 
+> > > > The CONFIG_NO_HZ=y Kconfig option causes the kernel to avoid sending
+> > > > scheduling-clock interrupts to idle CPUs, which is critically important
+> > > > both to battery-powered devices and to highly virtualized mainframes.
+> > > > A battery-powered device running a CONFIG_NO_HZ=n kernel would drain its
+> > > > battery very quickly, easily 2-3x as fast as would the same device running
+> > > > a CONFIG_NO_HZ=n kernel.  A mainframe running 1,500 OS instances could
+> > > 
+> > > So a device running CONFIG_NO_HZ=n would drain its battery 2-3x faster
+> > > than the
+> 
+> Hmm, Evolution had the above on one line in the composer, but it seems
+> to be chopping it when it sends. I recently did an update on this box,
+> which screwed up the formatting of what the composer does and what it
+> sends out :-/
+> 
+> I hit a hard return to have CONFIG_NO_HZ = 0 be lined up correctly
+> (since I already knew that evolution screwed this up)
 
-What exactly are "these patches" so that I can remove them from my copy
-of the mmotm tree (assuming that Andrew does not get a new mmotm released
-in the next hour or so).
+Forever mutt!!!  ;-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> > > same device running CONFIG_NO_HZ=n ?
+> > > 
+> > > :-)
+> > 
+> > Good catch, fixed!
+> > 
+> > That said, there are two solutions as stated -- either the battery drains
+> > immediately, or it takes infinitely long to drain.  ;-)
+> 
+> A typical paulmck response ;-)
 
---Signature=_Thu__21_Mar_2013_13_20_12_+1100_3AEuIuWAOW.r+yBf
-Content-Type: application/pgp-signature
+;-) ;-) ;-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> > > > easily find that half of its CPU time was consumed by scheduling-clock
+> > > > interrupts.  In these situations, there is therefore strong motivation
+> > > > to avoid sending scheduling-clock interrupts to idle CPUs.  That said,
+> > > > dyntick-idle mode is not free:
+> > > > 
+> > > > 1.	It increases the number of instructions executed on the path
+> > > > 	to and from the idle loop.
+> > > > 
+> > > > 2.	Many architectures will place dyntick-idle CPUs into deep sleep
+> > > > 	states, which further degrades from-idle transition latencies.
+> > > > 
+> > > > Therefore, systems with aggressive real-time response constraints
+> > > > often run CONFIG_NO_HZ=n kernels in order to avoid degrading from-idle
+> > > > transition latencies.
+> > > > 
+> > > > An idle CPU that is not receiving scheduling-clock interrupts is said to
+> > > > be "dyntick-idle", "in dyntick-idle mode", "in nohz mode", or "running
+> > > > tickless".  The remainder of this document will use "dyntick-idle mode".
+> > > > 
+> > > > There is also a boot parameter "nohz=" that can be used to disable
+> > > > dyntick-idle mode in CONFIG_NO_HZ=y kernels by specifying "nohz=off".
+> > > > By default, CONFIG_NO_HZ=y kernels boot with "nohz=on", enabling
+> > > > dyntick-idle mode.
+> > > > 
+> > > > 
+> > > > CPUs WITH ONLY ONE RUNNABLE TASK
+> > > > 
+> > > > If a CPU has only one runnable task, there is again little point in
+> > > > sending it a scheduling-clock interrupt.  Recall that the primary
+> > > > purpose of a scheduling-clock interrupt is to force a busy CPU to
+> > > > shift its attention among many things requiring its attention -- and
+> > > > there is nowhere else for a CPU with but one runnable task to shift its
+> > > > attention to.
+> > > > 
+> > > > The CONFIG_NO_HZ_FULL=y Kconfig option causes the kernel to avoid
+> > > > sending scheduling-clock interrupts to CPUs with a single runnable task.
+> > > > This is important for applications with aggressive real-time response
+> > > > constraints because it allows them to improve their worst-case response
+> > > > times by the maximum duration of a scheduling-clock interrupt.  It is also
+> > > > important for computationally intensive iterative workloads with short
+> > > > iterations:  If any CPU is delayed during a given iteration, all the
+> > > > other CPUs will be forced to wait idle while the delayed CPU finished.
+> > > > Thus, the delay is multiplied by one less than the number of CPUs.
+> > > > In these situations, there is again strong motivation to avoid sending
+> > > > scheduling-clock interrupts to CPUs that have but one runnable task that
+> > > > is executing in user mode.
+> > > > 
+> > > > The "full_nohz=" boot parameter specifies which CPUs are to be
+> > > > adaptive-ticks CPUs.  For example, "full_nohz=1,6-8" says that CPUs 1,
+> > > 
+> > > This is the first time you mention "adaptive-ticks". Probably should
+> > > define it before just using it, even though one should be able to figure
+> > > out what adaptive-ticks are, it does throw in a wrench when reading this
+> > > if you have no idea what an "adaptive-tick" is.
+> > 
+> > Good point, changed the first sentence of this paragraph to read:
+> > 
+> > 	The CONFIG_NO_HZ_FULL=y Kconfig option causes the kernel to
+> > 	avoid sending scheduling-clock interrupts to CPUs with a single
+> > 	runnable task, and such CPUs are said to be "adaptive-ticks CPUs".
+> 
+> Sounds good.
+> 
+> > 
+> > > > 6, 7, and 8 are to be adaptive-ticks CPUs.  By default, no CPUs will
+> > > > be adaptive-ticks CPUs.  Not that you are prohibited from marking all
+> > > > of the CPUs as adaptive-tick CPUs:  At least one non-adaptive-tick CPU
+> > > > must remain online to handle timekeeping tasks in order to ensure that
+> > > > gettimeofday() returns sane values on adaptive-tick CPUs.
+> > > > 
+> > > > Note that if a given CPU is in adaptive-ticks mode while executing in
+> > > > user mode, transitioning to kernel mode does not automatically force
+> > > > that CPU out of adaptive-ticks mode.  The CPU will exit adaptive-ticks
+> > > > mode only if needed, for example, if that CPU enqueues an RCU callback.
+> > > > 
+> > > > Just as with dyntick-idle mode, the benefits of adaptive-tick mode do
+> > > > not come for free:
+> > > > 
+> > > > 1.	CONFIG_NO_HZ_FULL depends on CONFIG_NO_HZ, so you cannot run
+> > > > 	adaptive ticks without also running dyntick idle.  This dependency
+> > > > 	of CONFIG_NO_HZ_FULL on CONFIG_NO_HZ extends down into the
+> > > > 	implementation.  Therefore, all of the costs of CONFIG_NO_HZ
+> > > > 	are also incurred by CONFIG_NO_HZ_FULL.
+> > > 
+> > > Not a comment on this document, but on the implementation. As idle NO_HZ
+> > > can hurt RT, but RT would want to have full NO_HZ, it's a shame that you
+> > > can't have both (no idle but full). As we only care about not letting
+> > > the CPU go into deep sleep, I wonder if it wouldn't be too hard to add
+> > > something that keeps idle from going into nohz mode. Hmm, I think there
+> > > may be an option to keep the CPU from going too deep into sleep. That
+> > > may be a better approach.
+> > 
+> > Would the combination of CONFIG_NO_HZ=y, CONFIG_NO_HZ_FULL=y, and
+> > idle=poll do the trick in this case?
+> 
+> I'm not sure I would recommend idle=poll either. It would certainly
+> work, but it goes to the other extreme. You think NO_HZ=n drains a
+> battery? Try idle=poll.
 
-iQIcBAEBCAAGBQJRSm5cAAoJEECxmPOUX5FEBdcP/R2QqT176pmKUS79pyIpy9Jy
-8MbrsGlgsrKmXOcYYJrhJKPYO5WVCUyppkM2KAYc/CNZdbrf9eaX/91L5jHTkFC3
-bwvVn3Ceaa1WN9VM1zP/adYogq2QPsXlcNSSRWNq9m6u/BcfTgmVVvSEwbmiq3AF
-41ruCnoYSb4YKOqdUDCt6p1ffEMPuLHN09oU8x+JQrSNzBG6ePCiph2byZVF0ojc
-IfWOscKieDVdcCj32UIDhPPK8OBJUrrST4npr2pHZBFwAnvJqXZGgyIG7WK7zoeI
-R8Ge6l46L6LaazlqNY40S9yJ8NZZj8zhNbDmxl8sR4AGiV05uKP2B4FgrmE+47/O
-9Wm+UVq2+UKNGKUJw2ZaICgqmakXc5LM7j1VnJtOFKw45P5OUQwVYZkdUdajIVJs
-FISTsL9YDMXvPof6Wqm0so0GQU9SYHNg2oB8b3vWjzglgdYQOiFje4C1ctXgqUUI
-KhCZlkobt78gStLvCXR9LEF9rzziLInEyvivzvBrRvEFdp0cYkrLZ21Frw/ACH9d
-x7zMoh2gTh1Mh9j1YYhBC44q3SbO0KKM1ebmOb2zjahmj4CdwsNjCckOdFntDhFy
-oKrAa6y9Z+2wbLMcB4fpNtsr92AZRCWNFs9SL5G4BUQD9my9RhW+1W8jXmZM0YX+
-cfoMXrlbDmtcwFV0hP/n
-=Xr1I
------END PGP SIGNATURE-----
+And a few people already run realtime on battery-powered systems, so
+good point...
 
---Signature=_Thu__21_Mar_2013_13_20_12_+1100_3AEuIuWAOW.r+yBf--
+> Looking at Documentation/kernel-parameters.txt, it looks like idle=mwait
+> may be better. It states that performance is the same as idle=poll (if
+> supported).
+> 
+> Also there's a kernel parameter for x86 called intel_idle.max_cstate=X.
+> 
+> As idle=poll will most likely run the processor very hot and you will
+> need to add more electricity not only for the computer but also for the
+> A/C, it would be nice to still have the CPU sleep, but just at a shallow
+> (fast wakeup) state.
+
+So maybe idle=mwait or intel_idle.max_cstate=? if supported, otherwise
+if on AC power, idle=poll plus active cooling.  ;-)
+
+> Perhaps Arjan can add some input here?
+
+I would certainly like to hear it!
+
+> > If so, I do need to document it.
+> > 
+> > > > 2.	The user/kernel transitions are slightly more expensive due
+> > > > 	to the need to inform kernel subsystems (such as RCU) about
+> > > > 	the change in mode.
+> > > > 
+> > > > 3.	POSIX CPU timers on adaptive-tick CPUs may fire late (or even
+> > > > 	not at all) because they currently rely on scheduling-tick
+> > > > 	interrupts.  This will likely be fixed in one of two ways: (1)
+> > > > 	Prevent CPUs with POSIX CPU timers from entering adaptive-tick
+> > > > 	mode, or (2) Use hrtimers or other adaptive-ticks-immune mechanism
+> > > > 	to cause the POSIX CPU timer to fire properly.
+> > > > 
+> > > > 4.	If there are more perf events pending than the hardware can
+> > > > 	accommodate, they are normally round-robined so as to collect
+> > > > 	all of them over time.  Adaptive-tick mode may prevent this
+> > > > 	round-robining from happening.  This will likely be fixed by
+> > > > 	preventing CPUs with large numbers of perf events pending from
+> > > > 	entering adaptive-tick mode.
+> > > > 
+> > > > 5.	Scheduler statistics for adaptive-idle CPUs may be computed
+> > > > 	slightly differently than those for non-adaptive-idle CPUs.
+> > > > 	This may in turn perturb load-balancing of real-time tasks.
+> > > > 
+> > > > 6.	The LB_BIAS scheduler feature is disabled by adaptive ticks.
+> > > > 
+> > > > Although improvements are expected over time, adaptive ticks is quite
+> > > > useful for many types of real-time and compute-intensive applications.
+> > > > However, the drawbacks listed above mean that adaptive ticks should not
+> > > > be enabled by default across the board at the current time.
+> > > > 
+> > > > 
+> > > > RCU IMPLICATIONS
+> > > > 
+> > > > There are situations in which idle CPUs cannot be permitted to
+> > > > enter either dyntick-idle mode or adaptive-tick mode, the most
+> > > > familiar being the case where that CPU has RCU callbacks pending.
+> > > > 
+> > > > The CONFIG_RCU_FAST_NO_HZ=y Kconfig option may be used to cause such
+> > > > CPUs to enter dyntick-idle mode or adaptive-tick mode anyway, though a
+> > > > timer will awaken these CPUs every four jiffies in order to ensure that
+> > > > the RCU callbacks are processed in a timely fashion.
+> > > > 
+> > > > Another approach is to offload RCU callback processing to "rcuo" kthreads
+> > > > using the CONFIG_RCU_NOCB_CPU=y.  The specific CPUs to offload may be
+> > > > selected via several methods:
+> > > > 
+> > > > 1.	One of three mutually exclusive Kconfig options specify a
+> > > > 	build-time default for the CPUs to offload:
+> > > > 
+> > > > 	a.	The RCU_NOCB_CPU_NONE=y Kconfig option results in
+> > > > 		no CPUs being offloaded.
+> > > > 
+> > > > 	b.	The RCU_NOCB_CPU_ZERO=y Kconfig option causes CPU 0 to
+> > > > 		be offloaded.
+> > > > 
+> > > > 	c.	The RCU_NOCB_CPU_ALL=y Kconfig option causes all CPUs
+> > > > 		to be offloaded.
+> > > 
+> > > All CPUs don't have their RCU call backs on them? I'm a bit confused by
+> > > this. Or is it that the scheduler picks one CPU to do call backs? Does
+> > > this mean that to use rcu_ncbs= to be the only deciding factor, you
+> > > select RCU_NCB_CPU_NONE?
+> > > 
+> > > I think this needs to be explained better.
+> > 
+> > Does this help?
+> > 
+> > 	c.	The RCU_NOCB_CPU_ALL=y Kconfig option causes all CPUs
+> > 		to be offloaded.  Note that the callbacks will be
+> > 		offloaded to "rcuo" kthreads, and that those kthreads
+> > 		will in fact run on some CPU.  However, this approach
+> > 		gives fine-grained control on exactly which CPUs the
+> > 		callbacks run on, the priority that they run at (including
+> > 		the default of SCHED_OTHER), and it further allows
+> > 		this control to be varied dynamically at runtime.
+> 
+> Excellent!
+> 
+> > 
+> > > > 2.	The "rcu_nocbs=" kernel boot parameter, which takes a comma-separated
+> > > > 	list of CPUs and CPU ranges, for example, "1,3-5" selects CPUs 1,
+> > > > 	3, 4, and 5.  The specified CPUs will be offloaded in addition
+> > > > 	to any CPUs specified as offloaded by RCU_NOCB_CPU_ZERO or
+> > > > 	RCU_NOCB_CPU_ALL.
+> > > > 
+> > > > The offloaded CPUs never have RCU callbacks queued, and therefore RCU
+> > > > never prevents offloaded CPUs from entering either dyntick-idle mode or
+> > > > adaptive-tick mode.  That said, note that it is up to userspace to
+> > > > pin the "rcuo" kthreads to specific CPUs if desired.  Otherwise, the
+> > > > scheduler will decide where to run them, which might or might not be
+> > > > where you want them to run.
+> > > > 
+> > > > 
+> > > > KNOWN ISSUES
+> > > > 
+> > > > o	Dyntick-idle slows transitions to and from idle slightly.
+> > > > 	In practice, this has not been a problem except for the most
+> > > > 	aggressive real-time workloads, which have the option of disabling
+> > > > 	dyntick-idle mode, an option that most of them take.
+> > > > 
+> > > > o	Adaptive-ticks slows user/kernel transitions slightly.
+> > > > 	This is not expected to be a problem for computational-intensive
+> > > > 	workloads, which have few such transitions.  Careful benchmarking
+> > > > 	will be required to determine whether or not other workloads
+> > > > 	are significantly affected by this effect.
+> > > 
+> > > It should be mentioned that only CPUs that are in adaptive-tick mode
+> > > have this issue. Other CPUs are still using the tick based accounting,
+> > > right?
+> 
+> ?
+
+True, but they still end up executing extra code to deal with the
+possibility that they are in adaptive-tick mode.
+
+> > > 
+> > > > 
+> > > > o	Adaptive-ticks does not do anything unless there is only one
+> > > > 	runnable task for a given CPU, even though there are a number
+> > > > 	of other situations where the scheduling-clock tick is not
+> > > > 	needed.  To give but one example, consider a CPU that has one
+> > > > 	runnable high-priority SCHED_FIFO task and an arbitrary number
+> > > > 	of low-priority SCHED_OTHER tasks.  In this case, the CPU is
+> > > > 	required to run the SCHED_FIFO task until either it blocks or
+> > > > 	some other higher-priority task awakens on (or is assigned to)
+> > > > 	this CPU, so there is no point in sending a scheduling-clock
+> > > > 	interrupt to this CPU.
+> > > 
+> > > You should point out that the example does not enable adaptive-ticks.
+> > > That point is hinted at, but not really expressed. That is, perhaps end
+> > > the paragraph with: 
+> > > 
+> > > "Even though the SCHED_FIFO task is the only task running, because the
+> > > SCHED_OTHER tasks are queued on the CPU, it currently will not enter
+> > > adaptive tick mode."
+> > 
+> > Again, good point!
+> > 
+> > How about adding the following sentence at the end of this paragraph.
+> > 
+> > 	However, the current implementation prohibits CPU with a single
+> > 	runnable SCHED_FIFO task and multiple runnable SCHED_OTHER
+> > 	tasks from entering adaptive-ticks mode, even though it would
+> > 	be correct to allow it to do so.
+> 
+> Sure.
+> 
+> > 
+> > > > 	Better handling of these sorts of situations is future work.
+> > > > 
+> > > > o	A reboot is required to reconfigure both adaptive idle and RCU
+> > > > 	callback offloading.  Runtime reconfiguration could be provided
+> > > > 	if needed, however, due to the complexity of reconfiguring RCU
+> > > > 	at runtime, there would need to be an earthshakingly good reason.
+> > > > 	Especially given the option of simply offloading RCU callbacks
+> > > > 	from all CPUs.
+> > > 
+> > > When you enable for all CPUs, how do you tell what CPUs you don't want
+> > > the scheduler to pick for off loading? I mean, if you pick all CPUs, can
+> > > you at run time pick which ones should always off load and which ones
+> > > shouldn't?
+> > 
+> > I must defer to Frederic on this one.
+> 
+> Well I was actually thinking more about the RCU NOCB mode. You answered
+> my question above about the rcu kthreads that do the callbacks instead
+> of them being pinned to a CPU.
+
+Ah, color me confused.  ;-)
+
+							Thanx, Paul
+
+> -- Steve
+> 
+> > 
+> > > > o	Additional configuration is required to deal with other sources
+> > > > 	of OS jitter, including interrupts and system-utility tasks
+> > > > 	and processes.  This configuration normally involves binding
+> > > > 	interrupts and tasks to particular CPUs.
+> > > > 
+> > > > o	Some sources of OS jitter can currently be eliminated only by
+> > > > 	constraining the workload.  For example, the only way to eliminate
+> > > > 	OS jitter due to global TLB shootdowns is to avoid the unmapping
+> > > > 	operations (such as kernel module unload operations) that result
+> > > > 	in these shootdowns.  For another example, page faults and TLB
+> > > > 	misses can be reduced (and in some cases eliminated) by using
+> > > > 	huge pages and by constraining the amount of memory used by the
+> > > > 	application.
+> > > > 
+> > > > o	At least one CPU must keep the scheduling-clock interrupt going
+> > > > 	in order to support accurate timekeeping.
+> > > 
+> > > Thanks for writing this up Paul!
+> > 
+> > And to many other people, including yourself, for doing the actual work!
+> > 
+> > 							Thanx, Paul
+> 
+> 
+> 
+
