@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751059Ab3CURLl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 13:11:41 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:43188 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750708Ab3CURLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 13:11:39 -0400
-Date: Thu, 21 Mar 2013 11:11:15 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Roland Dreier <roland@kernel.org>,
-        "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Subject: Re: [PATCH] rdma: don't make pages writeable if not requiested
-Message-ID: <20130321171115.GA653@obsidianresearch.com>
-References: <20130321061838.GA28319@redhat.com>
- <CAL1RGDUcMj9QVsuQgK+ozw64L6-cGehL7YBUJ1_ckni6TD=Kcg@mail.gmail.com>
- <20130321070357.GD28328@redhat.com>
- <CAG4TOxPkhOhGmzeA1K4a0Zw8HxS-QkOr-PCx7mJgA+KkuH3ZiQ@mail.gmail.com>
- <20130321085107.GE28328@redhat.com>
- <CAL1RGDVnkLZU2Vge4o3BwDxnAfGv7TQRMqE6ha3MUt39CVp5NQ@mail.gmail.com>
- <20130321093946.GG28328@redhat.com>
+	id S1751171Ab3CURPx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 13:15:53 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:58800 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735Ab3CURPv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 13:15:51 -0400
+Date: Thu, 21 Mar 2013 10:15:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org, zhong@linux.vnet.ibm.com, khilman@linaro.org,
+        geoff@infradead.org, tglx@linutronix.de
+Subject: Re: [PATCH] nohz1: Documentation
+Message-ID: <20130321171518.GW3637@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAFTL4hybMf+9GjjyKRSEEp0x+wT7OwpKShE5sR_JqW24DGfKOw@mail.gmail.com>
+ <1363636794.15703.32@driftwood>
+ <CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com>
+ <20130318222548.GG3656@linux.vnet.ibm.com>
+ <1363822338.6345.33.camel@gandalf.local.home>
+ <20130320235545.GL3637@linux.vnet.ibm.com>
+ <0000013d8db514e4-bf492080-82c9-412a-90b8-54ddc1463e4b-000000@email.amazonses.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130321093946.GG28328@redhat.com>
+In-Reply-To: <0000013d8db514e4-bf492080-82c9-412a-90b8-54ddc1463e4b-000000@email.amazonses.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032117-4834-0000-0000-000004EC56C2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 11:39:47AM +0200, Michael S. Tsirkin wrote:
-> On Thu, Mar 21, 2013 at 02:13:38AM -0700, Roland Dreier wrote:
-> > On Thu, Mar 21, 2013 at 1:51 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> > >> In that case, no, I don't see any reason for LOCAL_WRITE, since the
-> > >> only RDMA operations that will access this memory are remote reads.
-> > >
-> > > What is the meaning of LOCAL_WRITE then? There are no local
-> > > RDMA writes as far as I can see.
-> > 
-> > Umm, it means you're giving the local adapter permission to write to
-> > that memory.  So you can use it as a receive buffer or as the target
-> > for remote data from an RDMA read operation.
+On Thu, Mar 21, 2013 at 04:08:08PM +0000, Christoph Lameter wrote:
+> On Wed, 20 Mar 2013, Paul E. McKenney wrote:
 > 
-> Well RDMA read has it's own flag, IB_ACCESS_REMOTE_READ.
-> I don't see why do you need to give adapter permission
+> > > > Another approach is to offload RCU callback processing to "rcuo" kthreads
+> > > > using the CONFIG_RCU_NOCB_CPU=y.  The specific CPUs to offload may be
+> > > > selected via several methods:
+> 
+> Why are there multiple rcuo threads? Would a single thread that may be
+> able to run on multiple cpus not be sufficient?
 
-The access flags have to do with what independent access remote nodes
-get. There are four major cases:
+In many cases, this would indeed be sufficient.  However, if you have
+enough CPUs posting RCU callbacks, then the single thread would become
+a bottleneck, eventually resulting in an OOM.  Per-CPU kthreads avoid
+this possibility.
 
-access = IBV_ACCESS_REMOTE_READ says the adaptor will let remote nodes
-read the memory.
+That said, if you know that your workload's RCU callbacks could be
+serviced by a single CPU, you can bind all the rcuo kthreads to a
+single CPU.
 
-access = 0 (ie IBV_ACCESS_LOCAL_READ) says that only the adaptor, under
-the direct control of the application, can read this memory. Remote
-nodes are barred.
+> > > "Even though the SCHED_FIFO task is the only task running, because the
+> > > SCHED_OTHER tasks are queued on the CPU, it currently will not enter
+> > > adaptive tick mode."
+> >
+> > Again, good point!
+> 
+> Uggh. That will cause problems and did cause problems when I tried to use
+> nohz.
+> 
+> The OS always has some sched other tasks around that become runnable after
+> a while (like for example the vm statistics update, or the notorious slab
+> scanning). As long as SCHED_FIFO is active and there is no process in the
+> same scheduling class then tick needs to be off. Also wish that this would
+> work with SCHED_OTHER if there is only a single task with a certain renice
+> value (-10?) and the rest is runnable at lower priorities. Maybe in that
+> case stop the tick for a longer period and then give the lower priority
+> tasks a chance to run but then switch off the tick again.
 
-access = IBV_ACCESS_REMOTE_WRITE|IBV_ACCESS_LOCAL_WRITE says the adaptor
-will let remote nodes write the memory
+These sound to me like good future enhancements.
 
-access = IBV_ACCESS_LOCAL_WRITE bars remote nodes from writing to that
-memory. Only the adaptor, under the direct control of the application,
-can write the memory.
+In the meantime, one approach is to bind all these SCHED_OTHER tasks
+to designated housekeeping CPU(s) that don't run your main workload.
 
-The fact LOCAL_READ/REMOTE_READ exists makes it possible to do what
-you want - it guarentees the adaptor will never write to this memory
-under any circumstances, so you can leave the page COW'd. If
-LOCAL_WRITE was implied then you'd have to COW everything..
+							Thanx, Paul
 
-Would it be better to drive the COW break decision off the region's MM
-flags? Ie if the memory is mapped read only into the process then you
-can keep the COW at the RDMA layer, otherwise you should break
-it. That seems more natural than a new flag?
-
-Jason
