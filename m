@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab3CUTLV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 15:11:21 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:56674 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283Ab3CUTLU (ORCPT
+	id S1752311Ab3CUTMW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 15:12:22 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:58368 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751645Ab3CUTMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 15:11:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jason Cooper <jason@lakedaemon.net>
-Subject: Re: [PATCH] USB: EHCI: fix for leaking isochronous data
-Date: Thu, 21 Mar 2013 19:10:31 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: Soeren Moch <smoch@web.de>, Alan Stern <stern@rowland.harvard.edu>,
-        USB list <linux-usb@vger.kernel.org>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-mm@kvack.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, michael@amarulasolutions.com
-References: <Pine.LNX.4.44L0.1303171320560.26486-100000@netrider.rowland.org> <514B3DBB.3060302@web.de> <20130321173324.GY13280@titan.lakedaemon.net>
-In-Reply-To: <20130321173324.GY13280@titan.lakedaemon.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 21 Mar 2013 15:12:21 -0400
+Message-ID: <1363893139.1390.151.camel@x61.thuisdomein>
+Subject: [PATCH] tile: remove two outdated Kconfig entries
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 21 Mar 2013 20:12:19 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303211910.31473.arnd@arndb.de>
-X-Provags-ID: V02:K0:ygqnK0FUPxv9H6awUPb1LdKid1YYqiV6RDFuTU3P91W
- cw05nh0ISknUh/pYuNVPDW7XrYnbNSTqtCyx2gkuobk5yzSxsD
- R2kSvVLdk7oLDfuuUSEKdWO6JnOZQvUmNCBzj+ZYxlstcIg8ye
- ZDP2utbKFwHcctYnxRmf8qLZSEc1HoQZb47UiNfVQvE0h22FVX
- 1ywPQwm4lNH0egD4g1k4PknCvGzf2LcnCtHGjr17X3MyF8kWnU
- cLfTCyCaO4TuX+iWgX/fqLI3oIBa0/TQRB474knyD20tyoCoy+
- 0dHuT93MIqK1W45uBo17PB1/OKi6mmRFycRb3uZcQiHA8OdyJi
- HHzxVsCEUqetL4tPd8SM=
+X-OriginalArrivalTime: 21 Mar 2013 19:12:19.0862 (UTC) FILETIME=[025FF360:01CE2668]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 March 2013, Jason Cooper wrote:
-> On Thu, Mar 21, 2013 at 06:04:59PM +0100, Soeren Moch wrote:
+Tile support got added in v2.6.36. Its main Kconfig file was added with
+two outdated Kconfig entries. DEFAULT_MIGRATION_COST is unused since
+v2.6.23, and SEMAPHORE_SLEEPERS is unused since v2.6.26. Remove these
+outdated entries now.
 
-> > 
-> > Now I found out what is going on here:
-> > 
-> > In itd_urb_transaction() we allocate 9 iTDs for each URB with
-> > number_of_packets == 64 in my case. The iTDs are added to
-> > sched->td_list. For a frame-aligned scheduling we need 8 iTDs, the
-> > 9th one is released back to the front of the streams free_list in
-> > iso_sched_free(). This iTD was cleared after allocation and has a
-> > frame number of 0 now. So for each allocation when now_frame == 0 we
-> > allocate from the dma_pool, not from the free_list. The attached
-> > patch invalidates the frame number in each iTD before it is sent to
-> > the scheduler. This fixes the problem without the need to iterate
-> > over a iTD list.
-> > 
-> > Signed-off-by: Soeren Moch <smoch@web.de>
-> 
-> Wow!  Great work Soeren!  Talk about a long road to a small fix.  Thanks
-> for keeping after it.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-+1
+ arch/tile/Kconfig | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-I hardly understand half of the description above, but that much sounds
-plausible. Is this a bug fix that should get backported to stable kernels?
+diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
+index 25877ae..2f8ccff 100644
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -40,9 +40,6 @@ config MMU
+ config GENERIC_CSUM
+ 	def_bool y
+ 
+-config SEMAPHORE_SLEEPERS
+-	def_bool y
+-
+ config HAVE_ARCH_ALLOC_REMAP
+ 	def_bool y
+ 
+@@ -67,12 +64,6 @@ config HUGETLB_SUPER_PAGES
+ config RWSEM_GENERIC_SPINLOCK
+ 	def_bool y
+ 
+-# We have a very flat architecture from a migration point of view,
+-# so save boot time by presetting this (particularly useful on tile-sim).
+-config DEFAULT_MIGRATION_COST
+-	int
+-	default "10000000"
+-
+ # We only support gcc 4.4 and above, so this should work.
+ config ARCH_SUPPORTS_OPTIMIZED_INLINING
+ 	def_bool y
+-- 
+1.7.11.7
 
-	Arnd
