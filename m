@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab3CUKhm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 06:37:42 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:43215 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754453Ab3CUKhX (ORCPT
+	id S1754226Ab3CUKkX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 06:40:23 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:45642 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811Ab3CUKkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 06:37:23 -0400
-Date: Thu, 21 Mar 2013 17:54:31 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "'Matt Mackall'" <mpm@selenic.com>
-Subject: Re: [PATCH] hwrng: exynos - add CONFIG_PM_SLEEP to suspend/resume
- functions
-Message-ID: <20130321095430.GC26931@gondor.apana.org.au>
-References: <003a01ce1ee4$ed8842b0$c898c810$%han@samsung.com>
+	Thu, 21 Mar 2013 06:40:22 -0400
+Date: Thu, 21 Mar 2013 11:40:18 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Fenghua Yu <fenghua.yu@intel.com>
+Cc: H Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        penguin-kernel@I-love.SAKURA.ne.jp,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH] x86/microcode_intel_early.c: Get 32-bit physical address
+ by __pa_nodebug()
+Message-ID: <20130321104018.GA18484@gmail.com>
+References: <1363705484-27645-1-git-send-email-fenghua.yu@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <003a01ce1ee4$ed8842b0$c898c810$%han@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1363705484-27645-1-git-send-email-fenghua.yu@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 02:46:22PM +0900, Jingoo Han wrote:
-> This patch adds CONFIG_PM_SLEEP to suspend/resume functions to fix
-> the following build warning when CONFIG_PM_SLEEP is not selected.
-> 
-> drivers/char/hw_random/exynos-rng.c:147:12: warning: 'exynos_rng_runtime_suspend' defined but not used [-Wunused-function]
-> drivers/char/hw_random/exynos-rng.c:157:12: warning: 'exynos_rng_runtime_resume' defined but not used [-Wunused-function]
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-Patch applied.  Thanks.
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+* Fenghua Yu <fenghua.yu@intel.com> wrote:
+
+> +	initrd_start_p = (unsigned long *)__pa_nodebug(&initrd_start);
+> +	initrd_start_addr = (unsigned long)__pa_nodebug(*initrd_start_p);
+
+We should probably use __pa_early() for that - aliased to __pa_nodebug(). 
+That would self-document the purpose.
+
+Thanks,
+
+	Ingo
