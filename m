@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580Ab3CULDd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:03:33 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:55574 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756105Ab3CULDb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:03:31 -0400
+	id S1756748Ab3CULDy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:03:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61366 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754509Ab3CULDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 07:03:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,884,1355126400"; 
+   d="scan'208";a="282677129"
+Date: Thu, 21 Mar 2013 16:08:45 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] DMA: OF: Check properties value before running
+ be32_to_cpup() on it
+Message-ID: <20130321103845.GR10326@intel.com>
+References: <0a0ef15d47393fe9d24a395c38068b871f913776.1363337257.git.viresh.kumar@linaro.org>
+ <20130321094609.GM10326@intel.com>
+ <CAKohpokeZ7Udc2K_vccC1uPL=QAhpJ-vuoyFKRs84ndpDbVfqg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130320181010.GA30484@htj.dyndns.org>
-References: <1363721306-2030-1-git-send-email-laijs@cn.fujitsu.com>
-	<1363721306-2030-16-git-send-email-laijs@cn.fujitsu.com>
-	<20130320181010.GA30484@htj.dyndns.org>
-Date: Thu, 21 Mar 2013 19:03:30 +0800
-Message-ID: <CACvQF512Ufz-Y2HjLKOGNW8A+9epcv6yvB8szyR4S9d4Uy41Sw@mail.gmail.com>
-Subject: Re: [PATCH 15/21] workqueue: remove worker_maybe_bind_and_lock()
-From: Lai Jiangshan <eag0628@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKohpokeZ7Udc2K_vccC1uPL=QAhpJ-vuoyFKRs84ndpDbVfqg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 2:10 AM, Tejun Heo <tj@kernel.org> wrote:
-> On Wed, Mar 20, 2013 at 03:28:15AM +0800, Lai Jiangshan wrote:
->>  static struct worker *alloc_worker(void)
->>  {
->>       struct worker *worker;
->> @@ -2326,7 +2262,8 @@ repeat:
->>               spin_unlock_irq(&wq_mayday_lock);
->>
->>               /* migrate to the target cpu if possible */
->> -             worker_maybe_bind_and_lock(pool);
->> +             set_cpus_allowed_ptr(current, pool->attrs->cpumask);
->> +             spin_lock_irq(&pool->lock);
->>               rescuer->pool = pool;
->
-> You can't do this.  The CPU might go up between set_cpus_allowed_ptr()
-> and spin_lock_irq() and the rescuer can end up executing a work item
-> which was issued while the target CPU is up on the wrong CPU.
+On Thu, Mar 21, 2013 at 03:48:50PM +0530, Viresh Kumar wrote:
+> On 21 March 2013 15:16, Vinod Koul <vinod.koul@intel.com> wrote:
+> > On Fri, Mar 15, 2013 at 02:18:20PM +0530, Viresh Kumar wrote:
+> >> In of_dma_controller_register() routine we are calling of_get_property() as an
+> >> parameter to be32_to_cpup(). In case the property doesn't exist we will get a
+> >> crash.
+> >>
+> >> This patch changes this code to check if we got a valid property first and then
+> >> runs be32_to_cpup() on it.
+> >>
+> >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> >> ---
+> >>
+> >> My mails are broken, i have pushed this patch here:
+> > I noticed you used git send-email. Usually it will send patch properly
+> > independent of whatever MUA you use.
+> 
+> Probably not!! Its the famous (Infamous) Microsoft exchange server working in
+> background and it breaks mails without treating mails coming from git send-email
+> specially :)
+I have seen usually receiving patches is a problem, not sending. at least at my
+work place till now my sent patches have not been broken but what I receive has
+thus forcing me to use non exchange accounts for receiving email but somehow situation
+is better for receiving too :)
+--
+~Vinod
+> 
+> > So I have the patch and its applied now :)
+> 
+> I have seen this kind of discrimination on breaking patches based on the size of
+> patch. If its very small (like this one), you may get a unbroken patch
+> but if the size
+> is a bit large then nobody can save you :)
 
-
-Why it is wrong?
-It can be allowed if the wq has rescuer. (wq of work_on_cpu() don't has rescuer,
-it does not hurt to work_on_cpu() of something else.
-
-Actually it was allowed by recent patches.
-If a cpu is up while a rescuer do process_scheduled_workers(),
-all the later work item will be running the wrong CPU while
- the target CPU is up.(due to for_cpu_pool_workers() don't include
-active rescuer).
-
-I don't want to go back to make cpuhotplug nor rescuer_theread become
-complicated.
-so I prefer to allow work item can run on wrong cpu if the wq has rescuer.
-All just needs a comments.
-
-I guess you will agaist me...... let me rewrite it .....
-
-Thanks,
-Lai
-
->
-> Thanks.
->
+> 
 > --
-> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> viresh
