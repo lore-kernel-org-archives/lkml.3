@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933374Ab3CUIuu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 04:50:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43887 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932625Ab3CUIur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 04:50:47 -0400
-Date: Thu, 21 Mar 2013 10:51:07 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Roland Dreier <roland@kernel.org>
-Cc: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Subject: Re: [PATCH] rdma: don't make pages writeable if not requiested
-Message-ID: <20130321085107.GE28328@redhat.com>
-References: <20130321061838.GA28319@redhat.com>
- <CAL1RGDUcMj9QVsuQgK+ozw64L6-cGehL7YBUJ1_ckni6TD=Kcg@mail.gmail.com>
- <20130321070357.GD28328@redhat.com>
- <CAG4TOxPkhOhGmzeA1K4a0Zw8HxS-QkOr-PCx7mJgA+KkuH3ZiQ@mail.gmail.com>
+	id S1753687Ab3CUJA4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 05:00:56 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:45716 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab3CUJAx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 05:00:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAG4TOxPkhOhGmzeA1K4a0Zw8HxS-QkOr-PCx7mJgA+KkuH3ZiQ@mail.gmail.com>
+In-Reply-To: <514A7E81.9000501@am.sony.com>
+References: <514A7E81.9000501@am.sony.com>
+Date: Thu, 21 Mar 2013 17:00:52 +0800
+Message-ID: <CACVXFVODZNuoLYSk60YwhFhEv5SX2QkszjjoYDWBHij7zwmhdQ@mail.gmail.com>
+Subject: Re: [BUG] bisected: PandaBoard smsc95xx ethernet driver error from
+ USB timeout
+From: Ming Lei <tom.leiming@gmail.com>
+To: frank.rowand@am.sony.com
+Cc: stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, balbi@ti.com, netdev@vger.kernel.org,
+        steve.glendinning@smsc.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 12:15:33AM -0700, Roland Dreier wrote:
-> >> I think this change will break the case where userspace tries to
-> >> register an MR with read-only permission, but intends locally through
-> >> the CPU to write to the memory.
-> 
-> > Shouldn't it set LOCAL_WRITE then?
-> 
-> We're talking about the permissions for the register MR operation,
-> right?  (That's what the kernel RDMA driver code that does
-> get_user_pages() sees)
-> 
-> In that case, no, I don't see any reason for LOCAL_WRITE, since the
-> only RDMA operations that will access this memory are remote reads.
+Hi Frank,
 
-What is the meaning of LOCAL_WRITE then? There are no local
-RDMA writes as far as I can see.
+On Thu, Mar 21, 2013 at 11:29 AM, Frank Rowand <frank.rowand@am.sony.com> wrote:
+>
+> I found the problem on 3.6.11, but have not replicated it on 3.9-rcX
+> yet because my config fails to build on 3.9-rc1 and 3.9-rc2.  I'll try
+> to work on that issue tomorrow.
 
-> The writing (that triggers COW) is coming from normal process access
-> triggering a page fault, etc.  This is a pretty standard way of using
-> RDMA... For example, I allocate some memory and register it for RDMA
-> read (and pass the R_Key to the remote system) with only REMOTE_READ
-> permission.  Then I fill in the memory with the results of some
-> computation and the remote system does an RDMA read to get those
-> results.
-> 
->  - R.
+I play upstream kernel on Pandaboard A1 frequently, looks not
+see the failure problem before. Maybe the problem is config dependent.
 
-OK then what we need is a new flag saying "I really do not
-intend to write into this memory please do not break
-COW or do anything else just in case I do".
+If you may share your config file, I'd like to do the test too.
 
+
+Thanks,
 -- 
-MST
+Ming Lei
