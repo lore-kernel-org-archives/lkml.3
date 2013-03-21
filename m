@@ -1,69 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933036Ab3CUJti (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 05:49:38 -0400
-Received: from mga14.intel.com ([143.182.124.37]:30123 "EHLO mga14.intel.com"
+	id S933520Ab3CUJyw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 05:54:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50674 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752793Ab3CUJth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 05:49:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,884,1355126400"; 
-   d="scan'208";a="217281127"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH] dw_dmac: don't wait for FIFO_EMPTY endlessly in dwc_chan_pause
-Date: Thu, 21 Mar 2013 11:49:17 +0200
-Message-Id: <1363859357-31545-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
+	id S1757950Ab3CUJyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 05:54:49 -0400
+Date: Thu, 21 Mar 2013 09:54:45 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning
+ requirements for kswapd
+Message-ID: <20130321095444.GE1878@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-3-git-send-email-mgorman@suse.de>
+ <514A5E07.3080501@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <514A5E07.3080501@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we pause the channel after transfer is completed we might stuck in the
-dwc_chan_pause() because the FIFO_EMPTY flag will never be asserted. To avoid
-the endless loop we introduce a timeout here (*). The proper solution is to
-somehow get the residue in FIFO and avoid busyloop when transfer is done, but
-this task is not simple and fast.
+On Wed, Mar 20, 2013 at 09:10:31PM -0400, Rik van Riel wrote:
+> On 03/17/2013 09:04 AM, Mel Gorman wrote:
+> >Simplistically, the anon and file LRU lists are scanned proportionally
+> >depending on the value of vm.swappiness although there are other factors
+> >taken into account by get_scan_count().  The patch "mm: vmscan: Limit
+> >the number of pages kswapd reclaims" limits the number of pages kswapd
+> >reclaims but it breaks this proportional scanning and may evenly shrink
+> >anon/file LRUs regardless of vm.swappiness.
+> >
+> >This patch preserves the proportional scanning and reclaim. It does mean
+> >that kswapd will reclaim more than requested but the number of pages will
+> >be related to the high watermark.
+> >
+> >Signed-off-by: Mel Gorman <mgorman@suse.de>
+> >---
+> >  mm/vmscan.c | 52 +++++++++++++++++++++++++++++++++++++++++-----------
+> >  1 file changed, 41 insertions(+), 11 deletions(-)
+> >
+> >diff --git a/mm/vmscan.c b/mm/vmscan.c
+> >index 4835a7a..182ff15 100644
+> >--- a/mm/vmscan.c
+> >+++ b/mm/vmscan.c
+> >@@ -1815,6 +1815,45 @@ out:
+> >  	}
+> >  }
+> >
+> >+static void recalculate_scan_count(unsigned long nr_reclaimed,
+> >+		unsigned long nr_to_reclaim,
+> >+		unsigned long nr[NR_LRU_LISTS])
+> >+{
+> >+	enum lru_list l;
+> >+
+> >+	/*
+> >+	 * For direct reclaim, reclaim the number of pages requested. Less
+> >+	 * care is taken to ensure that scanning for each LRU is properly
+> >+	 * proportional. This is unfortunate and is improper aging but
+> >+	 * minimises the amount of time a process is stalled.
+> >+	 */
+> >+	if (!current_is_kswapd()) {
+> >+		if (nr_reclaimed >= nr_to_reclaim) {
+> >+			for_each_evictable_lru(l)
+> >+				nr[l] = 0;
+> >+		}
+> >+		return;
+> >+	}
+> 
+> This part is obvious.
+> 
+> >+	/*
+> >+	 * For kswapd, reclaim at least the number of pages requested.
+> >+	 * However, ensure that LRUs shrink by the proportion requested
+> >+	 * by get_scan_count() so vm.swappiness is obeyed.
+> >+	 */
+> >+	if (nr_reclaimed >= nr_to_reclaim) {
+> >+		unsigned long min = ULONG_MAX;
+> >+
+> >+		/* Find the LRU with the fewest pages to reclaim */
+> >+		for_each_evictable_lru(l)
+> >+			if (nr[l] < min)
+> >+				min = nr[l];
+> >+
+> >+		/* Normalise the scan counts so kswapd scans proportionally */
+> >+		for_each_evictable_lru(l)
+> >+			nr[l] -= min;
+> >+	}
+> >+}
+> 
+> This part took me a bit longer to get.
+> 
+> Before getting to this point, we scanned the LRUs evenly.
+> By subtracting min from all of the LRUs, we end up stopping
+> the scanning of the LRU where we have the fewest pages left
+> to scan.
+> 
+> This results in the scanning being concentrated where it
+> should be - on the LRUs where we have not done nearly
+> enough scanning yet.
+> 
 
-Unfortunately we can't use cpu_relax() in conjunction with jiffies checker, due
-to we have interrupts disabled by spin_lock_irqsave() and there is a big chance
-that no interrupts will come to update the jiffies..
+This is exactly what my intention was. It does mean that we potentially
+reclaim much more than required by sc->nr_to_reclaim but I did not think
+of a straight-forward way around that that would work in every case.
 
-(*) The worst case is
-	AHB write * FIFO size / hclk = 5.12 us,
-    where
-	AHB write = 2 cycles,
-	hclk = 100 MHz,
-	burst size = 1 byte,
-	FIFO size = 256 bytes.
-    The proposed 40us timeout might be considered as a big one, though we enter
-    to that state only when we have the transfer already completed.
+> However, I am not sure how to document it better than
+> your comment already has...
+> 
+> Acked-by: Rik van Riel <riel@redhat.com>
+> 
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dw_dmac.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Thanks.
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 43a5329..43e2e89 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1030,10 +1030,11 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
- static inline void dwc_chan_pause(struct dw_dma_chan *dwc)
- {
- 	u32 cfglo = channel_readl(dwc, CFG_LO);
-+	unsigned int count = 20;	/* timeout iterations */
- 
- 	channel_writel(dwc, CFG_LO, cfglo | DWC_CFGL_CH_SUSP);
--	while (!(channel_readl(dwc, CFG_LO) & DWC_CFGL_FIFO_EMPTY))
--		cpu_relax();
-+	while (!(channel_readl(dwc, CFG_LO) & DWC_CFGL_FIFO_EMPTY) && count--)
-+		udelay(2);
- 
- 	dwc->paused = true;
- }
 -- 
-1.8.2.rc0.22.gb3600c3
-
+Mel Gorman
+SUSE Labs
