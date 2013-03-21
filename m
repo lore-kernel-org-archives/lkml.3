@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253Ab3CULXh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:23:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56490 "EHLO
+	id S1757298Ab3CULYr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:24:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56519 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755358Ab3CULXf (ORCPT
+	with ESMTP id S1755565Ab3CULYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:23:35 -0400
-Date: Thu, 21 Mar 2013 04:22:01 -0700
+	Thu, 21 Mar 2013 07:24:46 -0400
+Date: Thu, 21 Mar 2013 04:23:10 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-ab77df672cdbf7a0235a9de3289c173e2fce68e5@git.kernel.org>
+Message-ID: <tip-e64aa75bf5559be3ce72e53ae28b76a2f633ca06@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
         a.p.zijlstra@chello.nl, penberg@kernel.org, namhyung.kim@lge.com,
@@ -18,12 +18,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
         a.p.zijlstra@chello.nl, penberg@kernel.org, namhyung.kim@lge.com,
         tglx@linutronix.de, namhyung@kernel.org, jolsa@redhat.com
-In-Reply-To: <1362462812-30885-10-git-send-email-namhyung@kernel.org>
-References: <1362462812-30885-10-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1362462812-30885-11-git-send-email-namhyung@kernel.org>
+References: <1362462812-30885-11-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate browser: Make browser_disasm_line->
- percent an array
-Git-Commit-ID: ab77df672cdbf7a0235a9de3289c173e2fce68e5
+Subject: [tip:perf/core] perf annotate browser: Use disasm__calc_percent()
+Git-Commit-ID: e64aa75bf5559be3ce72e53ae28b76a2f633ca06
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,22 +31,23 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:22:12 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:23:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ab77df672cdbf7a0235a9de3289c173e2fce68e5
-Gitweb:     http://git.kernel.org/tip/ab77df672cdbf7a0235a9de3289c173e2fce68e5
+Commit-ID:  e64aa75bf5559be3ce72e53ae28b76a2f633ca06
+Gitweb:     http://git.kernel.org/tip/e64aa75bf5559be3ce72e53ae28b76a2f633ca06
 Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Tue, 5 Mar 2013 14:53:29 +0900
+AuthorDate: Tue, 5 Mar 2013 14:53:30 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Fri, 15 Mar 2013 13:06:06 -0300
 
-perf annotate browser: Make browser_disasm_line->percent an array
+perf annotate browser: Use disasm__calc_percent()
 
-Make percent field of struct browser_disasm_line an array and move it to
-the last.  This is a preparation of event group view feature.
+The disasm_line__calc_percent() which was used by annotate browser code
+almost duplicates disasm__calc_percent.  Let's get rid of the code
+duplication.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>
@@ -57,58 +57,123 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1362462812-30885-10-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1362462812-30885-11-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/annotate.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ tools/perf/ui/browsers/annotate.c | 50 +++++++++++----------------------------
+ tools/perf/util/annotate.c        |  4 ++--
+ tools/perf/util/annotate.h        |  4 ++++
+ 3 files changed, 20 insertions(+), 38 deletions(-)
 
 diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index cfae57f..62369f0 100644
+index 62369f0..8b16926 100644
 --- a/tools/perf/ui/browsers/annotate.c
 +++ b/tools/perf/ui/browsers/annotate.c
-@@ -14,10 +14,10 @@
+@@ -240,40 +240,6 @@ static unsigned int annotate_browser__refresh(struct ui_browser *browser)
+ 	return ret;
+ }
  
- struct browser_disasm_line {
- 	struct rb_node	rb_node;
--	double		percent;
- 	u32		idx;
- 	int		idx_asm;
- 	int		jump_sources;
-+	double		percent[1];
- };
+-static double disasm_line__calc_percent(struct disasm_line *dl, struct symbol *sym, int evidx)
+-{
+-	double percent = 0.0;
+-
+-	if (dl->offset != -1) {
+-		int len = sym->end - sym->start;
+-		unsigned int hits = 0;
+-		struct annotation *notes = symbol__annotation(sym);
+-		struct source_line *src_line = notes->src->lines;
+-		struct sym_hist *h = annotation__histogram(notes, evidx);
+-		s64 offset = dl->offset;
+-		struct disasm_line *next;
+-
+-		next = disasm__get_next_ip_line(&notes->src->source, dl);
+-		while (offset < (s64)len &&
+-		       (next == NULL || offset < next->offset)) {
+-			if (src_line) {
+-				percent += src_line[offset].p[0].percent;
+-			} else
+-				hits += h->addr[offset];
+-
+-			++offset;
+-		}
+-		/*
+- 		 * If the percentage wasn't already calculated in
+- 		 * symbol__get_source_line, do it now:
+- 		 */
+-		if (src_line == NULL && h->sum)
+-			percent = 100.0 * hits / h->sum;
+-	}
+-
+-	return percent;
+-}
+-
+ static void disasm_rb_tree__insert(struct rb_root *root, struct browser_disasm_line *bdl)
+ {
+ 	struct rb_node **p = &root->rb_node;
+@@ -337,7 +303,8 @@ static void annotate_browser__calc_percent(struct annotate_browser *browser,
+ 	struct map_symbol *ms = browser->b.priv;
+ 	struct symbol *sym = ms->sym;
+ 	struct annotation *notes = symbol__annotation(sym);
+-	struct disasm_line *pos;
++	struct disasm_line *pos, *next;
++	s64 len = symbol__size(sym);
  
- static struct annotate_browser_opt {
-@@ -97,9 +97,9 @@ static void annotate_browser__write(struct ui_browser *browser, void *entry, int
- 	int width = browser->width, printed;
- 	char bf[256];
+ 	browser->entries = RB_ROOT;
  
--	if (dl->offset != -1 && bdl->percent != 0.0) {
--		ui_browser__set_percent_color(browser, bdl->percent, current_entry);
--		slsmg_printf("%6.2f ", bdl->percent);
-+	if (dl->offset != -1 && bdl->percent[0] != 0.0) {
-+		ui_browser__set_percent_color(browser, bdl->percent[0], current_entry);
-+		slsmg_printf("%6.2f ", bdl->percent[0]);
- 	} else {
- 		ui_browser__set_percent_color(browser, 0, current_entry);
- 		slsmg_write_nstring(" ", 7);
-@@ -283,7 +283,7 @@ static void disasm_rb_tree__insert(struct rb_root *root, struct browser_disasm_l
- 	while (*p != NULL) {
- 		parent = *p;
- 		l = rb_entry(parent, struct browser_disasm_line, rb_node);
--		if (bdl->percent < l->percent)
-+		if (bdl->percent[0] < l->percent[0])
- 			p = &(*p)->rb_left;
- 		else
- 			p = &(*p)->rb_right;
-@@ -345,8 +345,8 @@ static void annotate_browser__calc_percent(struct annotate_browser *browser,
+@@ -345,7 +312,18 @@ static void annotate_browser__calc_percent(struct annotate_browser *browser,
  
  	list_for_each_entry(pos, &notes->src->source, node) {
  		struct browser_disasm_line *bpos = disasm_line__browser(pos);
--		bpos->percent = disasm_line__calc_percent(pos, sym, evsel->idx);
--		if (bpos->percent < 0.01) {
-+		bpos->percent[0] = disasm_line__calc_percent(pos, sym, evsel->idx);
-+		if (bpos->percent[0] < 0.01) {
+-		bpos->percent[0] = disasm_line__calc_percent(pos, sym, evsel->idx);
++		const char *path = NULL;
++
++		if (pos->offset == -1) {
++			RB_CLEAR_NODE(&bpos->rb_node);
++			continue;
++		}
++
++		next = disasm__get_next_ip_line(&notes->src->source, pos);
++		bpos->percent[0] = disasm__calc_percent(notes, evsel->idx,
++					pos->offset, next ? next->offset : len,
++				        &path);
++
+ 		if (bpos->percent[0] < 0.01) {
  			RB_CLEAR_NODE(&bpos->rb_node);
  			continue;
- 		}
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 05e34df..d102716 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -603,8 +603,8 @@ struct disasm_line *disasm__get_next_ip_line(struct list_head *head, struct disa
+ 	return NULL;
+ }
+ 
+-static double disasm__calc_percent(struct annotation *notes, int evidx,
+-				   s64 offset, s64 end, const char **path)
++double disasm__calc_percent(struct annotation *notes, int evidx, s64 offset,
++			    s64 end, const char **path)
+ {
+ 	struct source_line *src_line = notes->src->lines;
+ 	double percent = 0.0;
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index 68f851e..6f3c16f 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -50,6 +50,8 @@ bool ins__is_jump(const struct ins *ins);
+ bool ins__is_call(const struct ins *ins);
+ int ins__scnprintf(struct ins *ins, char *bf, size_t size, struct ins_operands *ops);
+ 
++struct annotation;
++
+ struct disasm_line {
+ 	struct list_head    node;
+ 	s64		    offset;
+@@ -68,6 +70,8 @@ void disasm_line__free(struct disasm_line *dl);
+ struct disasm_line *disasm__get_next_ip_line(struct list_head *head, struct disasm_line *pos);
+ int disasm_line__scnprintf(struct disasm_line *dl, char *bf, size_t size, bool raw);
+ size_t disasm__fprintf(struct list_head *head, FILE *fp);
++double disasm__calc_percent(struct annotation *notes, int evidx, s64 offset,
++			    s64 end, const char **path);
+ 
+ struct sym_hist {
+ 	u64		sum;
