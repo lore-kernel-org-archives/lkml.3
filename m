@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab3CUUcr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 16:32:47 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:45015 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913Ab3CUUcq (ORCPT
+	id S1753086Ab3CUUdI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 16:33:08 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5915 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612Ab3CUUdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 16:32:46 -0400
+	Thu, 21 Mar 2013 16:33:06 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 21 Mar 2013 13:33:04 -0700
+From: Rhyland Klein <rklein@nvidia.com>
+To: Anton Vorontsov <cbou@mail.ru>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Rhyland Klein <rklein@nvidia.com>
+Subject: [PATCH 2/2] power_supply: tps65090: Setup compatible property for dt
+Date: Thu, 21 Mar 2013 16:33:05 -0400
+Message-ID: <1363897985-19980-2-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1363897985-19980-1-git-send-email-rklein@nvidia.com>
+References: <1363897985-19980-1-git-send-email-rklein@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <20130321202635.GA16406@redhat.com>
-References: <20130321190653.GA15479@redhat.com>
-	<20130321192935.GY21522@ZenIV.linux.org.uk>
-	<CA+55aFyvwJK99YvDLDsazD4tWT6sNQO6kGM_1WyDdvwPNDxbLw@mail.gmail.com>
-	<20130321202635.GA16406@redhat.com>
-Date: Thu, 21 Mar 2013 13:32:45 -0700
-X-Google-Sender-Auth: olPwuMwXxsYkgsUYy0IqCsjomzI
-Message-ID: <CA+55aFwyK4uDgSKUpXBGS5zi16qd8STtrGi3kndunYi40dnj+A@mail.gmail.com>
-Subject: Re: VFS deadlock ?
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 1:26 PM, Dave Jones <davej@redhat.com> wrote:
->
-> those are qstr's, so I used d_name.name, right ?
+Setup the compatible property so that when this device is registered
+through device tree, it can match the expected compatiblity string
+used in the tps65090 driver.
 
-Yup. And if you want to, you could do p1->d_parent->d_name.name too,
-just to make things obvious. It's technically racy, but by the time
-the bug happens, who cares?
+Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+---
+ drivers/power/tps65090-charger.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-> I'd be surprised actually, I've got sysfs excluded from its list of victim files,
-> due to unrelated issues still unresolved.  So unless it followed a symlink into
-> sys from somewhere in /proc or /dev...
->
-> It took a few hours to reproduce last time, I'll increase the number of child
-> processes to see if I can trigger it faster now that I have the debug stuff in there.
+diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
+index 0c66c66..3b3dafd 100644
+--- a/drivers/power/tps65090-charger.c
++++ b/drivers/power/tps65090-charger.c
+@@ -168,7 +168,7 @@ static struct tps65090_platform_data *
+ 		tps65090_parse_dt_charger_data(struct platform_device *pdev)
+ {
+ 	struct tps65090_platform_data *pdata;
+-	struct device_node *np = pdev->dev.parent->of_node;
++	struct device_node *np = pdev->dev.of_node;
+ 	unsigned int prop;
+ 
+ 	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+@@ -204,7 +204,7 @@ static int tps65090_charger_probe(struct platform_device *pdev)
+ 
+ 	pdata = dev_get_platdata(pdev->dev.parent);
+ 
+-	if (!pdata && tps65090_mfd->dev->of_node)
++	if (!pdata && pdev->dev.of_node)
+ 		pdata = tps65090_parse_dt_charger_data(pdev);
+ 
+ 	if (!pdata) {
+@@ -300,9 +300,15 @@ static int tps65090_charger_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static struct of_device_id of_tps65090_charger_match[] = {
++	{ .compatible = "ti,tps65090-charger", },
++	{ /* end */ }
++};
++
+ static struct platform_driver tps65090_charger_driver = {
+ 	.driver	= {
+ 		.name	= "tps65090-charger",
++		.of_match_table = of_tps65090_charger_match,
+ 		.owner	= THIS_MODULE,
+ 	},
+ 	.probe	= tps65090_charger_probe,
+-- 
+1.7.9.5
 
-Hmm, ok. Do you have any network mounts or fuse or other "odd"
-filesystems etc? The whole "aliased inodes" thing might come from
-something like that.
-
-        Linus
