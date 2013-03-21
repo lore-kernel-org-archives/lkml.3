@@ -1,107 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab3CUCma (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 22:42:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57455 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753822Ab3CUCm2 (ORCPT
+	id S1755524Ab3CUCpI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 22:45:08 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:52667 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753447Ab3CUCpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 22:42:28 -0400
-Message-ID: <1363833706.31336.99.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3.0] perf,x86: fix kernel crash with PEBS/BTS after
- suspend/resume
-From: Ben Hutchings <ben@decadent.org.uk>
-To: shuah.khan@hp.com
-Cc: eranian@google.com, Greg KH <gregkh@linuxfoundation.org>,
-        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
-        acme@ghostprotocols.net, tglx@linutronix.de, hpa@zytor.com,
-        pavel@ucw.cz, rafael.j.wysocki@intel.com,
-        LKML <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org,
-        peterz@infradead.org, Andrew Morton <akpm@linux-foundation.org>,
-        jolsa@redhat.com, ak@linux.intel.com, stable <stable@vger.kernel.org>,
-        shuahkhan@gmail.com
-Date: Thu, 21 Mar 2013 02:41:46 +0000
-In-Reply-To: <1363395478.7231.9.camel@lorien2>
-References: <1363395478.7231.9.camel@lorien2>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-jKYd1qMBM6aFTsFBLVOa"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:5944:e226:2c7e:1b17
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 20 Mar 2013 22:45:06 -0400
+Date: Wed, 20 Mar 2013 22:45:02 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Keun-O Park <kpark3469@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, keun-o.park@windriver.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tracepoints: prevents null probe from being added
+Message-ID: <20130321024502.GB3874@Krystal>
+References: <1363749497-12176-1-git-send-email-kpark3469@gmail.com> <1363800712.6345.17.camel@gandalf.local.home> <20130320180113.GA24537@Krystal> <1363820491.6345.21.camel@gandalf.local.home> <CA+KhAHaWT5FR5J8iBr_DExrNTBC50LyEo8NG-qZbF6NPEy+zFA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+KhAHaWT5FR5J8iBr_DExrNTBC50LyEo8NG-qZbF6NPEy+zFA@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Keun-O Park (kpark3469@gmail.com) wrote:
+> On Thu, Mar 21, 2013 at 8:01 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Wed, 2013-03-20 at 14:01 -0400, Mathieu Desnoyers wrote:
+> >> * Steven Rostedt (rostedt@goodmis.org) wrote:
+> >> > On Wed, 2013-03-20 at 12:18 +0900, kpark3469@gmail.com wrote:
+> >> > > From: Sahara <keun-o.park@windriver.com>
+> >> > >
+> >> > > Somehow tracepoint_entry_add/remove_probe functions allow a null probe
+> >> > > function.
+> >> >
+> >> > You actually hit this in practice, or is this just something that you
+> >> > observe from code review?
+> >> >
+> >> > >  Especially on getting a null probe in remove function, it seems
+> >> > > to be used to remove all probe functions in the entry.
+> >> >
+> >> > Hmm, that actually sounds like a feature.
+> >>
+> >> Yep. It's been a long time since I wrote this code, but the removal code
+> >> seems to use NULL probe pointer to remove all probes for a given
+> >> tracepoint.
+> >>
+> >> I'd be tempted to just validate non-NULL probe within
+> >> tracepoint_entry_add_probe() and let other sites as is, just in case
+> >> anyone would be using this feature.
+> >>
+> >> I cannot say that I have personally used this "remove all" feature much
+> >> though.
+> >>
+> >
+> > I agree. I don't see anything wrong in leaving the null probe feature in
+> > the removal code. But updating the add code looks like a proper change.
+> >
+> > -- Steve
+> >
+> >
+> 
+> Hello Steve & Mathieu,
+> If we want to leave the null probe feature enabled, I think it would
+> be better modifying the code like the following for code efficiency.
+> 
+> @@ -112,7 +112,8 @@ tracepoint_entry_add_probe(struct tracepoint_entry *entry,
+>         int nr_probes = 0;
+>         struct tracepoint_func *old, *new;
+> 
+> -       WARN_ON(!probe);
+> +       if (WARN_ON(!probe))
+> +               return ERR_PTR(-EINVAL);
+> 
+>         debug_print_probes(entry);
+>         old = entry->funcs;
+> @@ -152,14 +153,15 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *ent
+> 
+>         debug_print_probes(entry);
+>         /* (N -> M), (N > 1, M >= 0) probes */
+> -       for (nr_probes = 0; old[nr_probes].func; nr_probes++) {
+> -               if (!probe ||
+> -                   (old[nr_probes].func == probe &&
+> -                    old[nr_probes].data == data))
+> -                       nr_del++;
+> +       if (probe) {
+> +               for (nr_probes = 0; old[nr_probes].func; nr_probes++) {
+> +                       if (old[nr_probes].func == probe &&
+> +                            old[nr_probes].data == data)
+> +                               nr_del++;
+> +               }
+>         }
+> 
+> -       if (nr_probes - nr_del == 0) {
+> +       if (!probe || nr_probes - nr_del == 0) {
 
---=-jKYd1qMBM6aFTsFBLVOa
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+We might want to do:
 
-On Fri, 2013-03-15 at 18:57 -0600, Shuah Khan wrote:
-> This patch fixes a kernel crash when using precise sampling (PEBS)
-> after a suspend/resume. Turns out the CPU notifier code is not invoked
-> on CPU0 (BP). Therefore, the DS_AREA (used by PEBS) is not restored prope=
-rly
-> by the kernel and keeps it power-on/resume value of 0 causing any PEBS
-> measurement to crash when running on CPU0.
->=20
-> The workaround is to add a hook in the actual resume code to restore
-> the DS Area MSR value. It is invoked for all CPUS. So for all but CPU0,
-> the DS_AREA will be restored twice but this is harmless.
->=20
-> Upstream commit id: 1d9d8639c063caf6efc2447f5f26aa637f844ff6
->=20
-> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> CC: stable@vger.kernel.org 3.0
-[...]
+if (probe) {
+  ...
+} else {
+  nr_del = nr_probes;
+}
 
-I've queued this up for 3.2 (though context was different again), along
-with the following fix-ups:
+if (nr_probes - nr_del == 0) {
+   ...
+}
 
-commit 2a6e06b2aed6995af401dcd4feb5e79a0c7ea554
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Sun Mar 17 15:44:43 2013 -0700
+rather than:
 
-    perf,x86: fix wrmsr_on_cpu() warning on suspend/resume
+if (probe) {
+  ...
+}
 
-commit 6c4d3bc99b3341067775efd4d9d13cc8e655fd7c
-Author: David Rientjes <rientjes@google.com>
-Date:   Sun Mar 17 15:49:10 2013 -0700
+if (!probe || nr_probes - nr_del == 0) {
+   ...
+}
 
-    perf,x86: fix link failure for non-Intel configs
+Using nr_del makes the code easier to follow IMHO.
 
-Ben.
+Thanks,
 
---=20
-Ben Hutchings
-It is easier to write an incorrect program than to understand a correct one=
-.
+Mathieu
 
---=-jKYd1qMBM6aFTsFBLVOa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+>                 /* N -> 0, (N > 1) */
+>                 entry->funcs = NULL;
+>                 entry->refcount = 0;
+> 
+> Because we know handing over the null probe to
+> tracepoint_entry_add_probe is not possible,
+> we don't have to check if the probe is null or not within for loop. If
+> the probe is null, it's just enough to add !probe in
+> 'if(nr_probes-nr_del==0)'. And, with additional if-clause wrapping
+> for-loop, falling through for-loop can be prevented when probe is
+> null.
+> 
+> @@ -173,8 +172,7 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry
+>                 if (new == NULL)
+>                         return ERR_PTR(-ENOMEM);
+>                 for (i = 0; old[i].func; i++)
+> -                       if (probe &&
+> -                           (old[i].func != probe || old[i].data != data))
+> +                       if (old[i].func != probe || old[i].data != data)
+>                                 new[j++] = old[i];
+>                 new[nr_probes - nr_del].func = NULL;
+>                 entry->refcount = nr_probes - nr_del;
+> 
+> We don't have to check the probe here too. We know probe is always true here.
+> Thanks.
+> 
+> -- Kpark
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUUpzaue/yOyVhhEJAQow4BAAlYZb58LUknbVEMOZbkOiJloGOdzxCoYW
-izfAiJthh48Ddzg9vJP/TFYph9OWEXB6rh1t7oQ9EDyuq8WZch8ZGeCb+POpfxIS
-n6b6iKgQWRKeax2hmmUeo/S+1EUeo7m41BIBfSFmE3diRPzDT1WYMNz7sOEWF59g
-XwThUDoSLHkfItT13LEqY4Zy/p1+jP35aAzq9dHE6iZxSyzFP8/SDfGkkhuejD8R
-b1VjkfnFCiiYy9etS+p/z00qezegULGUH98qD+I0O8kEsV39di2/DF0WGCXQ54vm
-5L3NbaV738W/4yFVP48SNzrr3Nx95xw0RtFAA+eDqv8/WlZIAjCyCnpenE9sW+vv
-othr/kK+v4vwJh+jZzGOhXH8wgHMfYD2i2rfMTHM2sWXZu+y5mVhtm1ov2Tv7dN0
-vuvccwOsv40qNuIqts1UeQzEdXMkcvQxXNYdpJHK+l9QCKQ5Qi/uBrpHAOIDInc0
-Ihpy5XhUV+5Xx/oimXQXhmWqrreiKE9k50ofnL9tH9/RzkzyHJgEQQBlYnjYnho2
-LGLkyK6ArwT5AxRFov1WzK1APtueTHZ4rJJug/7KmjA/ejIr7OorcKt4lo69CJMh
-/0tSIZR2pRTkzKhlwnV2EYN0ftTGGsYTDz3IfyzJbIa6juSfx2L94gou6WdPRL3u
-9jDLdl6Q58w=
-=W0Vh
------END PGP SIGNATURE-----
-
---=-jKYd1qMBM6aFTsFBLVOa--
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
