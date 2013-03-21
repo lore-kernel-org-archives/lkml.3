@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab3CUUdH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 16:33:07 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5914 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752770Ab3CUUdF (ORCPT
+	id S1753253Ab3CUUdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 16:33:46 -0400
+Received: from mail-db8lp0185.outbound.messaging.microsoft.com ([213.199.154.185]:3500
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752612Ab3CUUdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 16:33:05 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 21 Mar 2013 13:33:03 -0700
-From: Rhyland Klein <rklein@nvidia.com>
-To: Anton Vorontsov <cbou@mail.ru>
-CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Rhyland Klein <rklein@nvidia.com>
-Subject: [PATCH 1/2] power_supply: tps65090: Update bindings for subnode
-Date: Thu, 21 Mar 2013 16:33:04 -0400
-Message-ID: <1363897985-19980-1-git-send-email-rklein@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
+	Thu, 21 Mar 2013 16:33:43 -0400
+X-Forefront-Antispam-Report: CIP:160.33.194.231;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail04v.am.sony.com;RD:mail04.sonyusa.com;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zzbb2dI98dI936eI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2fh2a8h668h839h947hd25hf0ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1b0ah1724k1155h)
+Message-ID: <514B6E5F.2040405@am.sony.com>
+Date: Thu, 21 Mar 2013 13:32:31 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain
+CC: Ming Lei <tom.leiming@gmail.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "steve.glendinning@smsc.com" <steve.glendinning@smsc.com>
+Subject: Re: [BUG] bisected: PandaBoard smsc95xx ethernet driver error from
+ USB timeout
+References: <514A7E81.9000501@am.sony.com> <CACVXFVODZNuoLYSk60YwhFhEv5SX2QkszjjoYDWBHij7zwmhdQ@mail.gmail.com> <514B6CAF.3090406@am.sony.com>
+In-Reply-To: <514B6CAF.3090406@am.sony.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This updates the DT documentation to reflect that the tps65090-charger
-should be represented as a child node of the tps65090 device itself.
+On 03/21/13 13:25, Frank Rowand wrote:
+> On 03/21/13 02:00, Ming Lei wrote:
 
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
----
- .../devicetree/bindings/power_supply/tps65090.txt  |   18 ++++++------------
- 1 file changed, 6 insertions(+), 12 deletions(-)
+< snip >
 
-diff --git a/Documentation/devicetree/bindings/power_supply/tps65090.txt b/Documentation/devicetree/bindings/power_supply/tps65090.txt
-index 56370c7..8e5e0d3 100644
---- a/Documentation/devicetree/bindings/power_supply/tps65090.txt
-+++ b/Documentation/devicetree/bindings/power_supply/tps65090.txt
-@@ -1,23 +1,17 @@
- TPS65090 Frontend PMU with Switchmode Charger
- 
- Required Properties:
---compatible: "ti,tps65090"
---reg: I2C slave address
---interrupts: the interrupt output to which this device connects
-+-compatible: "ti,tps65090-charger"
- 
- Optional Properties:
- -ti,enable-low-current-chrg: Enables charging when a low current is detected
-  while the default logic is to stop charging.
- 
--Example:
-+This node is a subnode of the tps65090 PMIC.
- 
--	tps65090@48 {
--		compatible = "ti,tps65090";
--		reg = <0x48>;
--		interrupts = <0 88 0x4>;
-+Example:
- 
-+	tps65090-charger {
-+		compatible = "ti,tps65090-charger";
- 		ti,enable-low-current-chrg;
--
--		regulators {
--			...
--		};
-+	};
--- 
-1.7.9.5
+> ----------
+> There are some timeout messages that I am not positive are symptoms of
+> the problem.  With these messages, the smsc95xx driver initialization is
+> successful, so the ethernet device is available.  For the first bisect
+> attempt, I did not treat these messages as errors.  For the second bisect
+> attempt I treated these messages as errors.  A typical example of the
+> timeout message is:
+> 
+>   [    9.537811] hub 1-1:1.0: state 7 ports 5 chg 0000 evt 0002
+>   [   17.056701] usb 1-1.1: swapper/0 timed out on ep0out len=0/4
+>   [   17.062652] smsc95xx 1-1.1:1.0: eth0: Failed to write register index 0x00000108
+>   [   17.070343] smsc95xx 1-1.1:1.0: eth0: Failed to write ADDRL: -110
+>   [   17.076751] IP-Config: Failed to open eth0
+
+Oops, pasted the wrong example.  This is an example of a timeout, but the
+driver still works, and the system boots:
+
+  [    6.072357] smsc95xx 1-1.1:1.0: eth0: register 'smsc95xx' at usb-ehci-omap.0-1.1, smsc95xx USB 2.0 Ethernet, fa:50:73:02:79:67
+  [    6.084655] hub 1-1:1.0: state 7 ports 5 chg 0000 evt 0002
+  [   11.220672] usb 1-1.1: swapper/0 timed out on ep0out len=4/4
+  [   18.183441] usb 1-1.1: link qh8-0001/dc8d6640 start 2 [1/0 us]
+  [   19.822296] IP-Config: Complete:
+
+> 
+>   The mention of swapper is not relevent, it just happens to be the
+>   current process when the time out occurs.
+> 
+> I have only seen these timeout messages in the boot log, so they may not
+> be a very visible symptom.  They also _might_ be unrelated to the problem,
+> but my gut feel is that they are related.
+
+< snip >
+
+-Frank
 
