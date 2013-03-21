@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755690Ab3CUL2O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:28:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56593 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752931Ab3CUL2M (ORCPT
+	id S1757436Ab3CUL2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:28:40 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:59889 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271Ab3CUL2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:28:12 -0400
-Date: Thu, 21 Mar 2013 04:26:39 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-0d7f5b57a4373993121df4b4216e9628233b075b@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@kernel.org
-In-Reply-To: <1363064360-7641-1-git-send-email-namhyung@kernel.org>
-References: <1363064360-7641-1-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace: Get rid of a duplicate code
-Git-Commit-ID: 0d7f5b57a4373993121df4b4216e9628233b075b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 21 Mar 2013 07:28:39 -0400
+Date: Thu, 21 Mar 2013 12:28:35 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: Basic perf PMU support for Haswell v9
+Message-ID: <20130321112835.GA23567@gmail.com>
+References: <1362786573-18455-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:26:50 -0700 (PDT)
+In-Reply-To: <1362786573-18455-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0d7f5b57a4373993121df4b4216e9628233b075b
-Gitweb:     http://git.kernel.org/tip/0d7f5b57a4373993121df4b4216e9628233b075b
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Tue, 12 Mar 2013 13:59:20 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 15 Mar 2013 13:06:07 -0300
 
-perf trace: Get rid of a duplicate code
+* Andi Kleen <andi@firstfloor.org> wrote:
 
-Checking of sample.raw_data is duplicated and seems an artifact of some
-git auto merging stuff.  Kill it.
+> This is based on v7 of the full Haswell PMU support,
+> rebased, reviewer-optimized and stripped down to the bare bones
+> 
+> Most interesting new features are not in this patchkit
+> (full version is git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc.git hsw/pmu5)
+> 
+> Contains support for:
+> - Basic Haswell PMU and PEBS support
+> - Late unmasking of the PMI
+> - Basic LBRv4 support
+> 
+> v2: Addressed Stephane's feedback. See individual patches for details.
+> v3: now even more bite-sized. Qualifier constraints merged earlier.
+> v4: Rename some variables, add some comments and other minor changes.
+> Add some Reviewed/Tested-bys.
+> v5: Address some minor review feedback. Port to latest perf/core
+> v6: Add just some variable names, add comments, edit descriptions, some
+> more testing, rebased to latest perf/core
+> v7: Expand comment
+> v8: Rename structure field.
+> v9: No wide counters, but add basic LBRs. Add some more 
+> constraints. Rebase to 3.9rc1
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1363064360-7641-1-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-trace.c | 7 -------
- 1 file changed, 7 deletions(-)
+I had another look at your latest patches and they are still quite sloppy: 
+you never ran them through checkpatch.pl, right? Tons of warnings, quite a 
+few of which are legitimate.
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index f0c20ef..49fedb5 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -527,13 +527,6 @@ again:
- 				continue;
- 			}
- 
--			if (sample.raw_data == NULL) {
--				printf("%s sample with no payload for tid: %d, cpu %d, raw_size=%d, skipping...\n",
--				       perf_evsel__name(evsel), sample.tid,
--				       sample.cpu, sample.raw_size);
--				continue;
--			}
--
- 			handler = evsel->handler.func;
- 			handler(trace, evsel, &sample);
- 		}
+These are all basic kernel hacking 101 mistakes you commited and we are 
+already into version 9 of your patch-set ...
+
+Having to point out trivial errors in your patches again and again is not 
+a very efficient use of my time, frankly.
+
+Thanks,
+
+	Ingo
