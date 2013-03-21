@@ -1,218 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934156Ab3CUQcc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:32:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40842 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932371Ab3CUQca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:32:30 -0400
-Date: Thu, 21 Mar 2013 17:32:27 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/10 -v2r1] mm: vmscan: Block kswapd if it is
- encountering pages under writeback
-Message-ID: <20130321163227.GT6094@dhcp22.suse.cz>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-8-git-send-email-mgorman@suse.de>
+	id S933963Ab3CUQdz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:33:55 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:26865 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756043Ab3CUQdx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 12:33:53 -0400
+Message-ID: <1363883628.2736.8.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH net] vhost/net: fix heads usage of ubuf_info
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: David Miller <davem@davemloft.net>, <rusty@rustcorp.com.au>,
+        <jasowang@redhat.com>, <basil.gor@gmail.com>,
+        <nab@risingtidesystems.com>, <kvm@vger.kernel.org>,
+        <virtualization@lists.linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Thu, 21 Mar 2013 16:33:48 +0000
+In-Reply-To: <20130321162813.GG1925@redhat.com>
+References: <20130317124609.GA25967@redhat.com>
+	 <20130317.142955.1114572401286297685.davem@davemloft.net>
+	 <20130321060218.GB23908@redhat.com>
+	 <1363883028.2736.7.camel@bwh-desktop.uk.solarflarecom.com>
+	 <20130321162813.GG1925@redhat.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363525456-10448-8-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19734.005
+X-TM-AS-Result: No--22.915000-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is what you have in your mm-vmscan-limit-reclaim-v2r1 branch:
-> commit 0dae7d4be56e6a7fe3f128284679f5efc0cc2383
-> Author: Mel Gorman <mgorman@suse.de>
-> Date:   Tue Mar 12 10:33:31 2013 +0000
+On Thu, 2013-03-21 at 18:28 +0200, Michael S. Tsirkin wrote:
+> On Thu, Mar 21, 2013 at 04:23:48PM +0000, Ben Hutchings wrote:
+> > On Thu, 2013-03-21 at 08:02 +0200, Michael S. Tsirkin wrote:
+> > > On Sun, Mar 17, 2013 at 02:29:55PM -0400, David Miller wrote:
+> > > > From: "Michael S. Tsirkin" <mst@redhat.com>
+> > > > Date: Sun, 17 Mar 2013 14:46:09 +0200
+> > > > 
+> > > > > ubuf info allocator uses guest controlled head as an index,
+> > > > > so a malicious guest could put the same head entry in the ring twice,
+> > > > > and we will get two callbacks on the same value.
+> > > > > To fix use upend_idx which is guaranteed to be unique.
+> > > > > 
+> > > > > Reported-by: Rusty Russell <rusty@rustcorp.com.au>
+> > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > > 
+> > > > Applied and queued up for -stable, thanks.
+> > > > 
+> > > > And thankfully you got the stable URL wrong,
+> > > 
+> > > Yes I wrote stable@kernel.org that's what an old copy
+> > > says here:
+> > > https://www.kernel.org/doc/Documentation/stable_kernel_rules.txt
+> > > 
+> > > I should have known better than look at it on the 'net.  The top
+> > > 'Everything you ever wanted to know about Linux 2.6 -stable releases.'
+> > > is a big hint that it's stale.
+> > > Any idea who maintains this? Better update it or remove it or redirect to git.
+> > 
+> > Rob Landley maintains it, but he's been having trouble updating it since
+> > all the upload mechanisms were changed on kernel.org.
+> > 
+> > (My stable maintenance scripts still match the old address, anyway.  Not
+> > sure about Greg's.)
+> > 
+> > Ben.
 > 
->     mm: vmscan: Block kswapd if it is encountering pages under writeback
->     
->     Historically, kswapd used to congestion_wait() at higher priorities if it
->     was not making forward progress. This made no sense as the failure to make
->     progress could be completely independent of IO. It was later replaced by
->     wait_iff_congested() and removed entirely by commit 258401a6 (mm: don't
->     wait on congested zones in balance_pgdat()) as it was duplicating logic
->     in shrink_inactive_list().
->     
->     This is problematic. If kswapd encounters many pages under writeback and
->     it continues to scan until it reaches the high watermark then it will
->     quickly skip over the pages under writeback and reclaim clean young
->     pages or push applications out to swap.
->     
->     The use of wait_iff_congested() is not suited to kswapd as it will only
->     stall if the underlying BDI is really congested or a direct reclaimer was
->     unable to write to the underlying BDI. kswapd bypasses the BDI congestion
->     as it sets PF_SWAPWRITE but even if this was taken into account then it
->     would cause direct reclaimers to stall on writeback which is not desirable.
->     
->     This patch sets a ZONE_WRITEBACK flag if direct reclaim or kswapd is
->     encountering too many pages under writeback. If this flag is set and
->     kswapd encounters a PageReclaim page under writeback then it'll assume
->     that the LRU lists are being recycled too quickly before IO can complete
->     and block waiting for some IO to complete.
->     
->     Signed-off-by: Mel Gorman <mgorman@suse.de>
+> I hope you mean it will match both the old and the new address?
 
-Looks reasonable to me.
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Yes, of course!
 
-> 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index afedd1d..dd0d266 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -499,6 +499,9 @@ typedef enum {
->  					 * many dirty file pages at the tail
->  					 * of the LRU.
->  					 */
-> +	ZONE_WRITEBACK,			/* reclaim scanning has recently found
-> +					 * many pages under writeback
-> +					 */
->  } zone_flags_t;
->  
->  static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
-> @@ -526,6 +529,11 @@ static inline int zone_is_reclaim_dirty(const struct zone *zone)
->  	return test_bit(ZONE_TAIL_LRU_DIRTY, &zone->flags);
->  }
->  
-> +static inline int zone_is_reclaim_writeback(const struct zone *zone)
-> +{
-> +	return test_bit(ZONE_WRITEBACK, &zone->flags);
-> +}
-> +
->  static inline int zone_is_reclaim_locked(const struct zone *zone)
->  {
->  	return test_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index a8b94fa..e87de90 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -723,25 +723,51 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  		may_enter_fs = (sc->gfp_mask & __GFP_FS) ||
->  			(PageSwapCache(page) && (sc->gfp_mask & __GFP_IO));
->  
-> +		/*
-> +		 * If a page at the tail of the LRU is under writeback, there
-> +		 * are three cases to consider.
-> +		 *
-> +		 * 1) If reclaim is encountering an excessive number of pages
-> +		 *    under writeback and this page is both under writeback and
-> +		 *    PageReclaim then it indicates that pages are being queued
-> +		 *    for IO but are being recycled through the LRU before the
-> +		 *    IO can complete. In this case, wait on the IO to complete
-> +		 *    and then clear the ZONE_WRITEBACK flag to recheck if the
-> +		 *    condition exists.
-> +		 *
-> +		 * 2) Global reclaim encounters a page, memcg encounters a
-> +		 *    page that is not marked for immediate reclaim or
-> +		 *    the caller does not have __GFP_IO. In this case mark
-> +		 *    the page for immediate reclaim and continue scanning.
-> +		 *
-> +		 *    __GFP_IO is checked  because a loop driver thread might
-> +		 *    enter reclaim, and deadlock if it waits on a page for
-> +		 *    which it is needed to do the write (loop masks off
-> +		 *    __GFP_IO|__GFP_FS for this reason); but more thought
-> +		 *    would probably show more reasons.
-> +		 *
-> +		 *    Don't require __GFP_FS, since we're not going into the
-> +		 *    FS, just waiting on its writeback completion. Worryingly,
-> +		 *    ext4 gfs2 and xfs allocate pages with
-> +		 *    grab_cache_page_write_begin(,,AOP_FLAG_NOFS), so testing
-> +		 *    may_enter_fs here is liable to OOM on them.
-> +		 *
-> +		 * 3) memcg encounters a page that is not already marked
-> +		 *    PageReclaim. memcg does not have any dirty pages
-> +		 *    throttling so we could easily OOM just because too many
-> +		 *    pages are in writeback and there is nothing else to
-> +		 *    reclaim. Wait for the writeback to complete.
-> +		 */
->  		if (PageWriteback(page)) {
-> -			/*
-> -			 * memcg doesn't have any dirty pages throttling so we
-> -			 * could easily OOM just because too many pages are in
-> -			 * writeback and there is nothing else to reclaim.
-> -			 *
-> -			 * Check __GFP_IO, certainly because a loop driver
-> -			 * thread might enter reclaim, and deadlock if it waits
-> -			 * on a page for which it is needed to do the write
-> -			 * (loop masks off __GFP_IO|__GFP_FS for this reason);
-> -			 * but more thought would probably show more reasons.
-> -			 *
-> -			 * Don't require __GFP_FS, since we're not going into
-> -			 * the FS, just waiting on its writeback completion.
-> -			 * Worryingly, ext4 gfs2 and xfs allocate pages with
-> -			 * grab_cache_page_write_begin(,,AOP_FLAG_NOFS), so
-> -			 * testing may_enter_fs here is liable to OOM on them.
-> -			 */
-> -			if (global_reclaim(sc) ||
-> +			/* Case 1 above */
-> +			if (current_is_kswapd() &&
-> +			    PageReclaim(page) &&
-> +			    zone_is_reclaim_writeback(zone)) {
-> +				wait_on_page_writeback(page);
-> +				zone_clear_flag(zone, ZONE_WRITEBACK);
-> +
-> +			/* Case 2 above */
-> +			} else if (global_reclaim(sc) ||
->  			    !PageReclaim(page) || !(sc->gfp_mask & __GFP_IO)) {
->  				/*
->  				 * This is slightly racy - end_page_writeback()
-> @@ -756,9 +782,13 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  				 */
->  				SetPageReclaim(page);
->  				nr_writeback++;
-> +
->  				goto keep_locked;
-> +
-> +			/* Case 3 above */
-> +			} else {
-> +				wait_on_page_writeback(page);
->  			}
-> -			wait_on_page_writeback(page);
->  		}
->  
->  		if (!force_reclaim)
-> @@ -1373,8 +1403,10 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->  	 *                     isolated page is PageWriteback
->  	 */
->  	if (nr_writeback && nr_writeback >=
-> -			(nr_taken >> (DEF_PRIORITY - sc->priority)))
-> +			(nr_taken >> (DEF_PRIORITY - sc->priority))) {
->  		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
-> +		zone_set_flag(zone, ZONE_WRITEBACK);
-> +	}
->  
->  	/*
->  	 * Similarly, if many dirty pages are encountered that are not
-> @@ -2639,8 +2671,8 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
->   * kswapd shrinks the zone by the number of pages required to reach
->   * the high watermark.
->   *
-> - * Returns true if kswapd scanned at least the requested number of
-> - * pages to reclaim.
-> + * Returns true if kswapd scanned at least the requested number of pages to
-> + * reclaim or if the lack of process was due to pages under writeback.
->   */
->  static bool kswapd_shrink_zone(struct zone *zone,
->  			       struct scan_control *sc,
-> @@ -2663,6 +2695,8 @@ static bool kswapd_shrink_zone(struct zone *zone,
->  	if (nr_slab == 0 && !zone_reclaimable(zone))
->  		zone->all_unreclaimable = 1;
->  
-> +	zone_clear_flag(zone, ZONE_WRITEBACK);
-> +
->  	return sc->nr_scanned >= sc->nr_to_reclaim;
->  }
- 
+Ben.
+
 -- 
-Michal Hocko
-SUSE Labs
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
