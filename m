@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932580Ab3CULjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:39:54 -0400
-Received: from mail-ia0-f171.google.com ([209.85.210.171]:36110 "EHLO
-	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932475Ab3CULju (ORCPT
+	id S932653Ab3CULkF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:40:05 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:52515 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932215Ab3CULkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:39:50 -0400
+	Thu, 21 Mar 2013 07:40:01 -0400
+Date: Thu, 21 Mar 2013 12:39:57 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Timo Juhani Lindfors <timo.lindfors@iki.fi>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Jiri Kosina <jkosina@suse.cz>,
+        Nadia Yvette Chambers <nyc@holomorphy.com>,
+        yrl.pp-manager.tt@hitachi.com, "David S. Miller" <davem@davemloft.net>
+Subject: Re: Re: [PATCH -tip ] [BUGFIX] kprobes: Move hash_64() into
+ .text.kprobe section
+Message-ID: <20130321113957.GA2659@gmail.com>
+References: <20130311142233.19885.10567.stgit@mhiramat-M0-7522>
+ <CA+55aFz28CvntOMF-Te0x=gn=XQcU8Zzi6E0iAhZb9mG5J-Ppg@mail.gmail.com>
+ <514023AA.4070004@hitachi.com>
+ <847glb8m4i.fsf@sauna.l.org>
+ <51408349.8080800@hitachi.com>
+ <84li9ke88w.fsf@sauna.l.org>
+ <5147D318.9060400@hitachi.com>
 MIME-Version: 1.0
-In-Reply-To: <1363145021-14339-1-git-send-email-s-anna@ti.com>
-References: <1363145021-14339-1-git-send-email-s-anna@ti.com>
-Date: Thu, 21 Mar 2013 12:39:49 +0100
-Message-ID: <CACRpkdYpJLdTx_sVyLj+MVzXqcyfucyP8qy_b_8jiArU+NSMfQ@mail.gmail.com>
-Subject: Re: [PATCHv3 00/14] drivers: mailbox: framework creation
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Suman Anna <s-anna@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Loic Pallardy <loic.pallardy@st.com>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5147D318.9060400@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 4:23 AM, Suman Anna <s-anna@ti.com> wrote:
 
-> Please find the updated mailbox patch series for pulling into linux-next.
-> The series is rebased on top of 3.9-rc2, and includes one new patch to
-> rename an existing mailbox.h added as part of the highbank cpufreq
-> support for 3.9 merge window [1].
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-ARM SoC folks:
+> (2013/03/19 5:57), Timo Juhani Lindfors wrote:
+> > Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
+> >> Thank you for reporting!!
+> > 
+> > Thanks for fixing these! I spent some time trying to automate the
+> > process of finding sensitive functions and eventually resorted into
+> > booting a kvm instance with a minimal initrd to test every single
+> > function in a clean and reproducible environment.
+> > 
+> > I found 7 more cases where calling register_kprobe() leads to an instant
+> > kernel panic:
+> > 
+> > __flush_tlb_single
+> > native_flush_tlb
+> > native_safe_halt
+> > native_set_pgd
+> > native_set_pmd
+> > native_set_pud
+> > native_write_cr0
+> 
+> Ah, right and Great! these native_* things are too fundamental one.
+> Hmm, curiously, those are defined as inline functions, and
+> I also couldn't find some of those symbols even with your previous
+> kconfig.
+> 
+> > You can see full kernel console output for each function at
+> > http://lindi.iki.fi/lindi/linux/kprobes/panics_2013-03-18/
+> 
+> As you can see, your panic messages, most of them caused GFP.
+> This may mean that int3 software exception must not happened
+> on those sites. Not the recursive call.
+> 
+> Perhaps, I'd better add those native_* things into symbol-name
+> based blacklist, instead of adding __kprobes, because those
+> are not related to kprobes recursion.
 
-would you consider pulling this stuff into the ARM SoC tree?
+Blacklists are not really good in general - it's easy for a symbol to be 
+renamed and the blacklist misses them silently ...
 
-It turns out that ux500 multiplatform support is sort of relying
-on this refactoring since it helps us to break apart the huge
-PRCMU driver.
+symbol name and annotation should go hand in hand.
 
-I am proceeding with my multiplatform work but things like
-this not being upstream will make the patches look ugly
-and I cannot quite consider it properly done before this is
-fixed too.
+Thanks,
 
-Yours,
-Linus Walleij
+	Ingo
