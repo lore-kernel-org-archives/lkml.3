@@ -1,39 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932853Ab3CUHUy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 03:20:54 -0400
-Received: from forward1.mail.yandex.net ([77.88.46.6]:33096 "EHLO
-	forward1.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932584Ab3CUHUw (ORCPT
+	id S1757808Ab3CUHVU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 03:21:20 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45112 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757740Ab3CUHS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 03:20:52 -0400
-X-Greylist: delayed 387 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Mar 2013 03:20:52 EDT
-Message-ID: <514AB34F.9060707@yandex.ru>
-Date: Thu, 21 Mar 2013 13:14:23 +0600
-From: Vitaliy Bortsov <bortsov@yandex.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: WCH CH352 PCI-to-RS232 card bad default type
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Mar 2013 03:18:57 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-07-514ab45f89c6
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 2/9] perf util: Get rid of malloc_or_die() in trace-event-info.c
+Date: Thu, 21 Mar 2013 16:18:45 +0900
+Message-Id: <1363850332-25297-3-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1363850332-25297-1-git-send-email-namhyung@kernel.org>
+References: <1363850332-25297-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-According to manufacture chip information from 
-http://wch-ic.com/product/pci/ch352.asp type of emulated chip cannot be 
-16C550A (it is default value in linux and in patch 
-https://lkml.org/lkml/2013/3/2/30 ). Correct value is 16550.
-Therefore I need to run additional command
-setserial /dev/ttySx uart 16550
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Default value 16550A is not working, correct value 16550 is working on 
-my PCI-RS232card.
+Check return value of malloc and fail if NULL.
 
-Please somebody make changes to module 
-drivers/tty/serial/8250/8250_pci.c (as I think).
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/trace-event-info.c | 48 ++++++++++++++++++++++++--------------
+ 1 file changed, 30 insertions(+), 18 deletions(-)
 
-Regards,
-   Vitaliy
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index 81c673282ed4..91db6e8e4493 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -47,16 +47,6 @@ static const char *output_file = "trace.info";
+ static int output_fd;
+ 
+ 
+-static void *malloc_or_die(unsigned int size)
+-{
+-	void *data;
+-
+-	data = malloc(size);
+-	if (!data)
+-		die("malloc");
+-	return data;
+-}
+-
+ static const char *find_debugfs(void)
+ {
+ 	const char *path = perf_debugfs_mount(NULL);
+@@ -209,7 +199,7 @@ static bool name_in_tp_list(char *sys, struct tracepoint_path *tps)
+ 	return false;
+ }
+ 
+-static void copy_event_system(const char *sys, struct tracepoint_path *tps)
++static int copy_event_system(const char *sys, struct tracepoint_path *tps)
+ {
+ 	struct dirent *dent;
+ 	struct stat st;
+@@ -217,6 +207,7 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 	DIR *dir;
+ 	int count = 0;
+ 	int ret;
++	int err;
+ 
+ 	dir = opendir(sys);
+ 	if (!dir)
+@@ -228,7 +219,11 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "..") == 0 ||
+ 		    !name_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		format = malloc_or_die(strlen(sys) + strlen(dent->d_name) + 10);
++		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
++		if (!format) {
++			err = -ENOMEM;
++			goto out;
++		}
+ 		sprintf(format, "%s/%s/format", sys, dent->d_name);
+ 		ret = stat(format, &st);
+ 		free(format);
+@@ -246,16 +241,22 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "..") == 0 ||
+ 		    !name_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		format = malloc_or_die(strlen(sys) + strlen(dent->d_name) + 10);
++		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
++		if (!format) {
++			err = -ENOMEM;
++			goto out;
++		}
+ 		sprintf(format, "%s/%s/format", sys, dent->d_name);
+ 		ret = stat(format, &st);
+ 
+ 		if (ret >= 0)
+ 			record_file(format, 8);
+-
+ 		free(format);
+ 	}
++	err = 0;
++out:
+ 	closedir(dir);
++	return err;
+ }
+ 
+ static void read_ftrace_files(struct tracepoint_path *tps)
+@@ -282,7 +283,7 @@ static bool system_in_tp_list(char *sys, struct tracepoint_path *tps)
+ 	return false;
+ }
+ 
+-static void read_event_files(struct tracepoint_path *tps)
++static int read_event_files(struct tracepoint_path *tps)
+ {
+ 	struct dirent *dent;
+ 	struct stat st;
+@@ -291,6 +292,7 @@ static void read_event_files(struct tracepoint_path *tps)
+ 	DIR *dir;
+ 	int count = 0;
+ 	int ret;
++	int err;
+ 
+ 	path = get_tracing_file("events");
+ 	if (!path)
+@@ -320,7 +322,11 @@ static void read_event_files(struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "ftrace") == 0 ||
+ 		    !system_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		sys = malloc_or_die(strlen(path) + strlen(dent->d_name) + 2);
++		sys = malloc(strlen(path) + strlen(dent->d_name) + 2);
++		if (!sys) {
++			err = -ENOMEM;
++			goto out;
++		}
+ 		sprintf(sys, "%s/%s", path, dent->d_name);
+ 		ret = stat(sys, &st);
+ 		if (ret >= 0) {
+@@ -329,9 +335,12 @@ static void read_event_files(struct tracepoint_path *tps)
+ 		}
+ 		free(sys);
+ 	}
+-
++	err = 0;
++out:
+ 	closedir(dir);
+ 	put_tracing_file(path);
++
++	return err;
+ }
+ 
+ static void read_proc_kallsyms(void)
+@@ -463,7 +472,10 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+ 	if (!tps)
+ 		return NULL;
+ 
+-	tdata = malloc_or_die(sizeof(*tdata));
++	tdata = malloc(sizeof(*tdata));
++	if (!tdata)
++		return NULL;
++
+ 	tdata->temp = temp;
+ 	tdata->size = 0;
+ 
+-- 
+1.7.11.7
+
