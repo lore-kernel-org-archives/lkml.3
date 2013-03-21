@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab3CUUBO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 16:01:14 -0400
-Received: from mga11.intel.com ([192.55.52.93]:37780 "EHLO mga11.intel.com"
+	id S1752808Ab3CUUBc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 16:01:32 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42001 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752629Ab3CUUAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752637Ab3CUUAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 21 Mar 2013 16:00:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,888,1355126400"; 
-   d="scan'208";a="310162232"
+   d="scan'208";a="310162233"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, tglx@linutronix.de, eranian@google.com,
         torvalds@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/5] perf, x86: Basic Haswell PMU support v7
-Date: Thu, 21 Mar 2013 12:59:52 -0700
-Message-Id: <1363895995-12967-3-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 5/5] perf, x86: Support Haswell v4 LBR format
+Date: Thu, 21 Mar 2013 12:59:55 -0700
+Message-Id: <1363895995-12967-6-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1363895995-12967-1-git-send-email-andi@firstfloor.org>
 References: <1363895995-12967-1-git-send-email-andi@firstfloor.org>
@@ -26,179 +26,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add basic Haswell PMU support.
+Haswell has two additional LBR from flags for TSX: intx and abort, implemented
+as a new v4 version of the LBR format.
 
-Similar to SandyBridge, but has a few new events and two
-new counter bits.
+Handle those in and adjust the sign extension code to still correctly extend.
+The flags are exported similarly in the LBR record to the existing misprediction
+flag
 
-There are some new counter flags that need to be prevented
-from being set on fixed counters, and allowed to be set
-for generic counters.
-
-Also we add support for the counter 2 constraint to handle
-all raw events.
-
-Contains fixes from Stephane Eranian
-
-v2: Folded TSX bits into standard FIXED_EVENT_CONSTRAINTS
-v3: Use SNB LBR init code. Comment fix (Stephane Eranian)
-v4: Add the counter2 constraints. Fix comment in the right place.
-v5: Expand comment
-v6: Add CYCLE_ACTIVITY.* to counter constraints
-v7: Follow Linux style, not perf style
-Reviewed-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/perf_event.h      |    3 +
- arch/x86/kernel/cpu/perf_event.h       |    5 ++-
- arch/x86/kernel/cpu/perf_event_intel.c |   79 ++++++++++++++++++++++++++++++++
- 3 files changed, 86 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++++++++---
+ include/linux/perf_event.h                 |    7 ++++++-
+ 2 files changed, 21 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index 57cb634..b79b6eb 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -29,6 +29,9 @@
- #define ARCH_PERFMON_EVENTSEL_INV			(1ULL << 23)
- #define ARCH_PERFMON_EVENTSEL_CMASK			0xFF000000ULL
- 
-+#define HSW_INTX					(1ULL << 32)
-+#define HSW_INTX_CHECKPOINTED				(1ULL << 33)
-+
- #define AMD64_EVENTSEL_INT_CORE_ENABLE			(1ULL << 36)
- #define AMD64_EVENTSEL_GUESTONLY			(1ULL << 40)
- #define AMD64_EVENTSEL_HOSTONLY				(1ULL << 41)
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 7f5c75c..a356350 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -219,11 +219,14 @@ struct cpu_hw_events {
-  *  - inv
-  *  - edge
-  *  - cnt-mask
-+ *  - intx
-+ *  - intx_checkpointed
-  *  The other filters are supported by fixed counters.
-  *  The any-thread option is supported starting with v3.
-  */
-+#define FIXED_EVENT_FLAGS (X86_RAW_EVENT_MASK|HSW_INTX|HSW_INTX_CHECKPOINTED)
- #define FIXED_EVENT_CONSTRAINT(c, n)	\
--	EVENT_CONSTRAINT(c, (1ULL << (32+n)), X86_RAW_EVENT_MASK)
-+	EVENT_CONSTRAINT(c, (1ULL << (32+n)), FIXED_EVENT_FLAGS)
- 
- /*
-  * Constraint on the Event code + UMask
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 529c893..5ecaef0 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -13,6 +13,7 @@
- #include <linux/slab.h>
- #include <linux/export.h>
- 
-+#include <asm/cpufeature.h>
- #include <asm/hardirq.h>
- #include <asm/apic.h>
- 
-@@ -154,6 +155,22 @@ static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
- 	EVENT_EXTRA_END
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index da02e9c..2af6695b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -12,6 +12,7 @@ enum {
+ 	LBR_FORMAT_LIP		= 0x01,
+ 	LBR_FORMAT_EIP		= 0x02,
+ 	LBR_FORMAT_EIP_FLAGS	= 0x03,
++	LBR_FORMAT_EIP_FLAGS2	= 0x04,
  };
  
-+static struct event_constraint intel_hsw_event_constraints[] = {
-+	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-+	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
-+	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
-+	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.* */
-+	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
-+	INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
-+	/* CYCLE_ACTIVITY.CYCLES_L1D_PENDING */
-+	INTEL_EVENT_CONSTRAINT(0x08a3, 0x4),
-+	/* CYCLE_ACTIVITY.STALLS_L1D_PENDING */
-+	INTEL_EVENT_CONSTRAINT(0x0ca3, 0x4),
-+	/* CYCLE_ACTIVITY.CYCLES_NO_EXECUTE */
-+	INTEL_EVENT_CONSTRAINT(0x04a3, 0xf),
-+	EVENT_CONSTRAINT_END
-+};
-+
- static u64 intel_pmu_event_map(int hw_event)
- {
- 	return intel_perfmon_event_map[hw_event];
-@@ -1606,6 +1623,48 @@ static void core_pmu_enable_all(int added)
+ /*
+@@ -56,6 +57,8 @@ enum {
+ 	 LBR_FAR)
+ 
+ #define LBR_FROM_FLAG_MISPRED  (1ULL << 63)
++#define LBR_FROM_FLAG_INTX     (1ULL << 62)
++#define LBR_FROM_FLAG_ABORT    (1ULL << 61)
+ 
+ #define for_each_branch_sample_type(x) \
+ 	for ((x) = PERF_SAMPLE_BRANCH_USER; \
+@@ -270,21 +273,30 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
+ 
+ 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
+ 		unsigned long lbr_idx = (tos - i) & mask;
+-		u64 from, to, mis = 0, pred = 0;
++		u64 from, to, mis = 0, pred = 0, intx = 0, abort = 0;
+ 
+ 		rdmsrl(x86_pmu.lbr_from + lbr_idx, from);
+ 		rdmsrl(x86_pmu.lbr_to   + lbr_idx, to);
+ 
+-		if (lbr_format == LBR_FORMAT_EIP_FLAGS) {
++		if (lbr_format == LBR_FORMAT_EIP_FLAGS ||
++		    lbr_format == LBR_FORMAT_EIP_FLAGS2) {
+ 			mis = !!(from & LBR_FROM_FLAG_MISPRED);
+ 			pred = !mis;
+-			from = (u64)((((s64)from) << 1) >> 1);
++			if (lbr_format == LBR_FORMAT_EIP_FLAGS)
++				from = (u64)((((s64)from) << 1) >> 1);
++			else if (lbr_format == LBR_FORMAT_EIP_FLAGS2) {
++				intx = !!(from & LBR_FROM_FLAG_INTX);
++				abort = !!(from & LBR_FROM_FLAG_ABORT);
++				from = (u64)((((s64)from) << 3) >> 3);
++			}
+ 		}
+ 
+ 		cpuc->lbr_entries[i].from	= from;
+ 		cpuc->lbr_entries[i].to		= to;
+ 		cpuc->lbr_entries[i].mispred	= mis;
+ 		cpuc->lbr_entries[i].predicted	= pred;
++		cpuc->lbr_entries[i].intx	= intx;
++		cpuc->lbr_entries[i].abort	= abort;
+ 		cpuc->lbr_entries[i].reserved	= 0;
  	}
- }
+ 	cpuc->lbr_stack.nr = i;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 1d795df..e1b975a 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -74,13 +74,18 @@ struct perf_raw_record {
+  *
+  * support for mispred, predicted is optional. In case it
+  * is not supported mispred = predicted = 0.
++ *
++ *     intx: running in a hardware transaction
++ *     abort: aborting a hardware transaction
+  */
+ struct perf_branch_entry {
+ 	__u64	from;
+ 	__u64	to;
+ 	__u64	mispred:1,  /* target mispredicted */
+ 		predicted:1,/* target predicted */
+-		reserved:62;
++		intx:1,	    /* in transaction */
++		abort:1,    /* transaction abort */
++		reserved:60;
+ };
  
-+static int hsw_hw_config(struct perf_event *event)
-+{
-+	int ret = intel_pmu_hw_config(event);
-+
-+	if (ret)
-+		return ret;
-+	if (!boot_cpu_has(X86_FEATURE_RTM) && !boot_cpu_has(X86_FEATURE_HLE))
-+		return 0;
-+	event->hw.config |= event->attr.config &
-+				(HSW_INTX|HSW_INTX_CHECKPOINTED);
-+
-+	/*
-+	 * INTX/INTX-CP filters are not supported by the Haswell PMU with
-+	 * PEBS or in ANY thread mode. Since the results are non-sensical forbid
-+	 * this combination.
-+	 */
-+	if ((event->hw.config & (HSW_INTX|HSW_INTX_CHECKPOINTED)) &&
-+	     ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
-+	      event->attr.precise_ip > 0))
-+		return -EOPNOTSUPP;
-+
-+	return 0;
-+}
-+
-+static struct event_constraint counter2_constraint =
-+			EVENT_CONSTRAINT(0, 0x4, 0);
-+
-+static struct event_constraint *
-+hsw_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
-+{
-+	struct event_constraint *c = intel_get_event_constraints(cpuc, event);
-+
-+	/* Handle special quirk on intx_checkpointed only in counter 2 */
-+	if (event->hw.config & HSW_INTX_CHECKPOINTED) {
-+		if (c->idxmsk64 & (1U << 2))
-+			return &counter2_constraint;
-+		return &emptyconstraint;
-+	}
-+
-+	return c;
-+}
-+
- PMU_FORMAT_ATTR(event,	"config:0-7"	);
- PMU_FORMAT_ATTR(umask,	"config:8-15"	);
- PMU_FORMAT_ATTR(edge,	"config:18"	);
-@@ -2132,6 +2191,26 @@ __init int intel_pmu_init(void)
- 		break;
- 
- 
-+	case 60: /* Haswell Client */
-+	case 70:
-+	case 71:
-+		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
-+		       sizeof(hw_cache_event_ids));
-+
-+		intel_pmu_lbr_init_snb();
-+
-+		x86_pmu.event_constraints = intel_hsw_event_constraints;
-+
-+		x86_pmu.extra_regs = intel_snb_extra_regs;
-+		/* all extra regs are per-cpu when HT is on */
-+		x86_pmu.er_flags |= ERF_HAS_RSP_1;
-+		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-+
-+		x86_pmu.hw_config = hsw_hw_config;
-+		x86_pmu.get_event_constraints = hsw_get_event_constraints;
-+		pr_cont("Haswell events, ");
-+		break;
-+
- 	default:
- 		switch (x86_pmu.version) {
- 		case 1:
+ /*
 -- 
 1.7.7.6
 
