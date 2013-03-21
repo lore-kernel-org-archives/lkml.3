@@ -1,76 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738Ab3CUM7m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 08:59:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58768 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754222Ab3CUM7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 08:59:41 -0400
-Date: Thu, 21 Mar 2013 13:59:39 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd
- reclaims at each priority
-Message-ID: <20130321125939.GK6094@dhcp22.suse.cz>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-2-git-send-email-mgorman@suse.de>
- <20130320161847.GD27375@dhcp22.suse.cz>
- <20130321094713.GD1878@suse.de>
+	id S1758084Ab3CUNGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 09:06:36 -0400
+Received: from relay.parallels.com ([195.214.232.42]:54366 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754977Ab3CUNGf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 09:06:35 -0400
+Message-ID: <514B056E.7040802@parallels.com>
+Date: Thu, 21 Mar 2013 17:04:46 +0400
+From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321094713.GD1878@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: <dev@parallels.com>, <xemul@parallels.com>,
+        <fuse-devel@lists.sourceforge.net>, <bfoster@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
+Subject: Re: [PATCH 0/3] fuse: fix accounting background requests
+References: <20121226124319.24502.41536.stgit@maximpc.sw.ru> <CAJfpegsKDYrZKJ2TLzMfpx+vgF=cNvdBFjVnTZi1zuqTPwd7YA@mail.gmail.com>
+In-Reply-To: <CAJfpegsKDYrZKJ2TLzMfpx+vgF=cNvdBFjVnTZi1zuqTPwd7YA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 21-03-13 09:47:13, Mel Gorman wrote:
-> On Wed, Mar 20, 2013 at 05:18:47PM +0100, Michal Hocko wrote:
-> > On Sun 17-03-13 13:04:07, Mel Gorman wrote:
-> > [...]
-> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > index 88c5fed..4835a7a 100644
-> > > --- a/mm/vmscan.c
-> > > +++ b/mm/vmscan.c
-> > > @@ -2593,6 +2593,32 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
-> > >  }
-> > >  
-> > >  /*
-> > > + * kswapd shrinks the zone by the number of pages required to reach
-> > > + * the high watermark.
-> > > + */
-> > > +static void kswapd_shrink_zone(struct zone *zone,
-> > > +			       struct scan_control *sc,
-> > > +			       unsigned long lru_pages)
-> > > +{
-> > > +	unsigned long nr_slab;
-> > > +	struct reclaim_state *reclaim_state = current->reclaim_state;
-> > > +	struct shrink_control shrink = {
-> > > +		.gfp_mask = sc->gfp_mask,
-> > > +	};
-> > > +
-> > > +	/* Reclaim above the high watermark. */
-> > > +	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
-> > 
-> > OK, so the cap is at high watermark which sounds OK to me, although I
-> > would expect balance_gap being considered here. Is it not used
-> > intentionally or you just wanted to have a reasonable upper bound?
-> > 
-> 
-> It's intentional. The balance_gap is taken into account before the
-> decision to shrink but not afterwards. As the watermark check after
-> shrinking is based on just the high watermark, I decided to have
-> shrink_zone reclaim on that basis.
+02/06/2013 09:12 PM, Miklos Szeredi пишет:
+> On Wed, Dec 26, 2012 at 1:44 PM, Maxim Patlasov <mpatlasov@parallels.com> wrote:
+>> Hi,
+>>
+>> The feature was added long time ago (commit 08a53cdc...) with the comment:
+>>
+>>> A task may have at most one synchronous request allocated.  So these requests
+>>> need not be otherwise limited.
+>>>
+>>> However the number of background requests (release, forget, asynchronous
+>>> reads, interrupted requests) can grow indefinitely.  This can be used by a
+>>> malicous user to cause FUSE to allocate arbitrary amounts of unswappable
+>>> kernel memory, denying service.
+>>>
+>>> For this reason add a limit for the number of background requests, and block
+>>> allocations of new requests until the number goes bellow the limit.
+>> However, the implementation suffers from the following problems:
+>>
+>> 1. Latency of synchronous requests. As soon as fc->num_background hits the
+>> limit, all allocations are blocked: both for synchronous and background
+>> requests. This is unnecessary - as the comment cited above states, synchronous
+>> requests need not be limited (by fuse). Moreover, sometimes it's very
+>> inconvenient. For example, a dozen of tasks aggressively writing to mmap()-ed
+>> area may block 'ls' for long while (>1min in my experiments).
+>>
+>> 2. Thundering herd problem. When fc->num_background falls below the limit,
+>> request_end() calls wake_up_all(&fc->blocked_waitq). This wakes up all waiters
+>> while it's not impossible that the first waiter getting new request will
+>> immediately put it to background increasing fc->num_background again.
+>> (experimenting with mmap()-ed writes I observed 2x slowdown as compared with
+>> fuse after applying this patch-set)
+>>
+>> The patch-set re-works fuse_get_req (and its callers) to throttle only requests
+>> intended for background processing. Having this done, it becomes possible to
+>> use exclusive wakeups in chained manner: request_end() wakes up a waiter,
+>> the waiter allocates new request and submits it for background processing,
+>> the processing ends in request_end() where another wakeup happens an so on.
+> Thanks.  These patches look okay.
+>
+> But they don't apply to for-next.  Can you please update them?
 
-OK, it makes sense. Thanks both you and Rik for clarification.
+Sorry for long delay. I'll send updated patches soon.
 
--- 
-Michal Hocko
-SUSE Labs
+Thanks,
+Maxim
+
+>
+> Thanks,
+> Miklos
+>
+>> Thanks,
+>> Maxim
+>>
+>> ---
+>>
+>> Maxim Patlasov (3):
+>>        fuse: make request allocations for background processing explicit
+>>        fuse: skip blocking on allocations of synchronous requests
+>>        fuse: implement exclusive wakeup for blocked_waitq
+>>
+>>
+>>   fs/fuse/cuse.c   |    2 +-
+>>   fs/fuse/dev.c    |   60 +++++++++++++++++++++++++++++++++++++++++-------------
+>>   fs/fuse/file.c   |    5 +++--
+>>   fs/fuse/fuse_i.h |    3 +++
+>>   fs/fuse/inode.c  |    1 +
+>>   5 files changed, 54 insertions(+), 17 deletions(-)
+>>
+>> --
+>> Signature
+
