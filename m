@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124Ab3CUIY0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 04:24:26 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:55636 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757919Ab3CUIXL (ORCPT
+	id S933088Ab3CUIYY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 04:24:24 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:48668 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757920Ab3CUIXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 04:23:11 -0400
-Subject: [PATCH RFC 3/5] kconfig: simplity linking cross-module glue objects
+	Thu, 21 Mar 2013 04:23:15 -0400
+Subject: [PATCH RFC 4/5] ptp: add stub function for ptp_clock_index()
 To: Michal Marek <mmarek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Richard Cochran <richardcochran@gmail.com>
-Date: Thu, 21 Mar 2013 12:23:05 +0400
-Message-ID: <20130321082305.21557.69305.stgit@zurg>
+Date: Thu, 21 Mar 2013 12:23:09 +0400
+Message-ID: <20130321082309.21557.27838.stgit@zurg>
 In-Reply-To: <20130321082256.21557.68351.stgit@zurg>
 References: <20130321082256.21557.68351.stgit@zurg>
 User-Agent: StGit/0.15
@@ -25,128 +25,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds some synax sugar for makefiles to simplify conditional linking
-cross-module glue objects into composite modules.
-
-For example: there two tristate config options MODULE_A and MODULE_B.
-Module-B wants to use some code from Module-A. Code of Module-A is available
-from Module-B if MODULE_A=y or if MODULE_A=m and MODULE_B=m.
-
-This patch allows to write this construction in makefile:
-
-obj-$(CONFIG_MODULE_A) += module_a.o
-obj-$(CONFIG_MODULE_B) += module_b.o
-module_b-y += core_b.o
-module_b-$(CONFIG_MODULE_A) += glue_a_b.o
-
-After that glue_a_b will be linked into module_b.o iff module-A is available.
-Objects from module_b-m will be linked only if CONFIG_MODULE_B=m.
+After this patch function ptp_clock_index(struct ptp_clock *ptp)
+returns -1 if ptp is NULL or CONFIG_PTP_1588_CLOCK disabled.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org
+Cc: Richard Cochran <richardcochran@gmail.com>
 ---
- Documentation/kbuild/makefiles.txt |   14 ++++++++++++++
- scripts/Makefile.build             |   16 ++++++++++++----
- scripts/Makefile.lib               |    8 ++++----
- 3 files changed, 30 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c              |    5 +----
+ drivers/net/ethernet/freescale/fec.c             |    5 +----
+ drivers/net/ethernet/intel/e1000e/ethtool.c      |    3 +--
+ drivers/net/ethernet/intel/igb/igb_ethtool.c     |    5 +----
+ drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |    5 +----
+ drivers/ptp/ptp_clock.c                          |    2 +-
+ include/linux/ptp_clock_kernel.h                 |   12 ++++++++++++
+ 7 files changed, 18 insertions(+), 19 deletions(-)
 
-diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
-index 5198b74..dcdf424 100644
---- a/Documentation/kbuild/makefiles.txt
-+++ b/Documentation/kbuild/makefiles.txt
-@@ -224,6 +224,20 @@ more details, with real examples.
- 	kbuild will build an ext2.o file for you out of the individual
- 	parts and then link this into built-in.o, as you would expect.
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 67d2663..9eafff7 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -5630,10 +5630,7 @@ static int tg3_get_ts_info(struct net_device *dev, struct ethtool_ts_info *info)
+ 				SOF_TIMESTAMPING_RX_HARDWARE |
+ 				SOF_TIMESTAMPING_RAW_HARDWARE;
  
-+	Kbuild also includes objects listed in variable $(<module_name>-m)
-+	if it builds composite objects as module (obj-m) and ignores them
-+	for built-in modules (obj-y). This allows to implement flexible
-+	dependence between two modules.
+-	if (tp->ptp_clock)
+-		info->phc_index = ptp_clock_index(tp->ptp_clock);
+-	else
+-		info->phc_index = -1;
++	info->phc_index = ptp_clock_index(tp->ptp_clock);
+ 
+ 	info->tx_types = (1 << HWTSTAMP_TX_OFF) | (1 << HWTSTAMP_TX_ON);
+ 
+diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
+index e3f3937..4fde3c3 100644
+--- a/drivers/net/ethernet/freescale/fec.c
++++ b/drivers/net/ethernet/freescale/fec.c
+@@ -1240,10 +1240,7 @@ static int fec_enet_get_ts_info(struct net_device *ndev,
+ 					SOF_TIMESTAMPING_TX_HARDWARE |
+ 					SOF_TIMESTAMPING_RX_HARDWARE |
+ 					SOF_TIMESTAMPING_RAW_HARDWARE;
+-		if (fep->ptp_clock)
+-			info->phc_index = ptp_clock_index(fep->ptp_clock);
+-		else
+-			info->phc_index = -1;
++		info->phc_index = ptp_clock_index(fep->ptp_clock);
+ 
+ 		info->tx_types = (1 << HWTSTAMP_TX_OFF) |
+ 				 (1 << HWTSTAMP_TX_ON);
+diff --git a/drivers/net/ethernet/intel/e1000e/ethtool.c b/drivers/net/ethernet/intel/e1000e/ethtool.c
+index f91a8f3..b4f110c 100644
+--- a/drivers/net/ethernet/intel/e1000e/ethtool.c
++++ b/drivers/net/ethernet/intel/e1000e/ethtool.c
+@@ -2224,8 +2224,7 @@ static int e1000e_get_ts_info(struct net_device *netdev,
+ 			    (1 << HWTSTAMP_FILTER_PTP_V2_DELAY_REQ) |
+ 			    (1 << HWTSTAMP_FILTER_ALL));
+ 
+-	if (adapter->ptp_clock)
+-		info->phc_index = ptp_clock_index(adapter->ptp_clock);
++	info->phc_index = ptp_clock_index(adapter->ptp_clock);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/net/ethernet/intel/igb/igb_ethtool.c b/drivers/net/ethernet/intel/igb/igb_ethtool.c
+index a3830a8..924fd8d 100644
+--- a/drivers/net/ethernet/intel/igb/igb_ethtool.c
++++ b/drivers/net/ethernet/intel/igb/igb_ethtool.c
+@@ -2293,10 +2293,7 @@ static int igb_get_ts_info(struct net_device *dev,
+ 			SOF_TIMESTAMPING_RX_HARDWARE |
+ 			SOF_TIMESTAMPING_RAW_HARDWARE;
+ 
+-		if (adapter->ptp_clock)
+-			info->phc_index = ptp_clock_index(adapter->ptp_clock);
+-		else
+-			info->phc_index = -1;
++		info->phc_index = ptp_clock_index(adapter->ptp_clock);
+ 
+ 		info->tx_types =
+ 			(1 << HWTSTAMP_TX_OFF) |
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
+index c3f1afd..71d4164 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
+@@ -2723,10 +2723,7 @@ static int ixgbe_get_ts_info(struct net_device *dev,
+ 			SOF_TIMESTAMPING_RX_HARDWARE |
+ 			SOF_TIMESTAMPING_RAW_HARDWARE;
+ 
+-		if (adapter->ptp_clock)
+-			info->phc_index = ptp_clock_index(adapter->ptp_clock);
+-		else
+-			info->phc_index = -1;
++		info->phc_index = ptp_clock_index(adapter->ptp_clock);
+ 
+ 		info->tx_types =
+ 			(1 << HWTSTAMP_TX_OFF) |
+diff --git a/drivers/ptp/ptp_clock.c b/drivers/ptp/ptp_clock.c
+index 79f4bce..f97d144 100644
+--- a/drivers/ptp/ptp_clock.c
++++ b/drivers/ptp/ptp_clock.c
+@@ -314,7 +314,7 @@ EXPORT_SYMBOL(ptp_clock_event);
+ 
+ int ptp_clock_index(struct ptp_clock *ptp)
+ {
+-	return ptp->index;
++	return ptp ? ptp->index : -1;
+ }
+ EXPORT_SYMBOL(ptp_clock_index);
+ 
+diff --git a/include/linux/ptp_clock_kernel.h b/include/linux/ptp_clock_kernel.h
+index 38a9935..4788943 100644
+--- a/include/linux/ptp_clock_kernel.h
++++ b/include/linux/ptp_clock_kernel.h
+@@ -148,12 +148,24 @@ struct ptp_clock_event {
+ extern void ptp_clock_event(struct ptp_clock *ptp,
+ 			    struct ptp_clock_event *event);
+ 
++#if IS_ENABLED(CONFIG_PTP_1588_CLOCK)
 +
-+	Example:
-+		obj-$(CONFIG_MODULE_A) += module_a.o
-+		obj-$(CONFIG_MODULE_B) += module_b.o
-+		module_b-y += core_b.o
-+		module_b-$(CONFIG_MODULE_A) += glue_a_b.o
+ /**
+  * ptp_clock_index() - obtain the device index of a PTP clock
++ *		       returns -1 if @ptp is NULL
+  *
+  * @ptp:    The clock obtained from ptp_clock_register().
+  */
+ 
+ extern int ptp_clock_index(struct ptp_clock *ptp);
+ 
++#else /* IS_ENABLED(CONFIG_PTP_1588_CLOCK) */
 +
-+	In this example, glue_a_b.o will be used only if module_a is available
-+	from module_b, this is true if CONFIG_MODULE_A=y or they both are =m.
++static inline int ptp_clock_index(struct ptp_clock *ptp)
++{
++	return -1;
++}
 +
- --- 3.4 Objects which export symbols
- 
- 	No special notation is required in the makefiles for
-diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-index 0e801c3..1c89dbf 100644
---- a/scripts/Makefile.build
-+++ b/scripts/Makefile.build
-@@ -421,16 +421,24 @@ endif
- #    <composite-object>-objs := <list of .o files>
- #  or
- #    <composite-object>-y    := <list of .o files>
--link_multi_deps =                     \
-+#  or (for modules)
-+#    <composite-object>-m    := <list of .o files>
-+link_multi_deps-y =                   \
- $(filter $(addprefix $(obj)/,         \
- $($(subst $(obj)/,,$(@:.o=-objs)))    \
- $($(subst $(obj)/,,$(@:.o=-y)))), $^)
-- 
++#endif /* IS_ENABLED(CONFIG_PTP_1588_CLOCK) */
 +
-+link_multi_deps-m =                   \
-+$(filter $(addprefix $(obj)/,         \
-+$($(subst $(obj)/,,$(@:.o=-objs)))    \
-+$($(subst $(obj)/,,$(@:.o=-y)))       \
-+$($(subst $(obj)/,,$(@:.o=-m)))), $^)
-+
- quiet_cmd_link_multi-y = LD      $@
--cmd_link_multi-y = $(LD) $(ld_flags) -r -o $@ $(link_multi_deps) $(cmd_secanalysis)
-+cmd_link_multi-y = $(LD) $(ld_flags) -r -o $@ $(link_multi_deps-y) $(cmd_secanalysis)
- 
- quiet_cmd_link_multi-m = LD [M]  $@
--cmd_link_multi-m = $(cmd_link_multi-y)
-+cmd_link_multi-m = $(LD) $(ld_flags) -r -o $@ $(link_multi_deps-m) $(cmd_secanalysis)
- 
- # We would rather have a list of rules like
- # 	foo.o: $(foo-objs)
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 07125e6..b1ce3e4 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -48,14 +48,14 @@ subdir-ym	:= $(sort $(subdir-y) $(subdir-m))
- 
- # if $(foo-objs) exists, foo.o is a composite object 
- multi-used-y := $(sort $(foreach m,$(obj-y), $(if $(strip $($(m:.o=-objs)) $($(m:.o=-y))), $(m))))
--multi-used-m := $(sort $(foreach m,$(obj-m), $(if $(strip $($(m:.o=-objs)) $($(m:.o=-y))), $(m))))
-+multi-used-m := $(sort $(foreach m,$(obj-m), $(if $(strip $($(m:.o=-objs)) $($(m:.o=-y)) $($(m:.o=-m))), $(m))))
- multi-used   := $(multi-used-y) $(multi-used-m)
- single-used-m := $(sort $(filter-out $(multi-used-m),$(obj-m)))
- 
- # Build list of the parts of our composite objects, our composite
- # objects depend on those (obviously)
- multi-objs-y := $(foreach m, $(multi-used-y), $($(m:.o=-objs)) $($(m:.o=-y)))
--multi-objs-m := $(foreach m, $(multi-used-m), $($(m:.o=-objs)) $($(m:.o=-y)))
-+multi-objs-m := $(foreach m, $(multi-used-m), $($(m:.o=-objs)) $($(m:.o=-y)) $($(m:.o=-m)))
- multi-objs   := $(multi-objs-y) $(multi-objs-m)
- 
- # $(subdir-obj-y) is the list of objects in $(obj-y) which uses dir/ to
-@@ -67,7 +67,7 @@ obj-dirs := $(dir $(multi-objs) $(subdir-obj-y))
- 
- # Replace multi-part objects by their individual parts, look at local dir only
- real-objs-y := $(foreach m, $(filter-out $(subdir-obj-y), $(obj-y)), $(if $(strip $($(m:.o=-objs)) $($(m:.o=-y))),$($(m:.o=-objs)) $($(m:.o=-y)),$(m))) $(extra-y)
--real-objs-m := $(foreach m, $(obj-m), $(if $(strip $($(m:.o=-objs)) $($(m:.o=-y))),$($(m:.o=-objs)) $($(m:.o=-y)),$(m)))
-+real-objs-m := $(foreach m, $(obj-m), $(if $(strip $($(m:.o=-objs)) $($(m:.o=-y)) $($(m:.o=-m))),$($(m:.o=-objs)) $($(m:.o=-y)) $($(m:.o=-m)),$(m)))
- 
- # Add subdir path
- 
-@@ -163,7 +163,7 @@ dtc_cpp_flags  = -Wp,-MD,$(depfile) -nostdinc                            \
- 
- # Finds the multi-part object the current object will be linked into
- modname-multi = $(sort $(foreach m,$(multi-used),\
--		$(if $(filter $(subst $(obj)/,,$*.o), $($(m:.o=-objs)) $($(m:.o=-y))),$(m:.o=))))
-+		$(if $(filter $(subst $(obj)/,,$*.o), $($(m:.o=-objs)) $($(m:.o=-y)) $($(m:.o=-m))),$(m:.o=))))
- 
- ifdef REGENERATE_PARSERS
- 
+ #endif
 
