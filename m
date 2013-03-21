@@ -1,218 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817Ab3CUA4y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Mar 2013 20:56:54 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:8309 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681Ab3CUA4w (ORCPT
+	id S1755922Ab3CUA7l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Mar 2013 20:59:41 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18441 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab3CUA7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Mar 2013 20:56:52 -0400
-X-IronPort-AV: E=Sophos;i="4.84,881,1355126400"; 
-   d="scan'208";a="31389948"
-Message-ID: <514A5AD3.3010605@codeaurora.org>
-Date: Wed, 20 Mar 2013 17:56:51 -0700
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Wed, 20 Mar 2013 20:59:39 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 20 Mar 2013 17:59:37 -0700
+Message-ID: <1363827789.8815.56.camel@bilhuang-vm1>
+Subject: Re: [PATCH 1/1] clk: Add notifier support in
+ clk_prepare/clk_unprepare
+From: Bill Huang <bilhuang@nvidia.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
+Date: Wed, 20 Mar 2013 18:03:09 -0700
+In-Reply-To: <20130320144752.11073.653@quantum>
+References: <1363699712-8124-1-git-send-email-bilhuang@nvidia.com>
+	 <20130319170140.8663.93388@quantum> <1363748149.8815.16.camel@bilhuang-vm1>
+	 <20130320033142.11073.30097@quantum>
+	 <1363754384.8815.42.camel@bilhuang-vm1> <20130320144752.11073.653@quantum>
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 MIME-Version: 1.0
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-CC: David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [Please Ignore] Re: [PATCH] Changes to resolve the multiple client
- issue: by Michael Street
-References: <1363826498-7254-1-git-send-email-rvaswani@codeaurora.org>
-In-Reply-To: <1363826498-7254-1-git-send-email-rvaswani@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="ISO-8859-9"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please Ignore.
+On Wed, 2013-03-20 at 22:47 +0800, Mike Turquette wrote:
+> Quoting Bill Huang (2013-03-19 21:39:44)
+> > On Wed, 2013-03-20 at 11:31 +0800, Mike Turquette wrote:
+> > > Quoting Bill Huang (2013-03-19 19:55:49)
+> > > > On Wed, 2013-03-20 at 01:01 +0800, Mike Turquette wrote:
+> > > > > I'm still not sure about this approach.  Based on feedback I got from
+> > > > > Linaro Connect I am not convinced that scaling voltage through clk
+> > > > > rate-change notifiers is the right way to go.  As I understand it this
+> > > > > patch only exists for that single purpose, so if the voltage-notifier
+> > > > > idea gets dropped then I will not take this patch in.
+> > > > > 
+> > > > Thanks Mike, actually we won't use your "clk: notifier handler for
+> > > > dynamic voltage scaling" patch instead we are trying to port our DVFS
+> > > > into Non-CPU DVFS framework "devfreq" which will need to hook those
+> > > > notifiers, without the clock notifiers been extended the framework is
+> > > > useless for us since we cannot do polling due to the fact that polling
+> > > > is not in real time. If it ended up extending the notifiers cannot
+> > > > happen then the only choice for us I think would be giving up "devfreq"
+> > > > and implement them in Tegra's "clk_hw".
+> > > 
+> > > I'm familiar with the devfreq framework.  Can you explain further how
+> > > you plan to use devfreq with the clock notifiers?  What does the call
+> > > graph look like?
+> > > 
+> > The call graph will look like this, when any DVFS interested clock rate
+> > changes (including enable and disable) happen -> Tegra devfreq clock
+> > notifier is called -> call into update_devfreq if needed -> in
+> > update_devfreq it will call into .get_target_freq in Tegra
+> > "devfreq_governor" -> and then call into .target of tegra
+> > devfreq_dev_profile to set voltage and done. More details are as below.
+> > 
+> > We'll create devfreq driver for Tegra VDD_CORE rail, and the safe
+> > voltage level of the rail is determined by tens of clocks (2d, 3d,
+> > mpe,...), all the frequency ladders of those clocks are defined in DT
+> > also the operating points for VDD_CORE is declared in DT where its
+> > frequency will be more of a virtual clock or index.
+> > 
+> >         operating-points = <
+> >         /* virtual-kHz  uV */
+> >         0       950000
+> >         1       1000000
+> >         2       1050000
+> >         3       1100000
+> >         4       1150000
+> >         5       1200000
+> >         6       1250000
+> >         7       1300000
+> >         8       1350000
+> > 
+> > Register a Tegra governor where the callback .get_target_freq is the
+> > function to determine the overall frequency it can go to, and
+> > the .target callback in "devfreq_dev_profile" will be the function
+> > really do the voltage scaling.
+> > 
+> > Tegra devfreq driver will register clock notifiers on all its interested
+> > clock and hence when any of those clock rate changes, disabled, enabled,
+> > we'll specifically call update_devfreq in the notifier.
+> 
+> Thank you for the explanation.  Do you plan to use actual devfreq
+> governors (like simple-ondemand, or something custom) for changing OPPs,
+> or do you just plan to use the clock framework as a trigger for DVFS?
+> 
+I think the existing governors are all polling basis that do not work
+for us, we have only single voltage rails and have tens of clocks which
+are used by different device drivers, the voltage has to be boost before
+the frequency is increasing, and it can only be lower after all the
+interested clocks rate are allowing it to or we might crash. Clock
+notifier seem to be the only choice to build association with all those
+interested device driver (in real time) who might make changes on clock
+rate either by using runtime PM or the similar mechanism.
 
-On 3/20/2013 5:41 PM, Rohit Vaswani wrote:
-> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
-> ---
->   src/msm-dri2.c |   21 +++++++++++++++++++--
->   src/msm-drm.c  |   39 ++++++++++++++++++++++++++++++---------
->   src/msm-drm.h  |    1 +
->   3 files changed, 50 insertions(+), 11 deletions(-)
->
-> diff --git a/src/msm-dri2.c b/src/msm-dri2.c
-> index e5bdf8a..7eadc48 100644
-> --- a/src/msm-dri2.c
-> +++ b/src/msm-dri2.c
-> @@ -131,9 +131,10 @@ DoFlipMDP4(ScreenPtr pScreen, PixmapPtr pPixmap,
->   {
->       struct mdp_overlay overlay;
->       struct msmfb_overlay_data play;
-> +    struct drm_kgsl_gem_get_ion_fd ionfdioctl;
->       ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
->       MSMPtr pMsm = MSMPTR(pScrn);
-> -    int ret;
-> +    int ret = 0;
->       struct msm_pixmap_priv *pixpriv;
->   
->   
-> @@ -190,9 +191,21 @@ DoFlipMDP4(ScreenPtr pScreen, PixmapPtr pPixmap,
->       }
->   
->       pixpriv = exaGetPixmapDriverPrivate(pPixmap);
-> +    ionfdioctl.ion_fd = 0;
-> +    if(pixpriv->bo->ion_fd == 0) {
-> +	    ionfdioctl.handle = pixpriv->bo->handle;
-> +	    ret = ioctl(pixpriv->bo->fd, DRM_IOCTL_KGSL_GEM_GET_ION_FD, &ionfdioctl);
-> +	    if (ret < 0) {
-> +	        ErrorF("DRM: DRM_IOCTL_KGSL_GEM_GET_ION_FD failed: %m\n");
-> +	        return ret;
-> +	    }
-> +        play.data.memory_id =  ionfdioctl.ion_fd;
-> +    }
-> +    else {
-> +        play.data.memory_id = pixpriv->bo->ion_fd;
-> +    }
->       play.id = fbOverlay;
->       play.data.offset = pixpriv->bo->offsets[pixpriv->bo->active];
-> -    play.data.memory_id = pixpriv->bo->ion_fd;
->       play.data.priv = 0;
->       play.data.flags = 0;
->   
-> @@ -206,6 +219,10 @@ DoFlipMDP4(ScreenPtr pScreen, PixmapPtr pPixmap,
->       if (ret < 0)
->           ErrorF("FBIOPAN_DISPLAY failed line %d error %d\n",__LINE__,errno);
->   
-> +    if(ionfdioctl.ion_fd != 0) {
-> +	    close(ionfdioctl.ion_fd);
-> +    }
-> +
->       return ret == 0 ? TRUE : FALSE;
->   }
->   #endif
-> diff --git a/src/msm-drm.c b/src/msm-drm.c
-> index 1e13d4a..3603cbd 100644
-> --- a/src/msm-drm.c
-> +++ b/src/msm-drm.c
-> @@ -218,6 +218,7 @@ msm_drm_bo_create(MSMPtr pMsm, int fd, int size, int type)
->       bo->fd = fd;
->       bo->active = 0;
->       bo->count = 1;
-> +    bo->allocated = 0;
->   
->       /* All memory defaults to KMEM */
->       bo->memtype = DRM_KGSL_GEM_TYPE_KMEM;
-> @@ -260,20 +261,21 @@ int
->   msm_drm_bo_alloc(struct msm_drm_bo *bo)
->   {
->       struct drm_kgsl_gem_alloc alloc;
-> -    struct drm_kgsl_gem_get_ion_fd ionfdioctl;
-> +    //struct drm_kgsl_gem_get_ion_fd ionfdioctl;
->       int ret;
->   
->       if (bo == NULL)
->   	return -1;
->   
->       /* If the offset is set, then assume it has been allocated */
-> -    if (bo->ion_fd != 0)
-> +    if (bo->allocated != 0)
->   	return 0;
->   
->       memset(&alloc, 0, sizeof(alloc));
->       alloc.handle = bo->handle;
->   
->       ret = ioctl(bo->fd, DRM_IOCTL_KGSL_GEM_ALLOC, &alloc);
-> +    bo->allocated = 1;
->   
->       if (ret) {
->   	/* if the ioctl isn't supported, then use the legacy PREP ioctl */
-> @@ -299,13 +301,13 @@ msm_drm_bo_alloc(struct msm_drm_bo *bo)
->   	return ret;
->       }
->   
-> -    ionfdioctl.handle = bo->handle;
-> -    ret = ioctl(bo->fd, DRM_IOCTL_KGSL_GEM_GET_ION_FD, &ionfdioctl);
-> -    if (ret < 0) {
-> -        ErrorF("DRM: DRM_IOCTL_KGSL_GEM_GET_ION_FD failed: %m\n");
-> -        return ret;
-> -    }
-> -    bo->ion_fd = ionfdioctl.ion_fd;
-> +//    ionfdioctl.handle = bo->handle;
-> +//    ret = ioctl(bo->fd, DRM_IOCTL_KGSL_GEM_GET_ION_FD, &ionfdioctl);
-> +//    if (ret < 0) {
-> +//        ErrorF("DRM: DRM_IOCTL_KGSL_GEM_GET_ION_FD failed: %m\n");
-> +//        return ret;
-> +//    }
-> +//    bo->ion_fd = ionfdioctl.ion_fd;
->   
->       bo->offset = alloc.offset;
->       return 0;
-> @@ -356,6 +358,7 @@ msm_drm_bo_map(struct msm_drm_bo *bo)
->   {
->       int ret, i;
->       unsigned int mapsize;
-> +    struct drm_kgsl_gem_get_ion_fd ionfdioctl;
->   
->       if (bo == NULL)
->   	return -1;
-> @@ -401,8 +404,22 @@ msm_drm_bo_map(struct msm_drm_bo *bo)
->   
->       if (ret == 0)
->       {
-> +        ionfdioctl.handle = bo->handle;
-> +	if(bo->ion_fd == 0)
-> +	{
-> +        	ret = ioctl(bo->fd, DRM_IOCTL_KGSL_GEM_GET_ION_FD, &ionfdioctl);
-> +        	if (ret < 0) {
-> +            	ErrorF("DRM: DRM_IOCTL_KGSL_GEM_GET_ION_FD failed: %m\n");
-> +            	return ret;
-> +        	}
-> +        	bo->ion_fd = ionfdioctl.ion_fd;
-> +	}
-> +	else ErrorF("DRM: ion_fd %d already allocated\n", bo->ion_fd);
-> +
->           bo->hostptr = mmap(0, mapsize, PROT_READ | PROT_WRITE, MAP_SHARED,
->                              bo->ion_fd, 0);
-> +	close(bo->ion_fd);
-> +	bo->ion_fd = 0;
->       }
->       else
->       {
-> @@ -434,6 +451,8 @@ msm_drm_bo_unmap(struct msm_drm_bo *bo)
->   	munmap((void *) bo->hostptr, bo->size);
->   
->       bo->hostptr = 0;
-> +    close(bo->ion_fd);
-> +    bo->ion_fd = 0;
->   #endif
->   }
->   
-> @@ -452,6 +471,8 @@ msm_drm_bo_free(MSMPtr pMsm, struct msm_drm_bo *bo)
->   	}
->   	else
->   		_msm_drm_bo_free(bo);
-> +
-> +	bo->allocated = 0;
->   }
->   
->   /* Set the next buffer in the list as active */
-> diff --git a/src/msm-drm.h b/src/msm-drm.h
-> index 55d071d..1eaf8e4 100644
-> --- a/src/msm-drm.h
-> +++ b/src/msm-drm.h
-> @@ -53,6 +53,7 @@ struct msm_drm_bo {
->       int ref;
->       int active;
->       unsigned long long offset;
-> +    int allocated;
->   };
->   
->   int msm_drm_init(int fd);
-
-
-Thanks,
-Rohit Vaswani
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
+We do use OPP in our devfreq driver, we just need to do some extra work
+on checking all the interested clocks for making sure we will be
+choosing the correct operating point for the power rail.
 
