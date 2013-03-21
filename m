@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab3CUUJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 16:09:40 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:41866 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751967Ab3CUUJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 16:09:38 -0400
-Date: Thu, 21 Mar 2013 14:09:22 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Roland Dreier <roland@kernel.org>,
-        "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Subject: Re: [PATCH] rdma: don't make pages writeable if not requiested
-Message-ID: <20130321200922.GA8109@obsidianresearch.com>
-References: <CAL1RGDUcMj9QVsuQgK+ozw64L6-cGehL7YBUJ1_ckni6TD=Kcg@mail.gmail.com>
- <20130321070357.GD28328@redhat.com>
- <CAG4TOxPkhOhGmzeA1K4a0Zw8HxS-QkOr-PCx7mJgA+KkuH3ZiQ@mail.gmail.com>
- <20130321085107.GE28328@redhat.com>
- <CAL1RGDVnkLZU2Vge4o3BwDxnAfGv7TQRMqE6ha3MUt39CVp5NQ@mail.gmail.com>
- <20130321093946.GG28328@redhat.com>
- <20130321171115.GA653@obsidianresearch.com>
- <20130321181633.GC4366@redhat.com>
- <20130321184135.GA8044@obsidianresearch.com>
- <20130321191541.GB5272@redhat.com>
+	id S1752862Ab3CUUJy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 16:09:54 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41196 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300Ab3CUUJw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 16:09:52 -0400
+Date: Thu, 21 Mar 2013 19:35:49 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, Arnd Bergmann <arnd@arndb.de>,
+        linus.walleij@linaro.org, haojian.zhuang@linaro.org,
+        pawel.moll@arm.com, john.stultz@linaro.org, tglx@linutronix.de,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 03/11] ARM: timer-sp: convert to use CLKSRC_OF init
+Message-ID: <20130321193549.GS4977@n2100.arm.linux.org.uk>
+References: <1363820051-24428-1-git-send-email-robherring2@gmail.com> <1363820051-24428-4-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130321191541.GB5272@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+In-Reply-To: <1363820051-24428-4-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 09:15:41PM +0200, Michael S. Tsirkin wrote:
-> On Thu, Mar 21, 2013 at 12:41:35PM -0600, Jason Gunthorpe wrote:
-> > On Thu, Mar 21, 2013 at 08:16:33PM +0200, Michael S. Tsirkin wrote:
-> > 
-> > > This is the one I find redundant. Since the write will be done by
-> > > the adaptor under direct control by the application, why does it
-> > > make sense to declare this beforehand?  If you don't want to allow
-> > > local write access to memory, just do not post any receive WRs with
-> > > this address.  If you posted and regret it, reset the QP to cancel.
-> > 
-> > This is to support your COW scenario - the app declares before hand to
-> > the kernel that it will write to the memory and the kernel ensures
-> > pages are dedicated to the app at registration time. Or the app says
-> > it will only read and the kernel could leave them shared.
-> 
-> Someone here is confused. LOCAL_WRITE/absence of it does not address
-> COW, it breaks COW anyway.  Are you now saying we should change rdma so
-> without LOCAL_WRITE it will not break COW?
+On Wed, Mar 20, 2013 at 05:54:03PM -0500, Rob Herring wrote:
+> +	clk0 = of_clk_get(np, 0);
+> +	if (IS_ERR(clk0))
+> +		clk0 = NULL;
+> +
+> +	/* Get the 2nd clock if the timer has 2 timer clocks */
+> +	if (of_count_phandle_with_args(np, "clocks", "#clock-cells") == 3) {
+> +		clk1 = of_clk_get(np, 1);
+> +		if (IS_ERR(clk1)) {
+> +			pr_err("sp804: %s clock not found: %d\n", np->name,
+> +				(int)PTR_ERR(clk1));
+> +			return;
+> +		}
+> +	} else
+> +		clk1 = clk0;
+> +
+> +	irq = irq_of_parse_and_map(np, 0);
+> +	if (irq <= 0)
+> +		return;
+> +
+> +	of_property_read_u32(np, "arm,sp804-has-irq", &irq_num);
+> +	if (irq_num == 2)
+> +		tmr2_evt = true;
+> +
+> +	__sp804_clockevents_init(base + (tmr2_evt ? TIMER_2_BASE : 0),
+> +				 irq, tmr2_evt ? clk1 : clk0, name);
+> +	__sp804_clocksource_and_sched_clock_init(base + (tmr2_evt ? 0 : TIMER_2_BASE),
+> +						 name, tmr2_evt ? clk0 : clk1, 1);
 
-I am talking about 'from a spec' perspective - not what Linux does
-today. The absence of LOCAL_WRITE is part of the specification to
-support shared pages.
+This just looks totally screwed to me.
 
-Pages can only be kept shared if all the ACCESS WRITE bits are clear -
-today Linux always breaks the COW, but if you patch in the ability to
-keep things shared then it must only happen when *all* the ACCESS
-WRITE bits are clear.
+A SP804 cell has two timers, and has one clock input and two clock
+enable inputs.  The clock input is common to both timers.  The timers
+only count on the rising edge of the clock input when the enable
+input is high.  (the APB PCLK also matters too...)
 
-> > The adaptor enforces the access control to prevent a naughty app from
-> > writing to shared memory - think about mmap'ing libc.so and then using
-> > RDMA to write to the shared pages. It is necessary to ensure that is
-> > impossible.
+Now, the clock enable inputs are controlled by the SP810 system
+controller to achieve different clock rates for each.  So, we *can*
+view an SP804 as having two clock inputs.
 
-> That's why it's redundant: we can't trust an application to tell us
-> 'this page is writeable', we must get this info from kernel.  And so
-> there's apparently no need for application to tell adaptor about
-> LOCAL_WRITE.
+However, the two clock inputs do not depend on whether one or the
+other has an IRQ or not.  Timer 1 is always clocked by TIMCLK &
+TIMCLKEN1.  Timer 2 is always clocked by TIMCLK & TIMCLKEN2.
 
-The API design gives user space maximum flexibility, if it wants to
-create an enforced no-write MR in otherwise writable pages by skipping
-LOCAL_WRITE then it can do so.
+Using the logic above, the clocks depend on how the IRQs are wired
+up... really?  Can you see from my description above why that is
+screwed?  What bearing does the IRQ have on the wiring of the
+clock inputs?
 
-The kernel's role in this should be to deny ibv_reg_mr with WRITE bits
-set if the pages are not writable by the app - I don't know if it does
-this today, it isn't critically important as long as the pages are
-unshared.
+And, by doing this aren't you embedding into the DT description
+something specific to the Linux implementation for this device -
+namely the decision by you that the IRQs determine how the clocks
+get used?
 
-Jason
+So... NAK.
