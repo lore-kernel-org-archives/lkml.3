@@ -1,67 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab3CUPVk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 11:21:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62787 "EHLO mx1.redhat.com"
+	id S1752514Ab3CUPWX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 11:22:23 -0400
+Received: from www.sr71.net ([198.145.64.142]:49801 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932227Ab3CUPVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 11:21:39 -0400
-Date: Thu, 21 Mar 2013 11:21:24 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        heiko.carstens@de.ibm.com, akpm@linux-foundation.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com
-Subject: Re: [PATCH v3 18/21] vmcore: check if vmcore objects satify mmap()'s
- page-size boundary requirement
-Message-ID: <20130321152124.GJ3934@redhat.com>
-References: <8738vp75cy.fsf@xmission.com>
- <20130321.151428.393714972.d.hatayama@jp.fujitsu.com>
- <87ip4l1d1q.fsf@xmission.com>
- <20130321.154650.424925595.d.hatayama@jp.fujitsu.com>
- <87a9pxz0wv.fsf@xmission.com>
+	id S932227Ab3CUPWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 11:22:22 -0400
+Message-ID: <514B25F5.7020207@sr71.net>
+Date: Thu, 21 Mar 2013 08:23:33 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87a9pxz0wv.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2, RFC 02/30] mm: implement zero_huge_user_segment and
+ friends
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-3-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1363283435-7666-3-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 12:07:12AM -0700, Eric W. Biederman wrote:
+On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
+> Let's add helpers to clear huge page segment(s). They provide the same
+> functionallity as zero_user_segment{,s} and zero_user, but for huge
+> pages
+...
+> +static inline void zero_huge_user_segments(struct page *page,
+> +		unsigned start1, unsigned end1,
+> +		unsigned start2, unsigned end2)
+> +{
+> +	zero_huge_user_segment(page, start1, end1);
+> +	zero_huge_user_segment(page, start2, end2);
+> +}
 
-[..]
-> I think the two having different contents violates the principle of
-> least surprise.
-> 
-> I think exporting the old memory as the ``extra data'' is the least
-> surprising and the easiest way to go.
-> 
-> I don't mind filling the extra data with zero's but I don't see the
-> point.
+I'm not sure that this helper saves very much code.  The one call later
+in these patches:
 
-I think only question would be if there is a problem in reading memory
-areas which BIOS has kept reserved or possibly not exported. Are there
-any surprises to be expected. (machines reboots while trying to reboot
-a particular memory location etc).
++                       zero_huge_user_segments(page, 0, from,
++                                       from + len, HPAGE_PMD_SIZE);
 
-So trying to zero the extra data can make theoritically make it somewhat
-safer.
+really only saves one line over this:
 
-So if starting or end address of PT_LOAD header is not aligned, why
-not we simply allocate a page. Copy the relevant data from old memory,
-fill rest with zero. That way mmap and read view will be same. There
-will be no surprises w.r.t reading old kernel memory beyond what's 
-specified by the headers.
+			zero_huge_user_segment(page, 0, from);
+			zero_huge_user_segment(page, from + len,
+					       HPAGE_PMD_SIZE);
 
-And in practice I am not expecting many PT_LOAD ranges which are unaligned.
-Just few. And allocating a few 4K pages should not be a big deal.
+and I think the second one is much more clear to read.
 
-And vmcore_list will help us again map whether pfn lies in old memory
-or new memory. 
+I do see that there's a small-page variant of this, but I think that one
+was done to save doing two kmap_atomic() operations when you wanted to
+zero two separate operations.  This variant doesn't have that kind of
+optimization, so it makes much less sense.
 
-Thanks
-Vivek
+> +void zero_huge_user_segment(struct page *page, unsigned start, unsigned end)
+> +{
+> +	int i;
+> +	
+> +	BUG_ON(end < start);
+> +
+> +	might_sleep();
+> +
+> +	if (start == end)
+> +		return;
+
+I've really got to wonder how much of an optimization this is in
+practice.  Was there a specific reason this was added?
+
+> +	/* start and end are on the same small page */
+> +	if ((start & PAGE_MASK) == ((end - 1) & PAGE_MASK))
+> +		return zero_user_segment(page + (start >> PAGE_SHIFT),
+> +				start & ~PAGE_MASK,
+> +				((end - 1) & ~PAGE_MASK) + 1);
+
+It wasn't immediately obvious to me why we need to optimize the "on the
+same page" case.  I _think_ it's because using zero_user_segments()
+saves us a kmap_atomic() over the code below.  Is that right?  It might
+be worth a comment.
+
+> +	zero_user_segment(page + (start >> PAGE_SHIFT),
+> +			start & ~PAGE_MASK, PAGE_SIZE);
+> +	for (i = (start >> PAGE_SHIFT) + 1; i < (end >> PAGE_SHIFT) - 1; i++) {
+> +		cond_resched();
+> +		clear_highpage(page + i);
+
+zero_user_segments() does a flush_dcache_page(), which wouldn't get done
+on these middle pages.  Is that a problem?
+
+> +	}
+> +	zero_user_segment(page + i, 0, ((end - 1) & ~PAGE_MASK) + 1);
+> +}
+
+This code is dying for some local variables.  It could really use a
+'start_pfn_offset' and 'end_pfn_offset' or something similar.  All of
+the shifting and masking is a bit hard to read and it would be nice to
+think of some real names for what it is doing.
+
+It also desperately needs some comments about how it works.  Some
+one-liners like:
+
+	/* zero the first (possibly partial) page */
+	for()..
+		/* zero the full pages in the middle */
+	/* zero the last (possibly partial) page */
+
+would be pretty sweet.
+
