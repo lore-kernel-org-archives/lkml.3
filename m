@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757668Ab3CULcy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:32:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56667 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab3CULcx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:32:53 -0400
-Date: Thu, 21 Mar 2013 04:31:17 -0700
-From: tip-bot for Wei Yongjun <tipbot@zytor.com>
-Message-ID: <tip-db3c6bf811581c626471a6aecdf0024575b707d7@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, yongjun_wei@trendmicro.com.cn,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        yongjun_wei@trendmicro.com.cn, tglx@linutronix.de
-In-Reply-To: <CAPgLHd9=EXaH1hv4jeVvTa4tZFsjnx+8+g3zqmmUKqQ5qRqTEA@mail.gmail.com>
-References: <CAPgLHd9=EXaH1hv4jeVvTa4tZFsjnx+8+g3zqmmUKqQ5qRqTEA@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf report: Remove duplicated include
-Git-Commit-ID: db3c6bf811581c626471a6aecdf0024575b707d7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S932078Ab3CULc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:32:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55222 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752147Ab3CULcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 07:32:55 -0400
+Date: Thu, 21 Mar 2013 12:32:52 +0100
+From: Jan Kara <jack@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        axboe@kernel.dk, laijs@cn.fujitsu.com, fengguang.wu@intel.com,
+        linux-kernel@vger.kernel.org, jmoyer@redhat.com
+Subject: Re: [PATCH 3/4] writeback: replace custom worker pool
+ implementation with unbound workqueue
+Message-ID: <20130321113252.GA30777@quack.suse.cz>
+References: <1362692649-25570-1-git-send-email-tj@kernel.org>
+ <1362692649-25570-4-git-send-email-tj@kernel.org>
+ <20130312150510.GF13152@quack.suse.cz>
+ <20130318223244.GA11188@quack.suse.cz>
+ <20130318223526.GH3042@htj.dyndns.org>
+ <20130319154600.GC5222@quack.suse.cz>
+ <CAOS58YMop8+TnCGK2+SH52WNyK011vP0BWu3XENjrGt9xks32w@mail.gmail.com>
+ <20130321015721.GL17758@dastard>
+ <20130321050718.GA8012@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:31:27 -0700 (PDT)
+In-Reply-To: <20130321050718.GA8012@mtj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  db3c6bf811581c626471a6aecdf0024575b707d7
-Gitweb:     http://git.kernel.org/tip/db3c6bf811581c626471a6aecdf0024575b707d7
-Author:     Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-AuthorDate: Wed, 13 Mar 2013 12:24:42 +0800
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 15 Mar 2013 13:06:08 -0300
+On Wed 20-03-13 22:07:18, Tejun Heo wrote:
+> Hello, Dave.
+> 
+> On Thu, Mar 21, 2013 at 12:57:21PM +1100, Dave Chinner wrote:
+> > When you have a system that has 50+ active filesystems (pretty
+> > common in the distributed storage environments were every disk has
+> > it's own filesystem), knowing which filesystem(s) are getting stuck
+> > in writeback from the sysrq-w or hangcheck output is pretty damn
+> > important....
+> 
+> Hmm... I guess, then, what we can do is adding a worker description
+> which is printed out with task dump.  ie. A work function can call
+> work_set_desc(fmt, arg....).  It won't be expensive and can be
+> implemented relatively easily.  Does that sound good enough?
+  Yeah, that sounds good! Thanks!
 
-perf report: Remove duplicated include
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/CAPgLHd9=EXaH1hv4jeVvTa4tZFsjnx+8+g3zqmmUKqQ5qRqTEA@mail.gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-report.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 3f4a79b..296bd21 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -13,7 +13,6 @@
- #include "util/annotate.h"
- #include "util/color.h"
- #include <linux/list.h>
--#include "util/cache.h"
- #include <linux/rbtree.h>
- #include "util/symbol.h"
- #include "util/callchain.h"
+							Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
