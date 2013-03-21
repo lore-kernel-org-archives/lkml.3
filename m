@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932547Ab3CUVyW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 17:54:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33285 "EHLO
+	id S932614Ab3CUVyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 17:54:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33269 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932421Ab3CUVxX (ORCPT
+	with ESMTP id S932391Ab3CUVxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 17:53:23 -0400
-Message-Id: <20130321215235.348460344@linutronix.de>
+	Thu, 21 Mar 2013 17:53:22 -0400
+Message-Id: <20130321215235.216323644@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 21 Mar 2013 21:53:21 -0000
+Date: Thu, 21 Mar 2013 21:53:20 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
@@ -18,11 +18,10 @@ Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [patch 31/34] tile: Use generic idle loop
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+Subject: [patch 29/34] sh: Use generic idle loop
 References: <20130321214930.752934102@linutronix.de>
-Content-Disposition: inline; filename=tile-use-generic-idle-loop.patch
+Content-Disposition: inline; filename=sh-use-generic-idle-loop.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -31,113 +30,164 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
 ---
- arch/tile/kernel/process.c |   61 ++++-----------------------------------------
- arch/tile/kernel/smpboot.c |    2 -
- 2 files changed, 7 insertions(+), 56 deletions(-)
+ arch/sh/Kconfig       |    2 
+ arch/sh/kernel/idle.c |  102 ++++----------------------------------------------
+ arch/sh/kernel/smp.c  |    2 
+ 3 files changed, 12 insertions(+), 94 deletions(-)
 
-Index: linux-2.6/arch/tile/kernel/process.c
+Index: linux-2.6/arch/sh/Kconfig
 ===================================================================
---- linux-2.6.orig/arch/tile/kernel/process.c
-+++ linux-2.6/arch/tile/kernel/process.c
-@@ -40,13 +40,11 @@
- #include <arch/abi.h>
- #include <arch/sim_def.h>
+--- linux-2.6.orig/arch/sh/Kconfig
++++ linux-2.6/arch/sh/Kconfig
+@@ -33,6 +33,8 @@ config SUPERH
+ 	select GENERIC_ATOMIC64
+ 	select GENERIC_IRQ_SHOW
+ 	select GENERIC_SMP_IDLE_THREAD
++	select GENERIC_IDLE_LOOP
++	select GENERIC_IDLE_POLL_SETUP
+ 	select GENERIC_CLOCKEVENTS
+ 	select GENERIC_CMOS_UPDATE if SH_SH03 || SH_DREAMCAST
+ 	select GENERIC_STRNCPY_FROM_USER
+Index: linux-2.6/arch/sh/kernel/idle.c
+===================================================================
+--- linux-2.6.orig/arch/sh/kernel/idle.c
++++ linux-2.6/arch/sh/kernel/idle.c
+@@ -24,98 +24,19 @@
  
+ static void (*sh_idle)(void);
+ 
+-static int hlt_counter;
 -
- /*
-  * Use the (x86) "idle=poll" option to prefer low latency when leaving the
-  * idle loop over low power while in the idle loop, e.g. if we have
-  * one thread per core and we want to get threads out of futex waits fast.
-  */
--static int no_idle_nap;
- static int __init idle_setup(char *str)
+-static int __init nohlt_setup(char *__unused)
+-{
+-	hlt_counter = 1;
+-	return 1;
+-}
+-__setup("nohlt", nohlt_setup);
+-
+-static int __init hlt_setup(char *__unused)
+-{
+-	hlt_counter = 0;
+-	return 1;
+-}
+-__setup("hlt", hlt_setup);
+-
+-static inline int hlt_works(void)
+-{
+-	return !hlt_counter;
+-}
+-
+-/*
+- * On SMP it's slightly faster (but much more power-consuming!)
+- * to poll the ->work.need_resched flag instead of waiting for the
+- * cross-CPU IPI to arrive. Use this option with caution.
+- */
+-static void poll_idle(void)
+-{
+-	local_irq_enable();
+-	while (!need_resched())
+-		cpu_relax();
+-}
+-
+ void default_idle(void)
  {
- 	if (!str)
-@@ -54,64 +52,17 @@ static int __init idle_setup(char *str)
- 
- 	if (!strcmp(str, "poll")) {
- 		pr_info("using polling idle threads.\n");
--		no_idle_nap = 1;
-+		cpu_idle_poll_ctrl(true);
- 	} else if (!strcmp(str, "halt"))
--		no_idle_nap = 0;
--	else
--		return -1;
+-	if (hlt_works()) {
+-		clear_thread_flag(TIF_POLLING_NRFLAG);
+-		smp_mb__after_clear_bit();
 -
--	return 0;
-+		return 0;
-+	return -1;
+-		set_bl_bit();
+-		if (!need_resched()) {
+-			local_irq_enable();
+-			cpu_sleep();
+-		} else
+-			local_irq_enable();
+-
+-		set_thread_flag(TIF_POLLING_NRFLAG);
+-		clear_bl_bit();
+-	} else
+-		poll_idle();
++	set_bl_bit();
++	local_irq_enable();
++	/* Isn't this racy ? */
++	cpu_sleep();
++	clear_bl_bit();
  }
- early_param("idle", idle_setup);
  
 -/*
-- * The idle thread. There's no useful work to be
-- * done, so just try to conserve power and have a
-- * low exit latency (ie sit in a loop waiting for
-- * somebody to say that they'd like to reschedule)
+- * The idle thread. There's no useful work to be done, so just try to conserve
+- * power and have a low exit latency (ie sit in a loop waiting for somebody to
+- * say that they'd like to reschedule)
 - */
 -void cpu_idle(void)
 +void arch_cpu_idle(void)
  {
--	int cpu = smp_processor_id();
+-	unsigned int cpu = smp_processor_id();
 -
--
--	current_thread_info()->status |= TS_POLLING;
--
--	if (no_idle_nap) {
--		while (1) {
--			while (!need_resched())
--				cpu_relax();
--			schedule();
--		}
--	}
+-	set_thread_flag(TIF_POLLING_NRFLAG);
 -
 -	/* endless idle loop with no priority at all */
 -	while (1) {
 -		tick_nohz_idle_enter();
 -		rcu_idle_enter();
+-
 -		while (!need_resched()) {
+-			check_pgt_cache();
+-			rmb();
+-
 -			if (cpu_is_offline(cpu))
--				BUG();  /* no HOTPLUG_CPU */
+-				play_dead();
 -
 -			local_irq_disable();
--			__get_cpu_var(irq_stat).idle_timestamp = jiffies;
--			current_thread_info()->status &= ~TS_POLLING;
+-			/* Don't trace irqs off for idle */
+-			stop_critical_timings();
+-			if (cpuidle_idle_call())
+-				sh_idle();
 -			/*
--			 * TS_POLLING-cleared state must be visible before we
--			 * test NEED_RESCHED:
+-			 * Sanity check to ensure that sh_idle() returns
+-			 * with IRQs enabled
 -			 */
--			smp_mb();
--
--			if (!need_resched())
--				_cpu_idle();
--			else
--				local_irq_enable();
--			current_thread_info()->status |= TS_POLLING;
+-			WARN_ON(irqs_disabled());
+-			start_critical_timings();
 -		}
+-
 -		rcu_idle_exit();
 -		tick_nohz_idle_exit();
 -		schedule_preempt_disabled();
 -	}
-+	__get_cpu_var(irq_stat).idle_timestamp = jiffies;
-+	_cpu_idle();
++	if (cpuidle_idle_call())
++		sh_idle();
  }
  
- /*
-Index: linux-2.6/arch/tile/kernel/smpboot.c
+ void __init select_idle_routine(void)
+@@ -123,13 +44,8 @@ void __init select_idle_routine(void)
+ 	/*
+ 	 * If a platform has set its own idle routine, leave it alone.
+ 	 */
+-	if (sh_idle)
+-		return;
+-
+-	if (hlt_works())
++	if (!sh_idle)
+ 		sh_idle = default_idle;
+-	else
+-		sh_idle = poll_idle;
+ }
+ 
+ void stop_this_cpu(void *unused)
+Index: linux-2.6/arch/sh/kernel/smp.c
 ===================================================================
---- linux-2.6.orig/arch/tile/kernel/smpboot.c
-+++ linux-2.6/arch/tile/kernel/smpboot.c
-@@ -207,7 +207,7 @@ void __cpuinit online_secondary(void)
- 	/* Set up tile-timer clock-event device on this cpu */
- 	setup_tile_timer();
+--- linux-2.6.orig/arch/sh/kernel/smp.c
++++ linux-2.6/arch/sh/kernel/smp.c
+@@ -203,7 +203,7 @@ asmlinkage void __cpuinit start_secondar
+ 	set_cpu_online(cpu, true);
+ 	per_cpu(cpu_state, cpu) = CPU_ONLINE;
  
 -	cpu_idle();
 +	cpu_startup_entry(CPUHP_ONLINE);
  }
  
- int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tidle)
+ extern struct {
 
 
