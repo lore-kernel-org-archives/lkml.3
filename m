@@ -1,112 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab3CUPSm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 11:18:42 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:50608 "EHLO e8.ny.us.ibm.com"
+	id S932613Ab3CUPVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 11:21:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62787 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752845Ab3CUPSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 11:18:41 -0400
-Date: Thu, 21 Mar 2013 08:18:11 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Borislav Petkov <bp@alien8.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org, zhong@linux.vnet.ibm.com, khilman@linaro.org,
-        geoff@infradead.org, tglx@linutronix.de,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH] nohz1: Documentation
-Message-ID: <20130321151811.GR3637@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAFTL4hybMf+9GjjyKRSEEp0x+wT7OwpKShE5sR_JqW24DGfKOw@mail.gmail.com>
- <1363636794.15703.32@driftwood>
- <CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com>
- <20130318222548.GG3656@linux.vnet.ibm.com>
- <1363822338.6345.33.camel@gandalf.local.home>
- <20130320235545.GL3637@linux.vnet.ibm.com>
- <1363825631.6345.45.camel@gandalf.local.home>
- <20130321022259.GM3637@linux.vnet.ibm.com>
- <20130321101650.GA11214@pd.tnic>
+	id S932227Ab3CUPVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 11:21:39 -0400
+Date: Thu, 21 Mar 2013 11:21:24 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        heiko.carstens@de.ibm.com, akpm@linux-foundation.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com
+Subject: Re: [PATCH v3 18/21] vmcore: check if vmcore objects satify mmap()'s
+ page-size boundary requirement
+Message-ID: <20130321152124.GJ3934@redhat.com>
+References: <8738vp75cy.fsf@xmission.com>
+ <20130321.151428.393714972.d.hatayama@jp.fujitsu.com>
+ <87ip4l1d1q.fsf@xmission.com>
+ <20130321.154650.424925595.d.hatayama@jp.fujitsu.com>
+ <87a9pxz0wv.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130321101650.GA11214@pd.tnic>
+In-Reply-To: <87a9pxz0wv.fsf@xmission.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032115-9360-0000-0000-0000116BB4A5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 11:16:50AM +0100, Borislav Petkov wrote:
-> On Wed, Mar 20, 2013 at 07:22:59PM -0700, Paul E. McKenney wrote:
-> > > > > > The "full_nohz=" boot parameter specifies which CPUs are to be
-> > > > > > adaptive-ticks CPUs.  For example, "full_nohz=1,6-8" says that CPUs 1,
-> > > > > 
-> > > > > This is the first time you mention "adaptive-ticks". Probably should
-> > > > > define it before just using it, even though one should be able to figure
-> > > > > out what adaptive-ticks are, it does throw in a wrench when reading this
-> > > > > if you have no idea what an "adaptive-tick" is.
-> > > > 
-> > > > Good point, changed the first sentence of this paragraph to read:
-> > > > 
-> > > > 	The CONFIG_NO_HZ_FULL=y Kconfig option causes the kernel to
-> > > > 	avoid sending scheduling-clock interrupts to CPUs with a single
-> > > > 	runnable task, and such CPUs are said to be "adaptive-ticks CPUs".
-> > > 
-> > > Sounds good.
+On Thu, Mar 21, 2013 at 12:07:12AM -0700, Eric W. Biederman wrote:
+
+[..]
+> I think the two having different contents violates the principle of
+> least surprise.
 > 
-> Yeah,
+> I think exporting the old memory as the ``extra data'' is the least
+> surprising and the easiest way to go.
 > 
-> so I read this last night too and I have to say, very clearly written,
-> even for dummies like me.
+> I don't mind filling the extra data with zero's but I don't see the
+> point.
 
-Can't say that I think of you as a dummy, but glad you liked it!
+I think only question would be if there is a problem in reading memory
+areas which BIOS has kept reserved or possibly not exported. Are there
+any surprises to be expected. (machines reboots while trying to reboot
+a particular memory location etc).
 
-> But this "adaptive-ticks CPUs" reads kinda strange throughout the whole
-> text, it feels a bit weird. And since the cmdline option is called
-> "full_nohz", you might just as well call them the "full_nohz CPUs" or
-> the "full_nohz subset of CPUs" for simplicity and so that you don't have
-> yet another new term in the text denoting the same idea. I mean, all
-> those names kinda suck and need the full definition of what adaptive
-> ticking actually means anyway. :)
+So trying to zero the extra data can make theoritically make it somewhat
+safer.
 
-I am happy with either "adaptive-ticks CPUs" or "full_nohz CPUs", and
-leave the choice to Frederic.
+So if starting or end address of PT_LOAD header is not aligned, why
+not we simply allocate a page. Copy the relevant data from old memory,
+fill rest with zero. That way mmap and read view will be same. There
+will be no surprises w.r.t reading old kernel memory beyond what's 
+specified by the headers.
 
-> Btw, congrats on coining a new noun: "Adaptive-tick mode may prevent
-> this round-robining from happening."
->      ^^^^^^^^^^^^^^
+And in practice I am not expecting many PT_LOAD ranges which are unaligned.
+Just few. And allocating a few 4K pages should not be a big deal.
 
-Actually, this is a generic transformation.  Given an English verb,
-you almost always add "ing" to create a noun.  Since "round-robin" is
-used as a verb, as in "The scheduler will round-robin between the two
-SCHED_RR tasks", "round-robining" may be used as a noun denoting the
-action corresponding to the verb "round-robin".  There is no doubt
-an argument as to whether this should be spelled "round-robining" or
-"round-robinning", but I will leave this to those who care enough to
-argue about it.  ;-)
+And vmcore_list will help us again map whether pfn lies in old memory
+or new memory. 
 
-> Funny. :-)
-> 
-> I spose now one can say: "The kids in the garden are round-robining on
-> the carousel."
-> 
-> or
-> 
-> "The kernel developers are round-robined for pull requests."
-
-;-)
-
-> Or maybe it wasn't you who coined it after /me doing a little search. It
-> looks like technical people are pushing hard for it to be committed in
-> the upstream English language repository. :-)
-
-The thing about English is that it is an open-source language, and always
-has been.  English is defined by its usage, and the wise dictionary-makers
-try their best to keep up.  (The unwise ones attempt to stop the evolution
-of the English language.)  Everything good and everything bad about
-English stems from this property.  ;-)
-
-							Thanx, Paul
-
+Thanks
+Vivek
