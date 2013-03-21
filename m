@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932975Ab3CUWCo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 18:02:44 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33052 "EHLO
+	id S933027Ab3CUWC5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 18:02:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33037 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932171Ab3CUVxC (ORCPT
+	with ESMTP id S932167Ab3CUVxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 17:53:02 -0400
-Message-Id: <20130321215233.711253792@linutronix.de>
+	Thu, 21 Mar 2013 17:53:00 -0400
+Message-Id: <20130321215233.583190032@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 21 Mar 2013 21:53:00 -0000
+Date: Thu, 21 Mar 2013 21:52:59 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
@@ -18,11 +18,11 @@ Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Vineet Gupta <vgupta@synopsys.com>
-Subject: [patch 06/34] arc: Use generic idle loop
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: [patch 04/34] idle: Provide a generic entry point for the idle code
 References: <20130321214930.752934102@linutronix.de>
-Content-Disposition: inline; filename=arc-use-generic-idle-loop.patch
+Content-Disposition: inline;
+ filename=smpboot-implement-core-idle-function.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -30,88 +30,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The generic idle loop implements all functionality. Aside of that it
-allows arc to implement the tsk_is_polling() functionality correctly,
-despite the patently (now gone) comment in the original arc cpu_idle()
-function:
-/* Since we SLEEP in idle loop, TIF_POLLING_NRFLAG can't be set */
-See kernel/cpu/idle.c
+For now this calls cpu_idle(), but in the long run we want to move the
+cpu bringup code to the core and therefor we add a state argument.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/Kconfig          |    1 +
- arch/arc/kernel/process.c |   27 +--------------------------
- arch/arc/kernel/smp.c     |    2 +-
- 3 files changed, 3 insertions(+), 27 deletions(-)
+ include/linux/cpu.h |    8 ++++++++
+ init/main.c         |    2 +-
+ kernel/Makefile     |    1 +
+ kernel/cpu/Makefile |    1 +
+ kernel/cpu/idle.c   |   10 ++++++++++
+ 5 files changed, 21 insertions(+), 1 deletion(-)
 
-Index: linux-2.6/arch/arc/Kconfig
+Index: linux-2.6/include/linux/cpu.h
 ===================================================================
---- linux-2.6.orig/arch/arc/Kconfig
-+++ linux-2.6/arch/arc/Kconfig
-@@ -20,6 +20,7 @@ config ARC
- 	select GENERIC_KERNEL_THREAD
- 	select GENERIC_PENDING_IRQ if SMP
- 	select GENERIC_SMP_IDLE_THREAD
-+	select GENERIC_IDLE_LOOP
- 	select HAVE_ARCH_KGDB
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_GENERIC_HARDIRQS
-Index: linux-2.6/arch/arc/kernel/process.c
+--- linux-2.6.orig/include/linux/cpu.h
++++ linux-2.6/include/linux/cpu.h
+@@ -212,4 +212,12 @@ static inline int disable_nonboot_cpus(v
+ static inline void enable_nonboot_cpus(void) {}
+ #endif /* !CONFIG_PM_SLEEP_SMP */
+ 
++enum cpuhp_state {
++	CPUHP_OFFLINE,
++	CPUHP_ONLINE,
++};
++
++void cpu_startup_entry(enum cpuhp_state state);
++void cpu_idle(void);
++
+ #endif /* _LINUX_CPU_H_ */
+Index: linux-2.6/init/main.c
 ===================================================================
---- linux-2.6.orig/arch/arc/kernel/process.c
-+++ linux-2.6/arch/arc/kernel/process.c
-@@ -41,37 +41,12 @@ SYSCALL_DEFINE0(arc_gettls)
- 	return task_thread_info(current)->thr_ptr;
- }
- 
--static inline void arch_idle(void)
-+void arch_cpu_idle(void)
- {
- 	/* sleep, but enable all interrupts before committing */
- 	__asm__("sleep 0x3");
- }
- 
--void cpu_idle(void)
--{
--	/* Since we SLEEP in idle loop, TIF_POLLING_NRFLAG can't be set */
--
--	/* endless idle loop with no priority at all */
--	while (1) {
--		tick_nohz_idle_enter();
--		rcu_idle_enter();
--
--doze:
--		local_irq_disable();
--		if (!need_resched()) {
--			arch_idle();
--			goto doze;
--		} else {
--			local_irq_enable();
--		}
--
--		rcu_idle_exit();
--		tick_nohz_idle_exit();
--
--		schedule_preempt_disabled();
--	}
--}
--
- asmlinkage void ret_from_fork(void);
- 
- /* Layout of Child kernel mode stack as setup at the end of this function is
-Index: linux-2.6/arch/arc/kernel/smp.c
-===================================================================
---- linux-2.6.orig/arch/arc/kernel/smp.c
-+++ linux-2.6/arch/arc/kernel/smp.c
-@@ -141,7 +141,7 @@ void __cpuinit start_kernel_secondary(vo
- 
- 	local_irq_enable();
- 	preempt_disable();
+--- linux-2.6.orig/init/main.c
++++ linux-2.6/init/main.c
+@@ -384,7 +384,7 @@ static noinline void __init_refok rest_i
+ 	init_idle_bootup_task(current);
+ 	schedule_preempt_disabled();
+ 	/* Call into cpu_idle with preempt disabled */
 -	cpu_idle();
 +	cpu_startup_entry(CPUHP_ONLINE);
  }
  
- /*
+ /* Check for early params. */
+Index: linux-2.6/kernel/Makefile
+===================================================================
+--- linux-2.6.orig/kernel/Makefile
++++ linux-2.6/kernel/Makefile
+@@ -24,6 +24,7 @@ endif
+ 
+ obj-y += sched/
+ obj-y += power/
++obj-y += cpu/
+ 
+ obj-$(CONFIG_CHECKPOINT_RESTORE) += kcmp.o
+ obj-$(CONFIG_FREEZER) += freezer.o
+Index: linux-2.6/kernel/cpu/Makefile
+===================================================================
+--- /dev/null
++++ linux-2.6/kernel/cpu/Makefile
+@@ -0,0 +1 @@
++obj-y	= idle.o
+Index: linux-2.6/kernel/cpu/idle.c
+===================================================================
+--- /dev/null
++++ linux-2.6/kernel/cpu/idle.c
+@@ -0,0 +1,10 @@
++/*
++ * Generic entry point for the idle threads
++ */
++#include <linux/sched.h>
++#include <linux/cpu.h>
++
++void cpu_startup_entry(enum cpuhp_state state)
++{
++	cpu_idle();
++}
 
 
