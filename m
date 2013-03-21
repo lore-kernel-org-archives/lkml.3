@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756338Ab3CUQ6l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:58:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42514 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756223Ab3CUQ6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:58:40 -0400
-Date: Thu, 21 Mar 2013 17:58:37 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/10] mm: vmscan: Check if kswapd should writepage once
- per priority
-Message-ID: <20130321165600.GV6094@dhcp22.suse.cz>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-10-git-send-email-mgorman@suse.de>
+	id S933997Ab3CURC1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 13:02:27 -0400
+Received: from vaxjo.synopsys.com ([198.182.60.75]:42288 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756043Ab3CURCZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 13:02:25 -0400
+Message-ID: <514B3D05.3070501@synopsys.com>
+Date: Thu, 21 Mar 2013 21:01:57 +0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363525456-10448-10-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Michal Simek <monstr@monstr.eu>, Grant Likely <grant.likely@secretlab.ca>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Geert Uytterhoeven" <geert@linux-m68k.org>,
+        <dahinds@users.sourceforge.net>
+Subject: Re: [PATCH] drivers/block/xsysace - replace in(out)_8/in(out)_be16/in(out)_le16
+ with generic iowrite(read)8/16(be)
+References: <1359475380-31512-1-git-send-email-abrodkin@synopsys.com> <CACxGe6uHx4KdZRgAyL-wQ2GurojAH0eTa6YRCoSuCg89BAvBTA@mail.gmail.com> <CAHTX3dKPWg35Az8eE45AGriPZh2G6LLaQMynhFPKSZ+7UvM=9g@mail.gmail.com> <201302121725.07641.arnd@arndb.de>
+In-Reply-To: <201302121725.07641.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.121.8.30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 17-03-13 13:04:15, Mel Gorman wrote:
-> Currently kswapd checks if it should start writepage as it shrinks
-> each zone without taking into consideration if the zone is balanced or
-> not. This is not wrong as such but it does not make much sense either.
-> This patch checks once per priority if kswapd should be writing pages.
+On 02/12/2013 09:25 PM, Arnd Bergmann wrote:
+> On Tuesday 12 February 2013, Michal Simek wrote:
+>> But on Microblaze LE is necessary to use different datain/out_le16
+>> functions as below
+>> which are also not compatible with Microblaze and PPC BE.
+>>
+>> diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
+>> index bbad046..8dd192c 100644
+>> --- a/drivers/block/xsysace.c
+>> +++ b/drivers/block/xsysace.c
+>> @@ -314,7 +314,7 @@ static void ace_datain_le16(struct ace_device *ace)
+>>          int i = ACE_FIFO_SIZE / 2;
+>>          u16 *dst = ace->data_ptr;
+>>          while (i--)
+>> -               *dst++ = ioread16be(ace->baseaddr + 0x40);
+>> +               *dst++ = ioread16(ace->baseaddr + 0x40);
+>>          ace->data_ptr = dst;
+>>   }
+>
+> Hmm, that actually seems sane then: You can replace the loop around
+> ioread16be with a single ioread32_rep() call, which will use
+> the correct native endian accesses on both LE Microblaze
+> and on all the big-endian platforms. Note that the asm-generic
+> definition of that function was broken until quite recently
+> when Will Deacon repaired it in order to support ARM64.
+>
+> 	Arnd
+>
 
-Except it is not once per priority strictly speaking...  It doesn't make
-any difference though.
+It seems like this thread was not updated for many weeks now.
+I'm wondering if I missed something or if I may do something to help you 
+guys move forward with proposed patch?
 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/vmscan.c | 14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 84375b2..8c66e5a 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2804,6 +2804,13 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  		}
->  
->  		/*
-> +		 * If we're getting trouble reclaiming, start doing writepage
-> +		 * even in laptop mode.
-> +		 */
-> +		if (sc.priority < DEF_PRIORITY - 2)
-> +			sc.may_writepage = 1;
-> +
-> +		/*
->  		 * Now scan the zone in the dma->highmem direction, stopping
->  		 * at the last zone which needs scanning.
->  		 *
-> @@ -2876,13 +2883,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  				nr_to_reclaim += sc.nr_to_reclaim;
->  			}
->  
-> -			/*
-> -			 * If we're getting trouble reclaiming, start doing
-> -			 * writepage even in laptop mode.
-> -			 */
-> -			if (sc.priority < DEF_PRIORITY - 2)
-> -				sc.may_writepage = 1;
-> -
->  			if (zone->all_unreclaimable) {
->  				if (end_zone && end_zone == i)
->  					end_zone--;
-> -- 
-> 1.8.1.4
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+-Alexey
