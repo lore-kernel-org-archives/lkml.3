@@ -1,248 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757937Ab3CULl0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:41:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56823 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755705Ab3CULlX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:41:23 -0400
-Date: Thu, 21 Mar 2013 04:39:30 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-06933e3a732bb305b0721f1051a45264588e0519@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, jolsa@redhat.com, vincent.weaver@maine.edu,
-        fweisbec@gmail.com, oleg@redhat.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        andi@firstfloor.org, a.p.zijlstra@chello.nl, jolsa@redhat.com,
-        fweisbec@gmail.com, vincent.weaver@maine.edu, tglx@linutronix.de,
-        oleg@redhat.com, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1362940871-24486-7-git-send-email-jolsa@redhat.com>
-References: <1362940871-24486-7-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests:
-  Test breakpoint overflow signal handler counts
-Git-Commit-ID: 06933e3a732bb305b0721f1051a45264588e0519
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S932846Ab3CULl4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:41:56 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:50561
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932102Ab3CULly convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 07:41:54 -0400
+X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI936eI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2fh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+Message-ID: <1363866099.2289.8.camel@leyfoon-vm>
+Subject: Re: [PATCH 2/2] serial: of_serial: Handle fifosize property
+From: Ley Foon Tan <lftan@altera.com>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Rob Landley <rob@landley.net>,
+        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>
+Date: Thu, 21 Mar 2013 19:41:39 +0800
+In-Reply-To: <1363862880-17295-1-git-send-email-heikki.krogerus@linux.intel.com>
+References: <20130321104651.GC2862@xps8300>
+	 <1363862880-17295-1-git-send-email-heikki.krogerus@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:39:40 -0700 (PDT)
+X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  06933e3a732bb305b0721f1051a45264588e0519
-Gitweb:     http://git.kernel.org/tip/06933e3a732bb305b0721f1051a45264588e0519
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Sun, 10 Mar 2013 19:41:11 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 15 Mar 2013 13:06:10 -0300
+On Thu, 2013-03-21 at 12:48 +0200, Heikki Krogerus wrote:
+> fifosize property is already used with a number of serial
+> devices. This should reduce the need for extra types in
+> 8250.c just in case the fifosize differs from the standard.
+> 
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> ---
+>  Documentation/devicetree/bindings/tty/serial/of-serial.txt |    1 +
+>  drivers/tty/serial/of_serial.c                             |    4 ++++
+>  2 files changed, 5 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/tty/serial/of-serial.txt b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
+> index 8f01cb1..55fe4e7 100644
+> --- a/Documentation/devicetree/bindings/tty/serial/of-serial.txt
+> +++ b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
+> @@ -33,6 +33,7 @@ Optional properties:
+>    RTAS and should not be registered.
+>  - no-loopback-test: set to indicate that the port does not implements loopback
+>    test mode
+> +- fifosize: the fifo size of the UART.
+>  
+>  Example:
+>  
+> diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+> index b025d54..4f89761 100644
+> --- a/drivers/tty/serial/of_serial.c
+> +++ b/drivers/tty/serial/of_serial.c
+> @@ -97,6 +97,10 @@ static int of_platform_serial_setup(struct platform_device *ofdev,
+>  	if (of_property_read_u32(np, "reg-shift", &prop) == 0)
+>  		port->regshift = prop;
+>  
+> +	/* Check for fifo size */
+> +	if (of_property_read_u32(np, "fifosize", &prop) == 0)
+> +		port->fifosize = prop;
+> +
+Suggest to use "fifo-size" for the device tree property, to align with
+other DT properties.
 
-perf tests: Test breakpoint overflow signal handler counts
+>  	port->irq = irq_of_parse_and_map(np, 0);
+>  	port->iotype = UPIO_MEM;
+>  	if (of_property_read_u32(np, "reg-io-width", &prop) == 0) {
 
-Adding automated test to check the exact number of breakpoint event
-overflows and counts.
+I think you need to remove the UPF_FIXED_TYPE from port-flags as well to
+use the fifo size from device tree. Otherwise, it will get from the
+static array in 8250.c.
 
-This test was originally done by Vince Weaver for perf_event_tests.
+LFTan
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Vince Weaver <vincent.weaver@maine.edu>
-Link: http://lkml.kernel.org/r/1362940871-24486-7-git-send-email-jolsa@redhat.com
-[ committer note: s/pr_err/pr_debug/g i.e. print just OK or FAILED in non verbose mode ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile                   |   1 +
- tools/perf/tests/bp_signal_overflow.c | 126 ++++++++++++++++++++++++++++++++++
- tools/perf/tests/builtin-test.c       |   4 ++
- tools/perf/tests/tests.h              |   1 +
- 4 files changed, 132 insertions(+)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 21e0b4b..990e9a1 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -512,6 +512,7 @@ LIB_OBJS += $(OUTPUT)tests/pmu.o
- LIB_OBJS += $(OUTPUT)tests/hists_link.o
- LIB_OBJS += $(OUTPUT)tests/python-use.o
- LIB_OBJS += $(OUTPUT)tests/bp_signal.o
-+LIB_OBJS += $(OUTPUT)tests/bp_signal_overflow.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-diff --git a/tools/perf/tests/bp_signal_overflow.c b/tools/perf/tests/bp_signal_overflow.c
-new file mode 100644
-index 0000000..fe7ed28
---- /dev/null
-+++ b/tools/perf/tests/bp_signal_overflow.c
-@@ -0,0 +1,126 @@
-+/*
-+ * Originally done by Vince Weaver <vincent.weaver@maine.edu> for
-+ * perf_event_tests (git://github.com/deater/perf_event_tests)
-+ */
-+
-+#include <stdlib.h>
-+#include <stdio.h>
-+#include <unistd.h>
-+#include <string.h>
-+#include <sys/ioctl.h>
-+#include <time.h>
-+#include <fcntl.h>
-+#include <signal.h>
-+#include <sys/mman.h>
-+#include <linux/compiler.h>
-+#include <linux/hw_breakpoint.h>
-+
-+#include "tests.h"
-+#include "debug.h"
-+#include "perf.h"
-+
-+static int overflows;
-+
-+__attribute__ ((noinline))
-+static int test_function(void)
-+{
-+	return time(NULL);
-+}
-+
-+static void sig_handler(int signum __maybe_unused,
-+			siginfo_t *oh __maybe_unused,
-+			void *uc __maybe_unused)
-+{
-+	overflows++;
-+}
-+
-+static long long bp_count(int fd)
-+{
-+	long long count;
-+	int ret;
-+
-+	ret = read(fd, &count, sizeof(long long));
-+	if (ret != sizeof(long long)) {
-+		pr_debug("failed to read: %d\n", ret);
-+		return TEST_FAIL;
-+	}
-+
-+	return count;
-+}
-+
-+#define EXECUTIONS 10000
-+#define THRESHOLD  100
-+
-+int test__bp_signal_overflow(void)
-+{
-+	struct perf_event_attr pe;
-+	struct sigaction sa;
-+	long long count;
-+	int fd, i, fails = 0;
-+
-+	/* setup SIGIO signal handler */
-+	memset(&sa, 0, sizeof(struct sigaction));
-+	sa.sa_sigaction = (void *) sig_handler;
-+	sa.sa_flags = SA_SIGINFO;
-+
-+	if (sigaction(SIGIO, &sa, NULL) < 0) {
-+		pr_debug("failed setting up signal handler\n");
-+		return TEST_FAIL;
-+	}
-+
-+	memset(&pe, 0, sizeof(struct perf_event_attr));
-+	pe.type = PERF_TYPE_BREAKPOINT;
-+	pe.size = sizeof(struct perf_event_attr);
-+
-+	pe.config = 0;
-+	pe.bp_type = HW_BREAKPOINT_X;
-+	pe.bp_addr = (unsigned long) test_function;
-+	pe.bp_len = sizeof(long);
-+
-+	pe.sample_period = THRESHOLD;
-+	pe.sample_type = PERF_SAMPLE_IP;
-+	pe.wakeup_events = 1;
-+
-+	pe.disabled = 1;
-+	pe.exclude_kernel = 1;
-+	pe.exclude_hv = 1;
-+
-+	fd = sys_perf_event_open(&pe, 0, -1, -1, 0);
-+	if (fd < 0) {
-+		pr_debug("failed opening event %llx\n", pe.config);
-+		return TEST_FAIL;
-+	}
-+
-+	fcntl(fd, F_SETFL, O_RDWR|O_NONBLOCK|O_ASYNC);
-+	fcntl(fd, F_SETSIG, SIGIO);
-+	fcntl(fd, F_SETOWN, getpid());
-+
-+	ioctl(fd, PERF_EVENT_IOC_RESET, 0);
-+	ioctl(fd, PERF_EVENT_IOC_ENABLE, 0);
-+
-+	for (i = 0; i < EXECUTIONS; i++)
-+		test_function();
-+
-+	ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
-+
-+	count = bp_count(fd);
-+
-+	close(fd);
-+
-+	pr_debug("count %lld, overflow %d\n",
-+		 count, overflows);
-+
-+	if (count != EXECUTIONS) {
-+		pr_debug("\tWrong number of executions %lld != %d\n",
-+		count, EXECUTIONS);
-+		fails++;
-+	}
-+
-+	if (overflows != EXECUTIONS / THRESHOLD) {
-+		pr_debug("\tWrong number of overflows %d != %d\n",
-+		overflows, EXECUTIONS / THRESHOLD);
-+		fails++;
-+	}
-+
-+	return fails ? TEST_FAIL : TEST_OK;
-+}
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 37b108b..45d9ad4 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -82,6 +82,10 @@ static struct test {
- 		.func = test__bp_signal,
- 	},
- 	{
-+		.desc = "Test breakpoint overflow sampling",
-+		.func = test__bp_signal_overflow,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 05d0e58..6cf1ec4 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -24,5 +24,6 @@ int test__parse_events(void);
- int test__hists_link(void);
- int test__python_use(void);
- int test__bp_signal(void);
-+int test__bp_signal_overflow(void);
- 
- #endif /* TESTS_H */
