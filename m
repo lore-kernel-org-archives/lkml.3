@@ -1,106 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab3CUK44 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 06:56:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56057 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754080Ab3CUK4z (ORCPT
+	id S1755344Ab3CUK50 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 06:57:26 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:39286 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753998Ab3CUK5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 06:56:55 -0400
-Date: Thu, 21 Mar 2013 03:55:12 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-c21d0030cfe17d87f8ad80a4205c8203bdb3949b@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, oleg@redhat.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, oleg@redhat.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1361785972-7431-4-git-send-email-jolsa@redhat.com>
-References: <1361785972-7431-4-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests: Make attr script test event cpu
-Git-Commit-ID: c21d0030cfe17d87f8ad80a4205c8203bdb3949b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 21 Mar 2013 06:57:24 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 03:55:22 -0700 (PDT)
+In-Reply-To: <20130321001211.GC31256@htj.dyndns.org>
+References: <cover.1363617402.git.viresh.kumar@linaro.org>
+	<fb2e721fc43fbc3517a7ebb905aa573b12bb83a5.1363617402.git.viresh.kumar@linaro.org>
+	<20130321001211.GC31256@htj.dyndns.org>
+Date: Thu, 21 Mar 2013 16:27:23 +0530
+Message-ID: <CAKohponKUGbwEZ_edu353Y7YVZKgFOhZunTSUi04FGYWveftkw@mail.gmail.com>
+Subject: Re: [PATCH V3 3/7] workqueue: Add helpers to schedule work on any cpu
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
+        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
+        peterz@infradead.org, rostedt@goodmis.org,
+        linaro-kernel@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, Arvind.Chauhan@arm.com,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c21d0030cfe17d87f8ad80a4205c8203bdb3949b
-Gitweb:     http://git.kernel.org/tip/c21d0030cfe17d87f8ad80a4205c8203bdb3949b
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 25 Feb 2013 10:52:50 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 15 Mar 2013 13:06:00 -0300
+On 21 March 2013 05:42, Tejun Heo <tj@kernel.org> wrote:
+> On Mon, Mar 18, 2013 at 08:53:25PM +0530, Viresh Kumar wrote:
 
-perf tests: Make attr script test event cpu
+> For some reason, I've been always unsure about this patchset.  I've
+> been thinking about it past few days and I think I now know why.
 
-Make attr script to check for 'cpu' when testing event properties. This
-will allow us to check the '-C X' option for both record and stat
-commands.
+I knew this since the beginning and thought power numbers i showed might
+change your view. My hard luck :)
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1361785972-7431-4-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/tests/attr.py          | 1 +
- tools/perf/tests/attr/base-record | 1 +
- tools/perf/tests/attr/base-stat   | 1 +
- 3 files changed, 3 insertions(+)
+> I can see that strategy like this being useful for timer, and
+> impressive power saving numbers BTW - we definitely want that.  While
+> workqueue shares a lot of attributes with timers, there's one
+> important difference - scheduler is involved in work item executions.
 
-diff --git a/tools/perf/tests/attr.py b/tools/perf/tests/attr.py
-index e0ea513..c9b4b62 100644
---- a/tools/perf/tests/attr.py
-+++ b/tools/perf/tests/attr.py
-@@ -24,6 +24,7 @@ class Unsup(Exception):
- 
- class Event(dict):
-     terms = [
-+        'cpu',
-         'flags',
-         'type',
-         'size',
-diff --git a/tools/perf/tests/attr/base-record b/tools/perf/tests/attr/base-record
-index 5bc3880..b4fc835 100644
---- a/tools/perf/tests/attr/base-record
-+++ b/tools/perf/tests/attr/base-record
-@@ -2,6 +2,7 @@
- fd=1
- group_fd=-1
- flags=0
-+cpu=*
- type=0|1
- size=96
- config=0
-diff --git a/tools/perf/tests/attr/base-stat b/tools/perf/tests/attr/base-stat
-index 4bd79a8..748ee94 100644
---- a/tools/perf/tests/attr/base-stat
-+++ b/tools/perf/tests/attr/base-stat
-@@ -2,6 +2,7 @@
- fd=1
- group_fd=-1
- flags=0
-+cpu=*
- type=0
- size=96
- config=0
+Yes, scheduler is involved for queuing works queued on a UNBOUND wq.
+
+> Work item scheduling for per-cpu work items artificially removes the
+> choice of CPU from the scheduler with the assumption that such
+> restrictions would lead to lower overall overhead.
+
+Yes.. We aren't touching them here and we can't :)
+
+> There is another
+> variant of workqueue - WQ_UNBOUND - when such assumption wouldn't hold
+> too well and it would be best to give the scheduler full latitude
+> regarding scheduling work item execution including choice of CPU.
+
+I liked this point of yours and what you said is correct too. But there is a
+difference here with our approach.
+
+I here see two parallel solutions:
+
+1. What we proposed:
+- Add another wq api and used sched_select_non_idle_cpu() to choose
+the right cpu
+- Fix user drivers we care about
+
+2. What you proposed:
+- Fix user drivers we care about by using UNBOUNDED workqueues rather than
+system_wq or other private wq's. And let the scheduler do everything. Right?
+
+
+Now there are two things i am worried about.
+
+A.
+About the difference in behavior of scheduler and sched_select_non_idle_cpu().
+Scheduler will treat this work as any normal task and can schedule it anywhere
+based on what it feels is the right place and may still wake up an idle one for
+load balancing.
+
+In our approach, We aren't switching CPU for a work if that cpu (or system) is
+busy enough, like in case of high IOPS for block layer. We will find that cpu as
+busy, most of the time on such situations and so we will stay where we were.
+
+In case system is fairly idle, then also we stay on the same cpu.
+The only time we migrate is when current cpu is idle but the whole system
+isn't.
+
+B.
+It is sort of difficult to teach users about BOUND and UNBOUND workqueues
+and people have used them without thinking too much about them since some
+time. We need a straightforward API to make this more transparent. And
+queue_work_on_any_cpu() was a good candidate here. I am not talking about
+its implementation but about the interface.
+
+
+Though in both suggestions we need to fix user drivers one by one to use
+queue_work_on_any_cpu() or use WQ_UNBOUND..
+
+> Now, this patchset, kinda sorta adds back CPU selection by scheduler
+> in an ad-hoc way, right?
+
+Yes.
+
+> If we're gonna do that, why not just make it
+> unbound workqueues?  Then, the scheduler would have full discretion
+> over them and we don't need to implement this separate ad-hoc thing on
+> the side.  It's the roundaboutness that bothers me.
+
+I had my own reasons as explained earlier.
+
+> I'm not sure about other workqueues but the block one can be very
+> performance sensitive on machines with high IOPS and it would
+> definitely be advisable to keep it CPU-affine unless power consumption
+> is the overriding concern, so how about introducing another workqueue
+> flag, say WQ_UNBOUND_FOR_POWER (it's terrible, please come up with
+> something better), which is WQ_UNBOUND on configurations where this
+> matters and becomes noop if not?
+
+Maybe people wouldn't suffer much because of the reasons i told you earlier.
+On a busy system we will never switch cpus.
+
+This static configuration might not work well with multiplatform images.
+
+--
+viresh
