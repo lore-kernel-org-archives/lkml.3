@@ -1,160 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab3CUPyy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 11:54:54 -0400
-Received: from www.sr71.net ([198.145.64.142]:50118 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755937Ab3CUPyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 11:54:52 -0400
-Message-ID: <514B2D94.8040206@sr71.net>
-Date: Thu, 21 Mar 2013 08:56:04 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756073Ab3CUP5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 11:57:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3826 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755728Ab3CUP5e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 11:57:34 -0400
+X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=tLUlnkoJZcZI9ocdGARlSQ==:17 a=c11ml42nfjYA:10 a=wom5GMh1gUkA:10 a=PQXwkx6xI6AA:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=hBqU3vQJAAAA:8 a=v06FSq8qSjgA:10 a=20KFwNOVAAAA:8 a=Mds663bsvGpMlwoRxQIA:9 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=IMjOmI90U0jUzqAt:21 a=LrILllYHoMGxwtGu:21 wl=env:18 a=tLUlnkoJZcZI9ocdGARlSQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 70.114.148.7
+Date: Thu, 21 Mar 2013 10:58:23 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 01/12] Security: Add CAP_COMPROMISE_KERNEL
+Message-ID: <20130321155823.GA4438@austin.hallyn.com>
+References: <1363798166.2553.29.camel@x230.sbx07502.somerma.wayport.net>
+ <1363802506.2580.55.camel@falcor1.watson.ibm.com>
+ <1363803158.2553.33.camel@x230.sbx07502.somerma.wayport.net>
+ <1363806968.2580.86.camel@falcor1.watson.ibm.com>
+ <1363811856.2553.37.camel@x230.sbx07502.somerma.wayport.net>
+ <1363813877.2580.120.camel@falcor1.watson.ibm.com>
+ <1363814289.2553.41.camel@x230.sbx07502.somerma.wayport.net>
+ <20130321134348.GA3934@redhat.com>
+ <20130321153725.GA3656@austin.hallyn.com>
+ <20130321155220.GL3934@redhat.com>
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2, RFC 04/30] radix-tree: implement preload for multiple
- contiguous elements
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-5-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1363283435-7666-5-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130321155220.GL3934@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Quoting Vivek Goyal (vgoyal@redhat.com):
+> On Thu, Mar 21, 2013 at 10:37:25AM -0500, Serge E. Hallyn wrote:
+> > Quoting Vivek Goyal (vgoyal@redhat.com):
+> > ...
+> > > Giving CAP_MODIFY_KERNEL to processess upon signature verification
+> > > will simplify things a bit.
+> > > 
+> > > Only thing is that signature verification alone is not sufficient. We
+> > > also need to make sure after signature verification executable can
+> > > not be modified in memory in any way. So that means atleast couple of
+> > > things.
+> > 
+> > Also what about context?  If I construct a mounts namespace a certain
+> > way, can I trick this executable into loading an old singed bzImage that
+> > I had laying around?
 > 
-> Currently radix_tree_preload() only guarantees enough nodes to insert
-> one element. It's a hard limit. You cannot batch a number insert under
-> one tree_lock.
+> We were thinking that /sbin/kexec will need to verify bzImage signature
+> before loading it. 
 > 
-> This patch introduces radix_tree_preload_count(). It allows to
-> preallocate nodes enough to insert a number of *contiguous* elements.
+> Key for verification is in kernel so idea was to take kernel's help
+> in verifying signature.
+> 
+> Not sure how exactly the interface should look like. 
+> 
+> - I was thinking may be process can mmap() the bzImage with MAP_LOCKED.
+>   We can create additional flag say MAP_VERIFY_SIG_POST, which tries
+>   to verify signature/integrity of mapped region of file after mapping and
+>   locking pages and mmap() fails if signature verification fails.
+> 
+> There have been suggestions about creating new system call altogether.
+> 
+> > 
+> > ISTM the only sane thing to do, if you're going down this road,
+> > is to have CAP_MODIFIY_KERNEL pulled from bounding set for everyone
+> > except a getty started by init on ttyS0.  Then log in on serial
+> > to update.  Or run a damon with CAP_MODIFIY_KERNEL which listens
+> > to a init_net_ns netlink socket for very basic instructions, like
+> > "find and install latest signed bzImage in /boot".  Then you can
+> > at least trust that /boot for that daemon is not faked.
+> 
+> daemon does not have the key and can't verify signature of signed
+> bzImage. Even if it had the key, it can't trust the crypto code for
+> signature verification as none of that is signed.
 
-You don't need to write a paper on how radix trees work, but it might be
-nice to include a wee bit of text in here about how the existing preload
-works, and how this new guarantee works.
+I'm not saying not to use the kernel to verify the signature.
 
-> diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
-> index ffc444c..81318cb 100644
-> --- a/include/linux/radix-tree.h
-> +++ b/include/linux/radix-tree.h
-> @@ -83,6 +83,8 @@ do {									\
->  	(root)->rnode = NULL;						\
->  } while (0)
->  
-> +#define RADIX_TREE_PRELOAD_NR		512 /* For THP's benefit */
-
-This eventually boils down to making the radix_tree_preload array
-larger.  Do we really want to do this unconditionally if it's only for
-THP's benefit?
-
->  /**
->   * Radix-tree synchronization
->   *
-> @@ -231,6 +233,7 @@ unsigned long radix_tree_next_hole(struct radix_tree_root *root,
->  unsigned long radix_tree_prev_hole(struct radix_tree_root *root,
->  				unsigned long index, unsigned long max_scan);
->  int radix_tree_preload(gfp_t gfp_mask);
-> +int radix_tree_preload_count(unsigned size, gfp_t gfp_mask);
->  void radix_tree_init(void);
->  void *radix_tree_tag_set(struct radix_tree_root *root,
->  			unsigned long index, unsigned int tag);
-> diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-> index e796429..9bef0ac 100644
-> --- a/lib/radix-tree.c
-> +++ b/lib/radix-tree.c
-> @@ -81,16 +81,24 @@ static struct kmem_cache *radix_tree_node_cachep;
->   * The worst case is a zero height tree with just a single item at index 0,
->   * and then inserting an item at index ULONG_MAX. This requires 2 new branches
->   * of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
-> + *
-> + * Worst case for adding N contiguous items is adding entries at indexes
-> + * (ULONG_MAX - N) to ULONG_MAX. It requires nodes to insert single worst-case
-> + * item plus extra nodes if you cross the boundary from one node to the next.
-> + *
->   * Hence:
->   */
-> -#define RADIX_TREE_PRELOAD_SIZE (RADIX_TREE_MAX_PATH * 2 - 1)
-> +#define RADIX_TREE_PRELOAD_MIN (RADIX_TREE_MAX_PATH * 2 - 1)
-> +#define RADIX_TREE_PRELOAD_MAX \
-> +	(RADIX_TREE_PRELOAD_MIN + \
-> +	 DIV_ROUND_UP(RADIX_TREE_PRELOAD_NR - 1, RADIX_TREE_MAP_SIZE))
->  
->  /*
->   * Per-cpu pool of preloaded nodes
->   */
->  struct radix_tree_preload {
->  	int nr;
-> -	struct radix_tree_node *nodes[RADIX_TREE_PRELOAD_SIZE];
-> +	struct radix_tree_node *nodes[RADIX_TREE_PRELOAD_MAX];
->  };
-
-For those of us too lazy to go compile a kernel and figure this out in
-practice, how much bigger does this make the nodes[] array?
-
->  static DEFINE_PER_CPU(struct radix_tree_preload, radix_tree_preloads) = { 0, };
->  
-> @@ -257,29 +265,34 @@ radix_tree_node_free(struct radix_tree_node *node)
->  
->  /*
->   * Load up this CPU's radix_tree_node buffer with sufficient objects to
-> - * ensure that the addition of a single element in the tree cannot fail.  On
-> - * success, return zero, with preemption disabled.  On error, return -ENOMEM
-> + * ensure that the addition of *contiguous* elements in the tree cannot fail.
-> + * On success, return zero, with preemption disabled.  On error, return -ENOMEM
->   * with preemption not disabled.
->   *
->   * To make use of this facility, the radix tree must be initialised without
->   * __GFP_WAIT being passed to INIT_RADIX_TREE().
->   */
-> -int radix_tree_preload(gfp_t gfp_mask)
-> +int radix_tree_preload_count(unsigned size, gfp_t gfp_mask)
->  {
->  	struct radix_tree_preload *rtp;
->  	struct radix_tree_node *node;
->  	int ret = -ENOMEM;
-> +	int alloc = RADIX_TREE_PRELOAD_MIN +
-> +		DIV_ROUND_UP(size - 1, RADIX_TREE_MAP_SIZE);
-
-Any chance I could talk you in to giving 'alloc' a better name?  Maybe
-"preload_target" or "preload_fill_to".
-
-> +	if (size > RADIX_TREE_PRELOAD_NR)
-> +		return -ENOMEM;
-
-I always wonder if these deep, logical -ENOMEMs deserve a WARN_ONCE().
-We really don't expect to hit this unless something really funky is
-going on, right?
-
->  	preempt_disable();
->  	rtp = &__get_cpu_var(radix_tree_preloads);
-> -	while (rtp->nr < ARRAY_SIZE(rtp->nodes)) {
-> +	while (rtp->nr < alloc) {
->  		preempt_enable();
->  		node = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
->  		if (node == NULL)
->  			goto out;
->  		preempt_disable();
->  		rtp = &__get_cpu_var(radix_tree_preloads);
-> -		if (rtp->nr < ARRAY_SIZE(rtp->nodes))
-> +		if (rtp->nr < alloc)
->  			rtp->nodes[rtp->nr++] = node;
->  		else
->  			kmem_cache_free(radix_tree_node_cachep, node);
-> @@ -288,6 +301,11 @@ int radix_tree_preload(gfp_t gfp_mask)
->  out:
->  	return ret;
->  }
-
+-serge
