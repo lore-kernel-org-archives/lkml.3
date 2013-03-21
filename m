@@ -1,67 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933081Ab3CUN5C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 09:57:02 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:20948 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758278Ab3CUN5A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 09:57:00 -0400
-Date: Wed, 20 Mar 2013 17:27:53 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) stable/for-jens-3.9
-Message-ID: <20130320212753.GA15060@phenom.dumpdata.com>
+	id S1758338Ab3CUOB5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 10:01:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33573 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757551Ab3CUOB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 10:01:56 -0400
+Date: Thu, 21 Mar 2013 15:01:54 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning
+ requirements for kswapd
+Message-ID: <20130321140154.GL6094@dhcp22.suse.cz>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-3-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1363525456-10448-3-git-send-email-mgorman@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Jens,
+On Sun 17-03-13 13:04:08, Mel Gorman wrote:
+> Simplistically, the anon and file LRU lists are scanned proportionally
+> depending on the value of vm.swappiness although there are other factors
+> taken into account by get_scan_count().  The patch "mm: vmscan: Limit
+> the number of pages kswapd reclaims" limits the number of pages kswapd
+> reclaims but it breaks this proportional scanning and may evenly shrink
+> anon/file LRUs regardless of vm.swappiness.
+> 
+> This patch preserves the proportional scanning and reclaim. It does mean
+> that kswapd will reclaim more than requested but the number of pages will
+> be related to the high watermark.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/vmscan.c | 52 +++++++++++++++++++++++++++++++++++++++++-----------
+>  1 file changed, 41 insertions(+), 11 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 4835a7a..182ff15 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1815,6 +1815,45 @@ out:
+>  	}
+>  }
+>  
+> +static void recalculate_scan_count(unsigned long nr_reclaimed,
+> +		unsigned long nr_to_reclaim,
+> +		unsigned long nr[NR_LRU_LISTS])
+> +{
+> +	enum lru_list l;
+> +
+> +	/*
+> +	 * For direct reclaim, reclaim the number of pages requested. Less
+> +	 * care is taken to ensure that scanning for each LRU is properly
+> +	 * proportional. This is unfortunate and is improper aging but
+> +	 * minimises the amount of time a process is stalled.
+> +	 */
+> +	if (!current_is_kswapd()) {
+> +		if (nr_reclaimed >= nr_to_reclaim) {
+> +			for_each_evictable_lru(l)
+> +				nr[l] = 0;
+> +		}
+> +		return;
 
-Please git pull the following branch:
+Heh, this is nicely cryptically said what could be done in shrink_lruvec
+as
+	if (!current_is_kswapd()) {
+		if (nr_reclaimed >= nr_to_reclaim)
+			break;
+	}
 
- git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.9
+Besides that this is not memcg aware which I think it would break
+targeted reclaim which is kind of direct reclaim but it still would be
+good to stay proportional because it starts with DEF_PRIORITY.
 
-which has a bunch of fixes. They vary from being able to deal with unknown
-requests, overflow in statistics, compile warnings, bug in the error path,
-removal of unnecessary logic. There is also one performance fix - which is
-to allocate pages for requests when the driver loads - instead of doing it
-per request.
+I would suggest moving this back to shrink_lruvec and update the test as
+follows:
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 182ff15..5cf5a4b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1822,23 +1822,9 @@ static void recalculate_scan_count(unsigned long nr_reclaimed,
+ 	enum lru_list l;
+ 
+ 	/*
+-	 * For direct reclaim, reclaim the number of pages requested. Less
+-	 * care is taken to ensure that scanning for each LRU is properly
+-	 * proportional. This is unfortunate and is improper aging but
+-	 * minimises the amount of time a process is stalled.
+-	 */
+-	if (!current_is_kswapd()) {
+-		if (nr_reclaimed >= nr_to_reclaim) {
+-			for_each_evictable_lru(l)
+-				nr[l] = 0;
+-		}
+-		return;
+-	}
+-
+-	/*
+-	 * For kswapd, reclaim at least the number of pages requested.
+-	 * However, ensure that LRUs shrink by the proportion requested
+-	 * by get_scan_count() so vm.swappiness is obeyed.
++	 * Reclaim at least the number of pages requested. However,
++	 * ensure that LRUs shrink by the proportion requested by
++	 * get_scan_count() so vm.swappiness is obeyed.
+ 	 */
+ 	if (nr_reclaimed >= nr_to_reclaim) {
+ 		unsigned long min = ULONG_MAX;
+@@ -1881,6 +1867,18 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 			}
+ 		}
+ 
++		/*
++		 * For global direct reclaim, reclaim the number of
++		 * pages requested. Less care is taken to ensure that
++		 * scanning for each LRU is properly proportional. This
++		 * is unfortunate and is improper aging but minimises
++		 * the amount of time a process is stalled.
++		 */
++		if (global_reclaim(sc) && !current_is_kswapd()) {
++			if (nr_reclaimed >= nr_to_reclaim)
++				break
++		}
++
+ 		recalculate_scan_count(nr_reclaimed, nr_to_reclaim, nr);
+ 	}
+ 	blk_finish_plug(&plug);
 
-That is it. Please pull!
+> +	}
+> +
+> +	/*
+> +	 * For kswapd, reclaim at least the number of pages requested.
+> +	 * However, ensure that LRUs shrink by the proportion requested
+> +	 * by get_scan_count() so vm.swappiness is obeyed.
+> +	 */
+> +	if (nr_reclaimed >= nr_to_reclaim) {
+> +		unsigned long min = ULONG_MAX;
+> +
+> +		/* Find the LRU with the fewest pages to reclaim */
+> +		for_each_evictable_lru(l)
+> +			if (nr[l] < min)
+> +				min = nr[l];
+> +
+> +		/* Normalise the scan counts so kswapd scans proportionally */
+> +		for_each_evictable_lru(l)
+> +			nr[l] -= min;
+> +	}
 
- drivers/block/xen-blkback/blkback.c |  68 +++++++++-------
- drivers/block/xen-blkback/common.h  |  40 ++++++++--
- drivers/block/xen-blkback/xenbus.c  |  14 ++--
- drivers/block/xen-blkfront.c        | 154 +++++++++++++++++++++---------------
- include/xen/interface/io/blkif.h    |  10 +++
- 5 files changed, 179 insertions(+), 107 deletions(-)
+It looked scary at first glance but it makes sense. Every round (after we
+have reclaimed enough) one LRU is pulled out and others are
+proportionally inhibited.
 
-Chen Gang (1):
-      xen/xen-blkback: preq.dev is used without initialized
+> +}
+> +
+>  /*
+>   * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
+>   */
+> @@ -1841,17 +1880,8 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+>  							    lruvec, sc);
+>  			}
+>  		}
+> -		/*
+> -		 * On large memory systems, scan >> priority can become
+> -		 * really large. This is fine for the starting priority;
+> -		 * we want to put equal scanning pressure on each zone.
+> -		 * However, if the VM has a harder time of freeing pages,
+> -		 * with multiple processes reclaiming pages, the total
+> -		 * freeing target can get unreasonably large.
+> -		 */
+> -		if (nr_reclaimed >= nr_to_reclaim &&
+> -		    sc->priority < DEF_PRIORITY)
+> -			break;
+> +
+> +		recalculate_scan_count(nr_reclaimed, nr_to_reclaim, nr);
+>  	}
+>  	blk_finish_plug(&plug);
+>  	sc->nr_reclaimed += nr_reclaimed;
+> -- 
+> 1.8.1.4
+> 
 
-David Vrabel (1):
-      xen/blkback: correctly respond to unknown, non-native requests
-
-Jan Beulich (1):
-      xen-blkback: fix dispatch_rw_block_io() error path
-
-Mihnea Dobrescu-Balaur (1):
-      xen-blkfront: replace kmalloc and then memcpy with kmemdup
-
-Roger Pau Monne (5):
-      xen-blkback: fix foreach_grant_safe to handle empty lists
-      xen-blkfront: switch from llist to list
-      xen-blkback: don't store dev_bus_addr
-      xen-blkfront: pre-allocate pages for requests
-      xen-blkfront: remove frame list from blk_shadow
-
-Zoltan Kiss (1):
-      xen/blkback: Change statistics counter types to unsigned
-
+-- 
+Michal Hocko
+SUSE Labs
