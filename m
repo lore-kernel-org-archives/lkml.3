@@ -1,28 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757991Ab3CULn2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 07:43:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56873 "EHLO
+	id S932603Ab3CULoW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 07:44:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56808 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753350Ab3CULnY (ORCPT
+	with ESMTP id S1754021Ab3CULkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 07:43:24 -0400
-Date: Thu, 21 Mar 2013 04:41:48 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-a74b4b66cc027110272a18cd50cc6ee93483e78d@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        dsahern@gmail.com, tglx@linutronix.de
+	Thu, 21 Mar 2013 07:40:21 -0400
+Date: Thu, 21 Mar 2013 04:38:17 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-5a6bef47b418676546ab86d25631c3cfb9ffaf2a@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, jolsa@redhat.com, vincent.weaver@maine.edu,
+        fweisbec@gmail.com, oleg@redhat.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1363326533-3310-1-git-send-email-namhyung@kernel.org>
-References: <1363326533-3310-1-git-send-email-namhyung@kernel.org>
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        andi@firstfloor.org, a.p.zijlstra@chello.nl, jolsa@redhat.com,
+        fweisbec@gmail.com, vincent.weaver@maine.edu, tglx@linutronix.de,
+        oleg@redhat.com, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1362940871-24486-6-git-send-email-jolsa@redhat.com>
+References: <1362940871-24486-6-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist: Introduce perf_evlist__close()
-Git-Commit-ID: a74b4b66cc027110272a18cd50cc6ee93483e78d
+Subject: [tip:perf/core] perf tests:
+  Test breakpoint overflow signal handler
+Git-Commit-ID: 5a6bef47b418676546ab86d25631c3cfb9ffaf2a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,84 +34,288 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:41:58 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 04:38:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a74b4b66cc027110272a18cd50cc6ee93483e78d
-Gitweb:     http://git.kernel.org/tip/a74b4b66cc027110272a18cd50cc6ee93483e78d
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Fri, 15 Mar 2013 14:48:48 +0900
+Commit-ID:  5a6bef47b418676546ab86d25631c3cfb9ffaf2a
+Gitweb:     http://git.kernel.org/tip/5a6bef47b418676546ab86d25631c3cfb9ffaf2a
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Sun, 10 Mar 2013 19:41:10 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Fri, 15 Mar 2013 13:06:10 -0300
 
-perf evlist: Introduce perf_evlist__close()
+perf tests: Test breakpoint overflow signal handler
 
-It's a pair of perf_evlist__open().
+Adding automated test for breakpoint event signal handler checking if
+it's executed properly.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
+The test is related to the proper handling of the RF EFLAGS bit on
+x86_64, but it's generic for all archs.
+
+First we check the signal handler is properly called and that the
+following debug exception return to user space wouldn't trigger
+recursive breakpoint.
+
+This is related to x86_64 RF EFLAGS bit being managed in a wrong way.
+
+Second we check that we can set breakpoint in signal handler, which is
+not possible on x86_64 if the signal handler is executed with RF EFLAG
+set.
+
+This test is inpired by overflow tests done by Vince Weaver.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1363326533-3310-1-git-send-email-namhyung@kernel.org
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Vince Weaver <vincent.weaver@maine.edu>
+Link: http://lkml.kernel.org/r/1362940871-24486-6-git-send-email-jolsa@redhat.com
+[ committer note: s/pr_err/pr_debug/g i.e. print just OK or FAILED in non verbose mode ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 19 ++++++++++++-------
- tools/perf/util/evlist.h |  1 +
- 2 files changed, 13 insertions(+), 7 deletions(-)
+ tools/perf/Makefile             |   1 +
+ tools/perf/tests/bp_signal.c    | 186 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/builtin-test.c |   4 +
+ tools/perf/tests/tests.h        |   1 +
+ 4 files changed, 192 insertions(+)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 5b012b8..1344fbd 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -721,10 +721,20 @@ void perf_evlist__set_selected(struct perf_evlist *evlist,
- 	evlist->selected = evsel;
- }
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 3dcd627..21e0b4b 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -511,6 +511,7 @@ LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
+ LIB_OBJS += $(OUTPUT)tests/pmu.o
+ LIB_OBJS += $(OUTPUT)tests/hists_link.o
+ LIB_OBJS += $(OUTPUT)tests/python-use.o
++LIB_OBJS += $(OUTPUT)tests/bp_signal.o
  
-+void perf_evlist__close(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel;
-+	int ncpus = cpu_map__nr(evlist->cpus);
-+	int nthreads = thread_map__nr(evlist->threads);
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+diff --git a/tools/perf/tests/bp_signal.c b/tools/perf/tests/bp_signal.c
+new file mode 100644
+index 0000000..68daa28
+--- /dev/null
++++ b/tools/perf/tests/bp_signal.c
+@@ -0,0 +1,186 @@
++/*
++ * Inspired by breakpoint overflow test done by
++ * Vince Weaver <vincent.weaver@maine.edu> for perf_event_tests
++ * (git://github.com/deater/perf_event_tests)
++ */
 +
-+	list_for_each_entry_reverse(evsel, &evlist->entries, node)
-+		perf_evsel__close(evsel, ncpus, nthreads);
++#include <stdlib.h>
++#include <stdio.h>
++#include <unistd.h>
++#include <string.h>
++#include <sys/ioctl.h>
++#include <time.h>
++#include <fcntl.h>
++#include <signal.h>
++#include <sys/mman.h>
++#include <linux/compiler.h>
++#include <linux/hw_breakpoint.h>
++
++#include "tests.h"
++#include "debug.h"
++#include "perf.h"
++
++static int fd1;
++static int fd2;
++static int overflows;
++
++__attribute__ ((noinline))
++static int test_function(void)
++{
++	return time(NULL);
 +}
 +
- int perf_evlist__open(struct perf_evlist *evlist)
- {
- 	struct perf_evsel *evsel;
--	int err, ncpus, nthreads;
-+	int err;
++static void sig_handler(int signum __maybe_unused,
++			siginfo_t *oh __maybe_unused,
++			void *uc __maybe_unused)
++{
++	overflows++;
++
++	if (overflows > 10) {
++		/*
++		 * This should be executed only once during
++		 * this test, if we are here for the 10th
++		 * time, consider this the recursive issue.
++		 *
++		 * We can get out of here by disable events,
++		 * so no new SIGIO is delivered.
++		 */
++		ioctl(fd1, PERF_EVENT_IOC_DISABLE, 0);
++		ioctl(fd2, PERF_EVENT_IOC_DISABLE, 0);
++	}
++}
++
++static int bp_event(void *fn, int setup_signal)
++{
++	struct perf_event_attr pe;
++	int fd;
++
++	memset(&pe, 0, sizeof(struct perf_event_attr));
++	pe.type = PERF_TYPE_BREAKPOINT;
++	pe.size = sizeof(struct perf_event_attr);
++
++	pe.config = 0;
++	pe.bp_type = HW_BREAKPOINT_X;
++	pe.bp_addr = (unsigned long) fn;
++	pe.bp_len = sizeof(long);
++
++	pe.sample_period = 1;
++	pe.sample_type = PERF_SAMPLE_IP;
++	pe.wakeup_events = 1;
++
++	pe.disabled = 1;
++	pe.exclude_kernel = 1;
++	pe.exclude_hv = 1;
++
++	fd = sys_perf_event_open(&pe, 0, -1, -1, 0);
++	if (fd < 0) {
++		pr_debug("failed opening event %llx\n", pe.config);
++		return TEST_FAIL;
++	}
++
++	if (setup_signal) {
++		fcntl(fd, F_SETFL, O_RDWR|O_NONBLOCK|O_ASYNC);
++		fcntl(fd, F_SETSIG, SIGIO);
++		fcntl(fd, F_SETOWN, getpid());
++	}
++
++	ioctl(fd, PERF_EVENT_IOC_RESET, 0);
++
++	return fd;
++}
++
++static long long bp_count(int fd)
++{
++	long long count;
++	int ret;
++
++	ret = read(fd, &count, sizeof(long long));
++	if (ret != sizeof(long long)) {
++		pr_debug("failed to read: %d\n", ret);
++		return TEST_FAIL;
++	}
++
++	return count;
++}
++
++int test__bp_signal(void)
++{
++	struct sigaction sa;
++	long long count1, count2;
++
++	/* setup SIGIO signal handler */
++	memset(&sa, 0, sizeof(struct sigaction));
++	sa.sa_sigaction = (void *) sig_handler;
++	sa.sa_flags = SA_SIGINFO;
++
++	if (sigaction(SIGIO, &sa, NULL) < 0) {
++		pr_debug("failed setting up signal handler\n");
++		return TEST_FAIL;
++	}
++
++	/*
++	 * We create following events:
++	 *
++	 * fd1 - breakpoint event on test_function with SIGIO
++	 *       signal configured. We should get signal
++	 *       notification each time the breakpoint is hit
++	 *
++	 * fd2 - breakpoint event on sig_handler without SIGIO
++	 *       configured.
++	 *
++	 * Following processing should happen:
++	 *   - execute test_function
++	 *   - fd1 event breakpoint hit -> count1 == 1
++	 *   - SIGIO is delivered       -> overflows == 1
++	 *   - fd2 event breakpoint hit -> count2 == 1
++	 *
++	 * The test case check following error conditions:
++	 * - we get stuck in signal handler because of debug
++	 *   exception being triggered receursively due to
++	 *   the wrong RF EFLAG management
++	 *
++	 * - we never trigger the sig_handler breakpoint due
++	 *   to the rong RF EFLAG management
++	 *
++	 */
++
++	fd1 = bp_event(test_function, 1);
++	fd2 = bp_event(sig_handler, 0);
++
++	ioctl(fd1, PERF_EVENT_IOC_ENABLE, 0);
++	ioctl(fd2, PERF_EVENT_IOC_ENABLE, 0);
++
++	/*
++	 * Kick off the test by trigering 'fd1'
++	 * breakpoint.
++	 */
++	test_function();
++
++	ioctl(fd1, PERF_EVENT_IOC_DISABLE, 0);
++	ioctl(fd2, PERF_EVENT_IOC_DISABLE, 0);
++
++	count1 = bp_count(fd1);
++	count2 = bp_count(fd2);
++
++	close(fd1);
++	close(fd2);
++
++	pr_debug("count1 %lld, count2 %lld, overflow %d\n",
++		 count1, count2, overflows);
++
++	if (count1 != 1) {
++		if (count1 == 11)
++			pr_debug("failed: RF EFLAG recursion issue detected\n");
++		else
++			pr_debug("failed: wrong count for bp1%lld\n", count1);
++	}
++
++	if (overflows != 1)
++		pr_debug("failed: wrong overflow hit\n");
++
++	if (count2 != 1)
++		pr_debug("failed: wrong count for bp2\n");
++
++	return count1 == 1 && overflows == 1 && count2 == 1 ?
++		TEST_OK : TEST_FAIL;
++}
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index acb98e0..37b108b 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -78,6 +78,10 @@ static struct test {
+ 		.func = test__python_use,
+ 	},
+ 	{
++		.desc = "Test breakpoint overflow signal handler",
++		.func = test__bp_signal,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index 5de0be1..05d0e58 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -23,5 +23,6 @@ int test__dso_data(void);
+ int test__parse_events(void);
+ int test__hists_link(void);
+ int test__python_use(void);
++int test__bp_signal(void);
  
- 	list_for_each_entry(evsel, &evlist->entries, node) {
- 		err = perf_evsel__open(evsel, evlist->cpus, evlist->threads);
-@@ -734,12 +744,7 @@ int perf_evlist__open(struct perf_evlist *evlist)
- 
- 	return 0;
- out_err:
--	ncpus = cpu_map__nr(evlist->cpus);
--	nthreads = thread_map__nr(evlist->threads);
--
--	list_for_each_entry_reverse(evsel, &evlist->entries, node)
--		perf_evsel__close(evsel, ncpus, nthreads);
--
-+	perf_evlist__close(evlist);
- 	errno = -err;
- 	return err;
- }
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index c096da7..0583d36 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -81,6 +81,7 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id);
- union perf_event *perf_evlist__mmap_read(struct perf_evlist *self, int idx);
- 
- int perf_evlist__open(struct perf_evlist *evlist);
-+void perf_evlist__close(struct perf_evlist *evlist);
- 
- void perf_evlist__config(struct perf_evlist *evlist,
- 			 struct perf_record_opts *opts);
+ #endif /* TESTS_H */
