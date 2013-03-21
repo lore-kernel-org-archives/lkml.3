@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab3CUVQT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 17:16:19 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:56559 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152Ab3CUVQS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 17:16:18 -0400
-Date: Thu, 21 Mar 2013 22:16:13 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 5/5] arm: dts: Convert mvebu device tree files to 64
- bits
-Message-ID: <20130321221613.53a48845@skate>
-In-Reply-To: <20130321203751.GP21478@lunn.ch>
-References: <1363883179-1361-1-git-send-email-gregory.clement@free-electrons.com>
-	<1363883179-1361-6-git-send-email-gregory.clement@free-electrons.com>
-	<20130321201533.GN21478@lunn.ch>
-	<20130321212236.1015295d@skate>
-	<20130321203751.GP21478@lunn.ch>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753465Ab3CUVRo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 17:17:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54623 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752965Ab3CUVRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 17:17:43 -0400
+Date: Thu, 21 Mar 2013 23:17:36 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Kevin Hilman <khilman@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        linaro-kernel@lists.linaro.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        "open list:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: allow host header to be included even for
+ !CONFIG_KVM
+Message-ID: <20130321211736.GI9382@redhat.com>
+References: <1363306426-27209-1-git-send-email-khilman@linaro.org>
+ <1363823921.25034.35@snotra>
+ <20130321072955.GO3889@redhat.com>
+ <87ppyshlq5.fsf@linaro.org>
+ <1363891354.31522.17@snotra>
+ <20130321191600.GG9382@redhat.com>
+ <1363894393.31522.20@snotra>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363894393.31522.20@snotra>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Andrew Lunn,
-
-On Thu, 21 Mar 2013 21:37:51 +0100, Andrew Lunn wrote:
-
-> > And I'm not sure the SDRAM address decoding windows allows to split the
-> > first 4 GB of RAM into two areas, one that would be mapped starting at
-> > physical address 0x0, and another area that would be mapped at a
-> > different address (above 4 GB).
+On Thu, Mar 21, 2013 at 02:33:13PM -0500, Scott Wood wrote:
+> On 03/21/2013 02:16:00 PM, Gleb Natapov wrote:
+> >On Thu, Mar 21, 2013 at 01:42:34PM -0500, Scott Wood wrote:
+> >> On 03/21/2013 09:27:14 AM, Kevin Hilman wrote:
+> >> >Gleb Natapov <gleb@redhat.com> writes:
+> >> >
+> >> >> On Wed, Mar 20, 2013 at 06:58:41PM -0500, Scott Wood wrote:
+> >> >>> Why can't the entirety kvm_host.h be included regardless of
+> >> >>> CONFIG_KVM, just like most other feature-specific headers?  Why
+> >> >>> can't the if/else just go around the functions that you want to
+> >> >stub
+> >> >>> out for non-KVM builds?
+> >> >>>
+> >> >> Kevin,
+> >> >>
+> >> >>  What compilation failure this patch fixes? I presume
+> >something ARM
+> >> >> related.
+> >> >
+> >> >Not specficially ARM related, but more context tracking related
+> >since
+> >> >kernel/context_tracking.c pulls in kvm_host.h, which attempts to
+> >> >pull in
+> >> ><asm/kvm*.h> which may not exist on some platforms.
+> >> >
+> >> >At least for ARM, KVM support was added in v3.9 so this patch can
+> >> >probably be dropped since the non-KVM builds on ARM now work.
+> >But any
+> >> >platform without the <asm/kvm*.h> will still be broken when
+> >trying to
+> >> >build the context tracker.
+> >>
+> >> Maybe other platforms should get empty asm/kvm*.h files.  Is there
+> >> anything from those files that the linux/kvm*.h headers need to
+> >> build?
+> >>
+> >arch things. kvm_vcpu_arch, kvm_arch_memory_slot, kvm_arch etc.
 > 
-> So why not map the whole SDRAM above 4GB physical address?
+> Could define them as empty structs.
+> 
+Isn't is simpler for kernel/context_tracking.c to define empty
+__guest_enter()/__guest_exit() if !CONFIG_KVM.
 
-As Lior rightly pointed out to me, this would prevent any device from
-DMA-ing to or from the RAM. Devices can only access the first 32 bits
-of the physical address space. So there must be some RAM below 4 GB.
-
-Best regards,
-
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+--
+			Gleb.
