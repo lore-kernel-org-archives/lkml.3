@@ -1,89 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757346Ab3CUGfq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 02:35:46 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38974 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754067Ab3CUGfp (ORCPT
+	id S932172Ab3CUGf6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 02:35:58 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:34056 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067Ab3CUGf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 02:35:45 -0400
-Date: Thu, 21 Mar 2013 15:35:37 +0900 (JST)
-Message-Id: <20130321.153537.03532110.d.hatayama@jp.fujitsu.com>
-To: ebiederm@xmission.com
-Cc: akpm@linux-foundation.org, vgoyal@redhat.com, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
-Subject: Re: [PATCH v3 00/21] kdump, vmcore: support mmap() on /proc/vmcore
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <87d2ut2s7f.fsf@xmission.com>
-References: <20130319123005.46e48e3f154acf594da5737c@linux-foundation.org>
-	<20130321.125245.142520187.d.hatayama@jp.fujitsu.com>
-	<87d2ut2s7f.fsf@xmission.com>
-X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Mar 2013 02:35:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.44L0.1303201024190.1701-100000@iolanthe.rowland.org>
+References: <CADB-GoLncGoXmJsxXPUZocz1fJe9uUBX+mtgBVkuUR1SqbOBEQ@mail.gmail.com>
+	<Pine.LNX.4.44L0.1303201024190.1701-100000@iolanthe.rowland.org>
+Date: Thu, 21 Mar 2013 14:35:54 +0800
+Message-ID: <CADB-GoKACxJCNqj3OsQdgmWoK3y-hgbiLoCBzA7kbcJ3rMoheA@mail.gmail.com>
+Subject: Re: [PATCH] usb host: Faraday FUSBH200 HCD driver.
+From: Yuan-Hsin Chen <yuanlmm@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Felipe Balbi <balbi@ti.com>, gregkh@linuxfoundation.org,
+        sarah.a.sharp@linux.intel.com, Julia.Lawall@lip6.fr,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yuan-Hsin Chen <yhchen@faraday-tech.com>, john453@faraday-tech.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH v3 00/21] kdump, vmcore: support mmap() on /proc/vmcore
-Date: Wed, 20 Mar 2013 23:16:20 -0700
+Hi,
 
-> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
-> 
->> From: Andrew Morton <akpm@linux-foundation.org>
->> Subject: Re: [PATCH v3 00/21] kdump, vmcore: support mmap() on /proc/vmcore
->> Date: Tue, 19 Mar 2013 12:30:05 -0700
+On Wed, Mar 20, 2013 at 10:26 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Wed, 20 Mar 2013, Yuan-Hsin Chen wrote:
+>
+>> Hi,
 >>
->>> On Sat, 16 Mar 2013 13:00:47 +0900 HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
->>> 
->>>> Currently, read to /proc/vmcore is done by read_oldmem() that uses
->>>> ioremap/iounmap per a single page. For example, if memory is 1GB,
->>>> ioremap/iounmap is called (1GB / 4KB)-times, that is, 262144
->>>> times. This causes big performance degradation.
->>>> 
->>>> In particular, the current main user of this mmap() is makedumpfile,
->>>> which not only reads memory from /proc/vmcore but also does other
->>>> processing like filtering, compression and IO work. Update of page
->>>> table and the following TLB flush makes such processing much slow;
->>>> though I have yet to make patch for makedumpfile and yet to confirm
->>>> how it's improved.
->>>> 
->>>> To address the issue, this patch implements mmap() on /proc/vmcore to
->>>> improve read performance. My simple benchmark shows the improvement
->>>> from 200 [MiB/sec] to over 50.0 [GiB/sec].
->>> 
->>> There are quite a lot of userspace-visible vmcore changes here.  Is it
->>> all fully back-compatible?  Will all known userspace continue to work
->>> OK on newer kernels?
->>> 
+>> On Tue, Mar 19, 2013 at 11:48 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>> > On Tue, 19 Mar 2013, Yuan-Hsin Chen wrote:
+>> >
+>> >> > What about the port_status registers?  They're not between command and
+>> >> > async_next.  If they aren't consistent with EHCI, it makes things a lot
+>> >> > more complicated.
+>> >>
+>> >> fusbh200 has only one port_status register with different offset,
+>> >> 0x30, and the position of some bits are different from EHCI.
 >>
->> I designed it to keep backward-compatibility at least for gdb and
->> binutils but not less for makedumpfile since it should follow kernel
->> changes; old makedumpfile cannot use newer kernels, and this is within
->> the range of this review.
-> 
-> To the extent possible we should different versions of tools to be
-> interchanged.  That helps with bug hunting and for people who are in
-> resource constrained systems that build old versions of the tools that
-> are tiny and fit.
-> 
-> Given that rounding the per cpu NOTES turns out to be a waste of memory
-> I didn't see anything in the patchset that justfies any breakage.
+>> How about adding kernel configuration to adjust offset for FUSBH200 in
+>> ehci_def.h? So port_status would be in offset 0x20 from ehci_regs.
+>>
+>> For example,
+>>
+>>         /* ASYNCLISTADDR: offset 0x18 */
+>>         u32             async_next;     /* address of next async queue head */
+>>
+>> #ifndef CONFIG_USB_EHCI_HCD_FUSBH200
+>>         u32             reserved1[2];
+>>
+>>         /* TXFILLTUNING: offset 0x24 */
+>>         u32             txfill_tuning;  /* TX FIFO Tuning register */
+>> #define TXFIFO_DEFAULT  (8<<16)         /* FIFO burst threshold 8 */
+>>
+>>         u32             reserved2[6];
+>>
+>>         /* CONFIGFLAG: offset 0x40 */
+>>         u32             configured_flag;
+>> #define FLAG_CF         (1<<0)          /* true: we'll support "high speed" */
+>>
+>> #else
+>>         u32             reserved1;
+>> #endif
+>>         /* PORTSC: offset 0x44 */
+>>         u32             port_status[0]; /* up to N_PORTS */
+>
+> This is acceptable _only_ if it is not possible to use an FUSBH200
+> controller in the same computer as a normal EHCI controller.
+>
+>> Furthermore, there are PORT_POWER, PORT_OWNER, PORT_LED_XXX,
+>> PORT_TEST, PORT_WKCONN_E, PORT_WKDISC_E, PORT_WKOC_E absent in
+>> port_status of FUSBH200. Also PORT_OC and PORT_OCC are in another
+>> register. Is it ok to use quirk flag also?
+>
+> Yes, those can be handled by a quirk flag.  Does the FUSBH200 have a
+> built-in Transaction Translator?
 
-The breakage was caused by the introduction of new NT_VMCORE_PAD to
-"VMCOREINFO" name, except for which it worked fine. But it will be
-dropped in the next version. It'll be no problem for some time.
+Yes, the FUSBH200 has built-in Transaction Translator.
 
-The breakage was caused by makedumpfile itself due to the bug that it
-had so far seen note type only, not note name. It was possible to
-avoid the breakage by choosing another note name but I didn't do
-it. This topic will probably arise when some kind of new note types
-are needed.
+I will modify the driver based on what we discussed before and re-submit it.
+Thank you for your time.
 
-Thanks.
-HATAYAMA, Daisuke
-
+>
+> Alan Stern
+>
