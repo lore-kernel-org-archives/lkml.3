@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575Ab3CURxQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 13:53:16 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42698 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751561Ab3CURxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 13:53:13 -0400
-Message-ID: <1363888393.30275.31.camel@joe-AO722>
-Subject: Re: [PATCH] sound: max98090: Remove executable bit
-From: Joe Perches <joe@perches.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 21 Mar 2013 10:53:13 -0700
-In-Reply-To: <20130321174440.GG15926@opensource.wolfsonmicro.com>
-References: <1363730323.16270.11.camel@joe-AO722>
-	 <20130320095758.GD28775@opensource.wolfsonmicro.com>
-	 <1363792936.16270.30.camel@joe-AO722>
-	 <20130320163627.GS28775@opensource.wolfsonmicro.com>
-	 <1363820072.16270.43.camel@joe-AO722>
-	 <20130321162503.GC14768@opensource.wolfsonmicro.com>
-	 <1363886175.30275.10.camel@joe-AO722>
-	 <20130321174440.GG15926@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S1751883Ab3CUR4h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 13:56:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51415 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751140Ab3CUR4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 13:56:35 -0400
+Message-ID: <514B4925.2010909@redhat.com>
+Date: Thu, 21 Mar 2013 13:53:41 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Andi Kleen <andi@firstfloor.org>, Linux-MM <linux-mm@kvack.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/10] mm: vmscan: Have kswapd writeback pages based on
+ dirty pages encountered, not priority
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-7-git-send-email-mgorman@suse.de> <m2620qjdeo.fsf@firstfloor.org> <20130317151155.GC2026@suse.de>
+In-Reply-To: <20130317151155.GC2026@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-21 at 18:44 +0100, Mark Brown wrote:
-> On Thu, Mar 21, 2013 at 10:16:15AM -0700, Joe Perches wrote:
-> > On Thu, 2013-03-21 at 17:25 +0100, Mark Brown wrote:
-> 
-> > > I don't think you're quite understanding the issues with automation
-> > > here.  Or indeed the desired end result.
-> 
-> > What issue is that?
-> 
-> That one needs a bit more taste and thought to work out what's
-> appropraite than can be guaranteed easily with a script, things like
-> working out drive level prefixes for example.
+On 03/17/2013 11:11 AM, Mel Gorman wrote:
+> On Sun, Mar 17, 2013 at 07:42:39AM -0700, Andi Kleen wrote:
+>> Mel Gorman <mgorman@suse.de> writes:
+>>
+>>> @@ -495,6 +495,9 @@ typedef enum {
+>>>   	ZONE_CONGESTED,			/* zone has many dirty pages backed by
+>>>   					 * a congested BDI
+>>>   					 */
+>>> +	ZONE_DIRTY,			/* reclaim scanning has recently found
+>>> +					 * many dirty file pages
+>>> +					 */
+>>
+>> Needs a better name. ZONE_DIRTY_CONGESTED ?
+>>
+>
+> That might be confusing. The underlying BDI is not necessarily
+> congested. I accept your point though and will try thinking of a better
+> name.
 
-[perfectly useful git applypatch-msg hook script removed]
+ZONE_LOTS_DIRTY ?
 
-> No, that's going to leave essentially every commit that needs fixing up
-> still needing manual fixup.
-
-Then I'm sure that's your job as a maintainer
-to modify whatever patches you get to suit your
-taste.
-
-I think what I did is perfectly tasty.
-
-ttfn, o+o, ttyl, tafn, etc...
+>>> +	 * currently being written then flag that kswapd should start
+>>> +	 * writing back pages.
+>>> +	 */
+>>> +	if (global_reclaim(sc) && nr_dirty &&
+>>> +			nr_dirty >= (nr_taken >> (DEF_PRIORITY - sc->priority)))
+>>> +		zone_set_flag(zone, ZONE_DIRTY);
+>>> +
+>>>   	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
+>>
+>> I suppose you want to trace the dirty case here too.
+>>
+>
+> I guess it wouldn't hurt to have a new tracepoint for when the flag gets
+> set. A vmstat might be helpful as well.
+>
 
