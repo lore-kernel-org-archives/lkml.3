@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519Ab3CUO56 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 10:57:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12542 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753472Ab3CUO55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 10:57:57 -0400
-Date: Thu, 21 Mar 2013 10:57:43 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        heiko.carstens@de.ibm.com, akpm@linux-foundation.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com
-Subject: Re: [PATCH v3 18/21] vmcore: check if vmcore objects satify mmap()'s
- page-size boundary requirement
-Message-ID: <20130321145743.GI3934@redhat.com>
-References: <87txo5bxk4.fsf@xmission.com>
- <20130321.122501.82758179.d.hatayama@jp.fujitsu.com>
- <8738vp75cy.fsf@xmission.com>
- <20130321.151428.393714972.d.hatayama@jp.fujitsu.com>
- <87ip4l1d1q.fsf@xmission.com>
+	id S1755240Ab3CUPC7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 11:02:59 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38176 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752809Ab3CUPC6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 11:02:58 -0400
+Date: Thu, 21 Mar 2013 11:02:57 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+cc: myungjoo.ham@samsung.com, <rjw@sisk.pl>, Kevin Hilman <khilman@linaro.org>,
+        <linaro-kernel@lists.linaro.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] PM / devfreq: tie suspend/resume to runtime-pm
+In-Reply-To: <1363872506-3630-3-git-send-email-rajagopal.venkat@linaro.org>
+Message-ID: <Pine.LNX.4.44L0.1303211101530.1899-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ip4l1d1q.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 11:29:05PM -0700, Eric W. Biederman wrote:
+On Thu, 21 Mar 2013, Rajagopal Venkat wrote:
 
-[..]
-> Preserving the actual PT_LOAD segments p_paddr and p_memsz values is
-> important. p_offset we can change as much as we want.  Which means there
-> can be logical holes in the file between PT_LOAD segments, where we put
-> the extra data needed to keep everything page aligned.
+> Allow device devfreq to be suspend/resume automatically with
+> runtime pm suspend/resume. The devfreq drivers should be least
+> cared when to suspend/resume the devfreq.
+> 
+> pm_runtime_suspend(dev) will first suspend device devfreq(if available)
+> before device is suspended from runtime pm core.
+> 
+> pm_runtime_resume(dev) will resume device devfreq(if available) after
+> device is resumed from runtime pm core.
 
-Agreed. If one modifies p_paddr then one will have to modify p->vaddr
-too. And user space tools look at p->vaddr and where is the corresponding
-physical address. Keeping p_vaddr and p_paddr intact makes sense.
+Aren't these backward?  The device continues to need its clocks and 
+frequency settings until _after_ it has been suspended.  Similarly, it 
+needs them to be available _before_ it resumes.
 
-Thanks
-Vivek
+Alan Stern
+
