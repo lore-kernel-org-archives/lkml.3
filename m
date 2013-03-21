@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933711Ab3CUPuu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 11:50:50 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:54763 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755685Ab3CUPus (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933664Ab3CUPut (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 11:50:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38821 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755677Ab3CUPus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 21 Mar 2013 11:50:48 -0400
+Date: Thu, 21 Mar 2013 16:50:45 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/10] mm: vmscan: Decide whether to compact the pgdat
+ based on reclaim progress
+Message-ID: <20130321155045.GS6094@dhcp22.suse.cz>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-5-git-send-email-mgorman@suse.de>
+ <20130321153231.GP6094@dhcp22.suse.cz>
+ <20130321154730.GK1878@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <CAJtEV7YDNGq-t1W2Q4=mBobKGATz14hqkamauL=5KqZ728U9wg@mail.gmail.com>
-References: <1362666523-9961-1-git-send-email-yxlraid@gmail.com>
-	<CAErSpo69g-dJo4xW+bvGuz=TALfMLQBgQ-_PLvsa-c58AzOVJA@mail.gmail.com>
-	<CAJtEV7YDNGq-t1W2Q4=mBobKGATz14hqkamauL=5KqZ728U9wg@mail.gmail.com>
-Date: Thu, 21 Mar 2013 09:50:47 -0600
-Message-ID: <CAL-B5D38sNcvpR+XxjLLbAm279v5LuCGQttai-Ek6zOUWCbv3g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] PCI: define macro for marvell vendor ID
-From: Myron Stowe <myron.stowe@gmail.com>
-To: Andrew Cooks <acooks@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, yxlraid@gmail.com,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Xiangliang Yu <yuxiangl@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130321154730.GK1878@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 11:23 PM, Andrew Cooks <acooks@gmail.com> wrote:
-> On Fri, Mar 8, 2013 at 12:24 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Thu, Mar 7, 2013 at 7:28 AM,  <yxlraid@gmail.com> wrote:
->>> From: Xiangliang Yu <yuxiangl@marvell.com>
->>>
->>> Define PCI_VENDOR_MARVELL_ID_EXT macro for 0x1b4b vendor ID
->>
->> "PCI_VENDOR_MARVELL_ID_EXT" is not actually the symbol you defined below.
->>
->> Per the comment at the top of pci_ids.h, we don't add things here
->> unless they are shared between multiple drivers.
->>
->> That said, the 0x1b4b vendor ID is used in mv_init.c, mvumi.h,
->> mvumi.c, and ahci.c.  If you want to unify all those so they all use
->> same symbol, and define that symbol here in pci_ids.h, that would be
->> fine with me.
->>
->
-> This symbol will also be useful for the quirk that creates iommu
-> context entries for Marvell devices that use incorrect dma source
-> tags. I'll update and resend that patch when this change has been
-> merged.
+On Thu 21-03-13 15:47:31, Mel Gorman wrote:
+> On Thu, Mar 21, 2013 at 04:32:31PM +0100, Michal Hocko wrote:
+> > On Sun 17-03-13 13:04:10, Mel Gorman wrote:
+> > > In the past, kswapd makes a decision on whether to compact memory after the
+> > > pgdat was considered balanced. This more or less worked but it is late to
+> > > make such a decision and does not fit well now that kswapd makes a decision
+> > > whether to exit the zone scanning loop depending on reclaim progress.
+> > > 
+> > > This patch will compact a pgdat if at least  the requested number of pages
+> > > were reclaimed from unbalanced zones for a given priority. If any zone is
+> > > currently balanced, kswapd will not call compaction as it is expected the
+> > > necessary pages are already available.
+> > > 
+> > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > > ---
+> > >  mm/vmscan.c | 52 +++++++++++++++++++++-------------------------------
+> > >  1 file changed, 21 insertions(+), 31 deletions(-)
+> > > 
+> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > index 279d0c2..7513bd1 100644
+> > > --- a/mm/vmscan.c
+> > > +++ b/mm/vmscan.c
+> > > @@ -2694,8 +2694,11 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+> > >  
+> > >  	do {
+> > >  		unsigned long lru_pages = 0;
+> > > +		unsigned long nr_to_reclaim = 0;
+> > >  		unsigned long nr_reclaimed = sc.nr_reclaimed;
+> > > +		unsigned long this_reclaimed;
+> > >  		bool raise_priority = true;
+> > > +		bool pgdat_needs_compaction = true;
+> > 
+> > I am confused. We don't want to compact for order == 0, do we?
+> > 
+> 
+> No, but an order check is made later which I felt it was clearer.  You are
+> the second person to bring it up so I'll base the initialisation on order.
 
-Andrew -
-  A new series that includes the 0x1b4b vendor ID change was posted
-last night so you may want to follow that:
-https://lkml.org/lkml/2013/3/21/12
-
->
-> Thanks
-> Andrew
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Dohh. Yes compact_pgdat is called only if order != 0. I was so focused
+on pgdat_needs_compaction that I've missed it. Both checks use (order &&
+pgdat_needs_compaction) so initialization based on order would be
+probably better for readability.
+-- 
+Michal Hocko
+SUSE Labs
