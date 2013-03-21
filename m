@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205Ab3CUNRT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 09:17:19 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:56009 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757031Ab3CUNRS convert rfc822-to-8bit (ORCPT
+	id S932364Ab3CUNRb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 09:17:31 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:47041 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756741Ab3CUNRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 09:17:18 -0400
+	Thu, 21 Mar 2013 09:17:30 -0400
+Message-ID: <514B0868.8040905@console-pimps.org>
+Date: Thu, 21 Mar 2013 13:17:28 +0000
+From: Matt Fleming <matt@console-pimps.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-X-Originating-IP: [109.186.17.83]
-In-Reply-To: <1361466940-6813-7-git-send-email-sjur.brandeland@stericsson.com>
-References: <1361466940-6813-1-git-send-email-sjur.brandeland@stericsson.com> <1361466940-6813-7-git-send-email-sjur.brandeland@stericsson.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Thu, 21 Mar 2013 15:16:55 +0200
-Message-ID: <CAK=WgbaXj8aVNN-9T=Ox4UrOFaJmahjt9OJUc7hVyAjWtRJGOQ@mail.gmail.com>
-Subject: Re: [PATCHv2 06/10] remoteproc: Code cleanup of resource parsing
-To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
-Cc: Ido Yariv <ido@wizery.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Erwan Yvin <erwan.yvin@stericsson.com>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur@brendeland.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] EFI changes for v3.9-rc3
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 7:15 PM,  <sjur.brandeland@stericsson.com> wrote:
-> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
->
-> Combine the almost identical functions rproc_handle_virtio_rsc
-> and rproc_handle_boot_rsc.
->
-> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Hi guys,
 
-Cool patch :)
+The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
 
-BTW I'm almost done. Doing very small changes here and there and
-briefly testing the code. Will let you test a private branch before I
-push out.
+  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
 
-Thanks,
-Ohad.
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-for-3.9-rc3
+
+for you to fetch changes up to e971318bbed610e28bb3fde9d548e6aaf0a6b02e:
+
+  efivars: Handle duplicate names from get_next_variable() (2013-03-21 12:43:46 +0000)
+
+----------------------------------------------------------------
+EFI changes for v3.9-rc3,
+
+  * A new config option and efivars module parameter have been added to
+    allow the efivars pstore backend to be disabled as we're still seeing
+    issues on machines despite adding heuristics to workaround known bugs.
+    Distributions now have a way to disable EFI variable pstore code
+    completely - from Seth Forshee.
+
+  * A couple of efivars patches to workaround quirky implementations
+    of GetNextVariableName() which resulted in machines hanging and
+    sysfs files being created with garbage names.
+
+----------------------------------------------------------------
+Matt Fleming (2):
+      efivars: explicitly calculate length of VariableName
+      efivars: Handle duplicate names from get_next_variable()
+
+Seth Forshee (2):
+      efivars: Allow disabling use as a pstore backend
+      efivars: Add module parameter to disable use as a pstore backend
+
+ drivers/firmware/Kconfig   |  18 ++++++
+ drivers/firmware/efivars.c | 150 +++++++++++++++++++++++++++++++--------------
+ 2 files changed, 122 insertions(+), 46 deletions(-)
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
