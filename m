@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab3CUPjE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 11:39:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38177 "EHLO mx2.suse.de"
+	id S933524Ab3CUPpY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 11:45:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:51128 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753703Ab3CUPjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 11:39:02 -0400
-Date: Thu, 21 Mar 2013 16:38:59 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/10] mm: vmscan: Flatten kswapd priority loop
-Message-ID: <20130321153859.GQ6094@dhcp22.suse.cz>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-4-git-send-email-mgorman@suse.de>
- <20130321145458.GM6094@dhcp22.suse.cz>
- <20130321152602.GI1878@suse.de>
+	id S932453Ab3CUPpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 11:45:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,887,1355126400"; 
+   d="scan'208";a="310036042"
+Message-ID: <514B2B03.4030301@linux.intel.com>
+Date: Thu, 21 Mar 2013 08:45:07 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321152602.GI1878@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: paulmck@linux.vnet.ibm.com, Frederic Weisbecker <fweisbec@gmail.com>,
+        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org, zhong@linux.vnet.ibm.com, khilman@linaro.org,
+        geoff@infradead.org, tglx@linutronix.de
+Subject: Re: [PATCH] nohz1: Documentation
+References: <CAFTL4hybMf+9GjjyKRSEEp0x+wT7OwpKShE5sR_JqW24DGfKOw@mail.gmail.com>  <1363636794.15703.32@driftwood>  <CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com>  <20130318222548.GG3656@linux.vnet.ibm.com>  <1363822338.6345.33.camel@gandalf.local.home>  <20130320235545.GL3637@linux.vnet.ibm.com> <1363825631.6345.45.camel@gandalf.local.home>
+In-Reply-To: <1363825631.6345.45.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 21-03-13 15:26:02, Mel Gorman wrote:
-> On Thu, Mar 21, 2013 at 03:54:58PM +0100, Michal Hocko wrote:
-> > > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > > ---
-> > >  mm/vmscan.c | 86 ++++++++++++++++++++++++++++++-------------------------------
-> > >  1 file changed, 42 insertions(+), 44 deletions(-)
-> > > 
-> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > index 182ff15..279d0c2 100644
-> > > --- a/mm/vmscan.c
-> > > +++ b/mm/vmscan.c
-> > > @@ -2625,8 +2625,11 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
-> > >  /*
-> > >   * kswapd shrinks the zone by the number of pages required to reach
-> > >   * the high watermark.
-> > > + *
-> > > + * Returns true if kswapd scanned at least the requested number of
-> > > + * pages to reclaim.
-> > 
-> > Maybe move the comment about not rising priority in such case here to be
-> > clear what the return value means. Without that the return value could
-> > be misinterpreted that kswapd_shrink_zone succeeded in shrinking might
-> > be not true.
-> 
-> I moved the comment.
+On 3/20/2013 5:27 PM, Steven Rostedt wrote:
+> I'm not sure I would recommend idle=poll either. It would certainly
+> work, but it goes to the other extreme. You think NO_HZ=n drains a
+> battery? Try idle=poll.
 
-Thanks
 
-> > Or maybe even better, leave the void there and add bool *raise_priority
-> > argument here so the decision and raise_priority are at the same place.
-> > 
-> 
-> The priority is raised if kswapd failed to reclaim from any of the unbalanced
-> zone. If raise_priority is moved inside kswapd_shrink_zone then it can
-> only take one zone into account.
+do not ever use idle=poll on anything production.. really bad idea.
 
-Right you are. I am blind.
+if you temporary cannot cope with the latency, you can use the PMQOS system
+to limit (including going all the way to idle=poll).
+but using idle=poll completely is very nasty for the hardware.
 
--- 
-Michal Hocko
-SUSE Labs
+In addition we should document that idle=poll will cost you peak performance,
+possibly quite a bit.
+
+the same is true for the kernel paramter to some extend; it's there to work around
+broken bioses/hardware/etc; if you have a latency/runtime requirement, it's much better
+to use PMQOS for this from userspace.
+
