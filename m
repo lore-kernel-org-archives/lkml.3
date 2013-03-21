@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933917Ab3CUQ2N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:28:13 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:57302 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933711Ab3CUQ2J (ORCPT
+	id S933836Ab3CUQ3G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:29:06 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:64478 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932903Ab3CUQ3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:28:09 -0400
+	Thu, 21 Mar 2013 12:29:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [GIT PULL] at91: dt for 3.10 #1
+Date: Thu, 21 Mar 2013 16:28:54 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Joachim Eastwood <manabian@gmail.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+References: <514B26C2.5020804@atmel.com>
+In-Reply-To: <514B26C2.5020804@atmel.com>
 MIME-Version: 1.0
-Date: Fri, 22 Mar 2013 00:28:07 +0800
-Message-ID: <CAHgCKdWcvHyG2qYPx=2mTfRxH2J+3eh8ROK=+Jk2R2CNWBkhwg@mail.gmail.com>
-Subject: [PATCH] mtd: m25p80: update flash id list of Macronix chips
-From: Jim-Ting Kuo <jimtingkuo@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303211628.54660.arnd@arndb.de>
+X-Provags-ID: V02:K0:qKgCkrQ6iy2HhSl5Pw4OJhhnFVMmijWL1JSQrGap99t
+ H+b65an3/+i1A9IYnIgogHazc0C76ujnoVcqJGZIDH57uU3vcg
+ 8lsWwqBZpbJ+sGqEzGkJ6o8+glLrEQJfsDQKEPvVBkSlC+cbHH
+ mN5vhQGOo4k/Agh/hsAFOR3x3BxZ9RgHoSph0NoxcaHpQoKYeA
+ 0d6rreAKThzW/kzV0Zj4AhqSaaIE8Z9XGanPp+/aRJE7ek36g8
+ 4tIJF+OF7NtL259DS0yZ/Bti+MhFqVY4E6XpIrv3X7HiK+R+8T
+ CTITy1K4aS7oXEvfOMogwJ0DLbU/9bFYrexTMwprPWki2qTAnX
+ zKAwZXV1BZfAjWYKYqME=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Lavender <mike@steroidmicros.com>
+On Thursday 21 March 2013, Nicolas Ferre wrote:
+> The following changes since commit a937536b868b8369b98967929045f1df54234323:
+> 
+>   Linux 3.9-rc3 (2013-03-17 15:59:32 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-dt
 
-I have changed and added Macronix's JEDEC id to "m25p_ids" array.
-And initialized status register to 0 for using some Macronix devices.
-Thank you!
-Signed-off-by: Jim Kuo <jimtingkuo@gmail.com>
----
-diff -uprN a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
---- a/drivers/mtd/devices/m25p80.c	2013-03-22 00:11:50.554729702 +0800
-+++ b/drivers/mtd/devices/m25p80.c	2013-03-22 00:23:25.502754241 +0800
-@@ -743,16 +743,36 @@ static const struct spi_device_id m25p_i
- 	{ "n25q064",  INFO(0x20ba17, 0, 64 * 1024, 128, 0) },
+Pulled into next/dt, thanks!
 
- 	/* Macronix */
--	{ "mx25l2005a",  INFO(0xc22012, 0, 64 * 1024,   4, SECT_4K) },
--	{ "mx25l4005a",  INFO(0xc22013, 0, 64 * 1024,   8, SECT_4K) },
--	{ "mx25l8005",   INFO(0xc22014, 0, 64 * 1024,  16, 0) },
--	{ "mx25l1606e",  INFO(0xc22015, 0, 64 * 1024,  32, SECT_4K) },
--	{ "mx25l3205d",  INFO(0xc22016, 0, 64 * 1024,  64, 0) },
--	{ "mx25l6405d",  INFO(0xc22017, 0, 64 * 1024, 128, 0) },
--	{ "mx25l12805d", INFO(0xc22018, 0, 64 * 1024, 256, 0) },
--	{ "mx25l12855e", INFO(0xc22618, 0, 64 * 1024, 256, 0) },
--	{ "mx25l25635e", INFO(0xc22019, 0, 64 * 1024, 512, 0) },
--	{ "mx25l25655e", INFO(0xc22619, 0, 64 * 1024, 512, 0) },
-+	{ "mx25l512e",   INFO(0xc22010, 0, 64 * 1024,    1, SECT_4K) },
-+	{ "mx25l5121e",  INFO(0xc22210, 0, 64 * 1024,    1, SECT_4K) },
-+	{ "mx25l1006e",  INFO(0xc22011, 0, 64 * 1024,    2, SECT_4K) },
-+	{ "mx25l1021e",  INFO(0xc22211, 0, 64 * 1024,    2, SECT_4K) },
-+	{ "mx25l2006e",  INFO(0xc22012, 0, 64 * 1024,    4, SECT_4K) },
-+	{ "mx25l4006e",  INFO(0xc22013, 0, 64 * 1024,    8, SECT_4K) },
-+	{ "mx25u4035",   INFO(0xc22533, 0, 64 * 1024,    8, SECT_4K) },
-+	{ "mx25v4035",   INFO(0xc22553, 0, 64 * 1024,    8, SECT_4K) },
-+	{ "mx25l8006e",  INFO(0xc22014, 0, 64 * 1024,   16, 0) },
-+	{ "mx25u8035",   INFO(0xc22534, 0, 64 * 1024,   16, 0) },
-+	{ "mx25v8035",   INFO(0xc22554, 0, 64 * 1024,   16, 0) },
-+	{ "mx25l1606e",  INFO(0xc22015, 0, 64 * 1024,   32, 0) },
-+	{ "mx25l1633e",  INFO(0xc22415, 0, 64 * 1024,   32, 0) },
-+	{ "mx25l1635e",  INFO(0xc22515, 0, 64 * 1024,   32, 0) },
-+	{ "mx25u1635e",  INFO(0xc22535, 0, 64 * 1024,   32, 0) },
-+	{ "mx25l1655d",  INFO(0xc22615, 0, 64 * 1024,   32, 0) },
-+	{ "mx25l3206e",  INFO(0xc22016, 0, 64 * 1024,   64, 0) },
-+	{ "mx25l3239e",  INFO(0xc22536, 0, 64 * 1024,   64, 0) },
-+	{ "mx25l3225d",  INFO(0xc25e16, 0, 64 * 1024,   64, 0) },
-+	{ "mx25l3255d",  INFO(0xc29e16, 0, 64 * 1024,   64, 0) },
-+	{ "mx25l6406e",  INFO(0xc22017, 0, 64 * 1024,  128, 0) },
-+	{ "mx25l6439e",  INFO(0xc22537, 0, 64 * 1024,  128, 0) },
-+	{ "mx25l6455e",  INFO(0xc22617, 0, 64 * 1024,  128, 0) },
-+	{ "mx25l12806e", INFO(0xc22018, 0, 64 * 1024,  256, 0) },
-+	{ "mx25u12835f", INFO(0xc22538, 0, 64 * 1024,  256, 0) },
-+	{ "mx25l12855e", INFO(0xc22618, 0, 64 * 1024,  256, 0) },
-+	{ "mx25l25635e", INFO(0xc22019, 0, 64 * 1024,  512, 0) },
-+	{ "mx25u25635f", INFO(0xc22539, 0, 64 * 1024,  512, 0) },
-+	{ "mx25l25655e", INFO(0xc22619, 0, 64 * 1024,  512, 0) },
-+	{ "mx66l51235f", INFO(0xc2201a, 0, 64 * 1024, 1024, 0) },
-
- 	/* Micron */
- 	{ "n25q128a11",  INFO(0x20bb18, 0, 64 * 1024, 256, 0) },
-@@ -970,13 +990,14 @@ static int m25p_probe(struct spi_device
- 	dev_set_drvdata(&spi->dev, flash);
-
- 	/*
--	 * Atmel, SST and Intel/Numonyx serial flash tend to power
--	 * up with the software protection bits set
-+	 * Atmel, SST, Intel/Numonyx and Macronix serial flash tend
-+	 * to power up with the software protection bits set
- 	 */
-
- 	if (JEDEC_MFR(info->jedec_id) == CFI_MFR_ATMEL ||
- 	    JEDEC_MFR(info->jedec_id) == CFI_MFR_INTEL ||
--	    JEDEC_MFR(info->jedec_id) == CFI_MFR_SST) {
-+	    JEDEC_MFR(info->jedec_id) == CFI_MFR_SST   ||
-+	    JEDEC_MFR(info->jedec_id) == CFI_MFR_MACRONIX) {
- 		write_enable(flash);
- 		write_sr(flash, 0);
- 	}
+	Arnd
