@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933524Ab3CUOct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 10:32:49 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10102 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932539Ab3CUOcr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 10:32:47 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 21 Mar 2013 07:32:44 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <linus.walleij@linaro.org>, <grant.likely@secretlab.ca>
-CC: <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <swarren@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] gpio: palmas: add dt support
-Date: Thu, 21 Mar 2013 20:00:14 +0530
-Message-ID: <1363876214-25933-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	id S933562Ab3CUOc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 10:32:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58812 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933533Ab3CUOc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 10:32:56 -0400
+Message-ID: <514B1981.2080107@zytor.com>
+Date: Thu, 21 Mar 2013 07:30:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ingo Molnar <mingo@kernel.org>
+CC: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        penguin-kernel@I-love.SAKURA.ne.jp,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH] x86/microcode_intel_early.c: Get 32-bit physical address
+ by __pa_nodebug()
+References: <1363705484-27645-1-git-send-email-fenghua.yu@intel.com> <20130321104018.GA18484@gmail.com>
+In-Reply-To: <20130321104018.GA18484@gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add of_device_id table for Palma GPIO to be enable the
-driver from DT file.
+On 03/21/2013 03:40 AM, Ingo Molnar wrote:
+> 
+> * Fenghua Yu <fenghua.yu@intel.com> wrote:
+> 
+>> +	initrd_start_p = (unsigned long *)__pa_nodebug(&initrd_start);
+>> +	initrd_start_addr = (unsigned long)__pa_nodebug(*initrd_start_p);
+> 
+> We should probably use __pa_early() for that - aliased to __pa_nodebug(). 
+> That would self-document the purpose.
+> 
 
-The driver can be registered from DT file as:
-	palmas: tps65913@58 {
-		:::::::::::
-		palmas_gpio: palmas_gpio {
-			compatible = "ti,palmas-gpio";
-			gpio-controller;
-			#gpio-cells = <2>;
-		};
-	};
+Well, it's not that it is early, it is that it actually can execute in
+linear mode (paging off).
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/gpio/gpio-palmas.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+	-hpa
 
-diff --git a/drivers/gpio/gpio-palmas.c b/drivers/gpio/gpio-palmas.c
-index e3a4e56..fddaa0d 100644
---- a/drivers/gpio/gpio-palmas.c
-+++ b/drivers/gpio/gpio-palmas.c
-@@ -134,7 +134,7 @@ static int palmas_gpio_probe(struct platform_device *pdev)
- 	palmas_gpio->gpio_chip.get	= palmas_gpio_get;
- 	palmas_gpio->gpio_chip.dev = &pdev->dev;
- #ifdef CONFIG_OF_GPIO
--	palmas_gpio->gpio_chip.of_node = palmas->dev->of_node;
-+	palmas_gpio->gpio_chip.of_node = pdev->dev.of_node;
- #endif
- 	palmas_pdata = dev_get_platdata(palmas->dev);
- 	if (palmas_pdata && palmas_pdata->gpio_base)
-@@ -159,9 +159,18 @@ static int palmas_gpio_remove(struct platform_device *pdev)
- 	return gpiochip_remove(&palmas_gpio->gpio_chip);
- }
- 
-+#ifdef CONFIG_OF
-+static struct of_device_id of_palmas_gpio_match[] = {
-+	{ .compatible = "ti,palmas-gpio"},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, of_palmas_gpio_match);
-+#endif
-+
- static struct platform_driver palmas_gpio_driver = {
- 	.driver.name	= "palmas-gpio",
- 	.driver.owner	= THIS_MODULE,
-+	.driver.of_match_table = of_match_ptr(of_palmas_gpio_match),
- 	.probe		= palmas_gpio_probe,
- 	.remove		= palmas_gpio_remove,
- };
--- 
-1.7.1.1
 
