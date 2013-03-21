@@ -1,97 +1,338 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab3CUXS6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 19:18:58 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:55682 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037Ab3CUXS4 (ORCPT
+	id S1753464Ab3CUXVH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 19:21:07 -0400
+Received: from ozlabs.org ([203.10.76.45]:52972 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751268Ab3CUXVE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 19:18:56 -0400
-X-AuditID: cbfee68d-b7f786d000005188-c6-514b955e89a4
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'David Rientjes'" <rientjes@google.com>,
-        "'Herbert Xu'" <herbert@gondor.hengli.com.au>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "'Matt Mackall'" <mpm@selenic.com>
-References: <003a01ce1ee4$ed8842b0$c898c810$%han@samsung.com>
- <20130321095430.GC26931@gondor.apana.org.au>
- <alpine.DEB.2.02.1303211214230.5662@chino.kir.corp.google.com>
-In-reply-to: <alpine.DEB.2.02.1303211214230.5662@chino.kir.corp.google.com>
-Subject: Re: [PATCH] hwrng: exynos - add CONFIG_PM_SLEEP to suspend/resume
- functions
-Date: Fri, 22 Mar 2013 08:18:54 +0900
-Message-id: <008301ce268a$74fb9470$5ef2bd50$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4maLCAnoPLbPq5SP2LUUT9cu6i7wAITkLA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEIsWRmVeSWpSXmKPExsVy+t8zQ924qd6BBvvem1nMWb+GzaL7lYzF
-	5V1z2CwWbOtjtGhbspHJgdVj2wFVjwWbSj1OzPjN4tH3cgOjx+dNcgGsUVw2Kak5mWWpRfp2
-	CVwZ2yZPZypo5axY82oBYwPjPvYuRg4OCQETiWnHIrsYOYFMMYkL99azdTFycQgJLGOU2D5n
-	MiNEwkSitfk4E0RiOqPE9Ol/mSGcX4wSe3pbWUCq2ATUJL58OcwOYosIREi8OPUTLM4sUCgx
-	oeUAK0TDWkaJ+7c/giU4Bbwlzt+9xwJyhrBAmMSeFt0uRnYOFgFVic/GIAW8ArYS+/o/sEDY
-	ghI/Jt+DmqglsX4nyD0gtrzE5jVvmSF+UZd49FcX4gAjiXn9C5ghSkQk9r14xwhygITANXaJ
-	6ZsXgvWyCAhIfJt8iAWiV1Zi0wFmiHclJQ6uuMEygVFiFpLNs5BsnoVk8ywkKxYwsqxiFE0t
-	SC4oTkovMtQrTswtLs1L10vOz93ECInP3h2Mtw9YH2JMBlo/kVlKNDkfGN95JfGGxmZGFqYm
-	psZG5pZmpAkrifOqtVgHCgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamBc0B/32EYvd9fk9z9n
-	59rc872jn725+5YRZ6BwdtAab97djxcGvo5SnTBtIqtK/YfGKR98SgJ3xsk82XPFfnnmsYcP
-	p6wIYjU6Y9n7coOotJuoStSWwwxGMj16BaKMjf8LZzUH3HjqJd1zS/2L2o4rK+8/zVsxzz10
-	ZouJft4ZFZOPpgsjtvMosRRnJBpqMRcVJwIAhmwluOUCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAKsWRmVeSWpSXmKPExsVy+t9jQd24qd6BBi/vGFnMWb+GzaL7lYzF
-	5V1z2CwWbOtjtGhbspHJgdVj2wFVjwWbSj1OzPjN4tH3cgOjx+dNcgGsUQ2MNhmpiSmpRQqp
-	ecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAq5UUyhJzSoFCAYnFxUr6
-	dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGdsmT2cqaOWsWPNqAWMD4z72LkZODgkBE4nW5uNM
-	ELaYxIV769m6GLk4hASmM0pMn/6XGcL5xSixp7eVBaSKTUBN4suXw2DdIgIREi9O/QSLMwsU
-	SkxoOcAK0bCWUeL+7Y9gCU4Bb4nzd+8B2RwcwgJhEntadLsY2TlYBFQlPhuDFPAK2Ers6//A
-	AmELSvyYfA9qopbE+p0QtzELyEtsXvOWGWSIhIC6xKO/uhAHGEnM61/ADFEiIrHvxTvGCYxC
-	s5BMmoVk0iwkk2YhaVnAyLKKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzj+n0ntYFzZYHGI
-	UYCDUYmHV0PHO1CINbGsuDL3EKMEB7OSCG9kClCINyWxsiq1KD++qDQntfgQYzLQmxOZpUST
-	84GpKa8k3tDYxMzI0sjMwsjE3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGOsqIpJ/
-	nHRl5XK7p5j94dr6fapuyloP9U98vdp9ffas72KJIYdWHto8X/eUm2NtoZzQsicsk84knZtf
-	ydy+dQar4k+3g9+v/6nQaZ8d9G3dm8cpK3KsLm3n7TFu/KGSvYkngm/X9H5Dw9lbFx7RsmI8
-	W3di5zUXsyvfuXkDBKZW7c79J1X2z0WJpTgj0VCLuag4EQDfxms3QwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 21 Mar 2013 19:21:04 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Chen Gang F T <chen.gang.flying.transformer@gmail.com>,
+        Stuart Yoder <stuart.yoder@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+cc: Chen Gang <gang.chen@asianux.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        sfr@canb.auug.org.au, "paulus\@samba.org" <paulus@samba.org>,
+        matt@ozlabs.org, imunsie@au1.ibm.com, linuxppc-dev@lists.ozlabs.org,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Suggestion] PowerPC: kernel: cross compiling issue with allmodconfig
+In-reply-to: <514AC418.1070806@gmail.com>
+References: <51428C81.6000204@asianux.com> <25841.1363323174@ale.ozlabs.ibm.com> <5142AE27.7060003@asianux.com> <514AA0D9.1090509@asianux.com> <514AC418.1070806@gmail.com>
+Comments: In-reply-to Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+   message dated "Thu, 21 Mar 2013 16:26:00 +0800."
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 22 Mar 2013 10:21:02 +1100
+Message-ID: <14121.1363908062@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 22, 2013 4:17 AM, David Rientjes wrote:
+Chen Gang F T <chen.gang.flying.transformer@gmail.com> wrote:
+
 > 
-> On Thu, 21 Mar 2013, Herbert Xu wrote:
+>   it seems:
+>     only move slb_miss_realmode to the end, can fix this issue without negative effect.
+
+So this works but uncovers a new bug.
+
+Stuart: if you apply this patch allmodconfig now gets this build error
+on linux-next.
+
+arch/powerpc/kernel/built-in.o: In function `restore_pblist_ptr':
+ftrace.c:(.toc+0xd78): undefined reference to `epapr_ev_idle_start'
+ftrace.c:(.toc+0xd88): undefined reference to `epapr_ev_idle'
+make[1]: *** [vmlinux] Error 1
+
+Reverting your patch below fixes this:
+
+  commit f070986a07e514e3b4fc4aef6551b8dffcb19287
+  Author: Stuart Yoder <stuart.yoder@freescale.com>
+  Date:   Fri Feb 8 13:22:56 2013 -0600
+
+  powerpc: Add paravirt idle loop for 64-bit Book-E
+
+  Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
+  Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+
+Should we revert your patch or can you send a fix?  This is currently
+broken in linux-next (at least next-20130321).
+
+Mikey
+
+
 > 
-> > > This patch adds CONFIG_PM_SLEEP to suspend/resume functions to fix
-> > > the following build warning when CONFIG_PM_SLEEP is not selected.
-> > >
-> > > drivers/char/hw_random/exynos-rng.c:147:12: warning: 'exynos_rng_runtime_suspend' defined but not
-> used [-Wunused-function]
-> > > drivers/char/hw_random/exynos-rng.c:157:12: warning: 'exynos_rng_runtime_resume' defined but not
-> used [-Wunused-function]
-> > >
-> > > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> >
-> > Patch applied.  Thanks.
 > 
-> Nack, it causes build errors when CONFIG_PM_SLEEP is disabled:
 > 
-> drivers/char/hw_random/exynos-rng.c:167:8: error: 'exynos_rng_runtime_suspend' undeclared here (not in a
-> function)
-> drivers/char/hw_random/exynos-rng.c:167:8: error: 'exynos_rng_runtime_resume' undeclared here (not in a
-> function)
-
-OK, I see.
-
-UNIVERSAL_DEV_PM_OPS is related to both CONFIG_PM_SLEEP and CONFIG_PM_RUNTIME.
-Thus, CONFIG_PM_RUNTIME is also necessary.
-
-I will send an additional patch, soon.
-
-Best regards,
-Jingoo Han
-
-
-
-
+> diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
+> index 200afa5..56bd923 100644
+> --- a/arch/powerpc/kernel/exceptions-64s.S
+> +++ b/arch/powerpc/kernel/exceptions-64s.S
+> @@ -1066,78 +1066,6 @@ unrecov_user_slb:
+>  #endif /* __DISABLED__ */
+>  
+>  
+> -/*
+> - * r13 points to the PACA, r9 contains the saved CR,
+> - * r12 contain the saved SRR1, SRR0 is still ready for return
+> - * r3 has the faulting address
+> - * r9 - r13 are saved in paca->exslb.
+> - * r3 is saved in paca->slb_r3
+> - * We assume we aren't going to take any exceptions during this procedure.
+> - */
+> -_GLOBAL(slb_miss_realmode)
+> -	mflr	r10
+> -#ifdef CONFIG_RELOCATABLE
+> -	mtctr	r11
+> -#endif
+> -
+> -	stw	r9,PACA_EXSLB+EX_CCR(r13)	/* save CR in exc. frame */
+> -	std	r10,PACA_EXSLB+EX_LR(r13)	/* save LR */
+> -
+> -	bl	.slb_allocate_realmode
+> -
+> -	/* All done -- return from exception. */
+> -
+> -	ld	r10,PACA_EXSLB+EX_LR(r13)
+> -	ld	r3,PACA_EXSLB+EX_R3(r13)
+> -	lwz	r9,PACA_EXSLB+EX_CCR(r13)	/* get saved CR */
+> -
+> -	mtlr	r10
+> -
+> -	andi.	r10,r12,MSR_RI	/* check for unrecoverable exception */
+> -	beq-	2f
+> -
+> -.machine	push
+> -.machine	"power4"
+> -	mtcrf	0x80,r9
+> -	mtcrf	0x01,r9		/* slb_allocate uses cr0 and cr7 */
+> -.machine	pop
+> -
+> -	RESTORE_PPR_PACA(PACA_EXSLB, r9)
+> -	ld	r9,PACA_EXSLB+EX_R9(r13)
+> -	ld	r10,PACA_EXSLB+EX_R10(r13)
+> -	ld	r11,PACA_EXSLB+EX_R11(r13)
+> -	ld	r12,PACA_EXSLB+EX_R12(r13)
+> -	ld	r13,PACA_EXSLB+EX_R13(r13)
+> -	rfid
+> -	b	.	/* prevent speculative execution */
+> -
+> -2:	mfspr	r11,SPRN_SRR0
+> -	ld	r10,PACAKBASE(r13)
+> -	LOAD_HANDLER(r10,unrecov_slb)
+> -	mtspr	SPRN_SRR0,r10
+> -	ld	r10,PACAKMSR(r13)
+> -	mtspr	SPRN_SRR1,r10
+> -	rfid
+> -	b	.
+> -
+> -unrecov_slb:
+> -	EXCEPTION_PROLOG_COMMON(0x4100, PACA_EXSLB)
+> -	DISABLE_INTS
+> -	bl	.save_nvgprs
+> -1:	addi	r3,r1,STACK_FRAME_OVERHEAD
+> -	bl	.unrecoverable_exception
+> -	b	1b
+> -
+> -
+> -#ifdef CONFIG_PPC_970_NAP
+> -power4_fixup_nap:
+> -	andc	r9,r9,r10
+> -	std	r9,TI_LOCAL_FLAGS(r11)
+> -	ld	r10,_LINK(r1)		/* make idle task do the */
+> -	std	r10,_NIP(r1)		/* equivalent of a blr */
+> -	blr
+> -#endif
+> -
+>  	.align	7
+>  	.globl alignment_common
+>  alignment_common:
+> @@ -1336,6 +1264,78 @@ _GLOBAL(opal_mc_secondary_handler)
+>  
+>  
+>  /*
+> + * r13 points to the PACA, r9 contains the saved CR,
+> + * r12 contain the saved SRR1, SRR0 is still ready for return
+> + * r3 has the faulting address
+> + * r9 - r13 are saved in paca->exslb.
+> + * r3 is saved in paca->slb_r3
+> + * We assume we aren't going to take any exceptions during this procedure.
+> + */
+> +_GLOBAL(slb_miss_realmode)
+> +	mflr	r10
+> +#ifdef CONFIG_RELOCATABLE
+> +	mtctr	r11
+> +#endif
+> +
+> +	stw	r9,PACA_EXSLB+EX_CCR(r13)	/* save CR in exc. frame */
+> +	std	r10,PACA_EXSLB+EX_LR(r13)	/* save LR */
+> +
+> +	bl	.slb_allocate_realmode
+> +
+> +	/* All done -- return from exception. */
+> +
+> +	ld	r10,PACA_EXSLB+EX_LR(r13)
+> +	ld	r3,PACA_EXSLB+EX_R3(r13)
+> +	lwz	r9,PACA_EXSLB+EX_CCR(r13)	/* get saved CR */
+> +
+> +	mtlr	r10
+> +
+> +	andi.	r10,r12,MSR_RI	/* check for unrecoverable exception */
+> +	beq-	2f
+> +
+> +.machine	push
+> +.machine	"power4"
+> +	mtcrf	0x80,r9
+> +	mtcrf	0x01,r9		/* slb_allocate uses cr0 and cr7 */
+> +.machine	pop
+> +
+> +	RESTORE_PPR_PACA(PACA_EXSLB, r9)
+> +	ld	r9,PACA_EXSLB+EX_R9(r13)
+> +	ld	r10,PACA_EXSLB+EX_R10(r13)
+> +	ld	r11,PACA_EXSLB+EX_R11(r13)
+> +	ld	r12,PACA_EXSLB+EX_R12(r13)
+> +	ld	r13,PACA_EXSLB+EX_R13(r13)
+> +	rfid
+> +	b	.	/* prevent speculative execution */
+> +
+> +2:	mfspr	r11,SPRN_SRR0
+> +	ld	r10,PACAKBASE(r13)
+> +	LOAD_HANDLER(r10,unrecov_slb)
+> +	mtspr	SPRN_SRR0,r10
+> +	ld	r10,PACAKMSR(r13)
+> +	mtspr	SPRN_SRR1,r10
+> +	rfid
+> +	b	.
+> +
+> +unrecov_slb:
+> +	EXCEPTION_PROLOG_COMMON(0x4100, PACA_EXSLB)
+> +	DISABLE_INTS
+> +	bl	.save_nvgprs
+> +1:	addi	r3,r1,STACK_FRAME_OVERHEAD
+> +	bl	.unrecoverable_exception
+> +	b	1b
+> +
+> +
+> +#ifdef CONFIG_PPC_970_NAP
+> +power4_fixup_nap:
+> +	andc	r9,r9,r10
+> +	std	r9,TI_LOCAL_FLAGS(r11)
+> +	ld	r10,_LINK(r1)		/* make idle task do the */
+> +	std	r10,_NIP(r1)		/* equivalent of a blr */
+> +	blr
+> +#endif
+> +
+> +/*
+>   * Hash table stuff
+>   */
+>  	.align	7
+> 
+> 
+> On 2013年03月21日 13:55, Chen Gang wrote:
+> > Hello All:
+> > 
+> > summary:
+> >   the root cause is no enough room in exception area (0x5500 -- 0x7000).
+> > 
+> >   it is caused by the patches "for saving/restre PPR":
+> >     they consumed much space of this area (0x5500 -- 0x7000).
+> >     for pseries_defconfig and ppc64_defconfig, it is still ok.
+> >     but for allmodconfig and "some additional config", it will cause issue.
+> > 
+> >   the solving patch "Make room in exception vector area" can make room larger.
+> >     it can let "some additional config" ok.
+> >     but for allmodconfig, it is still not enough.
+> > 
+> > 
+> > details
+> >   reason:
+> >     it is caused by:
+> >        commit number: 13e7a8e846c2ea38a552b986ea49332f965bbb7a
+> >        commit number: 44e9309f1f357794b7ae93d5f3e3e6f11d2b8a7f
+> >     they are "for saving/restore PPR"
+> >     by Haren Myneni <haren@linux.vnet.ibm.com> Thu, 6 Dec 2012
+> >     compiling result:
+> >       pseries_defconfig: pass   (cpu for POWER7)
+> >       ppc64_defconfig:   pass   (cpu for POWER7)
+> >       allmodconfig:      failed (cpu for POWER7)
+> > 
+> >   analysing:
+> >     solving patch:
+> >       ------------------------------------------------------------------
+> >       commit number: 61383407677aef05928541a00678591abea2d84c
+> >       Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> >       Date:   Thu Jan 10 17:44:19 2013 +1100
+> > 
+> >         powerpc: Make room in exception vector area
+> >     
+> >         The FWNMI region is fixed at 0x7000 and the vector are now
+> >         overflowing that with some configurations. Fix that by moving
+> >         some hash management code out of that region as it doesn't need
+> >         to be that close to the call sites (isn't accessed using
+> >         conditional branches).
+> >       ------------------------------------------------------------------
+> > 
+> >       but for allmodconfig (not only for "some configurations"):
+> >         it really can reduce much overflow bytes,
+> >           (maybe from hundreds bytes to dozens bytes)
+> >         but still not enough (still content overflow bytes)
+> > 
+> >     additional trying:
+> > 	after del CONFIG_VSX and CONFIG_PPC_970_NAP in allmodconfig,
+> >           (will reduce dozens bytes in the region .0x5500 -- .0x7000)
+> >         it can pass compiling (not overflow).
+> > 
+> > 
+> > next:
+> >   I am sorry:
+> >       I am not quite familiar with the detail features of powerpc.
+> >       it seems I am not the suitable member to continue trying.
+> > 
+> >   I prefer Benjamin to continue trying (just like what he has done).
+> > 
+> >   if Benjamin will not do it (e.g. maybe no time to do)
+> >     I should continue: "make additional room in exception vector area".
+> >       (if get no reply within a week: before 2013-03-28, I should continue)
+> > 
+> > 
+> > 
+> >   welcome any members' (especially Benjamin) suggestions or completions.
+> > 
+> >   thanks.
+> > 
+> >   :-)
+> > 
+> > 
+> > On 2013年03月15日 13:14, Chen Gang wrote:
+> >> 于 2013年03月15日 12:52, Michael Neuling 写道:
+> >>> Yep it's a known problem but no one has bothered to fix it since it
+> >>> doesn't happen in a config that anyone cares about like
+> >>> pseries_defconfig and ppc64_defconfig.  We've been moving code around in
+> >>> this area a lot recently hence the breakage.
+> >>>
+> >>> It should be fixed though.  Patches welcome. :-)
+> >>
+> >>   thanks, and I should try, and very glad to try.
+> >>
+> >>   :-)  :-)
+> >>
+> >>   excuse me, I try to provide related patch within this month (2013-03-31), is it ok ?
+> >>   the reason is:
+> >>     I am not familiar with ppc assembly code, neither ppc kernel,
+> >>     so need additional time resource.
+> >>       (originally, I worked for x86(_64) core dump analysing for kernel and user programs)
+> >>
+> >>   thanks.
+> >>
+> > 
+> > 
+> 
+> 
+> -- 
+> Chen Gang
+> 
+> Flying Transformer
+> 
