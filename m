@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab3CUGq5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 02:46:57 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53532 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab3CUGqy (ORCPT
+	id S1757443Ab3CUGw4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 02:52:56 -0400
+Received: from vaxjo.synopsys.com ([198.182.60.75]:36985 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245Ab3CUGwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 02:46:54 -0400
-Date: Thu, 21 Mar 2013 15:46:50 +0900 (JST)
-Message-Id: <20130321.154650.424925595.d.hatayama@jp.fujitsu.com>
-To: ebiederm@xmission.com
-Cc: vgoyal@redhat.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
-        lisa.mitchell@hp.com, heiko.carstens@de.ibm.com,
-        akpm@linux-foundation.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, zhangyanfei@cn.fujitsu.com
-Subject: Re: [PATCH v3 18/21] vmcore: check if vmcore objects satify
- mmap()'s page-size boundary requirement
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <87ip4l1d1q.fsf@xmission.com>
-References: <8738vp75cy.fsf@xmission.com>
-	<20130321.151428.393714972.d.hatayama@jp.fujitsu.com>
-	<87ip4l1d1q.fsf@xmission.com>
-X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 21 Mar 2013 02:52:54 -0400
+Message-ID: <514AADAD.1060503@synopsys.com>
+Date: Thu, 21 Mar 2013 12:20:21 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Subject: host gcc 4.7 warning when generating defconfig
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.153]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH v3 18/21] vmcore: check if vmcore objects satify mmap()'s page-size boundary requirement
-Date: Wed, 20 Mar 2013 23:29:05 -0700
+Hi,
 
-> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
->>
->> Do you mean for each range represented by each PT_LOAD entry, say:
->>
->>   [p_paddr, p_paddr + p_memsz]
->>
->> extend it as:
->>
->>   [rounddown(p_paddr, PAGE_SIZE), roundup(p_paddr + p_memsz, PAGE_SIZE)].
->>
->> not only objects in vmcore_list, but also updating p_paddr and p_memsz
->> members themselves of each PT_LOAD entry? In other words, there's no
->> new holes not referenced by any PT_LOAD entry since the regions
->> referenced by some PT_LOAD entry, themselves are extended.
-> 
-> No.  p_paddr and p_memsz as exported should remain the same.
-> I am suggesting that we change p_offset.
-> 
-> I am suggesting to include the data in the file as if we had changed
-> p_paddr and p_memsz.
-> 
->> Then, the vmcores seen from read and mmap methods are coincide in the
->> direction of including both ranges
->>
->>   [rounddown(p_paddr, PAGE_SIZE), p_paddr]
->>
->> and
->>
->>   [p_paddr + p_memsz, roundup(p_paddr + p_memsz, PAGE_SIZE)]
->>
->> are included in both vmcores seen from read and mmap methods, although
->> they are originally not dump target memory, which you are not
->> problematic for ease of implementation.
->>
->> Is there difference here from you understanding?
-> 
-> Preserving the actual PT_LOAD segments p_paddr and p_memsz values is
-> important. p_offset we can change as much as we want.  Which means there
-> can be logical holes in the file between PT_LOAD segments, where we put
-> the extra data needed to keep everything page aligned.
-> 
+We do cross compile builds for ARC Linux. To avoid the env var set, we have a
+defconfig entry for CONFIG_CROSS_COMPILE.
+This worked fine so far (host gcc 4.4 i.e.). When switched to a new host distro
+(gcc 4.7), a defconfig build spews out the warning.
 
-So, I have to make the same question again. Is it OK if two vmcores
-are different? How do you intend the ``extra data'' to be deal with? I
-mean mmap() has to export part of old memory as the ``extra data''.
+------------------->8--------------------------
+mymake defconfig
+gcc: error: unrecognized command line option '-marc600'
+gcc: error: unrecognized command line option '-mA7'
+gcc: error: unrecognized command line option '-mno-sdata'
+gcc: error: unrecognized command line option '-mno-mpy'
+*** Default configuration is based on 'fpga_defconfig'
+#
+# configuration written to .config
+------------------->8--------------------------
 
-If you think OK, I'll fill the ``extra data'' with 0 in case of read
-method. If not OK, I'll fill with the corresponding part of old
-memory.
+While the following trivial fix seems to fix this, it seems that the spew is
+coming due to LIBGCC definition line, which is strange to be called for defconfig
+generation. Any thoughts ?
 
-Thanks.
-HATAYAMA, Daisuke
+---------------->
+diff --git a/arch/arc/Makefile b/arch/arc/Makefile
+index 4232d4e..97e6c20 100644
+--- a/arch/arc/Makefile
++++ b/arch/arc/Makefile
+@@ -8,6 +8,10 @@
+ 
+ UTS_MACHINE := arc
+ 
++ifeq ($(CROSS_COMPILE),)
++#CROSS_COMPILE := arc-elf32-
++endif
++
+ KBUILD_DEFCONFIG := fpga_defconfig
 
+Thx,
+-Vineet
