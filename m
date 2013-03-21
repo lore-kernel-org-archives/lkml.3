@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934412Ab3CUQmp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 12:42:45 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:42285 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934209Ab3CUQgW (ORCPT
+	id S934263Ab3CUQgV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 12:36:21 -0400
+Received: from mail-da0-f41.google.com ([209.85.210.41]:51380 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934209Ab3CUQgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 12:36:22 -0400
+	Thu, 21 Mar 2013 12:36:11 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         akpm@linux-foundation.org
-Cc: Kent Overstreet <koverstreet@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Zach Brown <zab@redhat.com>, Felipe Balbi <balbi@ti.com>,
+Cc: Zach Brown <zab@redhat.com>, Kent Overstreet <koverstreet@google.com>,
+        Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
         Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
@@ -20,9 +19,9 @@ Cc: Kent Overstreet <koverstreet@google.com>,
         Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
         Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
         Benjamin LaHaise <bcrl@kvack.org>, "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH 13/33] wait: add wait_event_hrtimeout()
-Date: Thu, 21 Mar 2013 09:35:34 -0700
-Message-Id: <1363883754-27966-14-git-send-email-koverstreet@google.com>
+Subject: [PATCH 05/33] char: add aio_{read,write} to /dev/{null,zero}
+Date: Thu, 21 Mar 2013 09:35:26 -0700
+Message-Id: <1363883754-27966-6-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1363883754-27966-1-git-send-email-koverstreet@google.com>
 References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
@@ -30,33 +29,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Analagous to wait_event_timeout() and friends, this adds
-wait_event_hrtimeout() and wait_event_interruptible_hrtimeout().
+From: Zach Brown <zab@redhat.com>
 
-Note that unlike the versions that use regular timers, these don't return
-the amount of time remaining when they return - instead, they return 0 or
--ETIME if they timed out.  because I was uncomfortable with the semantics
-of doing it the other way (that I could get it right, anyways).
+These are handy for measuring the cost of the aio infrastructure with
+operations that do very little and complete immediately.
 
-If the timer expires, there's no real guarantee that expire_time -
-current_time would be <= 0 - due to timer slack certainly, and I'm not
-sure I want to know the implications of the different clock bases in
-hrtimers.
-
-If the timer does expire and the code calculates that the time remaining
-is nonnegative, that could be even worse if the calling code then reuses
-that timeout.  Probably safer to just return 0 then, but I could imagine
-weird bugs or at least unintended behaviour arising from that too.
-
-I came to the conclusion that if other users end up actually needing the
-amount of time remaining, the sanest thing to do would be to create a
-version that uses absolute timeouts instead of relative.
-
-[akpm@linux-foundation.org: fix description of `timeout' arg]
+Signed-off-by: Zach Brown <zab@redhat.com>
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Zach Brown <zab@redhat.com>
 Cc: Felipe Balbi <balbi@ti.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Mark Fasheh <mfasheh@suse.com>
@@ -72,106 +51,83 @@ Cc: Benjamin LaHaise <bcrl@kvack.org>
 Cc: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/linux/wait.h | 86 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 86 insertions(+)
+ drivers/char/mem.c | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index 7cb64d4..ac38be2 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -330,6 +330,92 @@ do {									\
- 	__ret;								\
- })
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 2c644af..e49265f 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -627,6 +627,18 @@ static ssize_t write_null(struct file *file, const char __user *buf,
+ 	return count;
+ }
  
-+#define __wait_event_hrtimeout(wq, condition, timeout, state)		\
-+({									\
-+	int __ret = 0;							\
-+	DEFINE_WAIT(__wait);						\
-+	struct hrtimer_sleeper __t;					\
-+									\
-+	hrtimer_init_on_stack(&__t.timer, CLOCK_MONOTONIC,		\
-+			      HRTIMER_MODE_REL);			\
-+	hrtimer_init_sleeper(&__t, current);				\
-+	if ((timeout).tv64 != KTIME_MAX)				\
-+		hrtimer_start_range_ns(&__t.timer, timeout,		\
-+				       current->timer_slack_ns,		\
-+				       HRTIMER_MODE_REL);		\
-+									\
-+	for (;;) {							\
-+		prepare_to_wait(&wq, &__wait, state);			\
-+		if (condition)						\
-+			break;						\
-+		if (state == TASK_INTERRUPTIBLE &&			\
-+		    signal_pending(current)) {				\
-+			__ret = -ERESTARTSYS;				\
-+			break;						\
-+		}							\
-+		if (!__t.task) {					\
-+			__ret = -ETIME;					\
-+			break;						\
-+		}							\
-+		schedule();						\
-+	}								\
-+									\
-+	hrtimer_cancel(&__t.timer);					\
-+	destroy_hrtimer_on_stack(&__t.timer);				\
-+	finish_wait(&wq, &__wait);					\
-+	__ret;								\
-+})
++static ssize_t aio_read_null(struct kiocb *iocb, const struct iovec *iov,
++			     unsigned long nr_segs, loff_t pos)
++{
++	return 0;
++}
 +
-+/**
-+ * wait_event_hrtimeout - sleep until a condition gets true or a timeout elapses
-+ * @wq: the waitqueue to wait on
-+ * @condition: a C expression for the event to wait for
-+ * @timeout: timeout, as a ktime_t
-+ *
-+ * The process is put to sleep (TASK_UNINTERRUPTIBLE) until the
-+ * @condition evaluates to true or a signal is received.
-+ * The @condition is checked each time the waitqueue @wq is woken up.
-+ *
-+ * wake_up() has to be called after changing any variable that could
-+ * change the result of the wait condition.
-+ *
-+ * The function returns 0 if @condition became true, or -ETIME if the timeout
-+ * elapsed.
-+ */
-+#define wait_event_hrtimeout(wq, condition, timeout)			\
-+({									\
-+	int __ret = 0;							\
-+	if (!(condition))						\
-+		__ret = __wait_event_hrtimeout(wq, condition, timeout,	\
-+					       TASK_UNINTERRUPTIBLE);	\
-+	__ret;								\
-+})
++static ssize_t aio_write_null(struct kiocb *iocb, const struct iovec *iov,
++			      unsigned long nr_segs, loff_t pos)
++{
++	return iov_length(iov, nr_segs);
++}
 +
-+/**
-+ * wait_event_interruptible_hrtimeout - sleep until a condition gets true or a timeout elapses
-+ * @wq: the waitqueue to wait on
-+ * @condition: a C expression for the event to wait for
-+ * @timeout: timeout, as a ktime_t
-+ *
-+ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
-+ * @condition evaluates to true or a signal is received.
-+ * The @condition is checked each time the waitqueue @wq is woken up.
-+ *
-+ * wake_up() has to be called after changing any variable that could
-+ * change the result of the wait condition.
-+ *
-+ * The function returns 0 if @condition became true, -ERESTARTSYS if it was
-+ * interrupted by a signal, or -ETIME if the timeout elapsed.
-+ */
-+#define wait_event_interruptible_hrtimeout(wq, condition, timeout)	\
-+({									\
-+	long __ret = 0;							\
-+	if (!(condition))						\
-+		__ret = __wait_event_hrtimeout(wq, condition, timeout,	\
-+					       TASK_INTERRUPTIBLE);	\
-+	__ret;								\
-+})
+ static int pipe_to_null(struct pipe_inode_info *info, struct pipe_buffer *buf,
+ 			struct splice_desc *sd)
+ {
+@@ -670,6 +682,24 @@ static ssize_t read_zero(struct file *file, char __user *buf,
+ 	return written ? written : -EFAULT;
+ }
+ 
++static ssize_t aio_read_zero(struct kiocb *iocb, const struct iovec *iov,
++			     unsigned long nr_segs, loff_t pos)
++{
++	size_t written = 0;
++	unsigned long i;
++	ssize_t ret;
 +
- #define __wait_event_interruptible_exclusive(wq, condition, ret)	\
- do {									\
- 	DEFINE_WAIT(__wait);						\
++	for (i = 0; i < nr_segs; i++) {
++		ret = read_zero(iocb->ki_filp, iov[i].iov_base, iov[i].iov_len,
++				&pos);
++		if (ret < 0)
++			break;
++		written += ret;
++	}
++
++	return written ? written : -EFAULT;
++}
++
+ static int mmap_zero(struct file *file, struct vm_area_struct *vma)
+ {
+ #ifndef CONFIG_MMU
+@@ -738,6 +768,7 @@ static int open_port(struct inode *inode, struct file *filp)
+ #define full_lseek      null_lseek
+ #define write_zero	write_null
+ #define read_full       read_zero
++#define aio_write_zero	aio_write_null
+ #define open_mem	open_port
+ #define open_kmem	open_mem
+ #define open_oldmem	open_mem
+@@ -766,6 +797,8 @@ static const struct file_operations null_fops = {
+ 	.llseek		= null_lseek,
+ 	.read		= read_null,
+ 	.write		= write_null,
++	.aio_read	= aio_read_null,
++	.aio_write	= aio_write_null,
+ 	.splice_write	= splice_write_null,
+ };
+ 
+@@ -782,6 +815,8 @@ static const struct file_operations zero_fops = {
+ 	.llseek		= zero_lseek,
+ 	.read		= read_zero,
+ 	.write		= write_zero,
++	.aio_read	= aio_read_zero,
++	.aio_write	= aio_write_zero,
+ 	.mmap		= mmap_zero,
+ };
+ 
 -- 
 1.8.1.3
 
