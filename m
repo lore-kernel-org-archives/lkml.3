@@ -1,96 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933026Ab3CUIAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 04:00:55 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:58833 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab3CUIAx (ORCPT
+	id S933067Ab3CUICo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 04:02:44 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43549 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933034Ab3CUICk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 04:00:53 -0400
-Message-ID: <514ABE2C.1090901@gmail.com>
-Date: Thu, 21 Mar 2013 16:00:44 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Thu, 21 Mar 2013 04:02:40 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: Peter Korsgaard <jacmet@sunsite.dk>, "Nori, Sekhar" <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>
+Subject: RE: [PATCH v2 3/3] ARM: davinci: da850: add EHRPWM & ECAP DT node
+Thread-Topic: [PATCH v2 3/3] ARM: davinci: da850: add EHRPWM & ECAP DT node
+Thread-Index: AQHOJWkmF2psSPu0PECGfOAw5AwH1ZivsxHg
+Date: Thu, 21 Mar 2013 08:01:03 +0000
+Deferred-Delivery: Thu, 21 Mar 2013 08:00:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3EA9C651@DBDE01.ent.ti.com>
+References: <1363761714-15034-1-git-send-email-avinashphilip@ti.com>
+	<1363761714-15034-4-git-send-email-avinashphilip@ti.com>
+	<51499DB4.9080907@ti.com> <87wqt2qlts.fsf@dell.be.48ers.dk>
+In-Reply-To: <87wqt2qlts.fsf@dell.be.48ers.dk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, RFC 00/16] Transparent huge page cache
-References: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2013 05:24 PM, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->
-> Here's first steps towards huge pages in page cache.
->
-> The intend of the work is get code ready to enable transparent huge page
-> cache for the most simple fs -- ramfs.
->
-> It's not yet near feature-complete. It only provides basic infrastructure.
-> At the moment we can read, write and truncate file on ramfs with huge pages in
-> page cache. The most interesting part, mmap(), is not yet there. For now
-> we split huge page on mmap() attempt.
->
-> I can't say that I see whole picture. I'm not sure if I understand locking
-> model around split_huge_page(). Probably, not.
-> Andrea, could you check if it looks correct?
+On Wed, Mar 20, 2013 at 18:17:59, Peter Korsgaard wrote:
+> >>>>> "Sekhar" == Sekhar Nori <nsekhar@ti.com> writes:
+> 
+>  Sekhar> On 3/20/2013 12:11 PM, Philip Avinash wrote:
+>  >> Add da850 EHRPWM & ECAP DT node.
+>  >> Also adds OF_DEV_AUXDATA for EHRPWM & ECAP driver to use EHRPWM & ECAP
+>  >> clock.
+>  >> 
+>  >> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+>  >> ---
+>  >> Changes since v1:
+>  >> - Reusing ti,am33xx<ecap/ehrpwm> as compatible field as both IP's are
+>  >> same with am33xx platform and da850 has no platform specific
+>  >> dependency.
+> 
+>  Sekhar> Which is fine, but I think the binding documentation still needs to be
+>  Sekhar> updated to document the ti,da850-ehrpwm binding. Looping Peter (it is
+>  Sekhar> always a good idea to CC folks who reviewed your patch last time
+>  Sekhar> around). Also, please Cc the DT folks and devicetree-discuss list too
+>  Sekhar> for their opinion.
+> 
+> Yes, thanks for CC'ing me. I also think da850-* should be
+> documented. See Documentation/devicetree/bindings/gpio/8xxx_gpio.txt for
+> an similar (old) example.
 
-Is there any thp performance test benchmark? For anonymous pages or file 
-pages.
+Peter,
 
->
-> Next steps (not necessary in this order):
->   - mmap();
->   - migration (?);
->   - collapse;
->   - stats, knobs, etc.;
->   - tmpfs/shmem enabling;
->   - ...
->
-> Kirill A. Shutemov (16):
->    block: implement add_bdi_stat()
->    mm: implement zero_huge_user_segment and friends
->    mm: drop actor argument of do_generic_file_read()
->    radix-tree: implement preload for multiple contiguous elements
->    thp, mm: basic defines for transparent huge page cache
->    thp, mm: rewrite add_to_page_cache_locked() to support huge pages
->    thp, mm: rewrite delete_from_page_cache() to support huge pages
->    thp, mm: locking tail page is a bug
->    thp, mm: handle tail pages in page_cache_get_speculative()
->    thp, mm: implement grab_cache_huge_page_write_begin()
->    thp, mm: naive support of thp in generic read/write routines
->    thp, libfs: initial support of thp in
->      simple_read/write_begin/write_end
->    thp: handle file pages in split_huge_page()
->    thp, mm: truncate support for transparent huge page cache
->    thp, mm: split huge page on mmap file page
->    ramfs: enable transparent huge page cache
->
->   fs/libfs.c                  |   54 +++++++++---
->   fs/ramfs/inode.c            |    6 +-
->   include/linux/backing-dev.h |   10 +++
->   include/linux/huge_mm.h     |    8 ++
->   include/linux/mm.h          |   15 ++++
->   include/linux/pagemap.h     |   14 ++-
->   include/linux/radix-tree.h  |    3 +
->   lib/radix-tree.c            |   32 +++++--
->   mm/filemap.c                |  204 +++++++++++++++++++++++++++++++++++--------
->   mm/huge_memory.c            |   62 +++++++++++--
->   mm/memory.c                 |   22 +++++
->   mm/truncate.c               |   12 +++
->   12 files changed, 375 insertions(+), 67 deletions(-)
->
+In this binding file also, only initial compatible field is updated. Later on many
+compatible were added in driver. But not update back to binding doc.
+
+<Documentation/devicetree/bindings/gpio/8xxx_gpio.txt>
+---
+	followed by "fsl,mpc8349-gpio" for 83xx, "fsl,mpc8572-gpio" for 85xx and
+	"fsl,mpc8610-gpio" for 86xx.
+---
+<drivers/gpio/gpio-mpc8xxx.c>
+---
+static struct of_device_id mpc8xxx_gpio_ids[] __initdata = {
+        { .compatible = "fsl,mpc8349-gpio", },
+        { .compatible = "fsl,mpc8572-gpio", },
+        { .compatible = "fsl,mpc8610-gpio", },
+        { .compatible = "fsl,mpc5121-gpio", .data = mpc512x_irq_set_type, },
+        { .compatible = "fsl,pq3-gpio",     },
+        { .compatible = "fsl,qoriq-gpio",   },
+        {}
+};
+---
+
+Grant/Rob,
+With respect peters explanation (below), what is your opinion on adding information to 
+binding doc for da850 support?
+
+Peter --> if the hardware block is identical the dts should simply list:
+Peter --> compatible = "ti,da850-ecap", "ti,am33xx-ecap"
+Peter --> And the driver only bind to ti,am33xx-ecap (unless there ever needs to
+Peter --> be a da850 specific workaround.
+
+Or
+Should I update both binding doc & the driver to use new compatible option "ti,da830-ecap"
+(as da830 platform has initial IP support)?
+Even with this, platforms da830, da850 and am33xx can reuse "ti,da830-ecap" compatible field.
+
+Thanks
+Avinash
+
+> 
+> -- 
+> Bye, Peter Korsgaard
+> _______________________________________________
+> Davinci-linux-open-source mailing list
+> Davinci-linux-open-source@linux.davincidsp.com
+> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
+> 
 
