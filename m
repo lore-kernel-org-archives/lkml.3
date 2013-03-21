@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230Ab3CUJYH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 05:24:07 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:39046 "EHLO relay.sw.ru"
+	id S933466Ab3CUJ1T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 05:27:19 -0400
+Received: from mga14.intel.com ([143.182.124.37]:26285 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757346Ab3CUJXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 05:23:48 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: Andrey Vagin <avagin@openvz.org>, "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH 0/2] netlink: implement socket diag for netlink sockets
-Date: Thu, 21 Mar 2013 13:21:07 +0400
-Message-Id: <1363857669-19990-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.1.4
+	id S932084Ab3CUJ1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 05:27:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,884,1355126400"; 
+   d="scan'208";a="274002934"
+Message-ID: <514AD26F.9010905@intel.com>
+Date: Thu, 21 Mar 2013 17:27:11 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Subject: Re: [patch v5 14/15] sched: power aware load balance
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-15-git-send-email-alex.shi@intel.com> <514941C5.6080007@linux.vnet.ibm.com> <514ABA19.1080807@intel.com> <514AC7B2.7030400@linux.vnet.ibm.com>
+In-Reply-To: <514AC7B2.7030400@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/21/2013 04:41 PM, Preeti U Murthy wrote:
+>> > 
+> Yes, I did find this behaviour on a 2 socket, 8 core machine very
+> consistently.
+> 
+> rq->util cannot go to 0, after it has begun accumulating load right?
+> 
+> Say a load was running on a runqueue which had its rq->util to be at
+> 100%. After the load finishes, the runqueue goes idle. For every
+> scheduler tick, its utilisation decays. But can never become 0.
+> 
+> rq->util = rq->avg.runnable_avg_sum/rq->avg.runnable_avg_period
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Gao feng <gaofeng@cn.fujitsu.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
 
-Andrey Vagin (2):
-  net: prepare netlink code for netlink diag
-  netlink: Diag core and basic socket info dumping
+did you close all of background system services?
+In theory the rq->avg.runnable_avg_sum should be zero if there is no
+task a bit long, otherwise there are some bugs in kernel. Could you
+check the value under /proc/sched_debug?
 
- include/uapi/linux/netlink_diag.h |  40 ++++++++
- net/Kconfig                       |   1 +
- net/netlink/Kconfig               |  10 ++
- net/netlink/Makefile              |   3 +
- net/netlink/af_netlink.c          |  59 +-----------
- net/netlink/af_netlink.h          |  62 +++++++++++++
- net/netlink/diag.c                | 186 ++++++++++++++++++++++++++++++++++++++
- 7 files changed, 307 insertions(+), 54 deletions(-)
- create mode 100644 include/uapi/linux/netlink_diag.h
- create mode 100644 net/netlink/Kconfig
- create mode 100644 net/netlink/af_netlink.h
- create mode 100644 net/netlink/diag.c
 
 -- 
-1.8.1.4
-
+Thanks
+    Alex
