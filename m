@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab3CVCPB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 22:15:01 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:49318 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831Ab3CVCPA (ORCPT
+	id S933113Ab3CVCPk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 22:15:40 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:24160 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab3CVCPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 22:15:00 -0400
-X-AuditID: cbfee68d-b7f786d000005188-7b-514bbea2aed8
+	Thu, 21 Mar 2013 22:15:39 -0400
+X-AuditID: cbfee68d-b7f786d000005188-49-514bbeca0d2f
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/2] rtc: rtc-ds1374: add CONFIG_PM_SLEEP to suspend/resume
+References: <00bb01ce26a3$0d69b800$283d2800$%han@samsung.com>
+In-reply-to: <00bb01ce26a3$0d69b800$283d2800$%han@samsung.com>
+Subject: [PATCH 2/2] rtc: rtc-88pm80x: add CONFIG_PM_SLEEP to suspend/resume
  functions
-Date: Fri, 22 Mar 2013 11:14:58 +0900
-Message-id: <00bb01ce26a3$0d69b800$283d2800$%han@samsung.com>
+Date: Fri, 22 Mar 2013 11:15:37 +0900
+Message-id: <00bc01ce26a3$24cfdc90$6e6f95b0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4mow1NhbkZdmKeSwuK3nkgccWzIw==
+Thread-index: Ac4mow1NhbkZdmKeSwuK3nkgccWzIwAAAX2Q
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zQ91F+7wDDdatNbdYcvEqu8Wc9WvY
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t8zI91T+7wDDXZu47JYcvEqu8Wc9WvY
 	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANYrLJiU1J7Ms
-	tUjfLoEr4/bz/awFr7grLv0Ja2B8ytnFyMkhIWAisfb0eyYIW0ziwr31bF2MXBxCAssYJX5t
-	3sEMU9S+ZB4TRGI6o8S7u3cZIZxfjBIv/85lAaliE1CT+PLlMHsXIweHiIC+RFuLBkgNs0Av
-	o8SZ3t3sIDXCAuESE3u3soHYLAKqEsunvQHr5RWwlTg6fxoThC0o8WPyPbA4s4CWxPqdx5kg
-	bHmJzWveMoPMlxBQl3j0VxckLCKgJ3GvcwMzRImIxL4X78BukxA4xi7x8XcjK8QuAYlvkw+x
-	QPTKSmw6APWYpMTBFTdYJjCKzUKyeRaSzbOQbJ6FZMUCRpZVjKKpBckFxUnpRYZ6xYm5xaV5
-	6XrJ+bmbGCGR17uD8fYB60OMyUDrJzJLiSbnAyM3ryTe0NjMyMLUxNTYyNzSjDRhJXFetRbr
-	QCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MR3+XyBx5asatvN3rmlzT0/7iXxPb8nK+CE5r
-	DFMNnLmr9WPGlDLvF+u81m7fUKv/LIan40hV/urmyORZnxYtt61b3v5Iyk5n4V1PnTDR0xGO
-	1yoeZi9XvWdRfHQJk/ivxfzqMXXPP52ZyFD4YOGlYwqJnBa3f1fqfL2yQWzfysxKu1Bh2dsc
-	SizFGYmGWsxFxYkAnweletICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jQd1F+7wDDVauNLZYcvEqu8Wc9WvY
+	tUjfLoEr4/35SUwF0zgqbj/4wdrA+Juti5GTQ0LAROLF1K/sELaYxIV764HiXBxCAssYJa78
+	+ccCU9R5dg8zRGIRo0TT/XdQzi9GiadrNoGNYhNQk/jy5TDQKA4OEQF9ibYWDZAaZoFeRokz
+	vbvBVggJ2ErsO7+eCcTmFLCTeH/oN1hcWCBCYsb6SawgNouAqsSc1tdgm3mB6i8uaICyBSV+
+	TL4HZjMLaEms33mcCcKWl9i85i0zyF4JAXWJR391QcIiAkYS6zf2QpWISOx78Y4R5B4JgXvs
+	En937WaG2CUg8W3yIRaIXlmJTQeYIR6WlDi44gbLBEaJWUg2z0KyeRaSzbOQrFjAyLKKUTS1
+	ILmgOCm9yFCvODG3uDQvXS85P3cTIyRWe3cw3j5gfYgxGWj9RGYp0eR8YKznlcQbGpsZWZia
+	mBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoHx/OvVnwyTG+r3+97K
+	NXM/oHFR5szJuC7/pwXOXiraF5s22X1k+CKuIBln2vRFf/Wv13X/Ft5JqPL1/8li5mS5oEIl
+	6O0h55TAjvsXBP9Y3Nh7ZaXg1Q+vZ3Srfp+/UKWgujOL88FmkYkbbq0J8uiV9D7/S/78mQkP
+	PjCuecu+QYEj7ZLU+twFSizFGYmGWsxFxYkAm+vPpusCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t9jAd1T+7wDDTYsZLNYcvEqu8Wc9WvY
 	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANaqB0SYjNTEl
 	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
-	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMeP28/2sBa+4Ky79CWtgfMrZxcjJISFgItG+
-	ZB4ThC0mceHeerYuRi4OIYHpjBLv7t5lhHB+MUq8/DuXBaSKTUBN4suXw+xdjBwcIgL6Em0t
-	GiA1zAK9jBJnenezg9QIC4RLTOzdygZiswioSiyf9gasl1fAVuLo/GlMELagxI/J98DizAJa
-	Eut3HmeCsOUlNq95ywwyX0JAXeLRX12QsIiAnsS9zg3MECUiEvtevGOcwCgwC8mkWUgmzUIy
-	aRaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxguP6mfQOxlUNFocYBTgYlXh4NXS8
-	A4VYE8uKK3MPMUpwMCuJ8EamAIV4UxIrq1KL8uOLSnNSiw8xJgM9OpFZSjQ5H5hy8kriDY1N
-	zIwsjcwsjEzMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBMf731Ac+TK6tF/dKevT/
-	PFO8LXzl8jW87Ev+KfgKvp57obh0/lTOxIqHHN4rxBK4hMK+2e/T8+Y4av6WY+mR5uddj6NY
-	Dj4+otC7TU5c6nWY07XQTTonTb8JKL5lMzn2YHX7sTnb3lxgXmPatzn6nG9kmO+OQ1rnDt7/
-	8qQvn1+Gu8pqf5HRBiWW4oxEQy3mouJEAINP/UMvAwAA
+	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMeP9+UlMBdM4Km4/+MHawPibrYuRk0NCwESi
+	8+weZghbTOLCvfVAcS4OIYFFjBJN998xQzi/GCWertkE1sEmoCbx5cth9i5GDg4RAX2JthYN
+	kBpmgV5GiTO9u9lBaoQEbCX2nV/PBGJzCthJvD/0GywuLBAhMWP9JFYQm0VAVWJO62sWEJsX
+	qP7iggYoW1Dix+R7YDazgJbE+p3HmSBseYnNa94yg+yVEFCXePRXFyQsImAksX5jL1SJiMS+
+	F+8YJzAKzUIyaRaSSbOQTJqFpGUBI8sqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOBE8Ex6
+	B+OqBotDjAIcjEo8vBo63oFCrIllxZW5hxglOJiVRHgjU4BCvCmJlVWpRfnxRaU5qcWHGJOB
+	Hp3ILCWanA9MUnkl8YbGJmZGlkZmFkYm5uakCSuJ8x5stQ4UEkhPLEnNTk0tSC2C2cLEwSnV
+	wBj/iakuUPzGzIoI6wiF1csd9quyWjgk3hJkaP2zTFTq71+hVqdr3YwKv3ZL+c1l5l8jlLrH
+	gj3PMkOXhT9j6txMJqWgzVeKN+5mfLJbqXav2lbud49XfPmy89GdJvU2xb8Ln+1coMCcrL5y
+	k69vv+X8Q0/23l/Ote91yZKV4t2/HD4eO6Cz4boSS3FGoqEWc1FxIgDK7o91SAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,49 +61,27 @@ build warning when CONFIG_PM_SLEEP is not selected. This is because
 sleep PM callbacks defined by SIMPLE_DEV_PM_OPS are only used when
 the CONFIG_PM_SLEEP is enabled.
 
-drivers/rtc/rtc-ds1374.c:413:12: warning: 'ds1374_suspend' defined but not used [-Wunused-function]
-drivers/rtc/rtc-ds1374.c:422:12: warning: 'ds1374_resume' defined but not used [-Wunused-function]
+drivers/rtc/rtc-88pm80x.c:238:12: warning: 'pm80x_rtc_suspend' defined but not used [-Wunused-function]
+drivers/rtc/rtc-88pm80x.c:243:12: warning: 'pm80x_rtc_resume' defined but not used [-Wunused-function]
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-ds1374.c |   10 +++-------
- 1 files changed, 3 insertions(+), 7 deletions(-)
+ drivers/rtc/rtc-88pm80x.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/rtc/rtc-ds1374.c b/drivers/rtc/rtc-ds1374.c
-index fef7686..67cd1e3 100644
---- a/drivers/rtc/rtc-ds1374.c
-+++ b/drivers/rtc/rtc-ds1374.c
-@@ -409,7 +409,7 @@ static int ds1374_remove(struct i2c_client *client)
- 	return 0;
- }
+diff --git a/drivers/rtc/rtc-88pm80x.c b/drivers/rtc/rtc-88pm80x.c
+index 76f9505..f3742f3 100644
+--- a/drivers/rtc/rtc-88pm80x.c
++++ b/drivers/rtc/rtc-88pm80x.c
+@@ -234,7 +234,7 @@ static const struct rtc_class_ops pm80x_rtc_ops = {
+ 	.alarm_irq_enable = pm80x_rtc_alarm_irq_enable,
+ };
  
 -#ifdef CONFIG_PM
 +#ifdef CONFIG_PM_SLEEP
- static int ds1374_suspend(struct device *dev)
+ static int pm80x_rtc_suspend(struct device *dev)
  {
- 	struct i2c_client *client = to_i2c_client(dev);
-@@ -427,19 +427,15 @@ static int ds1374_resume(struct device *dev)
- 		disable_irq_wake(client->irq);
- 	return 0;
- }
-+#endif
- 
- static SIMPLE_DEV_PM_OPS(ds1374_pm, ds1374_suspend, ds1374_resume);
- 
--#define DS1374_PM (&ds1374_pm)
--#else
--#define DS1374_PM NULL
--#endif
--
- static struct i2c_driver ds1374_driver = {
- 	.driver = {
- 		.name = "rtc-ds1374",
- 		.owner = THIS_MODULE,
--		.pm = DS1374_PM,
-+		.pm = &ds1374_pm,
- 	},
- 	.probe = ds1374_probe,
- 	.remove = ds1374_remove,
+ 	return pm80x_dev_suspend(dev);
 -- 
 1.7.2.5
 
