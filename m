@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933711Ab3CVVlL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 17:41:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33166 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932468Ab3CVVlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 17:41:09 -0400
-Message-ID: <514CCFDA.2080305@redhat.com>
-Date: Fri, 22 Mar 2013 14:40:42 -0700
-From: Josh Stone <jistone@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Anton Arapov <anton@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Frank Eigler <fche@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: Re: [PATCH 0/7] uretprobes: return probes implementation
-References: <1363957745-6657-1-git-send-email-anton@redhat.com> <20130322151034.GC17286@redhat.com>
-In-Reply-To: <20130322151034.GC17286@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1423100Ab3CVVpy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 17:45:54 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:65523 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1422984Ab3CVVpx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 17:45:53 -0400
+Message-ID: <1363988751.1390.199.camel@x61.thuisdomein>
+Subject: [PATCH] CRIS: remove "config OOM_REBOOT"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org
+Date: Fri, 22 Mar 2013 22:45:51 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Mar 2013 21:45:52.0791 (UTC) FILETIME=[A01F1A70:01CE2746]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2013 08:10 AM, Oleg Nesterov wrote:
-> This looks simple, but probably we need to add the additional "ulong bp_vaddr"
-> argument for rp_handler().
+The Kconfig symbol OOM_REBOOT got added in v2.6.25. It has never been
+used. Its entry can safely be removed.
 
-FWIW, in SystemTap we don't currently do anything that would need
-bp_vaddr.  The uprobe_consumer already gives the context, so I'm not
-sure what else you would do with the *entry* address of the function
-that just returned.  Perhaps you could emulate an additional top line on
-a stacktrace, but it doesn't tell you where in the function you were.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-Josh
+ arch/cris/Kconfig | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/arch/cris/Kconfig b/arch/cris/Kconfig
+index b02ca1b..64c590f 100644
+--- a/arch/cris/Kconfig
++++ b/arch/cris/Kconfig
+@@ -99,9 +99,6 @@ config ETRAX_KMALLOCED_MODULES
+ 	help
+ 	  Enable module allocation with kmalloc instead of vmalloc.
+ 
+-config OOM_REBOOT
+-       bool "Enable reboot at out of memory"
+-
+ source "kernel/Kconfig.preempt"
+ 
+ source mm/Kconfig
+-- 
+1.7.11.7
+
