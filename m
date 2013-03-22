@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab3CVKbF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 06:31:05 -0400
-Received: from dcvr.yhbt.net ([64.71.152.64]:60352 "EHLO dcvr.yhbt.net"
+	id S932077Ab3CVKbs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 06:31:48 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:60373 "EHLO dcvr.yhbt.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752931Ab3CVKbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 06:31:03 -0400
-Date: Fri, 22 Mar 2013 10:31:02 +0000
+	id S1751862Ab3CVKbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 06:31:47 -0400
+Date: Fri, 22 Mar 2013 10:31:46 +0000
 From: Eric Wong <normalperson@yhbt.net>
-To: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
-Cc: linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC v3 1/2] epoll: avoid spinlock contention with wfcqueue
-Message-ID: <20130322103102.GA4818@dcvr.yhbt.net>
-References: <20130321115259.GA17883@dcvr.yhbt.net>
- <CAMP5XgfKfuF4Lo1PVoqBnjynB6COWVhVcqzKV3PAic7HLP7FaQ@mail.gmail.com>
- <20130322032410.GA19377@dcvr.yhbt.net>
- <CAMP5XgcPG6-ikNE5jQHL9vNVPrM4wrMb8HYfYcEfT2hW6a2pUA@mail.gmail.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] wfcqueue: functions for local append and enqueue
+Message-ID: <20130322103146.GA9078@dcvr.yhbt.net>
+References: <20130311213602.GB9829@Krystal>
+ <20130321114313.GA17275@dcvr.yhbt.net>
+ <20130322020150.GA17809@Krystal>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMP5XgcPG6-ikNE5jQHL9vNVPrM4wrMb8HYfYcEfT2hW6a2pUA@mail.gmail.com>
+In-Reply-To: <20130322020150.GA17809@Krystal>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arve Hjønnevåg <arve@android.com> wrote:
-> On Thu, Mar 21, 2013 at 8:24 PM, Eric Wong <normalperson@yhbt.net> wrote:
-> >
-> > With EPOLLET and improper usage (not hitting EAGAIN), the event now
-> > has a larger window to be lost (as mentioned in my changelog).
-> >
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> * Eric Wong (normalperson@yhbt.net) wrote:
+> >  /*
+> > + * __wfcq_append_local: append one local queue to another local queue
+> > + *
+> > + * No memory barriers are issued.  Mutual exclusion is the responsibility
+> > + * of the caller.
+> > + *
+> > + * Returns false if the queue was empty prior to adding the node.
+> > + * Returns true otherwise.
+> > + */
+> > +static inline bool __wfcq_append_local(struct wfcq_head *head,
 > 
-> What about the case where EPOLLET is not set? The old code did not
-> drop events in that case.
-
-Nothing is dropped, if the event wasn't on the ready list before,
-ep_poll_callback may still append the ready list while __put_user
-is running.
-
-If the event was on the ready list:
-
-1) It does not matter for EPOLLONESHOT, it'll get masked out and
-   discarded in the next ep_send_events call until ep_modify reenables
-   it.  Since ep_modify and ep_send_events both take ep->mtx, there's
-   no conflict.
-
-2) Level Trigger - event stays ready, so nothing is dropped.
-
-> > As far as correct __pm_stay_awake/__pm_relax handling, perhaps adding
-> > an atomic counter to struct eventpoll (or each epitem) will work?
+> Following the rest of the header, we could use:
 > 
-> The wakeup_source should stay in sync with the epoll state. I don't
-> think any additional state is needed.
+> ___wfcq_append() for this function,
 
-The problem is epi->state is not set atomically in ep_send_events,
+OK.
 
-Having atomic operations in the loop hurts performance (early versions
-of this patch did that, and hurt the single-threaded case).
+However, I think ___ is a little confusing (but I'm easily confused :x).
+I didn't even realize some functions in wfcqueue.h had ___ (vs __) until
+just now(!)
 
-Maybe I'll only set epi->state atomically if epi->ws is used...
+But I will resend later tonight/tomorrow with ___ for consistency with
+the existing API unless I've convinced you "_local" is easier :)
 
-> > If we go with atomic counter in struct eventpoll, is per-epitem
-> > wakeup_source still necessary?  We have space in epitem now, but
-> > maybe one day we will might need it.
-> >
+On a related note to underscores, I totally missed the existence of
+____cacheline_aligned_in_smp in my first RFC even though I had seen
+the __ version for .data around.
+
+> and:
 > 
-> The wakeup_source per epitem is useful for accounting reasons. If
-> suspend fails, it is useful to know which device caused it.
+> __wfcq_enqueue()
+> 
+> we should also update the "Synchronization table" at the beginning of
+> the file accordingly.
 
-OK.  I'll keep epitem->ws
+Will update.
