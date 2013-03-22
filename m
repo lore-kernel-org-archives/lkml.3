@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933339Ab3CVNjn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 09:39:43 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:47011 "EHLO zmc.proxad.net"
+	id S933494Ab3CVNkc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 09:40:32 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:46996 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933304Ab3CVNjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933311Ab3CVNjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Mar 2013 09:39:39 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: davem@davemloft.net
@@ -21,9 +21,9 @@ Cc: Grant Likely <grant.likely@secretlab.ca>,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org
-Subject: [PATCH 1/4 v3] net: mvmdio: allow platform device style registration
-Date: Fri, 22 Mar 2013 14:39:25 +0100
-Message-Id: <1363959568-16976-2-git-send-email-florian@openwrt.org>
+Subject: [PATCH 2/4 v3] net: mvmdio: rename base register cookie from smireg to regs
+Date: Fri, 22 Mar 2013 14:39:26 +0100
+Message-Id: <1363959568-16976-3-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1363959568-16976-1-git-send-email-florian@openwrt.org>
 References: <1363284515-9865-1-git-send-email-florian@openwrt.org>
@@ -32,91 +32,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the mvmdio driver not to use device tree
-helper functions such as of_mdiobus_register() and of_iomap() so we can
-instantiate this driver using a classic platform_device approach. Use
-the device manager helper to ioremap() the base register cookie so we
-get automatic freeing upon error and removal. This change is harmless
-for Device Tree platforms because they will get the driver be registered
-the same way as it was before.
+This patch renames the base register cookie in the mvmdio drive from
+"smireg" to "regs" since a subsequent patch is going to use an ioremap()
+cookie whose size is larger than a single register of 4 bytes. No
+functionnal code change introduced.
 
+Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
 Changes since v2:
-- use of_mdiobus_register if device tree node is available to ensure that
-  all child PHY nodes get also registered (fixes PHY probing on DT-only)
+- rebased against latest version
 
 Changes since v1:
-- use device managed helpers to fix an ioremap leak in remove function
-- remove the use of Device Tree specific helpers to allow platform-style
-  registration
+- added Thomas Acked-by tag
 
- drivers/net/ethernet/marvell/mvmdio.c |   22 +++++++++++++++-------
- 1 file changed, 15 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/marvell/mvmdio.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/net/ethernet/marvell/mvmdio.c b/drivers/net/ethernet/marvell/mvmdio.c
-index 77b7c80..bbc5fde 100644
+index bbc5fde..3e2711d 100644
 --- a/drivers/net/ethernet/marvell/mvmdio.c
 +++ b/drivers/net/ethernet/marvell/mvmdio.c
-@@ -24,10 +24,10 @@
- #include <linux/module.h>
- #include <linux/mutex.h>
- #include <linux/phy.h>
--#include <linux/of_address.h>
--#include <linux/of_mdio.h>
- #include <linux/platform_device.h>
- #include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/of_mdio.h>
+@@ -39,7 +39,7 @@
  
- #define MVMDIO_SMI_DATA_SHIFT              0
- #define MVMDIO_SMI_PHY_ADDR_SHIFT          16
-@@ -143,11 +143,17 @@ static int orion_mdio_reset(struct mii_bus *bus)
+ struct orion_mdio_dev {
+ 	struct mutex lock;
+-	void __iomem *smireg;
++	void __iomem *regs;
+ };
  
- static int orion_mdio_probe(struct platform_device *pdev)
- {
--	struct device_node *np = pdev->dev.of_node;
-+	struct resource *r;
- 	struct mii_bus *bus;
- 	struct orion_mdio_dev *dev;
- 	int i, ret;
+ /* Wait for the SMI unit to be ready for another operation
+@@ -52,7 +52,7 @@ static int orion_mdio_wait_ready(struct mii_bus *bus)
  
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!r) {
-+		dev_err(&pdev->dev, "No SMI register address given\n");
-+		return -ENODEV;
-+	}
-+
- 	bus = mdiobus_alloc_size(sizeof(struct orion_mdio_dev));
- 	if (!bus) {
- 		dev_err(&pdev->dev, "Cannot allocate MDIO bus\n");
-@@ -172,9 +178,9 @@ static int orion_mdio_probe(struct platform_device *pdev)
+ 	count = 0;
+ 	while (1) {
+-		val = readl(dev->smireg);
++		val = readl(dev->regs);
+ 		if (!(val & MVMDIO_SMI_BUSY))
+ 			break;
+ 
+@@ -87,12 +87,12 @@ static int orion_mdio_read(struct mii_bus *bus, int mii_id,
+ 	writel(((mii_id << MVMDIO_SMI_PHY_ADDR_SHIFT) |
+ 		(regnum << MVMDIO_SMI_PHY_REG_SHIFT)  |
+ 		MVMDIO_SMI_READ_OPERATION),
+-	       dev->smireg);
++	       dev->regs);
+ 
+ 	/* Wait for the value to become available */
+ 	count = 0;
+ 	while (1) {
+-		val = readl(dev->smireg);
++		val = readl(dev->regs);
+ 		if (val & MVMDIO_SMI_READ_VALID)
+ 			break;
+ 
+@@ -129,7 +129,7 @@ static int orion_mdio_write(struct mii_bus *bus, int mii_id,
+ 		(regnum << MVMDIO_SMI_PHY_REG_SHIFT)  |
+ 		MVMDIO_SMI_WRITE_OPERATION            |
+ 		(value << MVMDIO_SMI_DATA_SHIFT)),
+-	       dev->smireg);
++	       dev->regs);
+ 
+ 	mutex_unlock(&dev->lock);
+ 
+@@ -178,8 +178,8 @@ static int orion_mdio_probe(struct platform_device *pdev)
  		bus->irq[i] = PHY_POLL;
  
  	dev = bus->priv;
--	dev->smireg = of_iomap(pdev->dev.of_node, 0);
-+	dev->smireg = devm_ioremap(&pdev->dev, r->start, resource_size(r));
- 	if (!dev->smireg) {
--		dev_err(&pdev->dev, "No SMI register address given in DT\n");
-+		dev_err(&pdev->dev, "Unable to remap SMI register\n");
+-	dev->smireg = devm_ioremap(&pdev->dev, r->start, resource_size(r));
+-	if (!dev->smireg) {
++	dev->regs = devm_ioremap(&pdev->dev, r->start, resource_size(r));
++	if (!dev->regs) {
+ 		dev_err(&pdev->dev, "Unable to remap SMI register\n");
  		kfree(bus->irq);
  		mdiobus_free(bus);
- 		return -ENODEV;
-@@ -182,10 +188,12 @@ static int orion_mdio_probe(struct platform_device *pdev)
- 
- 	mutex_init(&dev->lock);
- 
--	ret = of_mdiobus_register(bus, np);
-+	if (pdev->dev.of_node)
-+		ret = of_mdiobus_register(bus, pdev->dev.of_node);
-+	else
-+		ret = mdiobus_register(bus);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "Cannot register MDIO bus (%d)\n", ret);
--		iounmap(dev->smireg);
- 		kfree(bus->irq);
- 		mdiobus_free(bus);
- 		return ret;
 -- 
 1.7.10.4
 
