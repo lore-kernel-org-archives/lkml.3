@@ -1,104 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423522Ab3CVXQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 19:16:13 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:27255 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423395Ab3CVXQM (ORCPT
+	id S1423460Ab3CVXck (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 19:32:40 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:55916 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423061Ab3CVXci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 19:16:12 -0400
-Date: Fri, 22 Mar 2013 16:16:00 -0700
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: device-mapper development <dm-devel@redhat.com>
-Cc: Heinz Mauelshagen <heinzm@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Paul Taysom <taysom@chromium.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Joe Thornber <ejt@redhat.com>
-Subject: Re: [dm-devel] dm: dm-cache fails to write the cache device in
- writethrough mode
-Message-ID: <20130322231600.GD5357@blackbox.djwong.org>
-References: <20130322201151.GB5357@blackbox.djwong.org>
- <20130322223425.GA5638@redhat.com>
+	Fri, 22 Mar 2013 19:32:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130322223425.GA5638@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <20130322203652.GC19091@google.com>
+References: <1363977199-1507-1-git-send-email-octavian.purdila@intel.com>
+	<20130322203652.GC19091@google.com>
+Date: Fri, 22 Mar 2013 16:32:36 -0700
+Message-ID: <CAE1zot+ij8KBS6WDe0W=e5vobNwDLa0UDo66i1N0b6p7cfxdXQ@mail.gmail.com>
+Subject: Re: [PATCH] aio: convert the ioctx list to radix tree
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-s390@vger.kernel.org, bcrl@kvack.org, schwidefsky@de.ibm.com,
+        kirill.shutemov@linux.intel.com, Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 06:34:28PM -0400, Mike Snitzer wrote:
-> On Fri, Mar 22 2013 at  4:11pm -0400,
-> Darrick J. Wong <darrick.wong@oracle.com> wrote:
-> 
-> > The new writethrough strategy for dm-cache issues a bio to the origin device,
-> > remaps the bio to the cache device, and issues the bio to the cache device.
-> > However, the block layer modifies bi_sector and bi_size, so we need to preserve
-> > these or else nothing gets written to the cache (bi_size == 0).  This fixes the
-> > problem where someone writes a block through the cache, but a subsequent reread
-> > (from the cache) returns old contents.
-> 
-> Your writethrough blkid test results are certainly strange.  But I'm not
-> aware of where the block layer would modify bi_size and bi_sector;
-> please elaborate.
-> 
-> I cannot reproduce your original report.  I developed
-> 'test_writethrough_ext4_uuids_match', apologies for the ruby code:
+On Fri, Mar 22, 2013 at 1:36 PM, Kent Overstreet <koverstreet@google.com> wrote:
+> On Fri, Mar 22, 2013 at 08:33:19PM +0200, Octavian Purdila wrote:
+>> When using a large number of threads performing AIO operations the
+>> IOCTX list may get a significant number of entries which will cause
+>> significant overhead. For example, when running this fio script:
+>>
+>> rw=randrw; size=256k ;directory=/mnt/fio; ioengine=libaio; iodepth=1
+>> blocksize=1024; numjobs=512; thread; loops=100
+>>
+>> on an EXT2 filesystem mounted on top of a ramdisk we can observe up to
+>> 30% CPU time spent by lookup_ioctx:
+>>
+>>  32.51%  [guest.kernel]  [g] lookup_ioctx
+>>   9.19%  [guest.kernel]  [g] __lock_acquire.isra.28
+>>   4.40%  [guest.kernel]  [g] lock_release
+>>   4.19%  [guest.kernel]  [g] sched_clock_local
+>>   3.86%  [guest.kernel]  [g] local_clock
+>>   3.68%  [guest.kernel]  [g] native_sched_clock
+>>   3.08%  [guest.kernel]  [g] sched_clock_cpu
+>>   2.64%  [guest.kernel]  [g] lock_release_holdtime.part.11
+>>   2.60%  [guest.kernel]  [g] memcpy
+>>   2.33%  [guest.kernel]  [g] lock_acquired
+>>   2.25%  [guest.kernel]  [g] lock_acquire
+>>   1.84%  [guest.kernel]  [g] do_io_submit
+>>
+>> This patchs converts the ioctx list to a radix tree. For a performance
+>> comparison the above FIO script was run on a 2 sockets 8 core
+>> machine. This are the results for the original list based
+>> implementation and for the radix tree based implementation:
+>
+> The biggest reason the overhead is so high is that the kioctx's
+> hlist_node shares a cacheline with the refcount. Did you check what just
+> fixing that does? My aio patch series (in akpm's tree) fixes that.
+>
 
-Hmm... I'm building my kernels off 0a7e453103b9718d357688b83bb968ee108cc874 in
-Linus' tree (post 3.9-rc3).  This is the full output of dmsetup table:
+Hi Kent,
 
-moocache-blocks: 0 1039360 linear 8:16 9088
-moocache-metadata: 0 8704 linear 8:16 384
-moocache: 0 67108864 cache 253:0 253:1 8:0 512 1 writethrough default 4 random_threshold 4 sequential_threshold 32768
+Just checked, and I don't see any improvements for this particular workload.
 
-253:0 -> moocache-metadata and 253:1 -> moocache-blocks.
+> Also, why are you using so many kioctxs? I can't think any good reason
+> why userspace would want to - you really want to use only one or a few
+> (potentially one per cpu) so that events can get serviced as soon as a
+> worker thread is available.
+>
 
-I'm curious what your setup is...
+For servers, 1 kioctx per core can easily translate to 16-32 kioctxes.
+And you probably want to oversubscribe the cores, especially since IO
+is getting faster these days. So, I think 512 is not such an
+outrageously large number of kioctxes.
 
---D
+> Currently there are applications using many kioctxs to work around the
+> fact that performance is terrible when you're sharing kioctxs between
+> threads - but that's fixed in my aio patch series.
+>
+> In fact, we want userspace to be using as few kioctxs as they can so we
+> can benefit from batch completion.
+>
 
-> 
->   def test_writethrough_ext4_uuids_match
->     size = meg(10)
->   
->     # wipe the origin to ensure we don't accidentally have the same
->     # data on it.
->     with_standard_linear(:data_size => size) do |origin|
->       wipe_device(origin)
->     end
-> 
->     uuid = "deadbeef-cafe-dead-beef-cafedeadbeef"
-> 
->     # format the cache device with a specific uuid
->     with_standard_cache(:format => true,
->                         :io_mode => :writethrough,
->                         :data_size => size) do |cache|
->       fs = FS::file_system(:ext4, cache)
->       fs.format(:uuid => uuid)
->       FS::assert_fs_uuid(uuid, cache)
->     end
-> 
->     # origin should have the same uuid as the cache
->     with_standard_linear(:data_size => size) do |origin|
->       FS::assert_fs_uuid(uuid, origin)
->     end
->   end
-> 
-> This test was committed to the 'devel' branch of my thinp-test-suite
-> tree: git://github.com/snitm/thinp-test-suite.git
-> 
-> Also the existing 'test_writethrough' test works fine.
-> 
-> So for now:
-> 
-> Nacked-by: Mike Snitzer <snitzer@redhat.com>
-> 
-> --
-> dm-devel mailing list
-> dm-devel@redhat.com
-> https://www.redhat.com/mailman/listinfo/dm-devel
+I think that using multiple contexts has its uses, with your great
+series not for I/O performance anymore :) , but for example for I/O
+operations management/grouping. Then, there is the case of existing
+applications, it would be nice to have them perform better without
+rewriting them. So, I think that this patch is complementary to your
+work.
