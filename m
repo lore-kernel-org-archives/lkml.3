@@ -1,139 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933141Ab3CVMbO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 08:31:14 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:64872 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932613Ab3CVM3h (ORCPT
+	id S933156Ab3CVMeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 08:34:06 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:58807 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932330Ab3CVMeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 08:29:37 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, peterz@infradead.org, mingo@kernel.org,
-        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
-        morten.rasmussen@arm.com, chander.kashyap@linaro.org,
-        cmetcalf@tilera.com, tony.luck@intel.com
-Cc: alex.shi@intel.com, preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
-        amit.kucheria@linaro.org, corbet@lwn.net,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [RFC PATCH v3 2/6] sched: add a new SD_SHARE_POWERDOMAIN flag for sched_domain
-Date: Fri, 22 Mar 2013 13:25:51 +0100
-Message-Id: <1363955155-18382-3-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
-References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
+	Fri, 22 Mar 2013 08:34:04 -0400
+Date: Fri, 22 Mar 2013 13:33:59 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Jay Agarwal <jagarwal@nvidia.com>
+Cc: Stephen Warren <swarren@nvidia.com>, Juha Tukkinen <jtukkinen@nvidia.com>,
+        Krishna Thota <kthota@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: PCIe code Upstream
+Message-ID: <20130322123359.GA13174@avionic-0098.mockup.avionic-design.de>
+References: <C79B248886DD134989C8FF6B096A91AB91B06252D9@BGMAIL01.nvidia.com>
+ <20130226072232.GA30973@avionic-0098.mockup.avionic-design.de>
+ <C79B248886DD134989C8FF6B096A91AB91B1BA7E06@BGMAIL01.nvidia.com>
+ <20130308105642.GA29254@avionic-0098.mockup.avionic-design.de>
+ <C79B248886DD134989C8FF6B096A91AB91B2F758C0@BGMAIL01.nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF2A74B947F8@HQMAIL01.nvidia.com>
+ <20130318125201.GA7697@avionic-0098.mockup.avionic-design.de>
+ <C79B248886DD134989C8FF6B096A91AB91B2F75D6A@BGMAIL01.nvidia.com>
+ <20130320075322.GA2666@avionic-0098.mockup.avionic-design.de>
+ <C79B248886DD134989C8FF6B096A91AB91B36FB281@BGMAIL01.nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ReaqsoxgOBHFXBhH"
+Content-Disposition: inline
+In-Reply-To: <C79B248886DD134989C8FF6B096A91AB91B36FB281@BGMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:LfqbbAlYWvAoeGZINDDJrT+MGqh9uhvNa1naFweUFtM
+ 2Aqf9/ihZkARrE52zz68x6vP8pqdDgxdITu7RYUtWRl31UzuhW
+ IdBo1IZg1t/RC9t6X9qWrj1WTA7WRff7e1okemZ4BwHuQMZS42
+ TcrrME+NA9BIC03k3K1a6+/QJNlEYhIwYf9HnSYPDvA8WJ8RYD
+ EKsvT/Y7ATROpBl8qFiQyWVrgYmLWOUzf1B0a1MveJnrlliftA
+ ktcxjDi1jSxvKCPM8qf6hjLAI5vxlGPmWGR51iiFZgWs/qaySN
+ /317wfnNpKNF/oxM+/aHO0qy2Q0P9+3SlaKAiXCywpwU+tidSI
+ KZ3TgTQBNXgf5KsJh5lsrRF8/BSUvuJEvE2GmPdreY23Y9Q66R
+ j+4fwx8ectxxfWbKdVAYrwvRUZx3mkSLwQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This new flag SD_SHARE_POWERDOMAIN is used to reflect whether groups of CPUs
-in a sched_domain level can or not reach a different power state. If groups of
-cores can be power gated independently, as an example, the flag should be
-cleared at CPU level. This information is used to decide if it's worth packing
-some tasks in a group of CPUs in order to power gated the other groups instead
-of spreading the tasks. The default behavior of the scheduler is to spread
-tasks so the flag is set into all sched_domains.
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-Reviewed-by: Morten Rasmussen <morten.rasmussen@arm.com>
----
- arch/ia64/include/asm/topology.h |    1 +
- arch/tile/include/asm/topology.h |    1 +
- include/linux/sched.h            |    1 +
- include/linux/topology.h         |    4 ++++
- kernel/sched/core.c              |    6 ++++++
- 5 files changed, 13 insertions(+)
+--ReaqsoxgOBHFXBhH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/ia64/include/asm/topology.h b/arch/ia64/include/asm/topology.h
-index a2496e4..6d0b617 100644
---- a/arch/ia64/include/asm/topology.h
-+++ b/arch/ia64/include/asm/topology.h
-@@ -65,6 +65,7 @@ void build_cpu_to_node_map(void);
- 				| SD_BALANCE_EXEC	\
- 				| SD_BALANCE_FORK	\
- 				| SD_WAKE_AFFINE,	\
-+				| arch_sd_local_flags(0)\
- 	.last_balance		= jiffies,		\
- 	.balance_interval	= 1,			\
- 	.nr_balance_failed	= 0,			\
-diff --git a/arch/tile/include/asm/topology.h b/arch/tile/include/asm/topology.h
-index d5e86c9..adc87102 100644
---- a/arch/tile/include/asm/topology.h
-+++ b/arch/tile/include/asm/topology.h
-@@ -71,6 +71,7 @@ static inline const struct cpumask *cpumask_of_node(int node)
- 				| 0*SD_WAKE_AFFINE			\
- 				| 0*SD_SHARE_CPUPOWER			\
- 				| 0*SD_SHARE_PKG_RESOURCES		\
-+				| arch_sd_local_flags(0)		\
- 				| 0*SD_SERIALIZE			\
- 				,					\
- 	.last_balance		= jiffies,				\
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 16b0d18..a82cdeb 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -809,6 +809,7 @@ enum cpu_idle_type {
- #define SD_BALANCE_WAKE		0x0010  /* Balance on wakeup */
- #define SD_WAKE_AFFINE		0x0020	/* Wake task to waking CPU */
- #define SD_SHARE_CPUPOWER	0x0080	/* Domain members share cpu power */
-+#define SD_SHARE_POWERDOMAIN	0x0100	/* Domain members share power domain */
- #define SD_SHARE_PKG_RESOURCES	0x0200	/* Domain members share cpu pkg resources */
- #define SD_SERIALIZE		0x0400	/* Only a single load balancing instance */
- #define SD_ASYM_PACKING		0x0800  /* Place busy groups earlier in the domain */
-diff --git a/include/linux/topology.h b/include/linux/topology.h
-index d3cf0d6..3eab293 100644
---- a/include/linux/topology.h
-+++ b/include/linux/topology.h
-@@ -99,6 +99,8 @@ int arch_update_cpu_topology(void);
- 				| 1*SD_WAKE_AFFINE			\
- 				| 1*SD_SHARE_CPUPOWER			\
- 				| 1*SD_SHARE_PKG_RESOURCES		\
-+				| arch_sd_local_flags(SD_SHARE_CPUPOWER|\
-+						SD_SHARE_PKG_RESOURCES) \
- 				| 0*SD_SERIALIZE			\
- 				| 0*SD_PREFER_SIBLING			\
- 				| arch_sd_sibling_asym_packing()	\
-@@ -131,6 +133,7 @@ int arch_update_cpu_topology(void);
- 				| 1*SD_WAKE_AFFINE			\
- 				| 0*SD_SHARE_CPUPOWER			\
- 				| 1*SD_SHARE_PKG_RESOURCES		\
-+				| arch_sd_local_flags(SD_SHARE_PKG_RESOURCES)\
- 				| 0*SD_SERIALIZE			\
- 				,					\
- 	.last_balance		= jiffies,				\
-@@ -161,6 +164,7 @@ int arch_update_cpu_topology(void);
- 				| 1*SD_WAKE_AFFINE			\
- 				| 0*SD_SHARE_CPUPOWER			\
- 				| 0*SD_SHARE_PKG_RESOURCES		\
-+				| arch_sd_local_flags(0)		\
- 				| 0*SD_SERIALIZE			\
- 				| 1*SD_PREFER_SIBLING			\
- 				,					\
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 54eaaa2..b827e0c 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5938,6 +5938,11 @@ int __weak arch_sd_sibling_asym_packing(void)
-        return 0*SD_ASYM_PACKING;
- }
- 
-+int __weak arch_sd_local_flags(int level)
-+{
-+	return 1*SD_SHARE_POWERDOMAIN;
-+}
-+
- /*
-  * Initializers for schedule domains
-  * Non-inlined to reduce accumulated stack pressure in build_sched_domains()
-@@ -6127,6 +6132,7 @@ sd_numa_init(struct sched_domain_topology_level *tl, int cpu)
- 					| 0*SD_WAKE_AFFINE
- 					| 0*SD_SHARE_CPUPOWER
- 					| 0*SD_SHARE_PKG_RESOURCES
-+					| 1*SD_SHARE_POWERDOMAIN
- 					| 1*SD_SERIALIZE
- 					| 0*SD_PREFER_SIBLING
- 					| sd_local_flags(level)
--- 
-1.7.9.5
+On Fri, Mar 22, 2013 at 05:59:13PM +0530, Jay Agarwal wrote:
+> I don't see can't assign things now on Thierry's latest repo() + my tegra=
+3 support patch, but some reconfiguring things are still there as below:
+>=20
+>   bridge configuration invalid ([bus 00-00]), reconfiguring
+>=20
+>=20
+>=20
+> I am not sure if it's harmless?
 
+That's harmless.
+
+Thierry
+
+--ReaqsoxgOBHFXBhH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRTE+3AAoJEN0jrNd/PrOh7ekP/iQUsvHGogl2Lmp3iijHWCnw
+8bigRlHZbVT1k4vJER1k9fub3f1JekcTEPL4hzz+M9Jt7UJpaS14+duilIIvMkBw
+Hh/UEpnK+SAmASbRlUNbC84cqMGfxW3g2Nv3ZiFiHOS3eMHBygleZ0Ml5caVq4NK
+qYrynZErl5zXuTVNaPBO1+dQO+bnuC/Uf3TNs1W+jNgq+4ImklxZwdQuySTBAqow
+MpFeUIH+xYJWAb51XNKl8qatPJAE/iCQ4GRE6l00wSn4qnVHJGP3pyEGKtSmJfkE
+B18uP2zi30GTwSbSCmZzQXvzbbfVcwGF+9mm186OteM73Co/o4xevTSQbWa3byJ0
+gjeWslYUE6mHzvsQiCVkGWm2TmzoAahRtFK0X+vrOLrqMI9aW8h95F4x2xhVED5r
+j+dxm2pP2q0E8KC+AVwTbzMeWucirtICuStoh90k9U8jtZ1iLapO8RiDk+OYg/PT
+nzZ4HHt2+fgBkINqQZu8Q3YVBw5vTtjkYUQdWS7G8inoxvInHl1p1huJ187AZpp/
+EYrDqvFuj4IahlQH/wMgYf/CQ0tGty1zVvG943ynDc7tCBf8MO4PMOvnmeDPEkUZ
+wV/fQO8WIUlIQbNua5mzOtvxVsKxsZ1c4oCukVe2ULgfSZ51wiz/H3XRoKYYyXo4
+mDzgqyxHE4Flu3RbgjDo
+=qhd1
+-----END PGP SIGNATURE-----
+
+--ReaqsoxgOBHFXBhH--
