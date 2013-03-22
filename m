@@ -1,124 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422986Ab3CVU1k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 16:27:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49931 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422908Ab3CVUZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 16:25:18 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org
-Subject: [PATCH 07/10] mbind: add hugepage migration code to mbind()
-Date: Fri, 22 Mar 2013 16:23:52 -0400
-Message-Id: <1363983835-20184-8-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1422951Ab3CVUev (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 16:34:51 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:41269 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422920Ab3CVUet (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 16:34:49 -0400
+Message-ID: <514CC066.8080307@tilera.com>
+Date: Fri, 22 Mar 2013 16:34:46 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [patch 30/34] tile: Enter idle with preemption disabled
+References: <20130321214930.752934102@linutronix.de> <20130321215235.280451779@linutronix.de>
+In-Reply-To: <20130321215235.280451779@linutronix.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends do_mbind() to handle vma with VM_HUGETLB set.
-We will be able to migrate hugepage with mbind(2) after
-applying the enablement patch which comes later in this series.
+On 3/21/2013 5:53 PM, Thomas Gleixner wrote:
+> cpu_idle() needs to be called with preemption disabled.
+>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> ---
+>  arch/tile/kernel/smpboot.c |    2 --
+>  1 file changed, 2 deletions(-)
 
-ChangeLog v2:
- - updated description and renamed patch title
+Thanks.  I had fixed this in our internal tree, but hadn't pushed it up yet.  I'll take your version into the public tile tree.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- include/linux/hugetlb.h |  3 +++
- mm/hugetlb.c            |  2 +-
- mm/mempolicy.c          | 10 ++++------
- mm/migrate.c            |  7 ++++++-
- 4 files changed, 14 insertions(+), 8 deletions(-)
-
-diff --git v3.9-rc3.orig/include/linux/hugetlb.h v3.9-rc3/include/linux/hugetlb.h
-index 3c62b82..981eff8 100644
---- v3.9-rc3.orig/include/linux/hugetlb.h
-+++ v3.9-rc3/include/linux/hugetlb.h
-@@ -261,6 +261,8 @@ struct huge_bootmem_page {
- #endif
- };
- 
-+struct page *alloc_huge_page(struct vm_area_struct *vma,
-+				unsigned long addr, int avoid_reserve);
- struct page *alloc_huge_page_node(struct hstate *h, int nid);
- 
- /* arch callback */
-@@ -356,6 +358,7 @@ static inline int hstate_index(struct hstate *h)
- 
- #else
- struct hstate {};
-+#define alloc_huge_page(v, a, r) NULL
- #define alloc_huge_page_node(h, nid) NULL
- #define alloc_bootmem_huge_page(h) NULL
- #define hstate_file(f) NULL
-diff --git v3.9-rc3.orig/mm/hugetlb.c v3.9-rc3/mm/hugetlb.c
-index 99ef969..d9d3dd7 100644
---- v3.9-rc3.orig/mm/hugetlb.c
-+++ v3.9-rc3/mm/hugetlb.c
-@@ -1117,7 +1117,7 @@ static void vma_commit_reservation(struct hstate *h,
- 	}
- }
- 
--static struct page *alloc_huge_page(struct vm_area_struct *vma,
-+struct page *alloc_huge_page(struct vm_area_struct *vma,
- 				    unsigned long addr, int avoid_reserve)
- {
- 	struct hugepage_subpool *spool = subpool_vma(vma);
-diff --git v3.9-rc3.orig/mm/mempolicy.c v3.9-rc3/mm/mempolicy.c
-index b9e323e..ffba2ee 100644
---- v3.9-rc3.orig/mm/mempolicy.c
-+++ v3.9-rc3/mm/mempolicy.c
-@@ -1173,6 +1173,8 @@ static struct page *new_vma_page(struct page *page, unsigned long private, int *
- 		vma = vma->vm_next;
- 	}
- 
-+	if (PageHuge(page))
-+		return alloc_huge_page(vma, address, 1);
- 	/*
- 	 * if !vma, alloc_page_vma() will use task or system default policy
- 	 */
-@@ -1277,14 +1279,10 @@ static long do_mbind(unsigned long start, unsigned long len,
- 	if (!err) {
- 		int nr_failed = 0;
- 
--		if (!list_empty(&pagelist)) {
--			WARN_ON_ONCE(flags & MPOL_MF_LAZY);
--			nr_failed = migrate_pages(&pagelist, new_vma_page,
-+		WARN_ON_ONCE(flags & MPOL_MF_LAZY);
-+		nr_failed = migrate_movable_pages(&pagelist, new_vma_page,
- 					(unsigned long)vma,
- 					MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
--			if (nr_failed)
--				putback_lru_pages(&pagelist);
--		}
- 
- 		if (nr_failed && (flags & MPOL_MF_STRICT))
- 			err = -EIO;
-diff --git v3.9-rc3.orig/mm/migrate.c v3.9-rc3/mm/migrate.c
-index ef8e4e3..e64cd55 100644
---- v3.9-rc3.orig/mm/migrate.c
-+++ v3.9-rc3/mm/migrate.c
-@@ -951,7 +951,12 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
- 	struct page *new_hpage = get_new_page(hpage, private, &result);
- 	struct anon_vma *anon_vma = NULL;
- 
--	if (!new_hpage)
-+	/*
-+	 * Getting a new hugepage with alloc_huge_page() (which can happen
-+	 * when migration is caused by mbind()) can return ERR_PTR value,
-+	 * so we need take care of the case here.
-+	 */
-+	if (!new_hpage || IS_ERR_VALUE(new_hpage))
- 		return -ENOMEM;
- 
- 	rc = -EAGAIN;
 -- 
-1.7.11.7
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
