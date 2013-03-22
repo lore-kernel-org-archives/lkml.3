@@ -1,43 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161040Ab3CVQhN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 12:37:13 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42244 "EHLO
+	id S1422646Ab3CVQhQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 12:37:16 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42246 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1160998Ab3CVQhL (ORCPT
+	with ESMTP id S1160998Ab3CVQhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 12:37:11 -0400
-Date: Fri, 22 Mar 2013 16:36:50 +0000
+	Fri, 22 Mar 2013 12:37:13 -0400
+Date: Fri, 22 Mar 2013 16:36:05 +0000
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jon Hunter <jon-hunter@ti.com>
-Cc: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mach_omap2: use PTR_RET instead of IS_ERR + PTR_ERR
-Message-ID: <20130322163650.GN30923@n2100.arm.linux.org.uk>
-References: <1363075109-27038-1-git-send-email-silviupopescu1990@gmail.com> <20130312110557.GF30923@n2100.arm.linux.org.uk> <5149FFDF.6050501@ti.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [BUGFIX PATCH] ARM: OMAP: fix type of return values in
+	omap_device_get_by_hwmod_name()
+Message-ID: <20130322163605.GM30923@n2100.arm.linux.org.uk>
+References: <1363867990-24593-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <5149FFDF.6050501@ti.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1363867990-24593-1-git-send-email-LW@KARO-electronics.de>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 01:28:47PM -0500, Jon Hunter wrote:
-> Sorry I am now not sure I follow you here. Someone just pointed out to
-> me that PTR_RET() is defined as ...
-> 
-> static inline int __must_check PTR_RET(const void *ptr)
-> {
-> 	if (IS_ERR(ptr))
-> 		return PTR_ERR(ptr);
-> 	else
-> 		return 0;
-> }
-> 
-> So the above change appears to be equivalent. Is there something that is
-> wrong with the current implementation that needs to be fixed?
+On Thu, Mar 21, 2013 at 01:13:10PM +0100, Lothar Waßmann wrote:
+> The merge bda5e141fbe96295c669692114d18687730269fb erroneously changed
 
-No - I misread it as PTR_ERR not PTR_RET.  Your patch is fine.
+Don't forget that commit's description as well...
