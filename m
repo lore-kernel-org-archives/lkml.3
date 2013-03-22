@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932624Ab3CVLRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 07:17:32 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:62744 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754525Ab3CVLRa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 07:17:30 -0400
+	id S932783Ab3CVLVD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 07:21:03 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37964 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932460Ab3CVLVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 07:21:01 -0400
+Message-ID: <514C3E7C.3000705@ti.com>
+Date: Fri, 22 Mar 2013 16:50:28 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <CAP245DWx_C0wcW-9SCfR0ViqyyqNbAeZnWfeMiXSgRGupo9jWQ@mail.gmail.com>
-References: <234906745c34fb72b0c450d897f261a22ed18d40.1363947023.git.viresh.kumar@linaro.org>
-	<CAP245DWx_C0wcW-9SCfR0ViqyyqNbAeZnWfeMiXSgRGupo9jWQ@mail.gmail.com>
-Date: Fri, 22 Mar 2013 16:47:29 +0530
-Message-ID: <CAKohpo=bOcPLESk6p88gjHq=i-D8zFhhEL_4pgZUtjRYZnD_7w@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: stats: do cpufreq_cpu_put() corresponding to cpufreq_cpu_get
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Amit Kucheria <amit.kucheria@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Robin Randhawa <robin.randhawa@arm.com>,
-        linux-pm@vger.kernel.org, Liviu Dudau <Liviu.Dudau@arm.com>,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Steve Bannister <Steve.Bannister@arm.com>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Charles Garcia-Tobin <charles.garcia-tobin@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>, <arnd@arndb.de>,
+        <linus.walleij@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <rob.herring@calxeda.com>, <linux-keystone@list.ti.com>,
+        <viresh.linux@gmail.com>, <akpm@linux-foundation.org>,
+        <shawn.guo@linaro.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 02/11] clk: davinci - add PSC clock driver
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-3-git-send-email-m-karicheri2@ti.com> <50950908.1060302@ti.com> <5097D6FC.7040202@ti.com> <20121110022254.18014.31873@nucleus> <50B4D6B1.3000903@ti.com> <20121127172900.21126.89528@nucleus> <50B6101C.30502@ti.com>
+In-Reply-To: <50B6101C.30502@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 March 2013 16:42, Amit Kucheria <amit.kucheria@linaro.org> wrote:
-> On Fri, Mar 22, 2013 at 3:43 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> In cpufreq_stats_free_sysfs() we aren't balancing calls to cpufreq_cpu_get()
->> with cpufreq_cpu_put(). This will never let us have ref count to policy->kobj as
->> zero.
->
-> Rafael,
->
-> Since this prevents booting on our hardware (we unregister and
-> re-register the cpufreq driver to account for virtual cores), will
-> this be considered as a hotfix for 3.9?
->
->> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
->
-> Acked-by: Amit Kucheria <amit.kucheria@linaro.org>
+Mike,
 
-Sorry i forgot to mention, this should be pushed for next rc.
+On 11/28/2012 6:52 PM, Sekhar Nori wrote:
+> On 11/27/2012 10:59 PM, Mike Turquette wrote:
+
+>> Also have you looked into regmap?  Since you are defining your own clock
+>> type that might be something nice for you.
+> 
+> No, haven't looked at regmap yet. Will look at that.
+
+I could get to this only now. regmap needs a valid struct device. We
+aren't modelling psc clocks as device so regmap cannot be used here.
+
+Thanks,
+Sekhar
