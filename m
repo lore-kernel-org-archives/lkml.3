@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422893Ab3CVUMF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 16:12:05 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:35386 "EHLO
+	id S1422905Ab3CVUOn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 16:14:43 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:36570 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422691Ab3CVUMC (ORCPT
+	with ESMTP id S1422768Ab3CVUOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 16:12:02 -0400
-Date: Fri, 22 Mar 2013 13:11:51 -0700
+	Fri, 22 Mar 2013 16:14:41 -0400
+Date: Fri, 22 Mar 2013 13:14:32 -0700
 From: "Darrick J. Wong" <darrick.wong@oracle.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
         linux-kernel@vger.kernel.org, Heinz Mauelshagen <heinzm@redhat.com>,
@@ -15,62 +15,111 @@ To: Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
         Mikulas Patocka <mpatocka@redhat.com>,
         Paul Taysom <taysom@chromium.org>,
         Randy Dunlap <rdunlap@infradead.org>, stable@vger.kernel.org
-Subject: [PATCH] dm: dm-cache fails to write the cache device in writethrough
- mode
-Message-ID: <20130322201151.GB5357@blackbox.djwong.org>
+Subject: Re: [dm-devel] [git pull] device-mapper fixes for 3.9
+Message-ID: <20130322201432.GC5357@blackbox.djwong.org>
+References: <20130321022625.GA25054@agk-dp.fab.redhat.com>
+ <20130322185326.GA5357@blackbox.djwong.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130322185326.GA5357@blackbox.djwong.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new writethrough strategy for dm-cache issues a bio to the origin device,
-remaps the bio to the cache device, and issues the bio to the cache device.
-However, the block layer modifies bi_sector and bi_size, so we need to preserve
-these or else nothing gets written to the cache (bi_size == 0).  This fixes the
-problem where someone writes a block through the cache, but a subsequent reread
-(from the cache) returns old contents.
+On Fri, Mar 22, 2013 at 11:53:26AM -0700, Darrick J. Wong wrote:
+> On Thu, Mar 21, 2013 at 02:26:26AM +0000, Alasdair G Kergon wrote:
+> > Please pull from:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/agk/linux-dm tags/dm-3.9-fixes
+> > 
+> > to get the following device-mapper fixes for 3.9.
+> > 
+> > Thanks,
+> > Alasdair
+> > 
+> > ----------------------------------------------------------------
+> > A set of device-mapper fixes for 3.9.
+> > 
+> > Fix reported data loss with discards and thin snapshots; avoid a
+> > deadlock observed in dm verity; fix a race in the new dm cache code
+> > along with some other minor bugs; store the cache policy version on disk
+> > to make the stored hints format future-proof.
+> > 
+> > ----------------------------------------------------------------
+> > Heinz Mauelshagen (2):
+> >       dm cache: detect cache_create failure
+> >       dm cache: avoid calling policy destructor twice on error
+> > 
+> > Joe Thornber (5):
+> >       dm thin: fix discard corruption
+> >       dm thin: fix non power of two discard granularity calc
+> >       dm cache: avoid 64 bit division on 32 bit
+> >       dm cache: metadata clear dirty bits on clean shutdown
+> >       dm cache: fix race in writethrough implementation
+> 
+> I think I've found a bug in this new WT implementation.  /dev/sdb is an SSD,
+> /dev/sda is a spinny disk, and both have been zeroed prior to running the
+> following:
+> 
+> # pvcreate /dev/sdb
+> # vgcreate -s 256K moocache /dev/sdb
+> # lvcreate -n metadata moocache -l 17
+> # lvcreate -n blocks moocache -l 2030
+> # echo '0 67108864 cache /dev/mapper/moocache-metadata /dev/mapper/moocache-blocks /dev/sda 512 1 writethrough default 4 random_threshold 4 sequential_threshold 32768' | dmsetup create moocache
+> # mkfs.ext4 /dev/mapper/moocache -U deadbeef-cafe-dead-beef-cafedeadbeef 
+> 
+> If I then run blkid, I only see this:
+> /dev/sdb: UUID="jlKkqi-L3W1-QQqf-7HKR-jmjU-GL79-qDOdvP" TYPE="LVM2_member" 
+> /dev/sda: UUID="deadbeef-cafe-dead-beef-cafedeadbeef" TYPE="ext4" 
+> 
+> Curious -- it didn't find anything on /dev/mapper/moocache.  e2fsck/mount also
+> see nothing, and dumping the first 256K shows zeroes.  Sometimes it finds no
+> ext4 at all.
+> 
+> If I create the cache in WB mode, I see that blkid finds the deadbeef fs on
+> /dev/sda and /dev/mapper/moocache, like I'd expect:
+> 
+> /dev/sdb: UUID="9hYUEh-OOKT-KuqF-6eDy-2cEZ-2eEa-y17lhN" TYPE="LVM2_member" 
+> /dev/mapper/moocache-blocks: UUID="deadbeef-cafe-dead-beef-cafedeadbeef" TYPE="ext4" 
+> /dev/mapper/moocache: UUID="deadbeef-cafe-dead-beef-cafedeadbeef" TYPE="ext4" 
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
----
- drivers/md/dm-cache-target.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+It looks like dm-cache issues the bio first to the origin device with bi_sector
+== N and bi_size == S, but then fails to reset these values when reissuing the
+bio to the cache device.  Therefore, the second issue of the bio goes out with
+bi_size == 0 and bi_sector == N + (S >> 512), which is incorrect.  I'll send a
+patch.
 
-diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-index 66120bd..0db0ad2 100644
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -205,6 +205,8 @@ struct per_bio_data {
- 	struct cache *cache;
- 	dm_cblock_t cblock;
- 	bio_end_io_t *saved_bi_end_io;
-+	unsigned int bi_size;
-+	sector_t bi_sector;
- };
- 
- struct dm_cache_migration {
-@@ -643,6 +645,8 @@ static void writethrough_endio(struct bio *bio, int err)
- 		return;
- 	}
- 
-+	bio->bi_sector = pb->bi_sector;
-+	bio->bi_size = pb->bi_size;
- 	remap_to_cache(pb->cache, bio, pb->cblock);
- 
- 	/*
-@@ -667,6 +671,12 @@ static void remap_to_origin_then_cache(struct cache *cache, struct bio *bio,
- 	pb->cache = cache;
- 	pb->cblock = cblock;
- 	pb->saved_bi_end_io = bio->bi_end_io;
-+	/*
-+	 * The block layer modifies bi_size and bi_sector, so we must save
-+	 * them for when we re-issue the bio against the cache device.
-+	 */
-+	pb->bi_size = bio->bi_size;
-+	pb->bi_sector = bio->bi_sector;
- 	bio->bi_end_io = writethrough_endio;
- 
- 	remap_to_origin_clear_discard(pb->cache, bio, oblock);
+--D
+> 
+> --D
+> 
+> > 
+> > Mike Snitzer (2):
+> >       dm cache: policy change version from string to integer set
+> >       dm cache: policy ignore hints if generated by different version
+> > 
+> > Mikulas Patocka (1):
+> >       dm verity: avoid deadlock
+> > 
+> >  drivers/md/dm-bufio.c                        |    2 +
+> >  drivers/md/dm-cache-metadata.c               |   64 ++++++++--
+> >  drivers/md/dm-cache-metadata.h               |    2 +-
+> >  drivers/md/dm-cache-policy-cleaner.c         |    7 +-
+> >  drivers/md/dm-cache-policy-internal.h        |    2 +
+> >  drivers/md/dm-cache-policy-mq.c              |    8 +-
+> >  drivers/md/dm-cache-policy.c                 |    8 ++
+> >  drivers/md/dm-cache-policy.h                 |    2 +
+> >  drivers/md/dm-cache-target.c                 |  169 +++++++++++++++++---------
+> >  drivers/md/dm-thin.c                         |   11 +-
+> >  drivers/md/dm-verity.c                       |   39 +++++-
+> >  drivers/md/persistent-data/dm-btree-remove.c |   46 +++----
+> >  12 files changed, 252 insertions(+), 108 deletions(-)
+> > 
+> 
+> --
+> dm-devel mailing list
+> dm-devel@redhat.com
+> https://www.redhat.com/mailman/listinfo/dm-devel
