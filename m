@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933063Ab3CVBgM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 21:36:12 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54956 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932092Ab3CVBgK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 21:36:10 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <514BB566.3050903@jp.fujitsu.com>
-Date: Fri, 22 Mar 2013 10:35:34 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <rjw@sisk.pl>, <linux-acpi@vger.kernel.org>, <tangchen@cn.fujitsu.com>,
-        <wency@cn.fujitsu.com>, <laijs@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ACPI,acpi_memhotplug: Remove acpi_memory_info->failed
- bit
-References: <514022BF.3080303@jp.fujitsu.com>   <1363186213.12845.174.camel@misato.fc.hp.com>   <514679BC.5020700@jp.fujitsu.com>  <1363705437.11659.5.camel@misato.fc.hp.com>  <514A4CCD.6000608@jp.fujitsu.com> <514A8E3C.1050902@jp.fujitsu.com>  <514A8EF3.90203@jp.fujitsu.com> <1363912171.11659.12.camel@misato.fc.hp.com>
-In-Reply-To: <1363912171.11659.12.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753870Ab3CVBjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 21:39:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16571 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752175Ab3CVBjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 21:39:06 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CA+icZUVj4jChaGSdC5Lu4R9h-NzVx8HqT+tnve9GOMh84C5sVw@mail.gmail.com>
+References: <CA+icZUVj4jChaGSdC5Lu4R9h-NzVx8HqT+tnve9GOMh84C5sVw@mail.gmail.com> <CA+icZUUqSCZeb2JOFv-OSRXAQyD+crvGqg9E0FAUF=+ZAg5vFA@mail.gmail.com> <16729.1363108768@warthog.procyon.org.uk>
+To: sedat.dilek@gmail.com
+Cc: dhowells@redhat.com, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: Status of union-mount?
+Date: Fri, 22 Mar 2013 01:38:55 +0000
+Message-ID: <3190.1363916335@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
+Sedat Dilek <sedat.dilek@gmail.com> wrote:
 
-2013/03/22 9:29, Toshi Kani wrote:
-> On Thu, 2013-03-21 at 13:39 +0900, Yasuaki Ishimatsu wrote:
->> acpi_memory_info has enabled bit and failed bit for controlling memory
->> hotplug. But we don't need to keep both bits.
->>
->> The patch removes acpi_memory_info->failed bit.
->>
->> Signed-off-by: yasuaki ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> ---
->>
->> v2 : Changed a based kernel from linux-3.9-rc2 to linux-pm.git/bleeding-edge.
->>
->> ---
->>    drivers/acpi/acpi_memhotplug.c |   13 +------------
->>    1 files changed, 1 insertions(+), 12 deletions(-)
->>
->> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
->> index ea78988..597cd65 100644
->> --- a/drivers/acpi/acpi_memhotplug.c
->> +++ b/drivers/acpi/acpi_memhotplug.c
->> @@ -73,7 +73,6 @@ struct acpi_memory_info {
->>    	unsigned short caching;	/* memory cache attribute */
->>    	unsigned short write_protect;	/* memory read/write attribute */
->>    	unsigned int enabled:1;
->> -	unsigned int failed:1;
->>    };
->>
->>    struct acpi_memory_device {
->> @@ -201,10 +200,8 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
->>    		 * returns -EEXIST. If add_memory() returns the other error, it
->>    		 * means that this memory block is not used by the kernel.
->>    		 */
->> -		if (result && result != -EEXIST) {
->> -			info->failed = 1;
->> +		if (result && result != -EEXIST)
->>    			continue;
->> -		}
->>
->>    		info->enabled = 1;
->>
->> @@ -238,15 +235,7 @@ static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
->>    	nid = acpi_get_node(mem_device->device->handle);
->>
->>    	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
->> -		if (info->failed)
->> -			/* The kernel does not use this memory block */
->> -			continue;
->> -
->>    		if (!info->enabled)
->> -			/*
->> -			 * The kernel uses this memory block, but it may be not
->> -			 * managed by us.
->> -			 */
->>    			return -EBUSY;
->
-> Shouldn't this case (!info->enabled) continue since it is the same as
-> info->failed before?  -EBUSY was previously used for the -EEXIST case,
-> which is no longer a failure case with this patchset.
+> Hmmm, sorry for asking, but when do you plan to offer a "working"
+> union-mount (u-m)?
 
-You are right. It is my mitake. We need to continue to hot remove memory.
-I'll update soon.
+It's a maze of twisty locking problems - some of which also apply to things
+like overlayfs:-(
 
-Thanks,
-Yasuaki Ishimatsu
+> What's the status of the user-space tools or are they no more needed?
 
->
-> Thanks,
-> -Toshi
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+You need to be able to tell mount(2) that you want a union.  This is currently
+done with a mount flag, but it might be portable to something in the mount
+option string.
 
+> AFAICS the original authors patched e2fsprogs etc. (see Valerie's old
+> homepage [1]).
 
+Yeah... I guess fsck programs need to be able to handle whiteout and fallthru
+directory entries.
+
+> >> Where does the development happen - in [1]?
+> >
+> > On a git tree on my PC - which is occasionally mirrored in [1] when I've got
+> > it working.
+> >
+> 
+> Development on your local workstation does not look like you do an
+> open development.
+
+Excuse me.  But it's quite hard to develop this on a remote git tree.
+Further, I prefer not to push partially working stuff to my git tree, lest
+someone pull it, try playing with it and have their fs eaten.
+
+If someone wants it, I can mail the partially working stuff to them, but not
+many people ask.
+
+> So, it's currently only you doing the work on u-m?
+
+Almost entirely, yes.
+
+David
