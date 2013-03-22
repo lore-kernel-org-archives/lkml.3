@@ -1,161 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab3CVKrm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 06:47:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44551 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754240Ab3CVKrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 06:47:40 -0400
-Date: Fri, 22 Mar 2013 11:47:37 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning
- requirements for kswapd
-Message-ID: <20130322104737.GJ31457@dhcp22.suse.cz>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-3-git-send-email-mgorman@suse.de>
- <20130321140154.GL6094@dhcp22.suse.cz>
- <20130321143114.GM2055@suse.de>
- <20130321150755.GN6094@dhcp22.suse.cz>
- <20130321153442.GJ1878@suse.de>
- <20130322075413.GA31457@dhcp22.suse.cz>
- <20130322083704.GS1878@suse.de>
- <20130322100449.GH31457@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130322100449.GH31457@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754621Ab3CVKvx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 06:51:53 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:45766 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754322Ab3CVKvv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 06:51:51 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH v5 0/2] perf: use hrtimer for event multiplexing
+Date: Fri, 22 Mar 2013 11:51:37 +0100
+Message-Id: <1363949499-3728-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-03-13 11:04:49, Michal Hocko wrote:
-> On Fri 22-03-13 08:37:04, Mel Gorman wrote:
-> > On Fri, Mar 22, 2013 at 08:54:27AM +0100, Michal Hocko wrote:
-> > > On Thu 21-03-13 15:34:42, Mel Gorman wrote:
-> > > > On Thu, Mar 21, 2013 at 04:07:55PM +0100, Michal Hocko wrote:
-> > > > > > > > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > > > > > > index 4835a7a..182ff15 100644
-> > > > > > > > --- a/mm/vmscan.c
-> > > > > > > > +++ b/mm/vmscan.c
-> > > > > > > > @@ -1815,6 +1815,45 @@ out:
-> > > > > > > >  	}
-> > > > > > > >  }
-> > > > > > > >  
-> > > > > > > > +static void recalculate_scan_count(unsigned long nr_reclaimed,
-> > > > > > > > +		unsigned long nr_to_reclaim,
-> > > > > > > > +		unsigned long nr[NR_LRU_LISTS])
-> > > > > > > > +{
-> > > > > > > > +	enum lru_list l;
-> > > > > > > > +
-> > > > > > > > +	/*
-> > > > > > > > +	 * For direct reclaim, reclaim the number of pages requested. Less
-> > > > > > > > +	 * care is taken to ensure that scanning for each LRU is properly
-> > > > > > > > +	 * proportional. This is unfortunate and is improper aging but
-> > > > > > > > +	 * minimises the amount of time a process is stalled.
-> > > > > > > > +	 */
-> > > > > > > > +	if (!current_is_kswapd()) {
-> > > > > > > > +		if (nr_reclaimed >= nr_to_reclaim) {
-> > > > > > > > +			for_each_evictable_lru(l)
-> > > > > > > > +				nr[l] = 0;
-> > > > > > > > +		}
-> > > > > > > > +		return;
-> > > > > > > 
-> > > > > > > Heh, this is nicely cryptically said what could be done in shrink_lruvec
-> > > > > > > as
-> > > > > > > 	if (!current_is_kswapd()) {
-> > > > > > > 		if (nr_reclaimed >= nr_to_reclaim)
-> > > > > > > 			break;
-> > > > > > > 	}
-> > > > > > > 
-> > > > > > 
-> > > > > > Pretty much. At one point during development, this function was more
-> > > > > > complex and it evolved into this without me rechecking if splitting it
-> > > > > > out still made sense.
-> > > > > > 
-> > > > > > > Besides that this is not memcg aware which I think it would break
-> > > > > > > targeted reclaim which is kind of direct reclaim but it still would be
-> > > > > > > good to stay proportional because it starts with DEF_PRIORITY.
-> > > > > > > 
-> > > > > > 
-> > > > > > This does break memcg because it's a special sort of direct reclaim.
-> > > > > > 
-> > > > > > > I would suggest moving this back to shrink_lruvec and update the test as
-> > > > > > > follows:
-> > > > > > 
-> > > > > > I also noticed that we check whether the scan counts need to be
-> > > > > > normalised more than once
-> > > > > 
-> > > > > I didn't mind this because it "disqualified" at least one LRU every
-> > > > > round which sounds reasonable to me because all LRUs would be scanned
-> > > > > proportionally.
-> > > > 
-> > > > Once the scan count for one LRU is 0 then min will always be 0 and no
-> > > > further adjustment is made. It's just redundant to check again.
-> > > 
-> > > Hmm, I was almost sure I wrote that min should be adjusted only if it is >0
-> > > in the first loop but it is not there...
-> > > 
-> > > So for real this time.
-> > > 			for_each_evictable_lru(l)
-> > > 				if (nr[l] && nr[l] < min)
-> > > 					min = nr[l];
-> > > 
-> > > This should work, no? Everytime you shrink all LRUs you and you have
-> > > reclaimed enough already you get the smallest LRU out of game. This
-> > > should keep proportions evenly.
-> > 
-> > Lets say we started like this
-> > 
-> > LRU_INACTIVE_ANON	  60
-> > LRU_ACTIVE_FILE		1000
-> > LRU_INACTIVE_FILE	3000
-> > 
-> > and we've reclaimed nr_to_reclaim pages then we recalculate the number
-> > of pages to scan from each list as;
-> > 
-> > LRU_INACTIVE_ANON	  0
-> > LRU_ACTIVE_FILE		940
-> > LRU_INACTIVE_FILE      2940
-> > 
-> > We then shrink SWAP_CLUSTER_MAX from each LRU giving us this.
-> > 
-> > LRU_INACTIVE_ANON	  0
-> > LRU_ACTIVE_FILE		908
-> > LRU_INACTIVE_FILE      2908
-> > 
-> > Then under your suggestion this would be recalculated as
-> > 
-> > LRU_INACTIVE_ANON	  0
-> > LRU_ACTIVE_FILE		  0
-> > LRU_INACTIVE_FILE      2000
-> > 
-> > another SWAP_CLUSTER_MAX reclaims and then it stops we stop reclaiming. I
-> > might still be missing the point of your suggestion but I do not think it
-> > would preserve the proportion of pages we reclaim from the anon or file LRUs.
-> 
-> It wouldn't preserve proportion precisely because each reclaim round is
-> in SWAP_CLUSTER_MAX units but it would reclaim bigger lists more than
-> smaller ones which I thought was the whole point. So yes using word
-> "proportionally" is unfortunate but I didn't find out better one.
+The current scheme of using the timer tick was fine
+for per-thread events. However, it was causing
+bias issues in system-wide mode (including for
+uncore PMUs). Event groups would not get their
+fair share of runtime on the PMU. With tickless
+kernels, if a core is idle there is no timer tick,
+and thus no event rotation (multiplexing). However,
+there are events (especially uncore events) which do
+count even though cores are asleep.
 
-OK, I have obviosly missed that you are not breaking out of the loop if
-scan_adjusted. Now that I am looking at the updated patch again you just
-do
-		if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
-			continue;
+This patch changes the timer source for multiplexing.
+It introduces a per-cpu hrtimer. The advantage is that
+even when the core goes idle, it will come back to
+service the hrtimer, thus multiplexing on system-wide
+events works much better.
 
-So I thouught you would just do one round of reclaim after
-nr_reclaimed >= nr_to_reclaim which din't feel right to me.
+In order to minimize the impact of the hrtimer, it
+is turned on and off on demand. When the PMU on
+a CPU is overcommitted, the hrtimer is activated.
+It is stopped when the PMU is not overcommitted.
 
-Sorry about the confusion!
+In order for this to work properly with HOTPLUG_CPU,
+we had to change the order of initialization in
+start_kernel() such that hrtimer_init() is run
+before perf_event_init().
+
+The second patch provide a sysctl control to
+adjust the multiplexing interval. Unit is
+milliseconds.
+
+Here is a simple before/after example with
+two event groups which do require multiplexing.
+This is done in system-wide mode on an idle
+system. What matters here is the scaling factor
+in [] in not the total counts.
+
+Before:
+
+# perf stat -a -e ref-cycles,ref-cycles sleep 10
+ Performance counter stats for 'sleep 10':
+ 34,319,545 ref-cycles  [56.51%]
+ 31,917,229 ref-cycles  [43.50%]
+
+ 10.000827569 seconds time elapsed
+
+After:
+# perf stat -a -e ref-cycles,ref-cycles sleep 10
+ Performance counter stats for 'sleep 10':
+ 11,144,822,193 ref-cycles [50.00%]
+ 11,103,760,513 ref-cycles [50.00%]
+
+ 10.000672946 seconds time elapsed
+
+What matters here is the 50% not the actual
+count. Ref-cycles runs only on one fixed counter.
+With two instances, each should get 50% of the PMU
+which is now true. This helps mitigate the error
+introduced by the scaling.
+
+In this second version of the patchset, we now
+have the hrtimer_interval per PMU instance. The
+tunable is in /sys/devices/XXX/mux_interval_ms,
+where XXX is the name of the PMU instance. Due
+to initialization changes of each hrtimer, we
+had to introduce hrtimer_init_cpu() to initialize
+a hrtimer from another CPU.
+
+In the 3rd version, we simplify the code a bit
+by using hrtimer_active(). We stopped using
+the rotation_list for perf_cpu_hrtimer_cancel().
+We also fix an intialization problem.
+
+In the 4th version, we rebase to 3.8.0-rc7 and
+we kept SW event on the rotation list which is
+now used only for unthrottling. We also renamed
+the sysfs tunable to perf_event_mux_interval_ms
+to be more consistent with the existing sysctl
+entries.
+
+In the 5th version, we modified the code such
+that a new hrtimer interval is applied immediately
+to any active hrtimer as suggested by Jiri Olsa.
+Also got rid of the CPU notifier for hrtimer, it
+was useless and unreliable. The code is rebased to
+3.9.0-rc3.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+Stephane Eranian (2):
+  perf: use hrtimer for event multiplexing
+  perf: add sysfs entry to adjust multiplexing interval per PMU
+
+ include/linux/perf_event.h |    4 +-
+ init/main.c                |    2 +-
+ kernel/events/core.c       |  173 +++++++++++++++++++++++++++++++++++++++++---
+ 3 files changed, 167 insertions(+), 12 deletions(-)
+
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
