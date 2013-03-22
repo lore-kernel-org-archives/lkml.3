@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933769Ab3CVPxl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 11:53:41 -0400
-Received: from mail-vb0-f74.google.com ([209.85.212.74]:59105 "EHLO
-	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933516Ab3CVPxk (ORCPT
+	id S933811Ab3CVPxq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 11:53:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36761 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933516Ab3CVPxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 11:53:40 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Changhwan Youn <chaos.youn@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: EXYNOS: Add missing semicolons in exynos_mct.c
-Date: Fri, 22 Mar 2013 08:53:07 -0700
-Message-Id: <1363967587-19154-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
+	Fri, 22 Mar 2013 11:53:44 -0400
+From: Dave Chiluk <chiluk@canonical.com>
+To: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] NFSv4: Fix the string length returned by the idmapper
+Date: Fri, 22 Mar 2013 10:53:32 -0500
+Message-Id: <1363967612-28488-1-git-send-email-chiluk@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CLOCKSOURCE_OF_DECLARE lines were added without a semicolon at the
-end.  On my system this causes a compile-time error that looks like:
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
- .../drivers/clocksource/exynos_mct.c:557:202: warning: comparison of distinct pointer types lacks a cast [enabled by default]
- .../drivers/clocksource/exynos_mct.c:558:1: error: expected ',' or ';' before 'static'
+Functions like nfs_map_uid_to_name() and nfs_map_gid_to_group() are
+expected to return a string without any terminating NUL character.
+Regression introduced by commit 57e62324e469e092ecc6c94a7a86fe4bd6ac5172
+(NFS: Store the legacy idmapper result in the keyring).
 
-The error didn't show up till now because there was an extra semicolon
-at end of the CLOCKSOURCE_OF_DECLARE definition that was removed by
-Arnd Bergmann in "clocksource: make CLOCKSOURCE_OF_DECLARE type safe"
+This fixes inability to chown on chgrp files on AIX nfs shares.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
+Reported-by: Dave Chiluk <dave.chiluk@canonical.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Bryan Schumaker <bjschuma@netapp.com>
+Cc: stable@vger.kernel.org [>=3.4]
 ---
- drivers/clocksource/exynos_mct.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nfs/idmap.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-index 203ac05..106228d 100644
---- a/drivers/clocksource/exynos_mct.c
-+++ b/drivers/clocksource/exynos_mct.c
-@@ -554,5 +554,5 @@ void __init mct_init(void)
- 	exynos4_clocksource_init();
- 	exynos4_clockevent_init();
+diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
+index dc0f98d..99e9ec6 100644
+--- a/fs/nfs/idmap.c
++++ b/fs/nfs/idmap.c
+@@ -726,9 +726,10 @@ out1:
+ 	return ret;
  }
--CLOCKSOURCE_OF_DECLARE(exynos4210, "samsung,exynos4210-mct", mct_init)
--CLOCKSOURCE_OF_DECLARE(exynos4412, "samsung,exynos4412-mct", mct_init)
-+CLOCKSOURCE_OF_DECLARE(exynos4210, "samsung,exynos4210-mct", mct_init);
-+CLOCKSOURCE_OF_DECLARE(exynos4412, "samsung,exynos4412-mct", mct_init);
+ 
+-static int nfs_idmap_instantiate(struct key *key, struct key *authkey, char *data)
++static int nfs_idmap_instantiate(struct key *key, struct key *authkey,
++		char *data, size_t datalen)
+ {
+-	return key_instantiate_and_link(key, data, strlen(data) + 1,
++	return key_instantiate_and_link(key, data, datalen,
+ 					id_resolver_cache->thread_keyring,
+ 					authkey);
+ }
+@@ -738,6 +739,7 @@ static int nfs_idmap_read_and_verify_message(struct idmap_msg *im,
+ 		struct key *key, struct key *authkey)
+ {
+ 	char id_str[NFS_UINT_MAXLEN];
++	size_t len;
+ 	int ret = -ENOKEY;
+ 
+ 	/* ret = -ENOKEY */
+@@ -747,13 +749,15 @@ static int nfs_idmap_read_and_verify_message(struct idmap_msg *im,
+ 	case IDMAP_CONV_NAMETOID:
+ 		if (strcmp(upcall->im_name, im->im_name) != 0)
+ 			break;
+-		sprintf(id_str, "%d", im->im_id);
+-		ret = nfs_idmap_instantiate(key, authkey, id_str);
++		/* Note: here we store the NUL terminator too */
++		len = sprintf(id_str, "%d", im->im_id) + 1;
++		ret = nfs_idmap_instantiate(key, authkey, id_str, len);
+ 		break;
+ 	case IDMAP_CONV_IDTONAME:
+ 		if (upcall->im_id != im->im_id)
+ 			break;
+-		ret = nfs_idmap_instantiate(key, authkey, im->im_name);
++		len = strlen(im->im_name);
++		ret = nfs_idmap_instantiate(key, authkey, im->im_name, len);
+ 		break;
+ 	default:
+ 		ret = -EINVAL;
 -- 
-1.8.1.3
+1.7.9.5
 
