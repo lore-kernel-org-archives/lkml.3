@@ -1,69 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423033Ab3CVU0p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 16:26:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23820 "EHLO mx1.redhat.com"
+	id S1422927Ab3CVUZT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 16:25:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45198 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423000Ab3CVU0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 16:26:42 -0400
-Date: Fri, 22 Mar 2013 16:26:35 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [RFC PATCH] integrity: Use a new type for asymmetric signature
-Message-ID: <20130322202635.GH4544@redhat.com>
-References: <20130314182815.GB24238@redhat.com>
- <CALLzPKZgSjtodeikffsRyZrq5eS92ziLm3NdjWmD878xL_kFVw@mail.gmail.com>
- <20130314203028.GE24238@redhat.com>
- <20130314203703.GF24238@redhat.com>
- <CALLzPKb646eXYCLrgtuNFYx_Y6dWdwNWZM1whJPR1wZBxbVY6w@mail.gmail.com>
- <20130315154151.GA3887@redhat.com>
- <CALLzPKa+7tmpnKt-b_g7p=pdWqutNT=71DbJSmY04TqVRdXrQw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALLzPKa+7tmpnKt-b_g7p=pdWqutNT=71DbJSmY04TqVRdXrQw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1422890Ab3CVUZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 16:25:17 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH 02/10] migrate: make core migration code aware of hugepage
+Date: Fri, 22 Mar 2013 16:23:47 -0400
+Message-Id: <1363983835-20184-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 09:57:57AM +0200, Kasatkin, Dmitry wrote:
-> On Fri, Mar 15, 2013 at 5:41 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Thu, Mar 14, 2013 at 11:08:45PM +0200, Kasatkin, Dmitry wrote:
-> >> On Thu, Mar 14, 2013 at 10:37 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> >> > On Thu, Mar 14, 2013 at 04:30:28PM -0400, Vivek Goyal wrote:
-> >> >
-> >> > [..]
-> >> >> I thought explicitly using signature format is more intutive. Exporting
-> >> >> signature version is not. I personally associate versioning with minor
-> >> >> changes like addition of some fields etc.
-> >> >
-> >> > For instance, you might want to add some fields to  signature_v2_hdr down
-> >> > the line. I think even after that change, it still remains "asymmetric
-> >> > signature" just that structure size changes and there is additional
-> >> > info. If there is versioning info assciated with signature type
-> >> > ASYMMETRIC, we could simple bump it to 1.1 or whatever and keep the
-> >> > version detail internal to ima/integrity subsystem.
-> >> >
-> >>
-> >> Yes, it will make some things cleaner.
-> >
-> > So do you agree that every new signature format should have a new entry
-> > and we can introduce new signature type for asymmetric signature.
-> >
-> 
-> Hi Vivek,
-> 
-> I was/am a bit busy with responding.
-> I will do it asap.
+Before enabling each user of page migration to support hugepage,
+this patch adds necessary changes on core migration code.
+The main change is that the list of pages to migrate can link
+not only LRU pages, but also hugepages.
+Along with this, functions such as migrate_pages() and
+putback_movable_pages() need to be changed to handle hugepages.
 
-Hi Dmitry,
+ChangeLog v2:
+ - move code removing VM_HUGETLB from vma_migratable check into a
+   separate patch
+ - hold hugetlb_lock in putback_active_hugepage
+ - update comment near the definition of hugetlb_lock
 
-Sure. Only thing to keep in mind is that if you want to change it, we
-better do it in 3.9. Otherwise changing it in 3.10 will be messy.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ include/linux/hugetlb.h |  4 ++++
+ include/linux/migrate.h |  6 ++++++
+ mm/hugetlb.c            | 21 ++++++++++++++++++++-
+ mm/migrate.c            | 24 +++++++++++++++++++++++-
+ 4 files changed, 53 insertions(+), 2 deletions(-)
 
-Thanks
-Vivek
+diff --git v3.9-rc3.orig/include/linux/hugetlb.h v3.9-rc3/include/linux/hugetlb.h
+index 16e4e9a..baa0aa0 100644
+--- v3.9-rc3.orig/include/linux/hugetlb.h
++++ v3.9-rc3/include/linux/hugetlb.h
+@@ -66,6 +66,8 @@ int hugetlb_reserve_pages(struct inode *inode, long from, long to,
+ 						vm_flags_t vm_flags);
+ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
+ int dequeue_hwpoisoned_huge_page(struct page *page);
++void putback_active_hugepage(struct page *page);
++void putback_active_hugepages(struct list_head *l);
+ void copy_huge_page(struct page *dst, struct page *src);
+ 
+ extern unsigned long hugepages_treat_as_movable;
+@@ -128,6 +130,8 @@ static inline int dequeue_hwpoisoned_huge_page(struct page *page)
+ 	return 0;
+ }
+ 
++#define putback_active_hugepage(p) 0
++#define putback_active_hugepages(l) 0
+ static inline void copy_huge_page(struct page *dst, struct page *src)
+ {
+ }
+diff --git v3.9-rc3.orig/include/linux/migrate.h v3.9-rc3/include/linux/migrate.h
+index a405d3dc..d4c6c08 100644
+--- v3.9-rc3.orig/include/linux/migrate.h
++++ v3.9-rc3/include/linux/migrate.h
+@@ -41,6 +41,9 @@ extern int migrate_page(struct address_space *,
+ 			struct page *, struct page *, enum migrate_mode);
+ extern int migrate_pages(struct list_head *l, new_page_t x,
+ 		unsigned long private, enum migrate_mode mode, int reason);
++extern int migrate_movable_pages(struct list_head *from,
++		new_page_t get_new_page, unsigned long private,
++		enum migrate_mode mode, int reason);
+ extern int migrate_huge_page(struct page *, new_page_t x,
+ 		unsigned long private, enum migrate_mode mode);
+ 
+@@ -62,6 +65,9 @@ static inline void putback_movable_pages(struct list_head *l) {}
+ static inline int migrate_pages(struct list_head *l, new_page_t x,
+ 		unsigned long private, enum migrate_mode mode, int reason)
+ 	{ return -ENOSYS; }
++static inline int migrate_movable_pages(struct list_head *from,
++		new_page_t get_new_page, unsigned long private, bool offlining,
++		enum migrate_mode mode, int reason) { return -ENOSYS; }
+ static inline int migrate_huge_page(struct page *page, new_page_t x,
+ 		unsigned long private, enum migrate_mode mode)
+ 	{ return -ENOSYS; }
+diff --git v3.9-rc3.orig/mm/hugetlb.c v3.9-rc3/mm/hugetlb.c
+index 98a478e..a787c44 100644
+--- v3.9-rc3.orig/mm/hugetlb.c
++++ v3.9-rc3/mm/hugetlb.c
+@@ -48,7 +48,8 @@ static unsigned long __initdata default_hstate_max_huge_pages;
+ static unsigned long __initdata default_hstate_size;
+ 
+ /*
+- * Protects updates to hugepage_freelists, nr_huge_pages, and free_huge_pages
++ * Protects updates to hugepage_freelists, hugepage_activelist, nr_huge_pages,
++ * free_huge_pages, and surplus_huge_pages.
+  */
+ DEFINE_SPINLOCK(hugetlb_lock);
+ 
+@@ -3182,3 +3183,21 @@ int dequeue_hwpoisoned_huge_page(struct page *hpage)
+ 	return ret;
+ }
+ #endif
++
++void putback_active_hugepage(struct page *page)
++{
++	VM_BUG_ON(!PageHead(page));
++	spin_lock(&hugetlb_lock);
++	list_move_tail(&page->lru, &(page_hstate(page))->hugepage_activelist);
++	spin_unlock(&hugetlb_lock);
++	put_page(page);
++}
++
++void putback_active_hugepages(struct list_head *l)
++{
++	struct page *page;
++	struct page *page2;
++
++	list_for_each_entry_safe(page, page2, l, lru)
++		putback_active_hugepage(page);
++}
+diff --git v3.9-rc3.orig/mm/migrate.c v3.9-rc3/mm/migrate.c
+index ec692a3..f69f354 100644
+--- v3.9-rc3.orig/mm/migrate.c
++++ v3.9-rc3/mm/migrate.c
+@@ -100,6 +100,10 @@ void putback_movable_pages(struct list_head *l)
+ 	struct page *page2;
+ 
+ 	list_for_each_entry_safe(page, page2, l, lru) {
++		if (unlikely(PageHuge(page))) {
++			putback_active_hugepage(page);
++			continue;
++		}
+ 		list_del(&page->lru);
+ 		dec_zone_page_state(page, NR_ISOLATED_ANON +
+ 				page_is_file_cache(page));
+@@ -1023,7 +1027,11 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
+ 		list_for_each_entry_safe(page, page2, from, lru) {
+ 			cond_resched();
+ 
+-			rc = unmap_and_move(get_new_page, private,
++			if (PageHuge(page))
++				rc = unmap_and_move_huge_page(get_new_page,
++						private, page, pass > 2, mode);
++			else
++				rc = unmap_and_move(get_new_page, private,
+ 						page, pass > 2, mode);
+ 
+ 			switch(rc) {
+@@ -1056,6 +1064,20 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
+ 	return rc;
+ }
+ 
++int migrate_movable_pages(struct list_head *from, new_page_t get_new_page,
++			unsigned long private,
++			enum migrate_mode mode, int reason)
++{
++	int err = 0;
++
++	if (!list_empty(from)) {
++		err = migrate_pages(from, get_new_page, private, mode, reason);
++		if (err)
++			putback_movable_pages(from);
++	}
++	return err;
++}
++
+ int migrate_huge_page(struct page *hpage, new_page_t get_new_page,
+ 		      unsigned long private, enum migrate_mode mode)
+ {
+-- 
+1.7.11.7
+
