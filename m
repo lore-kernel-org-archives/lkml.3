@@ -1,113 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422913Ab3CVSg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 14:36:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43291 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422880Ab3CVSg1 (ORCPT
+	id S1754675Ab3CVSiA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 14:38:00 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:55912 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754499Ab3CVSh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 14:36:27 -0400
-Message-ID: <1363977368.3728.35.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] register_console: prevent adding the same console twice
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Andreas =?ISO-8859-1?Q?Bie=DFmann?= <andreas@biessmann.de>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay@vrfy.org>, stable@vger.kernel.org
-Date: Fri, 22 Mar 2013 18:36:08 +0000
-In-Reply-To: <1363947052-15605-1-git-send-email-andreas@biessmann.de>
-References: <1363947052-15605-1-git-send-email-andreas@biessmann.de>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-IRp0Lp8FklGCz4MV84fW"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:9535:520b:eb30:917a
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Fri, 22 Mar 2013 14:37:59 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org, zhong@linux.vnet.ibm.com, geoff@infradead.org,
+        tglx@linutronix.de
+Subject: Re: [PATCH] nohz1: Documentation
+References: <CAFTL4hybMf+9GjjyKRSEEp0x+wT7OwpKShE5sR_JqW24DGfKOw@mail.gmail.com>
+	<1363636794.15703.32@driftwood>
+	<CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com>
+	<20130318222548.GG3656@linux.vnet.ibm.com>
+	<1363822338.6345.33.camel@gandalf.local.home>
+	<20130320235545.GL3637@linux.vnet.ibm.com>
+	<1363825631.6345.45.camel@gandalf.local.home>
+	<514B2B03.4030301@linux.intel.com>
+	<20130321171806.GX3637@linux.vnet.ibm.com>
+	<514B464A.50700@linux.intel.com>
+	<20130321180218.GA3637@linux.vnet.ibm.com>
+Date: Fri, 22 Mar 2013 11:37:55 -0700
+In-Reply-To: <20130321180218.GA3637@linux.vnet.ibm.com> (Paul E. McKenney's
+	message of "Thu, 21 Mar 2013 11:02:18 -0700")
+Message-ID: <87wqszb7r0.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
 
---=-IRp0Lp8FklGCz4MV84fW
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> On Thu, Mar 21, 2013 at 10:41:30AM -0700, Arjan van de Ven wrote:
+>> On 3/21/2013 10:18 AM, Paul E. McKenney wrote:
+>> >	o	Use the "idle=poll" boot parameter.  However, please note
+>> >		that use of this parameter can cause your CPU to overheat,
+>> >		which may cause thermal throttling to degrade your
+>> >		latencies --and that this degradation can be even worse
+>> >		than that of dyntick-idle.
+>> 
+>> it also disables (effectively) Turbo Mode on Intel cpus... which can
+>> cost you a serious percentage of performance
+>
+> Thank you, added!  Please see below for the updated list.
+>
+> 							Thanx, Paul
+>
+> ------------------------------------------------------------------------
+>
+> o	Dyntick-idle slows transitions to and from idle slightly.
+> 	In practice, this has not been a problem except for the most
+> 	aggressive real-time workloads, which have the option of disabling
+> 	dyntick-idle mode, an option that most of them take.  However,
+> 	some workloads will no doubt want to use adaptive ticks to
+> 	eliminate scheduling-clock-tick latencies.  Here are some
+> 	options for these workloads:
+>
+> 	a.	Use PMQOS from userspace to inform the kernel of your
+> 		latency requirements (preferred).
 
-On Fri, 2013-03-22 at 11:10 +0100, Andreas Bie=C3=9Fmann wrote:
-> This patch guards the console_drivers list to be corrupted. The
-> for_each_console() macro insist on a strictly forward list ended by NULL:
->=20
->  con0->next->con1->next->NULL
->=20
-> Without this patch it may happen easily to destroy this list for example =
-by
-> adding 'earlyprintk' twice. This will result in the following list:
->=20
->  con0->next->con0
->=20
-> This in turn will result in an endless loop in console_unlock() later on =
-by
-> printing the first __log_buf line endlessly.
->=20
-> Signed-off-by: Andreas Bie=C3=9Fmann <andreas@biessmann.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Kay Sievers <kay@vrfy.org>
-> Cc: stable@vger.kernel.org
-> ---
->  kernel/printk.c |    8 ++++++++
->  1 file changed, 8 insertions(+)
->=20
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index 0b31715..f78bfcd 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -2254,6 +2254,14 @@ void register_console(struct console *newcon)
->  	unsigned long flags;
->  	struct console *bcon =3D NULL;
-> =20
-> +	if (console_drivers)
-> +		for_each_console(bcon)
-> +			if (bcon =3D=3D newcon) {
-> +				pr_warn("prevent adding console '%s%d' twice\n",
-> +					newcon->name, newcon->index);
+This is not only the preferred approach, but the *only* approach
+available on non-x86 systems.  Perhaps the others should be marked as
+x86-only?
 
-Since this is surely a bug in the calling driver, I think the warning
-should be louder, i.e. use WARN.
+Kevin
 
-Ben.
-
-> +				return;
-> +			}
-> +
->  	/*
->  	 * before we register a new CON_BOOT console, make sure we don't
->  	 * already have a valid console
-
---=20
-Ben Hutchings
-Make three consecutive correct guesses and you will be considered an expert=
-.
-
---=-IRp0Lp8FklGCz4MV84fW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUUykmOe/yOyVhhEJAQq3eBAAgvLwIV251d3A82E/N9kZgFoExWO3xy31
-hArNHyHXklQdukgVQH9uqKJxYpIhr9rhjf2O7TL6yBrNDA306AujTaqWM51bcqe1
-vM9VwzW0jFifRTdv1tAhbm0ydZ3MiV893JYtu4vzIdV/+rAa7N0QpYjU2d0PKYpV
-UpNcDfmBAJhrd6Y3kyxFqSUjhW104NU+B+RVet4cpom0EPRgjyqPHZnOf/XnbU5M
-PGX/4yTVpWGI9fWFddg25qjpMRBRMmj7tDqTBOkk4LZdLbFSoRzL6JF4qWHRjiBZ
-V33KxmRHCOPVaYQcExmDPFhebFCcQwBBSddBYVeLqloZpatLlVCZEvwbv3JQ3Qpl
-XXvSs7GN4obQ/yA+x1CqcK6ITI39OqryAJ6cfm5BUIrQzYvDbn51oBvuBGIkF868
-CRHQUFKzhLawFwuOOp8YiqbAuVdiEZsKLAkRk5tCGQqLLNlHAeGyDEnarVJvaQdU
-Tpa5EVVwdDZZ58+EfM3L/tpPu08TJejbEPIbmoqhIgbAJ4COn5CWaXvacPkj0jab
-IdQsDbvXK3QMc1zgEPd0mHAROroio2DzcWavEbWlEpnWztFHo/A5En5EKgJ2nxgO
-PMnZZX0fWBeBweprXV4rkxjMVPYXx0sUFa+jx5ZTdaEp38Pb5upUoP/CfWy3MYq7
-7eubLYaO/r8=
-=LijB
------END PGP SIGNATURE-----
-
---=-IRp0Lp8FklGCz4MV84fW--
+> 	b.	Use the "idle=mwait" boot parameter.
+>
+> 	c.	Use the "intel_idle.max_cstate=" to limit the maximum
+> 		depth C-state depth.
+>
+> 	d.	Use the "idle=poll" boot parameter.  However, please note
+> 		that use of this parameter can cause your CPU to overheat,
+> 		which may cause thermal throttling to degrade your
+> 		latencies -- and that this degradation can be even worse
+> 		than that of dyntick-idle.  Furthermore, this parameter
+> 		effectively disables Turbo Mode on Intel CPUs, which
+> 		can significantly reduce maximum performance.
