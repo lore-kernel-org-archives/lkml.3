@@ -1,150 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073Ab3CVTqO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 15:46:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38298 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754670Ab3CVTqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 15:46:13 -0400
-Date: Fri, 22 Mar 2013 19:46:09 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        dormando <dormando@rydia.net>, Satoru Moriya <satoru.moriya@hds.com>,
-        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning
- requirements for kswapd
-Message-ID: <20130322194609.GC32241@suse.de>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-3-git-send-email-mgorman@suse.de>
- <20130321162518.GB27848@cmpxchg.org>
- <20130321180238.GM1878@suse.de>
- <20130322165349.GI1953@cmpxchg.org>
- <20130322182556.GB32241@suse.de>
- <20130322190902.GA4611@cmpxchg.org>
+	id S1755304Ab3CVTxo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 15:53:44 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:29264 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754957Ab3CVTxm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 15:53:42 -0400
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Myron Stowe <myron.stowe@gmail.com>, Robert Hancock <hancockrwd@gmail.com>
+CC: Myron Stowe <myron.stowe@redhat.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "yuxiangl@marvell.com" <yuxiangl@marvell.com>,
+        "yxlraid@gmail.com" <yxlraid@gmail.com>,
+        "greg@kroah.com" <greg@kroah.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "kay@vrfy.org" <kay@vrfy.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/3] PCI: Handle device quirks when accessing sysfs
+ resource<N> entries
+Thread-Topic: [PATCH 2/3] PCI: Handle device quirks when accessing sysfs
+ resource<N> entries
+Thread-Index: AQHOJpdx3Rx518ke6EmXvZU4KjrhqZix2cQAgAAEYwCAAA5SgIAAJYVg
+Date: Fri, 22 Mar 2013 19:52:36 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B402950DAF0FE@G9W0745.americas.hpqcorp.net>
+References: <20130321043449.7229.81056.stgit@amt.stowe>
+	<20130321043502.7229.43877.stgit@amt.stowe>	<514BAB13.3000101@gmail.com>
+	<CAL-B5D2zJYPNYcCD3StXjnmQit5k05_Zp=cjeeqRLQkzb2g4UQ@mail.gmail.com>
+	<CADLC3L33VbGGRPpVA2vUzE1KtT7ow5oTM0KCbSENo456dEYPUg@mail.gmail.com>
+ <CAL-B5D3YHUsDfJS4spKkc7sTFM=e8ZwMcaiKoMfHnEdQQsHHBA@mail.gmail.com>
+In-Reply-To: <CAL-B5D3YHUsDfJS4spKkc7sTFM=e8ZwMcaiKoMfHnEdQQsHHBA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130322190902.GA4611@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 03:09:02PM -0400, Johannes Weiner wrote:
-> > To preserve existing behaviour, that makes sense. I'm not convinced that
-> > it's necessarily the best idea but altering it would be beyond the scope
-> > of this series and bite off more than I'm willing to chew. This actually
-> > simplifies things a bit and shrink_lruvec turns into the (untested) code
-> > below. It does not do exact proportional scanning but I do not think it's
-> > necessary to either and is a useful enough approximation. It still could
-> > end up reclaiming much more than sc->nr_to_reclaim unfortunately but fixing
-> > it requires reworking how kswapd scans at different priorities.
+
+
+> On Fri, Mar 22, 2013 at 9:55 AM, Robert Hancock <hancockrwd@gmail.com>
+> wrote:
+> > On Fri, Mar 22, 2013 at 9:39 AM, Myron Stowe <myron.stowe@gmail.com>
+> wrote:
+> >> On Thu, Mar 21, 2013 at 6:51 PM, Robert Hancock
+> <hancockrwd@gmail.com> wrote:
+> >>> On 03/20/2013 10:35 PM, Myron Stowe wrote:
+> >>>>
+> >>>> Sysfs includes entries to memory regions that back a PCI device's BARs.
+> >>>> The pci-sysfs entries backing I/O Port BARs can be accessed by userspace,
+> >>>> providing direct access to the device's registers.  File permissions
+> >>>> prevent random users from accessing the device's registers through these
+> >>>> files, but don't stop a privileged app that chooses to ignore the purpose
+> >>>> of these files from doing so.
+> >>>>
+> >>>> There are devices with abnormally strict restrictions with respect to
+> >>>> accessing their registers; aspects that are typically handled by the
+> >>>> device's driver.  When these access restrictions are not followed - as
+> >>>> when a userspace app such as "udevadm info --attribute-walk
+> >>>> --path=/sys/..." parses though reading all the device's sysfs entries - it
+> >>>> can cause such devices to fail.
+> >>>>
+> >>>> This patch introduces a quirking mechanism that can be used to detect
+> >>>> accesses that do no meet the device's restrictions, letting a device
+> >>>> specific method intervene and decide how to progress.
+> >>>>
+> >>>> Reported-by: Xiangliang Yu <yuxiangl@marvell.com>
+> >>>> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+> >>>
+> >>>
+> >>> I honestly don't think there's much point in even attempting this strategy.
+> >>> This list of devices in the quirk can't possibly be complete. It would
+> >>> likely be easier to enumerate a white-list of devices that can deal with
+> >>> their IO ports being read willy-nilly than a blacklist of those that don't,
+> >>> as there's likely countless devices that fall into this category. Even if
+> >>> they don't choke as badly as these ones do, it's quite likely that bad
+> >>> behavior will result.
+> >>
+> >> For the device in question, it seems abnormally restrictive in its
+> >> access limitations to BAR1 and BAR3.  The device reserves 4 Bytes of
+> >> I/O Port space for these BARs, which is likely based on PCI's DWord
+> >> based protocol, but "chokes (we still have not received any specifics
+> >> on this yet)" on any access other than a single Byte access at offset
+> >> 0x2 (x86 supports 1, 2, and 4 Byte I/O Port accesses).  This seems to
+> >> imply that the device did not back the other three reserved Bytes it
+> >> claims in any way, which again, seems peculiar to this particular
+> >> device as other similar devices tend to back the reserved bytes they
+> >> claim and return 0's when accessed.
+> >
+> > I don't think it's really that unusual. IO ports are weird, they're
+> > not necessarily emulating any kind of normal memory - doing a 32-bit
+> > access on IO port 0 isn't necessarily equivalent at all to doing
+> > separate 8-bit accesses on IO ports 0, 1, 2 and 3 for example. They
+> > can do completely different things. For legacy SFF ATA controllers,
+> > IIRC most of the IO ports only expect 8-bit accesses other than the
+> > PIO data register which can do 16 or 32-bit accesses (which just gives
+> > you a different amount of data when doing different size reads from
+> > the same location - it doesn't give you the data for the IO ports 2 or
+> > 3 bytes ahead of that when doing a 32-bit read, like you might expect
+> > if you were thinking of it like memory).
 > 
-> In which way does it not do exact proportional scanning?  I commented
-> on one issue below, but maybe you were referring to something else.
+> Very good point; I did have a more memory based mindset.
+> 
+> > So it's not too shocking that
+> > the designer of these Marvell devices didn't pay too much attention to
+> > what happens if you access the ports in an unexpected way.
+> >
+> > ...
+> >>
+> >> ...
+> 
+> So this suggests that we will never be able to deal with a userspace
+> app accessing device registers in a unknowledgable, random, fashion -
+> the exact situation we are currently in today.  We could get to the
+> point of supporting UIO drivers, which would be more like device
+> drivers and have intimate detailed knowledge of what they are driving
+> and which would also introduce some of the mutual-exclusive ownership
+> issues we have talked about, but not unknowing userspace apps.
 > 
 
-You guessed what I was referring to correctly.
+The PCI Express specification allows devices to choose what types of accesses they support to the 
+IO or memory address spaces provided by their BARs:
 
-> Yes, it's a little unfortunate that we escalate to a gigantic scan
-> window first, and then have to contort ourselves in the process of
-> backing off gracefully after we reclaimed a few pages...
-> 
+Excerpt from PCI Express Base Specification 3.0 page 109:
+" When a device's programming model restricts (vs. what is otherwise permitted in PCI Express) the
+characteristics of a Request, that device is permitted to "Completer Abort" any Requests which
+violate the programming model. Examples include unaligned or wrong-size access to a register
+block and unsupported size of request to a Memory Space.
 
-The next patch "mm: vmscan: Flatten kswapd priority loop" mitigates the
-problem slightly by improving how kswapd controls when priority gets raised.
-It's not perfect though, lots of pages under writeback at the tail of
-the LRU will still raise the priority quickly.
+Generally, devices are able to assume a restricted programming model when all communication will
+be between the device's driver software and the device itself. Devices which may be accessed
+directly by operating system software or by applications which may not comprehend the restricted
+programming model of the device (typically devices which implement legacy capabilities) should be
+designed to support all types of Requests which are possible in the existing usage model for the
+device. If this is not done, the device may fail to operate with existing software."
 
-> > Is this closer to what you had in mind?
-> > 
-> > static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
-> > {
-> > 	unsigned long nr[NR_LRU_LISTS];
-> > 	unsigned long nr_to_scan;
-> > 	enum lru_list lru;
-> > 	unsigned long nr_reclaimed = 0;
-> > 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
-> > 	unsigned long nr_anon_scantarget, nr_file_scantarget;
-> > 	struct blk_plug plug;
-> > 	bool scan_adjusted = false;
-> > 
-> > 	get_scan_count(lruvec, sc, nr);
-> > 
-> > 	/* Record the original scan target for proportional adjustments later */
-> > 	nr_file_scantarget = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE] + 1;
-> > 	nr_anon_scantarget = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON] + 1;
-> > 
-> > 	blk_start_plug(&plug);
-> > 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
-> > 					nr[LRU_INACTIVE_FILE]) {
-> > 		unsigned long nr_anon, nr_file, percentage;
-> > 
-> > 		for_each_evictable_lru(lru) {
-> > 			if (nr[lru]) {
-> > 				nr_to_scan = min(nr[lru], SWAP_CLUSTER_MAX);
-> > 				nr[lru] -= nr_to_scan;
-> > 
-> > 				nr_reclaimed += shrink_list(lru, nr_to_scan,
-> > 							    lruvec, sc);
-> > 			}
-> > 		}
-> > 
-> > 		if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
-> > 			continue;
-> > 
-> > 		/*
-> > 		 * For global direct reclaim, reclaim only the number of pages
-> > 		 * requested. Less care is taken to scan proportionally as it
-> > 		 * is more important to minimise direct reclaim stall latency
-> > 		 * than it is to properly age the LRU lists.
-> > 		 */
-> > 		if (global_reclaim(sc) && !current_is_kswapd())
-> > 			break;
-> > 
-> > 		/*
-> > 		 * For kswapd and memcg, reclaim at least the number of pages
-> > 		 * requested. Ensure that the anon and file LRUs shrink
-> > 		 * proportionally what was requested by get_scan_count(). We
-> > 		 * stop reclaiming one LRU and reduce the amount scanning
-> > 		 * proportional to the original scan target.
-> > 		 */
-> > 		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
-> > 		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
-> > 
-> > 		if (nr_file > nr_anon) {
-> > 			lru = LRU_BASE;
-> > 			percentage = nr_anon * 100 / nr_anon_scantarget;
-> > 		} else {
-> > 			lru = LRU_FILE;
-> > 			percentage = nr_file * 100 / nr_file_scantarget;
-> > 		}
-> > 
-> > 		/* Stop scanning the smaller of the LRU */
-> > 		nr[lru] = 0;
-> > 		nr[lru + LRU_ACTIVE] = 0;
-> > 
-> > 		/* Reduce scanning of the other LRU proportionally */
-> > 		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
-> > 		nr[lru] = nr[lru] * percentage / 100;;
-> > 		nr[lru + LRU_ACTIVE] = nr[lru + LRU_ACTIVE] * percentage / 100;
-> 
-> The percentage is taken from the original goal but then applied to the
-> remainder of scan goal for the LRUs we continue scanning.  The more
-> pages that have already been scanned, the more inaccurate this gets.
-> Is that what you had in mind with useful enough approximation?
+How the system handles errors like Completer Aborts will vary - NMIs, hangs, or even processing 
+bogus data are all possible.
 
-Yes. I could record the original scan rates, recalculate as a percentage
-and then do something like
+There are some baseline rules on configuration space accesses (so generic PCI topology software
+can work with all PCI cards), but not IO and memory space.  It's prudent to not generate IO
+or memory accesses you don't know are supposed to work.
 
-nr[lru] = min(nr[lru], origin_nr[lru] * percentage / 100)
-
-but it was not obvious that the result would be any better.
+---
+Rob Elliott    HP Server Storage
 
 
--- 
-Mel Gorman
-SUSE Labs
+
