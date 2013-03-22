@@ -1,189 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161083Ab3CVRHu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 13:07:50 -0400
-Received: from exprod7og109.obsmtp.com ([64.18.2.171]:47717 "EHLO
-	exprod7og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161000Ab3CVRHs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 13:07:48 -0400
-X-Forefront-Antispam-Report: CIP:157.56.241.149;KIP:(null);UIP:(null);(null);H:BL2PRD0511HT001.namprd05.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -3
-X-BigFish: PS-3(zzbb2dI98dI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275ch8275bhz2dh2a8h668h839h946he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Benoit Lourdelet <blourdel@juniper.net>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lxc-users <lxc-users@lists.sourceforge.net>
-Subject: Re: [Lxc-users] Containers slow to start after 1600
-Thread-Topic: [Lxc-users] Containers slow to start after 1600
-Thread-Index: AQHOHnHbka0gSHH4mk6h9e1etrhar5igwnOAgAGPI4CAADkXgIAJTLEA///3UICAATVPAIAAXjqAgAAZTACAAAngAIAAQaHBgAFaDQD///fPSoAC+YUA
-Date: Fri, 22 Mar 2013 17:05:44 +0000
-Message-ID: <CD724CB7.72DE%blourdel@juniper.net>
-In-Reply-To: <87vc8ldcy7.fsf@xmission.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.2.2.120421
-x-originating-ip: [10.255.131.4]
-Content-Type: text/plain; charset="Windows-1252"
-Content-ID: <02DF07C12D178E4DAFFABC13EC9B5598@namprd05.prod.outlook.com>
-Content-Transfer-Encoding: 8BIT
+	id S1161113Ab3CVRJZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 13:09:25 -0400
+Received: from void.printf.net ([89.145.121.20]:46903 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161035Ab3CVRJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 13:09:24 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
+        tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
+        mingo@redhat.com, peterz@infradead.org, rostedt@goodmis.org,
+        linaro-kernel@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, Arvind.Chauhan@arm.com,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH V3 5/7] mmc: queue work on any cpu
+References: <cover.1363617402.git.viresh.kumar@linaro.org>
+	<08070dbf56439c84b8c25837c2049ff8e8eafd6e.1363617402.git.viresh.kumar@linaro.org>
+Date: Fri, 22 Mar 2013 13:09:13 -0400
+In-Reply-To: <08070dbf56439c84b8c25837c2049ff8e8eafd6e.1363617402.git.viresh.kumar@linaro.org>
+	(Viresh Kumar's message of "Mon, 18 Mar 2013 20:53:27 +0530")
+Message-ID: <87sj3nl5ty.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%12219$Dn%XMISSION.COM$RO%2$TLS%5$FQDN%onpremiseedge-1018244.customer.frontbridge.com$TlsDn%o365mail.juniper.net
-X-FOPE-CONNECTOR: Id%12219$Dn%UBUNTU.COM$RO%2$TLS%5$FQDN%onpremiseedge-1018244.customer.frontbridge.com$TlsDn%o365mail.juniper.net
-X-FOPE-CONNECTOR: Id%12219$Dn%VGER.KERNEL.ORG$RO%2$TLS%5$FQDN%onpremiseedge-1018244.customer.frontbridge.com$TlsDn%o365mail.juniper.net
-X-FOPE-CONNECTOR: Id%12219$Dn%LISTS.SOURCEFORGE.NET$RO%2$TLS%5$FQDN%onpremiseedge-1018244.customer.frontbridge.com$TlsDn%o365mail.juniper.net
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-I tried multiple kernels with similar results.
-
-I ran the following on 3.8.2
-
-$ cat > test-script.sh << 'EOF'
-#!/bin/bash
-for i in $(seq 1 2000) ; do
-	ip link add a$i type veth peer name b$i
-done
-EOF
-
-$ perf record -a test-script.sh
-$ perf report
-
-
-# event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 =
-0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1,
-precise_ip = 0, id = { 33
-# HEADER_NUMA_TOPOLOGY info available, use -I to display
-# pmu mappings: cpu = 4, software = 1, uncore_pcu = 15, tracepoint = 2,
-uncore_imc_0 = 17, uncore_imc_1 = 18, uncore_imc_2 = 19, uncore_imc_3 =
-20, uncore_qpi_0 = 2
-# ========
-#
-# Samples: 2M of event 'cycles'
-# Event count (approx.): 638240250735
-#
-# Overhead Command Shared Object Symbol
-# ........ ............... .............................
-.......................................ŠŠ.
-#
-    11.13% ip [kernel.kallsyms] [k] snmp_fold_field
-   
-     4.24% ip [kernel.kallsyms] [k] find_next_bit
-   
-     2.51% swapper [kernel.kallsyms] [k] intel_idle
-        
-     1.71% init libnih.so.1.0.0 [.] nih_list_add_after
-   
-     1.35% ip [kernel.kallsyms] [k] memcpy
-   
-     1.28% ip [xt_conntrack] [k] 0x0000000000005296
-     1.26% ip [kernel.kallsyms] [k] rtnl_fill_ifinfo
-   
-     1.25% sed ld-2.15.so [.] 0x0000000000015972
-     1.13% ifquery ld-2.15.so [.] 0x0000000000008bdb
- 
-     1.10% init [kernel.kallsyms] [k] page_fault
-     
-     1.00% ifquery [kernel.kallsyms] [k] page_fault
-        
-     0.97% init libc-2.15.so [.] 0x0000000000131e42
-     0.94% sed [kernel.kallsyms] [k] page_fault
-    
-     0.75% ip [kernel.kallsyms] [k] inet6_fill_ifla6_attrs
-   
-     0.67% ip [kernel.kallsyms] [k] memset
-   
-     0.66% init [kernel.kallsyms] [k] copy_pte_range
-     
-     0.64% init init [.] 0x0000000000012433
-     0.58% sed libc-2.15.so [.] 0x000000000008149a
-     0.48% init libnih.so.1.0.0 [.] nih_tree_next_post_full
-
-
-
-
-If I increase the number of links created , time spent for SNMP can even
-increase :
-
-12.04% ip [kernel.kallsyms] [k] snmp_fold_field
-    
-    12.03% sudo [kernel.kallsyms] [k] snmp_fold_field
-          
-     8.56% sudo libc-2.15.so [.] 0x000000000009198b
-     
-     4.39% sudo [kernel.kallsyms] [k] find_next_bit
-          
-     4.36% ip [kernel.kallsyms] [k] find_next_bit
-        
-     3.17% irqbalance libc-2.15.so [.] 0x000000000003d298
-           
-     2.01% init libnih.so.1.0.0 [.] nih_list_add_after
-        
-     1.63% ip [kernel.kallsyms] [k] rtnl_fill_ifinfo
-
-
-Regards
-
-Benoit
-
-
-On 20/03/2013 21:38, "Eric W. Biederman" <ebiederm@xmission.com> wrote:
-
->Benoit Lourdelet <blourdel@juniper.net> writes:
+On Mon, Mar 18 2013, Viresh Kumar wrote:
+> mmc uses workqueues for running mmc_rescan(). There is no real dependency of
+> scheduling these on the cpu which scheduled them.
 >
->> Hello,
->>
->> The measurement has been done with kernel 3.8.2.
->>
->> Linux ieng-serv06 3.7.9 #3 SMP Wed Feb 27 02:38:58 PST 2013 x86_64
->>x86_64
->> x86_64 GNU/Linux
+> On a idle system, it is observed that and idle cpu wakes up many times just to
+> service this work. It would be better if we can schedule it on a cpu which isn't
+> idle to save on power.
 >
->Two different kernel versions?
+> By idle cpu (from scheduler's perspective) we mean:
+> - Current task is idle task
+> - nr_running == 0
+> - wake_list is empty
 >
->> What information would you like to see on the kernel ?
+> This patch replaces the queue_delayed_work() with
+> queue_delayed_work_on_any_cpu() siblings.
 >
->The question is where is the kernel spending it's time.  So profiling
->information should help us see that.  Something like.
+> This routine would look for the closest (via scheduling domains) non-idle cpu
+> (non-idle from schedulers perspective). If the current cpu is not idle or all
+> cpus are idle, work will be scheduled on local cpu.
 >
->$ cat > test-script.sh << 'EOF'
->#!/bin/bash
->for i in $(seq 1 2000) ; do
->	ip link add a$i type veth peer name b$i
->done
->EOF
+> Cc: Chris Ball <cjb@laptop.org>
+> Cc: linux-mmc@vger.kernel.org
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/mmc/core/core.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
->$ perf record -a -g test-script.sh
->$ perf report 
->
->I don't do anywhere enough work with perf to remember what good options
->are.
->
->You definititely don't want to time anything you are doing something
->silly like asking ip link add to generate device names which is O(N^2)
->when you create one device at a time.
->
->And of course there is the interesting discrepency.  Why can I add 5000
->veth pairs in 120 seconds and it takes you 1123 seconds.  Do you have a
->very
->slow cpu in your test environment?  Or was your test asking the kernel
->to generate names.
->
->Once we know where the kernel is spending it's time we can look to see
->if there is anything that is easy to fix, and where to point you.
->
->Both my timing and yours indicates that there is something taking O(N^2)
->time in there.  So it would at least be interesting to see what that
->something is.
->
->Eric
->
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index 9290bb5..adf331a 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -85,7 +85,7 @@ MODULE_PARM_DESC(
+>  static int mmc_schedule_delayed_work(struct delayed_work *work,
+>  				     unsigned long delay)
+>  {
+> -	return queue_delayed_work(workqueue, work, delay);
+> +	return queue_delayed_work_on_any_cpu(workqueue, work, delay);
+>  }
+>  
+>  /*
 
+Thanks, pushed to mmc-next for 3.10.
 
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
