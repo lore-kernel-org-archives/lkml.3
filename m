@@ -1,117 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933774Ab3CVQH4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 12:07:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11983 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754489Ab3CVQHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 12:07:55 -0400
-Message-ID: <1363968462.24132.611.camel@bling.home>
-Subject: Re: [PATCH] iommu: add a function to find an iommu group by id
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Joerg Roedel <joerg.roedel@amd.com>, Paul Mackerras <paulus@samba.org>,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Gibson <david@gibson.dropbear.id.au>
-Date: Fri, 22 Mar 2013 10:07:42 -0600
-In-Reply-To: <1363934941-21020-1-git-send-email-aik@ozlabs.ru>
-References: <1363883719.2747.13.camel@ul30vt.home>
-	 <1363934941-21020-1-git-send-email-aik@ozlabs.ru>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933822Ab3CVQO7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 12:14:59 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:45898 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933480Ab3CVQO6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 12:14:58 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJwKkjb5rDUwdDCeCg=
+X-RZG-CLASS-ID: mo00
+Date: Fri, 22 Mar 2013 17:14:53 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, apw@canonical.com, jasowang@redhat.com,
+        Evgeniy Polyakov <zbr@ioremap.net>
+Subject: Re: [PATCH V2 1/1] Drivers: hv: Add a new driver to support host
+ initiated backup
+Message-ID: <20130322161453.GA2767@aepfle.de>
+References: <1363375806-19979-1-git-send-email-kys@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1363375806-19979-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21.rev5641 (2013-02-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-22 at 17:49 +1100, Alexey Kardashevskiy wrote:
-> As IOMMU groups are exposed to the user space by their numbers,
-> the user space can use them in various kernel APIs so the kernel
-> might need an API to find a group by its ID.
-> 
-> As an example, QEMU VFIO on PPC64 platform needs it to associate
-> a logical bus number (LIOBN) with a specific IOMMU group in order
-> to support in-kernel handling of DMA map/unmap requests.
-> 
-> The patch adds the iommu_group_get_by_id(id) function which performs
-> such search.
-> 
-> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> ---
+On Fri, Mar 15, K. Y. Srinivasan wrote:
 
-v2: <describe what changed>
+> This driver has a user-level component (daemon) that invokes the appropriate
 
->  drivers/iommu/iommu.c |   28 ++++++++++++++++++++++++++++
->  include/linux/iommu.h |    1 +
->  2 files changed, 29 insertions(+)
-> 
-> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> index 1065a1a..531cbb5 100644
-> --- a/drivers/iommu/iommu.c
-> +++ b/drivers/iommu/iommu.c
-> @@ -204,6 +204,34 @@ again:
->  }
->  EXPORT_SYMBOL_GPL(iommu_group_alloc);
->  
-> +struct iommu_group *iommu_group_get_by_id(int id)
-> +{
-> +	struct kobject *group_kobj;
-> +	struct iommu_group *grp;
+This change fixes a few compile errors:
 
-This is named "group" everywhere else in this file.
+hv_vss_daemon.c:64:15: warning: unknown escape sequence '\/'
+hv_vss_daemon.c:64:15: warning: unknown escape sequence '\/'
+hv_vss_daemon.c: In function 'vss_operate':
+hv_vss_daemon.c:66: warning: 'return' with no value, in function returning non-void
+hv_vss_daemon.c: In function 'main':
+hv_vss_daemon.c:130: warning: ignoring return value of 'daemon', declared with attribute warn_unused_result
+hv_vss_daemon.c: In function 'vss_operate':
+hv_vss_daemon.c:47: warning: 'fs_op' may be used uninitialized in this function
 
-> +	const char *name;
-> +
-> +	if (!iommu_group_kset)
-> +		return NULL;
-> +
-> +	name = kasprintf(GFP_KERNEL, "%d", id);
-> +	if (!name)
-> +		return NULL;
-> +
-> +	group_kobj = kset_find_obj(iommu_group_kset, name);
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
 
-This does a kobject_get on group->kobj
-
-> +	kfree(name);
-> +
-> +	if (!group_kobj)
-> +		return NULL;
-> +
-> +	grp = container_of(group_kobj, struct iommu_group, kobj);
-> +	BUG_ON(grp->id != id);
-> +
-
-Here you want to exchange one reference for another, so first do the
-get:
-
-> +	kobject_get(grp->devices_kobj);
-
-Now you need to release the get from the find:
-
-kobject_put(&group->kobj)
-
-> +
-> +	return grp;
-> +}
-> +EXPORT_SYMBOL_GPL(iommu_group_get_by_id);
-> +
->  /**
->   * iommu_group_get_iommudata - retrieve iommu_data registered for a group
->   * @group: the group
-> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-> index f3b99e1..00e5d7d 100644
-> --- a/include/linux/iommu.h
-> +++ b/include/linux/iommu.h
-> @@ -113,6 +113,7 @@ struct iommu_ops {
->  extern int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops);
->  extern bool iommu_present(struct bus_type *bus);
->  extern struct iommu_domain *iommu_domain_alloc(struct bus_type *bus);
-> +extern struct iommu_group *iommu_group_get_by_id(int id);
->  extern void iommu_domain_free(struct iommu_domain *domain);
->  extern int iommu_attach_device(struct iommu_domain *domain,
->  			       struct device *dev);
-
-
-
+--- a/tools/hv/hv_vss_daemon.c	2013-03-22 17:06:41.000000000 +0100
++++ b/tools/hv/hv_vss_daemon.c	2013-03-22 17:09:41.000000000 +0100
+@@ -51,7 +51,7 @@ static int vss_operate(int operation)
+ 	FILE *file;
+ 	char *p;
+ 	char *x;
+-	int error;
++	int error = -1;
+ 
+ 	switch (operation) {
+ 	case VSS_OP_FREEZE:
+@@ -60,11 +60,13 @@ static int vss_operate(int operation)
+ 	case VSS_OP_THAW:
+ 		fs_op = "-u ";
+ 		break;
++	default:
++		goto out;
+ 	}
+ 
+-	file = popen("mount | awk '/^\/dev\// { print $3}'", "r");
++	file = popen("mount | awk '/^\\/dev\\// { print $3}'", "r");
+ 	if (file == NULL)
+-		return;
++		goto out;
+ 
+ 	while ((p = fgets(buf, sizeof(buf), file)) != NULL) {
+ 		x = strchr(p, '\n');
+@@ -82,6 +84,7 @@ static int vss_operate(int operation)
+ 	syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
+ 	error = system(cmd);
+ 
++out:
+ 	return error;
+ }
+ 
+@@ -128,7 +131,9 @@ int main(void)
+ 	int	op;
+ 	struct hv_vss_msg *vss_msg;
+ 
+-	daemon(1, 0);
++	if (daemon(1, 0))
++		return 1;
++
+ 	openlog("Hyper-V VSS", 0, LOG_USER);
+ 	syslog(LOG_INFO, "VSS starting; pid is:%d", getpid());
+ 
