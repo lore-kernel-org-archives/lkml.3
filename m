@@ -1,84 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab3CVEJy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 00:09:54 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50087 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab3CVEJx (ORCPT
+	id S1753940Ab3CVEMz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 00:12:55 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:54879 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383Ab3CVEMx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 00:09:53 -0400
-Date: Fri, 22 Mar 2013 15:09:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
-        Anson Huang <b20788@freescale.com>
-Subject: linux-next: manual merge of the imx-mxs tree with the arm-soc tree
-Message-Id: <20130322150941.dd103b83bc0da8a4bcb1647f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__22_Mar_2013_15_09_41_+1100_L6vLV3z+j=a2lcvQ"
+	Fri, 22 Mar 2013 00:12:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130322032410.GA19377@dcvr.yhbt.net>
+References: <20130321115259.GA17883@dcvr.yhbt.net>
+	<CAMP5XgfKfuF4Lo1PVoqBnjynB6COWVhVcqzKV3PAic7HLP7FaQ@mail.gmail.com>
+	<20130322032410.GA19377@dcvr.yhbt.net>
+Date: Thu, 21 Mar 2013 21:07:14 -0700
+Message-ID: <CAMP5XgcPG6-ikNE5jQHL9vNVPrM4wrMb8HYfYcEfT2hW6a2pUA@mail.gmail.com>
+Subject: Re: [RFC v3 1/2] epoll: avoid spinlock contention with wfcqueue
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__22_Mar_2013_15_09_41_+1100_L6vLV3z+j=a2lcvQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 21, 2013 at 8:24 PM, Eric Wong <normalperson@yhbt.net> wrote:
+> Arve Hjønnevåg <arve@android.com> wrote:
+>> On Thu, Mar 21, 2013 at 4:52 AM, Eric Wong <normalperson@yhbt.net> wrote:
+>> > Changes since v2:
+>> > * epi->state is no longer atomic, we only cmpxchg in ep_poll_callback
+>> >   now and rely on implicit barriers in other places for reading.
+>> > * intermediate EP_STATE_DEQUEUE removed, this (with xchg) caused too
+>> >   much overhead in the ep_send_events loop and could not eliminate
+>> >   starvation dangers from improper EPOLLET usage (the original code
+>> >   had this problem, too, the window is just a few cycles larger, now).
+>> > * minor code cleanups
+>
+>> >                 /*
+>> >                  * Activate ep->ws before deactivating epi->ws to prevent
+>>
+>> Does anything deactivate ep->ws now?
+>
+> Oops, I left that out when I killed ep_scan_ready_list.
+> But I think we need a different approach to wakeup sources in
+> this series...
+>
+>> > +               /*
+>> > +                * reset item state for EPOLLONESHOT and EPOLLET
+>> > +                * no barrier here, rely on ep->mtx release for write barrier
+>> > +                */
+>>
+>> What happens if ep_poll_callback runs before you set epi->state below?
+>> It used to queue on ep->ovflist and call __pm_stay_awake on ep->ws,
+>> but now it does not appear to do anything.
+>>
+>> > +               epi->state = EP_STATE_IDLE;
+>> >         }
+>> >
+>> >         return eventcnt;
+>> >  }
+>> >
+>
+> With EPOLLET and improper usage (not hitting EAGAIN), the event now
+> has a larger window to be lost (as mentioned in my changelog).
+>
 
-Hi Shawn,
+What about the case where EPOLLET is not set? The old code did not
+drop events in that case.
 
-Today's linux-next merge of the imx-mxs tree got a conflict in
-arch/arm/mach-imx/mach-imx6q.c between commit da4a686a2cfb ("ARM:
-smp_twd: convert to use CLKSRC_OF init") from the arm-soc tree and commit
-371287432334 ("ARM: imx: enable anatop suspend/resume") from the imx-mxs
-tree.
+> As far as correct __pm_stay_awake/__pm_relax handling, perhaps adding
+> an atomic counter to struct eventpoll (or each epitem) will work?
+>
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+The wakeup_source should stay in sync with the epoll state. I don't
+think any additional state is needed.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> If we go with atomic counter in struct eventpoll, is per-epitem
+> wakeup_source still necessary?  We have space in epitem now, but
+> maybe one day we will might need it.
+>
 
-diff --cc arch/arm/mach-imx/mach-imx6q.c
-index b59ddcb,31aee4d..0000000
---- a/arch/arm/mach-imx/mach-imx6q.c
-+++ b/arch/arm/mach-imx/mach-imx6q.c
-@@@ -291,8 -257,7 +256,7 @@@ static void __init imx6q_init_irq(void
-  static void __init imx6q_timer_init(void)
-  {
-  	mx6q_clocks_init();
- -	twd_local_timer_of_register();
- +	clocksource_of_init();
-- 	imx_print_silicon_rev("i.MX6Q", imx6q_revision());
-  }
- =20
-  static const char *imx6q_dt_compat[] __initdata =3D {
+The wakeup_source per epitem is useful for accounting reasons. If
+suspend fails, it is useful to know which device caused it.
 
---Signature=_Fri__22_Mar_2013_15_09_41_+1100_L6vLV3z+j=a2lcvQ
-Content-Type: application/pgp-signature
+> Thanks for looking at this patch.
+>
+> Btw, I'm curious; which applications use EPOLLWAKEUP?
+>
+> My epoll work is focused on network servers with thousands of clients,
+> and I don't think any of them use (or have use for) EPOLLWAKEUP.
+> But I will keep EPOLLWAKEUP users in mind when working on epoll :)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+EPOLLWAKEUP is only needed on systems that use suspend. I don't know
+if it is currently in use, but it is intended to at least replace the
+evdev wakelock in the android kernel, but user-space needs to be
+updated before we can drop that patch.
 
-iQIcBAEBCAAGBQJRS9mFAAoJEECxmPOUX5FExLoP/15P6KPjEIkPVN0EBrrPCebR
-XcnoZRT/SKIfigMC0pj/QYdaSi7CZvK32MJfWXqVFEKMF8JIIcKVhVHSZ813ZAFb
-TrTof+D1AvK7McfL/sO2Qs9ifmPgKyoJ+uNlMivukmmABjvNxtcoyne8bnu3Ekxr
-JoL1CoN/xCmOFmizKFMlQpjiNKK/tBexj7RAt1/THADFaXcJGTV3mAZMF+WxPZXF
-OZfIVE8tP+sZmpxcu9E/bDdamyxIzKliyLHHp+48cVg+vHNOTwvUbV0hiKq6DQ1F
-81gCQuMU1aW2em+VekBFUDDAaXD9HaGtpRsjF68cDQBUBBzwqPOJBfmtZUxs+yRl
-mpi1Z7Gzui8lxLmIq+Ec32qw4lpQ8RcQLHFqlt46B/Gs3aLKk6dXUBdD9Omv7hIl
-Xh9pimVEPpHpUwpDPhfqlkRaf6B8igIelQ6DC1/bUag43n2BmHytejiLfMuOeW5y
-P/4z10nDnpEDeoMxe22jMEOuRmlUpPI9f1Gwjr/zhobL923NPKPS0OGVQfpcN7SK
-ibmY1rQk5aIcr3045VhdpgGSyL1noDgKjS41k0RXwcbJiEt9YRQKULRfYxwlbE+K
-9h7mDCs7aWHoV3V3Nj4EiRZ87JKk99sQHOU1kK7SXU1Z5x17048igt3s5mQSM/+6
-95q4gxboKgh0X39Tr0FY
-=tBDq
------END PGP SIGNATURE-----
-
---Signature=_Fri__22_Mar_2013_15_09_41_+1100_L6vLV3z+j=a2lcvQ--
+-- 
+Arve Hjønnevåg
