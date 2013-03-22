@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361Ab3CVMXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 08:23:18 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33347 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932206Ab3CVMXQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 08:23:16 -0400
-Message-ID: <514C4D2F.8030100@arm.com>
-Date: Fri, 22 Mar 2013 12:23:11 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        Will Deacon <Will.Deacon@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Subject: Re: [PATCH 3/4] xen: move the xenvm machine to mach-virt
-References: <alpine.DEB.2.02.1303211848150.5135@kaball.uk.xensource.com> <1363893380-14309-3-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1363893380-14309-3-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 22 Mar 2013 12:23:12.0459 (UTC) FILETIME=[056541B0:01CE26F8]
-X-MC-Unique: 113032212231410401
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	id S932582Ab3CVMX7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 08:23:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53283 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753024Ab3CVMX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 08:23:58 -0400
+Date: Fri, 22 Mar 2013 07:40:03 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: ycnian@gmail.com
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: nfsv4.1 client refuses to suspend
+Message-ID: <20130322074003.616911b6@tlielax.poochiereds.net>
+In-Reply-To: <1363921041-5042-1-git-send-email-ycnian@gmail.com>
+References: <1363921041-5042-1-git-send-email-ycnian@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/03/13 19:16, Stefano Stabellini wrote:
-> xenvm is based on mach-vexpress, move it to mach-virt.
+On Fri, 22 Mar 2013 10:57:21 +0800
+ycnian@gmail.com wrote:
+
+> nfsv4.1 client suspending fails with such info
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> CC: marc.zyngier@arm.com
-> CC: will.deacon@arm.com
-> CC: arnd@arndb.de
-> CC: rob.herring@calxeda.com
-
-Awesome!
-
-Acked-by: Marc Zyngier <marc.zyngier@arm.com>
-
+> Freezing of tasks failed after 20.00 seconds (1 tasks refusing to freeze, wq_busy=0):
+> nfsv4.1-svc     S ffff88007889f2e0     0  3191      2 0x00000080   
+>  ffff88007b2f3e28 0000000000000046 ffff88007b2f2010 00000000000127c0
+>  ffff880079b08000 00000000000127c0 ffff88007b2f3fd8 00000000000127c0
+>  ffff88007b2f3fd8 00000000000127c0 ffffffff81a14410 ffff880079b08000
+> Call Trace:
+>  [<ffffffff81441396>] schedule+0x64/0x66
+>  [<ffffffffa06a6892>] nfs41_callback_svc+0x100/0x129 [nfsv4]
+>  [<ffffffff8104fdb8>] ? wake_up_bit+0x2a/0x2a
+>  [<ffffffffa06a6792>] ? nfs_callback_up+0x548/0x548 [nfsv4]
+>  [<ffffffff8104f7e0>] kthread+0xb5/0xbd
+>  [<ffffffff8104f72b>] ? kthread_freezable_should_stop+0x65/0x65
+>  [<ffffffff8144912c>] ret_from_fork+0x7c/0xb0
+>  [<ffffffff8104f72b>] ? kthread_freezable_should_stop+0x65/0x65
+> 
+> I read such threads
+> [1] nfs/sunrpc: allow freezing of tasks with NFS calls in flight
+> [2] LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+> and then modify nfs41_callback_svc(). It works on my machine. I don't know
+> the details of freezing, so I'm not sure if the modification is reasonable.
+> This is not a formal patch. Thanks.
+> 
+> Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
 > ---
->  arch/arm/mach-vexpress/v2m.c |    1 -
->  arch/arm/mach-virt/virt.c    |    1 +
->  2 files changed, 1 insertions(+), 1 deletions(-)
+>  fs/nfs/callback.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
-> index 915683c..c43ec78 100644
-> --- a/arch/arm/mach-vexpress/v2m.c
-> +++ b/arch/arm/mach-vexpress/v2m.c
-> @@ -469,7 +469,6 @@ static void __init v2m_dt_init(void)
->  
->  static const char * const v2m_dt_match[] __initconst = {
->  	"arm,vexpress",
-> -	"xen,xenvm",
->  	NULL,
->  };
->  
-> diff --git a/arch/arm/mach-virt/virt.c b/arch/arm/mach-virt/virt.c
-> index 31666f6..528c05e 100644
-> --- a/arch/arm/mach-virt/virt.c
-> +++ b/arch/arm/mach-virt/virt.c
-> @@ -40,6 +40,7 @@ static void __init virt_timer_init(void)
->  
->  static const char *virt_dt_match[] = {
->  	"linux,dummy-virt",
-> +	"xen,xenvm",
->  	NULL
->  };
->  
-> 
+> diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+> index 5088b57..8addb7b 100644
+> --- a/fs/nfs/callback.c
+> +++ b/fs/nfs/callback.c
+> @@ -138,7 +138,7 @@ nfs41_callback_svc(void *vrqstp)
+>  				error);
+>  		} else {
+>  			spin_unlock_bh(&serv->sv_cb_lock);
+> -			schedule();
+> +			freezable_schedule();
+>  		}
+>  		finish_wait(&serv->sv_cb_waitq, &wq);
+>  	}
 
+I think it'd be better to have that thread call try_to_freeze()
+directly instead of doing this. There are some problems with
+freezable_schedule() that still need to be resolved and I suspect that
+it will eventually go away entirely.
+
+It's may be sufficient to simply call try_to_freeze() at the top of
+the loop, but that would need to be tested.
 
 -- 
-Jazz is not dead. It just smells funny...
-
+Jeff Layton <jlayton@redhat.com>
