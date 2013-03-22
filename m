@@ -1,42 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933510Ab3CVOsd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 10:48:33 -0400
-Received: from a192-102.smtp-out.amazonses.com ([199.255.192.102]:19041 "EHLO
-	a192-102.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753733Ab3CVOsc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 10:48:32 -0400
-X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Mar 2013 10:48:32 EDT
-Date: Fri, 22 Mar 2013 14:38:58 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org, zhong@linux.vnet.ibm.com, khilman@linaro.org,
-        geoff@infradead.org, tglx@linutronix.de
-Subject: Re: [PATCH] nohz1: Documentation
-In-Reply-To: <20130321205054.GI3637@linux.vnet.ibm.com>
-Message-ID: <0000013d9289cebc-e6380265-3a74-4343-b851-765f785a3754-000000@email.amazonses.com>
-References: <1363636794.15703.32@driftwood> <CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com> <20130318222548.GG3656@linux.vnet.ibm.com> <1363822338.6345.33.camel@gandalf.local.home> <20130320235545.GL3637@linux.vnet.ibm.com>
- <0000013d8db514e4-bf492080-82c9-412a-90b8-54ddc1463e4b-000000@email.amazonses.com> <20130321171518.GW3637@linux.vnet.ibm.com> <0000013d8e3f58ce-0f6ea95f-780a-49c1-a633-5aa0cf3e5040-000000@email.amazonses.com> <20130321185821.GF3637@linux.vnet.ibm.com>
- <0000013d8e8d24fd-d2931c45-2722-46d1-8b47-2ef11e21096d-000000@email.amazonses.com> <20130321205054.GI3637@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S933564Ab3CVOtn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 10:49:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2071 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751862Ab3CVOtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 10:49:42 -0400
+Message-ID: <514C6F45.5010006@redhat.com>
+Date: Fri, 22 Mar 2013 15:48:37 +0100
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.192.102
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] HID: input: don't register unmapped input devices
+References: <1361984127-912-1-git-send-email-benjamin.tissoires@redhat.com> <1361984127-912-2-git-send-email-benjamin.tissoires@redhat.com> <20130319212511.GA7821@polaris.bitmath.org>
+In-Reply-To: <20130319212511.GA7821@polaris.bitmath.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Mar 2013, Paul E. McKenney wrote:
+On 03/19/2013 10:25 PM, Henrik Rydberg wrote:
+> Hi Benjamin,
+> 
+>> There is no need to register an input device containing no events.
+>> This allows drivers using the quirk MULTI_INPUT to register one input
+>> per report effectively used.
+>>
+>> For backward compatibility, we need to add a quirk to request
+>> this behavior.
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>> ---
+>>  drivers/hid/hid-input.c | 77 +++++++++++++++++++++++++++++++++++++++++++++++++
+>>  include/linux/hid.h     |  1 +
+>>  2 files changed, 78 insertions(+)
+>>
+>> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+>> index 21b196c..7aaf7d3 100644
+>> --- a/drivers/hid/hid-input.c
+>> +++ b/drivers/hid/hid-input.c
+>> @@ -1198,6 +1198,67 @@ static struct hid_input *hidinput_allocate(struct hid_device *hid)
+>>  	return hidinput;
+>>  }
+>>  
+>> +static bool hidinput_has_been_populated(struct hid_input *hidinput)
+>> +{
+>> +	int i;
+>> +	bool r = 0;
+>> +
+>> +	for (i = 0; i < BITS_TO_LONGS(EV_CNT); i++)
+>> +		r = r || hidinput->input->evbit[i];
+> 
+> I believe there is a bit count method that will do this for you (weight).
+> 
 
-> So, how long of busy periods are you contemplating for your SCHED_FIFO
-> threads?  Is it possible to tune/adjust the offending per-CPU ktheads
-> to wake up less frequently than that time?
+Actually, weight does not work here. evbit[] is an array of long, and we
+still need to check if each field of this array is not null.
 
-Test programs right now run 10 seconds. 30 seconds would definitely be
-enough for the worst case.
+Thus, the following can be used (r being a long here):
+r |= hidinput->input->evbit[i];
 
+Cheers,
+Benjamin
