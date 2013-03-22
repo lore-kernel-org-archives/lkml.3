@@ -1,97 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933138Ab3CVCL1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 22:11:27 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:47774 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932374Ab3CVCLZ (ORCPT
+	id S1754024Ab3CVCPB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 22:15:01 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:49318 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab3CVCPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 22:11:25 -0400
-Message-ID: <514BBDC5.6090104@linux.vnet.ibm.com>
-Date: Fri, 22 Mar 2013 10:11:17 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: gleb@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 0/7] KVM: MMU: fast zap all shadow pages
-References: <1363768227-4782-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130321222151.GA19821@amt.cnet>
-In-Reply-To: <20130321222151.GA19821@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032202-8878-0000-0000-00000665886E
+	Thu, 21 Mar 2013 22:15:00 -0400
+X-AuditID: cbfee68d-b7f786d000005188-7b-514bbea2aed8
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 1/2] rtc: rtc-ds1374: add CONFIG_PM_SLEEP to suspend/resume
+ functions
+Date: Fri, 22 Mar 2013 11:14:58 +0900
+Message-id: <00bb01ce26a3$0d69b800$283d2800$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4mow1NhbkZdmKeSwuK3nkgccWzIw==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zQ91F+7wDDdatNbdYcvEqu8Wc9WvY
+	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANYrLJiU1J7Ms
+	tUjfLoEr4/bz/awFr7grLv0Ja2B8ytnFyMkhIWAisfb0eyYIW0ziwr31bF2MXBxCAssYJX5t
+	3sEMU9S+ZB4TRGI6o8S7u3cZIZxfjBIv/85lAaliE1CT+PLlMHsXIweHiIC+RFuLBkgNs0Av
+	o8SZ3t3sIDXCAuESE3u3soHYLAKqEsunvQHr5RWwlTg6fxoThC0o8WPyPbA4s4CWxPqdx5kg
+	bHmJzWveMoPMlxBQl3j0VxckLCKgJ3GvcwMzRImIxL4X78BukxA4xi7x8XcjK8QuAYlvkw+x
+	QPTKSmw6APWYpMTBFTdYJjCKzUKyeRaSzbOQbJ6FZMUCRpZVjKKpBckFxUnpRYZ6xYm5xaV5
+	6XrJ+bmbGCGR17uD8fYB60OMyUDrJzJLiSbnAyM3ryTe0NjMyMLUxNTYyNzSjDRhJXFetRbr
+	QCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MR3+XyBx5asatvN3rmlzT0/7iXxPb8nK+CE5r
+	DFMNnLmr9WPGlDLvF+u81m7fUKv/LIan40hV/urmyORZnxYtt61b3v5Iyk5n4V1PnTDR0xGO
+	1yoeZi9XvWdRfHQJk/ivxfzqMXXPP52ZyFD4YOGlYwqJnBa3f1fqfL2yQWzfysxKu1Bh2dsc
+	SizFGYmGWsxFxYkAnweletICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jQd1F+7wDDVauNLZYcvEqu8Wc9WvY
+	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANaqB0SYjNTEl
+	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
+	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMeP28/2sBa+4Ky79CWtgfMrZxcjJISFgItG+
+	ZB4ThC0mceHeerYuRi4OIYHpjBLv7t5lhHB+MUq8/DuXBaSKTUBN4suXw+xdjBwcIgL6Em0t
+	GiA1zAK9jBJnenezg9QIC4RLTOzdygZiswioSiyf9gasl1fAVuLo/GlMELagxI/J98DizAJa
+	Eut3HmeCsOUlNq95ywwyX0JAXeLRX12QsIiAnsS9zg3MECUiEvtevGOcwCgwC8mkWUgmzUIy
+	aRaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxguP6mfQOxlUNFocYBTgYlXh4NXS8
+	A4VYE8uKK3MPMUpwMCuJ8EamAIV4UxIrq1KL8uOLSnNSiw8xJgM9OpFZSjQ5H5hy8kriDY1N
+	zIwsjcwsjEzMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBMf731Ac+TK6tF/dKevT/
+	PFO8LXzl8jW87Ev+KfgKvp57obh0/lTOxIqHHN4rxBK4hMK+2e/T8+Y4av6WY+mR5uddj6NY
+	Dj4+otC7TU5c6nWY07XQTTonTb8JKL5lMzn2YHX7sTnb3lxgXmPatzn6nG9kmO+OQ1rnDt7/
+	8qQvn1+Gu8pqf5HRBiWW4oxEQy3mouJEAINP/UMvAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2013 06:21 AM, Marcelo Tosatti wrote:
-> On Wed, Mar 20, 2013 at 04:30:20PM +0800, Xiao Guangrong wrote:
->> Changlog:
->> V2:
->>   - do not reset n_requested_mmu_pages and n_max_mmu_pages
->>   - batch free root shadow pages to reduce vcpu notification and mmu-lock
->>     contention
->>   - remove the first patch that introduce kvm->arch.mmu_cache since we only
->>     'memset zero' on hashtable rather than all mmu cache members in this
->>     version
->>   - remove unnecessary kvm_reload_remote_mmus after kvm_mmu_zap_all
->>
->> * Issue
->> The current kvm_mmu_zap_all is really slow - it is holding mmu-lock to
->> walk and zap all shadow pages one by one, also it need to zap all guest
->> page's rmap and all shadow page's parent spte list. Particularly, things
->> become worse if guest uses more memory or vcpus. It is not good for
->> scalability.
-> 
-> Xiao, 
-> 
-> The bulk removal of shadow pages from mmu cache is nerving - it creates
-> two codepaths to delete a data structure: the usual, single entry one
-> and the bulk one.
-> 
-> There are two main usecases for kvm_mmu_zap_all(): to invalidate the
-> current mmu tree (from kvm_set_memory) and to tear down all pages
-> (VM shutdown).
-> 
-> The first usecase can use your idea of an invalid generation number
-> on shadow pages. That is, increment the VM generation number, nuke the root
-> pages and thats it. 
-> 
-> The modifications should be contained to kvm_mmu_get_page() mostly,
-> correct? (would also have to keep counters to increase SLAB freeing 
-> ratio, relative to number of outdated shadow pages).
+Add CONFIG_PM_SLEEP to suspend/resume functions to fix the following
+build warning when CONFIG_PM_SLEEP is not selected. This is because
+sleep PM callbacks defined by SIMPLE_DEV_PM_OPS are only used when
+the CONFIG_PM_SLEEP is enabled.
 
-Yes.
+drivers/rtc/rtc-ds1374.c:413:12: warning: 'ds1374_suspend' defined but not used [-Wunused-function]
+drivers/rtc/rtc-ds1374.c:422:12: warning: 'ds1374_resume' defined but not used [-Wunused-function]
 
-> 
-> And then have codepaths that nuke shadow pages break from the spinlock,
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/rtc/rtc-ds1374.c |   10 +++-------
+ 1 files changed, 3 insertions(+), 7 deletions(-)
 
-I think this is not needed any more. We can let mmu_notify use the generation
-number to invalid all shadow pages, then we only need to free them after
-all vcpus down and mmu_notify unregistered - at this point, no lock contention,
-we can directly free them.
+diff --git a/drivers/rtc/rtc-ds1374.c b/drivers/rtc/rtc-ds1374.c
+index fef7686..67cd1e3 100644
+--- a/drivers/rtc/rtc-ds1374.c
++++ b/drivers/rtc/rtc-ds1374.c
+@@ -409,7 +409,7 @@ static int ds1374_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int ds1374_suspend(struct device *dev)
+ {
+ 	struct i2c_client *client = to_i2c_client(dev);
+@@ -427,19 +427,15 @@ static int ds1374_resume(struct device *dev)
+ 		disable_irq_wake(client->irq);
+ 	return 0;
+ }
++#endif
+ 
+ static SIMPLE_DEV_PM_OPS(ds1374_pm, ds1374_suspend, ds1374_resume);
+ 
+-#define DS1374_PM (&ds1374_pm)
+-#else
+-#define DS1374_PM NULL
+-#endif
+-
+ static struct i2c_driver ds1374_driver = {
+ 	.driver = {
+ 		.name = "rtc-ds1374",
+ 		.owner = THIS_MODULE,
+-		.pm = DS1374_PM,
++		.pm = &ds1374_pm,
+ 	},
+ 	.probe = ds1374_probe,
+ 	.remove = ds1374_remove,
+-- 
+1.7.2.5
 
-> such as kvm_mmu_slot_remove_write_access does now (spin_needbreak).
-
-BTW, to my honest, i do not think spin_needbreak is a good way - it does
-not fix the hot-lock contention and it just occupies more cpu time to avoid
-possible soft lock-ups.
-
-Especially, zap-all-shadow-pages can let other vcpus fault and vcpus contest
-mmu-lock, then zap-all-shadow-pages release mmu-lock and wait, other vcpus
-create page tables again. zap-all-shadow-page need long time to be finished,
-the worst case is, it can not completed forever on intensive vcpu and memory
-usage.
-
-I still think the right way to fix this kind of thing is optimization for
-mmu-lock.
-
-> That would also solve the current issues without using more memory 
-> for pte_list_desc and without the delicate "Reset MMU cache" step.
-> 
-> What you think?
-
-I agree your point, Marcelo! I will redesign it. Thank you!
 
