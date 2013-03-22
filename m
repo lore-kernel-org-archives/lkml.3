@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933994Ab3CVQXU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 12:23:20 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:38520 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933845Ab3CVQXT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 12:23:19 -0400
-X-Greylist: delayed 514 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Mar 2013 12:23:19 EDT
+	id S934008Ab3CVQXd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 12:23:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28655 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933715Ab3CVQXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 12:23:31 -0400
+Date: Fri, 22 Mar 2013 12:23:26 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [CFT] Re: VFS deadlock ?
+Message-ID: <20130322162326.GA2543@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Al Viro <viro@zeniv.linux.org.uk>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	"Eric W. Biederman" <ebiederm@xmission.com>
+References: <CA+55aFyWNkOnrQ41xCAU8q5sVXdq1-u2P8n+quLY50OdiFo3Zw@mail.gmail.com>
+ <20130322001257.GH21522@ZenIV.linux.org.uk>
+ <CA+55aFz5Ce7h2ja0m++tENXuG-1d346VNu9N=ZKy2UfojaSf0g@mail.gmail.com>
+ <20130322012208.GJ21522@ZenIV.linux.org.uk>
+ <CA+55aFzPD08kJi=x8wLBi5FAjr1TqSGXWbv5KXy5Ymm0PJL0wA@mail.gmail.com>
+ <20130322014037.GK21522@ZenIV.linux.org.uk>
+ <20130322043715.GL21522@ZenIV.linux.org.uk>
+ <CA+55aFzUobqDR0RSh8t18m32BdTvm4k7j2PCseXpFVCH_gR=Fw@mail.gmail.com>
+ <20130322051817.GM21522@ZenIV.linux.org.uk>
+ <CA+55aFzbV81KQh_f0=wti9=_6=PXu37z0+NJymhDvzv13GgpuA@mail.gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Subject: Re: [PATCH] net: Add support for handling queueing in hardware
-From: Ben Collins <benmcollins13@gmail.com>
-In-Reply-To: <20130322.121600.1984397550534213180.davem@davemloft.net>
-Date: Fri, 22 Mar 2013 12:23:19 -0400
-Cc: afleming@freescale.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <CAA3A00E-3D5B-4A9E-91E6-F47566C0A4D4@gmail.com>
-References: <14243FE7-A0A6-4C0C-AEFB-95F19C8898E3@gmail.com> <20130322.115924.1452021957855498515.davem@davemloft.net> <0FF79196-E252-4738-BFB5-C0B10F447B33@gmail.com> <20130322.121600.1984397550534213180.davem@davemloft.net>
-To: David Miller <davem@davemloft.net>
-X-Mailer: Apple Mail (2.1499)
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzbV81KQh_f0=wti9=_6=PXu37z0+NJymhDvzv13GgpuA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mar 22, 2013, at 12:16 PM, David Miller <davem@davemloft.net> wrote:
+On Thu, Mar 21, 2013 at 10:33:27PM -0700, Linus Torvalds wrote:
 
-> From: Ben Collins <benmcollins13@gmail.com>
-> Date: Fri, 22 Mar 2013 12:14:44 -0400
-> 
->> I'm sorry, I thought we were working on open source projects
->> here. If the code isn't encumbered by patents, legal issues or
->> technical problems, and is licensed compatible with the kernel, I
->> just thought it was fair game.
-> 
-> This is about being nice to people, rather than exercising your rights
-> to the maximum possible extent regardless of how that effects other
-> people.
+ > Ok, that's kind of ugly, but shouldn't be a correctness issue. It
+ > should still work - just cycle through inodes quite aggressivelydue to
+ > no longer re-using them - so I suspect Dave could test it (with the
+ > extra line removed I pointed out just a moment ago).
 
+Been running a few hours now without incident.
+Of course, proving absense of a bug is always fun when fuzzing, as it
+may have just not run long enough yet.. though I was hitting it pretty
+quickly last night.
 
+	Dave
 
-Right, because a 3-line patch is such a ballsy move on my part. Better restrain myself next time.
-
---
-Servergy  : http://www.servergy.com/
-SwissDisk : http://www.swissdisk.com/
-Ubuntu    : http://www.ubuntu.com/
-My Blog   : http://ben-collins.blogspot.com/
-
+ 
