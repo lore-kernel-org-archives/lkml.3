@@ -1,53 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab3CVKoG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 06:44:06 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:54483 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897Ab3CVKoE (ORCPT
+	id S1754471Ab3CVKpS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 06:45:18 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:62954 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754277Ab3CVKpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 06:44:04 -0400
-Date: Fri, 22 Mar 2013 13:42:48 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [-next] fs/eventpoll.c:545 suspicious rcu_dereference_check() usage
-Message-ID: <20130322104248.GA2589@swordfish.minsk.epam.com>
+	Fri, 22 Mar 2013 06:45:16 -0400
+Date: Fri, 22 Mar 2013 11:45:08 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Philip Avinash <avinashphilip@ti.com>
+Cc: nsekhar@ti.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com, prakash.pm@ti.com
+Subject: Re: [PATCH v2] pwm: davinci: Add Kconfig support for ECAP & EHRPWM
+ devices
+Message-ID: <20130322104508.GA9804@avionic-0098.mockup.avionic-design.de>
+References: <1363761564-14814-1-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OXfL5xGRrasGEqWY"
 Content-Disposition: inline
+In-Reply-To: <1363761564-14814-1-git-send-email-avinashphilip@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:jnm0xYuWK4uZLIAC/FwgOYNcYk6B90YMkRgAu8TfHh9
+ +m/nHeI5q8ohGsPkW+QaYoz+8S2MZDZP+EO9tL8tWSGWPusKUB
+ k0yra6DpENIETpU4zIMaMF/NJaHqoEs2B5udWme6rkVSKoHK8q
+ yMl4+f1fK92n8q9aUg1+4QntMTNBhTBlzJ/YJV1uqDKyWAYgGa
+ Z2b1PIM+yhr/McDTwDAGxEWOlKhwusRkwaTGs/ucBRGN6fDB/L
+ faC22BS5NS7yhbz6ajEVA41AX76i34WPTJmTGKwfSbBx5ja9uA
+ LRd178WDJO8kihvEM2H8U4M9312Xlpkgwcw/VvCKe5wlwZdKc1
+ 86JWSJjqjKO2TfKYf1j+x97bfiubL1bVZL8xIKJ5/npeyveweR
+ ENOEGzTKwO+bsavjdsdZWaIYV+zbfjYyVTr9Nrd9ARJzs9hvJO
+ VzpLW
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-got this with today's linux-next
+--OXfL5xGRrasGEqWY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[    3.163894] ===============================
-[    3.163895] [ INFO: suspicious RCU usage. ]
-[    3.163897] 3.9.0-rc3-next-20130322-dbg-dirty #1 Not tainted
-[    3.163898] -------------------------------
-[    3.163900] fs/eventpoll.c:545 suspicious rcu_dereference_check() usage!
-[    3.163900] other info that might help us debug this:
-[    3.163902] rcu_scheduler_active = 1, debug_locks = 1
-[    3.163903] 2 locks held by ata_id/763:
-[    3.163915]  #0:  (&pipe->wait){......}, at: [<ffffffff810757a7>] __wake_up_sync_key+0x37/0x80
-[    3.163923]  #1:  (&(&ep->lock)->rlock){......}, at: [<ffffffff811bb4a9>] ep_poll_callback+0x59/0x1f0
-[    3.163924] 	stack backtrace:
-[    3.163927] Pid: 763, comm: ata_id Not tainted 3.9.0-rc3-next-20130322-dbg-dirty #1
-[    3.163929] Call Trace:
-[    3.163940]  [<ffffffff810a7c66>] lockdep_rcu_suspicious+0xe6/0x130
-[    3.163945]  [<ffffffff811bb61f>] ep_poll_callback+0x1cf/0x1f0
-[    3.163949]  [<ffffffff81074765>] __wake_up_common+0x55/0x90
-[    3.163952]  [<ffffffff810757c3>] __wake_up_sync_key+0x53/0x80
-[    3.163957]  [<ffffffff811775f8>] pipe_write+0x448/0x590
-[    3.163962]  [<ffffffff8116df70>] do_sync_write+0x80/0xb0
-[    3.163965]  [<ffffffff8116e938>] vfs_write+0xa8/0x180
-[    3.163968]  [<ffffffff8116ec95>] SyS_write+0x55/0xb0
-[    3.163975]  [<ffffffff81620506>] system_call_fastpath+0x1a/0x1f
+On Wed, Mar 20, 2013 at 12:09:24PM +0530, Philip Avinash wrote:
+> Add EHRPWM and ECAP support build support for DAVINCI_DA8XX platforms.
+>=20
+> Also, since DAVINCI platforms doesn't support TI-PWM-Subsystem module,
+> remove the select option for CONFIG_PWM_TIPWMSS.
+>=20
+> Also, update CONFIG_PWM_TIPWMSS compiler directive appropriately in
+> pwm-tipwmss.h to fix the below compiler error upon removal of
+> CONFIG_PWM_TIPWMSS for DAVINCI platforms.
+>=20
+> 	drivers/pwm/pwm-tiecap.c: In function 'ecap_pwm_probe':
+> 	drivers/pwm/pwm-tiecap.c:263:4: error: 'PWMSS_ECAPCLK_EN' undeclared
+> 	(first use in this function)
+> 	drivers/pwm/pwm-tiecap.c:263:4: note: each undeclared identifier
+> 	is reported only once for each function it appears in
+> 	drivers/pwm/pwm-tiecap.c:264:17: error: 'PWMSS_ECAPCLK_EN_ACK'
+> 	undeclared (first use in this function)
+> 	drivers/pwm/pwm-tiecap.c: In function 'ecap_pwm_remove':
+> 	drivers/pwm/pwm-tiecap.c:291:49: error: 'PWMSS_ECAPCLK_STOP_REQ'
+> 	undeclared (first use in this function)
+> 	make[2]: *** [drivers/pwm/pwm-tiecap.o] Error 1
+> 	make[1]: *** [drivers/pwm] Error 2
+> 	make: *** [drivers] Error 2
+>=20
+> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+> ---
+> Changes Since v1:
+> 	- Change the Kconfig dependency to ARCH_DAVINCI_DA8XX from
+> 	  ARCH_DAVINCI_DA850.
 
+Applied, thanks.
 
+Thierry
 
-	-ss
+--OXfL5xGRrasGEqWY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRTDY0AAoJEN0jrNd/PrOh3aEP/iANfAJiVIN7gCaBrD7nOgSx
+bU8s+KbXNWbaVk2ZmNNwqLzHTcBfbwqpSPq0Yig9DymD4R15tu94/nZLrEq9gwrA
+dXIV+3Lkp3NZwRxGZ4IKRboUZLtutKUGEaaiPZFGpFFYOPVt5jPzrwh3JLwab4sW
+SFU+wM4YvnFqaDrEoz/RB6rWwdN3NX9aZBdXhEMqIkT8XA16bQ8CgI774fVNlKgg
+xebwdTGGQsSGtr6529FI8VgQj71eSVZU0X8QP7U0tPT4+a4R0nxA7izzj2MACpxI
+uG/YbQdhoS25P/KVx8z4CBsl/ytdxT3gQVaDjb0sChrBSdzM99hm04/kM91MiB/X
+ZvJgcZvMn8RvX3ZFAz7jciO0XVgcGi9ZFFwN5usMJ1YkFHh3zcZqAHQjuDbOEoxq
+6TkRDbiTU1wV8YNCCxgiFTP/EUQJfGvm974lnmijqvcUW3lPNGF+l47WbaeQfJWR
+awiRG/g9EZ0t9B19PFoYdIDfW1Sugk1DwmQIt/WY6X6dj8CPnr/Df/Sk0sYvoLTk
+kMZqUkfXoUDt24LUuCJJ0zOH4d+zxu9wkTao3w6RhRXGtJH6YxEYdbTzq3JRXeMH
+4SV89K4GMXsuf+6TzV85c3z9Ldh8UAzQlQF3Isw1ZyikzH38QTmzFUoCQxzua8TI
+J+D6Mj6bRhe/3q0+kOva
+=cDs9
+-----END PGP SIGNATURE-----
+
+--OXfL5xGRrasGEqWY--
