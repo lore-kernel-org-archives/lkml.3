@@ -1,135 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933155Ab3CVJWK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 05:22:10 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54561 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274Ab3CVJWG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 05:22:06 -0400
-Message-ID: <514C2245.4080506@ti.com>
-Date: Fri, 22 Mar 2013 14:50:05 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S933205Ab3CVJY1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 05:24:27 -0400
+Received: from mga03.intel.com ([143.182.124.21]:18305 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933079Ab3CVJYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 05:24:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,891,1355126400"; 
+   d="scan'208";a="217687126"
+Date: Fri, 22 Mar 2013 11:24:21 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCHv2 2/2] serial: of_serial: Handle fifo-size property
+Message-ID: <20130322092421.GA3134@xps8300>
+References: <20130322074154.GA9250@xps8300>
+ <1363939516-17308-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1363940208.2289.22.camel@leyfoon-vm>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
-        <akpm@linux-foundation.org>, <rob@landley.net>, <davem@davemloft.net>,
-        <cesarb@cesarb.net>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <b-cousson@ti.com>,
-        <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <mchehab@redhat.com>, <santosh.shilimkar@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
-        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 5/6] ARM: dts: omap: update usb_otg_hs data
-References: <1363770725-13717-1-git-send-email-kishon@ti.com> <1363770725-13717-6-git-send-email-kishon@ti.com> <514A233F.8010105@wwwdotorg.org> <514AA74D.9070506@ti.com> <514B3EEF.3080705@wwwdotorg.org>
-In-Reply-To: <514B3EEF.3080705@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363940208.2289.22.camel@leyfoon-vm>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Thursday 21 March 2013 10:40 PM, Stephen Warren wrote:
-> On 03/21/2013 12:23 AM, kishon wrote:
->> Hi,
->>
->> On Thursday 21 March 2013 02:29 AM, Stephen Warren wrote:
->>> On 03/20/2013 03:12 AM, Kishon Vijay Abraham I wrote:
->>>> Updated the usb_otg_hs dt data to include the *phy* and *phy-names*
->>>> binding in order for the driver to use the new generic PHY framework.
->>>> Also updated the Documentation to include the binding information.
->>>
->>>> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt
->>>> b/Documentation/devicetree/bindings/usb/omap-usb.txt
->>>> index abce256..3d6f9f6 100644
->>>> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
->>>> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
->>>> @@ -19,6 +19,9 @@ OMAP MUSB GLUE
->>>>     - power : Should be "50". This signifies the controller can supply
->>>> upto
->>>>       100mA when operating in host mode.
->>>>     - usb-phy : the phandle for the PHY device
->>>> + - phy : the phandle for the PHY device (used by generic PHY framework)
->>>> + - phy-names : the names of the PHY corresponding to the PHYs
->>>> present in the
->>>> +   *phy* phandle.
->>>
->>> If the intent is for those properties to be generic and used by any DT
->>> binding that refers to a PHY node, I think you'd want to define those
->>> properties in e.g. Documentation/devicetree/bindings/phy/phy.txt, just
->>> like common clock/GPIO/... properties are defined in standalone common
->>> files.
->>
->> Ok. Will add it.
->>>
->>> I think you want to require that DT nodes that represent PHYs have a
->>> #phy-cells property, and that the format of the phy property be
->>> <&phy_phandle phy_specifier*>, where #phy-cells in the referenced node
->>> defines how many cells are part of phy_specifier*, just like (almost)
->>> any other DT property that references another node by phandle. That way,
->>> if a single DT node represents a HW block that implements e.g. 3 PHYs,
->>> it can use #phy-cells = <1>, and the referencing phy property can
->>> include a cell that indicates which of those 3 PHYs is being referenced.
->>
->> Currently, if a single phandle have reference to multiple PHYs, we can
->> get PHY by passing index or by name as give in phy-names.
->> I'm not sure if we have <&phy_phandle phy_specifier*>, what could that
->> phy_specifier be? Maybe phy_type?
->
-> I'm not talking about the case where a consumer node references multiple
-> PHYs. As you say, that is indeed handled by the driver looking at a
-> particular index in the phys property, or using phy-names.
->
-> I'm talking about the case where a single provider provides multiple
-> PHYs. For example, consider:
->
-> phys: phy {
->      compatible = "xxx";
->      reg = <...>;
->      #phy-cells = <1>;
-> };
->
-> That node describes an IP block that implements 3 different PHYs. The
-> registers are inter-mixed in such a way that you can't split it into 3
-> separate nodes each with a separate device instance. If the consumers
-> simply say:
->
-> phys = <&phys>;
->
-> then which of the 3 PHYs are you referring to?
->
-> Instead, the consumer needs to say one of:
->
-> phys = <&phys 0>;
-> phys = <&phys 1>;
-> phys = <&phys 2>;
->
-> in order to specify which of the PHYs it refers to.
->
-> The number of cells in the phy property after the phandle is specified
-> by the #phy-cells property in the node referred to by the phandle. The
-> meaning of all those cells is defined by the binding for the phy node.
-> This could include both the PHY ID (as in my example here), or whatever
-> configuration information or flags the provider needs. For example, both
-> GPIOs and interrupts have specifiers than describe both of these things.
+On Fri, Mar 22, 2013 at 04:16:48PM +0800, Ley Foon Tan wrote:
+> On Fri, 2013-03-22 at 10:05 +0200, Heikki Krogerus wrote:
+> > This will reduce the need for extra types in 8250.c just
+> > in case the fifo size differs from the standard.
+> Besides the fifo size, we need to have hardware flow control setting
+> from device tree as well.
 
-Thanks for the explanation. I'll add it in my next version.
->
-> For more background, take a look at almost any other binding that uses
-> phandles.
->
-> By the way, the property in the consumer should probably be "phys" not
-> "phy" to be consistent with other similar properties (e.g. gpios,
-> interrupts, ... which are all plural).
->
-Ok.
+This is a bit problematic. We can set the uart_8250_port.capabilities
+flag UART_CAP_AFE based on "hw-flow-control" property, but then the
+properties from the type will not be used, just like in case of
+fifosize. We would need to know all the flags of the type that are
+normally taken from the uart_config[] array.
 
-Thanks
-Kishon
+The UART_CAP_FIFO can be set by checking if we have set the
+port.fifosize or not, so if the bellow is acceptable then I can make a
+patch. There is no risk of overriding the capabilities for the
+existing uarts, as we only touch the uart_8250_port.capabilities if
+the new properties are used. So is it OK?
 
+diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+index 267711b..cc5135d 100644
+--- a/drivers/tty/serial/of_serial.c
++++ b/drivers/tty/serial/of_serial.c
+@@ -171,11 +171,16 @@ static int of_platform_serial_probe(struct platform_device *ofdev)
+ #ifdef CONFIG_SERIAL_8250
+        case PORT_8250 ... PORT_MAX_8250:
+        {
+-               /* For now the of bindings don't support the extra
+-                  8250 specific bits */
+                struct uart_8250_port port8250;
+                memset(&port8250, 0, sizeof(port8250));
+                port8250.port = port;
++
++               if (port.fifosize)
++                       port8250.capabilities = UART_CAP_FIFO;
++
++               if (of_property_read_u32(np, "hw-flow-control", &prop) == 0)
++                       port8250.capabilities |= UART_CAP_AFE;
++
+                ret = serial8250_register_8250_port(&port8250);
+                break;
+        }
+
+-- 
+heikki
