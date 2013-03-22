@@ -1,80 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541Ab3CVJwx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 05:52:53 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:50007 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442Ab3CVJww (ORCPT
+	id S933401Ab3CVKAN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 06:00:13 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57861 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932138Ab3CVKAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 05:52:52 -0400
-Date: Fri, 22 Mar 2013 10:52:47 +0100
-From: Mats Liljegren <liljegren.mats2@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org, zhong@linux.vnet.ibm.com, khilman@linaro.org,
-        geoff@infradead.org, tglx@linutronix.de
-Subject: Re: [PATCH] nohz1: Documentation
-Message-ID: <20130322095246.GG29378@enea.se>
-References: <1363636794.15703.32@driftwood>
- <CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com>
- <20130318222548.GG3656@linux.vnet.ibm.com>
- <1363822338.6345.33.camel@gandalf.local.home>
- <20130320235545.GL3637@linux.vnet.ibm.com>
- <0000013d8db514e4-bf492080-82c9-412a-90b8-54ddc1463e4b-000000@email.amazonses.com>
- <20130321171518.GW3637@linux.vnet.ibm.com>
- <0000013d8e3f58ce-0f6ea95f-780a-49c1-a633-5aa0cf3e5040-000000@email.amazonses.com>
- <20130321185821.GF3637@linux.vnet.ibm.com>
- <0000013d8e8d24fd-d2931c45-2722-46d1-8b47-2ef11e21096d-000000@email.amazonses.com>
+	Fri, 22 Mar 2013 06:00:11 -0400
+Date: Fri, 22 Mar 2013 11:00:05 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Andrew Murray <andrew.murray@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 1/2] PCI: Introduce new MSI chip infrastructure
+Message-ID: <20130322100005.GB21096@avionic-0098.mockup.avionic-design.de>
+References: <1363942307-9327-1-git-send-email-thierry.reding@avionic-design.de>
+ <1363942307-9327-2-git-send-email-thierry.reding@avionic-design.de>
+ <20130322093750.GA679@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UHN/qo2QbUvPLonB"
 Content-Disposition: inline
-In-Reply-To: <0000013d8e8d24fd-d2931c45-2722-46d1-8b47-2ef11e21096d-000000@email.amazonses.com>
+In-Reply-To: <20130322093750.GA679@arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:dVJCLsMqo9Lromaja8t+yC3f7b/QWH7g9E0cau1a9Xg
+ Wlw87JuscD8dym7VlT6kABGc6Ez0XtLEGKuz5i4F2AQ4gJUC/6
+ 4ywNx4vP+vcxqRZoSUMXIUOfG6o5+ve9n4dskin/9DOWCs1AAl
+ Z1vlAk3CMYZ7zTXqcbZIKA7tOCzwwWVpoQUC+VXrR24Ekout2e
+ rUdFJaK2CjO9+dQ6dsDvd2mKqYytcsWdXRd1QwuYZdhrgw0M+t
+ lya0x5uzi8zNe1go/k93inQvXf0chJIpjUQjKF9SMuJhiXec2K
+ UffwGcv7x9+8fiNEMRXnD76xeFIOkDxaW8/krx4NJ8soDnXER6
+ HKBbKXtZQs0+tt0nSSkg1etKQPOntmqtEbmsxVn3KmlscYTo1n
+ XS3Anu0PgKDRNV9lcyA201TXjO9wWY7ox4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Lameter wrote:
-> On Thu, 21 Mar 2013, Paul E. McKenney wrote:
-> 
-> > > Yeah doing that right now but I'd like to see it handled without manual
-> > > intervention.
-> >
-> > Given that RCU has no idea where you want them to run, some manual
-> > intervention would most likely be required even if RCU spawned them
-> > dynamically, right?
-> 
-> If rcuoXX is a SCHED_OTHER process/thread then the kernel will move it to
-> another processor from the one running the SCHED_FIFO task. There would be
-> no manual intervention required.
-> 
-> > So, again, removing scheduling-clock interrupts in more situations is
-> > a good future enhancement.
-> 
-> The point here is that the check for a single runnable process is wrong
-> because it accounts for tasks in all scheduling classes.
-> 
-> It would be better to check if there is only one runnable task in the
-> highest scheduling class. That would work and defer the SCHED_OTHER kernel
-> threads for the SCHED_FIFO thread.
-> 
-> I am wondering how you actually can get NOHZ to work right? There is
-> always a kernel thread that is scheduled in a couple of ticks.
 
-In my case I use 2 CPU PandaBoard where I use cpuset to create a
-non-realtime domain for CPU0 and a real-time domain for CPU1. I then move
-all kernel threads and IRQs to CPU0, leaving only the application specific
-IRQ for CPU1. I then start a singe thread on CPU1.
+--UHN/qo2QbUvPLonB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I use a quite down-stripped version of Linux built using Yocto. I have run
-the application for a minute and got 70-80 ticks, most (all?) occurring
-during start and exit of the application. I use 100Hz ticks.
+On Fri, Mar 22, 2013 at 09:37:50AM +0000, Andrew Murray wrote:
+> On Fri, Mar 22, 2013 at 08:51:46AM +0000, Thierry Reding wrote:
+> > index ce93a34..ea4a5be 100644
+> > --- a/include/linux/msi.h
+> > +++ b/include/linux/msi.h
+> > @@ -58,5 +58,15 @@ extern int arch_setup_msi_irqs(struct pci_dev *dev, =
+int nvec, int type);
+> >  extern void arch_teardown_msi_irqs(struct pci_dev *dev);
+> >  extern int arch_msi_check_device(struct pci_dev* dev, int nvec, int ty=
+pe);
+> > =20
+> > +struct msi_chip {
+> > +	struct module *owner;
+> > +	struct device *dev;
+> > +
+> > +	int (*setup_irq)(struct msi_chip *chip, struct pci_dev *dev,
+> > +			 struct msi_desc *desc);
+> > +	void (*teardown_irq)(struct msi_chip *chip, unsigned int irq);
+> > +	int (*check_device)(struct msi_chip *chip, struct pci_dev *dev,
+> > +			    int nvec, int type);
+> > +};
+>=20
+> Is there a need to add setup_irqs and teardown_irqs functions here? This =
+will
+> allow your MSI chips to support multiple MSIs per requesting device.
+>=20
+> What about restore_msi_irqs? Does this fit in here too?
 
-So personally I do get something by using full NOHZ in its current
-incarnation. I'd like some better interrupt latency though, so disabling
- nohz-idle might be interesting for me. But that's another story...
+I guess those could be added as well. I've concentrated on the most
+common use-cases here, which seem to be the three included functions.
+Most other implementations use the generic implementations for multiple
+MSIs.
 
--- Mats
+Note that the proposed framework is in no way fixed and can be extended
+at will. The important step is to get rid of the one implementation for
+the whole kernel concept.
+
+Thierry
+
+--UHN/qo2QbUvPLonB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRTCulAAoJEN0jrNd/PrOheJkQAKDJrX9rVGWYgMM5Mka2Sk5f
+cWwXzWTiwdpqXoGPy7GW0ZhG0kB0KGXiCyACY3afLwGmK1BVmpMXFslxvJZHN7FR
+y7YJ3+uwHrfLDgzIfkRNSjoVNN7ng7HorDH/P8E0sJElChjkOHXsHKQtFghCpDp3
+VBBmQKSiVpcEri/2czrpjU8cLYddeN96dF4jYR4kcZBhDhEtRaR35QRShkSqsDcD
+mfgBDAhR++1PhYUIzFWkrMHIxqmrgC6aBWUzpPtCAJxk8s1jVOg0q6YNE4iId0AG
+/uKeEYaoe4/1/oldtGBtYWTQ+WMOeuOMgddfZVyMrPG/G2D2lwIxO/pwZ6+xMC0r
+TF+/KXYU5XLF/kFyjFBeaRm+9N/wn/HZLp6hawkxWD5/rFpONbkOUvYAh0cznb5M
+9+U8YmL+zK6qLK525oUpe0tEPmOC9nsp71xpCk/WZkDFvKj1bTsTC0LvfrG/Hgrt
+zA4PudySXcwlqtOY011+y2NHMnjZzpxpxsWYPEWtzU91XRjyU3m2vTOIdLSBEH7T
+ics9xnwcLw8vkMOFq8oCWtTF59mEkMqmcRdouIyij1xr1OKyMeooqed8iUNVo8mY
+XX0totvPs9LOabGfLpCPoaEXyRuuXqRZF4UYdimUalT2sgfHS/9XeHpp+ZzMYa7D
+KVnPC5jnlCDLef8xsqyk
+=NbyG
+-----END PGP SIGNATURE-----
+
+--UHN/qo2QbUvPLonB--
