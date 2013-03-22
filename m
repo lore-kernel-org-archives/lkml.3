@@ -1,45 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab3CVMPT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 08:15:19 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15145 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186Ab3CVMPP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 08:15:15 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 22 Mar 2013 05:15:06 -0700
-Date: Fri, 22 Mar 2013 14:15:07 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH REPOST v2] clk: add table lookup to mux
-Message-ID: <20130322121507.GX18519@tbergstrom-lnx.Nvidia.com>
-References: <1363954078-29952-1-git-send-email-pdeschrijver@nvidia.com>
+	id S932192Ab3CVMPe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 08:15:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14341 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754651Ab3CVMP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 08:15:29 -0400
+Date: Fri, 22 Mar 2013 14:12:54 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v2 0/7] KVM: MMU: fast zap all shadow pages
+Message-ID: <20130322121254.GX9382@redhat.com>
+References: <1363768227-4782-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130321222151.GA19821@amt.cnet>
+ <514BBDC5.6090104@linux.vnet.ibm.com>
+ <20130322105436.GC7543@amt.cnet>
+ <514C3C34.4080906@linux.vnet.ibm.com>
+ <20130322112811.GV9382@redhat.com>
+ <514C42EC.6000303@linux.vnet.ibm.com>
+ <20130322114715.GW9382@redhat.com>
+ <514C4878.5000404@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363954078-29952-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <514C4878.5000404@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 01:07:53PM +0100, Peter De Schrijver wrote:
-> Add a table lookup feature to the mux clock. Also allow arbitrary masks
-> instead of the width. This will be used by some clocks on Tegra114. Also
-> adapt the tegra periph clk because it uses struct clk_mux directly.
+On Fri, Mar 22, 2013 at 08:03:04PM +0800, Xiao Guangrong wrote:
+> On 03/22/2013 07:47 PM, Gleb Natapov wrote:
+> > On Fri, Mar 22, 2013 at 07:39:24PM +0800, Xiao Guangrong wrote:
+> >> On 03/22/2013 07:28 PM, Gleb Natapov wrote:
+> >>> On Fri, Mar 22, 2013 at 07:10:44PM +0800, Xiao Guangrong wrote:
+> >>>> On 03/22/2013 06:54 PM, Marcelo Tosatti wrote:
+> >>>>
+> >>>>>>
+> >>>>>>>
+> >>>>>>> And then have codepaths that nuke shadow pages break from the spinlock,
+> >>>>>>
+> >>>>>> I think this is not needed any more. We can let mmu_notify use the generation
+> >>>>>> number to invalid all shadow pages, then we only need to free them after
+> >>>>>> all vcpus down and mmu_notify unregistered - at this point, no lock contention,
+> >>>>>> we can directly free them.
+> >>>>>>
+> >>>>>>> such as kvm_mmu_slot_remove_write_access does now (spin_needbreak).
+> >>>>>>
+> >>>>>> BTW, to my honest, i do not think spin_needbreak is a good way - it does
+> >>>>>> not fix the hot-lock contention and it just occupies more cpu time to avoid
+> >>>>>> possible soft lock-ups.
+> >>>>>>
+> >>>>>> Especially, zap-all-shadow-pages can let other vcpus fault and vcpus contest
+> >>>>>> mmu-lock, then zap-all-shadow-pages release mmu-lock and wait, other vcpus
+> >>>>>> create page tables again. zap-all-shadow-page need long time to be finished,
+> >>>>>> the worst case is, it can not completed forever on intensive vcpu and memory
+> >>>>>> usage.
+> >>>>>
+> >>>>> Yes, but the suggestion is to use spin_needbreak on the VM shutdown
+> >>>>> cases, where there is no detailed concern about performance. Such as
+> >>>>> mmu_notifier_release, kvm_destroy_vm, etc. In those cases what matters
+> >>>>> most is that host remains unaffected (and that it finishes in a
+> >>>>> reasonable time).
+> >>>>
+> >>>> Okay. I agree with you, will give a try.
+> >>>>
+> >>>>>
+> >>>>>> I still think the right way to fix this kind of thing is optimization for
+> >>>>>> mmu-lock.
+> >>>>>
+> >>>>> And then for the cases where performance matters just increase a
+> >>>>> VM global generetion number, zap the roots and then on kvm_mmu_get_page:
+> >>>>>
+> >>>>> kvm_mmu_get_page() {
+> >>>>> 	sp = lookup_hash(gfn)
+> >>>>> 	if (sp->role = role) {
+> >>>>> 		if (sp->mmu_gen_number != kvm->arch.mmu_gen_number) {
+> >>>>> 			kvm_mmu_commit_zap_page(sp); (no need for TLB flushes as its unreachable)
+> >>>>> 			kvm_mmu_init_page(sp);
+> >>>>> 			proceed as if the page was just allocated
+> >>>>> 		}
+> >>>>> 	}
+> >>>>> }
+> >>>>>
+> >>>>> It makes the kvm_mmu_zap_all path even faster than you have now.
+> >>>>> I suppose this was your idea correct with the generation number correct?
+> >>>>
+> >>>> Wow, great minds think alike, this is exactly what i am doing. ;)
+> >>>>
+> >>> Not that I disagree with above code, but why not make mmu_gen_number to be
+> >>> part of a role and remove old pages in kvm_mmu_free_some_pages() whenever
+> >>> limit is reached like we looks to be doing with role.invalid pages now.
+> >>
+> >> These pages can be reused after purge its entries and delete it from parents
+> >> list, it can reduce the pressure of memory allocator. Also, we can move it to
+> >> the head of active_list so that the pages with invalid_gen can be reclaimed first.
+> >>
+> > You mean tail of the active_list, since kvm_mmu_free_some_pages()
+> > removes pages from tail? Since pages with new mmu_gen_number will be put
 > 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> I mean purge the invalid-gen page first, then update its valid-gen to current-gen,
+> then move it to the head of active_list:
+> 
+> kvm_mmu_get_page() {
+> 	sp = lookup_hash(gfn)
+> 	if (sp->role = role) {
+> 		if (sp->mmu_gen_number != kvm->arch.mmu_gen_number) {
+> 			kvm_mmu_purge_page(sp); (no need for TLB flushes as its unreachable)
+> 			sp->mmu_gen_number = kvm->arch.mmu_gen_number;
+> 			@@@@@@ move sp to the head of active list @@@@@@
+> 		}
+> 	}
+> }
+> 
+> 
+And I am saying that if you make mmu_gen_number part of the role you do
+not need to change kvm_mmu_get_page() at all. It will just work.
 
-This is actually the first post, despite the subject.
+> > at the head of the list it is natural that tail will contain pages with
+> > outdated generation numbers without need to explicitly move them.
+> 
+> Currently, only the new allocated page can be moved to the head of
+> active_list. The existing pages are not moved by kvm_mmu_get_page.
+> It seems a bug.
+Ideally it needs to be LRU list based on accessed bit scanning.
 
-Thanks,
-
-Peter.
+--
+			Gleb.
