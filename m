@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932948Ab3CVBZB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 21:25:01 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45436 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932843Ab3CVBY6 (ORCPT
+	id S933004Ab3CVB1L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 21:27:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37485 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932912Ab3CVB1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 21:24:58 -0400
-X-Sasl-enc: o5mFU/q6nqa4ddOXl79XewG+2QhADNKpG/SJX+23Hmys 1363915496
-Date: Thu, 21 Mar 2013 18:24:55 -0700
-From: Greg KH <greg@kroah.com>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: Myron Stowe <myron.stowe@redhat.com>, bhelgaas@google.com,
-        linux-pci@vger.kernel.org, yuxiangl@marvell.com, yxlraid@gmail.com,
-        alex.williamson@redhat.com, kay@vrfy.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] PCI: Handle device quirks when accessing sysfs
- resource<N> entries
-Message-ID: <20130322012455.GB2009@kroah.com>
-References: <20130321043449.7229.81056.stgit@amt.stowe>
- <20130321043502.7229.43877.stgit@amt.stowe>
- <514BAB13.3000101@gmail.com>
+	Thu, 21 Mar 2013 21:27:09 -0400
+Date: Thu, 21 Mar 2013 18:24:52 -0700
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-f564c24103f87dc740c1c293c975565ac46b12ef@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, sruffell@digium.com,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com,
+        sruffell@digium.com
+In-Reply-To: <20130320170310.GA23362@digium.com>
+References: <20130320170310.GA23362@digium.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, microcode_intel_early:
+  Mark apply_microcode_early() as cpuinit
+Git-Commit-ID: f564c24103f87dc740c1c293c975565ac46b12ef
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <514BAB13.3000101@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 18:24:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 06:51:31PM -0600, Robert Hancock wrote:
-> On 03/20/2013 10:35 PM, Myron Stowe wrote:
-> >Sysfs includes entries to memory regions that back a PCI device's BARs.
-> >The pci-sysfs entries backing I/O Port BARs can be accessed by userspace,
-> >providing direct access to the device's registers.  File permissions
-> >prevent random users from accessing the device's registers through these
-> >files, but don't stop a privileged app that chooses to ignore the purpose
-> >of these files from doing so.
-> >
-> >There are devices with abnormally strict restrictions with respect to
-> >accessing their registers; aspects that are typically handled by the
-> >device's driver.  When these access restrictions are not followed - as
-> >when a userspace app such as "udevadm info --attribute-walk
-> >--path=/sys/..." parses though reading all the device's sysfs entries - it
-> >can cause such devices to fail.
-> >
-> >This patch introduces a quirking mechanism that can be used to detect
-> >accesses that do no meet the device's restrictions, letting a device
-> >specific method intervene and decide how to progress.
-> >
-> >Reported-by: Xiangliang Yu <yuxiangl@marvell.com>
-> >Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-> 
-> I honestly don't think there's much point in even attempting this
-> strategy. This list of devices in the quirk can't possibly be
-> complete. It would likely be easier to enumerate a white-list of
-> devices that can deal with their IO ports being read willy-nilly
-> than a blacklist of those that don't, as there's likely countless
-> devices that fall into this category. Even if they don't choke as
-> badly as these ones do, it's quite likely that bad behavior will
-> result.
-> 
-> I think there's a few things that need to be done:
-> 
-> -Fix the bug in udevadm that caused it to trawl through these files
-> willy-nilly,
+Commit-ID:  f564c24103f87dc740c1c293c975565ac46b12ef
+Gitweb:     http://git.kernel.org/tip/f564c24103f87dc740c1c293c975565ac46b12ef
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Thu, 21 Mar 2013 17:32:36 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 21 Mar 2013 17:32:36 -0700
 
-There's no "bug" in udevadm, the user explicitly asked for it to read
-all of those files.  Just like grep or bash could be used to ask to read
-those files.
+x86, microcode_intel_early: Mark apply_microcode_early() as cpuinit
 
-If the kernel is going to provide files to userspace, the kernel can't
-suddenly get upset if userspace actually reads those files.
+Add missing __cpuinit annotation to apply_microcode_early().
 
-Fix the kernel here please.
+Reported-by: Shaun Ruffell <sruffell@digium.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/20130320170310.GA23362@digium.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/microcode_intel_early.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> -Fix the kernel so that access through these files complies with the
-> kernel's mechanisms for claiming IO/memory regions to prevent access
-> conflicts (i.e. opening these files should claim the resource region
-> they refer to, and should fail with EBUSY or something if another
-> process or a kernel driver is using it).
-
-Yes, this is a good solution.
-
-> -Reconsider whether supporting read/write on the resource files for
-> IO port regions like these makes any sense. Obviously mmap isn't
-> very practical for IO port access on x86 but you could even do
-> something like an ioctl for this purpose. Not very many pieces of
-> software would need to access these files so it's likely OK if the
-> API is a bit ugly. That would prevent something like grepping
-> through sysfs from generating port accesses to random devices.
-
-Also a good solution.
-
-greg k-h
+diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
+index 5992ee8..d893e8e 100644
+--- a/arch/x86/kernel/microcode_intel_early.c
++++ b/arch/x86/kernel/microcode_intel_early.c
+@@ -659,8 +659,8 @@ static inline void __cpuinit print_ucode(struct ucode_cpu_info *uci)
+ }
+ #endif
+ 
+-static int apply_microcode_early(struct mc_saved_data *mc_saved_data,
+-				 struct ucode_cpu_info *uci)
++static int __cpuinit apply_microcode_early(struct mc_saved_data *mc_saved_data,
++					   struct ucode_cpu_info *uci)
+ {
+ 	struct microcode_intel *mc_intel;
+ 	unsigned int val[2];
