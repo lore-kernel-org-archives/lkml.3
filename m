@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933489Ab3CVO15 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 10:27:57 -0400
-Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:18267
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932843Ab3CVO1l convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 10:27:41 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz98dI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275ch8275bhz2dh2a8h668h839h8e2h8e3h944hd25he5bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
-From: Fleming Andy-AFLEMING <afleming@freescale.com>
-To: David Miller <davem@davemloft.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Gala Kumar-B11780 <B11780@freescale.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH] phy: Add support for VSC8234
-Thread-Topic: [PATCH] phy: Add support for VSC8234
-Thread-Index: AQHOJwd+n3kfY3fqFkO/7FNNaD93w5ixxLxr
-Date: Fri, 22 Mar 2013 14:27:35 +0000
-Message-ID: <45F3FB2F-D5AA-42BD-A3B8-B38A93569303@freescale.com>
-References: <E1UJ1fR-0004hp-2j@swissweb.swissdisk.com>,<20130322.101351.803684806942512280.davem@davemloft.net>
-In-Reply-To: <20130322.101351.803684806942512280.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S933494Ab3CVO2X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 10:28:23 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:17051 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933247Ab3CVO2T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 10:28:19 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, jinsong.liu@intel.com
+Subject: [PATCH] xen/acpi-stub: Disable it b/c the acpi_processor_add is no longer called.
+Date: Fri, 22 Mar 2013 10:28:00 -0400
+Message-Id: <1363962480-1366-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.0.2
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+With the Xen ACPI stub code (CONFIG_XEN_STUB=y) enabled, the power
+C and P states are no longer uploaded to the hypervisor.
 
+The reason is that the Xen CPU hotplug code: xen-acpi-cpuhotplug.c
+and the xen-acpi-stub.c register themselves as the "processor" type object.
 
-On Mar 22, 2013, at 9:13, "David Miller" <davem@davemloft.net> wrote:
+That means the generic processor (processor_driver.c) stops
+working and it does not call (acpi_processor_add) which populates the
 
-> From: Andy Fleming <afleming@freescale.com>
-> Date: Sun, 16 Oct 2011 01:49:49 -0500
-> 
->> No functional changes other than to recognize this PHYID.
->> 
->> Signed-off-by: Andy Fleming <afleming@freescale.com>
->> Signed-off-by: Kumar Gala <kumar.gala@freescale.com>
->> Signed-off-by: Ben Collins <ben.c@servergy.com>
-> 
-> Please do not submit patches with the commit date integrated
-> into your formal email headers.
-> 
-> This screws up archives and patch queue maintainence systems which
-> order submissions by date.
+         per_cpu(processors, pr->id) = pr;
 
+structure. The 'pr' is gathered from the acpi_processor_get_info function
+which does the job of finding the C-states and figuring out PBLK address.
 
-Yes, I'm very confused, as I didn't send any of these.
+The 'processors->pr' is then later used by xen-acpi-processor.c (the one that
+uploads C and P states to the hypervisor). Since it is NULL, we end
+skip the gathering of _PSD, _PSS, _PCT, etc and never upload the power
+management data.
 
-Andy
+The end result is that enabling the CONFIG_XEN_STUB in the build means that
+xen-acpi-processor is not working anymore.
+
+This temporary patch fixes it by marking the XEN_STUB driver as
+BROKEN until this can be properly fixed.
+
+CC: jinsong.liu@intel.com
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/xen/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+index 5a32232..67af155 100644
+--- a/drivers/xen/Kconfig
++++ b/drivers/xen/Kconfig
+@@ -182,7 +182,7 @@ config XEN_PRIVCMD
+ 
+ config XEN_STUB
+ 	bool "Xen stub drivers"
+-	depends on XEN && X86_64
++	depends on XEN && X86_64 && BROKEN
+ 	default n
+ 	help
+ 	  Allow kernel to install stub drivers, to reserve space for Xen drivers,
+-- 
+1.8.0.2
 
