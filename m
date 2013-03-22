@@ -1,138 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab3CVDZN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 23:25:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37673 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751464Ab3CVDZM (ORCPT
+	id S1754629Ab3CVD2Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 23:28:25 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47992 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753815Ab3CVD2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 23:25:12 -0400
-Message-ID: <1363922685.3728.21.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: PREEMPT_RT vs 'hrtimer: Prevent hrtimer_enqueue_reprogram race'
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Leonid Shatz <leonid.shatz@ravellosystems.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>
-Date: Fri, 22 Mar 2013 03:24:45 +0000
-In-Reply-To: <1363919473.6345.88.camel@gandalf.local.home>
-References: <1363914713.31336.191.camel@deadeye.wl.decadent.org.uk>
-	 <1363919473.6345.88.camel@gandalf.local.home>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-LHxlsCY0lY0WWjEFg7Vn"
-X-Mailer: Evolution 3.4.4-2 
+	Thu, 21 Mar 2013 23:28:24 -0400
+Date: Fri, 22 Mar 2013 14:28:11 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Bolle <pebolle@tiscali.nl>, Greg KH <greg@kroah.com>
+Subject: linux-next: manual merge of the usb-gadget tree with the
+ usb.current tree
+Message-Id: <20130322142811.41c24edf17de8c6809da5224@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:9535:520b:eb30:917a
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__22_Mar_2013_14_28_11_+1100_lxd2ET5lZ6tcjkeS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-LHxlsCY0lY0WWjEFg7Vn
-Content-Type: text/plain; charset="UTF-8"
+--Signature=_Fri__22_Mar_2013_14_28_11_+1100_lxd2ET5lZ6tcjkeS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2013-03-21 at 22:31 -0400, Steven Rostedt wrote:
-> On Fri, 2013-03-22 at 01:11 +0000, Ben Hutchings wrote:
-> > Commit b22affe0aef4 'hrtimer: Prevent hrtimer_enqueue_reprogram race'
-> > conflicts with the RT patches
-> > hrtimer-fixup-hrtimer-callback-changes-for-preempt-r.patch and
-> > peter_zijlstra-frob-hrtimer.patch, as they all change
-> > hrtimer_enqueue_reprogram().  It seems that the changes in the RT
-> > patches now belong in __hrtimer_start_range_ns().
-> >=20
-> > Since I haven't seen any RT releases in a while, here's what I came up
-> > with for 3.2-rt:
->=20
-> Note, I posted a fix on Tuesday:
->=20
-> https://lkml.org/lkml/2013/3/19/369
+Hi Felipe,
 
-Thanks.  I did search GMANE with some obvious terms but I think its
-index is lagging.
+Today's linux-next merge of the usb-gadget tree got a conflict in
+drivers/usb/gadget/net2272.c between commit eda81bea894e ("usb: gadget:
+net2272: finally convert "CONFIG_USB_GADGET_NET2272_DMA"") from the
+usb.current tree and commit c36cbfc045bf ("usb: gadget: net2272: remove
+unused DMA_ADDR_INVALID") from the usb-gadget tree.
 
-> I'm waiting for Thomas to give his OK on it before releasing the series.
-> He told me he'll have a look at it tomorrow. I've already ran the series
-> through all my tests, and will post it immediately after I get the OK.
-> Or if there's a issue I will have to fix it and rerun my tests.
->=20
->=20
-> >=20
-> > ---
-> > From: Thomas Gleixner <tglx@linutronix.de>
-> > Date: Fri, 3 Jul 2009 08:44:31 -0500
-> > Subject: hrtimer: fixup hrtimer callback changes for preempt-rt
-[...]
-> > @@ -1011,6 +1023,26 @@ int __hrtimer_start_range_ns(struct hrti
-> >  	 */
-> >  	if (leftmost && new_base->cpu_base =3D=3D &__get_cpu_var(hrtimer_base=
-s)
-> >  		&& hrtimer_enqueue_reprogram(timer, new_base)) {
-> > +#ifdef CONFIG_PREEMPT_RT_BASE
-> > +	again:
->=20
-> What kernel are you working with? I don't see anywhere the "again:"
-> within a PREEMPT_RT_BASE block.
-
-I'm rebasing the rt patch series generated with
-'git format-patch v3.2.39..v3.2.39-rt59-rebase' on top of v3.2.41 (plus
-Debian changes, which introduce some trivial textual conflicts).
-
-So these patches were previously:
-
-commit c495d005449523772e27a22fb74814dc3cebff8e
-Author: Thomas Gleixner <tglx@linutronix.de>
-Date:   Fri Jul 3 08:44:31 2009 -0500
-
-    hrtimer: fixup hrtimer callback changes for preempt-rt
-
-commit 80cc960e628509c72f63a7327a4dc22707a02b81
-Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date:   Fri Aug 12 17:39:54 2011 +0200
-
-    hrtimer: Don't call the timer handler from hrtimer_start
-
-[...]
-> This is very similar to what I came up with.
-[...]
-> Yep, looks like we are on the right track  :-)
-[...]
-
-Good to hear.
-
-Ben.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
 --=20
-Ben Hutchings
-Make three consecutive correct guesses and you will be considered an expert=
-.
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---=-LHxlsCY0lY0WWjEFg7Vn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+diff --cc drivers/usb/gadget/net2272.c
+index 32524b63,03e4104..0000000
+--- a/drivers/usb/gadget/net2272.c
++++ b/drivers/usb/gadget/net2272.c
+@@@ -58,8 -58,7 +58,7 @@@ static const char * const ep_name[] =3D=20
+  	"ep-a", "ep-b", "ep-c",
+  };
+ =20
+- #define DMA_ADDR_INVALID	(~(dma_addr_t)0)
+ -#ifdef CONFIG_USB_GADGET_NET2272_DMA
+ +#ifdef CONFIG_USB_NET2272_DMA
+  /*
+   * use_dma: the NET2272 can use an external DMA controller.
+   * Note that since there is no generic DMA api, some functions,
+
+--Signature=_Fri__22_Mar_2013_14_28_11_+1100_lxd2ET5lZ6tcjkeS
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAUUvO/ee/yOyVhhEJAQqEMQ/7BRsyB7tf8HV/uEwemk++ojQAtIZfZMrA
-cjkQkbbi/GsYHxz5FqXu0X+FzeZUdz+G/oLQxRlmNGqEFUo4pURCysiuiLHgv4ml
-e/RHbWpAFoT/zaAcjvTeWChmw8zgsKiSBlXY5+RTksyEXv9zmGXgpabhQxk3CRPm
-mCNNuRsF+lpB5d45rZY5LPXhedyWzS2WivCk3Ix+eIrTvOjO/HgCJ0wKy+hfDtfG
-uxEIW3J2J99J8GrvElXIB4ZneGfRmvJLC3a70Se1tgKhG3GsRgR46I/XS2+HIVoS
-MCdiKoH4UKhlyu1yuJFJSCtStH8loMub/k5sn50B7EraxX/vBWdhJ3SHbh4w1DEs
-9+sEQuFTo71gEvb/CWwqY3XDW217QORzgjcQtOdqYqz2GjTK2TFko6Nwp0+PfaIq
-Eq8QFBCBLrJSqY3MXeB/yjbrAdHuQ9zUGrxPWHoVxO0Vk2ynSHRnk5M7TxT5GGHH
-bRS5Bjx+1VyiwwWXPsZMAtM2wFzw+p1gVrKFw7H191xCTCQcvUVbxh3yXztZz1gT
-RhdWpJnIiGiQDk66zePSyuK59T80cTmFY6RjdCeVvVuhRfq3EVJd8VifydQ48z21
-2av0NCX4Rqj4JXjYDwcDYXLN9g/paNa/QHyHn0Ix2Il2l+WtP/FGcCmiiP2VbNv/
-J6VMlwlZZK8=
-=ZffS
+iQIcBAEBCAAGBQJRS8/LAAoJEECxmPOUX5FEtGwP/jMykrs0fuNioiJozzl7HH0x
+4f+xxa0D+xmsoW669xiBc97XNtlvE+GoyU5qhw/rLlHXk8yJTJmPleMufTmKOX1X
+TMSFy6QEf8m85fGuIl6olf+nbI5xPhXMep2xqY6Zd5y+uX4O9dca5lEJVzkaP4YE
++c2R/aXvItWv+/VLXXbxx3Ii14eH7B4UpURiRmd9DnquvZZMimZT/rQHfWgA73y1
+097tmKgHG+NR3iQ3zFW5Gc9fG186be84i69XSGLPBldg8nBiqFDxb3p55GV82mpV
+3aroG/DhtYzCiJZtHqgmE9f/XV4ffAw5nBI6NSCqQHRq37jIbDbDXuXmiEi0OFBS
+WrornSSD/VdPBTBvefORhHVkAyC8VFZ6kbSER9nAKyMpCbwS9G9fRODLTzwTxBUo
+qYP0nV5z9JS5vDtiWnPe17ulo4/KNw/VGjbaSvmuAcUhc+N8PI+W8bT3qPEHSoqX
+QgRRydtzgeRguNvfjrEgc8A+YpwoEgBkngXTiKEfh2LrdQ5JGcPMkT2Fo3kAAxa3
+FsKeQIx7zMacyJZn7uWtRShNmorGrnfyNjewP4Q/rX/+Yce64N1vFtfzjK8xQZN4
+w3vZUjG7iXSNUtG9hVsRpjipvQxn5gJYL1wZkN1rFhgt84C7XKW5xGHHIcrrs9xK
+vXH+MsCfAFaTL4S/5Rvu
+=dyqd
 -----END PGP SIGNATURE-----
 
---=-LHxlsCY0lY0WWjEFg7Vn--
+--Signature=_Fri__22_Mar_2013_14_28_11_+1100_lxd2ET5lZ6tcjkeS--
