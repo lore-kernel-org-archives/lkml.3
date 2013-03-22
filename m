@@ -1,68 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933319Ab3CVJbV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 05:31:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34852 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623Ab3CVJbT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 05:31:19 -0400
+	id S933464Ab3CVJbu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 05:31:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40475 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933087Ab3CVJbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 05:31:47 -0400
+Date: Fri, 22 Mar 2013 10:31:41 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
+Message-ID: <20130322093141.GE31457@dhcp22.suse.cz>
+References: <514A60CD.60208@huawei.com>
+ <20130321090849.GF6094@dhcp22.suse.cz>
+ <20130321102257.GH6094@dhcp22.suse.cz>
+ <514BB23E.70908@huawei.com>
+ <20130322080749.GB31457@dhcp22.suse.cz>
+ <514C1388.6090909@huawei.com>
+ <514C14BF.3050009@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <514BF0BE.1070907@huawei.com>
-References: <1363793126-11510-1-git-send-email-ming.lei@canonical.com>
-	<1363793126-11510-2-git-send-email-ming.lei@canonical.com>
-	<514A7340.5040409@huawei.com>
-	<CACVXFVN7urpLM+Q-3o9=hYQLM=544WTXh+BnSo9fBM+d07oapQ@mail.gmail.com>
-	<514A7E72.2090200@huawei.com>
-	<CACVXFVMS644BpX7voMHS-xXoRs9-G4y96=ubk_NAj6KDTy1ENQ@mail.gmail.com>
-	<514BF0BE.1070907@huawei.com>
-Date: Fri, 22 Mar 2013 17:31:16 +0800
-Message-ID: <CACVXFVOAFqVoNP-igJ-WeaJ+rKF-gREcHqspHWOkz4EJ9Gn94w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] sysfs: fix race between readdir and lseek
-From: Ming Lei <ming.lei@canonical.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <514C14BF.3050009@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 1:48 PM, Li Zefan <lizefan@huawei.com> wrote:
-> On 2013/3/21 12:48, Ming Lei wrote:
->
-> Yes, it can...As I said, it's irrelevant, because it's vfs that changes
-> file->f_pos.
->
-> SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
-> {
->         struct fd f = fdget(fd);
->         ssize_t ret = -EBADF;
->
->         if (f.file) {
->                 loff_t pos = file_pos_read(f.file);             <--- read f_pos
->                 ret = vfs_read(f.file, buf, count, &pos);       <--- return -EISDIR
->                 file_pos_write(f.file, pos);                    <--- write f_pos
+On Fri 22-03-13 12:22:23, Glauber Costa wrote:
+> On 03/22/2013 12:17 PM, Li Zefan wrote:
+> >> GFP_TEMPORARY groups short lived allocations but the mem cache is not
+> >> > an ideal candidate of this type of allocations..
+> >> > 
+> > I'm not sure I'm following you...
+> > 
+> > char *memcg_cache_name()
+> > {
+> > 	char *name = alloc();
+> > 	return name;
+> > }
+> > 
+> > kmem_cache_dup()
+> > {
+> > 	name = memcg_cache_name();
+> > 	kmem_cache_create_memcg(name);
+> > 	free(name);
+> > }
+> > 
+> > Isn't this a short lived allocation?
+> > 
+> 
+> Hi,
+> 
+> Thanks for identifying and fixing this.
+> 
+> Li is right. The cache name will live long, but this is because the
+> slab/slub caches will strdup it internally. So the actual memcg
+> allocation is short lived.
 
-Considered that f_pos of sysfs directory is always less than INT_MAX,
-we need't worry about atomic writing it in file_pos_write().
+OK, I have totally missed that. Sorry about the confusion. Then all the
+churn around the allocation is pointless, no?
+What about:
+---
+>From 7ed7f53bb597e8cb40d9ac91ce16142fb60f1e93 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Fri, 22 Mar 2013 10:22:54 +0100
+Subject: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
 
-The only probable problem on sysfs is below scenario in read()/write():
+As cgroup supports rename, it's unsafe to dereference dentry->d_name
+without proper vfs locks. Fix this by using cgroup_name() rather than
+dentry directly.
 
--  pos is read as less than 2 in file_pos_read(f.file)
--  ret = vfs_read(f.file, buf, count, &pos)
-          ---> readdir() in another path
--  file_pos_write(pos)
-         ---> readdir() found f_pos becomes 0 or 1, and may cause
-use-after-free problem
+Also open code memcg_cache_name because it is called only from
+kmem_cache_dup which frees the returned name right after
+kmem_cache_create_memcg makes a copy of it. Such a short-lived
+allocation doesn't make too much sense. So replace it by a static
+buffer as kmem_cache_dup is called with memcg_cache_mutex.
 
-Considered that vfs_read()/vfs_write on sysfs dir is almost doing nothing, the
-above problem may only exist in theory. The patch[1] can't avoid it too.
-I am wondering if it need to be fixed, but I will try to figure out how to
-avoid it in sysfs_readdir() if possible.
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |   33 +++++++++++----------------------
+ 1 file changed, 11 insertions(+), 22 deletions(-)
 
-[1], https://patchwork.kernel.org/patch/2160771/
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 53b8201..9452b56 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3214,40 +3214,29 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
+ 	schedule_work(&cachep->memcg_params->destroy);
+ }
+ 
+-static char *memcg_cache_name(struct mem_cgroup *memcg, struct kmem_cache *s)
+-{
+-	char *name;
+-	struct dentry *dentry;
+-
+-	rcu_read_lock();
+-	dentry = rcu_dereference(memcg->css.cgroup->dentry);
+-	rcu_read_unlock();
+-
+-	BUG_ON(dentry == NULL);
+-
+-	name = kasprintf(GFP_KERNEL, "%s(%d:%s)", s->name,
+-			 memcg_cache_id(memcg), dentry->d_name.name);
+-
+-	return name;
+-}
+-
++/*
++ * Called with memcg_cache_mutex held
++ */
+ static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+ 					 struct kmem_cache *s)
+ {
+ 	char *name;
+ 	struct kmem_cache *new;
++	static char tmp_name[PAGE_SIZE];
+ 
+-	name = memcg_cache_name(memcg, s);
+-	if (!name)
+-		return NULL;
++	lockdep_assert_held(&memcg_cache_mutex);
++
++	rcu_read_lock();
++	tmp_name = snprintf(tmp_name, sizeof(tmp_name), "%s(%d:%s)", s->name,
++			 memcg_cache_id(memcg), cgroup_name(memcg->css.cgroup));
++	rcu_read_unlock();
+ 
+-	new = kmem_cache_create_memcg(memcg, name, s->object_size, s->align,
++	new = kmem_cache_create_memcg(memcg, tmp_name, s->object_size, s->align,
+ 				      (s->flags & ~SLAB_PANIC), s->ctor, s);
+ 
+ 	if (new)
+ 		new->allocflags |= __GFP_KMEMCG;
+ 
+-	kfree(name);
+ 	return new;
+ }
+ 
+-- 
+1.7.10.4
 
-Thanks,
---
-Ming Lei
+
+-- 
+Michal Hocko
+SUSE Labs
