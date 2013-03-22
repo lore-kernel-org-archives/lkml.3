@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933741Ab3CVPvd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 11:51:33 -0400
-Received: from a192-166.smtp-out.amazonses.com ([199.255.192.166]:41149 "EHLO
-	a192-166.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933488Ab3CVPvc (ORCPT
+	id S933769Ab3CVPxl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 11:53:41 -0400
+Received: from mail-vb0-f74.google.com ([209.85.212.74]:59105 "EHLO
+	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933516Ab3CVPxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 11:51:32 -0400
-X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Mar 2013 11:51:31 EDT
-Date: Fri, 22 Mar 2013 15:41:58 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>
-Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
- unfreeze_partials() code.
-In-Reply-To: <1363906545.6345.81.camel@gandalf.local.home>
-Message-ID: <0000013d92c37ff3-5fb85400-bec1-4eda-8ba1-332566884c59-000000@email.amazonses.com>
-References: <1363906545.6345.81.camel@gandalf.local.home>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.192.166
+	Fri, 22 Mar 2013 11:53:40 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Thomas Abraham <thomas.abraham@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Changhwan Youn <chaos.youn@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: EXYNOS: Add missing semicolons in exynos_mct.c
+Date: Fri, 22 Mar 2013 08:53:07 -0700
+Message-Id: <1363967587-19154-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Mar 2013, Steven Rostedt wrote:
+The CLOCKSOURCE_OF_DECLARE lines were added without a semicolon at the
+end.  On my system this causes a compile-time error that looks like:
 
-> The ffffffff8115517a is just before put_cpu_partial() which calls
-> unfreeze_partials() with irqs disabled. So I started tracing again, this
-> time with:
+ .../drivers/clocksource/exynos_mct.c:557:202: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+ .../drivers/clocksource/exynos_mct.c:558:1: error: expected ',' or ';' before 'static'
 
-Hmmm... That is strange. unfreeze_partials should be rather fast.
+The error didn't show up till now because there was an extra semicolon
+at end of the CLOCKSOURCE_OF_DECLARE definition that was removed by
+Arnd Bergmann in "clocksource: make CLOCKSOURCE_OF_DECLARE type safe"
 
-> It ran for 249.51 microseconds!!! With interrupts disabled! This was
-> what caused the interrupt to go off late. I have no idea why adding
-> tracing makes this latency go away. Perhaps it changes the timings just
-> enough to not let things line up?
->
-> I did a report with '-R' and showing the raw events, which will show the
-> exit part of the function graph we have:
->
->    <...>-80563  14d...0 262219.108982: funcgraph_entry:       func=0xffffffff81154954 depth=0
->    <...>-80563  14d...0 262219.109233: funcgraph_exit:        func=0xffffffff81154954 calltime=0xee7ca4d8200f rettime=0xee7ca4dbeeb5 overrun=0x0 depth=0
->    <...>-80563  14d...0 262219.109233: funcgraph_entry:       func=0xffffffff81528e47 depth=0
->
-> The funcgraph_exit is within the same microsecond the
-> smp_apic_timer_interrupt() went off, so yes this is what delayed it.
->
-> Anyway, this is run on 3.6.11-rt30, but looking at the current code, it
-> doesn't look like it changed in any meaningful way. The while ((page =
-> c->partial)) makes me nervous. How big can this list be? Is there a way
-> to limit the amount this can run?
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/clocksource/exynos_mct.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-The control is via the cpu_partial field in /sys/kernel/slab/<cache>/
-
-There is also slabs_cpu_partial which gives a view as to how many objects
-are cached in each per cpu structure. Do a cat
-
-/sys/kernel/*/slabs_cpu_partial to get a view of what the situation is.
-Any abnormally high numbers?
-
-The default for the number of per cpu partial objects should be 30 or so.
-
-
+diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+index 203ac05..106228d 100644
+--- a/drivers/clocksource/exynos_mct.c
++++ b/drivers/clocksource/exynos_mct.c
+@@ -554,5 +554,5 @@ void __init mct_init(void)
+ 	exynos4_clocksource_init();
+ 	exynos4_clockevent_init();
+ }
+-CLOCKSOURCE_OF_DECLARE(exynos4210, "samsung,exynos4210-mct", mct_init)
+-CLOCKSOURCE_OF_DECLARE(exynos4412, "samsung,exynos4412-mct", mct_init)
++CLOCKSOURCE_OF_DECLARE(exynos4210, "samsung,exynos4210-mct", mct_init);
++CLOCKSOURCE_OF_DECLARE(exynos4412, "samsung,exynos4412-mct", mct_init);
+-- 
+1.8.1.3
 
