@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933551Ab3CVOZN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 10:25:13 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:48372 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933304Ab3CVOZI (ORCPT
+	id S1754722Ab3CVO0d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 10:26:33 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:49968 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565Ab3CVO0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 10:25:08 -0400
-Message-ID: <514C69B7.8090106@openwrt.org>
-Date: Fri, 22 Mar 2013 15:24:55 +0100
-From: Florian Fainelli <florian@openwrt.org>
-Organization: OpenWrt
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: davem@davemloft.net, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Fri, 22 Mar 2013 10:26:30 -0400
+Date: Fri, 22 Mar 2013 10:26:26 -0400 (EDT)
+Message-Id: <20130322.102626.1889236227505288422.davem@davemloft.net>
+To: florian@openwrt.org
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        jason@lakedaemon.net, andrew@lunn.ch, linux@arm.linux.org.uk,
+        benh@kernel.crashing.org, paulus@samba.org, buytenh@wantstofly.org,
+        thomas.petazzoni@free-electrons.com, gregkh@linuxfoundation.org,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org
 Subject: Re: [PATCH 0/4 v3] mv643xx_eth: use mvmdio MDIO bus driver
-References: <1363284515-9865-1-git-send-email-florian@openwrt.org> <1363959568-16976-1-git-send-email-florian@openwrt.org> <20130322141423.GJ13280@titan.lakedaemon.net>
-In-Reply-To: <20130322141423.GJ13280@titan.lakedaemon.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1363959568-16976-1-git-send-email-florian@openwrt.org>
+References: <1363284515-9865-1-git-send-email-florian@openwrt.org>
+	<1363959568-16976-1-git-send-email-florian@openwrt.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 22 Mar 2013 07:26:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 03/22/13 15:14, Jason Cooper a écrit :
-> On Fri, Mar 22, 2013 at 02:39:24PM +0100, Florian Fainelli wrote:
->> Hi all,
->>
->> This patch converts the mv643xx_eth driver to use the mvmdio MDIO bus driver
->> instead of rolling its own implementation. As a result, all users of this
->> mv643xx_eth driver are converted to register an "orion-mdio" platform_device.
->> The mvmdio driver is also updated to support an interrupt line which reports
->> SMI error/completion, and to allow traditionnal platform device registration
->> instead of just device tree.
->>
->> David, I think it makes sense for you to merge all of this, since we do
->> not want the architecture files to be desynchronized from the mv643xx_eth to
->> avoid runtime breakage. The potential for merge conflicts should be very small.
->>
->> Florian Fainelli (4):
->>    net: mvmdio: allow platform device style registration
->>    net: mvmdio: rename base register cookie from smireg to regs
->>    net: mvmdio: enhance driver to support SMI error/done interrupts
->>    mv643xx_eth: convert to use the Marvell Orion MDIO driver
->>
->>   .../devicetree/bindings/net/marvell-orion-mdio.txt |    3 +
->>   arch/arm/plat-orion/common.c                       |   54 +++---
->>   arch/powerpc/platforms/chrp/pegasos_eth.c          |   20 ++
->>   arch/powerpc/sysdev/mv64x60_dev.c                  |   16 +-
->>   drivers/net/ethernet/marvell/Kconfig               |    5 +-
->>   drivers/net/ethernet/marvell/Makefile              |    2 +-
->>   drivers/net/ethernet/marvell/mv643xx_eth.c         |  195 ++------------------
->>   drivers/net/ethernet/marvell/mvmdio.c              |  130 ++++++++++---
->>   include/linux/mv643xx_eth.h                        |    1 -
->>   9 files changed, 187 insertions(+), 239 deletions(-)
->
-> Whole series applied on top of v3.9-rc3 and tested on dreamplug
-> (kirkwood DT boot with legacy mv643xx_eth init)
+From: Florian Fainelli <florian@openwrt.org>
+Date: Fri, 22 Mar 2013 14:39:24 +0100
 
-Ok, thanks! Does that mean that you want these changes to go via your 
-tree? David initially applied my v2 of this patchset, and since it 
-thouches mostly ethernet driver stuff, I would rather make it go via his 
-tree if both of you agree.
---
-Florian
+> This patch converts the mv643xx_eth driver to use the mvmdio MDIO bus driver
+> instead of rolling its own implementation. As a result, all users of this
+> mv643xx_eth driver are converted to register an "orion-mdio" platform_device.
+> The mvmdio driver is also updated to support an interrupt line which reports
+> SMI error/completion, and to allow traditionnal platform device registration
+> instead of just device tree.
+> 
+> David, I think it makes sense for you to merge all of this, since we do
+> not want the architecture files to be desynchronized from the mv643xx_eth to
+> avoid runtime breakage. The potential for merge conflicts should be very small.
+
+Series applied to net-next, thanks Florian.
