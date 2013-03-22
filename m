@@ -1,118 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab3CVDA7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 23:00:59 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:59144 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754471Ab3CVDAv convert rfc822-to-8bit (ORCPT
+	id S1754601Ab3CVDJQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 23:09:16 -0400
+Received: from mail-da0-f41.google.com ([209.85.210.41]:58601 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab3CVDJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 23:00:51 -0400
-Date: Thu, 21 Mar 2013 22:00:46 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] init: fix name of root device in /proc/mounts
-To: William Hubbs <williamh@gentoo.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        mpagano@gentoo.org, ryao@gentoo.org, gregkh@gentoo.org,
-        torvalds@linux-foundation.org, w.d.hubbs@gmail.com
-In-Reply-To: <20130320211125.GA26595@linux1> (from williamh@gentoo.org on
-	Wed Mar 20 16:11:25 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1363921246.15703.54@driftwood>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+	Thu, 21 Mar 2013 23:09:15 -0400
+From: ycnian@gmail.com
+To: Trond.Myklebust@netapp.com
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yanchuan Nian <ycnian@gmail.com>
+Subject: nfsv4.1 client refuses to suspend
+Date: Fri, 22 Mar 2013 10:57:21 +0800
+Message-Id: <1363921041-5042-1-git-send-email-ycnian@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 04:11:25 PM, William Hubbs wrote:
-> On Wed, Mar 20, 2013 at 02:03:20AM -0500, Rob Landley wrote:
-> > On 03/19/2013 07:20:17 PM, William Hubbs wrote:
-> > > On Tue, Mar 19, 2013 at 04:17:11PM -0700, H. Peter Anvin wrote:
-> > > > On 03/19/2013 03:28 PM, William Hubbs wrote:
-> > > > > The issue is that /dev/root appears in /proc/mounts if you do  
-> not
-> > > > > boot with an initramfs, but /dev/root is not a device node.  
-> In the
-> > > > > past, udev created a symbolic link from /dev/root to the
-> > > > > appropriate block device, but it does not do this any longer.
-> > > Also,
-> > > > > devtmpfs does not create this symbolic link.
-> > > > >
-> > > > > This is causing bugs with software that depends on the  
-> existence
-> > > > > of /dev/root [2] for example.
-> > > >
-> > > > Seems okay to me, although even better would be to use the udev  
-> name
-> > > > of the device in question.
-> > >
-> > > I'm not following what you mean.
-> > >
-> > > The problem is that "/dev/root" should not be in /proc/mounts,
-> > > since there is always another entry that points to the root
-> > > file system.
-> >
-> > What gave you that idea?
-> >
-> > wget http://landley.net/aboriginal/bin/system-image-i686.tar.bz2
-> > extract it and ./run-emulator.sh and in there:
-> >
-> > (i686:1) /home # cat /proc/mounts
-> > rootfs / rootfs rw 0 0
-> > /dev/root / squashfs ro,relatime 0 0
-> > proc /proc proc rw,relatime 0 0
-> > sys /sys sysfs rw,relatime 0 0
-> > dev /dev devtmpfs rw,relatime,size=63072k,nr_inodes=15768,mode=755  
-> 0 0
-> > dev/pts /dev/pts devpts rw,relatime,mode=600 0 0
-> > /tmp /tmp tmpfs rw,relatime 0 0
-> > /home /home tmpfs rw,relatime 0 0
-> >
-> > Userspace can totally determine what /dev/root points to, I made  
-> mdev
-> > do it in 2006 (udev started doing so shortly thereafter). Busybox  
-> git
-> > commit a7e3d052.:4
-> 
-> There are situations where it doesn't work though -- suppose that root
-> is btrfs for example.
+nfsv4.1 client suspending fails with such info
 
-So you're saying there's a bug in btrfs?
+Freezing of tasks failed after 20.00 seconds (1 tasks refusing to freeze, wq_busy=0):
+nfsv4.1-svc     S ffff88007889f2e0     0  3191      2 0x00000080   
+ ffff88007b2f3e28 0000000000000046 ffff88007b2f2010 00000000000127c0
+ ffff880079b08000 00000000000127c0 ffff88007b2f3fd8 00000000000127c0
+ ffff88007b2f3fd8 00000000000127c0 ffffffff81a14410 ffff880079b08000
+Call Trace:
+ [<ffffffff81441396>] schedule+0x64/0x66
+ [<ffffffffa06a6892>] nfs41_callback_svc+0x100/0x129 [nfsv4]
+ [<ffffffff8104fdb8>] ? wake_up_bit+0x2a/0x2a
+ [<ffffffffa06a6792>] ? nfs_callback_up+0x548/0x548 [nfsv4]
+ [<ffffffff8104f7e0>] kthread+0xb5/0xbd
+ [<ffffffff8104f72b>] ? kthread_freezable_should_stop+0x65/0x65
+ [<ffffffff8144912c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8104f72b>] ? kthread_freezable_should_stop+0x65/0x65
 
-> Also, the other message that answered you is correct, the udev
-> maintainers say we should not be relying on /dev/root at all so to  
-> make
-> it work distro packagers have to add a rule themselves.
+I read such threads
+[1] nfs/sunrpc: allow freezing of tasks with NFS calls in flight
+[2] LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+and then modify nfs41_callback_svc(). It works on my machine. I don't know
+the details of freezing, so I'm not sure if the modification is reasonable.
+This is not a formal patch. Thanks.
 
-These udev maintainers?
+Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
+---
+ fs/nfs/callback.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-   http://lkml.indiana.edu/hypermail/linux/kernel/1210.0/01889.html
+diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+index 5088b57..8addb7b 100644
+--- a/fs/nfs/callback.c
++++ b/fs/nfs/callback.c
+@@ -138,7 +138,7 @@ nfs41_callback_svc(void *vrqstp)
+ 				error);
+ 		} else {
+ 			spin_unlock_bh(&serv->sv_cb_lock);
+-			schedule();
++			freezable_schedule();
+ 		}
+ 		finish_wait(&serv->sv_cb_waitq, &wq);
+ 	}
+-- 
+1.7.4.4
 
-This is the udev that got Katamari'd into systemd, not one of the forks  
-that ran screaming trying not to get sucked into the latest escapade of  
-King of All Cosmos?
-
-Look, if you want to add /dev/root to devtmpfs, that makes a certain  
-amount of sense. But your patch seems to have missed do_mounts.c doing:
-
-   if (strncmp(root_device_name, "/dev/", 5) == 0)
-     root_device_name += 5;
-
-Which means that if the user does "root=sda1" on the kernel command  
-line you're not passing an absolute path to create_dev():
-
--	create_dev("/dev/root", ROOT_DEV);
--	mount_block_root("/dev/root", root_mountflags);
-+	if (saved_root_name[0]) {
-+		create_dev(saved_root_name, ROOT_DEV);
-
-And last I checked that means /proc/mounts will have a relative path in  
-it...
-
-I.E. you're modifying kernel code you're not familiar with to fix a  
-non-problem caused by your unfamiliarity with the corresponding  
-userspace code. I'm really not seeing the upside here.
-
-Rob
