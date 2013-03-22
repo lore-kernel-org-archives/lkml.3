@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab3CVMMm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 08:12:42 -0400
-Received: from pegase2.c-s.fr ([93.17.235.10]:42818 "EHLO mailhub2.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752878Ab3CVMMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 08:12:41 -0400
-Message-ID: <514C4A97.3040701@c-s.fr>
-Date: Fri, 22 Mar 2013 13:12:07 +0100
-From: christophe leroy <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Patrick Vasseur <patrick.vasseur@c-s.fr>
-Subject: Re: [PATCH v2] Adds support for Open Firmware in MAX730x GPIO Driver
-References: <201303051526.r25FQoCv002950@localhost.localdomain> <CACRpkdaETvQmEWSSp-Vj1tu-KVPBgWrKbMZbgTjmRt=7Yxxg6g@mail.gmail.com>
-In-Reply-To: <CACRpkdaETvQmEWSSp-Vj1tu-KVPBgWrKbMZbgTjmRt=7Yxxg6g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Antivirus: avast! (VPS 130322-0, 22/03/2013), Outbound message
-X-Antivirus-Status: Clean
+	id S1754088Ab3CVMPG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 08:15:06 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:57675 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab3CVMPE convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
+	Fri, 22 Mar 2013 08:15:04 -0400
+Message-Id: <514C595D02000078000C7BA2@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Fri, 22 Mar 2013 12:15:09 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Zhu Yanhai" <zhu.yanhai@gmail.com>
+Cc: <x86@kernel.org>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Richard Weinberger" <richard@nod.at>,
+        "Ingo Molnar" <mingo@redhat.com>, <muming.wq@taobao.com>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: How does spin_unlock() in x86-64 align with the
+ description in Documention/memory-barriers.txt?
+References: <CAC8teKU5H8r+uPqeytWNOsj+g+C0pN8LKdxz3+LzomoWXY6GrA@mail.gmail.com>
+In-Reply-To: <CAC8teKU5H8r+uPqeytWNOsj+g+C0pN8LKdxz3+LzomoWXY6GrA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 22/03/2013 09:38, Linus Walleij a écrit :
-> On Tue, Mar 5, 2013 at 4:26 PM, Christophe Leroy
-> <christophe.leroy@c-s.fr> wrote:
->
->> This patch allows the use of the MAX730x Driver on systems using
->> the Open Firmware platform format.
->> The bit_per_word can be set in the OF Device tree, so no need to force it as with
->> the platform_data.
->>
->> Signed-off-by: Patrick Vasseur <patrick.vasseur@c-s.fr>
->> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> I tried applying this but it fails. Can you send based on e.g.
-> v3.9-rc3 or so?
-Ok, part of it was already in 3.8
-Made a new one based on 3.8.4
-I checked it against 3.9-rc3, it is OK
-NB: I changed the patch subject name
+>>> On 22.03.13 at 12:58, Zhu Yanhai <zhu.yanhai@gmail.com> wrote:
+> Hi all,
+> In the documention it reads,
+> 
+> (2) UNLOCK operation implication:
+> 
+>      Memory operations issued before the UNLOCK will be completed before the
+>      UNLOCK operation has completed.
+> 
+>      Memory operations issued after the UNLOCK may be completed before the
+>      UNLOCK operation has completed.
+> 
+> However, on x86-64 __ticket_spin_unlock() merely does,
+> 
+> static __always_inline void __ticket_spin_unlock(raw_spinlock_t *lock)
+> {
+>     asm volatile(
+>         ALTERNATIVE(UNLOCK_LOCK_PREFIX"incb (%0);"ASM_NOP3,
+>                 UNLOCK_LOCK_ALT_PREFIX"movw $0, (%0)",
+>                 X86_FEATURE_UNFAIR_SPINLOCK)
+>         :
+>         : "Q" (&lock->slock)
+>         : "memory", "cc");
+> }
+> 
+> While both UNLOCK_LOCK_PREFIX and UNLOCK_LOCK_ALT_PREFIX are empty
+> strings. So how such a function keeps the memory operations issued
+> before it completed?
 
-Regards
-Christophe
+Please read the section "Memory Ordering in P6 and More Recent
+Processor Families" in SDM Vol 3.
+
+Jan
 
