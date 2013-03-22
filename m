@@ -1,92 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933178Ab3CVMgF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 08:36:05 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34569 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753929Ab3CVMgE (ORCPT
+	id S933241Ab3CVMho (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 08:37:44 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47018 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933187Ab3CVMhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 08:36:04 -0400
-Date: Fri, 22 Mar 2013 23:35:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [linux-next] Not able to fetch next-20130321
-Message-Id: <20130322233540.1c7db7b86afb1a110c2f58e0@canb.auug.org.au>
-In-Reply-To: <CAFRkauCd_dL-9muXQz2PV=hBtdfKyzZDqA_5va_Nq37mJcfb5g@mail.gmail.com>
-References: <1363877418.4019.1.camel@phoenix>
-	<20130322092736.f379b24f5f3e6a6f0642ef4a@canb.auug.org.au>
-	<CAFRkauCd_dL-9muXQz2PV=hBtdfKyzZDqA_5va_Nq37mJcfb5g@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__22_Mar_2013_23_35_40_+1100_XpRuyDrtgQJi.LdK"
+	Fri, 22 Mar 2013 08:37:42 -0400
+Message-ID: <514C508D.6070903@linux.vnet.ibm.com>
+Date: Fri, 22 Mar 2013 20:37:33 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v2 0/7] KVM: MMU: fast zap all shadow pages
+References: <1363768227-4782-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130321222151.GA19821@amt.cnet> <514BBDC5.6090104@linux.vnet.ibm.com> <20130322105436.GC7543@amt.cnet> <514C3C34.4080906@linux.vnet.ibm.com> <20130322112811.GV9382@redhat.com> <514C42EC.6000303@linux.vnet.ibm.com> <20130322114715.GW9382@redhat.com> <514C4878.5000404@linux.vnet.ibm.com> <20130322121254.GX9382@redhat.com>
+In-Reply-To: <20130322121254.GX9382@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032212-5490-0000-0000-000003295683
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__22_Mar_2013_23_35_40_+1100_XpRuyDrtgQJi.LdK
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 03/22/2013 08:12 PM, Gleb Natapov wrote:
+> On Fri, Mar 22, 2013 at 08:03:04PM +0800, Xiao Guangrong wrote:
+>> On 03/22/2013 07:47 PM, Gleb Natapov wrote:
+>>> On Fri, Mar 22, 2013 at 07:39:24PM +0800, Xiao Guangrong wrote:
+>>>> On 03/22/2013 07:28 PM, Gleb Natapov wrote:
+>>>>> On Fri, Mar 22, 2013 at 07:10:44PM +0800, Xiao Guangrong wrote:
+>>>>>> On 03/22/2013 06:54 PM, Marcelo Tosatti wrote:
+>>>>>>
+>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> And then have codepaths that nuke shadow pages break from the spinlock,
+>>>>>>>>
+>>>>>>>> I think this is not needed any more. We can let mmu_notify use the generation
+>>>>>>>> number to invalid all shadow pages, then we only need to free them after
+>>>>>>>> all vcpus down and mmu_notify unregistered - at this point, no lock contention,
+>>>>>>>> we can directly free them.
+>>>>>>>>
+>>>>>>>>> such as kvm_mmu_slot_remove_write_access does now (spin_needbreak).
+>>>>>>>>
+>>>>>>>> BTW, to my honest, i do not think spin_needbreak is a good way - it does
+>>>>>>>> not fix the hot-lock contention and it just occupies more cpu time to avoid
+>>>>>>>> possible soft lock-ups.
+>>>>>>>>
+>>>>>>>> Especially, zap-all-shadow-pages can let other vcpus fault and vcpus contest
+>>>>>>>> mmu-lock, then zap-all-shadow-pages release mmu-lock and wait, other vcpus
+>>>>>>>> create page tables again. zap-all-shadow-page need long time to be finished,
+>>>>>>>> the worst case is, it can not completed forever on intensive vcpu and memory
+>>>>>>>> usage.
+>>>>>>>
+>>>>>>> Yes, but the suggestion is to use spin_needbreak on the VM shutdown
+>>>>>>> cases, where there is no detailed concern about performance. Such as
+>>>>>>> mmu_notifier_release, kvm_destroy_vm, etc. In those cases what matters
+>>>>>>> most is that host remains unaffected (and that it finishes in a
+>>>>>>> reasonable time).
+>>>>>>
+>>>>>> Okay. I agree with you, will give a try.
+>>>>>>
+>>>>>>>
+>>>>>>>> I still think the right way to fix this kind of thing is optimization for
+>>>>>>>> mmu-lock.
+>>>>>>>
+>>>>>>> And then for the cases where performance matters just increase a
+>>>>>>> VM global generetion number, zap the roots and then on kvm_mmu_get_page:
+>>>>>>>
+>>>>>>> kvm_mmu_get_page() {
+>>>>>>> 	sp = lookup_hash(gfn)
+>>>>>>> 	if (sp->role = role) {
+>>>>>>> 		if (sp->mmu_gen_number != kvm->arch.mmu_gen_number) {
+>>>>>>> 			kvm_mmu_commit_zap_page(sp); (no need for TLB flushes as its unreachable)
+>>>>>>> 			kvm_mmu_init_page(sp);
+>>>>>>> 			proceed as if the page was just allocated
+>>>>>>> 		}
+>>>>>>> 	}
+>>>>>>> }
+>>>>>>>
+>>>>>>> It makes the kvm_mmu_zap_all path even faster than you have now.
+>>>>>>> I suppose this was your idea correct with the generation number correct?
+>>>>>>
+>>>>>> Wow, great minds think alike, this is exactly what i am doing. ;)
+>>>>>>
+>>>>> Not that I disagree with above code, but why not make mmu_gen_number to be
+>>>>> part of a role and remove old pages in kvm_mmu_free_some_pages() whenever
+>>>>> limit is reached like we looks to be doing with role.invalid pages now.
+>>>>
+>>>> These pages can be reused after purge its entries and delete it from parents
+>>>> list, it can reduce the pressure of memory allocator. Also, we can move it to
+>>>> the head of active_list so that the pages with invalid_gen can be reclaimed first.
+>>>>
+>>> You mean tail of the active_list, since kvm_mmu_free_some_pages()
+>>> removes pages from tail? Since pages with new mmu_gen_number will be put
+>>
+>> I mean purge the invalid-gen page first, then update its valid-gen to current-gen,
+>> then move it to the head of active_list:
+>>
+>> kvm_mmu_get_page() {
+>> 	sp = lookup_hash(gfn)
+>> 	if (sp->role = role) {
+>> 		if (sp->mmu_gen_number != kvm->arch.mmu_gen_number) {
+>> 			kvm_mmu_purge_page(sp); (no need for TLB flushes as its unreachable)
+>> 			sp->mmu_gen_number = kvm->arch.mmu_gen_number;
+>> 			@@@@@@ move sp to the head of active list @@@@@@
+>> 		}
+>> 	}
+>> }
+>>
+>>
+> And I am saying that if you make mmu_gen_number part of the role you do
+> not need to change kvm_mmu_get_page() at all. It will just work.
 
-Hi Axel,
+Oh, i got what your said. But i want to reuse these page (without
+free and re-allocate). What do you think about this?
 
-On Fri, 22 Mar 2013 16:51:40 +0800 Axel Lin <axel.lin@ingics.com> wrote:
->
-> Even with a fresh git clone, it still shows the latest commit is 20130318.
->=20
-> $ git clone git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next=
-.git
->=20
-> git log shows the latest commit is:
-> commit 0e78c0989334e9c1d578ba25621de14e8441d8b4
-> Author: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date:   Mon Mar 18 16:10:47 2013 +1100
->=20
->     Add linux-next specific files for 20130318
->=20
->     Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> 
+>>> at the head of the list it is natural that tail will contain pages with
+>>> outdated generation numbers without need to explicitly move them.
+>>
+>> Currently, only the new allocated page can be moved to the head of
+>> active_list. The existing pages are not moved by kvm_mmu_get_page.
+>> It seems a bug.
+> Ideally it needs to be LRU list based on accessed bit scanning.
 
-Very weird ... it works for me:
+Yes, but unfortunately, A bit does not be supported on some intel cpus...
 
-$ git clone --reference linus.git git://git.kernel.org/pub/scm/linux/kernel=
-/git/next/linux-next.git ntest
-Cloning into 'ntest'...
-remote: Counting objects: 192286, done.
-remote: Compressing objects: 100% (34238/34238), done.
-remote: Total 184570 (delta 165819), reused 166851 (delta 149091)
-Receiving objects: 100% (184570/184570), 25.60 MiB | 886 KiB/s, done.
-Resolving deltas: 100% (165819/165819), completed with 5985 local objects.
-Checking out files: 100% (42561/42561), done.
-$ cd ntest
-$ git branch -v
-* master 2db42b7 Add linux-next specific files for 20130322
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__22_Mar_2013_23_35_40_+1100_XpRuyDrtgQJi.LdK
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRTFAcAAoJEECxmPOUX5FE0+gP/1aSix2XuUHj/xqTcLj9EeEa
-8fhXXppU9kRFAHlEd5tEus/Usci5Kld/KJxmxccTH8iMWcrmYhk3htG4xadb6XUq
-LrDpG+KejSVl31eBGD2Pdfe1Ukbe3yPzRSUkL7dyn3dc8cwFUjORP52ekxX8vKvw
-unlJ/EDb49BkZWmIUuro0t11IydXO4oW0E2me7W3BaNQETZD+M4aD0wZKMn6MDFv
-JJWEtj13HkLYugCVcgpt4ZNXIs1RaVdR7bulLKMXhuuiw7uJhAl9jxvpqMRYDsKA
-QLcR3JLyaX9XNmIOwasW8V/fZtY96Bxqvw6uR8RO2eDRfJ9jXgNFMfmuks9KYKTh
-CyIHN+AwH/rirgKSfyWuwYl7dgO8WRv3n7Sg8zvf1Cvqw/KBG+hMYmyN9jKm0mrk
-DRwBDsDyGLX9qYFA4BYXf15EcTVK3GipY2EEKzTnaob62+tQpq6yBiS7WFUWakAj
-lLx8lMfJDIyAc7qrWqwAN1t7RSrZagw5opDyIGinjuMqb5cGSvWw9+ZU0kW12PVy
-HLch8NthSFHkY3UA88ZjLHxbywOftWt3KTmtKvBNyrkJlCP86BF3skGarAcN5UyK
-QxJLbUSTg7ZIwx5KUx88cw/m3mLkp6IOfjvfMEOVJ3bDPqEcOq3YF8E1omTmQNd/
-BKxbROgRa3qL9EAWmguQ
-=wqHZ
------END PGP SIGNATURE-----
-
---Signature=_Fri__22_Mar_2013_23_35_40_+1100_XpRuyDrtgQJi.LdK--
