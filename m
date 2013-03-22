@@ -1,39 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932939Ab3CVLaZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 07:30:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31793 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754628Ab3CVLaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 07:30:24 -0400
-Date: Fri, 22 Mar 2013 08:29:17 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: [GIT PULL] KVM fixes for 3.9-rc3
-Message-ID: <20130322112917.GA1081@amt.cnet>
+	id S933057Ab3CVLdr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 07:33:47 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41881 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932521Ab3CVLdp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 07:33:45 -0400
+Date: Fri, 22 Mar 2013 11:32:51 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Lior Amsalem <alior@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        David Marlin <dmarlin@redhat.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Eran Ben-Avi <benavi@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Jon Masters <jcm@redhat.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
+        Maen Suleiman <maen@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 2/5] arm: mvebu: Select DMA_BOUNCE when LPAE is
+	selected in Kconfig
+Message-ID: <20130322113251.GB4977@n2100.arm.linux.org.uk>
+References: <1363883179-1361-1-git-send-email-gregory.clement@free-electrons.com> <1363883179-1361-3-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-Fcc: ~/inbox/sent-mutt-Aug-2012
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1363883179-1361-3-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 21, 2013 at 05:26:15PM +0100, Gregory CLEMENT wrote:
+> From: Lior Amsalem <alior@marvell.com>
+> 
+> For mvebu IOs are 32 bits and we have 40 bits memory due to LPAE so
+> make sure we give 32 bits addresses to the IOs.
+> 
+> Signed-off-by: Lior Amsalem <alior@marvell.com>
+> Tested-by: Franklin <flin@marvell.com>
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-Linus,
+Oh god no.  Please move away from the addition on DMABOUNCE - that code
+creaks, doesn't have highmem support, and is known to give problems on
+various platforms.
 
-Please pull from
-
-git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
-
-To fix compilation on PPC with !CONFIG_KVM
-
-
-Marcelo Tosatti (1):
-      Revert "KVM: allow host header to be included even for !CONFIG_KVM"
-
- include/linux/kvm_host.h |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+Instead, please rely on using the DMA mask and such like, just like on
+x86.
