@@ -1,300 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422970Ab3CVUhK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 16:37:10 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:35657 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422911Ab3CVUg4 (ORCPT
+	id S1422998Ab3CVUh1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 16:37:27 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:60934 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422911Ab3CVUhX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 16:36:56 -0400
-Date: Fri, 22 Mar 2013 13:36:52 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-s390@vger.kernel.org, bcrl@kvack.org, schwidefsky@de.ibm.com,
-        kirill.shutemov@linux.intel.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] aio: convert the ioctx list to radix tree
-Message-ID: <20130322203652.GC19091@google.com>
-References: <1363977199-1507-1-git-send-email-octavian.purdila@intel.com>
+	Fri, 22 Mar 2013 16:37:23 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363977199-1507-1-git-send-email-octavian.purdila@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: Sekhar Nori <nsekhar@ti.com>, Sekhar Nori <nsekhar@ti.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <514C3E7C.3000705@ti.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>, <arnd@arndb.de>,
+        <linus.walleij@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <rob.herring@calxeda.com>, <linux-keystone@list.ti.com>,
+        <viresh.linux@gmail.com>, <akpm@linux-foundation.org>,
+        <shawn.guo@linaro.org>, <linux-arm-kernel@lists.infradead.org>
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com>
+ <1351181518-11882-3-git-send-email-m-karicheri2@ti.com>
+ <50950908.1060302@ti.com> <5097D6FC.7040202@ti.com>
+ <20121110022254.18014.31873@nucleus> <50B4D6B1.3000903@ti.com>
+ <20121127172900.21126.89528@nucleus> <50B6101C.30502@ti.com>
+ <514C3E7C.3000705@ti.com>
+Message-ID: <20130322203715.834.30085@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH v3 02/11] clk: davinci - add PSC clock driver
+Date: Fri, 22 Mar 2013 13:37:15 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 08:33:19PM +0200, Octavian Purdila wrote:
-> When using a large number of threads performing AIO operations the
-> IOCTX list may get a significant number of entries which will cause
-> significant overhead. For example, when running this fio script:
+Quoting Sekhar Nori (2013-03-22 04:20:28)
+> Mike,
 > 
-> rw=randrw; size=256k ;directory=/mnt/fio; ioengine=libaio; iodepth=1
-> blocksize=1024; numjobs=512; thread; loops=100
+> On 11/28/2012 6:52 PM, Sekhar Nori wrote:
+> > On 11/27/2012 10:59 PM, Mike Turquette wrote:
 > 
-> on an EXT2 filesystem mounted on top of a ramdisk we can observe up to
-> 30% CPU time spent by lookup_ioctx:
+> >> Also have you looked into regmap?  Since you are defining your own clock
+> >> type that might be something nice for you.
+> > 
+> > No, haven't looked at regmap yet. Will look at that.
 > 
->  32.51%  [guest.kernel]  [g] lookup_ioctx
->   9.19%  [guest.kernel]  [g] __lock_acquire.isra.28
->   4.40%  [guest.kernel]  [g] lock_release
->   4.19%  [guest.kernel]  [g] sched_clock_local
->   3.86%  [guest.kernel]  [g] local_clock
->   3.68%  [guest.kernel]  [g] native_sched_clock
->   3.08%  [guest.kernel]  [g] sched_clock_cpu
->   2.64%  [guest.kernel]  [g] lock_release_holdtime.part.11
->   2.60%  [guest.kernel]  [g] memcpy
->   2.33%  [guest.kernel]  [g] lock_acquired
->   2.25%  [guest.kernel]  [g] lock_acquire
->   1.84%  [guest.kernel]  [g] do_io_submit
+> I could get to this only now. regmap needs a valid struct device. We
+> aren't modelling psc clocks as device so regmap cannot be used here.
 > 
-> This patchs converts the ioctx list to a radix tree. For a performance
-> comparison the above FIO script was run on a 2 sockets 8 core
-> machine. This are the results for the original list based
-> implementation and for the radix tree based implementation:
 
-The biggest reason the overhead is so high is that the kioctx's
-hlist_node shares a cacheline with the refcount. Did you check what just
-fixing that does? My aio patch series (in akpm's tree) fixes that.
+According to Murali's reply back in November it was still not known if
+the PTCMD register was going to be concurrently accessed by sources
+outside the clock framework.  If this is so then neither the existing
+framework-level lock (e.g. enable_lock) nor the shared clock driver lock
+(e.g. spinlock in struct clk_psc) are adequate.  You may need a device
+driver which represents the PSC and use accessor functions to write to
+those register which provide coordination.
 
-Also, why are you using so many kioctxs? I can't think any good reason
-why userspace would want to - you really want to use only one or a few
-(potentially one per cpu) so that events can get serviced as soon as a
-worker thread is available.
+Regards,
+Mike
 
-Currently there are applications using many kioctxs to work around the
-fact that performance is terrible when you're sharing kioctxs between
-threads - but that's fixed in my aio patch series.
-
-In fact, we want userspace to be using as few kioctxs as they can so we
-can benefit from batch completion.
-
-
-> cores         1         2         4         8         16        32
-> list        111025 ms  62219 ms  34193 ms  22998 ms  19335 ms  15956 ms
-> radix        75400 ms  42668 ms  23923 ms  17206 ms  15820 ms  13295 ms
-> % of radix
-> relative      68%       69%       70%       75%       82%       83%
-> to list
-> 
-> Cc: Andi Kleen <ak@linux.intel.com>
-> 
-> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
-> ---
->  arch/s390/mm/pgtable.c   |    4 +-
->  fs/aio.c                 |   94 +++++++++++++++++++++++++++-------------------
->  include/linux/aio.h      |    1 -
->  include/linux/mm_types.h |    3 +-
->  kernel/fork.c            |    2 +-
->  5 files changed, 61 insertions(+), 43 deletions(-)
-> 
-> diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
-> index ae44d2a..6fb6751 100644
-> --- a/arch/s390/mm/pgtable.c
-> +++ b/arch/s390/mm/pgtable.c
-> @@ -831,7 +831,7 @@ int s390_enable_sie(void)
->  	task_lock(tsk);
->  	if (!tsk->mm || atomic_read(&tsk->mm->mm_users) > 1 ||
->  #ifdef CONFIG_AIO
-> -	    !hlist_empty(&tsk->mm->ioctx_list) ||
-> +	    tsk->mm->ioctx_rtree.rnode ||
->  #endif
->  	    tsk->mm != tsk->active_mm) {
->  		task_unlock(tsk);
-> @@ -858,7 +858,7 @@ int s390_enable_sie(void)
->  	task_lock(tsk);
->  	if (!tsk->mm || atomic_read(&tsk->mm->mm_users) > 1 ||
->  #ifdef CONFIG_AIO
-> -	    !hlist_empty(&tsk->mm->ioctx_list) ||
-> +	    tsk->mm->ioctx_rtree.rnode ||
->  #endif
->  	    tsk->mm != tsk->active_mm) {
->  		mmput(mm);
-> diff --git a/fs/aio.c b/fs/aio.c
-> index 3f941f2..89cccc6 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -35,6 +35,7 @@
->  #include <linux/eventfd.h>
->  #include <linux/blkdev.h>
->  #include <linux/compat.h>
-> +#include <linux/radix-tree.h>
->  
->  #include <asm/kmap_types.h>
->  #include <asm/uaccess.h>
-> @@ -281,10 +282,18 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
->  	aio_nr += ctx->max_reqs;
->  	spin_unlock(&aio_nr_lock);
->  
-> -	/* now link into global list. */
-> +	/* now insert into the radix tree */
-> +	err = radix_tree_preload(GFP_KERNEL);
-> +	if (err)
-> +		goto out_cleanup;
->  	spin_lock(&mm->ioctx_lock);
-> -	hlist_add_head_rcu(&ctx->list, &mm->ioctx_list);
-> +	err = radix_tree_insert(&mm->ioctx_rtree, ctx->user_id, ctx);
->  	spin_unlock(&mm->ioctx_lock);
-> +	radix_tree_preload_end();
-> +	if (err) {
-> +		WARN_ONCE(1, "aio: insert into ioctx tree failed: %d", err);
-> +		goto out_cleanup;
-> +	}
->  
->  	dprintk("aio: allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
->  		ctx, ctx->user_id, current->mm, ctx->ring_info.nr);
-> @@ -371,32 +380,44 @@ EXPORT_SYMBOL(wait_on_sync_kiocb);
->   */
->  void exit_aio(struct mm_struct *mm)
->  {
-> -	struct kioctx *ctx;
-> +	struct kioctx *ctx[16];
-> +	unsigned long idx = 0;
-> +	int count;
-> +
-> +	do {
-> +		int i;
->  
-> -	while (!hlist_empty(&mm->ioctx_list)) {
-> -		ctx = hlist_entry(mm->ioctx_list.first, struct kioctx, list);
-> -		hlist_del_rcu(&ctx->list);
-> +		count = radix_tree_gang_lookup(&mm->ioctx_rtree, (void **)ctx,
-> +					       idx, sizeof(ctx)/sizeof(void *));
-> +		for (i = 0; i < count; i++) {
-> +			void *ret;
->  
-> -		kill_ctx(ctx);
-> +			BUG_ON(ctx[i]->user_id < idx);
-> +			idx = ctx[i]->user_id;
-> +			ret = radix_tree_delete(&mm->ioctx_rtree, idx);
-> +			BUG_ON(!ret || ret != ctx[i]);
->  
-> -		if (1 != atomic_read(&ctx->users))
-> -			printk(KERN_DEBUG
-> -				"exit_aio:ioctx still alive: %d %d %d\n",
-> -				atomic_read(&ctx->users), ctx->dead,
-> -				ctx->reqs_active);
-> -		/*
-> -		 * We don't need to bother with munmap() here -
-> -		 * exit_mmap(mm) is coming and it'll unmap everything.
-> -		 * Since aio_free_ring() uses non-zero ->mmap_size
-> -		 * as indicator that it needs to unmap the area,
-> -		 * just set it to 0; aio_free_ring() is the only
-> -		 * place that uses ->mmap_size, so it's safe.
-> -		 * That way we get all munmap done to current->mm -
-> -		 * all other callers have ctx->mm == current->mm.
-> -		 */
-> -		ctx->ring_info.mmap_size = 0;
-> -		put_ioctx(ctx);
-> -	}
-> +			kill_ctx(ctx[i]);
-> +
-> +			if (1 != atomic_read(&ctx[i]->users))
-> +				pr_debug("exit_aio:ioctx still alive: %d %d %d\n",
-> +					 atomic_read(&ctx[i]->users),
-> +					 ctx[i]->dead, ctx[i]->reqs_active);
-> +			/*
-> +			 * We don't need to bother with munmap() here -
-> +			 * exit_mmap(mm) is coming and it'll unmap everything.
-> +			 * Since aio_free_ring() uses non-zero ->mmap_size
-> +			 * as indicator that it needs to unmap the area,
-> +			 * just set it to 0; aio_free_ring() is the only
-> +			 * place that uses ->mmap_size, so it's safe.
-> +			 * That way we get all munmap done to current->mm -
-> +			 * all other callers have ctx->mm == current->mm.
-> +			 */
-> +			ctx[i]->ring_info.mmap_size = 0;
-> +			put_ioctx(ctx[i]);
-> +		}
-> +		idx++;
-> +	} while (count);
->  }
->  
->  /* aio_get_req
-> @@ -594,18 +615,15 @@ static struct kioctx *lookup_ioctx(unsigned long ctx_id)
->  
->  	rcu_read_lock();
->  
-> -	hlist_for_each_entry_rcu(ctx, &mm->ioctx_list, list) {
-> -		/*
-> -		 * RCU protects us against accessing freed memory but
-> -		 * we have to be careful not to get a reference when the
-> -		 * reference count already dropped to 0 (ctx->dead test
-> -		 * is unreliable because of races).
-> -		 */
-> -		if (ctx->user_id == ctx_id && !ctx->dead && try_get_ioctx(ctx)){
-> -			ret = ctx;
-> -			break;
-> -		}
-> -	}
-> +	ctx = radix_tree_lookup(&mm->ioctx_rtree, ctx_id);
-> +	/*
-> +	 * RCU protects us against accessing freed memory but
-> +	 * we have to be careful not to get a reference when the
-> +	 * reference count already dropped to 0 (ctx->dead test
-> +	 * is unreliable because of races).
-> +	 */
-> +	if (ctx && !ctx->dead && try_get_ioctx(ctx))
-> +		ret = ctx;
->  
->  	rcu_read_unlock();
->  	return ret;
-> @@ -1200,7 +1218,7 @@ static void io_destroy(struct kioctx *ioctx)
->  	spin_lock(&mm->ioctx_lock);
->  	was_dead = ioctx->dead;
->  	ioctx->dead = 1;
-> -	hlist_del_rcu(&ioctx->list);
-> +	radix_tree_delete(&mm->ioctx_rtree, ioctx->user_id);
->  	spin_unlock(&mm->ioctx_lock);
->  
->  	dprintk("aio_release(%p)\n", ioctx);
-> diff --git a/include/linux/aio.h b/include/linux/aio.h
-> index 31ff6db..dd3fbdf 100644
-> --- a/include/linux/aio.h
-> +++ b/include/linux/aio.h
-> @@ -186,7 +186,6 @@ struct kioctx {
->  
->  	/* This needs improving */
->  	unsigned long		user_id;
-> -	struct hlist_node	list;
->  
->  	wait_queue_head_t	wait;
->  
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index ace9a5f..758ad98 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -5,6 +5,7 @@
->  #include <linux/types.h>
->  #include <linux/threads.h>
->  #include <linux/list.h>
-> +#include <linux/radix-tree.h>
->  #include <linux/spinlock.h>
->  #include <linux/rbtree.h>
->  #include <linux/rwsem.h>
-> @@ -386,7 +387,7 @@ struct mm_struct {
->  	struct core_state *core_state; /* coredumping support */
->  #ifdef CONFIG_AIO
->  	spinlock_t		ioctx_lock;
-> -	struct hlist_head	ioctx_list;
-> +	struct radix_tree_root	ioctx_rtree;
->  #endif
->  #ifdef CONFIG_MM_OWNER
->  	/*
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 1766d32..66e37af 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -523,7 +523,7 @@ static void mm_init_aio(struct mm_struct *mm)
->  {
->  #ifdef CONFIG_AIO
->  	spin_lock_init(&mm->ioctx_lock);
-> -	INIT_HLIST_HEAD(&mm->ioctx_list);
-> +	INIT_RADIX_TREE(&mm->ioctx_rtree, GFP_KERNEL);
->  #endif
->  }
->  
-> -- 
-> 1.7.10.4
-> 
+> Thanks,
+> Sekhar
