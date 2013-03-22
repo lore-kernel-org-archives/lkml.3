@@ -1,146 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab3CVTPa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 15:15:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27380 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755224Ab3CVTP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 15:15:28 -0400
-Date: Fri, 22 Mar 2013 21:15:24 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v2 0/7] KVM: MMU: fast zap all shadow pages
-Message-ID: <20130322191524.GY9382@redhat.com>
-References: <20130321222151.GA19821@amt.cnet>
- <514BBDC5.6090104@linux.vnet.ibm.com>
- <20130322105436.GC7543@amt.cnet>
- <514C3C34.4080906@linux.vnet.ibm.com>
- <20130322112811.GV9382@redhat.com>
- <514C42EC.6000303@linux.vnet.ibm.com>
- <20130322114715.GW9382@redhat.com>
- <514C4878.5000404@linux.vnet.ibm.com>
- <20130322121254.GX9382@redhat.com>
- <514C508D.6070903@linux.vnet.ibm.com>
+	id S1755262Ab3CVTRe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 15:17:34 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:3706 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754966Ab3CVTRd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 15:17:33 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dh8275bhz2dh2a8h668h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
+From: Yoder Stuart-B08248 <B08248@freescale.com>
+To: Michael Neuling <mikey@neuling.org>,
+        Chen Gang F T <chen.gang.flying.transformer@gmail.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+CC: Chen Gang <gang.chen@asianux.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "matt@ozlabs.org" <matt@ozlabs.org>,
+        "imunsie@au1.ibm.com" <imunsie@au1.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [Suggestion] PowerPC: kernel: cross compiling issue with
+ allmodconfig
+Thread-Topic: [Suggestion] PowerPC: kernel: cross compiling issue with
+ allmodconfig
+Thread-Index: AQHOJorGAGT/OMO8gE612qsjpbbIS5iyFapA
+Date: Fri, 22 Mar 2013 19:17:28 +0000
+Message-ID: <9F6FE96B71CF29479FF1CDC8046E150358CDE5@039-SN1MPN1-002.039d.mgd.msft.net>
+References: <51428C81.6000204@asianux.com>
+ <25841.1363323174@ale.ozlabs.ibm.com> <5142AE27.7060003@asianux.com>
+ <514AA0D9.1090509@asianux.com> <514AC418.1070806@gmail.com>
+ <14121.1363908062@ale.ozlabs.ibm.com>
+In-Reply-To: <14121.1363908062@ale.ozlabs.ibm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.82.121.95]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <514C508D.6070903@linux.vnet.ibm.com>
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2MJHdB9015392
 
-On Fri, Mar 22, 2013 at 08:37:33PM +0800, Xiao Guangrong wrote:
-> On 03/22/2013 08:12 PM, Gleb Natapov wrote:
-> > On Fri, Mar 22, 2013 at 08:03:04PM +0800, Xiao Guangrong wrote:
-> >> On 03/22/2013 07:47 PM, Gleb Natapov wrote:
-> >>> On Fri, Mar 22, 2013 at 07:39:24PM +0800, Xiao Guangrong wrote:
-> >>>> On 03/22/2013 07:28 PM, Gleb Natapov wrote:
-> >>>>> On Fri, Mar 22, 2013 at 07:10:44PM +0800, Xiao Guangrong wrote:
-> >>>>>> On 03/22/2013 06:54 PM, Marcelo Tosatti wrote:
-> >>>>>>
-> >>>>>>>>
-> >>>>>>>>>
-> >>>>>>>>> And then have codepaths that nuke shadow pages break from the spinlock,
-> >>>>>>>>
-> >>>>>>>> I think this is not needed any more. We can let mmu_notify use the generation
-> >>>>>>>> number to invalid all shadow pages, then we only need to free them after
-> >>>>>>>> all vcpus down and mmu_notify unregistered - at this point, no lock contention,
-> >>>>>>>> we can directly free them.
-> >>>>>>>>
-> >>>>>>>>> such as kvm_mmu_slot_remove_write_access does now (spin_needbreak).
-> >>>>>>>>
-> >>>>>>>> BTW, to my honest, i do not think spin_needbreak is a good way - it does
-> >>>>>>>> not fix the hot-lock contention and it just occupies more cpu time to avoid
-> >>>>>>>> possible soft lock-ups.
-> >>>>>>>>
-> >>>>>>>> Especially, zap-all-shadow-pages can let other vcpus fault and vcpus contest
-> >>>>>>>> mmu-lock, then zap-all-shadow-pages release mmu-lock and wait, other vcpus
-> >>>>>>>> create page tables again. zap-all-shadow-page need long time to be finished,
-> >>>>>>>> the worst case is, it can not completed forever on intensive vcpu and memory
-> >>>>>>>> usage.
-> >>>>>>>
-> >>>>>>> Yes, but the suggestion is to use spin_needbreak on the VM shutdown
-> >>>>>>> cases, where there is no detailed concern about performance. Such as
-> >>>>>>> mmu_notifier_release, kvm_destroy_vm, etc. In those cases what matters
-> >>>>>>> most is that host remains unaffected (and that it finishes in a
-> >>>>>>> reasonable time).
-> >>>>>>
-> >>>>>> Okay. I agree with you, will give a try.
-> >>>>>>
-> >>>>>>>
-> >>>>>>>> I still think the right way to fix this kind of thing is optimization for
-> >>>>>>>> mmu-lock.
-> >>>>>>>
-> >>>>>>> And then for the cases where performance matters just increase a
-> >>>>>>> VM global generetion number, zap the roots and then on kvm_mmu_get_page:
-> >>>>>>>
-> >>>>>>> kvm_mmu_get_page() {
-> >>>>>>> 	sp = lookup_hash(gfn)
-> >>>>>>> 	if (sp->role = role) {
-> >>>>>>> 		if (sp->mmu_gen_number != kvm->arch.mmu_gen_number) {
-> >>>>>>> 			kvm_mmu_commit_zap_page(sp); (no need for TLB flushes as its unreachable)
-> >>>>>>> 			kvm_mmu_init_page(sp);
-> >>>>>>> 			proceed as if the page was just allocated
-> >>>>>>> 		}
-> >>>>>>> 	}
-> >>>>>>> }
-> >>>>>>>
-> >>>>>>> It makes the kvm_mmu_zap_all path even faster than you have now.
-> >>>>>>> I suppose this was your idea correct with the generation number correct?
-> >>>>>>
-> >>>>>> Wow, great minds think alike, this is exactly what i am doing. ;)
-> >>>>>>
-> >>>>> Not that I disagree with above code, but why not make mmu_gen_number to be
-> >>>>> part of a role and remove old pages in kvm_mmu_free_some_pages() whenever
-> >>>>> limit is reached like we looks to be doing with role.invalid pages now.
-> >>>>
-> >>>> These pages can be reused after purge its entries and delete it from parents
-> >>>> list, it can reduce the pressure of memory allocator. Also, we can move it to
-> >>>> the head of active_list so that the pages with invalid_gen can be reclaimed first.
-> >>>>
-> >>> You mean tail of the active_list, since kvm_mmu_free_some_pages()
-> >>> removes pages from tail? Since pages with new mmu_gen_number will be put
-> >>
-> >> I mean purge the invalid-gen page first, then update its valid-gen to current-gen,
-> >> then move it to the head of active_list:
-> >>
-> >> kvm_mmu_get_page() {
-> >> 	sp = lookup_hash(gfn)
-> >> 	if (sp->role = role) {
-> >> 		if (sp->mmu_gen_number != kvm->arch.mmu_gen_number) {
-> >> 			kvm_mmu_purge_page(sp); (no need for TLB flushes as its unreachable)
-> >> 			sp->mmu_gen_number = kvm->arch.mmu_gen_number;
-> >> 			@@@@@@ move sp to the head of active list @@@@@@
-> >> 		}
-> >> 	}
-> >> }
-> >>
-> >>
-> > And I am saying that if you make mmu_gen_number part of the role you do
-> > not need to change kvm_mmu_get_page() at all. It will just work.
-> 
-> Oh, i got what your said. But i want to reuse these page (without
-> free and re-allocate). What do you think about this?
-> 
-We did not do that for sp->role.invalid pages although we could do what
-is proposed above for them too (am I right?). If there is measurable
-advantage of reusing invalid pages in kvm_mmu_get_page() lets do it like
-that, but if not then less code is better.
 
-> > 
-> >>> at the head of the list it is natural that tail will contain pages with
-> >>> outdated generation numbers without need to explicitly move them.
-> >>
-> >> Currently, only the new allocated page can be moved to the head of
-> >> active_list. The existing pages are not moved by kvm_mmu_get_page.
-> >> It seems a bug.
-> > Ideally it needs to be LRU list based on accessed bit scanning.
-> 
-> Yes, but unfortunately, A bit does not be supported on some intel cpus...
-> 
-Yes, but there is not much we can do there.
 
---
-			Gleb.
+> -----Original Message-----
+> From: Michael Neuling [mailto:mikey@neuling.org]
+> Sent: Thursday, March 21, 2013 6:21 PM
+> To: Chen Gang F T; Yoder Stuart-B08248; Kumar Gala
+> Cc: Chen Gang; Benjamin Herrenschmidt; sfr@canb.auug.org.au; paulus@samba.org; matt@ozlabs.org;
+> imunsie@au1.ibm.com; linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
+> Subject: Re: [Suggestion] PowerPC: kernel: cross compiling issue with allmodconfig
+> 
+> Chen Gang F T <chen.gang.flying.transformer@gmail.com> wrote:
+> 
+> >
+> >   it seems:
+> >     only move slb_miss_realmode to the end, can fix this issue without negative effect.
+> 
+> So this works but uncovers a new bug.
+> 
+> Stuart: if you apply this patch allmodconfig now gets this build error
+> on linux-next.
+> 
+> arch/powerpc/kernel/built-in.o: In function `restore_pblist_ptr':
+> ftrace.c:(.toc+0xd78): undefined reference to `epapr_ev_idle_start'
+> ftrace.c:(.toc+0xd88): undefined reference to `epapr_ev_idle'
+> make[1]: *** [vmlinux] Error 1
+> 
+> Reverting your patch below fixes this:
+> 
+>   commit f070986a07e514e3b4fc4aef6551b8dffcb19287
+>   Author: Stuart Yoder <stuart.yoder@freescale.com>
+>   Date:   Fri Feb 8 13:22:56 2013 -0600
+> 
+>   powerpc: Add paravirt idle loop for 64-bit Book-E
+> 
+>   Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
+>   Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+> 
+> Should we revert your patch or can you send a fix?  This is currently
+> broken in linux-next (at least next-20130321).
+
+Sent a patch that resolves this.  Not completely happy with it
+because of the added #ifdefs, but not sure how else to resolve
+this.   allmodconfig is creating config combinations that don't
+happen in a normal build (at least currently)-- 64-bit build
+that enables EPAPR_PARAVIRT but not PPC_BOOK3E_64.
+
+Stuart
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
