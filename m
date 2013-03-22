@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934008Ab3CVQXd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 12:23:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28655 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933715Ab3CVQXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 12:23:31 -0400
-Date: Fri, 22 Mar 2013 12:23:26 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [CFT] Re: VFS deadlock ?
-Message-ID: <20130322162326.GA2543@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	"Eric W. Biederman" <ebiederm@xmission.com>
-References: <CA+55aFyWNkOnrQ41xCAU8q5sVXdq1-u2P8n+quLY50OdiFo3Zw@mail.gmail.com>
- <20130322001257.GH21522@ZenIV.linux.org.uk>
- <CA+55aFz5Ce7h2ja0m++tENXuG-1d346VNu9N=ZKy2UfojaSf0g@mail.gmail.com>
- <20130322012208.GJ21522@ZenIV.linux.org.uk>
- <CA+55aFzPD08kJi=x8wLBi5FAjr1TqSGXWbv5KXy5Ymm0PJL0wA@mail.gmail.com>
- <20130322014037.GK21522@ZenIV.linux.org.uk>
- <20130322043715.GL21522@ZenIV.linux.org.uk>
- <CA+55aFzUobqDR0RSh8t18m32BdTvm4k7j2PCseXpFVCH_gR=Fw@mail.gmail.com>
- <20130322051817.GM21522@ZenIV.linux.org.uk>
- <CA+55aFzbV81KQh_f0=wti9=_6=PXu37z0+NJymhDvzv13GgpuA@mail.gmail.com>
+	id S1422644Ab3CVQaI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 12:30:08 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:46076 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1160996Ab3CVQaH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 12:30:07 -0400
+Date: Fri, 22 Mar 2013 09:28:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org, zhong@linux.vnet.ibm.com, khilman@linaro.org,
+        geoff@infradead.org, tglx@linutronix.de
+Subject: Re: [PATCH] nohz1: Documentation
+Message-ID: <20130322162820.GN3637@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130318222548.GG3656@linux.vnet.ibm.com>
+ <1363822338.6345.33.camel@gandalf.local.home>
+ <20130320235545.GL3637@linux.vnet.ibm.com>
+ <0000013d8db514e4-bf492080-82c9-412a-90b8-54ddc1463e4b-000000@email.amazonses.com>
+ <20130321171518.GW3637@linux.vnet.ibm.com>
+ <0000013d8e3f58ce-0f6ea95f-780a-49c1-a633-5aa0cf3e5040-000000@email.amazonses.com>
+ <20130321185821.GF3637@linux.vnet.ibm.com>
+ <0000013d8e8d24fd-d2931c45-2722-46d1-8b47-2ef11e21096d-000000@email.amazonses.com>
+ <20130321205054.GI3637@linux.vnet.ibm.com>
+ <0000013d9289cebc-e6380265-3a74-4343-b851-765f785a3754-000000@email.amazonses.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzbV81KQh_f0=wti9=_6=PXu37z0+NJymhDvzv13GgpuA@mail.gmail.com>
+In-Reply-To: <0000013d9289cebc-e6380265-3a74-4343-b851-765f785a3754-000000@email.amazonses.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032216-4834-0000-0000-000004FBCCB4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 10:33:27PM -0700, Linus Torvalds wrote:
+On Fri, Mar 22, 2013 at 02:38:58PM +0000, Christoph Lameter wrote:
+> On Thu, 21 Mar 2013, Paul E. McKenney wrote:
+> 
+> > So, how long of busy periods are you contemplating for your SCHED_FIFO
+> > threads?  Is it possible to tune/adjust the offending per-CPU ktheads
+> > to wake up less frequently than that time?
+> 
+> Test programs right now run 10 seconds. 30 seconds would definitely be
+> enough for the worst case.
 
- > Ok, that's kind of ugly, but shouldn't be a correctness issue. It
- > should still work - just cycle through inodes quite aggressivelydue to
- > no longer re-using them - so I suspect Dave could test it (with the
- > extra line removed I pointed out just a moment ago).
+OK, that might be doable for some workloads.  What happens when you
+try tuning the 2-second wakeup interval to (say) 45 seconds?
 
-Been running a few hours now without incident.
-Of course, proving absense of a bug is always fun when fuzzing, as it
-may have just not run long enough yet.. though I was hitting it pretty
-quickly last night.
+							Thanx, Paul
 
-	Dave
-
- 
