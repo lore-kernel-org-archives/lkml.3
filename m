@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313Ab3CVNgN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 09:36:13 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:59523 "EHLO slimlogic.co.uk"
+	id S932939Ab3CVNig (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 09:38:36 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:59607 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751679Ab3CVNgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 09:36:10 -0400
+	id S1754247Ab3CVNgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 09:36:13 -0400
 From: Ian Lartey <ian@slimlogic.co.uk>
 To: linux-kernel@vger.kernel.org
 Cc: linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -17,80 +17,53 @@ Cc: linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         rpurdie@rpsys.net, akpm@linux-foundation.org, sameo@linux.intel.com,
         wim@iguana.be, lgirdwood@gmail.com, gg@slimlogic.co.uk,
         j-keerthy@ti.com, ldewangan@nvidia.com, t-kristo@ti.com
-Subject: [PATCH v9 0/12] Palmas updates
-Date: Fri, 22 Mar 2013 13:36:02 +0000
-Message-Id: <1363959373-10671-1-git-send-email-ian@slimlogic.co.uk>
+Subject: [PATCH v9 04/11] watchdog: Kconfig for Palmas watchdog
+Date: Fri, 22 Mar 2013 13:36:06 +0000
+Message-Id: <1363959373-10671-5-git-send-email-ian@slimlogic.co.uk>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1363959373-10671-1-git-send-email-ian@slimlogic.co.uk>
+References: <1363959373-10671-1-git-send-email-ian@slimlogic.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds to the support for the Palmas series of PMIC chips.
+Add the Kconfig and Makefile for the Palmas watchdog driver
 
-Some of the patches have previously been submitted individually.
-The DT bindings doc has been added first due to comments that it was missing.
+Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+---
+ drivers/watchdog/Kconfig  |    8 ++++++++
+ drivers/watchdog/Makefile |    1 +
+ 2 files changed, 9 insertions(+), 0 deletions(-)
 
-Patches based on linux-next-20130319
-
-Changes since v8
-The .compatible = "palmas-charger-xxx" has been removed from the DT 
-for all palmas source files as the charger driver is not yet present.
-
-[PATCH 01/12] mfd: DT bindings... - Added in missing descriptions for 
-properties and added in properties that were missing
-
-[PATCH 08/12] gpio: Palmas.... - Added
-palmas_gpio_(read|write|update)  gpio parameter renamed to offset
-palmas_gpio_write   renamed to palmas_gpio_clear_and_set  
-as it no longer takes a data value instead it always sets the
-offset bit and clears all other bits -
-this is how it was being used by the callers
-
-[PATCH 09/12] leds: Add support... -  Combined patches for 
-drivers/leds/leds-palmas.c, drivers/leds/Kconfig and drivers/leds/Makefile.
-palmas_dt_to_pdata - added bounds checking for DT values and
-removed use of child node.
-palmas_led.on_time and palmas_led.period both changed to enums.
-palmas_get_crtl_and_period added which contains factored code 
-from palmas_leds_work for maintainability.
-
-[PATCH 10/12] clk: Add a clock... -  clock names taken from DT if provided
-
-palmas-regulator not in patchset - patch Now applied by Mark Brown
-
-[PATCH 12/12] regulator: palmas-charger-pmic removed from DT compatible list
-
- .../devicetree/bindings/clock/palmas-clk.txt       |   27 +
- .../devicetree/bindings/gpio/gpio-palmas.txt       |   35 ++
- .../devicetree/bindings/input/palmas-pwrbutton.txt |   26 +
- .../devicetree/bindings/leds/leds-palmas.txt       |   36 ++
- Documentation/devicetree/bindings/mfd/palmas.txt   |   81 +++
- .../devicetree/bindings/regulator/palmas-pmic.txt  |  168 ++++++
- .../devicetree/bindings/rtc/palmas-rtc.txt         |   21 +
- .../devicetree/bindings/watchdog/palmas-wdt.txt    |   21 +
- drivers/clk/Kconfig                                |    8 +
- drivers/clk/Makefile                               |    1 +
- drivers/clk/clk-palmas.c                           |  275 +++++++++
- drivers/gpio/gpio-palmas.c                         |   90 +++-
- drivers/leds/Kconfig                               |    9 +
- drivers/leds/Makefile                              |    1 +
- drivers/leds/leds-palmas.c                         |  590 ++++++++++++++++++++
- drivers/mfd/palmas.c                               |  102 +++-
- drivers/regulator/palmas-regulator.c               |    1 -
- drivers/watchdog/Kconfig                           |    8 +
- drivers/watchdog/Makefile                          |    1 +
- drivers/watchdog/palmas_wdt.c                      |  169 ++++++
- include/linux/mfd/palmas.h                         |  139 +++++-
- 21 files changed, 1768 insertions(+), 41 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/palmas-clk.txt
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-palmas.txt
- create mode 100644 Documentation/devicetree/bindings/input/palmas-pwrbutton.txt
- create mode 100644 Documentation/devicetree/bindings/leds/leds-palmas.txt
- create mode 100644 Documentation/devicetree/bindings/mfd/palmas.txt
- create mode 100644 Documentation/devicetree/bindings/regulator/palmas-pmic.txt
- create mode 100644 Documentation/devicetree/bindings/rtc/palmas-rtc.txt
- create mode 100644 Documentation/devicetree/bindings/watchdog/palmas-wdt.txt
- create mode 100644 drivers/clk/clk-palmas.c
- create mode 100644 drivers/leds/leds-palmas.c
- create mode 100644 drivers/watchdog/palmas_wdt.c
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 9fcc70c..d48cb0e 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -103,6 +103,14 @@ config WM8350_WATCHDOG
+ 	  Support for the watchdog in the WM8350 AudioPlus PMIC.  When
+ 	  the watchdog triggers the system will be reset.
+ 
++config PALMAS_WATCHDOG
++	tristate "Palmas Watchdog"
++	depends on MFD_PALMAS
++	select WATCHDOG_CORE
++	help
++	  Support for the watchdog in the Palmas family of PMICs. When the
++	  watchdog times out system will be reset.
++
+ # ALPHA Architecture
+ 
+ # ARM Architecture
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index a300b94..e845c21 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -171,3 +171,4 @@ obj-$(CONFIG_WM831X_WATCHDOG) += wm831x_wdt.o
+ obj-$(CONFIG_WM8350_WATCHDOG) += wm8350_wdt.o
+ obj-$(CONFIG_MAX63XX_WATCHDOG) += max63xx_wdt.o
+ obj-$(CONFIG_SOFT_WATCHDOG) += softdog.o
++obj-$(CONFIG_PALMAS_WATCHDOG) += palmas_wdt.o
+-- 
+1.7.0.4
 
