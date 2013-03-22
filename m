@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab3CVM3d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 08:29:33 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:62842 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932249Ab3CVM3c (ORCPT
+	id S932745Ab3CVM3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 08:29:40 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:35228 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932249Ab3CVM3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 08:29:32 -0400
+	Fri, 22 Mar 2013 08:29:35 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, peterz@infradead.org, mingo@kernel.org,
@@ -17,175 +17,136 @@ Cc: alex.shi@intel.com, preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
         tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
         amit.kucheria@linaro.org, corbet@lwn.net,
         Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [RFC PATCH v3 0/6]  sched: packing small tasks
-Date: Fri, 22 Mar 2013 13:25:49 +0100
-Message-Id: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
+Subject: [RFC PATCH v3 1/6] Revert "sched: Introduce temporary FAIR_GROUP_SCHED dependency for load-tracking"
+Date: Fri, 22 Mar 2013 13:25:50 +0100
+Message-Id: <1363955155-18382-2-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
+References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This reverts commit f4e26b120b9de84cb627bc7361ba43cfdc51341f.
 
-This patchset takes advantage of the new per-task load tracking that is
-available in the kernel for packing the small tasks in as few as possible
-CPU/Cluster/Core. The main goal of packing small tasks is to reduce the power
-consumption in the low load use cases by minimizing the number of power domain
-that are enabled. The packing is done in 2 steps:
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ include/linux/sched.h |    8 +-------
+ kernel/sched/core.c   |    7 +------
+ kernel/sched/fair.c   |   13 ++-----------
+ kernel/sched/sched.h  |    9 +--------
+ 4 files changed, 5 insertions(+), 32 deletions(-)
 
-The 1st step looks for the best place to pack tasks in a system according to
-its topology and it defines a pack buddy CPU for each CPU if there is one
-available. We define the best CPU during the build of the sched_domain instead
-of evaluating it at runtime because it can be difficult to define a stable
-buddy CPU in a low CPU load situation. The policy for defining a buddy CPU is
-that we pack at all levels inside a node where a group of CPU can be power
-gated independently from others. For describing this capability, a new flag
-has been introduced SD_SHARE_POWERDOMAIN that is used to indicate whether the
-groups of CPUs of a scheduling domain are sharing their power state. By
-default, this flag has been set in all sched_domain in order to keep unchanged
-the current behavior of the scheduler and only ARM platform clears the
-SD_SHARE_POWERDOMAIN flag for MC and CPU level.
-
-In a 2nd step, the scheduler checks the load average of a task which wakes up
-as well as the load average of the buddy CPU and it can decide to migrate the
-light tasks on a not busy buddy. This check is done during the wake up because
-small tasks tend to wake up between periodic load balance and asynchronously
-to each other which prevents the default mechanism to catch and migrate them
-efficiently. A light task is defined by a runnable_avg_sum that is less than
-20% of the runnable_avg_period. In fact, the former condition encloses 2 ones:
-The average CPU load of the task must be less than 20% and the task must have
-been runnable less than 10ms when it woke up last time in order to be
-electable for the packing migration. So, a task than runs 1 ms each 5ms will
-be considered as a small task but a task that runs 50 ms with a period of
-500ms, will not.
-Then, the business of the buddy CPU depends of the load average for the rq and
-the number of running tasks. A CPU with a load average greater than 50% will
-be considered as busy CPU whatever the number of running tasks is and this
-threshold will be reduced by the number of running tasks in order to not
-increase too much the wake up latency of a task. When the buddy CPU is busy,
-the scheduler falls back to default CFS policy.
-
-Change since V2:
-
- - Migrate only a task that wakes up
- - Change the light tasks threshold to 20%
- - Change the loaded CPU threshold to not pull tasks if the current number of
-   running tasks is null but the load average is already greater than 50%
- - Fix the algorithm for selecting the buddy CPU.
-
-Change since V1:
-
-Patch 2/6
- - Change the flag name which was not clear. The new name is
-   SD_SHARE_POWERDOMAIN.
- - Create an architecture dependent function to tune the sched_domain flags
-Patch 3/6
- - Fix issues in the algorithm that looks for the best buddy CPU
- - Use pr_debug instead of pr_info
- - Fix for uniprocessor
-Patch 4/6
- - Remove the use of usage_avg_sum which has not been merged
-Patch 5/6
- - Change the way the coherency of runnable_avg_sum and runnable_avg_period is
-   ensured
-Patch 6/6
- - Use the arch dependent function to set/clear SD_SHARE_POWERDOMAIN for ARM
-   platform
-
-
-New results for v3:
-
-This series has been tested with hackbench on ARM platform and the results
-don't show any performance regression
-
-Hackbench             3.9-rc2  +patches
-Mean Time (10 tests): 2.048    2.015
-stdev               : 0.047    0.068
-
-Previous results for V2:
-
-This series has been tested with MP3 play back on ARM platform:
-TC2 HMP (dual CA-15 and 3xCA-7 cluster).
-
-The measurements have been done on an Ubuntu image during 60 seconds of
-playback and the result has been normalized to 100.
-
-              | CA15 | CA7  | total |
--------------------------------------
-default       |  81  |   97 | 178   |
-pack          |  13  |  100 | 113   |
--------------------------------------
-
-Previous results for V1:
-
-The patch-set has been tested on ARM platforms: quad CA-9 SMP and TC2 HMP
-(dual CA-15 and 3xCA-7 cluster). For ARM platform, the results have
-demonstrated that it's worth packing small tasks at all topology levels.
-
-The performance tests have been done on both platforms with sysbench. The
-results don't show any performance regressions. These results are aligned with
-the policy which uses the normal behavior with heavy use cases.
-
-test: sysbench --test=cpu --num-threads=N --max-requests=R run
-
-Results below is the average duration of 3 tests on the quad CA-9.
-default is the current scheduler behavior (pack buddy CPU is -1)
-pack is the scheduler with the pack mechanism
-
-              | default |  pack   |
------------------------------------
-N=8;  R=200   |  3.1999 |  3.1921 |
-N=8;  R=2000  | 31.4939 | 31.4844 |
-N=12; R=200   |  3.2043 |  3.2084 |
-N=12; R=2000  | 31.4897 | 31.4831 |
-N=16; R=200   |  3.1774 |  3.1824 |
-N=16; R=2000  | 31.4899 | 31.4897 |
------------------------------------
-
-The power consumption tests have been done only on TC2 platform which has got
-accessible power lines and I have used cyclictest to simulate small tasks. The
-tests show some power consumption improvements.
-
-test: cyclictest -t 8 -q -e 1000000 -D 20 & cyclictest -t 8 -q -e 1000000 -D 20
-
-The measurements have been done during 16 seconds and the result has been
-normalized to 100
-
-              | CA15 | CA7  | total |
--------------------------------------
-default       | 100  |  40  | 140   |
-pack          |  <1  |  45  | <46   |
--------------------------------------
-
-The A15 cluster is less power efficient than the A7 cluster but if we assume
-that the tasks is well spread on both clusters, we can guest estimate that the
-power consumption on a dual cluster of CA7 would have been for a default
-kernel:
-
-              | CA7  | CA7  | total |
--------------------------------------
-default       |  40  |  40  |  80   |
--------------------------------------
-
-Vincent Guittot (6):
-  Revert "sched: Introduce temporary FAIR_GROUP_SCHED dependency for
-    load-tracking"
-  sched: add a new SD_SHARE_POWERDOMAIN flag for sched_domain
-  sched: pack small tasks
-  sched: secure access to other CPU statistics
-  sched: pack the idle load balance
-  ARM: sched: clear SD_SHARE_POWERDOMAIN
-
- arch/arm/kernel/topology.c       |    9 +++
- arch/ia64/include/asm/topology.h |    1 +
- arch/tile/include/asm/topology.h |    1 +
- include/linux/sched.h            |    9 +--
- include/linux/topology.h         |    4 +
- kernel/sched/core.c              |   14 ++--
- kernel/sched/fair.c              |  149 +++++++++++++++++++++++++++++++++++---
- kernel/sched/sched.h             |   14 ++--
- 8 files changed, 169 insertions(+), 32 deletions(-)
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d35d2b6..16b0d18 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1159,13 +1159,7 @@ struct sched_entity {
+ 	/* rq "owned" by this entity/group: */
+ 	struct cfs_rq		*my_q;
+ #endif
+-
+-/*
+- * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
+- * removed when useful for applications beyond shares distribution (e.g.
+- * load-balance).
+- */
+-#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++#ifdef CONFIG_SMP
+ 	/* Per-entity load-tracking */
+ 	struct sched_avg	avg;
+ #endif
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 7f12624..54eaaa2 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1561,12 +1561,7 @@ static void __sched_fork(struct task_struct *p)
+ 	p->se.vruntime			= 0;
+ 	INIT_LIST_HEAD(&p->se.group_node);
+ 
+-/*
+- * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
+- * removed when useful for applications beyond shares distribution (e.g.
+- * load-balance).
+- */
+-#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++#ifdef CONFIG_SMP
+ 	p->se.avg.runnable_avg_period = 0;
+ 	p->se.avg.runnable_avg_sum = 0;
+ #endif
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7a33e59..9c2f726 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1109,8 +1109,7 @@ static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
+ }
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+-/* Only depends on SMP, FAIR_GROUP_SCHED may be removed when useful in lb */
+-#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++#ifdef CONFIG_SMP
+ /*
+  * We choose a half-life close to 1 scheduling period.
+  * Note: The tables below are dependent on this value.
+@@ -3394,12 +3393,6 @@ unlock:
+ }
+ 
+ /*
+- * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
+- * removed when useful for applications beyond shares distribution (e.g.
+- * load-balance).
+- */
+-#ifdef CONFIG_FAIR_GROUP_SCHED
+-/*
+  * Called immediately before a task is migrated to a new cpu; task_cpu(p) and
+  * cfs_rq_of(p) references at time of call are still valid and identify the
+  * previous cpu.  However, the caller only guarantees p->pi_lock is held; no
+@@ -3422,7 +3415,6 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
+ 		atomic64_add(se->avg.load_avg_contrib, &cfs_rq->removed_load);
+ 	}
+ }
+-#endif
+ #endif /* CONFIG_SMP */
+ 
+ static unsigned long
+@@ -6114,9 +6106,8 @@ const struct sched_class fair_sched_class = {
+ 
+ #ifdef CONFIG_SMP
+ 	.select_task_rq		= select_task_rq_fair,
+-#ifdef CONFIG_FAIR_GROUP_SCHED
+ 	.migrate_task_rq	= migrate_task_rq_fair,
+-#endif
++
+ 	.rq_online		= rq_online_fair,
+ 	.rq_offline		= rq_offline_fair,
+ 
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index cc03cfd..7f36024f 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -227,12 +227,6 @@ struct cfs_rq {
+ #endif
+ 
+ #ifdef CONFIG_SMP
+-/*
+- * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
+- * removed when useful for applications beyond shares distribution (e.g.
+- * load-balance).
+- */
+-#ifdef CONFIG_FAIR_GROUP_SCHED
+ 	/*
+ 	 * CFS Load tracking
+ 	 * Under CFS, load is tracked on a per-entity basis and aggregated up.
+@@ -242,8 +236,7 @@ struct cfs_rq {
+ 	u64 runnable_load_avg, blocked_load_avg;
+ 	atomic64_t decay_counter, removed_load;
+ 	u64 last_decay;
+-#endif /* CONFIG_FAIR_GROUP_SCHED */
+-/* These always depend on CONFIG_FAIR_GROUP_SCHED */
++
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	u32 tg_runnable_contrib;
+ 	u64 tg_load_contrib;
 -- 
 1.7.9.5
 
