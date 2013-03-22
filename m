@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933927Ab3CVQRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 12:17:32 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:47198 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933838Ab3CVQR3 (ORCPT
+	id S933909Ab3CVQUm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 12:20:42 -0400
+Received: from mail-da0-f54.google.com ([209.85.210.54]:44386 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933792Ab3CVQUk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 12:17:29 -0400
-Date: Fri, 22 Mar 2013 16:16:44 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Alex Williamson <alex.williamson@redhat.com>, Takashi Iwai <tiwai@suse.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, Oliver Neukum <oneukum@suse.de>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pciehp: Add pciehp_surprise module option
-Message-ID: <20130322161644.GA28760@srcf.ucam.org>
-References: <s5h38vqjhk6.wl%tiwai@suse.de>
- <1363802953.24132.513.camel@bling.home>
- <s5hr4j9q48d.wl%tiwai@suse.de>
- <514C8388.3050200@suse.cz>
-MIME-Version: 1.0
+	Fri, 22 Mar 2013 12:20:40 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <514C8388.3050200@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+Subject: Re: [PATCH] net: Add support for handling queueing in hardware
+From: Ben Collins <benmcollins13@gmail.com>
+In-Reply-To: <20130322.115924.1452021957855498515.davem@davemloft.net>
+Date: Fri, 22 Mar 2013 12:14:44 -0400
+Cc: afleming@freescale.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0FF79196-E252-4738-BFB5-C0B10F447B33@gmail.com>
+References: <9AEAD974-4549-475A-AE15-C92523CD2466@gmail.com> <20130322.114159.2303026992656610194.davem@davemloft.net> <14243FE7-A0A6-4C0C-AEFB-95F19C8898E3@gmail.com> <20130322.115924.1452021957855498515.davem@davemloft.net>
+To: David Miller <davem@davemloft.net>
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 05:15:04PM +0100, Michal Marek wrote:
+On Mar 22, 2013, at 11:59 AM, David Miller <davem@davemloft.net> wrote:
 
-> Alex, Matthew, would it work for you to have this debug / band-aid
-> option _and_ have a list of either machines' dmi strings that have this
-> problem, or devices' PCI IDs (*), and enable the surprise event handling
-> for such machines / devices automatically?  The option would be still
-> useful for debugging, to be able to easily find out if given machine has
-> this problem and needs to be added to the quirk list.
+> From: Ben Collins <benmcollins13@gmail.com>
+> Date: Fri, 22 Mar 2013 11:53:54 -0400
+> 
+>> Also, if there's a patch that makes my hardware work, but I can't
+>> use it because (even though it's open source licensed) the author
+>> doesn't want it in mainline, then that is effectively squatting.
+> 
+> This is called respecting the wishes of the author of the code, I'm
+> sorry if this is a foreign concept for you.
 
-That's be preferable, but if there's anything we've learned about dmi 
-strings it's that they usually mean we're doing something wrong. Does 
-this work with Windows without any quirking? Is there a machine-specific 
-driver for the PCIe chipset?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I'm sorry, I thought we were working on open source projects here. If the code isn't encumbered by patents, legal issues or technical problems, and is licensed compatible with the kernel, I just thought it was fair game.
+
+--
+Servergy  : http://www.servergy.com/
+SwissDisk : http://www.swissdisk.com/
+Ubuntu    : http://www.ubuntu.com/
+My Blog   : http://ben-collins.blogspot.com/
+
