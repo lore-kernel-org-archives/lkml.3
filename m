@@ -1,81 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932730Ab3CVFtO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 01:49:14 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:32921 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754416Ab3CVFtN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 01:49:13 -0400
-Message-ID: <514BF0BE.1070907@huawei.com>
-Date: Fri, 22 Mar 2013 13:48:46 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S932768Ab3CVFyO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 01:54:14 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52830 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753963Ab3CVFyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 01:54:13 -0400
+Message-ID: <514BF1DC.60003@ti.com>
+Date: Fri, 22 Mar 2013 11:23:32 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
-Subject: Re: [PATCH 1/2] sysfs: fix race between readdir and lseek
-References: <1363793126-11510-1-git-send-email-ming.lei@canonical.com> <1363793126-11510-2-git-send-email-ming.lei@canonical.com> <514A7340.5040409@huawei.com> <CACVXFVN7urpLM+Q-3o9=hYQLM=544WTXh+BnSo9fBM+d07oapQ@mail.gmail.com> <514A7E72.2090200@huawei.com> <CACVXFVMS644BpX7voMHS-xXoRs9-G4y96=ubk_NAj6KDTy1ENQ@mail.gmail.com>
-In-Reply-To: <CACVXFVMS644BpX7voMHS-xXoRs9-G4y96=ubk_NAj6KDTy1ENQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: "Philip, Avinash" <avinashphilip@ti.com>
+CC: Peter Korsgaard <jacmet@sunsite.dk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH v2 3/3] ARM: davinci: da850: add EHRPWM & ECAP DT node
+References: <1363761714-15034-1-git-send-email-avinashphilip@ti.com> <1363761714-15034-4-git-send-email-avinashphilip@ti.com> <51499DB4.9080907@ti.com> <87wqt2qlts.fsf@dell.be.48ers.dk> <518397C60809E147AF5323E0420B992E3EA9C651@DBDE01.ent.ti.com>
+In-Reply-To: <518397C60809E147AF5323E0420B992E3EA9C651@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/3/21 12:48, Ming Lei wrote:
-> On Thu, Mar 21, 2013 at 11:28 AM, Li Zefan <lizefan@huawei.com> wrote:
->> On 2013/3/21 11:17, Ming Lei wrote:
->>> On Thu, Mar 21, 2013 at 10:41 AM, Li Zefan <lizefan@huawei.com> wrote:
->>>>
->>>> In fact the same race exists between readdir() and read()/write()...
->>>
->>> Fortunately, no read()/write() are implemented on sysfs directory, :-)
->>>
+On 3/21/2013 1:31 PM, Philip, Avinash wrote:
+> On Wed, Mar 20, 2013 at 18:17:59, Peter Korsgaard wrote:
+>>>>>>> "Sekhar" == Sekhar Nori <nsekhar@ti.com> writes:
 >>
->> That's irrelevant...
-> 
-> As far as sysfs is concerned, the filp->f_ops can't be changed in
-> read/write path.
-> 
-
-Yes, it can...As I said, it's irrelevant, because it's vfs that changes
-file->f_pos.
-
-SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
-{
-        struct fd f = fdget(fd);
-        ssize_t ret = -EBADF;
-
-        if (f.file) {
-                loff_t pos = file_pos_read(f.file);		<--- read f_pos
-                ret = vfs_read(f.file, buf, count, &pos);	<--- return -EISDIR
-                file_pos_write(f.file, pos);			<--- write f_pos
-                fdput(f);
-        }
-        return ret;
-}
-
+>>  Sekhar> On 3/20/2013 12:11 PM, Philip Avinash wrote:
+>>  >> Add da850 EHRPWM & ECAP DT node.
+>>  >> Also adds OF_DEV_AUXDATA for EHRPWM & ECAP driver to use EHRPWM & ECAP
+>>  >> clock.
+>>  >> 
+>>  >> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+>>  >> ---
+>>  >> Changes since v1:
+>>  >> - Reusing ti,am33xx<ecap/ehrpwm> as compatible field as both IP's are
+>>  >> same with am33xx platform and da850 has no platform specific
+>>  >> dependency.
 >>
->> See my report:
+>>  Sekhar> Which is fine, but I think the binding documentation still needs to be
+>>  Sekhar> updated to document the ti,da850-ehrpwm binding. Looping Peter (it is
+>>  Sekhar> always a good idea to CC folks who reviewed your patch last time
+>>  Sekhar> around). Also, please Cc the DT folks and devicetree-discuss list too
+>>  Sekhar> for their opinion.
 >>
->> https://patchwork.kernel.org/patch/2160771/
+>> Yes, thanks for CC'ing me. I also think da850-* should be
+>> documented. See Documentation/devicetree/bindings/gpio/8xxx_gpio.txt for
+>> an similar (old) example.
 > 
-> Yes, I know there might be some mess after the commit ef3d0fd2
-> (vfs: do (nearly) lockless generic_file_llseek).
+> Peter,
 > 
-> Also looks it has been stated in Documentation/filesystems/Locking:
-> 
-> ->llseek() locking has moved from llseek to the individual llseek
-> implementations.  If your fs is not using generic_file_llseek, you
-> need to acquire and release the appropriate locks in your ->llseek().
-> For many filesystems, it is probably safe to acquire the inode
-> mutex or just to use i_size_read() instead.
-> Note: this does not protect the file->f_pos against concurrent modifications
-> since this is something the userspace has to take care about.
-> 
+> In this binding file also, only initial compatible field is updated. Later on many
+> compatible were added in driver. But not update back to binding doc.
 
+Probably someone forgot to keep updating the binding doc after a point.
 
+> 
+> <Documentation/devicetree/bindings/gpio/8xxx_gpio.txt>
+> ---
+> 	followed by "fsl,mpc8349-gpio" for 83xx, "fsl,mpc8572-gpio" for 85xx and
+> 	"fsl,mpc8610-gpio" for 86xx.
+> ---
+> <drivers/gpio/gpio-mpc8xxx.c>
+> ---
+> static struct of_device_id mpc8xxx_gpio_ids[] __initdata = {
+>         { .compatible = "fsl,mpc8349-gpio", },
+>         { .compatible = "fsl,mpc8572-gpio", },
+>         { .compatible = "fsl,mpc8610-gpio", },
+>         { .compatible = "fsl,mpc5121-gpio", .data = mpc512x_irq_set_type, },
+>         { .compatible = "fsl,pq3-gpio",     },
+>         { .compatible = "fsl,qoriq-gpio",   },
+>         {}
+> };
+> ---
+> 
+> Grant/Rob,
+> With respect peters explanation (below), what is your opinion on adding information to 
+> binding doc for da850 support?
+> 
+> Peter --> if the hardware block is identical the dts should simply list:
+> Peter --> compatible = "ti,da850-ecap", "ti,am33xx-ecap"
+> Peter --> And the driver only bind to ti,am33xx-ecap (unless there ever needs to
+> Peter --> be a da850 specific workaround.
+> 
+> Or
+> Should I update both binding doc & the driver to use new compatible option "ti,da830-ecap"
+> (as da830 platform has initial IP support)?
+> Even with this, platforms da830, da850 and am33xx can reuse "ti,da830-ecap" compatible field.
+
+To me updating the driver to keep adding a .compatible even when not
+using it elsewhere in code is not required. Adding the new binding in
+.dts file is must since you may need to do something specific to da830
+at a later time (and the .dtb should be considered ROM'ed so you wont be
+able to change it then). Adding documentation for the binding is also
+required to help anyone wanting to know more about the binding after
+reading the .dts file.
+
+Thanks,
+Sekhar
