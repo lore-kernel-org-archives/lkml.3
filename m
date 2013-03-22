@@ -1,90 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423460Ab3CVXck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 19:32:40 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:55916 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423061Ab3CVXci (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 19:32:38 -0400
+	id S1754769Ab3CVXis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 19:38:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24046 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754565Ab3CVXir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 19:38:47 -0400
+Message-ID: <514CEB6A.8020300@redhat.com>
+Date: Fri, 22 Mar 2013 19:38:18 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130322203652.GC19091@google.com>
-References: <1363977199-1507-1-git-send-email-octavian.purdila@intel.com>
-	<20130322203652.GC19091@google.com>
-Date: Fri, 22 Mar 2013 16:32:36 -0700
-Message-ID: <CAE1zot+ij8KBS6WDe0W=e5vobNwDLa0UDo66i1N0b6p7cfxdXQ@mail.gmail.com>
-Subject: Re: [PATCH] aio: convert the ioctx list to radix tree
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-s390@vger.kernel.org, bcrl@kvack.org, schwidefsky@de.ibm.com,
-        kirill.shutemov@linux.intel.com, Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Michel Lespinasse <walken@google.com>
+CC: Rik van Riel <riel@surriel.com>, torvalds@linux-foundation.org,
+        davidlohr.bueso@hp.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
+        lwoodman@redhat.com, chegu_vinod@hp.com
+Subject: Re: [PATCH 7/7] ipc,sem: fine grained locking for semtimedop
+References: <1363809337-29718-1-git-send-email-riel@surriel.com> <1363809337-29718-8-git-send-email-riel@surriel.com> <CANN689FT6LGtFykOScV29MzZp2qeooaXZSeFp6_HhEF20g7ZMg@mail.gmail.com>
+In-Reply-To: <CANN689FT6LGtFykOScV29MzZp2qeooaXZSeFp6_HhEF20g7ZMg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 1:36 PM, Kent Overstreet <koverstreet@google.com> wrote:
-> On Fri, Mar 22, 2013 at 08:33:19PM +0200, Octavian Purdila wrote:
->> When using a large number of threads performing AIO operations the
->> IOCTX list may get a significant number of entries which will cause
->> significant overhead. For example, when running this fio script:
->>
->> rw=randrw; size=256k ;directory=/mnt/fio; ioengine=libaio; iodepth=1
->> blocksize=1024; numjobs=512; thread; loops=100
->>
->> on an EXT2 filesystem mounted on top of a ramdisk we can observe up to
->> 30% CPU time spent by lookup_ioctx:
->>
->>  32.51%  [guest.kernel]  [g] lookup_ioctx
->>   9.19%  [guest.kernel]  [g] __lock_acquire.isra.28
->>   4.40%  [guest.kernel]  [g] lock_release
->>   4.19%  [guest.kernel]  [g] sched_clock_local
->>   3.86%  [guest.kernel]  [g] local_clock
->>   3.68%  [guest.kernel]  [g] native_sched_clock
->>   3.08%  [guest.kernel]  [g] sched_clock_cpu
->>   2.64%  [guest.kernel]  [g] lock_release_holdtime.part.11
->>   2.60%  [guest.kernel]  [g] memcpy
->>   2.33%  [guest.kernel]  [g] lock_acquired
->>   2.25%  [guest.kernel]  [g] lock_acquire
->>   1.84%  [guest.kernel]  [g] do_io_submit
->>
->> This patchs converts the ioctx list to a radix tree. For a performance
->> comparison the above FIO script was run on a 2 sockets 8 core
->> machine. This are the results for the original list based
->> implementation and for the radix tree based implementation:
+On 03/22/2013 07:01 PM, Michel Lespinasse wrote:
+> Sorry for the late reply; I've been swamped and am behind on my upstream mail.
 >
-> The biggest reason the overhead is so high is that the kioctx's
-> hlist_node shares a cacheline with the refcount. Did you check what just
-> fixing that does? My aio patch series (in akpm's tree) fixes that.
+> On Wed, Mar 20, 2013 at 12:55 PM, Rik van Riel <riel@surriel.com> wrote:
+>> +static inline int sem_lock(struct sem_array *sma, struct sembuf *sops,
+>> +                             int nsops)
+>> +{
+>> +       int locknum;
+>> +       if (nsops == 1 && !sma->complex_count) {
+>> +               struct sem *sem = sma->sem_base + sops->sem_num;
+>> +
+>> +               /* Lock just the semaphore we are interested in. */
+>> +               spin_lock(&sem->lock);
+>> +
+>> +               /*
+>> +                * If sma->complex_count was set while we were spinning,
+>> +                * we may need to look at things we did not lock here.
+>> +                */
+>> +               if (unlikely(sma->complex_count)) {
+>> +                       spin_unlock(&sma->sem_perm.lock);
 >
+> I believe this should be spin_unlock(&sem->lock) instead ?
 
-Hi Kent,
+You are right. Good catch.
 
-Just checked, and I don't see any improvements for this particular workload.
+I'll send a one-liner fix for this to Andrew Morton,
+since he already applied the patches in -mm.
 
-> Also, why are you using so many kioctxs? I can't think any good reason
-> why userspace would want to - you really want to use only one or a few
-> (potentially one per cpu) so that events can get serviced as soon as a
-> worker thread is available.
+>> +                       goto lock_all;
+>> +               }
+>> +               locknum = sops->sem_num;
+>> +       } else {
+>> +               int i;
+>> +               /* Lock the sem_array, and all the semaphore locks */
+>> + lock_all:
+>> +               spin_lock(&sma->sem_perm.lock);
+>> +               for (i = 0; i < sma->sem_nsems; i++) {
 >
+> Do we have to lock every sem from the array instead of just the ones
+> that are being operated on in sops ?
+> (I'm not sure either way, as I don't fully understand the queueing of
+> complex ops)
 
-For servers, 1 kioctx per core can easily translate to 16-32 kioctxes.
-And you probably want to oversubscribe the cores, especially since IO
-is getting faster these days. So, I think 512 is not such an
-outrageously large number of kioctxes.
+We should be able to get away with locking just the ones that are
+being operated on.  However, that does require we remember which
+ones we locked, so we know which ones to unlock again.
 
-> Currently there are applications using many kioctxs to work around the
-> fact that performance is terrible when you're sharing kioctxs between
-> threads - but that's fixed in my aio patch series.
->
-> In fact, we want userspace to be using as few kioctxs as they can so we
-> can benefit from batch completion.
->
+I do not know whether that additional complexity is worthwhile,
+especially considering that in Davidlohr's profile, the major
+caller locking everybody appears to be semctl, which passes no
+semops into the kernel but simply operates on all semaphores
+at once (SET_ALL).
 
-I think that using multiple contexts has its uses, with your great
-series not for I/O performance anymore :) , but for example for I/O
-operations management/grouping. Then, there is the case of existing
-applications, it would be nice to have them perform better without
-rewriting them. So, I think that this patch is complementary to your
-work.
+> If we want to keep the loop as is, then we may at least remove the
+> sops argument to sem_lock() since we only care about nsops.
+
+We need to know exactly which semaphore to lock when we
+are locking only one. The sops argument is used to figure
+out which one.
+
+-- 
+All rights reversed
