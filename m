@@ -1,151 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422723Ab3CVRjc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 13:39:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3733 "EHLO mx1.redhat.com"
+	id S1422750Ab3CVRla (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 13:41:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30276 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422636Ab3CVRja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 13:39:30 -0400
+	id S1422685Ab3CVRjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 13:39:31 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
         Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/7] HID: input: don't register unmapped input devices
-Date: Fri, 22 Mar 2013 18:38:28 +0100
-Message-Id: <1363973914-5661-2-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v2 2/7] HID: multitouch: breaks out touch handling in specific functions
+Date: Fri, 22 Mar 2013 18:38:29 +0100
+Message-Id: <1363973914-5661-3-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1363973914-5661-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1363973914-5661-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to register an input device containing no events.
-This allows drivers using the quirk MULTI_INPUT to register one input
-per report effectively used.
-
-For backward compatibility, we need to add a quirk to request
-this behavior.
+This will allow easier integration of hybrid pen and touch devices.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- drivers/hid/hid-input.c | 77 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/hid.h     |  1 +
- 2 files changed, 78 insertions(+)
+ drivers/hid/hid-multitouch.c | 123 +++++++++++++++++++++++++++++--------------
+ 1 file changed, 83 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index 21b196c..945b815 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -1198,6 +1198,67 @@ static struct hid_input *hidinput_allocate(struct hid_device *hid)
- 	return hidinput;
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 1f544a4..35b6025 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -114,6 +114,9 @@ struct mt_device {
+ 	unsigned mt_flags;	/* flags to pass to input-mt */
+ };
+ 
++static void mt_post_parse_default_settings(struct mt_device *td);
++static void mt_post_parse(struct mt_device *td);
++
+ /* classes of device behavior */
+ #define MT_CLS_DEFAULT				0x0001
+ 
+@@ -364,7 +367,7 @@ static void mt_store_field(struct hid_usage *usage, struct mt_device *td,
+ 	f->usages[f->length++] = usage->hid;
  }
  
-+static bool hidinput_has_been_populated(struct hid_input *hidinput)
-+{
-+	int i;
-+	unsigned long r = 0;
-+
-+	for (i = 0; i < BITS_TO_LONGS(EV_CNT); i++)
-+		r |= hidinput->input->evbit[i];
-+
-+	for (i = 0; i < BITS_TO_LONGS(KEY_CNT); i++)
-+		r |= hidinput->input->keybit[i];
-+
-+	for (i = 0; i < BITS_TO_LONGS(REL_CNT); i++)
-+		r |= hidinput->input->relbit[i];
-+
-+	for (i = 0; i < BITS_TO_LONGS(ABS_CNT); i++)
-+		r |= hidinput->input->absbit[i];
-+
-+	for (i = 0; i < BITS_TO_LONGS(MSC_CNT); i++)
-+		r |= hidinput->input->mscbit[i];
-+
-+	for (i = 0; i < BITS_TO_LONGS(LED_CNT); i++)
-+		r |= hidinput->input->ledbit[i];
-+
-+	for (i = 0; i < BITS_TO_LONGS(SND_CNT); i++)
-+		r |= hidinput->input->sndbit[i];
-+
-+	for (i = 0; i < BITS_TO_LONGS(FF_CNT); i++)
-+		r |= hidinput->input->ffbit[i];
-+
-+	for (i = 0; i < BITS_TO_LONGS(SW_CNT); i++)
-+		r |= hidinput->input->swbit[i];
-+
-+	return !!r;
-+}
-+
-+static void hidinput_cleanup_hidinput(struct hid_device *hid,
-+		struct hid_input *hidinput)
-+{
-+	struct hid_report *report;
-+	int i, k;
-+
-+	list_del(&hidinput->list);
-+	input_free_device(hidinput->input);
-+
-+	for (k = HID_INPUT_REPORT; k <= HID_OUTPUT_REPORT; k++) {
-+		if (k == HID_OUTPUT_REPORT &&
-+			hid->quirks & HID_QUIRK_SKIP_OUTPUT_REPORTS)
-+			continue;
-+
-+		list_for_each_entry(report, &hid->report_enum[k].report_list,
-+				    list) {
-+
-+			for (i = 0; i < report->maxfield; i++)
-+				if (report->field[i]->hidinput == hidinput)
-+					report->field[i]->hidinput = NULL;
-+		}
-+	}
-+
-+	kfree(hidinput);
-+}
-+
- /*
-  * Register the input device; print a message.
-  * Configure the input layer interface
-@@ -1249,6 +1310,10 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
- 					hidinput_configure_usage(hidinput, report->field[i],
- 								 report->field[i]->usage + j);
+-static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
++static int mt_touch_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 		struct hid_field *field, struct hid_usage *usage,
+ 		unsigned long **bit, int *max)
+ {
+@@ -373,13 +376,8 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 	int code;
+ 	struct hid_usage *prev_usage = NULL;
  
-+			if ((hid->quirks & HID_QUIRK_NO_EMPTY_INPUT) &&
-+			    !hidinput_has_been_populated(hidinput))
-+				continue;
-+
- 			if (hid->quirks & HID_QUIRK_MULTI_INPUT) {
- 				/* This will leave hidinput NULL, so that it
- 				 * allocates another one if we have more inputs on
-@@ -1265,6 +1330,18 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
- 		}
+-	/* Only map fields from TouchScreen or TouchPad collections.
+-	* We need to ignore fields that belong to other collections
+-	* such as Mouse that might have the same GenericDesktop usages. */
+ 	if (field->application == HID_DG_TOUCHSCREEN)
+ 		td->mt_flags |= INPUT_MT_DIRECT;
+-	else if (field->application != HID_DG_TOUCHPAD)
+-		return 0;
+ 
+ 	/*
+ 	 * Model touchscreens providing buttons as touchpads.
+@@ -388,12 +386,6 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 	    (usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON)
+ 		td->mt_flags |= INPUT_MT_POINTER;
+ 
+-	/* eGalax devices provide a Digitizer.Stylus input which overrides
+-	 * the correct Digitizers.Finger X/Y ranges.
+-	 * Let's just ignore this input. */
+-	if (field->physical == HID_DG_STYLUS)
+-		return -1;
+-
+ 	if (usage->usage_index)
+ 		prev_usage = &field->usage[usage->usage_index - 1];
+ 
+@@ -514,7 +506,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 	return 0;
+ }
+ 
+-static int mt_input_mapped(struct hid_device *hdev, struct hid_input *hi,
++static int mt_touch_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+ 		struct hid_field *field, struct hid_usage *usage,
+ 		unsigned long **bit, int *max)
+ {
+@@ -605,7 +597,7 @@ static void mt_sync_frame(struct mt_device *td, struct input_dev *input)
+ 	td->num_received = 0;
+ }
+ 
+-static int mt_event(struct hid_device *hid, struct hid_field *field,
++static int mt_touch_event(struct hid_device *hid, struct hid_field *field,
+ 				struct hid_usage *usage, __s32 value)
+ {
+ 	/* we will handle the hidinput part later, now remains hiddev */
+@@ -681,19 +673,13 @@ static void mt_process_mt_event(struct hid_device *hid, struct hid_field *field,
  	}
+ }
  
-+	if (hidinput && (hid->quirks & HID_QUIRK_NO_EMPTY_INPUT) &&
-+	    !hidinput_has_been_populated(hidinput)) {
-+		/* no need to register an input device not populated */
-+		hidinput_cleanup_hidinput(hid, hidinput);
-+		hidinput = NULL;
-+	}
+-static void mt_report(struct hid_device *hid, struct hid_report *report)
++static void mt_touch_report(struct hid_device *hid, struct hid_report *report)
+ {
+ 	struct mt_device *td = hid_get_drvdata(hid);
+ 	struct hid_field *field;
+ 	unsigned count;
+ 	int r, n;
+ 
+-	if (report->id != td->mt_report_id)
+-		return;
+-
+-	if (!(hid->claimed & HID_CLAIMED_INPUT))
+-		return;
+-
+ 	/*
+ 	 * Includes multi-packet support where subsequent
+ 	 * packets are sent with zero contactcount.
+@@ -721,6 +707,81 @@ static void mt_report(struct hid_device *hid, struct hid_report *report)
+ 		mt_sync_frame(td, report->field[0]->hidinput->input);
+ }
+ 
++static void mt_touch_input_configured(struct hid_device *hdev,
++					struct hid_input *hi)
++{
++	struct mt_device *td = hid_get_drvdata(hdev);
++	struct mt_class *cls = &td->mtclass;
++	struct input_dev *input = hi->input;
 +
-+	if (list_empty(&hid->inputs)) {
-+		hid_err(hid, "No inputs registered, leaving\n");
-+		goto out_unwind;
-+	}
++	if (!td->maxcontacts)
++		td->maxcontacts = MT_DEFAULT_MAXCONTACT;
 +
- 	if (hidinput) {
- 		if (drv->input_configured)
- 			drv->input_configured(hid, hidinput);
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 19357f6..b7b5ff2 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -282,6 +282,7 @@ struct hid_item {
- #define HID_QUIRK_BADPAD			0x00000020
- #define HID_QUIRK_MULTI_INPUT			0x00000040
- #define HID_QUIRK_HIDINPUT_FORCE		0x00000080
-+#define HID_QUIRK_NO_EMPTY_INPUT		0x00000100
- #define HID_QUIRK_SKIP_OUTPUT_REPORTS		0x00010000
- #define HID_QUIRK_FULLSPEED_INTERVAL		0x10000000
- #define HID_QUIRK_NO_INIT_REPORTS		0x20000000
++	mt_post_parse(td);
++	if (td->serial_maybe)
++		mt_post_parse_default_settings(td);
++
++	if (cls->is_indirect)
++		td->mt_flags |= INPUT_MT_POINTER;
++
++	if (cls->quirks & MT_QUIRK_NOT_SEEN_MEANS_UP)
++		td->mt_flags |= INPUT_MT_DROP_UNUSED;
++
++	input_mt_init_slots(input, td->maxcontacts, td->mt_flags);
++
++	td->mt_flags = 0;
++}
++
++static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
++		struct hid_field *field, struct hid_usage *usage,
++		unsigned long **bit, int *max)
++{
++	/* Only map fields from TouchScreen or TouchPad collections.
++	* We need to ignore fields that belong to other collections
++	* such as Mouse that might have the same GenericDesktop usages. */
++	if (field->application != HID_DG_TOUCHSCREEN &&
++	    field->application != HID_DG_TOUCHPAD)
++		return 0;
++
++	/* eGalax devices provide a Digitizer.Stylus input which overrides
++	 * the correct Digitizers.Finger X/Y ranges.
++	 * Let's just ignore this input. */
++	if (field->physical == HID_DG_STYLUS)
++		return -1;
++
++	return mt_touch_input_mapping(hdev, hi, field, usage, bit, max);
++}
++
++static int mt_input_mapped(struct hid_device *hdev, struct hid_input *hi,
++		struct hid_field *field, struct hid_usage *usage,
++		unsigned long **bit, int *max)
++{
++	return mt_touch_input_mapped(hdev, hi, field, usage, bit, max);
++}
++
++static int mt_event(struct hid_device *hid, struct hid_field *field,
++				struct hid_usage *usage, __s32 value)
++{
++	struct mt_device *td = hid_get_drvdata(hid);
++
++	if (field->report->id == td->mt_report_id)
++		return mt_touch_event(hid, field, usage, value);
++
++	/* ignore other reports */
++	return 1;
++}
++
++static void mt_report(struct hid_device *hid, struct hid_report *report)
++{
++	struct mt_device *td = hid_get_drvdata(hid);
++
++	if (!(hid->claimed & HID_CLAIMED_INPUT))
++		return;
++
++	if (report->id == td->mt_report_id)
++		mt_touch_report(hid, report);
++}
++
+ static void mt_set_input_mode(struct hid_device *hdev)
+ {
+ 	struct mt_device *td = hid_get_drvdata(hdev);
+@@ -795,32 +856,14 @@ static void mt_post_parse(struct mt_device *td)
+ }
+ 
+ static void mt_input_configured(struct hid_device *hdev, struct hid_input *hi)
+-
+ {
+-	struct mt_device *td = hid_get_drvdata(hdev);
+-	struct mt_class *cls = &td->mtclass;
+ 	struct input_dev *input = hi->input;
+ 
+ 	/* Only initialize slots for MT input devices */
+ 	if (!test_bit(ABS_MT_POSITION_X, input->absbit))
+ 		return;
+ 
+-	if (!td->maxcontacts)
+-		td->maxcontacts = MT_DEFAULT_MAXCONTACT;
+-
+-	mt_post_parse(td);
+-	if (td->serial_maybe)
+-		mt_post_parse_default_settings(td);
+-
+-	if (cls->is_indirect)
+-		td->mt_flags |= INPUT_MT_POINTER;
+-
+-	if (cls->quirks & MT_QUIRK_NOT_SEEN_MEANS_UP)
+-		td->mt_flags |= INPUT_MT_DROP_UNUSED;
+-
+-	input_mt_init_slots(input, td->maxcontacts, td->mt_flags);
+-
+-	td->mt_flags = 0;
++	mt_touch_input_configured(hdev, hi);
+ }
+ 
+ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
 -- 
 1.8.1.4
 
