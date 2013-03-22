@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933673Ab3CVOgW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 10:36:22 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6532 "EHLO
+	id S933621Ab3CVOgU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 10:36:20 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6533 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933436Ab3CVOeU (ORCPT
+	with ESMTP id S933514Ab3CVOeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Mar 2013 10:34:20 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 22 Mar 2013 07:34:10 -0700
+	by hqnvupgp07.nvidia.com on Fri, 22 Mar 2013 07:34:09 -0700
 From: Terje Bergstrom <tbergstrom@nvidia.com>
 To: <airlied@linux.ie>, <thierry.reding@avionic-design.de>,
         <linux-tegra@vger.kernel.org>, <dri-devel@lists.freedesktop.org>
 CC: <linux-kernel@vger.kernel.org>, <amerilainen@nvidia.com>,
         Terje Bergstrom <tbergstrom@nvidia.com>
-Subject: [PATCHv9 6/9] gpu: host1x: drm: Rename host1x to host1x_drm
-Date: Fri, 22 Mar 2013 16:34:06 +0200
-Message-ID: <1363962849-19872-7-git-send-email-tbergstrom@nvidia.com>
+Subject: [PATCHv9 5/9] drm: tegra: Move drm to live under host1x
+Date: Fri, 22 Mar 2013 16:34:05 +0200
+Message-ID: <1363962849-19872-6-git-send-email-tbergstrom@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1363962849-19872-1-git-send-email-tbergstrom@nvidia.com>
 References: <1363962849-19872-1-git-send-email-tbergstrom@nvidia.com>
@@ -27,262 +27,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arto Merilainen <amerilainen@nvidia.com>
-
-Both host1x and drm drivers have host1x structures. This patch
-renames the host1x structure under drm to follow name host1x_drm.
+Make drm part of host1x driver.
 
 Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
 Signed-off-by: Terje Bergstrom <tbergstrom@nvidia.com>
 ---
- drivers/gpu/host1x/drm/dc.c     |    4 ++--
- drivers/gpu/host1x/drm/drm.c    |    4 ++--
- drivers/gpu/host1x/drm/drm.h    |   14 +++++++-------
- drivers/gpu/host1x/drm/fb.c     |    6 +++---
- drivers/gpu/host1x/drm/hdmi.c   |    4 ++--
- drivers/gpu/host1x/drm/host1x.c |   22 ++++++++++++----------
- 6 files changed, 28 insertions(+), 26 deletions(-)
+ drivers/gpu/drm/Kconfig                        |    2 --
+ drivers/gpu/drm/Makefile                       |    1 -
+ drivers/gpu/drm/tegra/Makefile                 |    7 -------
+ drivers/gpu/host1x/Kconfig                     |    2 ++
+ drivers/gpu/host1x/Makefile                    |    5 +++++
+ drivers/gpu/{drm/tegra => host1x/drm}/Kconfig  |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/dc.c     |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/dc.h     |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/drm.c    |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/drm.h    |    6 +++---
+ drivers/gpu/{drm/tegra => host1x/drm}/fb.c     |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/hdmi.c   |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/hdmi.h   |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/host1x.c |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/output.c |    0
+ drivers/gpu/{drm/tegra => host1x/drm}/rgb.c    |    0
+ 16 files changed, 10 insertions(+), 13 deletions(-)
+ delete mode 100644 drivers/gpu/drm/tegra/Makefile
+ rename drivers/gpu/{drm/tegra => host1x/drm}/Kconfig (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/dc.c (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/dc.h (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/drm.c (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/drm.h (98%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/fb.c (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/hdmi.c (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/hdmi.h (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/host1x.c (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/output.c (100%)
+ rename drivers/gpu/{drm/tegra => host1x/drm}/rgb.c (100%)
 
-diff --git a/drivers/gpu/host1x/drm/dc.c b/drivers/gpu/host1x/drm/dc.c
-index de94707..d1f6609 100644
---- a/drivers/gpu/host1x/drm/dc.c
-+++ b/drivers/gpu/host1x/drm/dc.c
-@@ -1097,7 +1097,7 @@ static const struct host1x_client_ops dc_client_ops = {
+diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+index 1e82882..9031bb7 100644
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -215,8 +215,6 @@ source "drivers/gpu/drm/cirrus/Kconfig"
  
- static int tegra_dc_probe(struct platform_device *pdev)
- {
--	struct host1x *host1x = dev_get_drvdata(pdev->dev.parent);
-+	struct host1x_drm *host1x = dev_get_drvdata(pdev->dev.parent);
- 	struct resource *regs;
- 	struct tegra_dc *dc;
- 	int err;
-@@ -1160,7 +1160,7 @@ static int tegra_dc_probe(struct platform_device *pdev)
+ source "drivers/gpu/drm/shmobile/Kconfig"
  
- static int tegra_dc_remove(struct platform_device *pdev)
- {
--	struct host1x *host1x = dev_get_drvdata(pdev->dev.parent);
-+	struct host1x_drm *host1x = dev_get_drvdata(pdev->dev.parent);
- 	struct tegra_dc *dc = platform_get_drvdata(pdev);
- 	int err;
+-source "drivers/gpu/drm/tegra/Kconfig"
+-
+ source "drivers/gpu/drm/omapdrm/Kconfig"
  
-diff --git a/drivers/gpu/host1x/drm/drm.c b/drivers/gpu/host1x/drm/drm.c
-index 9d452df..6c59bcd 100644
---- a/drivers/gpu/host1x/drm/drm.c
-+++ b/drivers/gpu/host1x/drm/drm.c
-@@ -26,7 +26,7 @@
- static int tegra_drm_load(struct drm_device *drm, unsigned long flags)
- {
- 	struct device *dev = drm->dev;
--	struct host1x *host1x;
-+	struct host1x_drm *host1x;
- 	int err;
+ source "drivers/gpu/drm/tilcdc/Kconfig"
+diff --git a/drivers/gpu/drm/Makefile b/drivers/gpu/drm/Makefile
+index 0d59b24..847b830 100644
+--- a/drivers/gpu/drm/Makefile
++++ b/drivers/gpu/drm/Makefile
+@@ -49,7 +49,6 @@ obj-$(CONFIG_DRM_GMA500) += gma500/
+ obj-$(CONFIG_DRM_UDL) += udl/
+ obj-$(CONFIG_DRM_AST) += ast/
+ obj-$(CONFIG_DRM_SHMOBILE) +=shmobile/
+-obj-$(CONFIG_DRM_TEGRA) += tegra/
+ obj-$(CONFIG_DRM_OMAP)	+= omapdrm/
+ obj-$(CONFIG_DRM_TILCDC)	+= tilcdc/
+ obj-y			+= i2c/
+diff --git a/drivers/gpu/drm/tegra/Makefile b/drivers/gpu/drm/tegra/Makefile
+deleted file mode 100644
+index 80f73d1..0000000
+--- a/drivers/gpu/drm/tegra/Makefile
++++ /dev/null
+@@ -1,7 +0,0 @@
+-ccflags-y := -Iinclude/drm
+-ccflags-$(CONFIG_DRM_TEGRA_DEBUG) += -DDEBUG
+-
+-tegra-drm-y := drm.o fb.o dc.o host1x.o
+-tegra-drm-y += output.o rgb.o hdmi.o
+-
+-obj-$(CONFIG_DRM_TEGRA) += tegra-drm.o
+diff --git a/drivers/gpu/host1x/Kconfig b/drivers/gpu/host1x/Kconfig
+index 00f0859..ee3af1e 100644
+--- a/drivers/gpu/host1x/Kconfig
++++ b/drivers/gpu/host1x/Kconfig
+@@ -18,4 +18,6 @@ config TEGRA_HOST1X_FIREWALL
  
- 	host1x = dev_get_drvdata(dev);
-@@ -69,7 +69,7 @@ static int tegra_drm_open(struct drm_device *drm, struct drm_file *filp)
+ 	  If unsure, choose Y.
  
- static void tegra_drm_lastclose(struct drm_device *drm)
- {
--	struct host1x *host1x = drm->dev_private;
-+	struct host1x_drm *host1x = drm->dev_private;
++source "drivers/gpu/host1x/drm/Kconfig"
++
+ endif
+diff --git a/drivers/gpu/host1x/Makefile b/drivers/gpu/host1x/Makefile
+index 49fd580..4761e8a 100644
+--- a/drivers/gpu/host1x/Makefile
++++ b/drivers/gpu/host1x/Makefile
+@@ -10,4 +10,9 @@ host1x-y = \
+ 	debug.o \
+ 	hw/host1x01.o
  
- 	drm_fbdev_cma_restore_mode(host1x->fbdev);
- }
-diff --git a/drivers/gpu/host1x/drm/drm.h b/drivers/gpu/host1x/drm/drm.h
-index a6c011d..7fedb6c 100644
---- a/drivers/gpu/host1x/drm/drm.h
++ccflags-y += -Iinclude/drm
++ccflags-$(CONFIG_DRM_TEGRA_DEBUG) += -DDEBUG
++
++host1x-$(CONFIG_DRM_TEGRA) += drm/drm.o drm/fb.o drm/dc.o drm/host1x.o
++host1x-$(CONFIG_DRM_TEGRA) += drm/output.o drm/rgb.o drm/hdmi.o
+ obj-$(CONFIG_TEGRA_HOST1X) += host1x.o
+diff --git a/drivers/gpu/drm/tegra/Kconfig b/drivers/gpu/host1x/drm/Kconfig
+similarity index 100%
+rename from drivers/gpu/drm/tegra/Kconfig
+rename to drivers/gpu/host1x/drm/Kconfig
+diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/host1x/drm/dc.c
+similarity index 100%
+rename from drivers/gpu/drm/tegra/dc.c
+rename to drivers/gpu/host1x/drm/dc.c
+diff --git a/drivers/gpu/drm/tegra/dc.h b/drivers/gpu/host1x/drm/dc.h
+similarity index 100%
+rename from drivers/gpu/drm/tegra/dc.h
+rename to drivers/gpu/host1x/drm/dc.h
+diff --git a/drivers/gpu/drm/tegra/drm.c b/drivers/gpu/host1x/drm/drm.c
+similarity index 100%
+rename from drivers/gpu/drm/tegra/drm.c
+rename to drivers/gpu/host1x/drm/drm.c
+diff --git a/drivers/gpu/drm/tegra/drm.h b/drivers/gpu/host1x/drm/drm.h
+similarity index 98%
+rename from drivers/gpu/drm/tegra/drm.h
+rename to drivers/gpu/host1x/drm/drm.h
+index 6dd75a2..a6c011d 100644
+--- a/drivers/gpu/drm/tegra/drm.h
 +++ b/drivers/gpu/host1x/drm/drm.h
-@@ -18,7 +18,7 @@
- #include <drm/drm_fb_cma_helper.h>
- #include <drm/drm_fixed.h>
+@@ -7,8 +7,8 @@
+  * published by the Free Software Foundation.
+  */
  
--struct host1x {
-+struct host1x_drm {
- 	struct drm_device *drm;
- 	struct device *dev;
- 	void __iomem *regs;
-@@ -44,7 +44,7 @@ struct host1x_client_ops {
- };
+-#ifndef TEGRA_DRM_H
+-#define TEGRA_DRM_H 1
++#ifndef HOST1X_DRM_H
++#define HOST1X_DRM_H 1
  
- struct host1x_client {
--	struct host1x *host1x;
-+	struct host1x_drm *host1x;
- 	struct device *dev;
+ #include <drm/drmP.h>
+ #include <drm/drm_crtc_helper.h>
+@@ -234,4 +234,4 @@ extern struct platform_driver tegra_hdmi_driver;
+ extern struct platform_driver tegra_dc_driver;
+ extern struct drm_driver tegra_drm_driver;
  
- 	const struct host1x_client_ops *ops;
-@@ -52,12 +52,12 @@ struct host1x_client {
- 	struct list_head list;
- };
- 
--extern int host1x_drm_init(struct host1x *host1x, struct drm_device *drm);
--extern int host1x_drm_exit(struct host1x *host1x);
-+extern int host1x_drm_init(struct host1x_drm *host1x, struct drm_device *drm);
-+extern int host1x_drm_exit(struct host1x_drm *host1x);
- 
--extern int host1x_register_client(struct host1x *host1x,
-+extern int host1x_register_client(struct host1x_drm *host1x,
- 				  struct host1x_client *client);
--extern int host1x_unregister_client(struct host1x *host1x,
-+extern int host1x_unregister_client(struct host1x_drm *host1x,
- 				    struct host1x_client *client);
- 
- struct tegra_output;
-@@ -66,7 +66,7 @@ struct tegra_dc {
- 	struct host1x_client client;
- 	spinlock_t lock;
- 
--	struct host1x *host1x;
-+	struct host1x_drm *host1x;
- 	struct device *dev;
- 
- 	struct drm_crtc base;
-diff --git a/drivers/gpu/host1x/drm/fb.c b/drivers/gpu/host1x/drm/fb.c
-index 0391495..6ed885a 100644
---- a/drivers/gpu/host1x/drm/fb.c
-+++ b/drivers/gpu/host1x/drm/fb.c
-@@ -11,7 +11,7 @@
- 
- static void tegra_drm_fb_output_poll_changed(struct drm_device *drm)
- {
--	struct host1x *host1x = drm->dev_private;
-+	struct host1x_drm *host1x = drm->dev_private;
- 
- 	drm_fbdev_cma_hotplug_event(host1x->fbdev);
- }
-@@ -23,7 +23,7 @@ static const struct drm_mode_config_funcs tegra_drm_mode_funcs = {
- 
- int tegra_drm_fb_init(struct drm_device *drm)
- {
--	struct host1x *host1x = drm->dev_private;
-+	struct host1x_drm *host1x = drm->dev_private;
- 	struct drm_fbdev_cma *fbdev;
- 
- 	drm->mode_config.min_width = 0;
-@@ -46,7 +46,7 @@ int tegra_drm_fb_init(struct drm_device *drm)
- 
- void tegra_drm_fb_exit(struct drm_device *drm)
- {
--	struct host1x *host1x = drm->dev_private;
-+	struct host1x_drm *host1x = drm->dev_private;
- 
- 	drm_fbdev_cma_fini(host1x->fbdev);
- }
-diff --git a/drivers/gpu/host1x/drm/hdmi.c b/drivers/gpu/host1x/drm/hdmi.c
-index bb747f6..f438f80 100644
---- a/drivers/gpu/host1x/drm/hdmi.c
-+++ b/drivers/gpu/host1x/drm/hdmi.c
-@@ -1189,7 +1189,7 @@ static const struct host1x_client_ops hdmi_client_ops = {
- 
- static int tegra_hdmi_probe(struct platform_device *pdev)
- {
--	struct host1x *host1x = dev_get_drvdata(pdev->dev.parent);
-+	struct host1x_drm *host1x = dev_get_drvdata(pdev->dev.parent);
- 	struct tegra_hdmi *hdmi;
- 	struct resource *regs;
- 	int err;
-@@ -1278,7 +1278,7 @@ static int tegra_hdmi_probe(struct platform_device *pdev)
- 
- static int tegra_hdmi_remove(struct platform_device *pdev)
- {
--	struct host1x *host1x = dev_get_drvdata(pdev->dev.parent);
-+	struct host1x_drm *host1x = dev_get_drvdata(pdev->dev.parent);
- 	struct tegra_hdmi *hdmi = platform_get_drvdata(pdev);
- 	int err;
- 
-diff --git a/drivers/gpu/host1x/drm/host1x.c b/drivers/gpu/host1x/drm/host1x.c
-index 92e25a7..c3d8ee5 100644
---- a/drivers/gpu/host1x/drm/host1x.c
-+++ b/drivers/gpu/host1x/drm/host1x.c
-@@ -21,7 +21,8 @@ struct host1x_drm_client {
- 	struct list_head list;
- };
- 
--static int host1x_add_drm_client(struct host1x *host1x, struct device_node *np)
-+static int host1x_add_drm_client(struct host1x_drm *host1x,
-+				 struct device_node *np)
- {
- 	struct host1x_drm_client *client;
- 
-@@ -37,7 +38,7 @@ static int host1x_add_drm_client(struct host1x *host1x, struct device_node *np)
- 	return 0;
- }
- 
--static int host1x_activate_drm_client(struct host1x *host1x,
-+static int host1x_activate_drm_client(struct host1x_drm *host1x,
- 				      struct host1x_drm_client *drm,
- 				      struct host1x_client *client)
- {
-@@ -50,7 +51,7 @@ static int host1x_activate_drm_client(struct host1x *host1x,
- 	return 0;
- }
- 
--static int host1x_remove_drm_client(struct host1x *host1x,
-+static int host1x_remove_drm_client(struct host1x_drm *host1x,
- 				    struct host1x_drm_client *client)
- {
- 	mutex_lock(&host1x->drm_clients_lock);
-@@ -63,7 +64,7 @@ static int host1x_remove_drm_client(struct host1x *host1x,
- 	return 0;
- }
- 
--static int host1x_parse_dt(struct host1x *host1x)
-+static int host1x_parse_dt(struct host1x_drm *host1x)
- {
- 	static const char * const compat[] = {
- 		"nvidia,tegra20-dc",
-@@ -92,7 +93,7 @@ static int host1x_parse_dt(struct host1x *host1x)
- 
- static int tegra_host1x_probe(struct platform_device *pdev)
- {
--	struct host1x *host1x;
-+	struct host1x_drm *host1x;
- 	struct resource *regs;
- 	int err;
- 
-@@ -156,14 +157,14 @@ err:
- 
- static int tegra_host1x_remove(struct platform_device *pdev)
- {
--	struct host1x *host1x = platform_get_drvdata(pdev);
-+	struct host1x_drm *host1x = platform_get_drvdata(pdev);
- 
- 	clk_disable_unprepare(host1x->clk);
- 
- 	return 0;
- }
- 
--int host1x_drm_init(struct host1x *host1x, struct drm_device *drm)
-+int host1x_drm_init(struct host1x_drm *host1x, struct drm_device *drm)
- {
- 	struct host1x_client *client;
- 
-@@ -186,7 +187,7 @@ int host1x_drm_init(struct host1x *host1x, struct drm_device *drm)
- 	return 0;
- }
- 
--int host1x_drm_exit(struct host1x *host1x)
-+int host1x_drm_exit(struct host1x_drm *host1x)
- {
- 	struct platform_device *pdev = to_platform_device(host1x->dev);
- 	struct host1x_client *client;
-@@ -216,7 +217,8 @@ int host1x_drm_exit(struct host1x *host1x)
- 	return 0;
- }
- 
--int host1x_register_client(struct host1x *host1x, struct host1x_client *client)
-+int host1x_register_client(struct host1x_drm *host1x,
-+			   struct host1x_client *client)
- {
- 	struct host1x_drm_client *drm, *tmp;
- 	int err;
-@@ -244,7 +246,7 @@ int host1x_register_client(struct host1x *host1x, struct host1x_client *client)
- 	return 0;
- }
- 
--int host1x_unregister_client(struct host1x *host1x,
-+int host1x_unregister_client(struct host1x_drm *host1x,
- 			     struct host1x_client *client)
- {
- 	struct host1x_drm_client *drm, *tmp;
+-#endif /* TEGRA_DRM_H */
++#endif /* HOST1X_DRM_H */
+diff --git a/drivers/gpu/drm/tegra/fb.c b/drivers/gpu/host1x/drm/fb.c
+similarity index 100%
+rename from drivers/gpu/drm/tegra/fb.c
+rename to drivers/gpu/host1x/drm/fb.c
+diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/host1x/drm/hdmi.c
+similarity index 100%
+rename from drivers/gpu/drm/tegra/hdmi.c
+rename to drivers/gpu/host1x/drm/hdmi.c
+diff --git a/drivers/gpu/drm/tegra/hdmi.h b/drivers/gpu/host1x/drm/hdmi.h
+similarity index 100%
+rename from drivers/gpu/drm/tegra/hdmi.h
+rename to drivers/gpu/host1x/drm/hdmi.h
+diff --git a/drivers/gpu/drm/tegra/host1x.c b/drivers/gpu/host1x/drm/host1x.c
+similarity index 100%
+rename from drivers/gpu/drm/tegra/host1x.c
+rename to drivers/gpu/host1x/drm/host1x.c
+diff --git a/drivers/gpu/drm/tegra/output.c b/drivers/gpu/host1x/drm/output.c
+similarity index 100%
+rename from drivers/gpu/drm/tegra/output.c
+rename to drivers/gpu/host1x/drm/output.c
+diff --git a/drivers/gpu/drm/tegra/rgb.c b/drivers/gpu/host1x/drm/rgb.c
+similarity index 100%
+rename from drivers/gpu/drm/tegra/rgb.c
+rename to drivers/gpu/host1x/drm/rgb.c
 -- 
 1.7.9.5
 
