@@ -1,143 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab3CVJUL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 05:20:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38752 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753461Ab3CVJUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 05:20:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,891,1355126400"; 
-   d="scan'208";a="306013309"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <514B25F5.7020207@sr71.net>
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1363283435-7666-3-git-send-email-kirill.shutemov@linux.intel.com>
- <514B25F5.7020207@sr71.net>
-Subject: Re: [PATCHv2, RFC 02/30] mm: implement zero_huge_user_segment and
- friends
+	id S933155Ab3CVJWK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 05:22:10 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54561 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274Ab3CVJWG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 05:22:06 -0400
+Message-ID: <514C2245.4080506@ti.com>
+Date: Fri, 22 Mar 2013 14:50:05 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
+        <akpm@linux-foundation.org>, <rob@landley.net>, <davem@davemloft.net>,
+        <cesarb@cesarb.net>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tony@atomide.com>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <b-cousson@ti.com>,
+        <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <mchehab@redhat.com>, <santosh.shilimkar@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
+        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 5/6] ARM: dts: omap: update usb_otg_hs data
+References: <1363770725-13717-1-git-send-email-kishon@ti.com> <1363770725-13717-6-git-send-email-kishon@ti.com> <514A233F.8010105@wwwdotorg.org> <514AA74D.9070506@ti.com> <514B3EEF.3080705@wwwdotorg.org>
+In-Reply-To: <514B3EEF.3080705@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <20130322092150.5DD29E0085@blue.fi.intel.com>
-Date: Fri, 22 Mar 2013 11:21:50 +0200 (EET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Hansen wrote:
-> On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
-> > Let's add helpers to clear huge page segment(s). They provide the same
-> > functionallity as zero_user_segment{,s} and zero_user, but for huge
-> > pages
-> ...
-> > +static inline void zero_huge_user_segments(struct page *page,
-> > +		unsigned start1, unsigned end1,
-> > +		unsigned start2, unsigned end2)
-> > +{
-> > +	zero_huge_user_segment(page, start1, end1);
-> > +	zero_huge_user_segment(page, start2, end2);
-> > +}
-> 
-> I'm not sure that this helper saves very much code.  The one call later
-> in these patches:
-> 
-> +                       zero_huge_user_segments(page, 0, from,
-> +                                       from + len, HPAGE_PMD_SIZE);
-> 
-> really only saves one line over this:
-> 
-> 			zero_huge_user_segment(page, 0, from);
-> 			zero_huge_user_segment(page, from + len,
-> 					       HPAGE_PMD_SIZE);
-> 
-> and I think the second one is much more clear to read.
+Hi,
 
-I've tried to mimic non-huge zero_user*, but, yeah, this is silly.
-Will drop.
+On Thursday 21 March 2013 10:40 PM, Stephen Warren wrote:
+> On 03/21/2013 12:23 AM, kishon wrote:
+>> Hi,
+>>
+>> On Thursday 21 March 2013 02:29 AM, Stephen Warren wrote:
+>>> On 03/20/2013 03:12 AM, Kishon Vijay Abraham I wrote:
+>>>> Updated the usb_otg_hs dt data to include the *phy* and *phy-names*
+>>>> binding in order for the driver to use the new generic PHY framework.
+>>>> Also updated the Documentation to include the binding information.
+>>>
+>>>> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt
+>>>> b/Documentation/devicetree/bindings/usb/omap-usb.txt
+>>>> index abce256..3d6f9f6 100644
+>>>> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
+>>>> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+>>>> @@ -19,6 +19,9 @@ OMAP MUSB GLUE
+>>>>     - power : Should be "50". This signifies the controller can supply
+>>>> upto
+>>>>       100mA when operating in host mode.
+>>>>     - usb-phy : the phandle for the PHY device
+>>>> + - phy : the phandle for the PHY device (used by generic PHY framework)
+>>>> + - phy-names : the names of the PHY corresponding to the PHYs
+>>>> present in the
+>>>> +   *phy* phandle.
+>>>
+>>> If the intent is for those properties to be generic and used by any DT
+>>> binding that refers to a PHY node, I think you'd want to define those
+>>> properties in e.g. Documentation/devicetree/bindings/phy/phy.txt, just
+>>> like common clock/GPIO/... properties are defined in standalone common
+>>> files.
+>>
+>> Ok. Will add it.
+>>>
+>>> I think you want to require that DT nodes that represent PHYs have a
+>>> #phy-cells property, and that the format of the phy property be
+>>> <&phy_phandle phy_specifier*>, where #phy-cells in the referenced node
+>>> defines how many cells are part of phy_specifier*, just like (almost)
+>>> any other DT property that references another node by phandle. That way,
+>>> if a single DT node represents a HW block that implements e.g. 3 PHYs,
+>>> it can use #phy-cells = <1>, and the referencing phy property can
+>>> include a cell that indicates which of those 3 PHYs is being referenced.
+>>
+>> Currently, if a single phandle have reference to multiple PHYs, we can
+>> get PHY by passing index or by name as give in phy-names.
+>> I'm not sure if we have <&phy_phandle phy_specifier*>, what could that
+>> phy_specifier be? Maybe phy_type?
+>
+> I'm not talking about the case where a consumer node references multiple
+> PHYs. As you say, that is indeed handled by the driver looking at a
+> particular index in the phys property, or using phy-names.
+>
+> I'm talking about the case where a single provider provides multiple
+> PHYs. For example, consider:
+>
+> phys: phy {
+>      compatible = "xxx";
+>      reg = <...>;
+>      #phy-cells = <1>;
+> };
+>
+> That node describes an IP block that implements 3 different PHYs. The
+> registers are inter-mixed in such a way that you can't split it into 3
+> separate nodes each with a separate device instance. If the consumers
+> simply say:
+>
+> phys = <&phys>;
+>
+> then which of the 3 PHYs are you referring to?
+>
+> Instead, the consumer needs to say one of:
+>
+> phys = <&phys 0>;
+> phys = <&phys 1>;
+> phys = <&phys 2>;
+>
+> in order to specify which of the PHYs it refers to.
+>
+> The number of cells in the phy property after the phandle is specified
+> by the #phy-cells property in the node referred to by the phandle. The
+> meaning of all those cells is defined by the binding for the phy node.
+> This could include both the PHY ID (as in my example here), or whatever
+> configuration information or flags the provider needs. For example, both
+> GPIOs and interrupts have specifiers than describe both of these things.
 
-> I do see that there's a small-page variant of this, but I think that one
-> was done to save doing two kmap_atomic() operations when you wanted to
-> zero two separate operations.  This variant doesn't have that kind of
-> optimization, so it makes much less sense.
-> 
-> > +void zero_huge_user_segment(struct page *page, unsigned start, unsigned end)
-> > +{
-> > +	int i;
-> > +	
-> > +	BUG_ON(end < start);
-> > +
-> > +	might_sleep();
-> > +
-> > +	if (start == end)
-> > +		return;
-> 
-> I've really got to wonder how much of an optimization this is in
-> practice.  Was there a specific reason this was added?
+Thanks for the explanation. I'll add it in my next version.
+>
+> For more background, take a look at almost any other binding that uses
+> phandles.
+>
+> By the way, the property in the consumer should probably be "phys" not
+> "phy" to be consistent with other similar properties (e.g. gpios,
+> interrupts, ... which are all plural).
+>
+Ok.
 
-It's likely for simple_write_begin() to call zero[_huge]_user_segments()
-with one of two segments start == end.
+Thanks
+Kishon
 
-But, honestly, it was just easier to cut the corner case first and don't
-bother about it in following code. ;)
-
-> > +	/* start and end are on the same small page */
-> > +	if ((start & PAGE_MASK) == ((end - 1) & PAGE_MASK))
-> > +		return zero_user_segment(page + (start >> PAGE_SHIFT),
-> > +				start & ~PAGE_MASK,
-> > +				((end - 1) & ~PAGE_MASK) + 1);
-> 
-> It wasn't immediately obvious to me why we need to optimize the "on the
-> same page" case.  I _think_ it's because using zero_user_segments()
-> saves us a kmap_atomic() over the code below.  Is that right?  It might
-> be worth a comment.
-
-The code below will call zero_user_segment() twice for the same small
-page, but here we can use just one.
-
-I'll document it.
-
-> > +	zero_user_segment(page + (start >> PAGE_SHIFT),
-> > +			start & ~PAGE_MASK, PAGE_SIZE);
-> > +	for (i = (start >> PAGE_SHIFT) + 1; i < (end >> PAGE_SHIFT) - 1; i++) {
-> > +		cond_resched();
-> > +		clear_highpage(page + i);
-> 
-> zero_user_segments() does a flush_dcache_page(), which wouldn't get done
-> on these middle pages.  Is that a problem?
-
-I think, it is. Will fix.
-
-> > +	}
-> > +	zero_user_segment(page + i, 0, ((end - 1) & ~PAGE_MASK) + 1);
-> > +}
-> 
-> This code is dying for some local variables.  It could really use a
-> 'start_pfn_offset' and 'end_pfn_offset' or something similar.  All of
-> the shifting and masking is a bit hard to read and it would be nice to
-> think of some real names for what it is doing.
-> 
-> It also desperately needs some comments about how it works.  Some
-> one-liners like:
-> 
-> 	/* zero the first (possibly partial) page */
-> 	for()..
-> 		/* zero the full pages in the middle */
-> 	/* zero the last (possibly partial) page */
-> 
-> would be pretty sweet.
-
-Okay, will rework it.
-
--- 
- Kirill A. Shutemov
