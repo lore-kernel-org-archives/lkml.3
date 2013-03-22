@@ -1,215 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab3CVKc6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 06:32:58 -0400
-Received: from mga03.intel.com ([143.182.124.21]:12827 "EHLO mga03.intel.com"
+	id S1754151Ab3CVKf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 06:35:29 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34926 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753490Ab3CVKc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 06:32:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,891,1355126400"; 
-   d="scan'208";a="274531459"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <514B3F24.3070006@sr71.net>
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1363283435-7666-9-git-send-email-kirill.shutemov@linux.intel.com>
- <514B3F24.3070006@sr71.net>
-Subject: Re: [PATCHv2, RFC 08/30] thp, mm: rewrite add_to_page_cache_locked()
- to support huge pages
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130322103438.46C5FE0085@blue.fi.intel.com>
-Date: Fri, 22 Mar 2013 12:34:38 +0200 (EET)
+	id S1753806Ab3CVKf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 06:35:27 -0400
+Date: Fri, 22 Mar 2013 11:35:20 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>, x86-ml <x86@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] AMD RAS improvements for v3.10
+Message-ID: <20130322103519.GC30807@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Ingo Molnar <mingo@kernel.org>,
+	Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+	x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Hansen wrote:
-> On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > 
-> > For huge page we add to radix tree HPAGE_CACHE_NR pages at once: head
-> > page for the specified index and HPAGE_CACHE_NR-1 tail pages for
-> > following indexes.
-> > 
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > ---
-> >  mm/filemap.c |   76 ++++++++++++++++++++++++++++++++++++++++------------------
-> >  1 file changed, 53 insertions(+), 23 deletions(-)
-> > 
-> > diff --git a/mm/filemap.c b/mm/filemap.c
-> > index 2d99191..6bac9e2 100644
-> > --- a/mm/filemap.c
-> > +++ b/mm/filemap.c
-> > @@ -447,6 +447,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
-> >  		pgoff_t offset, gfp_t gfp_mask)
-> >  {
-> >  	int error;
-> > +	int nr = 1;
-> >  
-> >  	VM_BUG_ON(!PageLocked(page));
-> >  	VM_BUG_ON(PageSwapBacked(page));
-> > @@ -454,32 +455,61 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
-> >  	error = mem_cgroup_cache_charge(page, current->mm,
-> >  					gfp_mask & GFP_RECLAIM_MASK);
-> >  	if (error)
-> > -		goto out;
-> > +		return error;
-> >  
-> > -	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
-> > -	if (error == 0) {
-> > -		page_cache_get(page);
-> > -		page->mapping = mapping;
-> > -		page->index = offset;
-> > +	if (PageTransHuge(page)) {
-> > +		BUILD_BUG_ON(HPAGE_CACHE_NR > RADIX_TREE_PRELOAD_NR);
-> > +		nr = HPAGE_CACHE_NR;
-> > +	}
-> 
-> That seems like a slightly odd place to put a BUILD_BUG_ON().  I guess
-> it doesn't matter to some degree, but does putting it inside the if()
-> imply anything?
+Hi Ingo,
 
-It actually matters.
+please pull the two improvements below; not urgent stuff, can go into
+tip/x86/ras for 3.10.
 
-HPAGE_CACHE_NR is BUILD_BUG() if !CONFIG_TRANSPARENT_HUGEPAGE, so we need
-to hide it inside 'if (PageTransHuge(page))'. PageTransHuge(page) is 0 in
-compile time if !CONFIG_TRANSPARENT_HUGEPAGE, so compiler can be smart and
-optimize out the check.
+Thanks.
 
-> > +	error = radix_tree_preload_count(nr, gfp_mask & ~__GFP_HIGHMEM);
-> > +	if (error) {
-> > +		mem_cgroup_uncharge_cache_page(page);
-> > +		return error;
-> > +	}
-> >  
-> > -		spin_lock_irq(&mapping->tree_lock);
-> > -		error = radix_tree_insert(&mapping->page_tree, offset, page);
-> > -		if (likely(!error)) {
-> > -			mapping->nrpages++;
-> > -			__inc_zone_page_state(page, NR_FILE_PAGES);
-> > -			spin_unlock_irq(&mapping->tree_lock);
-> > -			trace_mm_filemap_add_to_page_cache(page);
-> > -		} else {
-> > -			page->mapping = NULL;
-> > -			/* Leave page->index set: truncation relies upon it */
-> > -			spin_unlock_irq(&mapping->tree_lock);
-> > -			mem_cgroup_uncharge_cache_page(page);
-> > -			page_cache_release(page);
-> 
-> I do really like how this rewrite de-indents this code. :)
+The following changes since commit a937536b868b8369b98967929045f1df54234323:
 
-:)
+  Linux 3.9-rc3 (2013-03-17 15:59:32 -0700)
 
-> > +	page_cache_get(page);
-> > +	spin_lock_irq(&mapping->tree_lock);
-> > +	page->mapping = mapping;
-> > +	page->index = offset;
-> > +	error = radix_tree_insert(&mapping->page_tree, offset, page);
-> > +	if (unlikely(error))
-> > +		goto err;
-> > +	if (PageTransHuge(page)) {
-> > +		int i;
-> > +		for (i = 1; i < HPAGE_CACHE_NR; i++) {
-> > +			page_cache_get(page + i);
-> > +			page[i].index = offset + i;
-> 
-> Is it OK to leave page->mapping unset for these?
+are available in the git repository at:
 
-Good catch, thanks.
-Seems nobody really use it, since I haven't got any oops, but we need to
-set it anyway.
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/ras_for_next
 
-> > +			error = radix_tree_insert(&mapping->page_tree,
-> > +					offset + i, page + i);
-> > +			if (error) {
-> > +				page_cache_release(page + i);
-> > +				break;
-> > +			}
-> >  		}
-> 
-> Throughout all this new code, I'd really challenge you to try as much as
-> possible to minimize the code stuck under "if (PageTransHuge(page))".
+for you to fetch changes up to bafcdd3b6cb86035cdb0511450961edcdc084c27:
 
-I put thp-related code under the 'if' intentionally to be able to optimize
-it out if !CONFIG_TRANSPARENT_HUGEPAGE. The config option is disabled by
-default.
+  x86, MCE, AMD: Use MCG_CAP MSR to find out number of banks on AMD (2013-03-22 11:25:01 +0100)
 
-> For instance, could you change the for() loop a bit and have it shared
-> between both cases, like:
-> 
-> > +	for (i = 0; i < nr; i++) {
-> > +		page_cache_get(page + i);
-> > +		page[i].index = offset + i;
-> > +		error = radix_tree_insert(&mapping->page_tree,
-> > +				offset + i, page + i);
-> > +		if (error) {
-> > +			page_cache_release(page + i);
-> > +			break;
-> > +		}
-> >  	}
-> 
-> > -		radix_tree_preload_end();
-> > -	} else
-> > -		mem_cgroup_uncharge_cache_page(page);
-> > -out:
-> > +		if (error) {
-> > +			error = ENOSPC; /* no space for a huge page */
-> > +			for (i--; i > 0; i--) {
-> > +				radix_tree_delete(&mapping->page_tree,
-> > +						offset + i);
-> > +				page_cache_release(page + i);
-> > +			}
-> > +			radix_tree_delete(&mapping->page_tree, offset);
-> 
-> I wonder if this would look any nicer if you just did all the
-> page_cache_get()s for the entire huge page along with the head page, and
-> then released them all in one place.  I think it might shrink the error
-> handling paths here.
-> 
-> > +			goto err;
-> > +		}
-> > +	}
-> > +	__mod_zone_page_state(page_zone(page), NR_FILE_PAGES, nr);
-> > +	mapping->nrpages += nr;
-> > +	spin_unlock_irq(&mapping->tree_lock);
-> > +	trace_mm_filemap_add_to_page_cache(page);
-> 
-> Do we need to change the tracing to make sure it notes that these were
-> or weren't huge pages?
+----------------------------------------------------------------
+Basically, the main reason for this is virtualization but it is also
+correct, at the same time, to read out the number of supported banks
+from hardware instead of having hardcoded defines. Which means it is a
+nice cleanup for baremetal too.
 
-Hm.. I guess we just need to add page order to the trace.
+----------------------------------------------------------------
+Boris Ostrovsky (2):
+      x86, MCE, AMD: Replace shared_bank array with is_shared_bank() helper
+      x86, MCE, AMD: Use MCG_CAP MSR to find out number of banks on AMD
 
-> > +	radix_tree_preload_end();
-> > +	return 0;
-> > +err:
-> > +	page->mapping = NULL;
-> > +	/* Leave page->index set: truncation relies upon it */
-> > +	spin_unlock_irq(&mapping->tree_lock);
-> > +	radix_tree_preload_end();
-> > +	mem_cgroup_uncharge_cache_page(page);
-> > +	page_cache_release(page);
-> >  	return error;
-> >  }
-> >  EXPORT_SYMBOL(add_to_page_cache_locked);
-> 
-> Does the cgroup code know how to handle these large pages internally
-> somehow?  It looks like the charge/uncharge is only being done for the
-> head page.
-
-It can. We only need to remove PageCompound() check there. Patch is in
-git.
+ arch/x86/kernel/cpu/mcheck/mce_amd.c | 39 ++++++++++++++++++++++++---------------
+ 1 file changed, 24 insertions(+), 15 deletions(-)
 
 -- 
- Kirill A. Shutemov
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
