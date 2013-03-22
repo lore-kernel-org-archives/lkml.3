@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933384Ab3CVO1m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 10:27:42 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49986 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932625Ab3CVO1k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 10:27:40 -0400
-Date: Fri, 22 Mar 2013 10:27:38 -0400 (EDT)
-Message-Id: <20130322.102738.100763719710671227.davem@davemloft.net>
-To: benmcollins13@gmail.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] phy: Add XGMII phy interface type
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <9CC1FA76-1620-4E0F-82DC-89535633329F@gmail.com>
-References: <5BDCE647-67A3-423B-AB9C-8C50CC0B6C02@gmail.com>
-	<20130322.101900.1947638393872492900.davem@davemloft.net>
-	<9CC1FA76-1620-4E0F-82DC-89535633329F@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 22 Mar 2013 07:27:40 -0700 (PDT)
+	id S933489Ab3CVO15 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 10:27:57 -0400
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:18267
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932843Ab3CVO1l convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 10:27:41 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zz98dI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275ch8275bhz2dh2a8h668h839h8e2h8e3h944hd25he5bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
+From: Fleming Andy-AFLEMING <afleming@freescale.com>
+To: David Miller <davem@davemloft.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Gala Kumar-B11780 <B11780@freescale.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH] phy: Add support for VSC8234
+Thread-Topic: [PATCH] phy: Add support for VSC8234
+Thread-Index: AQHOJwd+n3kfY3fqFkO/7FNNaD93w5ixxLxr
+Date: Fri, 22 Mar 2013 14:27:35 +0000
+Message-ID: <45F3FB2F-D5AA-42BD-A3B8-B38A93569303@freescale.com>
+References: <E1UJ1fR-0004hp-2j@swissweb.swissdisk.com>,<20130322.101351.803684806942512280.davem@davemloft.net>
+In-Reply-To: <20130322.101351.803684806942512280.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Collins <benmcollins13@gmail.com>
-Date: Fri, 22 Mar 2013 10:22:05 -0400
 
-> It's code that I've manually stripped down as a subset of a larger
-> code base for Freescale's DPAA driver. I've only tested it on our
-> (Servergy's) platform, so until it gets more broad testing (and some
-> code review), I want to at least get it into staging so our hardware
-> is supported.
 
-Then why don't you submit the PHY type addition with the staging
-driver, which will be the only user, and you can add my:
+On Mar 22, 2013, at 9:13, "David Miller" <davem@davemloft.net> wrote:
 
-Acked-by: David S. Miller <davem@davemloft.net>
+> From: Andy Fleming <afleming@freescale.com>
+> Date: Sun, 16 Oct 2011 01:49:49 -0500
+> 
+>> No functional changes other than to recognize this PHYID.
+>> 
+>> Signed-off-by: Andy Fleming <afleming@freescale.com>
+>> Signed-off-by: Kumar Gala <kumar.gala@freescale.com>
+>> Signed-off-by: Ben Collins <ben.c@servergy.com>
+> 
+> Please do not submit patches with the commit date integrated
+> into your formal email headers.
+> 
+> This screws up archives and patch queue maintainence systems which
+> order submissions by date.
 
-to that.
 
-Thanks.
+Yes, I'm very confused, as I didn't send any of these.
+
+Andy
+
