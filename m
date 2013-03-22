@@ -1,129 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab3CVHxy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 03:53:54 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:36334 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582Ab3CVHxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 03:53:51 -0400
-From: Prabhakar lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Sekhar Nori <nsekhar@ti.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 2/2] media: davinci: vpbe: venc: move the enabling of vpss clocks to driver
-Date: Fri, 22 Mar 2013 13:23:13 +0530
-Message-Id: <1363938793-22246-3-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1363938793-22246-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1363938793-22246-1-git-send-email-prabhakar.csengg@gmail.com>
+	id S1754774Ab3CVHyb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 03:54:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36870 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754628Ab3CVHya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 03:54:30 -0400
+Date: Fri, 22 Mar 2013 08:54:27 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning
+ requirements for kswapd
+Message-ID: <20130322075413.GA31457@dhcp22.suse.cz>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-3-git-send-email-mgorman@suse.de>
+ <20130321140154.GL6094@dhcp22.suse.cz>
+ <20130321143114.GM2055@suse.de>
+ <20130321150755.GN6094@dhcp22.suse.cz>
+ <20130321153442.GJ1878@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130321153442.GJ1878@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On Thu 21-03-13 15:34:42, Mel Gorman wrote:
+> On Thu, Mar 21, 2013 at 04:07:55PM +0100, Michal Hocko wrote:
+> > > > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > > > index 4835a7a..182ff15 100644
+> > > > > --- a/mm/vmscan.c
+> > > > > +++ b/mm/vmscan.c
+> > > > > @@ -1815,6 +1815,45 @@ out:
+> > > > >  	}
+> > > > >  }
+> > > > >  
+> > > > > +static void recalculate_scan_count(unsigned long nr_reclaimed,
+> > > > > +		unsigned long nr_to_reclaim,
+> > > > > +		unsigned long nr[NR_LRU_LISTS])
+> > > > > +{
+> > > > > +	enum lru_list l;
+> > > > > +
+> > > > > +	/*
+> > > > > +	 * For direct reclaim, reclaim the number of pages requested. Less
+> > > > > +	 * care is taken to ensure that scanning for each LRU is properly
+> > > > > +	 * proportional. This is unfortunate and is improper aging but
+> > > > > +	 * minimises the amount of time a process is stalled.
+> > > > > +	 */
+> > > > > +	if (!current_is_kswapd()) {
+> > > > > +		if (nr_reclaimed >= nr_to_reclaim) {
+> > > > > +			for_each_evictable_lru(l)
+> > > > > +				nr[l] = 0;
+> > > > > +		}
+> > > > > +		return;
+> > > > 
+> > > > Heh, this is nicely cryptically said what could be done in shrink_lruvec
+> > > > as
+> > > > 	if (!current_is_kswapd()) {
+> > > > 		if (nr_reclaimed >= nr_to_reclaim)
+> > > > 			break;
+> > > > 	}
+> > > > 
+> > > 
+> > > Pretty much. At one point during development, this function was more
+> > > complex and it evolved into this without me rechecking if splitting it
+> > > out still made sense.
+> > > 
+> > > > Besides that this is not memcg aware which I think it would break
+> > > > targeted reclaim which is kind of direct reclaim but it still would be
+> > > > good to stay proportional because it starts with DEF_PRIORITY.
+> > > > 
+> > > 
+> > > This does break memcg because it's a special sort of direct reclaim.
+> > > 
+> > > > I would suggest moving this back to shrink_lruvec and update the test as
+> > > > follows:
+> > > 
+> > > I also noticed that we check whether the scan counts need to be
+> > > normalised more than once
+> > 
+> > I didn't mind this because it "disqualified" at least one LRU every
+> > round which sounds reasonable to me because all LRUs would be scanned
+> > proportionally.
+> 
+> Once the scan count for one LRU is 0 then min will always be 0 and no
+> further adjustment is made. It's just redundant to check again.
 
-The vpss clocks were enabled by calling a exported function from a driver
-in a machine code. calling driver code from platform code is incorrect way.
+Hmm, I was almost sure I wrote that min should be adjusted only if it is >0
+in the first loop but it is not there...
 
-This patch fixes this issue and calls the function from driver code itself.
+So for real this time.
+			for_each_evictable_lru(l)
+				if (nr[l] && nr[l] < min)
+					min = nr[l];
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- Note: This patch is based on the comment from Sekhar
-      (https://patchwork-mail1.kernel.org/patch/2278441/).
-      Shekar I haven't completely removed the callback, I just added
-      the function calls after the callback. As you mentioned just to
-      pass the VPSS_CLK_CTRL as a resource to venc but the VPSS_CLK_CTRL
-      is already being used by VPSS driver. I'll take this cleanup task later
-      point of time.
-
- drivers/media/platform/davinci/vpbe_venc.c |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/media/platform/davinci/vpbe_venc.c b/drivers/media/platform/davinci/vpbe_venc.c
-index f15f211..26bdf9b 100644
---- a/drivers/media/platform/davinci/vpbe_venc.c
-+++ b/drivers/media/platform/davinci/vpbe_venc.c
-@@ -202,6 +202,26 @@ static void venc_enabledigitaloutput(struct v4l2_subdev *sd, int benable)
- 	}
- }
- 
-+static void
-+venc_enable_vpss_clock(int venc_type,
-+		       enum vpbe_enc_timings_type type,
-+		       unsigned int pclock)
-+{
-+	if (venc_type == VPBE_VERSION_1)
-+		return;
-+
-+	if (venc_type == VPBE_VERSION_2 && (type == VPBE_ENC_STD ||
-+	    (type == VPBE_ENC_DV_TIMINGS && pclock <= 27000000))) {
-+		vpss_enable_clock(VPSS_VENC_CLOCK_SEL, 1);
-+		vpss_enable_clock(VPSS_VPBE_CLOCK, 1);
-+		return;
-+	}
-+
-+	if (venc_type == VPBE_VERSION_3 && type == VPBE_ENC_STD)
-+		vpss_enable_clock(VPSS_VENC_CLOCK_SEL, 0);
-+
-+}
-+
- #define VDAC_CONFIG_SD_V3	0x0E21A6B6
- #define VDAC_CONFIG_SD_V2	0x081141CF
- /*
-@@ -220,6 +240,7 @@ static int venc_set_ntsc(struct v4l2_subdev *sd)
- 	if (pdata->setup_clock(VPBE_ENC_STD, V4L2_STD_525_60) < 0)
- 		return -EINVAL;
- 
-+	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_STD, V4L2_STD_525_60);
- 	venc_enabledigitaloutput(sd, 0);
- 
- 	if (venc->venc_type == VPBE_VERSION_3) {
-@@ -265,6 +286,7 @@ static int venc_set_pal(struct v4l2_subdev *sd)
- 	if (venc->pdata->setup_clock(VPBE_ENC_STD, V4L2_STD_625_50) < 0)
- 		return -EINVAL;
- 
-+	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_STD, V4L2_STD_625_50);
- 	venc_enabledigitaloutput(sd, 0);
- 
- 	if (venc->venc_type == VPBE_VERSION_3) {
-@@ -319,6 +341,7 @@ static int venc_set_480p59_94(struct v4l2_subdev *sd)
- 	if (pdata->setup_clock(VPBE_ENC_DV_TIMINGS, 27000000) < 0)
- 		return -EINVAL;
- 
-+	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_DV_TIMINGS, 27000000);
- 	venc_enabledigitaloutput(sd, 0);
- 
- 	if (venc->venc_type == VPBE_VERSION_2)
-@@ -366,6 +389,7 @@ static int venc_set_576p50(struct v4l2_subdev *sd)
- 	if (pdata->setup_clock(VPBE_ENC_DV_TIMINGS, 27000000) < 0)
- 		return -EINVAL;
- 
-+	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_DV_TIMINGS, 27000000);
- 	venc_enabledigitaloutput(sd, 0);
- 
- 	if (venc->venc_type == VPBE_VERSION_2)
-@@ -406,6 +430,7 @@ static int venc_set_720p60_internal(struct v4l2_subdev *sd)
- 	if (pdata->setup_clock(VPBE_ENC_DV_TIMINGS, 74250000) < 0)
- 		return -EINVAL;
- 
-+	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_DV_TIMINGS, 74250000);
- 	venc_enabledigitaloutput(sd, 0);
- 
- 	venc_write(sd, VENC_OSDCLK0, 0);
-@@ -434,6 +459,7 @@ static int venc_set_1080i30_internal(struct v4l2_subdev *sd)
- 	if (pdata->setup_clock(VPBE_ENC_DV_TIMINGS, 74250000) < 0)
- 		return -EINVAL;
- 
-+	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_DV_TIMINGS, 74250000);
- 	venc_enabledigitaloutput(sd, 0);
- 
- 	venc_write(sd, VENC_OSDCLK0, 0);
+This should work, no? Everytime you shrink all LRUs you and you have
+reclaimed enough already you get the smallest LRU out of game. This
+should keep proportions evenly.
 -- 
-1.7.4.1
-
+Michal Hocko
+SUSE Labs
