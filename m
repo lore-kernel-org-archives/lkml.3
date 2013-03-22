@@ -1,52 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab3CVANJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 20:13:09 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:37581 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823Ab3CVANB (ORCPT
+	id S1754012Ab3CVAPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 20:15:10 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:63063 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752636Ab3CVAPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 20:13:01 -0400
-From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: andrew@lunn.ch, jason@lakedaemon.net,
-        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Subject: [PATCH] drivers: cpuidle: kirkwood: fix coccicheck warnings
-Date: Fri, 22 Mar 2013 02:12:55 +0200
-Message-Id: <1363911175-12502-1-git-send-email-silviupopescu1990@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 21 Mar 2013 20:15:09 -0400
+Message-ID: <1363911302.1390.167.camel@x61.thuisdomein>
+Subject: [PATCH] cpuimx27 and mbimx27: prepend CONFIG_ to Kconfig macro
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Eric =?ISO-8859-1?Q?B=E9nard?= <eric@eukrea.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Fri, 22 Mar 2013 01:15:02 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Mar 2013 00:15:02.0934 (UTC) FILETIME=[4C68CB60:01CE2692]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert all uses of devm_request_and_ioremap() to the newly introduced
-devm_ioremap_resource() which provides more consistent error handling.
+Commit 2d66c7803595da0d4bcd949825d598575f5de9e6 ("cpuimx27 and mbimx27:
+allow fine control of UART4 and SDHC2 usage") added the Kconfig symbol
+MACH_EUKREA_CPUIMX27_USEUART4. But it forgot to prepend CONFIG_ to the
+use of its macro. Add that prefix now.
 
-devm_ioremap_resource() provides its own error messages so all explicit
-error messages can be removed from the failure code paths.
-
-Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/cpuidle/cpuidle-kirkwood.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Untested. This needs testing, obviously. Or a rethink, because these
+typos have been in the tree since v2.6.36!
 
-diff --git a/drivers/cpuidle/cpuidle-kirkwood.c b/drivers/cpuidle/cpuidle-kirkwood.c
-index 670aa1e..53aad73 100644
---- a/drivers/cpuidle/cpuidle-kirkwood.c
-+++ b/drivers/cpuidle/cpuidle-kirkwood.c
-@@ -66,9 +66,9 @@ static int kirkwood_cpuidle_probe(struct platform_device *pdev)
- 	if (res == NULL)
- 		return -EINVAL;
+ arch/arm/mach-imx/eukrea_mbimx27-baseboard.c | 4 ++--
+ arch/arm/mach-imx/mach-cpuimx27.c            | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c b/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
+index b4c7002..b2f08bf 100644
+--- a/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
++++ b/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
+@@ -46,7 +46,7 @@ static const int eukrea_mbimx27_pins[] __initconst = {
+ 	PE10_PF_UART3_CTS,
+ 	PE11_PF_UART3_RTS,
+ 	/* UART4 */
+-#if !defined(MACH_EUKREA_CPUIMX27_USEUART4)
++#if !defined(CONFIG_MACH_EUKREA_CPUIMX27_USEUART4)
+ 	PB26_AF_UART4_RTS,
+ 	PB28_AF_UART4_TXD,
+ 	PB29_AF_UART4_CTS,
+@@ -306,7 +306,7 @@ void __init eukrea_mbimx27_baseboard_init(void)
  
--	ddr_operation_base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!ddr_operation_base)
--		return -EADDRNOTAVAIL;
-+	ddr_operation_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(ddr_operation_base))
-+		return PTR_ERR(ddr_operation_base);
+ 	imx27_add_imx_uart1(&uart_pdata);
+ 	imx27_add_imx_uart2(&uart_pdata);
+-#if !defined(MACH_EUKREA_CPUIMX27_USEUART4)
++#if !defined(CONFIG_MACH_EUKREA_CPUIMX27_USEUART4)
+ 	imx27_add_imx_uart3(&uart_pdata);
+ #endif
  
- 	device = &per_cpu(kirkwood_cpuidle_device, smp_processor_id());
- 	device->state_count = KIRKWOOD_MAX_STATES;
+diff --git a/arch/arm/mach-imx/mach-cpuimx27.c b/arch/arm/mach-imx/mach-cpuimx27.c
+index 1465593..ea50870 100644
+--- a/arch/arm/mach-imx/mach-cpuimx27.c
++++ b/arch/arm/mach-imx/mach-cpuimx27.c
+@@ -48,7 +48,7 @@ static const int eukrea_cpuimx27_pins[] __initconst = {
+ 	PE14_PF_UART1_CTS,
+ 	PE15_PF_UART1_RTS,
+ 	/* UART4 */
+-#if defined(MACH_EUKREA_CPUIMX27_USEUART4)
++#if defined(CONFIG_MACH_EUKREA_CPUIMX27_USEUART4)
+ 	PB26_AF_UART4_RTS,
+ 	PB28_AF_UART4_TXD,
+ 	PB29_AF_UART4_CTS,
+@@ -272,7 +272,7 @@ static void __init eukrea_cpuimx27_init(void)
+ 	/* SDHC2 can be used for Wifi */
+ 	imx27_add_mxc_mmc(1, NULL);
+ #endif
+-#if defined(MACH_EUKREA_CPUIMX27_USEUART4)
++#if defined(CONFIG_MACH_EUKREA_CPUIMX27_USEUART4)
+ 	/* in which case UART4 is also used for Bluetooth */
+ 	imx27_add_imx_uart3(&uart_pdata);
+ #endif
 -- 
-1.7.9.5
+1.7.11.7
 
