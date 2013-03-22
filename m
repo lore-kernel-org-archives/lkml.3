@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423092Ab3CVVCf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 17:02:35 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34525 "EHLO
+	id S1423114Ab3CVVCz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 17:02:55 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34542 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423027Ab3CVVCe (ORCPT
+	with ESMTP id S1423072Ab3CVVCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 17:02:34 -0400
+	Fri, 22 Mar 2013 17:02:54 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: Zhang Rui <rui.zhang@intel.com>
 CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH 03/11] thermal: rename notify_thermal_framework to thermal_notify_framework
-Date: Fri, 22 Mar 2013 17:00:46 -0400
-Message-ID: <1363986054-24637-4-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCH 04/11] thermal: rename get_thermal_instance to thermal_instance_get
+Date: Fri, 22 Mar 2013 17:00:47 -0400
+Message-ID: <1363986054-24637-5-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
 In-Reply-To: <1363986054-24637-1-git-send-email-eduardo.valentin@ti.com>
 References: <1363986054-24637-1-git-send-email-eduardo.valentin@ti.com>
@@ -24,68 +24,77 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 To follow the prefix names used by the thermal exported functions,
-this patch renames notify_thermal_framework to thermal_notify_framework.
+this patch renames get_thermal_instance to thermal_instance_get.
 
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
  Documentation/thermal/sysfs-api.txt |    2 +-
- drivers/thermal/thermal_sys.c       |    6 +++---
+ drivers/thermal/fair_share.c        |    2 +-
+ drivers/thermal/thermal_sys.c       |    4 ++--
  include/linux/thermal.h             |    2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
+ 4 files changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
-index 6859661..4b23190 100644
+index 4b23190..059b3bf 100644
 --- a/Documentation/thermal/sysfs-api.txt
 +++ b/Documentation/thermal/sysfs-api.txt
-@@ -363,7 +363,7 @@ This function returns the thermal_instance corresponding to a given
+@@ -358,7 +358,7 @@ are supposed to implement the callback. If they don't, the thermal
+ framework calculated the trend by comparing the previous and the current
+ temperature values.
+ 
+-5.2:get_thermal_instance:
++5.2:thermal_instance_get:
+ This function returns the thermal_instance corresponding to a given
  {thermal_zone, cooling_device, trip_point} combination. Returns NULL
  if such an instance does not exist.
+diff --git a/drivers/thermal/fair_share.c b/drivers/thermal/fair_share.c
+index 792479f..f629446 100644
+--- a/drivers/thermal/fair_share.c
++++ b/drivers/thermal/fair_share.c
+@@ -95,7 +95,7 @@ static int fair_share_throttle(struct thermal_zone_device *tz, int trip)
+ 			continue;
  
--5.3:notify_thermal_framework:
-+5.3:thermal_notify_framework:
- This function handles the trip events from sensor drivers. It starts
- throttling the cooling devices according to the policy configured.
- For CRITICAL and HOT trip points, this notifies the respective drivers,
+ 		cdev = tzp->tbp[i].cdev;
+-		instance = get_thermal_instance(tz, cdev, trip);
++		instance = thermal_instance_get(tz, cdev, trip);
+ 		if (!instance)
+ 			continue;
+ 
 diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-index 9542600..ffaf6d3 100644
+index ffaf6d3..44e89c0 100644
 --- a/drivers/thermal/thermal_sys.c
 +++ b/drivers/thermal/thermal_sys.c
-@@ -1420,7 +1420,7 @@ void thermal_cdev_update(struct thermal_cooling_device *cdev)
- EXPORT_SYMBOL(thermal_cdev_update);
- 
- /**
-- * notify_thermal_framework - Sensor drivers use this API to notify framework
-+ * thermal_notify_framework - Sensor drivers use this API to notify framework
-  * @tz:		thermal zone device
-  * @trip:	indicates which trip point has been crossed
-  *
-@@ -1431,11 +1431,11 @@ EXPORT_SYMBOL(thermal_cdev_update);
-  * The throttling policy is based on the configured platform data; if no
-  * platform data is provided, this uses the step_wise throttling policy.
-  */
--void notify_thermal_framework(struct thermal_zone_device *tz, int trip)
-+void thermal_notify_framework(struct thermal_zone_device *tz, int trip)
- {
- 	handle_thermal_trip(tz, trip);
+@@ -170,7 +170,7 @@ int get_tz_trend(struct thermal_zone_device *tz, int trip)
  }
--EXPORT_SYMBOL(notify_thermal_framework);
-+EXPORT_SYMBOL(thermal_notify_framework);
+ EXPORT_SYMBOL(get_tz_trend);
  
- /**
-  * create_trip_attrs - create attributes for trip points
+-struct thermal_instance *get_thermal_instance(struct thermal_zone_device *tz,
++struct thermal_instance *thermal_instance_get(struct thermal_zone_device *tz,
+ 			struct thermal_cooling_device *cdev, int trip)
+ {
+ 	struct thermal_instance *pos = NULL;
+@@ -191,7 +191,7 @@ struct thermal_instance *get_thermal_instance(struct thermal_zone_device *tz,
+ 
+ 	return target_instance;
+ }
+-EXPORT_SYMBOL(get_thermal_instance);
++EXPORT_SYMBOL(thermal_instance_get);
+ 
+ static void print_bind_err_msg(struct thermal_zone_device *tz,
+ 			struct thermal_cooling_device *cdev, int ret)
 diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index f0bd7f9..e8ec9d8 100644
+index e8ec9d8..e2a49e1 100644
 --- a/include/linux/thermal.h
 +++ b/include/linux/thermal.h
-@@ -242,7 +242,7 @@ int get_tz_trend(struct thermal_zone_device *, int);
- struct thermal_instance *get_thermal_instance(struct thermal_zone_device *,
+@@ -239,7 +239,7 @@ struct thermal_cooling_device *thermal_cooling_device_register(char *, void *,
+ void thermal_cooling_device_unregister(struct thermal_cooling_device *);
+ 
+ int get_tz_trend(struct thermal_zone_device *, int);
+-struct thermal_instance *get_thermal_instance(struct thermal_zone_device *,
++struct thermal_instance *thermal_instance_get(struct thermal_zone_device *,
  		struct thermal_cooling_device *, int);
  void thermal_cdev_update(struct thermal_cooling_device *);
--void notify_thermal_framework(struct thermal_zone_device *, int);
-+void thermal_notify_framework(struct thermal_zone_device *, int);
- 
- int thermal_register_governor(struct thermal_governor *);
- void thermal_unregister_governor(struct thermal_governor *);
+ void thermal_notify_framework(struct thermal_zone_device *, int);
 -- 
 1.7.7.1.488.ge8e1c
 
