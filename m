@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423166Ab3CVVOQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 17:14:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44052 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423058Ab3CVVOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 17:14:14 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: Zhang Rui <rui.zhang@intel.com>
-CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH 2/2] staging: ti-soc-thermal: remove external heat while extrapolating hotspot
-Date: Fri, 22 Mar 2013 17:13:07 -0400
-Message-ID: <1363986787-28147-3-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
-In-Reply-To: <1363986787-28147-1-git-send-email-eduardo.valentin@ti.com>
-References: <1363986787-28147-1-git-send-email-eduardo.valentin@ti.com>
+	id S1423265Ab3CVVVS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 17:21:18 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:56320 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423092Ab3CVVVR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 17:21:17 -0400
+Date: Fri, 22 Mar 2013 14:21:13 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Zach Brown <zab@redhat.com>
+Subject: Re: [PATCH] nfsd: fix bad offset use
+Message-ID: <20130322212113.GD19091@google.com>
+References: <1363976304-26093-1-git-send-email-koverstreet@google.com>
+ <20130322205353.GA14438@fieldses.org>
+ <20130322205434.GB14438@fieldses.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130322205434.GB14438@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For boards that provide a PCB sensor close to SoC junction
-temperature, it is possible to remove the cumulative heat
-reported by the SoC temperature sensor.
+On Fri, Mar 22, 2013 at 04:54:34PM -0400, J. Bruce Fields wrote:
+> On Fri, Mar 22, 2013 at 04:53:53PM -0400, J. Bruce Fields wrote:
+> > On Fri, Mar 22, 2013 at 11:18:24AM -0700, Kent Overstreet wrote:
+> > > vfs_writev() updates the offset argument - but the code then passes the
+> > > offset to vfs_fsync_range(). Since offset now points to the offset after
+> > > what was just written, this is probably not what was intended
+> > 
+> > Whoops--thanks!  Looks like this was introduced by my
+> > face15025ffdf664de95e86ae831544154d26c9c "nfsd: use vfs_fsync_range(),
+> > not O_SYNC, for stable writes", in 3.8.
+> > 
+> > I'll queue up for 3.9 and stable.
+> 
+> (By the way, out of curiosity: how did you stumble across this?)
 
-This patch changes the extrapolation computation to consider
-an external sensor in the extrapolation equations.
+Just reading code - I've been trying to figure out how to improve the
+way *pos pointers are passed around everywhere and I was looking at all
+the users of various vfs code.
 
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
----
- drivers/staging/ti-soc-thermal/ti-thermal-common.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/staging/ti-soc-thermal/ti-thermal-common.c b/drivers/staging/ti-soc-thermal/ti-thermal-common.c
-index 231c549..52d3c1b 100644
---- a/drivers/staging/ti-soc-thermal/ti-thermal-common.c
-+++ b/drivers/staging/ti-soc-thermal/ti-thermal-common.c
-@@ -92,10 +92,9 @@ static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
- 	if (ret)
- 		return ret;
- 
--	pcb_temp = 0;
--	/* TODO: Introduce pcb temperature lookup */
-+	ret = thermal_zone_lookup_temperature("pcb", &pcb_temp);
- 	/* In case pcb zone is available, use the extrapolation rule with it */
--	if (pcb_temp) {
-+	if (!ret) {
- 		tmp -= pcb_temp;
- 		slope = s->slope_pcb;
- 		constant = s->constant_pcb;
--- 
-1.7.7.1.488.ge8e1c
-
+> --b.
+> 
+> > 
+> > --b.
+> > 
+> > > 
+> > > Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> > > Cc: "J. Bruce Fields" <bfields@fieldses.org>
+> > > Cc: Al Viro <viro@zeniv.linux.org.uk>
+> > > Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> > > Cc: Zach Brown <zab@redhat.com>
+> > > ---
+> > >  fs/nfsd/vfs.c | 3 ++-
+> > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+> > > index 2a7eb53..2b2e239 100644
+> > > --- a/fs/nfsd/vfs.c
+> > > +++ b/fs/nfsd/vfs.c
+> > > @@ -1013,6 +1013,7 @@ nfsd_vfs_write(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file *file,
+> > >  	int			host_err;
+> > >  	int			stable = *stablep;
+> > >  	int			use_wgather;
+> > > +	loff_t			pos = offset;
+> > >  
+> > >  	dentry = file->f_path.dentry;
+> > >  	inode = dentry->d_inode;
+> > > @@ -1025,7 +1026,7 @@ nfsd_vfs_write(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file *file,
+> > >  
+> > >  	/* Write the data. */
+> > >  	oldfs = get_fs(); set_fs(KERNEL_DS);
+> > > -	host_err = vfs_writev(file, (struct iovec __user *)vec, vlen, &offset);
+> > > +	host_err = vfs_writev(file, (struct iovec __user *)vec, vlen, &pos);
+> > >  	set_fs(oldfs);
+> > >  	if (host_err < 0)
+> > >  		goto out_nfserr;
+> > > -- 
+> > > 1.8.1.3
+> > > 
