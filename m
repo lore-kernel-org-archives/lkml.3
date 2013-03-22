@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422892Ab3CVSL2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 14:11:28 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42634 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422813Ab3CVSL0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 14:11:26 -0400
-Date: Fri, 22 Mar 2013 18:11:11 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: David Howells <dhowells@redhat.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        jack@suse.cz, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, sedat.dilek@googlemail.com, mszeredi@suse.cz
-Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
-Message-ID: <20130322181111.GP21522@ZenIV.linux.org.uk>
-References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
- <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
- <1944.1363525619@warthog.procyon.org.uk>
- <13789.1363973875@jrobl>
+	id S1422893Ab3CVSNp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 14:13:45 -0400
+Received: from www.sr71.net ([198.145.64.142]:34230 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422861Ab3CVSNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 14:13:44 -0400
+Message-ID: <514CA182.7050906@sr71.net>
+Date: Fri, 22 Mar 2013 11:22:58 -0700
+From: Dave <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <13789.1363973875@jrobl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2, RFC 17/30] thp: wait_split_huge_page(): serialize over
+ i_mmap_mutex too
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-18-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1363283435-7666-18-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 23, 2013 at 02:37:55AM +0900, J. R. Okajima wrote:
-> 
-> David Howells:
-> > Now, looking at __sb_start_write(), I'm not entirely sure how the deadlock
-> > might operate, so it's possible that this is a false alarm.  Maybe Jan Kara can
-> > illuminate further, so I've added him to the cc list.
-> 
-> It is related to the design of UnionMount, isn't it?
-> UnionMount is not a filesystem and doen't have its own superblock.
-> If it was a fs, then
-> - vfs_truncate() acquires sb_writers for the unioning-fs.
-> - the unioning-fs may call vfs_truncate() again for the underlying fs.
-> - this time, sb_writers is for the underlying fs which is a different
->   sb_writers object from the already acquired one.
-> So there would be no deadlock.
+On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
+> --- a/include/linux/huge_mm.h
+> +++ b/include/linux/huge_mm.h
+> @@ -113,11 +113,20 @@ extern void __split_huge_page_pmd(struct vm_area_struct *vma,
+>  			__split_huge_page_pmd(__vma, __address,		\
+>  					____pmd);			\
+>  	}  while (0)
+> -#define wait_split_huge_page(__anon_vma, __pmd)				\
+> +#define wait_split_huge_page(__vma, __pmd)				\
+>  	do {								\
+>  		pmd_t *____pmd = (__pmd);				\
+> -		anon_vma_lock_write(__anon_vma);			\
+> -		anon_vma_unlock_write(__anon_vma);			\
+> +		struct address_space *__mapping =			\
+> +					vma->vm_file->f_mapping;	\
+> +		struct anon_vma *__anon_vma = (__vma)->anon_vma;	\
+> +		if (__mapping)						\
+> +			mutex_lock(&__mapping->i_mmap_mutex);		\
+> +		if (__anon_vma) {					\
+> +			anon_vma_lock_write(__anon_vma);		\
+> +			anon_vma_unlock_write(__anon_vma);		\
+> +		}							\
+> +		if (__mapping)						\
+> +			mutex_unlock(&__mapping->i_mmap_mutex);		\
+>  		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
+>  		       pmd_trans_huge(*____pmd));			\
+>  	} while (0)
 
-Doesn't help the situation with copyup - witness overlayfs stepping into the
-same deadlock on copyup.  It wants ->i_mutex held on directory in upper layer
-and it tries to write to file it has created in there.  The problem is
-with the upper layer superblock getting frozen; having a separate one for
-union is irrelevant.  Let me check how aufs does...  Aha.  Your
-au_do_copy_file() ends up calling vfs_write() on the file opened in
-upper layer.  And AFAICS it's called with ->i_mutex held on the directory
-in upper layer, so you've got the same deadlock, sorry.
+That thing was pretty ugly _before_. :)  Any chance this can get turned
+in to a function?
+
+What's the deal with the i_mmap_mutex operation getting split up?  I'm
+blanking on what kind of pages would have both anon_vmas and a valid
+mapping.
