@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422748Ab3CVRrZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 13:47:25 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:46344 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422700Ab3CVRrX (ORCPT
+	id S1422763Ab3CVRuH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 13:50:07 -0400
+Received: from ams-iport-1.cisco.com ([144.254.224.140]:12275 "EHLO
+	ams-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422717Ab3CVRuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 13:47:23 -0400
-X-IronPort-AV: E=Sophos;i="4.84,893,1355126400"; 
-   d="scan'208";a="31941595"
-From: David Brown <davidb@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/3] Fix msm timer clearing bugs
-References: <1363318299-10814-1-git-send-email-sboyd@codeaurora.org>
-Date: Fri, 22 Mar 2013 10:47:22 -0700
-In-Reply-To: <1363318299-10814-1-git-send-email-sboyd@codeaurora.org> (Stephen
-	Boyd's message of "Thu, 14 Mar 2013 20:31:36 -0700")
-Message-ID: <8ya4ng3ba39.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 22 Mar 2013 13:50:04 -0400
+X-Greylist: delayed 586 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Mar 2013 13:50:04 EDT
+X-IronPort-AV: E=Sophos;i="4.84,893,1355097600"; 
+   d="scan'208";a="152091224"
+From: Henrik Austad <haustad@cisco.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Henrik Austad <haustad@cisco.com>
+Subject: [PATCH] tile: ns2cycles must be called with preempt disabled.
+Date: Fri, 22 Mar 2013 18:37:51 +0100
+Message-Id: <1363973871-13199-1-git-send-email-haustad@cisco.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Boyd <sboyd@codeaurora.org> writes:
+ns2cycles use per_cpu variables, and will, eventually, find its way into
+smp_processord_id(). The latter must be called with either preempt
+disabled, irq's off, from a thread locked to a single core or early in
+the bootprocess (according to debug_smp_processor_id())
 
-> Patches are based on v3.9-rc2. These patches will conflict with
-> my other patch series to remove the local timer API, but the
-> conflict isn't impossible to resolve and we can figure out how to
-> deal with that after review.
->
-> Patch 1 is a bug fix which could probably go into 3.9 if desired.
-> Patch 2 overhauls the DT binding to be cleaner, and patch 3 fixes
-> a bug where we don't wait for the timer to be clear before
-> programming it leading to no more ticks.
->
-> Stephen Boyd (3):
->   ARM: msm: Stop counting before reprogramming clockevent
->   ARM: msm: Rework timer binding to be more general
->   ARM: msm: Wait for timer clear to complete
->
->  .../devicetree/bindings/arm/msm/timer.txt          |  41 ++++----
->  arch/arm/boot/dts/msm8660-surf.dts                 |  20 ++--
->  arch/arm/boot/dts/msm8960-cdp.dts                  |  22 ++--
->  arch/arm/mach-msm/timer.c                          | 115 ++++++++++-----------
->  4 files changed, 90 insertions(+), 108 deletions(-)
+BUG: using smp_processor_id() in preemptible [00000000] code: systemd-modules/367
+caller is ns2cycles+0x40/0xb8
 
-I've pulled these into msm for/next, so the conflicts will probably show
-up soon.
+Starting stack dump of tid 367, pid 367 (systemd-modules) on cpu 2 at cycle 20969956421
+  frame 0: 0xfffffff70004b860 dump_stack+0x0/0x20 (sp 0xfffffe407993fa90)
+  frame 1: 0xfffffff7006abc28 debug_smp_processor_id+0x1a8/0x1e0 (sp 0xfffffe407993fa90)
+  frame 2: 0xfffffff7004d7b40 ns2cycles+0x40/0xb8 (sp 0xfffffe407993fab8)
+  frame 3: 0xfffffff7004dc578 __ndelay+0x38/0x80 (sp 0xfffffe407993fae0)
 
-David
+Note: wrapping the -entire- delay-loop in a preempt-off section can be a
+bad idea as long delays would case kernel lockups without being able to
+preempt the thread at all.
 
+Signed-off-by: Henrik Austad <haustad@cisco.com>
+---
+ arch/tile/lib/delay.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/tile/lib/delay.c b/arch/tile/lib/delay.c
+index cdacdd1..a53cdcd 100644
+--- a/arch/tile/lib/delay.c
++++ b/arch/tile/lib/delay.c
+@@ -30,7 +30,9 @@ EXPORT_SYMBOL(__udelay);
+ void __ndelay(unsigned long nsecs)
+ {
+ 	cycles_t target = get_cycles();
++	preempt_disable();
+ 	target += ns2cycles(nsecs);
++	preempt_enable();
+ 	while (get_cycles() < target)
+ 		cpu_relax();
+ }
 -- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.2.5
+
