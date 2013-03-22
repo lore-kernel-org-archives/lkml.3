@@ -1,43 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932887Ab3CVBYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 21:24:53 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:38347 "EHLO
-	homiemail-a56.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932843Ab3CVBYw (ORCPT
+	id S932948Ab3CVBZB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 21:25:01 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45436 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932843Ab3CVBY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 21:24:52 -0400
-References: <1363277360-1947-1-git-send-email-shea@shealevy.com>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <1363277360-1947-1-git-send-email-shea@shealevy.com>
-Content-Type: text/plain;
-	charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <98307231-8FBF-47B6-89DB-81BE86904A8B@shealevy.com>
-Cc: Shea Levy <shea@shealevy.com>
-X-Mailer: iPad Mail (10A523)
-From: Shea Levy <shea@shealevy.com>
-Subject: Re: [PATCH 0/2] vfs: Report a mount r/o if the superblock is
-Date: Thu, 21 Mar 2013 21:24:51 -0400
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+	Thu, 21 Mar 2013 21:24:58 -0400
+X-Sasl-enc: o5mFU/q6nqa4ddOXl79XewG+2QhADNKpG/SJX+23Hmys 1363915496
+Date: Thu, 21 Mar 2013 18:24:55 -0700
+From: Greg KH <greg@kroah.com>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: Myron Stowe <myron.stowe@redhat.com>, bhelgaas@google.com,
+        linux-pci@vger.kernel.org, yuxiangl@marvell.com, yxlraid@gmail.com,
+        alex.williamson@redhat.com, kay@vrfy.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] PCI: Handle device quirks when accessing sysfs
+ resource<N> entries
+Message-ID: <20130322012455.GB2009@kroah.com>
+References: <20130321043449.7229.81056.stgit@amt.stowe>
+ <20130321043502.7229.43877.stgit@amt.stowe>
+ <514BAB13.3000101@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <514BAB13.3000101@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any feedback on this?
+On Thu, Mar 21, 2013 at 06:51:31PM -0600, Robert Hancock wrote:
+> On 03/20/2013 10:35 PM, Myron Stowe wrote:
+> >Sysfs includes entries to memory regions that back a PCI device's BARs.
+> >The pci-sysfs entries backing I/O Port BARs can be accessed by userspace,
+> >providing direct access to the device's registers.  File permissions
+> >prevent random users from accessing the device's registers through these
+> >files, but don't stop a privileged app that chooses to ignore the purpose
+> >of these files from doing so.
+> >
+> >There are devices with abnormally strict restrictions with respect to
+> >accessing their registers; aspects that are typically handled by the
+> >device's driver.  When these access restrictions are not followed - as
+> >when a userspace app such as "udevadm info --attribute-walk
+> >--path=/sys/..." parses though reading all the device's sysfs entries - it
+> >can cause such devices to fail.
+> >
+> >This patch introduces a quirking mechanism that can be used to detect
+> >accesses that do no meet the device's restrictions, letting a device
+> >specific method intervene and decide how to progress.
+> >
+> >Reported-by: Xiangliang Yu <yuxiangl@marvell.com>
+> >Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+> 
+> I honestly don't think there's much point in even attempting this
+> strategy. This list of devices in the quirk can't possibly be
+> complete. It would likely be easier to enumerate a white-list of
+> devices that can deal with their IO ports being read willy-nilly
+> than a blacklist of those that don't, as there's likely countless
+> devices that fall into this category. Even if they don't choke as
+> badly as these ones do, it's quite likely that bad behavior will
+> result.
+> 
+> I think there's a few things that need to be done:
+> 
+> -Fix the bug in udevadm that caused it to trawl through these files
+> willy-nilly,
 
-On Mar 14, 2013, at 12:09 PM, Shea Levy <shea@shealevy.com> wrote:
+There's no "bug" in udevadm, the user explicitly asked for it to read
+all of those files.  Just like grep or bash could be used to ask to read
+those files.
 
-> By calling mount(2) with MS_REMOUNT | MS_BIND on a non-bind readonly
-> mountpoint, it is possible to have a readonly mount without MNT_READONLY
-> in its mnt_flags. Currently, /proc/<pid>/mountinfo and statfs will
-> report such a mount as r/w, even though for all intents and purposes it
-> is still readonly.
-> 
-> This patchset fixes show_mountinfo and statfs to report such mounts as
-> readonly.
-> 
-> Signed-off-by: Shea Levy <shea@shealevy.com>
-> 
+If the kernel is going to provide files to userspace, the kernel can't
+suddenly get upset if userspace actually reads those files.
+
+Fix the kernel here please.
+
+> -Fix the kernel so that access through these files complies with the
+> kernel's mechanisms for claiming IO/memory regions to prevent access
+> conflicts (i.e. opening these files should claim the resource region
+> they refer to, and should fail with EBUSY or something if another
+> process or a kernel driver is using it).
+
+Yes, this is a good solution.
+
+> -Reconsider whether supporting read/write on the resource files for
+> IO port regions like these makes any sense. Obviously mmap isn't
+> very practical for IO port access on x86 but you could even do
+> something like an ioctl for this purpose. Not very many pieces of
+> software would need to access these files so it's likely OK if the
+> API is a bit ugly. That would prevent something like grepping
+> through sysfs from generating port accesses to random devices.
+
+Also a good solution.
+
+greg k-h
