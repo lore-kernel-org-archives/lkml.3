@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933614Ab3CVOuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 10:50:14 -0400
-Received: from www.sr71.net ([198.145.64.142]:60406 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933396Ab3CVOuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 10:50:12 -0400
-Message-ID: <514C6FF3.9040806@sr71.net>
-Date: Fri, 22 Mar 2013 07:51:31 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2, RFC 08/30] thp, mm: rewrite add_to_page_cache_locked()
- to support huge pages
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-9-git-send-email-kirill.shutemov@linux.intel.com> <514B3F24.3070006@sr71.net> <20130322103438.46C5FE0085@blue.fi.intel.com>
-In-Reply-To: <20130322103438.46C5FE0085@blue.fi.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933600Ab3CVOui (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 10:50:38 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:58389 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932719Ab3CVOug convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 10:50:36 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+Subject: Re: [PATCH] net: Add support for handling queueing in hardware
+From: Ben Collins <benmcollins13@gmail.com>
+In-Reply-To: <1363962193.4431.59.camel@edumazet-glaptop>
+Date: Fri, 22 Mar 2013 10:50:38 -0400
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <63463136-FE5B-462D-9259-53DD5AC61BDB@gmail.com>
+References: <E1UJ1fR-0004hs-4l@swissweb.swissdisk.com> <1363962193.4431.59.camel@edumazet-glaptop>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2013 03:34 AM, Kirill A. Shutemov wrote:
-> Dave Hansen wrote:
->> On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
->>> +			error = radix_tree_insert(&mapping->page_tree,
->>> +					offset + i, page + i);
->>> +			if (error) {
->>> +				page_cache_release(page + i);
->>> +				break;
->>> +			}
->>>  		}
->>
->> Throughout all this new code, I'd really challenge you to try as much as
->> possible to minimize the code stuck under "if (PageTransHuge(page))".
+On Mar 22, 2013, at 10:23 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+
+> On Wed, 2011-07-13 at 08:52 -0500, Andy Fleming wrote:
+>> The QDisc code does a bunch of locking which is unnecessary if
+>> you have hardware which handles all of the queueing. Add
+>> support for this, and skip over all of the queueing code if
+>> the feature is enabled on a given device, which breaks QDisc
+>> support on dpaa_eth, and also coopts the FCOE feature bit.
+>> 
+>> Signed-off-by: Andy Fleming <afleming@freescale.com>
+>> Signed-off-by: Ben Collins <ben.c@servergy.com>
+>> Cc: netdev@vger.kernel.org
+>> ---
+>> include/linux/netdev_features.h | 2 ++
+>> net/core/dev.c                  | 6 ++++++
+>> 2 files changed, 8 insertions(+)
+>> 
+>> diff --git a/include/linux/netdev_features.h b/include/linux/netdev_features.h
+>> index 3dd3934..ffb4587 100644
+>> --- a/include/linux/netdev_features.h
+>> +++ b/include/linux/netdev_features.h
+>> @@ -56,6 +56,7 @@ enum {
+>> 	NETIF_F_LOOPBACK_BIT,		/* Enable loopback */
+>> 	NETIF_F_RXFCS_BIT,		/* Append FCS to skb pkt data */
+>> 	NETIF_F_RXALL_BIT,		/* Receive errored frames too */
+>> +	NETIF_F_HW_QDISC_BIT,		/* Supports hardware Qdisc */
+>> 
+>> 	/*
+>> 	 * Add your fresh new feature above and remember to update
+>> @@ -80,6 +81,7 @@ enum {
+>> #define NETIF_F_GSO_ROBUST	__NETIF_F(GSO_ROBUST)
+>> #define NETIF_F_HIGHDMA		__NETIF_F(HIGHDMA)
+>> #define NETIF_F_HW_CSUM		__NETIF_F(HW_CSUM)
+>> +#define NETIF_F_HW_QDISC	__NETIF_F(HW_QDISC)
+>> #define NETIF_F_HW_VLAN_FILTER	__NETIF_F(HW_VLAN_FILTER)
+>> #define NETIF_F_HW_VLAN_RX	__NETIF_F(HW_VLAN_RX)
+>> #define NETIF_F_HW_VLAN_TX	__NETIF_F(HW_VLAN_TX)
+>> diff --git a/net/core/dev.c b/net/core/dev.c
+>> index dffbef7..6818b18 100644
+>> --- a/net/core/dev.c
+>> +++ b/net/core/dev.c
+>> @@ -2743,6 +2743,12 @@ int dev_queue_xmit(struct sk_buff *skb)
+>> 
+>> 	skb_update_prio(skb);
+>> 
+>> +	if (dev->features & NETIF_F_HW_QDISC) {
+>> +		txq = netdev_pick_tx(dev, skb);
+>> +		rc = dev_hard_start_xmit(skb, dev, txq);
+>> +		goto out;
+>> +	}
+>> +
+>> 	txq = netdev_pick_tx(dev, skb);
+>> 	q = rcu_dereference_bh(txq->qdisc);
+>> 
 > 
-> I put thp-related code under the 'if' intentionally to be able to optimize
-> it out if !CONFIG_TRANSPARENT_HUGEPAGE. The config option is disabled by
-> default.
-
-You've gotta give the compiler some credit! :)  In this function's case,
-the compiler should be able to realize that nr=1 is constant if
-!TRANSPARENT_HUGEPAGE.  It'll realize that all your for loops are:
-
-	for (i = 0; i < 1; i++) {
-
-and will end up generating _very_ similar code to what you get with the
-explicit #ifdefs.  You already _have_ #ifdefs, but they're just up in
-the headers around PageTransHuge()'s definition.
-
-The advantages for you are *huge* since it means that folks will have a
-harder time inadvertently breaking your CONFIG_TRANSPARENT_HUGEPAGE code.
-
->> Does the cgroup code know how to handle these large pages internally
->> somehow?  It looks like the charge/uncharge is only being done for the
->> head page.
+> Nobody forces you to use a qdisc.
 > 
-> It can. We only need to remove PageCompound() check there. Patch is in
-> git.
+> And if your device really is lockless, it can use NETIF_F_LLTX feature.
 
-OK, cool.  This _might_ deserve a comment or something here.  Again, it
-looks asymmetric and fishy to someone just reading the code.
+
+        NETIF_F_LLTX_BIT,               /* LockLess TX - deprecated. Please */
+                                        /* do not use LLTX in new drivers */
+
+--
+Servergy  : http://www.servergy.com/
+SwissDisk : http://www.swissdisk.com/
+Ubuntu    : http://www.ubuntu.com/
+My Blog   : http://ben-collins.blogspot.com/
 
