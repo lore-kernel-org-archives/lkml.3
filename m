@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605Ab3CVNOJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 09:14:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47074 "EHLO mx1.redhat.com"
+	id S1754411Ab3CVNOq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 09:14:46 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:33592 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753876Ab3CVNOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 09:14:07 -0400
-Date: Fri, 22 Mar 2013 14:13:37 +0100
-From: Anton Arapov <anton@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: Re: [PATCH 7/7] uretprobes: implemented, thus remove -ENOSYS
-Message-ID: <20130322131337.GA7016@bandura.redhat.com>
-References: <1363957745-6657-1-git-send-email-anton@redhat.com>
- <1363957745-6657-8-git-send-email-anton@redhat.com>
+	id S1753876Ab3CVNOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 09:14:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Cc: linux-kernel@vger.kernel.org, andrew@lunn.ch, jason@lakedaemon.net,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] drivers: cpuidle: kirkwood: fix coccicheck warnings
+Date: Fri, 22 Mar 2013 14:22:05 +0100
+Message-ID: <3028121.Qzfv8ofGRj@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1363911175-12502-1-git-send-email-silviupopescu1990@gmail.com>
+References: <1363911175-12502-1-git-send-email-silviupopescu1990@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363957745-6657-8-git-send-email-anton@redhat.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  please disregard this one, not sure how it managed to hide within
-  the rest ones...
-
-sry,
-Anton.
-
-On Fri, Mar 22, 2013 at 02:09:04PM +0100, Anton Arapov wrote:
->   enclose return probes implementation
+On Friday, March 22, 2013 02:12:55 AM Silviu-Mihai Popescu wrote:
+> Convert all uses of devm_request_and_ioremap() to the newly introduced
+> devm_ioremap_resource() which provides more consistent error handling.
 > 
-> v3 changes: (the patch is introduced in v3)
->   - remove 'TODO' as return probes implemented now
+> devm_ioremap_resource() provides its own error messages so all explicit
+> error messages can be removed from the failure code paths.
 > 
-> Signed-off-by: Anton Arapov <anton@redhat.com>
+> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+
+Applied to linux-pm.git/bleeding-edge and will be moved to linux-next after
+build testing.
+
+Thanks,
+Rafael
+
+
 > ---
->  kernel/events/uprobes.c | 4 ----
->  1 file changed, 4 deletions(-)
+>  drivers/cpuidle/cpuidle-kirkwood.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 5fb7809..e13f9f8 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -840,10 +840,6 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
->  	if (!uc->handler && !uc->rp_handler)
+> diff --git a/drivers/cpuidle/cpuidle-kirkwood.c b/drivers/cpuidle/cpuidle-kirkwood.c
+> index 670aa1e..53aad73 100644
+> --- a/drivers/cpuidle/cpuidle-kirkwood.c
+> +++ b/drivers/cpuidle/cpuidle-kirkwood.c
+> @@ -66,9 +66,9 @@ static int kirkwood_cpuidle_probe(struct platform_device *pdev)
+>  	if (res == NULL)
 >  		return -EINVAL;
 >  
-> -	/* TODO: Implement return probes */
-> -	if (uc->rp_handler)
-> -		return -ENOSYS;
-> -
->  	/* Racy, just to catch the obvious mistakes */
->  	if (offset > i_size_read(inode))
->  		return -EINVAL;
-> -- 
-> 1.8.1.4
+> -	ddr_operation_base = devm_request_and_ioremap(&pdev->dev, res);
+> -	if (!ddr_operation_base)
+> -		return -EADDRNOTAVAIL;
+> +	ddr_operation_base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(ddr_operation_base))
+> +		return PTR_ERR(ddr_operation_base);
+>  
+>  	device = &per_cpu(kirkwood_cpuidle_device, smp_processor_id());
+>  	device->state_count = KIRKWOOD_MAX_STATES;
 > 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
