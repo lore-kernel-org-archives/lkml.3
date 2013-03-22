@@ -1,88 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899Ab3CVMDL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 08:03:11 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12791 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab3CVMDJ (ORCPT
+	id S1753483Ab3CVMDU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 08:03:20 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:47283 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426Ab3CVMDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 08:03:09 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 22 Mar 2013 05:02:58 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] clk: tegra: Don't enable PLLs during early boot
-Date: Fri, 22 Mar 2013 14:02:33 +0200
-Message-ID: <1363953762-29783-1-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-X-NVConfidentiality: public
+	Fri, 22 Mar 2013 08:03:17 -0400
+Message-ID: <514C4878.5000404@linux.vnet.ibm.com>
+Date: Fri, 22 Mar 2013 20:03:04 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Gleb Natapov <gleb@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v2 0/7] KVM: MMU: fast zap all shadow pages
+References: <1363768227-4782-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130321222151.GA19821@amt.cnet> <514BBDC5.6090104@linux.vnet.ibm.com> <20130322105436.GC7543@amt.cnet> <514C3C34.4080906@linux.vnet.ibm.com> <20130322112811.GV9382@redhat.com> <514C42EC.6000303@linux.vnet.ibm.com> <20130322114715.GW9382@redhat.com>
+In-Reply-To: <20130322114715.GW9382@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032211-3568-0000-0000-000003544534
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PLL code relies on udelay() which is not available when CCF is
-initialized. Hence we can't enable any PLL during this phase.
+On 03/22/2013 07:47 PM, Gleb Natapov wrote:
+> On Fri, Mar 22, 2013 at 07:39:24PM +0800, Xiao Guangrong wrote:
+>> On 03/22/2013 07:28 PM, Gleb Natapov wrote:
+>>> On Fri, Mar 22, 2013 at 07:10:44PM +0800, Xiao Guangrong wrote:
+>>>> On 03/22/2013 06:54 PM, Marcelo Tosatti wrote:
+>>>>
+>>>>>>
+>>>>>>>
+>>>>>>> And then have codepaths that nuke shadow pages break from the spinlock,
+>>>>>>
+>>>>>> I think this is not needed any more. We can let mmu_notify use the generation
+>>>>>> number to invalid all shadow pages, then we only need to free them after
+>>>>>> all vcpus down and mmu_notify unregistered - at this point, no lock contention,
+>>>>>> we can directly free them.
+>>>>>>
+>>>>>>> such as kvm_mmu_slot_remove_write_access does now (spin_needbreak).
+>>>>>>
+>>>>>> BTW, to my honest, i do not think spin_needbreak is a good way - it does
+>>>>>> not fix the hot-lock contention and it just occupies more cpu time to avoid
+>>>>>> possible soft lock-ups.
+>>>>>>
+>>>>>> Especially, zap-all-shadow-pages can let other vcpus fault and vcpus contest
+>>>>>> mmu-lock, then zap-all-shadow-pages release mmu-lock and wait, other vcpus
+>>>>>> create page tables again. zap-all-shadow-page need long time to be finished,
+>>>>>> the worst case is, it can not completed forever on intensive vcpu and memory
+>>>>>> usage.
+>>>>>
+>>>>> Yes, but the suggestion is to use spin_needbreak on the VM shutdown
+>>>>> cases, where there is no detailed concern about performance. Such as
+>>>>> mmu_notifier_release, kvm_destroy_vm, etc. In those cases what matters
+>>>>> most is that host remains unaffected (and that it finishes in a
+>>>>> reasonable time).
+>>>>
+>>>> Okay. I agree with you, will give a try.
+>>>>
+>>>>>
+>>>>>> I still think the right way to fix this kind of thing is optimization for
+>>>>>> mmu-lock.
+>>>>>
+>>>>> And then for the cases where performance matters just increase a
+>>>>> VM global generetion number, zap the roots and then on kvm_mmu_get_page:
+>>>>>
+>>>>> kvm_mmu_get_page() {
+>>>>> 	sp = lookup_hash(gfn)
+>>>>> 	if (sp->role = role) {
+>>>>> 		if (sp->mmu_gen_number != kvm->arch.mmu_gen_number) {
+>>>>> 			kvm_mmu_commit_zap_page(sp); (no need for TLB flushes as its unreachable)
+>>>>> 			kvm_mmu_init_page(sp);
+>>>>> 			proceed as if the page was just allocated
+>>>>> 		}
+>>>>> 	}
+>>>>> }
+>>>>>
+>>>>> It makes the kvm_mmu_zap_all path even faster than you have now.
+>>>>> I suppose this was your idea correct with the generation number correct?
+>>>>
+>>>> Wow, great minds think alike, this is exactly what i am doing. ;)
+>>>>
+>>> Not that I disagree with above code, but why not make mmu_gen_number to be
+>>> part of a role and remove old pages in kvm_mmu_free_some_pages() whenever
+>>> limit is reached like we looks to be doing with role.invalid pages now.
+>>
+>> These pages can be reused after purge its entries and delete it from parents
+>> list, it can reduce the pressure of memory allocator. Also, we can move it to
+>> the head of active_list so that the pages with invalid_gen can be reclaimed first.
+>>
+> You mean tail of the active_list, since kvm_mmu_free_some_pages()
+> removes pages from tail? Since pages with new mmu_gen_number will be put
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+I mean purge the invalid-gen page first, then update its valid-gen to current-gen,
+then move it to the head of active_list:
 
---
+kvm_mmu_get_page() {
+	sp = lookup_hash(gfn)
+	if (sp->role = role) {
+		if (sp->mmu_gen_number != kvm->arch.mmu_gen_number) {
+			kvm_mmu_purge_page(sp); (no need for TLB flushes as its unreachable)
+			sp->mmu_gen_number = kvm->arch.mmu_gen_number;
+			@@@@@@ move sp to the head of active list @@@@@@
+		}
+	}
+}
 
-Stephen,
 
-Can you confirm this is ok for the audio drivers?
+> at the head of the list it is natural that tail will contain pages with
+> outdated generation numbers without need to explicitly move them.
 
-We used to be lucky that this has worked up to now, but I will introduce some
-changes to the pll lock check code which cause this to fail due to the
-slight differences in timing.
-
----
- drivers/clk/tegra/clk-tegra20.c |    4 ++--
- drivers/clk/tegra/clk-tegra30.c |    8 ++++----
- 2 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegra20.c
-index b92d48b..7cc76b0 100644
---- a/drivers/clk/tegra/clk-tegra20.c
-+++ b/drivers/clk/tegra/clk-tegra20.c
-@@ -1230,8 +1230,8 @@ static __initdata struct tegra_clk_init_table init_table[] = {
- 	{usbd, clk_max, 12000000, 0},
- 	{usb2, clk_max, 12000000, 0},
- 	{usb3, clk_max, 12000000, 0},
--	{pll_a, clk_max, 56448000, 1},
--	{pll_a_out0, clk_max, 11289600, 1},
-+	{pll_a, clk_max, 56448000, 0},
-+	{pll_a_out0, clk_max, 11289600, 0},
- 	{cdev1, clk_max, 0, 1},
- 	{blink, clk_max, 32768, 1},
- 	{i2s1, pll_a_out0, 11289600, 0},
-diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
-index ba6f51b..b705408 100644
---- a/drivers/clk/tegra/clk-tegra30.c
-+++ b/drivers/clk/tegra/clk-tegra30.c
-@@ -1882,11 +1882,11 @@ static __initdata struct tegra_clk_init_table init_table[] = {
- 	{uartc, pll_p, 408000000, 0},
- 	{uartd, pll_p, 408000000, 0},
- 	{uarte, pll_p, 408000000, 0},
--	{pll_a, clk_max, 564480000, 1},
--	{pll_a_out0, clk_max, 11289600, 1},
--	{extern1, pll_a_out0, 0, 1},
-+	{pll_a, clk_max, 564480000, 0},
-+	{pll_a_out0, clk_max, 11289600, 0},
-+	{extern1, pll_a_out0, 0, 0},
- 	{clk_out_1_mux, extern1, 0, 0},
--	{clk_out_1, clk_max, 0, 1},
-+	{clk_out_1, clk_max, 0, 0},
- 	{blink, clk_max, 0, 1},
- 	{i2s0, pll_a_out0, 11289600, 0},
- 	{i2s1, pll_a_out0, 11289600, 0},
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+Currently, only the new allocated page can be moved to the head of
+active_list. The existing pages are not moved by kvm_mmu_get_page.
+It seems a bug.
 
