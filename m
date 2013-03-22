@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933374Ab3CVOWI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 10:22:08 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:39225 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932116Ab3CVOWF convert rfc822-to-8bit (ORCPT
+	id S933384Ab3CVOXS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 10:23:18 -0400
+Received: from mail-da0-f50.google.com ([209.85.210.50]:65275 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932928Ab3CVOXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 10:22:05 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Subject: Re: [PATCH] phy: Add XGMII phy interface type
-From: Ben Collins <benmcollins13@gmail.com>
-In-Reply-To: <20130322.101900.1947638393872492900.davem@davemloft.net>
-Date: Fri, 22 Mar 2013 10:22:05 -0400
+	Fri, 22 Mar 2013 10:23:16 -0400
+Message-ID: <1363962193.4431.59.camel@edumazet-glaptop>
+Subject: Re: [PATCH] net: Add support for handling queueing in hardware
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andy Fleming <afleming@freescale.com>
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9CC1FA76-1620-4E0F-82DC-89535633329F@gmail.com>
-References: <E1UJ1fR-0004hy-AI@swissweb.swissdisk.com> <20130322.101259.1120794715082991238.davem@davemloft.net> <5BDCE647-67A3-423B-AB9C-8C50CC0B6C02@gmail.com> <20130322.101900.1947638393872492900.davem@davemloft.net>
-To: David Miller <davem@davemloft.net>
-X-Mailer: Apple Mail (2.1499)
+Date: Fri, 22 Mar 2013 07:23:13 -0700
+In-Reply-To: <E1UJ1fR-0004hs-4l@swissweb.swissdisk.com>
+References: <E1UJ1fR-0004hs-4l@swissweb.swissdisk.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mar 22, 2013, at 10:19 AM, David Miller <davem@davemloft.net> wrote:
-
-> From: Ben Collins <benmcollins13@gmail.com>
-> Date: Fri, 22 Mar 2013 10:17:35 -0400
+On Wed, 2011-07-13 at 08:52 -0500, Andy Fleming wrote:
+> The QDisc code does a bunch of locking which is unnecessary if
+> you have hardware which handles all of the queueing. Add
+> support for this, and skip over all of the queueing code if
+> the feature is enabled on a given device, which breaks QDisc
+> support on dpaa_eth, and also coopts the FCOE feature bit.
 > 
->> On Mar 22, 2013, at 10:12 AM, David Miller <davem@davemloft.net> wrote:
->> 
->>> From: Ben Collins <ben.c@servergy.com>
->>> Date: Mon, 18 Mar 2013 19:53:42 -0400
->>> 
->>>> Used by systems based on certain Freescale SoCs (specifically the
->>>> Servergy CTS-1000 system).
->>>> 
->>>> Signed-off-by: Ben Collins <ben.c@servergy.com>
->>> 
->>> You can resubmit this patch when you submit a driver upstream that
->>> uses it, so we can see what the use case looks like.
->> 
->> That patch is getting sent soon. It's starting out in staging. Should I Cc you on that?
+> Signed-off-by: Andy Fleming <afleming@freescale.com>
+> Signed-off-by: Ben Collins <ben.c@servergy.com>
+> Cc: netdev@vger.kernel.org
+> ---
+>  include/linux/netdev_features.h | 2 ++
+>  net/core/dev.c                  | 6 ++++++
+>  2 files changed, 8 insertions(+)
 > 
-> Why don't you wait until the driver is good enough for drivers/net proper?
+> diff --git a/include/linux/netdev_features.h b/include/linux/netdev_features.h
+> index 3dd3934..ffb4587 100644
+> --- a/include/linux/netdev_features.h
+> +++ b/include/linux/netdev_features.h
+> @@ -56,6 +56,7 @@ enum {
+>  	NETIF_F_LOOPBACK_BIT,		/* Enable loopback */
+>  	NETIF_F_RXFCS_BIT,		/* Append FCS to skb pkt data */
+>  	NETIF_F_RXALL_BIT,		/* Receive errored frames too */
+> +	NETIF_F_HW_QDISC_BIT,		/* Supports hardware Qdisc */
+>  
+>  	/*
+>  	 * Add your fresh new feature above and remember to update
+> @@ -80,6 +81,7 @@ enum {
+>  #define NETIF_F_GSO_ROBUST	__NETIF_F(GSO_ROBUST)
+>  #define NETIF_F_HIGHDMA		__NETIF_F(HIGHDMA)
+>  #define NETIF_F_HW_CSUM		__NETIF_F(HW_CSUM)
+> +#define NETIF_F_HW_QDISC	__NETIF_F(HW_QDISC)
+>  #define NETIF_F_HW_VLAN_FILTER	__NETIF_F(HW_VLAN_FILTER)
+>  #define NETIF_F_HW_VLAN_RX	__NETIF_F(HW_VLAN_RX)
+>  #define NETIF_F_HW_VLAN_TX	__NETIF_F(HW_VLAN_TX)
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index dffbef7..6818b18 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -2743,6 +2743,12 @@ int dev_queue_xmit(struct sk_buff *skb)
+>  
+>  	skb_update_prio(skb);
+>  
+> +	if (dev->features & NETIF_F_HW_QDISC) {
+> +		txq = netdev_pick_tx(dev, skb);
+> +		rc = dev_hard_start_xmit(skb, dev, txq);
+> +		goto out;
+> +	}
+> +
+>  	txq = netdev_pick_tx(dev, skb);
+>  	q = rcu_dereference_bh(txq->qdisc);
+>  
+
+Nobody forces you to use a qdisc.
+
+And if your device really is lockless, it can use NETIF_F_LLTX feature.
 
 
-It's code that I've manually stripped down as a subset of a larger code base for Freescale's DPAA driver. I've only tested it on our (Servergy's) platform, so until it gets more broad testing (and some code review), I want to at least get it into staging so our hardware is supported.
-
---
-Servergy  : http://www.servergy.com/
-SwissDisk : http://www.swissdisk.com/
-Ubuntu    : http://www.ubuntu.com/
-My Blog   : http://ben-collins.blogspot.com/
 
