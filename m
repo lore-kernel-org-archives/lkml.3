@@ -1,81 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755115Ab3CVTMr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 15:12:47 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:17325
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754928Ab3CVTMp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 15:12:45 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Stuart Yoder <stuart.yoder@freescale.com>
-To: <mikey@neuling.org>
-CC: <chen.gang.flying.transformer@gmail.com>, <galak@kernel.crashing.org>,
-        <gang.chen@asianux.com>, <benh@kernel.crashing.org>,
-        <sfr@canb.auug.org.au>, <paulus@samba.org>, <matt@ozlabs.org>,
-        <imunsie@au1.ibm.com>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>,
-        Stuart Yoder <stuart.yoder@freescale.com>
-Subject: [PATCH] PPC: define the conditions where the ePAPR idle hcall can be supported
-Date: Fri, 22 Mar 2013 14:12:13 -0500
-Message-ID: <1363979533-24485-1-git-send-email-stuart.yoder@freescale.com>
-X-Mailer: git-send-email 1.7.9.7
+	id S1755210Ab3CVTPJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 15:15:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53016 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755102Ab3CVTPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 15:15:06 -0400
+Date: Fri, 22 Mar 2013 12:14:56 -0700
+From: Zach Brown <zab@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] nfsd: fix bad offset use
+Message-ID: <20130322191456.GU10038@lenny.home.zabbo.net>
+References: <1363976304-26093-1-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363976304-26093-1-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stuart Yoder <stuart.yoder@freescale.com>
+On Fri, Mar 22, 2013 at 11:18:24AM -0700, Kent Overstreet wrote:
+> vfs_writev() updates the offset argument - but the code then passes the
+> offset to vfs_fsync_range(). Since offset now points to the offset after
+> what was just written, this is probably not what was intended
 
-For 32-bit, CONFIG_EPAPR_PARAVIRT pulls in both epapr_paravirt.c
-and epapr_hcalls.c which contains the 32-bit paravirt idle loop.
+Agreed, the original code does look fishy and this fix right to me.
 
-For 64-bit, the paravirt idle loop is in idle_book3e.S and that
-source file is included only if CONFIG_PPC_BOOK3E_64 defined.
+Reviewed-by: Zach Brown <zab@redhat.com> 
 
-This patch makes that dependency for 64-bit explicit.
-
-Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
----
- arch/powerpc/kernel/epapr_paravirt.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/arch/powerpc/kernel/epapr_paravirt.c b/arch/powerpc/kernel/epapr_paravirt.c
-index f3eab85..d44a571 100644
---- a/arch/powerpc/kernel/epapr_paravirt.c
-+++ b/arch/powerpc/kernel/epapr_paravirt.c
-@@ -23,8 +23,10 @@
- #include <asm/code-patching.h>
- #include <asm/machdep.h>
- 
-+#if !defined(CONFIG_64BIT) || defined(CONFIG_PPC_BOOK3E_64)
- extern void epapr_ev_idle(void);
- extern u32 epapr_ev_idle_start[];
-+#endif
- 
- bool epapr_paravirt_enabled;
- 
-@@ -47,11 +49,15 @@ static int __init epapr_paravirt_init(void)
- 
- 	for (i = 0; i < (len / 4); i++) {
- 		patch_instruction(epapr_hypercall_start + i, insts[i]);
-+#if !defined(CONFIG_64BIT) || defined(CONFIG_PPC_BOOK3E_64)
- 		patch_instruction(epapr_ev_idle_start + i, insts[i]);
-+#endif
- 	}
- 
-+#if !defined(CONFIG_64BIT) || defined(CONFIG_PPC_BOOK3E_64)
- 	if (of_get_property(hyper_node, "has-idle", NULL))
- 		ppc_md.power_save = epapr_ev_idle;
-+#endif
- 
- 	epapr_paravirt_enabled = true;
- 
--- 
-1.7.9.7
-
-
+- z
