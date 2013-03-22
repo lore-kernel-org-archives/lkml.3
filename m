@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933811Ab3CVPxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 11:53:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36761 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933516Ab3CVPxo (ORCPT
+	id S933854Ab3CVPx4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 11:53:56 -0400
+Received: from mail-da0-f53.google.com ([209.85.210.53]:47219 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933516Ab3CVPxx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 11:53:44 -0400
-From: Dave Chiluk <chiluk@canonical.com>
-To: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] NFSv4: Fix the string length returned by the idmapper
-Date: Fri, 22 Mar 2013 10:53:32 -0500
-Message-Id: <1363967612-28488-1-git-send-email-chiluk@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 22 Mar 2013 11:53:53 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+Subject: Re: [PATCH] net: Add support for handling queueing in hardware
+From: Ben Collins <benmcollins13@gmail.com>
+In-Reply-To: <20130322.114159.2303026992656610194.davem@davemloft.net>
+Date: Fri, 22 Mar 2013 11:53:54 -0400
+Cc: afleming@freescale.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <14243FE7-A0A6-4C0C-AEFB-95F19C8898E3@gmail.com>
+References: <FE78128C-01DB-4831-ACBE-BA3E3A428BFC@gmail.com> <20130322.111759.2108472348146991505.davem@davemloft.net> <9AEAD974-4549-475A-AE15-C92523CD2466@gmail.com> <20130322.114159.2303026992656610194.davem@davemloft.net>
+To: David Miller <davem@davemloft.net>
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-Functions like nfs_map_uid_to_name() and nfs_map_gid_to_group() are
-expected to return a string without any terminating NUL character.
-Regression introduced by commit 57e62324e469e092ecc6c94a7a86fe4bd6ac5172
-(NFS: Store the legacy idmapper result in the keyring).
+On Mar 22, 2013, at 11:41 AM, David Miller <davem@davemloft.net> wrote:
 
-This fixes inability to chown on chgrp files on AIX nfs shares.
+> From: Ben Collins <benmcollins13@gmail.com>
+> Date: Fri, 22 Mar 2013 11:39:20 -0400
+> 
+>> If your company had hardware going to production, you'd want it
+>> supported in mainline too, I suspect.
+> 
+> But never against the wishes of the author of the code.
+> 
+> This has firm and strict precedence, for example one of the
+> implementations block layer encryption was not wanted to be merged by
+> the author, and Linus reverted it.
+> 
+> So if the person who wrote the code doesn't want it upstream, you can't
+> bypass them against their wishes, ever.  It's their code not your's.
 
-Reported-by: Dave Chiluk <dave.chiluk@canonical.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Bryan Schumaker <bjschuma@netapp.com>
-Cc: stable@vger.kernel.org [>=3.4]
----
- fs/nfs/idmap.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+They never made such a statement. The commit (which is publicly available in Freescale's git repo) makes no mention of it being "good enough for our SDK, but don't send upstream". Freescale wants this upstream, but doesn't have the resources because they are embedded focused and gear more toward SDKs to support their SoCs (currently that means a 3.0.x kernel).
 
-diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
-index dc0f98d..99e9ec6 100644
---- a/fs/nfs/idmap.c
-+++ b/fs/nfs/idmap.c
-@@ -726,9 +726,10 @@ out1:
- 	return ret;
- }
- 
--static int nfs_idmap_instantiate(struct key *key, struct key *authkey, char *data)
-+static int nfs_idmap_instantiate(struct key *key, struct key *authkey,
-+		char *data, size_t datalen)
- {
--	return key_instantiate_and_link(key, data, strlen(data) + 1,
-+	return key_instantiate_and_link(key, data, datalen,
- 					id_resolver_cache->thread_keyring,
- 					authkey);
- }
-@@ -738,6 +739,7 @@ static int nfs_idmap_read_and_verify_message(struct idmap_msg *im,
- 		struct key *key, struct key *authkey)
- {
- 	char id_str[NFS_UINT_MAXLEN];
-+	size_t len;
- 	int ret = -ENOKEY;
- 
- 	/* ret = -ENOKEY */
-@@ -747,13 +749,15 @@ static int nfs_idmap_read_and_verify_message(struct idmap_msg *im,
- 	case IDMAP_CONV_NAMETOID:
- 		if (strcmp(upcall->im_name, im->im_name) != 0)
- 			break;
--		sprintf(id_str, "%d", im->im_id);
--		ret = nfs_idmap_instantiate(key, authkey, id_str);
-+		/* Note: here we store the NUL terminator too */
-+		len = sprintf(id_str, "%d", im->im_id) + 1;
-+		ret = nfs_idmap_instantiate(key, authkey, id_str, len);
- 		break;
- 	case IDMAP_CONV_IDTONAME:
- 		if (upcall->im_id != im->im_id)
- 			break;
--		ret = nfs_idmap_instantiate(key, authkey, im->im_name);
-+		len = strlen(im->im_name);
-+		ret = nfs_idmap_instantiate(key, authkey, im->im_name, len);
- 		break;
- 	default:
- 		ret = -EINVAL;
--- 
-1.7.9.5
+Don't accuse me of something I didn't do. Also, if there's a patch that makes my hardware work, but I can't use it because (even though it's open source licensed) the author doesn't want it in mainline, then that is effectively squatting.
+
+We are a hardware company. We've been provided with a driver for the platform we designed by the SoC vendor. It's GPL licensed. We've attempted to get this done by them, but they haven't been able to, so we are exercising prudence and making sure our platform is supported in mainline. I don't see where that's any different than tons of other patches that go into the kernel.
+
+If it makes everyone feel better, I'll limit attribution in the patches to just an Originally-By: line.
+
+--
+Servergy  : http://www.servergy.com/
+SwissDisk : http://www.swissdisk.com/
+Ubuntu    : http://www.ubuntu.com/
+My Blog   : http://ben-collins.blogspot.com/
 
