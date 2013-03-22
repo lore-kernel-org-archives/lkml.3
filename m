@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab3CVKit (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 06:38:49 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:50759 "EHLO
+	id S932254Ab3CVKjm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 06:39:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:50570 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808Ab3CVKis (ORCPT
+	with ESMTP id S1753974Ab3CVKjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 06:38:48 -0400
-Date: Fri, 22 Mar 2013 11:38:43 +0100
+	Fri, 22 Mar 2013 06:39:41 -0400
+Date: Fri, 22 Mar 2013 11:39:37 +0100
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: Jingoo Han <jg1.han@samsung.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] pwm: pwm-tiecap: add CONFIG_PM_SLEEP to
- suspend/resume functions
-Message-ID: <20130322103843.GB4567@avionic-0098.mockup.avionic-design.de>
-References: <005301ce1dfd$f306bec0$d9143c40$%han@samsung.com>
+Subject: Re: [PATCH] pwm: ab8500: use devm_kzalloc()
+Message-ID: <20130322103937.GC4567@avionic-0098.mockup.avionic-design.de>
+References: <000001ce1baf$71e96130$55bc2390$%han@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xXmbgvnjoT4axfJE"
+	protocol="application/pgp-signature"; boundary="p2kqVDKq5asng8Dg"
 Content-Disposition: inline
-In-Reply-To: <005301ce1dfd$f306bec0$d9143c40$%han@samsung.com>
+In-Reply-To: <000001ce1baf$71e96130$55bc2390$%han@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:kn+9sRAUJUmeYg/QsNomn+D57AXCZjHWfAGaZGLunTa
- 0P41wlHWysAtUFAXsvn7TMR7DTY1ATAnS2w+BGRRHpX5Y3gxjs
- VdWOPYEoZQJZY2j/xCg/12Qx+NSZPyQoDzC6PFgwEAsv4LKMyl
- z+CtD2odmBt48XNuOzKsnLrAMddy0CC6L4hMsTPm4jtt2/V3Zt
- kiBE95R4j97/nPehBSoCXLDdkH0WnQhAZ1mn659msMYQ9ENhwx
- zx8/A3z64eHWnDtkoOzMGJVmznxjEHGXx27P4jWlZbohSmKZND
- 8o1di5Kn+ilZ65MOve4DMEeXfdNHDtAjIV9KlMOSdK7uk80clJ
- hKVKIqiHBUsubfMAuMD9Mb+/sLVTTZx1Iauw5nm2O8k5viJwOd
- lKlAI6EmdO4xsaNd6M/GVu/Udj9/AGVdxA=
+X-Provags-ID: V02:K0:qxLtlnjld9RqRi6t7tKfevaONscADE+CeZEOF/WuhIj
+ 3HEncqJY6rWZ4nZGGH7oY5UBX853rDhEUclanCrNH572YfrPZL
+ QaRvfXwtZ0rRnQuMGvbZRBBR+jGGzRgyr7Qp9TqVkDBVPWfCB2
+ f1df6cG+tbV/G5KseQD1B8plNseGqNBHQHeCV0/EhlqhxTNDJt
+ c7JKwTmA0Y/UYGB7jpLVKRHWtRxZK9dnjnI/S4gpHXuPUFT0sH
+ +3R3sH/Ocj5/uH65m09twyU06rUCtRqAjzqrR5fhBP/AdoHPy4
+ IgHPGh9DrelanLmMjGXr7vwqFT4WQMPtlcbNxQXGH38OhPmUn+
+ 7lgipoF1gPyrWbCmjksIjuOHKa45rrclEe/HibAOAiwmjXFN/9
+ wRp2Gdwp0fmxHb0H7HT2l7t+zjVJDDF2W4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---xXmbgvnjoT4axfJE
+--p2kqVDKq5asng8Dg
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Mar 11, 2013 at 11:12:58AM +0900, Jingoo Han wrote:
-> This patch adds CONFIG_PM_SLEEP to suspend/resume functions to fix
-> the following build warning when CONFIG_PM_SLEEP is not selected.
->=20
-> drivers/pwm/pwm-tiecap.c:314:12: warning: 'ecap_pwm_suspend' defined but =
-not used [-Wunused-function]
-> drivers/pwm/pwm-tiecap.c:328:12: warning: 'ecap_pwm_resume' defined but n=
-ot used [-Wunused-function]
+On Fri, Mar 08, 2013 at 12:45:58PM +0900, Jingoo Han wrote:
+> Use devm_kzalloc() to make cleanup paths more simple.
 >=20
 > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 > ---
->  drivers/pwm/pwm-tiecap.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+>  drivers/pwm/pwm-ab8500.c |    7 ++-----
+>  1 files changed, 2 insertions(+), 5 deletions(-)
 
-All 3 patches applied, thanks.
+Applied, thanks.
 
 Thierry
 
---xXmbgvnjoT4axfJE
+--p2kqVDKq5asng8Dg
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRTDSzAAoJEN0jrNd/PrOhNccP/jDqB5FInM/Y0nFXFJJqMwpB
-kuIeOhP0BwiDlIbZjYoLWxiqzSXmIf/XusoCi9ltNlzKHOf4oOOmC58HA9C8Jrvx
-kHwy9Rh+wiqnuiVB5QIDkUxYzgl2aemnxQ+O9fqoQLam3xIUXLNTIEGPna7ZOFgV
-xDbCRBYcOtl08dPB8IRxaP1TniHrRccpLsvVN7zqQIOMBjG28d1CAO9AvajRRRcL
-OAe0lJfnVJNbzOjn3MlIZCdp9dTKjNee2Fyc+u40kcL3W6oEXm85vD0E9sHc6plX
-D0ije6aGN6O2T1LWl6aHJxrgeheVtnHaXUYIs/6fdGq7yUKfVNEDJ+tE9HfUcruo
-4lEvmiNZp9n67x5UpmA90znjKLLlwjQx89FdLjfWxSwJyQAAuos+/xH7RZZrPP3S
-DDo4QOfj2BkY7fQPfFNvyWqKu+dmDZeQ9JO72t062gdagC7H64ANlVJ12aiOlsr8
-ziJ2K917LbknvMeInmcqeF1towPif8ihKSWbNXo4APnNG2ygaFlVwIh3A39GiMqF
-Gc1xJpG7e6uIwqrXRuA6PsN6806vQ8fG+QLTFVRLhODbbvYqOfOR4zbC2OjbnTl/
-RgBFD5ZDCzZ7CxfQ5OcAf0d5dNT13Kg1bqvPyk6de7DAwuKYgz36KRyO/iWUdwXa
-bBPIdXKNQFpS91nabyOD
-=/f8P
+iQIcBAEBAgAGBQJRTDTpAAoJEN0jrNd/PrOhW+oQAJscXxBzmQHJqjf/sJJXLLgj
+K08MjFjrh8CIo3wLassctXknoBaL8H8sPWlsYdHlBRv/gWv8aO2hj57v+hfdq6Mi
+V8OLYIQIRJiyGwIjjZV7R/fLQWYICQOXDe+Cyx6XfjpPiYVWN0SIgvjDhUzCr2/2
+j1GtfqtymC6l72YAlIXIVs4tZdbHwpSgHYVxCRF08rJtel924TQAXuPIlb4mJOif
+eswoc3sAzQ+5VBIgGghpsATOz+6CzuaLmaVk0X3RDJSb0lO44HeAwng7VOsTLz2G
+l6lf3h+vLRBsP9rMqvVw98ZjrnA6o4ztoC+QHNP/Qq5cOoaV+ipsR5brZ+aH4kaP
+hg2TafOLAwHx9POa8lC0h8aKefgVoKgGkSsrqyFAXjKMFhzuoeVvZ++B9WBMk4he
+pPwc5PniIj0BO7JnoOSd8ADQvBe9fmexq56dbBmJytoPIneEHRejMjJBehJ5u9G8
+nkNcLJm5vruMCrdhXpR5kW/35ZPkYb/PsSiKSWIP5fxwXYzDJvNRp6vzSFlS6ZwX
+c09K5ijzD6FlD3BeA3WBcG1VANpjPB91Z20QjRoKlU04VL21/Ov180mKOML7Eon9
+O0v/W1KInJ7LAhim3g1YVikL7LBa0naDqzdToT4TRyanW2+bQs8KRRDOaqe9iMGn
+RuLuF5q2wqjNkJrYI/h1
+=y3lp
 -----END PGP SIGNATURE-----
 
---xXmbgvnjoT4axfJE--
+--p2kqVDKq5asng8Dg--
