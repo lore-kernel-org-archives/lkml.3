@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab3CVFUT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 01:20:19 -0400
-Received: from ozlabs.org ([203.10.76.45]:33882 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752534Ab3CVFUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 01:20:14 -0400
-Date: Fri, 22 Mar 2013 16:20:11 +1100
-From: Tony Breeds <tony@bakeyournoodle.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 02/34] arch: Consolidate tsk_is_polling()
-Message-ID: <20130322052010.GB31022@thor.bakeyournoodle.com>
-Mail-Followup-To: Thomas Gleixner <tglx@linutronix.de>,
-	LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Rusty Russell <rusty@rustcorp.com.au>,
-	Paul McKenney <paulmck@linux.vnet.ibm.com>,
-	Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-	"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	Magnus Damm <magnus.damm@gmail.com>
-References: <20130321214930.752934102@linutronix.de>
- <20130321215233.446034505@linutronix.de>
+	id S1753712Ab3CVFd3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 01:33:29 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:57054 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753340Ab3CVFd2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 01:33:28 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="neYutvxvOLaeuPCA"
-Content-Disposition: inline
-In-Reply-To: <20130321215233.446034505@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130322051817.GM21522@ZenIV.linux.org.uk>
+References: <20130321233630.GE21522@ZenIV.linux.org.uk>
+	<CA+55aFyLJ9vVm1T994EaE4tnEbV8rHj43m+cWsFFBi_qndao1A@mail.gmail.com>
+	<CA+55aFyWNkOnrQ41xCAU8q5sVXdq1-u2P8n+quLY50OdiFo3Zw@mail.gmail.com>
+	<20130322001257.GH21522@ZenIV.linux.org.uk>
+	<CA+55aFz5Ce7h2ja0m++tENXuG-1d346VNu9N=ZKy2UfojaSf0g@mail.gmail.com>
+	<20130322012208.GJ21522@ZenIV.linux.org.uk>
+	<CA+55aFzPD08kJi=x8wLBi5FAjr1TqSGXWbv5KXy5Ymm0PJL0wA@mail.gmail.com>
+	<20130322014037.GK21522@ZenIV.linux.org.uk>
+	<20130322043715.GL21522@ZenIV.linux.org.uk>
+	<CA+55aFzUobqDR0RSh8t18m32BdTvm4k7j2PCseXpFVCH_gR=Fw@mail.gmail.com>
+	<20130322051817.GM21522@ZenIV.linux.org.uk>
+Date: Thu, 21 Mar 2013 22:33:27 -0700
+X-Google-Sender-Auth: IQOe1dUn8c4xFoPfci_oDJUv9OQ
+Message-ID: <CA+55aFzbV81KQh_f0=wti9=_6=PXu37z0+NJymhDvzv13GgpuA@mail.gmail.com>
+Subject: Re: [CFT] Re: VFS deadlock ?
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 21, 2013 at 10:18 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>>
+>> This seems too simple, but I don't see why iget_locked() would be any
+>> better. It just wastes time hashing the inode that we aren't really
+>> interested in hashing. The inode is always filled by the caller
+>> anyway, so we migth as well just get a fresh pseudo-filesystem inode
+>> without any crazy hashing..
+>
+> Umm...
+> static int proc_delete_dentry(const struct dentry * dentry)
+> {
+>         return 1;
+> }
+>
+> static const struct dentry_operations proc_dentry_operations =
+> {
+>         .d_delete       = proc_delete_dentry,
+> };
+>
+> IOW, dcache retention in procfs is inexistent and the damn thing tries
+> to cut down on the amount of inode allocation/freeing/filling.
 
---neYutvxvOLaeuPCA
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok, that's kind of ugly, but shouldn't be a correctness issue. It
+should still work - just cycle through inodes quite aggressivelydue to
+no longer re-using them - so I suspect Dave could test it (with the
+extra line removed I pointed out just a moment ago).
 
-On Thu, Mar 21, 2013 at 09:52:57PM -0000, Thomas Gleixner wrote:
-=20
-> +/*
-> + * Idle thread specific functions to determine the need_resched
-> + * polling state. We have two versions, one based on TS_POLLING in
-> + * thread_info.status and one based on TIF_POLLING_NRFLAG in
-> + * thread_info.flags
-> + */
-> +#ifdef TS_POLLING
-> +static inline int tsk_is_polling(struct task_struct *p)
-> +{
-> +	return task_thread_info(p)->status & TS_POLLING;
-> +}
-> +#elif defined(TIF_POLLING_NRFLAG)
-> +static inline int tsk_is_polling(struct task_struct *p)
-> +{
-> +	test_tsk_thread_flag(p, TIF_POLLING_NRFLAG);
-> +}
+And I wonder how big of a deal the aggressive dentry deletion is.
+Maybe it's even ok to allocate/free the inodes all the time. The whole
+"get the inode hash lock and look it up there" can't be all that
+wonderful either. It takes the inode->i_lock for each entry it finds
+on the hash list, which looks horrible. I suspect our slab allocator
+isn't much worse than that, although the RCU freeing of the inodes
+could end up being problematic.
 
-On powerpc (at least) this is used before it's declared.  Also I think
-you're missing a 'return' in that function.
-
-*cough* https://www.kernel.org/pub/tools/crosstool/ *cough*
-
-Yours Tony
-
---neYutvxvOLaeuPCA
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRS+oKAAoJEEsCiJRY75GKRQMQAI6f6lV/cIRU2zTZYJ9SGCkI
-yvaP28K4yJYofT4jDkWVKd8iQOICm2UXik4j5H+8wXOUo7rgN7NvfRiiZWVlbe4H
-1GI8Kw/+7nhNuS/f/Mud/wK+81Nkx907kT+5cttqszOawepoOrX0/UTMRerfEHhN
-P7sRspjQULKvGJ6MrsMyIXO0fJzb3B9BT8b1CmjLxJbSp+aLz9c/E4ho4QY4yi41
-0T7z/44u/YLEGwxU7IUNJaXoL211vc7fUXObSjTY8Mcnv4iciyOOI6bLOwfHaPQp
-jJ/A3ZcNXHoRWlg/gGGJtQA6RLvQdLpcr7RyY9782GPy4aORxV+JfQWKaXZlo/CJ
-KKdsmYkdCgWpqqTPiMry6rnOtMOASaR7EmSz9KqBdocpYlEjC39k4q+t29cZKV2g
-W9ThFaNIBHJD313bGLyWciLO7b6HNA8EloHDMfEV/GrLyGzAAgUMTI6oCUaWnYcY
-+4rItpcG0LSdpxuggCtoGOO7mIyuvJgZmfDgz52H3tollTuMWcN00bEASBoKwhn2
-O845JKv5axf6OvzCDuumM+IOeGANASMJKh0EVDQWUI+H1onHlAZxBiyrXHEdTg0r
-NDtPC0RCTYxuO6MILVBmmgg0PWjYLq2biPN4jxr+oprcnbFtUYnyIGJSC8js9WI6
-Sbtj99g0lI6jp3wBI8Dc
-=x4VK
------END PGP SIGNATURE-----
-
---neYutvxvOLaeuPCA--
+                    Linus
