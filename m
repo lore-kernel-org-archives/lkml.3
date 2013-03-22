@@ -1,32 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422646Ab3CVQhQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 12:37:16 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42246 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1160998Ab3CVQhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 12:37:13 -0400
-Date: Fri, 22 Mar 2013 16:36:05 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [BUGFIX PATCH] ARM: OMAP: fix type of return values in
-	omap_device_get_by_hwmod_name()
-Message-ID: <20130322163605.GM30923@n2100.arm.linux.org.uk>
-References: <1363867990-24593-1-git-send-email-LW@KARO-electronics.de>
+	id S1161043Ab3CVQjL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 12:39:11 -0400
+Received: from void.printf.net ([89.145.121.20]:34026 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1160998Ab3CVQjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 12:39:09 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Cc: Tony Prisk <linux@prisktech.co.nz>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: mmc: host: Use resource_size()
+References: <1363043094-11352-1-git-send-email-gheorghiuandru@gmail.com>
+Date: Fri, 22 Mar 2013 12:39:06 -0400
+In-Reply-To: <1363043094-11352-1-git-send-email-gheorghiuandru@gmail.com>
+	(Alexandru Gheorghiu's message of "Tue, 12 Mar 2013 01:04:54 +0200")
+Message-ID: <87hak3o0d1.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1363867990-24593-1-git-send-email-LW@KARO-electronics.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 01:13:10PM +0100, Lothar Waßmann wrote:
-> The merge bda5e141fbe96295c669692114d18687730269fb erroneously changed
+Hi,
 
-Don't forget that commit's description as well...
+On Mon, Mar 11 2013, Alexandru Gheorghiu wrote:
+> Used resource_size function instead of explicit computation.
+> Patch found using coccinelle.
+>
+> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+> ---
+>  drivers/mmc/host/wmt-sdmmc.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/mmc/host/wmt-sdmmc.c b/drivers/mmc/host/wmt-sdmmc.c
+> index 154f0e8..541e097 100644
+> --- a/drivers/mmc/host/wmt-sdmmc.c
+> +++ b/drivers/mmc/host/wmt-sdmmc.c
+> @@ -925,7 +925,7 @@ static int wmt_mci_remove(struct platform_device *pdev)
+>  	clk_put(priv->clk_sdmmc);
+>  
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	release_mem_region(res->start, res->end - res->start + 1);
+> +	release_mem_region(res->start, resource_size(res));
+>  
+>  	mmc_free_host(mmc);
+
+Thanks, pushed to mmc-next for 3.10.
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
