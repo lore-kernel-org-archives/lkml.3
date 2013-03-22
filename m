@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161087Ab3CVRDT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 13:03:19 -0400
-Received: from void.printf.net ([89.145.121.20]:43792 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161066Ab3CVRDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 13:03:18 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Sergey Yanovich <ynvich@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
+	id S1161090Ab3CVRGl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 13:06:41 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54919 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161016Ab3CVRGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 13:06:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Ball <cjb@laptop.org>
+Subject: Re: FW: Regulator API ignored return values
+Date: Fri, 22 Mar 2013 17:06:27 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: Kevin Liu <keyuan.liu@gmail.com>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Linus Walleij <linus.walleij@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
+        Axel Lin <axel.lin@ingics.com>, Jingoo Han <jg1.han@samsung.com>,
+        Felipe Balbi <balbi@ti.com>, Dmitry Torokhov <dtor@mail.ru>,
         linux-mmc@vger.kernel.org
-Subject: Re: [PATCH v2] wait while adding MMC host to ensure root mounts
-References: <1363223183-3772-1-git-send-email-ynvich@gmail.com>
-	<1363224194-7366-1-git-send-email-ynvich@gmail.com>
-Date: Fri, 22 Mar 2013 13:03:13 -0400
-In-Reply-To: <1363224194-7366-1-git-send-email-ynvich@gmail.com> (Sergey
-	Yanovich's message of "Thu, 14 Mar 2013 05:23:13 +0400")
-Message-ID: <87620jmkoe.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+References: <25B60CDC2F704E4E9D88FFD52780CB4C0BDEB0547F@SC-VEXCH1.marvell.com> <87y5dsheqo.fsf@octavius.laptop.org> <87d2uro09v.fsf@octavius.laptop.org>
+In-Reply-To: <87d2uro09v.fsf@octavius.laptop.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303221706.27733.arnd@arndb.de>
+X-Provags-ID: V02:K0:VoRMZTW+OHJKTOdckN41SGfI/CXHJuevjxeuUDJLiUF
+ V87WWIX+Idyv4xgRyEgCDPf7qvNaVMF9C2A234UxRgCQaWZsNU
+ zpvLQepN0doPeEnTIdfz4WM37r11g0OIqnv/UHO2+zfybF4XNx
+ /criAofsWR1V5hSnSuLdIN27PjuOSkZVEBrubrRrKAWpa+oSXR
+ taOTWvYP6laE1D7V/XGRGJXndIvtSSQv9ax7LfFAk9DMy1YrVx
+ pAiXIj8mYQfaaba5EGTRGtSHdZMBRciej7fnV1apBQs17cBu1U
+ IUP/Kp8EwORjXJa+5Frv3m+H3hrCg6hDdRMOZ0VutTKaTlmFAB
+ zXiZPo6KnzPy3QeVSPSU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sergey,
+On Friday 22 March 2013, Chris Ball wrote:
+> >
+> > The reason I didn't make it a fatal error is that this is just vqmmc
+> > (responsible for moving from 3.3V to 1.8V for UHS modes), not the
+> > main vmmc regulator.  We can just disable those UHS modes from the
+> > capabilities on the host if vqmmc is missing, or failed to enable,
+> > or doesn't support those voltages, and that's what the code does now.
+> 
+> I've pushed this patch to mmc-next for 3.10 now, let me know if you
+> disagree.
 
-On Wed, Mar 13 2013, Sergey Yanovich wrote:
-> MMC hosts are added asynchronously. We need to wait until detect returns to
-> avoid failed root filesystem mounts.
-> ---8<---
-> VFS: Cannot open root device "mmcblk0p1" or unknown-block(0,0): error -6
-> Please append a correct "root=" boot option; here are the available partitions:
-> mmc0: host does not support reading read-only switch. assuming write-enable.
-> 1f00             256 mtdblock0  (driver?)
-> 1f01             256 mtdblock1  (driver?)
-> 1f02            2560 mtdblock2 mmc0: new SDHC card at address b368
->  (driver?)
-> 1f03           29696 mtdblock3  (driver?)
-> 1f04           16384 mtdblock4 mmcblk0: mmc0:b368 USD   3.72 GiB
->  (driver?)
->  mmcblk0: p1
-> b300         3910656 mmcblk0  driver: mmcblk
->   b301         3906560 mmcblk0p1 00000000-01
-> Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
-> ---8<---
->
-> Signed-off-by: Sergey Yanovich <ynvich@gmail.com>
-> ---
-> changes for v2:
-> - removed exporting as symbol is in the same file
->
->  drivers/mmc/core/core.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index aaed768..7196888 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -2225,6 +2225,7 @@ void mmc_start_host(struct mmc_host *host)
->  	host->rescan_disable = 0;
->  	mmc_power_up(host);
->  	mmc_detect_change(host, 0);
-> +	mmc_flush_scheduled_work();
->  }
->  
->  void mmc_stop_host(struct mmc_host *host)
+No, it's fine. Sorry for not replying earlier.
 
-Thanks, this looks okay to me, I've pushed it to mmc-next for 3.10.
-
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+	Arnd
