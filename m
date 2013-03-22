@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933692Ab3CVJjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 05:39:53 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53200 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932853Ab3CVJjv (ORCPT
+	id S933464Ab3CVJlF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 05:41:05 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:55801 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503Ab3CVJlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 05:39:51 -0400
-Date: Fri, 22 Mar 2013 09:39:36 +0000
-From: Andrew Murray <andrew.murray@arm.com>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>
-Subject: Re: [RFC PATCH RESEND v2] of/pci: Provide support for parsing PCI
- DT ranges property
-Message-ID: <20130322093936.GA875@arm.com>
-References: <1362140616-19346-1-git-send-email-Andrew.Murray@arm.com>
- <20130321170625.2a1bf226@skate>
+	Fri, 22 Mar 2013 05:41:03 -0400
+Message-ID: <514C2754.4080701@parallels.com>
+Date: Fri, 22 Mar 2013 13:41:40 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130321170625.2a1bf226@skate>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Michal Hocko <mhocko@suse.cz>
+CC: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
+References: <514A60CD.60208@huawei.com> <20130321090849.GF6094@dhcp22.suse.cz> <20130321102257.GH6094@dhcp22.suse.cz> <514BB23E.70908@huawei.com> <20130322080749.GB31457@dhcp22.suse.cz> <514C1388.6090909@huawei.com> <514C14BF.3050009@parallels.com> <20130322093141.GE31457@dhcp22.suse.cz>
+In-Reply-To: <20130322093141.GE31457@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 04:06:25PM +0000, Thomas Petazzoni wrote:
-> Dear Andrew Murray,
+On 03/22/2013 01:31 PM, Michal Hocko wrote:
+> On Fri 22-03-13 12:22:23, Glauber Costa wrote:
+>> On 03/22/2013 12:17 PM, Li Zefan wrote:
+>>>> GFP_TEMPORARY groups short lived allocations but the mem cache is not
+>>>>> an ideal candidate of this type of allocations..
+>>>>>
+>>> I'm not sure I'm following you...
+>>>
+>>> char *memcg_cache_name()
+>>> {
+>>> 	char *name = alloc();
+>>> 	return name;
+>>> }
+>>>
+>>> kmem_cache_dup()
+>>> {
+>>> 	name = memcg_cache_name();
+>>> 	kmem_cache_create_memcg(name);
+>>> 	free(name);
+>>> }
+>>>
+>>> Isn't this a short lived allocation?
+>>>
+>>
+>> Hi,
+>>
+>> Thanks for identifying and fixing this.
+>>
+>> Li is right. The cache name will live long, but this is because the
+>> slab/slub caches will strdup it internally. So the actual memcg
+>> allocation is short lived.
 > 
-> On Fri,  1 Mar 2013 12:23:36 +0000, Andrew Murray wrote:
-> > This patch factors out common implementations patterns to reduce overall kernel
-> > code and provide a means for host bridge drivers to directly obtain struct
-> > resources from the DT's ranges property without relying on architecture specific
-> > DT handling. This will make it easier to write archiecture independent host bridge
-> > drivers and mitigate against further duplication of DT parsing code.
-> > 
-> > This patch can be used in the following way:
-> > 
-> > 	struct of_pci_range_iter iter;
-> > 	for_each_of_pci_range(&iter, np) {
-> > 
-> > 		//directly access properties of the address range, e.g.:
-> > 		//iter.pci_space, iter.pci_addr, iter.cpu_addr, iter.size or
-> > 		//iter.flags
-> > 
-> > 		//alternatively obtain a struct resource, e.g.:
-> > 		//struct resource res;
-> > 		//range_iter_fill_resource(iter, np, res);
-> > 	}
-> > 
-> > Additionally the implementation takes care of adjacent ranges and merges them
-> > into a single range (as was the case with powerpc and microblaze).
-> > 
-> > The modifications to microblaze, mips and powerpc have not been tested.
-> > 
-> > v2:
-> >   This follows on from suggestions made by Grant Likely
-> >   (marc.info/?l=linux-kernel&m=136079602806328)
-> > 
-> > Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> 
-> Thanks, I've tested this successfully with the Marvell PCIe driver. I'm
-> about to send a new version of the Marvell PCIe patch set that includes
-> this RFC proposal.
-> 
-> I only made two small changes compared to your version, detailed below.
+> OK, I have totally missed that. Sorry about the confusion. Then all the
+> churn around the allocation is pointless, no?
+> What about:
 
-Thanks for the feedback, all looks good to me. Do I need to give ack?
+If we're really not concerned about stack, then yes. Even if always
+running from workqueues, a PAGE_SIZEd stack variable seems risky to me.
 
-Andrew Murray
