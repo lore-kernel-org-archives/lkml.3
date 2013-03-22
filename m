@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab3CVKCx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 06:02:53 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:46817 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473Ab3CVKCv (ORCPT
+	id S932809Ab3CVKDh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 06:03:37 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:51489 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932264Ab3CVKDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 06:02:51 -0400
-Message-ID: <514C2C72.5090402@parallels.com>
-Date: Fri, 22 Mar 2013 14:03:30 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Fri, 22 Mar 2013 06:03:35 -0400
+Date: Fri, 22 Mar 2013 11:03:30 +0100
+From: Mats Liljegren <liljegren.mats2@gmail.com>
+To: Frank Rowand <frank.rowand@am.sony.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [BUG] bisected: PandaBoard smsc95xx ethernet driver error from
+ USB timeout
+Message-ID: <20130322100329.GH29378@enea.se>
+References: <Pine.LNX.4.44L0.1303211037070.1899-100000@iolanthe.rowland.org>
+ <514BC5C3.9080808@am.sony.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
-References: <514A60CD.60208@huawei.com> <20130321090849.GF6094@dhcp22.suse.cz> <20130321102257.GH6094@dhcp22.suse.cz> <514BB23E.70908@huawei.com> <20130322080749.GB31457@dhcp22.suse.cz> <514C1388.6090909@huawei.com> <514C14BF.3050009@parallels.com> <20130322093141.GE31457@dhcp22.suse.cz> <514C2754.4080701@parallels.com> <20130322094832.GG31457@dhcp22.suse.cz>
-In-Reply-To: <20130322094832.GG31457@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <514BC5C3.9080808@am.sony.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2013 01:48 PM, Michal Hocko wrote:
-> On Fri 22-03-13 13:41:40, Glauber Costa wrote:
->> On 03/22/2013 01:31 PM, Michal Hocko wrote:
->>> On Fri 22-03-13 12:22:23, Glauber Costa wrote:
->>>> On 03/22/2013 12:17 PM, Li Zefan wrote:
->>>>>> GFP_TEMPORARY groups short lived allocations but the mem cache is not
->>>>>>> an ideal candidate of this type of allocations..
->>>>>>>
->>>>> I'm not sure I'm following you...
->>>>>
->>>>> char *memcg_cache_name()
->>>>> {
->>>>> 	char *name = alloc();
->>>>> 	return name;
->>>>> }
->>>>>
->>>>> kmem_cache_dup()
->>>>> {
->>>>> 	name = memcg_cache_name();
->>>>> 	kmem_cache_create_memcg(name);
->>>>> 	free(name);
->>>>> }
->>>>>
->>>>> Isn't this a short lived allocation?
->>>>>
->>>>
->>>> Hi,
->>>>
->>>> Thanks for identifying and fixing this.
->>>>
->>>> Li is right. The cache name will live long, but this is because the
->>>> slab/slub caches will strdup it internally. So the actual memcg
->>>> allocation is short lived.
->>>
->>> OK, I have totally missed that. Sorry about the confusion. Then all the
->>> churn around the allocation is pointless, no?
->>> What about:
->>
->> If we're really not concerned about stack, then yes. Even if always
->> running from workqueues, a PAGE_SIZEd stack variable seems risky to me.
+Frank Rowand wrote:
+> On 03/21/13 07:41, Alan Stern wrote:
+> > On Wed, 20 Mar 2013, Frank Rowand wrote:
+> > 
+> >> Hi All,
+> >>
+> >> Not quite sure quite where the problem is (USB, OMAP, smsc95xx driver, other???),
+> >> so casting the nets wide...
+> >>
+> >> The PandaBoard frequently fails to boot with an eth0 error when mounting
+> >> the root file system via NFS (ethernet driver fails due to a USB timeout;
+> >> no ethernet means NFS won't work).  A typical set of error messages is:
+> >>
+> >> [    3.264373] smsc95xx 1-1.1:1.0: usb_probe_interface
+> >> [    3.269500] smsc95xx 1-1.1:1.0: usb_probe_interface - got id
+> >> [    3.275543] smsc95xx v1.0.4
+> >> [    8.078674] smsc95xx 1-1.1:1.0: eth0: register 'smsc95xx' at usb-ehci-omap.0-1.1, smsc95xx USB 2.0 Ethernet, 82:b9:1d:fa:67:0d
+> >> [    8.091003] hub 1-1:1.0: state 7 ports 5 chg 0000 evt 0002
+> >> [   13.509918] usb 1-1.1: swapper/0 timed out on ep0out len=0/4
+> >> [   13.515869] smsc95xx 1-1.1:1.0: eth0: Failed to write register index 0x00000108
+> >> [   13.523559] smsc95xx 1-1.1:1.0: eth0: Failed to write ADDRL: -110
+> >> [   13.529998] IP-Config: Failed to open eth0
+> >>
+> >> I have bisected this to:
+> >>
+> >>   commit 18aafe64d75d0e27dae206cacf4171e4e485d285
+> >>   Author: Alan Stern <stern@rowland.harvard.edu>
+> >>   Date:   Wed Jul 11 11:23:04 2012 -0400
+> >>
+> >>      USB: EHCI: use hrtimer for the I/O watchdog
+> > 
+> > I don't understand how that commit could cause a timeout unless there 
+> > are at least two other bugs present in your system.
+> > 
+> >> Note that to compile this version of the kernel, an additional fix must
+> >> also be applied:
+> >>
+> >>   commit ba5952e0711b14d8d4fe172671f8aa6091ace3ee
+> >>   Author: Ming Lei <ming.lei@canonical.com>
+> >>   Date:   Fri Jul 13 17:25:24 2012 +0800
+> >>
+> >>      USB: ehci-omap: fix compile failure(v1)
+> >>
+> >> The symptom can be worked around by retrying the USB access if a timeout
+> >> occurs.  This is clearly _not_ the fix, just a hack that I used to
+> >> investigate the problem:
+> >>
+> >>   http://article.gmane.org/gmane.linux.rt.user/9773
+> >>
+> >> My kernel configuration is:
+> >>
+> >>   arch/arm/configs/omap2plus_defconfig
+> >>
+> >>   plus to get the ethernet driver I add:
+> >>
+> >>     CONFIG_USB_EHCI_HCD
+> >>     CONFIG_USB_NET_SMSC95XX
+> >>
+> >> I found the problem on 3.6.11, but have not replicated it on 3.9-rcX
+> >> yet because my config fails to build on 3.9-rc1 and 3.9-rc2.  I'll try
+> >> to work on that issue tomorrow.
+> > 
+> > Let me know how it works out.
 > 
-> This is not on stack. It is static
-> 
-Ah, right, I totally missed that. And then you're taking the mutex.
+> My PandaBoard builds fail on 3.9-rcX due to ARM multiplatform issues.
+> Either there is something I need to change about the way I build it,
+> or it is broken (that is a side issue).  My simple expedient was to
+> hack around multiplatform, and just make it build (patch below if
+> anyone else wants a _temporary_ hack).
 
-But actually, you don't need to take the mutex. All calls to
-kmem_cache_dup are protected by the memcg_cache_mutex. So you should be
-able to just use the buffer without further problems.
+I have built 3.9-RC2 for PandaBoard ES and the only problem I have seen is
+that you need to add "LOADADDR=0x80008000" when building uImage target.
 
+-- Mats
