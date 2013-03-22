@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab3CVOml (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 10:42:41 -0400
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:51452 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933447Ab3CVOmh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 10:42:37 -0400
+	id S933547Ab3CVOni (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 10:43:38 -0400
+Received: from www.sr71.net ([198.145.64.142]:60297 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932643Ab3CVOng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 10:43:36 -0400
+Message-ID: <514C6E68.4050203@sr71.net>
+Date: Fri, 22 Mar 2013 07:44:56 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CAJtyJaWRzng7XuGixXKLLATERNSV3FYkTN7kH55RJcmHs1BjCQ@mail.gmail.com>
-References: <CAJsYZ5ksvPCR2O39=sj9zeptfppP1w6FM08rw8Aw+L+2dEPCnQ@mail.gmail.com>
-	<20130320165339.GA28307@kroah.com>
-	<CAJsYZ5n40mBCd6x7baQ6MLw1HBAa3cfebm+Aa533uxYVP86o9Q@mail.gmail.com>
-	<CAJtyJaVnUZXkWdma8YydpU6tEF2KEhrWz+uq6D142gDwX3fATg@mail.gmail.com>
-	<CAG6tG3xyZYWgB2nUwwu8mmkSJza-cXym6iHivOUSJuYf3pV5_w@mail.gmail.com>
-	<CAJtyJaWRzng7XuGixXKLLATERNSV3FYkTN7kH55RJcmHs1BjCQ@mail.gmail.com>
-Date: Fri, 22 Mar 2013 20:12:36 +0530
-Message-ID: <CAJsYZ5kjHPowb3Jp46DWqfz6-rJdr6KgLuzp+JCu0atDOtKyAQ@mail.gmail.com>
-Subject: Re: [BUG] staging: android: ashmem: Deadlock during ashmem_mmap and ashmem_read
-From: Shankar Brahadeeswaran <shankoo77@gmail.com>
-To: Bjorn Bringert <bringert@google.com>
-Cc: Robert Love <rlove@google.com>, Dan Carpenter <dan.carpenter@oracle.com>,
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2, RFC 07/30] thp, mm: introduce mapping_can_have_hugepages()
+ predicate
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-8-git-send-email-kirill.shutemov@linux.intel.com> <514B336C.6070404@sr71.net> <20130322101211.34A5EE0085@blue.fi.intel.com>
+In-Reply-To: <20130322101211.34A5EE0085@blue.fi.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You don't want to hold ashmem_mutex across the VFS calls. It is only
-> needed to protect the ashmem-internal structures.
+On 03/22/2013 03:12 AM, Kirill A. Shutemov wrote:
+> Dave Hansen wrote:
+>> On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
+>>> +static inline bool mapping_can_have_hugepages(struct address_space *m)
+>>> +{
+>>> +	if (IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE)) {
+>>> +		gfp_t gfp_mask = mapping_gfp_mask(m);
+>>> +		return !!(gfp_mask & __GFP_COMP);
+>>> +	}
+>>> +
+>>> +	return false;
+>>> +}
+>>
+>> I did a quick search in all your patches and don't see __GFP_COMP
+>> getting _set_ anywhere.  Am I missing something?
+> 
+> __GFP_COMP is part of GFP_TRANSHUGE. We set it for ramfs in patch 20/30.
 
-In the ashmem_read function, after the VFS call the asma structure
-gets updated again. So one option is to drop the lock before invoking
-the VFS call and then take it again once it returns.
-But if a given thread invokes ashmem_read and sleeps, is there a
-scenario where some other task can come and access asma->file->f_pos ?
-If yes, the we'll be returning the older f_pos value. I'm not sure
-whether this is expected behavior. Since we are not done with the read
-yet, we can report the old f_pos, I think.  So is the below pseudo
-code OK?
+That's a bit non-obvious.  For a casual observer, it _seems_ like you
+should just be setting and checking GFP_TRANSHUGE directly.  It looks
+like you were having some problems with __GFP_MOVABLE and masked it out
+of GFP_TRANSHUGE and that has cascaded over to _this_ check.
 
-static ssize_t ashmem_read(struct file *file, char __user *buf,
-                           size_t len, loff_t *pos)
-{
-        struct ashmem_area *asma = file->private_data;
-        int ret = 0;
-
-        mutex_lock(&ashmem_mutex);
-        ....
-        mutex_unlock(&ashmem_mutex);
-        ret = asma->file->f_op->read(asma->file, buf, len, pos);
-        if (ret < 0) {
-                return ret;
-        }
-
-       mutex_lock(&ashmem_mutex);
-       asma->file->f_pos = *pos;
-out:
-        mutex_unlock(&ashmem_mutex);
-        return ret;
-}
-
-If this is OK, then similar changes can be done for ashmem_lseek as well.
+I _think_ the right thing to do is add a comment up there in
+mapping_can_have_hugepages() that does (GFP_TRANSHUGE & ~__GFP_MOVABLE),
+and adds a TODO in the code and patch comments to clean it up once
+ramfs_get_inode() gets fixed up too.
