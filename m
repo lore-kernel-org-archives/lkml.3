@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab3CVAIH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 20:08:07 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38956 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab3CVAIF (ORCPT
+	id S1753747Ab3CVAJF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 20:09:05 -0400
+Received: from mail-ia0-f180.google.com ([209.85.210.180]:42299 "EHLO
+	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab3CVAJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 20:08:05 -0400
-Date: Fri, 22 Mar 2013 00:08:03 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: VFS deadlock ?
-Message-ID: <20130322000803.GG21522@ZenIV.linux.org.uk>
-References: <20130321202635.GA16406@redhat.com>
- <CA+55aFwyK4uDgSKUpXBGS5zi16qd8STtrGi3kndunYi40dnj+A@mail.gmail.com>
- <20130321203639.GC16406@redhat.com>
- <20130321204704.GZ21522@ZenIV.linux.org.uk>
- <20130321210255.GD16406@redhat.com>
- <CA+55aFxysZEw6fw8+LobMgfzeHuGSSs+hyrUr_frTOjaCGJFLQ@mail.gmail.com>
- <20130321221256.GA30620@redhat.com>
- <CA+55aFx+O13YuJsZyrTS6O9Kws=1ff-knsSv9rV8wTf8yBrPJg@mail.gmail.com>
- <20130321233630.GE21522@ZenIV.linux.org.uk>
- <CA+55aFyLJ9vVm1T994EaE4tnEbV8rHj43m+cWsFFBi_qndao1A@mail.gmail.com>
+	Thu, 21 Mar 2013 20:09:03 -0400
+Message-ID: <514BA118.5000305@gmail.com>
+Date: Fri, 22 Mar 2013 08:08:56 +0800
+From: Will Huck <will.huckk@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyLJ9vVm1T994EaE4tnEbV8rHj43m+cWsFFBi_qndao1A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rik van Riel <riel@redhat.com>
+CC: Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd reclaims
+ at each priority
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-2-git-send-email-mgorman@suse.de> <20130320161847.GD27375@dhcp22.suse.cz> <514A59CD.3040108@redhat.com>
+In-Reply-To: <514A59CD.3040108@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 04:58:41PM -0700, Linus Torvalds wrote:
+Hi Rik,
+On 03/21/2013 08:52 AM, Rik van Riel wrote:
+> On 03/20/2013 12:18 PM, Michal Hocko wrote:
+>> On Sun 17-03-13 13:04:07, Mel Gorman wrote:
+>> [...]
+>>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>>> index 88c5fed..4835a7a 100644
+>>> --- a/mm/vmscan.c
+>>> +++ b/mm/vmscan.c
+>>> @@ -2593,6 +2593,32 @@ static bool prepare_kswapd_sleep(pg_data_t 
+>>> *pgdat, int order, long remaining,
+>>>   }
+>>>
+>>>   /*
+>>> + * kswapd shrinks the zone by the number of pages required to reach
+>>> + * the high watermark.
+>>> + */
+>>> +static void kswapd_shrink_zone(struct zone *zone,
+>>> +                   struct scan_control *sc,
+>>> +                   unsigned long lru_pages)
+>>> +{
+>>> +    unsigned long nr_slab;
+>>> +    struct reclaim_state *reclaim_state = current->reclaim_state;
+>>> +    struct shrink_control shrink = {
+>>> +        .gfp_mask = sc->gfp_mask,
+>>> +    };
+>>> +
+>>> +    /* Reclaim above the high watermark. */
+>>> +    sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
+>>
+>> OK, so the cap is at high watermark which sounds OK to me, although I
+>> would expect balance_gap being considered here. Is it not used
+>> intentionally or you just wanted to have a reasonable upper bound?
+>>
+>> I am not objecting to that it just hit my eyes.
+>
+> This is the maximum number of pages to reclaim, not the point
+> at which to stop reclaiming.
 
-> And the only other reason we don't want to allow it is to make sure
-> you can't have directory loops etc, afaik, and again, for this
-> particular case of /proc, we happen to be ok.
+What's the difference between the maximum number of pages to reclaim and 
+the point at which to stop reclaiming?
 
-Not really.  Do that and yes, this deadlock goes away.  But the locking
-order in general goes to hell - we order directory inodes by "which dentry
-is an ancestor of another?"  So we have no warranty that we won't get
-alias1/foo/bar/baz < alias2/foo.  Take rename_lock() on those two and
-have it race with rmdir alias2/foo/bar/baz (locks alias2/foo/bar, then
-alias2/foo/bar/baz) and rmdir alias2/foo/bar (locks alias2/foo and
-alias2/foo/bar).  Oops - we have a cycle now...
+>
+> I assume Mel chose this value because it guarantees that enough
+> pages will have been freed, while also making sure that the value
+> is scaled according to zone size (keeping pressure between zones
+> roughly equal).
+>
+
