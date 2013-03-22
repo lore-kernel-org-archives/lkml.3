@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933501Ab3CVOYH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 10:24:07 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:56989 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932116Ab3CVOYE (ORCPT
+	id S933543Ab3CVOYq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 10:24:46 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50567 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933356Ab3CVOYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 10:24:04 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 3/4] ARM: at91/trivial: fix model name for SAM9G15-EK
-Date: Fri, 22 Mar 2013 15:23:35 +0100
-Message-ID: <9c592c90cf8b8ed46073e46be36cecac1a8f5256.1363960549.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <cover.1363960549.git.nicolas.ferre@atmel.com>
-References: <cover.1363960549.git.nicolas.ferre@atmel.com>
+	Fri, 22 Mar 2013 10:24:09 -0400
+Date: Fri, 22 Mar 2013 10:24:08 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Soeren Moch <smoch@web.de>
+cc: Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        <linux-mm@kvack.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <michael@amarulasolutions.com>
+Subject: Re: [PATCH] USB: EHCI: fix for leaking isochronous data
+In-Reply-To: <514B86A9.60401@web.de>
+Message-ID: <Pine.LNX.4.44L0.1303221023310.1294-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: stable <stable@vger.kernel.org> # 3.8+
----
- arch/arm/boot/dts/at91sam9g15ek.dts | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Thu, 21 Mar 2013, Soeren Moch wrote:
 
-diff --git a/arch/arm/boot/dts/at91sam9g15ek.dts b/arch/arm/boot/dts/at91sam9g15ek.dts
-index 86dd3f6..5427b2d 100644
---- a/arch/arm/boot/dts/at91sam9g15ek.dts
-+++ b/arch/arm/boot/dts/at91sam9g15ek.dts
-@@ -11,6 +11,6 @@
- /include/ "at91sam9x5ek.dtsi"
- 
- / {
--	model = "Atmel AT91SAM9G25-EK";
-+	model = "Atmel AT91SAM9G15-EK";
- 	compatible = "atmel,at91sam9g15ek", "atmel,at91sam9x5ek", "atmel,at91sam9x5", "atmel,at91sam9";
- };
--- 
-1.8.0
+> > Hi Alan, Soeren
+> >
+> > Could you word the description a bit better. If Alan did not get it
+> > without a bit of thought, few others are going to understand it
+> > without a better explanation.
+> >
+> > Thanks
+> > 	Andrew
+> >
+> 
+> Alan,
+> 
+> can you come up with a better explanation, please? I think your 
+> description how it is supposed to work from here
+>     http://marc.info/?l=linux-usb&m=136345559432055&w=2
+> is required to understand the problem and the fix.
+
+Okay, I will rewrite your patch description.
+
+Alan Stern
 
