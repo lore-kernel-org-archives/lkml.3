@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933038Ab3CVM5h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 08:57:37 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16162 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab3CVM5f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 08:57:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 22 Mar 2013 05:55:08 -0700
-Date: Fri, 22 Mar 2013 14:55:09 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, "Rob Landley" <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "Simon Glass" <sjg@chromium.org>, Rhyland Klein <rklein@nvidia.com>,
-        "Pritesh Raithatha" <praithatha@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <AChew@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 00/14] Tegra114 clockframework
-Message-ID: <20130322125509.GY18519@tbergstrom-lnx.Nvidia.com>
-References: <1363956029-31873-1-git-send-email-pdeschrijver@nvidia.com>
+	id S1754300Ab3CVNCz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 09:02:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25819 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753790Ab3CVNCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 09:02:54 -0400
+Message-ID: <514C5640.8000902@redhat.com>
+Date: Fri, 22 Mar 2013 09:01:52 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1363956029-31873-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Will Huck <will.huckk@gmail.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Zlatko Calusic <zcalusic@bitsync.net>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd reclaims
+ at each priority
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-2-git-send-email-mgorman@suse.de> <20130321155705.GA27848@cmpxchg.org> <514BA04D.2090002@gmail.com> <514BD56F.6050709@redhat.com> <514BD665.5020803@gmail.com> <514BE54C.4050106@gmail.com>
+In-Reply-To: <514BE54C.4050106@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 01:39:17PM +0100, Peter De Schrijver wrote:
-> This is the eight version of the Tegra114 clockframework. It is based on the
-> next-20130320-fixed branch of
-> git://nv-tegra.nvidia.com/user/swarren/linux-2.6.git,
-> http://patchwork.ozlabs.org/patch/229972/ and
-> http://patchwork.ozlabs.org/patch/229978/
-> 
-> It has been boottested on Dalmore and Beaverboard.
+On 03/22/2013 12:59 AM, Will Huck wrote:
+> Hi Rik,
+> On 03/22/2013 11:56 AM, Will Huck wrote:
+>> Hi Rik,
+>> On 03/22/2013 11:52 AM, Rik van Riel wrote:
+>>> On 03/21/2013 08:05 PM, Will Huck wrote:
+>>>
+>>>> One offline question, how to understand this in function balance_pgdat:
+>>>> /*
+>>>>   * Do some background aging of the anon list, to give
+>>>>   * pages a chance to be referenced before reclaiming.
+>>>>   */
+>>>> age_acitve_anon(zone, &sc);
+>>>
+>>> The anon lrus use a two-handed clock algorithm. New anonymous pages
+>>> start off on the active anon list. Older anonymous pages get moved
+>>> to the inactive anon list.
+>>
+>> The file lrus also use the two-handed clock algorithm, correct?
+>
+> After reinvestigate the codes, the answer is no. But why have this
+> difference? I think you are the expert for this question, expect your
+> explanation. :-)
 
-Also available from git://nv-tegra.nvidia.com/user/swarren/linux-2.6.git branch ccf-tegra114-v8
+Anonymous memory has a smaller amount of memory (on the order
+of system memory), most of which is or has been in a working
+set at some point.
 
-Cheers,
+File system cache tends to have two distinct sets. One part
+are the frequently accessed files, another part are the files
+that are accessed just once or twice.
 
-Peter.
+The file working set needs to be protected from streaming
+IO. We do this by having new file pages start out on the
+inactive file list, and only promoted to the active file
+list if they get accessed twice.
+
+
+-- 
+All rights reversed
