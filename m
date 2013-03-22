@@ -1,117 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab3CVKZt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 06:25:49 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:35079 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab3CVKZr (ORCPT
+	id S1753897Ab3CVK2m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 06:28:42 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:33139 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab3CVK2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 06:25:47 -0400
+	Fri, 22 Mar 2013 06:28:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <514C1045.4060406@semaphore.gr>
-References: <51366C77.3080309@semaphore.gr>
-	<CAKohpokdG2vd5Cp4Lmcnc5ZrLsa-_4Kcy-DvLjG--6SMVsGZkg@mail.gmail.com>
-	<51374F8D.9040300@semaphore.gr>
-	<8496675.6HLUyC7fMI@vostro.rjw.lan>
-	<514C1045.4060406@semaphore.gr>
-Date: Fri, 22 Mar 2013 15:55:46 +0530
-Message-ID: <CAKohpokiu9hK7D71aaWcVb_VQoK6qp5gzoPKXKvC3_cs2XNbEw@mail.gmail.com>
-Subject: Re: [PATCH 3/3 linux-next] cpufreq: conservative: Use an inline
- function to evaluate freq_target
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CACxGe6vSywW_iekAKmDMf5_TLLt5Hn+Jttq8kddq3vJ=AE+DQA@mail.gmail.com>
+References: <1363865097-32764-1-git-send-email-grant.likely@secretlab.ca>
+ <1363865097-32764-3-git-send-email-grant.likely@secretlab.ca>
+ <1363870366.3312.1.camel@pasglop> <CACxGe6vSywW_iekAKmDMf5_TLLt5Hn+Jttq8kddq3vJ=AE+DQA@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 22 Mar 2013 10:28:20 +0000
+X-Google-Sender-Auth: _4NfZh-E7doKxKMK_brWuhxqVK4
+Message-ID: <CACxGe6uCKRH8jcGJW+oYt+T33XT_MGzaxmtkNdekMooGqBYTEw@mail.gmail.com>
+Subject: Re: [PATCH V2 2/2] of: remove /proc/device-tree
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Miller <davem@davemloft.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 March 2013 13:33, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> Use an inline function to evaluate freq_target to avoid duplicate code.
+On Thu, Mar 21, 2013 at 8:07 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Thu, Mar 21, 2013 at 12:52 PM, Benjamin Herrenschmidt
+> <benh@kernel.crashing.org> wrote:
+>> On Thu, 2013-03-21 at 11:24 +0000, Grant Likely wrote:
+>> kexec comes to mind (all 4 variants of fs2dt.c (yuck !)), dtc, various
+>> powerpc-utils (bootloader configuration etc...), and more.
+>>
+>> We also need to test the new code with hotplug, I'll see if I can get
+>> somebody at IBM to give it a spin.
 >
-> Also, define a macro for the default frequency step.
->
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> ---
->  drivers/cpufreq/cpufreq_conservative.c | 28 ++++++++++++++++------------
->  1 file changed, 16 insertions(+), 12 deletions(-)
+> Thanks
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Actually, this will be broken. I missed adding hooks to the property
+add/remove paths. It will be fixed in v3.
 
-> diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
-> index fe17bd3..63499c8 100644
-> --- a/drivers/cpufreq/cpufreq_conservative.c
-> +++ b/drivers/cpufreq/cpufreq_conservative.c
-> @@ -29,11 +29,24 @@
->  /* Conservative governor macros */
->  #define DEF_FREQUENCY_UP_THRESHOLD             (80)
->  #define DEF_FREQUENCY_DOWN_THRESHOLD           (20)
-> +#define DEF_FREQUENCY_STEP                     (5)
->  #define DEF_SAMPLING_DOWN_FACTOR               (1)
->  #define MAX_SAMPLING_DOWN_FACTOR               (10)
->
->  static DEFINE_PER_CPU(struct cs_cpu_dbs_info_s, cs_cpu_dbs_info);
->
-> +static inline unsigned int get_freq_target(struct cs_dbs_tuners *cs_tuners,
-> +                                          struct cpufreq_policy *policy)
-> +{
-> +       unsigned int freq_target = (cs_tuners->freq_step * policy->max) / 100;
-> +
-> +       /* max freq cannot be less than 100. But who knows... */
-> +       if (unlikely(freq_target == 0))
-> +               freq_target = DEF_FREQUENCY_STEP;
-> +
-> +       return freq_target;
-> +}
-> +
->  /*
->   * Every sampling_rate, we check, if current idle time is less than 20%
->   * (default), then we try to increase frequency. Every sampling_rate *
-> @@ -49,7 +62,6 @@ static void cs_check_cpu(int cpu, unsigned int load)
->         struct cpufreq_policy *policy = dbs_info->cdbs.cur_policy;
->         struct dbs_data *dbs_data = policy->governor_data;
->         struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
-> -       unsigned int freq_target;
->
->         /*
->          * break out if we 'cannot' reduce the speed as the user might
-> @@ -66,13 +78,7 @@ static void cs_check_cpu(int cpu, unsigned int load)
->                 if (dbs_info->requested_freq == policy->max)
->                         return;
->
-> -               freq_target = (cs_tuners->freq_step * policy->max) / 100;
-> -
-> -               /* max freq cannot be less than 100. But who knows.... */
-> -               if (unlikely(freq_target == 0))
-> -                       freq_target = 5;
-> -
-> -               dbs_info->requested_freq += freq_target;
-> +               dbs_info->requested_freq += get_freq_target(cs_tuners, policy);
->                 if (dbs_info->requested_freq > policy->max)
->                         dbs_info->requested_freq = policy->max;
->
-> @@ -94,9 +100,7 @@ static void cs_check_cpu(int cpu, unsigned int load)
->                 if (policy->cur == policy->min)
->                         return;
->
-> -               freq_target = (cs_tuners->freq_step * policy->max) / 100;
-> -
-> -               dbs_info->requested_freq -= freq_target;
-> +               dbs_info->requested_freq -= get_freq_target(cs_tuners, policy);
->                 if (dbs_info->requested_freq < policy->min)
->                         dbs_info->requested_freq = policy->min;
->
-> @@ -323,7 +327,7 @@ static int cs_init(struct dbs_data *dbs_data)
->         tuners->down_threshold = DEF_FREQUENCY_DOWN_THRESHOLD;
->         tuners->sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR;
->         tuners->ignore_nice = 0;
-> -       tuners->freq_step = 5;
-> +       tuners->freq_step = DEF_FREQUENCY_STEP;
->
->         dbs_data->tuners = tuners;
->         dbs_data->min_sampling_rate = MIN_SAMPLING_RATE_RATIO *
-> --
-> 1.8.1.4
->
->
+BTW, I'd really like to revisit the locking semantics and reference
+counting of OF_DYNAMIC. It is incredibly painful it is for driver
+authors to get right. What is the device_node lifecycle on pseries? Do
+we really need to be doing of_node_get/put() every time we walk the
+tree, or is there a different model that can be used?
+
+Bear with me as I think through this out-loud...
+
+How about instead of doing get/put by default every time, we have an
+explicit mutex that needs to be grabbed if there is a potential that
+the code will be dealing with dynamic nodes. For device drivers this
+will almost never be true because the node ref counts will already
+have been incremented when the device was created (well before probe
+occurs). Plus the ref count won't be decremented again until the point
+of struct device removal.
+
+The other scenario is when searching for nodes there is the potential
+that any node in the system could disappear mid-search, and in most
+cases it won't even be one of the nodes that is being searched for.
+For the non-matching nodes that shouldn't be a problem because the
+lock is held while traversing past them. No worries about them
+dropping out from under us. It's when one of the matching nodes might
+disappear that problems could happen.
+
+But for the vast majority of use cases that simply isn't going to
+happen. We aren't removing individual nodes from a passed in .dtb (at
+least not yet). I'm not going to base design decisions on that, but it
+seems like the the current scheme is optimized for the wrong use case.
+
+Would it be reasonable to expect that the caller explicitly grab a
+lock to hold off node removal tree wide? Then only increment the
+refcount on nodes that are actually cared about?
+
+g.
