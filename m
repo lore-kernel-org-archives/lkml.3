@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab3CVJFL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 05:05:11 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:34027 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932373Ab3CVJFI (ORCPT
+	id S932893Ab3CVJM4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 05:12:56 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:56871 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932344Ab3CVJMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 05:05:08 -0400
+	Fri, 22 Mar 2013 05:12:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1303211101530.1899-100000@iolanthe.rowland.org>
-References: <1363872506-3630-3-git-send-email-rajagopal.venkat@linaro.org>
-	<Pine.LNX.4.44L0.1303211101530.1899-100000@iolanthe.rowland.org>
-Date: Fri, 22 Mar 2013 14:35:07 +0530
-Message-ID: <CA+Z25wXYprpAOChV2P1vfbTgUyd7Te5s3RCmTLLaez6qiTx5GA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] PM / devfreq: tie suspend/resume to runtime-pm
-From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: myungjoo.ham@samsung.com, rjw@sisk.pl, Kevin Hilman <khilman@linaro.org>,
-        linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <s5hk3panhaq.wl%tiwai@suse.de>
+References: <s5hk3panhaq.wl%tiwai@suse.de>
+Date: Fri, 22 Mar 2013 10:12:54 +0100
+X-Google-Sender-Auth: SfWqGcKFaGhp2DUnyBAqbFRgrqw
+Message-ID: <CAKMK7uG3HiwpKY4XafSOCu+=fTvddzZN2EBYgc98ZiJgc+bgHw@mail.gmail.com>
+Subject: Re: [Intel-gfx] Regression: HSW eDP broken on 3.9-rc[12]
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 March 2013 20:32, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Thu, 21 Mar 2013, Rajagopal Venkat wrote:
+On Thu, Mar 14, 2013 at 4:15 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> I noticed that a Haswell desktop machine with eDP gets only the blank
+> screen on the latest Linus tree.  It works fine with 3.8, so it's a
+> regression since 3.9-rc1.  Actually, it's not a regression.  It's
+> three regressions in a shot! (I had to do painful bisections three
+> times...)
 >
->> Allow device devfreq to be suspend/resume automatically with
->> runtime pm suspend/resume. The devfreq drivers should be least
->> cared when to suspend/resume the devfreq.
->>
->> pm_runtime_suspend(dev) will first suspend device devfreq(if available)
->> before device is suspended from runtime pm core.
->>
->> pm_runtime_resume(dev) will resume device devfreq(if available) after
->> device is resumed from runtime pm core.
+> c464b2a17c59adedbdc02cc54341d630354edc3
+>     drm/i915: set TRANSCODER_EDP even earlier
 >
-> Aren't these backward?  The device continues to need its clocks and
-> frequency settings until _after_ it has been suspended.  Similarly, it
-> needs them to be available _before_ it resumes.
+> d6dd9eb1d96d2b7345fe4664066c2b7ed86da898
+>     drm/i915: dynamic Haswell display power well support
 >
-
-To clarify, devfreq suspend/resume means suspend/resume of load
-monitoring of a device. The clocks and other resources are still taken
-care by the devfreq driver runtime-pm callbacks. The devfreq must be
-suspended _before_ runtime-pm suspend callback in order to stop load
-monitoring while device is suspending. Similarly devfreq resume should
-happen _after_ runtime-pm resume callback.
-
-Just realised both devfreq suspend/resume are done _before_ invoking
-runtime-pm callbacks. I will fix this up. Thanks.
-
-
-> Alan Stern
+> commit cf0a6584aa6d382f802f2c3cacac23ccbccde0cd
+>     drm/i915: write backlight harder
 >
+>
+> The first commit affects no matter whether power well is on or off.
+> It brings the eDP output always blank.
 
+Can you please attach the xrandr output and drm.debug=0xe dmesg from
+booting for that hsw eDP machine quickly?
 
-
+Thanks, Daniel
 -- 
-Regards,
-Rajagopal
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
