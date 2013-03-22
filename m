@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933113Ab3CVCPk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 22:15:40 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:24160 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831Ab3CVCPj (ORCPT
+	id S933160Ab3CVCQO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 22:16:14 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50822 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab3CVCQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 22:15:39 -0400
-X-AuditID: cbfee68d-b7f786d000005188-49-514bbeca0d2f
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <00bb01ce26a3$0d69b800$283d2800$%han@samsung.com>
-In-reply-to: <00bb01ce26a3$0d69b800$283d2800$%han@samsung.com>
-Subject: [PATCH 2/2] rtc: rtc-88pm80x: add CONFIG_PM_SLEEP to suspend/resume
- functions
-Date: Fri, 22 Mar 2013 11:15:37 +0900
-Message-id: <00bc01ce26a3$24cfdc90$6e6f95b0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4mow1NhbkZdmKeSwuK3nkgccWzIwAAAX2Q
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t8zI91T+7wDDXZu47JYcvEqu8Wc9WvY
-	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANYrLJiU1J7Ms
-	tUjfLoEr4/35SUwF0zgqbj/4wdrA+Juti5GTQ0LAROLF1K/sELaYxIV764HiXBxCAssYJa78
-	+ccCU9R5dg8zRGIRo0TT/XdQzi9GiadrNoGNYhNQk/jy5TDQKA4OEQF9ibYWDZAaZoFeRokz
-	vbvBVggJ2ErsO7+eCcTmFLCTeH/oN1hcWCBCYsb6SawgNouAqsSc1tdgm3mB6i8uaICyBSV+
-	TL4HZjMLaEms33mcCcKWl9i85i0zyF4JAXWJR391QcIiAkYS6zf2QpWISOx78Y4R5B4JgXvs
-	En937WaG2CUg8W3yIRaIXlmJTQeYIR6WlDi44gbLBEaJWUg2z0KyeRaSzbOQrFjAyLKKUTS1
-	ILmgOCm9yFCvODG3uDQvXS85P3cTIyRWe3cw3j5gfYgxGWj9RGYp0eR8YKznlcQbGpsZWZia
-	mBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoHx/OvVnwyTG+r3+97K
-	NXM/oHFR5szJuC7/pwXOXiraF5s22X1k+CKuIBln2vRFf/Wv13X/Ft5JqPL1/8li5mS5oEIl
-	6O0h55TAjvsXBP9Y3Nh7ZaXg1Q+vZ3Srfp+/UKWgujOL88FmkYkbbq0J8uiV9D7/S/78mQkP
-	PjCuecu+QYEj7ZLU+twFSizFGYmGWsxFxYkAm+vPpusCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t9jAd1T+7wDDTYsZLNYcvEqu8Wc9WvY
-	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANaqB0SYjNTEl
-	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
-	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMeP9+UlMBdM4Km4/+MHawPibrYuRk0NCwESi
-	8+weZghbTOLCvfVAcS4OIYFFjBJN998xQzi/GCWertkE1sEmoCbx5cth9i5GDg4RAX2JthYN
-	kBpmgV5GiTO9u9lBaoQEbCX2nV/PBGJzCthJvD/0GywuLBAhMWP9JFYQm0VAVWJO62sWEJsX
-	qP7iggYoW1Dix+R7YDazgJbE+p3HmSBseYnNa94yg+yVEFCXePRXFyQsImAksX5jL1SJiMS+
-	F+8YJzAKzUIyaRaSSbOQTJqFpGUBI8sqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOBE8Ex6
-	B+OqBotDjAIcjEo8vBo63oFCrIllxZW5hxglOJiVRHgjU4BCvCmJlVWpRfnxRaU5qcWHGJOB
-	Hp3ILCWanA9MUnkl8YbGJmZGlkZmFkYm5uakCSuJ8x5stQ4UEkhPLEnNTk0tSC2C2cLEwSnV
-	wBj/iakuUPzGzIoI6wiF1csd9quyWjgk3hJkaP2zTFTq71+hVqdr3YwKv3ZL+c1l5l8jlLrH
-	gj3PMkOXhT9j6txMJqWgzVeKN+5mfLJbqXav2lbud49XfPmy89GdJvU2xb8Ln+1coMCcrL5y
-	k69vv+X8Q0/23l/Ote91yZKV4t2/HD4eO6Cz4boSS3FGoqEWc1FxIgDK7o91SAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 21 Mar 2013 22:16:13 -0400
+Message-ID: <514BBEE1.5040204@linux.vnet.ibm.com>
+Date: Fri, 22 Mar 2013 10:16:01 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: mtosatti@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 4/7] KVM: MMU: delete shadow page from hash list in
+ kvm_mmu_prepare_zap_page
+References: <1363768227-4782-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1363768227-4782-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130321131409.GT3889@redhat.com>
+In-Reply-To: <20130321131409.GT3889@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032202-2674-0000-0000-0000084F870A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CONFIG_PM_SLEEP to suspend/resume functions to fix the following
-build warning when CONFIG_PM_SLEEP is not selected. This is because
-sleep PM callbacks defined by SIMPLE_DEV_PM_OPS are only used when
-the CONFIG_PM_SLEEP is enabled.
+On 03/21/2013 09:14 PM, Gleb Natapov wrote:
+> On Wed, Mar 20, 2013 at 04:30:24PM +0800, Xiao Guangrong wrote:
+>> Move deletion shadow page from the hash list from kvm_mmu_commit_zap_page to
+>> kvm_mmu_prepare_zap_page, we that we can free the shadow page out of mmu-lock.
+>>
+>> Also, delete the invalid shadow page from the hash list since this page can
+>> not be reused anymore. This makes reset mmu-cache more easier - we do not need
+>> to care all hash entries after reset mmu-cache
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/kvm/mmu.c |    8 ++++++--
+>>  1 files changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index dc37512..5578c91 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -1472,7 +1472,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+>>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
+>>  {
+>>  	ASSERT(is_empty_shadow_page(sp->spt));
+>> -	hlist_del(&sp->hash_link);
+>> +
+>>  	list_del(&sp->link);
+>>  	free_page((unsigned long)sp->spt);
+>>  	if (!sp->role.direct)
+>> @@ -1660,7 +1660,8 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
+>>  
+>>  #define for_each_gfn_indirect_valid_sp(_kvm, _sp, _gfn)			\
+>>  	for_each_gfn_sp(_kvm, _sp, _gfn)				\
+>> -		if ((_sp)->role.direct || (_sp)->role.invalid) {} else
+>> +		if ((_sp)->role.direct ||				\
+>> +		      ((_sp)->role.invalid && WARN_ON(1))) {} else
+>>  
+>>  /* @sp->gfn should be write-protected at the call site */
+>>  static int __kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+>> @@ -2079,6 +2080,9 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+>>  		unaccount_shadowed(kvm, sp->gfn);
+>>  	if (sp->unsync)
+>>  		kvm_unlink_unsync_page(kvm, sp);
+>> +
+>> +	hlist_del_init(&sp->hash_link);
+>> +
+> Now we delete roots from hash, but leave it on active_mmu_pages list. Is
+> this OK?
 
-drivers/rtc/rtc-88pm80x.c:238:12: warning: 'pm80x_rtc_suspend' defined but not used [-Wunused-function]
-drivers/rtc/rtc-88pm80x.c:243:12: warning: 'pm80x_rtc_resume' defined but not used [-Wunused-function]
+It is okay i think. Hash-lish is only used to find gfn's shadow page. Invalid shadow page
+does not contain any useful guest content and will be freed soon after vcpu reload.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/rtc/rtc-88pm80x.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/rtc/rtc-88pm80x.c b/drivers/rtc/rtc-88pm80x.c
-index 76f9505..f3742f3 100644
---- a/drivers/rtc/rtc-88pm80x.c
-+++ b/drivers/rtc/rtc-88pm80x.c
-@@ -234,7 +234,7 @@ static const struct rtc_class_ops pm80x_rtc_ops = {
- 	.alarm_irq_enable = pm80x_rtc_alarm_irq_enable,
- };
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- static int pm80x_rtc_suspend(struct device *dev)
- {
- 	return pm80x_dev_suspend(dev);
--- 
-1.7.2.5
-
+IIRC, we did it when we used rcu to free shadow pages.
 
