@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338Ab3CVKnb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 06:43:31 -0400
-Received: from sauhun.de ([89.238.76.85]:57950 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753897Ab3CVKn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 06:43:29 -0400
-Date: Fri, 22 Mar 2013 11:43:23 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: =?utf-8?B?7Iah7J2A67SJ?= <eunb.song@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Subject: Re: I2C: Fix i2c fail problem when a process is terminated by a
- signal on octeon in 3.8
-Message-ID: <20130322104323.GF8240@the-dreams.de>
-References: <16202598.147281361912922998.JavaMail.weblogic@epml02>
+	id S1754443Ab3CVKoG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 06:44:06 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:54483 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753897Ab3CVKoE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 06:44:04 -0400
+Date: Fri, 22 Mar 2013 13:42:48 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [-next] fs/eventpoll.c:545 suspicious rcu_dereference_check() usage
+Message-ID: <20130322104248.GA2589@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <16202598.147281361912922998.JavaMail.weblogic@epml02>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 09:08:43PM +0000, 송은봉 wrote:
-> 
-> I've been debugging the abnormal operation of i2c on octeon. 
-> If a process is terminated by signal in the middle of i2c operation, 
-> next i2c read operation which is done by another process was failed.
-> So i changed to ignore signal in the middle of i2c operation. 
-> After that the problem was not reproduced.
-> 
->  
-> 
-> Signed-off-by: EunBong Song <eunb.song@samsung.com>
+Hello,
 
-Basically OK, but you have lots of whitespace issues, so I can't apply
-your patch. Please resend and make sure it applies.
+got this with today's linux-next
 
-Thanks,
+[    3.163894] ===============================
+[    3.163895] [ INFO: suspicious RCU usage. ]
+[    3.163897] 3.9.0-rc3-next-20130322-dbg-dirty #1 Not tainted
+[    3.163898] -------------------------------
+[    3.163900] fs/eventpoll.c:545 suspicious rcu_dereference_check() usage!
+[    3.163900] other info that might help us debug this:
+[    3.163902] rcu_scheduler_active = 1, debug_locks = 1
+[    3.163903] 2 locks held by ata_id/763:
+[    3.163915]  #0:  (&pipe->wait){......}, at: [<ffffffff810757a7>] __wake_up_sync_key+0x37/0x80
+[    3.163923]  #1:  (&(&ep->lock)->rlock){......}, at: [<ffffffff811bb4a9>] ep_poll_callback+0x59/0x1f0
+[    3.163924] 	stack backtrace:
+[    3.163927] Pid: 763, comm: ata_id Not tainted 3.9.0-rc3-next-20130322-dbg-dirty #1
+[    3.163929] Call Trace:
+[    3.163940]  [<ffffffff810a7c66>] lockdep_rcu_suspicious+0xe6/0x130
+[    3.163945]  [<ffffffff811bb61f>] ep_poll_callback+0x1cf/0x1f0
+[    3.163949]  [<ffffffff81074765>] __wake_up_common+0x55/0x90
+[    3.163952]  [<ffffffff810757c3>] __wake_up_sync_key+0x53/0x80
+[    3.163957]  [<ffffffff811775f8>] pipe_write+0x448/0x590
+[    3.163962]  [<ffffffff8116df70>] do_sync_write+0x80/0xb0
+[    3.163965]  [<ffffffff8116e938>] vfs_write+0xa8/0x180
+[    3.163968]  [<ffffffff8116ec95>] SyS_write+0x55/0xb0
+[    3.163975]  [<ffffffff81620506>] system_call_fastpath+0x1a/0x1f
 
-   Wolfram
+
+
+	-ss
