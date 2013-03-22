@@ -1,92 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675Ab3CVAyc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 20:54:32 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:45567 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab3CVAyb (ORCPT
+	id S932719Ab3CVA4a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 20:56:30 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34182 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab3CVA43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 20:54:31 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        heiko.carstens@de.ibm.com, akpm@linux-foundation.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com
-References: <8738vp75cy.fsf@xmission.com>
-	<20130321.151428.393714972.d.hatayama@jp.fujitsu.com>
-	<87ip4l1d1q.fsf@xmission.com>
-	<20130321.154650.424925595.d.hatayama@jp.fujitsu.com>
-	<87a9pxz0wv.fsf@xmission.com> <20130321152124.GJ3934@redhat.com>
-	<20130321152751.GK3934@redhat.com>
-Date: Thu, 21 Mar 2013 17:54:22 -0700
-In-Reply-To: <20130321152751.GK3934@redhat.com> (Vivek Goyal's message of
-	"Thu, 21 Mar 2013 11:27:51 -0400")
-Message-ID: <87ip4kntj5.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 21 Mar 2013 20:56:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/MRXmdWqxBlM0djLKGpG67U6+wZLb3gHE=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Vivek Goyal <vgoyal@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v3 18/21] vmcore: check if vmcore objects satify mmap()'s page-size boundary requirement
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <514B2D0E.808@gmail.com>
+References: <1363524578-3765-1-git-send-email-chenhc@lemote.com>
+	<514A42F2.4080501@gmail.com>
+	<514B2D0E.808@gmail.com>
+Date: Fri, 22 Mar 2013 08:56:27 +0800
+X-Google-Sender-Auth: nWpSjPnZbHjZ-HUm4C56n_F91d0
+Message-ID: <CAAhV-H79SGN-R5paROAzJQ+yuFsF7znOSpzEe+=bKJ9UMtajRw@mail.gmail.com>
+Subject: Re: [PATCH V2 01/02] MIPS: Build uasm-generated code only once to
+ avoid CPU Hotplug problem
+From: Huacai Chen <chenhc@lemote.com>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
+        Zhangjin Wu <wuzhangjin@gmail.com>, Hongbing Hu <huhb@lemote.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
-
-> On Thu, Mar 21, 2013 at 11:21:24AM -0400, Vivek Goyal wrote:
+On Thu, Mar 21, 2013 at 11:53 PM, David Daney <ddaney.cavm@gmail.com> wrote:
+> On 03/20/2013 04:14 PM, David Daney wrote:
+>>
+>> On 03/17/2013 05:49 AM, Huacai Chen wrote:
+>>>
+>>> This and the next patch resolve memory corruption problems while CPU
+>>> hotplug. Without these patches, memory corruption can triggered easily
+>>> as below:
+>>>
+> [...]
 >
-> [..]
->> So if starting or end address of PT_LOAD header is not aligned, why
->> not we simply allocate a page. Copy the relevant data from old memory,
->> fill rest with zero. That way mmap and read view will be same. There
->> will be no surprises w.r.t reading old kernel memory beyond what's 
->> specified by the headers.
+>>
+>> We were seeing the same crashes, this patch set seems to fix the problem.
+>>
+>> Acked-by: David Daney <david.daney@cavium.com>
 >
-> Copying from old memory might spring surprises w.r.t hw poisoned
-> pages. I guess we will have to disable MCE, read page, enable it
-> back or something like that to take care of these issues.
 >
-> In the past we have recommended makedumpfile to be careful, look
-> at struct pages and make sure we are not reading poisoned pages.
-> But vmcore itself is reading old memory and can run into this
-> issue too.
+> On second thought...
+>
+>
+>
+>>
+>>> ---
+>>>   arch/mips/include/asm/cpu-features.h               |    3 +++
+>>>   .../asm/mach-loongson/cpu-feature-overrides.h      |    1 +
+>>>   arch/mips/mm/page.c                                |   10 ++++++++++
+>>>   arch/mips/mm/tlbex.c                               |   10 ++++++++--
+>>>   4 files changed, 22 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/arch/mips/include/asm/cpu-features.h
+>>> b/arch/mips/include/asm/cpu-features.h
+>>> index 1a57e8b..e5ec8fc 100644
+>>> --- a/arch/mips/include/asm/cpu-features.h
+>>> +++ b/arch/mips/include/asm/cpu-features.h
+>>> @@ -113,6 +113,9 @@
+>>>   #ifndef cpu_has_pindexed_dcache
+>>>   #define cpu_has_pindexed_dcache (cpu_data[0].dcache.flags &
+>>> MIPS_CACHE_PINDEX)
+>>>   #endif
+>>> +#ifndef cpu_has_local_ebase
+>>> +#define cpu_has_local_ebase    1
+>
+>
+>
+> This really should default to 0 and only be set for (??who knows what??).
+The original code before this patch assume all MIPS has a local ebase.
+To minimize the modification, we default it to 1 (but I don't know
+which CPU has local ebase).
 
-Vivek you are overthinking this.
-
-If there are issues with reading partially exported pages we should
-fix them in kexec-tools or in the kernel where the data is exported.
-
-In the examples given in the patch what we were looking at were cases
-where the BIOS rightly or wrongly was saying kernel this is my memory
-stay off.  But it was all perfectly healthy memory.
-
-/proc/vmcore is a simple data dumper and prettifier.  Let's keep it that
-way so that we can predict how it will act when we feed it information.
-/proc/vmcore should not be worrying about or covering up sins elsewhere
-in the system.
-
-At the level of /proc/vmcore we may want to do something about ensuring
-MCE's don't kill us.  But that is an orthogonal problem.
-
-Eric
+>
+> David Daney
+>
+>
+>
+>>> +#endif
+>>>
+>>>   /*
+>>>    * I-Cache snoops remote store.     This only matters on SMP.  Some
+>>> multiprocessors
+>>> diff --git
+>>> a/arch/mips/include/asm/mach-loongson/cpu-feature-overrides.h
+>>> b/arch/mips/include/asm/mach-loongson/cpu-feature-overrides.h
+>>> index 75fd8c0..c0f3ef4 100644
+>>> --- a/arch/mips/include/asm/mach-loongson/cpu-feature-overrides.h
+>>> +++ b/arch/mips/include/asm/mach-loongson/cpu-feature-overrides.h
+>>> @@ -57,5 +57,6 @@
+>>>   #define cpu_has_vint        0
+>>>   #define cpu_has_vtag_icache    0
+>>>   #define cpu_has_watch        1
+>>> +#define cpu_has_local_ebase    0
+>>>
+>>>   #endif /* __ASM_MACH_LOONGSON_CPU_FEATURE_OVERRIDES_H */
+>>> diff --git a/arch/mips/mm/page.c b/arch/mips/mm/page.c
+>>> index a29fba5..4eb8dcf 100644
+>>> --- a/arch/mips/mm/page.c
+>>> +++ b/arch/mips/mm/page.c
+>>> @@ -247,6 +247,11 @@ void __cpuinit build_clear_page(void)
+>>>       struct uasm_label *l = labels;
+>>>       struct uasm_reloc *r = relocs;
+>>>       int i;
+>>> +    static atomic_t run_once = ATOMIC_INIT(0);
+>>> +
+>>> +    if (atomic_xchg(&run_once, 1)) {
+>>> +        return;
+>>> +    }
+>>>
+>>>       memset(labels, 0, sizeof(labels));
+>>>       memset(relocs, 0, sizeof(relocs));
+>>> @@ -389,6 +394,11 @@ void __cpuinit build_copy_page(void)
+>>>       struct uasm_label *l = labels;
+>>>       struct uasm_reloc *r = relocs;
+>>>       int i;
+>>> +    static atomic_t run_once = ATOMIC_INIT(0);
+>>> +
+>>> +    if (atomic_xchg(&run_once, 1)) {
+>>> +        return;
+>>> +    }
+>>>
+>>>       memset(labels, 0, sizeof(labels));
+>>>       memset(relocs, 0, sizeof(relocs));
+>>> diff --git a/arch/mips/mm/tlbex.c b/arch/mips/mm/tlbex.c
+>>> index 820e661..6bc28b4 100644
+>>> --- a/arch/mips/mm/tlbex.c
+>>> +++ b/arch/mips/mm/tlbex.c
+>>> @@ -2162,8 +2162,11 @@ void __cpuinit build_tlb_refill_handler(void)
+>>>       case CPU_TX3922:
+>>>       case CPU_TX3927:
+>>>   #ifndef CONFIG_MIPS_PGD_C0_CONTEXT
+>>> -        build_r3000_tlb_refill_handler();
+>>> +        if (cpu_has_local_ebase)
+>>> +            build_r3000_tlb_refill_handler();
+>>>           if (!run_once) {
+>>> +            if (!cpu_has_local_ebase)
+>>> +                build_r3000_tlb_refill_handler();
+>>>               build_r3000_tlb_load_handler();
+>>>               build_r3000_tlb_store_handler();
+>>>               build_r3000_tlb_modify_handler();
+>>> @@ -2192,9 +2195,12 @@ void __cpuinit build_tlb_refill_handler(void)
+>>>               build_r4000_tlb_load_handler();
+>>>               build_r4000_tlb_store_handler();
+>>>               build_r4000_tlb_modify_handler();
+>>> +            if (!cpu_has_local_ebase)
+>>> +                build_r4000_tlb_refill_handler();
+>>>               run_once++;
+>>>           }
+>>> -        build_r4000_tlb_refill_handler();
+>>> +        if (cpu_has_local_ebase)
+>>> +            build_r4000_tlb_refill_handler();
+>>>       }
+>>>   }
+>>>
+>>>
+>>
+>
+>
