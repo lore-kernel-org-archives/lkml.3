@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161017Ab3CVQfR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 12:35:17 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:45959 "EHLO e8.ny.us.ibm.com"
+	id S1161035Ab3CVQfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 12:35:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60404 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933488Ab3CVQfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 12:35:15 -0400
-Date: Fri, 22 Mar 2013 09:34:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ming Lei <tom.leiming@gmail.com>, Shaohua Li <shli@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: +
- atomic-improve-atomic_inc_unless_negative-atomic_dec_unless_positive .patch
- added to -mm tree
-Message-ID: <20130322163454.GO3637@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130314162413.GA21344@redhat.com>
- <CACVXFVP+fGeWS3xwBfaQDFaH7=e_4CbgCru9DJczB2vyWuUL1g@mail.gmail.com>
- <20130315134632.GA18335@redhat.com>
- <CACVXFVOjWc4RU+A-8PeYP9RfJ1-HSiZHbbv771LXDynMs0ybMQ@mail.gmail.com>
- <20130315165131.GA32065@redhat.com>
- <20130317172621.GQ3656@linux.vnet.ibm.com>
- <20130321170827.GA23539@redhat.com>
- <1363889025.4431.35.camel@edumazet-glaptop>
- <20130321183021.GA27586@redhat.com>
- <1363906618.4431.37.camel@edumazet-glaptop>
+	id S1161015Ab3CVQfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 12:35:42 -0400
+Message-ID: <514C8858.3050702@suse.cz>
+Date: Fri, 22 Mar 2013 17:35:36 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363906618.4431.37.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032216-9360-0000-0000-0000117071B7
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Alex Williamson <alex.williamson@redhat.com>, Takashi Iwai <tiwai@suse.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, Oliver Neukum <oneukum@suse.de>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pciehp: Add pciehp_surprise module option
+References: <s5h38vqjhk6.wl%tiwai@suse.de> <1363802953.24132.513.camel@bling.home> <s5hr4j9q48d.wl%tiwai@suse.de> <514C8388.3050200@suse.cz> <20130322161644.GA28760@srcf.ucam.org>
+In-Reply-To: <20130322161644.GA28760@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 03:56:58PM -0700, Eric Dumazet wrote:
-> On Thu, 2013-03-21 at 19:30 +0100, Oleg Nesterov wrote:
+On 22.3.2013 17:16, Matthew Garrett wrote:
+> On Fri, Mar 22, 2013 at 05:15:04PM +0100, Michal Marek wrote:
 > 
-> > To me, it would be better to kill atomic_inc_not_zero_hint() or unify
-> > unify it with atomic_inc_not_zero(). But this is another story.
+>> Alex, Matthew, would it work for you to have this debug / band-aid
+>> option _and_ have a list of either machines' dmi strings that have this
+>> problem, or devices' PCI IDs (*), and enable the surprise event handling
+>> for such machines / devices automatically?  The option would be still
+>> useful for debugging, to be able to easily find out if given machine has
+>> this problem and needs to be added to the quirk list.
 > 
-> git is your friend.
-> 
-> I suggest you read 3f9d35b9514 changelog before killing it, thanks.
+> That's be preferable, but if there's anything we've learned about dmi 
+> strings it's that they usually mean we're doing something wrong. Does 
+> this work with Windows without any quirking? Is there a machine-specific 
+> driver for the PCIe chipset?
 
-Hello, Eric,
+I don't know. Oliver and Takashi have the machines, but I'm not sure if
+they have a working Windows image for them.
 
-Does the addition of a memory barrier in the not-zero case impose
-too large a performance penalty?
-
-							Thanx, Paul
-
+Michal
