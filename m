@@ -1,47 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933909Ab3CVQUm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 12:20:42 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:44386 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933792Ab3CVQUk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 12:20:40 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Subject: Re: [PATCH] net: Add support for handling queueing in hardware
-From: Ben Collins <benmcollins13@gmail.com>
-In-Reply-To: <20130322.115924.1452021957855498515.davem@davemloft.net>
-Date: Fri, 22 Mar 2013 12:14:44 -0400
-Cc: afleming@freescale.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <0FF79196-E252-4738-BFB5-C0B10F447B33@gmail.com>
-References: <9AEAD974-4549-475A-AE15-C92523CD2466@gmail.com> <20130322.114159.2303026992656610194.davem@davemloft.net> <14243FE7-A0A6-4C0C-AEFB-95F19C8898E3@gmail.com> <20130322.115924.1452021957855498515.davem@davemloft.net>
-To: David Miller <davem@davemloft.net>
-X-Mailer: Apple Mail (2.1499)
+	id S933973Ab3CVQVc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 12:21:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51871 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933862Ab3CVQVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 12:21:31 -0400
+Message-ID: <1363969243.24132.613.camel@bling.home>
+Subject: Re: [PATCH] pciehp: Add pciehp_surprise module option
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Takashi Iwai <tiwai@suse.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, Oliver Neukum <oneukum@suse.de>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 22 Mar 2013 10:20:43 -0600
+In-Reply-To: <514C8388.3050200@suse.cz>
+References: <s5h38vqjhk6.wl%tiwai@suse.de>
+	 <1363802953.24132.513.camel@bling.home> <s5hr4j9q48d.wl%tiwai@suse.de>
+	 <514C8388.3050200@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mar 22, 2013, at 11:59 AM, David Miller <davem@davemloft.net> wrote:
-
-> From: Ben Collins <benmcollins13@gmail.com>
-> Date: Fri, 22 Mar 2013 11:53:54 -0400
+On Fri, 2013-03-22 at 17:15 +0100, Michal Marek wrote:
+> On 20.3.2013 20:08, Takashi Iwai wrote:
+> > At Wed, 20 Mar 2013 12:09:13 -0600,
+> > Alex Williamson wrote:
+> >>
+> >> On Wed, 2013-03-20 at 15:02 +0100, Takashi Iwai wrote:
+> >>> We encountered a problem that on some HP machines the Realtek PCI-e
+> >>> card reader device appears only when you inserted a card before the
+> >>> cold boot.  While debugging, it turned out that the device is actually
+> >>> handled via PCI-e hotplug in some level.  The device sends a presence
+> >>> change notification, and pciehp receives it, but it's ignored because
+> >>> of lack of the hotplug surprise (PCI_EXP_SLTCAP_HPS) capability bit.
+> >>> Once when this check passes, everything starts working -- the device
+> >>> appears upon plugging the card properly.
+> >>>
+> >>> There are a few other bug reports indicating the similar problems
+> >>> (e.g. on recent Dell laptops), and I guess the culprit is same.
+> >>>
+> >>> This patch adds a new module option, pciehp_surprise, to pciehp as a
+> >>> workaround.  When pciehp_surprise=1 is given, pciehp handles the
+> >>> presence change as the device on/off as if PCI_EXP_SLTCAP_HPS is set.
+> >>> Unless it's set explicitly, there is no impact on the existing
+> >>> behavior.
+> >>>
+> >>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> >>> ---
+> >>>  drivers/pci/hotplug/pciehp.h      | 3 ++-
+> >>>  drivers/pci/hotplug/pciehp_core.c | 3 +++
+> >>>  2 files changed, 5 insertions(+), 1 deletion(-)
+> >>>
+> >>> diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
+> >>> index 2c113de..314f3be 100644
+> >>> --- a/drivers/pci/hotplug/pciehp.h
+> >>> +++ b/drivers/pci/hotplug/pciehp.h
+> >>> @@ -44,6 +44,7 @@ extern bool pciehp_poll_mode;
+> >>>  extern int pciehp_poll_time;
+> >>>  extern bool pciehp_debug;
+> >>>  extern bool pciehp_force;
+> >>> +extern bool pciehp_surprise;
+> >>>  
+> >>>  #define dbg(format, arg...)						\
+> >>>  do {									\
+> >>> @@ -122,7 +123,7 @@ struct controller {
+> >>>  #define MRL_SENS(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_MRLSP)
+> >>>  #define ATTN_LED(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_AIP)
+> >>>  #define PWR_LED(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_PIP)
+> >>> -#define HP_SUPR_RM(ctrl)	((ctrl)->slot_cap & PCI_EXP_SLTCAP_HPS)
+> >>> +#define HP_SUPR_RM(ctrl)	(pciehp_surprise || ((ctrl)->slot_cap & PCI_EXP_SLTCAP_HPS))
+> >>>  #define EMI(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_EIP)
+> >>>  #define NO_CMD_CMPL(ctrl)	((ctrl)->slot_cap & PCI_EXP_SLTCAP_NCCS)
+> >>>  #define PSN(ctrl)		((ctrl)->slot_cap >> 19)
+> >>> diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
+> >>> index 7d72c5e..c3a574e 100644
+> >>> --- a/drivers/pci/hotplug/pciehp_core.c
+> >>> +++ b/drivers/pci/hotplug/pciehp_core.c
+> >>> @@ -42,6 +42,7 @@ bool pciehp_debug;
+> >>>  bool pciehp_poll_mode;
+> >>>  int pciehp_poll_time;
+> >>>  bool pciehp_force;
+> >>> +bool pciehp_surprise;
+> >>>  
+> >>>  #define DRIVER_VERSION	"0.4"
+> >>>  #define DRIVER_AUTHOR	"Dan Zink <dan.zink@compaq.com>, Greg Kroah-Hartman <greg@kroah.com>, Dely Sy <dely.l.sy@intel.com>"
+> >>> @@ -55,10 +56,12 @@ module_param(pciehp_debug, bool, 0644);
+> >>>  module_param(pciehp_poll_mode, bool, 0644);
+> >>>  module_param(pciehp_poll_time, int, 0644);
+> >>>  module_param(pciehp_force, bool, 0644);
+> >>> +module_param(pciehp_surprise, bool, 0644);
+> >>>  MODULE_PARM_DESC(pciehp_debug, "Debugging mode enabled or not");
+> >>>  MODULE_PARM_DESC(pciehp_poll_mode, "Using polling mechanism for hot-plug events or not");
+> >>>  MODULE_PARM_DESC(pciehp_poll_time, "Polling mechanism frequency, in seconds");
+> >>>  MODULE_PARM_DESC(pciehp_force, "Force pciehp, even if OSHP is missing");
+> >>> +MODULE_PARM_DESC(pciehp_surprise, "Force to set hotplug-surprise capability");
+> >>>  
+> >>>  #define PCIE_MODULE_NAME "pciehp"
+> >>>  
+> >>
+> >> Please no.  Can we quirk just the device with the problem?
+> > 
+> > It'd be good to have a static quirk in the end, yes.
 > 
->> Also, if there's a patch that makes my hardware work, but I can't
->> use it because (even though it's open source licensed) the author
->> doesn't want it in mainline, then that is effectively squatting.
+> Alex, Matthew, would it work for you to have this debug / band-aid
+> option _and_ have a list of either machines' dmi strings that have this
+> problem, or devices' PCI IDs (*), and enable the surprise event handling
+> for such machines / devices automatically?  The option would be still
+> useful for debugging, to be able to easily find out if given machine has
+> this problem and needs to be added to the quirk list.
 > 
-> This is called respecting the wishes of the author of the code, I'm
-> sorry if this is a foreign concept for you.
+> (*) It would probably make more sense to have a list of dmi strings,
+> because it's the PCIe controller that does not set the capability bit
+> when it should. The device (Realtek card reader in this case) seems to
+> behave correctly. The machines in question have been laptops or
+> all-in-one PCs so far, so there should be no problem with dmi matches.
 
+Yep, I think that makes sense, leave the global option for debugging but
+fix individual known broken devices through dmi quirks.  Thanks,
 
-I'm sorry, I thought we were working on open source projects here. If the code isn't encumbered by patents, legal issues or technical problems, and is licensed compatible with the kernel, I just thought it was fair game.
-
---
-Servergy  : http://www.servergy.com/
-SwissDisk : http://www.swissdisk.com/
-Ubuntu    : http://www.ubuntu.com/
-My Blog   : http://ben-collins.blogspot.com/
+Alex
 
