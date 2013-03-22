@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422827Ab3CVS2S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 14:28:18 -0400
-Received: from www.sr71.net ([198.145.64.142]:34380 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422649Ab3CVS2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 14:28:17 -0400
-Message-ID: <514CA4EA.9030206@sr71.net>
-Date: Fri, 22 Mar 2013 11:37:30 -0700
-From: Dave <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2, RFC 21/30] x86-64, mm: proper alignment mappings with
- hugepages
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-22-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1363283435-7666-22-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1422913Ab3CVSg3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 14:36:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43291 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1422880Ab3CVSg1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 14:36:27 -0400
+Message-ID: <1363977368.3728.35.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] register_console: prevent adding the same console twice
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Andreas =?ISO-8859-1?Q?Bie=DFmann?= <andreas@biessmann.de>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay@vrfy.org>, stable@vger.kernel.org
+Date: Fri, 22 Mar 2013 18:36:08 +0000
+In-Reply-To: <1363947052-15605-1-git-send-email-andreas@biessmann.de>
+References: <1363947052-15605-1-git-send-email-andreas@biessmann.de>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-IRp0Lp8FklGCz4MV84fW"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:9535:520b:eb30:917a
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
-> +	if (filp)
-> +		info.align_mask = mapping_can_have_hugepages(filp->f_mapping) ?
-> +			PAGE_MASK & ~HPAGE_MASK : get_align_mask();
-> +	else
-> +		info.align_mask = 0;
->  	info.align_offset = pgoff << PAGE_SHIFT;
->  	return vm_unmapped_area(&info);
->  }
-> @@ -174,7 +179,11 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
->  	info.length = len;
->  	info.low_limit = PAGE_SIZE;
->  	info.high_limit = mm->mmap_base;
-> -	info.align_mask = filp ? get_align_mask() : 0;
-> +	if (filp)
-> +		info.align_mask = mapping_can_have_hugepages(filp->f_mapping) ?
-> +			PAGE_MASK & ~HPAGE_MASK : get_align_mask();
-> +	else
-> +		info.align_mask = 0;
->  	info.align_offset = pgoff << PAGE_SHIFT;
->  	addr = vm_unmapped_area(&info);
->  	if (!(addr & ~PAGE_MASK))
 
-how about
+--=-IRp0Lp8FklGCz4MV84fW
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-static inline
-unsigned long mapping_align_mask(struct address_space *mapping)
-{
-	if (mapping_can_have_hugepages(filp->f_mapping))
-		return PAGE_MASK & ~HPAGE_MASK;
-	return get_align_mask();
-}
+On Fri, 2013-03-22 at 11:10 +0100, Andreas Bie=C3=9Fmann wrote:
+> This patch guards the console_drivers list to be corrupted. The
+> for_each_console() macro insist on a strictly forward list ended by NULL:
+>=20
+>  con0->next->con1->next->NULL
+>=20
+> Without this patch it may happen easily to destroy this list for example =
+by
+> adding 'earlyprintk' twice. This will result in the following list:
+>=20
+>  con0->next->con0
+>=20
+> This in turn will result in an endless loop in console_unlock() later on =
+by
+> printing the first __log_buf line endlessly.
+>=20
+> Signed-off-by: Andreas Bie=C3=9Fmann <andreas@biessmann.de>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Kay Sievers <kay@vrfy.org>
+> Cc: stable@vger.kernel.org
+> ---
+>  kernel/printk.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+>=20
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 0b31715..f78bfcd 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -2254,6 +2254,14 @@ void register_console(struct console *newcon)
+>  	unsigned long flags;
+>  	struct console *bcon =3D NULL;
+> =20
+> +	if (console_drivers)
+> +		for_each_console(bcon)
+> +			if (bcon =3D=3D newcon) {
+> +				pr_warn("prevent adding console '%s%d' twice\n",
+> +					newcon->name, newcon->index);
 
-to replace these two open-coded versions?
+Since this is surely a bug in the calling driver, I think the warning
+should be louder, i.e. use WARN.
+
+Ben.
+
+> +				return;
+> +			}
+> +
+>  	/*
+>  	 * before we register a new CON_BOOT console, make sure we don't
+>  	 * already have a valid console
+
+--=20
+Ben Hutchings
+Make three consecutive correct guesses and you will be considered an expert=
+.
+
+--=-IRp0Lp8FklGCz4MV84fW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUUykmOe/yOyVhhEJAQq3eBAAgvLwIV251d3A82E/N9kZgFoExWO3xy31
+hArNHyHXklQdukgVQH9uqKJxYpIhr9rhjf2O7TL6yBrNDA306AujTaqWM51bcqe1
+vM9VwzW0jFifRTdv1tAhbm0ydZ3MiV893JYtu4vzIdV/+rAa7N0QpYjU2d0PKYpV
+UpNcDfmBAJhrd6Y3kyxFqSUjhW104NU+B+RVet4cpom0EPRgjyqPHZnOf/XnbU5M
+PGX/4yTVpWGI9fWFddg25qjpMRBRMmj7tDqTBOkk4LZdLbFSoRzL6JF4qWHRjiBZ
+V33KxmRHCOPVaYQcExmDPFhebFCcQwBBSddBYVeLqloZpatLlVCZEvwbv3JQ3Qpl
+XXvSs7GN4obQ/yA+x1CqcK6ITI39OqryAJ6cfm5BUIrQzYvDbn51oBvuBGIkF868
+CRHQUFKzhLawFwuOOp8YiqbAuVdiEZsKLAkRk5tCGQqLLNlHAeGyDEnarVJvaQdU
+Tpa5EVVwdDZZ58+EfM3L/tpPu08TJejbEPIbmoqhIgbAJ4COn5CWaXvacPkj0jab
+IdQsDbvXK3QMc1zgEPd0mHAROroio2DzcWavEbWlEpnWztFHo/A5En5EKgJ2nxgO
+PMnZZX0fWBeBweprXV4rkxjMVPYXx0sUFa+jx5ZTdaEp38Pb5upUoP/CfWy3MYq7
+7eubLYaO/r8=
+=LijB
+-----END PGP SIGNATURE-----
+
+--=-IRp0Lp8FklGCz4MV84fW--
