@@ -1,119 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422861Ab3CVSYq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 14:24:46 -0400
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:45916
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422649Ab3CVSYo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 14:24:44 -0400
-X-Forefront-Antispam-Report: CIP:160.33.194.230;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail03v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zzbb2dI98dI936eI1432I14ffIzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dh8275bhz2fh2a8h668h839h947hd25hf0ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1b0ah1155h)
-Message-ID: <514CA1A5.1090606@am.sony.com>
-Date: Fri, 22 Mar 2013 11:23:33 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1422890Ab3CVS0G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 14:26:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35837 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422655Ab3CVS0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 14:26:03 -0400
+Date: Fri, 22 Mar 2013 18:25:56 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        dormando <dormando@rydia.net>, Satoru Moriya <satoru.moriya@hds.com>,
+        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning
+ requirements for kswapd
+Message-ID: <20130322182556.GB32241@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-3-git-send-email-mgorman@suse.de>
+ <20130321162518.GB27848@cmpxchg.org>
+ <20130321180238.GM1878@suse.de>
+ <20130322165349.GI1953@cmpxchg.org>
 MIME-Version: 1.0
-To: Mats Liljegren <liljegren.mats2@gmail.com>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [BUG] bisected: PandaBoard smsc95xx ethernet driver error from
- USB timeout
-References: <Pine.LNX.4.44L0.1303211037070.1899-100000@iolanthe.rowland.org> <514BC5C3.9080808@am.sony.com> <20130322100329.GH29378@enea.se>
-In-Reply-To: <20130322100329.GH29378@enea.se>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130322165349.GI1953@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/13 03:03, Mats Liljegren wrote:
-> Frank Rowand wrote:
->> On 03/21/13 07:41, Alan Stern wrote:
->>> On Wed, 20 Mar 2013, Frank Rowand wrote:
->>>
->>>> Hi All,
->>>>
->>>> Not quite sure quite where the problem is (USB, OMAP, smsc95xx driver, other???),
->>>> so casting the nets wide...
->>>>
->>>> The PandaBoard frequently fails to boot with an eth0 error when mounting
->>>> the root file system via NFS (ethernet driver fails due to a USB timeout;
->>>> no ethernet means NFS won't work).  A typical set of error messages is:
->>>>
->>>> [    3.264373] smsc95xx 1-1.1:1.0: usb_probe_interface
->>>> [    3.269500] smsc95xx 1-1.1:1.0: usb_probe_interface - got id
->>>> [    3.275543] smsc95xx v1.0.4
->>>> [    8.078674] smsc95xx 1-1.1:1.0: eth0: register 'smsc95xx' at usb-ehci-omap.0-1.1, smsc95xx USB 2.0 Ethernet, 82:b9:1d:fa:67:0d
->>>> [    8.091003] hub 1-1:1.0: state 7 ports 5 chg 0000 evt 0002
->>>> [   13.509918] usb 1-1.1: swapper/0 timed out on ep0out len=0/4
->>>> [   13.515869] smsc95xx 1-1.1:1.0: eth0: Failed to write register index 0x00000108
->>>> [   13.523559] smsc95xx 1-1.1:1.0: eth0: Failed to write ADDRL: -110
->>>> [   13.529998] IP-Config: Failed to open eth0
->>>>
->>>> I have bisected this to:
->>>>
->>>>   commit 18aafe64d75d0e27dae206cacf4171e4e485d285
->>>>   Author: Alan Stern <stern@rowland.harvard.edu>
->>>>   Date:   Wed Jul 11 11:23:04 2012 -0400
->>>>
->>>>      USB: EHCI: use hrtimer for the I/O watchdog
->>>
->>> I don't understand how that commit could cause a timeout unless there 
->>> are at least two other bugs present in your system.
->>>
->>>> Note that to compile this version of the kernel, an additional fix must
->>>> also be applied:
->>>>
->>>>   commit ba5952e0711b14d8d4fe172671f8aa6091ace3ee
->>>>   Author: Ming Lei <ming.lei@canonical.com>
->>>>   Date:   Fri Jul 13 17:25:24 2012 +0800
->>>>
->>>>      USB: ehci-omap: fix compile failure(v1)
->>>>
->>>> The symptom can be worked around by retrying the USB access if a timeout
->>>> occurs.  This is clearly _not_ the fix, just a hack that I used to
->>>> investigate the problem:
->>>>
->>>>   http://article.gmane.org/gmane.linux.rt.user/9773
->>>>
->>>> My kernel configuration is:
->>>>
->>>>   arch/arm/configs/omap2plus_defconfig
->>>>
->>>>   plus to get the ethernet driver I add:
->>>>
->>>>     CONFIG_USB_EHCI_HCD
->>>>     CONFIG_USB_NET_SMSC95XX
->>>>
->>>> I found the problem on 3.6.11, but have not replicated it on 3.9-rcX
->>>> yet because my config fails to build on 3.9-rc1 and 3.9-rc2.  I'll try
->>>> to work on that issue tomorrow.
->>>
->>> Let me know how it works out.
->>
->> My PandaBoard builds fail on 3.9-rcX due to ARM multiplatform issues.
->> Either there is something I need to change about the way I build it,
->> or it is broken (that is a side issue).  My simple expedient was to
->> hack around multiplatform, and just make it build (patch below if
->> anyone else wants a _temporary_ hack).
+On Fri, Mar 22, 2013 at 12:53:49PM -0400, Johannes Weiner wrote:
+> On Thu, Mar 21, 2013 at 06:02:38PM +0000, Mel Gorman wrote:
+> > On Thu, Mar 21, 2013 at 12:25:18PM -0400, Johannes Weiner wrote:
+> > > On Sun, Mar 17, 2013 at 01:04:08PM +0000, Mel Gorman wrote:
+> > > > Simplistically, the anon and file LRU lists are scanned proportionally
+> > > > depending on the value of vm.swappiness although there are other factors
+> > > > taken into account by get_scan_count().  The patch "mm: vmscan: Limit
+> > > > the number of pages kswapd reclaims" limits the number of pages kswapd
+> > > > reclaims but it breaks this proportional scanning and may evenly shrink
+> > > > anon/file LRUs regardless of vm.swappiness.
+> > > > 
+> > > > This patch preserves the proportional scanning and reclaim. It does mean
+> > > > that kswapd will reclaim more than requested but the number of pages will
+> > > > be related to the high watermark.
+> > > 
+> > > Swappiness is about page types, but this implementation compares all
+> > > LRUs against each other, and I'm not convinced that this makes sense
+> > > as there is no guaranteed balance between the inactive and active
+> > > lists.  For example, the active file LRU could get knocked out when
+> > > it's almost empty while the inactive file LRU has more easy cache than
+> > > the anon lists combined.
+> > > 
+> > 
+> > Ok, I see your point. I think Michal was making the same point but I
+> > failed to understand it the first time around.
+> > 
+> > > Would it be better to compare the sum of file pages with the sum of
+> > > anon pages and then knock out the smaller pair?
+> > 
+> > Yes, it makes more sense but the issue then becomes how can we do that
+> > sensibly, The following is straight-forward and roughly in line with your
+> > suggestion but it does not preseve the scanning ratio between active and
+> > inactive of the remaining LRU lists.
 > 
-> I have built 3.9-RC2 for PandaBoard ES and the only problem I have seen is
-> that you need to add "LOADADDR=0x80008000" when building uImage target.
+> After thinking more about it, I wonder if subtracting absolute values
+> of one LRU goal from the other is right to begin with, because the
+> anon/file balance percentage is applied to individual LRU sizes, and
+> these sizes are not necessarily comparable.
+> 
 
-Yes, that is essentially what my hack patch does.  The result of my patch
-is that arch/arm/boot/Makefile is invoked with MACHINE="arch/arm/mach-omap2"
-so that at the top of the makefile, the "include $(srctree)/$(MACHINE)/Makefile.boot"
-which pulls in the proper values for addresses.
+Good point and in itself it's not 100% clear that it's a good idea. If
+swappiness reflected the ratio of anon/file pages that were reflected
+then it's very easy to reason about. By our current definition, the rate
+at which anon or file pages get reclaimed adjusts as reclaim progresses.
 
--Frank
+> <Snipped the example>
+>
+
+I agree and I see your point.
+
+> So would it make sense to determine the percentage scanned of the type
+> that we stop scanning, then scale the original goal of the remaining
+> LRUs to that percentage, and scan the remainder?
+> 
+
+To preserve existing behaviour, that makes sense. I'm not convinced that
+it's necessarily the best idea but altering it would be beyond the scope
+of this series and bite off more than I'm willing to chew. This actually
+simplifies things a bit and shrink_lruvec turns into the (untested) code
+below. It does not do exact proportional scanning but I do not think it's
+necessary to either and is a useful enough approximation. It still could
+end up reclaiming much more than sc->nr_to_reclaim unfortunately but fixing
+it requires reworking how kswapd scans at different priorities.
+
+Is this closer to what you had in mind?
+
+static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+{
+	unsigned long nr[NR_LRU_LISTS];
+	unsigned long nr_to_scan;
+	enum lru_list lru;
+	unsigned long nr_reclaimed = 0;
+	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+	unsigned long nr_anon_scantarget, nr_file_scantarget;
+	struct blk_plug plug;
+	bool scan_adjusted = false;
+
+	get_scan_count(lruvec, sc, nr);
+
+	/* Record the original scan target for proportional adjustments later */
+	nr_file_scantarget = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE] + 1;
+	nr_anon_scantarget = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON] + 1;
+
+	blk_start_plug(&plug);
+	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+					nr[LRU_INACTIVE_FILE]) {
+		unsigned long nr_anon, nr_file, percentage;
+
+		for_each_evictable_lru(lru) {
+			if (nr[lru]) {
+				nr_to_scan = min(nr[lru], SWAP_CLUSTER_MAX);
+				nr[lru] -= nr_to_scan;
+
+				nr_reclaimed += shrink_list(lru, nr_to_scan,
+							    lruvec, sc);
+			}
+		}
+
+		if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
+			continue;
+
+		/*
+		 * For global direct reclaim, reclaim only the number of pages
+		 * requested. Less care is taken to scan proportionally as it
+		 * is more important to minimise direct reclaim stall latency
+		 * than it is to properly age the LRU lists.
+		 */
+		if (global_reclaim(sc) && !current_is_kswapd())
+			break;
+
+		/*
+		 * For kswapd and memcg, reclaim at least the number of pages
+		 * requested. Ensure that the anon and file LRUs shrink
+		 * proportionally what was requested by get_scan_count(). We
+		 * stop reclaiming one LRU and reduce the amount scanning
+		 * proportional to the original scan target.
+		 */
+		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
+		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
+
+		if (nr_file > nr_anon) {
+			lru = LRU_BASE;
+			percentage = nr_anon * 100 / nr_anon_scantarget;
+		} else {
+			lru = LRU_FILE;
+			percentage = nr_file * 100 / nr_file_scantarget;
+		}
+
+		/* Stop scanning the smaller of the LRU */
+		nr[lru] = 0;
+		nr[lru + LRU_ACTIVE] = 0;
+
+		/* Reduce scanning of the other LRU proportionally */
+		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
+		nr[lru] = nr[lru] * percentage / 100;;
+		nr[lru + LRU_ACTIVE] = nr[lru + LRU_ACTIVE] * percentage / 100;
+
+		scan_adjusted = true;
+	}
+	blk_finish_plug(&plug);
+	sc->nr_reclaimed += nr_reclaimed;
+
+	/*
+	 * Even if we did not try to evict anon pages at all, we want to
+	 * rebalance the anon lru active/inactive ratio.
+	 */
+	if (inactive_anon_is_low(lruvec))
+		shrink_active_list(SWAP_CLUSTER_MAX, lruvec,
+				   sc, LRU_ACTIVE_ANON);
+
+	throttle_vm_writeout(sc->gfp_mask);
+}
 
 
+-- 
+Mel Gorman
+SUSE Labs
