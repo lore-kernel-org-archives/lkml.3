@@ -1,102 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab3CVLrU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 07:47:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8395 "EHLO mx1.redhat.com"
+	id S933097Ab3CVLrv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 07:47:51 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:33358 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736Ab3CVLrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 07:47:19 -0400
-Date: Fri, 22 Mar 2013 13:47:15 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v2 0/7] KVM: MMU: fast zap all shadow pages
-Message-ID: <20130322114715.GW9382@redhat.com>
-References: <1363768227-4782-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130321222151.GA19821@amt.cnet>
- <514BBDC5.6090104@linux.vnet.ibm.com>
- <20130322105436.GC7543@amt.cnet>
- <514C3C34.4080906@linux.vnet.ibm.com>
- <20130322112811.GV9382@redhat.com>
- <514C42EC.6000303@linux.vnet.ibm.com>
+	id S932077Ab3CVLrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 07:47:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com
+Subject: Re: [PATCH V3 2/4] cpufreq: governor: Implement per policy instances of governors
+Date: Fri, 22 Mar 2013 12:55:09 +0100
+Message-ID: <1483775.d1txvSJx9o@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohpomDK+FQvhZsy672P+Q4U1s2AGtJ2QizFTaNqjMRh19G0g@mail.gmail.com>
+References: <cover.1362381470.git.viresh.kumar@linaro.org> <2565053.YP0dCLmaW9@vostro.rjw.lan> <CAKohpomDK+FQvhZsy672P+Q4U1s2AGtJ2QizFTaNqjMRh19G0g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <514C42EC.6000303@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 07:39:24PM +0800, Xiao Guangrong wrote:
-> On 03/22/2013 07:28 PM, Gleb Natapov wrote:
-> > On Fri, Mar 22, 2013 at 07:10:44PM +0800, Xiao Guangrong wrote:
-> >> On 03/22/2013 06:54 PM, Marcelo Tosatti wrote:
-> >>
-> >>>>
-> >>>>>
-> >>>>> And then have codepaths that nuke shadow pages break from the spinlock,
-> >>>>
-> >>>> I think this is not needed any more. We can let mmu_notify use the generation
-> >>>> number to invalid all shadow pages, then we only need to free them after
-> >>>> all vcpus down and mmu_notify unregistered - at this point, no lock contention,
-> >>>> we can directly free them.
-> >>>>
-> >>>>> such as kvm_mmu_slot_remove_write_access does now (spin_needbreak).
-> >>>>
-> >>>> BTW, to my honest, i do not think spin_needbreak is a good way - it does
-> >>>> not fix the hot-lock contention and it just occupies more cpu time to avoid
-> >>>> possible soft lock-ups.
-> >>>>
-> >>>> Especially, zap-all-shadow-pages can let other vcpus fault and vcpus contest
-> >>>> mmu-lock, then zap-all-shadow-pages release mmu-lock and wait, other vcpus
-> >>>> create page tables again. zap-all-shadow-page need long time to be finished,
-> >>>> the worst case is, it can not completed forever on intensive vcpu and memory
-> >>>> usage.
-> >>>
-> >>> Yes, but the suggestion is to use spin_needbreak on the VM shutdown
-> >>> cases, where there is no detailed concern about performance. Such as
-> >>> mmu_notifier_release, kvm_destroy_vm, etc. In those cases what matters
-> >>> most is that host remains unaffected (and that it finishes in a
-> >>> reasonable time).
-> >>
-> >> Okay. I agree with you, will give a try.
-> >>
-> >>>
-> >>>> I still think the right way to fix this kind of thing is optimization for
-> >>>> mmu-lock.
-> >>>
-> >>> And then for the cases where performance matters just increase a
-> >>> VM global generetion number, zap the roots and then on kvm_mmu_get_page:
-> >>>
-> >>> kvm_mmu_get_page() {
-> >>> 	sp = lookup_hash(gfn)
-> >>> 	if (sp->role = role) {
-> >>> 		if (sp->mmu_gen_number != kvm->arch.mmu_gen_number) {
-> >>> 			kvm_mmu_commit_zap_page(sp); (no need for TLB flushes as its unreachable)
-> >>> 			kvm_mmu_init_page(sp);
-> >>> 			proceed as if the page was just allocated
-> >>> 		}
-> >>> 	}
-> >>> }
-> >>>
-> >>> It makes the kvm_mmu_zap_all path even faster than you have now.
-> >>> I suppose this was your idea correct with the generation number correct?
-> >>
-> >> Wow, great minds think alike, this is exactly what i am doing. ;)
-> >>
-> > Not that I disagree with above code, but why not make mmu_gen_number to be
-> > part of a role and remove old pages in kvm_mmu_free_some_pages() whenever
-> > limit is reached like we looks to be doing with role.invalid pages now.
+On Friday, March 22, 2013 07:50:54 AM Viresh Kumar wrote:
+> On 22 March 2013 05:14, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Wednesday, March 20, 2013 10:59:13 AM Viresh Kumar wrote:
 > 
-> These pages can be reused after purge its entries and delete it from parents
-> list, it can reduce the pressure of memory allocator. Also, we can move it to
-> the head of active_list so that the pages with invalid_gen can be reclaimed first.
+> >> I have queued all patches i had for 3.10 here:
+> >>
+> >> http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/for-3.10
+> >
+> > OK, applied these to linux-pm.git/bleeding-edge.
 > 
-You mean tail of the active_list, since kvm_mmu_free_some_pages()
-removes pages from tail? Since pages with new mmu_gen_number will be put
-at the head of the list it is natural that tail will contain pages with
-outdated generation numbers without need to explicitly move them.
+> Thanks.
+> 
+> > At the moment bleeding-edge and linux-next diverged slightly on cpufreq, but
+> > I hope the bleeding-edge material won't cause build problems to occur, so I'll
+> > be able to move it to linux-next shortly.
+> 
+> There shouldn't be any build problems not because i have done all build testing
+> properly BUT because my tree is under continuously surveillance by Fengguang's
+> bot. And any problem with my branches is reported very early :)
+> 
+> >> commit f02fca9a2478088c4f7dadf82d998ae007a56285
+> >> Author: Viresh Kumar <viresh.kumar@linaro.org>
+> >> Date:   Wed Mar 20 10:50:33 2013 +0530
+> >>
+> >>     fixup! cpufreq: governor: Implement per policy instances of governors
+> >
+> > I'd actually prefer you to post complete updated patches instead of these
+> > fixups.  They are real PITA for me and probably for everybody else trying
+> > to follow the cpufreq development recently.
+> 
+> Hmm... I always thought fixups are way easy to review (and i still
+> believe that's
+> true) as they just contain what got changed and so people don't have to review
+> whole patch again.
 
---
-			Gleb.
+They won't have to if you write in the preamble what the differences from
+previous versions are.
+
+> BUT people who are looking for complete patches to apply
+> would be annoyed by this and hence i always show them path of my repo
+> where they can find it.
+
+The problem with this approach is that the complete patches never make it to
+the mailing lists and people have problems with connecting commits to
+previously posted patches.
+
+Moreover, it is *much* more convenient to me to take patches from kernel.org
+patchwork than from your repos, with all due respect.
+
+> So, what i may do is, post fixups and then resend
+> patches. So that reviewer knows what changed and others can have complete
+> patches too.
+
+Sure, that will work too.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
