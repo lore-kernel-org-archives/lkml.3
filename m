@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933247Ab3CVOQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 10:16:52 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:58637 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932116Ab3CVOQv (ORCPT
+	id S933295Ab3CVORh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 10:17:37 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:53985 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932116Ab3CVORf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 10:16:51 -0400
+	Fri, 22 Mar 2013 10:17:35 -0400
 Content-Type: text/plain; charset=us-ascii
 Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Subject: Re: [PATCH] phy: Add support for VSC8234
+Subject: Re: [PATCH] phy: Add XGMII phy interface type
 From: Ben Collins <benmcollins13@gmail.com>
-In-Reply-To: <20130322.101351.803684806942512280.davem@davemloft.net>
-Date: Fri, 22 Mar 2013 10:16:51 -0400
-Cc: afleming@freescale.com, linux-kernel@vger.kernel.org,
-        kumar.gala@freescale.com, netdev@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <D8FB2E8D-E8DD-49A3-85CC-7DE57433C602@gmail.com>
-References: <E1UJ1fR-0004hp-2j@swissweb.swissdisk.com> <20130322.101351.803684806942512280.davem@davemloft.net>
+In-Reply-To: <20130322.101259.1120794715082991238.davem@davemloft.net>
+Date: Fri, 22 Mar 2013 10:17:35 -0400
+Cc: ben.c@servergy.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5BDCE647-67A3-423B-AB9C-8C50CC0B6C02@gmail.com>
+References: <E1UJ1fR-0004hy-AI@swissweb.swissdisk.com> <20130322.101259.1120794715082991238.davem@davemloft.net>
 To: David Miller <davem@davemloft.net>
 X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mar 22, 2013, at 10:13 AM, David Miller <davem@davemloft.net> wrote:
+On Mar 22, 2013, at 10:12 AM, David Miller <davem@davemloft.net> wrote:
 
-> From: Andy Fleming <afleming@freescale.com>
-> Date: Sun, 16 Oct 2011 01:49:49 -0500
+> From: Ben Collins <ben.c@servergy.com>
+> Date: Mon, 18 Mar 2013 19:53:42 -0400
 > 
->> No functional changes other than to recognize this PHYID.
+>> Used by systems based on certain Freescale SoCs (specifically the
+>> Servergy CTS-1000 system).
 >> 
->> Signed-off-by: Andy Fleming <afleming@freescale.com>
->> Signed-off-by: Kumar Gala <kumar.gala@freescale.com>
 >> Signed-off-by: Ben Collins <ben.c@servergy.com>
 > 
-> Please do not submit patches with the commit date integrated
-> into your formal email headers.
-> 
-> This screws up archives and patch queue maintainence systems which
-> order submissions by date.
+> You can resubmit this patch when you submit a driver upstream that
+> uses it, so we can see what the use case looks like.
 
-
-For the record, this wasn't Andy, it was me. Noted.
+That patch is getting sent soon. It's starting out in staging. Should I Cc you on that?
 
 --
 Servergy  : http://www.servergy.com/
