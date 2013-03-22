@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161055Ab3CVQwR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 12:52:17 -0400
-Received: from void.printf.net ([89.145.121.20]:38460 "EHLO void.printf.net"
+	id S964788Ab3CVQxs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 12:53:48 -0400
+Received: from void.printf.net ([89.145.121.20]:50690 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1160998Ab3CVQwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 12:52:15 -0400
+	id S964772Ab3CVQxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 12:53:46 -0400
 From: Chris Ball <cjb@laptop.org>
-To: Markos Chandras <markos.chandras@imgtec.com>
-Cc: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        "Jaehoon Chung" <jh80.chung@samsung.com>
-Subject: Re: [PATCH 3/3] dw_mmc: Handle unaligned data submission correctly
-References: <1363085593-22214-1-git-send-email-markos.chandras@imgtec.com>
-	<1363085593-22214-3-git-send-email-markos.chandras@imgtec.com>
-Date: Fri, 22 Mar 2013 12:52:12 -0400
-In-Reply-To: <1363085593-22214-3-git-send-email-markos.chandras@imgtec.com>
-	(Markos Chandras's message of "Tue, 12 Mar 2013 10:53:13 +0000")
-Message-ID: <87vc8jml6r.fsf@octavius.laptop.org>
+To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Cc: linux-mmc@vger.kernel.org, yunhong.jiang@intel.com, sheng@linux.intel.com,
+        mikechan@google.com, xiaohui.xin@intel.com, jun.nakajima@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: host: use resource_size()
+References: <1363112486-2543-1-git-send-email-silviupopescu1990@gmail.com>
+Date: Fri, 22 Mar 2013 12:53:36 -0400
+In-Reply-To: <1363112486-2543-1-git-send-email-silviupopescu1990@gmail.com>
+	(Silviu-Mihai Popescu's message of "Tue, 12 Mar 2013 20:21:26 +0200")
+Message-ID: <87r4j7ml4f.fsf@octavius.laptop.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -27,30 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Tue, Mar 12 2013, Markos Chandras wrote:
-> Commit f9c2a0dc42a6938ff2a80e55ca2bbd1d5581c72e
-> "mmc: dw_mmc: Fix PIO mode with support of highmem" introduced
-> a regression since v3.2 making the mmc_test hang on test #13
-> with a "Data starvation by host timeout" interrupt.
+On Tue, Mar 12 2013, Silviu-Mihai Popescu wrote:
+> Use resource_size() instead of explicit calculation. This was found via
+> make coccicheck.
 >
-> This is because, sg_mapping_iter is used to iterate through the
-> data which spans on multiple pages. The problem is detected on
-> unaligned data submission where the code previously checked for
-> !(sg_next(host->sg)) which is true because we only have a single
-> scatter/gather list which then expands to multiple pages.
-> Therefore, the driver incorrectly assumed that this was the last
-> list item and submitted unaligned data to the mmc device. This
-> overflowed the FIFO on the device before all the data were written
-> to it. The code was fixed to only submit unaligned data when we are
-> handling the last sg_miter item by checking whether we reached
-> the desired data length or not.
+> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+> ---
+>  drivers/mmc/host/android-goldfish.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> The patch was tested against mmc_test and all the tests passed.
->
-> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-> Cc: Seungwon Jeon <tgih.jun@samsung.com>
-> Cc: Jaehoon Chung <jh80.chung@samsung.com>
-> Cc: Chris Ball <cjb@laptop.org>
+> diff --git a/drivers/mmc/host/android-goldfish.c b/drivers/mmc/host/android-goldfish.c
+> index ef3aef0..7780c14 100644
+> --- a/drivers/mmc/host/android-goldfish.c
+> +++ b/drivers/mmc/host/android-goldfish.c
+> @@ -476,7 +476,7 @@ static int goldfish_mmc_probe(struct platform_device *pdev)
+>  	host->mmc = mmc;
+>  
+>  	pr_err("mmc: Mapping %lX to %lX\n", (long)res->start, (long)res->end);
+> -	host->reg_base = ioremap(res->start, res->end - res->start + 1);
+> +	host->reg_base = ioremap(res->start, resource_size(res));
+>  	if (host->reg_base == NULL) {
+>  		ret = -ENOMEM;
+>  		goto ioremap_failed;
 
 Thanks, pushed to mmc-next for 3.10.
 
