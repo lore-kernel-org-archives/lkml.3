@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933543Ab3CVOYq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 10:24:46 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:50567 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933356Ab3CVOYJ (ORCPT
+	id S933551Ab3CVOZN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 10:25:13 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:48372 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933304Ab3CVOZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 10:24:09 -0400
-Date: Fri, 22 Mar 2013 10:24:08 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Soeren Moch <smoch@web.de>
-cc: Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        <linux-mm@kvack.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <michael@amarulasolutions.com>
-Subject: Re: [PATCH] USB: EHCI: fix for leaking isochronous data
-In-Reply-To: <514B86A9.60401@web.de>
-Message-ID: <Pine.LNX.4.44L0.1303221023310.1294-100000@iolanthe.rowland.org>
+	Fri, 22 Mar 2013 10:25:08 -0400
+Message-ID: <514C69B7.8090106@openwrt.org>
+Date: Fri, 22 Mar 2013 15:24:55 +0100
+From: Florian Fainelli <florian@openwrt.org>
+Organization: OpenWrt
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jason Cooper <jason@lakedaemon.net>
+CC: davem@davemloft.net, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 0/4 v3] mv643xx_eth: use mvmdio MDIO bus driver
+References: <1363284515-9865-1-git-send-email-florian@openwrt.org> <1363959568-16976-1-git-send-email-florian@openwrt.org> <20130322141423.GJ13280@titan.lakedaemon.net>
+In-Reply-To: <20130322141423.GJ13280@titan.lakedaemon.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Mar 2013, Soeren Moch wrote:
+Le 03/22/13 15:14, Jason Cooper a écrit :
+> On Fri, Mar 22, 2013 at 02:39:24PM +0100, Florian Fainelli wrote:
+>> Hi all,
+>>
+>> This patch converts the mv643xx_eth driver to use the mvmdio MDIO bus driver
+>> instead of rolling its own implementation. As a result, all users of this
+>> mv643xx_eth driver are converted to register an "orion-mdio" platform_device.
+>> The mvmdio driver is also updated to support an interrupt line which reports
+>> SMI error/completion, and to allow traditionnal platform device registration
+>> instead of just device tree.
+>>
+>> David, I think it makes sense for you to merge all of this, since we do
+>> not want the architecture files to be desynchronized from the mv643xx_eth to
+>> avoid runtime breakage. The potential for merge conflicts should be very small.
+>>
+>> Florian Fainelli (4):
+>>    net: mvmdio: allow platform device style registration
+>>    net: mvmdio: rename base register cookie from smireg to regs
+>>    net: mvmdio: enhance driver to support SMI error/done interrupts
+>>    mv643xx_eth: convert to use the Marvell Orion MDIO driver
+>>
+>>   .../devicetree/bindings/net/marvell-orion-mdio.txt |    3 +
+>>   arch/arm/plat-orion/common.c                       |   54 +++---
+>>   arch/powerpc/platforms/chrp/pegasos_eth.c          |   20 ++
+>>   arch/powerpc/sysdev/mv64x60_dev.c                  |   16 +-
+>>   drivers/net/ethernet/marvell/Kconfig               |    5 +-
+>>   drivers/net/ethernet/marvell/Makefile              |    2 +-
+>>   drivers/net/ethernet/marvell/mv643xx_eth.c         |  195 ++------------------
+>>   drivers/net/ethernet/marvell/mvmdio.c              |  130 ++++++++++---
+>>   include/linux/mv643xx_eth.h                        |    1 -
+>>   9 files changed, 187 insertions(+), 239 deletions(-)
+>
+> Whole series applied on top of v3.9-rc3 and tested on dreamplug
+> (kirkwood DT boot with legacy mv643xx_eth init)
 
-> > Hi Alan, Soeren
-> >
-> > Could you word the description a bit better. If Alan did not get it
-> > without a bit of thought, few others are going to understand it
-> > without a better explanation.
-> >
-> > Thanks
-> > 	Andrew
-> >
-> 
-> Alan,
-> 
-> can you come up with a better explanation, please? I think your 
-> description how it is supposed to work from here
->     http://marc.info/?l=linux-usb&m=136345559432055&w=2
-> is required to understand the problem and the fix.
-
-Okay, I will rewrite your patch description.
-
-Alan Stern
-
+Ok, thanks! Does that mean that you want these changes to go via your 
+tree? David initially applied my v2 of this patchset, and since it 
+thouches mostly ethernet driver stuff, I would rather make it go via his 
+tree if both of you agree.
+--
+Florian
