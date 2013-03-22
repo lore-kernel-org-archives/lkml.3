@@ -1,40 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab3CVMGB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 08:06:01 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:47278 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465Ab3CVMF7 (ORCPT
+	id S1754016Ab3CVMGx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 08:06:53 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14635 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab3CVMGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 08:05:59 -0400
+	Fri, 22 Mar 2013 08:06:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 22 Mar 2013 05:06:44 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] clk: tegra: Don't enable PLLs during early boot
+Date: Fri, 22 Mar 2013 14:06:25 +0200
+Message-ID: <1363953995-29889-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <1790330.ctnB4S9NpK@vostro.rjw.lan>
-References: <cover.1362381470.git.viresh.kumar@linaro.org>
-	<1483775.d1txvSJx9o@vostro.rjw.lan>
-	<CAOh2x=n8G+g8EE-9mGovbiB-oXV3pP3bWUds8noATSc3LEYJ8A@mail.gmail.com>
-	<1790330.ctnB4S9NpK@vostro.rjw.lan>
-Date: Fri, 22 Mar 2013 17:35:59 +0530
-Message-ID: <CAKohpok9zoq10UHCSQ5MC-dKcv89dqDkActLKng-6P6wd1oCFw@mail.gmail.com>
-Subject: Re: [PATCH V3 2/4] cpufreq: governor: Implement per policy instances
- of governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 March 2013 17:41, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Well, if the submitter wants to cheat, she/he certainly can this way, but
-> what's the benefit, honestly?  If the reviewer actually notices that there are
-> more differences than the submitter admits to, the consequences may be quite
-> unpleasant for the submitter (like the rejection of any future patches, for
-> example).  And mistakes are possible anyway (and the more patches you deal
-> with, the greater the chances of making a mistake are).
+The PLL code relies on udelay() which is not available when CCF is
+initialized. Hence we can't enable any PLL during this phase.
 
-Agreed.. I was focusing on the last part: mistakes.. People learn over time
-and can still commit mistakes.. So a diff is always better to see what changed.
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+
+--
+
+Stephen,
+
+Can you confirm this is ok for the audio drivers?
+
+We used to be lucky that this has worked up to now, but I will introduce some
+changes to the pll lock check code which cause this to fail due to the
+slight differences in timing.
+
+---
+ drivers/clk/tegra/clk-tegra20.c |    4 ++--
+ drivers/clk/tegra/clk-tegra30.c |    8 ++++----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegra20.c
+index b92d48b..7cc76b0 100644
+--- a/drivers/clk/tegra/clk-tegra20.c
++++ b/drivers/clk/tegra/clk-tegra20.c
+@@ -1230,8 +1230,8 @@ static __initdata struct tegra_clk_init_table init_table[] = {
+ 	{usbd, clk_max, 12000000, 0},
+ 	{usb2, clk_max, 12000000, 0},
+ 	{usb3, clk_max, 12000000, 0},
+-	{pll_a, clk_max, 56448000, 1},
+-	{pll_a_out0, clk_max, 11289600, 1},
++	{pll_a, clk_max, 56448000, 0},
++	{pll_a_out0, clk_max, 11289600, 0},
+ 	{cdev1, clk_max, 0, 1},
+ 	{blink, clk_max, 32768, 1},
+ 	{i2s1, pll_a_out0, 11289600, 0},
+diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
+index ba6f51b..b705408 100644
+--- a/drivers/clk/tegra/clk-tegra30.c
++++ b/drivers/clk/tegra/clk-tegra30.c
+@@ -1882,11 +1882,11 @@ static __initdata struct tegra_clk_init_table init_table[] = {
+ 	{uartc, pll_p, 408000000, 0},
+ 	{uartd, pll_p, 408000000, 0},
+ 	{uarte, pll_p, 408000000, 0},
+-	{pll_a, clk_max, 564480000, 1},
+-	{pll_a_out0, clk_max, 11289600, 1},
+-	{extern1, pll_a_out0, 0, 1},
++	{pll_a, clk_max, 564480000, 0},
++	{pll_a_out0, clk_max, 11289600, 0},
++	{extern1, pll_a_out0, 0, 0},
+ 	{clk_out_1_mux, extern1, 0, 0},
+-	{clk_out_1, clk_max, 0, 1},
++	{clk_out_1, clk_max, 0, 0},
+ 	{blink, clk_max, 0, 1},
+ 	{i2s0, pll_a_out0, 11289600, 0},
+ 	{i2s1, pll_a_out0, 11289600, 0},
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
+
