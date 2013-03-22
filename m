@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423560Ab3CVWn1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 18:43:27 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:42316
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422648Ab3CVWnY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 18:43:24 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: <joro@8bytes.org>, <iommu@lists.linux-foundation.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <galak@kernel.crashing.org>, <benh@kernel.crashing.org>,
-        <scottwood@freescale.com>, <stuart.yoder@freescale.com>
-CC: Varun Sethi <Varun.Sethi@freescale.com>
-Subject: [PATCH 3/5 v10] iommu/fsl: Add the window permission flag as a parameter to iommu_window_enable API.
-Date: Sat, 23 Mar 2013 04:04:59 +0530
-Message-ID: <1363991700-21454-5-git-send-email-Varun.Sethi@freescale.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1363991700-21454-1-git-send-email-Varun.Sethi@freescale.com>
-References: <1363991700-21454-1-git-send-email-Varun.Sethi@freescale.com>
+	id S1423586Ab3CVWya (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 18:54:30 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:36570 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423395Ab3CVWy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 18:54:29 -0400
+Date: Fri, 22 Mar 2013 22:54:28 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
+Cc: linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [RFC v3 1/2] epoll: avoid spinlock contention with wfcqueue
+Message-ID: <20130322225428.GA7596@dcvr.yhbt.net>
+References: <20130321115259.GA17883@dcvr.yhbt.net>
+ <CAMP5XgfKfuF4Lo1PVoqBnjynB6COWVhVcqzKV3PAic7HLP7FaQ@mail.gmail.com>
+ <20130322032410.GA19377@dcvr.yhbt.net>
+ <CAMP5XgcPG6-ikNE5jQHL9vNVPrM4wrMb8HYfYcEfT2hW6a2pUA@mail.gmail.com>
+ <20130322103102.GA4818@dcvr.yhbt.net>
+ <CAMP5XgcN+qBJ7FryzXJEG11F=3ajHDoBncMyShZOksd14SaptA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMP5XgcN+qBJ7FryzXJEG11F=3ajHDoBncMyShZOksd14SaptA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each iommu window can have access permissions associated with it. Extended the
-window_enable API to incorporate window access permissions.
+Arve Hjønnevåg <arve@android.com> wrote:
+> On Fri, Mar 22, 2013 at 3:31 AM, Eric Wong <normalperson@yhbt.net> wrote:
+> > Arve Hjønnevåg <arve@android.com> wrote:
+> >> On Thu, Mar 21, 2013 at 8:24 PM, Eric Wong <normalperson@yhbt.net> wrote:
+> >> >
+> >> > With EPOLLET and improper usage (not hitting EAGAIN), the event now
+> >> > has a larger window to be lost (as mentioned in my changelog).
+> >> >
+> >>
+> >> What about the case where EPOLLET is not set? The old code did not
+> >> drop events in that case.
+> >
+> > Nothing is dropped, if the event wasn't on the ready list before,
+> > ep_poll_callback may still append the ready list while __put_user
+> > is running.
+> >
+> > If the event was on the ready list:
+> >
+> > 1) It does not matter for EPOLLONESHOT, it'll get masked out and
+> >    discarded in the next ep_send_events call until ep_modify reenables
+> >    it.  Since ep_modify and ep_send_events both take ep->mtx, there's
+> >    no conflict.
+> >
+> > 2) Level Trigger - event stays ready, so nothing is dropped.
+> >
+> 
+> At some point the level triggered event has to get cleared. As far as
+> I can tell, your new code will drop new events that occur between
+> "revents = ep_item_poll(epi, &pt);" and "epi->state = EP_STATE_IDLE;"
+> in that case.
 
-In case of PAMU each window can have its specific set of permissions.
-
-Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
----
-- no change in v10.
-
- drivers/iommu/iommu.c |    5 +++--
- include/linux/iommu.h |    7 ++++---
- 2 files changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index 39106ec..c4d5265 100644
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -853,12 +853,13 @@ EXPORT_SYMBOL_GPL(iommu_unmap);
- 
- 
- int iommu_domain_window_enable(struct iommu_domain *domain, u32 wnd_nr,
--			       phys_addr_t paddr, u64 size)
-+			       phys_addr_t paddr, u64 size, int prot)
- {
- 	if (unlikely(domain->ops->domain_window_enable == NULL))
- 		return -ENODEV;
- 
--	return domain->ops->domain_window_enable(domain, wnd_nr, paddr, size);
-+	return domain->ops->domain_window_enable(domain, wnd_nr, paddr, size,
-+						 prot);
- }
- EXPORT_SYMBOL_GPL(iommu_domain_window_enable);
- 
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index 576cc19..02ac111 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -104,7 +104,7 @@ struct iommu_ops {
- 
- 	/* Window handling functions */
- 	int (*domain_window_enable)(struct iommu_domain *domain, u32 wnd_nr,
--				    phys_addr_t paddr, u64 size);
-+				    phys_addr_t paddr, u64 size, int prot);
- 	void (*domain_window_disable)(struct iommu_domain *domain, u32 wnd_nr);
- 	/* Set the numer of window per domain */
- 	int (*domain_set_windows)(struct iommu_domain *domain, u32 w_count);
-@@ -169,7 +169,8 @@ extern int iommu_domain_set_attr(struct iommu_domain *domain, enum iommu_attr,
- 
- /* Window handling function prototypes */
- extern int iommu_domain_window_enable(struct iommu_domain *domain, u32 wnd_nr,
--				      phys_addr_t offset, u64 size);
-+				      phys_addr_t offset, u64 size,
-+				      int prot);
- extern void iommu_domain_window_disable(struct iommu_domain *domain, u32 wnd_nr);
- /**
-  * report_iommu_fault() - report about an IOMMU fault to the IOMMU framework
-@@ -255,7 +256,7 @@ static inline int iommu_unmap(struct iommu_domain *domain, unsigned long iova,
- 
- static inline int iommu_domain_window_enable(struct iommu_domain *domain,
- 					     u32 wnd_nr, phys_addr_t paddr,
--					     u64 size)
-+					     u64 size, int prot)
- {
- 	return -ENODEV;
- }
--- 
-1.7.4.1
-
-
+Thanks for catching that, I'll need to fix that.  Maybe reintroduce
+EP_STATE_DEQUEUE, but just for the (LT && !revents) case.
