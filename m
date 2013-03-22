@@ -1,43 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423003Ab3CVUZd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 16:25:33 -0400
-Received: from mail-da0-f45.google.com ([209.85.210.45]:59971 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422990Ab3CVUZa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 16:25:30 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <514C813E.1070603@wwwdotorg.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-References: <1363954078-29952-1-git-send-email-pdeschrijver@nvidia.com>
- <514C813E.1070603@wwwdotorg.org>
-Message-ID: <20130322202522.834.24639@quantum>
-User-Agent: alot/0.3.3+
-Subject: Re: [PATCH REPOST v2] clk: add table lookup to mux
-Date: Fri, 22 Mar 2013 13:25:22 -0700
+	id S1422987Ab3CVUZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 16:25:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51682 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422943Ab3CVUZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 16:25:24 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH 10/10] prepare to remove /proc/sys/vm/hugepages_treat_as_movable
+Date: Fri, 22 Mar 2013 16:23:55 -0400
+Message-Id: <1363983835-20184-11-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Warren (2013-03-22 09:05:18)
-> On 03/22/2013 06:07 AM, Peter De Schrijver wrote:
-> > Add a table lookup feature to the mux clock. Also allow arbitrary masks
-> > instead of the width. This will be used by some clocks on Tegra114. Also
-> > adapt the tegra periph clk because it uses struct clk_mux directly.
-> > 
-> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> 
-> Tested-by: Stephen Warren <swarren@nvidia.com>
+Now hugepages are definitely movable. So allocating hugepages from
+ZONE_MOVABLE is natural and we have no reason to keep this parameter.
+In order to allow userspace to prepare for the removal, let's leave
+this sysctl handler as noop for a while.
 
-Thanks for the patch.  Taken into clk-next.
+ChangeLog v2:
+ - shift to noop function instead of completely removing the parameter
+ - rename patch title
 
-Regards,
-Mike
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ Documentation/sysctl/vm.txt | 13 ++-----------
+ mm/hugetlb.c                | 17 ++++++-----------
+ 2 files changed, 8 insertions(+), 22 deletions(-)
+
+diff --git v3.9-rc3.orig/Documentation/sysctl/vm.txt v3.9-rc3/Documentation/sysctl/vm.txt
+index 078701f..1746176 100644
+--- v3.9-rc3.orig/Documentation/sysctl/vm.txt
++++ v3.9-rc3/Documentation/sysctl/vm.txt
+@@ -169,17 +169,8 @@ fragmentation index is <= extfrag_threshold. The default value is 500.
+ 
+ hugepages_treat_as_movable
+ 
+-This parameter is only useful when kernelcore= is specified at boot time to
+-create ZONE_MOVABLE for pages that may be reclaimed or migrated. Huge pages
+-are not movable so are not normally allocated from ZONE_MOVABLE. A non-zero
+-value written to hugepages_treat_as_movable allows huge pages to be allocated
+-from ZONE_MOVABLE.
+-
+-Once enabled, the ZONE_MOVABLE is treated as an area of memory the huge
+-pages pool can easily grow or shrink within. Assuming that applications are
+-not running that mlock() a lot of memory, it is likely the huge pages pool
+-can grow to the size of ZONE_MOVABLE by repeatedly entering the desired value
+-into nr_hugepages and triggering page reclaim.
++This parameter is obsolete and planned to be removed. The value has no effect
++on kernel's behavior.
+ 
+ ==============================================================
+ 
+diff --git v3.9-rc3.orig/mm/hugetlb.c v3.9-rc3/mm/hugetlb.c
+index ef79871..0d1705b 100644
+--- v3.9-rc3.orig/mm/hugetlb.c
++++ v3.9-rc3/mm/hugetlb.c
+@@ -33,7 +33,6 @@
+ #include "internal.h"
+ 
+ const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
+-static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
+ unsigned long hugepages_treat_as_movable;
+ 
+ int hugetlb_max_hstate __read_mostly;
+@@ -543,7 +542,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ retry_cpuset:
+ 	cpuset_mems_cookie = get_mems_allowed();
+ 	zonelist = huge_zonelist(vma, address,
+-					htlb_alloc_mask, &mpol, &nodemask);
++					GFP_HIGHUSER_MOVABLE, &mpol, &nodemask);
+ 	/*
+ 	 * A child process with MAP_PRIVATE mappings created by their parent
+ 	 * have no page reserves. This check ensures that reservations are
+@@ -559,7 +558,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 						MAX_NR_ZONES - 1, nodemask) {
+-		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
++		if (cpuset_zone_allowed_softwall(zone, GFP_HIGHUSER_MOVABLE)) {
+ 			page = dequeue_huge_page_node(h, zone_to_nid(zone));
+ 			if (page) {
+ 				if (!avoid_reserve)
+@@ -699,7 +698,7 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
+ 		return NULL;
+ 
+ 	page = alloc_pages_exact_node(nid,
+-		htlb_alloc_mask|__GFP_COMP|__GFP_THISNODE|
++		GFP_HIGHUSER_MOVABLE|__GFP_COMP|__GFP_THISNODE|
+ 						__GFP_REPEAT|__GFP_NOWARN,
+ 		huge_page_order(h));
+ 	if (page) {
+@@ -916,12 +915,12 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+ 	spin_unlock(&hugetlb_lock);
+ 
+ 	if (nid == NUMA_NO_NODE)
+-		page = alloc_pages(htlb_alloc_mask|__GFP_COMP|
++		page = alloc_pages(GFP_HIGHUSER_MOVABLE|__GFP_COMP|
+ 				   __GFP_REPEAT|__GFP_NOWARN,
+ 				   huge_page_order(h));
+ 	else
+ 		page = alloc_pages_exact_node(nid,
+-			htlb_alloc_mask|__GFP_COMP|__GFP_THISNODE|
++			GFP_HIGHUSER_MOVABLE|__GFP_COMP|__GFP_THISNODE|
+ 			__GFP_REPEAT|__GFP_NOWARN, huge_page_order(h));
+ 
+ 	if (page && arch_prepare_hugepage(page)) {
+@@ -2086,11 +2085,7 @@ int hugetlb_treat_movable_handler(struct ctl_table *table, int write,
+ 			void __user *buffer,
+ 			size_t *length, loff_t *ppos)
+ {
+-	proc_dointvec(table, write, buffer, length, ppos);
+-	if (hugepages_treat_as_movable)
+-		htlb_alloc_mask = GFP_HIGHUSER_MOVABLE;
+-	else
+-		htlb_alloc_mask = GFP_HIGHUSER;
++	/* hugepages_treat_as_movable is obsolete and to be removed. */
+ 	return 0;
+ }
+ 
+-- 
+1.7.11.7
+
