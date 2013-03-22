@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab3CVKVo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 06:21:44 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:60141 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754283Ab3CVKVm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 06:21:42 -0400
-From: Anisse Astier <anisse@astier.eu>
-To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz>, maximilian attems <max@stro.at>,
-        Anisse Astier <anisse@astier.eu>
-Subject: [PATCH 2/2] deb-pkg: add a hook argument to match debian hooks parameters
-Date: Fri, 22 Mar 2013 11:06:01 +0100
-Message-Id: <1363946761-7449-2-git-send-email-anisse@astier.eu>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1363946761-7449-1-git-send-email-anisse@astier.eu>
-References: <1363946761-7449-1-git-send-email-anisse@astier.eu>
+	id S933267Ab3CVKWx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 06:22:53 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45107 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933216Ab3CVKWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 06:22:51 -0400
+Date: Fri, 22 Mar 2013 11:22:44 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-edac <linux-edac@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] EDAC fixes for 3.9
+Message-ID: <20130322102244.GB30807@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-edac <linux-edac@vger.kernel.org>,
+	lkml <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This should allow the package to better integrate with debian hooks, and
-should not be too disruptive of hooks supporting only one parameter.
+Hi Linus,
 
-Signed-off-by: Anisse Astier <anisse@astier.eu>
----
- scripts/package/builddeb | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+please pull the fixes below.
 
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index 7f7a7fd..30d8756 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -169,7 +169,7 @@ set -e
- # Pass maintainer script parameters to hook scripts
- export DEB_MAINT_PARAMS="\$*"
- 
--test -d $debhookdir/$script.d && run-parts --arg="$version" $debhookdir/$script.d
-+test -d $debhookdir/$script.d && run-parts --arg="$version" --arg="/boot/vmlinuz-$version" $debhookdir/$script.d
- exit 0
- EOF
- 	chmod 755 "$tmpdir/DEBIAN/$script"
+Thanks.
+
+The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
+
+  Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/for_linus
+
+for you to fetch changes up to 9713faecff3d071de1208b081d4943b002e9cb1c:
+
+  EDAC: Merge mci.mem_is_per_rank with mci.csbased (2013-03-16 06:32:30 +0100)
+
+----------------------------------------------------------------
+A fix from Mauro to correct csrow size accounting in sysfs and a sparse
+fix from Stephen Hemminger.
+
+----------------------------------------------------------------
+Mauro Carvalho Chehab (2):
+      amd64_edac: Correct DIMM sizes
+      EDAC: Merge mci.mem_is_per_rank with mci.csbased
+
+Stephen Hemminger (1):
+      EDAC: Make sysfs functions static
+
+ drivers/edac/amd64_edac.c    | 15 +++++++++------
+ drivers/edac/edac_mc.c       |  6 +++---
+ drivers/edac/edac_mc_sysfs.c | 17 +++++------------
+ include/linux/edac.h         |  7 ++-----
+ 4 files changed, 19 insertions(+), 26 deletions(-)
+
 -- 
-1.8.1.4
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
