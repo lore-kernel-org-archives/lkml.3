@@ -1,67 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422803Ab3CVSVV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 14:21:21 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42684 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422649Ab3CVSVU (ORCPT
+	id S1422861Ab3CVSYq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 14:24:46 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:45916
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1422649Ab3CVSYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 14:21:20 -0400
-Date: Fri, 22 Mar 2013 18:21:07 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: David Howells <dhowells@redhat.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        jack@suse.cz, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, sedat.dilek@googlemail.com, mszeredi@suse.cz
-Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
-Message-ID: <20130322182107.GQ21522@ZenIV.linux.org.uk>
-References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu>
- <1363184193-1796-1-git-send-email-miklos@szeredi.hu>
- <1944.1363525619@warthog.procyon.org.uk>
- <13789.1363973875@jrobl>
- <20130322181111.GP21522@ZenIV.linux.org.uk>
+	Fri, 22 Mar 2013 14:24:44 -0400
+X-Forefront-Antispam-Report: CIP:160.33.194.230;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail03v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VPS-5(zzbb2dI98dI936eI1432I14ffIzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dh8275bhz2fh2a8h668h839h947hd25hf0ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1b0ah1155h)
+Message-ID: <514CA1A5.1090606@am.sony.com>
+Date: Fri, 22 Mar 2013 11:23:33 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130322181111.GP21522@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mats Liljegren <liljegren.mats2@gmail.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [BUG] bisected: PandaBoard smsc95xx ethernet driver error from
+ USB timeout
+References: <Pine.LNX.4.44L0.1303211037070.1899-100000@iolanthe.rowland.org> <514BC5C3.9080808@am.sony.com> <20130322100329.GH29378@enea.se>
+In-Reply-To: <20130322100329.GH29378@enea.se>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 06:11:11PM +0000, Al Viro wrote:
-> On Sat, Mar 23, 2013 at 02:37:55AM +0900, J. R. Okajima wrote:
-> > 
-> > David Howells:
-> > > Now, looking at __sb_start_write(), I'm not entirely sure how the deadlock
-> > > might operate, so it's possible that this is a false alarm.  Maybe Jan Kara can
-> > > illuminate further, so I've added him to the cc list.
-> > 
-> > It is related to the design of UnionMount, isn't it?
-> > UnionMount is not a filesystem and doen't have its own superblock.
-> > If it was a fs, then
-> > - vfs_truncate() acquires sb_writers for the unioning-fs.
-> > - the unioning-fs may call vfs_truncate() again for the underlying fs.
-> > - this time, sb_writers is for the underlying fs which is a different
-> >   sb_writers object from the already acquired one.
-> > So there would be no deadlock.
+On 03/22/13 03:03, Mats Liljegren wrote:
+> Frank Rowand wrote:
+>> On 03/21/13 07:41, Alan Stern wrote:
+>>> On Wed, 20 Mar 2013, Frank Rowand wrote:
+>>>
+>>>> Hi All,
+>>>>
+>>>> Not quite sure quite where the problem is (USB, OMAP, smsc95xx driver, other???),
+>>>> so casting the nets wide...
+>>>>
+>>>> The PandaBoard frequently fails to boot with an eth0 error when mounting
+>>>> the root file system via NFS (ethernet driver fails due to a USB timeout;
+>>>> no ethernet means NFS won't work).  A typical set of error messages is:
+>>>>
+>>>> [    3.264373] smsc95xx 1-1.1:1.0: usb_probe_interface
+>>>> [    3.269500] smsc95xx 1-1.1:1.0: usb_probe_interface - got id
+>>>> [    3.275543] smsc95xx v1.0.4
+>>>> [    8.078674] smsc95xx 1-1.1:1.0: eth0: register 'smsc95xx' at usb-ehci-omap.0-1.1, smsc95xx USB 2.0 Ethernet, 82:b9:1d:fa:67:0d
+>>>> [    8.091003] hub 1-1:1.0: state 7 ports 5 chg 0000 evt 0002
+>>>> [   13.509918] usb 1-1.1: swapper/0 timed out on ep0out len=0/4
+>>>> [   13.515869] smsc95xx 1-1.1:1.0: eth0: Failed to write register index 0x00000108
+>>>> [   13.523559] smsc95xx 1-1.1:1.0: eth0: Failed to write ADDRL: -110
+>>>> [   13.529998] IP-Config: Failed to open eth0
+>>>>
+>>>> I have bisected this to:
+>>>>
+>>>>   commit 18aafe64d75d0e27dae206cacf4171e4e485d285
+>>>>   Author: Alan Stern <stern@rowland.harvard.edu>
+>>>>   Date:   Wed Jul 11 11:23:04 2012 -0400
+>>>>
+>>>>      USB: EHCI: use hrtimer for the I/O watchdog
+>>>
+>>> I don't understand how that commit could cause a timeout unless there 
+>>> are at least two other bugs present in your system.
+>>>
+>>>> Note that to compile this version of the kernel, an additional fix must
+>>>> also be applied:
+>>>>
+>>>>   commit ba5952e0711b14d8d4fe172671f8aa6091ace3ee
+>>>>   Author: Ming Lei <ming.lei@canonical.com>
+>>>>   Date:   Fri Jul 13 17:25:24 2012 +0800
+>>>>
+>>>>      USB: ehci-omap: fix compile failure(v1)
+>>>>
+>>>> The symptom can be worked around by retrying the USB access if a timeout
+>>>> occurs.  This is clearly _not_ the fix, just a hack that I used to
+>>>> investigate the problem:
+>>>>
+>>>>   http://article.gmane.org/gmane.linux.rt.user/9773
+>>>>
+>>>> My kernel configuration is:
+>>>>
+>>>>   arch/arm/configs/omap2plus_defconfig
+>>>>
+>>>>   plus to get the ethernet driver I add:
+>>>>
+>>>>     CONFIG_USB_EHCI_HCD
+>>>>     CONFIG_USB_NET_SMSC95XX
+>>>>
+>>>> I found the problem on 3.6.11, but have not replicated it on 3.9-rcX
+>>>> yet because my config fails to build on 3.9-rc1 and 3.9-rc2.  I'll try
+>>>> to work on that issue tomorrow.
+>>>
+>>> Let me know how it works out.
+>>
+>> My PandaBoard builds fail on 3.9-rcX due to ARM multiplatform issues.
+>> Either there is something I need to change about the way I build it,
+>> or it is broken (that is a side issue).  My simple expedient was to
+>> hack around multiplatform, and just make it build (patch below if
+>> anyone else wants a _temporary_ hack).
 > 
-> Doesn't help the situation with copyup - witness overlayfs stepping into the
-> same deadlock on copyup.  It wants ->i_mutex held on directory in upper layer
-> and it tries to write to file it has created in there.  The problem is
-> with the upper layer superblock getting frozen; having a separate one for
-> union is irrelevant.  Let me check how aufs does...  Aha.  Your
-> au_do_copy_file() ends up calling vfs_write() on the file opened in
-> upper layer.  And AFAICS it's called with ->i_mutex held on the directory
-> in upper layer, so you've got the same deadlock, sorry.
+> I have built 3.9-RC2 for PandaBoard ES and the only problem I have seen is
+> that you need to add "LOADADDR=0x80008000" when building uImage target.
 
-The scenario, BTW, looks so:
-process A does sb_start_write() (on your upper layer)
-process B tries to freeze said upper layer and blocks, waiting for A to finish
-process C grabs ->i_mutex in your upper layer
-process C does vfs_write(), which blocks, since there's a pending attempt to
-freeze
-process A tries to grab ->i_mutex held by C and blocks
+Yes, that is essentially what my hack patch does.  The result of my patch
+is that arch/arm/boot/Makefile is invoked with MACHINE="arch/arm/mach-omap2"
+so that at the top of the makefile, the "include $(srctree)/$(MACHINE)/Makefile.boot"
+which pulls in the proper values for addresses.
+
+-Frank
+
+
