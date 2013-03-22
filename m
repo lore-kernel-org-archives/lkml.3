@@ -1,95 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926Ab3CVAku (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 20:40:50 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:16093 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752706Ab3CVAkt (ORCPT
+	id S1753994Ab3CVAk7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 20:40:59 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:57010 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752706Ab3CVAk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 20:40:49 -0400
-Message-ID: <1363912171.11659.12.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 2/2] ACPI,acpi_memhotplug: Remove
- acpi_memory_info->failed bit
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: rjw@sisk.pl, linux-acpi@vger.kernel.org, tangchen@cn.fujitsu.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Date: Thu, 21 Mar 2013 18:29:31 -0600
-In-Reply-To: <514A8EF3.90203@jp.fujitsu.com>
-References: <514022BF.3080303@jp.fujitsu.com>
-	  <1363186213.12845.174.camel@misato.fc.hp.com>
-	  <514679BC.5020700@jp.fujitsu.com>
-	 <1363705437.11659.5.camel@misato.fc.hp.com>
-	 <514A4CCD.6000608@jp.fujitsu.com> <514A8E3C.1050902@jp.fujitsu.com>
-	 <514A8EF3.90203@jp.fujitsu.com>
+	Thu, 21 Mar 2013 20:40:56 -0400
+Message-ID: <1363912851.1390.170.camel@x61.thuisdomein>
+Subject: [PATCH] arch: remove KCORE_ELF again
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Chris Metcalf <cmetcalf@tilera.com>, Chris Zankel <chris@zankel.net>,
+        Max Filippov <jcmvbkbc@gmail.com>
+Cc: linux-xtensa@linux-xtensa.org, linux-kernel@vger.kernel.org
+Date: Fri, 22 Mar 2013 01:40:51 +0100
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Mar 2013 00:40:51.0395 (UTC) FILETIME=[E75D3130:01CE2695]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-21 at 13:39 +0900, Yasuaki Ishimatsu wrote:
-> acpi_memory_info has enabled bit and failed bit for controlling memory
-> hotplug. But we don't need to keep both bits.
-> 
-> The patch removes acpi_memory_info->failed bit.
-> 
-> Signed-off-by: yasuaki ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> ---
-> 
-> v2 : Changed a based kernel from linux-3.9-rc2 to linux-pm.git/bleeding-edge.
-> 
-> ---
->   drivers/acpi/acpi_memhotplug.c |   13 +------------
->   1 files changed, 1 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> index ea78988..597cd65 100644
-> --- a/drivers/acpi/acpi_memhotplug.c
-> +++ b/drivers/acpi/acpi_memhotplug.c
-> @@ -73,7 +73,6 @@ struct acpi_memory_info {
->   	unsigned short caching;	/* memory cache attribute */
->   	unsigned short write_protect;	/* memory read/write attribute */
->   	unsigned int enabled:1;
-> -	unsigned int failed:1;
->   };
->   
->   struct acpi_memory_device {
-> @@ -201,10 +200,8 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
->   		 * returns -EEXIST. If add_memory() returns the other error, it
->   		 * means that this memory block is not used by the kernel.
->   		 */
-> -		if (result && result != -EEXIST) {
-> -			info->failed = 1;
-> +		if (result && result != -EEXIST)
->   			continue;
-> -		}
->   
->   		info->enabled = 1;
->   
-> @@ -238,15 +235,7 @@ static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
->   	nid = acpi_get_node(mem_device->device->handle);
->   
->   	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
-> -		if (info->failed)
-> -			/* The kernel does not use this memory block */
-> -			continue;
-> -
->   		if (!info->enabled)
-> -			/*
-> -			 * The kernel uses this memory block, but it may be not
-> -			 * managed by us.
-> -			 */
->   			return -EBUSY;
+The Kconfig symbol KCORE_ELF was removed in v2.6.0, but reappeared in two
+architectures. It is useless. Remove it again.
 
-Shouldn't this case (!info->enabled) continue since it is the same as
-info->failed before?  -EBUSY was previously used for the -EEXIST case,
-which is no longer a failure case with this patchset.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Untested.
 
-Thanks,
--Toshi
+1) Sent as one patch. Feel free to tell me to split it up in two
+patches.
 
+ arch/tile/Kconfig   |  5 -----
+ arch/xtensa/Kconfig | 15 ---------------
+ 2 files changed, 20 deletions(-)
+
+diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
+index 2f8ccff..18e2a81 100644
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -411,11 +411,6 @@ endmenu
+ 
+ menu "Executable file formats"
+ 
+-# only elf supported
+-config KCORE_ELF
+-	def_bool y
+-	depends on PROC_FS
+-
+ source "fs/Kconfig.binfmt"
+ 
+ endmenu
+diff --git a/arch/xtensa/Kconfig b/arch/xtensa/Kconfig
+index b09de49..d10b159 100644
+--- a/arch/xtensa/Kconfig
++++ b/arch/xtensa/Kconfig
+@@ -252,21 +252,6 @@ endmenu
+ 
+ menu "Executable file formats"
+ 
+-# only elf supported
+-config KCORE_ELF
+-	def_bool y
+-        depends on PROC_FS
+-        help
+-          If you enabled support for /proc file system then the file
+-          /proc/kcore will contain the kernel core image in ELF format. This
+-          can be used in gdb:
+-
+-          $ cd /usr/src/linux ; gdb vmlinux /proc/kcore
+-
+-          This is especially useful if you have compiled the kernel with the
+-          "-g" option to preserve debugging information. It is mainly used
+-	  for examining kernel data structures on the live kernel.
+-
+ source "fs/Kconfig.binfmt"
+ 
+ endmenu
+-- 
+1.7.11.7
 
