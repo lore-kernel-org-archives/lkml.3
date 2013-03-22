@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab3CVIty (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 04:49:54 -0400
-Received: from mga14.intel.com ([143.182.124.37]:48473 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754124Ab3CVItv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 04:49:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,891,1355126400"; 
-   d="scan'208";a="274498966"
-Message-ID: <514C1B23.20701@intel.com>
-Date: Fri, 22 Mar 2013 16:49:39 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1754635Ab3CVIvo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 04:51:44 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:50488 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862Ab3CVIvl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 04:51:41 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 06/15] sched: log the cpu utilization at rq
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>   <1361164062-20111-7-git-send-email-alex.shi@intel.com>  <1361352643.10155.4.camel@laptop> <5124DED5.5050207@intel.com> <1361373740.10155.42.camel@laptop>
-In-Reply-To: <1361373740.10155.42.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [114.39.107.32]
+In-Reply-To: <20130322092736.f379b24f5f3e6a6f0642ef4a@canb.auug.org.au>
+References: <1363877418.4019.1.camel@phoenix>
+	<20130322092736.f379b24f5f3e6a6f0642ef4a@canb.auug.org.au>
+Date: Fri, 22 Mar 2013 16:51:40 +0800
+Message-ID: <CAFRkauCd_dL-9muXQz2PV=hBtdfKyzZDqA_5va_Nq37mJcfb5g@mail.gmail.com>
+Subject: Re: [linux-next] Not able to fetch next-20130321
+From: Axel Lin <axel.lin@ingics.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 11:22 PM, Peter Zijlstra wrote:
-> On Wed, 2013-02-20 at 22:33 +0800, Alex Shi wrote:
->>> You don't actually compute the rq utilization, you only compute the
->>> utilization as per the fair class, so if there's significant RT
->> activity
->>> it'll think the cpu is under-utilized, whihc I think will result in
->> the
->>> wrong thing.
+2013/3/22 Stephen Rothwell <sfr@canb.auug.org.au>:
+> Hi Axel,
+>
+> On Thu, 21 Mar 2013 22:50:18 +0800 Axel Lin <axel.lin@ingics.com> wrote:
 >>
->> yes. A bit complicit to resolve this. Any suggestions on this, guys?
-> 
-> Shouldn't be too hard seeing as we already track cpu utilization for !
-> fair usage; see rq::rt_avg and scale_rt_power.
-> 
+>> I run "git remote update" but cannot find next-20130321 tag.
+>> It seems the latest tag is "next-20130318".
+>> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/
+>
+> It seems to have come good by the time I had a look.  And I am pretty
+> sure that people had downloaded next-20130320 ok.
 
-Hi Peter,
+Even with a fresh git clone, it still shows the latest commit is 20130318.
 
-rt_avg will be accumulated the irq time and steal time in
-update_rq_clock_task(), if CONFIG_IRQ_TIME_ACCOUNTING or
-CONFIG_IRQ_TIME_ACCOUNTING defined. That cause irq/steal time was double
-added into rq utilisation, since normal rq->util already include the irq
-time. So we do wrongly judgement to think it is a overload cpu. but it
-is not.
+$ git clone git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
 
-To resolve this issue, if is it possible to introduce another member in
-rq to describe rt_avg non irq/steal beside the rt_avg? If so, what the
-name do you like to use?
+git log shows the latest commit is:
+commit 0e78c0989334e9c1d578ba25621de14e8441d8b4
+Author: Stephen Rothwell <sfr@canb.auug.org.au>
+Date:   Mon Mar 18 16:10:47 2013 +1100
 
--- 
-Thanks Alex
+    Add linux-next specific files for 20130318
+
+    Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
