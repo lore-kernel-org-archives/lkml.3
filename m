@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933384Ab3CVOXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 10:23:18 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:65275 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932928Ab3CVOXQ (ORCPT
+	id S933416Ab3CVOXl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 10:23:41 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:56892 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932928Ab3CVOXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 10:23:16 -0400
-Message-ID: <1363962193.4431.59.camel@edumazet-glaptop>
-Subject: Re: [PATCH] net: Add support for handling queueing in hardware
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andy Fleming <afleming@freescale.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Date: Fri, 22 Mar 2013 07:23:13 -0700
-In-Reply-To: <E1UJ1fR-0004hs-4l@swissweb.swissdisk.com>
-References: <E1UJ1fR-0004hs-4l@swissweb.swissdisk.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 22 Mar 2013 10:23:39 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 0/4] ARM: at91: little DT fixes
+Date: Fri, 22 Mar 2013 15:23:32 +0100
+Message-ID: <cover.1363960549.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-13 at 08:52 -0500, Andy Fleming wrote:
-> The QDisc code does a bunch of locking which is unnecessary if
-> you have hardware which handles all of the queueing. Add
-> support for this, and skip over all of the queueing code if
-> the feature is enabled on a given device, which breaks QDisc
-> support on dpaa_eth, and also coopts the FCOE feature bit.
-> 
-> Signed-off-by: Andy Fleming <afleming@freescale.com>
-> Signed-off-by: Ben Collins <ben.c@servergy.com>
-> Cc: netdev@vger.kernel.org
-> ---
->  include/linux/netdev_features.h | 2 ++
->  net/core/dev.c                  | 6 ++++++
->  2 files changed, 8 insertions(+)
-> 
-> diff --git a/include/linux/netdev_features.h b/include/linux/netdev_features.h
-> index 3dd3934..ffb4587 100644
-> --- a/include/linux/netdev_features.h
-> +++ b/include/linux/netdev_features.h
-> @@ -56,6 +56,7 @@ enum {
->  	NETIF_F_LOOPBACK_BIT,		/* Enable loopback */
->  	NETIF_F_RXFCS_BIT,		/* Append FCS to skb pkt data */
->  	NETIF_F_RXALL_BIT,		/* Receive errored frames too */
-> +	NETIF_F_HW_QDISC_BIT,		/* Supports hardware Qdisc */
->  
->  	/*
->  	 * Add your fresh new feature above and remember to update
-> @@ -80,6 +81,7 @@ enum {
->  #define NETIF_F_GSO_ROBUST	__NETIF_F(GSO_ROBUST)
->  #define NETIF_F_HIGHDMA		__NETIF_F(HIGHDMA)
->  #define NETIF_F_HW_CSUM		__NETIF_F(HW_CSUM)
-> +#define NETIF_F_HW_QDISC	__NETIF_F(HW_QDISC)
->  #define NETIF_F_HW_VLAN_FILTER	__NETIF_F(HW_VLAN_FILTER)
->  #define NETIF_F_HW_VLAN_RX	__NETIF_F(HW_VLAN_RX)
->  #define NETIF_F_HW_VLAN_TX	__NETIF_F(HW_VLAN_TX)
-> diff --git a/net/core/dev.c b/net/core/dev.c
-> index dffbef7..6818b18 100644
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -2743,6 +2743,12 @@ int dev_queue_xmit(struct sk_buff *skb)
->  
->  	skb_update_prio(skb);
->  
-> +	if (dev->features & NETIF_F_HW_QDISC) {
-> +		txq = netdev_pick_tx(dev, skb);
-> +		rc = dev_hard_start_xmit(skb, dev, txq);
-> +		goto out;
-> +	}
-> +
->  	txq = netdev_pick_tx(dev, skb);
->  	q = rcu_dereference_bh(txq->qdisc);
->  
+Hi,
 
-Nobody forces you to use a qdisc.
-
-And if your device really is lockless, it can use NETIF_F_LLTX feature.
+Here are some little fixes found while adding device tree boards.
+I plan to request a pull on this material early next week.
 
 
+Nicolas Ferre (4):
+  ARM: at91/dt: fix macb node declaration
+  ARM: at91/trivial: typos in compatible property
+  ARM: at91/trivial: fix model name for SAM9G15-EK
+  ARM: at91: remove partial parameter in bootargs for at91sam9x5ek.dtsi
+
+ arch/arm/boot/dts/at91sam9g15.dtsi  |  2 +-
+ arch/arm/boot/dts/at91sam9g15ek.dts |  2 +-
+ arch/arm/boot/dts/at91sam9g25.dtsi  |  2 +-
+ arch/arm/boot/dts/at91sam9g25ek.dts |  9 +++++++++
+ arch/arm/boot/dts/at91sam9g35.dtsi  |  2 +-
+ arch/arm/boot/dts/at91sam9g35ek.dts |  9 +++++++++
+ arch/arm/boot/dts/at91sam9x25.dtsi  |  2 +-
+ arch/arm/boot/dts/at91sam9x25ek.dts | 14 ++++++++++++++
+ arch/arm/boot/dts/at91sam9x35.dtsi  |  2 +-
+ arch/arm/boot/dts/at91sam9x35ek.dts |  9 +++++++++
+ arch/arm/boot/dts/at91sam9x5ek.dtsi |  7 +------
+ 11 files changed, 48 insertions(+), 12 deletions(-)
+
+-- 
+1.8.0
 
