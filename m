@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928Ab3CVNvs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 09:51:48 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:56055
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751724Ab3CVNvq (ORCPT
+	id S932867Ab3CVNxn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 09:53:43 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:59422 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932116Ab3CVNxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 09:51:46 -0400
-X-Greylist: delayed 597 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Mar 2013 09:51:46 EDT
-X-IronPort-AV: E=Sophos;i="4.84,891,1355094000"; 
-   d="scan'208";a="7475638"
-Date: Fri, 22 Mar 2013 14:41:47 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Karel Zak <kzak@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        util-linux@vger.kernel.org
-Subject: Re: [ANNOUNCE] util-linux v2.23-rc1
-Message-ID: <20130322134147.GA6125@type.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Karel Zak <kzak@redhat.com>, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org, util-linux@vger.kernel.org
-References: <20130322125621.GA6278@x2.net.home>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="ibTvN161/egqYuK8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130322125621.GA6278@x2.net.home>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+	Fri, 22 Mar 2013 09:53:41 -0400
+Date: Fri, 22 Mar 2013 14:53:37 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: davem@davemloft.net, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 0/4 v3] mv643xx_eth: use mvmdio MDIO bus driver
+Message-ID: <20130322145337.3814fcc8@skate>
+In-Reply-To: <1363959568-16976-1-git-send-email-florian@openwrt.org>
+References: <1363284515-9865-1-git-send-email-florian@openwrt.org>
+	<1363959568-16976-1-git-send-email-florian@openwrt.org>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---ibTvN161/egqYuK8
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-
 Hello,
 
-Karel Zak, le Fri 22 Mar 2013 13:56:21 +0100, a écrit :
-> The util-linux release v2.23-rc1 is available at
->  
->    ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.23
->     
-> Feedback and bug reports, as always, are welcomed.
+On Fri, 22 Mar 2013 14:39:24 +0100, Florian Fainelli wrote:
+> Hi all,
+> 
+> This patch converts the mv643xx_eth driver to use the mvmdio MDIO bus driver
+> instead of rolling its own implementation. As a result, all users of this
+> mv643xx_eth driver are converted to register an "orion-mdio" platform_device.
+> The mvmdio driver is also updated to support an interrupt line which reports
+> SMI error/completion, and to allow traditionnal platform device registration
+> instead of just device tree.
+> 
+> David, I think it makes sense for you to merge all of this, since we do
+> not want the architecture files to be desynchronized from the mv643xx_eth to
+> avoid runtime breakage. The potential for merge conflicts should be very small.
+> 
+> Florian Fainelli (4):
+>   net: mvmdio: allow platform device style registration
+>   net: mvmdio: rename base register cookie from smireg to regs
+>   net: mvmdio: enhance driver to support SMI error/done interrupts
+>   mv643xx_eth: convert to use the Marvell Orion MDIO driver
 
-Here is a couple of obvious fixes for non-linux systems.
+For the entire series:
 
-Samuel
+Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
---ibTvN161/egqYuK8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=patch
+tested on:
 
-diff --git a/login-utils/sulogin.c b/login-utils/sulogin.c
-index db5f41e..621df1e 100644
---- a/login-utils/sulogin.c
-+++ b/login-utils/sulogin.c
-@@ -118,7 +118,9 @@ static void tcinit(struct console *con)
- 		cfsetispeed(tio, ispeed);
- 		cfsetospeed(tio, ospeed);
- 
-+#ifdef HAVE_STRUCT_TERMIOS_C_LINE
- 		tio->c_line         = 0;
-+#endif
- 		tio->c_cc[VTIME]    = 0;
- 		tio->c_cc[VMIN]     = 1;
- 
-@@ -198,7 +200,7 @@ static void tcfinal(struct console *con)
- 	tio->c_cc[VEOF]     = CEOF;
- #ifdef VSWTC
- 	tio->c_cc[VSWTC]    = _POSIX_VDISABLE;
--#else
-+#elif defined(VSWTCH)
- 	tio->c_cc[VSWTCH]   = _POSIX_VDISABLE;
- #endif
- 	tio->c_cc[VSTART]   = CSTART;
+ * Armada XP DB, DT-based, which uses the mvneta driver. It is affected
+   by the 3 first commits since Armada XP also uses the mvmdio driver.
 
---ibTvN161/egqYuK8--
+ * Kirkwood development board, non-DT, which uses the mv643xx_eth
+   driver.
+
+Thanks Florian for this work,
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
