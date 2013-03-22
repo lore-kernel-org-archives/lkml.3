@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab3CVSiA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 14:38:00 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:55912 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499Ab3CVSh7 (ORCPT
+	id S1754722Ab3CVSjS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 14:39:18 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55595 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565Ab3CVSjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 14:37:59 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org, zhong@linux.vnet.ibm.com, geoff@infradead.org,
-        tglx@linutronix.de
-Subject: Re: [PATCH] nohz1: Documentation
-References: <CAFTL4hybMf+9GjjyKRSEEp0x+wT7OwpKShE5sR_JqW24DGfKOw@mail.gmail.com>
-	<1363636794.15703.32@driftwood>
-	<CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com>
-	<20130318222548.GG3656@linux.vnet.ibm.com>
-	<1363822338.6345.33.camel@gandalf.local.home>
-	<20130320235545.GL3637@linux.vnet.ibm.com>
-	<1363825631.6345.45.camel@gandalf.local.home>
-	<514B2B03.4030301@linux.intel.com>
-	<20130321171806.GX3637@linux.vnet.ibm.com>
-	<514B464A.50700@linux.intel.com>
-	<20130321180218.GA3637@linux.vnet.ibm.com>
-Date: Fri, 22 Mar 2013 11:37:55 -0700
-In-Reply-To: <20130321180218.GA3637@linux.vnet.ibm.com> (Paul E. McKenney's
-	message of "Thu, 21 Mar 2013 11:02:18 -0700")
-Message-ID: <87wqszb7r0.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 22 Mar 2013 14:39:17 -0400
+Message-ID: <514CA544.5080006@ti.com>
+Date: Fri, 22 Mar 2013 13:39:00 -0500
+From: Jon Hunter <jon-hunter@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>,
+        <linux-omap@vger.kernel.org>, <tony@atomide.com>, <khilman@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mach_omap2: use PTR_RET instead of IS_ERR + PTR_ERR
+References: <1363075109-27038-1-git-send-email-silviupopescu1990@gmail.com> <20130312110557.GF30923@n2100.arm.linux.org.uk> <5149FFDF.6050501@ti.com> <20130322163650.GN30923@n2100.arm.linux.org.uk>
+In-Reply-To: <20130322163650.GN30923@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.24.115.187]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
 
-> On Thu, Mar 21, 2013 at 10:41:30AM -0700, Arjan van de Ven wrote:
->> On 3/21/2013 10:18 AM, Paul E. McKenney wrote:
->> >	o	Use the "idle=poll" boot parameter.  However, please note
->> >		that use of this parameter can cause your CPU to overheat,
->> >		which may cause thermal throttling to degrade your
->> >		latencies --and that this degradation can be even worse
->> >		than that of dyntick-idle.
->> 
->> it also disables (effectively) Turbo Mode on Intel cpus... which can
->> cost you a serious percentage of performance
->
-> Thank you, added!  Please see below for the updated list.
->
-> 							Thanx, Paul
->
-> ------------------------------------------------------------------------
->
-> o	Dyntick-idle slows transitions to and from idle slightly.
-> 	In practice, this has not been a problem except for the most
-> 	aggressive real-time workloads, which have the option of disabling
-> 	dyntick-idle mode, an option that most of them take.  However,
-> 	some workloads will no doubt want to use adaptive ticks to
-> 	eliminate scheduling-clock-tick latencies.  Here are some
-> 	options for these workloads:
->
-> 	a.	Use PMQOS from userspace to inform the kernel of your
-> 		latency requirements (preferred).
+On 03/22/2013 11:36 AM, Russell King - ARM Linux wrote:
+> On Wed, Mar 20, 2013 at 01:28:47PM -0500, Jon Hunter wrote:
+>> Sorry I am now not sure I follow you here. Someone just pointed out to
+>> me that PTR_RET() is defined as ...
+>>
+>> static inline int __must_check PTR_RET(const void *ptr)
+>> {
+>> 	if (IS_ERR(ptr))
+>> 		return PTR_ERR(ptr);
+>> 	else
+>> 		return 0;
+>> }
+>>
+>> So the above change appears to be equivalent. Is there something that is
+>> wrong with the current implementation that needs to be fixed?
+> 
+> No - I misread it as PTR_ERR not PTR_RET.  Your patch is fine.
 
-This is not only the preferred approach, but the *only* approach
-available on non-x86 systems.  Perhaps the others should be marked as
-x86-only?
+Thanks for confirming. I had made the same mistake recently too!
 
-Kevin
+Jon
 
-> 	b.	Use the "idle=mwait" boot parameter.
->
-> 	c.	Use the "intel_idle.max_cstate=" to limit the maximum
-> 		depth C-state depth.
->
-> 	d.	Use the "idle=poll" boot parameter.  However, please note
-> 		that use of this parameter can cause your CPU to overheat,
-> 		which may cause thermal throttling to degrade your
-> 		latencies -- and that this degradation can be even worse
-> 		than that of dyntick-idle.  Furthermore, this parameter
-> 		effectively disables Turbo Mode on Intel CPUs, which
-> 		can significantly reduce maximum performance.
