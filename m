@@ -1,133 +1,547 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423427Ab3CVVcJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 17:32:09 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:39664 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423310Ab3CVVbu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 17:31:50 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Benoit Lourdelet <blourdel@juniper.net>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lxc-users <lxc-users@lists.sourceforge.net>
-References: <CD724CB7.72DE%blourdel@juniper.net>
-Date: Fri, 22 Mar 2013 14:31:32 -0700
-In-Reply-To: <CD724CB7.72DE%blourdel@juniper.net> (Benoit Lourdelet's message
-	of "Fri, 22 Mar 2013 17:05:44 +0000")
-Message-ID: <87r4j7m897.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/qGq5VAkm33NJlSn71FlyZVefHYhJ2UTA=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.0 XMSubMetaSx_00 1+ Sexy Words
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Benoit Lourdelet <blourdel@juniper.net>
-X-Spam-Relay-Country: 
-Subject: Re: [Lxc-users] Containers slow to start after 1600
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S1423396Ab3CVVcj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 17:32:39 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32084 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423324Ab3CVV3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 17:29:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,893,1355126400"; 
+   d="scan'208";a="306274765"
+Subject: [PATCH 04/11] Optimized sha256 x86_64 assembly routine with AVX
+ instructions.
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "David S.Miller" <davem@davemloft.net>
+Cc: Kirk Yap <kirk.s.yap@intel.com>, David Cote <david.m.cote@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+In-Reply-To: <cover.1363961999.git.tim.c.chen@linux.intel.com>
+References: <cover.1363961999.git.tim.c.chen@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Mar 2013 14:29:14 -0700
+Message-ID: <1363987754.8972.58.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benoit Lourdelet <blourdel@juniper.net> writes:
+Provides SHA256 x86_64 assembly routine optimized with SSE and AVX instructions.
+Speedup of 60% or more has been measured over the generic implementation.
 
-> Hello,
->
-> I tried multiple kernels with similar results.
->
-> I ran the following on 3.8.2
->
-> $ cat > test-script.sh << 'EOF'
-> #!/bin/bash
-> for i in $(seq 1 2000) ; do
-> 	ip link add a$i type veth peer name b$i
-> done
-> EOF
->
-> $ perf record -a test-script.sh
-> $ perf report
->
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+---
+ arch/x86/crypto/sha256-avx-asm.S | 493 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 493 insertions(+)
+ create mode 100644 arch/x86/crypto/sha256-avx-asm.S
 
-Interesting.  And the snmp_fold_field is an interesting hint.
-
-It looks like something is listing all of your interfaces probably
-between interface creation.  And that will definitely take this
-process from O(NlogN) to O(N^2).
-
-Although I find the find_next_bit call also concerning.
-
-snmp_fold_field is used when reading /proc/net/snmp /proc/net/netstat
-and when running ip link to show all of the interfaces.
-
-I suspect find_next_bit is coming out of the per cpu allocator, and it
-might be partially responsible.  But that doesn't feel right.
-
-Regardless from this trace it looks like the performance problem on
-creation is something in userspace is calling /sbin/ip to list all of
-the interfaces and that is  causing the interface creation to slow down.
-
-
-Oh I see what is happening.  In iproute.
-do_iplink
-  iplink_modify
-     ll_init_map
-
-So the limitation at this point is in iproute, and not in the kernel.
-
-And with the following patch the time to create 5000 devices drops from
-120 to 11 seconds for me.  So it looks like the kernel is fine it is
-whatever userspace tools that are of interest that are the bottleneck.
-
-Although a quicker way to do a name to ifindex mapping might be
-interesting.
-
-Eric
-
-
-diff --git a/ip/iplink.c b/ip/iplink.c
-index ad33611..58af369 100644
---- a/ip/iplink.c
-+++ b/ip/iplink.c
-@@ -533,8 +533,6 @@ static int iplink_modify(int cmd, unsigned int flags, int argc, char **argv)
-                }
-        }
- 
--       ll_init_map(&rth);
--
-        if (!(flags & NLM_F_CREATE)) {
-                if (!dev) {
-                        fprintf(stderr, "Not enough information: \"dev\" "
-@@ -542,6 +540,7 @@ static int iplink_modify(int cmd, unsigned int flags, int argc, char **argv)
-                        exit(-1);
-                }
- 
-+               ll_init_map(&rth);
-                req.i.ifi_index = ll_name_to_index(dev);
-                if (req.i.ifi_index == 0) {
-                        fprintf(stderr, "Cannot find device \"%s\"\n", dev);
-@@ -555,6 +554,7 @@ static int iplink_modify(int cmd, unsigned int flags, int argc, char **argv)
-                if (link) {
-                        int ifindex;
- 
-+                       ll_init_map(&rth);
-                        ifindex = ll_name_to_index(link);
-                        if (ifindex == 0) {
-                                fprintf(stderr, "Cannot find device \"%s\"\n",
-
+diff --git a/arch/x86/crypto/sha256-avx-asm.S b/arch/x86/crypto/sha256-avx-asm.S
+new file mode 100644
+index 0000000..0b2e2d5
+--- /dev/null
++++ b/arch/x86/crypto/sha256-avx-asm.S
+@@ -0,0 +1,493 @@
++########################################################################
++# Implement fast SHA-256 with AVX1 instructions. (x86_64)
++#
++# Copyright (C) 2013 Intel Corporation.
++#
++# Authors:
++#     James Guilford <james.guilford@intel.com>
++#     Kirk Yap <kirk.s.yap@intel.com>
++#     Tim Chen <tim.c.chen@linux.intel.com>
++#
++# This software is available to you under a choice of one of two
++# licenses.  You may choose to be licensed under the terms of the GNU
++# General Public License (GPL) Version 2, available from the file
++# COPYING in the main directory of this source tree, or the
++# OpenIB.org BSD license below:
++#
++#     Redistribution and use in source and binary forms, with or
++#     without modification, are permitted provided that the following
++#     conditions are met:
++#
++#      - Redistributions of source code must retain the above
++#        copyright notice, this list of conditions and the following
++#        disclaimer.
++#
++#      - Redistributions in binary form must reproduce the above
++#        copyright notice, this list of conditions and the following
++#        disclaimer in the documentation and/or other materials
++#        provided with the distribution.
++#
++# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
++# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
++# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
++# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++# SOFTWARE.
++########################################################################
++#
++# This code is described in an Intel White-Paper:
++# "Fast SHA-256 Implementations on Intel Architecture Processors"
++#
++# To find it, surf to http://www.intel.com/p/en_US/embedded
++# and search for that title.
++#
++########################################################################
++# This code schedules 1 block at a time, with 4 lanes per block
++########################################################################
++
++## assume buffers not aligned
++#define    VMOVDQ vmovdqu
++
++################################ Define Macros
++
++# addm [mem], reg
++# Add reg to mem using reg-mem add and store
++.macro addm p1 p2
++	add     \p1, \p2
++	mov     \p2, \p1
++.endm
++
++
++.macro MY_ROR p1 p2
++	shld    $(32-(\p1)), \p2, \p2
++.endm
++
++################################
++
++# COPY_XMM_AND_BSWAP xmm, [mem], byte_flip_mask
++# Load xmm with mem and byte swap each dword
++.macro COPY_XMM_AND_BSWAP p1 p2 p3
++	VMOVDQ \p2, \p1
++	vpshufb \p3, \p1, \p1
++.endm
++
++################################
++
++X0 = %xmm4
++X1 = %xmm5
++X2 = %xmm6
++X3 = %xmm7
++
++XTMP0 = %xmm0
++XTMP1 = %xmm1
++XTMP2 = %xmm2
++XTMP3 = %xmm3
++XTMP4 = %xmm8
++XFER = %xmm9
++XTMP5 = %xmm11
++
++SHUF_00BA = %xmm10      # shuffle xBxA -> 00BA
++SHUF_DC00 = %xmm12      # shuffle xDxC -> DC00
++BYTE_FLIP_MASK = %xmm13
++
++NUM_BLKS = %rdx   # 3rd arg
++CTX = %rsi        # 2nd arg
++INP = %rdi        # 1st arg
++
++SRND = %rdi       # clobbers INP
++c = %ecx
++d = %r8d
++e = %edx
++TBL = %rbp
++a = %eax
++b = %ebx
++
++f = %r9d
++g = %r10d
++h = %r11d
++
++y0 = %r13d
++y1 = %r14d
++y2 = %r15d
++
++
++_INP_END_SIZE = 8
++_INP_SIZE = 8
++_XFER_SIZE = 8
++_XMM_SAVE_SIZE = 0
++
++_INP_END = 0
++_INP            = _INP_END  + _INP_END_SIZE
++_XFER           = _INP      + _INP_SIZE
++_XMM_SAVE       = _XFER     + _XFER_SIZE
++STACK_SIZE      = _XMM_SAVE + _XMM_SAVE_SIZE
++
++# rotate_Xs
++# Rotate values of symbols X0...X3
++.macro rotate_Xs
++X_ = X0
++X0 = X1
++X1 = X2
++X2 = X3
++X3 = X_
++.endm
++
++# ROTATE_ARGS
++# Rotate values of symbols a...h
++.macro ROTATE_ARGS
++TMP_ = h
++h = g
++g = f
++f = e
++e = d
++d = c
++c = b
++b = a
++a = TMP_
++.endm
++
++.macro FOUR_ROUNDS_AND_SCHED
++	## compute s0 four at a time and s1 two at a time
++	## compute W[-16] + W[-7] 4 at a time
++
++	mov     e, y0			# y0 = e
++	MY_ROR  (25-11), y0             # y0 = e >> (25-11)
++	mov     a, y1                   # y1 = a
++	vpalignr $4, X2, X3, XTMP0      # XTMP0 = W[-7]
++	MY_ROR  (22-13), y1             # y1 = a >> (22-13)
++	xor     e, y0                   # y0 = e ^ (e >> (25-11))
++	mov     f, y2                   # y2 = f
++	MY_ROR  (11-6), y0              # y0 = (e >> (11-6)) ^ (e >> (25-6))
++	xor     a, y1                   # y1 = a ^ (a >> (22-13)
++	xor     g, y2                   # y2 = f^g
++	vpaddd  X0, XTMP0, XTMP0        # XTMP0 = W[-7] + W[-16]
++	xor     e, y0                   # y0 = e ^ (e >> (11-6)) ^ (e >> (25-6))
++	and     e, y2                   # y2 = (f^g)&e
++	MY_ROR  (13-2), y1              # y1 = (a >> (13-2)) ^ (a >> (22-2))
++	## compute s0
++	vpalignr $4, X0, X1, XTMP1      # XTMP1 = W[-15]
++	xor     a, y1                   # y1 = a ^ (a >> (13-2)) ^ (a >> (22-2))
++	MY_ROR  6, y0                   # y0 = S1 = (e>>6) & (e>>11) ^ (e>>25)
++	xor     g, y2                   # y2 = CH = ((f^g)&e)^g
++	MY_ROR  2, y1                   # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>22)
++	add     y0, y2                  # y2 = S1 + CH
++	add     _XFER(%rsp), y2         # y2 = k + w + S1 + CH
++	mov     a, y0                   # y0 = a
++	add     y2, h                   # h = h + S1 + CH + k + w
++	mov     a, y2                   # y2 = a
++	vpsrld  $7, XTMP1, XTMP2
++	or      c, y0                   # y0 = a|c
++	add     h, d                    # d = d + h + S1 + CH + k + w
++	and     c, y2                   # y2 = a&c
++	vpslld  $(32-7), XTMP1, XTMP3
++	and     b, y0                   # y0 = (a|c)&b
++	add     y1, h                   # h = h + S1 + CH + k + w + S0
++	vpor    XTMP2, XTMP3, XTMP3     # XTMP1 = W[-15] MY_ROR 7
++	or      y2, y0                  # y0 = MAJ = (a|c)&b)|(a&c)
++	add     y0, h                   # h = h + S1 + CH + k + w + S0 + MAJ
++	ROTATE_ARGS
++	mov     e, y0                   # y0 = e
++	mov     a, y1                   # y1 = a
++	MY_ROR  (25-11), y0             # y0 = e >> (25-11)
++	xor     e, y0                   # y0 = e ^ (e >> (25-11))
++	mov     f, y2                   # y2 = f
++	MY_ROR  (22-13), y1             # y1 = a >> (22-13)
++	vpsrld  $18, XTMP1, XTMP2       #
++	xor     a, y1                   # y1 = a ^ (a >> (22-13)
++	MY_ROR  (11-6), y0              # y0 = (e >> (11-6)) ^ (e >> (25-6))
++	xor     g, y2                   # y2 = f^g
++	vpsrld  $3, XTMP1, XTMP4        # XTMP4 = W[-15] >> 3
++	MY_ROR  (13-2), y1              # y1 = (a >> (13-2)) ^ (a >> (22-2))
++	xor     e, y0                   # y0 = e ^ (e >> (11-6)) ^ (e >> (25-6))
++	and     e, y2                   # y2 = (f^g)&e
++	MY_ROR  6, y0                   # y0 = S1 = (e>>6) & (e>>11) ^ (e>>25)
++	vpslld  $(32-18), XTMP1, XTMP1
++	xor     a, y1                   # y1 = a ^ (a >> (13-2)) ^ (a >> (22-2))
++	xor     g, y2                   # y2 = CH = ((f^g)&e)^g
++	vpxor   XTMP1, XTMP3, XTMP3     #
++	add     y0, y2                  # y2 = S1 + CH
++	add     (1*4 + _XFER)(%rsp), y2 # y2 = k + w + S1 + CH
++	MY_ROR  2, y1                   # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>22)
++	vpxor   XTMP2, XTMP3, XTMP3     # XTMP1 = W[-15] MY_ROR 7 ^ W[-15] MY_ROR
++	mov     a, y0                   # y0 = a
++	add     y2, h                   # h = h + S1 + CH + k + w
++	mov     a, y2                   # y2 = a
++	vpxor   XTMP4, XTMP3, XTMP1     # XTMP1 = s0
++	or      c, y0                   # y0 = a|c
++	add     h, d                    # d = d + h + S1 + CH + k + w
++	and     c, y2                   # y2 = a&c
++	## compute low s1
++	vpshufd $0b11111010, X3, XTMP2  # XTMP2 = W[-2] {BBAA}
++	and     b, y0                   # y0 = (a|c)&b
++	add     y1, h                   # h = h + S1 + CH + k + w + S0
++	vpaddd  XTMP1, XTMP0, XTMP0     # XTMP0 = W[-16] + W[-7] + s0
++	or      y2, y0                  # y0 = MAJ = (a|c)&b)|(a&c)
++	add     y0, h                   # h = h + S1 + CH + k + w + S0 + MAJ
++	ROTATE_ARGS
++	mov     e, y0                   # y0 = e
++	mov     a, y1                   # y1 = a
++	MY_ROR  (25-11), y0             # y0 = e >> (25-11)
++	xor     e, y0                   # y0 = e ^ (e >> (25-11))
++	MY_ROR  (22-13), y1             # y1 = a >> (22-13)
++	mov     f, y2                   # y2 = f
++	xor     a, y1                   # y1 = a ^ (a >> (22-13)
++	MY_ROR  (11-6), y0              # y0 = (e >> (11-6)) ^ (e >> (25-6))
++	vpsrld  $10, XTMP2, XTMP4       # XTMP4 = W[-2] >> 10 {BBAA}
++	xor     g, y2                   # y2 = f^g
++	vpsrlq  $19, XTMP2, XTMP3       # XTMP3 = W[-2] MY_ROR 19 {xBxA}
++	xor     e, y0                   # y0 = e ^ (e >> (11-6)) ^ (e >> (25-6))
++	and     e, y2                   # y2 = (f^g)&e
++	vpsrlq  $17, XTMP2, XTMP2       # XTMP2 = W[-2] MY_ROR 17 {xBxA}
++	MY_ROR  (13-2), y1              # y1 = (a >> (13-2)) ^ (a >> (22-2))
++	xor     a, y1                   # y1 = a ^ (a >> (13-2)) ^ (a >> (22-2))
++	xor     g, y2                   # y2 = CH = ((f^g)&e)^g
++	MY_ROR  6, y0                   # y0 = S1 = (e>>6) & (e>>11) ^ (e>>25)
++	vpxor   XTMP3, XTMP2, XTMP2     #
++	add     y0, y2                  # y2 = S1 + CH
++	MY_ROR  2, y1                   # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>22)
++	add     (2*4 + _XFER)(%rsp), y2 # y2 = k + w + S1 + CH
++	vpxor   XTMP2, XTMP4, XTMP4     # XTMP4 = s1 {xBxA}
++	mov     a, y0                   # y0 = a
++	add     y2, h                   # h = h + S1 + CH + k + w
++	mov     a, y2                   # y2 = a
++	vpshufb SHUF_00BA, XTMP4, XTMP4 # XTMP4 = s1 {00BA}
++	or      c, y0                   # y0 = a|c
++	add     h, d                    # d = d + h + S1 + CH + k + w
++	and     c, y2                   # y2 = a&c
++	vpaddd  XTMP4, XTMP0, XTMP0     # XTMP0 = {..., ..., W[1], W[0]}
++	and     b, y0                   # y0 = (a|c)&b
++	add     y1, h                   # h = h + S1 + CH + k + w + S0
++	## compute high s1
++	vpshufd $0b01010000, XTMP0, XTMP2 # XTMP2 = W[-2] {DDCC}
++	or      y2, y0                  # y0 = MAJ = (a|c)&b)|(a&c)
++	add     y0, h                   # h = h + S1 + CH + k + w + S0 + MAJ
++	ROTATE_ARGS
++	mov     e, y0                   # y0 = e
++	MY_ROR  (25-11), y0             # y0 = e >> (25-11)
++	mov     a, y1                   # y1 = a
++	MY_ROR  (22-13), y1             # y1 = a >> (22-13)
++	xor     e, y0                   # y0 = e ^ (e >> (25-11))
++	mov     f, y2                   # y2 = f
++	MY_ROR  (11-6), y0              # y0 = (e >> (11-6)) ^ (e >> (25-6))
++	vpsrld  $10, XTMP2, XTMP5       # XTMP5 = W[-2] >> 10 {DDCC}
++	xor     a, y1                   # y1 = a ^ (a >> (22-13)
++	xor     g, y2                   # y2 = f^g
++	vpsrlq  $19, XTMP2, XTMP3       # XTMP3 = W[-2] MY_ROR 19 {xDxC}
++	xor     e, y0                   # y0 = e ^ (e >> (11-6)) ^ (e >> (25-6))
++	and     e, y2                   # y2 = (f^g)&e
++	MY_ROR  (13-2), y1              # y1 = (a >> (13-2)) ^ (a >> (22-2))
++	vpsrlq  $17, XTMP2, XTMP2       # XTMP2 = W[-2] MY_ROR 17 {xDxC}
++	xor     a, y1                   # y1 = a ^ (a >> (13-2)) ^ (a >> (22-2))
++	MY_ROR  6, y0                   # y0 = S1 = (e>>6) & (e>>11) ^ (e>>25)
++	xor     g, y2                   # y2 = CH = ((f^g)&e)^g
++	vpxor   XTMP3, XTMP2, XTMP2
++	MY_ROR  2, y1                   # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>22)
++	add     y0, y2                  # y2 = S1 + CH
++	add     (3*4 + _XFER)(%rsp), y2 # y2 = k + w + S1 + CH
++	vpxor   XTMP2, XTMP5, XTMP5     # XTMP5 = s1 {xDxC}
++	mov     a, y0                   # y0 = a
++	add     y2, h                   # h = h + S1 + CH + k + w
++	mov     a, y2                   # y2 = a
++	vpshufb SHUF_DC00, XTMP5, XTMP5 # XTMP5 = s1 {DC00}
++	or      c, y0                   # y0 = a|c
++	add     h, d                    # d = d + h + S1 + CH + k + w
++	and     c, y2                   # y2 = a&c
++	vpaddd  XTMP0, XTMP5, X0        # X0 = {W[3], W[2], W[1], W[0]}
++	and     b, y0                   # y0 = (a|c)&b
++	add     y1, h                   # h = h + S1 + CH + k + w + S0
++	or      y2, y0                  # y0 = MAJ = (a|c)&b)|(a&c)
++	add     y0, h                   # h = h + S1 + CH + k + w + S0 + MAJ
++	ROTATE_ARGS
++	rotate_Xs
++.endm
++
++## input is [rsp + _XFER + %1 * 4]
++.macro DO_ROUND round
++	mov	e, y0			# y0 = e
++        MY_ROR  (25-11), y0             # y0 = e >> (25-11)
++        mov     a, y1                   # y1 = a
++        xor     e, y0                   # y0 = e ^ (e >> (25-11))
++        MY_ROR  (22-13), y1             # y1 = a >> (22-13)
++        mov     f, y2                   # y2 = f
++        xor     a, y1                   # y1 = a ^ (a >> (22-13)
++        MY_ROR  (11-6), y0              # y0 = (e >> (11-6)) ^ (e >> (25-6))
++        xor     g, y2                   # y2 = f^g
++        xor     e, y0                   # y0 = e ^ (e >> (11-6)) ^ (e >> (25-6))
++        MY_ROR  (13-2), y1              # y1 = (a >> (13-2)) ^ (a >> (22-2))
++        and     e, y2                   # y2 = (f^g)&e
++        xor     a, y1                   # y1 = a ^ (a >> (13-2)) ^ (a >> (22-2))
++        MY_ROR  6, y0                   # y0 = S1 = (e>>6) & (e>>11) ^ (e>>25)
++        xor     g, y2                   # y2 = CH = ((f^g)&e)^g
++        add     y0, y2                  # y2 = S1 + CH
++        MY_ROR  2, y1                   # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>22)
++        offset = \round * 4 + _XFER     #
++        add     offset(%rsp), y2	# y2 = k + w + S1 + CH
++        mov     a, y0			# y0 = a
++        add     y2, h                   # h = h + S1 + CH + k + w
++        mov     a, y2                   # y2 = a
++        or      c, y0                   # y0 = a|c
++        add     h, d                    # d = d + h + S1 + CH + k + w
++        and     c, y2                   # y2 = a&c
++        and     b, y0                   # y0 = (a|c)&b
++        add     y1, h                   # h = h + S1 + CH + k + w + S0
++        or      y2, y0                  # y0 = MAJ = (a|c)&b)|(a&c)
++        add     y0, h                   # h = h + S1 + CH + k + w + S0 + MAJ
++        ROTATE_ARGS
++.endm
++
++########################################################################
++## void sha256_transform_avx(void *input_data, UINT32 digest[8], UINT64 num_blks)
++## arg 1 : pointer to input data
++## arg 2 : pointer to digest
++## arg 3 : Num blocks
++########################################################################
++.text
++.global sha256_transform_avx
++.align 32
++sha256_transform_avx:
++	pushq   %rbx
++	pushq   %rbp
++	pushq   %r13
++	pushq   %r14
++	pushq   %r15
++	pushq   %r12
++
++	mov	%rsp, %r12
++	subq    $STACK_SIZE, %rsp	# allocate stack space
++	and	$~15, %rsp		# align stack pointer
++
++	shl     $6, NUM_BLKS		# convert to bytes
++	jz      done_hash
++	add     INP, NUM_BLKS		# pointer to end of data
++	mov     NUM_BLKS, _INP_END(%rsp)
++
++	## load initial digest
++	mov     4*0(CTX), a
++	mov     4*1(CTX), b
++	mov     4*2(CTX), c
++	mov     4*3(CTX), d
++	mov     4*4(CTX), e
++	mov     4*5(CTX), f
++	mov     4*6(CTX), g
++	mov     4*7(CTX), h
++
++	vmovdqa  PSHUFFLE_BYTE_FLIP_MASK(%rip), BYTE_FLIP_MASK
++	vmovdqa  _SHUF_00BA(%rip), SHUF_00BA
++	vmovdqa  _SHUF_DC00(%rip), SHUF_DC00
++loop0:
++	lea     K256(%rip), TBL
++
++	## byte swap first 16 dwords
++	COPY_XMM_AND_BSWAP      X0, 0*16(INP), BYTE_FLIP_MASK
++	COPY_XMM_AND_BSWAP      X1, 1*16(INP), BYTE_FLIP_MASK
++	COPY_XMM_AND_BSWAP      X2, 2*16(INP), BYTE_FLIP_MASK
++	COPY_XMM_AND_BSWAP      X3, 3*16(INP), BYTE_FLIP_MASK
++
++	mov     INP, _INP(%rsp)
++
++	## schedule 48 input dwords, by doing 3 rounds of 16 each
++	mov     $3, SRND
++.align 16
++loop1:
++	vpaddd  (TBL), X0, XFER
++	vmovdqa XFER, _XFER(%rsp)
++	FOUR_ROUNDS_AND_SCHED
++
++	vpaddd  1*16(TBL), X0, XFER
++	vmovdqa XFER, _XFER(%rsp)
++	FOUR_ROUNDS_AND_SCHED
++
++	vpaddd  2*16(TBL), X0, XFER
++	vmovdqa XFER, _XFER(%rsp)
++	FOUR_ROUNDS_AND_SCHED
++
++	vpaddd  3*16(TBL), X0, XFER
++	vmovdqa XFER, _XFER(%rsp)
++	add	$4*16, TBL
++	FOUR_ROUNDS_AND_SCHED
++
++	sub     $1, SRND
++	jne     loop1
++
++	mov     $2, SRND
++loop2:
++	vpaddd  (TBL), X0, XFER
++	vmovdqa XFER, _XFER(%rsp)
++	DO_ROUND        0
++	DO_ROUND        1
++	DO_ROUND        2
++	DO_ROUND        3
++
++	vpaddd  1*16(TBL), X1, XFER
++	vmovdqa XFER, _XFER(%rsp)
++	add     $2*16, TBL
++	DO_ROUND        0
++	DO_ROUND        1
++	DO_ROUND        2
++	DO_ROUND        3
++
++	vmovdqa X2, X0
++	vmovdqa X3, X1
++
++	sub     $1, SRND
++	jne     loop2
++
++	addm    (4*0)(CTX),a
++	addm    (4*1)(CTX),b
++	addm    (4*2)(CTX),c
++	addm    (4*3)(CTX),d
++	addm    (4*4)(CTX),e
++	addm    (4*5)(CTX),f
++	addm    (4*6)(CTX),g
++	addm    (4*7)(CTX),h
++
++	mov     _INP(%rsp), INP
++	add     $64, INP
++	cmp     _INP_END(%rsp), INP
++	jne     loop0
++
++done_hash:
++
++	mov	%r12, %rsp
++
++	popq	%r12
++	popq    %r15
++	popq    %r14
++	popq    %r13
++	popq    %rbp
++	popq    %rbx
++
++	ret
++
++.data
++.align 64
++K256:
++	.long 0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5
++	.long 0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5
++	.long 0xd807aa98,0x12835b01,0x243185be,0x550c7dc3
++	.long 0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174
++	.long 0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc
++	.long 0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da
++	.long 0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7
++	.long 0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967
++	.long 0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13
++	.long 0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85
++	.long 0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3
++	.long 0xd192e819,0xd6990624,0xf40e3585,0x106aa070
++	.long 0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5
++	.long 0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3
++	.long 0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208
++	.long 0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
++
++PSHUFFLE_BYTE_FLIP_MASK:
++	.octa 0x0c0d0e0f08090a0b0405060700010203
++
++# shuffle xBxA -> 00BA
++_SHUF_00BA:
++	.octa 0xFFFFFFFFFFFFFFFF0b0a090803020100
++
++# shuffle xDxC -> DC00
++_SHUF_DC00:
++	.octa 0x0b0a090803020100FFFFFFFFFFFFFFFF
+-- 
+1.7.11.7
 
 
 
