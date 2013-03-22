@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933912Ab3CVO6z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 10:58:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36420 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933680Ab3CVO6w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 10:58:52 -0400
-Message-ID: <514C71AA.7090900@ubuntu.com>
-Date: Fri, 22 Mar 2013 14:58:50 +0000
-From: James Hunt <james.hunt@ubuntu.com>
-Reply-To: james.hunt@ubuntu.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: "upstart-devel >> \"upstart-devel >> Upstart Devel List\"" 
-	<upstart-devel@lists.ubuntu.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Upstart 1.8 released
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933803Ab3CVO6j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 10:58:39 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:47326 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933691Ab3CVOzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 10:55:19 -0400
+From: Ian Lartey <ian@slimlogic.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-leds@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, swarren@wwwdotorg.org,
+        grant.likely@secretlab.ca, broonie@opensource.wolfsonmicro.com,
+        rob.herring@calxeda.com, rob@landley.net, mturquette@linaro.org,
+        linus.walleij@linaro.org, cooloney@gmail.com, sfr@canb.auug.org.au,
+        rpurdie@rpsys.net, akpm@linux-foundation.org, sameo@linux.intel.com,
+        wim@iguana.be, lgirdwood@gmail.com, gg@slimlogic.co.uk,
+        j-keerthy@ti.com, ldewangan@nvidia.com, t-kristo@ti.com
+Subject: [PATCH v10 05/12] watchdog: Kconfig for Palmas watchdog
+Date: Fri, 22 Mar 2013 14:55:15 +0000
+Message-Id: <1363964122-19201-6-git-send-email-ian@slimlogic.co.uk>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1363964122-19201-1-git-send-email-ian@slimlogic.co.uk>
+References: <1363964122-19201-1-git-send-email-ian@slimlogic.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hot on the heels of v1.7, this new release adds two interesting new features:
+Add the Kconfig and Makefile for the Palmas watchdog driver
 
-- upstart-file-bridge: a new bridge that allows jobs to react to file
-  events.
+Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+---
+ drivers/watchdog/Kconfig  |    8 ++++++++
+ drivers/watchdog/Makefile |    1 +
+ 2 files changed, 9 insertions(+), 0 deletions(-)
 
-  Examples:
-
-  # Event emitted when file is created, modified or deleted
-  start on file FILE=/run/app.pid
-
-  # Event emitted when file is created (only)
-  start on file FILE=/run/app.pid EVENT=created
-
-  # Event emitted when files within a directory are created,
-  # modified or deleted.
-  start on file FILE=/var/log/
-
-  # Event emitted when files that match a glob pattern are
-  # created in the indicated directory.
-  start on file FILE=/var/crash/*.crash EVENT=created
-
-  See upstart-file-bridge(8) and file-event(7) for further details.
-
-
-- upstart-monitor: a very simple tool (*) that can run in either CLI or
-  GUI mode either connected to PID 1 or a Session Init (as root or
-  non-root) that allows users and admins to see event flows.
-
-  See upstart-monitor(8) for further details (and [1] for obligatory screenshot).
-
-
-Thanks to all involved!
-
-Download Upstart 1.8 from launchpad: https://launchpad.net/upstart
-
-
-Kind regards,
-
-James.
-
-(*) - If you are interested in contributing to Upstart, we'd love to hear from
-you. Now is a great time to get involved, since with the advent of the
-upstart-monitor the fun expands to include GUI hackers too ;-)
-
-[1] -
-http://ifdeflinux.blogspot.co.uk/2013/03/a-basic-upstart-events-gui-and-cli-tool.html
---
-James Hunt
-____________________________________
-#upstart on freenode
-http://upstart.ubuntu.com/cookbook
-https://lists.ubuntu.com/mailman/listinfo/upstart-devel
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 9fcc70c..d48cb0e 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -103,6 +103,14 @@ config WM8350_WATCHDOG
+ 	  Support for the watchdog in the WM8350 AudioPlus PMIC.  When
+ 	  the watchdog triggers the system will be reset.
+ 
++config PALMAS_WATCHDOG
++	tristate "Palmas Watchdog"
++	depends on MFD_PALMAS
++	select WATCHDOG_CORE
++	help
++	  Support for the watchdog in the Palmas family of PMICs. When the
++	  watchdog times out system will be reset.
++
+ # ALPHA Architecture
+ 
+ # ARM Architecture
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index a300b94..e845c21 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -171,3 +171,4 @@ obj-$(CONFIG_WM831X_WATCHDOG) += wm831x_wdt.o
+ obj-$(CONFIG_WM8350_WATCHDOG) += wm8350_wdt.o
+ obj-$(CONFIG_MAX63XX_WATCHDOG) += max63xx_wdt.o
+ obj-$(CONFIG_SOFT_WATCHDOG) += softdog.o
++obj-$(CONFIG_PALMAS_WATCHDOG) += palmas_wdt.o
+-- 
+1.7.0.4
 
