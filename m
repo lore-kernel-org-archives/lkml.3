@@ -1,45 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423066Ab3CVU2f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 16:28:35 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:57963 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422915Ab3CVU2d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 16:28:33 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 1/5] ARM: ux500: Add machine support for ccu8540
-Date: Fri, 22 Mar 2013 20:28:14 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: Lee Jones <lee.jones@linaro.org>, Alexander Shiyan <shc_work@mail.ru>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linus.walleij@stericsson.com
-References: <1363966065-2478-1-git-send-email-lee.jones@linaro.org> <20130322172346.GG4977@n2100.arm.linux.org.uk> <20130322172911.GH4977@n2100.arm.linux.org.uk>
-In-Reply-To: <20130322172911.GH4977@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303222028.14953.arnd@arndb.de>
-X-Provags-ID: V02:K0:QzuOojqm/9KVZyOjnYSgiX6H2rlGXF/JOiXRKsPOa8A
- rRzQqwDKJiPcPm6ZdeX5kIwgCV5UXKF99kAf0pbyA3yngv9p6i
- 8oGq8B+gW5kagATMF8tMqlMgae3kp7I1WfzKy3roX1zow+RdGx
- ZOn7I2qWtst+03JT4owUbjszzfkWSHjhAa4X3FgWK4VtreMVdw
- sx7Rx1EHhSXWxLmmOe2hc+83sjkqpiGzzo+2/5MfJEe1oX1ZxF
- fCUtyo0pGW8mLYj+Me1mIbCi8ZWxTYmBQQu3ExbA8h3sYMdo2S
- gkXAcXsNsbNbUhf2iJa2C7NeBAMiPMBcJkT7QYSCD6iH1zmdQa
- 4HwZgaz8WRLXdUckz6/g=
+	id S1423031Ab3CVU1l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 16:27:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58892 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422907Ab3CVUZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 16:25:18 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH 06/10] migrate: add hugepage migration code to move_pages()
+Date: Fri, 22 Mar 2013 16:23:51 -0400
+Message-Id: <1363983835-20184-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 22 March 2013, Russell King - ARM Linux wrote:
-> As I've said before, do not remove entries from this file because
-> they will get replaced when it gets updated from the website version.
+This patch extends move_pages() to handle vma with VM_HUGETLB set.
+We will be able to migrate hugepage with move_pages(2) after
+applying the enablement patch which comes later in this series.
 
-Sorry about that. For some reason when I merged those patches, I thought
-your script would automatically remove entries that are no longer used
-in the kernel.
+We avoid getting refcount on tail pages of hugepage, because unlike thp,
+hugepage is not split and we need not care about races with splitting.
 
-	Arnd
+And migration of larger (1GB for x86_64) hugepage are not enabled.
+
+ChangeLog v2:
+ - updated description and renamed patch title
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ mm/memory.c  |  6 ++++--
+ mm/migrate.c | 26 +++++++++++++++++++-------
+ 2 files changed, 23 insertions(+), 9 deletions(-)
+
+diff --git v3.9-rc3.orig/mm/memory.c v3.9-rc3/mm/memory.c
+index 494526a..3b6ad3d 100644
+--- v3.9-rc3.orig/mm/memory.c
++++ v3.9-rc3/mm/memory.c
+@@ -1503,7 +1503,8 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
+ 	if (pud_none(*pud))
+ 		goto no_page_table;
+ 	if (pud_huge(*pud) && vma->vm_flags & VM_HUGETLB) {
+-		BUG_ON(flags & FOLL_GET);
++		if (flags & FOLL_GET)
++			goto out;
+ 		page = follow_huge_pud(mm, address, pud, flags & FOLL_WRITE);
+ 		goto out;
+ 	}
+@@ -1514,8 +1515,9 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
+ 	if (pmd_none(*pmd))
+ 		goto no_page_table;
+ 	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB) {
+-		BUG_ON(flags & FOLL_GET);
+ 		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
++		if (flags & FOLL_GET && PageHead(page))
++			get_page_foll(page);
+ 		goto out;
+ 	}
+ 	if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
+diff --git v3.9-rc3.orig/mm/migrate.c v3.9-rc3/mm/migrate.c
+index 38912ae..ef8e4e3 100644
+--- v3.9-rc3.orig/mm/migrate.c
++++ v3.9-rc3/mm/migrate.c
+@@ -1104,7 +1104,11 @@ static struct page *new_page_node(struct page *p, unsigned long private,
+ 
+ 	*result = &pm->status;
+ 
+-	return alloc_pages_exact_node(pm->node,
++	if (PageHuge(p))
++		return alloc_huge_page_node(page_hstate(compound_head(p)),
++					pm->node);
++	else
++		return alloc_pages_exact_node(pm->node,
+ 				GFP_HIGHUSER_MOVABLE | GFP_THISNODE, 0);
+ }
+ 
+@@ -1150,6 +1154,13 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
+ 		if (PageReserved(page))
+ 			goto put_and_set;
+ 
++		/*
++		 * follow_page(FOLL_GET) didn't get refcount for tail pages of
++		 * hugepage, so here we skip putting it.
++		 */
++		if (PageHuge(page) && PageTail(page))
++			goto set_status;
++
+ 		pp->page = page;
+ 		err = page_to_nid(page);
+ 
+@@ -1164,6 +1175,12 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
+ 				!migrate_all)
+ 			goto put_and_set;
+ 
++		if (PageHuge(page)) {
++			get_page(page);
++			list_move_tail(&page->lru, &pagelist);
++			goto put_and_set;
++		}
++
+ 		err = isolate_lru_page(page);
+ 		if (!err) {
+ 			list_add_tail(&page->lru, &pagelist);
+@@ -1181,13 +1198,8 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
+ 		pp->status = err;
+ 	}
+ 
+-	err = 0;
+-	if (!list_empty(&pagelist)) {
+-		err = migrate_pages(&pagelist, new_page_node,
++	err = migrate_movable_pages(&pagelist, new_page_node,
+ 				(unsigned long)pm, MIGRATE_SYNC, MR_SYSCALL);
+-		if (err)
+-			putback_lru_pages(&pagelist);
+-	}
+ 
+ 	up_read(&mm->mmap_sem);
+ 	return err;
+-- 
+1.7.11.7
+
