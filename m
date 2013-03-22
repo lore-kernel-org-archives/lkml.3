@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab3CVTBR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 15:01:17 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:53148 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754675Ab3CVTBQ (ORCPT
+	id S1754982Ab3CVTFS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 15:05:18 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43031 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754885Ab3CVTFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 15:01:16 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Christoph Lameter <cl@linux.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org, zhong@linux.vnet.ibm.com, geoff@infradead.org,
-        tglx@linutronix.de
-Subject: Re: [PATCH] nohz1: Documentation
-References: <CAFTL4hybMf+9GjjyKRSEEp0x+wT7OwpKShE5sR_JqW24DGfKOw@mail.gmail.com>
-	<1363636794.15703.32@driftwood>
-	<CAFTL4hz=VKCchgvKcSHbctZcRyjCSmCbLu6OhLz0zEcYA20zOQ@mail.gmail.com>
-	<20130318222548.GG3656@linux.vnet.ibm.com>
-	<1363822338.6345.33.camel@gandalf.local.home>
-	<20130320235545.GL3637@linux.vnet.ibm.com>
-	<0000013d8db514e4-bf492080-82c9-412a-90b8-54ddc1463e4b-000000@email.amazonses.com>
-	<20130321171518.GW3637@linux.vnet.ibm.com>
-	<0000013d8e3f58ce-0f6ea95f-780a-49c1-a633-5aa0cf3e5040-000000@email.amazonses.com>
-	<20130321185821.GF3637@linux.vnet.ibm.com>
-Date: Fri, 22 Mar 2013 12:01:12 -0700
-In-Reply-To: <20130321185821.GF3637@linux.vnet.ibm.com> (Paul E. McKenney's
-	message of "Thu, 21 Mar 2013 11:58:21 -0700")
-Message-ID: <87ehf7b6o7.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 22 Mar 2013 15:05:16 -0400
+Date: Sat, 23 Mar 2013 06:04:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Ian Lartey <ian@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-leds@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        swarren@wwwdotorg.org, grant.likely@secretlab.ca,
+        broonie@opensource.wolfsonmicro.com, rob.herring@calxeda.com,
+        rob@landley.net, mturquette@linaro.org, linus.walleij@linaro.org,
+        cooloney@gmail.com, rpurdie@rpsys.net, akpm@linux-foundation.org,
+        sameo@linux.intel.com, wim@iguana.be, lgirdwood@gmail.com,
+        gg@slimlogic.co.uk, j-keerthy@ti.com, ldewangan@nvidia.com,
+        t-kristo@ti.com
+Subject: Re: [PATCH v10 0/12] Palmas updates
+Message-Id: <20130323060455.78a4c90c3f1e028434818fd1@canb.auug.org.au>
+In-Reply-To: <1363964122-19201-1-git-send-email-ian@slimlogic.co.uk>
+References: <1363964122-19201-1-git-send-email-ian@slimlogic.co.uk>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__23_Mar_2013_06_04_55_+1100_7Olw5O_=bY6EnJIk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
+--Signature=_Sat__23_Mar_2013_06_04_55_+1100_7Olw5O_=bY6EnJIk
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> >
->> > In the meantime, one approach is to bind all these SCHED_OTHER tasks
->> > to designated housekeeping CPU(s) that don't run your main workload.
->> 
->> One cannot bind kevent threads and other per cpu threads to another
->> processor. So right now there is no way to avoid this issue.
+Hi Ian,
+
+On Fri, 22 Mar 2013 14:55:10 +0000 Ian Lartey <ian@slimlogic.co.uk> wrote:
 >
-> Yep, my approach works only for those threads that are free to migrate.
-> Of course, in some cases, you can avoid per-CPU threads running by pinning
-> interrupts, avoiding certain operations in your workload, and so on.
+> This patchset adds to the support for the Palmas series of PMIC chips.
+>=20
+> Some of the patches have previously been submitted individually.
+> The DT bindings doc has been added first due to comments that it was miss=
+ing.
+>=20
+> Patches based on linux-next-20130319
 
-Speaking of threads that are not free to migrate, you might add a bit to
-the doc explaining that these various kernel threads that cannot migrate
-are also potential sources of jitter and also reasons why a CPU may exit
-(or not enter) full nohz mode.
+I can't really comment on the patch set except to say that you should not
+base on linux-next, you should base on the tree to which you expect the
+patch set to be applied.
 
-And thanks a ton for writing up this detailed doc.  Speaking as someone
-trying to get full nohz working on a new arch (ARM), getting my head
-around all of this has been challenging, and your doc is a great help.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Kevin
+--Signature=_Sat__23_Mar_2013_06_04_55_+1100_7Olw5O_=bY6EnJIk
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRTKtXAAoJEECxmPOUX5FE0UQP/0KeuAdMIeoUJESYzR52cQRt
+aykiOFX+2bqP4WysLpghKuqJJKMPtVvVyIiCKtl6KimXgheucQGcAlmYcmHnwIo6
+v3sg+B8wPWBNQOpA+wR8dsly10arpqdQQJ43dyTIpG+4zWD83sSaClKBhj9KuaIn
+Ib8DzbwDOaO3PTyiz8AOWvI4GgqxBhzfzZ2y7heojGPOqvHKy3cMgQMync6vgx7C
+1hTIbOq54KY7OsCBvkZoshGhqRD0DxYrDb3EJFt9ogpGQZx0pLIoUy9AqWgpgHN3
+CXBsy0+QKRjNImOu6za3T1d/vH/SVoupRlvzWxaNeKm285/JnZ9JrCJBKq7uR66i
+4ekE7kpVih0nrN7AGAOFIaSYVYJOroXzrbKBmFqhgTSch0xUTSkYqB6OgOrCbyzg
+cZ3E6kFwEv8tkvFsUEmvFHUnShs9ig8vY4Ria0/UG/IooswCMzxzzyb4Oe1MBi6J
+DEMcjZMUgPhvkwiIx0K4fZVUOg8ejg5Dsm85LPW8vCH9+IWxZkToOxt5dqGWOZNY
+I/RsZa6KiCrPIDn/b0kzsCiW4R1eDgAYG9esZJtD24FjAxy4hz23bIhBGCnyQSGy
+XCNKg7Y7dTldlE3b0NeymXKmCSqB1oVzhYvfsYwTkBEM9Ndn8Xcx3PLkUJuCz+04
+flX7Y1oRx47xFh6o8Ajm
+=vdaI
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__23_Mar_2013_06_04_55_+1100_7Olw5O_=bY6EnJIk--
