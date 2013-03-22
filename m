@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422763Ab3CVRuH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 13:50:07 -0400
-Received: from ams-iport-1.cisco.com ([144.254.224.140]:12275 "EHLO
-	ams-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422717Ab3CVRuE (ORCPT
+	id S1422768Ab3CVRvO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 13:51:14 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:13800 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422678Ab3CVRvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 13:50:04 -0400
-X-Greylist: delayed 586 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Mar 2013 13:50:04 EDT
-X-IronPort-AV: E=Sophos;i="4.84,893,1355097600"; 
-   d="scan'208";a="152091224"
-From: Henrik Austad <haustad@cisco.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Henrik Austad <haustad@cisco.com>
-Subject: [PATCH] tile: ns2cycles must be called with preempt disabled.
-Date: Fri, 22 Mar 2013 18:37:51 +0100
-Message-Id: <1363973871-13199-1-git-send-email-haustad@cisco.com>
-X-Mailer: git-send-email 1.7.10.1
+	Fri, 22 Mar 2013 13:51:13 -0400
+Message-ID: <1363974671.1946.4.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: ipc,sem: sysv semaphore scalability
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Rik van Riel <riel@surriel.com>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
+        walken@google.com, lwoodman@redhat.com, chegu_vinod@hp.com
+Date: Fri, 22 Mar 2013 10:51:11 -0700
+In-Reply-To: <1363809337-29718-1-git-send-email-riel@surriel.com>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ns2cycles use per_cpu variables, and will, eventually, find its way into
-smp_processord_id(). The latter must be called with either preempt
-disabled, irq's off, from a thread locked to a single core or early in
-the bootprocess (according to debug_smp_processor_id())
+On Wed, 2013-03-20 at 15:55 -0400, Rik van Riel wrote:
+> Include lkml in the CC: this time... *sigh*
+> ---8<---
+> 
+> This series makes the sysv semaphore code more scalable,
+> by reducing the time the semaphore lock is held, and making
+> the locking more scalable for semaphore arrays with multiple
+> semaphores.
+> 
+> The first four patches were written by Davidlohr Buesso, and
+> reduce the hold time of the semaphore lock.
+> 
+> The last three patches change the sysv semaphore code locking
+> to be more fine grained, providing a performance boost when
+> multiple semaphores in a semaphore array are being manipulated
+> simultaneously.
+> 
+> On a 24 CPU system, performance numbers with the semop-multi
+> test with N threads and N semaphores, look like this:
+> 
+> 	vanilla		Davidlohr's	Davidlohr's +	Davidlohr's +
+> threads			patches		rwlock patches	v3 patches
+> 10	610652		726325		1783589		2142206
+> 20	341570		365699		1520453		1977878
+> 30	288102		307037		1498167		2037995
+> 40	290714		305955		1612665		2256484
+> 50	288620		312890		1733453		2650292
+> 60	289987		306043		1649360		2388008
+> 70	291298		306347		1723167		2717486
+> 80	290948		305662		1729545		2763582
+> 90	290996		306680		1736021		2757524
+> 100	292243		306700		1773700		3059159
+> 
 
-BUG: using smp_processor_id() in preemptible [00000000] code: systemd-modules/367
-caller is ns2cycles+0x40/0xb8
+Some results with semop-multi on my 4 core laptop:
 
-Starting stack dump of tid 367, pid 367 (systemd-modules) on cpu 2 at cycle 20969956421
-  frame 0: 0xfffffff70004b860 dump_stack+0x0/0x20 (sp 0xfffffe407993fa90)
-  frame 1: 0xfffffff7006abc28 debug_smp_processor_id+0x1a8/0x1e0 (sp 0xfffffe407993fa90)
-  frame 2: 0xfffffff7004d7b40 ns2cycles+0x40/0xb8 (sp 0xfffffe407993fab8)
-  frame 3: 0xfffffff7004dc578 __ndelay+0x38/0x80 (sp 0xfffffe407993fae0)
+	vanilla		v3 patchset
+threads
+10       5094473         10289146
+20       5079946         10187923
+30       5041258         10660635
+40       4942786         10876009
+50       5076437         10759434
+60       5139024         10797032
+70       5103811         10698323
+80       5094850          9959675
+90       5085774         10054844
+100      4939547          9798291
 
-Note: wrapping the -entire- delay-loop in a preempt-off section can be a
-bad idea as long delays would case kernel lockups without being able to
-preempt the thread at all.
 
-Signed-off-by: Henrik Austad <haustad@cisco.com>
----
- arch/tile/lib/delay.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/tile/lib/delay.c b/arch/tile/lib/delay.c
-index cdacdd1..a53cdcd 100644
---- a/arch/tile/lib/delay.c
-+++ b/arch/tile/lib/delay.c
-@@ -30,7 +30,9 @@ EXPORT_SYMBOL(__udelay);
- void __ndelay(unsigned long nsecs)
- {
- 	cycles_t target = get_cycles();
-+	preempt_disable();
- 	target += ns2cycles(nsecs);
-+	preempt_enable();
- 	while (get_cycles() < target)
- 		cpu_relax();
- }
--- 
-1.7.2.5
 
