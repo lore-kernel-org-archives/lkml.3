@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933057Ab3CVLdr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 07:33:47 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41881 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932521Ab3CVLdp (ORCPT
+	id S933097Ab3CVLje (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 07:39:34 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:58389 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932718Ab3CVLjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 07:33:45 -0400
-Date: Fri, 22 Mar 2013 11:32:51 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Lior Amsalem <alior@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        David Marlin <dmarlin@redhat.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Eran Ben-Avi <benavi@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Leif Lindholm <leif.lindholm@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Jon Masters <jcm@redhat.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
-        Maen Suleiman <maen@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 2/5] arm: mvebu: Select DMA_BOUNCE when LPAE is
-	selected in Kconfig
-Message-ID: <20130322113251.GB4977@n2100.arm.linux.org.uk>
-References: <1363883179-1361-1-git-send-email-gregory.clement@free-electrons.com> <1363883179-1361-3-git-send-email-gregory.clement@free-electrons.com>
+	Fri, 22 Mar 2013 07:39:32 -0400
+Message-ID: <514C42EC.6000303@linux.vnet.ibm.com>
+Date: Fri, 22 Mar 2013 19:39:24 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363883179-1361-3-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Gleb Natapov <gleb@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v2 0/7] KVM: MMU: fast zap all shadow pages
+References: <1363768227-4782-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130321222151.GA19821@amt.cnet> <514BBDC5.6090104@linux.vnet.ibm.com> <20130322105436.GC7543@amt.cnet> <514C3C34.4080906@linux.vnet.ibm.com> <20130322112811.GV9382@redhat.com>
+In-Reply-To: <20130322112811.GV9382@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032211-8256-0000-0000-000006C0DEB6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 05:26:15PM +0100, Gregory CLEMENT wrote:
-> From: Lior Amsalem <alior@marvell.com>
-> 
-> For mvebu IOs are 32 bits and we have 40 bits memory due to LPAE so
-> make sure we give 32 bits addresses to the IOs.
-> 
-> Signed-off-by: Lior Amsalem <alior@marvell.com>
-> Tested-by: Franklin <flin@marvell.com>
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+On 03/22/2013 07:28 PM, Gleb Natapov wrote:
+> On Fri, Mar 22, 2013 at 07:10:44PM +0800, Xiao Guangrong wrote:
+>> On 03/22/2013 06:54 PM, Marcelo Tosatti wrote:
+>>
+>>>>
+>>>>>
+>>>>> And then have codepaths that nuke shadow pages break from the spinlock,
+>>>>
+>>>> I think this is not needed any more. We can let mmu_notify use the generation
+>>>> number to invalid all shadow pages, then we only need to free them after
+>>>> all vcpus down and mmu_notify unregistered - at this point, no lock contention,
+>>>> we can directly free them.
+>>>>
+>>>>> such as kvm_mmu_slot_remove_write_access does now (spin_needbreak).
+>>>>
+>>>> BTW, to my honest, i do not think spin_needbreak is a good way - it does
+>>>> not fix the hot-lock contention and it just occupies more cpu time to avoid
+>>>> possible soft lock-ups.
+>>>>
+>>>> Especially, zap-all-shadow-pages can let other vcpus fault and vcpus contest
+>>>> mmu-lock, then zap-all-shadow-pages release mmu-lock and wait, other vcpus
+>>>> create page tables again. zap-all-shadow-page need long time to be finished,
+>>>> the worst case is, it can not completed forever on intensive vcpu and memory
+>>>> usage.
+>>>
+>>> Yes, but the suggestion is to use spin_needbreak on the VM shutdown
+>>> cases, where there is no detailed concern about performance. Such as
+>>> mmu_notifier_release, kvm_destroy_vm, etc. In those cases what matters
+>>> most is that host remains unaffected (and that it finishes in a
+>>> reasonable time).
+>>
+>> Okay. I agree with you, will give a try.
+>>
+>>>
+>>>> I still think the right way to fix this kind of thing is optimization for
+>>>> mmu-lock.
+>>>
+>>> And then for the cases where performance matters just increase a
+>>> VM global generetion number, zap the roots and then on kvm_mmu_get_page:
+>>>
+>>> kvm_mmu_get_page() {
+>>> 	sp = lookup_hash(gfn)
+>>> 	if (sp->role = role) {
+>>> 		if (sp->mmu_gen_number != kvm->arch.mmu_gen_number) {
+>>> 			kvm_mmu_commit_zap_page(sp); (no need for TLB flushes as its unreachable)
+>>> 			kvm_mmu_init_page(sp);
+>>> 			proceed as if the page was just allocated
+>>> 		}
+>>> 	}
+>>> }
+>>>
+>>> It makes the kvm_mmu_zap_all path even faster than you have now.
+>>> I suppose this was your idea correct with the generation number correct?
+>>
+>> Wow, great minds think alike, this is exactly what i am doing. ;)
+>>
+> Not that I disagree with above code, but why not make mmu_gen_number to be
+> part of a role and remove old pages in kvm_mmu_free_some_pages() whenever
+> limit is reached like we looks to be doing with role.invalid pages now.
 
-Oh god no.  Please move away from the addition on DMABOUNCE - that code
-creaks, doesn't have highmem support, and is known to give problems on
-various platforms.
+These pages can be reused after purge its entries and delete it from parents
+list, it can reduce the pressure of memory allocator. Also, we can move it to
+the head of active_list so that the pages with invalid_gen can be reclaimed first.
 
-Instead, please rely on using the DMA mask and such like, just like on
-x86.
+
