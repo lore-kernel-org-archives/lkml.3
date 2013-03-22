@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933004Ab3CVB1L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 21:27:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37485 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932912Ab3CVB1J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 21:27:09 -0400
-Date: Thu, 21 Mar 2013 18:24:52 -0700
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-f564c24103f87dc740c1c293c975565ac46b12ef@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, sruffell@digium.com,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com,
-        sruffell@digium.com
-In-Reply-To: <20130320170310.GA23362@digium.com>
-References: <20130320170310.GA23362@digium.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, microcode_intel_early:
-  Mark apply_microcode_early() as cpuinit
-Git-Commit-ID: f564c24103f87dc740c1c293c975565ac46b12ef
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S933036Ab3CVBbJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 21:31:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58414 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932092Ab3CVBbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 21:31:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,888,1355126400"; 
+   d="scan'208";a="306691240"
+Message-ID: <514BB452.2070906@intel.com>
+Date: Fri, 22 Mar 2013 09:30:58 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Mar 2013 18:24:58 -0700 (PDT)
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Subject: Re: [patch v5 14/15] sched: power aware load balance
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-15-git-send-email-alex.shi@intel.com> <514941C5.6080007@linux.vnet.ibm.com> <514ABA19.1080807@intel.com> <514AC7B2.7030400@linux.vnet.ibm.com> <514AD26F.9010905@intel.com> <514AE07A.10100@linux.vnet.ibm.com>
+In-Reply-To: <514AE07A.10100@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f564c24103f87dc740c1c293c975565ac46b12ef
-Gitweb:     http://git.kernel.org/tip/f564c24103f87dc740c1c293c975565ac46b12ef
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Thu, 21 Mar 2013 17:32:36 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 21 Mar 2013 17:32:36 -0700
+On 03/21/2013 06:27 PM, Preeti U Murthy wrote:
+>> > did you close all of background system services?
+>> > In theory the rq->avg.runnable_avg_sum should be zero if there is no
+>> > task a bit long, otherwise there are some bugs in kernel.
+> Could you explain why rq->avg.runnable_avg_sum should be zero? What if
+> some kernel thread ran on this run queue and is now finished? Its
+> utilisation would be say x.How would that ever drop to 0,even if nothing
+> ran on it later?
 
-x86, microcode_intel_early: Mark apply_microcode_early() as cpuinit
+the value get from decay_load():
+ sa->runnable_avg_sum = decay_load(sa->runnable_avg_sum,
+in decay_load it is possible to be set zero.
 
-Add missing __cpuinit annotation to apply_microcode_early().
+and /proc/sched_debug also approve this:
 
-Reported-by: Shaun Ruffell <sruffell@digium.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/20130320170310.GA23362@digium.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/microcode_intel_early.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+  .tg_runnable_contrib           : 0
+  .tg->runnable_avg              : 50
+  .avg->runnable_avg_sum         : 0
+  .avg->runnable_avg_period      : 47507
 
-diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
-index 5992ee8..d893e8e 100644
---- a/arch/x86/kernel/microcode_intel_early.c
-+++ b/arch/x86/kernel/microcode_intel_early.c
-@@ -659,8 +659,8 @@ static inline void __cpuinit print_ucode(struct ucode_cpu_info *uci)
- }
- #endif
- 
--static int apply_microcode_early(struct mc_saved_data *mc_saved_data,
--				 struct ucode_cpu_info *uci)
-+static int __cpuinit apply_microcode_early(struct mc_saved_data *mc_saved_data,
-+					   struct ucode_cpu_info *uci)
- {
- 	struct microcode_intel *mc_intel;
- 	unsigned int val[2];
+
+-- 
+Thanks Alex
