@@ -1,53 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423100Ab3CVVpy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 17:45:54 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:65523 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422984Ab3CVVpx (ORCPT
+	id S1423341Ab3CVVyw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 17:54:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44224 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422936Ab3CVVyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 17:45:53 -0400
-Message-ID: <1363988751.1390.199.camel@x61.thuisdomein>
-Subject: [PATCH] CRIS: remove "config OOM_REBOOT"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org
-Date: Fri, 22 Mar 2013 22:45:51 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Fri, 22 Mar 2013 17:54:51 -0400
+Date: Fri, 22 Mar 2013 14:54:48 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Josh Boyer <jwboyer@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christian Kujau <lists@nerdbynature.de>,
+        "# 3.4.x" <stable@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
+Message-Id: <20130322145448.f44f9d10a36620c1c11535b7@linux-foundation.org>
+In-Reply-To: <CAGXu5j+aADfSpBcz9=LVtREQQiW4d3Jd8t7nQKbih7oUhvQghg@mail.gmail.com>
+References: <20130222181856.GA2419@hansolo.jdub.homelinux.org>
+	<20130227175427.GQ26411@outflux.net>
+	<20130227180145.GH2071@hansolo.jdub.homelinux.org>
+	<CAGXu5j+ntBM5ZwO9Xqa3sWaEW3nSpR8wsL7poTJ6wZOp5x0Lhw@mail.gmail.com>
+	<1361998001.2110.22.camel@localhost>
+	<20130227221954.GJ2071@hansolo.jdub.homelinux.org>
+	<CAGXu5j+aADfSpBcz9=LVtREQQiW4d3Jd8t7nQKbih7oUhvQghg@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 Mar 2013 21:45:52.0791 (UTC) FILETIME=[A01F1A70:01CE2746]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig symbol OOM_REBOOT got added in v2.6.25. It has never been
-used. Its entry can safely be removed.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+poke.  Nothing got applied.  I'll drop
+kmsg-honor-dmesg_restrict-sysctl-on-dev-kmsg.patch, see if that has any
+effect ;) 
+
+
+From: Josh Boyer <jwboyer@redhat.com>
+Subject: kmsg: honor dmesg_restrict sysctl on /dev/kmsg
+
+Originally, the addition of dmesg_restrict covered both the syslog
+method of accessing dmesg, as well as /dev/kmsg itself.  This was done
+indirectly by security_syslog calling cap_syslog before doing any LSM
+checks.
+
+However, commit 12b3052c3ee ("capabilities/syslog: open code cap_syslog
+logic to fix build failure") moved the code around and pushed the checks
+into the caller itself.  That seems to have inadvertently dropped the
+checks for dmesg_restrict on /dev/kmsg.  Most people haven't noticed
+because util-linux dmesg(1) defaults to using the syslog method for access
+in older versions.  With util-linux 2.22 and a kernel newer than 3.5,
+dmesg(1) defaults to reading directly from /dev/kmsg.
+
+Fix this by making an explicit check in the devkmsg_open function.
+
+This fixes https://bugzilla.redhat.com/show_bug.cgi?id=903192
+
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Reported-by: Christian Kujau <lists@nerdbynature.de>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
-Untested.
 
- arch/cris/Kconfig | 3 ---
- 1 file changed, 3 deletions(-)
+ kernel/printk.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/cris/Kconfig b/arch/cris/Kconfig
-index b02ca1b..64c590f 100644
---- a/arch/cris/Kconfig
-+++ b/arch/cris/Kconfig
-@@ -99,9 +99,6 @@ config ETRAX_KMALLOCED_MODULES
- 	help
- 	  Enable module allocation with kmalloc instead of vmalloc.
+diff -puN kernel/printk.c~kmsg-honor-dmesg_restrict-sysctl-on-dev-kmsg kernel/printk.c
+--- a/kernel/printk.c~kmsg-honor-dmesg_restrict-sysctl-on-dev-kmsg
++++ a/kernel/printk.c
+@@ -620,6 +620,9 @@ static int devkmsg_open(struct inode *in
+ 	struct devkmsg_user *user;
+ 	int err;
  
--config OOM_REBOOT
--       bool "Enable reboot at out of memory"
--
- source "kernel/Kconfig.preempt"
- 
- source mm/Kconfig
--- 
-1.7.11.7
++	if (dmesg_restrict && !capable(CAP_SYSLOG))
++		return -EACCES;
++
+ 	/* write-only does not need any file context */
+ 	if ((file->f_flags & O_ACCMODE) == O_WRONLY)
+ 		return 0;
+_
 
