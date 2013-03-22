@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab3CVMKy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 08:10:54 -0400
-Received: from pegase2.c-s.fr ([93.17.235.10]:48233 "EHLO mailhub2.si.c-s.fr"
+	id S1754532Ab3CVMMm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 08:12:42 -0400
+Received: from pegase2.c-s.fr ([93.17.235.10]:42818 "EHLO mailhub2.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751675Ab3CVMKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 08:10:53 -0400
-Date: Fri, 22 Mar 2013 13:10:09 +0100
-Message-Id: <201303221210.r2MCA99B031543@localhost.localdomain>
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: linux-kernel@vger.kernel.org, Patrick Vasseur <patrick.vasseur@c-s.fr>
-Subject: [PATCH] MAX7301 GPIO: Do not force SPI speed when using OF Platform
+	id S1752878Ab3CVMMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 08:12:41 -0400
+Message-ID: <514C4A97.3040701@c-s.fr>
+Date: Fri, 22 Mar 2013 13:12:07 +0100
+From: christophe leroy <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        Patrick Vasseur <patrick.vasseur@c-s.fr>
+Subject: Re: [PATCH v2] Adds support for Open Firmware in MAX730x GPIO Driver
+References: <201303051526.r25FQoCv002950@localhost.localdomain> <CACRpkdaETvQmEWSSp-Vj1tu-KVPBgWrKbMZbgTjmRt=7Yxxg6g@mail.gmail.com>
+In-Reply-To: <CACRpkdaETvQmEWSSp-Vj1tu-KVPBgWrKbMZbgTjmRt=7Yxxg6g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 X-Antivirus: avast! (VPS 130322-0, 22/03/2013), Outbound message
 X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bit_per_word can be set in the OF Device tree, so no need to force it as with
-the platform_data when using OF Platform
+Le 22/03/2013 09:38, Linus Walleij a écrit :
+> On Tue, Mar 5, 2013 at 4:26 PM, Christophe Leroy
+> <christophe.leroy@c-s.fr> wrote:
+>
+>> This patch allows the use of the MAX730x Driver on systems using
+>> the Open Firmware platform format.
+>> The bit_per_word can be set in the OF Device tree, so no need to force it as with
+>> the platform_data.
+>>
+>> Signed-off-by: Patrick Vasseur <patrick.vasseur@c-s.fr>
+>> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> I tried applying this but it fails. Can you send based on e.g.
+> v3.9-rc3 or so?
+Ok, part of it was already in 3.8
+Made a new one based on 3.8.4
+I checked it against 3.9-rc3, it is OK
+NB: I changed the patch subject name
 
-Signed-off-by: Patrick Vasseur <patrick.vasseur@c-s.fr>
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+Regards
+Christophe
 
-diff -ur linux-3.8.4/drivers/gpio/gpio-max7301.c linux/drivers/gpio/gpio-max7301.c
---- linux-3.8.4/drivers/gpio/gpio-max7301.c	2013-03-20 21:11:19.000000000 +0100
-+++ linux/drivers/gpio/gpio-max7301.c	2013-03-16 10:27:30.000000000 +0100
-@@ -56,7 +56,8 @@
- 	int ret;
- 
- 	/* bits_per_word cannot be configured in platform data */
--	spi->bits_per_word = 16;
-+	if (spi->dev.platform_data)
-+		spi->bits_per_word = 16;
- 	ret = spi_setup(spi);
- 	if (ret < 0)
- 		return ret;
