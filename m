@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933839Ab3CVQQE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 12:16:04 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:51261 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933704Ab3CVQQC (ORCPT
+	id S933921Ab3CVQQP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 12:16:15 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:54103 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933704Ab3CVQQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 12:16:02 -0400
-Date: Fri, 22 Mar 2013 12:16:00 -0400 (EDT)
-Message-Id: <20130322.121600.1984397550534213180.davem@davemloft.net>
-To: benmcollins13@gmail.com
-Cc: afleming@freescale.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] net: Add support for handling queueing in hardware
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <0FF79196-E252-4738-BFB5-C0B10F447B33@gmail.com>
-References: <14243FE7-A0A6-4C0C-AEFB-95F19C8898E3@gmail.com>
-	<20130322.115924.1452021957855498515.davem@davemloft.net>
-	<0FF79196-E252-4738-BFB5-C0B10F447B33@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 22 Mar 2013 09:16:01 -0700 (PDT)
+	Fri, 22 Mar 2013 12:16:12 -0400
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
+        devicetree-discuss@lists.ozlabs.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: [PATCH v3 0/3] DT support for AS3711 MFD, regulator and backlight drivers
+Date: Fri, 22 Mar 2013 17:15:46 +0100
+Message-Id: <1363968949-12151-1-git-send-email-g.liakhovetski@gmx.de>
+X-Mailer: git-send-email 1.7.2.5
+X-Provags-ID: V02:K0:qPAQF0UqdIHrBfqM74HPvek3wQ2sMEXmJUGwmwl4XM/
+ PHIwTYbwc8Dkx1g+N1kuKauG/gAfadwtPQpvgXFAORHI2rvme7
+ 3krs0yOrnO5YMpIv5yypN3Fystbrgc6KYduVvuDNMJftlSxvIf
+ 9h89E5KR/lQJ7bwJZLCCUWLyyLs0Jrzb2X5geGhkKmZonR0yuB
+ ca813Z5kX7Lj/UuqitCKcV+vJrNeFw5UC05vvRstEILGO7ZcSL
+ Uohr0/7o+aG6Zg2BU89yFMLb3NsIFCkgl6d5IRdgWyPoTCG2dn
+ 85XjfNk4UJlIOXqHpp2D0ea3MCSSe64yxSdMeJQCoObV2gyutq
+ 32hRmbOVfZQfErfCZ0ybsMYVJcZ1dAuCSkut7MDANL+k7P2n4v
+ /bgnyUxfx+1iw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Collins <benmcollins13@gmail.com>
-Date: Fri, 22 Mar 2013 12:14:44 -0400
+This is just a split of the previous version of this patch(-set), no code 
+changes.
 
-> I'm sorry, I thought we were working on open source projects
-> here. If the code isn't encumbered by patents, legal issues or
-> technical problems, and is licensed compatible with the kernel, I
-> just thought it was fair game.
+Guennadi Liakhovetski (3):
+  mfd: as3711: add OF support
+  regulator: as3711: add OF support
+  backlight: as3711: add OF support
 
-This is about being nice to people, rather than exercising your rights
-to the maximum possible extent regardless of how that effects other
-people.
+ Documentation/devicetree/bindings/mfd/as3711.txt |   73 +++++++++++++
+ drivers/mfd/as3711.c                             |   27 ++++-
+ drivers/regulator/as3711-regulator.c             |   74 +++++++++++++-
+ drivers/video/backlight/as3711_bl.c              |  118 +++++++++++++++++++++-
+ 4 files changed, 284 insertions(+), 8 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/as3711.txt
+
+-- 
+1.7.2.5
+
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
