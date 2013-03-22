@@ -1,129 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab3CVACU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 20:02:20 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:33944 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab3CVACT (ORCPT
+	id S1753548Ab3CVAFl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 20:05:41 -0400
+Received: from mail-ia0-f176.google.com ([209.85.210.176]:46779 "EHLO
+	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab3CVAFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 20:02:19 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Scott Wood <scottwood@freescale.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        linaro-kernel@lists.linaro.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        "open list\:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: allow host header to be included even for !CONFIG_KVM
-References: <1363306426-27209-1-git-send-email-khilman@linaro.org>
-	<1363823921.25034.35@snotra> <20130321072955.GO3889@redhat.com>
-	<87ppyshlq5.fsf@linaro.org> <1363891354.31522.17@snotra>
-	<20130321191600.GG9382@redhat.com> <1363894393.31522.20@snotra>
-	<20130321211736.GI9382@redhat.com>
-Date: Thu, 21 Mar 2013 17:02:15 -0700
-In-Reply-To: <20130321211736.GI9382@redhat.com> (Gleb Natapov's message of
-	"Thu, 21 Mar 2013 23:17:36 +0200")
-Message-ID: <878v5ggv3s.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 21 Mar 2013 20:05:40 -0400
+Message-ID: <514BA04D.2090002@gmail.com>
+Date: Fri, 22 Mar 2013 08:05:33 +0800
+From: Will Huck <will.huckk@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        dormando <dormando@rydia.net>, Satoru Moriya <satoru.moriya@hds.com>,
+        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd reclaims
+ at each priority
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-2-git-send-email-mgorman@suse.de> <20130321155705.GA27848@cmpxchg.org>
+In-Reply-To: <20130321155705.GA27848@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gleb Natapov <gleb@redhat.com> writes:
+Hi Johannes,
+On 03/21/2013 11:57 PM, Johannes Weiner wrote:
+> On Sun, Mar 17, 2013 at 01:04:07PM +0000, Mel Gorman wrote:
+>> The number of pages kswapd can reclaim is bound by the number of pages it
+>> scans which is related to the size of the zone and the scanning priority. In
+>> many cases the priority remains low because it's reset every SWAP_CLUSTER_MAX
+>> reclaimed pages but in the event kswapd scans a large number of pages it
+>> cannot reclaim, it will raise the priority and potentially discard a large
+>> percentage of the zone as sc->nr_to_reclaim is ULONG_MAX. The user-visible
+>> effect is a reclaim "spike" where a large percentage of memory is suddenly
+>> freed. It would be bad enough if this was just unused memory but because
+>> of how anon/file pages are balanced it is possible that applications get
+>> pushed to swap unnecessarily.
+>>
+>> This patch limits the number of pages kswapd will reclaim to the high
+>> watermark. Reclaim will will overshoot due to it not being a hard limit as
+> will -> still?
+>
+>> shrink_lruvec() will ignore the sc.nr_to_reclaim at DEF_PRIORITY but it
+>> prevents kswapd reclaiming the world at higher priorities. The number of
+>> pages it reclaims is not adjusted for high-order allocations as kswapd will
+>> reclaim excessively if it is to balance zones for high-order allocations.
+> I don't really understand this last sentence.  Is the excessive
+> reclaim a result of the patch, a description of what's happening
+> now...?
+>
+>> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Nice, thank you.  Using the high watermark for larger zones is more
+> reasonable than my hack that just always went with SWAP_CLUSTER_MAX,
+> what with inter-zone LRU cycle time balancing and all.
+>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-> On Thu, Mar 21, 2013 at 02:33:13PM -0500, Scott Wood wrote:
->> On 03/21/2013 02:16:00 PM, Gleb Natapov wrote:
->> >On Thu, Mar 21, 2013 at 01:42:34PM -0500, Scott Wood wrote:
->> >> On 03/21/2013 09:27:14 AM, Kevin Hilman wrote:
->> >> >Gleb Natapov <gleb@redhat.com> writes:
->> >> >
->> >> >> On Wed, Mar 20, 2013 at 06:58:41PM -0500, Scott Wood wrote:
->> >> >>> Why can't the entirety kvm_host.h be included regardless of
->> >> >>> CONFIG_KVM, just like most other feature-specific headers?  Why
->> >> >>> can't the if/else just go around the functions that you want to
->> >> >stub
->> >> >>> out for non-KVM builds?
->> >> >>>
->> >> >> Kevin,
->> >> >>
->> >> >>  What compilation failure this patch fixes? I presume
->> >something ARM
->> >> >> related.
->> >> >
->> >> >Not specficially ARM related, but more context tracking related
->> >since
->> >> >kernel/context_tracking.c pulls in kvm_host.h, which attempts to
->> >> >pull in
->> >> ><asm/kvm*.h> which may not exist on some platforms.
->> >> >
->> >> >At least for ARM, KVM support was added in v3.9 so this patch can
->> >> >probably be dropped since the non-KVM builds on ARM now work.
->> >But any
->> >> >platform without the <asm/kvm*.h> will still be broken when
->> >trying to
->> >> >build the context tracker.
->> >>
->> >> Maybe other platforms should get empty asm/kvm*.h files.  Is there
->> >> anything from those files that the linux/kvm*.h headers need to
->> >> build?
->> >>
->> >arch things. kvm_vcpu_arch, kvm_arch_memory_slot, kvm_arch etc.
->> 
->> Could define them as empty structs.
->> 
-> Isn't is simpler for kernel/context_tracking.c to define empty
-> __guest_enter()/__guest_exit() if !CONFIG_KVM.
-
-I proposed something like that in an earlier version but Frederic asked
-me to propose a fix to the KVM headers instead.
-
-Just in case fixing the context tracking subsystem is preferred, 
-the patch below fixes the problem also.
-
-Kevin
-
->From f22995a262144d0d61705fa72134694d911283eb Mon Sep 17 00:00:00 2001
-From: Kevin Hilman <khilman@linaro.org>
-Date: Thu, 21 Mar 2013 16:57:14 -0700
-Subject: [PATCH] context_tracking: fix !CONFIG_KVM compile: add stub guest
- enter/exit
-
-When KVM is not enabled, or not available on a platform, the KVM
-headers should not be included.  Instead, just define stub
-__guest_[enter|exit] functions.
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
----
- kernel/context_tracking.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 65349f0..64b0f80 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -15,12 +15,18 @@
+One offline question, how to understand this in function balance_pgdat:
+/*
+  * Do some background aging of the anon list, to give
+  * pages a chance to be referenced before reclaiming.
   */
- 
- #include <linux/context_tracking.h>
--#include <linux/kvm_host.h>
- #include <linux/rcupdate.h>
- #include <linux/sched.h>
- #include <linux/hardirq.h>
- #include <linux/export.h>
- 
-+#if IS_ENABLED(CONFIG_KVM)
-+#include <linux/kvm_host.h>
-+#else
-+#define __guest_enter()
-+#define __guest_exit()
-+#endif
-+
- DEFINE_PER_CPU(struct context_tracking, context_tracking) = {
- #ifdef CONFIG_CONTEXT_TRACKING_FORCE
- 	.active = true,
--- 
-1.8.2
+age_acitve_anon(zone, &sc);
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
