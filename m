@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161093Ab3CVRd3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 13:33:29 -0400
-Received: from mga14.intel.com ([143.182.124.37]:30408 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161061Ab3CVRd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 13:33:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,893,1355126400"; 
-   d="scan'208";a="274692890"
-Date: Fri, 22 Mar 2013 10:33:26 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com, jolsa@redhat.com, namhyung.kim@lge.com
-Subject: Re: [PATCH v5 0/2] perf: use hrtimer for event multiplexing
-Message-ID: <20130322173326.GN19692@tassilo.jf.intel.com>
-References: <1363949499-3728-1-git-send-email-eranian@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363949499-3728-1-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1161120Ab3CVReb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 13:34:31 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:27694 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161069Ab3CVRea (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 13:34:30 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] xen/mmu: Move the setting of pvops.write_cr3 to later phase in bootup.
+Date: Fri, 22 Mar 2013 13:34:24 -0400
+Message-Id: <1363973664-16380-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.0.2
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 11:51:37AM +0100, Stephane Eranian wrote:
-> The current scheme of using the timer tick was fine
-> for per-thread events. However, it was causing
-> bias issues in system-wide mode (including for
-> uncore PMUs). Event groups would not get their
-> fair share of runtime on the PMU. With tickless
-> kernels, if a core is idle there is no timer tick,
-> and thus no event rotation (multiplexing). However,
-> there are events (especially uncore events) which do
-> count even though cores are asleep.
+We move the setting of write_cr3 from the early bootup variant
+(see git commit 0cc9129d75ef8993702d97ab0e49542c15ac6ab9
+"x86-64, xen, mmu: Provide an early version of write_cr3.")
+to a more appropiate location.
 
-Would it be possible to only do this when uncore events
-are active? Otherwise it may have a large power cost
-and actually change results, as the core counters
-will tick more.
+This new location sets all of the other non-early variants
+of pvops calls - and most importantly is before the
+alternative_asm mechanism kicks in.
 
--Andi
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/mmu.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 31cc1ef..750f185 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1470,8 +1470,6 @@ static void __init xen_write_cr3_init(unsigned long cr3)
+ 	__xen_write_cr3(true, cr3);
+ 
+ 	xen_mc_issue(PARAVIRT_LAZY_CPU);  /* interrupts restored */
+-
+-	pv_mmu_ops.write_cr3 = &xen_write_cr3;
+ }
+ #endif
+ 
+@@ -2142,6 +2140,7 @@ static void __init xen_post_allocator_init(void)
+ #endif
+ 
+ #ifdef CONFIG_X86_64
++	pv_mmu_ops.write_cr3 = &xen_write_cr3;
+ 	SetPagePinned(virt_to_page(level3_user_vsyscall));
+ #endif
+ 	xen_mark_init_mm_pinned();
+-- 
+1.8.0.2
+
