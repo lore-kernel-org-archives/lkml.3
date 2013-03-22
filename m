@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab3CVNCz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 09:02:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25819 "EHLO mx1.redhat.com"
+	id S1753993Ab3CVNGm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 09:06:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17561 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753790Ab3CVNCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 09:02:54 -0400
-Message-ID: <514C5640.8000902@redhat.com>
-Date: Fri, 22 Mar 2013 09:01:52 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752530Ab3CVNGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 09:06:41 -0400
+Date: Fri, 22 Mar 2013 13:59:00 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ming Lei <tom.leiming@gmail.com>, Shaohua Li <shli@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: +
+	atomic-improve-atomic_inc_unless_negative-atomic_dec_unless_positive
+	.patch added to -mm tree
+Message-ID: <20130322125900.GA12647@redhat.com>
+References: <20130314162413.GA21344@redhat.com> <CACVXFVP+fGeWS3xwBfaQDFaH7=e_4CbgCru9DJczB2vyWuUL1g@mail.gmail.com> <20130315134632.GA18335@redhat.com> <CACVXFVOjWc4RU+A-8PeYP9RfJ1-HSiZHbbv771LXDynMs0ybMQ@mail.gmail.com> <20130315165131.GA32065@redhat.com> <20130317172621.GQ3656@linux.vnet.ibm.com> <20130321170827.GA23539@redhat.com> <1363889025.4431.35.camel@edumazet-glaptop> <20130321183021.GA27586@redhat.com> <1363906618.4431.37.camel@edumazet-glaptop>
 MIME-Version: 1.0
-To: Will Huck <will.huckk@gmail.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Zlatko Calusic <zcalusic@bitsync.net>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd reclaims
- at each priority
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-2-git-send-email-mgorman@suse.de> <20130321155705.GA27848@cmpxchg.org> <514BA04D.2090002@gmail.com> <514BD56F.6050709@redhat.com> <514BD665.5020803@gmail.com> <514BE54C.4050106@gmail.com>
-In-Reply-To: <514BE54C.4050106@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363906618.4431.37.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2013 12:59 AM, Will Huck wrote:
-> Hi Rik,
-> On 03/22/2013 11:56 AM, Will Huck wrote:
->> Hi Rik,
->> On 03/22/2013 11:52 AM, Rik van Riel wrote:
->>> On 03/21/2013 08:05 PM, Will Huck wrote:
->>>
->>>> One offline question, how to understand this in function balance_pgdat:
->>>> /*
->>>>   * Do some background aging of the anon list, to give
->>>>   * pages a chance to be referenced before reclaiming.
->>>>   */
->>>> age_acitve_anon(zone, &sc);
->>>
->>> The anon lrus use a two-handed clock algorithm. New anonymous pages
->>> start off on the active anon list. Older anonymous pages get moved
->>> to the inactive anon list.
->>
->> The file lrus also use the two-handed clock algorithm, correct?
+On 03/21, Eric Dumazet wrote:
 >
-> After reinvestigate the codes, the answer is no. But why have this
-> difference? I think you are the expert for this question, expect your
-> explanation. :-)
+> On Thu, 2013-03-21 at 19:30 +0100, Oleg Nesterov wrote:
+>
+> > To me, it would be better to kill atomic_inc_not_zero_hint() or unify
+> > unify it with atomic_inc_not_zero(). But this is another story.
+>
+> git is your friend.
+>
+> I suggest you read 3f9d35b9514 changelog before killing it, thanks.
 
-Anonymous memory has a smaller amount of memory (on the order
-of system memory), most of which is or has been in a working
-set at some point.
+Thanks Eric for your friendly suggestion.
 
-File system cache tends to have two distinct sets. One part
-are the frequently accessed files, another part are the files
-that are accessed just once or twice.
-
-The file working set needs to be protected from streaming
-IO. We do this by having new file pages start out on the
-inactive file list, and only promoted to the active file
-list if they get accessed twice.
+But I didn't mean we should kill this optimization. Yes, I am wondering
+if we can avoid inc_not_zero_hint _or_ unify with add_unless. But let me
+repeat, this is another story.
 
 
--- 
-All rights reversed
+Perhaps I misread your previous email... I understood it as if you think
+the patch I sent is wrong. No?
+
+If you meant that get_write_access() can predict the current value of
+i_writecount... how? And even if we could, why we cant/shouldnt try to
+optimize the generic atomic_inc_unless_negative()?
+
+So what did you actually mean?
+
+Oleg.
+
