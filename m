@@ -1,174 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933235Ab3CVNWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 09:22:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59085 "EHLO mx1.redhat.com"
+	id S1754014Ab3CVNdD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 09:33:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23294 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932330Ab3CVNWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 09:22:23 -0400
-Date: Fri, 22 Mar 2013 14:20:11 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] do not abuse ->cred_guard_mutex in threadgroup_lock()
-Message-ID: <20130322132011.GA13261@redhat.com>
-References: <20130307180139.GD29601@htj.dyndns.org> <20130307180332.GE29601@htj.dyndns.org> <20130307191242.GA18265@redhat.com> <20130307193820.GB3209@htj.dyndns.org> <513A9A67.60909@huawei.com> <20130309032936.GT14556@mtj.dyndns.org> <513AE918.7020704@huawei.com> <20130309200046.GA8149@redhat.com> <20130321162138.GA21859@redhat.com> <20130321150626.a7934d989fb80d835fa92255@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321150626.a7934d989fb80d835fa92255@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753675Ab3CVNdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 09:33:00 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Clemens Ladisch <clemens@ladisch.de>
+Subject: [PATCH] hpet, allow user controlled mmap for user processes
+Date: Fri, 22 Mar 2013 09:32:54 -0400
+Message-Id: <1363959174-28999-1-git-send-email-prarit@redhat.com>
+In-Reply-To: <51487B59.6010607@ladisch.de>
+References: <51487B59.6010607@ladisch.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21, Andrew Morton wrote:
->
-> On Thu, 21 Mar 2013 17:21:38 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > threadgroup_lock() takes signal->cred_guard_mutex to ensure that
-> > thread_group_leader() is stable. This doesn't look nice, the scope
-> > of this lock in do_execve() is huge.
-> >
-> > And as Dave pointed out this can lead to deadlock, we have the
-> > following dependencies:
-> >
-> > 	do_execve:		cred_guard_mutex -> i_mutex
-> > 	cgroup_mount:		i_mutex -> cgroup_mutex
-> > 	attach_task_by_pid:	cgroup_mutex -> cred_guard_mutex
-> >
-> > Change de_thread() to take threadgroup_change_begin() around the
-> > switch-the-leader code and change threadgroup_lock() to avoid
-> > ->cred_guard_mutex.
-> >
-> > Note that de_thread() can't sleep with ->group_rwsem held, this
-> > can obviously deadlock with the exiting leader if the writer is
-> > active, so it does threadgroup_change_end() before schedule().
->
-> <formletter>
-> When writing a changelog, please describe the end-user-visible effects
-> of the bug, so that others can more easily decide which kernel
-> version(s) should be fixed, and so that downstream kernel maintainers
-> can more easily work out whether this patch will fix a problem which
-> they or their customers are observing.
-> </formletter>
->
-> > Reported-by: Dave Jones <davej@redhat.com>
->
-> Perhaps Dave's report provides the needed info?  trinity went titsup?
+The CONFIG_HPET_MMAP Kconfig option exposes the memory map of the HPET
+registers to userspace.  The Kconfig help points out that in some cases this
+can be a security risk as some systems may erroneously configure the map such
+that additional data is exposed to userspace.
 
-Yes, trinity. Please see the original report below.
+This is a problem for distributions -- some users want the MMAP functionality
+but it comes with a significant security risk.  In an effort to mitigate this
+risk, and due to the low number of users of the MMAP functionality, I've
+introduced a kernel parameter, hpet_mmap_enable, that is required in order
+to actually have the HPET MMAP exposed.
 
-I tried to translate the lockdep's output into the human-readable form.
+[v2]: Clemens suggested modifying the Kconfig help text and making the
+default setting configurable.
+[v3]: Fixed up Documentation and Kconfig entries, default now "Y"
+[v4]: After testing, found that I need to modify CONFIG_HPET_MMAP_DEFAULT usage
 
-Oleg.
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>
+---
+ Documentation/kernel-parameters.txt |    4 ++++
+ drivers/char/Kconfig                |    9 +++++++--
+ drivers/char/hpet.c                 |   25 +++++++++++++++++++++++--
+ 3 files changed, 34 insertions(+), 4 deletions(-)
 
--------------------------------------------------------------------------------
-Looks like this happens when my fuzzer tries to look up garbage in /sys/fs/cgroup/freezer/
-
-trinity -c execve -V /sys/fs/cgroup/freezer/
-
-will reproduce it very quickly.
-
-This isn't a new trace. I've seen it in the past from iknowthis also.
-
-	Dave
-
-
-[  943.971541] ======================================================
-[  943.972451] [ INFO: possible circular locking dependency detected ]
-[  943.973370] 3.9.0-rc1+ #69 Not tainted
-[  943.973927] -------------------------------------------------------
-[  943.974838] trinity-child0/1301 is trying to acquire lock:
-[  943.975650] blocked:  (&sb->s_type->i_mutex_key#9){+.+.+.}, instance: ffff880127ea1680, at: [<ffffffff811c03fc>] do_last+0x35c/0xe30
-[  943.977522] 
-but task is already holding lock:
-[  943.978371] held:     (&sig->cred_guard_mutex){+.+.+.}, instance: ffff880123937578, at: [<ffffffff811b8866>] prepare_bprm_creds+0x36/0x80
-[  943.980260] 
-which lock already depends on the new lock.
-
-[  943.981434] 
-the existing dependency chain (in reverse order) is:
-[  943.982499] 
--> #2 (&sig->cred_guard_mutex){+.+.+.}:
-[  943.983280]        [<ffffffff810b7b82>] lock_acquire+0x92/0x1d0
-[  943.984196]        [<ffffffff816c1923>] mutex_lock_nested+0x73/0x3b0
-[  943.985173]        [<ffffffff810d45f2>] attach_task_by_pid+0x122/0x8d0
-[  943.986151]        [<ffffffff810d4dd3>] cgroup_tasks_write+0x13/0x20
-[  943.987127]        [<ffffffff810d0f10>] cgroup_file_write+0x130/0x2f0
-[  943.988118]        [<ffffffff811b119f>] vfs_write+0xaf/0x180
-[  943.988985]        [<ffffffff811b14e5>] sys_write+0x55/0xa0
-[  943.989853]        [<ffffffff816cd942>] system_call_fastpath+0x16/0x1b
-[  943.990853] 
--> #1 (cgroup_mutex){+.+.+.}:
-[  943.991616]        [<ffffffff810b7b82>] lock_acquire+0x92/0x1d0
-[  943.992527]        [<ffffffff816c1923>] mutex_lock_nested+0x73/0x3b0
-[  943.993492]        [<ffffffff810d33a7>] cgroup_mount+0x2e7/0x520
-[  943.994423]        [<ffffffff811b5123>] mount_fs+0x43/0x1b0
-[  943.995275]        [<ffffffff811d3051>] vfs_kern_mount+0x61/0x100
-[  943.996220]        [<ffffffff811d5821>] do_mount+0x211/0xa00
-[  943.997103]        [<ffffffff811d609e>] sys_mount+0x8e/0xe0
-[  943.997965]        [<ffffffff816cd942>] system_call_fastpath+0x16/0x1b
-[  943.998972] 
--> #0 (&sb->s_type->i_mutex_key#9){+.+.+.}:
-[  943.999886]        [<ffffffff810b7406>] __lock_acquire+0x1b86/0x1c80
-[  944.000864]        [<ffffffff810b7b82>] lock_acquire+0x92/0x1d0
-[  944.001771]        [<ffffffff816c1923>] mutex_lock_nested+0x73/0x3b0
-[  944.002750]        [<ffffffff811c03fc>] do_last+0x35c/0xe30
-[  944.003620]        [<ffffffff811c0f8a>] path_openat+0xba/0x4f0
-[  944.004517]        [<ffffffff811c1691>] do_filp_open+0x41/0xa0
-[  944.005427]        [<ffffffff811b74d3>] open_exec+0x53/0x130
-[  944.006296]        [<ffffffff811b8c3d>] do_execve_common.isra.26+0x31d/0x710
-[  944.007373]        [<ffffffff811b9048>] do_execve+0x18/0x20
-[  944.008222]        [<ffffffff811b933d>] sys_execve+0x3d/0x60
-[  944.009093]        [<ffffffff816cdf39>] stub_execve+0x69/0xa0
-[  944.009983] 
-other info that might help us debug this:
-
-[  944.011126] Chain exists of:
-  &sb->s_type->i_mutex_key#9 --> cgroup_mutex --> &sig->cred_guard_mutex
-
-[  944.012745]  Possible unsafe locking scenario:
-
-[  944.013617]        CPU0                    CPU1
-[  944.014280]        ----                    ----
-[  944.014942]   lock(&sig->cred_guard_mutex);
-[  944.021332]                                lock(cgroup_mutex);
-[  944.028094]                                lock(&sig->cred_guard_mutex);
-[  944.035007]   lock(&sb->s_type->i_mutex_key#9);
-[  944.041602] 
- *** DEADLOCK ***
-
-[  944.059241] 1 lock on stack by trinity-child0/1301:
-[  944.065496]  #0: held:     (&sig->cred_guard_mutex){+.+.+.}, instance: ffff880123937578, at: [<ffffffff811b8866>] prepare_bprm_creds+0x36/0x80
-[  944.073100] 
-stack backtrace:
-[  944.085269] Pid: 1301, comm: trinity-child0 Not tainted 3.9.0-rc1+ #69
-[  944.091788] Call Trace:
-[  944.097633]  [<ffffffff816b95f5>] print_circular_bug+0x1fe/0x20f
-[  944.104041]  [<ffffffff810b7406>] __lock_acquire+0x1b86/0x1c80
-[  944.110223]  [<ffffffff810b21bd>] ? trace_hardirqs_off+0xd/0x10
-[  944.116282]  [<ffffffff810b7b82>] lock_acquire+0x92/0x1d0
-[  944.122293]  [<ffffffff811c03fc>] ? do_last+0x35c/0xe30
-[  944.128287]  [<ffffffff816c1923>] mutex_lock_nested+0x73/0x3b0
-[  944.134460]  [<ffffffff811c03fc>] ? do_last+0x35c/0xe30
-[  944.140497]  [<ffffffff811c03fc>] ? do_last+0x35c/0xe30
-[  944.146446]  [<ffffffff811c03fc>] do_last+0x35c/0xe30
-[  944.152303]  [<ffffffff811bd098>] ? inode_permission+0x18/0x50
-[  944.158260]  [<ffffffff811bd315>] ? link_path_walk+0x245/0x880
-[  944.164165]  [<ffffffff811c0f8a>] path_openat+0xba/0x4f0
-[  944.169934]  [<ffffffff811c1691>] do_filp_open+0x41/0xa0
-[  944.175834]  [<ffffffff811b8c2e>] ? do_execve_common.isra.26+0x30e/0x710
-[  944.181817]  [<ffffffff810b2042>] ? get_lock_stats+0x22/0x70
-[  944.187828]  [<ffffffff810b24ae>] ? put_lock_stats.isra.23+0xe/0x40
-[  944.193892]  [<ffffffff810b2bcb>] ? lock_release_holdtime.part.24+0xcb/0x130
-[  944.200099]  [<ffffffff811b74d3>] open_exec+0x53/0x130
-[  944.206046]  [<ffffffff811b8c3d>] do_execve_common.isra.26+0x31d/0x710
-[  944.212123]  [<ffffffff811b8a42>] ? do_execve_common.isra.26+0x122/0x710
-[  944.218275]  [<ffffffff811b9048>] do_execve+0x18/0x20
-[  944.224206]  [<ffffffff811b933d>] sys_execve+0x3d/0x60
-[  944.230155]  [<ffffffff816cdf39>] stub_execve+0x69/0xa0
-
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index e567af3..1444491 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -962,6 +962,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 				VIA, nVidia)
+ 			verbose: show contents of HPET registers during setup
+ 
++	hpet_mmap=	[X86, HPET_MMAP] option to expose HPET MMAP to
++			userspace.  By default this is disabled. Values are
++			0(disabled) or 1(enabled).
++
+ 	hugepages=	[HW,X86-32,IA-64] HugeTLB pages to allocate at boot.
+ 	hugepagesz=	[HW,IA-64,PPC,X86-64] The size of the HugeTLB pages.
+ 			On x86-64 and powerpc, this option can be specified
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index 3bb6fa3..51b62a1 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -534,10 +534,15 @@ config HPET_MMAP
+ 	  If you say Y here, user applications will be able to mmap
+ 	  the HPET registers.
+ 
++config HPET_MMAP_DEFAULT
++	bool "Enable HPET MMAP access by default"
++	default y
++	depends on HPET_MMAP
++	help
+ 	  In some hardware implementations, the page containing HPET
+ 	  registers may also contain other things that shouldn't be
+-	  exposed to the user.  If this applies to your hardware,
+-	  say N here.
++	  exposed to the user. This option selects the default user access
++	  to the HPET registers for applications that require it.
+ 
+ config HANGCHECK_TIMER
+ 	tristate "Hangcheck timer"
+diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
+index e3f9a99..b3ba043 100644
+--- a/drivers/char/hpet.c
++++ b/drivers/char/hpet.c
+@@ -367,12 +367,30 @@ static unsigned int hpet_poll(struct file *file, poll_table * wait)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_HPET_MMAP
++#ifdef CONFIG_HPET_MMAP_DEFAULT
++static int hpet_mmap_enabled = 1;
++#else
++static int hpet_mmap_enabled = 0;
++#endif
++
++static __init int hpet_mmap_enable(char *str)
++{
++	get_option(&str, &hpet_mmap_enabled);
++	pr_info(KERN_INFO "HPET MMAP %s\n",
++		hpet_mmap_enabled ? "disabled" : "enabled");
++	return 1;
++}
++__setup("hpet_mmap", hpet_mmap_enable);
++
+ static int hpet_mmap(struct file *file, struct vm_area_struct *vma)
+ {
+-#ifdef	CONFIG_HPET_MMAP
+ 	struct hpet_dev *devp;
+ 	unsigned long addr;
+ 
++	if (!hpet_mmap_enabled)
++		return -EACCES;
++
+ 	if (((vma->vm_end - vma->vm_start) != PAGE_SIZE) || vma->vm_pgoff)
+ 		return -EINVAL;
+ 
+@@ -393,10 +411,13 @@ static int hpet_mmap(struct file *file, struct vm_area_struct *vma)
+ 	}
+ 
+ 	return 0;
++}
+ #else
++static int hpet_mmap(struct file *file, struct vm_area_struct *vma)
++{
+ 	return -ENOSYS;
+-#endif
+ }
++#endif
+ 
+ static int hpet_fasync(int fd, struct file *file, int on)
+ {
+-- 
+1.7.9.3
 
