@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932937Ab3CVIKt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 04:10:49 -0400
-Received: from smtprelay05.ispgateway.de ([80.67.31.99]:44360 "EHLO
-	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657Ab3CVIKk (ORCPT
+	id S1754546Ab3CVIO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 04:14:27 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:58293 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679Ab3CVIOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 04:10:40 -0400
-Message-ID: <514C11FB.8090507@ladisch.de>
-Date: Fri, 22 Mar 2013 09:10:35 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Fri, 22 Mar 2013 04:14:22 -0400
 MIME-Version: 1.0
-To: Eduardo Cruz <eduardohmdacruz@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: remap kernel static memory to user space
-References: <CAHG_u-=ChwiQ72O-9z1eD5Pex-niYMaRwMUOQOryYuPO154G=A@mail.gmail.com> <CAHG_u-=O0+2SLYQL_GtP9Yk72EcZjHaxLgu=rwB2DAPsTaXnvA@mail.gmail.com>
-In-Reply-To: <CAHG_u-=O0+2SLYQL_GtP9Yk72EcZjHaxLgu=rwB2DAPsTaXnvA@mail.gmail.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
+In-Reply-To: <1362139636-23579-1-git-send-email-linus.walleij@stericsson.com>
+References: <1362139636-23579-1-git-send-email-linus.walleij@stericsson.com>
+Date: Fri, 22 Mar 2013 09:14:21 +0100
+Message-ID: <CACRpkdZYrLkxu3q=e8Cxt+3S5MPzevH-1iarUFCBKzqTsxnUuA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mfd: stmpe: DT: Enable no-irq mode configuration
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Anmar Oueja <anmar.oueja@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@stericsson.com>,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eduardo Cruz wrote:
-> Please, anyone knows how to solve this problem?
+On Fri, Mar 1, 2013 at 1:07 PM, Linus Walleij
+<linus.walleij@stericsson.com> wrote:
+
+> From: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
 >
-> 2013/3/20 Eduardo Cruz <eduardohmdacruz@gmail.com>:
->> I'm trying to remap some kernel static memory to user space using
->> remap_pfn_range.
+> If there is no interrupt property into stmpe node
+> then activate the no-irq mode by setting the irq
+> value to -1.
+>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-Well, don't do that.
+Hi Sam, ping on this!
 
-What is the actual problem you're trying to solve?
-
-
-Regards,
-Clemens
+Yours,
+Linus Walleij
