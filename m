@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab3CVDJQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 23:09:16 -0400
-Received: from mail-da0-f41.google.com ([209.85.210.41]:58601 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677Ab3CVDJP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 23:09:15 -0400
-From: ycnian@gmail.com
-To: Trond.Myklebust@netapp.com
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yanchuan Nian <ycnian@gmail.com>
-Subject: nfsv4.1 client refuses to suspend
-Date: Fri, 22 Mar 2013 10:57:21 +0800
-Message-Id: <1363921041-5042-1-git-send-email-ycnian@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1753885Ab3CVDYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 23:24:14 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:58212 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752743Ab3CVDYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Mar 2013 23:24:11 -0400
+Date: Fri, 22 Mar 2013 03:24:10 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
+Cc: linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [RFC v3 1/2] epoll: avoid spinlock contention with wfcqueue
+Message-ID: <20130322032410.GA19377@dcvr.yhbt.net>
+References: <20130321115259.GA17883@dcvr.yhbt.net>
+ <CAMP5XgfKfuF4Lo1PVoqBnjynB6COWVhVcqzKV3PAic7HLP7FaQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMP5XgfKfuF4Lo1PVoqBnjynB6COWVhVcqzKV3PAic7HLP7FaQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nfsv4.1 client suspending fails with such info
+Arve Hjønnevåg <arve@android.com> wrote:
+> On Thu, Mar 21, 2013 at 4:52 AM, Eric Wong <normalperson@yhbt.net> wrote:
+> > Changes since v2:
+> > * epi->state is no longer atomic, we only cmpxchg in ep_poll_callback
+> >   now and rely on implicit barriers in other places for reading.
+> > * intermediate EP_STATE_DEQUEUE removed, this (with xchg) caused too
+> >   much overhead in the ep_send_events loop and could not eliminate
+> >   starvation dangers from improper EPOLLET usage (the original code
+> >   had this problem, too, the window is just a few cycles larger, now).
+> > * minor code cleanups
 
-Freezing of tasks failed after 20.00 seconds (1 tasks refusing to freeze, wq_busy=0):
-nfsv4.1-svc     S ffff88007889f2e0     0  3191      2 0x00000080   
- ffff88007b2f3e28 0000000000000046 ffff88007b2f2010 00000000000127c0
- ffff880079b08000 00000000000127c0 ffff88007b2f3fd8 00000000000127c0
- ffff88007b2f3fd8 00000000000127c0 ffffffff81a14410 ffff880079b08000
-Call Trace:
- [<ffffffff81441396>] schedule+0x64/0x66
- [<ffffffffa06a6892>] nfs41_callback_svc+0x100/0x129 [nfsv4]
- [<ffffffff8104fdb8>] ? wake_up_bit+0x2a/0x2a
- [<ffffffffa06a6792>] ? nfs_callback_up+0x548/0x548 [nfsv4]
- [<ffffffff8104f7e0>] kthread+0xb5/0xbd
- [<ffffffff8104f72b>] ? kthread_freezable_should_stop+0x65/0x65
- [<ffffffff8144912c>] ret_from_fork+0x7c/0xb0
- [<ffffffff8104f72b>] ? kthread_freezable_should_stop+0x65/0x65
+> >                 /*
+> >                  * Activate ep->ws before deactivating epi->ws to prevent
+> 
+> Does anything deactivate ep->ws now?
 
-I read such threads
-[1] nfs/sunrpc: allow freezing of tasks with NFS calls in flight
-[2] LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-and then modify nfs41_callback_svc(). It works on my machine. I don't know
-the details of freezing, so I'm not sure if the modification is reasonable.
-This is not a formal patch. Thanks.
+Oops, I left that out when I killed ep_scan_ready_list.
+But I think we need a different approach to wakeup sources in
+this series...
 
-Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
----
- fs/nfs/callback.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> > +               /*
+> > +                * reset item state for EPOLLONESHOT and EPOLLET
+> > +                * no barrier here, rely on ep->mtx release for write barrier
+> > +                */
+> 
+> What happens if ep_poll_callback runs before you set epi->state below?
+> It used to queue on ep->ovflist and call __pm_stay_awake on ep->ws,
+> but now it does not appear to do anything.
+> 
+> > +               epi->state = EP_STATE_IDLE;
+> >         }
+> >
+> >         return eventcnt;
+> >  }
+> >
 
-diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-index 5088b57..8addb7b 100644
---- a/fs/nfs/callback.c
-+++ b/fs/nfs/callback.c
-@@ -138,7 +138,7 @@ nfs41_callback_svc(void *vrqstp)
- 				error);
- 		} else {
- 			spin_unlock_bh(&serv->sv_cb_lock);
--			schedule();
-+			freezable_schedule();
- 		}
- 		finish_wait(&serv->sv_cb_waitq, &wq);
- 	}
--- 
-1.7.4.4
+With EPOLLET and improper usage (not hitting EAGAIN), the event now
+has a larger window to be lost (as mentioned in my changelog).
 
+As far as correct __pm_stay_awake/__pm_relax handling, perhaps adding
+an atomic counter to struct eventpoll (or each epitem) will work?
+
+If we go with atomic counter in struct eventpoll, is per-epitem
+wakeup_source still necessary?  We have space in epitem now, but
+maybe one day we will might need it.
+
+Thanks for looking at this patch.
+
+Btw, I'm curious; which applications use EPOLLWAKEUP?
+
+My epoll work is focused on network servers with thousands of clients,
+and I don't think any of them use (or have use for) EPOLLWAKEUP.
+But I will keep EPOLLWAKEUP users in mind when working on epoll :)
