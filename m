@@ -1,236 +1,641 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422750Ab3CVRla (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 13:41:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30276 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422685Ab3CVRjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 13:39:31 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/7] HID: multitouch: breaks out touch handling in specific functions
-Date: Fri, 22 Mar 2013 18:38:29 +0100
-Message-Id: <1363973914-5661-3-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1363973914-5661-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1363973914-5661-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1422731Ab3CVRm3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 13:42:29 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42316 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422685Ab3CVRmY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 13:42:24 -0400
+Date: Fri, 22 Mar 2013 17:37:10 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com
+Subject: Re: [PATCH 1/5] ARM: ux500: Add machine support for ccu8540
+Message-ID: <20130322173710.GI4977@n2100.arm.linux.org.uk>
+References: <1363966065-2478-1-git-send-email-lee.jones@linaro.org> <20130322172346.GG4977@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130322172346.GG4977@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will allow easier integration of hybrid pen and touch devices.
+On Fri, Mar 22, 2013 at 05:23:46PM +0000, Russell King - ARM Linux wrote:
+> On Fri, Mar 22, 2013 at 03:27:41PM +0000, Lee Jones wrote:
+> > diff --git a/arch/arm/tools/mach-types b/arch/arm/tools/mach-types
+> > index 831e1fd..1c9d0be 100644
+> > --- a/arch/arm/tools/mach-types
+> > +++ b/arch/arm/tools/mach-types
+> > @@ -1204,3 +1204,4 @@ baileys			MACH_BAILEYS		BAILEYS			4169
+> >  familybox		MACH_FAMILYBOX		FAMILYBOX		4170
+> >  ensemble_mx35		MACH_ENSEMBLE_MX35	ENSEMBLE_MX35		4171
+> >  sc_sps_1		MACH_SC_SPS_1		SC_SPS_1		4172
+> > +u8540			MACH_U8540		U8540			4211
+> 
+> If you need this updated, please ask. :)
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- drivers/hid/hid-multitouch.c | 123 +++++++++++++++++++++++++++++--------------
- 1 file changed, 83 insertions(+), 40 deletions(-)
+Okay, here's the update, which I'll push into linux-next this evening.
+Here's the list of IDs which are going to be deleted as they're unused
+in the kernel source - this list is very long as it's been almost a
+full year since the last time this file was updated.  About 593 IDs
+deleted, 396 added.  You'll be pleased to know that U8540 is amongst
+those to be added.
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 1f544a4..35b6025 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -114,6 +114,9 @@ struct mt_device {
- 	unsigned mt_flags;	/* flags to pass to input-mt */
- };
- 
-+static void mt_post_parse_default_settings(struct mt_device *td);
-+static void mt_post_parse(struct mt_device *td);
-+
- /* classes of device behavior */
- #define MT_CLS_DEFAULT				0x0001
- 
-@@ -364,7 +367,7 @@ static void mt_store_field(struct hid_usage *usage, struct mt_device *td,
- 	f->usages[f->length++] = usage->hid;
- }
- 
--static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
-+static int mt_touch_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 		struct hid_field *field, struct hid_usage *usage,
- 		unsigned long **bit, int *max)
- {
-@@ -373,13 +376,8 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 	int code;
- 	struct hid_usage *prev_usage = NULL;
- 
--	/* Only map fields from TouchScreen or TouchPad collections.
--	* We need to ignore fields that belong to other collections
--	* such as Mouse that might have the same GenericDesktop usages. */
- 	if (field->application == HID_DG_TOUCHSCREEN)
- 		td->mt_flags |= INPUT_MT_DIRECT;
--	else if (field->application != HID_DG_TOUCHPAD)
--		return 0;
- 
- 	/*
- 	 * Model touchscreens providing buttons as touchpads.
-@@ -388,12 +386,6 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 	    (usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON)
- 		td->mt_flags |= INPUT_MT_POINTER;
- 
--	/* eGalax devices provide a Digitizer.Stylus input which overrides
--	 * the correct Digitizers.Finger X/Y ranges.
--	 * Let's just ignore this input. */
--	if (field->physical == HID_DG_STYLUS)
--		return -1;
--
- 	if (usage->usage_index)
- 		prev_usage = &field->usage[usage->usage_index - 1];
- 
-@@ -514,7 +506,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 	return 0;
- }
- 
--static int mt_input_mapped(struct hid_device *hdev, struct hid_input *hi,
-+static int mt_touch_input_mapped(struct hid_device *hdev, struct hid_input *hi,
- 		struct hid_field *field, struct hid_usage *usage,
- 		unsigned long **bit, int *max)
- {
-@@ -605,7 +597,7 @@ static void mt_sync_frame(struct mt_device *td, struct input_dev *input)
- 	td->num_received = 0;
- }
- 
--static int mt_event(struct hid_device *hid, struct hid_field *field,
-+static int mt_touch_event(struct hid_device *hid, struct hid_field *field,
- 				struct hid_usage *usage, __s32 value)
- {
- 	/* we will handle the hidinput part later, now remains hiddev */
-@@ -681,19 +673,13 @@ static void mt_process_mt_event(struct hid_device *hid, struct hid_field *field,
- 	}
- }
- 
--static void mt_report(struct hid_device *hid, struct hid_report *report)
-+static void mt_touch_report(struct hid_device *hid, struct hid_report *report)
- {
- 	struct mt_device *td = hid_get_drvdata(hid);
- 	struct hid_field *field;
- 	unsigned count;
- 	int r, n;
- 
--	if (report->id != td->mt_report_id)
--		return;
--
--	if (!(hid->claimed & HID_CLAIMED_INPUT))
--		return;
--
- 	/*
- 	 * Includes multi-packet support where subsequent
- 	 * packets are sent with zero contactcount.
-@@ -721,6 +707,81 @@ static void mt_report(struct hid_device *hid, struct hid_report *report)
- 		mt_sync_frame(td, report->field[0]->hidinput->input);
- }
- 
-+static void mt_touch_input_configured(struct hid_device *hdev,
-+					struct hid_input *hi)
-+{
-+	struct mt_device *td = hid_get_drvdata(hdev);
-+	struct mt_class *cls = &td->mtclass;
-+	struct input_dev *input = hi->input;
-+
-+	if (!td->maxcontacts)
-+		td->maxcontacts = MT_DEFAULT_MAXCONTACT;
-+
-+	mt_post_parse(td);
-+	if (td->serial_maybe)
-+		mt_post_parse_default_settings(td);
-+
-+	if (cls->is_indirect)
-+		td->mt_flags |= INPUT_MT_POINTER;
-+
-+	if (cls->quirks & MT_QUIRK_NOT_SEEN_MEANS_UP)
-+		td->mt_flags |= INPUT_MT_DROP_UNUSED;
-+
-+	input_mt_init_slots(input, td->maxcontacts, td->mt_flags);
-+
-+	td->mt_flags = 0;
-+}
-+
-+static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
-+		struct hid_field *field, struct hid_usage *usage,
-+		unsigned long **bit, int *max)
-+{
-+	/* Only map fields from TouchScreen or TouchPad collections.
-+	* We need to ignore fields that belong to other collections
-+	* such as Mouse that might have the same GenericDesktop usages. */
-+	if (field->application != HID_DG_TOUCHSCREEN &&
-+	    field->application != HID_DG_TOUCHPAD)
-+		return 0;
-+
-+	/* eGalax devices provide a Digitizer.Stylus input which overrides
-+	 * the correct Digitizers.Finger X/Y ranges.
-+	 * Let's just ignore this input. */
-+	if (field->physical == HID_DG_STYLUS)
-+		return -1;
-+
-+	return mt_touch_input_mapping(hdev, hi, field, usage, bit, max);
-+}
-+
-+static int mt_input_mapped(struct hid_device *hdev, struct hid_input *hi,
-+		struct hid_field *field, struct hid_usage *usage,
-+		unsigned long **bit, int *max)
-+{
-+	return mt_touch_input_mapped(hdev, hi, field, usage, bit, max);
-+}
-+
-+static int mt_event(struct hid_device *hid, struct hid_field *field,
-+				struct hid_usage *usage, __s32 value)
-+{
-+	struct mt_device *td = hid_get_drvdata(hid);
-+
-+	if (field->report->id == td->mt_report_id)
-+		return mt_touch_event(hid, field, usage, value);
-+
-+	/* ignore other reports */
-+	return 1;
-+}
-+
-+static void mt_report(struct hid_device *hid, struct hid_report *report)
-+{
-+	struct mt_device *td = hid_get_drvdata(hid);
-+
-+	if (!(hid->claimed & HID_CLAIMED_INPUT))
-+		return;
-+
-+	if (report->id == td->mt_report_id)
-+		mt_touch_report(hid, report);
-+}
-+
- static void mt_set_input_mode(struct hid_device *hdev)
- {
- 	struct mt_device *td = hid_get_drvdata(hdev);
-@@ -795,32 +856,14 @@ static void mt_post_parse(struct mt_device *td)
- }
- 
- static void mt_input_configured(struct hid_device *hdev, struct hid_input *hi)
--
- {
--	struct mt_device *td = hid_get_drvdata(hdev);
--	struct mt_class *cls = &td->mtclass;
- 	struct input_dev *input = hi->input;
- 
- 	/* Only initialize slots for MT input devices */
- 	if (!test_bit(ABS_MT_POSITION_X, input->absbit))
- 		return;
- 
--	if (!td->maxcontacts)
--		td->maxcontacts = MT_DEFAULT_MAXCONTACT;
--
--	mt_post_parse(td);
--	if (td->serial_maybe)
--		mt_post_parse_default_settings(td);
--
--	if (cls->is_indirect)
--		td->mt_flags |= INPUT_MT_POINTER;
--
--	if (cls->quirks & MT_QUIRK_NOT_SEEN_MEANS_UP)
--		td->mt_flags |= INPUT_MT_DROP_UNUSED;
--
--	input_mt_init_slots(input, td->maxcontacts, td->mt_flags);
--
--	td->mt_flags = 0;
-+	mt_touch_input_configured(hdev, hi);
- }
- 
- static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
--- 
-1.8.1.4
+karo			ARCH_KARO		KARO			190
+bkde303			MACH_BKDE303		BKDE303 		1021
+tx37			MACH_TX37		TX37			2127
+tx25			MACH_TX25		TX25			2177
+mx51_m2id		MACH_MX51_M2ID		MX51_M2ID		2428
+tx51			MACH_TX51		TX51			2529
+pca101 			MACH_PCA101		PCA101			2595
+pcaal1 			MACH_PCAAL1		PCAAL1			2843
+mx257sx			MACH_MX257SX		MX257SX 		2861
+pov15hd			MACH_POV15HD		POV15HD 		2910
+tsunagi			MACH_TSUNAGI		TSUNAGI 		3197
+tx53			MACH_TX53		TX53			3279
+encore 			MACH_ENCORE		ENCORE			3284
+wtplug 			MACH_WTPLUG		WTPLUG			3412
+veridis_a300		MACH_VERIDIS_A300	VERIDIS_A300		3448
+wm8650refboard 		MACH_WM8650REFBOARD	WM8650REFBOARD		3472
+xarina 			MACH_XARINA		XARINA			3476
+sdvr			MACH_SDVR		SDVR			3478
+acer_maya		MACH_ACER_MAYA		ACER_MAYA		3479
+pico			MACH_PICO		PICO			3480
+cwmx233			MACH_CWMX233		CWMX233 		3481
+cwam1808		MACH_CWAM1808		CWAM1808		3482
+cwdm365			MACH_CWDM365		CWDM365 		3483
+mx51_moray		MACH_MX51_MORAY 	MX51_MORAY		3484
+thales_cbc		MACH_THALES_CBC 	THALES_CBC		3485
+bluepoint		MACH_BLUEPOINT		BLUEPOINT		3486
+dir665 			MACH_DIR665		DIR665			3487
+acmerover1		MACH_ACMEROVER1 	ACMEROVER1		3488
+shooter_ct		MACH_SHOOTER_CT 	SHOOTER_CT		3489
+bliss			MACH_BLISS		BLISS			3490
+blissc 			MACH_BLISSC		BLISSC			3491
+thales_adc		MACH_THALES_ADC 	THALES_ADC		3492
+ubisys_p9d_evp 		MACH_UBISYS_P9D_EVP	UBISYS_P9D_EVP		3493
+atdgp318		MACH_ATDGP318		ATDGP318		3494
+dma210u			MACH_DMA210U		DMA210U 		3495
+em_t3			MACH_EM_T3		EM_T3			3496
+htx3250			MACH_HTX3250		HTX3250 		3497
+g50			MACH_G50		G50			3498
+eco5			MACH_ECO5		ECO5			3499
+wintergrasp		MACH_WINTERGRASP	WINTERGRASP		3500
+puro			MACH_PURO		PURO			3501
+shooter_k		MACH_SHOOTER_K		SHOOTER_K		3502
+mickxx 			MACH_MICKXX		MICKXX			3504
+lxmb			MACH_LXMB		LXMB			3505
+adam			MACH_ADAM		ADAM			3507
+b1004			MACH_B1004		B1004			3508
+oboea			MACH_OBOEA		OBOEA			3509
+a1015			MACH_A1015		A1015			3510
+robin_vbdt30		MACH_ROBIN_VBDT30	ROBIN_VBDT30		3511
+tegra_enterprise	MACH_TEGRA_ENTERPRISE	TEGRA_ENTERPRISE	3512
+rfl108200_mk10 		MACH_RFL108200_MK10	RFL108200_MK10		3513
+rfl108300_mk16 		MACH_RFL108300_MK16	RFL108300_MK16		3514
+rover_v7		MACH_ROVER_V7		ROVER_V7		3515
+miphone			MACH_MIPHONE		MIPHONE 		3516
+femtobts		MACH_FEMTOBTS		FEMTOBTS		3517
+monopoli		MACH_MONOPOLI		MONOPOLI		3518
+boss			MACH_BOSS		BOSS			3519
+davinci_dm368_vtam	MACH_DAVINCI_DM368_VTAM DAVINCI_DM368_VTAM	3520
+clcon			MACH_CLCON		CLCON			3521
+tahiti 			MACH_TAHITI		TAHITI			3523
+fighter			MACH_FIGHTER		FIGHTER 		3524
+sgh_i710		MACH_SGH_I710		SGH_I710		3525
+integreproscb		MACH_INTEGREPROSCB	INTEGREPROSCB		3526
+monza			MACH_MONZA		MONZA			3527
+calimain		MACH_CALIMAIN		CALIMAIN		3528
+mx6q_sabreauto 		MACH_MX6Q_SABREAUTO	MX6Q_SABREAUTO		3529
+gma01x 			MACH_GMA01X		GMA01X			3530
+sbc51			MACH_SBC51		SBC51			3531
+fit			MACH_FIT		FIT			3532
+steelhead		MACH_STEELHEAD		STEELHEAD		3533
+panther			MACH_PANTHER		PANTHER 		3534
+msm8960_liquid 		MACH_MSM8960_LIQUID	MSM8960_LIQUID		3535
+lexikonct		MACH_LEXIKONCT		LEXIKONCT		3536
+ns2816_stb		MACH_NS2816_STB 	NS2816_STB		3537
+sei_mm2_lpc3250		MACH_SEI_MM2_LPC3250	SEI_MM2_LPC3250 	3538
+cmimx53			MACH_CMIMX53		CMIMX53 		3539
+sandwich		MACH_SANDWICH		SANDWICH		3540
+chief			MACH_CHIEF		CHIEF			3541
+pogo_e02		MACH_POGO_E02		POGO_E02		3542
+htcmozart		MACH_HTCMOZART		HTCMOZART		3544
+htcgold			MACH_HTCGOLD		HTCGOLD 		3545
+mt72xx 			MACH_MT72XX		MT72XX			3546
+mx51_ivy		MACH_MX51_IVY		MX51_IVY		3547
+mx51_lvd		MACH_MX51_LVD		MX51_LVD		3548
+omap3_wiser2		MACH_OMAP3_WISER2	OMAP3_WISER2		3549
+dreamplug		MACH_DREAMPLUG		DREAMPLUG		3550
+cobas_c_111		MACH_COBAS_C_111	COBAS_C_111		3551
+cobas_u_411		MACH_COBAS_U_411	COBAS_U_411		3552
+hssd			MACH_HSSD		HSSD			3553
+iom35x 			MACH_IOM35X		IOM35X			3554
+psom_omap		MACH_PSOM_OMAP		PSOM_OMAP		3555
+iphone_2g		MACH_IPHONE_2G		IPHONE_2G		3556
+iphone_3g		MACH_IPHONE_3G		IPHONE_3G		3557
+ipod_touch_1g		MACH_IPOD_TOUCH_1G	IPOD_TOUCH_1G		3558
+pharos_tpc		MACH_PHAROS_TPC 	PHAROS_TPC		3559
+mx53_hydra		MACH_MX53_HYDRA 	MX53_HYDRA		3560
+ns2816_dev_board	MACH_NS2816_DEV_BOARD	NS2816_DEV_BOARD	3561
+iphone_3gs		MACH_IPHONE_3GS 	IPHONE_3GS		3562
+iphone_4		MACH_IPHONE_4		IPHONE_4		3563
+ipod_touch_4g		MACH_IPOD_TOUCH_4G	IPOD_TOUCH_4G		3564
+dragon_e1100		MACH_DRAGON_E1100	DRAGON_E1100		3565
+topside			MACH_TOPSIDE		TOPSIDE 		3566
+irisiii			MACH_IRISIII		IRISIII 		3567
+eti_d1 			MACH_ETI_D1		ETI_D1			3569
+som3530sdk		MACH_SOM3530SDK 	SOM3530SDK		3570
+oc_engine		MACH_OC_ENGINE		OC_ENGINE		3571
+apq8064_sim		MACH_APQ8064_SIM	APQ8064_SIM		3572
+alps			MACH_ALPS		ALPS			3575
+tny_t3730		MACH_TNY_T3730		TNY_T3730		3576
+geryon_nfe		MACH_GERYON_NFE 	GERYON_NFE		3577
+ns2816_ref_board	MACH_NS2816_REF_BOARD	NS2816_REF_BOARD	3578
+silverstone		MACH_SILVERSTONE	SILVERSTONE		3579
+mtt2440			MACH_MTT2440		MTT2440 		3580
+ynicdb 			MACH_YNICDB		YNICDB			3581
+bct			MACH_BCT		BCT			3582
+tuscan 			MACH_TUSCAN		TUSCAN			3583
+xbt_sam9g45		MACH_XBT_SAM9G45	XBT_SAM9G45		3584
+enbw_cmc		MACH_ENBW_CMC		ENBW_CMC		3585
+ch104mx257		MACH_CH104MX257 	CH104MX257		3587
+openpri			MACH_OPENPRI		OPENPRI 		3588
+am335xevm		MACH_AM335XEVM		AM335XEVM		3589
+picodmb			MACH_PICODMB		PICODMB 		3590
+waluigi			MACH_WALUIGI		WALUIGI 		3591
+punicag7		MACH_PUNICAG7		PUNICAG7		3592
+ipad_1g			MACH_IPAD_1G		IPAD_1G 		3593
+appletv_2g		MACH_APPLETV_2G 	APPLETV_2G		3594
+mach_ecog45		MACH_MACH_ECOG45	MACH_ECOG45		3595
+ait_cam_enc_4xx		MACH_AIT_CAM_ENC_4XX	AIT_CAM_ENC_4XX 	3596
+runnymede		MACH_RUNNYMEDE		RUNNYMEDE		3597
+play			MACH_PLAY		PLAY			3598
+hw90260			MACH_HW90260		HW90260 		3599
+tagh			MACH_TAGH		TAGH			3600
+filbert			MACH_FILBERT		FILBERT 		3601
+getinge_netcomv3	MACH_GETINGE_NETCOMV3	GETINGE_NETCOMV3	3602
+cw20			MACH_CW20		CW20			3603
+cinema 			MACH_CINEMA		CINEMA			3604
+cinema_tea		MACH_CINEMA_TEA 	CINEMA_TEA		3605
+cinema_coffee		MACH_CINEMA_COFFEE	CINEMA_COFFEE		3606
+cinema_juice		MACH_CINEMA_JUICE	CINEMA_JUICE		3607
+mx53_mirage2		MACH_MX53_MIRAGE2	MX53_MIRAGE2		3609
+mx53_efikasb		MACH_MX53_EFIKASB	MX53_EFIKASB		3610
+stm_b2000		MACH_STM_B2000		STM_B2000		3612
+pda			MACH_PDA		PDA			3614
+meraki_mr58		MACH_MERAKI_MR58	MERAKI_MR58		3615
+letcool			MACH_LETCOOL		LETCOOL 		3617
+mx27iat			MACH_MX27IAT		MX27IAT 		3618
+apollo_td		MACH_APOLLO_TD		APOLLO_TD		3619
+arena			MACH_ARENA		ARENA			3620
+gsngateway		MACH_GSNGATEWAY 	GSNGATEWAY		3621
+lf2000 			MACH_LF2000		LF2000			3622
+asymptote		MACH_ASYMPTOTE		ASYMPTOTE		3624
+bst2brd			MACH_BST2BRD		BST2BRD 		3625
+tx335s 			MACH_TX335S		TX335S			3626
+pelco_tesla		MACH_PELCO_TESLA	PELCO_TESLA		3627
+rrhtestplat		MACH_RRHTESTPLAT	RRHTESTPLAT		3628
+vidtonic_pro		MACH_VIDTONIC_PRO	VIDTONIC_PRO		3629
+pl_apollo		MACH_PL_APOLLO		PL_APOLLO		3630
+pl_phoenix		MACH_PL_PHOENIX 	PL_PHOENIX		3631
+m28cu3 			MACH_M28CU3		M28CU3			3632
+vvbox_hd		MACH_VVBOX_HD		VVBOX_HD		3633
+coreware_sam9260_	MACH_COREWARE_SAM9260_	COREWARE_SAM9260_	3634
+marmaduke		MACH_MARMADUKE		MARMADUKE		3635
+amg_xlcore_camera	MACH_AMG_XLCORE_CAMERA	AMG_XLCORE_CAMERA	3636
+dnp9200			MACH_DNP9200		DNP9200 		3639
+tf101			MACH_TF101		TF101			3640
+omap3silvio		MACH_OMAP3SILVIO	OMAP3SILVIO		3641
+picasso2		MACH_PICASSO2		PICASSO2		3642
+vangogh2		MACH_VANGOGH2		VANGOGH2		3643
+olpc_xo_1_75		MACH_OLPC_XO_1_75	OLPC_XO_1_75		3644
+gx400			MACH_GX400		GX400			3645
+gs300			MACH_GS300		GS300			3646
+acer_a9			MACH_ACER_A9		ACER_A9 		3647
+vivow_evm		MACH_VIVOW_EVM		VIVOW_EVM		3648
+veloce_cxq		MACH_VELOCE_CXQ 	VELOCE_CXQ		3649
+veloce_cxm		MACH_VELOCE_CXM 	VELOCE_CXM		3650
+p1852			MACH_P1852		P1852			3651
+naxy100			MACH_NAXY100		NAXY100 		3652
+taishan			MACH_TAISHAN		TAISHAN 		3653
+touchlink		MACH_TOUCHLINK		TOUCHLINK		3654
+stm32f103ze		MACH_STM32F103ZE	STM32F103ZE		3655
+mcx			MACH_MCX		MCX			3656
+stm_nmhdk_fli7610	MACH_STM_NMHDK_FLI7610	STM_NMHDK_FLI7610	3657
+top28x 			MACH_TOP28X		TOP28X			3658
+okl4vp_microvisor	MACH_OKL4VP_MICROVISOR	OKL4VP_MICROVISOR	3659
+pop			MACH_POP		POP			3660
+layer			MACH_LAYER		LAYER			3661
+trondheim		MACH_TRONDHEIM		TRONDHEIM		3662
+eva			MACH_EVA		EVA			3663
+trust_taurus		MACH_TRUST_TAURUS	TRUST_TAURUS		3664
+ns2816_huashan 		MACH_NS2816_HUASHAN	NS2816_HUASHAN		3665
+ns2816_yangcheng	MACH_NS2816_YANGCHENG	NS2816_YANGCHENG	3666
+p852			MACH_P852		P852			3667
+flea3			MACH_FLEA3		FLEA3			3668
+bowfin 			MACH_BOWFIN		BOWFIN			3669
+mv88de3100		MACH_MV88DE3100 	MV88DE3100		3670
+pia_am35x		MACH_PIA_AM35X		PIA_AM35X		3671
+cedar			MACH_CEDAR		CEDAR			3672
+picasso_e		MACH_PICASSO_E		PICASSO_E		3673
+samsung_e60		MACH_SAMSUNG_E60	SAMSUNG_E60		3674
+sdvr_mini		MACH_SDVR_MINI		SDVR_MINI		3676
+omap3_ij3k		MACH_OMAP3_IJ3K 	OMAP3_IJ3K		3677
+modasmc1		MACH_MODASMC1		MODASMC1		3678
+apq8064_rumi3		MACH_APQ8064_RUMI3	APQ8064_RUMI3		3679
+matrix506		MACH_MATRIX506		MATRIX506		3680
+msm9615_mtp		MACH_MSM9615_MTP	MSM9615_MTP		3681
+dm36x_spawndc		MACH_DM36X_SPAWNDC	DM36X_SPAWNDC		3682
+sff792 			MACH_SFF792		SFF792			3683
+am335xiaevm		MACH_AM335XIAEVM	AM335XIAEVM		3684
+g3c2440			MACH_G3C2440		G3C2440 		3685
+tion270			MACH_TION270		TION270 		3686
+w22q7arm02		MACH_W22Q7ARM02 	W22Q7ARM02		3687
+omap_cat		MACH_OMAP_CAT		OMAP_CAT		3688
+at91sam9n12ek		MACH_AT91SAM9N12EK	AT91SAM9N12EK		3689
+morrison		MACH_MORRISON		MORRISON		3690
+svdu			MACH_SVDU		SVDU			3691
+lpp01			MACH_LPP01		LPP01			3692
+ubc283 			MACH_UBC283		UBC283			3693
+zeppelin		MACH_ZEPPELIN		ZEPPELIN		3694
+motus			MACH_MOTUS		MOTUS			3695
+neomainboard		MACH_NEOMAINBOARD	NEOMAINBOARD		3696
+devkit3250		MACH_DEVKIT3250 	DEVKIT3250		3697
+devkit7000		MACH_DEVKIT7000 	DEVKIT7000		3698
+fmc_uic			MACH_FMC_UIC		FMC_UIC 		3699
+fmc_dcm			MACH_FMC_DCM		FMC_DCM 		3700
+batwm			MACH_BATWM		BATWM			3701
+atlas6cb		MACH_ATLAS6CB		ATLAS6CB		3702
+blue			MACH_BLUE		BLUE			3705
+colorado		MACH_COLORADO		COLORADO		3706
+popc			MACH_POPC		POPC			3707
+promwad_jade		MACH_PROMWAD_JADE	PROMWAD_JADE		3708
+amp			MACH_AMP		AMP			3709
+gnet_amp		MACH_GNET_AMP		GNET_AMP		3710
+toques 			MACH_TOQUES		TOQUES			3711
+dct_storm		MACH_DCT_STORM		DCT_STORM		3713
+owl			MACH_OWL		OWL			3715
+cogent_csb1741 		MACH_COGENT_CSB1741	COGENT_CSB1741		3716
+adillustra610		MACH_ADILLUSTRA610	ADILLUSTRA610		3718
+ecafe_na04		MACH_ECAFE_NA04 	ECAFE_NA04		3719
+popct			MACH_POPCT		POPCT			3720
+omap3_helena		MACH_OMAP3_HELENA	OMAP3_HELENA		3721
+ach			MACH_ACH		ACH			3722
+module_dtb		MACH_MODULE_DTB 	MODULE_DTB		3723
+oslo_elisabeth 		MACH_OSLO_ELISABETH	OSLO_ELISABETH		3725
+tt01			MACH_TT01		TT01			3726
+msm8930_cdp		MACH_MSM8930_CDP	MSM8930_CDP		3727
+msm8930_mtp		MACH_MSM8930_MTP	MSM8930_MTP		3728
+msm8930_fluid		MACH_MSM8930_FLUID	MSM8930_FLUID		3729
+ltu11			MACH_LTU11		LTU11			3730
+am1808_spawnco 		MACH_AM1808_SPAWNCO	AM1808_SPAWNCO		3731
+flx6410			MACH_FLX6410		FLX6410 		3732
+mx6q_qsb		MACH_MX6Q_QSB		MX6Q_QSB		3733
+mx53_plt424		MACH_MX53_PLT424	MX53_PLT424		3734
+jasmine			MACH_JASMINE		JASMINE 		3735
+l138_owlboard_plus	MACH_L138_OWLBOARD_PLUS L138_OWLBOARD_PLUS	3736
+wr21			MACH_WR21		WR21			3737
+peaboy 			MACH_PEABOY		PEABOY			3739
+mx28_plato		MACH_MX28_PLATO 	MX28_PLATO		3740
+kacom2 			MACH_KACOM2		KACOM2			3741
+slco			MACH_SLCO		SLCO			3742
+imx51pico		MACH_IMX51PICO		IMX51PICO		3743
+glink1 			MACH_GLINK1		GLINK1			3744
+diamond			MACH_DIAMOND		DIAMOND 		3745
+d9000			MACH_D9000		D9000			3746
+w5300e01		MACH_W5300E01		W5300E01		3747
+im6000 			MACH_IM6000		IM6000			3748
+mx51_fred51		MACH_MX51_FRED51	MX51_FRED51		3749
+stm32f2			MACH_STM32F2		STM32F2 		3750
+ville			MACH_VILLE		VILLE			3751
+ptip_murnau		MACH_PTIP_MURNAU	PTIP_MURNAU		3752
+ptip_classic		MACH_PTIP_CLASSIC	PTIP_CLASSIC		3753
+mx53grb			MACH_MX53GRB		MX53GRB 		3754
+gagarin			MACH_GAGARIN		GAGARIN 		3755
+nas2big			MACH_NAS2BIG		NAS2BIG 		3757
+superfemto		MACH_SUPERFEMTO 	SUPERFEMTO		3758
+teufel 			MACH_TEUFEL		TEUFEL			3759
+dinara 			MACH_DINARA		DINARA			3760
+vanquish		MACH_VANQUISH		VANQUISH		3761
+zipabox1		MACH_ZIPABOX1		ZIPABOX1		3762
+u9540			MACH_U9540		U9540			3763
+jet			MACH_JET		JET			3764
+elite			MACH_ELITE		ELITE			3766
+spear320_hmi		MACH_SPEAR320_HMI	SPEAR320_HMI		3767
+ontario			MACH_ONTARIO		ONTARIO 		3768
+mx6q_sabrelite 		MACH_MX6Q_SABRELITE	MX6Q_SABRELITE		3769
+vc200			MACH_VC200		VC200			3770
+msm7625a_ffa		MACH_MSM7625A_FFA	MSM7625A_FFA		3771
+msm7625a_surf		MACH_MSM7625A_SURF	MSM7625A_SURF		3772
+benthossbp		MACH_BENTHOSSBP 	BENTHOSSBP		3773
+smdk5210		MACH_SMDK5210		SMDK5210		3774
+empq2300		MACH_EMPQ2300		EMPQ2300		3775
+minipos			MACH_MINIPOS		MINIPOS 		3776
+omap5_sevm		MACH_OMAP5_SEVM 	OMAP5_SEVM		3777
+shelter			MACH_SHELTER		SHELTER 		3778
+omap3_devkit8500	MACH_OMAP3_DEVKIT8500	OMAP3_DEVKIT8500	3779
+edgetd 			MACH_EDGETD		EDGETD			3780
+copperyard		MACH_COPPERYARD 	COPPERYARD		3781
+edge_u 			MACH_EDGE_U		EDGE_U			3783
+edge_td			MACH_EDGE_TD		EDGE_TD 		3784
+wdss			MACH_WDSS		WDSS			3785
+dl_pb25			MACH_DL_PB25		DL_PB25 		3786
+dss11			MACH_DSS11		DSS11			3787
+cpa			MACH_CPA		CPA			3788
+aptp2000		MACH_APTP2000		APTP2000		3789
+st_turbine		MACH_ST_TURBINE 	ST_TURBINE		3791
+gtl_it3300		MACH_GTL_IT3300 	GTL_IT3300		3792
+mx6_mule		MACH_MX6_MULE		MX6_MULE		3793
+v7pxa_dt		MACH_V7PXA_DT		V7PXA_DT		3794
+v7mmp_dt		MACH_V7MMP_DT		V7MMP_DT		3795
+dragon7			MACH_DRAGON7		DRAGON7 		3796
+oratisdante		MACH_ORATISDANTE	ORATISDANTE		3798
+fathom 			MACH_FATHOM		FATHOM			3799
+dns325 			MACH_DNS325		DNS325			3800
+sarnen 			MACH_SARNEN		SARNEN			3801
+ubisys_g1		MACH_UBISYS_G1		UBISYS_G1		3802
+mx53_pf1		MACH_MX53_PF1		MX53_PF1		3803
+asanti 			MACH_ASANTI		ASANTI			3804
+volta			MACH_VOLTA		VOLTA			3805
+knight 			MACH_KNIGHT		KNIGHT			3807
+beaglebone		MACH_BEAGLEBONE 	BEAGLEBONE		3808
+becker 			MACH_BECKER		BECKER			3809
+fc360			MACH_FC360		FC360			3810
+pmi2_xls		MACH_PMI2_XLS		PMI2_XLS		3811
+taranto			MACH_TARANTO		TARANTO 		3812
+plutux 			MACH_PLUTUX		PLUTUX			3813
+ipmp_medcom		MACH_IPMP_MEDCOM	IPMP_MEDCOM		3814
+absolut			MACH_ABSOLUT		ABSOLUT 		3815
+awpb3			MACH_AWPB3		AWPB3			3816
+nfp32xx_dt		MACH_NFP32XX_DT 	NFP32XX_DT		3817
+dl_pb53			MACH_DL_PB53		DL_PB53 		3818
+acu_ii 			MACH_ACU_II		ACU_II			3819
+avalon 			MACH_AVALON		AVALON			3820
+sphinx 			MACH_SPHINX		SPHINX			3821
+titan_t			MACH_TITAN_T		TITAN_T 		3822
+harvest_boris		MACH_HARVEST_BORIS	HARVEST_BORIS		3823
+mach_msm7x30_m3s	MACH_MACH_MSM7X30_M3S	MACH_MSM7X30_M3S	3824
+smdk5250		MACH_SMDK5250		SMDK5250		3825
+imxt_lite		MACH_IMXT_LITE		IMXT_LITE		3826
+imxt_std		MACH_IMXT_STD		IMXT_STD		3827
+imxt_log		MACH_IMXT_LOG		IMXT_LOG		3828
+imxt_nav		MACH_IMXT_NAV		IMXT_NAV		3829
+imxt_full		MACH_IMXT_FULL		IMXT_FULL		3830
+ag09015			MACH_AG09015		AG09015 		3831
+am3517_mt_ventoux	MACH_AM3517_MT_VENTOUX	AM3517_MT_VENTOUX	3832
+dp1arm9			MACH_DP1ARM9		DP1ARM9 		3833
+picasso_m		MACH_PICASSO_M		PICASSO_M		3834
+video_gadget		MACH_VIDEO_GADGET	VIDEO_GADGET		3835
+mtt_om3x		MACH_MTT_OM3X		MTT_OM3X		3836
+mx6q_arm2		MACH_MX6Q_ARM2		MX6Q_ARM2		3837
+picosam9g45		MACH_PICOSAM9G45	PICOSAM9G45		3838
+vpm_dm365		MACH_VPM_DM365		VPM_DM365		3839
+bonfire			MACH_BONFIRE		BONFIRE 		3840
+mt2p2d 			MACH_MT2P2D		MT2P2D			3841
+sigpda01		MACH_SIGPDA01		SIGPDA01		3842
+cn27			MACH_CN27		CN27			3843
+mx25_cwtap		MACH_MX25_CWTAP 	MX25_CWTAP		3844
+apf28			MACH_APF28		APF28			3845
+pelco_maxwell		MACH_PELCO_MAXWELL	PELCO_MAXWELL		3846
+ge_phoenix		MACH_GE_PHOENIX 	GE_PHOENIX		3847
+empc_a500		MACH_EMPC_A500		EMPC_A500		3848
+ims_arm9		MACH_IMS_ARM9		IMS_ARM9		3849
+mini2416		MACH_MINI2416		MINI2416		3850
+mini2450		MACH_MINI2450		MINI2450		3851
+mini310			MACH_MINI310		MINI310 		3852
+spear_hurricane		MACH_SPEAR_HURRICANE	SPEAR_HURRICANE 	3853
+mt7208 			MACH_MT7208		MT7208			3854
+lpc178x			MACH_LPC178X		LPC178X 		3855
+farleys			MACH_FARLEYS		FARLEYS 		3856
+efm32gg_dk3750 		MACH_EFM32GG_DK3750	EFM32GG_DK3750		3857
+zeus_board		MACH_ZEUS_BOARD 	ZEUS_BOARD		3858
+cc51			MACH_CC51		CC51			3859
+fxi_c210		MACH_FXI_C210		FXI_C210		3860
+msm8627_cdp		MACH_MSM8627_CDP	MSM8627_CDP		3861
+msm8627_mtp		MACH_MSM8627_MTP	MSM8627_MTP		3862
+primou 			MACH_PRIMOU		PRIMOU			3864
+primoc 			MACH_PRIMOC		PRIMOC			3865
+primoct			MACH_PRIMOCT		PRIMOCT 		3866
+a9500			MACH_A9500		A9500			3867
+pluto			MACH_PLUTO		PLUTO			3869
+acfx100			MACH_ACFX100		ACFX100 		3870
+msm8625_rumi3		MACH_MSM8625_RUMI3	MSM8625_RUMI3		3871
+valente			MACH_VALENTE		VALENTE 		3872
+crfs_rfeye		MACH_CRFS_RFEYE 	CRFS_RFEYE		3873
+rfeye			MACH_RFEYE		RFEYE			3874
+phidget_sbc3		MACH_PHIDGET_SBC3	PHIDGET_SBC3		3875
+tcw_mika		MACH_TCW_MIKA		TCW_MIKA		3876
+imx28_egf		MACH_IMX28_EGF		IMX28_EGF		3877
+valente_wx		MACH_VALENTE_WX 	VALENTE_WX		3878
+huangshans		MACH_HUANGSHANS 	HUANGSHANS		3879
+bosphorus1		MACH_BOSPHORUS1 	BOSPHORUS1		3880
+prima			MACH_PRIMA		PRIMA			3881
+evita_ulk		MACH_EVITA_ULK		EVITA_ULK		3884
+merisc600		MACH_MERISC600		MERISC600		3885
+dolak			MACH_DOLAK		DOLAK			3886
+sbc53			MACH_SBC53		SBC53			3887
+elite_ulk		MACH_ELITE_ULK		ELITE_ULK		3888
+pov2			MACH_POV2		POV2			3889
+ipod_touch_2g		MACH_IPOD_TOUCH_2G	IPOD_TOUCH_2G		3890
+da850_pqab		MACH_DA850_PQAB 	DA850_PQAB		3891
+fermi			MACH_FERMI		FERMI			3892
+ccardwmx28		MACH_CCARDWMX28 	CCARDWMX28		3893
+ccardmx28		MACH_CCARDMX28		CCARDMX28		3894
+fs20_fcm2050		MACH_FS20_FCM2050	FS20_FCM2050		3895
+kinetis			MACH_KINETIS		KINETIS 		3896
+kai			MACH_KAI		KAI			3897
+bcthb2 			MACH_BCTHB2		BCTHB2			3898
+inels3_cu		MACH_INELS3_CU		INELS3_CU		3899
+da850_apollo		MACH_DA850_APOLLO	DA850_APOLLO		3901
+tracnas			MACH_TRACNAS		TRACNAS 		3902
+mityarm335x		MACH_MITYARM335X	MITYARM335X		3903
+xcgz7x 			MACH_XCGZ7X		XCGZ7X			3904
+cubox			MACH_CUBOX		CUBOX			3905
+terminator		MACH_TERMINATOR 	TERMINATOR		3906
+eye03			MACH_EYE03		EYE03			3907
+kota3			MACH_KOTA3		KOTA3			3908
+pscpe			MACH_PSCPE		PSCPE			3910
+akt1100			MACH_AKT1100		AKT1100 		3911
+pcaaxl2			MACH_PCAAXL2		PCAAXL2 		3912
+primodd_ct		MACH_PRIMODD_CT 	PRIMODD_CT		3913
+nsbc			MACH_NSBC		NSBC			3914
+meson2_skt		MACH_MESON2_SKT 	MESON2_SKT		3915
+meson2_ref		MACH_MESON2_REF 	MESON2_REF		3916
+ccardwmx28js		MACH_CCARDWMX28JS	CCARDWMX28JS		3917
+ccardmx28js		MACH_CCARDMX28JS	CCARDMX28JS		3918
+indico 			MACH_INDICO		INDICO			3919
+msm8960dt		MACH_MSM8960DT		MSM8960DT		3920
+primods			MACH_PRIMODS		PRIMODS 		3921
+beluga_m1388		MACH_BELUGA_M1388	BELUGA_M1388		3922
+primotd			MACH_PRIMOTD		PRIMOTD 		3923
+varan_master		MACH_VARAN_MASTER	VARAN_MASTER		3924
+primodd			MACH_PRIMODD		PRIMODD 		3925
+jetduo 			MACH_JETDUO		JETDUO			3926
+trats			MACH_TRATS		TRATS			3928
+starcraft		MACH_STARCRAFT		STARCRAFT		3929
+qseven_tegra2		MACH_QSEVEN_TEGRA2	QSEVEN_TEGRA2		3930
+lichee_sun4i_devbd	MACH_LICHEE_SUN4I_DEVBD LICHEE_SUN4I_DEVBD	3931
+movenow			MACH_MOVENOW		MOVENOW 		3932
+golf_u 			MACH_GOLF_U		GOLF_U			3933
+msm7627a_evb		MACH_MSM7627A_EVB	MSM7627A_EVB		3934
+rambo			MACH_RAMBO		RAMBO			3935
+golfu			MACH_GOLFU		GOLFU			3936
+mango310		MACH_MANGO310		MANGO310		3937
+dns343 			MACH_DNS343		DNS343			3938
+var_som_om44		MACH_VAR_SOM_OM44	VAR_SOM_OM44		3939
+naon			MACH_NAON		NAON			3940
+vp4000 			MACH_VP4000		VP4000			3941
+impcard			MACH_IMPCARD		IMPCARD 		3942
+smoovcam		MACH_SMOOVCAM		SMOOVCAM		3943
+cobham3725		MACH_COBHAM3725 	COBHAM3725		3944
+cobham3730		MACH_COBHAM3730 	COBHAM3730		3945
+cobham3703		MACH_COBHAM3703 	COBHAM3703		3946
+quetzal			MACH_QUETZAL		QUETZAL 		3947
+apq8064_cdp		MACH_APQ8064_CDP	APQ8064_CDP		3948
+apq8064_mtp		MACH_APQ8064_MTP	APQ8064_MTP		3949
+apq8064_fluid		MACH_APQ8064_FLUID	APQ8064_FLUID		3950
+apq8064_liquid 		MACH_APQ8064_LIQUID	APQ8064_LIQUID		3951
+mango210		MACH_MANGO210		MANGO210		3952
+mango100		MACH_MANGO100		MANGO100		3953
+mango24			MACH_MANGO24		MANGO24 		3954
+mango64			MACH_MANGO64		MANGO64 		3955
+nsa320 			MACH_NSA320		NSA320			3956
+elv_ccu2		MACH_ELV_CCU2		ELV_CCU2		3957
+triton_x00		MACH_TRITON_X00 	TRITON_X00		3958
+triton_1500_2000	MACH_TRITON_1500_2000	TRITON_1500_2000	3959
+pogoplugv4		MACH_POGOPLUGV4 	POGOPLUGV4		3960
+venus_cl		MACH_VENUS_CL		VENUS_CL		3961
+vulcano_g20		MACH_VULCANO_G20	VULCANO_G20		3962
+sgs_i9100		MACH_SGS_I9100		SGS_I9100		3963
+stsv2			MACH_STSV2		STSV2			3964
+csb1724			MACH_CSB1724		CSB1724 		3965
+omapl138_lcdk		MACH_OMAPL138_LCDK	OMAPL138_LCDK		3966
+pvd_mx25		MACH_PVD_MX25		PVD_MX25		3968
+meson6_skt		MACH_MESON6_SKT 	MESON6_SKT		3969
+meson6_ref		MACH_MESON6_REF 	MESON6_REF		3970
+pxm			MACH_PXM		PXM			3971
+pogoplugv3		MACH_POGOPLUGV3 	POGOPLUGV3		3973
+mlp89626		MACH_MLP89626		MLP89626		3974
+iomegahmndce		MACH_IOMEGAHMNDCE	IOMEGAHMNDCE		3975
+pogoplugv3pci		MACH_POGOPLUGV3PCI	POGOPLUGV3PCI		3976
+bntv250			MACH_BNTV250		BNTV250 		3977
+mx53_qseven		MACH_MX53_QSEVEN	MX53_QSEVEN		3978
+gtl_it1100		MACH_GTL_IT1100 	GTL_IT1100		3979
+mx6q_sabresd		MACH_MX6Q_SABRESD	MX6Q_SABRESD		3980
+jumbo_d			MACH_JUMBO_D		JUMBO_D 		3982
+jumbo_i			MACH_JUMBO_I		JUMBO_I 		3983
+fs20_dmp		MACH_FS20_DMP		FS20_DMP		3984
+dns320 			MACH_DNS320		DNS320			3985
+mx28bacos		MACH_MX28BACOS		MX28BACOS		3986
+tl80			MACH_TL80		TL80			3987
+polatis_nic_1001	MACH_POLATIS_NIC_1001	POLATIS_NIC_1001	3988
+tely			MACH_TELY		TELY			3989
+manta			MACH_MANTA		MANTA			3991
+mpq8064_cdp		MACH_MPQ8064_CDP	MPQ8064_CDP		3993
+mpq8064_dtv		MACH_MPQ8064_DTV	MPQ8064_DTV		3995
+dm368som		MACH_DM368SOM		DM368SOM		3996
+gprisb2			MACH_GPRISB2		GPRISB2 		3997
+chammid			MACH_CHAMMID		CHAMMID 		3998
+seoul2 			MACH_SEOUL2		SEOUL2			3999
+omap4_nooktablet	MACH_OMAP4_NOOKTABLET	OMAP4_NOOKTABLET	4000
+aalto			MACH_AALTO		AALTO			4001
+metro			MACH_METRO		METRO			4002
+cydm3730		MACH_CYDM3730		CYDM3730		4003
+tqma53 			MACH_TQMA53		TQMA53			4004
+msm7627a_qrd3		MACH_MSM7627A_QRD3	MSM7627A_QRD3		4005
+mx28_canby		MACH_MX28_CANBY 	MX28_CANBY		4006
+tiger			MACH_TIGER		TIGER			4007
+pcats_9307_type_a	MACH_PCATS_9307_TYPE_A	PCATS_9307_TYPE_A	4008
+pcats_9307_type_o	MACH_PCATS_9307_TYPE_O	PCATS_9307_TYPE_O	4009
+pcats_9307_type_r	MACH_PCATS_9307_TYPE_R	PCATS_9307_TYPE_R	4010
+streamplug		MACH_STREAMPLUG 	STREAMPLUG		4011
+icechicken_dev 		MACH_ICECHICKEN_DEV	ICECHICKEN_DEV		4012
+hedgehog		MACH_HEDGEHOG		HEDGEHOG		4013
+yusend_obc		MACH_YUSEND_OBC 	YUSEND_OBC		4014
+imxninja		MACH_IMXNINJA		IMXNINJA		4015
+omap4_jarod		MACH_OMAP4_JAROD	OMAP4_JAROD		4016
+eco5_pk			MACH_ECO5_PK		ECO5_PK 		4017
+qj2440 			MACH_QJ2440		QJ2440			4018
+mx6q_mercury		MACH_MX6Q_MERCURY	MX6Q_MERCURY		4019
+cm6810 			MACH_CM6810		CM6810			4020
+omap4_torpedo		MACH_OMAP4_TORPEDO	OMAP4_TORPEDO		4021
+nsa310 			MACH_NSA310		NSA310			4022
+tmx536 			MACH_TMX536		TMX536			4023
+ktt20			MACH_KTT20		KTT20			4024
+dragonix		MACH_DRAGONIX		DRAGONIX		4025
+lungching		MACH_LUNGCHING		LUNGCHING		4026
+bulogics		MACH_BULOGICS		BULOGICS		4027
+mx535_sx		MACH_MX535_SX		MX535_SX		4028
+ngui3250		MACH_NGUI3250		NGUI3250		4029
+salutec_dac		MACH_SALUTEC_DAC	SALUTEC_DAC		4030
+loco			MACH_LOCO		LOCO			4031
+ctera_plug_usi 		MACH_CTERA_PLUG_USI	CTERA_PLUG_USI		4032
+scepter			MACH_SCEPTER		SCEPTER 		4033
+sga			MACH_SGA		SGA			4034
+p_81_j5			MACH_P_81_J5		P_81_J5 		4035
+p_81_o4			MACH_P_81_O4		P_81_O4 		4036
+msm8625_surf		MACH_MSM8625_SURF	MSM8625_SURF		4037
+carallon_shark 		MACH_CARALLON_SHARK	CARALLON_SHARK		4038
+ordog			MACH_ORDOG		ORDOG			4040
+puente_io		MACH_PUENTE_IO		PUENTE_IO		4041
+msm8625_evb		MACH_MSM8625_EVB	MSM8625_EVB		4042
+ev_am1707		MACH_EV_AM1707		EV_AM1707		4043
+ev_am1707e2		MACH_EV_AM1707E2	EV_AM1707E2		4044
+ev_am3517e2		MACH_EV_AM3517E2	EV_AM3517E2		4045
+calabria		MACH_CALABRIA		CALABRIA		4046
+ev_imx287		MACH_EV_IMX287		EV_IMX287		4047
+erau			MACH_ERAU		ERAU			4048
+sichuan			MACH_SICHUAN		SICHUAN 		4049
+davinci_da850		MACH_DAVINCI_DA850	DAVINCI_DA850		4051
+omap138_trunarc		MACH_OMAP138_TRUNARC	OMAP138_TRUNARC 	4052
+bcm4761			MACH_BCM4761		BCM4761 		4053
+picasso_e2		MACH_PICASSO_E2 	PICASSO_E2		4054
+picasso_mf		MACH_PICASSO_MF 	PICASSO_MF		4055
+miro			MACH_MIRO		MIRO			4056
+at91sam9g20ewon3	MACH_AT91SAM9G20EWON3	AT91SAM9G20EWON3	4057
+yoyo			MACH_YOYO		YOYO			4058
+windjkl			MACH_WINDJKL		WINDJKL 		4059
+monarudo		MACH_MONARUDO		MONARUDO		4060
+batan			MACH_BATAN		BATAN			4061
+tadao			MACH_TADAO		TADAO			4062
+baso			MACH_BASO		BASO			4063
+mahon			MACH_MAHON		MAHON			4064
+villec2			MACH_VILLEC2		VILLEC2 		4065
+asi1230			MACH_ASI1230		ASI1230 		4066
+alaska 			MACH_ALASKA		ALASKA			4067
+swarco_shdsl2		MACH_SWARCO_SHDSL2	SWARCO_SHDSL2		4068
+oxrtu			MACH_OXRTU		OXRTU			4069
+omap5_panda		MACH_OMAP5_PANDA	OMAP5_PANDA		4070
+c8000			MACH_C8000		C8000			4072
+bje_display3_5 		MACH_BJE_DISPLAY3_5	BJE_DISPLAY3_5		4073
+picomod7		MACH_PICOMOD7		PICOMOD7		4074
+picocom5		MACH_PICOCOM5		PICOCOM5		4075
+qblissa8		MACH_QBLISSA8		QBLISSA8		4076
+armstonea8		MACH_ARMSTONEA8 	ARMSTONEA8		4077
+netdcu14		MACH_NETDCU14		NETDCU14		4078
+at91sam9x5_epiphan	MACH_AT91SAM9X5_EPIPHAN AT91SAM9X5_EPIPHAN	4079
+p2u			MACH_P2U		P2U			4080
+doris			MACH_DORIS		DORIS			4081
+j49			MACH_J49		J49			4082
+vdss2e 			MACH_VDSS2E		VDSS2E			4083
+vc300			MACH_VC300		VC300			4084
+ns115_pad_test 		MACH_NS115_PAD_TEST	NS115_PAD_TEST		4085
+ns115_pad_ref		MACH_NS115_PAD_REF	NS115_PAD_REF		4086
+ns115_phone_test	MACH_NS115_PHONE_TEST	NS115_PHONE_TEST	4087
+ns115_phone_ref		MACH_NS115_PHONE_REF	NS115_PHONE_REF 	4088
+golfc			MACH_GOLFC		GOLFC			4089
+xerox_olympus		MACH_XEROX_OLYMPUS	XEROX_OLYMPUS		4090
+mx6sl_arm2		MACH_MX6SL_ARM2 	MX6SL_ARM2		4091
+csb1701_csb1726		MACH_CSB1701_CSB1726	CSB1701_CSB1726 	4092
+at91sam9xeek		MACH_AT91SAM9XEEK	AT91SAM9XEEK		4093
+ebv210 			MACH_EBV210		EBV210			4094
+msm7627a_qrd7		MACH_MSM7627A_QRD7	MSM7627A_QRD7		4095
+svthin 			MACH_SVTHIN		SVTHIN			4096
+duovero			MACH_DUOVERO		DUOVERO 		4097
+davinci_dp10		MACH_DAVINCI_DP10	DAVINCI_DP10		4120
 
