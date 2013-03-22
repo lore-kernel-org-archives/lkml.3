@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933519Ab3CVPTH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 11:19:07 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:38650 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932792Ab3CVPTE (ORCPT
+	id S933607Ab3CVPTZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 11:19:25 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:61227 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862Ab3CVPTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 11:19:04 -0400
-Date: Fri, 22 Mar 2013 20:48:38 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: oleg@redhat.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        benh@kernel.crashing.org, ppcdev <linuxppc-dev@lists.ozlabs.org>
-Subject: [PATCH v2 3/4] uprobes/powerpc: teach uprobes to ignore gdb
-	breakpoints
-Message-ID: <20130322151838.GD20010@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20130322151627.GB20010@in.ibm.com>
+	Fri, 22 Mar 2013 11:19:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: Re: [PATCH 3/4] dw_dmac: make build of DT related methods optional
+Date: Fri, 22 Mar 2013 15:19:13 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: Vinod Koul <vinod.koul@intel.com>, Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-kernel@vger.kernel.org, "spear-devel" <spear-devel@list.st.com>
+References: <1363963401-7924-1-git-send-email-andriy.shevchenko@linux.intel.com> <1363963401-7924-4-git-send-email-andriy.shevchenko@linux.intel.com>
+In-Reply-To: <1363963401-7924-4-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130322151627.GB20010@in.ibm.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032215-3620-0000-0000-000001BC2DD0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303221519.14108.arnd@arndb.de>
+X-Provags-ID: V02:K0:9BtDgd+ePhfWZefm3dxZEz6++2e76Ycd9kfd9qT8oqU
+ uZiR3OkSns+JvEmlr1pKdtolxpH/klOwgwOqyyc+SLaWnjRtHN
+ XJKQyvjFog+HdIkYFLK4Jyp1ySPL5C1ADvVgRsJBr8bfpdbKXX
+ +hqg4ymlwqT+qgwzKiQJCVTj0+x10J0OfbUgbUckRrN1wsAkyM
+ /SwsMVkmAseoSmF5yUG2n1HherZ8UFxkGa4LyglERnGppaiau9
+ 54cHvYOTVwuyZj1m2FlZES4VRl7BZhBUE8/q+GjuohtfbSb3Se
+ +6rgddyNW23tPk+8BLQbFCVVF2a4g73ye2wlvFOeNuaL0/kTcy
+ hJLNIMEyhD0xqM57nwHg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+On Friday 22 March 2013, Andy Shevchenko wrote:
+> There is no reason to build custom filter function and translation function
+> inside the driver in case we have no DT platform.
+> 
+> This patch introduces new method dw_dma_of_controller_register() and moves all
+> DT related stuff under #ifdef CONFIG_OF. It also helps to distinguish the real
+> -ENODEV return code of fake one when of_dma_controller_register is not
+> implemented.
+> 
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-Powerpc has many trap variants that could be used by entities like gdb.
-Currently, running gdb on a program being traced by uprobes causes an
-endless loop since uprobes doesn't understand that the trap was inserted
-by some other entity and a SIGTRAP needs to be delivered.
+This should have no impact on the object code at all, since everything
+inside of the #ifdef is be dropped by the compiler anyway if
+of_dma_controller_register is stubbed out.
 
-Teach uprobes to ignore breakpoints that do not belong to it.
+I generally prefer to have all driver code be compiled  all the time
+to catch build regressions independent of the configuration, and leave
+the #ifdefs in header files that provide the interfaces.
 
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
----
- arch/powerpc/kernel/uprobes.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+> -	if (pdev->dev.of_node) {
+> -		err = of_dma_controller_register(pdev->dev.of_node,
+> -						 dw_dma_of_xlate, dw);
+> -		if (err && err != -ENODEV)
+> -			dev_err(&pdev->dev,
+> -				"could not register of_dma_controller\n");
+> -	}
+> +	if (pdev->dev.of_node)
+> +		dw_dma_of_controller_register(dw);
 
-Index: linux-3.9-rc3/arch/powerpc/kernel/uprobes.c
-===================================================================
---- linux-3.9-rc3.orig/arch/powerpc/kernel/uprobes.c
-+++ linux-3.9-rc3/arch/powerpc/kernel/uprobes.c
-@@ -31,6 +31,16 @@
- #define UPROBE_TRAP_NR	UINT_MAX
- 
- /**
-+ * is_trap_insn - check if the instruction is a trap variant
-+ * @insn: instruction to be checked.
-+ * Returns true if @insn is a trap variant.
-+ */
-+bool is_trap_insn(uprobe_opcode_t *insn)
-+{
-+	return (is_trap(*insn));
-+}
-+
-+/**
-  * arch_uprobe_analyze_insn
-  * @mm: the probed address space.
-  * @arch_uprobe: the probepoint information.
+If you want to remove the "err != -ENODEV" check here, we could rewrite
+this as 
 
+	if (IS_ENABLED(CONFIG_OF)) && pdev->dev.of_node) {
+		err = of_dma_controller_register(pdev->dev.of_node,
+						 dw_dma_of_xlate, dw);
+		if (err)
+			dev_err(&pdev->dev,
+				"could not register of_dma_controller\n");
+	}
+
+Or alternatively, we can change the of_dma_controller_register() stub to
+return 0 if CONFIG_OF is disabled. That would also take care of similar
+code in other dma engine drivers.
+
+	Arnd
