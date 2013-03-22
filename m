@@ -1,133 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933092Ab3CVCBy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Mar 2013 22:01:54 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:53680 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932265Ab3CVCBx (ORCPT
+	id S933113Ab3CVCDO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Mar 2013 22:03:14 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:51631 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932321Ab3CVCDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Mar 2013 22:01:53 -0400
-Date: Thu, 21 Mar 2013 22:01:50 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] wfcqueue: functions for local append and enqueue
-Message-ID: <20130322020150.GA17809@Krystal>
-References: <20130311213602.GB9829@Krystal> <20130321114313.GA17275@dcvr.yhbt.net>
+	Thu, 21 Mar 2013 22:03:13 -0400
+Message-ID: <514BBBD2.9010602@huawei.com>
+Date: Fri, 22 Mar 2013 10:02:58 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321114313.GA17275@dcvr.yhbt.net>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH] init/Kconfig: make EXPERT as config instead of menuconfig
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Eric Wong (normalperson@yhbt.net) wrote:
-> With level-triggered epoll, append/enqueue operations to the
-> local/locked queues increase performance by avoiding unnecessary atomic
-> operations and barriers.  These are necessary to avoid performance
-> regressions when looping through ep_send_events and appending many
-> items to a queue.
+There don't have any EXPERT menu guard, and no config item is
+included in EXPERT menu, so change it as a config, not menu.
 
-Sounds like a good idea,
+This will make user more clear when they use 'make menuconfig'
+or 'make nconfig'.
 
-> 
-> Signed-off-by: Eric Wong <normalperson@yhbt.net>
-> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Stephen Hemminger <shemminger@vyatta.com>
-> Cc: Davide Libenzi <davidel@xmailserver.org>
-> ---
->   Benchmark for this coming with updated epoll patches.
-> 
->  include/linux/wfcqueue.h | 43 +++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 43 insertions(+)
-> 
-> diff --git a/include/linux/wfcqueue.h b/include/linux/wfcqueue.h
-> index 9464a0c..7eb2aaa 100644
-> --- a/include/linux/wfcqueue.h
-> +++ b/include/linux/wfcqueue.h
-> @@ -205,6 +205,49 @@ static inline bool wfcq_enqueue(struct wfcq_head *head,
->  }
->  
->  /*
-> + * __wfcq_append_local: append one local queue to another local queue
-> + *
-> + * No memory barriers are issued.  Mutual exclusion is the responsibility
-> + * of the caller.
-> + *
-> + * Returns false if the queue was empty prior to adding the node.
-> + * Returns true otherwise.
-> + */
-> +static inline bool __wfcq_append_local(struct wfcq_head *head,
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Michal Marek <mmarek@suse.cz>
+---
+ init/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Following the rest of the header, we could use:
+diff --git a/init/Kconfig b/init/Kconfig
+index 5341d72..0495453 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1177,7 +1177,7 @@ config SYSCTL
+ config ANON_INODES
+ 	bool
 
-___wfcq_append() for this function,
-
-> +		struct wfcq_tail *tail,
-> +		struct wfcq_node *new_head,
-> +		struct wfcq_node *new_tail)
-> +{
-> +	struct wfcq_node *old_tail;
-> +
-> +	old_tail = tail->p;
-> +	tail->p = new_tail;
-> +	old_tail->next = new_head;
-> +
-> +	/*
-> +	 * Return false if queue was empty prior to adding the node,
-> +	 * else return true.
-> +	 */
-> +	return old_tail != &head->node;
-> +}
-> +
-> +/*
-> + * wfcq_enqueue_local: enqueue a node into a local wait-free queue
-> + *
-> + * No memory barriers are issued.  Mutual exclusion is the responsibility
-> + * of the caller.
-> + *
-> + * Returns false if the queue was empty prior to adding the node.
-> + * Returns true otherwise.
-> + */
-> +static inline bool wfcq_enqueue_local(struct wfcq_head *head,
-
-and:
-
-__wfcq_enqueue()
-
-we should also update the "Synchronization table" at the beginning of
-the file accordingly.
-
-Thoughts ?
-
-Thanks,
-
-Mathieu
-
-> +		struct wfcq_tail *tail,
-> +		struct wfcq_node *new_tail)
-> +{
-> +	return __wfcq_append_local(head, tail, new_tail, new_tail);
-> +}
-> +
-> +/*
->   * ___wfcq_busy_wait: busy-wait.
->   */
->  static inline void ___wfcq_busy_wait(void)
-> -- 
-> 1.8.2.rc3.2.g89ce8d6
-> 
-
+-menuconfig EXPERT
++config EXPERT
+ 	bool "Configure standard kernel features (expert users)"
+ 	# Unhide debug options, to make the on-by-default options visible
+ 	select DEBUG_KERNEL
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+1.7.9.7
+
+
