@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932661Ab3CVK4q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 06:56:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31814 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932544Ab3CVK4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 06:56:45 -0400
-Date: Fri, 22 Mar 2013 07:54:36 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: gleb@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 0/7] KVM: MMU: fast zap all shadow pages
-Message-ID: <20130322105436.GC7543@amt.cnet>
-References: <1363768227-4782-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130321222151.GA19821@amt.cnet>
- <514BBDC5.6090104@linux.vnet.ibm.com>
+	id S932624Ab3CVLE1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 07:04:27 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42424 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754525Ab3CVLEZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 07:04:25 -0400
+Date: Fri, 22 Mar 2013 12:04:22 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Subject: Re: [PATCH 06/46] regulator: ab8500: Separate regulator and MFD
+ platform data
+Message-ID: <20130322110421.GH22890@opensource.wolfsonmicro.com>
+References: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
+ <1363881583-15234-7-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ik0NlRzMGhMnxrMX"
 Content-Disposition: inline
-In-Reply-To: <514BBDC5.6090104@linux.vnet.ibm.com>
+In-Reply-To: <1363881583-15234-7-git-send-email-lee.jones@linaro.org>
+X-Cookie: You have a truly strong individuality.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 10:11:17AM +0800, Xiao Guangrong wrote:
-> On 03/22/2013 06:21 AM, Marcelo Tosatti wrote:
-> > On Wed, Mar 20, 2013 at 04:30:20PM +0800, Xiao Guangrong wrote:
-> >> Changlog:
-> >> V2:
-> >>   - do not reset n_requested_mmu_pages and n_max_mmu_pages
-> >>   - batch free root shadow pages to reduce vcpu notification and mmu-lock
-> >>     contention
-> >>   - remove the first patch that introduce kvm->arch.mmu_cache since we only
-> >>     'memset zero' on hashtable rather than all mmu cache members in this
-> >>     version
-> >>   - remove unnecessary kvm_reload_remote_mmus after kvm_mmu_zap_all
-> >>
-> >> * Issue
-> >> The current kvm_mmu_zap_all is really slow - it is holding mmu-lock to
-> >> walk and zap all shadow pages one by one, also it need to zap all guest
-> >> page's rmap and all shadow page's parent spte list. Particularly, things
-> >> become worse if guest uses more memory or vcpus. It is not good for
-> >> scalability.
-> > 
-> > Xiao, 
-> > 
-> > The bulk removal of shadow pages from mmu cache is nerving - it creates
-> > two codepaths to delete a data structure: the usual, single entry one
-> > and the bulk one.
-> > 
-> > There are two main usecases for kvm_mmu_zap_all(): to invalidate the
-> > current mmu tree (from kvm_set_memory) and to tear down all pages
-> > (VM shutdown).
-> > 
-> > The first usecase can use your idea of an invalid generation number
-> > on shadow pages. That is, increment the VM generation number, nuke the root
-> > pages and thats it. 
-> > 
-> > The modifications should be contained to kvm_mmu_get_page() mostly,
-> > correct? (would also have to keep counters to increase SLAB freeing 
-> > ratio, relative to number of outdated shadow pages).
-> 
-> Yes.
-> 
-> > 
-> > And then have codepaths that nuke shadow pages break from the spinlock,
-> 
-> I think this is not needed any more. We can let mmu_notify use the generation
-> number to invalid all shadow pages, then we only need to free them after
-> all vcpus down and mmu_notify unregistered - at this point, no lock contention,
-> we can directly free them.
-> 
-> > such as kvm_mmu_slot_remove_write_access does now (spin_needbreak).
-> 
-> BTW, to my honest, i do not think spin_needbreak is a good way - it does
-> not fix the hot-lock contention and it just occupies more cpu time to avoid
-> possible soft lock-ups.
->
-> Especially, zap-all-shadow-pages can let other vcpus fault and vcpus contest
-> mmu-lock, then zap-all-shadow-pages release mmu-lock and wait, other vcpus
-> create page tables again. zap-all-shadow-page need long time to be finished,
-> the worst case is, it can not completed forever on intensive vcpu and memory
-> usage.
 
-Yes, but the suggestion is to use spin_needbreak on the VM shutdown
-cases, where there is no detailed concern about performance. Such as
-mmu_notifier_release, kvm_destroy_vm, etc. In those cases what matters
-most is that host remains unaffected (and that it finishes in a
-reasonable time).
+--ik0NlRzMGhMnxrMX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I still think the right way to fix this kind of thing is optimization for
-> mmu-lock.
+On Thu, Mar 21, 2013 at 03:59:03PM +0000, Lee Jones wrote:
+> From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+>=20
+> The ab8500 MFD should not have knowledge about regulator-
+> specific platform data like number of regulators and
+> regulator registers. As the regulator platform data is
+> about to grow with external regulators, this information
+> is moved to a new structure provided by the regulator
+> driver.
 
-And then for the cases where performance matters just increase a
-VM global generetion number, zap the roots and then on kvm_mmu_get_page:
+Applied everything up to here, thanks - I'll carry on reviewing the rest
+later, not actually looked at them yet.
 
-kvm_mmu_get_page() {
-	sp = lookup_hash(gfn)
-	if (sp->role = role) {
-		if (sp->mmu_gen_number != kvm->arch.mmu_gen_number) {
-			kvm_mmu_commit_zap_page(sp); (no need for TLB flushes as its unreachable)
-			kvm_mmu_init_page(sp);
-			proceed as if the page was just allocated
-		}
-	}
-}
+--ik0NlRzMGhMnxrMX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-It makes the kvm_mmu_zap_all path even faster than you have now.
-I suppose this was your idea correct with the generation number correct?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRTDqrAAoJELSic+t+oim9KacP/3IewdZuS+rre57gcgwjom+L
+96q/I2rRnUhpkgA6SOYoH8JDFpe07G1qElJ0l2JHpp9uDMm7mWl1yo8RpNvBBb3c
+/wMMbW04blrJVvlNaEZWErkKtRdHBZDqEYrMMcOmkeBT8InQeb3Zxr27Y63uD+mN
+kbbv69TPDyMJMqYZ2SWb1ETS1MSDJ6HVgp8zqRmxrurAXabSy27nRh+L4lhOJ9tN
+lCLAoekPCsSED7LZEYOOFcKkN3TTTvAjuKNc1GPDg2SeHslX2O1zjmpkHE45LoiY
+C21TZK8Fki9S7GH/sdSIDbMWiQ5hn9cdvIYH4z09zvOtY9mR29NSM5WF3xIIxSRZ
+5JicZoujx7YyxHtKk/m119Pp4NA3vhReSdY2iay5sCOO38bTtyzY/PuQRR3x63CU
+SKVw1l58XqkYPmRJ98tE0qRU6vzEPuEqHuo9d+W8QjoOpkkQwyiZKNq8unm0mIoy
+ak/LZIBorhAA5t+gOXEK7WqkYnh8zUXjLIZKfjlBPVY0ynchNnnFMFYtaxmja3Jp
+dQ1eRx4FzApJLfElBA4yVG89W8ykDmkllayGZTXdjEEmRmiGQU8mkZiPOHdB4Yi1
+HjMS3dfJQ5y7wcqXJ1jHaIy5Wm7DA8TqBCowJ1KmrdGRqjb4SRvplDqqMdpssEqS
+//JLtP+rGq+EELp6PY9U
+=T9DT
+-----END PGP SIGNATURE-----
+
+--ik0NlRzMGhMnxrMX--
