@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829Ab3CWKmo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 06:42:44 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42650 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab3CWKmn (ORCPT
+	id S1752317Ab3CWKm4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 06:42:56 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:44496 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab3CWKmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 06:42:43 -0400
-Date: Sat, 23 Mar 2013 10:41:56 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        linux-samsung-soc@vger.kernel.org,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Andrew Murray'" <andrew.murray@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/6] of/pci: Provide support for parsing PCI DT ranges
-	property
-Message-ID: <20130323104156.GL4977@n2100.arm.linux.org.uk>
-References: <00c001ce277b$92b26ab0$b8174010$%han@samsung.com>
+	Sat, 23 Mar 2013 06:42:54 -0400
+Message-ID: <514D8711.8020303@huawei.com>
+Date: Sat, 23 Mar 2013 18:42:25 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00c001ce277b$92b26ab0$b8174010$%han@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Jovi Zhang <bookjovi@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v2] tracing: Expose event tracing infrastructure
+References: <514057BF.6040804@huawei.com>  <CACV3sb+DqAsQtvK0d+vNHCyeJYCqWD29AyikRCV6g-rZp3A8nQ@mail.gmail.com> <1363351889.25967.51.camel@gandalf.local.home>
+In-Reply-To: <1363351889.25967.51.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 23, 2013 at 01:04:53PM +0900, Jingoo Han wrote:
-> -		switch ((pci_space >> 24) & 0x3) {
-> -		case 1:		/* PCI IO space */
-> +		if (iter.flags & IORESOURCE_IO) {
+On 2013/3/15 20:51, Steven Rostedt wrote:
+> On Fri, 2013-03-15 at 20:31 +0800, Jovi Zhang wrote:
+> 
+>> Hi steven,
+>>
+>> Would you please give some comments? patch works normally on my box.
+> 
+> Yeah, I planned on it today ;-)  Actually, I've been a busy beaver
+> lately. The last couple of weeks I have:
+> 
+>   32 files changed, 5239 insertions(+), 1805 deletions(-)
+> 
+> (Although some of that work started back last August)
+> 
+> I still have to finish backporting the patches I said I would take from
+> you from earlier this week.
+> 
+> Anyway, a quick scan of the patch looks fine, and I don't see any major
+> issues with it. The only problem is that the changes I've made have
+> touched this code a bit and your patch won't apply, with my new work.
 
-Please look at how IORESOURCE_* stuff is defined:
-#define IORESOURCE_TYPE_BITS    0x00001f00      /* Resource type */
-#define IORESOURCE_IO           0x00000100      /* PCI/ISA I/O ports */
-#define IORESOURCE_MEM          0x00000200
-#define IORESOURCE_REG          0x00000300      /* Register offsets */
-#define IORESOURCE_IRQ          0x00000400
-#define IORESOURCE_DMA          0x00000800
-#define IORESOURCE_BUS          0x00001000
+Steven, I just saw you have sent a pull request to Ingo with a large update on tracing code,
+and bring a little conflicts with this "Expose event tracing infrastructure" patch,
+like ftrace_event_file introduced in ftrace_raw_event_<call>.
 
-Notice that it's not an array of bits.
+Do I need to resend this patch based on your new work?(and testing) to make you can merge this patch easily.
 
-So this should be:
-		if ((iter.flags & IORESOURCE_TYPE_BITS) == IORESOURCE_IO) {
+Thanks.
+> 
+> I'm just about finished, the final tests I'm doing on my code are
+> looking good and I'm hoping to push my final version to linux-next
+> today. If you want to have a head start, you can look at the current
+> code (no guarantee that it wont rebase), at:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+>  trace/tip/perf/core-5
+> 
+> -- Steve
+> 
+> 
+> 
+> 
 
-> +			iter.cpu_addr = iter.pci_addr;
-> +		} else if (iter.flags & IORESOURCE_MEM) {
 
-And this should be:
-		} else if ((iter.flags & IORESOURCE_TYPE_BITS) == IORESOURCE_MEM) {
-
-> +		if (iter.flags & IORESOURCE_IO) {
-
-Same here.
-
-> +		} else if (iter.flags & IORESOURCE_MEM) {
-
-And again here.
-
-> -		switch ((pci_space >> 24) & 0x3) {
-> -		case 1:		/* PCI IO space */
-> +		if (iter.flags & IORESOURCE_IO) {
-
-ditto.
-
-> +			iter.cpu_addr = iter.pci_addr;
-> +		} else if (flags & IORESOURCE_MEM) {
-
-ditto.
