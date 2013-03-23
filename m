@@ -1,100 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab3CWUpc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 16:45:32 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:56286 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab3CWUpa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 16:45:30 -0400
-Date: Sat, 23 Mar 2013 13:45:11 -0700
-From: Kumar amit mehta <gmate.amit@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: eilong@broadcom.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] bnx2x: fix assignment of signed expression to unsigned
- variable
-Message-ID: <20130323204511.GA18813@gmail.com>
-References: <1364064775-19319-1-git-send-email-gmate.amit@gmail.com>
- <20130323195454.GB9138@mwanda>
+	id S1752081Ab3CWVJG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 17:09:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21329 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751992Ab3CWVJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 17:09:05 -0400
+Date: Sat, 23 Mar 2013 17:08:53 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        Heinz Mauelshagen <heinzm@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joe Thornber <ejt@redhat.com>, Mikulas Patocka <mpatocka@redhat.com>,
+        Paul Taysom <taysom@chromium.org>
+Subject: Re: dm: dm-cache fails to write the cache device in writethrough mode
+Message-ID: <20130323210853.GA12164@redhat.com>
+References: <20130322201151.GB5357@blackbox.djwong.org>
+ <20130322223425.GA5638@redhat.com>
+ <20130322231600.GD5357@blackbox.djwong.org>
+ <20130323032715.GA7692@redhat.com>
+ <20130323051549.GE5357@blackbox.djwong.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130323195454.GB9138@mwanda>
+In-Reply-To: <20130323051549.GE5357@blackbox.djwong.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 23, 2013 at 10:56:47PM +0300, Dan Carpenter wrote:
-> On Sat, Mar 23, 2013 at 11:52:55AM -0700, Kumar Amit Mehta wrote:
-> > fix for incorrect assignment of signed expression to unsigned variable.
+On Sat, Mar 23 2013 at  1:15am -0400,
+Darrick J. Wong <darrick.wong@oracle.com> wrote:
+
+> On Fri, Mar 22, 2013 at 11:27:16PM -0400, Mike Snitzer wrote:
+> > On Fri, Mar 22 2013 at  7:16pm -0400,
+> > Darrick J. Wong <darrick.wong@oracle.com> wrote:
 > > 
-> 
-> This fix isn't right.
-> 
-> > Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
-> > ---
-> >  drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c |   20 ++++++++++----------
-> >  1 file changed, 10 insertions(+), 10 deletions(-)
+> > > On Fri, Mar 22, 2013 at 06:34:28PM -0400, Mike Snitzer wrote:
+> > > > On Fri, Mar 22 2013 at  4:11pm -0400,
+> > > > Darrick J. Wong <darrick.wong@oracle.com> wrote:
+> > > > 
+> > > > > The new writethrough strategy for dm-cache issues a bio to the origin device,
+> > > > > remaps the bio to the cache device, and issues the bio to the cache device.
+> > > > > However, the block layer modifies bi_sector and bi_size, so we need to preserve
+> > > > > these or else nothing gets written to the cache (bi_size == 0).  This fixes the
+> > > > > problem where someone writes a block through the cache, but a subsequent reread
+> > > > > (from the cache) returns old contents.
+> > > > 
+> > > > Your writethrough blkid test results are certainly strange.  But I'm not
+> > > > aware of where the block layer would modify bi_size and bi_sector;
+> > > > please elaborate.
+> > > > 
+> > > > I cannot reproduce your original report.  I developed
+> > > > 'test_writethrough_ext4_uuids_match', apologies for the ruby code:
+> > > 
+> > > Hmm... I'm building my kernels off 0a7e453103b9718d357688b83bb968ee108cc874 in
+> > > Linus' tree (post 3.9-rc3).  This is the full output of dmsetup table:
+> > > 
+> > > moocache-blocks: 0 1039360 linear 8:16 9088
+> > > moocache-metadata: 0 8704 linear 8:16 384
+> > > moocache: 0 67108864 cache 253:0 253:1 8:0 512 1 writethrough default 4 random_threshold 4 sequential_threshold 32768
+> > > 
+> > > 253:0 -> moocache-metadata and 253:1 -> moocache-blocks.
+> > > 
+> > > I'm curious what your setup is...
 > > 
-> > diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c
-> > index 5682054..b90533a 100644
-> > --- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c
-> > +++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c
-> > @@ -2139,12 +2139,12 @@ static u8 bnx2x_dcbnl_get_cap(struct net_device *netdev, int capid, u8 *cap)
-> >  			break;
-> >  		default:
-> >  			BNX2X_ERR("Non valid capability ID\n");
-> > -			rval = -EINVAL;
-> > +			rval = EINVAL;
-> >  			break;
-> >  		}
-> >  	} else {
-> >  		DP(BNX2X_MSG_DCB, "DCB disabled\n");
-> > -		rval = -EINVAL;
-> > +		rval = EINVAL;
+> > Here are the tables:
+> > test-dev-238267: 0 8192 linear /dev/stec/metadata 0
+> > test-dev-255913: 0 2097152 linear /dev/stec/metadata 8192
+> > test-dev-655144: 0 20480 linear /dev/spindle/data 0
+> > 0 20480 cache /dev/mapper/test-dev-238267 /dev/mapper/test-dev-255913 /dev/mapper/test-dev-655144 512 1 writethrough default 0
+> > 
+> > And I tweaked 'test_writethrough_ext4_uuids_match' to make sure to use the
+> > same thresholds you're using, full status output:
+> > 0 20480 cache 15/1024 0 19 0 0 0 0 0 0 1 writethrough 2 migration_threshold 32768 4 random_threshold 4 sequential_threshold 512
+> > 
+> > So the big difference is the thinp-test-suite uses intermediate linear
+> > DM layers above the slower sd device (spindle/data) -- whereas in your
+> > setup the origin device is direct to sd (8:0).
+> > 
+> > I'll re-run with the origin directly on sd in the morning and will
+> > report back.
 > 
-> This function is called from dcbnl_getcap().  It returns zero on
-> success, but it's not clear what it should return on failure.  But
-> certainly it's not a positive EINVAL.
+> Interesting ... if I set up this:
 > 
-> >  	}
-> >  
-> >  	DP(BNX2X_MSG_DCB, "capid %d:%x\n", capid, *cap);
-> > @@ -2154,7 +2154,7 @@ static u8 bnx2x_dcbnl_get_cap(struct net_device *netdev, int capid, u8 *cap)
-> >  static int bnx2x_dcbnl_get_numtcs(struct net_device *netdev, int tcid, u8 *num)
-> >  {
-> >  	struct bnx2x *bp = netdev_priv(netdev);
-> > -	u8 rval = 0;
-> > +	s8 rval = 0;
+> # echo "0 67108864 linear /dev/sda 0" | dmsetup create origin
 > 
-> Just use "int" here.
-> 
-> >  
-> >  	DP(BNX2X_MSG_DCB, "tcid %d\n", tcid);
-> >  
-> > @@ -2188,7 +2188,7 @@ static int bnx2x_dcbnl_set_numtcs(struct net_device *netdev, int tcid, u8 num)
-> >  	return -EINVAL;
-> >  }
-> >  
-> > -static u8  bnx2x_dcbnl_get_pfc_state(struct net_device *netdev)
-> > +static u8 bnx2x_dcbnl_get_pfc_state(struct net_device *netdev)
-> >  {
-> >  	struct bnx2x *bp = netdev_priv(netdev);
-> >  	DP(BNX2X_MSG_DCB, "state = %d\n", bp->dcbx_local_feat.pfc.enabled);
-> > @@ -2282,7 +2282,7 @@ static int bnx2x_set_admin_app_up(struct bnx2x *bp, u8 idtype, u16 idval, u8 up)
-> >  	else {
-> >  		/* app table is full */
-> >  		BNX2X_ERR("Application table is too large\n");
-> > -		return -EBUSY;
-> > +		return EBUSY;
-> >  	}
-> 
-> The fix for this is more involved.  The function prototype should
-> be changed to return an int.  The caller should be updated to check
-> for errors.
->
-I wonder, why these callbacks are restricting the lower layers to return
-only unsigned values, However Updating the prototype doesn't seem a good idea as
-then it would require changes in various existing drivers.
+> And then repeat the test, but using /dev/mapper/origin as the origin instead
+> of /dev/sda, the problem goes away.
+
+Using the extra dm-linear layer is implicitly leveraging the DM core's
+bio cloning to restore the original bio that was sent to the linear
+target.
+
+But even after having changed my test to use /dev/sdb for the origin
+device I cannot reproduce the problem you've reported.  Do you have any
+further details on how/why the bios are being altered?  Are you
+reliably hitting partial completions within the origin's driver?  If so
+how?
+
+Having looked at this for a bit it seems pretty clear writethrough_endio
+is missing partial completion handling, e.g.:
+   if (!bio_flagged(bio, BIO_UPTODATE) && !err)
+      err = -EIO;
+
+But I haven't yet come to terms with what the partial completion
+handling implementation needs to be for the writethrough support.
