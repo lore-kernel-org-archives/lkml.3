@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429Ab3CWNCY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 09:02:24 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:40384 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751057Ab3CWNCX (ORCPT
+	id S1751273Ab3CWNPA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 09:15:00 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:62159 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751057Ab3CWNOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 09:02:23 -0400
-Date: Sat, 23 Mar 2013 14:02:22 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Takahisa Tanaka <mc74hc00@gmail.com>,
-        Paul Menzel <paulepanter@users.sourceforge.net>
-Subject: Re: [GIT PULL REQUEST] watchdog - v3.9-rc4 Fixes
-Message-ID: <20130323130222.GH7867@spo001.leaseweb.com>
-References: <20130322222750.GF7867@spo001.leaseweb.com> <CA+55aFyuMNR1tj9NyvZ3qx2ygoghqFcmquTeDnkH48S0pPTHqg@mail.gmail.com>
+	Sat, 23 Mar 2013 09:14:49 -0400
+Message-ID: <1364044486.1390.237.camel@x61.thuisdomein>
+Subject: Re: [PATCH 21/21] cris: drop unused Kconfig symbols
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        Mikael Starvik <starvik@axis.com>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sat, 23 Mar 2013 14:14:46 +0100
+In-Reply-To: <20111031105959.GA26898@axis.com>
+References: <1318595467.6132.80.camel@x61.thuisdomein>
+	 <20111014133354.GE9412@axis.com> <14215.1318619461@turing-police.cc.vt.edu>
+	 <20111031105959.GA26898@axis.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyuMNR1tj9NyvZ3qx2ygoghqFcmquTeDnkH48S0pPTHqg@mail.gmail.com>
-User-Agent: Mutt/1.4.1i
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 Mar 2013 13:14:47.0180 (UTC) FILETIME=[6467F4C0:01CE27C8]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Jesper,
 
-> >
-> > Please pull from 'master' branch of
-> >         git://www.linux-watchdog.org/linux-watchdog.git
-> 
-> That host seems to be a little sick right now. I'm not getting
-> anything from it, just a very long wait followed by "Connection reset
-> by peer".
+On Mon, 2011-10-31 at 11:59 +0100, Jesper Nilsson wrote:
+> Ok, let's do it the right way and remove them now, and I can re-add
+> them in the same tree.
 
-I restarted the git daemon. It was indeed dead :-(. Can you retry?
+The patch at the start of this (old) thread still applies on top of
+v3.9-rc3. Do you still intend to remove the cris Kconfig symbols unused
+in mainline?
 
-Mental note: I need to get that server replaced in the very near future...
+(Note that there's a second order effect to this patch:
+ETRAX_ETHERNET_IFACE0, and ETRAX_ETHERNET_IFACE1, and ETRAX_SERIAL_PORT4
+could also be dropped. I'm happy to submit a patch with those included
+too.)
 
-Kind regards,
-Wim.
+
+Paul Bolle
 
