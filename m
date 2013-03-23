@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423264Ab3CWBbR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 21:31:17 -0400
-Received: from mga11.intel.com ([192.55.52.93]:10220 "EHLO mga11.intel.com"
+	id S1423236Ab3CWBbP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 21:31:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44419 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422837Ab3CWBZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1422840Ab3CWBZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Mar 2013 21:25:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,896,1355126400"; 
-   d="scan'208";a="310741524"
+   d="scan'208";a="306338476"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 24/29] x86, tsx: Use adaptive elision for mutexes
-Date: Fri, 22 Mar 2013 18:25:18 -0700
-Message-Id: <1364001923-10796-25-git-send-email-andi@firstfloor.org>
+        Andi Kleen <ak@linux.intel.com>, rusty@rustcorp.co.au
+Subject: [PATCH 14/29] params: Add static key module param
+Date: Fri, 22 Mar 2013 18:25:08 -0700
+Message-Id: <1364001923-10796-15-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1364001923-10796-1-git-send-email-andi@firstfloor.org>
 References: <1364001923-10796-1-git-send-email-andi@firstfloor.org>
@@ -25,116 +25,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add the elision adaption state to struct mutex and use elide_adapt()
-This allows mutexes that do not elide to automatically disable
-elision on themselves for some time. This means we have a fail-safe
-for mutexes that do not elide well and do not need to annotate
-very mutex.
+Add a module param type for uint static keys. Useful for
+time critical flags.
 
+Cc: rusty@rustcorp.co.au
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/mutex.h |   20 +++++++++++++++-----
- arch/x86/kernel/rtm-locks.c  |   10 ++++++++--
- include/linux/mutex.h        |    3 +++
- 3 files changed, 26 insertions(+), 7 deletions(-)
+ include/linux/moduleparam.h |    6 ++++++
+ kernel/params.c             |   35 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/mutex.h b/arch/x86/include/asm/mutex.h
-index 7f585e3..bb9cf9d 100644
---- a/arch/x86/include/asm/mutex.h
-+++ b/arch/x86/include/asm/mutex.h
-@@ -10,8 +10,10 @@
- #define  ARCH_HAS_MUTEX_AND_OWN 1
+diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
+index e3c41af..ac815d2 100644
+--- a/include/linux/moduleparam.h
++++ b/include/linux/moduleparam.h
+@@ -398,6 +398,12 @@ extern int param_set_bint(const char *val, const struct kernel_param *kp);
+ extern struct kernel_param_ops param_ops_percpu_uint;
+ #define param_check_percpu_uint(name, p) param_check_uint
  
- #include <linux/elide.h>
++/* Static key module params. Useful for time critical flags. */
++struct static_key;
++extern struct kernel_param_ops param_ops_static_key;
++#define param_check_static_key(name, p) \
++	__param_check(name, p, struct static_key)
++
+ /**
+  * module_param_array - a parameter which is an array of some type
+  * @name: the name of the array variable
+diff --git a/kernel/params.c b/kernel/params.c
+index 1a8a1ca..68f9482 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -23,6 +23,7 @@
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/ctype.h>
 +#include <linux/jump_label.h>
  
--extern bool mutex_elision;
-+extern struct static_key mutex_elision;
-+extern struct elision_config mutex_elision_config;
+ /* Protects all parameters, and incidentally kmalloced_param list. */
+ static DEFINE_MUTEX(param_lock);
+@@ -527,6 +528,40 @@ struct kernel_param_ops param_ops_percpu_uint = {
+ };
+ EXPORT_SYMBOL(param_ops_percpu_uint);
  
- /*
-  * Try speculation first and only do the normal locking and owner setting
-@@ -21,8 +23,10 @@ extern bool mutex_elision;
- #define mutex_free(l) (atomic_read(&(l)->count) == 1)
- 
- #define __mutex_fastpath_lock_and_own(l, s) ({				\
--			if (!elide_lock(mutex_elision,			\
--					mutex_free(l))) {		\
-+			if (!elide_lock_adapt(mutex_elision,		\
-+					mutex_free(l),			\
-+					&l->elision_adapt,		\
-+					&mutex_elision_config)) {	\
- 				__mutex_fastpath_lock(&(l)->count, s);	\
- 				mutex_set_owner(l);			\
- 			}						\
-@@ -37,7 +41,10 @@ extern bool mutex_elision;
- 
- #define __mutex_fastpath_lock_retval_and_own(l, s) ({			\
- 			int ret = 0;					\
--			if (!elide_lock(mutex_elision, mutex_free(l))) { \
-+			if (!elide_lock_adapt(mutex_elision,		\
-+					      mutex_free(l),		\
-+					      &l->elision_adapt,	\
-+					      &mutex_elision_config)) { \
- 				ret = __mutex_fastpath_lock_retval(&(l)->count, s); \
- 				if (!ret)				\
- 					mutex_set_owner(l);		\
-@@ -46,7 +53,10 @@ extern bool mutex_elision;
- 
- #define __mutex_fastpath_trylock_and_own(l, s) ({			\
- 			int ret = 1;					\
--			if (!elide_lock(mutex_elision, mutex_free(l))) {\
-+			if (!elide_lock_adapt(mutex_elision,		\
-+					      mutex_free(l),		\
-+					      &l->elision_adapt,	\
-+					      &mutex_elision_config)) { \
- 				ret = __mutex_fastpath_trylock(&(l)->count, s);	\
- 				if (ret)				\
- 					mutex_set_owner(l);		\
-diff --git a/arch/x86/kernel/rtm-locks.c b/arch/x86/kernel/rtm-locks.c
-index 8d4763d..a313a81 100644
---- a/arch/x86/kernel/rtm-locks.c
-+++ b/arch/x86/kernel/rtm-locks.c
-@@ -416,6 +416,9 @@ static unsigned rtm_patch(u8 type, u16 clobbers, void *ibuf,
- 	}
- }
- 
-+struct static_key mutex_elision = STATIC_KEY_INIT_FALSE;
-+module_param(mutex_elision, static_key, 0644);
++/* Static key module params. Like a bool, but allows patching the jumps. */
 +
- void init_rtm_spinlocks(void)
- {
- 	if (!boot_cpu_has(X86_FEATURE_RTM))
-@@ -441,10 +444,13 @@ void init_rtm_spinlocks(void)
- 	pv_irq_ops.irq_enable = PV_CALLEE_SAVE(rtm_irq_enable);
- 	pv_irq_ops.restore_fl = PV_CALLEE_SAVE(rtm_restore_fl);
- 	pv_init_ops.patch = rtm_patch;
++/* Noone else should change */
++static int param_static_key_set(const char *val, const struct kernel_param *kp)
++{
++	static DEFINE_SPINLOCK(lock);
++	bool l;
++	struct static_key *key = (struct static_key *)(kp->arg);
++	int ret = strtobool(val, &l);
 +
-+	static_key_slow_inc(&mutex_elision);
- }
- 
--__read_mostly bool mutex_elision = true;
--module_param(mutex_elision, bool, 0644);
-+__read_mostly struct elision_config mutex_elision_config =
-+	DEFAULT_ELISION_CONFIG;
-+TUNE_ELISION_CONFIG(mutex, mutex_elision_config);
- 
- __read_mostly bool rwsem_elision = true;
- module_param(rwsem_elision, bool, 0644);
-diff --git a/include/linux/mutex.h b/include/linux/mutex.h
-index 0574095..7ae9a08 100644
---- a/include/linux/mutex.h
-+++ b/include/linux/mutex.h
-@@ -54,6 +54,9 @@ struct mutex {
- #if defined(CONFIG_DEBUG_MUTEXES) || defined(CONFIG_SMP)
- 	struct task_struct	*owner;
- #endif
-+#ifdef CONFIG_RTM_LOCKS
-+	short			elision_adapt;
-+#endif
- #ifdef CONFIG_DEBUG_MUTEXES
- 	const char 		*name;
- 	void			*magic;
++	if (ret < 0)
++		return ret;
++	/* Work around racy static key interface */
++	spin_lock(&lock);
++	if (l && !atomic_read(&key->enabled))
++		static_key_slow_inc(key);
++	if (!l && atomic_read(&key->enabled))
++		static_key_slow_dec(key);
++	spin_unlock(&lock);
++	return ret;
++}
++
++static int param_static_key_get(char *buffer, const struct kernel_param *kp)
++{
++	struct static_key *key = kp->arg;
++	return sprintf(buffer, "%u", atomic_read(&key->enabled) > 0);
++}
++
++struct kernel_param_ops param_ops_static_key = {
++	.set = param_static_key_set,
++	.get = param_static_key_get,
++};
++EXPORT_SYMBOL(param_ops_static_key);
++
+ /* sysfs output in /sys/modules/XYZ/parameters/ */
+ #define to_module_attr(n) container_of(n, struct module_attribute, attr)
+ #define to_module_kobject(n) container_of(n, struct module_kobject, kobj)
 -- 
 1.7.7.6
 
