@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422690Ab3CWAd3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 20:33:29 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47086 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932325Ab3CWAd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 20:33:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,895,1355126400"; 
-   d="scan'208";a="283444595"
-Subject: Re: [PATCH 01/11] Added macro to check for AVX2 feature.
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S.Miller" <davem@davemloft.net>,
-        Kirk Yap <kirk.s.yap@intel.com>, David Cote <david.m.cote@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-In-Reply-To: <09e94963-5146-4c1b-ab76-64ac73d660ab@email.android.com>
-References: <cover.1363961999.git.tim.c.chen@linux.intel.com>
-	 <1363987742.8972.55.camel@schen9-DESK>
-	 <09e94963-5146-4c1b-ab76-64ac73d660ab@email.android.com>
+	id S1422749Ab3CWAov (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 20:44:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9889 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422701Ab3CWAou (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 20:44:50 -0400
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=F0my4ousGMIA:10 a=MzJa8G2Mr3FL0AqodUgA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1363999487.6345.146.camel@gandalf.local.home>
+Subject: Re: [ANNOUNCE] 3.6.11-rt31
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Sebastian Sewior <bigeasy@linutronix.de>
+Date: Fri, 22 Mar 2013 20:44:47 -0400
+In-Reply-To: <alpine.LFD.2.02.1303222227160.22263@ionos>
+References: <alpine.LFD.2.02.1303222227160.22263@ionos>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Mar 2013 17:33:16 -0700
-Message-ID: <1363998796.8972.69.camel@schen9-DESK>
+X-Mailer: Evolution 3.4.4-2 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-22 at 17:21 -0700, H. Peter Anvin wrote:
-> I really, really hate these macros... Not sure they are worth the extra noise.
+On Fri, 2013-03-22 at 22:56 +0100, Thomas Gleixner wrote:
+
+> This is the last release for the 3.6 kernel from my side. Steven is
+> going to take over and maintain it until 3.8-rt is stabilized.
 > 
 
-I can do without the macro and I'll remove it.
+I have created a new branch in the stable-rt git repo called v3.6-rt.
+The first tag for that branch is v3.6.11-rt31
 
-Wonder the reason that such macro should be avoided?
+-- Steve
 
-Tim
 
