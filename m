@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967Ab3CWTbN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 15:31:13 -0400
-Received: from mail-ia0-f169.google.com ([209.85.210.169]:35680 "EHLO
-	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751703Ab3CWTbM (ORCPT
+	id S1752030Ab3CWTfu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 15:35:50 -0400
+Received: from inx.pm.waw.pl ([195.116.170.130]:40760 "EHLO inx.pm.waw.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751703Ab3CWTfs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 15:31:12 -0400
+	Sat, 23 Mar 2013 15:35:48 -0400
+From: Krzysztof Halasa <khc@pm.waw.pl>
+To: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Christophe Aeschlimann <c.aeschlimann@acn-group.ch>,
+        David Miller <davem@davemloft.net>
+Subject: [PATCH] Fix IXP4xx coherent allocations
+Date: Sat, 23 Mar 2013 20:35:46 +0100
+Message-ID: <m3obe9lxil.fsf@intrepid.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <1363685150-18303-2-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1363685150-18303-1-git-send-email-liwanp@linux.vnet.ibm.com>
-	<1363685150-18303-2-git-send-email-liwanp@linux.vnet.ibm.com>
-Date: Sat, 23 Mar 2013 20:31:11 +0100
-X-Google-Sender-Auth: 31Zho1S_09P_q-hQYA-9R7rUw64
-Message-ID: <CAMuHMdUTsHs0-5=kYLMHYGTxBiCAGB33KZH0wvz51vgtExjK8Q@mail.gmail.com>
-Subject: Re: [PATCH v4 1/8] staging: zcache: introduce zero-filled pages handler
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Linux-Next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 10:25 AM, Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
-> Introduce zero-filled pages handler to capture and handle zero pages.
->
-> Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
->  drivers/staging/zcache/zcache-main.c |   26 ++++++++++++++++++++++++++
->  1 files changed, 26 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-> index 328898e..d73dd4b 100644
-> --- a/drivers/staging/zcache/zcache-main.c
-> +++ b/drivers/staging/zcache/zcache-main.c
+ARM core code currently requires coherent DMA mask to be set. Make sure
+we limit PCI devices to 64 MiB while allowing on-chip devices to access
+the whole 4 GiB address space.
 
-> +static void handle_zero_filled_page(void *page)
-> +{
-> +       void *user_mem;
-> +
-> +       user_mem = kmap_atomic(page);
+This fixes a v3.7+ regression which broke IXP4xx built-in network devices.
 
-kmap_atomic() takes a "struct page *", not a "void *".
+Signed-off-by: Krzysztof Hałasa <khc@pm.waw.pl>
+Cc: <stable@vger.kernel.org>
 
-> +       memset(user_mem, 0, PAGE_SIZE);
-> +       kunmap_atomic(user_mem);
-> +
-> +       flush_dcache_page(page);
-
-While flush_dcache_page() is a no-op on many architectures, it also
-takes a "struct page *", not a "void *":
-
-m68k/allmodconfig:
-
-drivers/staging/zcache/zcache-main.c:309:2: error: request for member
-'virtual' in something not a structure or union
-
-Cfr. http://kisskb.ellerman.id.au/kisskb/buildresult/8433711/
-
-> +}
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+diff --git a/arch/arm/mach-ixp4xx/common-pci.c b/arch/arm/mach-ixp4xx/common-pci.c
+index ea1933d..8629fc9 100644
+--- a/arch/arm/mach-ixp4xx/common-pci.c
++++ b/arch/arm/mach-ixp4xx/common-pci.c
+@@ -454,10 +454,15 @@ int ixp4xx_setup(int nr, struct pci_sys_data *sys)
+ 
+ int dma_set_coherent_mask(struct device *dev, u64 mask)
+ {
+-	if (mask >= SZ_64M - 1)
+-		return 0;
++	if ((mask & DMA_BIT_MASK(26)) != DMA_BIT_MASK(26))
++		return -EIO;
++
++	/* PCI devices are limited to 64 MiB */
++	if (dev_is_pci(dev))
++		mask &= DMA_BIT_MASK(26); /* Use DMA region */
+ 
+-	return -EIO;
++	dev->coherent_dma_mask = mask;
++	return 0;
+ }
+ 
+ EXPORT_SYMBOL(ixp4xx_pci_read);
+diff --git a/drivers/net/ethernet/xscale/ixp4xx_eth.c b/drivers/net/ethernet/xscale/ixp4xx_eth.c
+index 6958a5e..7c08269 100644
+--- a/drivers/net/ethernet/xscale/ixp4xx_eth.c
++++ b/drivers/net/ethernet/xscale/ixp4xx_eth.c
+@@ -1423,7 +1423,7 @@ static int eth_init_one(struct platform_device *pdev)
+ 	dev->netdev_ops = &ixp4xx_netdev_ops;
+ 	dev->ethtool_ops = &ixp4xx_ethtool_ops;
+ 	dev->tx_queue_len = 100;
+-
++	dma_set_coherent_mask(&dev->dev, DMA_BIT_MASK(32));
+ 	netif_napi_add(dev, &port->napi, eth_poll, NAPI_WEIGHT);
+ 
+ 	if (!(port->npe = npe_request(NPE_ID(port->id)))) {
+diff --git a/drivers/net/wan/ixp4xx_hss.c b/drivers/net/wan/ixp4xx_hss.c
+index 95d0451..83b4597 100644
+--- a/drivers/net/wan/ixp4xx_hss.c
++++ b/drivers/net/wan/ixp4xx_hss.c
+@@ -1367,6 +1367,7 @@ static int hss_init_one(struct platform_device *pdev)
+ 	port->id = pdev->id;
+ 	port->dev = &pdev->dev;
+ 	port->plat = pdev->dev.platform_data;
++	dma_set_coherent_mask(&dev->dev, DMA_BIT_MASK(32));
+ 	netif_napi_add(dev, &port->napi, hss_hdlc_poll, NAPI_WEIGHT);
+ 
+ 	if ((err = register_hdlc_device(dev)))
