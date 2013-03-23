@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412Ab3CWOeQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 10:34:16 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:35173 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab3CWOeO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 10:34:14 -0400
-Message-ID: <1364048887.13141.0.camel@phoenix>
-Subject: [PATCH] clocksource: exynos_mct: Add terminating entry for
- exynos_mct_ids table
-From: Axel Lin <axel.lin@ingics.com>
-To: Kukjin Kim <kgene.kim@samsung.com>, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        Changhwan Youn <chaos.youn@samsung.com>, linux-kernel@vger.kernel.org
-Date: Sat, 23 Mar 2013 22:28:07 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751577Ab3CWOpy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 10:45:54 -0400
+Received: from verein.lst.de ([213.95.11.211]:42299 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751026Ab3CWOpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 10:45:51 -0400
+Date: Sat, 23 Mar 2013 15:39:34 +0100 (MET)
+From: Torsten Duwe <torsten@lst.de>
+To: David Airlie <airlied@linux.ie>, torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] KMS: fix EDID detailed timing frame rate
+In-Reply-To: <alpine.LNX.2.02.1303231531520.2097@blackhole.lst.de>
+Message-ID: <alpine.LNX.2.02.1303231538310.2097@blackhole.lst.de>
+References: <alpine.LNX.2.02.1303231531520.2097@blackhole.lst.de>
+User-Agent: Alpine 2.02 (LNX 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The of_device_id table is supposed to be zero-terminated.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/clocksource/exynos_mct.c |    1 +
- 1 file changed, 1 insertion(+)
+When KMS has parsed an EDID "detailed timing", it leaves the frame
+rate zeroed. Consecutive (debug-) output of that mode thus yields 0
+for vsync. This simple fix also speeds up future invocations of
+drm_mode_vrefresh(). While it is debatable whether this qualifies
+as a -stable fix I'd apply it for consistency's sake;
+drm_helper_probe_single_connector_modes() does the same thing already
+for all probed modes.
 
-diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-index 203ac05..3cdafc0 100644
---- a/drivers/clocksource/exynos_mct.c
-+++ b/drivers/clocksource/exynos_mct.c
-@@ -514,6 +514,7 @@ static void __init exynos4_timer_resources(struct device_node *np)
- static const struct of_device_id exynos_mct_ids[] = {
- 	{ .compatible = "samsung,exynos4210-mct", .data = (void *)MCT_INT_SPI },
- 	{ .compatible = "samsung,exynos4412-mct", .data = (void *)MCT_INT_PPI },
-+	{ }
- };
+Cc: stable@vger.kernel.org
+Signed-off-by: Torsten Duwe <duwe@lst.de>
+
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -977,6 +977,7 @@ set_size:
+ 	}
  
- void __init mct_init(void)
--- 
-1.7.9.5
-
-
+ 	mode->type = DRM_MODE_TYPE_DRIVER;
++	mode->vrefresh = drm_mode_vrefresh(mode);
+ 	drm_mode_set_name(mode);
+ 
+ 	return mode;
 
