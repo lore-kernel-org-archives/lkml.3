@@ -1,167 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab3CWP3y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 11:29:54 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:50501 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751151Ab3CWP3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 11:29:52 -0400
-Date: Sat, 23 Mar 2013 10:29:48 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com
-Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
-Message-ID: <20130323152948.GA3036@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20130318155619.GA18828@sgi.com>
- <20130321105516.GC18484@gmail.com>
- <alpine.DEB.2.02.1303211139110.3775@chino.kir.corp.google.com>
- <20130322072532.GC10608@gmail.com>
+	id S1751515Ab3CWPxF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 11:53:05 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57141 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751262Ab3CWPxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 11:53:02 -0400
+Date: Sat, 23 Mar 2013 16:52:56 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 12/29] x86, tsx: Add a per thread transaction disable
+ count
+Message-ID: <20130323155256.GB10811@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+	torvalds@linux-foundation.org, akpm@linux-foundation.org,
+	x86@kernel.org, Andi Kleen <ak@linux.intel.com>
+References: <1364001923-10796-1-git-send-email-andi@firstfloor.org>
+ <1364001923-10796-13-git-send-email-andi@firstfloor.org>
+ <20130323115115.GA10821@pd.tnic>
+ <20130323135156.GJ20853@two.firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130322072532.GC10608@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20130323135156.GJ20853@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 08:25:32AM +0100, Ingo Molnar wrote:
-> 
-> * David Rientjes <rientjes@google.com> wrote:
-> 
-> > On Thu, 21 Mar 2013, Ingo Molnar wrote:
-> > 
-> > > > Index: linux/mm/page_alloc.c
-> > > > ===================================================================
-> > > > --- linux.orig/mm/page_alloc.c	2013-03-18 10:52:11.510988843 -0500
-> > > > +++ linux/mm/page_alloc.c	2013-03-18 10:52:14.214931348 -0500
-> > > > @@ -4161,10 +4161,19 @@ int __meminit __early_pfn_to_nid(unsigne
-> > > >  {
-> > > >  	unsigned long start_pfn, end_pfn;
-> > > >  	int i, nid;
-> > > > +	static unsigned long last_start_pfn, last_end_pfn;
-> > > > +	static int last_nid;
-> > > 
-> > > Please move these globals out of function local scope, to make it more 
-> > > apparent that they are not on-stack. I only noticed it in the second pass.
-> > 
-> > The way they're currently defined places these in meminit.data as 
-> > appropriate; if they are moved out, please make sure to annotate their 
-> > definitions with __meminitdata.
-> 
-> I'm fine with having them within the function as well in this special 
-> case, as long as a heavy /* NOTE: ... */ warning is put before them - 
-> which explains why these SMP-unsafe globals are safe.
-> 
-> ( That warning will also act as a visual delimiter that breaks the 
->   normally confusing and misleading 'globals mixed amongst stack 
->   variables' pattern. )
+On Sat, Mar 23, 2013 at 02:51:56PM +0100, Andi Kleen wrote:
+> Bit fields are slower and larger in code and unlike the others this is
+> on hot paths.
 
-Thanks Ingo.  Here is an updated patch with heavy warning added.
+Really? Let's see:
 
-As for the wrapper function, I was unable to find an obvious
-way to add a wrapper without significanly changing both
-versions of __early_pfn_to_nid().  It seems cleaner to add
-the change in both versions.  I'm sure someone will point 
-out if this conclusion is wrong.  :-)
+unsigned:
+=========
+
+	.file 8 "/w/kernel/linux-2.6/arch/x86/include/asm/thread_info.h"
+	.loc 8 211 0
+#APP
+# 211 "/w/kernel/linux-2.6/arch/x86/include/asm/thread_info.h" 1
+	movq %gs:kernel_stack,%rax	#, pfo_ret__
+# 0 "" 2
+.LVL238:
+#NO_APP
+
+...									# AMD F10h			SNB
+
+disable:
+	incl    -8056(%rax)     # ti_25->notxn				# INC mem: 4			; 6
+
+test:
+        cmpl    $0, -8056(%rax) #, ti_24->notxn				# CMP mem, imm: 4		; 1
+
+reenable:
+	decl    -8056(%rax)     # ti_25->notxn				# DEC mem: 4			; 6
 
 
+bitfield:
+=========
 
-------------------------------------------------------------
-When booting on a large memory system, the kernel spends
-considerable time in memmap_init_zone() setting up memory zones.
-Analysis shows significant time spent in __early_pfn_to_nid().
+	.file 8 "/w/kernel/linux-2.6/arch/x86/include/asm/thread_info.h"
+	.loc 8 211 0
+#APP
+# 211 "/w/kernel/linux-2.6/arch/x86/include/asm/thread_info.h" 1
+	movq %gs:kernel_stack,%rax	#, pfo_ret__
+# 0 "" 2
+.LVL238:
+#NO_APP
 
-The routine memmap_init_zone() checks each PFN to verify the
-nid is valid.  __early_pfn_to_nid() sequentially scans the list of
-pfn ranges to find the right range and returns the nid.  This does
-not scale well.  On a 4 TB (single rack) system there are 308
-memory ranges to scan.  The higher the PFN the more time spent
-sequentially spinning through memory ranges.
+disable:
+	xorb    $4, -8056(%rax) #,					# XOR mem, imm: 1		; 0
 
-Since memmap_init_zone() increments pfn, it will almost always be
-looking for the same range as the previous pfn, so check that
-range first.  If it is in the same range, return that nid.
-If not, scan the list as before.
+test:
+        testb   $4, -8056(%rax) #,					# TEST mem, imm: 4		; -
 
-A 4 TB (single rack) UV1 system takes 512 seconds to get through
-the zone code.  This performance optimization reduces the time
-by 189 seconds, a 36% improvement.
+reenable:
+        xorb    $4, -8056(%rax) #,					# XOR mem, imm: 1		; 0
 
-A 2 TB (single rack) UV2 system goes from 212.7 seconds to 99.8 seconds,
-a 112.9 second (53%) reduction.
 
-Signed-off-by: Russ Anderson <rja@sgi.com>
----
- arch/ia64/mm/numa.c |   15 ++++++++++++++-
- mm/page_alloc.c     |   15 ++++++++++++++-
- 2 files changed, 28 insertions(+), 2 deletions(-)
+So let's explain. The AMD F10h column shows the respective instruction
+latencies on AMD F10h. All instructions are DirectPath single.
 
-Index: linux/mm/page_alloc.c
-===================================================================
---- linux.orig/mm/page_alloc.c	2013-03-19 16:09:03.736450861 -0500
-+++ linux/mm/page_alloc.c	2013-03-22 17:07:43.895405617 -0500
-@@ -4161,10 +4161,23 @@ int __meminit __early_pfn_to_nid(unsigne
- {
- 	unsigned long start_pfn, end_pfn;
- 	int i, nid;
-+	/*
-+	   NOTE: The following SMP-unsafe globals are only used early
-+	   in boot when the kernel is running single-threaded.
-+	 */
-+	static unsigned long last_start_pfn, last_end_pfn;
-+	static int last_nid;
-+
-+	if (last_start_pfn <= pfn && pfn < last_end_pfn)
-+		return last_nid;
- 
- 	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, &nid)
--		if (start_pfn <= pfn && pfn < end_pfn)
-+		if (start_pfn <= pfn && pfn < end_pfn) {
-+			last_start_pfn = start_pfn;
-+			last_end_pfn = end_pfn;
-+			last_nid = nid;
- 			return nid;
-+		}
- 	/* This is a memory hole */
- 	return -1;
- }
-Index: linux/arch/ia64/mm/numa.c
-===================================================================
---- linux.orig/arch/ia64/mm/numa.c	2013-02-25 15:49:44.000000000 -0600
-+++ linux/arch/ia64/mm/numa.c	2013-03-22 16:09:44.662268239 -0500
-@@ -61,13 +61,26 @@ paddr_to_nid(unsigned long paddr)
- int __meminit __early_pfn_to_nid(unsigned long pfn)
- {
- 	int i, section = pfn >> PFN_SECTION_SHIFT, ssec, esec;
-+	/*
-+	   NOTE: The following SMP-unsafe globals are only used early
-+	   in boot when the kernel is running single-threaded.
-+	*/
-+	static unsigned long last_start_pfn, last_end_pfn;
-+	static int last_nid;
-+
-+	if (section >= last_ssec && section < last_esec)
-+		return last_nid;
- 
- 	for (i = 0; i < num_node_memblks; i++) {
- 		ssec = node_memblk[i].start_paddr >> PA_SECTION_SHIFT;
- 		esec = (node_memblk[i].start_paddr + node_memblk[i].size +
- 			((1L << PA_SECTION_SHIFT) - 1)) >> PA_SECTION_SHIFT;
--		if (section >= ssec && section < esec)
-+		if (section >= ssec && section < esec) {
-+			last_ssec = ssec;
-+			last_esec = esec;
-+			last_nid = node_memblk[i].nid
- 			return node_memblk[i].nid;
-+		}
- 	}
- 
- 	return -1;
+The SNB column is something similar which I could find for Intel
+Sandybridge: http://www.agner.org/optimize/instruction_tables.pdf. I'm
+assuming Agner Fog's measurements are more or less accurate.
+
+And wow, the XOR is *actually* faster. That's whopping three cycles on
+AMD. Similar observation on SNB.
+
+Now let's look at decoding bandwidth:
+
+unsigned:
+=========
+
+disable:
+  13:   ff 80 88 e0 ff ff       incl   -0x1f78(%rax)
+
+test:
+   9:   83 b8 88 e0 ff ff 00    cmpl   $0x0,-0x1f78(%rax)
+
+reenable:
+  13:   ff 88 88 e0 ff ff       decl   -0x1f78(%rax)
+
+
+bitfield:
+=========
+
+disable:
+  13:   80 b0 88 e0 ff ff 04    xorb   $0x4,-0x1f78(%rax)
+
+test:
+   9:   f6 80 88 e0 ff ff 04    testb  $0x4,-0x1f78(%rax)
+
+reenable:
+  13:   80 b0 88 e0 ff ff 04    xorb   $0x4,-0x1f78(%rax)
+
+This particular XOR encoding is 1 byte longer, the rest is on-par.
+
+Oh, and compiler is gcc (Debian 4.7.2-5) 4.7.2.
+
+So you were saying?
 
 -- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
