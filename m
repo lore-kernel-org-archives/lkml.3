@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423312Ab3CWDl6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 23:41:58 -0400
+	id S1423206Ab3CWDlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 23:41:17 -0400
 Received: from mga01.intel.com ([192.55.52.88]:13897 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422694Ab3CWDlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 23:41:22 -0400
+	id S1422694Ab3CWDlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 23:41:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,896,1355126400"; 
-   d="scan'208";a="310768225"
+   d="scan'208";a="310768182"
 From: Aaron Lu <aaron.lu@intel.com>
 To: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
         "Rafael J. Wysocki" <rjw@sisk.pl>,
@@ -18,169 +18,179 @@ Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
         Aaron Lu <aaron.lwe@gmail.com>, Aaron Lu <aaron.lu@intel.com>,
         Shane Huang <shane.huang@amd.com>, Oliver Neukum <oneukum@suse.de>
-Subject: [PATCH v12 4/5] block: implement runtime pm strategy
-Date: Sat, 23 Mar 2013 11:42:27 +0800
-Message-Id: <1364010148-8584-5-git-send-email-aaron.lu@intel.com>
+Subject: [PATCH v12 0/5] block layer runtime pm
+Date: Sat, 23 Mar 2013 11:42:23 +0800
+Message-Id: <1364010148-8584-1-git-send-email-aaron.lu@intel.com>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1364010148-8584-1-git-send-email-aaron.lu@intel.com>
-References: <1364010148-8584-1-git-send-email-aaron.lu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lin Ming <ming.m.lin@intel.com>
-
-When a request is added:
-    If device is suspended or is suspending and the request is not a
-    PM request, resume the device.
-
-When the last request finishes:
-    Call pm_runtime_mark_last_busy().
-
-When pick a request:
-    If device is resuming/suspending, then only PM request is allowed
-    to go.
-
-The idea and API is designed by Alan Stern and described here:
+In August 2010, Jens and Alan discussed about "Runtime PM and the block
+layer". http://marc.info/?t=128259108400001&r=1&w=2
+And then Alan has given a detailed implementation guide:
 http://marc.info/?l=linux-scsi&m=133727953625963&w=2
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
- block/blk-core.c | 39 +++++++++++++++++++++++++++++++++++++++
- block/elevator.c | 26 ++++++++++++++++++++++++++
- 2 files changed, 65 insertions(+)
+To test:
+# ls -l /sys/block/sda
+/sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/block/sda
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 123d240..441f348 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1264,6 +1264,16 @@ void part_round_stats(int cpu, struct hd_struct *part)
- }
- EXPORT_SYMBOL_GPL(part_round_stats);
- 
-+#ifdef CONFIG_PM_RUNTIME
-+static void blk_pm_put_request(struct request *rq)
-+{
-+	if (rq->q->dev && !(rq->cmd_flags & REQ_PM) && !--rq->q->nr_pending)
-+		pm_runtime_mark_last_busy(rq->q->dev);
-+}
-+#else
-+static inline void blk_pm_put_request(struct request *rq) {}
-+#endif
-+
- /*
-  * queue lock must be held
-  */
-@@ -1274,6 +1284,8 @@ void __blk_put_request(struct request_queue *q, struct request *req)
- 	if (unlikely(--req->ref_count))
- 		return;
- 
-+	blk_pm_put_request(req);
-+
- 	elv_completed_request(q, req);
- 
- 	/* this is a bio leak */
-@@ -2053,6 +2065,28 @@ static void blk_account_io_done(struct request *req)
- 	}
- }
- 
-+#ifdef CONFIG_PM_RUNTIME
-+/*
-+ * Don't process normal requests when queue is suspended
-+ * or in the process of suspending/resuming
-+ */
-+static struct request *blk_pm_peek_request(struct request_queue *q,
-+					   struct request *rq)
-+{
-+	if (q->dev && (q->rpm_status == RPM_SUSPENDED ||
-+	    (q->rpm_status != RPM_ACTIVE && !(rq->cmd_flags & REQ_PM))))
-+		return NULL;
-+	else
-+		return rq;
-+}
-+#else
-+static inline struct request *blk_pm_peek_request(struct request_queue *q,
-+						  struct request *rq)
-+{
-+	return rq;
-+}
-+#endif
-+
- /**
-  * blk_peek_request - peek at the top of a request queue
-  * @q: request queue to peek at
-@@ -2075,6 +2109,11 @@ struct request *blk_peek_request(struct request_queue *q)
- 	int ret;
- 
- 	while ((rq = __elv_next_request(q)) != NULL) {
-+
-+		rq = blk_pm_peek_request(q, rq);
-+		if (!rq)
-+			break;
-+
- 		if (!(rq->cmd_flags & REQ_STARTED)) {
- 			/*
- 			 * This is the first time the device driver
-diff --git a/block/elevator.c b/block/elevator.c
-index a0ffdd9..eba5b04 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -34,6 +34,7 @@
- #include <linux/blktrace_api.h>
- #include <linux/hash.h>
- #include <linux/uaccess.h>
-+#include <linux/pm_runtime.h>
- 
- #include <trace/events/block.h>
- 
-@@ -536,6 +537,27 @@ void elv_bio_merged(struct request_queue *q, struct request *rq,
- 		e->type->ops.elevator_bio_merged_fn(q, rq, bio);
- }
- 
-+#ifdef CONFIG_PM_RUNTIME
-+static void blk_pm_requeue_request(struct request *rq)
-+{
-+	if (rq->q->dev && !(rq->cmd_flags & REQ_PM))
-+		rq->q->nr_pending--;
-+}
-+
-+static void blk_pm_add_request(struct request_queue *q, struct request *rq)
-+{
-+	if (q->dev && !(rq->cmd_flags & REQ_PM) && q->nr_pending++ == 0 &&
-+	    (q->rpm_status == RPM_SUSPENDED || q->rpm_status == RPM_SUSPENDING))
-+		pm_request_resume(q->dev);
-+}
-+#else
-+static inline void blk_pm_requeue_request(struct request *rq) {}
-+static inline void blk_pm_add_request(struct request_queue *q,
-+				      struct request *rq)
-+{
-+}
-+#endif
-+
- void elv_requeue_request(struct request_queue *q, struct request *rq)
- {
- 	/*
-@@ -550,6 +572,8 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
- 
- 	rq->cmd_flags &= ~REQ_STARTED;
- 
-+	blk_pm_requeue_request(rq);
-+
- 	__elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
- }
- 
-@@ -572,6 +596,8 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
- {
- 	trace_block_rq_insert(q, rq);
- 
-+	blk_pm_add_request(q, rq);
-+
- 	rq->q = q;
- 
- 	if (rq->cmd_flags & REQ_SOFTBARRIER) {
+# echo 10000 > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/autosuspend_delay_ms
+# echo auto > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/control
+Then you'll see sda is suspended after 10secs idle.
+
+[ 1767.680192] sd 2:0:0:0: [sda] Synchronizing SCSI cache
+[ 1767.680317] sd 2:0:0:0: [sda] Stopping disk
+
+And if you do some IO, it will resume immediately.
+[ 1791.052438] sd 2:0:0:0: [sda] Starting disk
+
+For test, I often set the autosuspend time to 1 second. If you are using
+a GUI, the 10 seconds delay may be too long that the disk can not enter
+runtime suspended state.
+
+Note that sd's runtime suspend callback will dump some kernel messages
+and the syslog daemon will write kernel message to /var/log/messages,
+making the disk instantly resume after suspended. So for test, the
+syslog daemon should better be temporarily stopped.
+
+A git repo for it, on top of block/for-next:
+https://github.com/aaronlu/linux.git blockpm
+
+v12:
+- Split patch 1 into 2 patches, one introduces REQ_PM in block layer
+  and one uses that flag in SCSI layer, suggested by Jens Axboe.
+
+v11:
+- Add Alan Stern's Acked-by tag.
+
+v10:
+- Add link of Alan Stern's ideas on block layer runtime PM to patch 2
+  and 3's changelog;
+- Add back code to schdule device suspend if scsi driver return -EBUSY.
+
+v9:
+- No need to mark last busy and autosuspend in blk_pm_runtime_init as
+  suggested by Alan Stern;
+- mark last busy in blk_runtime_post_suspend if driver failed to runtime
+  suspend the device, so that PM core can try to autosuspend it some
+  time later;
+- Update scsi bus layer runtime callback to handle scsi devices which
+  use request based runtime PM and which don't.
+
+v8:
+- Set default autosuspend delay to -1 to avoid suspend till an updated
+  value is set as suggested by Alan Stern;
+- Always check the dev field of the queue structure, as it is incorrect
+  and meaningless to do any operation on devices that do not use block
+  layer runtime PM as reminded by Alan Stern;
+- Update scsi bus level runtime PM callback to take care of scsi devices
+  that use block layer runtime PM and that don't.
+
+v7:
+- Add kernel doc for block layer runtime PM API as suggested by
+  Alan Stern;
+
+- Add back check for q->dev, as that serves as a flag if driver
+  is using block layer runtime PM;
+
+- Do not auto suspend when last request is finished, as that's a hot
+  path and auto suspend is not a trivial function. Instead, mark last
+  busy in pre_suspend so that runtim PM core will retry suspend some
+  time later to solve the 1st problem demostrated in v6, suggested by
+  Alan Stern.
+
+- Move block layer runtime PM strtegy functions to where they are
+  needed instead of in include/linux/blkdev.h as suggested by Alan
+  Stern since clients of block layer do not need to know those
+  functions.
+
+v6:
+Take over from Lin Ming.
+
+- Instead of put the device into autosuspend state in
+  blk_post_runtime_suspend, do it when the last request is finished.
+  This can also solve the problem illustrated below:
+
+      thread A				      thread B
+|suspend timer expired			|
+|  ... ...				|a new request comes in,
+|  ... ...				|blk_pm_add_request
+|  ... ...				|skip request_resume due to
+|  ... ...				|q->status is still RPM_ACTIVE
+|  rpm_suspend				|  ... ...
+|    scsi_runtime_suspend		|  ... ...
+|      blk_pre_runtime_suspend		|  ... ...
+|      return -EBUSY due to nr_pending	|  ... ...
+|  rpm_suspend done			|  ... ...
+|					|    blk_pm_put_request, mark last busy
+
+But no more trigger point, and the device will stay at RPM_ACTIVE state.
+Run pm_runtime_autosuspend after the last request is finished solved
+this problem.
+
+- Requests which have the REQ_PM flag should not involve nr_pending
+  counting, or we may lose the condition to resume the device:
+  Suppose queue is active and nr_pending is 0. Then a REQ_PM request
+  comes and nr_pending will be increased to 1, but since the request has
+  REQ_PM flag, it will not cause resume. Before it is finished, a normal
+  request comes in, and since nr_pending is 1 now, it will not trigger
+  the resume of the device either. Bug.
+
+- Do not quiesce the device in scsi bus level runtime suspend callback.
+  Since the only reason the device is to be runtime suspended is due to
+  no more requests pending for it, quiesce it is pointless.
+
+- Remove scsi_autopm_* from sd_check_events as we are request driven.
+
+- Call blk_pm_runtime_init in scsi_sysfs_initialize_dev, so that we do
+  not need to check queue's device in blk_pm_add/put_request.
+
+- Do not mark last busy and initiate an autosuspend for the device in
+  blk_pm_runtime_init function.
+
+- Do not mark last busy and initiate an autosuspend for the device in
+  block_post_runtime_resume, as when the request that triggered the
+  resume finished, the blk_pm_put_request will mark last busy and
+  initiate an autosuspend.
+
+v5:
+- rename scsi_execute_req to scsi_execute_req_flags
+  and wrap scsi_execute_req around it.
+- add detail function descriptions in patch 2 log
+- define static helper functions to do runtime pm work on block layer
+  and put the definitions inside a #ifdef block
+
+v4:
+- add CONFIG_PM_RUNTIME check
+- update queue runtime pm status after system resume
+- use pm_runtime_autosuspend instead of pm_request_autosuspend in scsi_runtime_idle
+- always count PM request
+
+v3:
+- remove block layer suspend/resume callbacks
+- add block layer runtime pm helper functions
+
+v2:
+- remove queue idle timer, use runtime pm core's auto suspend
+
+Lin Ming (5):
+  block: add a flag to identify PM request
+  scsi: use REQ_PM in sd's runtime suspend operation
+  block: add runtime pm helpers
+  block: implement runtime pm strategy
+  sd: change to auto suspend mode
+
+ block/blk-core.c           | 183 +++++++++++++++++++++++++++++++++++++++++++++
+ block/elevator.c           |  26 +++++++
+ drivers/scsi/scsi_lib.c    |   9 +--
+ drivers/scsi/scsi_pm.c     |  84 +++++++++++++++++----
+ drivers/scsi/sd.c          |  22 ++----
+ include/linux/blk_types.h  |   2 +
+ include/linux/blkdev.h     |  27 +++++++
+ include/scsi/scsi_device.h |  16 +++-
+ 8 files changed, 331 insertions(+), 38 deletions(-)
+
 -- 
 1.8.1.4
 
