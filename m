@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346Ab3CWOZo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 10:25:44 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:36175 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750973Ab3CWOZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 10:25:42 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Accardi, Kristen C" <kristen.c.accardi@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>, linux-pci@vger.kernel.org
-Subject: [PATCH] PCI / ACPI: Always resume devices on ACPI wakeup notifications
-Date: Sat, 23 Mar 2013 15:33:03 +0100
-Message-ID: <2282655.IicBMMa6jN@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc3+; KDE/4.9.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1751412Ab3CWOeQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 10:34:16 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:35173 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab3CWOeO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 10:34:14 -0400
+Message-ID: <1364048887.13141.0.camel@phoenix>
+Subject: [PATCH] clocksource: exynos_mct: Add terminating entry for
+ exynos_mct_ids table
+From: Axel Lin <axel.lin@ingics.com>
+To: Kukjin Kim <kgene.kim@samsung.com>, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Cc: Thomas Abraham <thomas.abraham@linaro.org>,
+        Changhwan Youn <chaos.youn@samsung.com>, linux-kernel@vger.kernel.org
+Date: Sat, 23 Mar 2013 22:28:07 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+The of_device_id table is supposed to be zero-terminated.
 
-It turns out that _Lxx control methods provided by some BIOSes clear
-the PME Status bit of PCI devices they handle, which means that
-pci_acpi_wake_dev() cannot really use that bit to check whether or
-not the device has signalled wakeup.
-
-For this reason, make pci_acpi_wake_dev() always attempt to resume
-the device it is called for regardless of the device's PME Status bit
-value (that bit still has to be cleared if set at this point,
-though).
-
-Reported-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/pci/pci-acpi.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ drivers/clocksource/exynos_mct.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Index: linux-pm/drivers/pci/pci-acpi.c
-===================================================================
---- linux-pm.orig/drivers/pci/pci-acpi.c
-+++ linux-pm/drivers/pci/pci-acpi.c
-@@ -53,14 +53,15 @@ static void pci_acpi_wake_dev(acpi_handl
- 		return;
- 	}
+diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+index 203ac05..3cdafc0 100644
+--- a/drivers/clocksource/exynos_mct.c
++++ b/drivers/clocksource/exynos_mct.c
+@@ -514,6 +514,7 @@ static void __init exynos4_timer_resources(struct device_node *np)
+ static const struct of_device_id exynos_mct_ids[] = {
+ 	{ .compatible = "samsung,exynos4210-mct", .data = (void *)MCT_INT_SPI },
+ 	{ .compatible = "samsung,exynos4412-mct", .data = (void *)MCT_INT_PPI },
++	{ }
+ };
  
--	if (!pci_dev->pm_cap || !pci_dev->pme_support
--	     || pci_check_pme_status(pci_dev)) {
--		if (pci_dev->pme_poll)
--			pci_dev->pme_poll = false;
-+	/* Clear PME Status if set. */
-+	if (pci_dev->pme_support)
-+		pci_check_pme_status(pci_dev);
- 
--		pci_wakeup_event(pci_dev);
--		pm_runtime_resume(&pci_dev->dev);
--	}
-+	if (pci_dev->pme_poll)
-+		pci_dev->pme_poll = false;
-+
-+	pci_wakeup_event(pci_dev);
-+	pm_runtime_resume(&pci_dev->dev);
- 
- 	if (pci_dev->subordinate)
- 		pci_pme_wakeup_bus(pci_dev->subordinate);
+ void __init mct_init(void)
+-- 
+1.7.9.5
+
+
 
