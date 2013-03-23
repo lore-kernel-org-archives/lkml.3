@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423010Ab3CWB0t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 21:26:49 -0400
+	id S1423106Ab3CWB1I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 21:27:08 -0400
 Received: from mga09.intel.com ([134.134.136.24]:1050 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423003Ab3CWB0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 21:26:00 -0400
+	id S1422994Ab3CWBZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 21:25:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,896,1355126400"; 
-   d="scan'208";a="283455611"
+   d="scan'208";a="283455615"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, x86@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 17/29] x86, tsx: Enable lock elision for mutexes
-Date: Fri, 22 Mar 2013 18:25:11 -0700
-Message-Id: <1364001923-10796-18-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 21/29] locking, tsx: Protect assert_spin_locked() with _xtest()
+Date: Fri, 22 Mar 2013 18:25:15 -0700
+Message-Id: <1364001923-10796-22-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1364001923-10796-1-git-send-email-andi@firstfloor.org>
 References: <1364001923-10796-1-git-send-email-andi@firstfloor.org>
@@ -25,94 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-We use the generic elision macros and the mutex hook infrastructure
-added earlier. With that attempt to lock elide mutexes using
-the elide() macros and the usual elision wrapping pattern.
-
-Lock elision does not allow modifying the lock itself, so it's not
-possible to set the lock owner. So we don't do that when the lock
-is elided. Lock owner is only used for debugging or adaptive spinning,
-but both do not apply with elision. All the checking is still done
-when the lock falls back to real locking.
+lock_is_locked aborts with lock elision. Some code does a lot of lock asserts,
+which causes a lot of aborts. Add a _xtest() here so that the checking is only
+done when the lock is not elided. This always happens occasionally due to
+fallbacks, so there is still enough assert coverage.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/mutex.h |   51 ++++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/rtm-locks.c  |    3 ++
- 2 files changed, 54 insertions(+), 0 deletions(-)
+ include/linux/spinlock_api_smp.h |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/mutex.h b/arch/x86/include/asm/mutex.h
-index 7d3a482..7f585e3 100644
---- a/arch/x86/include/asm/mutex.h
-+++ b/arch/x86/include/asm/mutex.h
-@@ -1,5 +1,56 @@
-+#ifndef _ASM_MUTEX_H
-+#define _ASM_MUTEX_H 1
-+
- #ifdef CONFIG_X86_32
- # include <asm/mutex_32.h>
- #else
- # include <asm/mutex_64.h>
+diff --git a/include/linux/spinlock_api_smp.h b/include/linux/spinlock_api_smp.h
+index cf9bf3b..cd9269b 100644
+--- a/include/linux/spinlock_api_smp.h
++++ b/include/linux/spinlock_api_smp.h
+@@ -5,6 +5,8 @@
+ # error "please don't include this file directly"
  #endif
+ 
++#include <linux/rtm.h>
 +
-+#define  ARCH_HAS_MUTEX_AND_OWN 1
-+
-+#include <linux/elide.h>
-+
-+extern bool mutex_elision;
-+
-+/*
-+ * Try speculation first and only do the normal locking and owner setting
-+ * if that fails.
-+ */
-+
-+#define mutex_free(l) (atomic_read(&(l)->count) == 1)
-+
-+#define __mutex_fastpath_lock_and_own(l, s) ({				\
-+			if (!elide_lock(mutex_elision,			\
-+					mutex_free(l))) {		\
-+				__mutex_fastpath_lock(&(l)->count, s);	\
-+				mutex_set_owner(l);			\
-+			}						\
-+		})
-+
-+#define __mutex_fastpath_unlock_and_unown(l, s) ({			\
-+			if (!elide_unlock(mutex_free(l))) {		\
-+				mutex_unlock_clear_owner(l);		\
-+				__mutex_fastpath_unlock(&(l)->count, s); \
-+			}						\
-+		})
-+
-+#define __mutex_fastpath_lock_retval_and_own(l, s) ({			\
-+			int ret = 0;					\
-+			if (!elide_lock(mutex_elision, mutex_free(l))) { \
-+				ret = __mutex_fastpath_lock_retval(&(l)->count, s); \
-+				if (!ret)				\
-+					mutex_set_owner(l);		\
-+			}						\
-+			ret; })
-+
-+#define __mutex_fastpath_trylock_and_own(l, s) ({			\
-+			int ret = 1;					\
-+			if (!elide_lock(mutex_elision, mutex_free(l))) {\
-+				ret = __mutex_fastpath_trylock(&(l)->count, s);	\
-+				if (ret)				\
-+					mutex_set_owner(l);		\
-+			}						\
-+			ret; })
-+
-+#endif
-diff --git a/arch/x86/kernel/rtm-locks.c b/arch/x86/kernel/rtm-locks.c
-index 0717050..f3ae8e6 100644
---- a/arch/x86/kernel/rtm-locks.c
-+++ b/arch/x86/kernel/rtm-locks.c
-@@ -348,3 +348,6 @@ void init_rtm_spinlocks(void)
- 	pv_irq_ops.restore_fl = PV_CALLEE_SAVE(rtm_restore_fl);
- 	pv_init_ops.patch = rtm_patch;
- }
-+
-+__read_mostly bool mutex_elision = true;
-+module_param(mutex_elision, bool, 0644);
+ /*
+  * include/linux/spinlock_api_smp.h
+  *
+@@ -17,7 +19,10 @@
+ 
+ int in_lock_functions(unsigned long addr);
+ 
+-#define assert_raw_spin_locked(x)	BUG_ON(!raw_spin_is_locked(x))
++#define assert_raw_spin_locked(x) do {			\
++	if (!_xtest())					\
++		BUG_ON(!raw_spin_is_locked(x));		\
++	} while (0)
+ 
+ void __lockfunc _raw_spin_lock(raw_spinlock_t *lock)		__acquires(lock);
+ void __lockfunc _raw_spin_lock_nested(raw_spinlock_t *lock, int subclass)
 -- 
 1.7.7.6
 
