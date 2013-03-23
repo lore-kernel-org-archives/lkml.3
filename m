@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273Ab3CWNPA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 09:15:00 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:62159 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751057Ab3CWNOt (ORCPT
+	id S1751206Ab3CWNhQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 09:37:16 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:41621 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750847Ab3CWNhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 09:14:49 -0400
-Message-ID: <1364044486.1390.237.camel@x61.thuisdomein>
-Subject: Re: [PATCH 21/21] cris: drop unused Kconfig symbols
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        Mikael Starvik <starvik@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sat, 23 Mar 2013 14:14:46 +0100
-In-Reply-To: <20111031105959.GA26898@axis.com>
-References: <1318595467.6132.80.camel@x61.thuisdomein>
-	 <20111014133354.GE9412@axis.com> <14215.1318619461@turing-police.cc.vt.edu>
-	 <20111031105959.GA26898@axis.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Sat, 23 Mar 2013 09:37:11 -0400
+Date: Sat, 23 Mar 2013 14:37:04 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jingoo Han <jg1.han@samsung.com>, "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
+        linux-samsung-soc@vger.kernel.org,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Andrew Murray'" <andrew.murray@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/6] of/pci: Provide support for parsing PCI DT ranges
+ property
+Message-ID: <20130323143704.5da5d20c@skate>
+In-Reply-To: <20130323104156.GL4977@n2100.arm.linux.org.uk>
+References: <00c001ce277b$92b26ab0$b8174010$%han@samsung.com>
+	<20130323104156.GL4977@n2100.arm.linux.org.uk>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Mar 2013 13:14:47.0180 (UTC) FILETIME=[6467F4C0:01CE27C8]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jesper,
 
-On Mon, 2011-10-31 at 11:59 +0100, Jesper Nilsson wrote:
-> Ok, let's do it the right way and remove them now, and I can re-add
-> them in the same tree.
+On Sat, 23 Mar 2013 10:41:56 +0000, Russell King - ARM Linux wrote:
 
-The patch at the start of this (old) thread still applies on top of
-v3.9-rc3. Do you still intend to remove the cris Kconfig symbols unused
-in mainline?
+> Please look at how IORESOURCE_* stuff is defined:
+> #define IORESOURCE_TYPE_BITS    0x00001f00      /* Resource type */
+> #define IORESOURCE_IO           0x00000100      /* PCI/ISA I/O ports */
+> #define IORESOURCE_MEM          0x00000200
+> #define IORESOURCE_REG          0x00000300      /* Register offsets */
+> #define IORESOURCE_IRQ          0x00000400
+> #define IORESOURCE_DMA          0x00000800
+> #define IORESOURCE_BUS          0x00001000
+> 
+> Notice that it's not an array of bits.
+> 
+> So this should be:
+> 		if ((iter.flags & IORESOURCE_TYPE_BITS) == IORESOURCE_IO) {
 
-(Note that there's a second order effect to this patch:
-ETRAX_ETHERNET_IFACE0, and ETRAX_ETHERNET_IFACE1, and ETRAX_SERIAL_PORT4
-could also be dropped. I'm happy to submit a patch with those included
-too.)
+What I've done for the Marvell PCIe driver is:
 
++	for_each_of_pci_range(&iter, np) {
++		unsigned long restype = iter.flags & IORESOURCE_TYPE_BITS;
++		if (restype == IORESOURCE_IO) {
+[...]
++		if (restype == IORESOURCE_MEM) {
+[...]
 
-Paul Bolle
-
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
