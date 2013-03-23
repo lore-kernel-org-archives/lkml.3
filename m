@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661Ab3CWQ0I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 12:26:08 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56871 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423Ab3CWQ0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 12:26:06 -0400
-Date: Sat, 23 Mar 2013 17:25:58 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        x86@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 12/29] x86, tsx: Add a per thread transaction disable
- count
-Message-ID: <20130323162558.GD10811@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-	torvalds@linux-foundation.org, akpm@linux-foundation.org,
-	x86@kernel.org, Andi Kleen <ak@linux.intel.com>
-References: <1364001923-10796-1-git-send-email-andi@firstfloor.org>
- <1364001923-10796-13-git-send-email-andi@firstfloor.org>
- <20130323115115.GA10821@pd.tnic>
- <20130323135156.GJ20853@two.firstfloor.org>
- <20130323155256.GB10811@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130323155256.GB10811@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751586Ab3CWQa7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 12:30:59 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:41903 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab3CWQa6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 12:30:58 -0400
+Date: Sat, 23 Mar 2013 17:30:52 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
+        Soeren Moch <smoch@web.de>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Kirkwood: fix unused mvsdio gpio pins
+Message-ID: <20130323173052.10ecc4cb@skate>
+In-Reply-To: <514DC982.3010706@gmail.com>
+References: <1364043420-17641-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20130323161744.5d13c570@skate>
+	<514DC982.3010706@gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 23, 2013 at 04:52:56PM +0100, Borislav Petkov wrote:
-> And wow, the XOR is *actually* faster. That's whopping three cycles on
-> AMD. Similar observation on SNB.
+Dear Sebastian Hesselbarth,
 
-Ok, correction: I was looking at the wrong row in the table. The XOR
-version with an immediate and mem access is actually as fast as the
-INC/DEC mem versions: 4 cycles on AMD F10h and 6 on SNB, according to
-the docs. I should've realized that there's still a mem access there...
+On Sat, 23 Mar 2013 16:25:54 +0100, Sebastian Hesselbarth wrote:
 
-Anyway, the rest stands.
+> I understand that you proposed patch fixes mvsdio grab mpp0 by accident.
+> But what if you have a kirkwood board where cd-gpio _is_ connected to mpp0?
 
+It didn't work with the existing mvsdio driver, so the purpose of my
+patch was merely to restore the old behavior, in order to avoid having
+to change all the instances of mvsdio_platform_data, knowing that those
+would anyway go away as we convert boards to the Device Tree.
+
+> Not that there is one I know of, but IMHO the only useful patch is to
+> set passed values to an invalid gpio number.
+
+To me, it remains a fragile way of doing things. Let's say tomorrow you
+add a new "int foo_gpio" field in mvsdio_platform_data. The whole
+purpose of C99 struct initializers is that you don't have to change all
+instances of the structure because all fields that are not initialized
+with .<field> = <value> are guaranteed to be zero. If you need to set
+foo_gpio to -1 everywhere when you add this field, it becomes quite
+annoying.
+
+> > That said, I have nothing against explicitly setting those GPIO values
+> > to an invalid value. Maybe -EINVAL would make more sense than just -1 ?
+> 
+> Every invalid gpio number will be sufficient. But -EINVAL doesn't make
+> more sense than -1 does. Having no cd-gpio is not an "Invalid argument".
+
+It's just that I've seen -EINVAL being used on some other platforms, at
+least mach-at91/, but I agree it's not an invalid argument per se.
+
+Best regards,
+
+Thomas
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
