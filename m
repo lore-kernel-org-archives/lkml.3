@@ -1,81 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030Ab3CWTfu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 15:35:50 -0400
-Received: from inx.pm.waw.pl ([195.116.170.130]:40760 "EHLO inx.pm.waw.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751703Ab3CWTfs convert rfc822-to-8bit (ORCPT
+	id S1752016Ab3CWTnO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 15:43:14 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:55645 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751851Ab3CWTnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 15:35:48 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Christophe Aeschlimann <c.aeschlimann@acn-group.ch>,
-        David Miller <davem@davemloft.net>
-Subject: [PATCH] Fix IXP4xx coherent allocations
-Date: Sat, 23 Mar 2013 20:35:46 +0100
-Message-ID: <m3obe9lxil.fsf@intrepid.localdomain>
+	Sat, 23 Mar 2013 15:43:13 -0400
+Date: Sat, 23 Mar 2013 15:43:10 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] wfcqueue: functions for local append and enqueue
+Message-ID: <20130323194309.GA32464@Krystal>
+References: <20130311213602.GB9829@Krystal> <20130321114313.GA17275@dcvr.yhbt.net> <20130322020150.GA17809@Krystal> <20130322103146.GA9078@dcvr.yhbt.net> <20130323190726.GA30029@dcvr.yhbt.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130323190726.GA30029@dcvr.yhbt.net>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARM core code currently requires coherent DMA mask to be set. Make sure
-we limit PCI devices to 64 MiB while allowing on-chip devices to access
-the whole 4 GiB address space.
+* Eric Wong (normalperson@yhbt.net) wrote:
+> With level-triggered epoll, append/enqueue operations to the
+> local/locked queues increase performance by avoiding unnecessary atomic
+> operations and barriers.  These are necessary to avoid performance
+> regressions when looping through ep_send_events and appending many
+> items to a local queue.
+> 
+> Signed-off-by: Eric Wong <normalperson@yhbt.net>
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Stephen Hemminger <shemminger@vyatta.com>
+> Cc: Davide Libenzi <davidel@xmailserver.org>
+> ---
+>  I noticed the original __wfcq_append function was not in the
+>  synchronization table, so I left out ___wfcq_append from the table
+>  as well.
+> 
+>  include/linux/wfcqueue.h | 59 ++++++++++++++++++++++++++++++++++++++++++------
+>  1 file changed, 52 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/wfcqueue.h b/include/linux/wfcqueue.h
+> index 9464a0c..800b1dd 100644
+> --- a/include/linux/wfcqueue.h
+> +++ b/include/linux/wfcqueue.h
+> @@ -55,14 +55,16 @@
+>   * [4] __wfcq_splice (source queue)
+>   * [5] __wfcq_first
+>   * [6] __wfcq_next
+> + * [7] __wfcq_enqueue
+>   *
+> - *     [1] [2] [3] [4] [5] [6]
+> - * [1]  -   -   -   -   -   -
+> - * [2]  -   -   -   -   -   -
+> - * [3]  -   -   X   X   X   X
+> - * [4]  -   -   X   -   X   X
+> - * [5]  -   -   X   X   -   -
+> - * [6]  -   -   X   X   -   -
+> + *     [1] [2] [3] [4] [5] [6] [7]
+> + * [1]  -   -   -   -   -   -   X
+> + * [2]  -   -   -   -   -   -   X
+> + * [3]  -   -   X   X   X   X   X
+> + * [4]  -   -   X   -   X   X   X
+> + * [5]  -   -   X   X   -   -   X
+> + * [6]  -   -   X   X   -   -   X
+> + * [7]  X   X   X   X   X   X   X
+>   *
+>   * Besides locking, mutual exclusion of dequeue, splice and iteration
+>   * can be ensured by performing all of those operations from a single
+> @@ -205,6 +207,49 @@ static inline bool wfcq_enqueue(struct wfcq_head *head,
+>  }
+>  
+>  /*
+> + * ___wfcq_append: append one local queue to another local queue
+> + *
+> + * No memory barriers are issued.  Mutual exclusion is the responsibility
+> + * of the caller.
+> + *
+> + * Returns false if the queue was empty prior to adding the node.
+> + * Returns true otherwise.
+> + */
 
-This fixes a v3.7+ regression which broke IXP4xx built-in network devices.
+__wfcq_append() and ___wfcq_append() are meant to be private to
+wfcqueue.h. Therefore, the comment above should be removed, since it is
+not part of the API.
 
-Signed-off-by: Krzysztof Hałasa <khc@pm.waw.pl>
-Cc: <stable@vger.kernel.org>
+I notice that I should have used ___wfcq_append() for the original
+append function for consistency (other private helpers in this header
+are prefixed with ___).
 
-diff --git a/arch/arm/mach-ixp4xx/common-pci.c b/arch/arm/mach-ixp4xx/common-pci.c
-index ea1933d..8629fc9 100644
---- a/arch/arm/mach-ixp4xx/common-pci.c
-+++ b/arch/arm/mach-ixp4xx/common-pci.c
-@@ -454,10 +454,15 @@ int ixp4xx_setup(int nr, struct pci_sys_data *sys)
- 
- int dma_set_coherent_mask(struct device *dev, u64 mask)
- {
--	if (mask >= SZ_64M - 1)
--		return 0;
-+	if ((mask & DMA_BIT_MASK(26)) != DMA_BIT_MASK(26))
-+		return -EIO;
-+
-+	/* PCI devices are limited to 64 MiB */
-+	if (dev_is_pci(dev))
-+		mask &= DMA_BIT_MASK(26); /* Use DMA region */
- 
--	return -EIO;
-+	dev->coherent_dma_mask = mask;
-+	return 0;
- }
- 
- EXPORT_SYMBOL(ixp4xx_pci_read);
-diff --git a/drivers/net/ethernet/xscale/ixp4xx_eth.c b/drivers/net/ethernet/xscale/ixp4xx_eth.c
-index 6958a5e..7c08269 100644
---- a/drivers/net/ethernet/xscale/ixp4xx_eth.c
-+++ b/drivers/net/ethernet/xscale/ixp4xx_eth.c
-@@ -1423,7 +1423,7 @@ static int eth_init_one(struct platform_device *pdev)
- 	dev->netdev_ops = &ixp4xx_netdev_ops;
- 	dev->ethtool_ops = &ixp4xx_ethtool_ops;
- 	dev->tx_queue_len = 100;
--
-+	dma_set_coherent_mask(&dev->dev, DMA_BIT_MASK(32));
- 	netif_napi_add(dev, &port->napi, eth_poll, NAPI_WEIGHT);
- 
- 	if (!(port->npe = npe_request(NPE_ID(port->id)))) {
-diff --git a/drivers/net/wan/ixp4xx_hss.c b/drivers/net/wan/ixp4xx_hss.c
-index 95d0451..83b4597 100644
---- a/drivers/net/wan/ixp4xx_hss.c
-+++ b/drivers/net/wan/ixp4xx_hss.c
-@@ -1367,6 +1367,7 @@ static int hss_init_one(struct platform_device *pdev)
- 	port->id = pdev->id;
- 	port->dev = &pdev->dev;
- 	port->plat = pdev->dev.platform_data;
-+	dma_set_coherent_mask(&dev->dev, DMA_BIT_MASK(32));
- 	netif_napi_add(dev, &port->napi, hss_hdlc_poll, NAPI_WEIGHT);
- 
- 	if ((err = register_hdlc_device(dev)))
+So maybe we should rename __wfcq_append to ___wfcq_append (making it
+clear that it is a private helper), and introduce your helper as
+___wfcq_append_local() (I don't care about having "local" in there since
+it is not part of the exposed API).
+
+> +static inline bool ___wfcq_append(struct wfcq_head *head,
+> +		struct wfcq_tail *tail,
+> +		struct wfcq_node *new_head,
+> +		struct wfcq_node *new_tail)
+> +{
+> +	struct wfcq_node *old_tail;
+> +
+> +	old_tail = tail->p;
+> +	tail->p = new_tail;
+> +	old_tail->next = new_head;
+> +
+> +	/*
+> +	 * Return false if queue was empty prior to adding the node,
+> +	 * else return true.
+> +	 */
+> +	return old_tail != &head->node;
+> +}
+> +
+> +/*
+> + * __wfcq_enqueue: enqueue a node into a local queue
+
+The concept of "local queue" is not clearly defined.
+
+Perhaps it would be clearer to state:
+
+ * __wfcq_enqueue: enqueue a node into a queue, requiring mutual exclusion.
+
+Thoughts ?
+
+Thanks,
+
+Mathieu
+
+
+> + *
+> + * No memory barriers are issued.  Mutual exclusion is the responsibility
+> + * of the caller.
+> + *
+> + * Returns false if the queue was empty prior to adding the node.
+> + * Returns true otherwise.
+> + */
+> +static inline bool __wfcq_enqueue(struct wfcq_head *head,
+> +		struct wfcq_tail *tail,
+> +		struct wfcq_node *new_tail)
+> +{
+> +	return ___wfcq_append(head, tail, new_tail, new_tail);
+> +}
+> +
+> +/*
+>   * ___wfcq_busy_wait: busy-wait.
+>   */
+>  static inline void ___wfcq_busy_wait(void)
+> -- 
+> 1.8.2.rc3.2.geae6cf5
+> 
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
