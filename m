@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751304Ab3CWM6d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 08:58:33 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:41138 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab3CWM6b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 08:58:31 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Soeren Moch <smoch@web.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Stefan Peter <s.peter@mpl.ch>,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: kirkwood: add MACH_GURUPLUG_DT to defconfig
-Date: Sat, 23 Mar 2013 13:58:22 +0100
-Message-Id: <1364043502-17716-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751206Ab3CWM7O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 08:59:14 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40022 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750836Ab3CWM7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 08:59:12 -0400
+From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+To: <devicetree-discuss@lists.ozlabs.org>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-doc@vger.kernel.org>
+CC: <dmitry.torokhov@gmail.com>, <rob@landley.net>, <rob.herring@calxeda.com>,
+        <grant.likely@secretlab.ca>, <manishv.b@ti.com>
+Subject: [PATCH 0/2] Add dT support for tps6507x touchscreen.
+Date: Sat, 23 Mar 2013 18:29:29 +0530
+Message-ID: <1364043571-9210-1-git-send-email-manishv.b@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch just adds the missing MACH_GURUPLUG_DT to kirkwood_defconfig.
+Patch set adds DT support for tps6507x based touchscreen
+Also, add DT data for tps6507x touchscreen in da850-evm by 
+providing touchscreen node inside tps6507x mfd device.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Reported-by: Soeren Moch <smoch@web.de>
----
-Cc: Soeren Moch <smoch@web.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Stefan Peter <s.peter@mpl.ch>
-Cc: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/configs/kirkwood_defconfig |    1 +
- 1 file changed, 1 insertion(+)
+This patch series applies on top of v3.9-rc2 of linus tree and
+depends on [1].  
 
-diff --git a/arch/arm/configs/kirkwood_defconfig b/arch/arm/configs/kirkwood_defconfig
-index 13482ea..5e40f96 100644
---- a/arch/arm/configs/kirkwood_defconfig
-+++ b/arch/arm/configs/kirkwood_defconfig
-@@ -24,6 +24,7 @@ CONFIG_MACH_IB62X0_DT=y
- CONFIG_MACH_TS219_DT=y
- CONFIG_MACH_DOCKSTAR_DT=y
- CONFIG_MACH_GOFLEXNET_DT=y
-+CONFIG_MACH_GURUPLUG_DT=y
- CONFIG_MACH_LSXL_DT=y
- CONFIG_MACH_IOMEGA_IX2_200_DT=y
- CONFIG_MACH_KM_KIRKWOOD_DT=y
+[1]davinci: Add device tree data for tps6507x
+   http://www.spinics.net/lists/linux-doc/msg09473.html
+ 
+Tested on da850-evm board.
+
+Vishwanathrao Badarkhe, Manish (2):
+  tps6507x-ts: Add DT support
+  ARM: davinci: da850: add tps6507x touchscreen DT data
+
+ Documentation/devicetree/bindings/mfd/tps6507x.txt |   22 ++++
+ arch/arm/boot/dts/da850-evm.dts                    |    9 ++
+ drivers/input/touchscreen/tps6507x-ts.c            |  104 ++++++++++++++------
+ 3 files changed, 105 insertions(+), 30 deletions(-)
+
 -- 
-1.7.10.4
+1.7.4.1
 
