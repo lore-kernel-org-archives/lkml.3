@@ -1,116 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018Ab3CWSxU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 14:53:20 -0400
-Received: from mail-da0-f52.google.com ([209.85.210.52]:51881 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab3CWSxS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 14:53:18 -0400
-From: Kumar Amit Mehta <gmate.amit@gmail.com>
-To: eilong@broadcom.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH] bnx2x: fix assignment of signed expression to unsigned variable
-Date: Sat, 23 Mar 2013 11:52:55 -0700
-Message-Id: <1364064775-19319-1-git-send-email-gmate.amit@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751916Ab3CWTH2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 15:07:28 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:42423 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751673Ab3CWTH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 15:07:27 -0400
+Date: Sat, 23 Mar 2013 19:07:26 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] wfcqueue: functions for local append and enqueue
+Message-ID: <20130323190726.GA30029@dcvr.yhbt.net>
+References: <20130311213602.GB9829@Krystal>
+ <20130321114313.GA17275@dcvr.yhbt.net>
+ <20130322020150.GA17809@Krystal>
+ <20130322103146.GA9078@dcvr.yhbt.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130322103146.GA9078@dcvr.yhbt.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix for incorrect assignment of signed expression to unsigned variable.
+With level-triggered epoll, append/enqueue operations to the
+local/locked queues increase performance by avoiding unnecessary atomic
+operations and barriers.  These are necessary to avoid performance
+regressions when looping through ep_send_events and appending many
+items to a local queue.
 
-Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
+Signed-off-by: Eric Wong <normalperson@yhbt.net>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Davide Libenzi <davidel@xmailserver.org>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c |   20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ I noticed the original __wfcq_append function was not in the
+ synchronization table, so I left out ___wfcq_append from the table
+ as well.
 
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c
-index 5682054..b90533a 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c
-@@ -2139,12 +2139,12 @@ static u8 bnx2x_dcbnl_get_cap(struct net_device *netdev, int capid, u8 *cap)
- 			break;
- 		default:
- 			BNX2X_ERR("Non valid capability ID\n");
--			rval = -EINVAL;
-+			rval = EINVAL;
- 			break;
- 		}
- 	} else {
- 		DP(BNX2X_MSG_DCB, "DCB disabled\n");
--		rval = -EINVAL;
-+		rval = EINVAL;
- 	}
- 
- 	DP(BNX2X_MSG_DCB, "capid %d:%x\n", capid, *cap);
-@@ -2154,7 +2154,7 @@ static u8 bnx2x_dcbnl_get_cap(struct net_device *netdev, int capid, u8 *cap)
- static int bnx2x_dcbnl_get_numtcs(struct net_device *netdev, int tcid, u8 *num)
- {
- 	struct bnx2x *bp = netdev_priv(netdev);
--	u8 rval = 0;
-+	s8 rval = 0;
- 
- 	DP(BNX2X_MSG_DCB, "tcid %d\n", tcid);
- 
-@@ -2188,7 +2188,7 @@ static int bnx2x_dcbnl_set_numtcs(struct net_device *netdev, int tcid, u8 num)
- 	return -EINVAL;
+ include/linux/wfcqueue.h | 59 ++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 52 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/wfcqueue.h b/include/linux/wfcqueue.h
+index 9464a0c..800b1dd 100644
+--- a/include/linux/wfcqueue.h
++++ b/include/linux/wfcqueue.h
+@@ -55,14 +55,16 @@
+  * [4] __wfcq_splice (source queue)
+  * [5] __wfcq_first
+  * [6] __wfcq_next
++ * [7] __wfcq_enqueue
+  *
+- *     [1] [2] [3] [4] [5] [6]
+- * [1]  -   -   -   -   -   -
+- * [2]  -   -   -   -   -   -
+- * [3]  -   -   X   X   X   X
+- * [4]  -   -   X   -   X   X
+- * [5]  -   -   X   X   -   -
+- * [6]  -   -   X   X   -   -
++ *     [1] [2] [3] [4] [5] [6] [7]
++ * [1]  -   -   -   -   -   -   X
++ * [2]  -   -   -   -   -   -   X
++ * [3]  -   -   X   X   X   X   X
++ * [4]  -   -   X   -   X   X   X
++ * [5]  -   -   X   X   -   -   X
++ * [6]  -   -   X   X   -   -   X
++ * [7]  X   X   X   X   X   X   X
+  *
+  * Besides locking, mutual exclusion of dequeue, splice and iteration
+  * can be ensured by performing all of those operations from a single
+@@ -205,6 +207,49 @@ static inline bool wfcq_enqueue(struct wfcq_head *head,
  }
  
--static u8  bnx2x_dcbnl_get_pfc_state(struct net_device *netdev)
-+static u8 bnx2x_dcbnl_get_pfc_state(struct net_device *netdev)
- {
- 	struct bnx2x *bp = netdev_priv(netdev);
- 	DP(BNX2X_MSG_DCB, "state = %d\n", bp->dcbx_local_feat.pfc.enabled);
-@@ -2282,7 +2282,7 @@ static int bnx2x_set_admin_app_up(struct bnx2x *bp, u8 idtype, u16 idval, u8 up)
- 	else {
- 		/* app table is full */
- 		BNX2X_ERR("Application table is too large\n");
--		return -EBUSY;
-+		return EBUSY;
- 	}
- 
- 	/* up configured, if not 0 make sure feature is enabled */
-@@ -2312,7 +2312,7 @@ static u8 bnx2x_dcbnl_set_app_up(struct net_device *netdev, u8 idtype,
- 		break;
- 	default:
- 		DP(BNX2X_MSG_DCB, "Wrong ID type\n");
--		return -EINVAL;
-+		return EINVAL;
- 	}
- 	return bnx2x_set_admin_app_up(bp, idtype, idval, up);
- }
-@@ -2390,12 +2390,12 @@ static u8 bnx2x_dcbnl_get_featcfg(struct net_device *netdev, int featid,
- 			break;
- 		default:
- 			BNX2X_ERR("Non valid featrue-ID\n");
--			rval = -EINVAL;
-+			rval = EINVAL;
- 			break;
- 		}
- 	} else {
- 		DP(BNX2X_MSG_DCB, "DCB disabled\n");
--		rval = -EINVAL;
-+		rval = EINVAL;
- 	}
- 
- 	return rval;
-@@ -2431,12 +2431,12 @@ static u8 bnx2x_dcbnl_set_featcfg(struct net_device *netdev, int featid,
- 			break;
- 		default:
- 			BNX2X_ERR("Non valid featrue-ID\n");
--			rval = -EINVAL;
-+			rval = EINVAL;
- 			break;
- 		}
- 	} else {
- 		DP(BNX2X_MSG_DCB, "dcbnl call not valid\n");
--		rval = -EINVAL;
-+		rval = EINVAL;
- 	}
- 
- 	return rval;
+ /*
++ * ___wfcq_append: append one local queue to another local queue
++ *
++ * No memory barriers are issued.  Mutual exclusion is the responsibility
++ * of the caller.
++ *
++ * Returns false if the queue was empty prior to adding the node.
++ * Returns true otherwise.
++ */
++static inline bool ___wfcq_append(struct wfcq_head *head,
++		struct wfcq_tail *tail,
++		struct wfcq_node *new_head,
++		struct wfcq_node *new_tail)
++{
++	struct wfcq_node *old_tail;
++
++	old_tail = tail->p;
++	tail->p = new_tail;
++	old_tail->next = new_head;
++
++	/*
++	 * Return false if queue was empty prior to adding the node,
++	 * else return true.
++	 */
++	return old_tail != &head->node;
++}
++
++/*
++ * __wfcq_enqueue: enqueue a node into a local queue
++ *
++ * No memory barriers are issued.  Mutual exclusion is the responsibility
++ * of the caller.
++ *
++ * Returns false if the queue was empty prior to adding the node.
++ * Returns true otherwise.
++ */
++static inline bool __wfcq_enqueue(struct wfcq_head *head,
++		struct wfcq_tail *tail,
++		struct wfcq_node *new_tail)
++{
++	return ___wfcq_append(head, tail, new_tail, new_tail);
++}
++
++/*
+  * ___wfcq_busy_wait: busy-wait.
+  */
+ static inline void ___wfcq_busy_wait(void)
 -- 
-1.7.9.5
+1.8.2.rc3.2.geae6cf5
 
