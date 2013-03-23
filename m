@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422749Ab3CWAov (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 20:44:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9889 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422701Ab3CWAou (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 20:44:50 -0400
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=F0my4ousGMIA:10 a=MzJa8G2Mr3FL0AqodUgA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1363999487.6345.146.camel@gandalf.local.home>
-Subject: Re: [ANNOUNCE] 3.6.11-rt31
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Sebastian Sewior <bigeasy@linutronix.de>
-Date: Fri, 22 Mar 2013 20:44:47 -0400
-In-Reply-To: <alpine.LFD.2.02.1303222227160.22263@ionos>
-References: <alpine.LFD.2.02.1303222227160.22263@ionos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1422808Ab3CWAz7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 20:55:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51095 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422667Ab3CWAz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 20:55:58 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1363998796.8972.69.camel@schen9-DESK>
+References: <cover.1363961999.git.tim.c.chen@linux.intel.com> <1363987742.8972.55.camel@schen9-DESK> <09e94963-5146-4c1b-ab76-64ac73d660ab@email.android.com> <1363998796.8972.69.camel@schen9-DESK>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 01/11] Added macro to check for AVX2 feature.
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 22 Mar 2013 17:55:38 -0700
+To: Tim Chen <tim.c.chen@linux.intel.com>
+CC: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S.Miller" <davem@davemloft.net>,
+        Kirk Yap <kirk.s.yap@intel.com>, David Cote <david.m.cote@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Message-ID: <7243684e-3017-4519-8758-651618da609f@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-22 at 22:56 +0100, Thomas Gleixner wrote:
+Just syntactic overhead.  We should probably discuss it among ourselves first though.
 
-> This is the last release for the 3.6 kernel from my side. Steven is
-> going to take over and maintain it until 3.8-rt is stabilized.
-> 
+Tim Chen <tim.c.chen@linux.intel.com> wrote:
 
-I have created a new branch in the stable-rt git repo called v3.6-rt.
-The first tag for that branch is v3.6.11-rt31
+>On Fri, 2013-03-22 at 17:21 -0700, H. Peter Anvin wrote:
+>> I really, really hate these macros... Not sure they are worth the
+>extra noise.
+>> 
+>
+>I can do without the macro and I'll remove it.
+>
+>Wonder the reason that such macro should be avoided?
+>
+>Tim
 
--- Steve
-
-
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
