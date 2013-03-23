@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab3CWI44 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 04:56:56 -0400
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:34648 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754678Ab3CWI4x (ORCPT
+	id S1755371Ab3CWJic (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 05:38:32 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:34091 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523Ab3CWJib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 04:56:53 -0400
-Date: Sat, 23 Mar 2013 09:56:47 +0100
+	Sat, 23 Mar 2013 05:38:31 -0400
+Date: Sat, 23 Mar 2013 10:38:26 +0100
 From: Heiko Carstens <heiko.carstens@de.ibm.com>
 To: Thomas Gleixner <tglx@linutronix.de>
 Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
@@ -18,86 +18,107 @@ Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 05/34] idle: Implement generic idle function
-Message-ID: <20130323085647.GB3530@osiris>
+Subject: Re: [patch 27/34] s390: Use generic idle loop
+Message-ID: <20130323093826.GC3530@osiris>
 References: <20130321214930.752934102@linutronix.de>
- <20130321215233.646635455@linutronix.de>
+ <20130321215235.090816526@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130321215233.646635455@linutronix.de>
+In-Reply-To: <20130321215235.090816526@linutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032308-6892-0000-0000-000004ABFBF4
+x-cbid: 13032309-2966-0000-0000-0000071479E0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 09:53:00PM -0000, Thomas Gleixner wrote:
-> All idle functions in arch/* are more or less the same, plus minus a
-> few bugs and extra instrumentation, tickless support and other
-> optional items.
-> 
-> Implement a generic idle function which resembles the functionality
-> found in arch/. Provide weak arch_cpu_idle_* functions which can be
-> overridden by the architecture code if needed.
-> 
+On Thu, Mar 21, 2013 at 09:53:18PM -0000, Thomas Gleixner wrote:
 > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> ---
+>  arch/s390/kernel/process.c |   25 +++++++------------------
+>  arch/s390/kernel/smp.c     |    3 +--
+>  2 files changed, 8 insertions(+), 20 deletions(-)
 
-[...]
+Please merge the patch below into your patch to fix some issues.
 
-> +static void cpu_idle_loop(void)
-> +{
-> +	while (1) {
-> +		tick_nohz_idle_enter();
-> +
-> +		while (!need_resched()) {
-> +			check_pgt_cache();
-> +			rmb();
-> +
-> +			if (cpu_is_offline(smp_processor_id()))
-> +				arch_cpu_idle_dead();
-> +
-> +			local_irq_disable();
-> +			arch_cpu_idle_enter();
-> +
-> +			if (cpu_idle_force_poll) {
-> +				cpu_idle_poll();
-> +			} else {
-> +				current_clr_polling();
-> +				if (!need_resched()) {
-> +					stop_critical_timings();
-> +					rcu_idle_enter();
-> +					arch_cpu_idle();
-> +					WARN_ON_ONCE(!irqs_disabled());
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ arch/s390/Kconfig          |  1 +
+ arch/s390/kernel/process.c | 13 +++++--------
+ arch/s390/kernel/vtime.c   |  5 -----
+ 3 files changed, 6 insertions(+), 13 deletions(-)
 
-This should be WARN_ON_ONCE(irqs_disabled()), no?
-
-> +					rcu_idle_exit();
-> +					start_critical_timings();
-> +				} else {
-> +					local_irq_enable();
-> +				}
-> +				current_set_polling();
-> +			}
-> +			arch_cpu_idle_exit();
-> +		}
-> +		tick_nohz_idle_exit();
-
-I was wondering why the scheduler doesn't complain when being called with
-irqs disabled. In fact tick_nohz_idle_exit() enables irqs unconditionally
-iff CONFIG_NO_HZ is set.
-
-> +		schedule_preempt_disabled();
-> +	}
-> +}
-> +
-> +void cpu_startup_entry(enum cpuhp_state state)
-> +{
-> +	current_set_polling();
-> +	arch_cpu_idle_prepare();
-> +	cpu_idle_loop();
-> +}
-> +#endif
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index eb8fb62..749513d 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -97,6 +97,7 @@ config S390
+ 	select CLONE_BACKWARDS2
+ 	select GENERIC_CLOCKEVENTS
+ 	select GENERIC_CPU_DEVICES if !SMP
++	select GENERIC_IDLE_LOOP
+ 	select GENERIC_KERNEL_THREAD
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select GENERIC_TIME_VSYSCALL_OLD
+diff --git a/arch/s390/kernel/process.c b/arch/s390/kernel/process.c
+index 546afed..2bc3edd 100644
+--- a/arch/s390/kernel/process.c
++++ b/arch/s390/kernel/process.c
+@@ -61,16 +61,8 @@ unsigned long thread_saved_pc(struct task_struct *tsk)
+ 	return sf->gprs[8];
+ }
+ 
+-/*
+- * The idle function on a S390...
+- */
+ void arch_cpu_idle(void)
+ {
+-	if (test_thread_flag(TIF_MCCK_PENDING)) {
+-		local_irq_enable();
+-		return;
+-	}
+-
+ 	local_mcck_disable();
+ 	if (test_thread_flag(TIF_MCCK_PENDING)) {
+ 		local_mcck_enable();
+@@ -87,6 +79,11 @@ void arch_cpu_idle_exit(void)
+ 		s390_handle_mcck();
+ }
+ 
++void arch_cpu_idle_dead(void)
++{
++	cpu_die();
++}
++
+ extern void __kprobes kernel_thread_starter(void);
+ 
+ /*
+diff --git a/arch/s390/kernel/vtime.c b/arch/s390/kernel/vtime.c
+index a0042ac..3fb0935 100644
+--- a/arch/s390/kernel/vtime.c
++++ b/arch/s390/kernel/vtime.c
+@@ -158,8 +158,6 @@ void __kprobes vtime_stop_cpu(void)
+ 	unsigned long psw_mask;
+ 
+ 	trace_hardirqs_on();
+-	/* Don't trace preempt off for idle. */
+-	stop_critical_timings();
+ 
+ 	/* Wait for external, I/O or machine check interrupt. */
+ 	psw_mask = psw_kernel_bits | PSW_MASK_WAIT | PSW_MASK_DAT |
+@@ -169,9 +167,6 @@ void __kprobes vtime_stop_cpu(void)
+ 	/* Call the assembler magic in entry.S */
+ 	psw_idle(idle, psw_mask);
+ 
+-	/* Reenable preemption tracer. */
+-	start_critical_timings();
+-
+ 	/* Account time spent with enabled wait psw loaded as idle time. */
+ 	idle->sequence++;
+ 	smp_wmb();
+-- 
+1.7.12.4
 
