@@ -1,79 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423185Ab3CWDgD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 23:36:03 -0400
-Received: from mga03.intel.com ([143.182.124.21]:11493 "EHLO mga03.intel.com"
+	id S1423232Ab3CWDlU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 23:41:20 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13897 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422664Ab3CWDgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 23:36:00 -0400
+	id S1422694Ab3CWDlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 23:41:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,896,1355126400"; 
-   d="scan'208";a="217977596"
-Message-ID: <514D2369.2010200@intel.com>
-Date: Sat, 23 Mar 2013 11:37:13 +0800
+   d="scan'208";a="310768204"
 From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Alan Stern <stern@rowland.harvard.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+To: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
         James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Tejun Heo <tj@kernel.org>, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
+        Tejun Heo <tj@kernel.org>
+Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Aaron Lu <aaron.lwe@gmail.com>, Aaron Lu <aaron.lu@intel.com>,
         Shane Huang <shane.huang@amd.com>, Oliver Neukum <oneukum@suse.de>
-Subject: Re: [PATCH RESEND v11 0/4] block layer runtime pm
-References: <1363338305-4987-1-git-send-email-aaron.lu@intel.com> <20130322150958.GK25978@kernel.dk>
-In-Reply-To: <20130322150958.GK25978@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH v12 2/5] scsi: use REQ_PM in sd's runtime suspend operation
+Date: Sat, 23 Mar 2013 11:42:25 +0800
+Message-Id: <1364010148-8584-3-git-send-email-aaron.lu@intel.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1364010148-8584-1-git-send-email-aaron.lu@intel.com>
+References: <1364010148-8584-1-git-send-email-aaron.lu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2013 11:09 PM, Jens Axboe wrote:
-> On Fri, Mar 15 2013, Aaron Lu wrote:
->> In August 2010, Jens and Alan discussed about "Runtime PM and the block
->> layer". http://marc.info/?t=128259108400001&r=1&w=2
->> And then Alan has given a detailed implementation guide:
->> http://marc.info/?l=linux-scsi&m=133727953625963&w=2
->>
->> To test:
->> # ls -l /sys/block/sda
->> /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/block/sda
->>
->> # echo 10000 > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/autosuspend_delay_ms
->> # echo auto > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/control
->> Then you'll see sda is suspended after 10secs idle.
->>
->> [ 1767.680192] sd 2:0:0:0: [sda] Synchronizing SCSI cache
->> [ 1767.680317] sd 2:0:0:0: [sda] Stopping disk
->>
->> And if you do some IO, it will resume immediately.
->> [ 1791.052438] sd 2:0:0:0: [sda] Starting disk
->>
->> For test, I often set the autosuspend time to 1 second. If you are using
->> a GUI, the 10 seconds delay may be too long that the disk can not enter
->> runtime suspended state.
->>
->> Note that sd's runtime suspend callback will dump some kernel messages
->> and the syslog daemon will write kernel message to /var/log/messages,
->> making the disk instantly resume after suspended. So for test, the
->> syslog daemon should better be temporarily stopped.
->>
->> A git repo for it, on top of v3.9-rc1:
->> https://github.com/aaronlu/linux.git blockpm
-> 
-> I think it's about time we get this in, but the patchset isn't very
-> friendly from a scsi vs block perspective. Can you re-shuffle the REQ_PM
-> change, just do a separate patch for that. I'll get it queued up for
-> 3.10 then.
+From: Lin Ming <ming.m.lin@intel.com>
 
-Thanks Jens.
+With the introduction of REQ_PM, modify sd's runtime suspend operation
+functions to use that flag so that the operations to put the device into
+runtime suspended state(i.e. sync cache and stop device) will not affect
+its runtime PM status.
 
-I'll spilt the first patch into two patches: one to introduce the REQ_PM
-flag in block layer and one to use that flag in SCSI layer. Will send
-out v12 soon.
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+---
+ drivers/scsi/scsi_lib.c    |  9 ++++-----
+ drivers/scsi/sd.c          |  9 +++++----
+ include/scsi/scsi_device.h | 16 ++++++++++++----
+ 3 files changed, 21 insertions(+), 13 deletions(-)
 
-Best regards,
-Aaron
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index c31187d..86d5220 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -276,11 +276,10 @@ int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
+ }
+ EXPORT_SYMBOL(scsi_execute);
+ 
+-
+-int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
++int scsi_execute_req_flags(struct scsi_device *sdev, const unsigned char *cmd,
+ 		     int data_direction, void *buffer, unsigned bufflen,
+ 		     struct scsi_sense_hdr *sshdr, int timeout, int retries,
+-		     int *resid)
++		     int *resid, int flags)
+ {
+ 	char *sense = NULL;
+ 	int result;
+@@ -291,14 +290,14 @@ int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+ 			return DRIVER_ERROR << 24;
+ 	}
+ 	result = scsi_execute(sdev, cmd, data_direction, buffer, bufflen,
+-			      sense, timeout, retries, 0, resid);
++			      sense, timeout, retries, flags, resid);
+ 	if (sshdr)
+ 		scsi_normalize_sense(sense, SCSI_SENSE_BUFFERSIZE, sshdr);
+ 
+ 	kfree(sense);
+ 	return result;
+ }
+-EXPORT_SYMBOL(scsi_execute_req);
++EXPORT_SYMBOL(scsi_execute_req_flags);
+ 
+ /*
+  * Function:    scsi_init_cmd_errh()
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 7992635..c6e2b34 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1424,8 +1424,9 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
+ 		 * Leave the rest of the command zero to indicate
+ 		 * flush everything.
+ 		 */
+-		res = scsi_execute_req(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
+-				       SD_FLUSH_TIMEOUT, SD_MAX_RETRIES, NULL);
++		res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0,
++					     &sshdr, SD_FLUSH_TIMEOUT,
++					     SD_MAX_RETRIES, NULL, REQ_PM);
+ 		if (res == 0)
+ 			break;
+ 	}
+@@ -3021,8 +3022,8 @@ static int sd_start_stop_device(struct scsi_disk *sdkp, int start)
+ 	if (!scsi_device_online(sdp))
+ 		return -ENODEV;
+ 
+-	res = scsi_execute_req(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
+-			       SD_TIMEOUT, SD_MAX_RETRIES, NULL);
++	res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
++			       SD_TIMEOUT, SD_MAX_RETRIES, NULL, REQ_PM);
+ 	if (res) {
+ 		sd_printk(KERN_WARNING, sdkp, "START_STOP FAILED\n");
+ 		sd_print_result(sdkp, res);
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index a7f9cba..cc64587 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -394,10 +394,18 @@ extern int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
+ 			int data_direction, void *buffer, unsigned bufflen,
+ 			unsigned char *sense, int timeout, int retries,
+ 			int flag, int *resid);
+-extern int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+-			    int data_direction, void *buffer, unsigned bufflen,
+-			    struct scsi_sense_hdr *, int timeout, int retries,
+-			    int *resid);
++extern int scsi_execute_req_flags(struct scsi_device *sdev,
++	const unsigned char *cmd, int data_direction, void *buffer,
++	unsigned bufflen, struct scsi_sense_hdr *sshdr, int timeout,
++	int retries, int *resid, int flags);
++static inline int scsi_execute_req(struct scsi_device *sdev,
++	const unsigned char *cmd, int data_direction, void *buffer,
++	unsigned bufflen, struct scsi_sense_hdr *sshdr, int timeout,
++	int retries, int *resid)
++{
++	return scsi_execute_req_flags(sdev, cmd, data_direction, buffer,
++		bufflen, sshdr, timeout, retries, resid, 0);
++}
+ extern void sdev_disable_disk_events(struct scsi_device *sdev);
+ extern void sdev_enable_disk_events(struct scsi_device *sdev);
+ 
+-- 
+1.8.1.4
 
