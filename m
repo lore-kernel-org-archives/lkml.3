@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423081Ab3CWDZB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 23:25:01 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56792 "EHLO comal.ext.ti.com"
+	id S1423173Ab3CWD10 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 23:27:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22005 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422808Ab3CWDY7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 23:24:59 -0400
-From: "Anna, Suman" <s-anna@ti.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "loic.pallardy@st.com" <loic.pallardy@st.com>,
-        "omar.ramirez@copitl.com" <omar.ramirez@copitl.com>,
-        "lugo.fernando@gmail.com" <lugo.fernando@gmail.com>
-CC: "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH -next] mailbox: fix invalid use of sizeof in
- mailbox_msg_send()
-Thread-Topic: [PATCH -next] mailbox: fix invalid use of sizeof in
- mailbox_msg_send()
-Thread-Index: AQHOJwBE4+CeCCaimE6mVYfHW7MD8ZiynNEg
-Date: Sat, 23 Mar 2013 03:24:50 +0000
-Message-ID: <37C860A02101E749A747FA2D3C1E3C5049E935@DLEE11.ent.ti.com>
-References: <CAPgLHd-4=Nie0-jdy9-0V9v5GfgKP5L3XycQdw1qWL3dhzYjMw@mail.gmail.com>
-In-Reply-To: <CAPgLHd-4=Nie0-jdy9-0V9v5GfgKP5L3XycQdw1qWL3dhzYjMw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1423101Ab3CWD1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 23:27:25 -0400
+Date: Fri, 22 Mar 2013 23:27:16 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        Heinz Mauelshagen <heinzm@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joe Thornber <ejt@redhat.com>, Mikulas Patocka <mpatocka@redhat.com>,
+        Paul Taysom <taysom@chromium.org>
+Subject: Re: dm: dm-cache fails to write the cache device in writethrough mode
+Message-ID: <20130323032715.GA7692@redhat.com>
+References: <20130322201151.GB5357@blackbox.djwong.org>
+ <20130322223425.GA5638@redhat.com>
+ <20130322231600.GD5357@blackbox.djwong.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130322231600.GD5357@blackbox.djwong.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> sizeof() when applied to a pointer typed expression gives the size of the pointer,
-> not that of the pointed data.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/mailbox/mailbox.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c index
-> 5fea5c2..e011a75 100644
-> --- a/drivers/mailbox/mailbox.c
-> +++ b/drivers/mailbox/mailbox.c
-> @@ -93,8 +93,8 @@ int mailbox_msg_send(struct mailbox *mbox, struct
-> mailbox_msg *msg)
->  		goto out;
->  	}
-> 
-> -	len = kfifo_in(&mq->fifo, (unsigned char *)msg, sizeof(msg));
-> -	WARN_ON(len != sizeof(msg));
-> +	len = kfifo_in(&mq->fifo, (unsigned char *)msg, sizeof(*msg));
-> +	WARN_ON(len != sizeof(*msg));
+On Fri, Mar 22 2013 at  7:16pm -0400,
+Darrick J. Wong <darrick.wong@oracle.com> wrote:
 
-Thanks Wei, missed this one. In this same function, there is one more similar occurrence, which needs fixing as well.
---- a/drivers/mailbox/mailbox.c
-+++ b/drivers/mailbox/mailbox.c
-@@ -83,7 +83,7 @@ int mailbox_msg_send(struct mailbox *mbox, struct mailbox_msg
+> On Fri, Mar 22, 2013 at 06:34:28PM -0400, Mike Snitzer wrote:
+> > On Fri, Mar 22 2013 at  4:11pm -0400,
+> > Darrick J. Wong <darrick.wong@oracle.com> wrote:
+> > 
+> > > The new writethrough strategy for dm-cache issues a bio to the origin device,
+> > > remaps the bio to the cache device, and issues the bio to the cache device.
+> > > However, the block layer modifies bi_sector and bi_size, so we need to preserve
+> > > these or else nothing gets written to the cache (bi_size == 0).  This fixes the
+> > > problem where someone writes a block through the cache, but a subsequent reread
+> > > (from the cache) returns old contents.
+> > 
+> > Your writethrough blkid test results are certainly strange.  But I'm not
+> > aware of where the block layer would modify bi_size and bi_sector;
+> > please elaborate.
+> > 
+> > I cannot reproduce your original report.  I developed
+> > 'test_writethrough_ext4_uuids_match', apologies for the ruby code:
+> 
+> Hmm... I'm building my kernels off 0a7e453103b9718d357688b83bb968ee108cc874 in
+> Linus' tree (post 3.9-rc3).  This is the full output of dmsetup table:
+> 
+> moocache-blocks: 0 1039360 linear 8:16 9088
+> moocache-metadata: 0 8704 linear 8:16 384
+> moocache: 0 67108864 cache 253:0 253:1 8:0 512 1 writethrough default 4 random_threshold 4 sequential_threshold 32768
+> 
+> 253:0 -> moocache-metadata and 253:1 -> moocache-blocks.
+> 
+> I'm curious what your setup is...
 
-        mutex_lock(&mq->mlock);
+Here are the tables:
+test-dev-238267: 0 8192 linear /dev/stec/metadata 0
+test-dev-255913: 0 2097152 linear /dev/stec/metadata 8192
+test-dev-655144: 0 20480 linear /dev/spindle/data 0
+0 20480 cache /dev/mapper/test-dev-238267 /dev/mapper/test-dev-255913 /dev/mapper/test-dev-655144 512 1 writethrough default 0
 
--       if (kfifo_avail(&mq->fifo) < (sizeof(msg) + msg->size)) {
-+       if (kfifo_avail(&mq->fifo) < (sizeof(*msg) + msg->size)) {
-                ret = -ENOMEM;
-                goto out;
-        }
+And I tweaked 'test_writethrough_ext4_uuids_match' to make sure to use the
+same thresholds you're using, full status output:
+0 20480 cache 15/1024 0 19 0 0 0 0 0 0 1 writethrough 2 migration_threshold 32768 4 random_threshold 4 sequential_threshold 512
 
-Regards
-Suman
+So the big difference is the thinp-test-suite uses intermediate linear
+DM layers above the slower sd device (spindle/data) -- whereas in your
+setup the origin device is direct to sd (8:0).
+
+I'll re-run with the origin directly on sd in the morning and will
+report back.
