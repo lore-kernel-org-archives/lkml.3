@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484Ab3CWPHS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 11:07:18 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:51259 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab3CWPHD (ORCPT
+	id S1751464Ab3CWPOG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 11:14:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27196 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab3CWPOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 11:07:03 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dove: fix Dove cpu type from V7 to PJ4
-Date: Sat, 23 Mar 2013 16:06:51 +0100
-Message-Id: <1364051211-24414-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 23 Mar 2013 11:14:04 -0400
+X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=XS9J8YfiqEIA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=djQqxrKAXsQA:10 a=QFDoCn0hKqcNJ3qkJ78A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1364051642.6345.166.camel@gandalf.local.home>
+Subject: Re: [PATCH v2] tracing: Expose event tracing infrastructure
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: Jovi Zhang <bookjovi@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Date: Sat, 23 Mar 2013 11:14:02 -0400
+In-Reply-To: <514D8711.8020303@huawei.com>
+References: <514057BF.6040804@huawei.com>
+	  <CACV3sb+DqAsQtvK0d+vNHCyeJYCqWD29AyikRCV6g-rZp3A8nQ@mail.gmail.com>
+	 <1363351889.25967.51.camel@gandalf.local.home>
+	 <514D8711.8020303@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CPU used in Marvell Dove SoCs is a PJ4 Sheeva core. Using
-CONFIG_CPU_PJ4 instead of CONFIG_CPU_V7 will also allow to enable
-iWMMXt extensions on Dove.
+On Sat, 2013-03-23 at 18:42 +0800, zhangwei(Jovi) wrote:
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 2c3bdce..4fc9bca 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -556,7 +556,7 @@ config ARCH_IXP4XX
- config ARCH_DOVE
- 	bool "Marvell Dove"
- 	select ARCH_REQUIRE_GPIOLIB
--	select CPU_V7
-+	select CPU_PJ4
- 	select GENERIC_CLOCKEVENTS
- 	select MIGHT_HAVE_PCI
- 	select PINCTRL
--- 
-1.7.10.4
+> Do I need to resend this patch based on your new work?(and testing) to make you can merge this patch easily.
+> 
+
+Yes please,
+
+Thanks,
+
+-- Steve
+
 
