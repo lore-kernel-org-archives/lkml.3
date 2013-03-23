@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751755Ab3CWRIM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 13:08:12 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:36464 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab3CWRIL (ORCPT
+	id S1751805Ab3CWRLr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 13:11:47 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:60136 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622Ab3CWRLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 13:08:11 -0400
-X-IronPort-AV: E=Sophos;i="4.84,897,1355097600"; 
-   d="scan'208";a="14451719"
-Date: Sat, 23 Mar 2013 17:08:07 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [GIT PULL] (xen) stable/for-linus-3.9-rc3-tag
-In-Reply-To: <20130322210201.GA7932@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1303231705170.5135@kaball.uk.xensource.com>
-References: <20130322210201.GA7932@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 23 Mar 2013 13:11:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <1364001923-10796-1-git-send-email-andi@firstfloor.org>
+References: <1364001923-10796-1-git-send-email-andi@firstfloor.org>
+Date: Sat, 23 Mar 2013 10:11:45 -0700
+X-Google-Sender-Auth: 4zDkcSS9WlvhthqeUYXKvhaSCx4
+Message-ID: <CA+55aFyWMqwBfd6aYfRaLpX6gGqNxEkD5TFM3HRQpi9nAhn+0g@mail.gmail.com>
+Subject: Re: RFC: Kernel lock elision for TSX
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Mar 2013, Konrad Rzeszutek Wilk wrote:
-> Hey Linus,
-> 
-> Please git pull the following tag:
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.9-rc3-tag
-> 
-> which is full of fixes. The signed tag has the details (as always) but
-> this is mostly just the last stragglers of the regression bugs that this
-> merge window had. There are also two normal bug-fixes in the lot.
-> 
-> P.S.
-> We are working out the kinks in an early warning #linux-next testing framework
-> so that it can give us heads up in the future - so the when the next merge
-> window opens we shouldn't have surprises.
-> 
-> Please pull!
-> 
->  arch/x86/include/asm/xen/hypercall.h |  4 +--
->  arch/x86/xen/mmu.c                   |  3 +-
->  drivers/xen/Kconfig                  |  2 +-
->  drivers/xen/events.c                 | 10 +++---
->  drivers/xen/fallback.c               |  3 +-
->  drivers/xen/xen-acpi-processor.c     |  3 ++
->  drivers/xen/xen-pciback/pci_stub.c   | 59 +++++++++++++++++++++++++++---------
->  include/xen/interface/physdev.h      |  6 ++++
->  8 files changed, 64 insertions(+), 26 deletions(-)
-> 
-> David Vrabel (1):
->       xen/events: avoid race with raising an event in unmask_evtchn()
+On Fri, Mar 22, 2013 at 6:24 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>
+> Some questions and answers:
+>
+> - How much does it improve performance?
+> I cannot share any performance numbers at this point unfortunately.
+> Also please keep in mind that the tuning is very preliminary and
+> will be revised.
 
-Unless I am looking in the wrong place, this patch is still the same one
-that breaks PV on HVM and Xen ARM guests, see:
+Quite frankly, since the *only* reason for RTM is performance, this
+fundamentally makes the patch-set pointless.
 
-http://marc.info/?l=xen-devel&m=136377731913034
+If we don't know how much it helps, we can't judge whether it's worth
+even discussing this patch. It adds enough complexity that it had
+better be worth it, and without knowing the performance side, all we
+can see are the negatives.
 
-David is aware of the issue and I think is working on an alternative
-fix.
+Talk to your managers about this. Tell them that without performance
+numbers, any patch-series like this is totally pointless.
+
+Does it make non-contended code slower? We don't know. Does it improve
+anything but micro-benchmarks? We don't know. Is there any point to
+this? WE DON"T KNOW.
+
+Inside of intel, it might be useful for testing and validating the
+hardware. Outside of intel, it is totally useless without performance
+numbers.
+
+The other comment I have is that since it does touch non-x86 header
+files etc (although not a lot), you really need to talk to the POWER8
+people about naming of the thing. Calling it <linux/rtm.h> and having
+"generic" helpers called _xtest() used by the generic spinlock code
+sounds a bit suspect.
+
+                  Linus
