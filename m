@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab3CWHCR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 03:02:17 -0400
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:40475 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab3CWHCQ convert rfc822-to-8bit (ORCPT
+	id S1756037Ab3CWHER (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 03:04:17 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:55541 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab3CWHEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 03:02:16 -0400
-Date: Fri, 22 Mar 2013 00:15:48 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 00/13] overlay filesystem: request for inclusion (v16)
-To: George Spelvin <linux@horizon.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        miklos@szeredi.hu, viro@ZenIV.linux.org.uk, linux@horizon.com
-In-Reply-To: <20130320194108.24192.qmail@science.horizon.com> (from
-	linux@horizon.com on Wed Mar 20 14:41:08 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1363929348.15703.58@driftwood>
+	Sat, 23 Mar 2013 03:04:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+Date: Sat, 23 Mar 2013 15:04:14 +0800
+Message-ID: <CAPgLHd_FMbnYSFFL4rKVDC59CgHcDmDyCngdFHnexom-q538gQ@mail.gmail.com>
+Subject: [PATCH -next v2] mailbox: fix invalid use of sizeof in mailbox_msg_send()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: s-anna@ti.com, linus.walleij@linaro.org, loic.pallardy@st.com,
+        omar.ramirez@copitl.com, lugo.fernando@gmail.com
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 02:41:08 PM, George Spelvin wrote:
-> Sorry for being so very late to the party, but rather than messing
-> with xattrs, why not just have a specific file (say, default  
-> /.whiteout,
-> but selectable via a mount option) and links to it are counted as
-> whiteout entries?
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Don't the ext2 descendants have an array of reserved inodes at the  
-beginning (one of which is the journal for ext3, most of which were  
-still unused last I checked)?
+sizeof() when applied to a pointer typed expression gives the
+size of the pointer, not that of the pointed data.
 
-Maybe ext4 optimized this away, but that would mean it doesn't have to  
-be anywhere in the namespace.
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/mailbox/mailbox.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-(Of course you'd have to teach fsck about it, and probably not update  
-the link count or you'll have contention and integer overflow...)
+diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+index 5fea5c2..78e52c0 100644
+--- a/drivers/mailbox/mailbox.c
++++ b/drivers/mailbox/mailbox.c
+@@ -83,7 +83,7 @@ int mailbox_msg_send(struct mailbox *mbox, struct mailbox_msg *msg)
+ 
+ 	mutex_lock(&mq->mlock);
+ 
+-	if (kfifo_avail(&mq->fifo) < (sizeof(msg) + msg->size)) {
++	if (kfifo_avail(&mq->fifo) < (sizeof(*msg) + msg->size)) {
+ 		ret = -ENOMEM;
+ 		goto out;
+ 	}
+@@ -93,8 +93,8 @@ int mailbox_msg_send(struct mailbox *mbox, struct mailbox_msg *msg)
+ 		goto out;
+ 	}
+ 
+-	len = kfifo_in(&mq->fifo, (unsigned char *)msg, sizeof(msg));
+-	WARN_ON(len != sizeof(msg));
++	len = kfifo_in(&mq->fifo, (unsigned char *)msg, sizeof(*msg));
++	WARN_ON(len != sizeof(*msg));
+ 
+ 	if (msg->size && msg->pdata) {
+ 		len = kfifo_in(&mq->fifo, (unsigned char *)msg->pdata,
 
-Rob
+
