@@ -1,101 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443Ab3CWXNg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 19:13:36 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:55846 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752296Ab3CWXNe (ORCPT
+	id S1752564Ab3CWXNz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 19:13:55 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:18117 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461Ab3CWXNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 19:13:34 -0400
+	Sat, 23 Mar 2013 19:13:39 -0400
+Message-ID: <514E3711.8020609@oracle.com>
+Date: Sat, 23 Mar 2013 19:13:21 -0400
+From: konrad wilk <konrad.wilk@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1303231423420.14373@eggly.anvils>
-References: <CAHG_u-=ChwiQ72O-9z1eD5Pex-niYMaRwMUOQOryYuPO154G=A@mail.gmail.com>
-	<alpine.LNX.2.00.1303231423420.14373@eggly.anvils>
-Date: Sat, 23 Mar 2013 20:13:34 -0300
-Message-ID: <CAHG_u-mTY0tq4MR3MHWh-Q5uvrpfpRP7T=Y6YtGx2g0ocuT+xA@mail.gmail.com>
-Subject: Re: remap kernel static memory to user space
-From: Eduardo Cruz <eduardohmdacruz@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
-        linux-ia64@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [GIT PULL] (xen) stable/for-linus-3.9-rc3-tag
+References: <20130322210201.GA7932@phenom.dumpdata.com> <alpine.DEB.2.02.1303231705170.5135@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1303231705170.5135@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Man, it worked!
-You saved my life kkkkkkkkkkkkkkk.
-Thank you very much!
+ > David Vrabel (1): xen/events: avoid race with raising an event in 
+unmask_evtchn()
+> Unless I am looking in the wrong place, this patch is still the same one
+> that breaks PV on HVM and Xen ARM guests, see:
+>
+> http://marc.info/?l=xen-devel&m=136377731913034
+>
+> David is aware of the issue and I think is working on an alternative
+> fix.
 
-2013/3/23 Hugh Dickins <hughd@google.com>:
-> On Wed, 20 Mar 2013, Eduardo Cruz wrote:
->
->> Hello.
->>
->> I'm trying to remap some kernel static memory to user space using
->> remap_pfn_range.
->> For that, I wrote a module that initializes a device, which later I
->> use mknod, etc.
->>
->> When I allocate the memory with kmalloc, everything works:   (where
->> user_space_shared was allocated with kmalloc)
->>
->> if ((ret = remap_pfn_range(vma, vma->vm_start,
->> virt_to_phys(user_space_shared) >> PAGE_SHIFT, length,
->> vma->vm_page_prot)) < 0)
->
-> I have no ia64 experience, but my guess is that your problem is with
-> that virt_to_phys(user_space_shared).
->
-> virt_to_phys() expects to be given an address from the kernel's direct
-> map of physical memory; whereas if you declare user_space_shared[] in
-> kernel static memory, I believe ia64 places that in a different region.
->
-> Try changing that to virt_to_phys(ia64_imva(user_space_shared))
-> and I expect it will then work: see comment above ia64_imva()
-> in arch/ia64/include/asm/processor.h.
->
-> Hugh
->
->>
->> In the application in user space:
->> kstc = mmap(0, sizeof(user_space_shared_t), PROT_READ|PROT_WRITE,
->> MAP_SHARED| MAP_LOCKED, fd, 0);
->>
->> With user_space_shared allocated using kmalloc, it is working.
->> The application is able to read the data I wrote in the kernel module.
->>
->> However, when I define and allocate that var in arch/ia64/mm/fault.c:
->>
->> unsigned char user_space_shared[ sizeof(user_space_shared_t) +
->> PAGE_SIZE ] __attribute__((aligned(PAGE_SIZE)));
->> EXPORT_SYMBOL(user_space_shared);
->>
->> And access that var from the module:
->>
->> extern unsigned char user_space_shared[ sizeof(user_space_shared_t) +
->> PAGE_SIZE ];
->>
->> There is no error message, but I can't read the contents i wrote
->> inside the kernel module from the application.
->>
->> Your help would be appreciated.
->>
->> ps:
->> I am taking care of page offsets/boundaries.
->> I'm using kernel 2.6.32 for ia64.
->>
->>
->> --
->> Eduardo Henrique Molina da Cruz
->> PhD student
->> Parallel and Distributed Processing Group
->> Federal University of Rio Grande do Sul (UFRGS)
-
-
-
--- 
-Eduardo Henrique Molina da Cruz
-PhD student
-Parallel and Distributed Processing Group
-Federal University of Rio Grande do Sul (UFRGS)
+Thank you for noticing that. Linus does not look to have pulled it - so 
+we still have some time
+to fix this right.
