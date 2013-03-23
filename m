@@ -1,119 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab3CWXt5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 19:49:57 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37102 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752457Ab3CWXtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 19:49:55 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: [PATCH] ACPI / PM: Fix potential problem in acpi_device_get_power()
-Date: Sun, 24 Mar 2013 00:57:16 +0100
-Message-ID: <6380949.vJPdL9PvJh@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc3+; KDE/4.9.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752721Ab3CWXu2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 19:50:28 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:49886 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419Ab3CWXu0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 19:50:26 -0400
+Subject: [GIT PULL] target fixes for v3.9-rc4
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Asias He <asias@redhat.com>,
+        Andy Grover <agrover@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 23 Mar 2013 16:50:18 -0700
+Message-ID: <1364082618.30339.312.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi Linus!
 
-Theoretically, in some situations acpi_device_get_power() may return
-an incorrect result, because the settings of the power resources
-depended on by the device may indicate a power state shallower than
-the actual power state of the device.
+Here is the current set of target-pending/master fixes for v3.9-rc4.
 
-Say that two devices, A and B, depend on two power resources, X and
-Y, in such a way that _PR0 for both A and B list both X and Y and
-_PR3 for both A and B list power resource Y alone.  Also suppose
-that _PS0 and _PS3 are present for both A and B.  Then, if devices
-A and B are initially in D0, power resources X and Y are initially
-"on" and their reference counters are equal to 2.  To put device A
-into power state D3hot the kernel will decrement the reference
-counter of power resource X, but that power resource won't be turned
-off, because it is still in use by device B (its reference counter is
-equal to 1).  Next, _PS3 will be executed for device A.  Afterward
-the configuration of the power resources will indicate that device
-A is in power state D0 (both X and Y are "on"), but in fact it is
-in D3hot (because _PS3 has been executed for it).
+Please go ahead and pull from:
 
-In that situation, if acpi_device_get_power() is called to get the
-power state of device A, it will first execute _PSC for it which
-should return 3.  That will cause acpi_device_get_power() to run
-acpi_power_get_inferred_state() for device A and the resultant power
-state will be D0, which is incorrect.
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
 
-To fix that change acpi_device_get_power() to first execute
-acpi_power_get_inferred_state() for the given device (if it
-depends on power resources) and to evaluate _PSC for it subsequently,
-so that the result inferred from the power resources configuration
-can be amended by the _PSC return value.
+These are mostly minor fixes this time around.  The iscsi-target CHAP
+big-endian bugfix and bump FD_MAX_SECTORS=2048 default patch to allow
+1MB sized I/Os for FILEIO backends on >= v3.5 code are both CC'ed to
+stable.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/device_pm.c |   39 ++++++++++++++++++++++++---------------
- 1 file changed, 24 insertions(+), 15 deletions(-)
+Also, there is a persistent reservations regression that has recently
+been reported for >= v3.8.x code, that is currently being tracked down
+for v3.9.
 
-Index: linux-pm/drivers/acpi/device_pm.c
-===================================================================
---- linux-pm.orig/drivers/acpi/device_pm.c
-+++ linux-pm/drivers/acpi/device_pm.c
-@@ -145,27 +145,36 @@ int acpi_device_get_power(struct acpi_de
- 	}
- 
- 	/*
--	 * Get the device's power state either directly (via _PSC) or
--	 * indirectly (via power resources).
-+	 * Get the device's power state from power resources settings and _PSC,
-+	 * if available.
- 	 */
-+	if (device->power.flags.power_resources) {
-+		int error = acpi_power_get_inferred_state(device, &result);
-+		if (error)
-+			return error;
-+	}
- 	if (device->power.flags.explicit_get) {
-+		acpi_handle handle = device->handle;
- 		unsigned long long psc;
--		acpi_status status = acpi_evaluate_integer(device->handle,
--							   "_PSC", NULL, &psc);
-+		acpi_status status;
-+
-+		status = acpi_evaluate_integer(handle, "_PSC", NULL, &psc);
- 		if (ACPI_FAILURE(status))
- 			return -ENODEV;
- 
--		result = psc;
--	}
--	/* The test below covers ACPI_STATE_UNKNOWN too. */
--	if (result <= ACPI_STATE_D2) {
--	  ; /* Do nothing. */
--	} else if (device->power.flags.power_resources) {
--		int error = acpi_power_get_inferred_state(device, &result);
--		if (error)
--			return error;
--	} else if (result == ACPI_STATE_D3_HOT) {
--		result = ACPI_STATE_D3;
-+		/*
-+		 * The power resources settings may indicate a power state
-+		 * shallower than the actual power state of the device.
-+		 *
-+		 * Moreover, on systems predating ACPI 4.0, if the device
-+		 * doesn't depend on any power resources and _PSC returns 3,
-+		 * that means "power off".  We need to maintain compatibility
-+		 * with those systems.
-+		 */
-+		if (psc > result && psc < ACPI_STATE_D3_COLD)
-+			result = psc;
-+		else if (result == ACPI_STATE_UNKNOWN)
-+			result = psc > ACPI_STATE_D2 ? ACPI_STATE_D3_COLD : psc;
- 	}
- 
- 	/*
+Thank you,
+
+--nab
+
+Andy Grover (1):
+  target/iscsi: Fix mutual CHAP auth on big-endian arches
+
+Asias He (3):
+  tcm_vhost: Add missed lock in vhost_scsi_clear_endpoint()
+  tcm_vhost: Flush vhost_work in vhost_scsi_flush()
+  target/pscsi: Reject cross page boundary case in pscsi_map_sg
+
+Hannes Reinecke (1):
+  target_core_sbc: use noop for SYNCHRONIZE_CACHE
+
+Nicholas Bellinger (1):
+  target/file: Bump FD_MAX_SECTORS to 2048 to handle 1M sized I/Os
+
+Wei Yongjun (1):
+  target: fix possible memory leak in core_tpg_register()
+
+ drivers/target/iscsi/iscsi_target_auth.c |    5 ++++-
+ drivers/target/target_core_file.h        |    2 +-
+ drivers/target/target_core_pscsi.c       |   11 ++++++++---
+ drivers/target/target_core_sbc.c         |    7 +++++--
+ drivers/target/target_core_tpg.c         |    3 ++-
+ drivers/vhost/tcm_vhost.c                |   13 +++++++++----
+ 6 files changed, 29 insertions(+), 12 deletions(-)
 
