@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423173Ab3CWD10 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 23:27:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22005 "EHLO mx1.redhat.com"
+	id S1423185Ab3CWDgD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 23:36:03 -0400
+Received: from mga03.intel.com ([143.182.124.21]:11493 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423101Ab3CWD1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 23:27:25 -0400
-Date: Fri, 22 Mar 2013 23:27:16 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        Heinz Mauelshagen <heinzm@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Joe Thornber <ejt@redhat.com>, Mikulas Patocka <mpatocka@redhat.com>,
-        Paul Taysom <taysom@chromium.org>
-Subject: Re: dm: dm-cache fails to write the cache device in writethrough mode
-Message-ID: <20130323032715.GA7692@redhat.com>
-References: <20130322201151.GB5357@blackbox.djwong.org>
- <20130322223425.GA5638@redhat.com>
- <20130322231600.GD5357@blackbox.djwong.org>
+	id S1422664Ab3CWDgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 23:36:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,896,1355126400"; 
+   d="scan'208";a="217977596"
+Message-ID: <514D2369.2010200@intel.com>
+Date: Sat, 23 Mar 2013 11:37:13 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130322231600.GD5357@blackbox.djwong.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jens Axboe <axboe@kernel.dk>
+CC: Alan Stern <stern@rowland.harvard.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Tejun Heo <tj@kernel.org>, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>, Oliver Neukum <oneukum@suse.de>
+Subject: Re: [PATCH RESEND v11 0/4] block layer runtime pm
+References: <1363338305-4987-1-git-send-email-aaron.lu@intel.com> <20130322150958.GK25978@kernel.dk>
+In-Reply-To: <20130322150958.GK25978@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22 2013 at  7:16pm -0400,
-Darrick J. Wong <darrick.wong@oracle.com> wrote:
-
-> On Fri, Mar 22, 2013 at 06:34:28PM -0400, Mike Snitzer wrote:
-> > On Fri, Mar 22 2013 at  4:11pm -0400,
-> > Darrick J. Wong <darrick.wong@oracle.com> wrote:
-> > 
-> > > The new writethrough strategy for dm-cache issues a bio to the origin device,
-> > > remaps the bio to the cache device, and issues the bio to the cache device.
-> > > However, the block layer modifies bi_sector and bi_size, so we need to preserve
-> > > these or else nothing gets written to the cache (bi_size == 0).  This fixes the
-> > > problem where someone writes a block through the cache, but a subsequent reread
-> > > (from the cache) returns old contents.
-> > 
-> > Your writethrough blkid test results are certainly strange.  But I'm not
-> > aware of where the block layer would modify bi_size and bi_sector;
-> > please elaborate.
-> > 
-> > I cannot reproduce your original report.  I developed
-> > 'test_writethrough_ext4_uuids_match', apologies for the ruby code:
+On 03/22/2013 11:09 PM, Jens Axboe wrote:
+> On Fri, Mar 15 2013, Aaron Lu wrote:
+>> In August 2010, Jens and Alan discussed about "Runtime PM and the block
+>> layer". http://marc.info/?t=128259108400001&r=1&w=2
+>> And then Alan has given a detailed implementation guide:
+>> http://marc.info/?l=linux-scsi&m=133727953625963&w=2
+>>
+>> To test:
+>> # ls -l /sys/block/sda
+>> /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/block/sda
+>>
+>> # echo 10000 > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/autosuspend_delay_ms
+>> # echo auto > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/control
+>> Then you'll see sda is suspended after 10secs idle.
+>>
+>> [ 1767.680192] sd 2:0:0:0: [sda] Synchronizing SCSI cache
+>> [ 1767.680317] sd 2:0:0:0: [sda] Stopping disk
+>>
+>> And if you do some IO, it will resume immediately.
+>> [ 1791.052438] sd 2:0:0:0: [sda] Starting disk
+>>
+>> For test, I often set the autosuspend time to 1 second. If you are using
+>> a GUI, the 10 seconds delay may be too long that the disk can not enter
+>> runtime suspended state.
+>>
+>> Note that sd's runtime suspend callback will dump some kernel messages
+>> and the syslog daemon will write kernel message to /var/log/messages,
+>> making the disk instantly resume after suspended. So for test, the
+>> syslog daemon should better be temporarily stopped.
+>>
+>> A git repo for it, on top of v3.9-rc1:
+>> https://github.com/aaronlu/linux.git blockpm
 > 
-> Hmm... I'm building my kernels off 0a7e453103b9718d357688b83bb968ee108cc874 in
-> Linus' tree (post 3.9-rc3).  This is the full output of dmsetup table:
-> 
-> moocache-blocks: 0 1039360 linear 8:16 9088
-> moocache-metadata: 0 8704 linear 8:16 384
-> moocache: 0 67108864 cache 253:0 253:1 8:0 512 1 writethrough default 4 random_threshold 4 sequential_threshold 32768
-> 
-> 253:0 -> moocache-metadata and 253:1 -> moocache-blocks.
-> 
-> I'm curious what your setup is...
+> I think it's about time we get this in, but the patchset isn't very
+> friendly from a scsi vs block perspective. Can you re-shuffle the REQ_PM
+> change, just do a separate patch for that. I'll get it queued up for
+> 3.10 then.
 
-Here are the tables:
-test-dev-238267: 0 8192 linear /dev/stec/metadata 0
-test-dev-255913: 0 2097152 linear /dev/stec/metadata 8192
-test-dev-655144: 0 20480 linear /dev/spindle/data 0
-0 20480 cache /dev/mapper/test-dev-238267 /dev/mapper/test-dev-255913 /dev/mapper/test-dev-655144 512 1 writethrough default 0
+Thanks Jens.
 
-And I tweaked 'test_writethrough_ext4_uuids_match' to make sure to use the
-same thresholds you're using, full status output:
-0 20480 cache 15/1024 0 19 0 0 0 0 0 0 1 writethrough 2 migration_threshold 32768 4 random_threshold 4 sequential_threshold 512
+I'll spilt the first patch into two patches: one to introduce the REQ_PM
+flag in block layer and one to use that flag in SCSI layer. Will send
+out v12 soon.
 
-So the big difference is the thinp-test-suite uses intermediate linear
-DM layers above the slower sd device (spindle/data) -- whereas in your
-setup the origin device is direct to sd (8:0).
+Best regards,
+Aaron
 
-I'll re-run with the origin directly on sd in the morning and will
-report back.
