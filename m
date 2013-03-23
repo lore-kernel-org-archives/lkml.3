@@ -1,57 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab3CWRs0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 13:48:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23778 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751759Ab3CWRsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 13:48:25 -0400
-Date: Sat, 23 Mar 2013 18:46:05 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Anton Arapov <anton@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: Re: [PATCH 4/7] uretprobes: return probe entry, prepare_uretprobe()
-Message-ID: <20130323174605.GA3649@redhat.com>
-References: <1363957745-6657-1-git-send-email-anton@redhat.com> <1363957745-6657-5-git-send-email-anton@redhat.com>
+	id S1751974Ab3CWRuT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 13:50:19 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:55199 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab3CWRuR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 13:50:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363957745-6657-5-git-send-email-anton@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CA+55aFx_6_dwYNGkZHvtZ=HgCjECrj-9nSWMJsH8VSHtfVMp7A@mail.gmail.com>
+References: <alpine.LNX.2.02.1303231531520.2097@blackhole.lst.de>
+	<alpine.LNX.2.02.1303231537190.2097@blackhole.lst.de>
+	<CA+55aFx_6_dwYNGkZHvtZ=HgCjECrj-9nSWMJsH8VSHtfVMp7A@mail.gmail.com>
+Date: Sat, 23 Mar 2013 10:50:16 -0700
+X-Google-Sender-Auth: BdNYJ3HhrVmmYrm0BGv2DUTrm64
+Message-ID: <CA+55aFwaysjV+8gDDJfeMPWziOiXWvmM3PYL2ayuVfnuaMZocg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] KMS: fix EDID detailed timing vsync parsing
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Torsten Duwe <duwe@lst.de>
+Cc: David Airlie <airlied@linux.ie>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22, Anton Arapov wrote:
->
-> @@ -1513,20 +1596,26 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
->  {
->  	struct uprobe_consumer *uc;
->  	int remove = UPROBE_HANDLER_REMOVE;
-> +	bool prep = false; /* prepare return uprobe, when needed */
->  	int rc = 0;
->  
->  	down_read(&uprobe->register_rwsem);
->  	for (uc = uprobe->consumers; uc; uc = uc->next) {
->  		if (uc->handler)
->  			rc = uc->handler(uc, regs);
-> -		else
-> +		else {
-> +			prep |= true;
->  			remove = 0;
-> +		}
+How the heck did you get your *own* email address wrong in your mail
+headers? "torsten@lst.de" bounces, apparently your email address is
+"duwe@lst.org". Let's see if that bounces..
 
-This looks wrong (see also my reply to 1/7).
-
-What if uc->handler != NULL and uc->ret_handler != NULL ? We need
-
-	if (uc->rer_handler)
-		need_prep = true;
-
-Oleg.
-
+                  Linus
