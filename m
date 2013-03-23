@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752251Ab3CWLKK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 07:10:10 -0400
-Received: from forward11.mail.yandex.net ([95.108.130.93]:60144 "EHLO
-	forward11.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab3CWLKI (ORCPT
+	id S1750876Ab3CWLjJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 07:39:09 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:61191 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750708Ab3CWLjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 07:10:08 -0400
-X-Greylist: delayed 705 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Mar 2013 07:10:08 EDT
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Michal Marek <mmarek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] scripts/tags.sh: Add magic for OFFSET and DEFINE
-MIME-Version: 1.0
-Message-Id: <1810321364036300@web2f.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Sat, 23 Mar 2013 14:58:20 +0400
+	Sat, 23 Mar 2013 07:39:07 -0400
+Message-ID: <1364038742.1390.228.camel@x61.thuisdomein>
+Subject: [PATCH] um: remove "config STDIO_CONSOLE"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>
+Cc: user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Date: Sat, 23 Mar 2013 12:39:02 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+X-OriginalArrivalTime: 23 Mar 2013 11:39:03.0253 (UTC) FILETIME=[04C24050:01CE27BB]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add rules for definitions which is generally used in asm-offsets files.
+The only user of Kconfig symbol STDIO_CONSOLE was removed in v2.5.65.
+Its entry can safely be removed.
 
-Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
-CC: Michal Marek <mmarek@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- scripts/tags.sh |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index 26a87e6..74f02e4 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -199,7 +199,9 @@ exuberant()
- 	--regex-c='/DEFINE_PER_CPU_SHARED_ALIGNED\(([^,]*,\s*)(\w*).*\)/\2/v/' \
- 	--regex-c='/DECLARE_WAIT_QUEUE_HEAD\((\w*)/\1/v/'		\
- 	--regex-c='/DECLARE_(TASKLET|WORK|DELAYED_WORK)\((\w*)/\2/v/'	\
--	--regex-c='/DEFINE_PCI_DEVICE_TABLE\((\w*)/\1/v/'
-+	--regex-c='/DEFINE_PCI_DEVICE_TABLE\((\w*)/\1/v/'		\
-+	--regex-c='/(^\s)OFFSET\((\w*)/\2/v/'				\
-+	--regex-c='/(^\s)DEFINE\((\w*)/\2/v/'
+0) Untested.
+
+1) A short history of STDIO_CONSOLE and CONFIG_STDIO_CONSOLE
+
+CONFIG_STDIO_CONSOLE was added in v2.4.9 (August 2001). It wrapped a
+call of stdio_console_init() in an #ifdef and #endif pair.
+
+The Kconfig symbol STDIO_CONSOLE was added in v2.5.35 (September 2002).
+That release also introduced a definition of stdio_console_init().
+
+Both CONFIG_STDIO_CONSOLE and the call of stdio_console_init() that it
+guarded were removed in v2.5.65 (March 2003). An instance of the
+console_initcall() macro was then added for stdio_console_init.
+
+ arch/um/Kconfig.char | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/arch/um/Kconfig.char b/arch/um/Kconfig.char
+index b9d7c42..f10738d 100644
+--- a/arch/um/Kconfig.char
++++ b/arch/um/Kconfig.char
+@@ -6,10 +6,6 @@ config STDERR_CONSOLE
+ 	help
+ 	  console driver which dumps all printk messages to stderr.
  
- 	all_kconfigs | xargs $1 -a                              \
- 	--langdef=kconfig --language-force=kconfig              \
+-config STDIO_CONSOLE
+-	bool
+-	default y
+-
+ config SSL
+ 	bool "Virtual serial line"
+ 	help
+-- 
+1.7.11.7
+
