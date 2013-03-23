@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641Ab3CWFiI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 01:38:08 -0400
-Received: from mail03-md.ns.itscom.net ([175.177.155.113]:46574 "EHLO
-	mail03-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754670Ab3CWFiG (ORCPT
+	id S1755749Ab3CWGJJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 02:09:09 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2522 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560Ab3CWGJH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 01:38:06 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH 2/9] vfs: export do_splice_direct() to modules
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: David Howells <dhowells@redhat.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        jack@suse.cz, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, sedat.dilek@googlemail.com, mszeredi@suse.cz
-In-Reply-To: <20130323044140.GS21522@ZenIV.linux.org.uk>
-References: <1363184193-1796-3-git-send-email-miklos@szeredi.hu> <1363184193-1796-1-git-send-email-miklos@szeredi.hu> <1944.1363525619@warthog.procyon.org.uk> <13789.1363973875@jrobl> <20130322181111.GP21522@ZenIV.linux.org.uk> <20130322182107.GQ21522@ZenIV.linux.org.uk> <23399.1364006951@jrobl> <20130323044140.GS21522@ZenIV.linux.org.uk>
-Date: Sat, 23 Mar 2013 14:37:46 +0900
-Message-ID: <26769.1364017066@jrobl>
+	Sat, 23 Mar 2013 02:09:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 22 Mar 2013 23:08:55 -0700
+From: Jay Agarwal <jagarwal@nvidia.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Sat, 23 Mar 2013 11:38:57 +0530
+Subject: RE: PCIE: 32 bit prefetchable memory not getting programmed in BARs
+Thread-Topic: PCIE: 32 bit prefetchable memory not getting programmed in BARs
+Thread-Index: Ac4njHmF8T/hAtYUR2iBLbfkk/8kcgAAFFzg
+Message-ID: <C79B248886DD134989C8FF6B096A91AB91B375A1A0@BGMAIL01.nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi All,
 
-Al Viro:
-> Different ->i_mutex; you are holding one on the parent directory already.
+In my Graphics card, it has 4 memory requirement:
 
-Let me make sure. In your scenario,
-- processA writes something into the union, and the unioning fs operates
-  the writable layer. After sb_start_write() succeeds, processA should
-  not block by the reason of fsfreeze.
-- processC causes the copyup.
-  The current aufs implementation holds parent->i_mutex on the writable
-  layer during the copyup. The parent->i_mutex can make processA
-  blocking.
+a. 32 bit non-prefetchable
+b. 32 bit prefetchable
+c. 64 bit non-prefetchable.
+d. 64 bit prefetchable
 
-Now I am considering the copyup approach you suggested in another mail,
-and I am going to replace your
-	"unlink the target, re-link later, no dir lock during copyup"
-by
-	"make it hidden instead of unlinking, rename the correct name
-	later, no dir lock during copyup"
-since I am not sure all FSs can operate "->link with the unlinked
-one". I guess most FS can handle it, but I don't want to make sure
-everything particulary remote fs, journals.
+And I see a is programmed in BAR0(offset 0x10), c in BAR3(offset 0x1C), d in BAR1(offset 0x14) but b is not programmed anywhere.
 
-To make a file "hidden", I guess I can use the aufs "doubley whiteouted"
-approach. As you might know, aufs prepends the ".wh." prefix to the
-filename as whiteout. With one more prefix, the name loses the role of
-whiteout. Aufs simply ignores such doubly whiteouted name.
-The demerit is that aufs has to limit the length of the name.
+So is it  an expected behaviour? 
+
+With best,
+Jay
 
 
-J. R. Okajima
