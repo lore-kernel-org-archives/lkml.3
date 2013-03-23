@@ -1,196 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044Ab3CWUhj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 16:37:39 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:63184 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab3CWUhi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 16:37:38 -0400
+	id S1752071Ab3CWUmi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 16:42:38 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:42836 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751899Ab3CWUmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 16:42:37 -0400
+Date: Sat, 23 Mar 2013 20:42:37 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v3] wfcqueue: functions for local append and enqueue
+Message-ID: <20130323204237.GA27622@dcvr.yhbt.net>
+References: <20130311213602.GB9829@Krystal>
+ <20130321114313.GA17275@dcvr.yhbt.net>
+ <20130322020150.GA17809@Krystal>
+ <20130322103146.GA9078@dcvr.yhbt.net>
+ <20130323190726.GA30029@dcvr.yhbt.net>
+ <20130323194309.GA32464@Krystal>
 MIME-Version: 1.0
-In-Reply-To: <20130323152948.GA3036@sgi.com>
-References: <20130318155619.GA18828@sgi.com>
-	<20130321105516.GC18484@gmail.com>
-	<alpine.DEB.2.02.1303211139110.3775@chino.kir.corp.google.com>
-	<20130322072532.GC10608@gmail.com>
-	<20130323152948.GA3036@sgi.com>
-Date: Sat, 23 Mar 2013 13:37:37 -0700
-X-Google-Sender-Auth: MvPwPASRncfENyugcoFDQhdN-UY
-Message-ID: <CAE9FiQUjVRUs02-ymmtO+5+SgqTWK8Ae6jJwD08uRbgR=eLJgw@mail.gmail.com>
-Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
-From: Yinghai Lu <yinghai@kernel.org>
-To: Russ Anderson <rja@sgi.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com
-Content-Type: multipart/mixed; boundary=20cf307f365cd6e95704d89d8aee
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130323194309.GA32464@Krystal>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf307f365cd6e95704d89d8aee
-Content-Type: text/plain; charset=ISO-8859-1
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> * Eric Wong (normalperson@yhbt.net) wrote:
+> >  /*
+> > + * ___wfcq_append: append one local queue to another local queue
+> > + *
 
-On Sat, Mar 23, 2013 at 8:29 AM, Russ Anderson <rja@sgi.com> wrote:
-> On Fri, Mar 22, 2013 at 08:25:32AM +0100, Ingo Molnar wrote:
-> ------------------------------------------------------------
-> When booting on a large memory system, the kernel spends
-> considerable time in memmap_init_zone() setting up memory zones.
-> Analysis shows significant time spent in __early_pfn_to_nid().
->
-> The routine memmap_init_zone() checks each PFN to verify the
-> nid is valid.  __early_pfn_to_nid() sequentially scans the list of
-> pfn ranges to find the right range and returns the nid.  This does
-> not scale well.  On a 4 TB (single rack) system there are 308
-> memory ranges to scan.  The higher the PFN the more time spent
-> sequentially spinning through memory ranges.
->
-> Since memmap_init_zone() increments pfn, it will almost always be
-> looking for the same range as the previous pfn, so check that
-> range first.  If it is in the same range, return that nid.
-> If not, scan the list as before.
->
-> A 4 TB (single rack) UV1 system takes 512 seconds to get through
-> the zone code.  This performance optimization reduces the time
-> by 189 seconds, a 36% improvement.
->
-> A 2 TB (single rack) UV2 system goes from 212.7 seconds to 99.8 seconds,
-> a 112.9 second (53%) reduction.
+> __wfcq_append() and ___wfcq_append() are meant to be private to
+> wfcqueue.h. Therefore, the comment above should be removed, since it is
+> not part of the API.
+> 
+> I notice that I should have used ___wfcq_append() for the original
+> append function for consistency (other private helpers in this header
+> are prefixed with ___).
+> 
+> So maybe we should rename __wfcq_append to ___wfcq_append (making it
+> clear that it is a private helper), and introduce your helper as
+> ___wfcq_append_local() (I don't care about having "local" in there since
+> it is not part of the exposed API).
 
-Interesting. but only have 308 entries in memblock...
+Thanks for the explanation, I've squashed that renames into my patch
+below and removed the comment.
 
-Did you try to extend memblock_search() to search nid back?
-Something like attached patch. That should save more time.
+> > +/*
+> > + * __wfcq_enqueue: enqueue a node into a local queue
+> 
+> The concept of "local queue" is not clearly defined.
+> 
+> Perhaps it would be clearer to state:
+> 
+>  * __wfcq_enqueue: enqueue a node into a queue, requiring mutual exclusion.
 
->
-> Signed-off-by: Russ Anderson <rja@sgi.com>
-> ---
->  arch/ia64/mm/numa.c |   15 ++++++++++++++-
->  mm/page_alloc.c     |   15 ++++++++++++++-
->  2 files changed, 28 insertions(+), 2 deletions(-)
->
-> Index: linux/mm/page_alloc.c
-> ===================================================================
-> --- linux.orig/mm/page_alloc.c  2013-03-19 16:09:03.736450861 -0500
-> +++ linux/mm/page_alloc.c       2013-03-22 17:07:43.895405617 -0500
-> @@ -4161,10 +4161,23 @@ int __meminit __early_pfn_to_nid(unsigne
->  {
->         unsigned long start_pfn, end_pfn;
->         int i, nid;
-> +       /*
-> +          NOTE: The following SMP-unsafe globals are only used early
-> +          in boot when the kernel is running single-threaded.
-> +        */
-> +       static unsigned long last_start_pfn, last_end_pfn;
-> +       static int last_nid;
-> +
-> +       if (last_start_pfn <= pfn && pfn < last_end_pfn)
-> +               return last_nid;
->
->         for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, &nid)
-> -               if (start_pfn <= pfn && pfn < end_pfn)
-> +               if (start_pfn <= pfn && pfn < end_pfn) {
-> +                       last_start_pfn = start_pfn;
-> +                       last_end_pfn = end_pfn;
-> +                       last_nid = nid;
->                         return nid;
-> +               }
->         /* This is a memory hole */
->         return -1;
->  }
-> Index: linux/arch/ia64/mm/numa.c
-> ===================================================================
-> --- linux.orig/arch/ia64/mm/numa.c      2013-02-25 15:49:44.000000000 -0600
-> +++ linux/arch/ia64/mm/numa.c   2013-03-22 16:09:44.662268239 -0500
-> @@ -61,13 +61,26 @@ paddr_to_nid(unsigned long paddr)
->  int __meminit __early_pfn_to_nid(unsigned long pfn)
->  {
->         int i, section = pfn >> PFN_SECTION_SHIFT, ssec, esec;
-> +       /*
-> +          NOTE: The following SMP-unsafe globals are only used early
-> +          in boot when the kernel is running single-threaded.
-> +       */
-> +       static unsigned long last_start_pfn, last_end_pfn;
+Sounds good to me.  Updated patch below:
 
-last_ssec, last_esec?
+-------------------------------8<-----------------------------
+From: Eric Wong <normalperson@yhbt.net>
+Date: Sat, 23 Mar 2013 19:07:26 +0000
+Subject: [PATCH] wfcqueue: functions for local append and enqueue
 
+With level-triggered epoll, append/enqueue operations to the
+local/locked queues increase performance by avoiding unnecessary atomic
+operations and barriers.  These are necessary to avoid performance
+regressions when looping through ep_send_events and appending many items
+to a local queue where the caller already manages mutual exclusion.
 
-> +       static int last_nid;
-> +
-> +       if (section >= last_ssec && section < last_esec)
-> +               return last_nid;
->
->         for (i = 0; i < num_node_memblks; i++) {
->                 ssec = node_memblk[i].start_paddr >> PA_SECTION_SHIFT;
->                 esec = (node_memblk[i].start_paddr + node_memblk[i].size +
->                         ((1L << PA_SECTION_SHIFT) - 1)) >> PA_SECTION_SHIFT;
-> -               if (section >= ssec && section < esec)
-> +               if (section >= ssec && section < esec) {
-> +                       last_ssec = ssec;
-> +                       last_esec = esec;
-> +                       last_nid = node_memblk[i].nid
->                         return node_memblk[i].nid;
-> +               }
->         }
->
->         return -1;
->
+Changes since v1 and v2:
+* Function renaming and documentation updates
+* rename the existing private __wfcq_append to ___wfcq_append
 
-also looks like you forget to put IA maintainers in the To list.
+Signed-off-by: Eric Wong <normalperson@yhbt.net>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Davide Libenzi <davidel@xmailserver.org>
+---
+ include/linux/wfcqueue.h | 56 +++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 46 insertions(+), 10 deletions(-)
 
-may just put ia64 part in separated patch?
+diff --git a/include/linux/wfcqueue.h b/include/linux/wfcqueue.h
+index 9464a0c..a452ab9 100644
+--- a/include/linux/wfcqueue.h
++++ b/include/linux/wfcqueue.h
+@@ -55,14 +55,16 @@
+  * [4] __wfcq_splice (source queue)
+  * [5] __wfcq_first
+  * [6] __wfcq_next
++ * [7] __wfcq_enqueue
+  *
+- *     [1] [2] [3] [4] [5] [6]
+- * [1]  -   -   -   -   -   -
+- * [2]  -   -   -   -   -   -
+- * [3]  -   -   X   X   X   X
+- * [4]  -   -   X   -   X   X
+- * [5]  -   -   X   X   -   -
+- * [6]  -   -   X   X   -   -
++ *     [1] [2] [3] [4] [5] [6] [7]
++ * [1]  -   -   -   -   -   -   X
++ * [2]  -   -   -   -   -   -   X
++ * [3]  -   -   X   X   X   X   X
++ * [4]  -   -   X   -   X   X   X
++ * [5]  -   -   X   X   -   -   X
++ * [6]  -   -   X   X   -   -   X
++ * [7]  X   X   X   X   X   X   X
+  *
+  * Besides locking, mutual exclusion of dequeue, splice and iteration
+  * can be ensured by performing all of those operations from a single
+@@ -147,7 +149,7 @@ static inline bool wfcq_empty(struct wfcq_head *head,
+ 		&& CMM_LOAD_SHARED(tail->p) == &head->node;
+ }
+ 
+-static inline bool __wfcq_append(struct wfcq_head *head,
++static inline bool ___wfcq_append(struct wfcq_head *head,
+ 		struct wfcq_tail *tail,
+ 		struct wfcq_node *new_head,
+ 		struct wfcq_node *new_tail)
+@@ -201,7 +203,41 @@ static inline bool wfcq_enqueue(struct wfcq_head *head,
+ 		struct wfcq_tail *tail,
+ 		struct wfcq_node *new_tail)
+ {
+-	return __wfcq_append(head, tail, new_tail, new_tail);
++	return ___wfcq_append(head, tail, new_tail, new_tail);
++}
++
++static inline bool ___wfcq_append_local(struct wfcq_head *head,
++		struct wfcq_tail *tail,
++		struct wfcq_node *new_head,
++		struct wfcq_node *new_tail)
++{
++	struct wfcq_node *old_tail;
++
++	old_tail = tail->p;
++	tail->p = new_tail;
++	old_tail->next = new_head;
++
++	/*
++	 * Return false if queue was empty prior to adding the node,
++	 * else return true.
++	 */
++	return old_tail != &head->node;
++}
++
++/*
++ * __wfcq_enqueue: enqueue a node into a queue, requiring mutual exclusion.
++ *
++ * No memory barriers are issued.  Mutual exclusion is the responsibility
++ * of the caller.
++ *
++ * Returns false if the queue was empty prior to adding the node.
++ * Returns true otherwise.
++ */
++static inline bool __wfcq_enqueue(struct wfcq_head *head,
++		struct wfcq_tail *tail,
++		struct wfcq_node *new_tail)
++{
++	return ___wfcq_append_local(head, tail, new_tail, new_tail);
+ }
+ 
+ /*
+@@ -398,7 +434,7 @@ static inline enum wfcq_ret __wfcq_splice(
+ 	 * Append the spliced content of src_q into dest_q. Does not
+ 	 * require mutual exclusion on dest_q (wait-free).
+ 	 */
+-	if (__wfcq_append(dest_q_head, dest_q_tail, head, tail))
++	if (___wfcq_append(dest_q_head, dest_q_tail, head, tail))
+ 		return WFCQ_RET_DEST_NON_EMPTY;
+ 	else
+ 		return WFCQ_RET_DEST_EMPTY;
+-- 
+1.8.2.rc3.2.geae6cf5
 
-Thanks
-
-Yinghai
-
---20cf307f365cd6e95704d89d8aee
-Content-Type: application/octet-stream; name="memblock_search_pfn_nid.patch"
-Content-Disposition: attachment; filename="memblock_search_pfn_nid.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hen8ipgv0
-
-LS0tCiBpbmNsdWRlL2xpbnV4L21lbWJsb2NrLmggfCAgICAyICsrCiBtbS9tZW1ibG9jay5jICAg
-ICAgICAgICAgfCAgIDE4ICsrKysrKysrKysrKysrKysrKwogbW0vcGFnZV9hbGxvYy5jICAgICAg
-ICAgIHwgICAxNCArKysrKysrKy0tLS0tLQogMyBmaWxlcyBjaGFuZ2VkLCAyOCBpbnNlcnRpb25z
-KCspLCA2IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L21lbWJs
-b2NrLmgKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvaW5jbHVkZS9saW51eC9tZW1ibG9j
-ay5oCisrKyBsaW51eC0yLjYvaW5jbHVkZS9saW51eC9tZW1ibG9jay5oCkBAIC02MCw2ICs2MCw4
-IEBAIGludCBtZW1ibG9ja19yZXNlcnZlKHBoeXNfYWRkcl90IGJhc2UsIHAKIHZvaWQgbWVtYmxv
-Y2tfdHJpbV9tZW1vcnkocGh5c19hZGRyX3QgYWxpZ24pOwogCiAjaWZkZWYgQ09ORklHX0hBVkVf
-TUVNQkxPQ0tfTk9ERV9NQVAKK2ludCBtZW1ibG9ja19zZWFyY2hfcGZuX25pZCh1bnNpZ25lZCBs
-b25nIHBmbiwgdW5zaWduZWQgbG9uZyAqc3RhcnRfcGZuLAorCQkJICAgIHVuc2lnbmVkIGxvbmcg
-ICplbmRfcGZuKTsKIHZvaWQgX19uZXh0X21lbV9wZm5fcmFuZ2UoaW50ICppZHgsIGludCBuaWQs
-IHVuc2lnbmVkIGxvbmcgKm91dF9zdGFydF9wZm4sCiAJCQkgIHVuc2lnbmVkIGxvbmcgKm91dF9l
-bmRfcGZuLCBpbnQgKm91dF9uaWQpOwogCkluZGV4OiBsaW51eC0yLjYvbW0vbWVtYmxvY2suYwo9
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9tbS9tZW1ibG9jay5jCisrKyBsaW51eC0yLjYv
-bW0vbWVtYmxvY2suYwpAQCAtOTEwLDYgKzkxMCwyNCBAQCBpbnQgX19pbml0X21lbWJsb2NrIG1l
-bWJsb2NrX2lzX21lbW9yeShwCiAJcmV0dXJuIG1lbWJsb2NrX3NlYXJjaCgmbWVtYmxvY2subWVt
-b3J5LCBhZGRyKSAhPSAtMTsKIH0KIAorI2lmZGVmIENPTkZJR19IQVZFX01FTUJMT0NLX05PREVf
-TUFQCitpbnQgX19pbml0X21lbWJsb2NrIG1lbWJsb2NrX3NlYXJjaF9wZm5fbmlkKHVuc2lnbmVk
-IGxvbmcgcGZuLAorCQkJIHVuc2lnbmVkIGxvbmcgKnN0YXJ0X3BmbiwgdW5zaWduZWQgbG9uZyAq
-ZW5kX3BmbikKK3sKKwlzdHJ1Y3QgbWVtYmxvY2tfdHlwZSAqdHlwZSA9ICZtZW1ibG9jay5tZW1v
-cnk7CisJaW50IG1pZCA9IG1lbWJsb2NrX3NlYXJjaCh0eXBlLCAocGh5c19hZGRyX3QpcGZuIDw8
-IFBBR0VfU0hJRlQpOworCisJaWYgKG1pZCA9PSAtMSkKKwkJcmV0dXJuIC0xOworCisJKnN0YXJ0
-X3BmbiA9IHR5cGUtPnJlZ2lvbnNbbWlkXS5iYXNlID4+IFBBR0VfU0hJRlQ7CisJKmVuZF9wZm4g
-PSAodHlwZS0+cmVnaW9uc1ttaWRdLmJhc2UgKyB0eXBlLT5yZWdpb25zW21pZF0uc2l6ZSkKKwkJ
-CT4+IFBBR0VfU0hJRlQ7CisKKwlyZXR1cm4gdHlwZS0+cmVnaW9uc1ttaWRdLm5pZDsKK30KKyNl
-bmRpZgorCiAvKioKICAqIG1lbWJsb2NrX2lzX3JlZ2lvbl9tZW1vcnkgLSBjaGVjayBpZiBhIHJl
-Z2lvbiBpcyBhIHN1YnNldCBvZiBtZW1vcnkKICAqIEBiYXNlOiBiYXNlIG9mIHJlZ2lvbiB0byBj
-aGVjawpJbmRleDogbGludXgtMi42L21tL3BhZ2VfYWxsb2MuYwo9PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51
-eC0yLjYub3JpZy9tbS9wYWdlX2FsbG9jLmMKKysrIGxpbnV4LTIuNi9tbS9wYWdlX2FsbG9jLmMK
-QEAgLTQxNjAsMTMgKzQxNjAsMTUgQEAgaW50IF9fbWVtaW5pdCBpbml0X2N1cnJlbnRseV9lbXB0
-eV96b25lKAogaW50IF9fbWVtaW5pdCBfX2Vhcmx5X3Bmbl90b19uaWQodW5zaWduZWQgbG9uZyBw
-Zm4pCiB7CiAJdW5zaWduZWQgbG9uZyBzdGFydF9wZm4sIGVuZF9wZm47Ci0JaW50IGksIG5pZDsK
-KwlpbnQgbmlkOwogCi0JZm9yX2VhY2hfbWVtX3Bmbl9yYW5nZShpLCBNQVhfTlVNTk9ERVMsICZz
-dGFydF9wZm4sICZlbmRfcGZuLCAmbmlkKQotCQlpZiAoc3RhcnRfcGZuIDw9IHBmbiAmJiBwZm4g
-PCBlbmRfcGZuKQotCQkJcmV0dXJuIG5pZDsKLQkvKiBUaGlzIGlzIGEgbWVtb3J5IGhvbGUgKi8K
-LQlyZXR1cm4gLTE7CisJbmlkID0gbWVtYmxvY2tfc2VhcmNoX3Bmbl9uaWQocGZuLCAmc3RhcnRf
-cGZuLCAmZW5kX3Bmbik7CisKKwlpZiAobmlkICE9IC0xKSB7CisJLyogc2F2ZSBzdGFydF9wZm4s
-IGFuZCBlbmRfcGZuID8qLworCX0KKworCXJldHVybiBuaWQ7CiB9CiAjZW5kaWYgLyogQ09ORklH
-X0hBVkVfQVJDSF9FQVJMWV9QRk5fVE9fTklEICovCiAK
---20cf307f365cd6e95704d89d8aee--
