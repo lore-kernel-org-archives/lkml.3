@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681Ab3CWQsz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 12:48:55 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751496Ab3CWQsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 12:48:54 -0400
-From: Richard Weinberger <richard@nod.at>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, hpa@linux.intel.com, rusty@rustcorp.com.au,
-        viro@zeniv.linux.org.uk, jim.cromie@gmail.com,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] init: raise log level
-Date: Sat, 23 Mar 2013 17:48:39 +0100
-Message-Id: <1364057319-9455-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.1.4
+	id S1751755Ab3CWRIM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 13:08:12 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:36464 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab3CWRIL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 13:08:11 -0400
+X-IronPort-AV: E=Sophos;i="4.84,897,1355097600"; 
+   d="scan'208";a="14451719"
+Date: Sat, 23 Mar 2013 17:08:07 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [GIT PULL] (xen) stable/for-linus-3.9-rc3-tag
+In-Reply-To: <20130322210201.GA7932@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1303231705170.5135@kaball.uk.xensource.com>
+References: <20130322210201.GA7932@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the kernel was booted with the "quiet" boot option we have currently no
-chance to see why an initrd failes.
-Change KERN_WARNING to KERN_ERR to see what is going on.
+On Fri, 22 Mar 2013, Konrad Rzeszutek Wilk wrote:
+> Hey Linus,
+> 
+> Please git pull the following tag:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.9-rc3-tag
+> 
+> which is full of fixes. The signed tag has the details (as always) but
+> this is mostly just the last stragglers of the regression bugs that this
+> merge window had. There are also two normal bug-fixes in the lot.
+> 
+> P.S.
+> We are working out the kinks in an early warning #linux-next testing framework
+> so that it can give us heads up in the future - so the when the next merge
+> window opens we shouldn't have surprises.
+> 
+> Please pull!
+> 
+>  arch/x86/include/asm/xen/hypercall.h |  4 +--
+>  arch/x86/xen/mmu.c                   |  3 +-
+>  drivers/xen/Kconfig                  |  2 +-
+>  drivers/xen/events.c                 | 10 +++---
+>  drivers/xen/fallback.c               |  3 +-
+>  drivers/xen/xen-acpi-processor.c     |  3 ++
+>  drivers/xen/xen-pciback/pci_stub.c   | 59 +++++++++++++++++++++++++++---------
+>  include/xen/interface/physdev.h      |  6 ++++
+>  8 files changed, 64 insertions(+), 26 deletions(-)
+> 
+> David Vrabel (1):
+>       xen/events: avoid race with raising an event in unmask_evtchn()
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- init/main.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Unless I am looking in the wrong place, this patch is still the same one
+that breaks PV on HVM and Xen ARM guests, see:
 
-diff --git a/init/main.c b/init/main.c
-index 63534a1..1d63387 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -832,7 +832,7 @@ static int __ref kernel_init(void *unused)
- 	if (ramdisk_execute_command) {
- 		if (!run_init_process(ramdisk_execute_command))
- 			return 0;
--		printk(KERN_WARNING "Failed to execute %s\n",
-+		printk(KERN_ERR "Failed to execute %s\n",
- 				ramdisk_execute_command);
- 	}
- 
-@@ -845,7 +845,7 @@ static int __ref kernel_init(void *unused)
- 	if (execute_command) {
- 		if (!run_init_process(execute_command))
- 			return 0;
--		printk(KERN_WARNING "Failed to execute %s.  Attempting "
-+		printk(KERN_ERR "Failed to execute %s.  Attempting "
- 					"defaults...\n", execute_command);
- 	}
- 	if (!run_init_process("/sbin/init") ||
-@@ -891,7 +891,7 @@ static noinline void __init kernel_init_freeable(void)
- 
- 	/* Open the /dev/console on the rootfs, this should never fail */
- 	if (sys_open((const char __user *) "/dev/console", O_RDWR, 0) < 0)
--		printk(KERN_WARNING "Warning: unable to open an initial console.\n");
-+		printk(KERN_ERR "Warning: unable to open an initial console.\n");
- 
- 	(void) sys_dup(0);
- 	(void) sys_dup(0);
--- 
-1.8.1.4
+http://marc.info/?l=xen-devel&m=136377731913034
 
+David is aware of the issue and I think is working on an alternative
+fix.
