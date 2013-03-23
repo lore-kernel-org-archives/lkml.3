@@ -1,106 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab3CWOAo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 10:00:44 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59055 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003Ab3CWOAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 10:00:13 -0400
-X-IronPort-AV: E=Sophos;i="4.87,337,1363104000"; 
-   d="scan'208";a="6929131"
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, rusty@rustcorp.com.au,
-        mst@redhat.com, asias@redhat.com, JBottomley@parallels.com,
-        venkateshs@google.com, pbonzini@redhat.com, gaowanlong@cn.fujitsu.com
-Subject: [PATCH V7 5/5] virtio-scsi: reset virtqueue affinity when doing cpu hotplug
-Date: Sat, 23 Mar 2013 19:28:44 +0800
-Message-Id: <1364038124-32479-6-git-send-email-gaowanlong@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.rc2
-In-Reply-To: <1364038124-32479-1-git-send-email-gaowanlong@cn.fujitsu.com>
-References: <1364038124-32479-1-git-send-email-gaowanlong@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/23 19:26:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/23 19:27:02,
-	Serialize complete at 2013/03/23 19:27:02
+	id S1751287Ab3CWONp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 10:13:45 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:14685 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab3CWONo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 10:13:44 -0400
+Message-ID: <514DB895.9010201@tilera.com>
+Date: Sat, 23 Mar 2013 10:13:41 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Henrik Austad <haustad@cisco.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tile: ns2cycles should use __raw_get_cpu_var
+References: <514CB2E4.2030009@tilera.com> <1364023399-26075-1-git-send-email-haustad@cisco.com>
+In-Reply-To: <1364023399-26075-1-git-send-email-haustad@cisco.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add hot cpu notifier to reset the request virtqueue affinity
-when doing cpu hotplug.
+On 3/23/2013 3:23 AM, Henrik Austad wrote:
+> +	/* we don't have to disable preemptions here as each core has the same
+> +	 * clock-frequency */
 
-Cc: linux-scsi@vger.kernel.org
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reviewed-by: Asias He <asias@redhat.com>
----
- drivers/scsi/virtio_scsi.c | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+Looks OK except the comment is in the wrong style.  Kernel multiline comments
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 8dcdef0..2168258 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -110,6 +110,9 @@ struct virtio_scsi {
- 	/* If the affinity hint is set for virtqueues */
- 	bool affinity_hint_set;
- 
-+	/* CPU hotplug notifier */
-+	struct notifier_block nb;
-+
- 	struct virtio_scsi_vq ctrl_vq;
- 	struct virtio_scsi_vq event_vq;
- 	struct virtio_scsi_vq req_vqs[];
-@@ -762,6 +765,23 @@ static void virtscsi_set_affinity(struct virtio_scsi *vscsi, bool affinity)
- 	put_online_cpus();
- }
- 
-+static int virtscsi_cpu_callback(struct notifier_block *nfb,
-+				 unsigned long action, void *hcpu)
-+{
-+	struct virtio_scsi *vscsi = container_of(nfb, struct virtio_scsi, nb);
-+	switch(action) {
-+	case CPU_ONLINE:
-+	case CPU_ONLINE_FROZEN:
-+	case CPU_DEAD:
-+	case CPU_DEAD_FROZEN:
-+		__virtscsi_set_affinity(vscsi, true);
-+		break;
-+	default:
-+		break;
-+	}
-+	return NOTIFY_OK;
-+}
-+
- static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
- 			     struct virtqueue *vq)
- {
-@@ -884,6 +904,13 @@ static int virtscsi_probe(struct virtio_device *vdev)
- 	if (err)
- 		goto virtscsi_init_failed;
- 
-+	vscsi->nb.notifier_call = &virtscsi_cpu_callback;
-+	err = register_hotcpu_notifier(&vscsi->nb);
-+	if (err) {
-+		pr_err("registering cpu notifier failed\n");
-+		goto scsi_add_host_failed;
-+	}
-+
- 	cmd_per_lun = virtscsi_config_get(vdev, cmd_per_lun) ?: 1;
- 	shost->cmd_per_lun = min_t(u32, cmd_per_lun, shost->can_queue);
- 	shost->max_sectors = virtscsi_config_get(vdev, max_sectors) ?: 0xFFFF;
-@@ -921,6 +948,8 @@ static void virtscsi_remove(struct virtio_device *vdev)
- 
- 	scsi_remove_host(shost);
- 
-+	unregister_hotcpu_notifier(&vscsi->nb);
-+
- 	virtscsi_remove_vqs(vdev);
- 	scsi_host_put(shost);
- }
+/*
+ * Should look
+ * like this.
+ */
+
+and use full sentences with punctuation.  (Also, don't hyphenate clock frequency here.)  Thanks!
+
 -- 
-1.8.2.rc2
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
