@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab3CWDTS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 23:19:18 -0400
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:63974 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755205Ab3CWDTR (ORCPT
+	id S1423081Ab3CWDZB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 23:25:01 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56792 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422808Ab3CWDY7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 23:19:17 -0400
+	Fri, 22 Mar 2013 23:24:59 -0400
+From: "Anna, Suman" <s-anna@ti.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "loic.pallardy@st.com" <loic.pallardy@st.com>,
+        "omar.ramirez@copitl.com" <omar.ramirez@copitl.com>,
+        "lugo.fernando@gmail.com" <lugo.fernando@gmail.com>
+CC: "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH -next] mailbox: fix invalid use of sizeof in
+ mailbox_msg_send()
+Thread-Topic: [PATCH -next] mailbox: fix invalid use of sizeof in
+ mailbox_msg_send()
+Thread-Index: AQHOJwBE4+CeCCaimE6mVYfHW7MD8ZiynNEg
+Date: Sat, 23 Mar 2013 03:24:50 +0000
+Message-ID: <37C860A02101E749A747FA2D3C1E3C5049E935@DLEE11.ent.ti.com>
+References: <CAPgLHd-4=Nie0-jdy9-0V9v5GfgKP5L3XycQdw1qWL3dhzYjMw@mail.gmail.com>
+In-Reply-To: <CAPgLHd-4=Nie0-jdy9-0V9v5GfgKP5L3XycQdw1qWL3dhzYjMw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzqBEX=cGGZJJsfNWcDwQcUOP7njEog-kZZLRxuDg8Tzg@mail.gmail.com>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	<CA+i8gKKK_VxZtyyp1tqHnztd4++XyNXwbEEr-A29-J23PyuCfQ@mail.gmail.com>
-	<CA+55aFzqBEX=cGGZJJsfNWcDwQcUOP7njEog-kZZLRxuDg8Tzg@mail.gmail.com>
-Date: Sat, 23 Mar 2013 10:19:16 +0700
-Message-ID: <CA+i8gK+h+FyPiOL85BPa-Pu8+bDw6LW60-oRoLHgP2AnzMADCA@mail.gmail.com>
-Subject: Re: ipc,sem: sysv semaphore scalability
-From: Emmanuel Benisty <benisty.e@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rik van Riel <riel@surriel.com>, Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hhuang@redhat.com,
-        "Low, Jason" <jason.low2@hp.com>,
-        Michel Lespinasse <walken@google.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+> 
+> sizeof() when applied to a pointer typed expression gives the size of the pointer,
+> not that of the pointed data.
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  drivers/mailbox/mailbox.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c index
+> 5fea5c2..e011a75 100644
+> --- a/drivers/mailbox/mailbox.c
+> +++ b/drivers/mailbox/mailbox.c
+> @@ -93,8 +93,8 @@ int mailbox_msg_send(struct mailbox *mbox, struct
+> mailbox_msg *msg)
+>  		goto out;
+>  	}
+> 
+> -	len = kfifo_in(&mq->fifo, (unsigned char *)msg, sizeof(msg));
+> -	WARN_ON(len != sizeof(msg));
+> +	len = kfifo_in(&mq->fifo, (unsigned char *)msg, sizeof(*msg));
+> +	WARN_ON(len != sizeof(*msg));
 
-On Fri, Mar 22, 2013 at 10:37 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Mar 22, 2013 at 4:04 AM, Emmanuel Benisty <benisty.e@gmail.com> wrote:
->>
->> I was trying your patchset and my machine died while building a
->> package. I could reproduce the bug the (only) two times I tried.
->> There's a poor quality picture here: http://i.imgur.com/MuYuyQC.jpg
->
-> Hmm. The original oops may well have scrolled off the window, what
-> remains is just indicating something is corrupted in slab. Which isn't
-> likely to give much hints..
->
-> Can you try to reproduce this with CONFIG_SLUB_DEBUG=y and
-> CONFIG_SLUB_DEBUG_ON=y, and see if there are any earlier messages?
+Thanks Wei, missed this one. In this same function, there is one more similar occurrence, which needs fixing as well.
+--- a/drivers/mailbox/mailbox.c
++++ b/drivers/mailbox/mailbox.c
+@@ -83,7 +83,7 @@ int mailbox_msg_send(struct mailbox *mbox, struct mailbox_msg
 
-I could reproduce it but could you please let me know what would be
-the right tools I should use to catch the original oops?
-This is what I got but I doubt it will be helpful:
-http://i.imgur.com/Mewi1hC.jpg
+        mutex_lock(&mq->mlock);
 
-Thanks.
+-       if (kfifo_avail(&mq->fifo) < (sizeof(msg) + msg->size)) {
++       if (kfifo_avail(&mq->fifo) < (sizeof(*msg) + msg->size)) {
+                ret = -ENOMEM;
+                goto out;
+        }
+
+Regards
+Suman
