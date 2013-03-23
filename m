@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab3CXJTC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 05:19:02 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:64294 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859Ab3CXJSH (ORCPT
+	id S1753345Ab3CXJSF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 05:18:05 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62238 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687Ab3CXJRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 05:18:07 -0400
-Message-ID: <514EC323.7050002@gmail.com>
-Date: Sun, 24 Mar 2013 10:10:59 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Sun, 24 Mar 2013 05:17:50 -0400
+X-Originating-IP: 108.223.40.66
+Date: Sat, 23 Mar 2013 12:10:23 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: "Theodore Ts'o" <tytso@mit.edu>, Ben Collins <benmcollins13@gmail.com>,
+        David Miller <davem@davemloft.net>, afleming@freescale.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] net: Add support for handling queueing in hardware
+Message-ID: <20130323191023.GB22005@roeck-us.net>
+References: <A5ACC15C-361D-48E6-BFFF-9AA3966C2A68@freescale.com>
+ <20130322.103302.1277256650283142022.davem@davemloft.net>
+ <FE78128C-01DB-4831-ACBE-BA3E3A428BFC@gmail.com>
+ <20130322.111759.2108472348146991505.davem@davemloft.net>
+ <20130322220840.GA6647@thunk.org>
 MIME-Version: 1.0
-To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>
-Subject: [RFC] fsfreeze: moving from uniterruptible to killable
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130322220840.GA6647@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a fs is frozen, a process can hang because we wait in
-uniterruptible state. We give the user the possibility to kill the process.
+On Fri, Mar 22, 2013 at 06:08:40PM -0400, Theodore Ts'o wrote:
+> On Fri, Mar 22, 2013 at 11:39:20AM -0400, Ben Collins wrote:
+> > 
+> > If your company had hardware going to production, you'd want it supported in mainline too, I suspect.
+> 
+> And if companies told their hardware partners that they will drop use
+> of their hardware in future products unless they get their !@#@S
+> drivers upstream, I'd bet they'd change their engineering priorities
+> so they would work on it, instead of foisting this work on their
+> customers.
+> 
+I would love to be in that position. However, the decision to choose
+a specific chip is not always coordinated with those who have to provide
+the software to run on those chips.
 
-Not-signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
+> I've seen this work in enterprise computing, where the RFP had
+> requirements for upstream drivers (i.e., if you want your 10gig
+> ethernet NIC to be used in HP or IBM's servers, get the darned thing
+> upstream!).  The trick is making it clear that selection of components
+> depends not just on an OSS driver, but an OSS driver which has been
+> accepted upstream (which also helps from a quality-of-code
+> requirement).
+> 
+> I've been waiting for this to start happening in the consumer
+> electronics/embedded world, but it's been slow coming,
+> unfortunately....
+> 
+The same applies to vendors of non-consumer network devices, unfortunately.
 
---- fs/super.c.orig	2013-03-24 09:56:33.000000000 +0100
-+++ fs/super.c	2013-03-24 09:58:41.000000000 +0100
-@@ -1198,7 +1198,7 @@ retry:
- 	if (unlikely(sb->s_writers.frozen >= level)) {
- 		if (!wait)
- 			return 0;
--		wait_event(sb->s_writers.wait_unfrozen,
-+		wait_event_killable(sb->s_writers.wait_unfrozen,
- 			   sb->s_writers.frozen < level);
- 	}
- 
-@@ -1248,7 +1248,7 @@ static void sb_wait_write(struct super_b
- 		 * of frozen and checking of the counter
- 		 */
- 		prepare_to_wait(&sb->s_writers.wait, &wait,
--				TASK_UNINTERRUPTIBLE);
-+				 TASK_KILLABLE);
- 
- 		writers = percpu_counter_sum(&sb->s_writers.counter[level-1]);
- 		if (writers)
+Guenter
