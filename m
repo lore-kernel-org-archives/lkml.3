@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262Ab3CWM5s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 08:57:48 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:40379 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750806Ab3CWM5q (ORCPT
+	id S1751171Ab3CWM6T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 08:58:19 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:42926 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab3CWM6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 08:57:46 -0400
-Date: Sat, 23 Mar 2013 13:57:42 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
-Subject: Re: [PATCH v2 0/8] watchdog: w83627hf: Convert to watchdog infrastructure
-Message-ID: <20130323125742.GG7867@spo001.leaseweb.com>
-References: <1362957300-18223-1-git-send-email-linux@roeck-us.net> <20130322205258.GE7867@spo001.leaseweb.com> <20130323002810.GA26245@roeck-us.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130323002810.GA26245@roeck-us.net>
-User-Agent: Mutt/1.4.1i
+	Sat, 23 Mar 2013 08:58:18 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Soeren Moch <smoch@web.de>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Willy Tarreau <w@1wt.eu>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: kirkwood: make use of DT mvsdio on guruplug board
+Date: Sat, 23 Mar 2013 13:58:09 +0100
+Message-Id: <1364043489-17683-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+Device tree based guruplug boards still use mvsdio platform_data and
+kirkwood_sdio_init to enable sdio. DT support for sdio is already there,
+so make use of it.
 
-> > In 2011 I started something similar but then with the MFD approach in mind.
-> > Goal was also to clean-up the w836* watchdog drivers and get a clean driver that
-> > supports all Winbond super-I/O based watchdog drivers.
-> > 
-> > I dug op the development code again. I'll post it in a next e-mail so that we can
-> > see what the best way forward is. Note: I took the MFD approach because:
-> > 1) all superio shares the similar functions for using the Super-I/O registers.
-> > 2) Goal is to have low-level driver that support the specific super-I/O chipsets
-> > and that does the platform stuff for hwmon, watchdog, gpio, ...
-> > 
-> Hi Wim,
-> 
-> I started with a similar approach, only I used mfd cells to pass on platform
-> specific information such as the device type and the superio base address.
-> I still have the patchset for the mfd driver, in case you are interested.
-> My code is based on the patches submitted by Rodolfo Giometti a couple
-> of years ago. Want me to post it ?
+This also fixes mvsdio accidentially breaking nand by configuring mpp0
+to gpio, while used also by nand (nand_io2 on mpp0).
 
-If it's not v1 then I am interested.
-I think it depends on the super-I/O chipset of what info you can pass. I would
-not use mfd cells for the winbond driver but use platform data (similar to
-drivers/mfd/adp5520.c) because you don't need more then just pass some data.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Tested-by: Soeren Moch <smoch@web.de>
+---
+Cc: Soeren Moch <smoch@web.de>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Willy Tarreau <w@1wt.eu>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts |    4 ++++
+ arch/arm/mach-kirkwood/board-guruplug.c             |    6 ------
+ 2 files changed, 4 insertions(+), 6 deletions(-)
 
-> What I noticed in my testing is that the superio address range (2e or 4e),
-> which the drivers currently take as granted, is at least on my systems
-> (all three of them) reserved by ACPI. Unfortunately that means one can not
-> use the mfd infrastructure to pass on the superio memory region,
-> since it checks for acpi conflicts. With that I gave up on the idea and
-> reverted to using request_muxed_region. That seemed simpler and accomplish
-> the same as long as all drivers actually use it.
-
-Noticed the same. That's why passing the platform data together with the
-superio-address and type seems the best way to go. I also kept the superio_enter
-and superio_exit a function in the low level driver because I used a lock to
-make sure that the hwmon code doesn't start doing things when the watchdog is
-doing things. But I think that the request_muxed_region is doing something similar
-also.
-
-Kind regards,
-Wim.
+diff --git a/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts b/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
+index 9555a86..44fd97d 100644
+--- a/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
++++ b/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
+@@ -69,6 +69,10 @@
+ 			status = "okay";
+ 			nr-ports = <1>;
+ 		};
++
++		mvsdio@90000 {
++			status = "okay";
++		};
+ 	};
+ 
+ 	gpio-leds {
+diff --git a/arch/arm/mach-kirkwood/board-guruplug.c b/arch/arm/mach-kirkwood/board-guruplug.c
+index 0a0df45..a857163 100644
+--- a/arch/arm/mach-kirkwood/board-guruplug.c
++++ b/arch/arm/mach-kirkwood/board-guruplug.c
+@@ -13,7 +13,6 @@
+ #include <linux/init.h>
+ #include <linux/mv643xx_eth.h>
+ #include <linux/gpio.h>
+-#include <linux/platform_data/mmc-mvsdio.h>
+ #include "common.h"
+ 
+ static struct mv643xx_eth_platform_data guruplug_ge00_data = {
+@@ -24,10 +23,6 @@ static struct mv643xx_eth_platform_data guruplug_ge01_data = {
+ 	.phy_addr	= MV643XX_ETH_PHY_ADDR(1),
+ };
+ 
+-static struct mvsdio_platform_data guruplug_mvsdio_data = {
+-	/* unfortunately the CD signal has not been connected */
+-};
+-
+ void __init guruplug_dt_init(void)
+ {
+ 	/*
+@@ -35,5 +30,4 @@ void __init guruplug_dt_init(void)
+ 	 */
+ 	kirkwood_ge00_init(&guruplug_ge00_data);
+ 	kirkwood_ge01_init(&guruplug_ge01_data);
+-	kirkwood_sdio_init(&guruplug_mvsdio_data);
+ }
+-- 
+1.7.10.4
 
