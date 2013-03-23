@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423073Ab3CWB0W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 21:26:22 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24640 "EHLO mga09.intel.com"
+	id S1423045Ab3CWB0U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 21:26:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62847 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423007Ab3CWB0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1423009Ab3CWB0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Mar 2013 21:26:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,896,1355126400"; 
-   d="scan'208";a="283455617"
+   d="scan'208";a="283455618"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, x86@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 28/29] x86, tsx: Add adaptive elision for rwsems
-Date: Fri, 22 Mar 2013 18:25:22 -0700
-Message-Id: <1364001923-10796-29-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 29/29] tsx: Add documentation for lock-elision
+Date: Fri, 22 Mar 2013 18:25:23 -0700
+Message-Id: <1364001923-10796-30-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1364001923-10796-1-git-send-email-andi@firstfloor.org>
 References: <1364001923-10796-1-git-send-email-andi@firstfloor.org>
@@ -25,134 +25,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Convert the rwsem elision to be adaptive. This requires adding
-4/8 bytes to the rwsem for the adaptation state. The algorithm
-is the same as for other adaptive lock types. The elision
-configuration is split for readers and writers.
+Document the tunables and the statistics in Documentation/lock-elision.txt
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/rwsem.h |   22 +++++++++++++++++-----
- arch/x86/kernel/rtm-locks.c  |   10 ++++++++++
- include/linux/rwsem.h        |    3 +++
- 3 files changed, 30 insertions(+), 5 deletions(-)
+ Documentation/lock-elision.txt |   94 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 94 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/lock-elision.txt
 
-diff --git a/arch/x86/include/asm/rwsem.h b/arch/x86/include/asm/rwsem.h
-index f9297af..da6437c 100644
---- a/arch/x86/include/asm/rwsem.h
-+++ b/arch/x86/include/asm/rwsem.h
-@@ -39,6 +39,7 @@
- #ifdef __KERNEL__
- #include <asm/asm.h>
- #include <linux/elide.h>
-+#include <linux/jump_label.h>
- 
- /*
-  * The bias values and the counter type limits the number of
-@@ -58,14 +59,18 @@
- #define RWSEM_ACTIVE_READ_BIAS		RWSEM_ACTIVE_BIAS
- #define RWSEM_ACTIVE_WRITE_BIAS		(RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS)
- 
--extern bool rwsem_elision;
-+extern struct static_key rwsem_elision;
-+extern struct elision_config readsem_elision_config;
-+extern struct elision_config writesem_elision_config;
- 
- /*
-  * lock for reading
-  */
- static inline void __down_read(struct rw_semaphore *sem)
- {
--	if (elide_lock(rwsem_elision, sem->count == 0))
-+	if (elide_lock_adapt(rwsem_elision, sem->count == 0,
-+			     &sem->elision_adapt,
-+			     &readsem_elision_config))
- 		return;
- 	asm volatile("# beginning down_read\n\t"
- 		     LOCK_PREFIX _ASM_INC "(%1)\n\t"
-@@ -86,7 +91,9 @@ static inline int __down_read_trylock(struct rw_semaphore *sem)
- {
- 	long result, tmp;
- 
--	if (elide_lock(rwsem_elision, sem->count == 0))
-+	if (elide_lock_adapt(rwsem_elision, sem->count == 0,
-+			     &sem->elision_adapt,
-+			     &readsem_elision_config))
- 		return 1;
- 	asm volatile("# beginning __down_read_trylock\n\t"
- 		     "  mov          %0,%1\n\t"
-@@ -111,7 +118,9 @@ static inline void __down_write_nested(struct rw_semaphore *sem, int subclass)
- {
- 	long tmp;
- 
--	if (elide_lock(rwsem_elision, sem->count == 0))
-+	if (elide_lock_adapt(rwsem_elision, sem->count == 0,
-+			     &sem->elision_adapt,
-+			     &readsem_elision_config))
- 		return;
- 	asm volatile("# beginning down_write\n\t"
- 		     LOCK_PREFIX "  xadd      %1,(%2)\n\t"
-@@ -139,7 +148,9 @@ static inline int __down_write_trylock(struct rw_semaphore *sem)
- {
- 	long ret;
- 
--	if (elide_lock(rwsem_elision, sem->count == 0))
-+	if (elide_lock_adapt(rwsem_elision, sem->count == 0,
-+			     &sem->elision_adapt,
-+			     &writesem_elision_config))
- 		return 1;
- 	ret = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
- 			   RWSEM_ACTIVE_WRITE_BIAS);
-@@ -195,6 +206,7 @@ static inline void __up_write(struct rw_semaphore *sem)
-  */
- static inline void __downgrade_write(struct rw_semaphore *sem)
- {
-+	/* if (sem->count == 0) return; */
- 	asm volatile("# beginning __downgrade_write\n\t"
- 		     LOCK_PREFIX _ASM_ADD "%2,(%1)\n\t"
- 		     /*
-diff --git a/arch/x86/kernel/rtm-locks.c b/arch/x86/kernel/rtm-locks.c
-index 40a0e7d..5a33a12 100644
---- a/arch/x86/kernel/rtm-locks.c
-+++ b/arch/x86/kernel/rtm-locks.c
-@@ -436,6 +436,15 @@ static unsigned rtm_patch(u8 type, u16 clobbers, void *ibuf,
- struct static_key mutex_elision = STATIC_KEY_INIT_FALSE;
- module_param(mutex_elision, static_key, 0644);
- 
-+struct static_key rwsem_elision = STATIC_KEY_INIT_FALSE;
-+module_param(rwsem_elision, static_key, 0644);
-+__read_mostly struct elision_config readsem_elision_config =
-+	DEFAULT_ELISION_CONFIG;
-+TUNE_ELISION_CONFIG(readsem, readsem_elision_config);
-+__read_mostly struct elision_config writesem_elision_config =
-+	DEFAULT_ELISION_CONFIG;
-+TUNE_ELISION_CONFIG(writesem, writesem_elision_config);
+diff --git a/Documentation/lock-elision.txt b/Documentation/lock-elision.txt
+new file mode 100644
+index 0000000..bc5a5ac
+--- /dev/null
++++ b/Documentation/lock-elision.txt
+@@ -0,0 +1,94 @@
 +
- void init_rtm_spinlocks(void)
- {
- 	if (!boot_cpu_has(X86_FEATURE_RTM))
-@@ -464,6 +473,7 @@ void init_rtm_spinlocks(void)
- 
- 	static_key_slow_inc(&rwlock_elision);
- 	static_key_slow_inc(&mutex_elision);
-+	static_key_slow_inc(&rwsem_elision);
- 	bitlock_elision = true;
- }
- 
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index 436e430..fb96c565 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -28,6 +28,9 @@ struct rw_semaphore {
- 	long			count;
- 	raw_spinlock_t		wait_lock;
- 	struct list_head	wait_list;
-+#ifdef CONFIG_RTM_LOCKS
-+	short			elision_adapt;
-+#endif
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	struct lockdep_map	dep_map;
- #endif
++The Linux kernel uses Intel TSX lock elision for most of its locking primitives,
++when the hardware supports TSX.
++
++This allows to run lock regions that follow specific conditions to run
++in parallel without explicit blocking in a memory transaction. If the
++transaction fails the code falls back to the normal lock.
++
++The lock elision is implemented using RTM.
++
++To measure transaction success the TSX perf extensions should be used.
++(At the time of this writing this requires unmerged perf patches,
++as in the full Haswell PMU patch series in hsw/pmu* in
++git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc.git)
++
++perf stat -T ...
++perf record -e tx-aborts ...
++
++The elision code is mostly adaptive, that is the lock predicts whether
++it should elide or not based on the history.
++
++There are various tunables available in /sys/module/rtm_locks/parameters.
++The tunables are grouped by lock types.
++
++Elision can be enabled by lock types:
++
++rwsem_elision		Enable elision for read-write semaphores
++mutex_elision		Enable elision for mutexes
++spinlock_elision	Enable elision for spinlocks
++rwlock_elision		Enable elision for read-write spinlocks
++bitlock_elision		Enable elision for bit spinlocks
++
++Some lock types use adaptive algorithms. The adaptive algorithm
++has a number of tunables which can be tuned. Each tunable 
++is named LOCKTYPE_TUNABLE. For example to tune the conflict retries
++for mutexes do
++
++echo NUMBER > /sys/module/rtm_locks/parameters/mutex_conflict_retry
++
++Valid adaptive lock types are:
++mutex, readlock, writelock, readsem, writesem, spinlock
++
++The current tunables are (subject to change):
++
++In general increasing the skip counts makes lock elision more conservative,
++while increasing retries or timeout makes it more aggressive.
++
++*_elision 			Global elision enable for the lock type.
++*_conflict_abort_skip		Number of elisions to skip when a transaction
++				failed due to a number of retried conflicts.
++*_conflict_retry		Number of retries on memory conflicts
++*_internal_abort_skip		Number of elision to skip when a transaction
++				failed due to a reason inside the transaction
++				(that is not caused by another CPU)
++*_lock_busy_retry		How often to retry wen the lock is busy on
++				elision.
++*_lock_busy_skip		How often to skip elision when retries on
++				lock busy failed.
++*_other_abort_skip		How often to skip elision when the transaction
++				failed for other reasons (e.g. capacity overflow)
++*_retry_timeout			How often to spin while waiting for a lock to free
++				before retrying
++
++Note these tunables do not present an ABI and may change as the internals
++evolve.
++
++Additional statistics:
++
++lock_el_skip			Number of times a lock didn't elide due to skipping
++lock_el_skip_start		Number of times a lock started skipping
++
++The average skip is lock_el_skip / lock_el_start_skip
++Additional statistics can be gotten using perf PMU TSX events.
++
++There is also a elision:elision_skip_start trace point that triggers every time
++a lock starts skipping elision due to non success.
++
++References:
++"Adding Lock elision to Linux"
++http://halobates.de/adding-lock-elision-to-linux.pdf
++
++"Adding lock elision to the GNU C Library"
++http://lwn.net/Articles/533894/
++
++Full TSX specification:
++http://software.intel.com/file/41417 (chapter 8)
++
++Glossary:
++cache line	Aligned 64 byte region
++conflict	Another CPU writes to a cache line read in a elided lock region,
++		or reads from a cache line written to in the region.
++abort		Rolling back the transaction and undoing its side effect
++
++Andi Kleen
 -- 
 1.7.7.6
 
