@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab3CWGor (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 02:44:47 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:36056 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767Ab3CWGop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 02:44:45 -0400
+	id S1755921Ab3CWGpK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 02:45:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47295 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750767Ab3CWGpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 02:45:08 -0400
+Date: Sat, 23 Mar 2013 07:43:24 +0100
+From: Anton Arapov <anton@redhat.com>
+To: Josh Stone <jistone@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Frank Eigler <fche@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
+Subject: Re: [PATCH 0/7] uretprobes: return probes implementation
+Message-ID: <20130323064324.GA1960@bandura.redhat.com>
+References: <1363957745-6657-1-git-send-email-anton@redhat.com>
+ <20130322151034.GC17286@redhat.com>
+ <514CCFDA.2080305@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130322150519.GJ25978@kernel.dk>
-References: <cover.1363617402.git.viresh.kumar@linaro.org>
-	<9aa157216e60de7d245128d42fb896918184ae8c.1363617402.git.viresh.kumar@linaro.org>
-	<20130322150519.GJ25978@kernel.dk>
-Date: Sat, 23 Mar 2013 12:14:44 +0530
-Message-ID: <CAKohpon7SD666o=7sH9QpOt2dbiU2Jy1OE8E__y3+=Q-o33Xnw@mail.gmail.com>
-Subject: Re: [PATCH V3 6/7] block: queue work on any cpu
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        tj@kernel.org, Ingo Molnar <mingo@redhat.com>, peterz@infradead.org,
-        rostedt@goodmis.org, linaro-kernel@lists.linaro.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, Arvind.Chauhan@arm.com,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <514CCFDA.2080305@redhat.com>
+X-PGP-Key: http://people.redhat.com/aarapov/gpg
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 March 2013 20:35, Jens Axboe <axboe@kernel.dk> wrote:
+On Fri, Mar 22, 2013 at 02:40:42PM -0700, Josh Stone wrote:
+> On 03/22/2013 08:10 AM, Oleg Nesterov wrote:
+> > This looks simple, but probably we need to add the additional "ulong bp_vaddr"
+> > argument for rp_handler().
+> 
+> FWIW, in SystemTap we don't currently do anything that would need
+> bp_vaddr.  The uprobe_consumer already gives the context, so I'm not
+> sure what else you would do with the *entry* address of the function
+> that just returned.  Perhaps you could emulate an additional top line on
+> a stacktrace, but it doesn't tell you where in the function you were.
 
-Hi Jens,
+  IIUC, Oleg have stressed that perf and trace events requires
+additional code to leverage the return probes. IOW this patchset
+implements core only and to use it we need to teach the perf about
+rp_handler().
+  And I don't see why we would need additional parameter for 
+rp_handler() as well.
 
-First of all, please have a look at:
-
-1. https://lkml.org/lkml/2013/3/18/364
-
-This is cover-letter of my mail where i have shown power savings achieved
-with this patchset.
-
-2. https://lkml.org/lkml/2013/3/21/172
-
-This is the link for discussion i had with Tejun which answers some of these
-questions.
-
-> What are the performance implications of this? From that perspective,
-> scheduling on a local core is the better choice. Hopefully it's already
-> running on the local socket of the device, keeping it on that node would
-> be preferable.
-
-If the local cpu is busy or all cpus are idle then we don't migrate, and so
-for performance shouldn't be affected with it.
-
-> For the delayed functions, the timer is typically added on the current
-> CPU.
-
-This is the code that executes here:
-
-	if (unlikely(cpu != WORK_CPU_UNBOUND))
-		add_timer_on(timer, cpu);
-	else
-		add_timer(timer);
-
-Clearly for queue_delayed_work() call we don't use local cpu but we use
-the same sched_select_non_idle_cpu() routine to give us the right cpu.
-
-> It's hard to know what the state of idleness of CPUs would be when
-> the delay has expired. How are you handling this?
-
-Correct, and we are not deciding that right now, but when the timer expires.
-
-Thanks for your feedback.
+Anton
