@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255Ab3CWNv7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 09:51:59 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:44430 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab3CWNv6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 09:51:58 -0400
-Date: Sat, 23 Mar 2013 14:51:56 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 12/29] x86, tsx: Add a per thread transaction disable
- count
-Message-ID: <20130323135156.GJ20853@two.firstfloor.org>
-References: <1364001923-10796-1-git-send-email-andi@firstfloor.org>
- <1364001923-10796-13-git-send-email-andi@firstfloor.org>
- <20130323115115.GA10821@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130323115115.GA10821@pd.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751238Ab3CWOAN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 10:00:13 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59055 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750806Ab3CWOAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 10:00:11 -0400
+X-IronPort-AV: E=Sophos;i="4.87,337,1363104000"; 
+   d="scan'208";a="6929130"
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, rusty@rustcorp.com.au,
+        mst@redhat.com, asias@redhat.com, JBottomley@parallels.com,
+        venkateshs@google.com, pbonzini@redhat.com, gaowanlong@cn.fujitsu.com
+Subject: [PATCH V7 0/5] virtio-scsi multiqueue
+Date: Sat, 23 Mar 2013 19:28:39 +0800
+Message-Id: <1364038124-32479-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.rc2
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/23 19:26:57,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/23 19:27:01,
+	Serialize complete at 2013/03/23 19:27:01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> This surely can be a bitfield like the other two below. It is basically
-> begging to be one.
+This series implements virtio-scsi queue steering, which gives
+performance improvements of up to 50% (measured both with QEMU and
+tcm_vhost backends).
 
-Bit fields are slower and larger in code and unlike the others this is on hot
-paths.
+This version rebased on Rusty's virtio ring rework patches, which
+has already gone into virtio-next today.
+We hope this can go into virtio-next together with the virtio ring
+rework pathes.
 
--Andi
+V7: respin to fix the patch apply error
+
+V6: rework "redo allocation of target data" (James)
+    fix comments (Venkatesh)
+    rebase to virtio-next
+
+V5: improving the grammar of 1/5 (Paolo)
+    move the dropping of sg_elems to 'virtio-scsi: use virtqueue_add_sgs for command buffers'. (Asias)
+
+V4: rebase on virtio ring rework patches (rusty's pending-rebases branch)
+
+V3 and be found http://marc.info/?l=linux-virtualization&m=136067440717154&w=2
+
+
+It would probably be easier to get it in via Rusty's tree
+because of the prerequisites.  James, can we get your Acked-by?
+
+Paolo Bonzini (3):
+  virtio-scsi: pass struct virtio_scsi to virtqueue completion function
+  virtio-scsi: push vq lock/unlock into virtscsi_vq_done
+  virtio-scsi: introduce multiqueue support
+
+Wanlong Gao (2):
+  virtio-scsi: redo allocation of target data
+  virtio-scsi: reset virtqueue affinity when doing cpu hotplug
+
+ drivers/scsi/virtio_scsi.c | 387 ++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 309 insertions(+), 78 deletions(-)
+
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.8.2.rc2
+
