@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560Ab3CWP4Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 11:56:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41424 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751286Ab3CWP4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 11:56:23 -0400
-Message-ID: <514DD065.3000106@redhat.com>
-Date: Sat, 23 Mar 2013 11:55:17 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751541Ab3CWQS6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 12:18:58 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:37505 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382Ab3CWQS4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 12:18:56 -0400
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/10] migrate: add migrate_entry_wait_huge()
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1363983835-20184-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1363983835-20184-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <2281042.ltEMndsGee@vostro.rjw.lan>
+References: <CAE9FiQVZ5VZDo1KCun6SDonTJ=TGWLxm5zJQN5U4f1_52cKKwg@mail.gmail.com>
+	<CAE9FiQUarQVqzB_VSMqUrMvSHryrSN3_4tLTEJqygDFzB7uDUw@mail.gmail.com>
+	<2281042.ltEMndsGee@vostro.rjw.lan>
+Date: Sat, 23 Mar 2013 09:18:55 -0700
+X-Google-Sender-Auth: FNlP_xO4ATX1WdGtpUVjuCNwzEY
+Message-ID: <CAE9FiQWX15yH+7xgOZOg5XuLcoVEaJq3hononPkh5gYoC_C+zw@mail.gmail.com>
+Subject: Re: pm/linux-next cause network stop working with qemu-kvm/e1000
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bob Moore <robert.moore@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2013 04:23 PM, Naoya Horiguchi wrote:
-> When we have a page fault for the address which is backed by a hugepage
-> under migration, the kernel can't wait correctly until the migration
-> finishes. This is because pte_offset_map_lock() can't get a correct
-> migration entry for hugepage. This patch adds migration_entry_wait_huge()
-> to separate code path between normal pages and hugepages.
->
-> ChangeLog v2:
->   - remove dup in migrate_entry_wait_huge()
->
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+On Sat, Mar 23, 2013 at 5:30 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+>>
+>> Attached patch fix the problem. Please fold it into offending patch in
+>> pm/linux-next.
+>
+> I'd actually prefer to apply it as a separate patch, so can you please post
+> it with a proper changelog?
 
--- 
-All rights reversed
+but that will break bisecting, right?
+
+Yinghai
