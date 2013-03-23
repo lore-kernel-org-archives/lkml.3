@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423148Ab3CWB2J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 21:28:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62847 "EHLO mga09.intel.com"
+	id S1423162Ab3CWB2a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 21:28:30 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1050 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422971Ab3CWBZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 21:25:59 -0400
+	id S1422964Ab3CWBZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 21:25:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,896,1355126400"; 
-   d="scan'208";a="283455609"
+   d="scan'208";a="283455606"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>, rusty@rustcorp.co.au
-Subject: [PATCH 13/29] params: Add a per cpu module param type
-Date: Fri, 22 Mar 2013 18:25:07 -0700
-Message-Id: <1364001923-10796-14-git-send-email-andi@firstfloor.org>
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 08/29] locking, tsx: Add support for arch_read/write_unlock_irq/flags
+Date: Fri, 22 Mar 2013 18:25:02 -0700
+Message-Id: <1364001923-10796-9-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1364001923-10796-1-git-send-email-andi@firstfloor.org>
 References: <1364001923-10796-1-git-send-email-andi@firstfloor.org>
@@ -25,70 +25,161 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-This is mainly useful for simple statistic counters.
-Essentially read-only, writing only clears.
+The TSX RTM lock elision code needs to distinguish unlocks that reenable
+interrupts from others. Add arch_read/write_unlock_irq/flags for rwlocks
+similar to the ones for spinlocks.  This is opt in by the architecture.
 
-Cc: rusty@rustcorp.co.au
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/moduleparam.h |    4 ++++
- kernel/params.c             |   28 ++++++++++++++++++++++++++++
- 2 files changed, 32 insertions(+), 0 deletions(-)
+ include/linux/rwlock.h         |   76 ++++++++++++++++++++++++++++++++++++++-
+ include/linux/rwlock_api_smp.h |   12 ++----
+ 2 files changed, 78 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-index 137b419..e3c41af 100644
---- a/include/linux/moduleparam.h
-+++ b/include/linux/moduleparam.h
-@@ -394,6 +394,10 @@ extern int param_set_bint(const char *val, const struct kernel_param *kp);
- #define param_get_bint param_get_int
- #define param_check_bint param_check_int
+diff --git a/include/linux/rwlock.h b/include/linux/rwlock.h
+index bc2994e..82a7f61 100644
+--- a/include/linux/rwlock.h
++++ b/include/linux/rwlock.h
+@@ -14,6 +14,34 @@
+  * Released under the General Public License (GPL).
+  */
  
-+/* A per cpu read-only unsigned integer. Useful for counters. */
-+extern struct kernel_param_ops param_ops_percpu_uint;
-+#define param_check_percpu_uint(name, p) param_check_uint
-+
- /**
-  * module_param_array - a parameter which is an array of some type
-  * @name: the name of the array variable
-diff --git a/kernel/params.c b/kernel/params.c
-index ed35345..1a8a1ca 100644
---- a/kernel/params.c
-+++ b/kernel/params.c
-@@ -499,6 +499,34 @@ struct kernel_param_ops param_ops_string = {
- };
- EXPORT_SYMBOL(param_ops_string);
- 
-+/* Per CPU read only module param. */
-+
-+static int param_percpu_uint_set(const char *val, const struct kernel_param *kp)
++#if !defined(ARCH_HAS_RWLOCK_UNLOCK_IRQ) && defined(CONFIG_SMP)
++static inline void arch_read_unlock_irqrestore(arch_rwlock_t *lock,
++					       unsigned long flags)
 +{
-+	int cpu;
-+
-+	/* just clear on any write */
-+	for_each_possible_cpu(cpu)
-+		*per_cpu_ptr((unsigned * __percpu)(kp->arg), cpu) = 0;
-+	return 0;
++	arch_read_unlock(lock);
++	local_irq_restore(flags);
 +}
 +
-+static int param_percpu_uint_get(char *buffer, const struct kernel_param *kp)
++static inline void arch_read_unlock_irq(arch_rwlock_t *lock)
 +{
-+	int cpu;
-+	unsigned count = 0;
-+
-+	for_each_possible_cpu(cpu)
-+		count += *per_cpu_ptr((unsigned * __percpu)(kp->arg), cpu);
-+	return sprintf(buffer, "%u", count);
++	arch_read_unlock(lock);
++	local_irq_enable();
 +}
 +
-+struct kernel_param_ops param_ops_percpu_uint = {
-+	.set = param_percpu_uint_set,
-+	.get = param_percpu_uint_get,
-+};
-+EXPORT_SYMBOL(param_ops_percpu_uint);
++static inline void arch_write_unlock_irqrestore(arch_rwlock_t *lock,
++						unsigned long flags)
++{
++	arch_write_unlock(lock);
++	local_irq_restore(flags);
++}
 +
- /* sysfs output in /sys/modules/XYZ/parameters/ */
- #define to_module_attr(n) container_of(n, struct module_attribute, attr)
- #define to_module_kobject(n) container_of(n, struct module_kobject, kobj)
++static inline void arch_write_unlock_irq(arch_rwlock_t *lock)
++{
++	arch_write_unlock(lock);
++	local_irq_enable();
++}
++#endif
++
+ #ifdef CONFIG_DEBUG_SPINLOCK
+   extern void __rwlock_init(rwlock_t *lock, const char *name,
+ 			    struct lock_class_key *key);
+@@ -37,17 +65,61 @@ do {								\
+ #define do_raw_write_lock_flags(lock, flags) do_raw_write_lock(lock)
+  extern int do_raw_write_trylock(rwlock_t *lock);
+  extern void do_raw_write_unlock(rwlock_t *lock) __releases(lock);
++
++static inline void do_raw_write_unlock_irq(rwlock_t *lock) __releases(lock)
++{
++	do_raw_write_unlock(lock);
++	local_irq_enable();
++}
++
++static inline void do_raw_read_unlock_irq(rwlock_t *lock) __releases(lock)
++{
++	do_raw_read_unlock(lock);
++	local_irq_enable();
++}
++
++static inline void do_raw_write_unlock_irqrestore(rwlock_t *lock,
++						  unsigned long flags)
++	__releases(lock)
++{
++	do_raw_write_unlock(lock);
++	local_irq_restore(flags);
++}
++
++static inline void do_raw_read_unlock_irqrestore(rwlock_t *lock, unsigned long flags)
++	__releases(lock)
++{
++	do_raw_read_unlock(lock);
++	local_irq_restore(flags);
++}
++
+ #else
+ # define do_raw_read_lock(rwlock)	do {__acquire(lock); arch_read_lock(&(rwlock)->raw_lock); } while (0)
+-# define do_raw_read_lock_flags(lock, flags) \
+-		do {__acquire(lock); arch_read_lock_flags(&(lock)->raw_lock, *(flags)); } while (0)
++# define do_raw_read_lock_flags(lock, flags)	\
++		do { __acquire(lock);		\
++		     arch_read_lock_flags(&(lock)->raw_lock, *(flags)); } while (0)
+ # define do_raw_read_trylock(rwlock)	arch_read_trylock(&(rwlock)->raw_lock)
+ # define do_raw_read_unlock(rwlock)	do {arch_read_unlock(&(rwlock)->raw_lock); __release(lock); } while (0)
++# define do_raw_read_unlock_irqrestore(rwlock, flags)			\
++	do {								\
++		arch_read_unlock_irqrestore(&(rwlock)->raw_lock, flags); \
++		__release(lock); \
++	} while (0)
++# define do_raw_read_unlock_irq(rwlock)	\
++	do {arch_read_unlock_irq(&(rwlock)->raw_lock); __release(lock); } while (0)
+ # define do_raw_write_lock(rwlock)	do {__acquire(lock); arch_write_lock(&(rwlock)->raw_lock); } while (0)
+ # define do_raw_write_lock_flags(lock, flags) \
+ 		do {__acquire(lock); arch_write_lock_flags(&(lock)->raw_lock, *(flags)); } while (0)
+ # define do_raw_write_trylock(rwlock)	arch_write_trylock(&(rwlock)->raw_lock)
+ # define do_raw_write_unlock(rwlock)	do {arch_write_unlock(&(rwlock)->raw_lock); __release(lock); } while (0)
++# define do_raw_write_unlock_irqrestore(rwlock, flags)			\
++	do {								\
++		arch_write_unlock_irqrestore(&(rwlock)->raw_lock, flags); \
++		__release(lock); \
++	} while (0)
++# define do_raw_write_unlock_irq(rwlock)		 \
++	do { arch_write_unlock_irq(&(rwlock)->raw_lock); \
++	     __release(lock); } while (0)
+ #endif
+ 
+ #define read_can_lock(rwlock)		arch_read_can_lock(&(rwlock)->raw_lock)
+diff --git a/include/linux/rwlock_api_smp.h b/include/linux/rwlock_api_smp.h
+index 9c9f049..8ac4a73 100644
+--- a/include/linux/rwlock_api_smp.h
++++ b/include/linux/rwlock_api_smp.h
+@@ -233,16 +233,14 @@ static inline void
+ __raw_read_unlock_irqrestore(rwlock_t *lock, unsigned long flags)
+ {
+ 	rwlock_release(&lock->dep_map, 1, _RET_IP_);
+-	do_raw_read_unlock(lock);
+-	local_irq_restore(flags);
++	do_raw_read_unlock_irqrestore(lock, flags);
+ 	preempt_enable();
+ }
+ 
+ static inline void __raw_read_unlock_irq(rwlock_t *lock)
+ {
+ 	rwlock_release(&lock->dep_map, 1, _RET_IP_);
+-	do_raw_read_unlock(lock);
+-	local_irq_enable();
++	do_raw_read_unlock_irq(lock);
+ 	preempt_enable();
+ }
+ 
+@@ -258,16 +256,14 @@ static inline void __raw_write_unlock_irqrestore(rwlock_t *lock,
+ 					     unsigned long flags)
+ {
+ 	rwlock_release(&lock->dep_map, 1, _RET_IP_);
+-	do_raw_write_unlock(lock);
+-	local_irq_restore(flags);
++	do_raw_write_unlock_irqrestore(lock, flags);
+ 	preempt_enable();
+ }
+ 
+ static inline void __raw_write_unlock_irq(rwlock_t *lock)
+ {
+ 	rwlock_release(&lock->dep_map, 1, _RET_IP_);
+-	do_raw_write_unlock(lock);
+-	local_irq_enable();
++	do_raw_write_unlock_irq(lock);
+ 	preempt_enable();
+ }
+ 
 -- 
 1.7.7.6
 
