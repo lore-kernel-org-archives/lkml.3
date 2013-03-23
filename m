@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751144Ab3CWM53 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 08:57:29 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:61113 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab3CWM51 (ORCPT
+	id S1751262Ab3CWM5s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 08:57:48 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:40379 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750806Ab3CWM5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 08:57:27 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Soeren Moch <smoch@web.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: Kirkwood: fix unused mvsdio gpio pins
-Date: Sat, 23 Mar 2013 13:56:58 +0100
-Message-Id: <1364043420-17641-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 23 Mar 2013 08:57:46 -0400
+Date: Sat, 23 Mar 2013 13:57:42 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
+Subject: Re: [PATCH v2 0/8] watchdog: w83627hf: Convert to watchdog infrastructure
+Message-ID: <20130323125742.GG7867@spo001.leaseweb.com>
+References: <1362957300-18223-1-git-send-email-linux@roeck-us.net> <20130322205258.GE7867@spo001.leaseweb.com> <20130323002810.GA26245@roeck-us.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130323002810.GA26245@roeck-us.net>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mvsdio_platform_data allows to pass card detect and write protect gpio
-numbers to the driver. Some kirkwood boards don't use both pins as they
-are not connected, and don't set the corresponding value in platform_data.
+Hi Guenter,
 
-This will leave the unset values in platform_data initialized as 0, which
-is in fact a valid gpio pin. mvsdio will grab that pin and configure it as
-gpio, which in turn breaks nand controller as mpp0 also carries nand_io2.
+> > In 2011 I started something similar but then with the MFD approach in mind.
+> > Goal was also to clean-up the w836* watchdog drivers and get a clean driver that
+> > supports all Winbond super-I/O based watchdog drivers.
+> > 
+> > I dug op the development code again. I'll post it in a next e-mail so that we can
+> > see what the best way forward is. Note: I took the MFD approach because:
+> > 1) all superio shares the similar functions for using the Super-I/O registers.
+> > 2) Goal is to have low-level driver that support the specific super-I/O chipsets
+> > and that does the platform stuff for hwmon, watchdog, gpio, ...
+> > 
+> Hi Wim,
+> 
+> I started with a similar approach, only I used mfd cells to pass on platform
+> specific information such as the device type and the superio base address.
+> I still have the patchset for the mfd driver, in case you are interested.
+> My code is based on the patches submitted by Rodolfo Giometti a couple
+> of years ago. Want me to post it ?
 
-This patch fixes the above by initializing unused gpio functions in the
-platform_data with an invalid (-1) value.
+If it's not v1 then I am interested.
+I think it depends on the super-I/O chipset of what info you can pass. I would
+not use mfd cells for the winbond driver but use platform data (similar to
+drivers/mfd/adp5520.c) because you don't need more then just pass some data.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Reported-by: Soeren Moch <smoch@web.de>
----
-Cc: Soeren Moch <smoch@web.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/mach-kirkwood/guruplug-setup.c  |    2 ++
- arch/arm/mach-kirkwood/openrd-setup.c    |    1 +
- arch/arm/mach-kirkwood/rd88f6281-setup.c |    1 +
- 3 files changed, 4 insertions(+)
+> What I noticed in my testing is that the superio address range (2e or 4e),
+> which the drivers currently take as granted, is at least on my systems
+> (all three of them) reserved by ACPI. Unfortunately that means one can not
+> use the mfd infrastructure to pass on the superio memory region,
+> since it checks for acpi conflicts. With that I gave up on the idea and
+> reverted to using request_muxed_region. That seemed simpler and accomplish
+> the same as long as all drivers actually use it.
 
-diff --git a/arch/arm/mach-kirkwood/guruplug-setup.c b/arch/arm/mach-kirkwood/guruplug-setup.c
-index 1c6e736..08dd739 100644
---- a/arch/arm/mach-kirkwood/guruplug-setup.c
-+++ b/arch/arm/mach-kirkwood/guruplug-setup.c
-@@ -53,6 +53,8 @@ static struct mv_sata_platform_data guruplug_sata_data = {
- 
- static struct mvsdio_platform_data guruplug_mvsdio_data = {
- 	/* unfortunately the CD signal has not been connected */
-+	.gpio_card_detect = -1,
-+	.gpio_write_protect = -1,
- };
- 
- static struct gpio_led guruplug_led_pins[] = {
-diff --git a/arch/arm/mach-kirkwood/openrd-setup.c b/arch/arm/mach-kirkwood/openrd-setup.c
-index 8ddd69f..6a6eb54 100644
---- a/arch/arm/mach-kirkwood/openrd-setup.c
-+++ b/arch/arm/mach-kirkwood/openrd-setup.c
-@@ -55,6 +55,7 @@ static struct mv_sata_platform_data openrd_sata_data = {
- 
- static struct mvsdio_platform_data openrd_mvsdio_data = {
- 	.gpio_card_detect = 29,	/* MPP29 used as SD card detect */
-+	.gpio_write_protect = -1,
- };
- 
- static unsigned int openrd_mpp_config[] __initdata = {
-diff --git a/arch/arm/mach-kirkwood/rd88f6281-setup.c b/arch/arm/mach-kirkwood/rd88f6281-setup.c
-index c7d93b4..d242231 100644
---- a/arch/arm/mach-kirkwood/rd88f6281-setup.c
-+++ b/arch/arm/mach-kirkwood/rd88f6281-setup.c
-@@ -69,6 +69,7 @@ static struct mv_sata_platform_data rd88f6281_sata_data = {
- 
- static struct mvsdio_platform_data rd88f6281_mvsdio_data = {
- 	.gpio_card_detect = 28,
-+	.gpio_write_protect = -1,
- };
- 
- static unsigned int rd88f6281_mpp_config[] __initdata = {
--- 
-1.7.10.4
+Noticed the same. That's why passing the platform data together with the
+superio-address and type seems the best way to go. I also kept the superio_enter
+and superio_exit a function in the low level driver because I used a lock to
+make sure that the hwmon code doesn't start doing things when the watchdog is
+doing things. But I think that the request_muxed_region is doing something similar
+also.
+
+Kind regards,
+Wim.
 
