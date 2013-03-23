@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150Ab3CWLA2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 07:00:28 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:37072 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751244Ab3CWLA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 07:00:26 -0400
-From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-To: <devicetree-discuss@lists.ozlabs.org>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <dmitry.torokhov@gmail.com>, <wfp5p@virginia.edu>,
-        <broonie@opensource.wolfsonmicro.com>,
-        <u.kleine-koenig@pengutronix.de>, <rmk+kernel@arm.linux.org.uk>,
-        <manishv.b@ti.com>
-Subject: [PATCH] tps6507x-ts: update to devm_* API
-Date: Sat, 23 Mar 2013 16:30:23 +0530
-Message-ID: <1364036423-2057-1-git-send-email-manishv.b@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752251Ab3CWLKK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 07:10:10 -0400
+Received: from forward11.mail.yandex.net ([95.108.130.93]:60144 "EHLO
+	forward11.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab3CWLKI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Mar 2013 07:10:08 -0400
+X-Greylist: delayed 705 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Mar 2013 07:10:08 EDT
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Michal Marek <mmarek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] scripts/tags.sh: Add magic for OFFSET and DEFINE
 MIME-Version: 1.0
+Message-Id: <1810321364036300@web2f.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Sat, 23 Mar 2013 14:58:20 +0400
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the code to use devm_* API so that driver
-core will manage resources.
+Add rules for definitions which is generally used in asm-offsets files.
 
-Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
+CC: Michal Marek <mmarek@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>
 ---
-:100644 100644 820a066... 65e0f9a... M	drivers/input/touchscreen/tps6507x-ts.c
- drivers/input/touchscreen/tps6507x-ts.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/input/touchscreen/tps6507x-ts.c b/drivers/input/touchscreen/tps6507x-ts.c
-index 820a066..65e0f9a 100644
---- a/drivers/input/touchscreen/tps6507x-ts.c
-+++ b/drivers/input/touchscreen/tps6507x-ts.c
-@@ -261,7 +261,7 @@ static int tps6507x_ts_probe(struct platform_device *pdev)
+ scripts/tags.sh |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index 26a87e6..74f02e4 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -199,7 +199,9 @@ exuberant()
+ 	--regex-c='/DEFINE_PER_CPU_SHARED_ALIGNED\(([^,]*,\s*)(\w*).*\)/\2/v/' \
+ 	--regex-c='/DECLARE_WAIT_QUEUE_HEAD\((\w*)/\1/v/'		\
+ 	--regex-c='/DECLARE_(TASKLET|WORK|DELAYED_WORK)\((\w*)/\2/v/'	\
+-	--regex-c='/DEFINE_PCI_DEVICE_TABLE\((\w*)/\1/v/'
++	--regex-c='/DEFINE_PCI_DEVICE_TABLE\((\w*)/\1/v/'		\
++	--regex-c='/(^\s)OFFSET\((\w*)/\2/v/'				\
++	--regex-c='/(^\s)DEFINE\((\w*)/\2/v/'
  
- 	init_data = tps_board->tps6507x_ts_init_data;
- 
--	tsc = kzalloc(sizeof(struct tps6507x_ts), GFP_KERNEL);
-+	tsc = devm_kzalloc(&pdev->dev, sizeof(struct tps6507x_ts), GFP_KERNEL);
- 	if (!tsc) {
- 		dev_err(tps6507x_dev->dev, "failed to allocate driver data\n");
- 		error = -ENOMEM;
-@@ -339,7 +339,6 @@ err2:
- 	cancel_delayed_work_sync(&tsc->work);
- 	input_free_device(input_dev);
- err1:
--	kfree(tsc);
- 	tps6507x_dev->ts = NULL;
- err0:
- 	return error;
-@@ -356,7 +355,6 @@ static int tps6507x_ts_remove(struct platform_device *pdev)
- 	input_unregister_device(input_dev);
- 
- 	tps6507x_dev->ts = NULL;
--	kfree(tsc);
- 
- 	return 0;
- }
--- 
-1.7.4.1
-
+ 	all_kconfigs | xargs $1 -a                              \
+ 	--langdef=kconfig --language-force=kconfig              \
