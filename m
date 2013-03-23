@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009Ab3CWAQP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 20:16:15 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:45676
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754489Ab3CWAQO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 20:16:14 -0400
-Date: Fri, 22 Mar 2013 18:15:42 -0600
-From: Jens Axboe <axboe@kernel.dk>
-To: lars.ellenberg@linbit.com
-Cc: Philipp Reisner <philipp.reisner@linbit.com>, linux-kernel@vger.kernel.org,
-        drbd-dev@lists.linbit.com
-Subject: Re: [Drbd-dev] [PATCH 10/18, update] drbd: prepare to queue write
- requests on a submit worker
-Message-ID: <20130323001542.GN1628@kernel.dk>
-References: <1363713419-17803-1-git-send-email-philipp.reisner@linbit.com>
- <1363713419-17803-11-git-send-email-philipp.reisner@linbit.com>
- <20130322202224.GJ5231@soda.linbit>
+	id S1755115Ab3CWAVh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 20:21:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50884 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754709Ab3CWAVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 20:21:35 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1363987742.8972.55.camel@schen9-DESK>
+References: <cover.1363961999.git.tim.c.chen@linux.intel.com> <1363987742.8972.55.camel@schen9-DESK>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130322202224.GJ5231@soda.linbit>
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 01/11] Added macro to check for AVX2 feature.
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 22 Mar 2013 17:21:19 -0700
+To: Tim Chen <tim.c.chen@linux.intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S.Miller" <davem@davemloft.net>
+CC: Kirk Yap <kirk.s.yap@intel.com>, David Cote <david.m.cote@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Message-ID: <09e94963-5146-4c1b-ab76-64ac73d660ab@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22 2013, lars.ellenberg@linbit.com wrote:
-> From: Lars Ellenberg <lars.ellenberg@linbit.com>
-> 
-> Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-> Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-> ---
->  drivers/block/drbd/drbd_int.h  |   13 +++++++++++++
->  drivers/block/drbd/drbd_main.c |   26 +++++++++++++++++++++++++-
->  drivers/block/drbd/drbd_nl.c   |    1 +
->  drivers/block/drbd/drbd_req.c  |   29 +++++++++++++++++++++++++++++
->  4 files changed, 68 insertions(+), 1 deletion(-)
-> 
-> Updated
-> =======
-> to apply against current upstream,
-> because of 56de210 drbd: convert to idr_alloc()
-> affected the context of the last chunk of drbd_main.c; now last two
-> chunks: needed to re-add the out_idr_remove_vol cleanup goto.
+I really, really hate these macros... Not sure they are worth the extra noise.
 
-That's better - updated series and pushed out for testing.
+Tim Chen <tim.c.chen@linux.intel.com> wrote:
+
+>Macro to facilitate checking the availability of the AVX2 feature.
+>
+>Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+>---
+> arch/x86/include/asm/cpufeature.h | 1 +
+> 1 file changed, 1 insertion(+)
+>
+>diff --git a/arch/x86/include/asm/cpufeature.h
+>b/arch/x86/include/asm/cpufeature.h
+>index 2d9075e..db98ec7 100644
+>--- a/arch/x86/include/asm/cpufeature.h
+>+++ b/arch/x86/include/asm/cpufeature.h
+>@@ -313,6 +313,7 @@ extern const char * const x86_power_flags[32];
+> #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
+> #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
+> #define cpu_has_topoext		boot_cpu_has(X86_FEATURE_TOPOEXT)
+>+#define cpu_has_avx2		boot_cpu_has(X86_FEATURE_AVX2)
+> 
+> #ifdef CONFIG_X86_64
+> 
 
 -- 
-Jens Axboe
-
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
