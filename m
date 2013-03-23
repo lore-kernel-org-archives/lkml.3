@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040Ab3CWHez (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 03:34:55 -0400
-Received: from rcdn-iport-3.cisco.com ([173.37.86.74]:23936 "EHLO
-	rcdn-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab3CWHey (ORCPT
+	id S1753230Ab3CWIUr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 04:20:47 -0400
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:45085 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab3CWIUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 03:34:54 -0400
-X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Mar 2013 03:34:54 EDT
-X-IronPort-AV: E=Sophos;i="4.84,897,1355097600"; 
-   d="scan'208";a="190690483"
-From: Henrik Austad <haustad@cisco.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Henrik Austad <haustad@cisco.com>
-Subject: [PATCH] tile: ns2cycles should use __raw_get_cpu_var
-Date: Sat, 23 Mar 2013 08:23:19 +0100
-Message-Id: <1364023399-26075-1-git-send-email-haustad@cisco.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <514CB2E4.2030009@tilera.com>
-References: <514CB2E4.2030009@tilera.com>
+	Sat, 23 Mar 2013 04:20:45 -0400
+Date: Sat, 23 Mar 2013 09:20:41 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: gwendal@google.com, jgarzik@pobox.com
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: ata: HDIO_DRIVE_* ioctl() Linux 3.9 regression
+Message-ID: <20130323082040.GA19848@shrek.podlesie.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ns2cycles use per_cpu variables, and will, eventually, find its way into
-smp_processord_id(). This is not safe in a preemptible kernel,
-preemption should ideally be disabled.
+Hi,
 
-BUG: using smp_processor_id() in preemptible [00000000] code:
-systemd-modules/367
-caller is ns2cycles+0x40/0xb8
+commit 84a9a8cd9d0aa93c17e5815ab8a9cc4c0a765c63
+("[libata] Set proper SK when CK_COND is set") breaks
+"SMART Status command" ATA command issued by
+smartctl -d ata -a /dev/sda at least on FUJITSU MHV2060AH
+on ICH6 IDE Controller. The kernel returns -EIO on
+HDIO_DRIVE_TASK (0x31e) or HDIO_DRIVE_CMD (0x31f) ioctl,
+probably due to RECOVERED_ERROR translated to -EIO.
 
-Starting stack dump of tid 367, pid 367 (systemd-modules) on cpu 2 at
-cycle 20969956421
- frame 0: 0xfffffff70004b860 dump_stack+0x0/0x20 (sp 0xfffffe407993fa90)
- frame 1: 0xfffffff7006abc28 debug_smp_processor_id+0x1a8/0x1e0 (sp
-0xfffffe407993fa90)
- frame 2: 0xfffffff7004d7b40 ns2cycles+0x40/0xb8 (sp 0xfffffe407993fab8)
- frame 3: 0xfffffff7004dc578 __ndelay+0x38/0x80 (sp 0xfffffe407993fae0)
+The regression still exists in v3.9-rc3-218-g0a7e453.
 
-However, in this case:
+Ancient smartctl like 5.33 give up after such error:
 
-- the frequency is the same accross all cores
-- we use the data read-only
-- we do not scale the frequency
+  smartctl version 5.33 [i686-pc-linux-gnu] Copyright (C) 2002-4 Bruce Allen
+  Home page is http://smartmontools.sourceforge.net/
+  
+  === START OF INFORMATION SECTION ===
+  Device Model:     FUJITSU MHV2060AH
+  Serial Number:    NT29T5B2D23C
+  Firmware Version: 00830096
+  User Capacity:    60,011,642,880 bytes
+  Device is:        Not in smartctl database [for details use: -P showall]
+  ATA Version is:   6
+  ATA Standard is:  ATA/ATAPI-6 T13 1410D revision 3a
+  Local Time is:    Sat Mar 23 01:55:27 2013 CET
+  SMART support is: Available - device has SMART capability.
+  SMART support is: Enabled
+  
+  SMART Disabled. Use option -s with argument 'on' to enable it.
 
-Which means that we can use the __raw_get_cpu_var instead.
+ # strace -x smartctl-5.33 -d ata -a /dev/sda 2>&1 | tail -n 10
+  write(1, "SMART support is: Available - de"..., 59SMART support is: Available - device has SMART capability.
+  ) = 59
+  write(1, "SMART support is: Enabled\n", 26SMART support is: Enabled
+  ) = 26
+  write(1, "\n", 1
+  )                       = 1
+  ioctl(3, 0x31f, 0x7f98a240)             = -1 EIO (Input/output error)
+  write(1, "SMART Disabled. Use option -s wi"..., 63SMART Disabled. Use option -s with argument 'on' to enable it.
+  ) = 63
+  exit_group(0)                           = ?
 
-Signed-off-by: Henrik Austad <haustad@cisco.com>
----
- arch/tile/kernel/time.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/arch/tile/kernel/time.c b/arch/tile/kernel/time.c
-index 42297f6..4e87cb9 100644
---- a/arch/tile/kernel/time.c
-+++ b/arch/tile/kernel/time.c
-@@ -234,7 +234,9 @@ int setup_profiling_timer(unsigned int multiplier)
-  */
- cycles_t ns2cycles(unsigned long nsecs)
- {
--	struct clock_event_device *dev = &__get_cpu_var(tile_timer);
-+	/* we don't have to disable preemptions here as each core has the same
-+	 * clock-frequency */
-+	struct clock_event_device *dev = &__raw_get_cpu_var(tile_timer);
- 	return ((u64)nsecs * dev->mult) >> dev->shift;
- }
- 
--- 
-1.7.1
+Newer smartctl versions (at least 6.1) just reports an error in such
+case and continue:
 
+  Error SMART Status command failed: Input/output error
+
+ # strace -x smartctl-6.1 -d ata -a /dev/sda 2>&1
+  ...
+  ioctl(3, 0x31e, 0x7fac798c)             = -1 EIO (Input/output error)
+  write(1, "Error SMART Status command faile"..., 54Error SMART Status command failed: Input/output error
+  ...
+
+On older kernels ioctl() returns 0 instead of -EIO.
+
+Thanks,
+Krzysiek
