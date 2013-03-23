@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422770Ab3CWAHR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Mar 2013 20:07:17 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:34767 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422650Ab3CWAHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Mar 2013 20:07:15 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: dirk.brandewie@gmail.com
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: Re: [PATCH] cpufreq/intel_pstate: Fix calculation of current frequency
-Date: Sat, 23 Mar 2013 01:14:35 +0100
-Message-ID: <2316804.ObH9JhORys@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1363974665-22049-1-git-send-email-dirk.brandewie@gmail.com>
-References: <1363974665-22049-1-git-send-email-dirk.brandewie@gmail.com>
+	id S1755009Ab3CWAQP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Mar 2013 20:16:15 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:45676
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754489Ab3CWAQO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Mar 2013 20:16:14 -0400
+Date: Fri, 22 Mar 2013 18:15:42 -0600
+From: Jens Axboe <axboe@kernel.dk>
+To: lars.ellenberg@linbit.com
+Cc: Philipp Reisner <philipp.reisner@linbit.com>, linux-kernel@vger.kernel.org,
+        drbd-dev@lists.linbit.com
+Subject: Re: [Drbd-dev] [PATCH 10/18, update] drbd: prepare to queue write
+ requests on a submit worker
+Message-ID: <20130323001542.GN1628@kernel.dk>
+References: <1363713419-17803-1-git-send-email-philipp.reisner@linbit.com>
+ <1363713419-17803-11-git-send-email-philipp.reisner@linbit.com>
+ <20130322202224.GJ5231@soda.linbit>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130322202224.GJ5231@soda.linbit>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 22, 2013 10:51:05 AM dirk.brandewie@gmail.com wrote:
-> From: Dirk Brandewie <dirk.brandewie@gmail.com>
+On Fri, Mar 22 2013, lars.ellenberg@linbit.com wrote:
+> From: Lars Ellenberg <lars.ellenberg@linbit.com>
 > 
-> Use the correct pstate value to calculate the effective frequency.
-> 
-> https://bugzilla.redhat.com/show_bug.cgi?id=923942
-> Reported-by: Satish Balay <balay@fastmail.fm>
-> 
-> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-
-Well, another quick fix for v3.9 I suppose?
-
-May I please be sent CCs of such things to at least one of my addresses?
-
-Rafael
-
-
+> Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+> Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 > ---
->  drivers/cpufreq/intel_pstate.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  drivers/block/drbd/drbd_int.h  |   13 +++++++++++++
+>  drivers/block/drbd/drbd_main.c |   26 +++++++++++++++++++++++++-
+>  drivers/block/drbd/drbd_nl.c   |    1 +
+>  drivers/block/drbd/drbd_req.c  |   29 +++++++++++++++++++++++++++++
+>  4 files changed, 68 insertions(+), 1 deletion(-)
 > 
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index e84af66..ad72922 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -454,7 +454,7 @@ static inline void intel_pstate_calc_busy(struct cpudata *cpu,
->  					sample->idletime_us * 100,
->  					sample->duration_us);
->  	core_pct = div64_u64(sample->aperf * 100, sample->mperf);
-> -	sample->freq = cpu->pstate.turbo_pstate * core_pct * 1000;
-> +	sample->freq = cpu->pstate.max_pstate * core_pct * 1000;
->  
->  	sample->core_pct_busy = div_s64((sample->pstate_pct_busy * core_pct),
->  					100);
-> 
+> Updated
+> =======
+> to apply against current upstream,
+> because of 56de210 drbd: convert to idr_alloc()
+> affected the context of the last chunk of drbd_main.c; now last two
+> chunks: needed to re-add the out_idr_remove_vol cleanup goto.
+
+That's better - updated series and pushed out for testing.
+
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Jens Axboe
+
