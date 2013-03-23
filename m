@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab3CWUWW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Mar 2013 16:22:22 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44641 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab3CWUWV (ORCPT
+	id S1752006Ab3CWUZh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Mar 2013 16:25:37 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:61679 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805Ab3CWUZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Mar 2013 16:22:21 -0400
-Date: Sat, 23 Mar 2013 21:21:56 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        kernel list <linux-kernel@vger.kernel.org>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: 3.9-rc3+: reports battery as 0 mWh capacity on thinkpad x60
-Message-ID: <20130323202155.GC18732@amd.pavel.ucw.cz>
-References: <20130323114011.GA11092@amd.pavel.ucw.cz>
- <1364045783.tg02458AIS@vostro.rjw.lan>
- <87zjxu9spk.fsf@nemi.mork.no>
+	Sat, 23 Mar 2013 16:25:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87zjxu9spk.fsf@nemi.mork.no>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <514C11FB.8090507@ladisch.de>
+References: <CAHG_u-=ChwiQ72O-9z1eD5Pex-niYMaRwMUOQOryYuPO154G=A@mail.gmail.com>
+	<CAHG_u-=O0+2SLYQL_GtP9Yk72EcZjHaxLgu=rwB2DAPsTaXnvA@mail.gmail.com>
+	<514C11FB.8090507@ladisch.de>
+Date: Sat, 23 Mar 2013 17:25:35 -0300
+Message-ID: <CAHG_u-kVbFzMg8FrNFaa58SOmtkKnG8pxXh88KTWC5C_3it9xA@mail.gmail.com>
+Subject: Re: remap kernel static memory to user space
+From: Eduardo Cruz <eduardohmdacruz@gmail.com>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2013-03-23 14:00:23, Bjørn Mork wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> > On Saturday, March 23, 2013 12:40:12 PM Pavel Machek wrote:
-> >> Hi!
-> >> 
-> >> pavel@amd:~$ cat /proc/acpi/battery/BAT0/info 
-> >> present:                 yes
-> >> design capacity:         0 mWh
-> >> last full capacity:      0 mWh
-> >> battery technology:      rechargeable
-> >> design voltage:          14400 mV
-> >> 
-> >> This worked before... at least it works in 2.6 kernel used by debian.
-> >
-> > This works for me in 3.9-rc3.  May I see your .config?
-> 
-> Well, if this works, then maybe the Kconfig help text should be updated:
-> 
-> config ACPI_PROCFS_POWER
->         bool "Deprecated power /proc/acpi directories"
->         depends on PROC_FS
->         help
->           For backwards compatibility, this option allows
->           deprecated power /proc/acpi/ directories to exist, even when
->           they have been replaced by functions in /sys.
->           The deprecated directories (and their replacements) include:
->           /proc/acpi/battery/* (/sys/class/power_supply/*)
->           /proc/acpi/ac_adapter/* (sys/class/power_supply/*)
->           This option has no effect on /proc/acpi/ directories
->           and functions, which do not yet exist in /sys
->           This option, together with the proc directories, will be
->           deleted in 2.6.39.
-> 
-> 
-> Time to call the bluff now :)
+I'm adding some asm code in arch/ia64/kernel/ivt.S
+to gather some memory usage statistics.
 
-This should probably be "default y", BTW.
+>From whatever reason, when I allocate the memory using
+kmalloc/vmalloc, my assembly code cashes the machine when I load the
+allocated memory.
 
-But problem is not in /proc, /sys has zeros, too.
+If I use static allocated memory, the asm code works.
 
-pavel@amd:~$ cat /sys/class/power_supply/BAT0/energy_full
-0
-pavel@amd:~$ cat /sys/class/power_supply/BAT0/energy_full_design 
-0
-pavel@amd:~$ cat /sys/class/power_supply/BAT0/model_name 
-93P5030
-pavel@amd:~$ 
+I know the problem is not the assembly code.
+
+The problem is that I want to be able to read this data from user space.
+Since the code performance critical, I don't want to do a
+copy_to_user, I prefer to mmap this data into user space.
+
+The problem is, if I use kmalloc/vmalloc, I managed to map the memory
+to user space.
+However, the asm interrupt handler crashs.
+
+On the other hand, if I use static data, the asm interrupt handler
+works, while the mmap fails.
+
+Do you have any clues?
+
+2013/3/22 Clemens Ladisch <clemens@ladisch.de>:
+> Eduardo Cruz wrote:
+>> Please, anyone knows how to solve this problem?
+>>
+>> 2013/3/20 Eduardo Cruz <eduardohmdacruz@gmail.com>:
+>>> I'm trying to remap some kernel static memory to user space using
+>>> remap_pfn_range.
+>
+> Well, don't do that.
+>
+> What is the actual problem you're trying to solve?
+>
+>
+> Regards,
+> Clemens
 
 
-		      	   	       	  	    	     Pavel
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Eduardo Henrique Molina da Cruz
+PhD student
+Parallel and Distributed Processing Group
+Federal University of Rio Grande do Sul (UFRGS)
