@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab3CXVPE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 17:15:04 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:56100 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161Ab3CXVPC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 17:15:02 -0400
-Message-ID: <514F6CD1.5010409@gmail.com>
-Date: Sun, 24 Mar 2013 16:14:57 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1754878Ab3CXVPm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 17:15:42 -0400
+Received: from inx.pm.waw.pl ([195.116.170.130]:41514 "EHLO inx.pm.waw.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754767Ab3CXVPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 17:15:39 -0400
+From: Krzysztof Halasa <khc@pm.waw.pl>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        c.aeschlimann@acn-group.ch, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Fix IXP4xx coherent allocations
+References: <m3obe9lxil.fsf@intrepid.localdomain>
+	<20130323.195740.2108147521543354261.davem@davemloft.net>
+	<1364152267.3620.31.camel@deadeye.wl.decadent.org.uk>
+Date: Sun, 24 Mar 2013 22:15:36 +0100
+In-Reply-To: <1364152267.3620.31.camel@deadeye.wl.decadent.org.uk> (Ben
+	Hutchings's message of "Sun, 24 Mar 2013 19:11:07 +0000")
+Message-ID: <m3r4j4sdmv.fsf@intrepid.localdomain>
 MIME-Version: 1.0
-To: Paolo Pisati <p.pisati@gmail.com>
-CC: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH] ARM: l2x0: don't set .set_debug in l310 case
-References: <1364149654-16163-1-git-send-email-p.pisati@gmail.com>
-In-Reply-To: <1364149654-16163-1-git-send-email-p.pisati@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2013 01:27 PM, Paolo Pisati wrote:
-> From: Paolo Pisati <paolo.pisati@canonical.com>
-> 
-> commit 74ddcdb ("l2x0: Only set .set_debug on PL310 r3p0 and earlier")
-> to actually work needs .set_debug to be not set during definition
-> 
-> Signed-off-by: Paolo Pisati <p.pisati@gmail.com>
+Ben Hutchings <bhutchings@solarflare.com> writes:
 
-Ah crap, missed this part. Can I add this into my fix and I'll put it in
-Russell's patch system.
+> I'm failing to see where it says the default can't be narrower than 32
+> bits due to platform limits.  And how do you think DMA mapping is
+> supposed to work for PCI devices on these platforms, anyway?
 
-Rob
+The problem on ARM (and probably on powerpc, and on something called
+"metag" - grep -r 'coherent DMA mask is unset' arch) is that the default
+coherent DMA mask is zero. IOW, coherent DMA allocations are, by
+default, disabled. A driver has to dma_set_coherent_mask() or, as many
+drivers do, set dev->coherent_dma_mask directly (IMHO
+dev->coherent_dma_mask along with dev->dma_mask are private DMA API
+stuff and e.g. device drivers have no interest there).
 
-> ---
->  arch/arm/mm/cache-l2x0.c |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-> index d457653..37f1364 100644
-> --- a/arch/arm/mm/cache-l2x0.c
-> +++ b/arch/arm/mm/cache-l2x0.c
-> @@ -724,7 +724,6 @@ static const struct l2x0_of_data pl310_data = {
->  		.flush_all   = l2x0_flush_all,
->  		.inv_all     = l2x0_inv_all,
->  		.disable     = l2x0_disable,
-> -		.set_debug   = pl310_set_debug,
->  	},
->  };
->  
-> 
+The zero default is IMHO, WRT the actual DMA API, an ARM bug (and
+powerpc's etc). Nevertheless, the patch I posted does everything as
+required by the API. Specifically, the IXP4xx arch part makes
+IXP4xx's dma_set_coherent_mask() compliant with DMA API, and the actual
+dma_set_coherent_mask() calls in drivers are both valid and I guess
+recommended by the API.
 
+The patch doesn't touch the core ARM issue, that's right.
+-- 
+Krzysztof Halasa
