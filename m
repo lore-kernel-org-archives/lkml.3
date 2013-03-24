@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab3CXSX5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 14:23:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18559 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754654Ab3CXSXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 14:23:47 -0400
-Date: Sun, 24 Mar 2013 19:21:22 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Anton Arapov <anton@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: [PATCH 4/5] uprobes: Introduce copy_to_page()
-Message-ID: <20130324182122.GA13318@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130324182040.GA13078@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754531Ab3CXS1j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 14:27:39 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:60736 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753558Ab3CXS1i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 14:27:38 -0400
+From: Paolo Pisati <p.pisati@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: l2x0: don't set .set_debug in l310 case
+Date: Sun, 24 Mar 2013 19:27:34 +0100
+Message-Id: <1364149654-16163-1-git-send-email-p.pisati@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extract the kmap_atomic/memcpy/kunmap_atomic code from
-xol_get_insn_slot() into the new simple helper, copy_to_page().
-It will have more users soon.
+From: Paolo Pisati <paolo.pisati@canonical.com>
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+commit 74ddcdb ("l2x0: Only set .set_debug on PL310 r3p0 and earlier")
+to actually work needs .set_debug to be not set during definition
+
+Signed-off-by: Paolo Pisati <p.pisati@gmail.com>
 ---
- kernel/events/uprobes.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+ arch/arm/mm/cache-l2x0.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index e5d479f..9d943f7 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -180,6 +180,13 @@ static void copy_from_page(struct page *page, unsigned long vaddr, void *dst, in
- 	kunmap_atomic(kaddr);
- }
+diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+index d457653..37f1364 100644
+--- a/arch/arm/mm/cache-l2x0.c
++++ b/arch/arm/mm/cache-l2x0.c
+@@ -724,7 +724,6 @@ static const struct l2x0_of_data pl310_data = {
+ 		.flush_all   = l2x0_flush_all,
+ 		.inv_all     = l2x0_inv_all,
+ 		.disable     = l2x0_disable,
+-		.set_debug   = pl310_set_debug,
+ 	},
+ };
  
-+static void copy_to_page(struct page *page, unsigned long vaddr, const void *src, int len)
-+{
-+	void *kaddr = kmap_atomic(page);
-+	memcpy(kaddr + (vaddr & ~PAGE_MASK), src, len);
-+	kunmap_atomic(kaddr);
-+}
-+
- static int verify_opcode(struct page *page, unsigned long vaddr, uprobe_opcode_t *new_opcode)
- {
- 	uprobe_opcode_t old_opcode;
-@@ -1204,9 +1211,7 @@ static unsigned long xol_take_insn_slot(struct xol_area *area)
- static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
- {
- 	struct xol_area *area;
--	unsigned long offset;
- 	unsigned long xol_vaddr;
--	void *vaddr;
- 
- 	area = get_xol_area();
- 	if (!area)
-@@ -1217,10 +1222,7 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
- 		return 0;
- 
- 	/* Initialize the slot */
--	offset = xol_vaddr & ~PAGE_MASK;
--	vaddr = kmap_atomic(area->page);
--	memcpy(vaddr + offset, uprobe->arch.insn, MAX_UINSN_BYTES);
--	kunmap_atomic(vaddr);
-+	copy_to_page(area->page, xol_vaddr, uprobe->arch.insn, MAX_UINSN_BYTES);
- 	/*
- 	 * We probably need flush_icache_user_range() but it needs vma.
- 	 * This should work on supported architectures too.
 -- 
-1.5.5.1
+1.7.10.4
 
