@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3CXLg7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 07:36:59 -0400
-Received: from sd-mail-sa-01.sanoma.fi ([158.127.18.161]:37556 "EHLO
-	sd-mail-sa-01.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298Ab3CXLg5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 07:36:57 -0400
-Message-ID: <514EE556.7020004@iki.fi>
-Date: Sun, 24 Mar 2013 13:36:54 +0200
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1753426Ab3CXL4E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 07:56:04 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50729 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753379Ab3CXLz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 07:55:59 -0400
+Date: Sun, 24 Mar 2013 12:55:56 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: BUG: using smp_processor_id() in preemptible [00000000] code:
+ asm/8267
+Message-ID: <20130324115556.GA4866@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Ingo Molnar <mingo@kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Arnaldo Carvalho de Melo <acme@infradead.org>,
+	lkml <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "David S.Miller" <davem@davemloft.net>,
-        Kirk Yap <kirk.s.yap@intel.com>, David Cote <david.m.cote@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 11/11] Create module providing optimized SHA512 routines
- using SSSE3, AVX or AVX2 instructions.
-References: <cover.1363961999.git.tim.c.chen@linux.intel.com> <1363987779.8972.65.camel@schen9-DESK>
-In-Reply-To: <1363987779.8972.65.camel@schen9-DESK>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.03.2013 23:29, Tim Chen wrote:
-> We added glue code and config options to create crypto
-> module that uses SSE/AVX/AVX2 optimized SHA512 x86_64 assembly routines.
-> 
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> ---
->  arch/x86/crypto/Makefile            |   2 +
->  arch/x86/crypto/sha512_ssse3_glue.c | 276 ++++++++++++++++++++++++++++++++++++
->  crypto/Kconfig                      |  11 ++
->  3 files changed, 289 insertions(+)
->  create mode 100644 arch/x86/crypto/sha512_ssse3_glue.c
-> 
-> diff --git a/arch/x86/crypto/Makefile b/arch/x86/crypto/Makefile
-> index 02a664a..7d12625 100644
-> --- a/arch/x86/crypto/Makefile
-> +++ b/arch/x86/crypto/Makefile
-> @@ -28,6 +28,7 @@ obj-$(CONFIG_CRYPTO_GHASH_CLMUL_NI_INTEL) += ghash-clmulni-intel.o
->  obj-$(CONFIG_CRYPTO_CRC32C_INTEL) += crc32c-intel.o
->  obj-$(CONFIG_CRYPTO_SHA1_SSSE3) += sha1-ssse3.o
->  obj-$(CONFIG_CRYPTO_SHA256_SSSE3) += sha256-ssse3.o
-> +obj-$(CONFIG_CRYPTO_SHA512_SSSE3) += sha512-ssse3.o
->  
->  aes-i586-y := aes-i586-asm_32.o aes_glue.o
->  twofish-i586-y := twofish-i586-asm_32.o twofish_glue.o
-> @@ -54,3 +55,4 @@ sha1-ssse3-y := sha1_ssse3_asm.o sha1_ssse3_glue.o
->  crc32c-intel-y := crc32c-intel_glue.o
->  crc32c-intel-$(CONFIG_CRYPTO_CRC32C_X86_64) += crc32c-pcl-intel-asm_64.o
->  sha256-ssse3-y := sha256-ssse3-asm.o sha256-avx-asm.o sha256-avx2-asm.o sha256_ssse3_glue.o
-> +sha512-ssse3-y := sha512-ssse3-asm.o sha512-avx-asm.o sha512-avx2-asm.o sha512_ssse3_glue.o
-> diff --git a/arch/x86/crypto/sha512_ssse3_glue.c b/arch/x86/crypto/sha512_ssse3_glue.c
-> new file mode 100644
-> index 0000000..25a2e07
-> --- /dev/null
-> +++ b/arch/x86/crypto/sha512_ssse3_glue.c
+Hi,
 
-...snip..
+so I was tracing a small .c program like so:
 
-> +#include <linux/string.h>
-> +
-> +asmlinkage void sha512_transform_ssse3(const char *data, u64 *digest,
-> +				     u64 rounds);
-> +#ifdef CONFIG_AS_AVX
-> +asmlinkage void sha512_transform_avx(const char *data, u64 *digest,
-> +				     u64 rounds);
-> +asmlinkage void sha512_transform_rorx(const char *data, u64 *digest,
-> +				     u64 rounds);
-> +#endif
-> +
+$ ./perf record ~/test/asm
 
-Is CONFIG_AS_AVX enough to ensure that rorx is supported by assembler?
+and here's what got spewed in dmesg. Kernel is plain -rc4. Any pending
+fixes in tip I should try?
 
-You also have #ifdef CONFIG_AS_AVX / #endif missing in 'sha256-avx-asm.S', 'sha256-avx2-asm.S', 'sha512-avx-asm.S' and 'sha512-avx2-asm.S'.
+[ 3700.194208] BUG: using smp_processor_id() in preemptible [00000000] code: asm/8333
+[ 3700.194226] caller is perf_event_task_ctx+0x55/0x140
+[ 3700.194235] Pid: 8333, comm: asm Not tainted 3.9.0-rc4 #1
+[ 3700.194243] Call Trace:
+[ 3700.194261]  [<ffffffff812b4182>] debug_smp_processor_id+0xd2/0xf0
+[ 3700.194279]  [<ffffffff810e5155>] perf_event_task_ctx+0x55/0x140
+[ 3700.194296]  [<ffffffff810e5412>] perf_event_task+0x1d2/0x3c0
+[ 3700.194308]  [<ffffffff810e52ad>] ? perf_event_task+0x6d/0x3c0
+[ 3700.194324]  [<ffffffff810e99a6>] perf_event_exit_task+0x166/0x250
+[ 3700.194333]  [<ffffffff810414be>] do_exit+0x27e/0xb20
+[ 3700.194340]  [<ffffffff8159ac63>] ? error_sti+0x5/0x6
+[ 3700.194349]  [<ffffffff8159a80d>] ? retint_swapgs+0xe/0x13
+[ 3700.194358]  [<ffffffff81041f1c>] do_group_exit+0x4c/0xc0
+[ 3700.194365]  [<ffffffff81041fa7>] sys_exit_group+0x17/0x20
+[ 3700.194373]  [<ffffffff8159b306>] system_call_fastpath+0x1a/0x1f
 
--Jussi
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
