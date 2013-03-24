@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab3CXTZt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 15:25:49 -0400
-Received: from mail-da0-f43.google.com ([209.85.210.43]:38749 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556Ab3CXTZs (ORCPT
+	id S1754680Ab3CXTbS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 15:31:18 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:54769 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754556Ab3CXTbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 15:25:48 -0400
-From: Alice Ferrazzi <alice.ferrazzi@gmail.com>
-To: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com
-Cc: linux-rdma@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Alice Ferrazzi <alice.ferrazzi@gmail.com>
-Subject: [PATCH] Infiniband: core: change <asm/uaccess.h> to <linux/uaccess.h>
-Date: Mon, 25 Mar 2013 04:24:44 +0900
-Message-Id: <1364153084-8911-1-git-send-email-alice.ferrazzi@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 24 Mar 2013 15:31:16 -0400
+Message-ID: <514F5480.6040501@suse.cz>
+Date: Sun, 24 Mar 2013 20:31:12 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+MIME-Version: 1.0
+To: Sebastian Gottschall <s.gottschall@dd-wrt.com>,
+        linux-kernel@vger.kernel.org
+CC: stable@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        keescook@chromium.org
+Subject: Build breakage in 3.8.4 [was: Linux 3.8.4]
+References: <20130320201554.GA18281@kroah.com> <kidd01$2o6$1@ger.gmane.org>
+In-Reply-To: <kidd01$2o6$1@ger.gmane.org>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces <asm/uaccess.h> with <linux/uaccess.h>
-to comply with the checkpatch.pl hint.
+On 03/20/2013 11:25 PM, Sebastian Gottschall wrote:
 
-Signed-off-by: Alice Ferrazzi <alice.ferrazzi@gmail.com>
----
- drivers/infiniband/core/ucm.c         |    2 +-
- drivers/infiniband/core/user_mad.c    |    2 +-
- drivers/infiniband/core/uverbs_cmd.c  |    2 +-
- drivers/infiniband/core/uverbs_main.c |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+> Am 20.03.2013 21:15, schrieb Greg KH:
+>> I'm announcing the release of the 3.8.4 kernel.
+...
+>>        signal: always clear sa_restorer on execve
+> consider that this kernel is not compileable on mips targets due the
+> patch in kernel/signal.c
+>
+> SA_RESTORER is defined in mips, but sa_restorer does not exist on that
+> platform
 
-diff --git a/drivers/infiniband/core/ucm.c b/drivers/infiniband/core/ucm.c
-index f2f6393..224a7c9 100644
---- a/drivers/infiniband/core/ucm.c
-+++ b/drivers/infiniband/core/ucm.c
-@@ -46,7 +46,7 @@
- #include <linux/mutex.h>
- #include <linux/slab.h>
- 
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- 
- #include <rdma/ib_cm.h>
- #include <rdma/ib_user_cm.h>
-diff --git a/drivers/infiniband/core/user_mad.c b/drivers/infiniband/core/user_mad.c
-index f0d588f..ad414f1 100644
---- a/drivers/infiniband/core/user_mad.c
-+++ b/drivers/infiniband/core/user_mad.c
-@@ -48,7 +48,7 @@
- #include <linux/semaphore.h>
- #include <linux/slab.h>
- 
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- 
- #include <rdma/ib_mad.h>
- #include <rdma/ib_user_mad.h>
-diff --git a/drivers/infiniband/core/uverbs_cmd.c b/drivers/infiniband/core/uverbs_cmd.c
-index a7d00f6..62ff7f3 100644
---- a/drivers/infiniband/core/uverbs_cmd.c
-+++ b/drivers/infiniband/core/uverbs_cmd.c
-@@ -37,7 +37,7 @@
- #include <linux/fs.h>
- #include <linux/slab.h>
- 
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- 
- #include "uverbs.h"
- 
-diff --git a/drivers/infiniband/core/uverbs_main.c b/drivers/infiniband/core/uverbs_main.c
-index 2c6f0f2..dfee66f 100644
---- a/drivers/infiniband/core/uverbs_main.c
-+++ b/drivers/infiniband/core/uverbs_main.c
-@@ -46,7 +46,7 @@
- #include <linux/anon_inodes.h>
- #include <linux/slab.h>
- 
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- 
- #include "uverbs.h"
- 
+The same for ia64...
+
+kernel/signal.c: In function 'flush_signal_handlers':
+kernel/signal.c:441: error: 'struct sigaction' has no member named
+'sa_restorer'
+
+Do we need this in 3.0, 3.4, 3.8 too?
+commit 522cff142d7d2f9230839c9e1f21a4d8bcc22a4a
+Author: Andrew Morton <akpm@linux-foundation.org>
+Date:   Wed Mar 13 14:59:34 2013 -0700
+
+    kernel/signal.c: use __ARCH_HAS_SA_RESTORER instead of SA_RESTORER
+
+    __ARCH_HAS_SA_RESTORER is the preferred conditional for use in 3.9 and
+    later kernels, per Kees.
+
+thanks,
 -- 
-1.7.10.4
-
+js
+suse labs
