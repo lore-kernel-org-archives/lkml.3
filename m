@@ -1,36 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab3CXNNx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 09:13:53 -0400
-Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:38251 "EHLO
-	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753656Ab3CXNNw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 09:13:52 -0400
-Message-ID: <514EFC08.1000509@blueyonder.co.uk>
-Date: Sun, 24 Mar 2013 13:13:44 +0000
-From: Sid Boyce <sboyce@blueyonder.co.uk>
-Reply-To: sboyce@blueyonder.co.uk
-Organization: blueyonder.co.uk
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1753745Ab3CXNW6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 09:22:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61615 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752975Ab3CXNW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 09:22:57 -0400
+Date: Sun, 24 Mar 2013 14:20:47 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Caj Larsson <caj@omnicloud.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Zombie stuck in zap_pid_ns_processes()
+Message-ID: <20130324132047.GA13419@redhat.com>
+References: <CAMoAvfEsvah6VELu9D7k1prB2GLhvyubd35tKgBaJdB=P08+pQ@mail.gmail.com> <87txo1kqj5.fsf@xmission.com>
 MIME-Version: 1.0
-To: LKML Mailing List <linux-kernel@vger.kernel.org>
-Subject: 3.9-rc4 Makefile EXTRAVERSION still -rc3
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=AUhbpHVS+xhHrj9wLCYAQoYnFLYUZdbP8UM0GmH2jwk= c=1 sm=0 a=8gK0viZu5AQA:10 a=hDnXrIgeXM4A:10 a=3NElcqgl2aoA:10 a=k1j_C7plYBUA:10 a=8nJEP1OIZ-IA:10 a=QJSbeFYOpp3GrE2Sr2YA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87txo1kqj5.fsf@xmission.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using git pull or git clone this field in the Makefile remains unchanged.
-patch-3.9-rc4.xz has the change.
-Regards
-Sid.
+On 03/24, Eric W. Biederman wrote:
+>
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -181,6 +181,7 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
+>  	int nr;
+>  	int rc;
+>  	struct task_struct *task, *me = current;
+> +	int init_pids = task_pid_vnr(me) == 1 ? 1 : 2;
+                        ^^^^^^^^^^^^^^^^^^^^^
 
--- 
-Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
-Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
-Senior Staff Specialist, Cricket Coach
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
+Ah, mt-init.
+
+perhaps thread_group_leader(me) would be more clean/simple,
+but I won't insist of course.
+
+Oleg.
 
