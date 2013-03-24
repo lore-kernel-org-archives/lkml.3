@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458Ab3CXP73 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 11:59:29 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44732 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754070Ab3CXP71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 11:59:27 -0400
-Date: Sun, 24 Mar 2013 16:59:24 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Cc: Stephane Eranian <eranian@google.com>
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
- asm/8267
-Message-ID: <20130324155924.GB4866@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Ingo Molnar <mingo@kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Arnaldo Carvalho de Melo <acme@infradead.org>,
-	lkml <linux-kernel@vger.kernel.org>,
-	Stephane Eranian <eranian@google.com>
-References: <20130324115556.GA4866@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130324115556.GA4866@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754274Ab3CXQCm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 12:02:42 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:54288 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754029Ab3CXQCl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 12:02:41 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 24 Mar 2013 17:02:34 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Vijay <thelonejoker@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Workqueue behaviour - Synchronization within submitted work.
+Message-ID: <20130324170234.0eeb1fe9@stein>
+In-Reply-To: <CAEtk5ge3MBn5759EfUVdNRmb2g=kvtbe7u+xkZXy5E0KoynoJw@mail.gmail.com>
+References: <CAEtk5ge3MBn5759EfUVdNRmb2g=kvtbe7u+xkZXy5E0KoynoJw@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 24, 2013 at 12:55:56PM +0100, Borislav Petkov wrote:
-> Hi,
+On Mar 20 Vijay wrote:
+> In the new workqueue architecture, I have a question regarding
+> synchronization between different "work" submitted to the same
+> workqueue. For example:
 > 
-> so I was tracing a small .c program like so:
-> 
-> $ ./perf record ~/test/asm
-> 
-> and here's what got spewed in dmesg. Kernel is plain -rc4. Any pending
-> fixes in tip I should try?
-> 
-> [ 3700.194208] BUG: using smp_processor_id() in preemptible [00000000] code: asm/8333
-> [ 3700.194226] caller is perf_event_task_ctx+0x55/0x140
+> * I submit two "works" A and B to a common driver specific workqueue (W).
+> * Each A and B, meddle with a certain shared data SD.
+> * Am I guaranteed serialized execution of A and B, or should I play
+> safe and use a semaphore (acquire/release) with A and B ?
 
-Ok, here's the call stack I was able to reconstruct:
+The works A and B may be (and more or less likely will be) executed in
+parallel --- except if you create the workqueue with parameters @flags |=
+WQ_UNBOUND and @max_active = 1.  alloc_ordered_workqueue() is a shorthand
+for creation of such a workqueue.
 
-perf_event_exit_task()
-|->perf_event_exit_task_context()
-   |-> perf_event_task()
-       |-> perf_event_task_event()
-	   |-> perf_event_task_ctx()
-	       |-> perf_event_task_match()
-		   |-> event_filter_match()
-		       |-> smp_processor_id() -> debug_smp_processor_id()
-
-Now, my primitive thinking would presume that since we're on the
-exit_task path, we're still on the same cpu so the check triggers
-wrongly but I don't know for sure. Also, is there any possibility for
-this code to be moved somewhere else, i.e. to another cpu, so that the
-check actually is correct?
-
-Hmm.
-
-Adding Stephane who added that check in
-fa66f07aa1f0950e1dc78b7ab39728b3f8aa77a1.
-
-Thanks.
-
+Some more thoughts:
+  - If you go for an ordered workqueue and no other means of serialization
+    of accesses to your data, check carefully that these data are indeed
+    never accessed in other contexts besides the workers.
+  - For serialization in non-atomic context, a struct mutex is usually
+    preferred over a struct semaphore.  The foremost advantage of mutexes
+    over counting semaphores is that code using the former can be debugged
+    much easier.
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Stefan Richter
+-=====-===-= --== ==---
+http://arcgraph.de/sr/
