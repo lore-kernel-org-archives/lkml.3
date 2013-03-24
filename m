@@ -1,120 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab3CXWxs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 18:53:48 -0400
-Received: from fold.natur.cuni.cz ([195.113.57.32]:36817 "HELO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754872Ab3CXWxq (ORCPT
+	id S1754872Ab3CXXEq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 19:04:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37092 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753796Ab3CXXEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 18:53:46 -0400
-Message-ID: <514F83F8.9000604@fold.natur.cuni.cz>
-Date: Sun, 24 Mar 2013 23:53:44 +0100
-From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0 SeaMonkey/2.16
+	Sun, 24 Mar 2013 19:04:45 -0400
+Date: Sun, 24 Mar 2013 23:04:37 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Eric Piel <eric.piel@tremplin-utc.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Driver lis3lv02d_i2c not working on Nokia RX-51
+Message-ID: <20130324230435.GE18316@opensource.wolfsonmicro.com>
+References: <201302170046.26569@pali>
+ <201303242227.32528@pali>
+ <20130324221444.GD18316@opensource.wolfsonmicro.com>
+ <201303242345.00176@pali>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>,
-        kernel list <linux-kernel@vger.kernel.org>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: 3.9-rc3+: reports battery as 0 mWh capacity on thinkpad x60
-References: <20130323114011.GA11092@amd.pavel.ucw.cz> <87zjxu9spk.fsf@nemi.mork.no> <20130323202155.GC18732@amd.pavel.ucw.cz> <6726347.ehkcE9iAxU@vostro.rjw.lan> <20130324092733.GA3071@amd.pavel.ucw.cz>
-In-Reply-To: <20130324092733.GA3071@amd.pavel.ucw.cz>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EgVrEAR5UttbsTXg"
+Content-Disposition: inline
+In-Reply-To: <201303242345.00176@pali>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--EgVrEAR5UttbsTXg
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Pavel Machek wrote:
-> Hi!
-> 
->>>>>> pavel@amd:~$ cat /proc/acpi/battery/BAT0/info 
->>>>>> present:                 yes
->>>>>> design capacity:         0 mWh
->>>>>> last full capacity:      0 mWh
->>>>>> battery technology:      rechargeable
->>>>>> design voltage:          14400 mV
->>>>>>
->>>>>> This worked before... at least it works in 2.6 kernel used by debian.
->>>>>
->>>>> This works for me in 3.9-rc3.  May I see your .config?
-> ...
->>> But problem is not in /proc, /sys has zeros, too.
->>>
->>> pavel@amd:~$ cat /sys/class/power_supply/BAT0/energy_full
->>> 0
->>> pavel@amd:~$ cat /sys/class/power_supply/BAT0/energy_full_design 
->>> 0
->>> pavel@amd:~$ cat /sys/class/power_supply/BAT0/model_name 
->>> 93P5030
->>> pavel@amd:~$
->>
->> Can you narrow the time frame when it stopped working a bit?
-> 
-> Well, 2.6.32 from debian works ok, and self-compiled 3.1+ kernel also
-> seems to work ok.
-> 
-> I'm not sure if 3.7+ kernels worked, actually... I'd have to do some
-> compiling to check.
+On Sun, Mar 24, 2013 at 11:44:59PM +0100, Pali Roh=E1r wrote:
+> On Sunday 24 March 2013 23:14:46 Mark Brown wrote:
 
-FYI, on 3.7.10 I don't have the above files. See below what I do have:
+> > Well, you should seek support from the board vendor then.=20
 
-# for f in /sys/class/power_supply/BAT0/*; do echo $f; cat $f; done
-/sys/class/power_supply/BAT0/alarm
-0
-/sys/class/power_supply/BAT0/capacity
-106
-/sys/class/power_supply/BAT0/charge_full
-4126000
-/sys/class/power_supply/BAT0/charge_full_design
-4400000
-/sys/class/power_supply/BAT0/charge_now
-4400000
-/sys/class/power_supply/BAT0/current_now
-1000
-/sys/class/power_supply/BAT0/cycle_count
-0
-/sys/class/power_supply/BAT0/device
-cat: /sys/class/power_supply/BAT0/device: Is a directory
-/sys/class/power_supply/BAT0/manufacturer
-SMP
-/sys/class/power_supply/BAT0/model_name
-DELL 8NH551B
-/sys/class/power_supply/BAT0/power
-cat: /sys/class/power_supply/BAT0/power: Is a directory
-/sys/class/power_supply/BAT0/present
-1
-/sys/class/power_supply/BAT0/serial_number
- 2630
-/sys/class/power_supply/BAT0/status
-Full
-/sys/class/power_supply/BAT0/subsystem
-cat: /sys/class/power_supply/BAT0/subsystem: Is a directory
-/sys/class/power_supply/BAT0/technology
-Li-ion
-/sys/class/power_supply/BAT0/type
-Battery
-/sys/class/power_supply/BAT0/uevent
-POWER_SUPPLY_NAME=BAT0
-POWER_SUPPLY_STATUS=Full
-POWER_SUPPLY_PRESENT=1
-POWER_SUPPLY_TECHNOLOGY=Li-ion
-POWER_SUPPLY_CYCLE_COUNT=0
-POWER_SUPPLY_VOLTAGE_MIN_DESIGN=11100000
-POWER_SUPPLY_VOLTAGE_NOW=12294000
-POWER_SUPPLY_CURRENT_NOW=1000
-POWER_SUPPLY_CHARGE_FULL_DESIGN=4400000
-POWER_SUPPLY_CHARGE_FULL=4126000
-POWER_SUPPLY_CHARGE_NOW=4400000
-POWER_SUPPLY_CAPACITY=106
-POWER_SUPPLY_MODEL_NAME=DELL 8NH551B
-POWER_SUPPLY_MANUFACTURER=SMP
-POWER_SUPPLY_SERIAL_NUMBER= 2630
-/sys/class/power_supply/BAT0/voltage_min_design
-11100000
-/sys/class/power_supply/BAT0/voltage_now
-12294000
-#
+> Not possible. Nokia is already using Windows Phones and life=20
+> cycle for Nokia N900 phone is at the end. And Nokia never=20
+> released any HW documentations to community...
+
+There may well still be people with the required information, though in
+general this sort of thing is always going to be a hazard when working
+on undocumented hardware.
+
+> Another question: what was reason for that commit=20
+> ec400c9fab99d16a491cea17d27d0c6a5780b97c
+> "lis3lv02d: make regulator API usage unconditional" ?
+
+Failing to provide power to a device is typically a very serious
+problem for device operation but the code that was there handles such
+errors by ignoring them.  This isn't a robust way forwards and such code
+should never have been merged in the first place, as the changelog says
+the regulator core provides a number of facilities for stubbing itself
+out when it is not required which boards should use.
+
+Handling the possibility that supplies may not be there not only creates
+needless repetitive complexity in device drivers but also decreases the
+robustness of the system since error handling for access to powered down
+devices often isn't very pretty and other drivers or the core may
+disrupt the operation of the device by for example powering it down due
+to not thinking it's in use.
+
+> I think that for N900 support is reverting above commit needed, I=20
+> do not see other solution...
+
+If you're convinced that the regulator is kept on for some reason you
+could always just provide a fake supply, though obviously it would be
+better to hook up the real regulator since this may break if at some
+point the kernel decides that whatever is actually providing the supply
+is unused and can be turned off.
+
+--EgVrEAR5UttbsTXg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRT4Z7AAoJELSic+t+oim9fvMP/192OdVzYWLoRCvhw9GnwHLv
+V1am3R9TJ8IMjSE2ltqEqw/hfHujfsslUjxR4a5AKqqnQyvTYVV8bxw5oLoV/pZ5
+8oZx7dwAmN8M6H6MqgVX5AqIyEwrozDla275tBNAEasyHJSwSRFrtLNCUPiq+3zB
+b6tYwJ2QXUV4/yEcCaUECeRFd6NFGBueuHcNH6M2om4CsotWW7tZimEioZ+vZvE/
+wUksFwuTnrn+TpsaAYXXKucX5EQ8F4igpcbuuHMENNsBQaBqeyaYoxHVukmt/EXc
+4o52mxVdLQR14BPOGOII2ayFqBKsLvpZSiSF0khl5SHUQOK8Q0iUGe9Sn6g2oGm3
+mLvgwe9lap3wxNhrSU7AkE1HQ79lYLoHg/kViDAz/eyad2b5MFzx6rVlD4VKPAk1
+Z5I0WT8a1vKTYBO5ZCq1C79mDC3NAPSzABN5z/egpDecZ27gyBba3l6EGFrk2mpC
+iO+JaUJ+A7bT7ZYAoK5q0kvtt1MBstBQd7OQmm9qF2j0Xx7fbTNuRX9VsKGZ8J8s
+Z2Z6UQpHfuxG3u5Ws87bML/U6HQPTYcGOK7/AYQdPOa7uoe89y0lmSOfobvDePFx
+z+uvZwMx2FKZCMzhc7oG9CMtl9ogf115lM0vKl7feUgYRBF4k53oUOGskF1NJjVy
+/PoT/BMRicDj6Q+4QUPO
+=OT+s
+-----END PGP SIGNATURE-----
+
+--EgVrEAR5UttbsTXg--
