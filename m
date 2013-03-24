@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338Ab3CXHbK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 03:31:10 -0400
-Received: from mail-da0-f48.google.com ([209.85.210.48]:38242 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262Ab3CXHbH (ORCPT
+	id S1754392Ab3CXHbS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 03:31:18 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:62676 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293Ab3CXHbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 03:31:07 -0400
+	Sun, 24 Mar 2013 03:31:14 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -17,9 +17,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Hirokazu Takata <takata@linux-m32r.org>, linux-m32r@ml.linux-m32r.org,
         linux-m32r-ja@ml.linux-m32r.org
-Subject: [RFC PATCH v2, part4 20/39] mm/m32r: prepare for removing num_physpages and simplify mem_init()
-Date: Sun, 24 Mar 2013 15:24:58 +0800
-Message-Id: <1364109934-7851-33-git-send-email-jiang.liu@huawei.com>
+Subject: [RFC PATCH v2, part4 21/39] mm/m32r: prepare for removing num_physpages and simplify mem_init()
+Date: Sun, 24 Mar 2013 15:24:59 +0800
+Message-Id: <1364109934-7851-34-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
 References: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
