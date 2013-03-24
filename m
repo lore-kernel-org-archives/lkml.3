@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab3CXHm7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 03:42:59 -0400
-Received: from mail-da0-f45.google.com ([209.85.210.45]:47684 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360Ab3CXHmy (ORCPT
+	id S1755817Ab3CXHnF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 03:43:05 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:41038 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755783Ab3CXHnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 03:42:54 -0400
+	Sun, 24 Mar 2013 03:43:02 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -15,12 +15,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-xtensa@linux-xtensa.org
-Subject: [RFC PATCH v2, part4 37/39] mm/xtensa: prepare for removing num_physpages and simplify mem_init()
-Date: Sun, 24 Mar 2013 15:40:37 +0800
-Message-Id: <1364110839-8172-4-git-send-email-jiang.liu@huawei.com>
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [RFC PATCH v2, part4 38/39] mm/hotplug: prepare for removing num_physpages
+Date: Sun, 24 Mar 2013 15:40:38 +0800
+Message-Id: <1364110839-8172-5-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1364110839-8172-1-git-send-email-jiang.liu@huawei.com>
 References: <1364110839-8172-1-git-send-email-jiang.liu@huawei.com>
@@ -28,64 +27,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for removing num_physpages and simplify mem_init().
+Prepare for removing num_physpages.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Chris Zankel <chris@zankel.net>
-Cc: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-xtensa@linux-xtensa.org
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/xtensa/mm/init.c |   27 ++-------------------------
- 1 file changed, 2 insertions(+), 25 deletions(-)
+ mm/memory_hotplug.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/arch/xtensa/mm/init.c b/arch/xtensa/mm/init.c
-index dc6e009..267428e 100644
---- a/arch/xtensa/mm/init.c
-+++ b/arch/xtensa/mm/init.c
-@@ -173,12 +173,8 @@ void __init zones_init(void)
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 97454b3..9b1b494 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -751,10 +751,6 @@ EXPORT_SYMBOL_GPL(restore_online_page_callback);
  
- void __init mem_init(void)
+ void __online_page_set_limits(struct page *page)
  {
--	unsigned long codesize, reservedpages, datasize, initsize;
--	unsigned long highmemsize, tmp, ram;
+-	unsigned long pfn = page_to_pfn(page);
 -
--	max_mapnr = num_physpages = max_low_pfn - ARCH_PFN_OFFSET;
-+	max_mapnr = max_low_pfn - ARCH_PFN_OFFSET;
- 	high_memory = (void *) __va(max_low_pfn << PAGE_SHIFT);
--	highmemsize = 0;
- 
- #ifdef CONFIG_HIGHMEM
- #error HIGHGMEM not implemented in init.c
-@@ -186,26 +182,7 @@ void __init mem_init(void)
- 
- 	free_all_bootmem();
- 
--	reservedpages = ram = 0;
--	for (tmp = 0; tmp < max_mapnr; tmp++) {
--		ram++;
--		if (PageReserved(mem_map+tmp))
--			reservedpages++;
--	}
--
--	codesize =  (unsigned long) _etext - (unsigned long) _stext;
--	datasize =  (unsigned long) _edata - (unsigned long) _sdata;
--	initsize =  (unsigned long) __init_end - (unsigned long) __init_begin;
--
--	printk("Memory: %luk/%luk available (%ldk kernel code, %ldk reserved, "
--	       "%ldk data, %ldk init %ldk highmem)\n",
--	       nr_free_pages() << (PAGE_SHIFT-10),
--	       ram << (PAGE_SHIFT-10),
--	       codesize >> 10,
--	       reservedpages << (PAGE_SHIFT-10),
--	       datasize >> 10,
--	       initsize >> 10,
--	       highmemsize >> 10);
-+	mem_init_print_info(NULL);
+-	if (pfn >= num_physpages)
+-		num_physpages = pfn + 1;
  }
+ EXPORT_SYMBOL_GPL(__online_page_set_limits);
  
- #ifdef CONFIG_BLK_DEV_INITRD
 -- 
 1.7.9.5
 
