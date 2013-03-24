@@ -1,157 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab3CXP3U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 11:29:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752781Ab3CXP3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 11:29:19 -0400
-Date: Sun, 24 Mar 2013 16:26:51 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Anton Arapov <anton@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: Re: [PATCH 4/7] uretprobes: return probe entry, prepare_uretprobe()
-Message-ID: <20130324152651.GC17037@redhat.com>
-References: <1363957745-6657-1-git-send-email-anton@redhat.com> <1363957745-6657-5-git-send-email-anton@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363957745-6657-5-git-send-email-anton@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754055Ab3CXPaA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 11:30:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61328 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383Ab3CXP36 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 11:29:58 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: arvind.chauhan@arm.com, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Viresh Kumar <viresh.kumar@linaro.org>, Sekhar Nori <nsekhar@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/2] cpufreq: drivers: don't check range of target freq in .target()
+Date: Sun, 24 Mar 2013 20:59:42 +0530
+Message-Id: <2ece6d9fe8dfb6882a1c83a1cb2404bacc40b22d.1364138740.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22, Anton Arapov wrote:
->
->  void uprobe_free_utask(struct task_struct *t)
->  {
->  	struct uprobe_task *utask = t->utask;
-> +	struct return_instance *ri, *tmp;
->
->  	if (!utask)
->  		return;
-> @@ -1325,6 +1334,15 @@ void uprobe_free_utask(struct task_struct *t)
->  	if (utask->active_uprobe)
->  		put_uprobe(utask->active_uprobe);
->
-> +	ri = utask->return_instances;
+Cpufreq core checks the range of target_freq before calling driver->target() and
+so we don't need to do it again.
 
-You also need to nullify ->return_instances before return, otherwise
-it can be use-after-freed later.
+Remove it.
 
-uprobe_free_utask() can also be called when the task execs.
+Cc: Sekhar Nori <nsekhar@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ arch/arm/mach-davinci/cpufreq.c  | 9 ---------
+ drivers/cpufreq/dbx500-cpufreq.c | 6 ------
+ 2 files changed, 15 deletions(-)
 
-> +	while (ri) {
-> +		put_uprobe(ri->uprobe);
-> +
-> +		tmp = ri;
-> +		ri = ri->next;
-> +		kfree(tmp);
-> +	}
-
-This is really minor, but I can't resist. Both put_uprobe() and kfree()
-work with the same object, it would be more clean to use the same var.
-Say,
-
-	while (ri) {
-		tmp = ri;
-		ri = ri->next;
-
-		put_uprobe(tmp->uprobe);
-		kfree(tmp);
-	}
-
-> +static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
-> +{
-...
-> +
-> +	prev_ret_vaddr = -1;
-> +	if (utask->return_instances)
-> +		prev_ret_vaddr = utask->return_instances->orig_ret_vaddr;
-> +
-> +	ri = kzalloc(sizeof(struct return_instance), GFP_KERNEL);
-> +	if (!ri)
-> +		return;
-> +
-> +	ri->dirty = false;
-> +	trampoline_vaddr = get_trampoline_vaddr(area);
-> +	ret_vaddr = arch_uretprobe_hijack_return_addr(trampoline_vaddr, regs);
-> +
-> +	/*
-> +	 * We don't want to keep trampoline address in stack, rather keep the
-> +	 * original return address of first caller thru all the consequent
-> +	 * instances. This also makes breakpoint unwrapping easier.
-> +	 */
-> +	if (ret_vaddr == trampoline_vaddr) {
-> +		if (likely(prev_ret_vaddr != -1)) {
-> +			ri->dirty = true;
-> +			ret_vaddr = prev_ret_vaddr;
-> +		} else {
-> +			/*
-> +			 * This situation is not possible. Likely we have an
-> +			 * attack from user-space. Die.
-> +			 */
-> +			printk(KERN_ERR "uprobe: something went wrong "
-> +				"pid/tgid=%d/%d", current->pid, current->tgid);
-> +			send_sig(SIGSEGV, current, 0);
-> +			kfree(ri);
-> +			return;
-> +		}
-> +	}
-> +
-> +	if (likely(ret_vaddr != -1)) {
-> +		atomic_inc(&uprobe->ref);
-> +		ri->uprobe = uprobe;
-> +		ri->orig_ret_vaddr = ret_vaddr;
-> +
-> +		/* add instance to the stack */
-> +		ri->next = utask->return_instances;
-> +		utask->return_instances = ri;
-> +
-> +		return;
-> +	}
-> +
-> +	kfree(ri);
-> +}
-
-Anton, this really doesn't look clear/clean. Why do you need prev_ret_vaddr
-in advance? Why do you need it at all? why do you delay the "ret_vaddr == -1"
-errorcheck?
-
-And ->dirty looks confusing... perhaps ->chained ?
-
-		ri = kzalloc(...);
-		if (!ri)
-			return;
-
-		ret_vaddr = arch_uretprobe_hijack_return_addr(...);
-		if (ret_vaddr == -1)
-			goto err;
-
-		if (ret_vaddr == trampoline_vaddr) {
-			if (!utask->return_instances) {
-				// This situation is not possible.
-				// (not sure we should send SIGSEGV)
-				pr_warn(...);
-				goto err;
-			}
-
-			ri->chained = true;
-			ret_vaddr = utask->return_instances->orig_ret_vaddr;
-		}
-
-		fill-ri-and-add-push-it;
-		return;
-
-	err:
-		kfree(ri);
-		return;
-
-Oleg.
+diff --git a/arch/arm/mach-davinci/cpufreq.c b/arch/arm/mach-davinci/cpufreq.c
+index 55eb870..8fb0c2a 100644
+--- a/arch/arm/mach-davinci/cpufreq.c
++++ b/arch/arm/mach-davinci/cpufreq.c
+@@ -79,15 +79,6 @@ static int davinci_target(struct cpufreq_policy *policy,
+ 	struct davinci_cpufreq_config *pdata = cpufreq.dev->platform_data;
+ 	struct clk *armclk = cpufreq.armclk;
+ 
+-	/*
+-	 * Ensure desired rate is within allowed range.  Some govenors
+-	 * (ondemand) will just pass target_freq=0 to get the minimum.
+-	 */
+-	if (target_freq < policy->cpuinfo.min_freq)
+-		target_freq = policy->cpuinfo.min_freq;
+-	if (target_freq > policy->cpuinfo.max_freq)
+-		target_freq = policy->cpuinfo.max_freq;
+-
+ 	freqs.old = davinci_getspeed(0);
+ 	freqs.new = clk_round_rate(armclk, target_freq * 1000) / 1000;
+ 
+diff --git a/drivers/cpufreq/dbx500-cpufreq.c b/drivers/cpufreq/dbx500-cpufreq.c
+index 7192a6d..15ed367 100644
+--- a/drivers/cpufreq/dbx500-cpufreq.c
++++ b/drivers/cpufreq/dbx500-cpufreq.c
+@@ -37,12 +37,6 @@ static int dbx500_cpufreq_target(struct cpufreq_policy *policy,
+ 	unsigned int idx;
+ 	int ret;
+ 
+-	/* scale the target frequency to one of the extremes supported */
+-	if (target_freq < policy->cpuinfo.min_freq)
+-		target_freq = policy->cpuinfo.min_freq;
+-	if (target_freq > policy->cpuinfo.max_freq)
+-		target_freq = policy->cpuinfo.max_freq;
+-
+ 	/* Lookup the next frequency */
+ 	if (cpufreq_frequency_table_target(policy, freq_table, target_freq,
+ 					relation, &idx))
+-- 
+1.7.12.rc2.18.g61b472e
 
