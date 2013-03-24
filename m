@@ -1,63 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab3CXQQa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 12:16:30 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:53858 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112Ab3CXQQ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 12:16:28 -0400
+	id S1754169Ab3CXQap (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 12:30:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25607 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753940Ab3CXQao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 12:30:44 -0400
+Date: Sun, 24 Mar 2013 17:28:17 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Anton Arapov <anton@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
+        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
+Subject: Re: [PATCH 5/7] uretprobes: return probe exit, invoke handlers
+Message-ID: <20130324162817.GD17037@redhat.com>
+References: <1363957745-6657-1-git-send-email-anton@redhat.com> <1363957745-6657-6-git-send-email-anton@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130322150847.GH32416@pogo>
-References: <CAOULuOb0_40EX+6A_HM8eJN7kj9J4WhO9UhZbUUqng1Sfy_SQg@mail.gmail.com>
-	<20130318191340.GA28919@tuxdriver.com>
-	<20130318210308.GD32416@pogo>
-	<20130321114219.GB1459@redhat.com>
-	<20130321193331.GB32416@pogo>
-	<20130322091342.GB1496@redhat.com>
-	<20130322150847.GH32416@pogo>
-Date: Sun, 24 Mar 2013 12:16:27 -0400
-Message-ID: <CAOULuOYfwEAwBWbWAUYX2FaPtufTUqkCndcfA1ntiMPGkPi5qA@mail.gmail.com>
-Subject: Re: [PATCH] ath9k : Fix ieee80211 work while going to suspend
-From: Parag Warudkar <parag.lkml@gmail.com>
-To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        senthilb@qca.qualcomm.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363957745-6657-6-git-send-email-anton@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 11:08 AM, Luis R. Rodriguez
-<rodrigue@qca.qualcomm.com> wrote:
-> On Fri, Mar 22, 2013 at 10:13:42AM +0100, Stanislaw Gruszka wrote:
->> On Thu, Mar 21, 2013 at 12:33:31PM -0700, Luis R. Rodriguez wrote:
->> > OK how about this for stable for now:
->> >
->> > diff --git a/drivers/net/wireless/ath/ath9k/link.c b/drivers/net/wireless/ath/ath9k/link.c
->> > index 39c84ec..7fdac6c 100644
->> > --- a/drivers/net/wireless/ath/ath9k/link.c
->> > +++ b/drivers/net/wireless/ath/ath9k/link.c
->> > @@ -170,7 +170,8 @@ void ath_rx_poll(unsigned long data)
->> >  {
->> >     struct ath_softc *sc = (struct ath_softc *)data;
->> >
->> > -   ieee80211_queue_work(sc->hw, &sc->hw_check_work);
->> > +   if (!test_bit(SC_OP_INVALID, &sc->sc_flags))
->> > +           ieee80211_queue_work(sc->hw, &sc->hw_check_work);
->> >  }
->>
->> That looks ok for me as -stable fix
->>
->> Reviewed-by: Stanislaw Gruszka <sgruszka@redhat.com>
+On 03/22, Anton Arapov wrote:
 >
-> Parag, can you test the above to ensure it fixes your issue ?
+> +static void handle_uretprobe(struct xol_area *area, struct pt_regs *regs)
+> +{
+> +	struct uprobe_task *utask;
+> +	struct return_instance *ri, *tmp;
+> +	unsigned long prev_ret_vaddr;
+> +
+> +	utask = get_utask();
+> +	if (!utask)
+> +		return;
+> +
+> +	ri = utask->return_instances;
+> +	if (!ri)
+> +		return;
 
-Seems to be working ok so far.
+Hmm. I am wondering what should the caller (handle_swbp) do in this
+case...
 
-Reported-and-tested-by: Parag Warudkar <parag.lkml@gmail.com>
+> +
+> +	instruction_pointer_set(regs, ri->orig_ret_vaddr);
+> +
+> +	while (ri) {
+> +		if (ri->uprobe->consumers)
+> +			handler_uretprobe_chain(ri->uprobe, regs);
+
+I'd suggest to either remove this check or move it into
+handler_uretprobe_chain().
+
+> +
+> +		put_uprobe(ri->uprobe);
+> +		tmp = ri;
+> +		prev_ret_vaddr = tmp->orig_ret_vaddr;
+
+For what? It seems that prev_ret_vaddr should be simply killed.
+
+> +		ri = ri->next;
+> +		kfree(tmp);
+
+Another case when you do put_uprobe/kfree using the different vars...
+Once again, the code is correct but imho a bit confusing.
+
+> +		if (!ri || ri->dirty == false) {
+> +			/*
+> +			 * This is the first return uprobe (chronologically)
+> +			 * pushed for this particular instance of the probed
+> +			 * function.
+> +			 */
+> +			utask->return_instances = ri;
+> +			return;
+> +		}
+
+Else? we simply return without updating ->return_instances which
+points to the freed element(s) ? OK, this must not be possible but
+this is not obvious...
+
+And the fact you check "ri != NULL" twice doesn't look very nice.
+We already checked ri != NULL before while(ri), we have to do this
+anyway for instruction_pointer_set(). Perhaps do/whild or even
+for (;;) + break would be more clean. But this is minor.
+
+
+I am not sure the logic is correct. OK. suppose that
+->return_instances = NULL.
+
+The task hits the rp breakoint. After that
+
+	return_instances -> { .dirty = false }
+
+The task hits the same breakoint before return (tail call), now
+we have
+
+	return_instances -> { .dirty = true } -> { .dirty = false }
+
+Then it returns and handle_uretprobe() should unwind the whole stack.
+But, it seems, the main loop will stop after the 1st iteration?
+
+Ignoring the fact you need put_uprobe/kfree, it seems that we should
+do something like this,
+
+	do {
+		handler_uretprobe_chain(...);
+
+		if (!ri->dirty)	// not chained
+			break;
+
+		ri = ri->next;		
+	} while (ri);
+
+	utask->return_instances = ri;
+
+No?
+
+> @@ -1631,11 +1681,19 @@ static void handle_swbp(struct pt_regs *regs)
+>  {
+>  	struct uprobe *uprobe;
+>  	unsigned long bp_vaddr;
+> +	struct xol_area *area;
+>  	int uninitialized_var(is_swbp);
+>  
+>  	bp_vaddr = uprobe_get_swbp_addr(regs);
+> -	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
+> +	area = get_xol_area();
+
+Why?
+
+No, we do not want this heavy and potentially unnecessary get_xol_area(),
+
+> +	if (area) {
+
+Just check uprobes_state.xol_area != NULL instead. If it is NULL
+we simply should not call handle_uretprobe().
+
+Or perhaps get_trampoline_vaddr() should simply return -1 if
+->xol_area == NULL.
+
+> +		if (bp_vaddr == get_trampoline_vaddr(area)) {
+
+I just noticed get_trampoline_vaddr() takes an argument... It should
+not, I think.
+
+Oleg.
+
