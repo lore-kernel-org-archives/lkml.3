@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab3CXPpa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 11:45:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11188 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753944Ab3CXPp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 11:45:29 -0400
-Date: Sun, 24 Mar 2013 17:45:52 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Roland Dreier <roland@kernel.org>,
-        "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Subject: [PATCHv2] ibverbs: add a new IBV_ACCESS_GIFT option
-Message-ID: <20130324154552.GA16346@redhat.com>
+	id S1754210Ab3CXPpo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 11:45:44 -0400
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:58942 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753944Ab3CXPpl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 11:45:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+In-Reply-To: <514F1D9E.8020601@blueyonder.co.uk>
+References: <514EFC08.1000509@blueyonder.co.uk>
+	<CAMuHMdXyn+rCkBJg29CFW-kzCM+AbvhsEVfNueXXfyFs8FFqtg@mail.gmail.com>
+	<514F1D9E.8020601@blueyonder.co.uk>
+Date: Sun, 24 Mar 2013 16:45:40 +0100
+X-Google-Sender-Auth: 3jz0_wQ9-CQ-5w3-zLejGbKYliw
+Message-ID: <CAMuHMdVYKdasvv8aNqA1DWj-T3GAHPwTnBZOA5utrP5MwX9gBw@mail.gmail.com>
+Subject: Re: 3.9-rc4 Makefile EXTRAVERSION still -rc3
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: sboyce@blueyonder.co.uk
+Cc: LKML Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the moment registering an MR breaks COW.  If the application does not
-care that adapter sees stale data (for example, it tracks writes
-reregisters and resends), it can use a new IBV_ACCESS_GIFT flag to
-prevent registration from breaking COW.
+On Sun, Mar 24, 2013 at 4:37 PM, Sid Boyce <sboyce@blueyonder.co.uk> wrote:
+> tindog:/usr/src/XXX/linux # git pull
+> Already up-to-date.
+> tindog:/usr/src/XXX/linux # git show v3.9-rc4
+> fatal: ambiguous argument 'v3.9-rc4': unknown revision or path not in the
+> working tree.
 
-The semantics are similar to that of SPLICE_F_GIFT thus the name.
+So you didn't have v3.9-rc4 yet. Probably the mirror was not up-to-date.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+Gr{oetje,eeting}s,
 
-This is compiled but untested. Michael, could you please try
-this patch (together with the kernel patch I'm sending separately)
-and report whether setting this flag unbreaks overcommit for you?
+                        Geert
 
- include/infiniband/verbs.h | 3 ++-
- man/ibv_reg_mr.3           | 5 +++++
- 2 files changed, 7 insertions(+), 1 deletion(-)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-diff --git a/include/infiniband/verbs.h b/include/infiniband/verbs.h
-index 6acfc81..3290ec9 100644
---- a/include/infiniband/verbs.h
-+++ b/include/infiniband/verbs.h
-@@ -290,7 +290,8 @@ enum ibv_access_flags {
- 	IBV_ACCESS_REMOTE_WRITE		= (1<<1),
- 	IBV_ACCESS_REMOTE_READ		= (1<<2),
- 	IBV_ACCESS_REMOTE_ATOMIC	= (1<<3),
--	IBV_ACCESS_MW_BIND		= (1<<4)
-+	IBV_ACCESS_MW_BIND		= (1<<4),
-+	IBV_ACCESS_GIFT			= (1<<6)
- };
- 
- struct ibv_pd {
-diff --git a/man/ibv_reg_mr.3 b/man/ibv_reg_mr.3
-index 7723771..3c302f0 100644
---- a/man/ibv_reg_mr.3
-+++ b/man/ibv_reg_mr.3
-@@ -34,6 +34,8 @@ describes the desired memory protection attributes; it is either 0 or the bitwis
- .B IBV_ACCESS_REMOTE_ATOMIC\fR Enable Remote Atomic Operation Access (if supported)
- .TP
- .B IBV_ACCESS_MW_BIND\fR       Enable Memory Window Binding
-+.TP
-+.B IBV_ACCESS_GIFT\fR          This memory is a gift to the adapter: if memory is modified after registration, the local version and data seen by the adapter through this region rkey may differ
- .PP
- If
- .B IBV_ACCESS_REMOTE_WRITE
-@@ -43,6 +45,9 @@ is set, then
- .B IBV_ACCESS_LOCAL_WRITE
- must be set too.
- .PP
-+.B IBV_ACCESS_GIFT
-+is only legal with remote or local read access.
-+.PP
- Local read access is always enabled for the MR.
- .PP
- .B ibv_dereg_mr()
--- 
-MST
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
