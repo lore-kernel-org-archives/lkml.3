@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab3CXIMO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 04:12:14 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47739 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752942Ab3CXIMG (ORCPT
+	id S1753391Ab3CXIRL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 04:17:11 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:43044 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049Ab3CXIRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 04:12:06 -0400
-Message-ID: <1364112719.1975.4.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [RFC PATCH v2, part4 00/39] Simplify mem_init() implementations
- and kill num_physpages
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Sun, 24 Mar 2013 08:11:59 +0000
-In-Reply-To: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
-References: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.6.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 24 Mar 2013 04:17:06 -0400
+Date: Sun, 24 Mar 2013 09:17:01 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] nohz: Full dynticks base interface
+Message-ID: <20130324081701.GA13328@gmail.com>
+References: <1363879460-21595-1-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363879460-21595-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-03-24 at 15:24 +0800, Jiang Liu wrote:
-> The original goal of this patchset is to fix the bug reported by
-> https://bugzilla.kernel.org/show_bug.cgi?id=53501
-> Now it has also been expanded to reduce common code used by memory
-> initializion.
+
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> Hi Ingo,
 > 
-> This is the last part, previous three patch sets could be accessed at:
-> http://marc.info/?l=linux-mm&m=136289696323825&w=2
-> http://marc.info/?l=linux-mm&m=136290291524901&w=2
-> http://marc.info/?l=linux-mm&m=136345342831592&w=2
+> This settles the initial ground to start a special full dynticks tree in -tip
+> that we can iterate incrementally to accelerate the development.
+> It is based on tip:sched/core.
 > 
-> This patchset applies to
-> https://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git since-3.8
+> I tried to rearrange a bit the naming. We are probably not yet done with
+> that but I guess we can fix it along with the rest.
+> 
+> Please pull from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> 	full-dynticks-for-mingo
+> 
+> Changes on these commits since they were part of 3.9-rc1-nohz1:
+> 
+> * Force a timekeeping CPU over the full dynticks range
+> * Rename CONFIG_NO_HZ_FULL to CONFIG_NO_HZ_EXTENDED
+> * Following *_nohz_extended_* APIs renames
+> * Handle CPU hotplug for timekeeping
+> * Rename full_nohz= kernel parameter to nohz_extended=
 
-You're going to have to have a git tree for this if you want this series
-testing on other architectures.  Plus cc'ing linux-arch would be a good
-idea for that case.  The patch series seems to be screwed up in the
-numbering:  The parisc patches 26/39 and 27/39 are identical.
+Note that boot parameters suck for pretty much any purpose but quirks - 
+please also add a (default off!) Kconfig option to easily enable 
+nohz_extended for all CPUs.
 
-James
+That way I will be able to test it automatically via randconfig and such.
 
+My next question/request after that would be: could we make sure that 
+enabling this option does not break any applications or kernel 
+functionality, ASAP? Once that is offered, it becomes pushable to v3.10 I 
+think.
 
+Meanwhile I have pulled your tree into tip:sched/nohz to stage and test 
+it, in the hope that it becomes mergable quickly! :-)
 
+Thanks,
 
-
+	Ingo
