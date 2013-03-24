@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab3CXGk5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 02:40:57 -0400
-Received: from mga03.intel.com ([143.182.124.21]:36103 "EHLO mga03.intel.com"
+	id S1752822Ab3CXG4K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 02:56:10 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:45380 "EHLO dcvr.yhbt.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751452Ab3CXGkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 02:40:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,900,1355126400"; 
-   d="scan'208";a="275117792"
-Date: Sun, 24 Mar 2013 08:44:58 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Corey Richardson <corey@octayn.net>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: clk: x86: build failure
-Message-ID: <20130324064458.GF21804@intel.com>
-References: <CA++BO6Qz90ZY4udNYYPJLMhUi1Q3kwrW16G6j_-tf_bfPfqU5A@mail.gmail.com>
+	id S1752713Ab3CXG4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 02:56:07 -0400
+Date: Sun, 24 Mar 2013 06:56:06 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Fredrik Tolf <fredrik@dolda2000.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: I/O blocked while dirty pages are being flushed
+Message-ID: <20130324065605.GA19984@dcvr.yhbt.net>
+References: <alpine.DEB.2.02.1303240543280.4028@shack.dolda2000.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA++BO6Qz90ZY4udNYYPJLMhUi1Q3kwrW16G6j_-tf_bfPfqU5A@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1303240543280.4028@shack.dolda2000.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 23, 2013 at 01:57:01PM -0400, Corey Richardson wrote:
-> With the attached config, I get the following build failure:
-> 
->   LD      init/built-in.o
-> drivers/built-in.o:clk-lpt.c:function v4l2_device_unregister: error:
-> undefined reference to 'i2c_unregister_device'
+Fredrik Tolf <fredrik@dolda2000.com> wrote:
+> It is worth noting, also, that this seems to be a situation
+> introduced somewhere between 2.6.26 and 2.6.32, because I started
+> noticing it when I upgraded from Debian 5.0 to 6.0. I've since tried
+> it on 3.2.0, 3.5.4 and 3.7.1, and it appears in every version.
+> However, I can't easily go back and bisect, because the new init
+> scripts don't support kernels older than 2.6.32, unfortunately.
 
-I get following with your config:
+I'm not sure about Debian-specific changes to the kernel, but
+in the stock kernel, the dirty*ratios changes could affect you:
 
-LD      init/built-in.o
-drivers/built-in.o: In function `v4l2_device_unregister':
-(.text+0x1186cb): undefined reference to `i2c_unregister_device'
-make: *** [vmlinux] Error 1
+before 2.6.22  dirty_ratio=40 dirty_background_ratio=10
+2.6.22-2.6.29  dirty_ratio=10 dirty_background_ratio=5
+2.6.30-...     dirty_ratio=20 dirty_background_ratio=10
 
-and it looks like it wants to build in videodev.o (which provides
-v4l2_device_unregister()):
+So try lowering these sysctls to 2.6.26 levels (or lower) and see if
+that helps.
 
-CONFIG_VIDEO_DEV=y
+Fwiw, I usually use dirty_ratio=2 dirty_background_ratio=1 on servers
+with a few gigs of RAM (or appropriately low dirty*bytes values).
 
-This function calls i2c_unregister_device() if IS_ENABLED(CONFIG_I2C) but
-i2c support is compiled as a module:
+Lowering dirty*ratio helps servers get more consistent performance under
+constant I/O pressure and aggressively throttles processes before a
+large amount of dirty pages becomes a problem (as you've noticed).
 
-CONFIG_I2C=m
+High dirty*ratio is good for some bursty desktop workloads and some
+benchmarks, though...
 
-which explains the link error.
+ref: commit 07db59bd6b0f279c31044cba6787344f63be87ea
+ref: commit 1b5e62b42b55c509eea04c3c0f25e42c8b35b564
 
-However, this has nothing to do with clk-lpt.c or anything related to clock
-framework as far as I can tell.
+
+Heck, on a particularly bad server (2.6.18, pre-dirty_*bytes sysctl)
+with lots of RAM and horrible disk throughput (~10M/s), I set both
+dirty_writeback_centisecs and dirty_expire_centisecs to 100 to get
+acceptable performance for writing HTTP access logs.
