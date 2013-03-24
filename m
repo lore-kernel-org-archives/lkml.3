@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab3CXSzU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 14:55:20 -0400
-Received: from mail-da0-f41.google.com ([209.85.210.41]:62200 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753976Ab3CXSzR (ORCPT
+	id S1754556Ab3CXTAO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 15:00:14 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:43750 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754062Ab3CXTAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 14:55:17 -0400
-Date: Sun, 24 Mar 2013 11:55:06 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <eag0628@gmail.com>
-Cc: laijs@cn.fujitsu.com, axboe@kernel.dk, jack@suse.cz,
-        fengguang.wu@intel.com, jmoyer@redhat.com, zab@redhat.com,
-        linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au,
-        davem@davemloft.net, linux-crypto@vger.kernel.org
-Subject: Re: [PATCHSET wq/for-3.10] workqueue: NUMA affinity for unbound
- workqueues
-Message-ID: <20130324185506.GA4378@htj.dyndns.org>
-References: <1363737629-16745-1-git-send-email-tj@kernel.org>
- <20130320185708.GB31256@htj.dyndns.org>
- <CACvQF53=qgUHrr944D_70dZpT-EOMtPcz2+0JPp4kOnGPzAptQ@mail.gmail.com>
+	Sun, 24 Mar 2013 15:00:12 -0400
+Message-ID: <514F4D37.5030304@suse.cz>
+Date: Sun, 24 Mar 2013 20:00:07 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACvQF53=qgUHrr944D_70dZpT-EOMtPcz2+0JPp4kOnGPzAptQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>
+CC: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/8] Reduce system disruption due to kswapd
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+In-Reply-To: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Lai.
+On 03/17/2013 02:04 PM, Mel Gorman wrote:
+> Kswapd and page reclaim behaviour has been screwy in one way or the other
+> for a long time. Very broadly speaking it worked in the far past because
+> machines were limited in memory so it did not have that many pages to scan
+> and it stalled congestion_wait() frequently to prevent it going completely
+> nuts. In recent times it has behaved very unsatisfactorily with some of
+> the problems compounded by the removal of stall logic and the introduction
+> of transparent hugepage support with high-order reclaims.
+> 
+> There are many variations of bugs that are rooted in this area. One example
+> is reports of a large copy operations or backup causing the machine to
+> grind to a halt or applications pushed to swap. Sometimes in low memory
+> situations a large percentage of memory suddenly gets reclaimed. In other
+> cases an application starts and kswapd hits 100% CPU usage for prolonged
+> periods of time and so on. There is now talk of introducing features like
+> an extra free kbytes tunable to work around aspects of the problem instead
+> of trying to deal with it. It's compounded by the problem that it can be
+> very workload and machine specific.
+> 
+> This RFC is aimed at investigating if kswapd can be address these various
+> problems in a relatively straight-forward fashion without a fundamental
+> rewrite.
+> 
+> Patches 1-2 limits the number of pages kswapd reclaims while still obeying
+> 	the anon/file proportion of the LRUs it should be scanning.
 
-On Mon, Mar 25, 2013 at 12:04:19AM +0800, Lai Jiangshan wrote:
-> example:
-> node0(cpu0,cpu1),node1(cpu2,cpu3),
-> wq's cpumask: 1,3
-> the pwq of this wq on the node1's cpumask: 3
-> current online cpu: 0-2.
-> so the cpumask of worker tasks of the pwq on node1 is actually cpu_all_mask.
-> so the work scheduled from cpu2 can be executed on cpu0 or cpu2.
-> we expect it is executed on cpu1 only.
+Hi,
 
-Ah, right.  I was hoping to avoid doing pwq swaps on CPU hot[un]plugs
-doing everything on possible mask.  Looks like we'll need some
-massaging after all.
+patch 1 does not apply (on the top of -next), so I can't test this :(.
 
-> It can be fixed by swapping pwqs(node's pwq <-> default pwq)
-> when cpuhotplug. But could you reschedule this patchset to wq/for-3.11?
-
-We're still only at -rc4 meaning we still have plenty of time to
-resolve whatever issues which come up, so I think I'm still gonna
-target 3.10.
-
-> the whole patchset is more complicated than my brain.
-
-It isn't that complex, is it?  I mean, the difficult part - using
-multiple pwqs on unbound wq - already happened, and even that wasn't
-too complex as it in most part synchronized the behaviors between
-per-cpu and unbound workqueues.  All that NUMA support is doing is
-mapping different pwqs to different issuing CPUs.
-
-Thanks.
-
+thanks,
 -- 
-tejun
+js
+suse labs
