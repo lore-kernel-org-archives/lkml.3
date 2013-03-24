@@ -1,74 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab3CXHpR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 03:45:17 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:52813 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab3CXH1b (ORCPT
+	id S1753029Ab3CXIAX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 04:00:23 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4969 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752879Ab3CXIAV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 03:27:31 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Yoshinori Sato <ysato@users.sourceforge.jp>
-Subject: [RFC PATCH v2, part4 04/39] h8300: normalize global variables exported by vmlinux.lds
-Date: Sun, 24 Mar 2013 15:24:30 +0800
-Message-Id: <1364109934-7851-5-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
-References: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
+	Sun, 24 Mar 2013 04:00:21 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+From: "Dmitry Kravkov" <dmitry@broadcom.com>
+To: "Kumar Amit Mehta" <gmate.amit@gmail.com>,
+        "Eilon Greenstein" <eilong@broadcom.com>
+cc: "davem@davemloft.net" <davem@davemloft.net>,
+        "dan.carpenter@oracle.com" <dan.carpenter@oracle.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Subject: RE: [PATCH v2] bnx2x: fix assignment of signed expression to
+ unsigned variable
+Thread-Topic: [PATCH v2] bnx2x: fix assignment of signed expression to
+ unsigned variable
+Thread-Index: AQHOKFZmuhFGWsZ+NEezRY3AZ6FII5i0eUEQ
+Date: Sun, 24 Mar 2013 08:00:10 +0000
+Message-ID: <504C9EFCA2D0054393414C9CB605C37F20BEBB46@SJEXCHMB06.corp.ad.broadcom.com>
+References: <1364105425-8198-1-git-send-email-gmate.amit@gmail.com>
+In-Reply-To: <1364105425-8198-1-git-send-email-gmate.amit@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
+MIME-Version: 1.0
+X-WSS-ID: 7D506F613YC8208445-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generate mandatory global variables __bss_start/__bss_stop in
-file vmlinux.lds.
+> -----Original Message-----
+> From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org] On Behalf Of Kumar Amit Mehta
+> Sent: Sunday, March 24, 2013 8:10 AM
+> To: Eilon Greenstein
+> Cc: davem@davemloft.net; dan.carpenter@oracle.com; netdev@vger.kernel.org; linux-kernel@vger.kernel.org; kernel-
+> janitors@vger.kernel.org
+> Subject: [PATCH v2] bnx2x: fix assignment of signed expression to unsigned variable
+> 
+> fix for incorrect assignment of signed expression to unsigned variable.
+> 
+> Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
+> ---
+>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c |   18 +++++++++---------
+>  1 file changed, 9 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c
+> index 5682054..91ecd6a 100644
+> --- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c
+> +++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c
+> @@ -2139,12 +2139,12 @@ static u8 bnx2x_dcbnl_get_cap(struct net_device *netdev, int capid, u8 *cap)
+>  			break;
+>  		default:
+>  			BNX2X_ERR("Non valid capability ID\n");
+> -			rval = -EINVAL;
+> +			rval = 1;
+>  			break;
+>  		}
+>  	} else {
+>  		DP(BNX2X_MSG_DCB, "DCB disabled\n");
+> -		rval = -EINVAL;
+> +		rval = 1;
+>  	}
+> 
+>  	DP(BNX2X_MSG_DCB, "capid %d:%x\n", capid, *cap);
+> @@ -2170,12 +2170,12 @@ static int bnx2x_dcbnl_get_numtcs(struct net_device *netdev, int tcid, u8 *num)
+>  			break;
+>  		default:
+>  			BNX2X_ERR("Non valid TC-ID\n");
+> -			rval = -EINVAL;
+> +			rval = 1;
+>  			break;
+>  		}
+>  	} else {
+>  		DP(BNX2X_MSG_DCB, "DCB disabled\n");
+> -		rval = -EINVAL;
+> +		rval = 1;
+>  	}
+> 
+>  	return rval;
+> @@ -2188,7 +2188,7 @@ static int bnx2x_dcbnl_set_numtcs(struct net_device *netdev, int tcid, u8 num)
+>  	return -EINVAL;
+>  }
+> 
+> -static u8  bnx2x_dcbnl_get_pfc_state(struct net_device *netdev)
+> +static u8 bnx2x_dcbnl_get_pfc_state(struct net_device *netdev)
+>  {
+>  	struct bnx2x *bp = netdev_priv(netdev);
+>  	DP(BNX2X_MSG_DCB, "state = %d\n", bp->dcbx_local_feat.pfc.enabled);
+> @@ -2390,12 +2390,12 @@ static u8 bnx2x_dcbnl_get_featcfg(struct net_device *netdev, int featid,
+>  			break;
+>  		default:
+>  			BNX2X_ERR("Non valid featrue-ID\n");
+> -			rval = -EINVAL;
+> +			rval = 1;
+>  			break;
+>  		}
+>  	} else {
+>  		DP(BNX2X_MSG_DCB, "DCB disabled\n");
+> -		rval = -EINVAL;
+> +		rval = 1;
+>  	}
+> 
+>  	return rval;
+> @@ -2431,12 +2431,12 @@ static u8 bnx2x_dcbnl_set_featcfg(struct net_device *netdev, int featid,
+>  			break;
+>  		default:
+>  			BNX2X_ERR("Non valid featrue-ID\n");
+> -			rval = -EINVAL;
+> +			rval = 1;
+>  			break;
+>  		}
+>  	} else {
+>  		DP(BNX2X_MSG_DCB, "dcbnl call not valid\n");
+> -		rval = -EINVAL;
+> +		rval = 1;
+>  	}
+> 
+>  	return rval;
+> --
+> 1.7.9.5
 
-Also remove one unused declaration of _text.
+Kumar,  thanks!
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
-Cc: Jiang Liu <jiang.liu@huawei.com>
-Cc: linux-kernel@vger.kernel.org
----
- arch/h8300/boot/compressed/misc.c |    1 -
- arch/h8300/kernel/vmlinux.lds.S   |    2 ++
- 2 files changed, 2 insertions(+), 1 deletion(-)
+Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
 
-diff --git a/arch/h8300/boot/compressed/misc.c b/arch/h8300/boot/compressed/misc.c
-index 51ab6cb..4a1e3dd 100644
---- a/arch/h8300/boot/compressed/misc.c
-+++ b/arch/h8300/boot/compressed/misc.c
-@@ -79,7 +79,6 @@ static void error(char *m);
- 
- int puts(const char *);
- 
--extern int _text;		/* Defined in vmlinux.lds.S */
- extern int _end;
- static unsigned long free_mem_ptr;
- static unsigned long free_mem_end_ptr;
-diff --git a/arch/h8300/kernel/vmlinux.lds.S b/arch/h8300/kernel/vmlinux.lds.S
-index 03d356d..3253fed 100644
---- a/arch/h8300/kernel/vmlinux.lds.S
-+++ b/arch/h8300/kernel/vmlinux.lds.S
-@@ -132,10 +132,12 @@ SECTIONS
-         {
- 	. = ALIGN(0x4) ;
- 	__sbss = . ;
-+	___bss_start = . ;
- 		*(.bss*)
- 	. = ALIGN(0x4) ;
- 		*(COMMON)
- 	. = ALIGN(0x4) ;
-+	___bss_stop = . ;
- 	__ebss = . ;
- 	__end = . ;
- 	__ramstart = .;
--- 
-1.7.9.5
+
 
