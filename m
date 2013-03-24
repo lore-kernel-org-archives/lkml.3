@@ -1,138 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab3CXOMK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 10:12:10 -0400
-Received: from norkia.v3.sk ([91.210.183.14]:58426 "EHLO norkia.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753845Ab3CXOMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 10:12:08 -0400
-Subject: Re: [PATCH] watchdog: Add Broadcom BCM2708 watchdog timer driver
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        linux-rpi-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
-In-Reply-To: <514D1273.8070902@wwwdotorg.org>
-References: <1363956907-5644-1-git-send-email-lkundrak@v3.sk>
-	 <514D1273.8070902@wwwdotorg.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 24 Mar 2013 15:12:04 +0100
-Message-ID: <1364134324.2906.8.camel@hobbes.kokotovo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+	id S1754007Ab3CXOPW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 10:15:22 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:63175 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753873Ab3CXOPV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 10:15:21 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] OMAP3 ROM Random Number Generator support
+Date: Sun, 24 Mar 2013 15:15:16 +0100
+User-Agent: KMail/1.13.7 (Linux/3.5.0-27-generic; KDE/4.10.1; x86_64; ; )
+Cc: Juha Yrjola <juha.yrjola@solidboot.com>,
+        Russell King <linux@arm.linux.org.uk>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <201302281905.48546@pali>
+In-Reply-To: <201302281905.48546@pali>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1494092.28VHEjonLG";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201303241515.16520@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-22 at 20:24 -0600, Stephen Warren wrote:
+--nextPart1494092.28VHEjonLG
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thank you for your response!
+On Thursday 28 February 2013 19:05:47 Pali Roh=C3=A1r wrote:
+> This driver provides kernel-side support for the Random Number
+> Generator hardware found on OMAP34xx processors.
+>=20
+> This driver is included in Maemo 2.6.28 kernel used on Nokia
+> N900.
+>=20
+> I fixed driver to work with 3.8 kernel and added
+> platform_driver code to autoload it on omap3 devices.
+>=20
 
-> On 03/22/2013 06:55 AM, Lubomir Rintel wrote:
-> > Signed-off-by: Lubomir Rintel <lkundrak at v3.sk>
-> 
-> A commit description would be useful.
+Hello, can somebody look at this driver?
 
-I'll add a more descriptive one in next patch revision.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-> >  arch/arm/configs/bcm2835_defconfig |    4 +
-> >  drivers/watchdog/Kconfig           |   11 +++
-> >  drivers/watchdog/Makefile          |    1 +
-> >  drivers/watchdog/bcm2835_wdt.c     |  158 ++++++++++++++++++++++++++++++++++++
-> 
-> The changes to bcm2835_defconfig should be a separate patch, since they
-> would be applied in the BCM2835 ARM sub-arch tree, whereas the driver
-> patch would be applied to the watchdog driver tree.
+--nextPart1494092.28VHEjonLG
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Okay, makes sense to me.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> > diff --git a/arch/arm/configs/bcm2835_defconfig b/arch/arm/configs/bcm2835_defconfig
-> 
-> > +CONFIG_BCM2835_WDT=y
-> > +
-> >  CONFIG_MMC=y
-> 
-> That blank line is a little odd; was this defconfig change created using
-> "make savedefconfig"?
+iEYEABECAAYFAlFPCnQACgkQi/DJPQPkQ1IflQCdGboSqE1xTIQQYw/Bcs2ltoDa
+Z+QAoMx7pXvb9x/rvl9ZOBfhXZNoaHBw
+=bBo1
+-----END PGP SIGNATURE-----
 
-No, I did not notice that the savedefconfig exists and modified the defconfig 
-by hand. I'll use it for next patch revision.
-
-> > diff --git a/drivers/watchdog/bcm2835_wdt.c b/drivers/watchdog/bcm2835_wdt.c
-> 
-> > +static int heartbeat = -1;
-> > +static bool nowayout = WATCHDOG_NOWAYOUT;
-> > +static void __iomem *wdt_regs;
-> > +static DEFINE_SPINLOCK(wdog_lock);
-> 
-> Can these be stored in a dynamically-allocated structure, stored in the
-> device's drvdata?
-
-Well, not hearbeat and nowayout, those are module parameters.
-
-The other ones make perfect sense, I've attempted to use a per-device 
-dynamically-allocated structure for those.
-
-> > +static struct platform_driver bcm2835_wdt_driver = {
-> ...
-> > +};
-> > +
-> > +module_platform_driver(bcm2835_wdt_driver);
-> 
-> I believe it's typical not to leave a blank line before
-> module_platform_driver();
-
-Okay.
-
-> A couple of general comments:
-> 
-> 1)
-> 
-> This driver touches the same registers that
-> arch/arm/mach-bcm2835/bcm2835.c uses to implement reboot and "power
-> off". Some co-ordination might be necessary.
-> 
-> The implementation of bcm2835_power_off() could easily be moved into
-> this driver, to avoid some of the need for co-ordination.
-> 
-> Moving bcm2835_restart() would be more tricky, since the ARM machine
-> descriptor needs a pointer to that function. I guess the kernel probably
-> ensures that none of the code in this watchdog driver is running by the
-> time bcm2835_restart() is called, although perhaps it'd be better to
-> have mach-bcm2835/bcm2835.c and this driver share a lock?
-
-I need help here, I'm not sure what's the proper way to address this
-(whether to include the actual reboot code in the wdt driver or the
-platform driver).
-
-Is it okay to have the platform driver depend on watchdog timer?
-Is it okay for the platform driver not to reboot properly if the kernel
-is running without the wdt driver loaded?
-
-(For now, I'll send a revised patch addressing the other issues so that
-it can be reviewed without addressing this yet.)
-
-> 2)
-> 
-> I'm curious where you got the documentation to write this driver; this
-> HW module isn't described in BCM2835-ARM-Peripherals.pdf. I assume this
-> is based on the downstream kernel driver? If so, at least some credit in
-> the commit description might be appropriate. At least the relevant
-> commit downstream already has an appropriate Signed-off-by line:-)
-
-Your guess is right, used bcm2708_wdog driver from rpi-3.6.y as a reference. 
-I'll add that information to the commit message.
-
-The Signed-off-by line is indeed present, but unfortunately does not seem to be 
-particularly appropriate:
-
-Signed-off-by: popcornmix <popcornmix@gmail.com>
-
-I'm wondering if it's actually relevant, since the useful bits of the 
-downstream driver boil down to macro defines.
-
-Have a nice day!
-
--- 
-Lubomir Rintel <lkundrak@v3.sk>
-
+--nextPart1494092.28VHEjonLG--
