@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab3CXS1j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 14:27:39 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:60736 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753558Ab3CXS1i (ORCPT
+	id S1754511Ab3CXSzU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 14:55:20 -0400
+Received: from mail-da0-f41.google.com ([209.85.210.41]:62200 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753976Ab3CXSzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 14:27:38 -0400
-From: Paolo Pisati <p.pisati@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Will Deacon <will.deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: l2x0: don't set .set_debug in l310 case
-Date: Sun, 24 Mar 2013 19:27:34 +0100
-Message-Id: <1364149654-16163-1-git-send-email-p.pisati@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 24 Mar 2013 14:55:17 -0400
+Date: Sun, 24 Mar 2013 11:55:06 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <eag0628@gmail.com>
+Cc: laijs@cn.fujitsu.com, axboe@kernel.dk, jack@suse.cz,
+        fengguang.wu@intel.com, jmoyer@redhat.com, zab@redhat.com,
+        linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au,
+        davem@davemloft.net, linux-crypto@vger.kernel.org
+Subject: Re: [PATCHSET wq/for-3.10] workqueue: NUMA affinity for unbound
+ workqueues
+Message-ID: <20130324185506.GA4378@htj.dyndns.org>
+References: <1363737629-16745-1-git-send-email-tj@kernel.org>
+ <20130320185708.GB31256@htj.dyndns.org>
+ <CACvQF53=qgUHrr944D_70dZpT-EOMtPcz2+0JPp4kOnGPzAptQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACvQF53=qgUHrr944D_70dZpT-EOMtPcz2+0JPp4kOnGPzAptQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paolo Pisati <paolo.pisati@canonical.com>
+Hey, Lai.
 
-commit 74ddcdb ("l2x0: Only set .set_debug on PL310 r3p0 and earlier")
-to actually work needs .set_debug to be not set during definition
+On Mon, Mar 25, 2013 at 12:04:19AM +0800, Lai Jiangshan wrote:
+> example:
+> node0(cpu0,cpu1),node1(cpu2,cpu3),
+> wq's cpumask: 1,3
+> the pwq of this wq on the node1's cpumask: 3
+> current online cpu: 0-2.
+> so the cpumask of worker tasks of the pwq on node1 is actually cpu_all_mask.
+> so the work scheduled from cpu2 can be executed on cpu0 or cpu2.
+> we expect it is executed on cpu1 only.
 
-Signed-off-by: Paolo Pisati <p.pisati@gmail.com>
----
- arch/arm/mm/cache-l2x0.c |    1 -
- 1 file changed, 1 deletion(-)
+Ah, right.  I was hoping to avoid doing pwq swaps on CPU hot[un]plugs
+doing everything on possible mask.  Looks like we'll need some
+massaging after all.
 
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index d457653..37f1364 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -724,7 +724,6 @@ static const struct l2x0_of_data pl310_data = {
- 		.flush_all   = l2x0_flush_all,
- 		.inv_all     = l2x0_inv_all,
- 		.disable     = l2x0_disable,
--		.set_debug   = pl310_set_debug,
- 	},
- };
- 
+> It can be fixed by swapping pwqs(node's pwq <-> default pwq)
+> when cpuhotplug. But could you reschedule this patchset to wq/for-3.11?
+
+We're still only at -rc4 meaning we still have plenty of time to
+resolve whatever issues which come up, so I think I'm still gonna
+target 3.10.
+
+> the whole patchset is more complicated than my brain.
+
+It isn't that complex, is it?  I mean, the difficult part - using
+multiple pwqs on unbound wq - already happened, and even that wasn't
+too complex as it in most part synchronized the behaviors between
+per-cpu and unbound workqueues.  All that NUMA support is doing is
+mapping different pwqs to different issuing CPUs.
+
+Thanks.
+
 -- 
-1.7.10.4
-
+tejun
