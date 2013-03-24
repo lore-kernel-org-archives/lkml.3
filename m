@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab3CXHni (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 03:43:38 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:49650 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753797Ab3CXHng (ORCPT
+	id S1753021Ab3CXH1g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 03:27:36 -0400
+Received: from mail-da0-f48.google.com ([209.85.210.48]:42275 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752914Ab3CXH1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 03:43:36 -0400
-Date: Sun, 24 Mar 2013 08:43:31 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Russ Anderson <rja@sgi.com>
-Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com
-Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
-Message-ID: <20130324074331.GA12939@gmail.com>
-References: <20130318155619.GA18828@sgi.com>
- <20130321105516.GC18484@gmail.com>
- <alpine.DEB.2.02.1303211139110.3775@chino.kir.corp.google.com>
- <20130322072532.GC10608@gmail.com>
- <20130323152948.GA3036@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130323152948.GA3036@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 24 Mar 2013 03:27:15 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Subject: [RFC PATCH v2, part4 02/39] avr32: normalize global variables exported by vmlinux.lds
+Date: Sun, 24 Mar 2013 15:24:28 +0800
+Message-Id: <1364109934-7851-3-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
+References: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Normalize global variables exported by vmlinux.lds to conform usage
+guidelines from include/asm-generic/sections.h.
 
-* Russ Anderson <rja@sgi.com> wrote:
+Use _text to mark the start of the kernel image including the head text,
+and _stext to mark the start of the .text section.
 
-> --- linux.orig/mm/page_alloc.c	2013-03-19 16:09:03.736450861 -0500
-> +++ linux/mm/page_alloc.c	2013-03-22 17:07:43.895405617 -0500
-> @@ -4161,10 +4161,23 @@ int __meminit __early_pfn_to_nid(unsigne
->  {
->  	unsigned long start_pfn, end_pfn;
->  	int i, nid;
-> +	/*
-> +	   NOTE: The following SMP-unsafe globals are only used early
-> +	   in boot when the kernel is running single-threaded.
-> +	 */
-> +	static unsigned long last_start_pfn, last_end_pfn;
-> +	static int last_nid;
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/avr32/kernel/setup.c       |    2 +-
+ arch/avr32/kernel/vmlinux.lds.S |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-I guess I'm the nitpicker of the week:
-
-please use the customary (multi-line) comment style:
-
-  /*
-   * Comment .....
-   * ...... goes here.
-   */
-
-specified in Documentation/CodingStyle.
-
-Thanks,
-
-        Ingo
+diff --git a/arch/avr32/kernel/setup.c b/arch/avr32/kernel/setup.c
+index b4247f4..209ae5a 100644
+--- a/arch/avr32/kernel/setup.c
++++ b/arch/avr32/kernel/setup.c
+@@ -555,7 +555,7 @@ void __init setup_arch (char **cmdline_p)
+ {
+ 	struct clk *cpu_clk;
+ 
+-	init_mm.start_code = (unsigned long)_text;
++	init_mm.start_code = (unsigned long)_stext;
+ 	init_mm.end_code = (unsigned long)_etext;
+ 	init_mm.end_data = (unsigned long)_edata;
+ 	init_mm.brk = (unsigned long)_end;
+diff --git a/arch/avr32/kernel/vmlinux.lds.S b/arch/avr32/kernel/vmlinux.lds.S
+index 9cd2bd9..a458917 100644
+--- a/arch/avr32/kernel/vmlinux.lds.S
++++ b/arch/avr32/kernel/vmlinux.lds.S
+@@ -23,7 +23,7 @@ SECTIONS
+ {
+ 	. = CONFIG_ENTRY_ADDRESS;
+ 	.init		: AT(ADDR(.init) - LOAD_OFFSET) {
+-		_stext = .;
++		_text = .;
+ 		__init_begin = .;
+ 			_sinittext = .;
+ 			*(.text.reset)
+@@ -46,7 +46,7 @@ SECTIONS
+ 
+ 	.text		: AT(ADDR(.text) - LOAD_OFFSET) {
+ 		_evba = .;
+-		_text = .;
++		_stext = .;
+ 		*(.ex.text)
+ 		*(.irq.text)
+ 		KPROBES_TEXT
+-- 
+1.7.9.5
 
