@@ -1,99 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab3CXXSk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 19:18:40 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:18544 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153Ab3CXXSi (ORCPT
+	id S1754991Ab3CXXYG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 19:24:06 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:43951 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053Ab3CXXYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 19:18:38 -0400
-X-AuditID: cbfee68d-b7f786d000005188-42-514f89cc2e74
-Date: Sun, 24 Mar 2013 23:18:36 +0000 (GMT)
-From: =?euc-kr?B?vNvAurrA?= <eunb.song@samsung.com>
-Subject: [PATCH] mips: Fix build error cavium-octeon without CONFIG_SMP
-To: ralf@linux-mips.org
-Cc: linux-mips@linux-mips.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: eunb.song@samsung.com
-MIME-version: 1.0
-X-MTR: 20130324231407936@eunb.song
-Msgkey: 20130324231407936@eunb.song
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130324231407936@eunb.song
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <26870919.16191364167114826.JavaMail.weblogic@epml15>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+Ztu6ZTv9Ag7ln2Swu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGpatv2QousVe0XOljamDcwt7FyMkhJKAi0fL/OyOILSFgIrFy
-	ZhszhC0mceHeerYuRi6gmmWMEpe/7GOFKZr/dxoTRPN8Rolll027GDk4WARUJY6+4AYJswGV
-	bPgxAWy+sIC7xIRLz1lAbBEBGYmln66A7WIWSJY49PcEK8QYeYnJpy+D1fMKCEqcnPmEBWKV
-	ksTfEzvZIOLKEk3X29kh4hISs6ZfgDqHV2JG+1OoejmJaV/XQN0vLXF+1gZGmF8Wf38MFeeX
-	OHZ7BxPIySC9T+4Hw4zZvfkLG4QtIDH1zEGoVnWJzTsaodbySaxZ+JYFZsyuU8uZYXrvb5nL
-	BPGWosSU7ofsELaWxJcf+9jQvcUr4Cgx7fhe9gmMyrOQpGYhaZ+FpB1ZzQJGllWMoqkFyQXF
-	SelFhnrFibnFpXnpesn5uZsYIUmhdwfj7QPWhxiTgTEykVlKNDkfmFTySuINjc2MLExNTI2N
-	zC3NSBNWEudVa7EOFBJITyxJzU5NLUgtii8qzUktPsTIxMEp1cCoKyFe2aJnyrPq5JH7Tqk+
-	W3qXHIrmuz+/wGqPCGtt6I6XnlEtZWsX9cdIbAqTny4WH8We4iuiUWs7+83tvds7HyWwb/hX
-	t/AiV6m5qtZL8YwPqbFJ4Ud3vvYUX3p2yV7NILkFXHrcE8JUltcGe88qPZYbx+2culq95LzE
-	t7gbNwM9Lm9I/KLEUpyRaKjFXFScCACASEnIIAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2dN0znf6BBvfmMFlc3jWHzYHR4/Mm
-	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
-	jEtX37IVXGKvaLnSx9TAuIW9i5GTQ0hARaLl/3dGEFtCwERi/t9pTBC2mMSFe+vZIGrmM0os
-	u2zaxcjBwSKgKnH0BTdImA2ofMOPCWBjhAXcJSZces4CYosIyEgs/XQFbCSzQLLEob8nWCHG
-	yEtMPn0ZrJ5XQFDi5MwnLBCrlCT+ntjJBhFXlmi63s4OEZeQmDX9AiuEzSsxo/0pVL2cxLSv
-	a5ghbGmJ87M2MMKcvPj7Y6g4v8Sx2zuYQE4G6X1yPxhmzO7NX9ggbAGJqWcOQrWqS2ze0Qi1
-	lk9izcK3LDBjdp1azgzTe3/LXCaItxQlpnQ/ZIewtSS+/NjHhu4tXgFHiWnH97JPYJSbhSQ1
-	C0n7LCTtyGoWMLKsYhRNLUguKE5KrzDWK07MLS7NS9dLzs/dxAhOT88W72D8f976EKMAB6MS
-	D69AjX+gEGtiWXFl7iFGCQ5mJRHeZX5AId6UxMqq1KL8+KLSnNTiQ4zJwPibyCwlmpwPTJ15
-	JfGGxgbGhoaW5gamhkYWpAkrifM+a7UOFBJITyxJzU5NLUgtgtnCxMEp1cBo+Hjnt988vi/n
-	qC1xX9InX2vTOMXwxtpm38nKCiFzP25773r84LHGB3XLHpUp5QlNkVdd8vRlYlqFecGpOcyG
-	l6/evZL/dZPvA+cgo51reg9+mFqZonuylYllseAz4f4Il4Rs7j1B4WlugotNuoyXzE2747fw
-	bp2f7sXk3dOnOtVaXz3+uN5LiaU4I9FQi7moOBEAcL/YIJMDAAA=
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Sun, 24 Mar 2013 19:24:04 -0400
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Joerg Roedel <joerg.roedel@amd.com>, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org
+Subject: [PATCH] iommu: add a function to find an iommu group by id
+Date: Mon, 25 Mar 2013 10:23:49 +1100
+Message-Id: <1364167429-6432-1-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: 1363968462.24132.611.camel@bling.home
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2ONIxIw023911
 
+As IOMMU groups are exposed to the user space by their numbers,
+the user space can use them in various kernel APIs so the kernel
+might need an API to find a group by its ID.
 
-This patch fixes build error cavium-octeon without CONFIG_SMP
+As an example, QEMU VFIO on PPC64 platform needs it to associate
+a logical bus number (LIOBN) with a specific IOMMU group in order
+to support in-kernel handling of DMA map/unmap requests.
 
-Singed-off-by: EunBong Song<eunb.song@samsung.com>
+The patch adds the iommu_group_get_by_id(id) function which performs
+such search.
 
+v2: fixed reference counting.
+
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 ---
- arch/mips/cavium-octeon/setup.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ drivers/iommu/iommu.c |   29 +++++++++++++++++++++++++++++
+ include/linux/iommu.h |    1 +
+ 2 files changed, 30 insertions(+)
 
-diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
-index c594a3d..b0baa29 100644
---- a/arch/mips/cavium-octeon/setup.c
-+++ b/arch/mips/cavium-octeon/setup.c
-@@ -174,7 +174,10 @@ static int octeon_kexec_prepare(struct kimage *image)
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index 1065a1a..0de83eb 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -204,6 +204,35 @@ again:
+ }
+ EXPORT_SYMBOL_GPL(iommu_group_alloc);
  
- static void octeon_generic_shutdown(void)
- {
--	int cpu, i;
-+	int i;
-+#ifdef CONFIG_SMP
-+	int cpu;
-+#endif
- 	struct cvmx_bootmem_desc *bootmem_desc;
- 	void *named_block_array_ptr;
- 
++struct iommu_group *iommu_group_get_by_id(int id)
++{
++	struct kobject *group_kobj;
++	struct iommu_group *group;
++	const char *name;
++
++	if (!iommu_group_kset)
++		return NULL;
++
++	name = kasprintf(GFP_KERNEL, "%d", id);
++	if (!name)
++		return NULL;
++
++	group_kobj = kset_find_obj(iommu_group_kset, name);
++	kfree(name);
++
++	if (!group_kobj)
++		return NULL;
++
++	group = container_of(group_kobj, struct iommu_group, kobj);
++	BUG_ON(group->id != id);
++
++	kobject_get(group->devices_kobj);
++	kobject_put(&group->kobj);
++
++	return group;
++}
++EXPORT_SYMBOL_GPL(iommu_group_get_by_id);
++
+ /**
+  * iommu_group_get_iommudata - retrieve iommu_data registered for a group
+  * @group: the group
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index f3b99e1..00e5d7d 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -113,6 +113,7 @@ struct iommu_ops {
+ extern int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops);
+ extern bool iommu_present(struct bus_type *bus);
+ extern struct iommu_domain *iommu_domain_alloc(struct bus_type *bus);
++extern struct iommu_group *iommu_group_get_by_id(int id);
+ extern void iommu_domain_free(struct iommu_domain *domain);
+ extern int iommu_attach_device(struct iommu_domain *domain,
+ 			       struct device *dev);
 -- 
-1.7.0.1
+1.7.10.4
 
-Thanks.ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
