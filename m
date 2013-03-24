@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab3CXVNn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 17:13:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33192 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754161Ab3CXVNl (ORCPT
+	id S1754820Ab3CXVPE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 17:15:04 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:56100 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161Ab3CXVPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 17:13:41 -0400
-Date: Sun, 24 Mar 2013 21:13:37 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Ian Lartey <ian@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-leds@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, swarren@wwwdotorg.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        mturquette@linaro.org, linus.walleij@linaro.org, cooloney@gmail.com,
-        rpurdie@rpsys.net, akpm@linux-foundation.org, sameo@linux.intel.com,
-        wim@iguana.be, lgirdwood@gmail.com, gg@slimlogic.co.uk,
-        j-keerthy@ti.com, ldewangan@nvidia.com, t-kristo@ti.com
-Subject: Re: [PATCH v10 0/12] Palmas updates
-Message-ID: <20130324211336.GA18316@opensource.wolfsonmicro.com>
-References: <1363964122-19201-1-git-send-email-ian@slimlogic.co.uk>
- <20130323060455.78a4c90c3f1e028434818fd1@canb.auug.org.au>
+	Sun, 24 Mar 2013 17:15:02 -0400
+Message-ID: <514F6CD1.5010409@gmail.com>
+Date: Sun, 24 Mar 2013 16:14:57 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oyUTqETQ0mS9luUI"
-Content-Disposition: inline
-In-Reply-To: <20130323060455.78a4c90c3f1e028434818fd1@canb.auug.org.au>
-X-Cookie: Your aim is high and to the right.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paolo Pisati <p.pisati@gmail.com>
+CC: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH] ARM: l2x0: don't set .set_debug in l310 case
+References: <1364149654-16163-1-git-send-email-p.pisati@gmail.com>
+In-Reply-To: <1364149654-16163-1-git-send-email-p.pisati@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/24/2013 01:27 PM, Paolo Pisati wrote:
+> From: Paolo Pisati <paolo.pisati@canonical.com>
+> 
+> commit 74ddcdb ("l2x0: Only set .set_debug on PL310 r3p0 and earlier")
+> to actually work needs .set_debug to be not set during definition
+> 
+> Signed-off-by: Paolo Pisati <p.pisati@gmail.com>
 
---oyUTqETQ0mS9luUI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ah crap, missed this part. Can I add this into my fix and I'll put it in
+Russell's patch system.
 
-On Sat, Mar 23, 2013 at 06:04:55AM +1100, Stephen Rothwell wrote:
-> On Fri, 22 Mar 2013 14:55:10 +0000 Ian Lartey <ian@slimlogic.co.uk> wrote:
+Rob
 
-> > Patches based on linux-next-20130319
+> ---
+>  arch/arm/mm/cache-l2x0.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+> index d457653..37f1364 100644
+> --- a/arch/arm/mm/cache-l2x0.c
+> +++ b/arch/arm/mm/cache-l2x0.c
+> @@ -724,7 +724,6 @@ static const struct l2x0_of_data pl310_data = {
+>  		.flush_all   = l2x0_flush_all,
+>  		.inv_all     = l2x0_inv_all,
+>  		.disable     = l2x0_disable,
+> -		.set_debug   = pl310_set_debug,
+>  	},
+>  };
+>  
+> 
 
-> I can't really comment on the patch set except to say that you should not
-> base on linux-next, you should base on the tree to which you expect the
-> patch set to be applied.
-
-It's fairly common to suggest to people working over lots of subsystems
-like this that they use -next since for most subsystems it contains the
-trees that should be submitted against and it's much more efficient.
-This works OK most of the time when people are posting patches as
-opposed to pull requests, though obviously cross tree issues do happen
-=66rom time to time.
-
---oyUTqETQ0mS9luUI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRT2xmAAoJELSic+t+oim9sQ8P/3zX1xNz3uTlq3HlnhSX79xf
-7Iw6wgZ+1SILWpR1+FEfkCNjUuf9C4raa5DBVJM6VOqbldQENviWMrmojhi5y+Ts
-2bCCuB/1+55C0W1WhNaAnmCtL6Yrg7RVlUr3zMLeETOWlmGc+TeNywzJMZdWCurs
-Z+DOMaZRG5AehOc1XZ0lZrGlP9QVSXTjKpGPVT65vS8Ttj9aNa7+U0X4tCVDRxsk
-ptN61dBPWXtx1PSaEiJ6IMgf8Gx7IBEtJFt1i3VgCGlFqgKrEq9oshsn1L4VwjG+
-mWiRVf5lpDhfmxUO8yFq2IbF/nVTsAx4kp45J9IbdCTjwVh5AuF8/VIDDpTIlVdO
-ibotoXoeEF4qZe/UZSwkUhVq3Pv2/z1oSrG++N0Z1KAbrnUjCLymG50zfYY8cJXP
-g1Lu6iv89emD6nMdaA/mOCsFzX+eeuBuY+Cx5j8N+EbergNjxppx4JRnplXvbNOJ
-7I/+VX1flt+pzwz6tpwwzvlSEA2yy1E5cPG9ER3tT8pwgioeR7bq6fd6V9mkiVc/
-oPjgfQ/Wll4V78nSp1yQfvKoxqW/GOczrTSv4KcJFWU+X+xMf3NEUslHYZ0xjqHv
-yNlXBx0WCqnNxCf1v8X68eMqm55YV7VRkddVR7pLV5Wdo0O/wNBc1IqV4cueU1Ze
-zKqVHVWL6GlFwJbMJS8l
-=Zv8k
------END PGP SIGNATURE-----
-
---oyUTqETQ0mS9luUI--
