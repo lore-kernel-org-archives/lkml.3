@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab3CXH3w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 03:29:52 -0400
-Received: from mail-da0-f48.google.com ([209.85.210.48]:57412 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776Ab3CXH3r (ORCPT
+	id S1753846Ab3CXHaA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 03:30:00 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:45602 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab3CXH3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 03:29:47 -0400
+	Sun, 24 Mar 2013 03:29:55 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -15,11 +15,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mark Salter <msalter@redhat.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org
-Subject: [RFC PATCH v2, part4 15/39] mm/c6x: prepare for removing num_physpages and simplify mem_init()
-Date: Sun, 24 Mar 2013 15:24:47 +0800
-Message-Id: <1364109934-7851-22-git-send-email-jiang.liu@huawei.com>
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
+Subject: [RFC PATCH v2, part4 15/39] mm/cris: prepare for removing num_physpages and simplify mem_init()
+Date: Sun, 24 Mar 2013 15:24:48 +0800
+Message-Id: <1364109934-7851-23-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
 References: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
@@ -30,41 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Prepare for removing num_physpages and simplify mem_init().
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Mark Salter <msalter@redhat.com>
-Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
-Cc: linux-c6x-dev@linux-c6x.org
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: linux-cris-kernel@axis.com
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/c6x/mm/init.c |   11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+ arch/cris/mm/init.c |   33 ++-------------------------------
+ 1 file changed, 2 insertions(+), 31 deletions(-)
 
-diff --git a/arch/c6x/mm/init.c b/arch/c6x/mm/init.c
-index 2c51474..066f75c 100644
---- a/arch/c6x/mm/init.c
-+++ b/arch/c6x/mm/init.c
-@@ -57,21 +57,12 @@ void __init paging_init(void)
- 
- void __init mem_init(void)
+diff --git a/arch/cris/mm/init.c b/arch/cris/mm/init.c
+index 52b8b56..c81af5b 100644
+--- a/arch/cris/mm/init.c
++++ b/arch/cris/mm/init.c
+@@ -19,9 +19,6 @@ unsigned long empty_zero_page;
+ void __init
+ mem_init(void)
  {
--	int codek, datak;
+-	int codesize, reservedpages, datasize, initsize;
 -	unsigned long tmp;
--	unsigned long len = memory_end - memory_start;
 -
- 	high_memory = (void *)(memory_end & PAGE_MASK);
+ 	BUG_ON(!mem_map);
  
- 	/* this will put all memory onto the freelists */
- 	free_all_bootmem();
- 
--	codek = (_etext - _stext) >> 10;
--	datak = (_end - _sdata) >> 10;
+ 	/* max/min_low_pfn was set by setup.c
+@@ -29,35 +26,9 @@ mem_init(void)
+ 	 *
+ 	 * high_memory was also set in setup.c
+ 	 */
 -
--	tmp = nr_free_pages() << PAGE_SHIFT;
--	printk(KERN_INFO "Memory: %luk/%luk RAM (%dk kernel code, %dk data)\n",
--	       tmp >> 10, len >> 10, codek, datak);
+-	max_mapnr = num_physpages = max_low_pfn - min_low_pfn;
+- 
+-	/* this will put all memory onto the freelists */
++	max_mapnr = max_low_pfn - min_low_pfn;
+         free_all_bootmem();
+-
+-	reservedpages = 0;
+-	for (tmp = 0; tmp < max_mapnr; tmp++) {
+-		/*
+-                 * Only count reserved RAM pages
+-                 */
+-		if (PageReserved(mem_map + tmp))
+-			reservedpages++;
+-	}
+-
+-	codesize =  (unsigned long) &_etext - (unsigned long) &_stext;
+-        datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
+-        initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
+-	
+-        printk(KERN_INFO
+-               "Memory: %luk/%luk available (%dk kernel code, %dk reserved, %dk data, "
+-	       "%dk init)\n" ,
+-	       nr_free_pages() << (PAGE_SHIFT-10),
+-	       max_mapnr << (PAGE_SHIFT-10),
+-	       codesize >> 10,
+-	       reservedpages << (PAGE_SHIFT-10),
+-	       datasize >> 10,
+-	       initsize >> 10
+-               );
 +	mem_init_print_info(NULL);
  }
  
- #ifdef CONFIG_BLK_DEV_INITRD
+ /* free the pages occupied by initialization code */
 -- 
 1.7.9.5
 
