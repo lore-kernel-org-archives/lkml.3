@@ -1,101 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755083Ab3CXHdk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 03:33:40 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:49305 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755018Ab3CXHde (ORCPT
+	id S1755126Ab3CXHdq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 03:33:46 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:40643 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073Ab3CXHdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 03:33:34 -0400
-Message-ID: <514EAC41.5050700@huawei.com>
-Date: Sun, 24 Mar 2013 15:33:21 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>,
+	Sun, 24 Mar 2013 03:33:39 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
-References: <514A60CD.60208@huawei.com> <20130321090849.GF6094@dhcp22.suse.cz> <20130321102257.GH6094@dhcp22.suse.cz> <514BB23E.70908@huawei.com> <20130322080749.GB31457@dhcp22.suse.cz> <514C1388.6090909@huawei.com> <514C14BF.3050009@parallels.com> <20130322093141.GE31457@dhcp22.suse.cz>
-In-Reply-To: <20130322093141.GE31457@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>
+Subject: [RFC PATCH v2, part4 30/39] mm/score: prepare for removing num_physpages and simplify mem_init()
+Date: Sun, 24 Mar 2013 15:25:17 +0800
+Message-Id: <1364109934-7851-52-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
+References: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Thanks for identifying and fixing this.
->>
->> Li is right. The cache name will live long, but this is because the
->> slab/slub caches will strdup it internally. So the actual memcg
->> allocation is short lived.
-> 
-> OK, I have totally missed that. Sorry about the confusion. Then all the
-> churn around the allocation is pointless, no?
-> What about:
-> ---
->>From 7ed7f53bb597e8cb40d9ac91ce16142fb60f1e93 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Fri, 22 Mar 2013 10:22:54 +0100
-> Subject: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
-> 
-> As cgroup supports rename, it's unsafe to dereference dentry->d_name
-> without proper vfs locks. Fix this by using cgroup_name() rather than
-> dentry directly.
-> 
-> Also open code memcg_cache_name because it is called only from
-> kmem_cache_dup which frees the returned name right after
-> kmem_cache_create_memcg makes a copy of it. Such a short-lived
-> allocation doesn't make too much sense. So replace it by a static
-> buffer as kmem_cache_dup is called with memcg_cache_mutex.
-> 
+Prepare for removing num_physpages and simplify mem_init().
 
-I doubt it's a win to add 4K to kernel text size instead of adding
-a few extra lines of code... but it's up to you.
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Chen Liqin <liqin.chen@sunplusct.com>
+Cc: Lennox Wu <lennox.wu@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/score/mm/init.c |   26 ++------------------------
+ 1 file changed, 2 insertions(+), 24 deletions(-)
 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  mm/memcontrol.c |   33 +++++++++++----------------------
->  1 file changed, 11 insertions(+), 22 deletions(-)
-...
->  static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
->  					 struct kmem_cache *s)
->  {
->  	char *name;
->  	struct kmem_cache *new;
-> +	static char tmp_name[PAGE_SIZE];
->  
-> -	name = memcg_cache_name(memcg, s);
-> -	if (!name)
-> -		return NULL;
-> +	lockdep_assert_held(&memcg_cache_mutex);
-> +
-> +	rcu_read_lock();
-> +	tmp_name = snprintf(tmp_name, sizeof(tmp_name), "%s(%d:%s)", s->name,
-> +			 memcg_cache_id(memcg), cgroup_name(memcg->css.cgroup));
-
-I guess you didn't turn on CONFIG_MEMCG_KMEM?
-
-snprintf() returns a int value.
-
-> +	rcu_read_unlock();
->  
-> -	new = kmem_cache_create_memcg(memcg, name, s->object_size, s->align,
-> +	new = kmem_cache_create_memcg(memcg, tmp_name, s->object_size, s->align,
->  				      (s->flags & ~SLAB_PANIC), s->ctor, s);
->  
->  	if (new)
->  		new->allocflags |= __GFP_KMEMCG;
->  
-> -	kfree(name);
->  	return new;
->  }
->  
-> 
+diff --git a/arch/score/mm/init.c b/arch/score/mm/init.c
+index 579fc4e..2a223d8 100644
+--- a/arch/score/mm/init.c
++++ b/arch/score/mm/init.c
+@@ -77,33 +77,11 @@ void __init paging_init(void)
+ 
+ void __init mem_init(void)
+ {
+-	unsigned long codesize, reservedpages, datasize, initsize;
+-	unsigned long tmp, ram = 0;
+-
+ 	high_memory = (void *) __va(max_low_pfn << PAGE_SHIFT);
+ 	free_all_bootmem();
+ 	setup_zero_page();	/* Setup zeroed pages. */
+-	reservedpages = 0;
+-
+-	for (tmp = 0; tmp < max_low_pfn; tmp++)
+-		if (page_is_ram(tmp)) {
+-			ram++;
+-			if (PageReserved(pfn_to_page(tmp)))
+-				reservedpages++;
+-		}
+-
+-	num_physpages = ram;
+-	codesize = (unsigned long) &_etext - (unsigned long) &_text;
+-	datasize = (unsigned long) &_edata - (unsigned long) &_etext;
+-	initsize = (unsigned long) &__init_end - (unsigned long) &__init_begin;
+-
+-	printk(KERN_INFO "Memory: %luk/%luk available (%ldk kernel code, "
+-			"%ldk reserved, %ldk data, %ldk init, %ldk highmem)\n",
+-			(unsigned long) nr_free_pages() << (PAGE_SHIFT-10),
+-			ram << (PAGE_SHIFT-10), codesize >> 10,
+-			reservedpages << (PAGE_SHIFT-10), datasize >> 10,
+-			initsize >> 10,
+-			totalhigh_pages << (PAGE_SHIFT-10));
++
++	mem_init_print_info(NULL);
+ }
+ #endif /* !CONFIG_NEED_MULTIPLE_NODES */
+ 
+-- 
+1.7.9.5
 
