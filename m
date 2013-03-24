@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab3CXTGs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 15:06:48 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:53458 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754309Ab3CXTGq (ORCPT
+	id S1754647Ab3CXTLP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 15:11:15 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:59289 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754309Ab3CXTLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 15:06:46 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sun, 24 Mar 2013 12:06:53 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Ben Collins <benmcollins13@gmail.com>
-Cc: David Miller <davem@davemloft.net>, afleming@freescale.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] net: Add support for handling queueing in hardware
-Message-ID: <20130324190653.GA16227@roeck-us.net>
-References: <E1UJ1fR-0004hs-4l@swissweb.swissdisk.com>
- <20130322.101139.1942128058226201237.davem@davemloft.net>
- <A5ACC15C-361D-48E6-BFFF-9AA3966C2A68@freescale.com>
- <20130322.103302.1277256650283142022.davem@davemloft.net>
- <FE78128C-01DB-4831-ACBE-BA3E3A428BFC@gmail.com>
- <20130323190221.GA22005@roeck-us.net>
+	Sun, 24 Mar 2013 15:11:14 -0400
+Message-ID: <1364152267.3620.31.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] Fix IXP4xx coherent allocations
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Miller <davem@davemloft.net>
+CC: <khc@pm.waw.pl>, <netdev@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <c.aeschlimann@acn-group.ch>
+Date: Sun, 24 Mar 2013 19:11:07 +0000
+In-Reply-To: <20130323.195740.2108147521543354261.davem@davemloft.net>
+References: <m3obe9lxil.fsf@intrepid.localdomain>
+	 <20130323.195740.2108147521543354261.davem@davemloft.net>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130323190221.GA22005@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [88.96.1.126]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19744.005
+X-TM-AS-Result: No--21.877800-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 23, 2013 at 12:02:21PM -0700, Guenter Roeck wrote:
-> On Fri, Mar 22, 2013 at 10:43:44AM -0400, Ben Collins wrote:
-> > On Mar 22, 2013, at 10:33 AM, David Miller <davem@davemloft.net> wrote:
-> > 
-> > > From: Fleming Andy-AFLEMING <afleming@freescale.com>
-> > > Date: Fri, 22 Mar 2013 14:31:50 +0000
-> > > 
-> > >> It would appear one of our customers is attempting to upstream our
-> > >> code for us. We are aware that this current solution is unacceptable
-> > >> (which is why we have not submitted it), and we are currently trying
-> > >> to develop a less hacky solution that integrates with qdisc.
-> > > 
-> > > Ben, can can you coordinate with people instead of doing crap like
-> > > this?
-> > 
-> > 
-> > "For us" is a loose term, when it's more that we are attempting to upstream code so our system is supported by a mainline kernel instead of having one-off kernels.
-> > 
-> > And we have been talking with Freescale about this for quite some time (couple years?). They have a roadmap that doesn't include getting this driver supported in mainline any time soon, so I'm taking time to get this done for our own system. I'm not meaning to step on any toes.
-> > 
-> How true. You are not the only one with thatt problem.
+On Sat, 2013-03-23 at 19:57 -0400, David Miller wrote:
+> From: Krzysztof Halasa <khc@pm.waw.pl>
+> Date: Sat, 23 Mar 2013 20:35:46 +0100
 > 
-> Ben, can you possibly send me your complete patch set on top of 3.8, or point me
-> to a git tree ?
+> > ARM core code currently requires coherent DMA mask to be set. Make sure
+> > we limit PCI devices to 64 MiB while allowing on-chip devices to access
+> > the whole 4 GiB address space.
+> > 
+> > This fixes a v3.7+ regression which broke IXP4xx built-in network devices.
+> > 
+> > Signed-off-by: Krzysztof Hałasa <khc@pm.waw.pl>
 > 
-Never mind, I found your tree on github.
+> This requirement is not reasonable.
+> 
+> The DMA API documentation clearly states what the default must be,
+> and what drivers are guarenteed will be the default.
 
-I'll clone it next week and start playing with it. That is going to save me a
-lot of time. Thanks a lot for the work!
+I'm failing to see where it says the default can't be narrower than 32
+bits due to platform limits.  And how do you think DMA mapping is
+supposed to work for PCI devices on these platforms, anyway?
 
-Our system is based on P5040, and I might be able to do some testing on P5020
-as well. I'll let you know how it goes.
+Ben.
 
-Thanks,
-Guenter
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
