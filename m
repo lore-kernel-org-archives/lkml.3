@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab3CXPpo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 11:45:44 -0400
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:58942 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab3CXPpl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 11:45:41 -0400
+	id S1754177Ab3CXPv3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 11:51:29 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:38845 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753944Ab3CXPv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 11:51:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [REGRESSION] [CPUFREQ] 3.9.0-rcX
+Date: Sun, 24 Mar 2013 16:58:51 +0100
+Message-ID: <2092637.4fPJW06mFA@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc3+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAG9S4UjFJ2hLD7fXJ7D3Le=GC3xRZaD8vZ+YQOav5q+fnKO+Qw@mail.gmail.com>
+References: <CAG9S4UjMeRZECAiigZVLTU4av2ZJNBukyUAoCmiYRjtkdThhFw@mail.gmail.com> <CAKohpokBySA5uaTTAwF5tmUr-_+W04Ki_f6cWTLu7n1C3Tcqog@mail.gmail.com> <CAG9S4UjFJ2hLD7fXJ7D3Le=GC3xRZaD8vZ+YQOav5q+fnKO+Qw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <514F1D9E.8020601@blueyonder.co.uk>
-References: <514EFC08.1000509@blueyonder.co.uk>
-	<CAMuHMdXyn+rCkBJg29CFW-kzCM+AbvhsEVfNueXXfyFs8FFqtg@mail.gmail.com>
-	<514F1D9E.8020601@blueyonder.co.uk>
-Date: Sun, 24 Mar 2013 16:45:40 +0100
-X-Google-Sender-Auth: 3jz0_wQ9-CQ-5w3-zLejGbKYliw
-Message-ID: <CAMuHMdVYKdasvv8aNqA1DWj-T3GAHPwTnBZOA5utrP5MwX9gBw@mail.gmail.com>
-Subject: Re: 3.9-rc4 Makefile EXTRAVERSION still -rc3
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: sboyce@blueyonder.co.uk
-Cc: LKML Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 24, 2013 at 4:37 PM, Sid Boyce <sboyce@blueyonder.co.uk> wrote:
-> tindog:/usr/src/XXX/linux # git pull
-> Already up-to-date.
-> tindog:/usr/src/XXX/linux # git show v3.9-rc4
-> fatal: ambiguous argument 'v3.9-rc4': unknown revision or path not in the
-> working tree.
+On Sunday, March 24, 2013 04:36:25 PM Maciej Rutecki wrote:
+> 2013/3/24 Viresh Kumar <viresh.kumar@linaro.org>:
+> > On 24 March 2013 19:41, Maciej Rutecki <maciej.rutecki@gmail.com> wrote:
+> >> (long e-mail, sorry ;-))
+> >
+> > Don't be, it was useful :)
+> >
+> >> Last known good: 3.8.0
+> >>
+> >> Short description:
+> >> 1. On -rc3, after s2ram cpufreq does not set CPU on max frequency on high
+> >> load (on battery).
+> >
+> > Try attached patch for this.
+> >
+> -rc4 + yours path, config based on -rc3:
+> 
+> # CONFIG_X86_INTEL_PSTATE is not set
+> # CONFIG_X86_PCC_CPUFREQ is not set
+> 
+> (use acpi-cpufreq)
+> 
+> Freq. seems be ok. 'ondemand' governor works as expected.
 
-So you didn't have v3.9-rc4 yet. Probably the mirror was not up-to-date.
+Good, thanks for testing.
 
-Gr{oetje,eeting}s,
+Viresh, do you want me to apply that patch or are you going to send another
+one?
 
-                        Geert
+Rafael
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
