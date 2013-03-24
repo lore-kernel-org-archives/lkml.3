@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab3CXVPm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 17:15:42 -0400
-Received: from inx.pm.waw.pl ([195.116.170.130]:41514 "EHLO inx.pm.waw.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754767Ab3CXVPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 17:15:39 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        c.aeschlimann@acn-group.ch, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Fix IXP4xx coherent allocations
-References: <m3obe9lxil.fsf@intrepid.localdomain>
-	<20130323.195740.2108147521543354261.davem@davemloft.net>
-	<1364152267.3620.31.camel@deadeye.wl.decadent.org.uk>
-Date: Sun, 24 Mar 2013 22:15:36 +0100
-In-Reply-To: <1364152267.3620.31.camel@deadeye.wl.decadent.org.uk> (Ben
-	Hutchings's message of "Sun, 24 Mar 2013 19:11:07 +0000")
-Message-ID: <m3r4j4sdmv.fsf@intrepid.localdomain>
+	id S1754916Ab3CXVVw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 17:21:52 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54566 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754848Ab3CXVVv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 17:21:51 -0400
+Date: Sun, 24 Mar 2013 21:21:49 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Eric Piel <eric.piel@tremplin-utc.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Driver lis3lv02d_i2c not working on Nokia RX-51
+Message-ID: <20130324212149.GC18316@opensource.wolfsonmicro.com>
+References: <201302170046.26569@pali>
+ <201302171740.41985@pali>
+ <20130217181756.GE1583@opensource.wolfsonmicro.com>
+ <201303241550.42801@pali>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1SQmhf2mF2YjsYvc"
+Content-Disposition: inline
+In-Reply-To: <201303241550.42801@pali>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Hutchings <bhutchings@solarflare.com> writes:
 
-> I'm failing to see where it says the default can't be narrower than 32
-> bits due to platform limits.  And how do you think DMA mapping is
-> supposed to work for PCI devices on these platforms, anyway?
+--1SQmhf2mF2YjsYvc
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The problem on ARM (and probably on powerpc, and on something called
-"metag" - grep -r 'coherent DMA mask is unset' arch) is that the default
-coherent DMA mask is zero. IOW, coherent DMA allocations are, by
-default, disabled. A driver has to dma_set_coherent_mask() or, as many
-drivers do, set dev->coherent_dma_mask directly (IMHO
-dev->coherent_dma_mask along with dev->dma_mask are private DMA API
-stuff and e.g. device drivers have no interest there).
+On Sun, Mar 24, 2013 at 03:50:42PM +0100, Pali Roh=E1r wrote:
 
-The zero default is IMHO, WRT the actual DMA API, an ARM bug (and
-powerpc's etc). Nevertheless, the patch I posted does everything as
-required by the API. Specifically, the IXP4xx arch part makes
-IXP4xx's dma_set_coherent_mask() compliant with DMA API, and the actual
-dma_set_coherent_mask() calls in drivers are both valid and I guess
-recommended by the API.
+> There is no regulator 'Vdd' supply in board rx51 files. Can you=20
+> look at code how it can be fixed?=20
 
-The patch doesn't touch the core ARM issue, that's right.
--- 
-Krzysztof Halasa
+You need to look at the schematics rather than the code here - the code
+just needs to say what regulator supplies Vdd on the device.
+
+--1SQmhf2mF2YjsYvc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRT25lAAoJELSic+t+oim9xD8P/0Cyvr/yqKQPmdFJgDXEAwhD
+PTwxVDpbtI1ajJURjiua+4VmdjxCwPDmE+AqNSUKrs6vvTvsz/q0KJSuus/yS4oo
+tZC0rL+s91tnMdnxGcfRcNPwLCUmz4TWW2oRGe186SKHaWiS4/bCCGjKBywM2aDg
+oB1TKVf51g/5XI6Vy0CeW5yj+ERGSHcimdsGFVgCAVdPGpJdF9F4Orf9Dr3L1gM5
+k+ng2uC5Ng0E1uvI5COQGALFQusw3aPNoZbNIF0eGXx6/wLzuyNjgFzW4ykhTh6I
+55vgM3wpettTeILLBeHU6lrb6cSZSkgRmhTKQxgimvtb1gcz1ncpuJvFl/3pC52S
+Fmn4Y3aeLNzOQwwirAhDdVeD14KlmP2Wod63wMmb5iosVpqx9fxEhwtW5RyhphUX
+oicZe8/jSMDLiAgq1FCfaXaXy940HuRKvyBkCVde8YsZDjERR3OnknpHG7cKM8DJ
+utDQVcu8PQU7rIO4HAJy09hXXx7VbQL+UnA9LjH62Og7FOaN9opADinQSdwCRj0K
+bQj9SWN+SODJr47m+TKTq9M1xZQ6KEuDcPzu596wFQHcWHIO2lmheYgVoSY7ZuxF
+pzYrb5CAJiVBKnX6D33UtOS27AFpNsvoxHEbR3L6lLPMY+HGXZKcQ0HzsIAeHqkj
+OlvQb1yAJ9/qc3GiSANt
+=T44Y
+-----END PGP SIGNATURE-----
+
+--1SQmhf2mF2YjsYvc--
