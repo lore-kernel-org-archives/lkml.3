@@ -1,98 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab3CXOqe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 10:46:34 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:38693 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753940Ab3CXOqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 10:46:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [REGRESSION] [CPUFREQ] 3.9.0-rcX
-Date: Sun, 24 Mar 2013 15:53:54 +0100
-Message-ID: <1965505.vyQ4xZcodg@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc3+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpokBySA5uaTTAwF5tmUr-_+W04Ki_f6cWTLu7n1C3Tcqog@mail.gmail.com>
-References: <CAG9S4UjMeRZECAiigZVLTU4av2ZJNBukyUAoCmiYRjtkdThhFw@mail.gmail.com> <CAKohpokBySA5uaTTAwF5tmUr-_+W04Ki_f6cWTLu7n1C3Tcqog@mail.gmail.com>
+	id S1754429Ab3CXOqp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 10:46:45 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:59210 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754029Ab3CXOqm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 10:46:42 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20130324081701.GA13328@gmail.com>
+References: <1363879460-21595-1-git-send-email-fweisbec@gmail.com>
+	<20130324081701.GA13328@gmail.com>
+Date: Sun, 24 Mar 2013 15:46:40 +0100
+Message-ID: <CAFTL4hx4FLaRR6i9ap9UrCZY4ikhVtLfUqWSsjTpsO3dvShUjQ@mail.gmail.com>
+Subject: Re: [GIT PULL] nohz: Full dynticks base interface
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, March 24, 2013 07:59:35 PM Viresh Kumar wrote:
-> On 24 March 2013 19:41, Maciej Rutecki <maciej.rutecki@gmail.com> wrote:
-> > (long e-mail, sorry ;-))
-> 
-> Don't be, it was useful :)
-> 
-> > Last known good: 3.8.0
-> >
-> > Short description:
-> > 1. On -rc3, after s2ram cpufreq does not set CPU on max frequency on high
-> > load (on battery).
-> 
-> Try attached patch for this.
-> 
-> > 2. On -rc4 (this is not real regression because I change config between -rc3
-> > and rc4), "ondemand" does not work. Current frequency is 'strange' (792
-> > MHz).
-> 
-> I don't really have a reason for that :(
-> But with your config it is clear that, your working setup has:
-> 
-> # CONFIG_X86_INTEL_PSTATE is not set
-> # CONFIG_X86_PCC_CPUFREQ is not set
-> CONFIG_X86_ACPI_CPUFREQ=m
-> 
-> and rc4 version has:
-> 
-> CONFIG_X86_INTEL_PSTATE=y
-> CONFIG_X86_PCC_CPUFREQ=m
-> CONFIG_X86_ACPI_CPUFREQ=m
-> 
-> So, i believe you are using another cpufreq driver this, try with same
-> configuration once.
-> 
-> > 1. Kernel 3.8.0:
-> >
-> > Output (show only fisrt CPU, others are same):
-> > cpu0/cpufreq//affected_cpus:0
-> > cpu0/cpufreq//related_cpus:0 1 2 3
-> 
-> > Kernel 3.9.0-rc1
-> 
-> > CASE 2
-> > After boot:
-> > cpu0/cpufreq//affected_cpus:0 1 2 3
-> > cpu0/cpufreq//related_cpus:0 1 2 3
-> 
-> My attached patch will restore 1. instead of CASE 2.
-> 
-> > ===============================================================================
-> > Kernel 3.9.0-rc4
-> >
-> > CASE 7
-> > (normal boot)
-> > cpu0/cpufreq//affected_cpus:0
-> > cpu0/cpufreq//related_cpus:0
-> 
-> This must be related to your different driver.
+2013/3/24 Ingo Molnar <mingo@kernel.org>:
+>
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>
+>> Hi Ingo,
+>>
+>> This settles the initial ground to start a special full dynticks tree in -tip
+>> that we can iterate incrementally to accelerate the development.
+>> It is based on tip:sched/core.
+>>
+>> I tried to rearrange a bit the naming. We are probably not yet done with
+>> that but I guess we can fix it along with the rest.
+>>
+>> Please pull from:
+>>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+>>       full-dynticks-for-mingo
+>>
+>> Changes on these commits since they were part of 3.9-rc1-nohz1:
+>>
+>> * Force a timekeeping CPU over the full dynticks range
+>> * Rename CONFIG_NO_HZ_FULL to CONFIG_NO_HZ_EXTENDED
+>> * Following *_nohz_extended_* APIs renames
+>> * Handle CPU hotplug for timekeeping
+>> * Rename full_nohz= kernel parameter to nohz_extended=
+>
+> Note that boot parameters suck for pretty much any purpose but quirks -
+> please also add a (default off!) Kconfig option to easily enable
+> nohz_extended for all CPUs.
+>
+> That way I will be able to test it automatically via randconfig and such.
 
-Yes, intel_pstate is not really a cpufreq driver.  It just overtakes the
-whole subsystem.
+Sure, I'm adding such an option.
 
-Dirk, can you please check if this is as intended?
+>
+> My next question/request after that would be: could we make sure that
+> enabling this option does not break any applications or kernel
+> functionality, ASAP? Once that is offered, it becomes pushable to v3.10 I
+> think.
 
-Thanks,
-Rafael
+So that's already the case. I'm careful that, as we iterate, the
+changes aren't supposed to break something in the middle. the final
+code that eventually shuts the tick down should be the last one in the
+series: once we know it is safe to do so.
 
+>
+> Meanwhile I have pulled your tree into tip:sched/nohz to stage and test
+> it, in the hope that it becomes mergable quickly! :-)
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Thanks! :)
