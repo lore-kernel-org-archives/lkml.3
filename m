@@ -1,36 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab3CXLIY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 07:08:24 -0400
-Received: from 014136144135.static.ctinets.com ([14.136.144.135]:52333 "EHLO
-	rthk.hk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753199Ab3CXLIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 07:08:22 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Mar 2013 07:08:21 EDT
-Message-ID: <20130324190128.101646vw7o6flgco@pop.rthk.hk>
-Date: Sun, 24 Mar 2013 19:01:28 +0800
-From: Julia Jenkins <julia@mail.com>
-Reply-to: mrs.juliejenkinss1@kelebek.gen.tr
-To: undisclosed-recipients:;
-Subject: 
+	id S1753331Ab3CXLam (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 07:30:42 -0400
+Received: from sd-mail-sa-01.sanoma.fi ([158.127.18.161]:38532 "EHLO
+	sd-mail-sa-01.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243Ab3CXLal (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 07:30:41 -0400
+Message-ID: <514EE3DD.6060102@iki.fi>
+Date: Sun, 24 Mar 2013 13:30:37 +0200
+From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) 4.3.3
+To: Tim Chen <tim.c.chen@linux.intel.com>
+CC: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "David S.Miller" <davem@davemloft.net>,
+        Kirk Yap <kirk.s.yap@intel.com>, David Cote <david.m.cote@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH 06/11] Create module providing optimized SHA256 routines
+ using SSSE3, AVX or AVX2 instructions.
+References: <cover.1363961999.git.tim.c.chen@linux.intel.com> <1363987761.8972.60.camel@schen9-DESK>
+In-Reply-To: <1363987761.8972.60.camel@schen9-DESK>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am Julia Jenkins the wife of Late Mr.Terry Jenkins A white farmer  
-that was shot dead in Zimbabwe by "war veterans. Please i need your  
-help. Please contact me on my email mrs.juliejenkinss1@kelebek.gen.tr
+On 22.03.2013 23:29, Tim Chen wrote:
+> We added glue code and config options to create crypto
+> module that uses SSE/AVX/AVX2 optimized SHA256 x86_64 assembly routines.
+> 
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> ---
 
+I could not apply this patch cleanly on top of cryptodev-2.6 tree:
 
-----------------------------------------------------------------
-This message was sent from RTHK.
+Applying: Create module providing optimized SHA256 routines using SSSE3, AVX or AVX2 instructions.
+Using index info to reconstruct a base tree...
+Falling back to patching base and 3-way merge...
+Auto-merging crypto/Kconfig
+Auto-merging arch/x86/crypto/Makefile
+CONFLICT (content): Merge conflict in arch/x86/crypto/Makefile
+Failed to merge in the changes.
+Patch failed at 0006 Create module providing optimized SHA256 routines using SSSE3, AVX or AVX2 instructions.
 
-
+-Jussi
