@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab3CXH3h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 03:29:37 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:42054 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab3CXH3c (ORCPT
+	id S1753756Ab3CXH3n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 03:29:43 -0400
+Received: from mail-da0-f53.google.com ([209.85.210.53]:46985 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753714Ab3CXH3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 03:29:32 -0400
+	Sun, 24 Mar 2013 03:29:39 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -15,11 +15,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>, Bob Liu <lliubbo@gmail.com>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: [RFC PATCH v2, part4 14/39] mm/blackfin: prepare for removing num_physpages and simplify mem_init()
-Date: Sun, 24 Mar 2013 15:24:45 +0800
-Message-Id: <1364109934-7851-20-git-send-email-jiang.liu@huawei.com>
+        Mark Salter <msalter@redhat.com>,
+        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org
+Subject: [RFC PATCH v2, part4 14/39] mm/c6x: prepare for removing num_physpages and simplify mem_init()
+Date: Sun, 24 Mar 2013 15:24:46 +0800
+Message-Id: <1364109934-7851-21-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
 References: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
@@ -30,65 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Prepare for removing num_physpages and simplify mem_init().
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Bob Liu <lliubbo@gmail.com>
-Cc: uclinux-dist-devel@blackfin.uclinux.org
+Cc: Mark Salter <msalter@redhat.com>
+Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
+Cc: linux-c6x-dev@linux-c6x.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/blackfin/mm/init.c |   38 ++++++--------------------------------
- 1 file changed, 6 insertions(+), 32 deletions(-)
+ arch/c6x/mm/init.c |   11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
-diff --git a/arch/blackfin/mm/init.c b/arch/blackfin/mm/init.c
-index 1cc8607..e4b6e11 100644
---- a/arch/blackfin/mm/init.c
-+++ b/arch/blackfin/mm/init.c
-@@ -90,43 +90,17 @@ asmlinkage void __init init_pda(void)
+diff --git a/arch/c6x/mm/init.c b/arch/c6x/mm/init.c
+index 2c51474..066f75c 100644
+--- a/arch/c6x/mm/init.c
++++ b/arch/c6x/mm/init.c
+@@ -57,21 +57,12 @@ void __init paging_init(void)
  
  void __init mem_init(void)
  {
--	unsigned int codek = 0, datak = 0, initk = 0;
--	unsigned int reservedpages = 0, freepages = 0;
+-	int codek, datak;
 -	unsigned long tmp;
--	unsigned long start_mem = memory_start;
--	unsigned long end_mem = memory_end;
-+	char buf[64];
- 
--	end_mem &= PAGE_MASK;
--	high_memory = (void *)end_mem;
+-	unsigned long len = memory_end - memory_start;
 -
--	start_mem = PAGE_ALIGN(start_mem);
--	max_mapnr = num_physpages = MAP_NR(high_memory);
--	printk(KERN_DEBUG "Kernel managed physical pages: %lu\n", num_physpages);
-+	high_memory = (void *)(memory_end & PAGE_MASK);
-+	max_mapnr = MAP_NR(high_memory);
-+	printk(KERN_DEBUG "Kernel managed physical pages: %lu\n", max_mapnr);
+ 	high_memory = (void *)(memory_end & PAGE_MASK);
  
- 	/* This will put all low memory onto the freelists. */
+ 	/* this will put all memory onto the freelists */
  	free_all_bootmem();
  
--	reservedpages = 0;
--	for (tmp = ARCH_PFN_OFFSET; tmp < max_mapnr; tmp++)
--		if (PageReserved(pfn_to_page(tmp)))
--			reservedpages++;
--	freepages =  max_mapnr - ARCH_PFN_OFFSET - reservedpages;
--
--	/* do not count in kernel image between _rambase and _ramstart */
--	reservedpages -= (_ramstart - _rambase) >> PAGE_SHIFT;
--#if (defined(CONFIG_BFIN_EXTMEM_ICACHEABLE) && ANOMALY_05000263)
--	reservedpages += (_ramend - memory_end - DMA_UNCACHED_REGION) >> PAGE_SHIFT;
--#endif
--
 -	codek = (_etext - _stext) >> 10;
--	initk = (__init_end - __init_begin) >> 10;
--	datak = ((_ramstart - _rambase) >> 10) - codek - initk;
+-	datak = (_end - _sdata) >> 10;
 -
--	printk(KERN_INFO
--	     "Memory available: %luk/%luk RAM, "
--		"(%uk init code, %uk kernel code, %uk data, %uk dma, %uk reserved)\n",
--		(unsigned long) freepages << (PAGE_SHIFT-10), (_ramend - CONFIG_PHY_RAM_BASE_ADDRESS) >> 10,
--		initk, codek, datak, DMA_UNCACHED_REGION >> 10, (reservedpages << (PAGE_SHIFT-10)));
-+	snprintf(buf, sizeof(buf) - 1, "%uK DMA", DMA_UNCACHED_REGION >> 10);
-+	mem_init_print_info(buf);
+-	tmp = nr_free_pages() << PAGE_SHIFT;
+-	printk(KERN_INFO "Memory: %luk/%luk RAM (%dk kernel code, %dk data)\n",
+-	       tmp >> 10, len >> 10, codek, datak);
++	mem_init_print_info(NULL);
  }
  
  #ifdef CONFIG_BLK_DEV_INITRD
