@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab3CXJSF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 05:18:05 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62238 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687Ab3CXJRu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 05:17:50 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sat, 23 Mar 2013 12:10:23 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: "Theodore Ts'o" <tytso@mit.edu>, Ben Collins <benmcollins13@gmail.com>,
-        David Miller <davem@davemloft.net>, afleming@freescale.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] net: Add support for handling queueing in hardware
-Message-ID: <20130323191023.GB22005@roeck-us.net>
-References: <A5ACC15C-361D-48E6-BFFF-9AA3966C2A68@freescale.com>
- <20130322.103302.1277256650283142022.davem@davemloft.net>
- <FE78128C-01DB-4831-ACBE-BA3E3A428BFC@gmail.com>
- <20130322.111759.2108472348146991505.davem@davemloft.net>
- <20130322220840.GA6647@thunk.org>
+	id S1754197Ab3CXJWa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 05:22:30 -0400
+Received: from mout.web.de ([212.227.15.4]:61532 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752668Ab3CXJW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 05:22:28 -0400
+From: Markus <M4rkusXXL@web.de>
+To: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: hybrid raid1 with trim support
+Date: Sun, 24 Mar 2013 10:21:05 +0100
+Message-ID: <3642314.Bs77jRSGfY@f209>
+User-Agent: KMail/4.9.5 (Linux/3.8.4-gentoo; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <3387108.NX1Tlx8b5x@f209>
+References: <3387108.NX1Tlx8b5x@f209>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130322220840.GA6647@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:eIwXgkyBEQHkw8wlptwFH+ZL1POoaTyrj98oDFhBxH9
+ SzeMVWHijsdVg88LD0MQYEJxbYen0f5xIDVIau39Rx6u+AICQ7
+ JhU8IWWxhCaVUNcctfC2ucIFGfZC6IpDqoBP6+i8uLtmiDhQpq
+ wFz4uLha/14oXtlB0dll0pOjk8G+vlq4iyEai8OkWYrONVGaaS
+ xWYwyb0LfgjaF5pqhEuZw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 06:08:40PM -0400, Theodore Ts'o wrote:
-> On Fri, Mar 22, 2013 at 11:39:20AM -0400, Ben Collins wrote:
-> > 
-> > If your company had hardware going to production, you'd want it supported in mainline too, I suspect.
-> 
-> And if companies told their hardware partners that they will drop use
-> of their hardware in future products unless they get their !@#@S
-> drivers upstream, I'd bet they'd change their engineering priorities
-> so they would work on it, instead of foisting this work on their
-> customers.
-> 
-I would love to be in that position. However, the decision to choose
-a specific chip is not always coordinated with those who have to provide
-the software to run on those chips.
+Hi!
 
-> I've seen this work in enterprise computing, where the RFP had
-> requirements for upstream drivers (i.e., if you want your 10gig
-> ethernet NIC to be used in HP or IBM's servers, get the darned thing
-> upstream!).  The trick is making it clear that selection of components
-> depends not just on an OSS driver, but an OSS driver which has been
-> accepted upstream (which also helps from a quality-of-code
-> requirement).
-> 
-> I've been waiting for this to start happening in the consumer
-> electronics/embedded world, but it's been slow coming,
-> unfortunately....
-> 
-The same applies to vendors of non-consumer network devices, unfortunately.
+Still the same with 3.8.4 ... anybody?
 
-Guenter
+Best regards,
+Markus
+
+Markus schrieb am 12.03.2013:
+> Hello!
+> 
+> I created a hybrid raid1 with one ssd and one hdd. Used writemostly and writebehind and put ext4 with discard enabled on it.
+> This setup worked quite well for the last months (last kernel was 3.7.6). But now as I booted 3.8.2 the hdd was dropped from the raid with:
+> > md/raid1:md2: Disk failure on sdb1, disabling device.
+> > md/raid1:md2: Operation continuing on 1 devices.
+> 
+> Re-adding this drive it will try to resync but the hdd will be dropped short time after. Now I remounted the device without the discard flag and the resync and usage works as before.
+> After remounting it again with discard enabled the hdd is dropped again. So I think this is the culprit as the hdd does obviously not support TRIM...
+> 
+> As it worked fine before, I think this is a regression? Or is this an intended change?
+> 
+> 
+> Thanks,
+> Markus
