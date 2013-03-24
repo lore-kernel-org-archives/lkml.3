@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab3CXTLP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 15:11:15 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:59289 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754309Ab3CXTLO (ORCPT
+	id S1754666Ab3CXTZt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 15:25:49 -0400
+Received: from mail-da0-f43.google.com ([209.85.210.43]:38749 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754556Ab3CXTZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 15:11:14 -0400
-Message-ID: <1364152267.3620.31.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] Fix IXP4xx coherent allocations
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Miller <davem@davemloft.net>
-CC: <khc@pm.waw.pl>, <netdev@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <c.aeschlimann@acn-group.ch>
-Date: Sun, 24 Mar 2013 19:11:07 +0000
-In-Reply-To: <20130323.195740.2108147521543354261.davem@davemloft.net>
-References: <m3obe9lxil.fsf@intrepid.localdomain>
-	 <20130323.195740.2108147521543354261.davem@davemloft.net>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [88.96.1.126]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19744.005
-X-TM-AS-Result: No--21.877800-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Sun, 24 Mar 2013 15:25:48 -0400
+From: Alice Ferrazzi <alice.ferrazzi@gmail.com>
+To: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com
+Cc: linux-rdma@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Alice Ferrazzi <alice.ferrazzi@gmail.com>
+Subject: [PATCH] Infiniband: core: change <asm/uaccess.h> to <linux/uaccess.h>
+Date: Mon, 25 Mar 2013 04:24:44 +0900
+Message-Id: <1364153084-8911-1-git-send-email-alice.ferrazzi@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-23 at 19:57 -0400, David Miller wrote:
-> From: Krzysztof Halasa <khc@pm.waw.pl>
-> Date: Sat, 23 Mar 2013 20:35:46 +0100
-> 
-> > ARM core code currently requires coherent DMA mask to be set. Make sure
-> > we limit PCI devices to 64 MiB while allowing on-chip devices to access
-> > the whole 4 GiB address space.
-> > 
-> > This fixes a v3.7+ regression which broke IXP4xx built-in network devices.
-> > 
-> > Signed-off-by: Krzysztof Hałasa <khc@pm.waw.pl>
-> 
-> This requirement is not reasonable.
-> 
-> The DMA API documentation clearly states what the default must be,
-> and what drivers are guarenteed will be the default.
+This patch replaces <asm/uaccess.h> with <linux/uaccess.h>
+to comply with the checkpatch.pl hint.
 
-I'm failing to see where it says the default can't be narrower than 32
-bits due to platform limits.  And how do you think DMA mapping is
-supposed to work for PCI devices on these platforms, anyway?
+Signed-off-by: Alice Ferrazzi <alice.ferrazzi@gmail.com>
+---
+ drivers/infiniband/core/ucm.c         |    2 +-
+ drivers/infiniband/core/user_mad.c    |    2 +-
+ drivers/infiniband/core/uverbs_cmd.c  |    2 +-
+ drivers/infiniband/core/uverbs_main.c |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-Ben.
-
+diff --git a/drivers/infiniband/core/ucm.c b/drivers/infiniband/core/ucm.c
+index f2f6393..224a7c9 100644
+--- a/drivers/infiniband/core/ucm.c
++++ b/drivers/infiniband/core/ucm.c
+@@ -46,7 +46,7 @@
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
+ 
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ 
+ #include <rdma/ib_cm.h>
+ #include <rdma/ib_user_cm.h>
+diff --git a/drivers/infiniband/core/user_mad.c b/drivers/infiniband/core/user_mad.c
+index f0d588f..ad414f1 100644
+--- a/drivers/infiniband/core/user_mad.c
++++ b/drivers/infiniband/core/user_mad.c
+@@ -48,7 +48,7 @@
+ #include <linux/semaphore.h>
+ #include <linux/slab.h>
+ 
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ 
+ #include <rdma/ib_mad.h>
+ #include <rdma/ib_user_mad.h>
+diff --git a/drivers/infiniband/core/uverbs_cmd.c b/drivers/infiniband/core/uverbs_cmd.c
+index a7d00f6..62ff7f3 100644
+--- a/drivers/infiniband/core/uverbs_cmd.c
++++ b/drivers/infiniband/core/uverbs_cmd.c
+@@ -37,7 +37,7 @@
+ #include <linux/fs.h>
+ #include <linux/slab.h>
+ 
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ 
+ #include "uverbs.h"
+ 
+diff --git a/drivers/infiniband/core/uverbs_main.c b/drivers/infiniband/core/uverbs_main.c
+index 2c6f0f2..dfee66f 100644
+--- a/drivers/infiniband/core/uverbs_main.c
++++ b/drivers/infiniband/core/uverbs_main.c
+@@ -46,7 +46,7 @@
+ #include <linux/anon_inodes.h>
+ #include <linux/slab.h>
+ 
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ 
+ #include "uverbs.h"
+ 
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.7.10.4
 
