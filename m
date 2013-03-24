@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab3CXSXe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 14:23:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35980 "EHLO mx1.redhat.com"
+	id S1754577Ab3CXSXj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 14:23:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33658 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753558Ab3CXSXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 14:23:33 -0400
-Date: Sun, 24 Mar 2013 19:21:10 +0100
+	id S1753765Ab3CXSXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 14:23:36 -0400
+Date: Sun, 24 Mar 2013 19:21:15 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Anton Arapov <anton@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -15,8 +15,8 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
         Ingo Molnar <mingo@elte.hu>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: [PATCH 1/5] uprobes: Turn copy_opcode() into copy_from_page()
-Message-ID: <20130324182110.GA13301@redhat.com>
+Subject: [PATCH 2/5] uprobes: Change __copy_insn() to use copy_from_page()
+Message-ID: <20130324182115.GA13308@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,50 +26,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes. Rename copy_opcode() into copy_from_page() and
-add the new "int len" argument to make it more more generic for the
-new users.
+Change __copy_insn() to use copy_from_page() and simplify the code.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ kernel/events/uprobes.c |   13 ++-----------
+ 1 files changed, 2 insertions(+), 11 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 5c273b3..d6891cb 100644
+index d6891cb..0a759c6 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -173,10 +173,10 @@ bool __weak is_swbp_insn(uprobe_opcode_t *insn)
- 	return *insn == UPROBE_SWBP_INSN;
- }
- 
--static void copy_opcode(struct page *page, unsigned long vaddr, uprobe_opcode_t *opcode)
-+static void copy_from_page(struct page *page, unsigned long vaddr, void *dst, int len)
+@@ -477,30 +477,21 @@ __copy_insn(struct address_space *mapping, struct file *filp, char *insn,
+ 			unsigned long nbytes, loff_t offset)
  {
- 	void *kaddr = kmap_atomic(page);
--	memcpy(opcode, kaddr + (vaddr & ~PAGE_MASK), UPROBE_SWBP_INSN_SIZE);
-+	memcpy(dst, kaddr + (vaddr & ~PAGE_MASK), len);
- 	kunmap_atomic(kaddr);
- }
+ 	struct page *page;
+-	void *vaddr;
+-	unsigned long off;
+-	pgoff_t idx;
  
-@@ -185,7 +185,7 @@ static int verify_opcode(struct page *page, unsigned long vaddr, uprobe_opcode_t
- 	uprobe_opcode_t old_opcode;
- 	bool is_swbp;
+ 	if (!filp)
+ 		return -EINVAL;
  
--	copy_opcode(page, vaddr, &old_opcode);
-+	copy_from_page(page, vaddr, &old_opcode, UPROBE_SWBP_INSN_SIZE);
- 	is_swbp = is_swbp_insn(&old_opcode);
+ 	if (!mapping->a_ops->readpage)
+ 		return -EIO;
+-
+-	idx = offset >> PAGE_CACHE_SHIFT;
+-	off = offset & ~PAGE_MASK;
+-
+ 	/*
+ 	 * Ensure that the page that has the original instruction is
+ 	 * populated and in page-cache.
+ 	 */
+-	page = read_mapping_page(mapping, idx, filp);
++	page = read_mapping_page(mapping, offset >> PAGE_CACHE_SHIFT, filp);
+ 	if (IS_ERR(page))
+ 		return PTR_ERR(page);
  
- 	if (is_swbp_insn(new_opcode)) {
-@@ -1449,7 +1449,7 @@ static int is_swbp_at_addr(struct mm_struct *mm, unsigned long vaddr)
- 	if (result < 0)
- 		return result;
+-	vaddr = kmap_atomic(page);
+-	memcpy(insn, vaddr + off, nbytes);
+-	kunmap_atomic(vaddr);
++	copy_from_page(page, offset, insn, nbytes);
+ 	page_cache_release(page);
  
--	copy_opcode(page, vaddr, &opcode);
-+	copy_from_page(page, vaddr, &opcode, UPROBE_SWBP_INSN_SIZE);
- 	put_page(page);
-  out:
- 	return is_swbp_insn(&opcode);
+ 	return 0;
 -- 
 1.5.5.1
 
