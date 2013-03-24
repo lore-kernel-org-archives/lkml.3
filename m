@@ -1,37 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab3CXK1i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 06:27:38 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:42911 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607Ab3CXK1h (ORCPT
+	id S1752991Ab3CXKaY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 06:30:24 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41873 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781Ab3CXKaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 06:27:37 -0400
-Message-ID: <514ED516.4020009@acm.org>
-Date: Sun, 24 Mar 2013 11:27:34 +0100
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Sun, 24 Mar 2013 06:30:20 -0400
+Date: Sun, 24 Mar 2013 11:30:18 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Alan Cox <alan@linux.intel.com>, linux-input@vger.kernel.org,
+        jkosina@suse.cz
+Cc: George Spelvin <linux@horizon.com>, chris@the-brannons.com,
+        gregkh@linuxfoundation.org, jslaby@suse.cz,
+        linux-kernel@vger.kernel.org, samuel.thibault@ens-lyon.org
+Subject: Re: Caps lock XOR on multiple keyboards?
+Message-ID: <20130324103018.GA4156@amd.pavel.ucw.cz>
+References: <20121203211911.20156.qmail@science.horizon.com>
+ <20121203235848.04228689@bob.linux.org.uk>
 MIME-Version: 1.0
-To: Fredrik Tolf <fredrik@dolda2000.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: I/O blocked while dirty pages are being flushed
-References: <alpine.DEB.2.02.1303240543280.4028@shack.dolda2000.com>
-In-Reply-To: <alpine.DEB.2.02.1303240543280.4028@shack.dolda2000.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121203235848.04228689@bob.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/13 06:12, Fredrik Tolf wrote:
-> While this flush is running, I find that many a process goes into disk
-> sleep waiting for the flush to complete. This includes the process
-> manipulating the mmapped file whenever it tries to redirty a page
-> currently waiting to be flushed, but also, for instance, programs that
-> write() to log files (since, I guess, the buffer page backing the last
-> written portion of the log file is being flushed).
+Hi!
+On Mon 2012-12-03 23:58:48, Alan Cox wrote:
+> On 3 Dec 2012 16:19:11 -0500
+> "George Spelvin" <linux@horizon.com> wrote:
+> 
+> > (Not sure who owns this; Cc: to the last few people to touch
+> > drivers/tty/vt/keyboard.c.)
+> 
+> linux-input is probably the best place to discuss this
 
-Had you already encountered this article: Jonathan Corbet, The trouble 
-with stable pages, March 13, 2012 (http://lwn.net/Articles/486311/) ?
+Added few more ccs. Yes, I see that too, in kernels such as debian
+2.6.32. It may be even older than that, but I was not using docking
+heavily in the old days.
 
-Bart.
+Symptoms for me are that pretty often capslock LED will start show
+opposite of true capslock state. I normally use X these days.
+
+(Other problem seems to be that keyboard LEDs are not updated on
+keyboard hotplug.)
+
+There is patch to drive keyboard LEDs through LED subsystem, perhaps
+that would be good idea?
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
