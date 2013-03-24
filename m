@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429Ab3CXOqp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 10:46:45 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:59210 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754029Ab3CXOqm (ORCPT
+	id S1754631Ab3CXOur (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 10:50:47 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:46742 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754096Ab3CXOuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 10:46:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130324081701.GA13328@gmail.com>
-References: <1363879460-21595-1-git-send-email-fweisbec@gmail.com>
-	<20130324081701.GA13328@gmail.com>
-Date: Sun, 24 Mar 2013 15:46:40 +0100
-Message-ID: <CAFTL4hx4FLaRR6i9ap9UrCZY4ikhVtLfUqWSsjTpsO3dvShUjQ@mail.gmail.com>
-Subject: Re: [GIT PULL] nohz: Full dynticks base interface
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
+	Sun, 24 Mar 2013 10:50:46 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: Driver lis3lv02d_i2c not working on Nokia RX-51
+Date: Sun, 24 Mar 2013 15:50:42 +0100
+User-Agent: KMail/1.13.7 (Linux/3.5.0-27-generic; KDE/4.10.1; x86_64; ; )
+Cc: Eric Piel <eric.piel@tremplin-utc.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+References: <201302170046.26569@pali> <201302171740.41985@pali> <20130217181756.GE1583@opensource.wolfsonmicro.com>
+In-Reply-To: <20130217181756.GE1583@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart3239038.VZLPqB4gik";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303241550.42801@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/24 Ingo Molnar <mingo@kernel.org>:
->
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
->
->> Hi Ingo,
->>
->> This settles the initial ground to start a special full dynticks tree in -tip
->> that we can iterate incrementally to accelerate the development.
->> It is based on tip:sched/core.
->>
->> I tried to rearrange a bit the naming. We are probably not yet done with
->> that but I guess we can fix it along with the rest.
->>
->> Please pull from:
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
->>       full-dynticks-for-mingo
->>
->> Changes on these commits since they were part of 3.9-rc1-nohz1:
->>
->> * Force a timekeeping CPU over the full dynticks range
->> * Rename CONFIG_NO_HZ_FULL to CONFIG_NO_HZ_EXTENDED
->> * Following *_nohz_extended_* APIs renames
->> * Handle CPU hotplug for timekeeping
->> * Rename full_nohz= kernel parameter to nohz_extended=
->
-> Note that boot parameters suck for pretty much any purpose but quirks -
-> please also add a (default off!) Kconfig option to easily enable
-> nohz_extended for all CPUs.
->
-> That way I will be able to test it automatically via randconfig and such.
+--nextPart3239038.VZLPqB4gik
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Sure, I'm adding such an option.
+On Sunday 17 February 2013 19:17:59 Mark Brown wrote:
+> On Sun, Feb 17, 2013 at 05:40:41PM +0100, Pali Roh=C3=A1r wrote:
+> > $ dmesg | grep lis3
+> > [  110.454345] lis3lv02d_i2c 3-001d: Failed to get supply
+> > 'Vdd': -517 [  110.457397] i2c 3-001d: Driver lis3lv02d_i2c
+> > requests probe deferral [  111.507415] lis3lv02d_i2c
+> > 3-001d: Failed to get supply 'Vdd': -517 [  111.510528] i2c
+> > 3-001d: Driver lis3lv02d_i2c requests probe deferral [=20
+> > 126.720458] lis3lv02d_i2c 3-001d: Failed to get supply
+> > 'Vdd': -517 [  126.728149] i2c 3-001d: Driver lis3lv02d_i2c
+> > requests probe deferral [  135.842803] lis3lv02d_i2c
+> > 3-001d: Failed to get supply 'Vdd': -517 [  135.856292] i2c
+> > 3-001d: Driver lis3lv02d_i2c requests probe deferral
+>=20
+> This just looks like a basic error in the board hookup - the
+> supplies are not mapped for the device.  Add the supply
+> mappings and you should be fine.  This should have been done
+> when the device was added, the commit doing that looks like
+> it was never tested in mainline as the driver problem was
+> fixed in October 2011 but the RX51 didn't start using the
+> device until May 2012.
 
->
-> My next question/request after that would be: could we make sure that
-> enabling this option does not break any applications or kernel
-> functionality, ASAP? Once that is offered, it becomes pushable to v3.10 I
-> think.
+There is no regulator 'Vdd' supply in board rx51 files. Can you=20
+look at code how it can be fixed?=20
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/a=
+rm/mach-omap2/board-rx51-peripherals.c#n86
 
-So that's already the case. I'm careful that, as we iterate, the
-changes aren't supposed to break something in the middle. the final
-code that eventually shuts the tick down should be the last one in the
-series: once we know it is safe to do so.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
->
-> Meanwhile I have pulled your tree into tip:sched/nohz to stage and test
-> it, in the hope that it becomes mergable quickly! :-)
+--nextPart3239038.VZLPqB4gik
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Thanks! :)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlFPEsIACgkQi/DJPQPkQ1J06gCfdKSF/NPlDg0Pm0YsgKJzlNkM
+o3gAoLTyTsnEMh5Gap3PHPa0RtpJ04J7
+=OeD4
+-----END PGP SIGNATURE-----
+
+--nextPart3239038.VZLPqB4gik--
