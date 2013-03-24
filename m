@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab3CXHge (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 03:36:34 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:59013 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755483Ab3CXHga (ORCPT
+	id S1755662Ab3CXHgp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 03:36:45 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:61080 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755464Ab3CXHgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 03:36:30 -0400
+	Sun, 24 Mar 2013 03:36:38 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -15,11 +15,12 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: [RFC PATCH v2, part4 38/39] mm/hotplug: prepare for removing num_physpages
-Date: Sun, 24 Mar 2013 15:25:33 +0800
-Message-Id: <1364109934-7851-68-git-send-email-jiang.liu@huawei.com>
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: [RFC PATCH v2, part4 39/39] mm: kill global variable num_physpages
+Date: Sun, 24 Mar 2013 15:25:34 +0800
+Message-Id: <1364109934-7851-69-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
 References: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>
@@ -27,33 +28,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for removing num_physpages.
+Now all references to num_physpages have been removed, so kill it.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org
 ---
- mm/memory_hotplug.c |    4 ----
- 1 file changed, 4 deletions(-)
+ include/linux/mm.h |    1 -
+ mm/memory.c        |    2 --
+ mm/nommu.c         |    2 --
+ 3 files changed, 5 deletions(-)
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 97454b3..9b1b494 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -751,10 +751,6 @@ EXPORT_SYMBOL_GPL(restore_online_page_callback);
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index c225a4f..a49afbf 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -29,7 +29,6 @@ struct writeback_control;
+ extern unsigned long max_mapnr;
+ #endif
  
- void __online_page_set_limits(struct page *page)
- {
--	unsigned long pfn = page_to_pfn(page);
--
--	if (pfn >= num_physpages)
--		num_physpages = pfn + 1;
- }
- EXPORT_SYMBOL_GPL(__online_page_set_limits);
+-extern unsigned long num_physpages;
+ extern unsigned long totalram_pages;
+ extern void * high_memory;
+ extern int page_cluster;
+diff --git a/mm/memory.c b/mm/memory.c
+index 705473a..ecc771d 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -82,7 +82,6 @@ EXPORT_SYMBOL(max_mapnr);
+ EXPORT_SYMBOL(mem_map);
+ #endif
  
+-unsigned long num_physpages;
+ /*
+  * A number of key systems in x86 including ioremap() rely on the assumption
+  * that high_memory defines the upper bound on direct map memory, then end
+@@ -92,7 +91,6 @@ unsigned long num_physpages;
+  */
+ void * high_memory;
+ 
+-EXPORT_SYMBOL(num_physpages);
+ EXPORT_SYMBOL(high_memory);
+ 
+ /*
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 4eb25a8..ac23388 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -55,7 +55,6 @@
+ void *high_memory;
+ struct page *mem_map;
+ unsigned long max_mapnr;
+-unsigned long num_physpages;
+ unsigned long highest_memmap_pfn;
+ struct percpu_counter vm_committed_as;
+ int sysctl_overcommit_memory = OVERCOMMIT_GUESS; /* heuristic overcommit */
+@@ -82,7 +81,6 @@ unsigned long vm_memory_committed(void)
+ EXPORT_SYMBOL_GPL(vm_memory_committed);
+ 
+ EXPORT_SYMBOL(mem_map);
+-EXPORT_SYMBOL(num_physpages);
+ 
+ /* list of mapped, potentially shareable regions */
+ static struct kmem_cache *vm_region_jar;
 -- 
 1.7.9.5
 
