@@ -1,102 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab3CXXEq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 19:04:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37092 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753796Ab3CXXEp (ORCPT
+	id S1754844Ab3CXXSk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 19:18:40 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:18544 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153Ab3CXXSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 19:04:45 -0400
-Date: Sun, 24 Mar 2013 23:04:37 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Eric Piel <eric.piel@tremplin-utc.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Driver lis3lv02d_i2c not working on Nokia RX-51
-Message-ID: <20130324230435.GE18316@opensource.wolfsonmicro.com>
-References: <201302170046.26569@pali>
- <201303242227.32528@pali>
- <20130324221444.GD18316@opensource.wolfsonmicro.com>
- <201303242345.00176@pali>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EgVrEAR5UttbsTXg"
-Content-Disposition: inline
-In-Reply-To: <201303242345.00176@pali>
-X-Cookie: Your aim is high and to the right.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 24 Mar 2013 19:18:38 -0400
+X-AuditID: cbfee68d-b7f786d000005188-42-514f89cc2e74
+Date: Sun, 24 Mar 2013 23:18:36 +0000 (GMT)
+From: =?euc-kr?B?vNvAurrA?= <eunb.song@samsung.com>
+Subject: [PATCH] mips: Fix build error cavium-octeon without CONFIG_SMP
+To: ralf@linux-mips.org
+Cc: linux-mips@linux-mips.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20130324231407936@eunb.song
+Msgkey: 20130324231407936@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20130324231407936@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <26870919.16191364167114826.JavaMail.weblogic@epml15>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+Ztu6ZTv9Ag7ln2Swu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGpatv2QousVe0XOljamDcwt7FyMkhJKAi0fL/OyOILSFgIrFy
+	ZhszhC0mceHeerYuRi6gmmWMEpe/7GOFKZr/dxoTRPN8Rolll027GDk4WARUJY6+4AYJswGV
+	bPgxAWy+sIC7xIRLz1lAbBEBGYmln66A7WIWSJY49PcEK8QYeYnJpy+D1fMKCEqcnPmEBWKV
+	ksTfEzvZIOLKEk3X29kh4hISs6ZfgDqHV2JG+1OoejmJaV/XQN0vLXF+1gZGmF8Wf38MFeeX
+	OHZ7BxPIySC9T+4Hw4zZvfkLG4QtIDH1zEGoVnWJzTsaodbySaxZ+JYFZsyuU8uZYXrvb5nL
+	BPGWosSU7ofsELaWxJcf+9jQvcUr4Cgx7fhe9gmMyrOQpGYhaZ+FpB1ZzQJGllWMoqkFyQXF
+	SelFhnrFibnFpXnpesn5uZsYIUmhdwfj7QPWhxiTgTEykVlKNDkfmFTySuINjc2MLExNTI2N
+	zC3NSBNWEudVa7EOFBJITyxJzU5NLUgtii8qzUktPsTIxMEp1cCoKyFe2aJnyrPq5JH7Tqk+
+	W3qXHIrmuz+/wGqPCGtt6I6XnlEtZWsX9cdIbAqTny4WH8We4iuiUWs7+83tvds7HyWwb/hX
+	t/AiV6m5qtZL8YwPqbFJ4Ud3vvYUX3p2yV7NILkFXHrcE8JUltcGe88qPZYbx+2culq95LzE
+	t7gbNwM9Lm9I/KLEUpyRaKjFXFScCACASEnIIAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2dN0znf6BBvfmMFlc3jWHzYHR4/Mm
+	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
+	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
+	jEtX37IVXGKvaLnSx9TAuIW9i5GTQ0hARaLl/3dGEFtCwERi/t9pTBC2mMSFe+vZIGrmM0os
+	u2zaxcjBwSKgKnH0BTdImA2ofMOPCWBjhAXcJSZces4CYosIyEgs/XQFbCSzQLLEob8nWCHG
+	yEtMPn0ZrJ5XQFDi5MwnLBCrlCT+ntjJBhFXlmi63s4OEZeQmDX9AiuEzSsxo/0pVL2cxLSv
+	a5ghbGmJ87M2MMKcvPj7Y6g4v8Sx2zuYQE4G6X1yPxhmzO7NX9ggbAGJqWcOQrWqS2ze0Qi1
+	lk9izcK3LDBjdp1azgzTe3/LXCaItxQlpnQ/ZIewtSS+/NjHhu4tXgFHiWnH97JPYJSbhSQ1
+	C0n7LCTtyGoWMLKsYhRNLUguKE5KrzDWK07MLS7NS9dLzs/dxAhOT88W72D8f976EKMAB6MS
+	D69AjX+gEGtiWXFl7iFGCQ5mJRHeZX5AId6UxMqq1KL8+KLSnNTiQ4zJwPibyCwlmpwPTJ15
+	JfGGxgbGhoaW5gamhkYWpAkrifM+a7UOFBJITyxJzU5NLUgtgtnCxMEp1cBo+Hjnt988vi/n
+	qC1xX9InX2vTOMXwxtpm38nKCiFzP25773r84LHGB3XLHpUp5QlNkVdd8vRlYlqFecGpOcyG
+	l6/evZL/dZPvA+cgo51reg9+mFqZonuylYllseAz4f4Il4Rs7j1B4WlugotNuoyXzE2747fw
+	bp2f7sXk3dOnOtVaXz3+uN5LiaU4I9FQi7moOBEAcL/YIJMDAAA=
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2ONIxIw023911
 
 
---EgVrEAR5UttbsTXg
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch fixes build error cavium-octeon without CONFIG_SMP
 
-On Sun, Mar 24, 2013 at 11:44:59PM +0100, Pali Roh=E1r wrote:
-> On Sunday 24 March 2013 23:14:46 Mark Brown wrote:
+Singed-off-by: EunBong Song<eunb.song@samsung.com>
 
-> > Well, you should seek support from the board vendor then.=20
+---
+ arch/mips/cavium-octeon/setup.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-> Not possible. Nokia is already using Windows Phones and life=20
-> cycle for Nokia N900 phone is at the end. And Nokia never=20
-> released any HW documentations to community...
+diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
+index c594a3d..b0baa29 100644
+--- a/arch/mips/cavium-octeon/setup.c
++++ b/arch/mips/cavium-octeon/setup.c
+@@ -174,7 +174,10 @@ static int octeon_kexec_prepare(struct kimage *image)
+ 
+ static void octeon_generic_shutdown(void)
+ {
+-	int cpu, i;
++	int i;
++#ifdef CONFIG_SMP
++	int cpu;
++#endif
+ 	struct cvmx_bootmem_desc *bootmem_desc;
+ 	void *named_block_array_ptr;
+ 
+-- 
+1.7.0.1
 
-There may well still be people with the required information, though in
-general this sort of thing is always going to be a hazard when working
-on undocumented hardware.
-
-> Another question: what was reason for that commit=20
-> ec400c9fab99d16a491cea17d27d0c6a5780b97c
-> "lis3lv02d: make regulator API usage unconditional" ?
-
-Failing to provide power to a device is typically a very serious
-problem for device operation but the code that was there handles such
-errors by ignoring them.  This isn't a robust way forwards and such code
-should never have been merged in the first place, as the changelog says
-the regulator core provides a number of facilities for stubbing itself
-out when it is not required which boards should use.
-
-Handling the possibility that supplies may not be there not only creates
-needless repetitive complexity in device drivers but also decreases the
-robustness of the system since error handling for access to powered down
-devices often isn't very pretty and other drivers or the core may
-disrupt the operation of the device by for example powering it down due
-to not thinking it's in use.
-
-> I think that for N900 support is reverting above commit needed, I=20
-> do not see other solution...
-
-If you're convinced that the regulator is kept on for some reason you
-could always just provide a fake supply, though obviously it would be
-better to hook up the real regulator since this may break if at some
-point the kernel decides that whatever is actually providing the supply
-is unused and can be turned off.
-
---EgVrEAR5UttbsTXg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRT4Z7AAoJELSic+t+oim9fvMP/192OdVzYWLoRCvhw9GnwHLv
-V1am3R9TJ8IMjSE2ltqEqw/hfHujfsslUjxR4a5AKqqnQyvTYVV8bxw5oLoV/pZ5
-8oZx7dwAmN8M6H6MqgVX5AqIyEwrozDla275tBNAEasyHJSwSRFrtLNCUPiq+3zB
-b6tYwJ2QXUV4/yEcCaUECeRFd6NFGBueuHcNH6M2om4CsotWW7tZimEioZ+vZvE/
-wUksFwuTnrn+TpsaAYXXKucX5EQ8F4igpcbuuHMENNsBQaBqeyaYoxHVukmt/EXc
-4o52mxVdLQR14BPOGOII2ayFqBKsLvpZSiSF0khl5SHUQOK8Q0iUGe9Sn6g2oGm3
-mLvgwe9lap3wxNhrSU7AkE1HQ79lYLoHg/kViDAz/eyad2b5MFzx6rVlD4VKPAk1
-Z5I0WT8a1vKTYBO5ZCq1C79mDC3NAPSzABN5z/egpDecZ27gyBba3l6EGFrk2mpC
-iO+JaUJ+A7bT7ZYAoK5q0kvtt1MBstBQd7OQmm9qF2j0Xx7fbTNuRX9VsKGZ8J8s
-Z2Z6UQpHfuxG3u5Ws87bML/U6HQPTYcGOK7/AYQdPOa7uoe89y0lmSOfobvDePFx
-z+uvZwMx2FKZCMzhc7oG9CMtl9ogf115lM0vKl7feUgYRBF4k53oUOGskF1NJjVy
-/PoT/BMRicDj6Q+4QUPO
-=OT+s
------END PGP SIGNATURE-----
-
---EgVrEAR5UttbsTXg--
+Thanks.ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
