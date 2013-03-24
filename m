@@ -1,46 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab3CXOBW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 10:01:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21056 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753802Ab3CXOBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 10:01:20 -0400
-Date: Sun, 24 Mar 2013 16:01:14 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Scott Wood <scottwood@freescale.com>, Kevin Hilman <khilman@linaro.org>,
-        linaro-kernel@lists.linaro.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        "open list:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: allow host header to be included even for
- !CONFIG_KVM
-Message-ID: <20130324140114.GV3889@redhat.com>
-References: <1363306426-27209-1-git-send-email-khilman@linaro.org>
- <1363823921.25034.35@snotra>
- <20130321072955.GO3889@redhat.com>
- <87ppyshlq5.fsf@linaro.org>
- <1363891354.31522.17@snotra>
- <20130321191600.GG9382@redhat.com>
- <1363894393.31522.20@snotra>
- <20130321211736.GI9382@redhat.com>
- <CAFTL4hz2=VJBLG1w31JSPDtRdobcmL5oY6XkR46vi3zS904VGA@mail.gmail.com>
+	id S1753882Ab3CXODe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 10:03:34 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43513 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753802Ab3CXODd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 10:03:33 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 1/2] mfd: twl4030-madc: Add support for raw value in twl4030_madc_conversion
+Date: Sun, 24 Mar 2013 15:03:29 +0100
+User-Agent: KMail/1.13.7 (Linux/3.5.0-27-generic; KDE/4.10.1; x86_64; ; )
+Cc: Anton Vorontsov <cbou@mail.ru>, linux-kernel@vger.kernel.org,
+        Keerthy <j-keerthy@ti.com>, Kyle Manna <kyle@kylemanna.com>
+References: <1360969010-8571-1-git-send-email-pali.rohar@gmail.com> <201303022323.06091@pali>
+In-Reply-To: <201303022323.06091@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hz2=VJBLG1w31JSPDtRdobcmL5oY6XkR46vi3zS904VGA@mail.gmail.com>
+Content-Type: multipart/signed;
+  boundary="nextPart1518830.CGb9ZMZzjR";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303241503.29912@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 24, 2013 at 02:44:26PM +0100, Frederic Weisbecker wrote:
-> 2013/3/21 Gleb Natapov <gleb@redhat.com>:
-> > Isn't is simpler for kernel/context_tracking.c to define empty
-> > __guest_enter()/__guest_exit() if !CONFIG_KVM.
-> 
-> That doesn't look right. Off-cases are usually handled from the
-> headers, right? So that we avoid iffdeffery ugliness in core code.
-Lets put it in linux/context_tracking.h header then.
+--nextPart1518830.CGb9ZMZzjR
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
---
-			Gleb.
+On Saturday 02 March 2013 23:23:05 Pali Roh=C3=A1r wrote:
+> On Friday 15 February 2013 23:56:49 Pali Roh=C3=A1r wrote:
+> > Driver twl4030-madc has hardcoded channel types (10 -
+> > battery current, 1 - battery temperature) and also
+> > conversation data in variable twl4030_divider_ratios. These
+> > hardcoded channels are incorrect for Nokia RX-51 board
+> > (where is channel 0 - battery temperature).
+> >=20
+> > For Nokia RX-51 there is rx51_battery power_supply driver
+> > which reporting battery information via
+> > twl4030_madc_conversion. But this driver needs raw values
+> > (not converted via some hardcoded functions). So this patch
+> > adding new parameter "raw" to struct twl4030_madc_request
+> > which tell twl4030-madc driver to not convert values, but
+> > rather return raw.
+> >=20
+> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > ---
+> >=20
+> >  drivers/mfd/twl4030-madc.c       |   14 ++++++++++----
+> >  include/linux/i2c/twl4030-madc.h |    2 ++
+> >  2 files changed, 12 insertions(+), 4 deletions(-)
+>=20
+> Hello, can somebody review this twl4030-madc patch?
+
+Bump.
+
+Can some of mfd maintainers look at this patch and include it to=20
+mfd tree? It is needed for rx51_battery power supply driver.
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart1518830.CGb9ZMZzjR
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlFPB7EACgkQi/DJPQPkQ1I4MwCeLvZsHxV41gqnnCSbG5n/R6TR
+H7YAni90pWP7XY4rKBAST4dJoOY10cMw
+=MMgz
+-----END PGP SIGNATURE-----
+
+--nextPart1518830.CGb9ZMZzjR--
