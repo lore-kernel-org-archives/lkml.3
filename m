@@ -1,52 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758538Ab3CYPoo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 11:44:44 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:64845 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758473Ab3CYPom (ORCPT
+	id S932102Ab3CYPqD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 11:46:03 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59255 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758502Ab3CYPqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 11:44:42 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: josh.h.morris@us.ibm.com, pjk1939@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] block: remove unused variable
-Date: Mon, 25 Mar 2013 16:48:21 +0100
-Message-Id: <1364226501-28745-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 25 Mar 2013 11:46:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] Turn off -Wmaybe-uninitialized when building with -Os
+Date: Mon, 25 Mar 2013 15:44:55 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kbuild@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>,
+        "James E.J. Bottomley" <James.Bottomley@hansenpartnership.com>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303251544.55765.arnd@arndb.de>
+X-Provags-ID: V02:K0:zluIwDbsoPxHYDE7zZdBrcImo12rAE58bEGqtQB6Udc
+ QQuhu1QymIt8R4bu0WP2RoDnV5OiTvDBa3aGdBpwgVGwj7H02+
+ GmRXP+l/wX+pK78Xgg/B7MMz6NPTV3W5aI23rrpq6RnuR9DiT5
+ 2xLH25fMghmL0ukDNUvit6IohOTyLyyrwugBvI2Ze7nxpRr8KN
+ CDzOnjhTWYW46i2KvhcFgGL/ZCiD1YHNcY34ytJleGfuXsxaOO
+ ZU6RimRU+d1L/9WKLFBaxF0w3VXsFbb4Z94iTcOwTDqgo+qOZb
+ EHy2knQ3KJ8dat22JJMYxWnXnEHZ/B5t2fXB2mVRc/YKS9fxQm
+ knZH5LMzJmv2gKXTNi5M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The struct rsxx_dma pointer tmp is not used, we can remove it.
-Introduced by: c95246c3a2ac
-("Adding in EEH support to the IBM FlashSystem 70/80 device driver")
+gcc-4.7 and higher add a lot of false positive warnings about
+potential uses of uninitialized warnings, but only when optimizing
+for size (-Os). This is the default when building allyesconfig,
+which turns on CONFIG_CC_OPTIMIZE_FOR_SIZE.
 
-Sparse gives a warning:
-drivers/block/rsxx/dma.c:1050:19: warning:
-	unused variable ‘tmp’ [-Wunused-variable]
+In order to avoid getting a lot of patches that initialize such
+variables and accidentally hide real errors along the way, let's
+just turn off this warning on the respective gcc versions
+when building with size optimizations. The -Wmaybe-uninitialized
+option was introduced in the same gcc version (4.7) that is now
+causing the false positives, so there is no effect on older compilers.
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
+A side effect is that when building with CONFIG_CC_OPTIMIZE_FOR_SIZE,
+we might now see /fewer/ warnings about possibly uninitialized
+warnings than with -O2, but that is still much better than seeing
+warnings known to be bogus.
+
+Building v3.9-rc3 allmodconfig shows how the number of false
+positives is reduced:
+
+74	x86-linux-gcc-4.7 -Os
+12	x86-linux-gcc-4.7 -O2
+ 1	x86-linux-gcc-4.7 -Os -Wno-maybe-uninitialized
+ 8	arm-linux-gcc-4.6 -Os
+ 8	arm-linux-gcc-4.6 -Os
+50	arm-linux-gcc-4.7 -Os
+ 8	arm-linux-gcc-4.7 -O2
+ 0	arm-linux-gcc-4.7 -Os -Wno-maybe-uninitialized
+33	arm-linux-gcc-4.8 -Os
+13	arm-linux-gcc-4.8 -O2
+ 0	arm-linux-gcc-4.8 -Os -Wno-maybe-uninitialized
+
+The 8 to 13 warnings that are now hidden compared to the -O2 output
+seem to all be false positives as well. The total number of
+all other warnings I see is (independent of optimization level)
+
+24	x86-linux-gcc-4.7
+19	arm-linux-gcc-4.6
+17	arm-linux-gcc-4.7
+16	arm-linux-gcc-4.8
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/block/rsxx/dma.c |    1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/block/rsxx/dma.c b/drivers/block/rsxx/dma.c
-index d523e9c..bacbaa0 100644
---- a/drivers/block/rsxx/dma.c
-+++ b/drivers/block/rsxx/dma.c
-@@ -1047,7 +1047,6 @@ void rsxx_eeh_cancel_dmas(struct rsxx_cardinfo *card)
- int rsxx_eeh_remap_dmas(struct rsxx_cardinfo *card)
- {
- 	struct rsxx_dma *dma;
--	struct rsxx_dma *tmp;
- 	int i;
+diff --git a/Makefile b/Makefile
+index 22113a7..d8e3f36 100644
+--- a/Makefile
++++ b/Makefile
+@@ -570,7 +570,7 @@ endif # $(dot-config)
+ all: vmlinux
  
- 	for (i = 0; i < card->n_targets; i++) {
--- 
-1.7.10.4
+ ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
+-KBUILD_CFLAGS	+= -Os
++KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
+ else
+ KBUILD_CFLAGS	+= -O2
+ endif
 
