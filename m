@@ -1,66 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757733Ab3CYNEw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 09:04:52 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:65377 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753297Ab3CYNEu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 09:04:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Subject: Re: [PATCH 3/3] serial: of_serial: Handle hw-flow-control property
-Date: Mon, 25 Mar 2013 13:04:47 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Ley Foon Tan <lftan@altera.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-References: <1364211286-31611-1-git-send-email-heikki.krogerus@linux.intel.com> <201303251247.58823.arnd@arndb.de> <20130325125757.GA2847@xps8300>
-In-Reply-To: <20130325125757.GA2847@xps8300>
+	id S1757764Ab3CYNKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 09:10:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52702 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757277Ab3CYNK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 09:10:28 -0400
+Message-ID: <51504C96.8040002@redhat.com>
+Date: Mon, 25 Mar 2013 14:09:42 +0100
+From: Jan Vesely <jvesely@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: linux-kernel@vger.kernel.org
+CC: linux-scsi@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        =?UTF-8?B?S2FpIE3DpGtpc2FyYQ==?= <kai.makisara@kolumbus.fi>,
+        fujita.tomonori@lab.ntt.co.jp
+Subject: Re: [PATCH] block: modify __bio_add_page check to accept pages that
+ don't start a new segment
+References: <5125DB22.7020901@redhat.com> <513878A1.3020701@redhat.com>
+In-Reply-To: <513878A1.3020701@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303251304.47559.arnd@arndb.de>
-X-Provags-ID: V02:K0:ePP0hAkzuzOT8qEib1bMKZk/hqGZw3IJ1y4E1QA625C
- X/zGgjZMoPDJ5q45UocDWnJw/YPediwLHYv/kVIghqruS8CzJk
- cb2Dyx0W3wTt49CVJYeIy8F4IniwAZz6n4qrl95KuQyDkmCY/x
- sCnJ/BmDDt/ljtShvtMvafdTEKf6XKqimT0V5riIRmF1f8LovW
- 8iz00kkhgsJou9ExWAnrHJR89SJWnRibSB7zxgPjBLjocHoKUY
- hZ6jxK2Qr0PSZfatLBbgXQwcF2rYvzUc35YR9wcO55BXro4XF4
- aATaGrN4jpdODqEtejp+nlEqk84sxZFluxCuJRf1lNFMBHHBP0
- W9uwir/qWA+gVJiHfHgk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 March 2013, Heikki Krogerus wrote:
-> On Mon, Mar 25, 2013 at 12:47:58PM +0000, Arnd Bergmann wrote:
-> > On Monday 25 March 2013, Heikki Krogerus wrote:
-> > > On Mon, Mar 25, 2013 at 11:40:31AM +0000, Arnd Bergmann wrote:
-> > > > On Monday 25 March 2013, Heikki Krogerus wrote:
-> > > > > This will add support for hardware flow control. It is
-> > > > > limited to be used only with 8250 driver.
-> > > > > 
-> > > > > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> > > > 
-> > > > Does this imply that we can use hardware flow control only when this
-> > > > flag is set in the device tree? I assumed that working flow control
-> > > > would be the default. Is it not?
-> > > 
-> > > OK, the commit message is wrong. Is the patch otherwise OK?
-> > 
-> > I still find the text in the binding and the name of the property confusing,
-> > because it seems to imply that you have no hardware flow control without this.
-> > I think what you mean here is really "automatic flow control" rather than
-> > "hardware flow control".
-> 
-> Ah, I understand. I'll change the property name to auto-flow-control.
-> 
+On Thu 07 Mar 2013 12:23:13 CET, Jan Vesely wrote:
 
-Ok, sounds good. I would also suggest rewording the description in the
-binding so that the driver is allowed to detect the presence of the automatic
-flow control capability even if the property is not set, because that's
-what the driver does.
+> On Thu 21 Feb 2013 09:30:26 CET, Jan Vesely wrote:
+>> The original behavior was to refuse all pages after the maximum number of
+>> segments has been reached. However, some drivers (like st) craft their buffers
+>> to potentially require exactly max segments and multiple pages in the last
+>> segment. This patch modifies the check to allow pages that can be merged into
+>> the last segment.
+>>
+>> This change fixes EBUSY failures when using large (1mb) tape block size in high
+>> memory fragmentation condition.
+>>
+>> Signed-off-by: Jan Vesely <jvesely@redhat.com>
+>> ---
+>>  fs/bio.c |   26 ++++++++++++++++----------
+>>  1 files changed, 16 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/fs/bio.c b/fs/bio.c
+>> index b96fc6c..02efbd5 100644
+>> --- a/fs/bio.c
+>> +++ b/fs/bio.c
+>> @@ -500,7 +500,6 @@ static int __bio_add_page(struct request_queue *q, struct
+>> bio *bio, struct page
+>>                *page, unsigned int len, unsigned int offset,
+>>                unsigned short max_sectors)
+>>  {
+>> -    int retried_segments = 0;
+>>      struct bio_vec *bvec;
+>>
+>>      /*
+>> @@ -551,18 +550,12 @@ static int __bio_add_page(struct request_queue *q,
+>> struct bio *bio, struct page
+>>          return 0;
+>>
+>>      /*
+>> -     * we might lose a segment or two here, but rather that than
+>> -     * make this too complex.
+>> +     * prepare segment count check, reduce segment count if possible
+>>       */
+>>
+>> -    while (bio->bi_phys_segments >= queue_max_segments(q)) {
+>> -
+>> -        if (retried_segments)
+>> -            return 0;
+>> -
+>> -        retried_segments = 1;
+>> +    if (bio->bi_phys_segments >= queue_max_segments(q))
+>>          blk_recount_segments(q, bio);
+>> -    }
+>> +
+>>
+>>      /*
+>>       * setup the new entry, we might clear it again later if we
+>> @@ -572,6 +565,19 @@ static int __bio_add_page(struct request_queue *q, struct
+>> bio *bio, struct page
+>>      bvec->bv_page = page;
+>>      bvec->bv_len = len;
+>>      bvec->bv_offset = offset;
+>> +
+>> +    /*
+>> +     * the other part of the segment count check, allow mergeable pages
+>> +     */
+>> +    if ((bio->bi_phys_segments > queue_max_segments(q)) ||
+>> +        ( (bio->bi_phys_segments == queue_max_segments(q)) &&
+>> +        !BIOVEC_PHYS_MERGEABLE(bvec - 1, bvec))) {
+>> +            bvec->bv_page = NULL;
+>> +            bvec->bv_len = 0;
+>> +            bvec->bv_offset = 0;
+>> +            return 0;
+>> +    }
+>> +
+>>
+>>      /*
+>>       * if queue has other restrictions (eg varying max sector size
 
-	Arnd
+ping?
+
+The described failure is a regression introduced in
+    46081b166415acb66d4b3150ecefcd9460bb48a1
+    st: Increase success probability in driver buffer allocation
+
+I have added the signers to cc. I can resend the patch if it is 
+necessary
+
+thank you,
+
+--
+Jan Vesely <jvesely@redhat.com>
