@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab3CYB3F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:29:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33974 "EHLO
+	id S1756013Ab3CYBP6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:15:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33938 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755993Ab3CYBP7 (ORCPT
+	by vger.kernel.org with ESMTP id S1755876Ab3CYBPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:59 -0400
-Message-Id: <20130325010531.188093482@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:53 -0400
+Message-Id: <20130325010531.903433747@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:34 +0000
+Date: Mon, 25 Mar 2013 01:06:41 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Theodore Tso <tytso@mit.edu>,
-        Jan Kara <jack@suse.cz>
-Subject: [ 070/104] ext4: fix data=journal fast mount/umount hang
+Cc: akpm@linux-foundation.org, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Matt Fleming <matt.fleming@intel.com>, Tony Luck <tony.luck@intel.com>
+Subject: [ 077/104] efi_pstore: Introducing workqueue updating sysfs
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,74 +29,180 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Seiji Aguchi <seiji.aguchi@hds.com>
 
-commit 2b405bfa84063bfa35621d2d6879f52693c614b0 upstream.
+commit a93bc0c6e07ed9bac44700280e65e2945d864fd4 upstream.
 
-In data=journal mode, if we unmount the file system before a
-transaction has a chance to complete, when the journal inode is being
-evicted, we can end up calling into jbd2_log_wait_commit() for the
-last transaction, after the journalling machinery has been shut down.
+[Problem]
+efi_pstore creates sysfs entries, which enable users to access to NVRAM,
+in a write callback. If a kernel panic happens in an interrupt context,
+it may fail because it could sleep due to dynamic memory allocations during
+creating sysfs entries.
 
-Arguably we should adjust ext4_should_journal_data() to return FALSE
-for the journal inode, but the only place it matters is
-ext4_evict_inode(), and so to save a bit of CPU time, and to make the
-patch much more obviously correct by inspection(tm), we'll fix it by
-explicitly not trying to waiting for a journal commit when we are
-evicting the journal inode, since it's guaranteed to never succeed in
-this case.
+[Patch Description]
+This patch removes sysfs operations from a write callback by introducing
+a workqueue updating sysfs entries which is scheduled after the write
+callback is called.
 
-This can be easily replicated via:
+Also, the workqueue is kicked in a just oops case.
+A system will go down in other cases such as panic, clean shutdown and emergency
+restart. And we don't need to create sysfs entries because there is no chance for
+users to access to them.
 
-     mount -t ext4 -o data=journal /dev/vdb /vdb ; umount /vdb
+efi_pstore will be robust against a kernel panic in an interrupt context with this patch.
 
-------------[ cut here ]------------
-WARNING: at /usr/projects/linux/ext4/fs/jbd2/journal.c:542 __jbd2_log_start_commit+0xba/0xcd()
-Hardware name: Bochs
-JBD2: bad log_start_commit: 3005630206 3005630206 0 0
-Modules linked in:
-Pid: 2909, comm: umount Not tainted 3.8.0-rc3 #1020
-Call Trace:
- [<c015c0ef>] warn_slowpath_common+0x68/0x7d
- [<c02b7e7d>] ? __jbd2_log_start_commit+0xba/0xcd
- [<c015c177>] warn_slowpath_fmt+0x2b/0x2f
- [<c02b7e7d>] __jbd2_log_start_commit+0xba/0xcd
- [<c02b8075>] jbd2_log_start_commit+0x24/0x34
- [<c0279ed5>] ext4_evict_inode+0x71/0x2e3
- [<c021f0ec>] evict+0x94/0x135
- [<c021f9aa>] iput+0x10a/0x110
- [<c02b7836>] jbd2_journal_destroy+0x190/0x1ce
- [<c0175284>] ? bit_waitqueue+0x50/0x50
- [<c028d23f>] ext4_put_super+0x52/0x294
- [<c020efe3>] generic_shutdown_super+0x48/0xb4
- [<c020f071>] kill_block_super+0x22/0x60
- [<c020f3e0>] deactivate_locked_super+0x22/0x49
- [<c020f5d6>] deactivate_super+0x30/0x33
- [<c0222795>] mntput_no_expire+0x107/0x10c
- [<c02233a7>] sys_umount+0x2cf/0x2e0
- [<c02233ca>] sys_oldumount+0x12/0x14
- [<c08096b8>] syscall_call+0x7/0xb
----[ end trace 6a954cc790501c1f ]---
-jbd2_log_wait_commit: error: j_commit_request=-1289337090, tid=0
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Acked-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+[bwh: Backported to 3.2:
+ - Adjust contest
+ - Don't check reason in efi_pstore_write(), as it is not given as a
+   parameter
+ - Move up declaration of __efivars]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/inode.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -142,7 +142,8 @@ void ext4_evict_inode(struct inode *inod
- 		 * don't use page cache.
- 		 */
- 		if (ext4_should_journal_data(inode) &&
--		    (S_ISLNK(inode->i_mode) || S_ISREG(inode->i_mode))) {
-+		    (S_ISLNK(inode->i_mode) || S_ISREG(inode->i_mode)) &&
-+		    inode->i_ino != EXT4_JOURNAL_INO) {
- 			journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
- 			tid_t commit_tid = EXT4_I(inode)->i_datasync_tid;
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -127,6 +127,8 @@ struct efivar_attribute {
+ 	ssize_t (*store)(struct efivar_entry *entry, const char *buf, size_t count);
+ };
  
++static struct efivars __efivars;
++
+ #define PSTORE_EFI_ATTRIBUTES \
+ 	(EFI_VARIABLE_NON_VOLATILE | \
+ 	 EFI_VARIABLE_BOOTSERVICE_ACCESS | \
+@@ -151,6 +153,13 @@ efivar_create_sysfs_entry(struct efivars
+ 			  efi_char16_t *variable_name,
+ 			  efi_guid_t *vendor_guid);
+ 
++/*
++ * Prototype for workqueue functions updating sysfs entry
++ */
++
++static void efivar_update_sysfs_entries(struct work_struct *);
++static DECLARE_WORK(efivar_work, efivar_update_sysfs_entries);
++
+ /* Return the number of unicode characters in data */
+ static unsigned long
+ utf16_strnlen(efi_char16_t *s, size_t maxlength)
+@@ -833,11 +842,7 @@ static int efi_pstore_write(enum pstore_
+ 	if (found)
+ 		efivar_unregister(found);
+ 
+-	if (size)
+-		ret = efivar_create_sysfs_entry(efivars,
+-					  utf16_strsize(efi_name,
+-							DUMP_NAME_LEN * 2),
+-					  efi_name, &vendor);
++	schedule_work(&efivar_work);
+ 
+ 	*id = part;
+ 	return ret;
+@@ -1016,6 +1021,75 @@ static ssize_t efivar_delete(struct file
+ 	return count;
+ }
+ 
++static bool variable_is_present(efi_char16_t *variable_name, efi_guid_t *vendor)
++{
++	struct efivar_entry *entry, *n;
++	struct efivars *efivars = &__efivars;
++	unsigned long strsize1, strsize2;
++	bool found = false;
++
++	strsize1 = utf16_strsize(variable_name, 1024);
++	list_for_each_entry_safe(entry, n, &efivars->list, list) {
++		strsize2 = utf16_strsize(entry->var.VariableName, 1024);
++		if (strsize1 == strsize2 &&
++			!memcmp(variable_name, &(entry->var.VariableName),
++				strsize2) &&
++			!efi_guidcmp(entry->var.VendorGuid,
++				*vendor)) {
++			found = true;
++			break;
++		}
++	}
++	return found;
++}
++
++static void efivar_update_sysfs_entries(struct work_struct *work)
++{
++	struct efivars *efivars = &__efivars;
++	efi_guid_t vendor;
++	efi_char16_t *variable_name;
++	unsigned long variable_name_size = 1024;
++	efi_status_t status = EFI_NOT_FOUND;
++	bool found;
++
++	/* Add new sysfs entries */
++	while (1) {
++		variable_name = kzalloc(variable_name_size, GFP_KERNEL);
++		if (!variable_name) {
++			pr_err("efivars: Memory allocation failed.\n");
++			return;
++		}
++
++		spin_lock_irq(&efivars->lock);
++		found = false;
++		while (1) {
++			variable_name_size = 1024;
++			status = efivars->ops->get_next_variable(
++							&variable_name_size,
++							variable_name,
++							&vendor);
++			if (status != EFI_SUCCESS) {
++				break;
++			} else {
++				if (!variable_is_present(variable_name,
++				    &vendor)) {
++					found = true;
++					break;
++				}
++			}
++		}
++		spin_unlock_irq(&efivars->lock);
++
++		if (!found) {
++			kfree(variable_name);
++			break;
++		} else
++			efivar_create_sysfs_entry(efivars,
++						  variable_name_size,
++						  variable_name, &vendor);
++	}
++}
++
+ /*
+  * Let's not leave out systab information that snuck into
+  * the efivars driver
+@@ -1272,7 +1346,6 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(register_efivars);
+ 
+-static struct efivars __efivars;
+ static struct efivar_operations ops;
+ 
+ /*
+@@ -1330,6 +1403,8 @@ err_put:
+ static void __exit
+ efivars_exit(void)
+ {
++	cancel_work_sync(&efivar_work);
++
+ 	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
+ 		unregister_efivars(&__efivars);
+ 		kobject_put(efi_kobj);
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -484,7 +484,8 @@ struct efivars {
+ 	 * 1) ->list - adds, removals, reads, writes
+ 	 * 2) ops.[gs]et_variable() calls.
+ 	 * It must not be held when creating sysfs entries or calling kmalloc.
+-	 * ops.get_next_variable() is only called from register_efivars(),
++	 * ops.get_next_variable() is only called from register_efivars()
++	 * or efivar_update_sysfs_entries(),
+ 	 * which is protected by the BKL, so that path is safe.
+ 	 */
+ 	spinlock_t lock;
 
 
