@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab3CYW7T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 18:59:19 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:61397 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752702Ab3CYW7S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 18:59:18 -0400
-Message-ID: <1364252356.1390.303.camel@x61.thuisdomein>
-Subject: [PATCH] [TRIVIAL] Fix typo "CONFIG_CGROUP_CGROUP_MEMCG_SWAP"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 25 Mar 2013 23:59:16 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Mar 2013 22:59:17.0172 (UTC) FILETIME=[60938F40:01CE29AC]
-X-RcptDomain: vger.kernel.org
+	id S1754533Ab3CYXAY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 19:00:24 -0400
+Received: from ozlabs.org ([203.10.76.45]:40358 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752702Ab3CYXAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 19:00:23 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Wei Yongjun <weiyj.lk@gmail.com>, ohad@wizery.com,
+        akpm@linux-foundation.org, tj@kernel.org, sboyd@codeaurora.org
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] rpmsg: fix error return code in rpmsg_probe()
+In-Reply-To: <CAPgLHd_GCM6HPsbFmj1YfBbQ2VMTzdsNJuoDvDmyaZ2DCnWNXw@mail.gmail.com>
+References: <CAPgLHd_GCM6HPsbFmj1YfBbQ2VMTzdsNJuoDvDmyaZ2DCnWNXw@mail.gmail.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 25 Mar 2013 20:41:20 +1030
+Message-ID: <87wqsvdc1j.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
- Documentation/cgroups/memory.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Wei Yongjun <weiyj.lk@gmail.com> writes:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>
+> Fix to return a negative error code from the error handling
+> case instead of 0, as returned elsewhere in this function.
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 8b8c28b..17b91e0 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -194,7 +194,7 @@ the cgroup that brought it in -- this will happen on memory pressure).
- But see section 8.2: when moving a task to another cgroup, its pages may
- be recharged to the new cgroup, if move_charge_at_immigrate has been chosen.
- 
--Exception: If CONFIG_CGROUP_CGROUP_MEMCG_SWAP is not used.
-+Exception: If CONFIG_MEMCG_SWAP is not used.
- When you do swapoff and make swapped-out pages of shmem(tmpfs) to
- be backed into memory in force, charges for pages are accounted against the
- caller of swapoff rather than the users of shmem.
--- 
-1.7.11.7
+Thanks, I've taken this for the moment in my pending queue.
 
+Which brings the questionL Ohad, did you want to keep pushing your own
+tree or want to send rpmsg stuff via my virtio-next tree?
+
+Cheers,
+Rusty.
