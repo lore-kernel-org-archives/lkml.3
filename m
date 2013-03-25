@@ -1,64 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab3CYERv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 00:17:51 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:58485 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132Ab3CYERt (ORCPT
+	id S1756921Ab3CYEXM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 00:23:12 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:42692 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755338Ab3CYEXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 00:17:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <1362918544-31796-1-git-send-email-winged.flamespitter@gmail.com>
-References: <1362918544-31796-1-git-send-email-winged.flamespitter@gmail.com>
-Date: Sun, 24 Mar 2013 23:17:49 -0500
-Message-ID: <CAH2r5ms73QumoAKFazs_=8L9i+7WGFWrNzYAQ3eJXxXDJGsiQA@mail.gmail.com>
-Subject: Re: [PATCH] cifs: replaced kmalloc + memset with kzalloc
-From: Steve French <smfrench@gmail.com>
-To: Dia Vasile <winged.flamespitter@gmail.com>
-Cc: sfrench@samba.org, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-        Dia Vasile <kill.elohim@hotmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 25 Mar 2013 00:23:10 -0400
+Date: Mon, 25 Mar 2013 15:22:58 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Nathan Zimmer <nzimmer@sgi.com>
+Subject: linux-next: manual merge of the akpm tree with Linus' tree
+Message-Id: <20130325152258.b930b51cccd98bedceeca92c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__25_Mar_2013_15_22_58_+1100_RGlvdfRyH.K68Y9n"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merged into cifs-2.6.git for-next branch
+--Signature=_Mon__25_Mar_2013_15_22_58_+1100_RGlvdfRyH.K68Y9n
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, Mar 10, 2013 at 7:29 AM, Dia Vasile
-<winged.flamespitter@gmail.com> wrote:
-> From: Dia Vasile <kill.elohim@hotmail.com>
->
-> Signed-off-by: Diana Vasile <kill.elohim@hotmail.com>
-> ---
->  fs/cifs/smb2pdu.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
->
-> diff --git a/fs/cifs/smb2pdu.c b/fs/cifs/smb2pdu.c
-> index 41d9d07..83ef66e 100644
-> --- a/fs/cifs/smb2pdu.c
-> +++ b/fs/cifs/smb2pdu.c
-> @@ -846,12 +846,10 @@ create_lease_buf(u8 *lease_key, u8 oplock)
->  {
->         struct create_lease *buf;
->
-> -       buf = kmalloc(sizeof(struct create_lease), GFP_KERNEL);
-> +       buf = kzalloc(sizeof(struct create_lease), GFP_KERNEL);
->         if (!buf)
->                 return NULL;
->
-> -       memset(buf, 0, sizeof(struct create_lease));
-> -
->         buf->lcontext.LeaseKeyLow = cpu_to_le64(*((u64 *)lease_key));
->         buf->lcontext.LeaseKeyHigh = cpu_to_le64(*((u64 *)(lease_key + 8)));
->         if (oplock == SMB2_OPLOCK_LEVEL_EXCLUSIVE)
-> --
-> 1.7.10.4
->
+Hi Andrew,
 
+Today's linux-next merge of the akpm tree got a conflict in
+fs/proc/inode.c between commit  ("vfs,proc: guarantee unique inodes
+in /proc") from Linus' tree and commit
+"procfs-improve-scaling-in-proc-v5" from the akpm tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
--- 
-Thanks,
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Steve
+diff --cc fs/proc/inode.c
+index 38f0775,f53660a..0000000
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@@ -463,10 -464,10 +464,11 @@@ static const struct file_operations pro
+ =20
+  struct inode *proc_get_inode(struct super_block *sb, struct proc_dir_entr=
+y *de)
+  {
+ -	struct inode *inode =3D iget_locked(sb, de->low_ino);
+ +	struct inode *inode =3D new_inode_pseudo(sb);
++ 	const struct file_operations *fops;
+ =20
+ -	if (inode && (inode->i_state & I_NEW)) {
+ +	if (inode) {
+ +		inode->i_ino =3D de->low_ino;
+  		inode->i_mtime =3D inode->i_atime =3D inode->i_ctime =3D CURRENT_TIME;
+  		PROC_I(inode)->pde =3D de;
+ =20
+@@@ -491,9 -494,11 +495,10 @@@
+  #endif
+  					inode->i_fop =3D &proc_reg_file_ops;
+  			} else {
+- 				inode->i_fop =3D de->proc_fops;
++ 				inode->i_fop =3D fops;
+  			}
+  		}
++ 		rcu_read_unlock();
+ -		unlock_new_inode(inode);
+  	} else
+  	       pde_put(de);
+  	return inode;
+
+--Signature=_Mon__25_Mar_2013_15_22_58_+1100_RGlvdfRyH.K68Y9n
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRT9EiAAoJEECxmPOUX5FEuEcP/ixF8rPMBmE0SNzoKgMRonUJ
+oTckvTgfcB2V9CDqdx3OPsYLDx4WDm/cP45PIx88CzGaSZozSClSUc9SmRvGNcS+
+0S1UmWhoQVWcd40YygzT8kEsHPUNPKleiqg8NQ6ZyboUMj692Oh+JVYkA+L5Wkl7
+Aa82j0ZJ5cNyzvApcs0GdKTBjvnDRRrCFRYY5DwchXfKSExXVD93HMjgINb6jzFt
+TlBbUUcCoEtYoUNs6EU0gZ15xnsGpYleggU0FuO9OhwjqL8G4v4OGglH4V9lr6yI
+h0UvZONaTU+9Hvzqx67z5V1txW7nSBUPGJS8DM+s3pKZD6aHf2oa5u0qBGNOIEHo
+27gnT2X8OnADp5lmFBpWHZL5fh/Q6mBa6UHTbwEysCLfZrkmeg8762rZrk/TXZb1
+9XihyMmmSp2AOZ2TZ/1NnqirkSDFX++9+L3+5BwmK76EzyWmI52TxOVpujkvBH0n
+370dNI0KoC13F0MLS3ZI4V8Gt6hVFVQxGGOa+l7JJjOgfBEo4+hoWjQb3Dy5DpLC
+AOuJ/ysba93dEbe/oKsuHJ92EYTKIZA6ISuzKzV8tpMSA3HkLE49/NnwyKZFVbIK
+o88xVf3WYRB+gMg1t6zROqzH3n63Rs6Z6dOpuRjPhVchXvgbCNeaNEp0XoBsFDP1
+I8DyW7z8SE2wqsfb1Z4B
+=d2Gh
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__25_Mar_2013_15_22_58_+1100_RGlvdfRyH.K68Y9n--
