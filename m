@@ -1,122 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758115Ab3CYNbf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 09:31:35 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:57780
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757698Ab3CYNbb (ORCPT
+	id S1758110Ab3CYNcB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 09:32:01 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:46890 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758026Ab3CYNas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 09:31:31 -0400
-Date: Mon, 25 Mar 2013 07:31:13 -0600
-From: Jens Axboe <axboe@kernel.dk>
-To: Jan Vesely <jvesely@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Kai =?iso-8859-1?Q?M=E4kisara?= <kai.makisara@kolumbus.fi>,
-        fujita.tomonori@lab.ntt.co.jp
-Subject: Re: [PATCH] block: modify __bio_add_page check to accept pages that
- don't start a new segment
-Message-ID: <20130325133113.GB5401@kernel.dk>
-References: <5125DB22.7020901@redhat.com>
- <513878A1.3020701@redhat.com>
- <51504C96.8040002@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51504C96.8040002@redhat.com>
+	Mon, 25 Mar 2013 09:30:48 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: kevin@allwinnertech.com, sunny@allwinnertech.com, shuge@allwinnertech.com,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH 07/10] irqchip: sunxi: Rename sunxi to sun4i
+Date: Mon, 25 Mar 2013 14:30:30 +0100
+Message-Id: <1364218233-29636-8-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1364218233-29636-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1364218233-29636-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25 2013, Jan Vesely wrote:
-> On Thu 07 Mar 2013 12:23:13 CET, Jan Vesely wrote:
-> 
-> > On Thu 21 Feb 2013 09:30:26 CET, Jan Vesely wrote:
-> >> The original behavior was to refuse all pages after the maximum number of
-> >> segments has been reached. However, some drivers (like st) craft their buffers
-> >> to potentially require exactly max segments and multiple pages in the last
-> >> segment. This patch modifies the check to allow pages that can be merged into
-> >> the last segment.
-> >>
-> >> This change fixes EBUSY failures when using large (1mb) tape block size in high
-> >> memory fragmentation condition.
-> >>
-> >> Signed-off-by: Jan Vesely <jvesely@redhat.com>
-> >> ---
-> >>  fs/bio.c |   26 ++++++++++++++++----------
-> >>  1 files changed, 16 insertions(+), 10 deletions(-)
-> >>
-> >> diff --git a/fs/bio.c b/fs/bio.c
-> >> index b96fc6c..02efbd5 100644
-> >> --- a/fs/bio.c
-> >> +++ b/fs/bio.c
-> >> @@ -500,7 +500,6 @@ static int __bio_add_page(struct request_queue *q, struct
-> >> bio *bio, struct page
-> >>                *page, unsigned int len, unsigned int offset,
-> >>                unsigned short max_sectors)
-> >>  {
-> >> -    int retried_segments = 0;
-> >>      struct bio_vec *bvec;
-> >>
-> >>      /*
-> >> @@ -551,18 +550,12 @@ static int __bio_add_page(struct request_queue *q,
-> >> struct bio *bio, struct page
-> >>          return 0;
-> >>
-> >>      /*
-> >> -     * we might lose a segment or two here, but rather that than
-> >> -     * make this too complex.
-> >> +     * prepare segment count check, reduce segment count if possible
-> >>       */
-> >>
-> >> -    while (bio->bi_phys_segments >= queue_max_segments(q)) {
-> >> -
-> >> -        if (retried_segments)
-> >> -            return 0;
-> >> -
-> >> -        retried_segments = 1;
-> >> +    if (bio->bi_phys_segments >= queue_max_segments(q))
-> >>          blk_recount_segments(q, bio);
-> >> -    }
-> >> +
-> >>
-> >>      /*
-> >>       * setup the new entry, we might clear it again later if we
-> >> @@ -572,6 +565,19 @@ static int __bio_add_page(struct request_queue *q, struct
-> >> bio *bio, struct page
-> >>      bvec->bv_page = page;
-> >>      bvec->bv_len = len;
-> >>      bvec->bv_offset = offset;
-> >> +
-> >> +    /*
-> >> +     * the other part of the segment count check, allow mergeable pages
-> >> +     */
-> >> +    if ((bio->bi_phys_segments > queue_max_segments(q)) ||
-> >> +        ( (bio->bi_phys_segments == queue_max_segments(q)) &&
-> >> +        !BIOVEC_PHYS_MERGEABLE(bvec - 1, bvec))) {
-> >> +            bvec->bv_page = NULL;
-> >> +            bvec->bv_len = 0;
-> >> +            bvec->bv_offset = 0;
-> >> +            return 0;
-> >> +    }
-> >> +
-> >>
-> >>      /*
-> >>       * if queue has other restrictions (eg varying max sector size
-> 
-> ping?
-> 
-> The described failure is a regression introduced in
->     46081b166415acb66d4b3150ecefcd9460bb48a1
->     st: Increase success probability in driver buffer allocation
-> 
-> I have added the signers to cc. I can resend the patch if it is 
-> necessary
+During the introduction of the Allwinner SoC platforms, sunxi was
+initially meant as a generic name for all the variants of the Allwinner
+SoC.
 
-Can you resend the patch? The above is mangled for me.
+It was ok at the time of the support of only the A10 and A13 that
+looks pretty much the same, but it's beginning to be troublesome with
+the future addition of the Allwinner A31 (sun6i) that is quite
+different, and would introduce some weird logic, where sunxi would
+actually mean in some case sun4i and sun5i but without sun6i...
 
+Moreover, it makes the compatible strings naming scheme not consistent
+with other architectures, where usually for this kind of compability, we
+just use the oldest SoC name that has this IP, so let's do just this.
+
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/irqchip/Makefile    |    2 +-
+ drivers/irqchip/irq-sun4i.c |  149 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/irqchip/irq-sunxi.c |  149 -------------------------------------------
+ 3 files changed, 150 insertions(+), 150 deletions(-)
+ create mode 100644 drivers/irqchip/irq-sun4i.c
+ delete mode 100644 drivers/irqchip/irq-sunxi.c
+
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index 98e3b87..5416965 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -4,7 +4,7 @@ obj-$(CONFIG_ARCH_BCM2835)		+= irq-bcm2835.o
+ obj-$(CONFIG_ARCH_EXYNOS)		+= exynos-combiner.o
+ obj-$(CONFIG_METAG)			+= irq-metag-ext.o
+ obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)	+= irq-metag.o
+-obj-$(CONFIG_ARCH_SUNXI)		+= irq-sunxi.o
++obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
+ obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
+ obj-$(CONFIG_ARM_GIC)			+= irq-gic.o
+ obj-$(CONFIG_ARM_VIC)			+= irq-vic.o
+diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
+new file mode 100644
+index 0000000..b66d4ae
+--- /dev/null
++++ b/drivers/irqchip/irq-sun4i.c
+@@ -0,0 +1,149 @@
++/*
++ * Allwinner A1X SoCs IRQ chip driver.
++ *
++ * Copyright (C) 2012 Maxime Ripard
++ *
++ * Maxime Ripard <maxime.ripard@free-electrons.com>
++ *
++ * Based on code from
++ * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
++ * Benn Huang <benn@allwinnertech.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++
++#include <asm/exception.h>
++#include <asm/mach/irq.h>
++
++#include "irqchip.h"
++
++#define SUN4I_IRQ_VECTOR_REG		0x00
++#define SUN4I_IRQ_PROTECTION_REG	0x08
++#define SUN4I_IRQ_NMI_CTRL_REG		0x0c
++#define SUN4I_IRQ_PENDING_REG(x)	(0x10 + 0x4 * x)
++#define SUN4I_IRQ_FIQ_PENDING_REG(x)	(0x20 + 0x4 * x)
++#define SUN4I_IRQ_ENABLE_REG(x)		(0x40 + 0x4 * x)
++#define SUN4I_IRQ_MASK_REG(x)		(0x50 + 0x4 * x)
++
++static void __iomem *sun4i_irq_base;
++static struct irq_domain *sun4i_irq_domain;
++
++static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs);
++
++void sun4i_irq_ack(struct irq_data *irqd)
++{
++	unsigned int irq = irqd_to_hwirq(irqd);
++	unsigned int irq_off = irq % 32;
++	int reg = irq / 32;
++	u32 val;
++
++	val = readl(sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
++	writel(val | (1 << irq_off),
++	       sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
++}
++
++static void sun4i_irq_mask(struct irq_data *irqd)
++{
++	unsigned int irq = irqd_to_hwirq(irqd);
++	unsigned int irq_off = irq % 32;
++	int reg = irq / 32;
++	u32 val;
++
++	val = readl(sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(reg));
++	writel(val & ~(1 << irq_off),
++	       sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(reg));
++}
++
++static void sun4i_irq_unmask(struct irq_data *irqd)
++{
++	unsigned int irq = irqd_to_hwirq(irqd);
++	unsigned int irq_off = irq % 32;
++	int reg = irq / 32;
++	u32 val;
++
++	val = readl(sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(reg));
++	writel(val | (1 << irq_off),
++	       sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(reg));
++}
++
++static struct irq_chip sun4i_irq_chip = {
++	.name		= "sun4i_irq",
++	.irq_ack	= sun4i_irq_ack,
++	.irq_mask	= sun4i_irq_mask,
++	.irq_unmask	= sun4i_irq_unmask,
++};
++
++static int sun4i_irq_map(struct irq_domain *d, unsigned int virq,
++			 irq_hw_number_t hw)
++{
++	irq_set_chip_and_handler(virq, &sun4i_irq_chip,
++				 handle_level_irq);
++	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
++
++	return 0;
++}
++
++static struct irq_domain_ops sun4i_irq_ops = {
++	.map = sun4i_irq_map,
++	.xlate = irq_domain_xlate_onecell,
++};
++
++static int __init sun4i_of_init(struct device_node *node,
++				struct device_node *parent)
++{
++	sun4i_irq_base = of_iomap(node, 0);
++	if (!sun4i_irq_base)
++		panic("%s: unable to map IC registers\n",
++			node->full_name);
++
++	/* Disable all interrupts */
++	writel(0, sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(0));
++	writel(0, sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(1));
++	writel(0, sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(2));
++
++	/* Mask all the interrupts */
++	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(0));
++	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(1));
++	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(2));
++
++	/* Clear all the pending interrupts */
++	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(0));
++	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(1));
++	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(2));
++
++	/* Enable protection mode */
++	writel(0x01, sun4i_irq_base + SUN4I_IRQ_PROTECTION_REG);
++
++	/* Configure the external interrupt source type */
++	writel(0x00, sun4i_irq_base + SUN4I_IRQ_NMI_CTRL_REG);
++
++	sun4i_irq_domain = irq_domain_add_linear(node, 3 * 32,
++						 &sun4i_irq_ops, NULL);
++	if (!sun4i_irq_domain)
++		panic("%s: unable to create IRQ domain\n", node->full_name);
++
++	set_handle_irq(sun4i_handle_irq);
++
++	return 0;
++}
++IRQCHIP_DECLARE(allwinner_sun4i_ic, "allwinner,sun4i-ic", sun4i_of_init);
++
++static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs)
++{
++	u32 irq, hwirq;
++
++	hwirq = readl(sun4i_irq_base + SUN4I_IRQ_VECTOR_REG) >> 2;
++	while (hwirq != 0) {
++		irq = irq_find_mapping(sun4i_irq_domain, hwirq);
++		handle_IRQ(irq, regs);
++		hwirq = readl(sun4i_irq_base + SUN4I_IRQ_VECTOR_REG) >> 2;
++	}
++}
+diff --git a/drivers/irqchip/irq-sunxi.c b/drivers/irqchip/irq-sunxi.c
+deleted file mode 100644
+index 0fc49c5..0000000
+--- a/drivers/irqchip/irq-sunxi.c
++++ /dev/null
+@@ -1,149 +0,0 @@
+-/*
+- * Allwinner A1X SoCs IRQ chip driver.
+- *
+- * Copyright (C) 2012 Maxime Ripard
+- *
+- * Maxime Ripard <maxime.ripard@free-electrons.com>
+- *
+- * Based on code from
+- * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
+- * Benn Huang <benn@allwinnertech.com>
+- *
+- * This file is licensed under the terms of the GNU General Public
+- * License version 2.  This program is licensed "as is" without any
+- * warranty of any kind, whether express or implied.
+- */
+-
+-#include <linux/io.h>
+-#include <linux/irq.h>
+-#include <linux/of.h>
+-#include <linux/of_address.h>
+-#include <linux/of_irq.h>
+-
+-#include <asm/exception.h>
+-#include <asm/mach/irq.h>
+-
+-#include "irqchip.h"
+-
+-#define SUNXI_IRQ_VECTOR_REG		0x00
+-#define SUNXI_IRQ_PROTECTION_REG	0x08
+-#define SUNXI_IRQ_NMI_CTRL_REG		0x0c
+-#define SUNXI_IRQ_PENDING_REG(x)	(0x10 + 0x4 * x)
+-#define SUNXI_IRQ_FIQ_PENDING_REG(x)	(0x20 + 0x4 * x)
+-#define SUNXI_IRQ_ENABLE_REG(x)		(0x40 + 0x4 * x)
+-#define SUNXI_IRQ_MASK_REG(x)		(0x50 + 0x4 * x)
+-
+-static void __iomem *sunxi_irq_base;
+-static struct irq_domain *sunxi_irq_domain;
+-
+-static asmlinkage void __exception_irq_entry sunxi_handle_irq(struct pt_regs *regs);
+-
+-void sunxi_irq_ack(struct irq_data *irqd)
+-{
+-	unsigned int irq = irqd_to_hwirq(irqd);
+-	unsigned int irq_off = irq % 32;
+-	int reg = irq / 32;
+-	u32 val;
+-
+-	val = readl(sunxi_irq_base + SUNXI_IRQ_PENDING_REG(reg));
+-	writel(val | (1 << irq_off),
+-	       sunxi_irq_base + SUNXI_IRQ_PENDING_REG(reg));
+-}
+-
+-static void sunxi_irq_mask(struct irq_data *irqd)
+-{
+-	unsigned int irq = irqd_to_hwirq(irqd);
+-	unsigned int irq_off = irq % 32;
+-	int reg = irq / 32;
+-	u32 val;
+-
+-	val = readl(sunxi_irq_base + SUNXI_IRQ_ENABLE_REG(reg));
+-	writel(val & ~(1 << irq_off),
+-	       sunxi_irq_base + SUNXI_IRQ_ENABLE_REG(reg));
+-}
+-
+-static void sunxi_irq_unmask(struct irq_data *irqd)
+-{
+-	unsigned int irq = irqd_to_hwirq(irqd);
+-	unsigned int irq_off = irq % 32;
+-	int reg = irq / 32;
+-	u32 val;
+-
+-	val = readl(sunxi_irq_base + SUNXI_IRQ_ENABLE_REG(reg));
+-	writel(val | (1 << irq_off),
+-	       sunxi_irq_base + SUNXI_IRQ_ENABLE_REG(reg));
+-}
+-
+-static struct irq_chip sunxi_irq_chip = {
+-	.name		= "sunxi_irq",
+-	.irq_ack	= sunxi_irq_ack,
+-	.irq_mask	= sunxi_irq_mask,
+-	.irq_unmask	= sunxi_irq_unmask,
+-};
+-
+-static int sunxi_irq_map(struct irq_domain *d, unsigned int virq,
+-			 irq_hw_number_t hw)
+-{
+-	irq_set_chip_and_handler(virq, &sunxi_irq_chip,
+-				 handle_level_irq);
+-	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
+-
+-	return 0;
+-}
+-
+-static struct irq_domain_ops sunxi_irq_ops = {
+-	.map = sunxi_irq_map,
+-	.xlate = irq_domain_xlate_onecell,
+-};
+-
+-static int __init sunxi_of_init(struct device_node *node,
+-				struct device_node *parent)
+-{
+-	sunxi_irq_base = of_iomap(node, 0);
+-	if (!sunxi_irq_base)
+-		panic("%s: unable to map IC registers\n",
+-			node->full_name);
+-
+-	/* Disable all interrupts */
+-	writel(0, sunxi_irq_base + SUNXI_IRQ_ENABLE_REG(0));
+-	writel(0, sunxi_irq_base + SUNXI_IRQ_ENABLE_REG(1));
+-	writel(0, sunxi_irq_base + SUNXI_IRQ_ENABLE_REG(2));
+-
+-	/* Mask all the interrupts */
+-	writel(0, sunxi_irq_base + SUNXI_IRQ_MASK_REG(0));
+-	writel(0, sunxi_irq_base + SUNXI_IRQ_MASK_REG(1));
+-	writel(0, sunxi_irq_base + SUNXI_IRQ_MASK_REG(2));
+-
+-	/* Clear all the pending interrupts */
+-	writel(0xffffffff, sunxi_irq_base + SUNXI_IRQ_PENDING_REG(0));
+-	writel(0xffffffff, sunxi_irq_base + SUNXI_IRQ_PENDING_REG(1));
+-	writel(0xffffffff, sunxi_irq_base + SUNXI_IRQ_PENDING_REG(2));
+-
+-	/* Enable protection mode */
+-	writel(0x01, sunxi_irq_base + SUNXI_IRQ_PROTECTION_REG);
+-
+-	/* Configure the external interrupt source type */
+-	writel(0x00, sunxi_irq_base + SUNXI_IRQ_NMI_CTRL_REG);
+-
+-	sunxi_irq_domain = irq_domain_add_linear(node, 3 * 32,
+-						 &sunxi_irq_ops, NULL);
+-	if (!sunxi_irq_domain)
+-		panic("%s: unable to create IRQ domain\n", node->full_name);
+-
+-	set_handle_irq(sunxi_handle_irq);
+-
+-	return 0;
+-}
+-IRQCHIP_DECLARE(allwinner_sunxi_ic, "allwinner,sunxi-ic", sunxi_of_init);
+-
+-static asmlinkage void __exception_irq_entry sunxi_handle_irq(struct pt_regs *regs)
+-{
+-	u32 irq, hwirq;
+-
+-	hwirq = readl(sunxi_irq_base + SUNXI_IRQ_VECTOR_REG) >> 2;
+-	while (hwirq != 0) {
+-		irq = irq_find_mapping(sunxi_irq_domain, hwirq);
+-		handle_IRQ(irq, regs);
+-		hwirq = readl(sunxi_irq_base + SUNXI_IRQ_VECTOR_REG) >> 2;
+-	}
+-}
 -- 
-Jens Axboe
+1.7.10.4
 
