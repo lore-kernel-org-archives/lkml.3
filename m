@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab3CYB0R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:26:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34045 "EHLO
+	id S1757014Ab3CYB0e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:26:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34042 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755942Ab3CYBQJ (ORCPT
+	by vger.kernel.org with ESMTP id S1756132Ab3CYBQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:09 -0400
-Message-Id: <20130325010529.555742958@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:08 -0400
+Message-Id: <20130325010529.741350944@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:17 +0000
+Date: Mon, 25 Mar 2013 01:06:19 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Theodore Tso <tytso@mit.edu>,
-        Lukas Czerner <lczerner@redhat.com>
-Subject: [ 053/104] ext4: use atomic64_t for the per-flexbg free_clusters count
+Cc: akpm@linux-foundation.org, Mateusz Guzik <mguzik@redhat.com>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [ 055/104] cifs: delay super block destruction until all cifsFileInfo objects
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+ are gone
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:f137:78a:b654:affb
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,130 +30,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Mateusz Guzik <mguzik@redhat.com>
 
-commit 90ba983f6889e65a3b506b30dc606aa9d1d46cd2 upstream.
+commit 24261fc23db950951760d00c188ba63cc756b932 upstream.
 
-A user who was using a 8TB+ file system and with a very large flexbg
-size (> 65536) could cause the atomic_t used in the struct flex_groups
-to overflow.  This was detected by PaX security patchset:
+cifsFileInfo objects hold references to dentries and it is possible that
+these will still be around in workqueues when VFS decides to kill super
+block during unmount.
 
-http://forums.grsecurity.net/viewtopic.php?f=3&t=3289&p=12551#p12551
+This results in panics like this one:
+BUG: Dentry ffff88001f5e76c0{i=66b4a,n=1M-2} still in use (1) [unmount of cifs cifs]
+------------[ cut here ]------------
+kernel BUG at fs/dcache.c:943!
+[..]
+Process umount (pid: 1781, threadinfo ffff88003d6e8000, task ffff880035eeaec0)
+[..]
+Call Trace:
+ [<ffffffff811b44f3>] shrink_dcache_for_umount+0x33/0x60
+ [<ffffffff8119f7fc>] generic_shutdown_super+0x2c/0xe0
+ [<ffffffff8119f946>] kill_anon_super+0x16/0x30
+ [<ffffffffa036623a>] cifs_kill_sb+0x1a/0x30 [cifs]
+ [<ffffffff8119fcc7>] deactivate_locked_super+0x57/0x80
+ [<ffffffff811a085e>] deactivate_super+0x4e/0x70
+ [<ffffffff811bb417>] mntput_no_expire+0xd7/0x130
+ [<ffffffff811bc30c>] sys_umount+0x9c/0x3c0
+ [<ffffffff81657c19>] system_call_fastpath+0x16/0x1b
 
-This bug was introduced in commit 9f24e4208f7e, so it's been around
-since 2.6.30.  :-(
+Fix this by making each cifsFileInfo object hold a reference to cifs
+super block, which implicitly keeps VFS super block around as well.
 
-Fix this by using an atomic64_t for struct orlav_stats's
-free_clusters.
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Reported-and-Tested-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/ext4.h    |    6 +++---
- fs/ext4/ialloc.c  |    4 ++--
- fs/ext4/mballoc.c |   12 ++++++------
- fs/ext4/resize.c  |    4 ++--
- fs/ext4/super.c   |    4 ++--
- 5 files changed, 15 insertions(+), 15 deletions(-)
+ fs/cifs/cifsfs.c |   24 ++++++++++++++++++++++++
+ fs/cifs/cifsfs.h |    4 ++++
+ fs/cifs/file.c   |    6 +++++-
+ 3 files changed, 33 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -309,9 +309,9 @@ struct ext4_group_desc
-  */
+--- a/fs/cifs/cifsfs.c
++++ b/fs/cifs/cifsfs.c
+@@ -90,6 +90,30 @@ extern mempool_t *cifs_sm_req_poolp;
+ extern mempool_t *cifs_req_poolp;
+ extern mempool_t *cifs_mid_poolp;
  
- struct flex_groups {
--	atomic_t free_inodes;
--	atomic_t free_clusters;
--	atomic_t used_dirs;
-+	atomic64_t	free_clusters;
-+	atomic_t	free_inodes;
-+	atomic_t	used_dirs;
- };
++/*
++ * Bumps refcount for cifs super block.
++ * Note that it should be only called if a referece to VFS super block is
++ * already held, e.g. in open-type syscalls context. Otherwise it can race with
++ * atomic_dec_and_test in deactivate_locked_super.
++ */
++void
++cifs_sb_active(struct super_block *sb)
++{
++	struct cifs_sb_info *server = CIFS_SB(sb);
++
++	if (atomic_inc_return(&server->active) == 1)
++		atomic_inc(&sb->s_active);
++}
++
++void
++cifs_sb_deactive(struct super_block *sb)
++{
++	struct cifs_sb_info *server = CIFS_SB(sb);
++
++	if (atomic_dec_and_test(&server->active))
++		deactivate_super(sb);
++}
++
+ static int
+ cifs_read_super(struct super_block *sb)
+ {
+--- a/fs/cifs/cifsfs.h
++++ b/fs/cifs/cifsfs.h
+@@ -41,6 +41,10 @@ extern struct file_system_type cifs_fs_t
+ extern const struct address_space_operations cifs_addr_ops;
+ extern const struct address_space_operations cifs_addr_ops_smallbuf;
  
- #define EXT4_BG_INODE_UNINIT	0x0001 /* Inode table/bitmap not in use */
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -294,8 +294,8 @@ error_return:
++/* Functions related to super block operations */
++extern void cifs_sb_active(struct super_block *sb);
++extern void cifs_sb_deactive(struct super_block *sb);
++
+ /* Functions related to inodes */
+ extern const struct inode_operations cifs_dir_inode_ops;
+ extern struct inode *cifs_root_iget(struct super_block *);
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -265,6 +265,8 @@ cifs_new_fileinfo(__u16 fileHandle, stru
+ 	mutex_init(&pCifsFile->fh_mutex);
+ 	INIT_WORK(&pCifsFile->oplock_break, cifs_oplock_break);
+ 
++	cifs_sb_active(inode->i_sb);
++
+ 	spin_lock(&cifs_file_list_lock);
+ 	list_add(&pCifsFile->tlist, &(tlink_tcon(tlink)->openFileList));
+ 	/* if readable file instance put first in list*/
+@@ -293,7 +295,8 @@ void cifsFileInfo_put(struct cifsFileInf
+ 	struct inode *inode = cifs_file->dentry->d_inode;
+ 	struct cifs_tcon *tcon = tlink_tcon(cifs_file->tlink);
+ 	struct cifsInodeInfo *cifsi = CIFS_I(inode);
+-	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
++	struct super_block *sb = inode->i_sb;
++	struct cifs_sb_info *cifs_sb = CIFS_SB(sb);
+ 	struct cifsLockInfo *li, *tmp;
+ 
+ 	spin_lock(&cifs_file_list_lock);
+@@ -345,6 +348,7 @@ void cifsFileInfo_put(struct cifsFileInf
+ 
+ 	cifs_put_tlink(cifs_file->tlink);
+ 	dput(cifs_file->dentry);
++	cifs_sb_deactive(sb);
+ 	kfree(cifs_file);
  }
  
- struct orlov_stats {
-+	__u64 free_clusters;
- 	__u32 free_inodes;
--	__u32 free_clusters;
- 	__u32 used_dirs;
- };
- 
-@@ -312,7 +312,7 @@ static void get_orlov_stats(struct super
- 
- 	if (flex_size > 1) {
- 		stats->free_inodes = atomic_read(&flex_group[g].free_inodes);
--		stats->free_clusters = atomic_read(&flex_group[g].free_clusters);
-+		stats->free_clusters = atomic64_read(&flex_group[g].free_clusters);
- 		stats->used_dirs = atomic_read(&flex_group[g].used_dirs);
- 		return;
- 	}
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2866,8 +2866,8 @@ ext4_mb_mark_diskspace_used(struct ext4_
- 	if (sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group = ext4_flex_group(sbi,
- 							  ac->ac_b_ex.fe_group);
--		atomic_sub(ac->ac_b_ex.fe_len,
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_sub(ac->ac_b_ex.fe_len,
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 	}
- 
- 	err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
-@@ -4724,8 +4724,8 @@ do_more:
- 
- 	if (sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
--		atomic_add(count_clusters,
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_add(count_clusters,
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 	}
- 
- 	ext4_mb_unload_buddy(&e4b);
-@@ -4869,8 +4869,8 @@ int ext4_group_add_blocks(handle_t *hand
- 
- 	if (sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
--		atomic_add(EXT4_NUM_B2C(sbi, blocks_freed),
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_add(EXT4_NUM_B2C(sbi, blocks_freed),
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 	}
- 
- 	ext4_mb_unload_buddy(&e4b);
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -946,8 +946,8 @@ int ext4_group_add(struct super_block *s
- 	    sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group;
- 		flex_group = ext4_flex_group(sbi, input->group);
--		atomic_add(EXT4_NUM_B2C(sbi, input->free_blocks_count),
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_add(EXT4_NUM_B2C(sbi, input->free_blocks_count),
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 		atomic_add(EXT4_INODES_PER_GROUP(sb),
- 			   &sbi->s_flex_groups[flex_group].free_inodes);
- 	}
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2047,8 +2047,8 @@ static int ext4_fill_flex_info(struct su
- 		flex_group = ext4_flex_group(sbi, i);
- 		atomic_add(ext4_free_inodes_count(sb, gdp),
- 			   &sbi->s_flex_groups[flex_group].free_inodes);
--		atomic_add(ext4_free_group_clusters(sb, gdp),
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_add(ext4_free_group_clusters(sb, gdp),
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 		atomic_add(ext4_used_dirs_count(sb, gdp),
- 			   &sbi->s_flex_groups[flex_group].used_dirs);
- 	}
 
 
