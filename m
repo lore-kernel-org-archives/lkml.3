@@ -1,245 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167Ab3CYN7U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 09:59:20 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39710 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757826Ab3CYN7R (ORCPT
+	id S1758191Ab3CYN7s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 09:59:48 -0400
+Received: from mercuryimc.plus.com ([80.229.200.144]:50435 "EHLO
+	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757826Ab3CYN7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 09:59:17 -0400
-Date: Mon, 25 Mar 2013 09:59:09 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH] xen/acpi-stub: Disable it b/c the acpi_processor_add is
- no longer called.
-Message-ID: <20130325135909.GF11546@phenom.dumpdata.com>
-References: <1363962480-1366-1-git-send-email-konrad.wilk@oracle.com>
- <DE8DF0795D48FD4CA783C40EC82923354340D3@SHSMSX101.ccr.corp.intel.com>
+	Mon, 25 Mar 2013 09:59:46 -0400
+Message-ID: <51505851.8020609@mimc.co.uk>
+Date: Mon, 25 Mar 2013 13:59:45 +0000
+From: Mark Jackson <mpfj-list@mimc.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923354340D3@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: 3.9.0-rc3: BUG: Bad page state in process
+References: <51505173.1050009@mimc.co.uk>
+In-Reply-To: <51505173.1050009@mimc.co.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 08:49:47AM +0000, Liu, Jinsong wrote:
-> Konrad Rzeszutek Wilk wrote:
-> > With the Xen ACPI stub code (CONFIG_XEN_STUB=y) enabled, the power
-> > C and P states are no longer uploaded to the hypervisor.
-> > 
-> > The reason is that the Xen CPU hotplug code: xen-acpi-cpuhotplug.c
-> > and the xen-acpi-stub.c register themselves as the "processor" type
-> > object. 
-> > 
-> > That means the generic processor (processor_driver.c) stops
-> > working and it does not call (acpi_processor_add) which populates the
-> > 
-> >          per_cpu(processors, pr->id) = pr;
-> > 
-> > structure. The 'pr' is gathered from the acpi_processor_get_info
-> > function which does the job of finding the C-states and figuring out
-> > PBLK address. 
-> > 
-> > The 'processors->pr' is then later used by xen-acpi-processor.c (the
-> > one that uploads C and P states to the hypervisor). Since it is NULL,
-> > we end 
-> > skip the gathering of _PSD, _PSS, _PCT, etc and never upload the power
-> > management data.
-> > 
-> > The end result is that enabling the CONFIG_XEN_STUB in the build
-> > means that xen-acpi-processor is not working anymore.
-> > 
-> > This temporary patch fixes it by marking the XEN_STUB driver as
-> > BROKEN until this can be properly fixed.
-> > 
-> > CC: jinsong.liu@intel.com
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  drivers/xen/Kconfig | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-> > index 5a32232..67af155 100644
-> > --- a/drivers/xen/Kconfig
-> > +++ b/drivers/xen/Kconfig
-> > @@ -182,7 +182,7 @@ config XEN_PRIVCMD
-> > 
-> >  config XEN_STUB
-> >  	bool "Xen stub drivers"
-> > -	depends on XEN && X86_64
-> > +	depends on XEN && X86_64 && BROKEN
-> >  	default n
-> >  	help
-> >  	  Allow kernel to install stub drivers, to reserve space for Xen
-> > drivers, 
-> 
-> 
-> Yes, exactly.
-> 
-> With xen-cpu-hotplug logic added, it's not proper to make xen Px/Cx rely on native processor_driver anymore.
+On 25/03/13 13:30, Mark Jackson wrote:
+> On our custom AM335x cpu board, I have had several kernel crashes via my userspace program.
 
-Ahhh.
-> Reasonable solution is, hooking Px/Cx logic into xen hotplug path (say, ops.add --> acpi_processor_add), like what native side does currently.
+<snip>
 
-Right. That would require making acpi_processor_add an EXPORT symbol.
+And here's another similar oops ...
 
-> 
-> So at Xen dom0 side, there are 2 issues need to be solved:
-> 1. currently xen dom0 defaultly set cpu_possible_map equal to cpu_present_map, we need adjust it so that when cpu hotplug it can handle 'pr' properly;
-
-Kind of. The xen-acpi-processor dealt with that by copying the 'pr' for the present, but not-offline vCPUS
-and figuring out which of them dom0 did not know about. Look in the 'get_max_acpi_id' and 'pr_backup'
-in the code.
-
-So it has the logic to handle dom0_max_vcpus=X, where X is less than physically present CPUs.
-
-
-> 2. hook Px/Cx parsing logic into cpu hotadd or cpu online logic, like what native side did;
-> 
-> Attached is a patch to solve issue 1, basically it generates possible map according to MADT entries, not trims according to hypervisor online cpus. With it, dom0 cpu possible map reserves space for Xen cpu hotplug and corresponding Px/Cx, and dom0 also get a unified possible map view just like it runs under native platform.
-
-Ah, didn't think of doing it that way! Thought look at cf405ae612b0f7e2358db7ff594c0e94846137aa
-as the scheduler will now try to use those.
-> 
-> As for issue 2, it may be fixed later :-)
-> (BTW, your patch to temporarily disable xen-stub is necessary even with my patch, only would be reverted after issue 2 got solved)
-
-Right.
-> 
-> Thanks,
-> Jinsong
-> 
-> ========================
-> >From bb49caa523de46551c37de91754c49919bee4687 Mon Sep 17 00:00:00 2001
-> From: Liu Jinsong <jinsong.liu@intel.com>
-> Date: Mon, 25 Mar 2013 21:31:36 +0800
-> Subject: [PATCH] Xen/X86: adjust dom0 cpu possible map for sake of Xen Px/Cx
-> 
-> Currently dom0 cpu possible map defaultly equal to cpu
-> present map. It works fine if not consider Xen cpu hotplug
-> and corresponding Px/Cx. However, when cpu hotplug the
-> possible map should reserve some space, considering it's
-> static and per-cpu data-structures are allocated at init
-> time, and do not expect to do this dynamically.
-> 
-> This patch adjusts Xen dom0 cpu possible map.
-> Basically it generates possible map according to MADT entries,
-> not trims according to hypervisor online cpus. With it, dom0
-> cpu possible map reserves space for Xen cpu hotplug and
-> corresponding Px/Cx, and dom0 also get a unified possible map
-> view just like it runs under native platform.
-> 
-> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
-> ---
->  arch/x86/xen/enlighten.c |   13 +++++++++++--
->  arch/x86/xen/smp.c       |   30 +++++++-----------------------
->  2 files changed, 18 insertions(+), 25 deletions(-)
-> 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index c8e1c7b..f630956 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1089,8 +1089,17 @@ void xen_setup_vcpu_info_placement(void)
->  {
->  	int cpu;
->  
-> -	for_each_possible_cpu(cpu)
-> -		xen_vcpu_setup(cpu);
-> +	/*
-> +	 * Dom0 reserved more possible bits than present ones for the sake of
-> +	 * Xen processor driver and hotplug logic. To avoid clamp_max_cpus,
-> +	 * setup dom0 vcpus for present ones.
-> +	 */
-> +	if (xen_initial_domain())
-> +		for_each_present_cpu(cpu)
-> +			xen_vcpu_setup(cpu);
-> +	else
-> +		for_each_possible_cpu(cpu)
-> +			xen_vcpu_setup(cpu);
->  
->  	/* xen_vcpu_setup managed to place the vcpu_info within the
->  	   percpu area for all cpus, so make use of it */
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index 09ea61d..9b334b9 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -192,37 +192,23 @@ static void __init xen_fill_possible_map(void)
->  static void __init xen_filter_cpu_maps(void)
->  {
->  	int i, rc;
-> -	unsigned int subtract = 0;
->  
->  	if (!xen_initial_domain())
->  		return;
->  
->  	num_processors = 0;
->  	disabled_cpus = 0;
-> +
-> +	/* all bits have been set possible at prefill_possible_map */
->  	for (i = 0; i < nr_cpu_ids; i++) {
->  		rc = HYPERVISOR_vcpu_op(VCPUOP_is_up, i, NULL);
-> -		if (rc >= 0) {
-> +		if (rc >= 0)
->  			num_processors++;
-> -			set_cpu_possible(i, true);
-> -		} else {
-> -			set_cpu_possible(i, false);
-> +		else {
-> +			disabled_cpus++;
->  			set_cpu_present(i, false);
-> -			subtract++;
->  		}
->  	}
-> -#ifdef CONFIG_HOTPLUG_CPU
-> -	/* This is akin to using 'nr_cpus' on the Linux command line.
-> -	 * Which is OK as when we use 'dom0_max_vcpus=X' we can only
-> -	 * have up to X, while nr_cpu_ids is greater than X. This
-> -	 * normally is not a problem, except when CPU hotplugging
-> -	 * is involved and then there might be more than X CPUs
-> -	 * in the guest - which will not work as there is no
-> -	 * hypercall to expand the max number of VCPUs an already
-> -	 * running guest has. So cap it up to X. */
-> -	if (subtract)
-> -		nr_cpu_ids = nr_cpu_ids - subtract;
-> -#endif
-> -
-
-This was a fix for
-commit cf405ae612b0f7e2358db7ff594c0e94846137aa
-Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date:   Thu Apr 26 13:50:03 2012 -0400
-
-    xen/smp: Fix crash when booting with ACPI hotplug CPUs.
-
-which I think your patch would expose again?
-
->  }
->  
->  static void __init xen_smp_prepare_boot_cpu(void)
-> @@ -272,15 +258,13 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
->  
->  	cpumask_copy(xen_cpu_initialized_map, cpumask_of(0));
->  
-> -	/* Restrict the possible_map according to max_cpus. */
-> +	/* Restrict the possible/present_map according to max_cpus. */
->  	while ((num_possible_cpus() > 1) && (num_possible_cpus() > max_cpus)) {
->  		for (cpu = nr_cpu_ids - 1; !cpu_possible(cpu); cpu--)
->  			continue;
->  		set_cpu_possible(cpu, false);
-> +		set_cpu_present(cpu, false);
->  	}
-> -
-> -	for_each_possible_cpu(cpu)
-> -		set_cpu_present(cpu, true);
->  }
->  
->  static int __cpuinit
-> -- 
-> 1.7.1
+[16565.691706] Unable to handle kernel NULL pointer dereference at virtual address 00000000
+[16565.700289] pgd = cd07c000
+[16565.703149] [00000000] *pgd=00000000
+[16565.706909] Internal error: Oops: 5 [#1] ARM
+[16565.711390] CPU: 0    Not tainted  (3.9.0-rc4-00026-g58216a6 #148)
+[16565.717886] PC is at free_pages_and_swap_cache+0x48/0xbc
+[16565.723457] LR is at release_pages+0x1d0/0x20c
+[16565.728117] pc : [<c00be4ac>]    lr : [<c009d474>]    psr: 20000013
+[16565.728117] sp : cf707d70  ip : 00000000  fp : cf56edac
+[16565.740153] r10: cd079388  r9 : c0c8bac0  r8 : 00000000
+[16565.745624] r7 : 00000001  r6 : cd079380  r5 : 00000320  r4 : 0000000e
+[16565.752463] r3 : 00080068  r2 : 00000000  r1 : 00000000  r0 : cf707d2c
+[16565.759308] Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+[16565.766784] Control: 10c5387d  Table: 8d07c019  DAC: 00000015
+[16565.772802] Process ccrt (pid: 800, stack limit = 0xcf706238)
+[16565.778820] Stack: (0xcf707d70 to 0xcf708000)
+[16565.783389] 7d60:                                     0000000b b6bb6000 00000001 cf707e08
+[16565.791961] 7d80: cf707e08 b6c00000 00000000 c00aeb70 cf644d38 cf640700 cf644d00 00000000
+[16565.800531] 7da0: 8e4d63cd cf56eda8 b6d97000 b6d96fff c0c8ba60 00000000 fffffe49 00000000
+[16565.809102] 7dc0: 09bdd609 cf640700 ffffffff cf707e08 00000000 00000000 cf52d868 cf644d00
+[16565.817675] 7de0: cf39c680 c00af4b4 00000000 cf2fd640 cf640498 cf644d00 cf707e08 cf2ffc80
+[16565.826251] 7e00: cf2fd640 c00b56a8 cf644d00 00000001 00000000 00000080 00000000 00000400
+[16565.834826] 7e20: 00000400 cd079000 cf2ffc80 cf2fd640 cf52d868 cf644d00 cf39c680 c03ffc08
+[16565.843397] 7e40: 60000013 cf644d5c cf644d00 cf644d00 00000000 cf706000 cf2ffc80 c00364b8
+[16565.851968] 7e60: cf644d00 cf52d4c0 cf706000 c00ccb4c cf2f7340 cf2ffc80 cf2f73a4 cf707e90
+[16565.860541] 7e80: cf2f7374 cf706000 00000001 c010a624 cf2ffc80 00000080 00000003 00000000
+[16565.869118] 7ea0: cf706000 cf2ffd80 cf6003c0 c0579ddc cf706000 c0109b08 00000320 c0075190
+[16565.877691] 7ec0: 00000002 00000000 00000000 c00cd214 00000000 00000000 cf52d4c0 c0579dc0
+[16565.886262] 7ee0: 00000002 00000000 c0579dc0 cf2ffc80 fffffff8 00000000 c057a71c c0579ddc
+[16565.894834] 7f00: cf706000 c010a3e8 00000320 c00cd200 00000001 00000000 c00cd150 befff000
+[16565.903406] 7f20: cf706000 00000001 cf38e548 cf706000 00000001 00000001 cf38e548 cf2ffc80
+[16565.911976] 7f40: bebc3dac bebc34a8 00000000 c00cd750 00000001 00000000 c00cd3bc 00000ff0
+[16565.920549] 7f60: cf2fd698 cf2fd640 cf52d6e0 00000000 00000000 cd046000 bebc3dac bebc34a8
+[16565.929124] 7f80: 0000000b c0013968 cf706000 00000000 0001f190 c00cda58 00000000 b6e0c198
+[16565.937703] 7fa0: b6e07ee8 c00137c0 00000000 b6e0c198 b6dfcd52 bebc34a8 bebc3dac b6e0c190
+[16565.946280] 7fc0: 00000000 b6e0c198 b6e07ee8 0000000b 000042b0 0001394e bebc3900 0001f190
+[16565.954852] 7fe0: b6e07f34 bebc3488 b6dfac38 b6dc9e88 00000010 b6dfcd52 00000000 00000000
+[16565.963451] [<c00be4ac>] (free_pages_and_swap_cache+0x48/0xbc) from [<c00aeb70>] (unmap_single_vma+0x3b0/0x5b8)
+[16565.974035] [<c00aeb70>] (unmap_single_vma+0x3b0/0x5b8) from [<c00af4b4>] (unmap_vmas+0x54/0x68)
+[16565.983253] [<c00af4b4>] (unmap_vmas+0x54/0x68) from [<c00b56a8>] (exit_mmap+0xd0/0x1f4)
+[16565.991746] [<c00b56a8>] (exit_mmap+0xd0/0x1f4) from [<c00364b8>] (mmput+0x34/0xb8)
+[16565.999783] [<c00364b8>] (mmput+0x34/0xb8) from [<c00ccb4c>] (flush_old_exec+0x240/0x4c8)
+[16566.008365] [<c00ccb4c>] (flush_old_exec+0x240/0x4c8) from [<c010a624>] (load_elf_binary+0x23c/0x11b0)
+[16566.018131] [<c010a624>] (load_elf_binary+0x23c/0x11b0) from [<c00cd200>] (search_binary_handler+0xe4/0x1f0)
+[16566.028437] [<c00cd200>] (search_binary_handler+0xe4/0x1f0) from [<c00cd750>] (do_execve+0x444/0x4fc)
+[16566.038107] [<c00cd750>] (do_execve+0x444/0x4fc) from [<c00cda58>] (sys_execve+0x30/0x44)
+[16566.046697] [<c00cda58>] (sys_execve+0x30/0x44) from [<c00137c0>] (ret_fast_syscall+0x0/0x3c)
+[16566.055635] Code: e2877001 e1540007 da000015 e49a8004 (e5983000)
+[16566.062129] ---[ end trace d58a14e8bd6d8269 ]---
 
 
