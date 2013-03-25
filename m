@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab3CYBIn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:08:43 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:38755 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755180Ab3CYBIj (ORCPT
+	id S1755473Ab3CYBIs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:08:48 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37323 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755143Ab3CYBIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:08:39 -0400
-X-AuditID: cbfee690-b7f656d0000007e3-c3-514fa396f4d7
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Paul Bolle'" <pebolle@tiscali.nl>, "'Ben Dooks'" <ben-linux@fluff.org>,
-        "'Russell King'" <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1363778011.1390.96.camel@x61.thuisdomein>
-In-reply-to: <1363778011.1390.96.camel@x61.thuisdomein>
-Subject: RE: [PATCH] S3C24XX: remove unneeded "config SMDK2440_CPU2442"
-Date: Mon, 25 Mar 2013 10:08:38 +0900
-Message-id: <16e201ce28f5$4870be90$d9523bb0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4lW/YDHb92UaQlRMWxrZYtv6bPCwBiEzuw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t8zQ91pi/0DDXZPs7KYtO4Ak8Wmx9dY
-	LS7vmsNmMeP8PiaL25d5LRbdOsPswObR0tzD5vF31Qtmj81L6j02bn/C5PF5k1wAaxSXTUpq
-	TmZZapG+XQJXxoTW9awFXzkr1h3YytjA+IG9i5GTQ0LARGLe2T4mCFtM4sK99WxdjFwcQgLL
-	GCX+zkEoOnl5IStEYjqjxLdLj9khnL+MEk9uz2cFqWIT0JA4/P4ZWIeIQLHE5j3XgMZycDAL
-	ZEtseQW2QUjATGLJn/csIDangLnE1HtH2UBsYQF3ia5FZ8DiLAKqEvu2PQAbwytgK7Fz4iM2
-	CFtQ4sfkeywQI9UlpkzJBQkzC8hLbF7zlhkkLAEUfvRXF+IAI4k9344zQpSISOx78Y4R5GIJ
-	gXvsEu+XT2WGWCUg8W3yIRaIXlmJTQeYId6VlDi44gbLBEaJWUgWz0JYPAvJ4llINixgZFnF
-	KJpakFxQnJReZKJXnJhbXJqXrpecn7uJERKrE3Yw3jtgfYgxGWj7RGYp0eR8YKznlcQbGpsZ
-	WZiamBobmVuakSasJM6r3mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFRiYfndqVAVoPN
-	5jO8J066rdAy1V+db91h/YRHi1c+8fyUg2FL5/JdZLTZ4ianL8d9/qnquvfaWo5NRYYO697+
-	tzU5JZvILBLy8Mcj0ZuKHtzFzx+ladvkzl93Ylful/1qgn16fPLXL1dOS3D0vCZ9qnXL3/U3
-	gyvtrN/99uMMeOoSZNp3q1GJpTgj0VCLuag4EQA5Ljc46wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t9jQd1pi/0DDf6tNrOYtO4Ak8Wmx9dY
-	LS7vmsNmMeP8PiaL25d5LRbdOsPswObR0tzD5vF31Qtmj81L6j02bn/C5PF5k1wAa1QDo01G
-	amJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0AFKCmWJOaVA
-	oYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMI6xowJretZC75yVqw7sJWxgfEDexcjJ4eE
-	gInEycsLWSFsMYkL99azdTFycQgJTGeU+HbpMTuE85dR4snt+WBVbAIaEoffPwPrFhEolti8
-	5xpTFyMHB7NAtsSWV0wgYSEBM4klf96zgNicAuYSU+8dZQOxhQXcJboWnQGLswioSuzb9gBs
-	DK+ArcTOiY/YIGxBiR+T77FAjFSXmDIlFyTMLCAvsXnNW2aQsARQ+NFfXYgDjCT2fDvOCFEi
-	IrHvxTvGCYxCs5AMmoUwaBaSQbOQdCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJEZwI
-	nkntYFzZYHGIUYCDUYmHV6DGP1CINbGsuDL3EKMEB7OSCO+CfqAQb0piZVVqUX58UWlOavEh
-	xmSgNycyS4km5wOTVF5JvKGxiZmRpZGZhZGJuTlpwkrivAdarQOFBNITS1KzU1MLUotgtjBx
-	cEo1MFrYXWx4dIq1r/9/ulTLxMmqAjEz26cvWlBx6JXssiNdqsG+17aJq1mtZ62qaGZn/zRn
-	7kdHlxez2ipfWywoYm/1nGB6/nD7lymX+/kD9gdodIUGCdbPW3aOYcvWts0a61sTvffdEbqf
-	vaVkScl6jfsum9ZfdC1pCRNTLORfusslfkJLX4yyvRJLcUaioRZzUXEiAEjXkQNIAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 24 Mar 2013 21:08:46 -0400
+Date: Mon, 25 Mar 2013 01:08:40 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Simon Horman <horms@verge.net.au>, devicetree-discuss@lists.ozlabs.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+Subject: Re: [PATCH v3 2/3] regulator: as3711: add OF support
+Message-ID: <20130325010839.GH18316@opensource.wolfsonmicro.com>
+References: <1363968949-12151-1-git-send-email-g.liakhovetski@gmx.de>
+ <1363968949-12151-3-git-send-email-g.liakhovetski@gmx.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J/zg8ciPNcraoWb6"
+Content-Disposition: inline
+In-Reply-To: <1363968949-12151-3-git-send-email-g.liakhovetski@gmx.de>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Bolle wrote:
-> 
-> The Kconfig entry for SMDK2440_CPU2442 was moved from one Kconfig file
-> to another in commit acf2d41d8595829eb0ac7bf6891f4875a78d4d6e ("ARM:
-> S3C24XX: Move mach-s3c2440/ pll into mach-s3c24xx/"). In that move it
-> also lost its statement to select CPU_S3C2442. That was not needed
-> anymore because it now depended on that same symbol.
-> 
-> But without its select this entry became a nop: enabling it has no
-> effect, as it changes no code. It can safely be removed.
-> 
-> Fix a related, and trivial, comment typo too.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Untested.
-> 
->  arch/arm/mach-s3c24xx/Kconfig | 5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
-> index 37f513d..92c07a2 100644
-> --- a/arch/arm/mach-s3c24xx/Kconfig
-> +++ b/arch/arm/mach-s3c24xx/Kconfig
-> @@ -663,10 +663,7 @@ config MACH_RX1950
->  	help
->  	   Say Y here if you're using HP iPAQ rx1950
-> 
-> -config SMDK2440_CPU2442
-> -	bool "SMDM2440 with S3C2442 CPU module"
-> -
-> -endif	# CPU_S3C2440
-> +endif	# CPU_S3C2442
-> 
->  if CPU_S3C2443 || CPU_S3C2416
-> 
-> --
-> 1.7.11.7
 
-Looks good to me, applied.
+--J/zg8ciPNcraoWb6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks.
+On Fri, Mar 22, 2013 at 05:15:48PM +0100, Guennadi Liakhovetski wrote:
+> AS3711 regulator OF support only evaluates standard regulator DT
+> properties.
 
-- Kukjin
+Applied, thanks.
 
+--J/zg8ciPNcraoWb6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRT6OHAAoJELSic+t+oim9Q20P/2AbTGRKQ8PUj16sD2sZK6l4
+NvBAuX9RsDjkwyWDgcRdODEmAAsV3wuUbZWaws1sbfCcRckJR21Ww0CwFGo0Vzq1
+a1WstGbOrTchZDFyx23w6JzDfclFoySpNlFUF5EtXnDTFfASX3Td/1EVyQ2o81Uo
+fELDNDnJFsvlG9Kj9+9BNdpVXdPlGsGHnURAkVmM9pe8ADOZp/Fw+BvTumjZ6P+f
+NKiuNZMA6RgEdqjDUHggmemTv2Bv1cobQF6t5wZmwpBESRkXC+iAXe60qGwAU9Da
+ZunCpWEo9oxKJfGtgLt/vYgoG7tgYW9SFbL87KScQHsOZd9OSnsz3fe5BUhe5Ofa
+WlgJdtzCWJXo5p8LpfJq4iyAYsF72j6lTVHN9CbUsGSDwxFx5crfM7SGGN6lEI9m
+fNbRdanXIrzJg0r/K5HfTyZeQ2PCjjQqG6mrlnoW1wtN+y9eRZ+xzz4V2ZcEvIV+
+mHAliBHAH1u9DnwZFH5Tt0QGFwl4dV0FHb3ZrqYHBY208kH/70Y21yt1xkf7iOii
+Kw8QgLmcKpAk8f4r7ORd9qY7qqSu9z26AewsWL5t0R3hUGplBpZlbFfYMjbqGebt
+dCKufRiP3a9BHgldsE0rCb7JRihTbcR4mg8l0z4JEuvVX5mi4A7DcR6WjOWJg3Ia
+gPKBuAyGyMbFuileh02L
+=Cnn7
+-----END PGP SIGNATURE-----
+
+--J/zg8ciPNcraoWb6--
