@@ -1,205 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757402Ab3CYBcF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:32:05 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:49707 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755943Ab3CYBcB (ORCPT
+	id S1757407Ab3CYBce (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:32:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33926 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755895Ab3CYBPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:32:01 -0400
-X-Spam-Score: -100.7
-Message-ID: <514FA8F3.1030102@asianux.com>
-Date: Mon, 25 Mar 2013 09:31:31 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Michael Neuling <mikey@neuling.org>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>, sfr@canb.auug.org.au,
-        "paulus@samba.org" <paulus@samba.org>, matt@ozlabs.org,
-        imunsie@au1.ibm.com, linuxppc-dev@lists.ozlabs.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] PowerPC:kernel: make additional room in exception vector
- area
-References: <51428C81.6000204@asianux.com> <25841.1363323174@ale.ozlabs.ibm.com> <5142AE27.7060003@asianux.com> <514AA0D9.1090509@asianux.com> <10123.1363906486@ale.ozlabs.ibm.com> <514C0061.8080004@asianux.com> <29457.1364169818@ale.ozlabs.ibm.com>
-In-Reply-To: <29457.1364169818@ale.ozlabs.ibm.com>
+	Sun, 24 Mar 2013 21:15:41 -0400
+Message-Id: <20130325010532.200801386@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 25 Mar 2013 01:06:44 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, Jeff Layton <jlayton@redhat.com>,
+        Jason Burgess <jason@jacknife2.dns2go.com>,
+        Yan Li <elliot.li.tech@gmail.com>, Steve French <sfrench@us.ibm.com>
+Subject: [ 080/104] cifs: ignore everything in SPNEGO blob after mechTypes
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130325010524.240972766@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:f137:78a:b654:affb
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-  The FWNMI region is fixed at 0x7000 and the vector are now overflowing
-  that with allmodconfig. Fix that by moving slb_miss_realmode code out
-  of that region as it doesn't need to be that close to the call sites
-  (it is a _GLOBAL function)
+------------------
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+From: Jeff Layton <jlayton@redhat.com>
+
+commit f853c616883a8de966873a1dab283f1369e275a1 upstream.
+
+We've had several reports of people attempting to mount Windows 8 shares
+and getting failures with a return code of -EINVAL. The default sec=
+mode changed recently to sec=ntlmssp. With that, we expect and parse a
+SPNEGO blob from the server in the NEGOTIATE reply.
+
+The current decode_negTokenInit function first parses all of the
+mechTypes and then tries to parse the rest of the negTokenInit reply.
+The parser however currently expects a mechListMIC or nothing to follow the
+mechTypes, but Windows 8 puts a mechToken field there instead to carry
+some info for the new NegoEx stuff.
+
+In practice, we don't do anything with the fields after the mechTypes
+anyway so I don't see any real benefit in continuing to parse them.
+This patch just has the kernel ignore the fields after the mechTypes.
+We'll probably need to reinstate some of this if we ever want to support
+NegoEx.
+
+Reported-by: Jason Burgess <jason@jacknife2.dns2go.com>
+Reported-by: Yan Li <elliot.li.tech@gmail.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/kernel/exceptions-64s.S |  144 +++++++++++++++++-----------------
- 1 files changed, 72 insertions(+), 72 deletions(-)
+ fs/cifs/asn1.c |   53 +++++------------------------------------------------
+ 1 file changed, 5 insertions(+), 48 deletions(-)
 
-diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
-index 200afa5..56bd923 100644
---- a/arch/powerpc/kernel/exceptions-64s.S
-+++ b/arch/powerpc/kernel/exceptions-64s.S
-@@ -1066,78 +1066,6 @@ unrecov_user_slb:
- #endif /* __DISABLED__ */
+--- a/fs/cifs/asn1.c
++++ b/fs/cifs/asn1.c
+@@ -614,53 +614,10 @@ decode_negTokenInit(unsigned char *secur
+ 		}
+ 	}
  
- 
--/*
-- * r13 points to the PACA, r9 contains the saved CR,
-- * r12 contain the saved SRR1, SRR0 is still ready for return
-- * r3 has the faulting address
-- * r9 - r13 are saved in paca->exslb.
-- * r3 is saved in paca->slb_r3
-- * We assume we aren't going to take any exceptions during this procedure.
-- */
--_GLOBAL(slb_miss_realmode)
--	mflr	r10
--#ifdef CONFIG_RELOCATABLE
--	mtctr	r11
--#endif
+-	/* mechlistMIC */
+-	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
+-		/* Check if we have reached the end of the blob, but with
+-		   no mechListMic (e.g. NTLMSSP instead of KRB5) */
+-		if (ctx.error == ASN1_ERR_DEC_EMPTY)
+-			goto decode_negtoken_exit;
+-		cFYI(1, "Error decoding last part negTokenInit exit3");
+-		return 0;
+-	} else if ((cls != ASN1_CTX) || (con != ASN1_CON)) {
+-		/* tag = 3 indicating mechListMIC */
+-		cFYI(1, "Exit 4 cls = %d con = %d tag = %d end = %p (%d)",
+-			cls, con, tag, end, *end);
+-		return 0;
+-	}
 -
--	stw	r9,PACA_EXSLB+EX_CCR(r13)	/* save CR in exc. frame */
--	std	r10,PACA_EXSLB+EX_LR(r13)	/* save LR */
+-	/* sequence */
+-	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
+-		cFYI(1, "Error decoding last part negTokenInit exit5");
+-		return 0;
+-	} else if ((cls != ASN1_UNI) || (con != ASN1_CON)
+-		   || (tag != ASN1_SEQ)) {
+-		cFYI(1, "cls = %d con = %d tag = %d end = %p (%d)",
+-			cls, con, tag, end, *end);
+-	}
 -
--	bl	.slb_allocate_realmode
+-	/* sequence of */
+-	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
+-		cFYI(1, "Error decoding last part negTokenInit exit 7");
+-		return 0;
+-	} else if ((cls != ASN1_CTX) || (con != ASN1_CON)) {
+-		cFYI(1, "Exit 8 cls = %d con = %d tag = %d end = %p (%d)",
+-			cls, con, tag, end, *end);
+-		return 0;
+-	}
 -
--	/* All done -- return from exception. */
--
--	ld	r10,PACA_EXSLB+EX_LR(r13)
--	ld	r3,PACA_EXSLB+EX_R3(r13)
--	lwz	r9,PACA_EXSLB+EX_CCR(r13)	/* get saved CR */
--
--	mtlr	r10
--
--	andi.	r10,r12,MSR_RI	/* check for unrecoverable exception */
--	beq-	2f
--
--.machine	push
--.machine	"power4"
--	mtcrf	0x80,r9
--	mtcrf	0x01,r9		/* slb_allocate uses cr0 and cr7 */
--.machine	pop
--
--	RESTORE_PPR_PACA(PACA_EXSLB, r9)
--	ld	r9,PACA_EXSLB+EX_R9(r13)
--	ld	r10,PACA_EXSLB+EX_R10(r13)
--	ld	r11,PACA_EXSLB+EX_R11(r13)
--	ld	r12,PACA_EXSLB+EX_R12(r13)
--	ld	r13,PACA_EXSLB+EX_R13(r13)
--	rfid
--	b	.	/* prevent speculative execution */
--
--2:	mfspr	r11,SPRN_SRR0
--	ld	r10,PACAKBASE(r13)
--	LOAD_HANDLER(r10,unrecov_slb)
--	mtspr	SPRN_SRR0,r10
--	ld	r10,PACAKMSR(r13)
--	mtspr	SPRN_SRR1,r10
--	rfid
--	b	.
--
--unrecov_slb:
--	EXCEPTION_PROLOG_COMMON(0x4100, PACA_EXSLB)
--	DISABLE_INTS
--	bl	.save_nvgprs
--1:	addi	r3,r1,STACK_FRAME_OVERHEAD
--	bl	.unrecoverable_exception
--	b	1b
--
--
--#ifdef CONFIG_PPC_970_NAP
--power4_fixup_nap:
--	andc	r9,r9,r10
--	std	r9,TI_LOCAL_FLAGS(r11)
--	ld	r10,_LINK(r1)		/* make idle task do the */
--	std	r10,_NIP(r1)		/* equivalent of a blr */
--	blr
--#endif
--
- 	.align	7
- 	.globl alignment_common
- alignment_common:
-@@ -1336,6 +1264,78 @@ _GLOBAL(opal_mc_secondary_handler)
- 
- 
- /*
-+ * r13 points to the PACA, r9 contains the saved CR,
-+ * r12 contain the saved SRR1, SRR0 is still ready for return
-+ * r3 has the faulting address
-+ * r9 - r13 are saved in paca->exslb.
-+ * r3 is saved in paca->slb_r3
-+ * We assume we aren't going to take any exceptions during this procedure.
-+ */
-+_GLOBAL(slb_miss_realmode)
-+	mflr	r10
-+#ifdef CONFIG_RELOCATABLE
-+	mtctr	r11
-+#endif
-+
-+	stw	r9,PACA_EXSLB+EX_CCR(r13)	/* save CR in exc. frame */
-+	std	r10,PACA_EXSLB+EX_LR(r13)	/* save LR */
-+
-+	bl	.slb_allocate_realmode
-+
-+	/* All done -- return from exception. */
-+
-+	ld	r10,PACA_EXSLB+EX_LR(r13)
-+	ld	r3,PACA_EXSLB+EX_R3(r13)
-+	lwz	r9,PACA_EXSLB+EX_CCR(r13)	/* get saved CR */
-+
-+	mtlr	r10
-+
-+	andi.	r10,r12,MSR_RI	/* check for unrecoverable exception */
-+	beq-	2f
-+
-+.machine	push
-+.machine	"power4"
-+	mtcrf	0x80,r9
-+	mtcrf	0x01,r9		/* slb_allocate uses cr0 and cr7 */
-+.machine	pop
-+
-+	RESTORE_PPR_PACA(PACA_EXSLB, r9)
-+	ld	r9,PACA_EXSLB+EX_R9(r13)
-+	ld	r10,PACA_EXSLB+EX_R10(r13)
-+	ld	r11,PACA_EXSLB+EX_R11(r13)
-+	ld	r12,PACA_EXSLB+EX_R12(r13)
-+	ld	r13,PACA_EXSLB+EX_R13(r13)
-+	rfid
-+	b	.	/* prevent speculative execution */
-+
-+2:	mfspr	r11,SPRN_SRR0
-+	ld	r10,PACAKBASE(r13)
-+	LOAD_HANDLER(r10,unrecov_slb)
-+	mtspr	SPRN_SRR0,r10
-+	ld	r10,PACAKMSR(r13)
-+	mtspr	SPRN_SRR1,r10
-+	rfid
-+	b	.
-+
-+unrecov_slb:
-+	EXCEPTION_PROLOG_COMMON(0x4100, PACA_EXSLB)
-+	DISABLE_INTS
-+	bl	.save_nvgprs
-+1:	addi	r3,r1,STACK_FRAME_OVERHEAD
-+	bl	.unrecoverable_exception
-+	b	1b
-+
-+
-+#ifdef CONFIG_PPC_970_NAP
-+power4_fixup_nap:
-+	andc	r9,r9,r10
-+	std	r9,TI_LOCAL_FLAGS(r11)
-+	ld	r10,_LINK(r1)		/* make idle task do the */
-+	std	r10,_NIP(r1)		/* equivalent of a blr */
-+	blr
-+#endif
-+
-+/*
-  * Hash table stuff
-  */
- 	.align	7
--- 
-1.7.7.6
+-	/* general string */
+-	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
+-		cFYI(1, "Error decoding last part negTokenInit exit9");
+-		return 0;
+-	} else if ((cls != ASN1_UNI) || (con != ASN1_PRI)
+-		   || (tag != ASN1_GENSTR)) {
+-		cFYI(1, "Exit10 cls = %d con = %d tag = %d end = %p (%d)",
+-			cls, con, tag, end, *end);
+-		return 0;
+-	}
+-	cFYI(1, "Need to call asn1_octets_decode() function for %s",
+-		ctx.pointer);	/* is this UTF-8 or ASCII? */
+-decode_negtoken_exit:
++	/*
++	 * We currently ignore anything at the end of the SPNEGO blob after
++	 * the mechTypes have been parsed, since none of that info is
++	 * used at the moment.
++	 */
+ 	return 1;
+ }
+
+
