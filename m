@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757307Ab3CYKxw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 06:53:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53857 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756146Ab3CYKxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 06:53:51 -0400
-Message-ID: <51502D29.1010307@ti.com>
-Date: Mon, 25 Mar 2013 16:25:37 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756591Ab3CYK43 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 06:56:29 -0400
+Received: from mx2.digadd.de ([195.47.195.236]:60858 "EHLO mx1.digadd.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751049Ab3CYK42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 06:56:28 -0400
+Message-ID: <51502D27.8080606@digadd.de>
+Date: Mon, 25 Mar 2013 11:55:35 +0100
+From: Christian Schmidt <schmidt@digadd.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130312 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Will Deacon <will@willdeacon.co.uk>, Lokesh Vutla <lokeshvutla@ti.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] ARM: hw_breakpoint: Enable debug powerdown only if system
- supports 'has_ossr'
-References: <51407120.7030709@ti.com> <51417E58.5050501@ti.com> <20130315050014.GA15706@tiny-lites> <5146B972.1010002@ti.com> <20130318150724.GC28585@mudshark.cambridge.arm.com> <514736D4.4070906@ti.com> <20130318170649.GA29585@mudshark.cambridge.arm.com> <5148082A.3060503@ti.com> <20130319102803.GB22452@mudshark.cambridge.arm.com> <515014A4.5020504@ti.com> <20130325104910.GE12110@mudshark.cambridge.arm.com>
-In-Reply-To: <20130325104910.GE12110@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Andi Kleen <andi@firstfloor.org>
+CC: dm-crypt@saout.de, linux-kernel@vger.kernel.org
+Subject: Re: kworkers for dm-crypt locked to CPU core 0?
+References: <51501C0A.5060406@digadd.de> <m2obe7ixck.fsf@firstfloor.org>
+In-Reply-To: <m2obe7ixck.fsf@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 March 2013 04:19 PM, Will Deacon wrote:
-> On Mon, Mar 25, 2013 at 09:11:00AM +0000, Santosh Shilimkar wrote:
->> Will,
-> 
-> Hi Santosh,
-> 
->> Are you going to send the patch for 3.9-rcx ? As I said before without the
->> patch OMAP4 CPUILDE is unusable because of that debug noise and hence it
->> will be good to get that patch in
-> 
-> It's in Russell's tree, so should be queued for mainline fairly soon.
-> 
-Thanks Will !!
+Hi Andi,
 
-Regards
-Santosh
+On 25/03/13 11:32, Andi Kleen wrote:
+> Christian Schmidt <schmidt@digadd.de> writes:
+>>
+>> Is there a way I can make the scheduler put those on multiple cores?
+> 
+> Submit the IO from multiple cores. Don't use dd.
 
+The dd processes run on multiple cores. I do understand that you were
+saying "multiple requests to the same device from multiple cores",
+however I only see kworkers from core 0 active, even with corelocked dd
+processes (via numactl). Since I just skimmed to the pcrypt.c I kind of
+realized that was the answer - do I understand correctly that the core
+for the kworker follows the core of the requestor?
+
+Basically that means that I can not get the aggregate throughput for all
+devices higher than that for a single device by changing the stacking,
+e.g. dm-crypt on top of md-raid / below the md-raid, or below zfs/btrfs
+vdevs, since all user space requests will always appear to the crypto
+layer to originate from core 0, irrespective of the core the application
+runs on, unless the file system runs multithreaded? I just tested this
+with ZFS, and all kworkers run on core 0 during file I/O or when
+resilvering a raidZ. I don't have a btrfs managing its own vdevs at hand
+to compare though.
+
+Thanks for your input,
+Christian
