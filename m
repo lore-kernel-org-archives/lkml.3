@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756096Ab3CYBQG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:16:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34009 "EHLO
+	id S1757196Ab3CYB2H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:28:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34023 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756057Ab3CYBQC (ORCPT
+	by vger.kernel.org with ESMTP id S1756072Ab3CYBQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:02 -0400
-Message-Id: <20130325010530.597448227@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:04 -0400
+Message-Id: <20130325010530.505948660@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:28 +0000
+Date: Mon, 25 Mar 2013 01:06:27 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Alex Deucher <alexander.deucher@amd.com>,
-        =?ISO-8859-15?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
-Subject: [ 064/104] drm/radeon/benchmark: make sure bo blit copy exists before using it
+Cc: akpm@linux-foundation.org, Dmitry Artamonow <mad_soft@inbox.ru>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 063/104] usb-storage: add unusual_devs entry for Samsung YP-Z3 mp3 player
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,47 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Dmitry Artamonow <mad_soft@inbox.ru>
 
-commit fa8d387dc3f62062a6b4afbbb2a3438094fd8584 upstream.
+commit 29f86e66428ee083aec106cca1748dc63d98ce23 upstream.
 
-Fixes a segfault on asics without a blit callback.
+Device stucks on filesystem writes, unless following quirk is passed:
+  echo 04e8:5136:m > /sys/module/usb_storage/parameters/quirks
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=62239
+Add corresponding entry to unusual_devs.h
 
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[bwh: Backported to 3.2: s/copy\.blit/copy_blit/]
+Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/radeon_benchmark.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_benchmark.c
-+++ b/drivers/gpu/drm/radeon/radeon_benchmark.c
-@@ -139,13 +139,15 @@ static void radeon_benchmark_move(struct
- 						     sdomain, ddomain, "dma");
- 	}
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -488,6 +488,13 @@ UNUSUAL_DEV(  0x04e8, 0x5122, 0x0000, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_MAX_SECTORS_64 | US_FL_BULK_IGNORE_TAG),
  
--	time = radeon_benchmark_do_move(rdev, size, saddr, daddr,
--					RADEON_BENCHMARK_COPY_BLIT, n);
--	if (time < 0)
--		goto out_cleanup;
--	if (time > 0)
--		radeon_benchmark_log_results(n, size, time,
--					     sdomain, ddomain, "blit");
-+	if (rdev->asic->copy_blit) {
-+		time = radeon_benchmark_do_move(rdev, size, saddr, daddr,
-+						RADEON_BENCHMARK_COPY_BLIT, n);
-+		if (time < 0)
-+			goto out_cleanup;
-+		if (time > 0)
-+			radeon_benchmark_log_results(n, size, time,
-+						     sdomain, ddomain, "blit");
-+	}
- 
- out_cleanup:
- 	if (sobj) {
++/* Added by Dmitry Artamonow <mad_soft@inbox.ru> */
++UNUSUAL_DEV(  0x04e8, 0x5136, 0x0000, 0x9999,
++		"Samsung",
++		"YP-Z3",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64),
++
+ /* Entry and supporting patch by Theodore Kilgore <kilgota@auburn.edu>.
+  * Device uses standards-violating 32-byte Bulk Command Block Wrappers and
+  * reports itself as "Proprietary SCSI Bulk." Cf. device entry 0x084d:0x0011.
 
 
