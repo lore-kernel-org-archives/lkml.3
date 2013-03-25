@@ -1,168 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757646Ab3CYJIE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 05:08:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38700 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757588Ab3CYJIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 05:08:02 -0400
-Date: Mon, 25 Mar 2013 10:07:58 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd
- reclaims at each priority
-Message-ID: <20130325090758.GO2154@dhcp22.suse.cz>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-2-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363525456-10448-2-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757773Ab3CYJJL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 05:09:11 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53304 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757742Ab3CYJJJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 05:09:09 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-b4-5150142fbc9e
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, wcohen@redhat.com
+Subject: [PATCH] perf report: Add --no-demangle option
+Date: Mon, 25 Mar 2013 18:08:56 +0900
+Message-Id: <1364202536-17576-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 17-03-13 13:04:07, Mel Gorman wrote:
-> The number of pages kswapd can reclaim is bound by the number of pages it
-> scans which is related to the size of the zone and the scanning priority. In
-> many cases the priority remains low because it's reset every SWAP_CLUSTER_MAX
-> reclaimed pages but in the event kswapd scans a large number of pages it
-> cannot reclaim, it will raise the priority and potentially discard a large
-> percentage of the zone as sc->nr_to_reclaim is ULONG_MAX. The user-visible
-> effect is a reclaim "spike" where a large percentage of memory is suddenly
-> freed. It would be bad enough if this was just unused memory but because
-> of how anon/file pages are balanced it is possible that applications get
-> pushed to swap unnecessarily.
-> 
-> This patch limits the number of pages kswapd will reclaim to the high
-> watermark. Reclaim will will overshoot due to it not being a hard limit as
-> shrink_lruvec() will ignore the sc.nr_to_reclaim at DEF_PRIORITY but it
-> prevents kswapd reclaiming the world at higher priorities. The number of
-> pages it reclaims is not adjusted for high-order allocations as kswapd will
-> reclaim excessively if it is to balance zones for high-order allocations.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-It seems I forgot to add
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+It's sometimes useful to see undemangled raw symbol name for example
+other tools using the perf output to do manipulation of binaries.
 
-> ---
->  mm/vmscan.c | 53 +++++++++++++++++++++++++++++------------------------
->  1 file changed, 29 insertions(+), 24 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 88c5fed..4835a7a 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2593,6 +2593,32 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
->  }
->  
->  /*
-> + * kswapd shrinks the zone by the number of pages required to reach
-> + * the high watermark.
-> + */
-> +static void kswapd_shrink_zone(struct zone *zone,
-> +			       struct scan_control *sc,
-> +			       unsigned long lru_pages)
-> +{
-> +	unsigned long nr_slab;
-> +	struct reclaim_state *reclaim_state = current->reclaim_state;
-> +	struct shrink_control shrink = {
-> +		.gfp_mask = sc->gfp_mask,
-> +	};
-> +
-> +	/* Reclaim above the high watermark. */
-> +	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
-> +	shrink_zone(zone, sc);
-> +
-> +	reclaim_state->reclaimed_slab = 0;
-> +	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
-> +	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
-> +
-> +	if (nr_slab == 0 && !zone_reclaimable(zone))
-> +		zone->all_unreclaimable = 1;
-> +}
-> +
-> +/*
->   * For kswapd, balance_pgdat() will work across all this node's zones until
->   * they are all at high_wmark_pages(zone).
->   *
-> @@ -2619,27 +2645,16 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  	bool pgdat_is_balanced = false;
->  	int i;
->  	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
-> -	unsigned long total_scanned;
-> -	struct reclaim_state *reclaim_state = current->reclaim_state;
->  	unsigned long nr_soft_reclaimed;
->  	unsigned long nr_soft_scanned;
->  	struct scan_control sc = {
->  		.gfp_mask = GFP_KERNEL,
->  		.may_unmap = 1,
->  		.may_swap = 1,
-> -		/*
-> -		 * kswapd doesn't want to be bailed out while reclaim. because
-> -		 * we want to put equal scanning pressure on each zone.
-> -		 */
-> -		.nr_to_reclaim = ULONG_MAX,
->  		.order = order,
->  		.target_mem_cgroup = NULL,
->  	};
-> -	struct shrink_control shrink = {
-> -		.gfp_mask = sc.gfp_mask,
-> -	};
->  loop_again:
-> -	total_scanned = 0;
->  	sc.priority = DEF_PRIORITY;
->  	sc.nr_reclaimed = 0;
->  	sc.may_writepage = !laptop_mode;
-> @@ -2710,7 +2725,7 @@ loop_again:
->  		 */
->  		for (i = 0; i <= end_zone; i++) {
->  			struct zone *zone = pgdat->node_zones + i;
-> -			int nr_slab, testorder;
-> +			int testorder;
->  			unsigned long balance_gap;
->  
->  			if (!populated_zone(zone))
-> @@ -2730,7 +2745,6 @@ loop_again:
->  							order, sc.gfp_mask,
->  							&nr_soft_scanned);
->  			sc.nr_reclaimed += nr_soft_reclaimed;
-> -			total_scanned += nr_soft_scanned;
->  
->  			/*
->  			 * We put equal pressure on every zone, unless
-> @@ -2759,17 +2773,8 @@ loop_again:
->  
->  			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
->  			    !zone_balanced(zone, testorder,
-> -					   balance_gap, end_zone)) {
-> -				shrink_zone(zone, &sc);
-> -
-> -				reclaim_state->reclaimed_slab = 0;
-> -				nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
-> -				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
-> -				total_scanned += sc.nr_scanned;
-> -
-> -				if (nr_slab == 0 && !zone_reclaimable(zone))
-> -					zone->all_unreclaimable = 1;
-> -			}
-> +					   balance_gap, end_zone))
-> +				kswapd_shrink_zone(zone, &sc, lru_pages);
->  
->  			/*
->  			 * If we're getting trouble reclaiming, start doing
-> -- 
-> 1.8.1.4
-> 
+Suggested-by: William Cohen <wcohen@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-report.c  | 2 ++
+ tools/perf/util/symbol-elf.c | 9 ++++++---
+ tools/perf/util/symbol.c     | 1 +
+ tools/perf/util/symbol.h     | 3 ++-
+ 4 files changed, 11 insertions(+), 4 deletions(-)
 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 296bd219977a..b5ea26cc7eb1 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -692,6 +692,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "use branch records for histogram filling", parse_branch_mode),
+ 	OPT_STRING(0, "objdump", &objdump_path, "path",
+ 		   "objdump binary to use for disassembly and annotations"),
++	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
++		    "Disable symbol demangling"),
+ 	OPT_END()
+ 	};
+ 
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 54efcb5659ac..4b12bf850325 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -806,9 +806,12 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 		 * DWARF DW_compile_unit has this, but we don't always have access
+ 		 * to it...
+ 		 */
+-		demangled = bfd_demangle(NULL, elf_name, DMGL_PARAMS | DMGL_ANSI);
+-		if (demangled != NULL)
+-			elf_name = demangled;
++		if (symbol_conf.demangle) {
++			demangled = bfd_demangle(NULL, elf_name,
++						 DMGL_PARAMS | DMGL_ANSI);
++			if (demangled != NULL)
++				elf_name = demangled;
++		}
+ new_symbol:
+ 		f = symbol__new(sym.st_value, sym.st_size,
+ 				GELF_ST_BIND(sym.st_info), elf_name);
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index e6432d85b43d..8cf3b5426a9a 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -36,6 +36,7 @@ struct symbol_conf symbol_conf = {
+ 	.use_modules	  = true,
+ 	.try_vmlinux_path = true,
+ 	.annotate_src	  = true,
++	.demangle	  = true,
+ 	.symfs            = "",
+ };
+ 
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index b62ca37c4b77..d7654c23861a 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -97,7 +97,8 @@ struct symbol_conf {
+ 			kptr_restrict,
+ 			annotate_asm_raw,
+ 			annotate_src,
+-			event_group;
++			event_group,
++			demangle;
+ 	const char	*vmlinux_name,
+ 			*kallsyms_name,
+ 			*source_prefix,
 -- 
-Michal Hocko
-SUSE Labs
+1.7.11.7
+
