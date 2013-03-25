@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab3CYBPg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:15:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33883 "EHLO
+	id S1755835Ab3CYBPd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:15:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33882 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755629Ab3CYBPZ (ORCPT
+	by vger.kernel.org with ESMTP id S1755693Ab3CYBPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 24 Mar 2013 21:15:25 -0400
-Message-Id: <20130325010534.116563310@decadent.org.uk>
+Message-Id: <20130325010532.711405969@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:07:03 +0000
+Date: Mon, 25 Mar 2013 01:06:49 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>, Wolfram Sang <wsa@the-dreams.de>
-Subject: [ 099/104] i2c: tegra: check the clk_prepare_enable() return value
+Cc: akpm@linux-foundation.org, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 085/104] USB: ark3116: fix use-after-free in TIOCMIWAIT
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,58 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laxman Dewangan <ldewangan@nvidia.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 132c803f7b70b17322579f6f4f3f65cf68e55135 upstream.
+commit 5018860321dc7a9e50a75d5f319bc981298fb5b7 upstream.
 
-NVIDIA's Tegra SoC allows read/write of controller register only
-if controller clock is enabled. System hangs if read/write happens
-to registers without enabling clock.
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
 
-clk_prepare_enable() can be fail due to unknown reason and hence
-adding check for return value of this function. If this function
-success then only access register otherwise return to caller with
-error.
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-[bwh: Backported to 3.2:
- - Adjust context
- - Keep calling clk_enable() directly]
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/i2c/busses/i2c-tegra.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ark3116.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -341,7 +341,11 @@ static int tegra_i2c_init(struct tegra_i
- 	u32 val;
- 	int err = 0;
+--- a/drivers/usb/serial/ark3116.c
++++ b/drivers/usb/serial/ark3116.c
+@@ -68,7 +68,6 @@ static int is_irda(struct usb_serial *se
+ }
  
--	clk_enable(i2c_dev->clk);
-+	err = clk_enable(i2c_dev->clk);
-+	if (err < 0) {
-+		dev_err(i2c_dev->dev, "Clock enable failed %d\n", err);
-+		return err;
-+	}
+ struct ark3116_private {
+-	wait_queue_head_t       delta_msr_wait;
+ 	struct async_icount	icount;
+ 	int			irda;	/* 1 for irda device */
  
- 	tegra_periph_reset_assert(i2c_dev->clk);
- 	udelay(2);
-@@ -536,7 +540,12 @@ static int tegra_i2c_xfer(struct i2c_ada
- 	if (i2c_dev->is_suspended)
- 		return -EBUSY;
+@@ -148,7 +147,6 @@ static int ark3116_attach(struct usb_ser
+ 	if (!priv)
+ 		return -ENOMEM;
  
--	clk_enable(i2c_dev->clk);
-+	ret = clk_enable(i2c_dev->clk);
-+	if (ret < 0) {
-+		dev_err(i2c_dev->dev, "Clock enable failed %d\n", ret);
-+		return ret;
-+	}
+-	init_waitqueue_head(&priv->delta_msr_wait);
+ 	mutex_init(&priv->hw_lock);
+ 	spin_lock_init(&priv->status_lock);
+ 
+@@ -460,10 +458,14 @@ static int ark3116_ioctl(struct tty_stru
+ 	case TIOCMIWAIT:
+ 		for (;;) {
+ 			struct async_icount prev = priv->icount;
+-			interruptible_sleep_on(&priv->delta_msr_wait);
++			interruptible_sleep_on(&port->delta_msr_wait);
+ 			/* see if a signal did it */
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
 +
- 	for (i = 0; i < num; i++) {
- 		int stop = (i == (num - 1)) ? 1  : 0;
- 		ret = tegra_i2c_xfer_msg(i2c_dev, &msgs[i], stop);
++			if (port->serial->disconnected)
++				return -EIO;
++
+ 			if ((prev.rng == priv->icount.rng) &&
+ 			    (prev.dsr == priv->icount.dsr) &&
+ 			    (prev.dcd == priv->icount.dcd) &&
+@@ -584,7 +586,7 @@ static void ark3116_update_msr(struct us
+ 			priv->icount.dcd++;
+ 		if (msr & UART_MSR_TERI)
+ 			priv->icount.rng++;
+-		wake_up_interruptible(&priv->delta_msr_wait);
++		wake_up_interruptible(&port->delta_msr_wait);
+ 	}
+ }
+ 
 
 
