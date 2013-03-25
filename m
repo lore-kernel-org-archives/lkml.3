@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696Ab3CYQ4Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 12:56:16 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:38803 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932647Ab3CYQ4N (ORCPT
+	id S932734Ab3CYQ42 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 12:56:28 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:57989 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932699Ab3CYQ4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 12:56:13 -0400
+	Mon, 25 Mar 2013 12:56:22 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: arvind.chauhan@arm.com, robin.randhawa@arm.com, Steve.Bannister@arm.com,
@@ -14,10 +14,12 @@ Cc: arvind.chauhan@arm.com, robin.randhawa@arm.com, Steve.Bannister@arm.com,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         arnd.bergmann@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [PATCH 8/9] spark: cpufreq:  move cpufreq driver to drivers/cpufreq
-Date: Mon, 25 Mar 2013 22:24:44 +0530
-Message-Id: <2641a3f059f1698ee6825c7b6bfe25a3937e1474.1364229828.git.viresh.kumar@linaro.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Olof Johansson <olof@lixom.net>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 9/9] powerpc: cpufreq:  move cpufreq driver to drivers/cpufreq
+Date: Mon, 25 Mar 2013 22:24:45 +0530
+Message-Id: <4180fd5b43906421fc155126e8b7bea5fb3ff375.1364229828.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1364229828.git.viresh.kumar@linaro.org>
 References: <cover.1364229828.git.viresh.kumar@linaro.org>
@@ -27,123 +29,150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves cpufreq driver of SPARK architecture to drivers/cpufreq.
+This patch moves cpufreq driver of powerpc platform to drivers/cpufreq.
 
-Cc: David S. Miller <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: linuxppc-dev@lists.ozlabs.org
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- arch/sparc/Kconfig                                 | 23 ----------------------
- arch/sparc/kernel/Makefile                         |  3 ---
- drivers/cpufreq/Kconfig                            | 23 ++++++++++++++++++++++
- drivers/cpufreq/Makefile                           |  2 ++
- .../cpufreq/spark-us2e-cpufreq.c                   |  0
- .../cpufreq/spark-us3-cpufreq.c                    |  0
- 6 files changed, 25 insertions(+), 26 deletions(-)
- rename arch/sparc/kernel/us2e_cpufreq.c => drivers/cpufreq/spark-us2e-cpufreq.c (100%)
- rename arch/sparc/kernel/us3_cpufreq.c => drivers/cpufreq/spark-us3-cpufreq.c (100%)
+ arch/powerpc/platforms/Kconfig                     | 31 ----------------------
+ arch/powerpc/platforms/pasemi/Makefile             |  1 -
+ arch/powerpc/platforms/powermac/Makefile           |  2 --
+ drivers/cpufreq/Kconfig.powerpc                    | 26 ++++++++++++++++++
+ drivers/cpufreq/Makefile                           |  3 +++
+ .../cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c  |  0
+ .../cpufreq/pmac32-cpufreq.c                       |  0
+ .../cpufreq/pmac64-cpufreq.c                       |  0
+ 8 files changed, 29 insertions(+), 34 deletions(-)
+ rename arch/powerpc/platforms/pasemi/cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c (100%)
+ rename arch/powerpc/platforms/powermac/cpufreq_32.c => drivers/cpufreq/pmac32-cpufreq.c (100%)
+ rename arch/powerpc/platforms/powermac/cpufreq_64.c => drivers/cpufreq/pmac64-cpufreq.c (100%)
 
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 289127d..52e7680 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -260,29 +260,6 @@ config HOTPLUG_CPU
+diff --git a/arch/powerpc/platforms/Kconfig b/arch/powerpc/platforms/Kconfig
+index 52de8bc..46a223f 100644
+--- a/arch/powerpc/platforms/Kconfig
++++ b/arch/powerpc/platforms/Kconfig
+@@ -194,37 +194,6 @@ config PPC_IO_WORKAROUNDS
  
- if SPARC64
  source "drivers/cpufreq/Kconfig"
--
--config US3_FREQ
--	tristate "UltraSPARC-III CPU Frequency driver"
+ 
+-menu "CPU Frequency drivers"
 -	depends on CPU_FREQ
+-
+-config CPU_FREQ_PMAC
+-	bool "Support for Apple PowerBooks"
+-	depends on ADB_PMU && PPC32
 -	select CPU_FREQ_TABLE
 -	help
--	  This adds the CPUFreq driver for UltraSPARC-III processors.
+-	  This adds support for frequency switching on Apple PowerBooks,
+-	  this currently includes some models of iBook & Titanium
+-	  PowerBook.
 -
--	  For details, take a look at <file:Documentation/cpu-freq>.
--
--	  If in doubt, say N.
--
--config US2E_FREQ
--	tristate "UltraSPARC-IIe CPU Frequency driver"
--	depends on CPU_FREQ
+-config CPU_FREQ_PMAC64
+-	bool "Support for some Apple G5s"
+-	depends on PPC_PMAC && PPC64
 -	select CPU_FREQ_TABLE
 -	help
--	  This adds the CPUFreq driver for UltraSPARC-IIe processors.
+-	  This adds support for frequency switching on Apple iMac G5,
+-	  and some of the more recent desktop G5 machines as well.
 -
--	  For details, take a look at <file:Documentation/cpu-freq>.
+-config PPC_PASEMI_CPUFREQ
+-	bool "Support for PA Semi PWRficient"
+-	depends on PPC_PASEMI
+-	default y
+-	select CPU_FREQ_TABLE
+-	help
+-	  This adds the support for frequency switching on PA Semi
+-	  PWRficient processors.
 -
--	  If in doubt, say N.
+-endmenu
 -
- endif
+ menu "CPUIdle driver"
  
- config US3_MC
-diff --git a/arch/sparc/kernel/Makefile b/arch/sparc/kernel/Makefile
-index 6cf591b..5276fd4 100644
---- a/arch/sparc/kernel/Makefile
-+++ b/arch/sparc/kernel/Makefile
-@@ -102,9 +102,6 @@ obj-$(CONFIG_PCI_MSI)        += pci_msi.o
- 
- obj-$(CONFIG_COMPAT)         += sys32.o sys_sparc32.o signal32.o
- 
--# sparc64 cpufreq
--obj-$(CONFIG_US3_FREQ)  += us3_cpufreq.o
--obj-$(CONFIG_US2E_FREQ) += us2e_cpufreq.o
- obj-$(CONFIG_US3_MC)    += chmc.o
- 
- obj-$(CONFIG_KPROBES)   += kprobes.o
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index 602d5db..5b2c312 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -258,6 +258,29 @@ depends on PPC32 || PPC64
- source "drivers/cpufreq/Kconfig.powerpc"
- endmenu
- 
-+menu "SPARK CPU frequency scaling drivers"
-+depends on SPARC64
-+config SPARK_US3_CPUFREQ
-+	tristate "UltraSPARC-III CPU Frequency driver"
+ source "drivers/cpuidle/Kconfig"
+diff --git a/arch/powerpc/platforms/pasemi/Makefile b/arch/powerpc/platforms/pasemi/Makefile
+index ce6d789..8e8d4ca 100644
+--- a/arch/powerpc/platforms/pasemi/Makefile
++++ b/arch/powerpc/platforms/pasemi/Makefile
+@@ -1,3 +1,2 @@
+ obj-y	+= setup.o pci.o time.o idle.o powersave.o iommu.o dma_lib.o misc.o
+ obj-$(CONFIG_PPC_PASEMI_MDIO)	+= gpio_mdio.o
+-obj-$(CONFIG_PPC_PASEMI_CPUFREQ) += cpufreq.o
+diff --git a/arch/powerpc/platforms/powermac/Makefile b/arch/powerpc/platforms/powermac/Makefile
+index ea47df6..52c6ce1 100644
+--- a/arch/powerpc/platforms/powermac/Makefile
++++ b/arch/powerpc/platforms/powermac/Makefile
+@@ -9,8 +9,6 @@ obj-y				+= pic.o setup.o time.o feature.o pci.o \
+ 				   sleep.o low_i2c.o cache.o pfunc_core.o \
+ 				   pfunc_base.o udbg_scc.o udbg_adb.o
+ obj-$(CONFIG_PMAC_BACKLIGHT)	+= backlight.o
+-obj-$(CONFIG_CPU_FREQ_PMAC)	+= cpufreq_32.o
+-obj-$(CONFIG_CPU_FREQ_PMAC64)	+= cpufreq_64.o
+ # CONFIG_NVRAM is an arch. independent tristate symbol, for pmac32 we really
+ # need this to be a bool.  Cheat here and pretend CONFIG_NVRAM=m is really
+ # CONFIG_NVRAM=y
+diff --git a/drivers/cpufreq/Kconfig.powerpc b/drivers/cpufreq/Kconfig.powerpc
+index e76992f..2e5a007 100644
+--- a/drivers/cpufreq/Kconfig.powerpc
++++ b/drivers/cpufreq/Kconfig.powerpc
+@@ -5,3 +5,29 @@ config CPU_FREQ_MAPLE
+ 	help
+ 	  This adds support for frequency switching on Maple 970FX
+ 	  Evaluation Board and compatible boards (IBM JS2x blades).
++
++config CPU_FREQ_PMAC
++	bool "Support for Apple PowerBooks"
++	depends on ADB_PMU && PPC32
 +	select CPU_FREQ_TABLE
 +	help
-+	  This adds the CPUFreq driver for UltraSPARC-III processors.
++	  This adds support for frequency switching on Apple PowerBooks,
++	  this currently includes some models of iBook & Titanium
++	  PowerBook.
 +
-+	  For details, take a look at <file:Documentation/cpu-freq>.
-+
-+	  If in doubt, say N.
-+
-+config SPARK_US2E_CPUFREQ
-+	tristate "UltraSPARC-IIe CPU Frequency driver"
++config CPU_FREQ_PMAC64
++	bool "Support for some Apple G5s"
++	depends on PPC_PMAC && PPC64
 +	select CPU_FREQ_TABLE
 +	help
-+	  This adds the CPUFreq driver for UltraSPARC-IIe processors.
++	  This adds support for frequency switching on Apple iMac G5,
++	  and some of the more recent desktop G5 machines as well.
 +
-+	  For details, take a look at <file:Documentation/cpu-freq>.
-+
-+	  If in doubt, say N.
-+endmenu
-+
- menu "SH CPU Frequency scaling"
- depends on SUPERH
- config SH_CPU_FREQ
++config PPC_PASEMI_CPUFREQ
++	bool "Support for PA Semi PWRficient"
++	depends on PPC_PASEMI
++	select CPU_FREQ_TABLE
++	default y
++	help
++	  This adds the support for frequency switching on PA Semi
++	  PWRficient processors.
 diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index ab3a054..0203a06 100644
+index 0203a06..fa4b5f2 100644
 --- a/drivers/cpufreq/Makefile
 +++ b/drivers/cpufreq/Makefile
-@@ -85,4 +85,6 @@ obj-$(CONFIG_ETRAXFS)			+= cris-etraxfs-cpufreq.o
- obj-$(CONFIG_IA64_ACPI_CPUFREQ)		+= ia64-acpi-cpufreq.o
- obj-$(CONFIG_LOONGSON2_CPUFREQ)		+= loongson2_cpufreq.o
- obj-$(CONFIG_SH_CPU_FREQ)		+= sh-cpufreq.o
-+obj-$(CONFIG_SPARK_US2E_CPUFREQ)	+= spark-us2e-cpufreq.o
-+obj-$(CONFIG_SPARK_US3_CPUFREQ)		+= spark-us3-cpufreq.o
- obj-$(CONFIG_UNICORE32)			+= unicore2-cpufreq.o
-diff --git a/arch/sparc/kernel/us2e_cpufreq.c b/drivers/cpufreq/spark-us2e-cpufreq.c
+@@ -75,6 +75,9 @@ obj-$(CONFIG_ARCH_TEGRA)		+= tegra-cpufreq.o
+ ##################################################################################
+ # PowerPC platform drivers
+ obj-$(CONFIG_CPU_FREQ_MAPLE)		+= maple-cpufreq.o
++obj-$(CONFIG_CPU_FREQ_PMAC)		+= pmac32-cpufreq.o
++obj-$(CONFIG_CPU_FREQ_PMAC64)		+= pmac64-cpufreq.o
++obj-$(CONFIG_PPC_PASEMI_CPUFREQ)	+= pasemi-cpufreq.o
+ 
+ ##################################################################################
+ # Other platform drivers
+diff --git a/arch/powerpc/platforms/pasemi/cpufreq.c b/drivers/cpufreq/pasemi-cpufreq.c
 similarity index 100%
-rename from arch/sparc/kernel/us2e_cpufreq.c
-rename to drivers/cpufreq/spark-us2e-cpufreq.c
-diff --git a/arch/sparc/kernel/us3_cpufreq.c b/drivers/cpufreq/spark-us3-cpufreq.c
+rename from arch/powerpc/platforms/pasemi/cpufreq.c
+rename to drivers/cpufreq/pasemi-cpufreq.c
+diff --git a/arch/powerpc/platforms/powermac/cpufreq_32.c b/drivers/cpufreq/pmac32-cpufreq.c
 similarity index 100%
-rename from arch/sparc/kernel/us3_cpufreq.c
-rename to drivers/cpufreq/spark-us3-cpufreq.c
+rename from arch/powerpc/platforms/powermac/cpufreq_32.c
+rename to drivers/cpufreq/pmac32-cpufreq.c
+diff --git a/arch/powerpc/platforms/powermac/cpufreq_64.c b/drivers/cpufreq/pmac64-cpufreq.c
+similarity index 100%
+rename from arch/powerpc/platforms/powermac/cpufreq_64.c
+rename to drivers/cpufreq/pmac64-cpufreq.c
 -- 
 1.7.12.rc2.18.g61b472e
 
