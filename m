@@ -1,90 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933705Ab3CYXjw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 19:39:52 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:58854 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759011Ab3CYXjt (ORCPT
+	id S933741Ab3CYXnx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 19:43:53 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:57142 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab3CYXnw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 19:39:49 -0400
-X-AuditID: cbfee691-b7f5f6d000002fda-f7-5150e044c5ca
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Guennadi Liakhovetski'" <g.liakhovetski@gmx.de>,
-        linux-kernel@vger.kernel.org, "'Magnus Damm'" <magnus.damm@gmail.com>,
-        "'Simon Horman'" <horms@verge.net.au>,
-        devicetree-discuss@lists.ozlabs.org,
-        "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>, linux-fbdev@vger.kernel.org,
-        "'Guennadi Liakhovetski'" <g.liakhovetski+renesas@gmail.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1363968949-12151-1-git-send-email-g.liakhovetski@gmx.de>
- <1363968949-12151-4-git-send-email-g.liakhovetski@gmx.de>
- <00da01ce2917$54856ce0$fd9046a0$%han@samsung.com>
- <20130325101442.GJ18316@opensource.wolfsonmicro.com>
-In-reply-to: <20130325101442.GJ18316@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH v3 3/3] backlight: as3711: add OF support
-Date: Tue, 26 Mar 2013 08:39:47 +0900
-Message-id: <00cb01ce29b2$095f6f90$1c1e4eb0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4pQZiXLdpFaz04QreWqQXBFvYVxwAb9xKg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjleLIzCtJLcpLzFFi42I5/e+Zga7Lg4BAg+/XWC3mrF/DZvFv9ik2
-	iwOzH7Ja3Jz+iNni/cZ5TBbNW78yWlxeeInV4kTfB1aLy7vmsFk8WP2WzWL3rqesFqe7WR14
-	PHbOusvu8eFjnMeJGb9ZPOadDPQ4P2Mho8fLib/ZPPbM/8Hq0bdlFaPHnJ/fWDw+b5IL4Iri
-	sklJzcksSy3St0vgyjjX9Ie14ApLxYxNc5gbGA8xdzFyckgImEj8nLSYCcIWk7hwbz0biC0k
-	sIxRYuL6eJiaVwvbmSDiixglHt6X62LkArJ/MUrM3bgfrIFNQE3iy5fD7F2MHBwiAmYSPw/y
-	gNQwCxxjlpg/YwkTRMMbRompl06ygDRwCjhKzP61mh3EFhawldiy+y4jSDOLgKrEps2mIGFe
-	oHD3/Z3sELagxI/J98BamQW0JNbvPM4EYctLbF7zlhmkVUJAXeLRX12IE4wkzl/NhagQkdj3
-	4h0jyAUSAls4JDo6msB+ZxEQkPg2+RALRKusxKYD0CCRlDi44gbLBEaJWUgWz0KyeBaSxbOQ
-	rFjAyLKKUTS1ILmgOCm9yFSvODG3uDQvXS85P3cTIyQtTNzBeP+A9SHGZKD1E5mlRJPzgWkl
-	ryTe0NjMyMLUxNTYyNzSjDRhJXFe9RbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2M/Cp+
-	sZZbzRe5ijyqeVdy8uV5not+boIvN/N/9u1/dPYdz9JQkz/qrfMjQyo/SIuKvrqWfG73LqH7
-	kWrq9VvsX/182uG4MGVxgSaDbt3cgy3ir0WdhZhP9Nx5KH3HuWixzq2FfX4nLhl+qiizedGz
-	Y9emcsUXQsYF+2cca93weNqrQwdFJQLZlViKMxINtZiLihMB1ZOlWCEDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNKsWRmVeSWpSXmKPExsVy+t9jAV2XBwGBBn+dLOasX8Nm8W/2KTaL
-	A7MfslrcnP6I2eL9xnlMFs1bvzJaXF54idXiRN8HVovLu+awWTxY/ZbNYveup6wWp7tZHXg8
-	ds66y+7x4WOcx4kZv1k85p0M9Dg/YyGjx8uJv9k89sz/werRt2UVo8ecn99YPD5vkgvgimpg
-	tMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBulpJoSwx
-	pxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmHGu6Q9rwRWWihmb5jA3MB5i7mLk
-	5JAQMJF4tbCdCcIWk7hwbz0biC0ksIhR4uF9uS5GLiD7F6PE3I37wRJsAmoSX74cZu9i5OAQ
-	ETCT+HmQB6SGWeAYs8T8GUuYIBreMEpMvXSSBaSBU8BRYvav1ewgtrCArcSW3XcZQZpZBFQl
-	Nm02BQnzAoW77+9kh7AFJX5MvgfWyiygJbF+53EmCFteYvOat8wgrRIC6hKP/upCnGAkcf5q
-	LkSFiMS+F+8YJzAKzUIyaBaSQbOQDJqFpGUBI8sqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxN
-	jOCk80x6B+OqBotDjAIcjEo8vBxhAYFCrIllxZW5hxglOJiVRHiPXQAK8aYkVlalFuXHF5Xm
-	pBYfYkwGenMis5Rocj4wIeaVxBsam5gZWRqZWRiZmJuTJqwkznuw1TpQSCA9sSQ1OzW1ILUI
-	ZgsTB6dUAyNr4PU9upzrWyRn7dzwV/fU0hPV62cv54j10P2/QmRTwJxbTwK37XZZq+Hhv1Fa
-	mokho//31dRLLovvRj1P7XN5e7IyRqylyj5f8tYvP2tGz9zyAvk6Re0TOi+Ljrv6Gq/3YXqy
-	gp+Ta/fMVblbs+0ML6+O/uf/o/yt5uvzxmceMOxRf1e2hUmJpTgj0VCLuag4EQDwFrSufgMA	AA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 25 Mar 2013 19:43:52 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Prashant Gaikwad <pgaikwad@nvidia.com>, <hdoyu@nvidia.com>,
+        <t.figa@samsung.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1363780834-1289-1-git-send-email-pgaikwad@nvidia.com>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>
+References: <1363780834-1289-1-git-send-email-pgaikwad@nvidia.com>
+Message-ID: <20130325234343.4014.28487@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH V3] clk: Add composite clock type
+Date: Mon, 25 Mar 2013 16:43:43 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 25, 2013 7:15 PM, Mark Brown wrote:
+Quoting Prashant Gaikwad (2013-03-20 05:00:34)
+> Not all clocks are required to be decomposed into basic clock
+> types but at the same time want to use the functionality
+> provided by these basic clock types instead of duplicating.
 > 
-> On Mon, Mar 25, 2013 at 02:12:21PM +0900, Jingoo Han wrote:
-> > On Saturday, March 23, 2013 1:16 AM, Guennadi Liakhovetski wrote:
+> For example, Tegra SoC has ~100 clocks which can be decomposed
+> into Mux -> Div -> Gate clock types making the clock count to
+> ~300. Also, parent change operation can not be performed on gate
+> clock which forces to use mux clock in driver if want to change
+> the parent.
 > 
-> > But, there is a typo in comment.
-> > > +		 * At least one su2-auto-curr* must be specified iff
-> > s/iff/if
+> Instead aggregate the basic clock types functionality into one
+> clock and just use this clock for all operations. This clock
+> type re-uses the functionality of basic clock types and not
+> limited to basic clock types but any hardware-specific
+> implementation.
 > 
-> Are you sure that's a typo?  "Iff" is a bit of mathematical jargon
-> which means "if and only if" that's fairly often used in a computing
-> context.
+> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
 
-Oh, it's my mistake.
+This version looks cleaner.  Thanks for the respin.  Taken into
+clk-next.
 
-'xor' is used; thus, it is not a typo.
- Thank you for your comment.
+Regards,
+Mike
 
-Best regards,
-Jingoo Han
-
+> ---
+> 
+> Changes from V2:
+> - Move clk_ops inside clk_composite instead of dynamically allocation.
+> 
+> ---
+>  drivers/clk/Makefile         |    1 +
+>  drivers/clk/clk-composite.c  |  201 ++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/clk-provider.h |   31 +++++++
+>  3 files changed, 233 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/clk/clk-composite.c
+> 
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index 0147022..097ed01 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -7,6 +7,7 @@ obj-$(CONFIG_COMMON_CLK)        += clk-fixed-factor.o
+>  obj-$(CONFIG_COMMON_CLK)       += clk-fixed-rate.o
+>  obj-$(CONFIG_COMMON_CLK)       += clk-gate.o
+>  obj-$(CONFIG_COMMON_CLK)       += clk-mux.o
+> +obj-$(CONFIG_COMMON_CLK)       += clk-composite.o
+>  
+>  # SoCs specific
+>  obj-$(CONFIG_ARCH_BCM2835)     += clk-bcm2835.o
+> diff --git a/drivers/clk/clk-composite.c b/drivers/clk/clk-composite.c
+> new file mode 100644
+> index 0000000..097dee4
+> --- /dev/null
+> +++ b/drivers/clk/clk-composite.c
+> @@ -0,0 +1,201 @@
+> +/*
+> + * Copyright (c) 2013 NVIDIA CORPORATION.  All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/clk-provider.h>
+> +#include <linux/err.h>
+> +#include <linux/slab.h>
+> +
+> +#define to_clk_composite(_hw) container_of(_hw, struct clk_composite, hw)
+> +
+> +static u8 clk_composite_get_parent(struct clk_hw *hw)
+> +{
+> +       struct clk_composite *composite = to_clk_composite(hw);
+> +       const struct clk_ops *mux_ops = composite->mux_ops;
+> +       struct clk_hw *mux_hw = composite->mux_hw;
+> +
+> +       mux_hw->clk = hw->clk;
+> +
+> +       return mux_ops->get_parent(mux_hw);
+> +}
+> +
+> +static int clk_composite_set_parent(struct clk_hw *hw, u8 index)
+> +{
+> +       struct clk_composite *composite = to_clk_composite(hw);
+> +       const struct clk_ops *mux_ops = composite->mux_ops;
+> +       struct clk_hw *mux_hw = composite->mux_hw;
+> +
+> +       mux_hw->clk = hw->clk;
+> +
+> +       return mux_ops->set_parent(mux_hw, index);
+> +}
+> +
+> +static unsigned long clk_composite_recalc_rate(struct clk_hw *hw,
+> +                                           unsigned long parent_rate)
+> +{
+> +       struct clk_composite *composite = to_clk_composite(hw);
+> +       const struct clk_ops *div_ops = composite->div_ops;
+> +       struct clk_hw *div_hw = composite->div_hw;
+> +
+> +       div_hw->clk = hw->clk;
+> +
+> +       return div_ops->recalc_rate(div_hw, parent_rate);
+> +}
+> +
+> +static long clk_composite_round_rate(struct clk_hw *hw, unsigned long rate,
+> +                                 unsigned long *prate)
+> +{
+> +       struct clk_composite *composite = to_clk_composite(hw);
+> +       const struct clk_ops *div_ops = composite->div_ops;
+> +       struct clk_hw *div_hw = composite->div_hw;
+> +
+> +       div_hw->clk = hw->clk;
+> +
+> +       return div_ops->round_rate(div_hw, rate, prate);
+> +}
+> +
+> +static int clk_composite_set_rate(struct clk_hw *hw, unsigned long rate,
+> +                              unsigned long parent_rate)
+> +{
+> +       struct clk_composite *composite = to_clk_composite(hw);
+> +       const struct clk_ops *div_ops = composite->div_ops;
+> +       struct clk_hw *div_hw = composite->div_hw;
+> +
+> +       div_hw->clk = hw->clk;
+> +
+> +       return div_ops->set_rate(div_hw, rate, parent_rate);
+> +}
+> +
+> +static int clk_composite_is_enabled(struct clk_hw *hw)
+> +{
+> +       struct clk_composite *composite = to_clk_composite(hw);
+> +       const struct clk_ops *gate_ops = composite->gate_ops;
+> +       struct clk_hw *gate_hw = composite->gate_hw;
+> +
+> +       gate_hw->clk = hw->clk;
+> +
+> +       return gate_ops->is_enabled(gate_hw);
+> +}
+> +
+> +static int clk_composite_enable(struct clk_hw *hw)
+> +{
+> +       struct clk_composite *composite = to_clk_composite(hw);
+> +       const struct clk_ops *gate_ops = composite->gate_ops;
+> +       struct clk_hw *gate_hw = composite->gate_hw;
+> +
+> +       gate_hw->clk = hw->clk;
+> +
+> +       return gate_ops->enable(gate_hw);
+> +}
+> +
+> +static void clk_composite_disable(struct clk_hw *hw)
+> +{
+> +       struct clk_composite *composite = to_clk_composite(hw);
+> +       const struct clk_ops *gate_ops = composite->gate_ops;
+> +       struct clk_hw *gate_hw = composite->gate_hw;
+> +
+> +       gate_hw->clk = hw->clk;
+> +
+> +       gate_ops->disable(gate_hw);
+> +}
+> +
+> +struct clk *clk_register_composite(struct device *dev, const char *name,
+> +                       const char **parent_names, int num_parents,
+> +                       struct clk_hw *mux_hw, const struct clk_ops *mux_ops,
+> +                       struct clk_hw *div_hw, const struct clk_ops *div_ops,
+> +                       struct clk_hw *gate_hw, const struct clk_ops *gate_ops,
+> +                       unsigned long flags)
+> +{
+> +       struct clk *clk;
+> +       struct clk_init_data init;
+> +       struct clk_composite *composite;
+> +       struct clk_ops *clk_composite_ops;
+> +
+> +       composite = kzalloc(sizeof(*composite), GFP_KERNEL);
+> +       if (!composite) {
+> +               pr_err("%s: could not allocate composite clk\n", __func__);
+> +               return ERR_PTR(-ENOMEM);
+> +       }
+> +
+> +       init.name = name;
+> +       init.flags = flags | CLK_IS_BASIC;
+> +       init.parent_names = parent_names;
+> +       init.num_parents = num_parents;
+> +
+> +       clk_composite_ops = &composite->ops;
+> +
+> +       if (mux_hw && mux_ops) {
+> +               if (!mux_ops->get_parent || !mux_ops->set_parent) {
+> +                       clk = ERR_PTR(-EINVAL);
+> +                       goto err;
+> +               }
+> +
+> +               composite->mux_hw = mux_hw;
+> +               composite->mux_ops = mux_ops;
+> +               clk_composite_ops->get_parent = clk_composite_get_parent;
+> +               clk_composite_ops->set_parent = clk_composite_set_parent;
+> +       }
+> +
+> +       if (div_hw && div_ops) {
+> +               if (!div_ops->recalc_rate || !div_ops->round_rate ||
+> +                   !div_ops->set_rate) {
+> +                       clk = ERR_PTR(-EINVAL);
+> +                       goto err;
+> +               }
+> +
+> +               composite->div_hw = div_hw;
+> +               composite->div_ops = div_ops;
+> +               clk_composite_ops->recalc_rate = clk_composite_recalc_rate;
+> +               clk_composite_ops->round_rate = clk_composite_round_rate;
+> +               clk_composite_ops->set_rate = clk_composite_set_rate;
+> +       }
+> +
+> +       if (gate_hw && gate_ops) {
+> +               if (!gate_ops->is_enabled || !gate_ops->enable ||
+> +                   !gate_ops->disable) {
+> +                       clk = ERR_PTR(-EINVAL);
+> +                       goto err;
+> +               }
+> +
+> +               composite->gate_hw = gate_hw;
+> +               composite->gate_ops = gate_ops;
+> +               clk_composite_ops->is_enabled = clk_composite_is_enabled;
+> +               clk_composite_ops->enable = clk_composite_enable;
+> +               clk_composite_ops->disable = clk_composite_disable;
+> +       }
+> +
+> +       init.ops = clk_composite_ops;
+> +       composite->hw.init = &init;
+> +
+> +       clk = clk_register(dev, &composite->hw);
+> +       if (IS_ERR(clk))
+> +               goto err;
+> +
+> +       if (composite->mux_hw)
+> +               composite->mux_hw->clk = clk;
+> +
+> +       if (composite->div_hw)
+> +               composite->div_hw->clk = clk;
+> +
+> +       if (composite->gate_hw)
+> +               composite->gate_hw->clk = clk;
+> +
+> +       return clk;
+> +
+> +err:
+> +       kfree(composite);
+> +       return clk;
+> +}
+> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> index 7f197d7..33e7e64 100644
+> --- a/include/linux/clk-provider.h
+> +++ b/include/linux/clk-provider.h
+> @@ -325,6 +325,37 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
+>                 const char *parent_name, unsigned long flags,
+>                 unsigned int mult, unsigned int div);
+>  
+> +/***
+> + * struct clk_composite - aggregate clock of mux, divider and gate clocks
+> + *
+> + * @hw:                handle between common and hardware-specific interfaces
+> + * @mux_hw:    handle between composite and hardware-specifix mux clock
+> + * @div_hw:    handle between composite and hardware-specifix divider clock
+> + * @gate_hw:   handle between composite and hardware-specifix gate clock
+> + * @mux_ops:   clock ops for mux
+> + * @div_ops:   clock ops for divider
+> + * @gate_ops:  clock ops for gate
+> + */
+> +struct clk_composite {
+> +       struct clk_hw   hw;
+> +       struct clk_ops  ops;
+> +
+> +       struct clk_hw   *mux_hw;
+> +       struct clk_hw   *div_hw;
+> +       struct clk_hw   *gate_hw;
+> +
+> +       const struct clk_ops    *mux_ops;
+> +       const struct clk_ops    *div_ops;
+> +       const struct clk_ops    *gate_ops;
+> +};
+> +
+> +struct clk *clk_register_composite(struct device *dev, const char *name,
+> +               const char **parent_names, int num_parents,
+> +               struct clk_hw *mux_hw, const struct clk_ops *mux_ops,
+> +               struct clk_hw *div_hw, const struct clk_ops *div_ops,
+> +               struct clk_hw *gate_hw, const struct clk_ops *gate_ops,
+> +               unsigned long flags);
+> +
+>  /**
+>   * clk_register - allocate a new clock, register it and return an opaque cookie
+>   * @dev: device that is registering this clock
+> -- 
+> 1.7.4.1
