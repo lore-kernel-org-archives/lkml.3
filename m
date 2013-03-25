@@ -1,202 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab3CYK5F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 06:57:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43794 "EHLO mx2.suse.de"
+	id S1757074Ab3CYK5S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 06:57:18 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:3384 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756056Ab3CYK5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 06:57:03 -0400
-Date: Mon, 25 Mar 2013 11:57:01 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/10] migrate: make core migration code aware of hugepage
-Message-ID: <20130325105701.GS2154@dhcp22.suse.cz>
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1363983835-20184-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1756717Ab3CYK5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 06:57:13 -0400
+X-IronPort-AV: E=Sophos;i="4.84,904,1355097600"; 
+   d="scan'208";a="14597958"
+Message-ID: <51502D82.6010207@eu.citrix.com>
+Date: Mon, 25 Mar 2013 10:57:06 +0000
+From: George Dunlap <george.dunlap@eu.citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363983835-20184-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Konrad Wilk <konrad.wilk@oracle.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Cooper <Andrew.Cooper3@citrix.com>
+Subject: Re: [PATCH v2] perf: Check all MSRs before passing hw check
+References: <1363606045-6805-1-git-send-email-george.dunlap@eu.citrix.com>
+In-Reply-To: <1363606045-6805-1-git-send-email-george.dunlap@eu.citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-03-13 16:23:47, Naoya Horiguchi wrote:
-> Before enabling each user of page migration to support hugepage,
-> this patch adds necessary changes on core migration code.
-> The main change is that the list of pages to migrate can link
-> not only LRU pages, but also hugepages.
-> Along with this, functions such as migrate_pages() and
-> putback_movable_pages() need to be changed to handle hugepages.
-> 
-> ChangeLog v2:
->  - move code removing VM_HUGETLB from vma_migratable check into a
->    separate patch
->  - hold hugetlb_lock in putback_active_hugepage
->  - update comment near the definition of hugetlb_lock
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+On 18/03/13 11:27, George Dunlap wrote:
+> check_hw_exists has a number of checks which go to two exit paths:
+> msr_fail and bios_fail.  Checks classified as msr_fail will cause
+> check_hw_exists() to return false, causing the PMU not to be used;
+> bios_fail checks will only cause a warning to be printed, but will
+> return true.
+>
+> The problem is that if there are both msr failures and bios failures,
+> and the routine hits a bios_fail check first, it will exit early and
+> return true, not finishing the rest of the msr checks.  If those msrs
+> are in fact broken, it will cause them to be used erroneously.
+>
+> In the case of a Xen PV VM, the guest OS has read access to all the
+> MSRs, but write access is white-listed to supported features.  Writes
+> to unsupported MSRs have no effect.  The PMU MSRs are not (typically)
+> supported, because they are expensive to save and restore on a VM
+> context switch.  One of the "msr_fail" checks is supposed to detect
+> this circumstance (ether for Xen or KVM) and disable the harware PMU.
+>
+> However, on one of my AMD boxen, there is (apparently) a broken BIOS
+> which triggers one of the bios_fail checks.  In particular,
+> MSR_K7_EVNTSEL0 has the ARCH_PERFMON_EVENTSEL_ENABLE bit set.  The
+> guest kernel detects this because it has read access to all MSRs, and
+> causes it to skip the rest of the checks and try to use the
+> non-existent hardware PMU.  This minimally causes a lot of useless
+> instruction emulation and Xen console spam; it may cause other issues
+> with the watchdog as well.
+>
+> This changset causes check_hw_exists() to go through all of the msr
+> checks, failing and returning false if any of them fail.  This makes
+> sure that a guest running under Xen without a virtual PMU will detect
+> that there is no functioning PMU and not attempt to use it.
+>
+> This problem affects kernels as far back as 3.2, and should thus be
+> considered for backport.
+>
+> v2:
+>   - Print the warning when the event happens so the reg,val make sense
+>   - But print it only for the first such instance
+>   - Update changelog to include details of failing system
+>
+> Signed-off-by: George Dunlap <george.dunlap@eu.citrix.com>
+
+Ping?
+  -George
+
+> CC: Konrad Wilk <konrad.wilk@oracle.com>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> CC: Ingo Molnar <mingo@kernel.org>
+> CC: x86@kernel.org
+> CC: Ian Campbell <ian.campbell@citrix.com>
+> CC: David Vrabel <david.vrabel@citrix.com>
+> CC: Andrew Cooper <andrew.cooper3@citrix.com>
 > ---
->  include/linux/hugetlb.h |  4 ++++
->  include/linux/migrate.h |  6 ++++++
->  mm/hugetlb.c            | 21 ++++++++++++++++++++-
->  mm/migrate.c            | 24 +++++++++++++++++++++++-
->  4 files changed, 53 insertions(+), 2 deletions(-)
-> 
-> diff --git v3.9-rc3.orig/include/linux/hugetlb.h v3.9-rc3/include/linux/hugetlb.h
-> index 16e4e9a..baa0aa0 100644
-> --- v3.9-rc3.orig/include/linux/hugetlb.h
-> +++ v3.9-rc3/include/linux/hugetlb.h
-> @@ -66,6 +66,8 @@ int hugetlb_reserve_pages(struct inode *inode, long from, long to,
->  						vm_flags_t vm_flags);
->  void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
->  int dequeue_hwpoisoned_huge_page(struct page *page);
-> +void putback_active_hugepage(struct page *page);
-> +void putback_active_hugepages(struct list_head *l);
->  void copy_huge_page(struct page *dst, struct page *src);
->  
->  extern unsigned long hugepages_treat_as_movable;
-> @@ -128,6 +130,8 @@ static inline int dequeue_hwpoisoned_huge_page(struct page *page)
->  	return 0;
->  }
->  
-> +#define putback_active_hugepage(p) 0
-> +#define putback_active_hugepages(l) 0
->  static inline void copy_huge_page(struct page *dst, struct page *src)
->  {
->  }
-> diff --git v3.9-rc3.orig/include/linux/migrate.h v3.9-rc3/include/linux/migrate.h
-> index a405d3dc..d4c6c08 100644
-> --- v3.9-rc3.orig/include/linux/migrate.h
-> +++ v3.9-rc3/include/linux/migrate.h
-> @@ -41,6 +41,9 @@ extern int migrate_page(struct address_space *,
->  			struct page *, struct page *, enum migrate_mode);
->  extern int migrate_pages(struct list_head *l, new_page_t x,
->  		unsigned long private, enum migrate_mode mode, int reason);
-> +extern int migrate_movable_pages(struct list_head *from,
-> +		new_page_t get_new_page, unsigned long private,
-> +		enum migrate_mode mode, int reason);
->  extern int migrate_huge_page(struct page *, new_page_t x,
->  		unsigned long private, enum migrate_mode mode);
->  
-> @@ -62,6 +65,9 @@ static inline void putback_movable_pages(struct list_head *l) {}
->  static inline int migrate_pages(struct list_head *l, new_page_t x,
->  		unsigned long private, enum migrate_mode mode, int reason)
->  	{ return -ENOSYS; }
-> +static inline int migrate_movable_pages(struct list_head *from,
-> +		new_page_t get_new_page, unsigned long private, bool offlining,
-> +		enum migrate_mode mode, int reason) { return -ENOSYS; }
->  static inline int migrate_huge_page(struct page *page, new_page_t x,
->  		unsigned long private, enum migrate_mode mode)
->  	{ return -ENOSYS; }
-> diff --git v3.9-rc3.orig/mm/hugetlb.c v3.9-rc3/mm/hugetlb.c
-> index 98a478e..a787c44 100644
-> --- v3.9-rc3.orig/mm/hugetlb.c
-> +++ v3.9-rc3/mm/hugetlb.c
-> @@ -48,7 +48,8 @@ static unsigned long __initdata default_hstate_max_huge_pages;
->  static unsigned long __initdata default_hstate_size;
->  
->  /*
-> - * Protects updates to hugepage_freelists, nr_huge_pages, and free_huge_pages
-> + * Protects updates to hugepage_freelists, hugepage_activelist, nr_huge_pages,
-> + * free_huge_pages, and surplus_huge_pages.
->   */
-
-Could you get this out into a separate patch and add lockdep assertions
-to functions which do not lock it directly but they rely on it so that
-the locking is more clear?
-e.g. dequeue_huge_page_node, update_and_free_page, try_to_free_low, ...
-
-It would a nice cleanup and a lead for future when somebody tries to
-make the locking a bit saner.
-
->  DEFINE_SPINLOCK(hugetlb_lock);
->  
-> @@ -3182,3 +3183,21 @@ int dequeue_hwpoisoned_huge_page(struct page *hpage)
->  	return ret;
->  }
->  #endif
+>   arch/x86/kernel/cpu/perf_event.c |   30 ++++++++++++++++++------------
+>   1 file changed, 18 insertions(+), 12 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 6774c17..5e2b4d6 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -182,6 +182,19 @@ static bool check_hw_exists(void)
+>   {
+>   	u64 val, val_new = ~0;
+>   	int i, reg, ret = 0;
+> +	int bios_fail = 0;
 > +
-> +void putback_active_hugepage(struct page *page)
-> +{
-> +	VM_BUG_ON(!PageHead(page));
-> +	spin_lock(&hugetlb_lock);
-> +	list_move_tail(&page->lru, &(page_hstate(page))->hugepage_activelist);
-> +	spin_unlock(&hugetlb_lock);
-> +	put_page(page);
-> +}
+> +#define BIOS_FAIL(_r, _v) \
+> +do {							\
+> +	/* 						\
+> +	 * We still allow the PMU driver to operate: 	\
+> +	 */ 						\
+> +	if (!bios_fail) { 				\
+> +		bios_fail = 1; 				\
+> +		printk(KERN_CONT "Broken BIOS detected, complain to your hardware vendor.\n"); \
+> +		printk(KERN_ERR FW_BUG "the BIOS has corrupted hw-PMU resources (MSR %x is %Lx)\n", _r, _v); \
+> +        } 						\
+> +} while(0)
+>   
+>   	/*
+>   	 * Check to see if the BIOS enabled any of the counters, if so
+> @@ -192,8 +205,8 @@ static bool check_hw_exists(void)
+>   		ret = rdmsrl_safe(reg, &val);
+>   		if (ret)
+>   			goto msr_fail;
+> -		if (val & ARCH_PERFMON_EVENTSEL_ENABLE)
+> -			goto bios_fail;
+> +		if (val & ARCH_PERFMON_EVENTSEL_ENABLE)
+> +			BIOS_FAIL(reg, val);
+>   	}
+>   
+>   	if (x86_pmu.num_counters_fixed) {
+> @@ -203,10 +216,12 @@ static bool check_hw_exists(void)
+>   			goto msr_fail;
+>   		for (i = 0; i < x86_pmu.num_counters_fixed; i++) {
+>   			if (val & (0x03 << i*4))
+> -				goto bios_fail;
+> +				BIOS_FAIL(reg, val);
+>   		}
+>   	}
+>   
+> +#undef BIOS_FAIL
 > +
-> +void putback_active_hugepages(struct list_head *l)
-> +{
-> +	struct page *page;
-> +	struct page *page2;
-> +
-> +	list_for_each_entry_safe(page, page2, l, lru)
-> +		putback_active_hugepage(page);
-> +}
-> diff --git v3.9-rc3.orig/mm/migrate.c v3.9-rc3/mm/migrate.c
-> index ec692a3..f69f354 100644
-> --- v3.9-rc3.orig/mm/migrate.c
-> +++ v3.9-rc3/mm/migrate.c
-> @@ -100,6 +100,10 @@ void putback_movable_pages(struct list_head *l)
->  	struct page *page2;
->  
->  	list_for_each_entry_safe(page, page2, l, lru) {
-> +		if (unlikely(PageHuge(page))) {
-> +			putback_active_hugepage(page);
-> +			continue;
-> +		}
->  		list_del(&page->lru);
->  		dec_zone_page_state(page, NR_ISOLATED_ANON +
->  				page_is_file_cache(page));
-> @@ -1023,7 +1027,11 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
->  		list_for_each_entry_safe(page, page2, from, lru) {
->  			cond_resched();
->  
-> -			rc = unmap_and_move(get_new_page, private,
-> +			if (PageHuge(page))
-> +				rc = unmap_and_move_huge_page(get_new_page,
-> +						private, page, pass > 2, mode);
-> +			else
-> +				rc = unmap_and_move(get_new_page, private,
->  						page, pass > 2, mode);
->  
->  			switch(rc) {
-> @@ -1056,6 +1064,20 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
->  	return rc;
->  }
->  
-> +int migrate_movable_pages(struct list_head *from, new_page_t get_new_page,
-> +			unsigned long private,
-> +			enum migrate_mode mode, int reason)
-> +{
-> +	int err = 0;
-> +
-> +	if (!list_empty(from)) {
-> +		err = migrate_pages(from, get_new_page, private, mode, reason);
-> +		if (err)
-> +			putback_movable_pages(from);
-> +	}
-> +	return err;
-> +}
-> +
+>   	/*
+>   	 * Read the current value, change it and read it back to see if it
+>   	 * matches, this is needed to detect certain hardware emulators
+> @@ -223,15 +238,6 @@ static bool check_hw_exists(void)
+>   
+>   	return true;
+>   
+> -bios_fail:
+> -	/*
+> -	 * We still allow the PMU driver to operate:
+> -	 */
+> -	printk(KERN_CONT "Broken BIOS detected, complain to your hardware vendor.\n");
+> -	printk(KERN_ERR FW_BUG "the BIOS has corrupted hw-PMU resources (MSR %x is %Lx)\n", reg, val);
+> -
+> -	return true;
+> -
+>   msr_fail:
+>   	printk(KERN_CONT "Broken PMU hardware detected, using software events only.\n");
+>   	printk(KERN_ERR "Failed to access perfctr msr (MSR %x is %Lx)\n", reg, val_new);
 
-There doesn't seem to be any caller for this function. Please move it to
-the patch which uses it.
-
->  int migrate_huge_page(struct page *hpage, new_page_t get_new_page,
->  		      unsigned long private, enum migrate_mode mode)
->  {
-> -- 
-> 1.7.11.7
-> 
-
--- 
-Michal Hocko
-SUSE Labs
