@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab3CYBRj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:17:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34179 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756470Ab3CYBQn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756466Ab3CYBQn (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 24 Mar 2013 21:16:43 -0400
-Message-Id: <20130325010526.608940290@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34148 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756370Ab3CYBQh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 21:16:37 -0400
+Message-Id: <20130325010526.976899174@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:05:47 +0000
+Date: Mon, 25 Mar 2013 01:05:51 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Phileas Fogg <phileas-fogg@mail.ru>
-Subject: [ 023/104] powerpc: Fix cputable entry for 970MP rev 1.0
+Cc: akpm@linux-foundation.org, Tomas Hozza <thozza@redhat.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 027/104] tools: hv: Netlink source address validation allows DoS
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -30,32 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Tomas Hozza <thozza@redhat.com>
 
-commit d63ac5f6cf31c8a83170a9509b350c1489a7262b upstream.
+commit 95a69adab9acfc3981c504737a2b6578e4d846ef upstream.
 
-Commit 44ae3ab3358e962039c36ad4ae461ae9fb29596c forgot to update
-the entry for the 970MP rev 1.0 processor when moving some CPU
-features bits to the MMU feature bit mask. This breaks booting
-on some rare G5 models using that chip revision.
+The source code without this patch caused hypervkvpd to exit when it processed
+a spoofed Netlink packet which has been sent from an untrusted local user.
+Now Netlink messages with a non-zero nl_pid source address are ignored
+and a warning is printed into the syslog.
 
-Reported-by: Phileas Fogg <phileas-fogg@mail.ru>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Tomas Hozza <thozza@redhat.com>
+Acked-by:  K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/kernel/cputable.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/hv/hv_kvp_daemon.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/cputable.c
-+++ b/arch/powerpc/kernel/cputable.c
-@@ -268,7 +268,7 @@ static struct cpu_spec __initdata cpu_sp
- 		.cpu_features		= CPU_FTRS_PPC970,
- 		.cpu_user_features	= COMMON_USER_POWER4 |
- 			PPC_FEATURE_HAS_ALTIVEC_COMP,
--		.mmu_features		= MMU_FTR_HPTE_TABLE,
-+		.mmu_features		= MMU_FTRS_PPC970,
- 		.icache_bsize		= 128,
- 		.dcache_bsize		= 128,
- 		.num_pmcs		= 8,
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -393,13 +393,19 @@ int main(void)
+ 		len = recvfrom(fd, kvp_recv_buffer, sizeof(kvp_recv_buffer), 0,
+ 				addr_p, &addr_l);
+ 
+-		if (len < 0 || addr.nl_pid) {
++		if (len < 0) {
+ 			syslog(LOG_ERR, "recvfrom failed; pid:%u error:%d %s",
+ 					addr.nl_pid, errno, strerror(errno));
+ 			close(fd);
+ 			return -1;
+ 		}
+ 
++		if (addr.nl_pid) {
++			syslog(LOG_WARNING, "Received packet from untrusted pid:%u",
++					addr.nl_pid);
++			continue;
++		}
++
+ 		incoming_msg = (struct nlmsghdr *)kvp_recv_buffer;
+ 		incoming_cn_msg = (struct cn_msg *)NLMSG_DATA(incoming_msg);
+ 
 
 
