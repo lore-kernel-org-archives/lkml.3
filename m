@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933176Ab3CYUpv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 16:45:51 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:42164 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758894Ab3CYUpt (ORCPT
+	id S933228Ab3CYUrI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 16:47:08 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51614 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758581Ab3CYUrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 16:45:49 -0400
-Date: Mon, 25 Mar 2013 16:40:25 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2013-03-21
-Message-ID: <20130325204025.GF17454@tuxdriver.com>
-References: <20130321222408.GA8890@joana>
+	Mon, 25 Mar 2013 16:47:07 -0400
+Date: Mon, 25 Mar 2013 21:47:05 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT pull] timer fixes for 3.9
+Message-ID: <alpine.LFD.2.02.1303252145040.22263@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321222408.GA8890@joana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 07:24:08PM -0300, Gustavo Padovan wrote:
-> Hi John,
-> 
-> This is our first batch of patches for 3.10. The biggest changes of this pull
-> request are from Johan Hedberg, he implemented a HCI request framework to make
-> life easier when we have to send many HCI commands and a block and wait for
-> all of the to finish, we were able to fix a few issues in stack with the
-> introduction of this framework.
-> 
-> Other than that Dean Jenkins did a good work cleaning the RFCOMM code, the
-> refcnt infrastructure was removed and now we use NULL pointer checks to know
-> when a object was freed or not. That code was buggy and now it looks a way
-> better.
-> 
-> The rest of changes are clean ups, fixes and small improvements all over the
-> Bluetooth subsystem. 
-> 
-> Please pull, or let me know of any issues! Thanks.
-> 
-> 	Gustavo
-> 
-> ---
-> The following changes since commit 7da060c1c01b103d181dba39bce9bd141a945f99:
-> 
->   mwifiex: add WOWLAN support (2013-03-06 16:29:17 -0500)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next for-upstream
-> 
-> for you to fetch changes up to 0227c7b56959cd8f5edd20b6a47db86fa553e91a:
-> 
->   Bluetooth: fix error return code in rfcomm_add_listener() (2013-03-20 14:17:52 -0300)
+Linus,
 
-Pulling now...
+please pull the latest timers-urgent-for-linus git tree from:
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
+
+A single bugfix which prevents that a non functional timer device is
+selected to provide the fallback device, which is supposed to serve
+timer interrupts on behalf of non functional devices ...
+
+Thanks,
+
+	tglx
+
+------------------>
+Mark Rutland (1):
+      clockevents: Don't allow dummy broadcast timers
+
+
+ kernel/time/tick-broadcast.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 2fb8cb8..7f32fe0 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -67,7 +67,8 @@ static void tick_broadcast_start_periodic(struct clock_event_device *bc)
+  */
+ int tick_check_broadcast_device(struct clock_event_device *dev)
+ {
+-	if ((tick_broadcast_device.evtdev &&
++	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
++	    (tick_broadcast_device.evtdev &&
+ 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
+ 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
+ 		return 0;
