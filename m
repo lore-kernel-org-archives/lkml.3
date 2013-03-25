@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab3CYBYq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:24:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34058 "EHLO
+	id S1756949Ab3CYBYr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:24:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34057 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756179Ab3CYBQM (ORCPT
+	by vger.kernel.org with ESMTP id S1756176Ab3CYBQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 24 Mar 2013 21:16:12 -0400
-Message-Id: <20130325010529.347444888@decadent.org.uk>
+Message-Id: <20130325010529.147569023@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:15 +0000
+Date: Mon, 25 Mar 2013 01:06:13 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Jan Kara <jack@suse.cz>,
-        Zheng Liu <gnehzuil.liu@gmail.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 051/104] jbd2: fix use after free in jbd2_journal_dirty_metadata()
+Cc: akpm@linux-foundation.org, Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 049/104] sfc: Only use TX push if a single descriptor is to be  written
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,75 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit ad56edad089b56300fd13bb9eeb7d0424d978239 upstream.
+[ Upstream commit fae8563b25f73dc584a07bcda7a82750ff4f7672 ]
 
-jbd2_journal_dirty_metadata() didn't get a reference to journal_head it
-was working with. This is OK in most of the cases since the journal head
-should be attached to a transaction but in rare occasions when we are
-journalling data, __ext4_journalled_writepage() can race with
-jbd2_journal_invalidatepage() stripping buffers from a page and thus
-journal head can be freed under hands of jbd2_journal_dirty_metadata().
+Using TX push when notifying the NIC of multiple new descriptors in
+the ring will very occasionally cause the TX DMA engine to re-use an
+old descriptor.  This can result in a duplicated or partly duplicated
+packet (new headers with old data), or an IOMMU page fault.  This does
+not happen when the pushed descriptor is the only one written.
 
-Fix the problem by getting own journal head reference in
-jbd2_journal_dirty_metadata() (and also in jbd2_journal_set_triggers()
-which can possibly have the same issue).
+TX push also provides little latency benefit when a packet requires
+more than one descriptor.
 
-Reported-by: Zheng Liu <gnehzuil.liu@gmail.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/jbd2/transaction.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/sfc/nic.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/jbd2/transaction.c
-+++ b/fs/jbd2/transaction.c
-@@ -1016,9 +1016,12 @@ out:
- void jbd2_journal_set_triggers(struct buffer_head *bh,
- 			       struct jbd2_buffer_trigger_type *type)
- {
--	struct journal_head *jh = bh2jh(bh);
-+	struct journal_head *jh = jbd2_journal_grab_journal_head(bh);
+diff --git a/drivers/net/ethernet/sfc/nic.c b/drivers/net/ethernet/sfc/nic.c
+index 9cca2a6..2e9ca10 100644
+--- a/drivers/net/ethernet/sfc/nic.c
++++ b/drivers/net/ethernet/sfc/nic.c
+@@ -371,7 +371,8 @@ efx_may_push_tx_desc(struct efx_tx_queue *tx_queue, unsigned int write_count)
+ 		return false;
  
-+	if (WARN_ON(!jh))
-+		return;
- 	jh->b_triggers = type;
-+	jbd2_journal_put_journal_head(jh);
+ 	tx_queue->empty_read_count = 0;
+-	return ((empty_read_count ^ write_count) & ~EFX_EMPTY_COUNT_VALID) == 0;
++	return ((empty_read_count ^ write_count) & ~EFX_EMPTY_COUNT_VALID) == 0
++		&& tx_queue->write_count - write_count == 1;
  }
  
- void jbd2_buffer_frozen_trigger(struct journal_head *jh, void *mapped_data,
-@@ -1070,17 +1073,18 @@ int jbd2_journal_dirty_metadata(handle_t
- {
- 	transaction_t *transaction = handle->h_transaction;
- 	journal_t *journal = transaction->t_journal;
--	struct journal_head *jh = bh2jh(bh);
-+	struct journal_head *jh;
- 	int ret = 0;
- 
--	jbd_debug(5, "journal_head %p\n", jh);
--	JBUFFER_TRACE(jh, "entry");
- 	if (is_handle_aborted(handle))
- 		goto out;
--	if (!buffer_jbd(bh)) {
-+	jh = jbd2_journal_grab_journal_head(bh);
-+	if (!jh) {
- 		ret = -EUCLEAN;
- 		goto out;
- 	}
-+	jbd_debug(5, "journal_head %p\n", jh);
-+	JBUFFER_TRACE(jh, "entry");
- 
- 	jbd_lock_bh_state(bh);
- 
-@@ -1171,6 +1175,7 @@ int jbd2_journal_dirty_metadata(handle_t
- 	spin_unlock(&journal->j_list_lock);
- out_unlock_bh:
- 	jbd_unlock_bh_state(bh);
-+	jbd2_journal_put_journal_head(jh);
- out:
- 	JBUFFER_TRACE(jh, "exit");
- 	WARN_ON(ret);	/* All errors are bugs, so dump the stack */
+ /* For each entry inserted into the software descriptor ring, create a
 
 
