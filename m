@@ -1,54 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503Ab3CYPMt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 11:12:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57318 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756682Ab3CYPMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 11:12:48 -0400
-Date: Mon, 25 Mar 2013 16:12:46 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/10] prepare to remove
- /proc/sys/vm/hugepages_treat_as_movable
-Message-ID: <20130325151246.GB2154@dhcp22.suse.cz>
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1363983835-20184-11-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1758026Ab3CYPQu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 11:16:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47308 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757423Ab3CYPQt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 11:16:49 -0400
+Message-ID: <51505C59.1040607@infradead.org>
+Date: Mon, 25 Mar 2013 07:16:57 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363983835-20184-11-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Prabhakar lad <prabhakar.csengg@gmail.com>
+CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Sekhar Nori <nsekhar@ti.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: davinci: use is IS_ENABLED macro
+References: <1364210495-7938-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1364210495-7938-1-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-03-13 16:23:55, Naoya Horiguchi wrote:
-[...]
-> @@ -2086,11 +2085,7 @@ int hugetlb_treat_movable_handler(struct ctl_table *table, int write,
->  			void __user *buffer,
->  			size_t *length, loff_t *ppos)
->  {
-> -	proc_dointvec(table, write, buffer, length, ppos);
-> -	if (hugepages_treat_as_movable)
-> -		htlb_alloc_mask = GFP_HIGHUSER_MOVABLE;
-> -	else
-> -		htlb_alloc_mask = GFP_HIGHUSER;
-> +	/* hugepages_treat_as_movable is obsolete and to be removed. */
+On 03/25/13 04:21, Prabhakar lad wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 
+> This patches replaces #if defined() by IS_ENABLED macro, which provides
+> better readability.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Cc: Sekhar Nori <nsekhar@ti.com>
+> ---
+>  Note: This patch is compile tested only for davinci_all_defconfig
+>        and da8xx_omapl_defconfig.
 
-WARN_ON_ONCE("This knob is obsolete and has no effect. It is scheduled for removal")
+Source files that use IS_ENABLED() etc. should also
+#include <linux/kconfig.h>
+
+Is that already done in all of these source files?
+
+
+>  arch/arm/mach-davinci/board-da830-evm.c   |    2 +-
+>  arch/arm/mach-davinci/board-da850-evm.c   |    3 +--
+>  arch/arm/mach-davinci/board-dm644x-evm.c  |    9 +++------
+>  arch/arm/mach-davinci/board-dm646x-evm.c  |    3 +--
+>  arch/arm/mach-davinci/board-neuros-osd2.c |    6 ++----
+>  arch/arm/mach-davinci/devices.c           |    2 +-
+>  arch/arm/mach-davinci/usb.c               |    2 +-
+>  7 files changed, 10 insertions(+), 17 deletions(-)
+> 
+> diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
+> index 6da25ee..68ade71 100644
+> --- a/arch/arm/mach-davinci/board-da830-evm.c
+> +++ b/arch/arm/mach-davinci/board-da830-evm.c
+> @@ -298,7 +298,7 @@ static const short da830_evm_emif25_pins[] = {
+>  	-1
+>  };
+>  
+> -#if defined(CONFIG_MMC_DAVINCI) || defined(CONFIG_MMC_DAVINCI_MODULE)
+> +#if IS_ENABLED(CONFIG_MMC_DAVINCI)
+>  #define HAS_MMC	1
+>  #else
+>  #define HAS_MMC	0
+> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+> index c2dfe06..3475769 100644
+> --- a/arch/arm/mach-davinci/board-da850-evm.c
+> +++ b/arch/arm/mach-davinci/board-da850-evm.c
+> @@ -335,8 +335,7 @@ static const short da850_evm_nor_pins[] = {
+>  	-1
+>  };
+>  
+> -#if defined(CONFIG_MMC_DAVINCI) || \
+> -    defined(CONFIG_MMC_DAVINCI_MODULE)
+> +#if IS_ENABLED(CONFIG_MMC_DAVINCI)
+>  #define HAS_MMC 1
+>  #else
+>  #define HAS_MMC 0
+> diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
+> index 71735e7..d0f6365 100644
+> --- a/arch/arm/mach-davinci/board-dm644x-evm.c
+> +++ b/arch/arm/mach-davinci/board-dm644x-evm.c
+> @@ -750,22 +750,19 @@ static int davinci_phy_fixup(struct phy_device *phydev)
 >  	return 0;
 >  }
 >  
-> -- 
-> 1.7.11.7
+> -#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
+> -    defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
+> +#if IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
+>  #define HAS_ATA 1
+>  #else
+>  #define HAS_ATA 0
+>  #endif
+>  
+> -#if defined(CONFIG_MTD_PHYSMAP) || \
+> -    defined(CONFIG_MTD_PHYSMAP_MODULE)
+> +#if IS_ENABLED(CONFIG_MTD_PHYSMAP)
+>  #define HAS_NOR 1
+>  #else
+>  #define HAS_NOR 0
+>  #endif
+>  
+> -#if defined(CONFIG_MTD_NAND_DAVINCI) || \
+> -    defined(CONFIG_MTD_NAND_DAVINCI_MODULE)
+> +#if IS_ENABLED(CONFIG_MTD_NAND_DAVINCI)
+>  #define HAS_NAND 1
+>  #else
+>  #define HAS_NAND 0
+> diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
+> index de7adff..c84fdd5 100644
+> --- a/arch/arm/mach-davinci/board-dm646x-evm.c
+> +++ b/arch/arm/mach-davinci/board-dm646x-evm.c
+> @@ -117,8 +117,7 @@ static struct platform_device davinci_nand_device = {
+>  	},
+>  };
+>  
+> -#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
+> -    defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
+> +#if IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
+>  #define HAS_ATA 1
+>  #else
+>  #define HAS_ATA 0
+> diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
+> index 1c98107..8bd0a43 100644
+> --- a/arch/arm/mach-davinci/board-neuros-osd2.c
+> +++ b/arch/arm/mach-davinci/board-neuros-osd2.c
+> @@ -168,15 +168,13 @@ static struct davinci_mmc_config davinci_ntosd2_mmc_config = {
+>  };
+>  
+>  
+> -#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
+> -	defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
+> +#if IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
+>  #define HAS_ATA 1
+>  #else
+>  #define HAS_ATA 0
+>  #endif
+>  
+> -#if defined(CONFIG_MTD_NAND_DAVINCI) || \
+> -	defined(CONFIG_MTD_NAND_DAVINCI_MODULE)
+> +#if IS_ENABLED(CONFIG_MTD_NAND_DAVINCI)
+>  #define HAS_NAND 1
+>  #else
+>  #define HAS_NAND 0
+> diff --git a/arch/arm/mach-davinci/devices.c b/arch/arm/mach-davinci/devices.c
+> index 4c48a36..df135de 100644
+> --- a/arch/arm/mach-davinci/devices.c
+> +++ b/arch/arm/mach-davinci/devices.c
+> @@ -119,7 +119,7 @@ void __init davinci_init_ide(void)
+>  	platform_device_register(&ide_device);
+>  }
+>  
+> -#if	defined(CONFIG_MMC_DAVINCI) || defined(CONFIG_MMC_DAVINCI_MODULE)
+> +#if IS_ENABLED(CONFIG_MMC_DAVINCI)
+>  
+>  static u64 mmcsd0_dma_mask = DMA_BIT_MASK(32);
+>  
+> diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
+> index 34509ff..5764d65 100644
+> --- a/arch/arm/mach-davinci/usb.c
+> +++ b/arch/arm/mach-davinci/usb.c
+> @@ -17,7 +17,7 @@
+>  #define DA8XX_USB0_BASE 	0x01e00000
+>  #define DA8XX_USB1_BASE 	0x01e25000
+>  
+> -#if defined(CONFIG_USB_MUSB_HDRC) || defined(CONFIG_USB_MUSB_HDRC_MODULE)
+> +#if IS_ENABLED(CONFIG_USB_MUSB_HDRC)
+>  static struct musb_hdrc_eps_bits musb_eps[] = {
+>  	{ "ep1_tx", 8, },
+>  	{ "ep1_rx", 8, },
 > 
 
+
 -- 
-Michal Hocko
-SUSE Labs
+~Randy
