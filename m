@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab3CYFOo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 01:14:44 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:48499 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757298Ab3CYFOn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 01:14:43 -0400
-Date: Mon, 25 Mar 2013 16:14:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "paulus@samba.org" <paulus@samba.org>, matt@ozlabs.org,
-        imunsie@au1.ibm.com, linuxppc-dev@lists.ozlabs.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PowerPC:kernel: make additional room in exception
- vector area
-Message-Id: <20130325161435.ffff94805826bc7cad2c7de4@canb.auug.org.au>
-In-Reply-To: <514FA8F3.1030102@asianux.com>
-References: <51428C81.6000204@asianux.com>
-	<25841.1363323174@ale.ozlabs.ibm.com>
-	<5142AE27.7060003@asianux.com>
-	<514AA0D9.1090509@asianux.com>
-	<10123.1363906486@ale.ozlabs.ibm.com>
-	<514C0061.8080004@asianux.com>
-	<29457.1364169818@ale.ozlabs.ibm.com>
-	<514FA8F3.1030102@asianux.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__25_Mar_2013_16_14_35_+1100_zE=a3GxGNOj/lX0k"
+	id S1757367Ab3CYFRX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 01:17:23 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64253 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757296Ab3CYFRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 01:17:22 -0400
+X-IronPort-AV: E=Sophos;i="4.87,343,1363104000"; 
+   d="scan'208";a="6936778"
+Message-ID: <514FDE5F.5020500@cn.fujitsu.com>
+Date: Mon, 25 Mar 2013 13:19:27 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Lenky Gao <lenky.gao@gmail.com>
+CC: linux-kernel@vger.kernel.org, yinghai@kernel.org, mingo@elte.hu,
+        gorcunov@gmail.com, rusty@rustcorp.com.au, sivanich@sgi.com,
+        agordeev@redhat.com
+Subject: Re: Question: How to distribute the interrupts over multiple cores?
+References: <CAAO_Xo6=2PKumrxjb1XthsiVVFJcz33o5wf2OyXN9pPdu1GCRA@mail.gmail.com> <514FBD6E.2030706@cn.fujitsu.com> <CAAO_Xo7edAuiGQaXHuyWB5RPgPd5dDDRof3-d28eu+mryJkv+Q@mail.gmail.com> <514FC385.4030008@cn.fujitsu.com> <CAAO_Xo7FbEsG=6pmcfUDyKtcPuPLTkNY+kUU+5hFnzciQBO-Aw@mail.gmail.com>
+In-Reply-To: <CAAO_Xo7FbEsG=6pmcfUDyKtcPuPLTkNY+kUU+5hFnzciQBO-Aw@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/25 13:16:33,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/25 13:16:36,
+	Serialize complete at 2013/03/25 13:16:36
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Mar_2013_16_14_35_+1100_zE=a3GxGNOj/lX0k
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi all,
+On 03/25/2013 11:44 AM, Lenky Gao wrote:
+>> On 03/25/2013 11:18 AM, Lenky Gao wrote:
+>>> The irqbalance service has been stopped.
+>> So try start irqbalance to see what happen?
+>> It should help to give what you want ;-)
+> 
+> Using the irqbalance service to dynamically change the IRQ-bound? It's
+> seems a software solution. In my old machine, there is no this
+> problem. I need some information to explain why. Maybe is the
 
-On Mon, 25 Mar 2013 09:31:31 +0800 Chen Gang <gang.chen@asianux.com> wrote:
->
->   The FWNMI region is fixed at 0x7000 and the vector are now overflowing
->   that with allmodconfig. Fix that by moving slb_miss_realmode code out
->   of that region as it doesn't need to be that close to the call sites
->   (it is a _GLOBAL function)
->=20
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/powerpc/kernel/exceptions-64s.S |  144 +++++++++++++++++-----------=
-------
->  1 files changed, 72 insertions(+), 72 deletions(-)
+Do you mean on your old machine the irq will be distributed automatically 
+among the cpus set by smp_affinity?
 
-Thanks, Chen,
+Sorry, I forgot one thing that the irqbalance service will break the mask
+set by smp_affinity. So I don't know if now we support the feature
+that balance among the cpus set by smp_affinity.
+ 
+In my old conception when we set smp_affinity the irqbalance service
+should be stopped, so you are right before, and the kernel will choose
+one cpu in your mask for the IRQ and bounded from now on if there is no
+irqbalance service.
 
-I have applied this to linux-next today and pending the builds overnight,
-will send it to Linus tomorrow or Wednesday.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__25_Mar_2013_16_14_35_+1100_zE=a3GxGNOj/lX0k
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRT907AAoJEECxmPOUX5FEkIUP/jK8nEzxczJ2qal/XwuZp4TQ
-Jm65w5SticAj/s8oWbxehKUMx6hdx3qUPO5cgGuvE5UGInuuMDHhk5Gf1B+R9beF
-mzyLgYVG/sYcMS0P6nTLM41+bshOqCD9PUVeQmNMOfIXyMv0Bhk5cSux9t1hpa93
-mwC6UgdSaFLnFlz2WQHE2BsdmljuY70xZ1C6S7Rtti/xBI5MNVSWj2tFYZ9IKIc7
-iuHJ6nlJHwxSZr2HoNfTTwlZYTgMGRyyjfOvHh4KF8BDaxUXqQ5jAGrEJ0gWWF/3
-Y8FLLj3nGcnnxEeBXiQo5Z/XN2UJ6nZVHKjy4NLxyxTztPjvGGmsL9PdJlQO4Khm
-Gp775W05r31WMevr7mBHUUMwGAttpttwxbLcPtXpvFYhYKFI9W5aKbnw5EcULGQc
-11nwjWZeHfhg6jUn/k2O0KJe9QQS1hYESnAaj85V8t7rYn5RuI+R18KkQLMAZ9C3
-mIr6v5g6jtteCGb+Yjf6JZLiZvMQV97IK3JJjWq7nItmOjE3D+ovBV2b5pDH2Dhr
-F0ux0NPXSiJl23GmM4VMo1eqHdECwNXROOD5sZti7gB8E4yjvyTBntRIlynUalst
-wueCuGgOJF8lhFvCtKoXXSiqm3YJVzorUVee0scLyYIWXXrfIC2W9F/0E1j6m2x4
-hAYWZxLTqqb9zwvd93Qj
-=PnnT
------END PGP SIGNATURE-----
-
---Signature=_Mon__25_Mar_2013_16_14_35_+1100_zE=a3GxGNOj/lX0k--
+thanks,
+linfeng 
