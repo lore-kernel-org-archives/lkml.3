@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933136Ab3CYUDb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 16:03:31 -0400
-Received: from carbon.coolservecorp.net ([184.82.167.18]:55849 "EHLO
-	carbon.coolservecorp.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932801Ab3CYUDa (ORCPT
+	id S933149Ab3CYUHB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 16:07:01 -0400
+Received: from nctlincom02.orcon.net.nz ([60.234.4.76]:55265 "EHLO
+	nctlincom02.orcon.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933058Ab3CYUHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 16:03:30 -0400
-X-Greylist: delayed 1102 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Mar 2013 16:03:30 EDT
-Message-ID: <5150A8FF.7010301@grapecom.com>
-Date: Mon, 25 Mar 2013 21:43:59 +0200
-From: Elijah Ragozin <illia.ragozin@grapecom.com>
-Organization: Grapecom
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/1] ARM Feroceon: fix kexec by setting outer_cache.inv_all
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 25 Mar 2013 16:07:00 -0400
+Cc: "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-Id: <D7731577-A2C0-4FC5-A7E3-62F251A18798@orcon.net.nz>
+From: Michael Cree <mcree@orcon.net.nz>
+To: Tobias Klausmann <klausman@schwarzvogel.de>
+In-Reply-To: <20130325150958.GA13894@skade.schwarzvogel.de>
+Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - carbon.coolservecorp.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - grapecom.com
-X-Get-Message-Sender-Via: carbon.coolservecorp.net: authenticated_id: illia.ragozin+grapecom.com/only user confirmed/virtual account not confirmed
+Mime-Version: 1.0 (Apple Message framework v936)
+Subject: Re: [PATCH] alpha: makefile: don't enforce small data model for kernel builds
+Date: Tue, 26 Mar 2013 09:06:44 +1300
+References: <1363556926-21097-1-git-send-email-will.deacon@arm.com> <BFB01C0A-95E5-4C2B-8AF2-A06BE1FF74E0@orcon.net.nz> <20130325133710.GD14280@mudshark.cambridge.arm.com> <20130325150958.GA13894@skade.schwarzvogel.de>
+X-Mailer: Apple Mail (2.936)
+X-DSPAM-Check: by mx1.orcon.net.nz on Tue, 26 Mar 2013 09:06:57 +1300
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Tue Mar 26 09:06:57 2013
+X-DSPAM-Confidence: 0.6186
+X-DSPAM-Probability: 0.0000
+X-Bayes-Prob: 0.0006 (Score 0, tokens from: @@RPTN, default)
+X-Spam-Score: -3.00 () [Hold at 4.00] CC(NZ:-3)
+X-CanIt-Geo: ip=130.217.188.11; country=NZ; region=G1; city=Hamilton; latitude=-37.7833; longitude=175.2833; http://maps.google.com/maps?q=-37.7833,175.2833&z=6
+X-CanItPRO-Stream: base:default
+X-Canit-Stats-ID: 05JfU6V8t - 60cc7263fe1a - 20130326
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feroceon the L2 cache becomes non-coherent with the CPU
-when the L1 caches are disabled. Thus the L2 needs to be invalidated
-after both L1 caches are disabled.
+On 26/03/2013, at 4:09 AM, Tobias Klausmann wrote:
+> On Mon, 25 Mar 2013, Will Deacon wrote:
+>> Any news on these? I've included an updated version of the first  
+>> patch, with
+>> the Tested-by-tag and a tweaked commit message below.
+>
+> As a data point, I tried vanilla 3.8.4 on the weekend. With my
+> usual config on a UP1500, it will fail at build time with
+> relocation errors. If I remove -msmall-data (or replace it with
+> ~big~), the machine hangs hard immediatly after aboot telling me
+> it's starting it.
 
-On kexec before the starting the code for relocation the kernel,
-the L1 caches are disabled in cpu_froc_fin (cpu_v7_proc_fin for Feroceon),
-but after L2 cache is never invalidated, because inv_all is not set
-in cache-feroceon-l2.c.
-So kernel relocation and decompression may has (and usually has) errors.
-Setting the function enables L2 invalidation and fixes the issue.
+You probably want the "alpha: Add irongate_io to to PCI bus resources"  
+patch posted by Matt Turner in the linux-alpha forum.  Looks like it  
+has not been sent to Linus.
 
-Signed-off-by: Illia Ragozin <illia.ragozin@grapecom.com>
----
-  arch/arm/mm/cache-feroceon-l2.c | 1 +
-  1 file changed, 1 insertion(+)
+If Matt does not respond in the next day or two I'll collect patches  
+and send them on to Linus.
 
-diff --git a/arch/arm/mm/cache-feroceon-l2.c 
-b/arch/arm/mm/cache-feroceon-l2.c
-index e0b0e7a..09f8851 100644
---- a/arch/arm/mm/cache-feroceon-l2.c
-+++ b/arch/arm/mm/cache-feroceon-l2.c
-@@ -342,6 +342,7 @@ void __init feroceon_l2_init(int __l2_wt_override)
-      outer_cache.inv_range = feroceon_l2_inv_range;
-      outer_cache.clean_range = feroceon_l2_clean_range;
-      outer_cache.flush_range = feroceon_l2_flush_range;
-+    outer_cache.inv_all = l2_inv_all;
+Cheers
+Michael.
 
-      enable_l2();
-
--- 
-1.8.1.4
 
 
