@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758176Ab3CYOBk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 10:01:40 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:48147 "EHLO
+	id S1758200Ab3CYOCE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 10:02:04 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:48171 "EHLO
 	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757738Ab3CYOBi (ORCPT
+	with ESMTP id S1757738Ab3CYOCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 10:01:38 -0400
-Message-ID: <51505881.5060409@surriel.com>
-Date: Mon, 25 Mar 2013 10:00:33 -0400
+	Mon, 25 Mar 2013 10:02:02 -0400
+Message-ID: <515058D5.6060509@surriel.com>
+Date: Mon, 25 Mar 2013 10:01:57 -0400
 From: Rik van Riel <riel@surriel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
@@ -44,11 +44,8 @@ On 03/25/2013 09:47 AM, Emmanuel Benisty wrote:
 >
 > With the first four patches only, I got some X server freeze (just tried once).
 
-Could you try booting with panic=1 so the kernel panics on the first
-oops?
-
-Maybe that way (if we are lucky) we will be able to capture the first
-oops, and maybe get an idea of what causes the problem.
+Another random question, just to rule something out. What video driver
+are you using on your system?
 
 -- 
 All rights reversed.
