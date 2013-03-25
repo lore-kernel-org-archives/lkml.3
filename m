@@ -1,106 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757111Ab3CYEbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 00:31:09 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:64122 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756923Ab3CYEbF (ORCPT
+	id S1757179Ab3CYEon (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 00:44:43 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:37332 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757027Ab3CYEol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 00:31:05 -0400
-X-AuditID: cbfee68e-b7f946d000001e37-b0-514fd30743b8
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Wei Yongjun'" <weiyj.lk@gmail.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, rpurdie@rpsys.net,
-        FlorianSchandinat@gmx.de, yongjun_wei@trendmicro.com.cn,
-        linux-fbdev@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <CAPgLHd_V1M9DaO-XfrVh5k7on7cYRiLONQiu+SGrQM81MT5+Qg@mail.gmail.com>
-In-reply-to: <CAPgLHd_V1M9DaO-XfrVh5k7on7cYRiLONQiu+SGrQM81MT5+Qg@mail.gmail.com>
-Subject: Re: [PATCH -next] backlight: adp8870: fix error return code in
- adp8870_led_probe()
-Date: Mon, 25 Mar 2013 13:31:03 +0900
-Message-id: <00c901ce2911$8f2320f0$ad6962d0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4m8LdT2ROFWy6ISJOK5g1hAKeZmgCIJkxA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsVy+t8zQ132y/6BBgvnKlrMWb+GzaJz5jVG
-	i8sLL7FanOj7wGpxedccNovdu56yWny4dJTZYue6TnYHDo+ds+6ye3z4GOdxYsZvFo8983+w
-	evRtWcXosfTeUUaPz5vkAtijuGxSUnMyy1KL9O0SuDLWr1/GWPCKq+L/13tMDYznOLoYOTgk
-	BEwkGn7ldDFyApliEhfurWfrYuTiEBJYxijx8O0CdpialY15EPHpjBKLpm1ih3B+MUr0THzB
-	DtLNJqAm8eXLYTBbBMg++reLFcRmFrjHKHHuvwbIICGBAInPd5hBwpwCwRKH20+zgoSFBWIl
-	tp7lBQmzCKhK3OibwAhi8wrYSvz9uIYNwhaU+DH5HgvERC2J9TuPM0HY8hKb17xlhjhTXeLR
-	X12IA4wkVl1rYYcoEZHY9+IdI8jFEgJ/2SUWTrvDArFLQOLb5EMsEL2yEpsOMEOCQVLi4Iob
-	LBMYJWYh2TwLyeZZSDbPQrJiASPLKkbR1ILkguKk9CIjveLE3OLSvHS95PzcTYyQmO7bwXjz
-	gPUhxmSg9ROZpUST84EpIa8k3tDYzMjC1MTU2Mjc0ow0YSVxXrUW60AhgfTEktTs1NSC1KL4
-	otKc1OJDjEwcnFINjJ0uDh/Sv82UyJzE4vS8Z+ohLgdHrcl8ro0Gj7a0VzMdLet/Jfuhi/PF
-	ni3NZXL7NZcyXpn8+N1xzWVRTzY/+5gicXfSumOf5jV2/sy6JcayeiGDzdw/K6RZD290KZYI
-	uL8h1eSisfnx3me1q3647wxV3hCdJHD3zurir8lXr7pEMjW/YTIzNFBiKc5INNRiLipOBABX
-	BvOi/wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFKsWRmVeSWpSXmKPExsVy+t9jQV32y/6BBr1NMhZz1q9hs+iceY3R
-	4vLCS6wWJ/o+sFpc3jWHzWL3rqesFh8uHWW22Lmuk92Bw2PnrLvsHh8+xnmcmPGbxWPP/B+s
-	Hn1bVjF6LL13lNHj8ya5APaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWF
-	vMTcVFslF58AXbfMHKCrlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZ
-	69cvYyx4xVXx/+s9pgbGcxxdjBwcEgImEisb87oYOYFMMYkL99azdTFycQgJTGeUWDRtEzuE
-	84tRomfiC3aQKjYBNYkvXw6D2SJA9tG/XawgNrPAPUaJc/81QIYKCQRIfL7DDBLmFAiWONx+
-	mhUkLCwQK7H1LC9ImEVAVeJG3wRGEJtXwFbi78c1bBC2oMSPyfdYICZqSazfeZwJwpaX2Lzm
-	LTPEyeoSj/7qQhxgJLHqWgs7RImIxL4X7xgnMArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILi
-	pPRcQ73ixNzi0rx0veT83E2M4JTxTGoH48oGi0OMAhyMSjy8AjX+gUKsiWXFlbmHGCU4mJVE
-	eE+uBwrxpiRWVqUW5ccXleakFh9iTAZ6dCKzlGhyPjCd5ZXEGxqbmBlZGplZGJmYm5MmrCTO
-	e6DVOlBIID2xJDU7NbUgtQhmCxMHp1QDY2fZJ/ksj88LZe3f38n9y/jH1IlRRP/qqfmHq5a/
-	di5ZsfSRWvE/1RnTOuW1VjSsTY+66Mjy+vzXmsMb7nImMi/OOJ/Y+E75imdgrPrm3e63sphe
-	N9wXOyT2WPvrvUOKp1NPnZZ0ddmsF3pEbr/y/1Nc3k4KtcYaSe1iOndf+Kha/vqWGVPJp8RS
-	nJFoqMVcVJwIABqaCt9dAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 25 Mar 2013 00:44:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <1363380204.2433.12.camel@joe-AO722>
+References: <1363128287.23052.21.camel@joe-AO722>
+	<1363174614.2031.9.camel@joe-AO722>
+	<20130313075155.7464a34a@tlielax.poochiereds.net>
+	<1363178421.2031.29.camel@joe-AO722>
+	<1363289077.2146.19.camel@joe-AO722>
+	<20130315150136.7f7a262a@tlielax.poochiereds.net>
+	<CAH2r5mvW29FV+stH5CsjY5S2FdaHn48TfiSEk_beC=NzHC7-MQ@mail.gmail.com>
+	<1363380204.2433.12.camel@joe-AO722>
+Date: Sun, 24 Mar 2013 23:44:41 -0500
+Message-ID: <CAH2r5mtOC149YigDxnHLfSU64jLk5bzGcMhpqTTQgS0Eyg3HqA@mail.gmail.com>
+Subject: Re: [PATCH] cifs: Rename cERROR and cFYI to cifs_dbg
+From: Steve French <smfrench@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 22, 2013 8:31 PM, Wei Yongjun wrote:
-> 
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Fix to return a negative error code from the error handling
-> case instead of 0, as returned elsewhere in this function.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Fri, Mar 15, 2013 at 3:43 PM, Joe Perches <joe@perches.com> wrote:
+> On Fri, 2013-03-15 at 15:16 -0500, Steve French wrote:
+>
+>> I would like to merge the three we have (one still has to be put in
+>> for-next - the one from Jeff) for for-next in the next three or fouir
+>> days - but I can create another temporary branch for the ones for 3.10
+>> - but ... I would like to simplify things by merging the other cleanup
+>> patches we already have first.  I agree that we are going to have to
+>> let people know to rebase everything for cifs for 3.10 on this big
+>> cleanup patch.
+>
+> Another possibility is to extend the
+> cifs_dbg(type, fmt. ...) types from
+>
+> VFS, FYI, NOISY
+>
+> so that the messages could be
+> filtered/classified better.
+>
+> Also, perhaps it'd be better to use
+> pr_debug instead of KERN_ERR for
+> the VFS messages.
 
-CC'ed Andrdew Morton, linux-kernel@vger.kernel.org
+Although it required hand merging, this large patch is now merged into
+cifs-2.6.git (for-next branch, destined for 3.10) but ... I only
+merged three obvious other patches (destined for 3.10) before it
+
+4521ba9ca4138f424769f17ae7166ff5ccf08805 fs: cifs: use kmemdup instead
+of kmalloc + memcpy
+41057e5a5d673015fc0d0e587e993d26f1818b1c cifs: replaced kmalloc +
+memset with kzalloc
+8f43465d17982767dd5b3f5d48216ef5c100c274 cifs: ignore the unc= and
+prefixpath= mount options
+
+and I merged one so far after it that Jeff had already rebased ontop
+of Joe's large patch
+
+457d2157ec2da6f9fa755e16ab740979f581e328 cifs: remove ENOSPC handling
+in smb_sendv
+
+So ... going forward for 3.10 make sure to fixup subsequent new cifs
+patches ontop Joe's large "cifs: Rename cERROR and cFYI to cifs_dbg"
+patch or else it will make merging a mess since Joe's patch changes
+just about very cifs file due to the macro renaming.
 
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
 
-> ---
->  drivers/video/backlight/adp8870_bl.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/video/backlight/adp8870_bl.c b/drivers/video/backlight/adp8870_bl.c
-> index 302c800..759bf23 100644
-> --- a/drivers/video/backlight/adp8870_bl.c
-> +++ b/drivers/video/backlight/adp8870_bl.c
-> @@ -274,12 +274,14 @@ static int adp8870_led_probe(struct i2c_client *client)
->  		if (led_dat->id > 7 || led_dat->id < 1) {
->  			dev_err(&client->dev, "Invalid LED ID %d\n",
->  				led_dat->id);
-> +			ret = -EINVAL;
->  			goto err;
->  		}
-> 
->  		if (pdata->bl_led_assign & (1 << (led_dat->id - 1))) {
->  			dev_err(&client->dev, "LED %d used by Backlight\n",
->  				led_dat->id);
-> +			ret = -EBUSY;
->  			goto err;
->  		}
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Thanks,
 
+Steve
