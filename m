@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694Ab3CYIIk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 04:08:40 -0400
-Received: from mga03.intel.com ([143.182.124.21]:52532 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754825Ab3CYIIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 04:08:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,904,1355126400"; 
-   d="scan'208";a="218519410"
-Message-ID: <1364198913.2465.40.camel@rzhang1-mobl4>
-Subject: Re: [PATCH V2] drivers: thermal: cpu_cooling: fix checkpatch warning
-From: Zhang Rui <rui.zhang@intel.com>
-To: Laurent Navet <laurent.navet@gmail.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 25 Mar 2013 16:08:33 +0800
-In-Reply-To: <1363085270-22886-1-git-send-email-laurent.navet@gmail.com>
-References: <1363085270-22886-1-git-send-email-laurent.navet@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756710Ab3CYILp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 04:11:45 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:58157 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755935Ab3CYILo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 04:11:44 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        olof@lixom.net, Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH] arm: vt8500: Add wm8850 config options to multi_v7_defconfig
+Date: Mon, 25 Mar 2013 21:11:40 +1300
+Message-Id: <1364199100-12300-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-12 at 11:47 +0100, Laurent Navet wrote:
-> - WARNING: Avoid CamelCase: <maskPtr>
-> 
-> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+This patch finally adds the WM8850 SoC to the multi_v7_defconfig.
+We don't have a seperate defconfig for this SoC as it is only
+available as a multiplatform option.
 
-applied to thermal -next.
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+---
+ arch/arm/configs/multi_v7_defconfig |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-thanks,
-rui
-> ---
->  drivers/thermal/cpu_cooling.c |   10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-> index 8dc44cb..be2e6b0 100644
-> --- a/drivers/thermal/cpu_cooling.c
-> +++ b/drivers/thermal/cpu_cooling.c
-> @@ -168,8 +168,8 @@ static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
->  				unsigned long cooling_state)
->  {
->  	unsigned int cpuid, clip_freq;
-> -	struct cpumask *maskPtr = &cpufreq_device->allowed_cpus;
-> -	unsigned int cpu = cpumask_any(maskPtr);
-> +	struct cpumask *mask = &cpufreq_device->allowed_cpus;
-> +	unsigned int cpu = cpumask_any(mask);
->  
-> 
->  	/* Check if the old cooling action is same as new cooling action */
-> @@ -184,7 +184,7 @@ static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
->  	cpufreq_device->cpufreq_val = clip_freq;
->  	notify_device = cpufreq_device;
->  
-> -	for_each_cpu(cpuid, maskPtr) {
-> +	for_each_cpu(cpuid, mask) {
->  		if (is_cpufreq_valid(cpuid))
->  			cpufreq_update_policy(cpuid);
->  	}
-> @@ -235,13 +235,13 @@ static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
->  				 unsigned long *state)
->  {
->  	struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
-> -	struct cpumask *maskPtr = &cpufreq_device->allowed_cpus;
-> +	struct cpumask *mask = &cpufreq_device->allowed_cpus;
->  	unsigned int cpu;
->  	struct cpufreq_frequency_table *table;
->  	unsigned long count = 0;
->  	int i = 0;
->  
-> -	cpu = cpumask_any(maskPtr);
-> +	cpu = cpumask_any(mask);
->  	table = cpufreq_frequency_get_table(cpu);
->  	if (!table) {
->  		*state = 0;
-
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index e31d442..206119c 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -7,6 +7,7 @@ CONFIG_MACH_ARMADA_XP=y
+ CONFIG_ARCH_HIGHBANK=y
+ CONFIG_ARCH_SOCFPGA=y
+ CONFIG_ARCH_SUNXI=y
++CONFIG_ARCH_WM8850=y
+ # CONFIG_ARCH_VEXPRESS_CORTEX_A5_A9_ERRATA is not set
+ CONFIG_ARCH_ZYNQ=y
+ CONFIG_ARM_ERRATA_754322=y
+@@ -34,6 +35,8 @@ CONFIG_SERIAL_8250_DW=y
+ CONFIG_SERIAL_AMBA_PL011=y
+ CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
+ CONFIG_SERIAL_OF_PLATFORM=y
++CONFIG_SERIAL_VT8500=y
++CONFIG_SERIAL_VT8500_CONSOLE=y
+ CONFIG_IPMI_HANDLER=y
+ CONFIG_IPMI_SI=y
+ CONFIG_I2C=y
+@@ -42,6 +45,7 @@ CONFIG_SPI=y
+ CONFIG_SPI_PL022=y
+ CONFIG_FB=y
+ CONFIG_FB_ARMCLCD=y
++CONFIG_FB_WM8505=y
+ CONFIG_FRAMEBUFFER_CONSOLE=y
+ CONFIG_USB=y
+ CONFIG_USB_ISP1760_HCD=y
+@@ -50,11 +54,15 @@ CONFIG_MMC=y
+ CONFIG_MMC_ARMMMCI=y
+ CONFIG_MMC_SDHCI=y
+ CONFIG_MMC_SDHCI_PLTFM=y
++CONFIG_MMC_WMT=y
+ CONFIG_EDAC=y
+ CONFIG_EDAC_MM_EDAC=y
+ CONFIG_EDAC_HIGHBANK_MC=y
+ CONFIG_EDAC_HIGHBANK_L2=y
+ CONFIG_RTC_CLASS=y
+ CONFIG_RTC_DRV_PL031=y
++CONFIG_RTC_DRV_VT8500=y
++CONFIG_PWM=y
++CONFIG_PWM_VT8500=y
+ CONFIG_DMADEVICES=y
+ CONFIG_PL330_DMA=y
+-- 
+1.7.9.5
 
