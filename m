@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758919Ab3CYVXH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 17:23:07 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:65383 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab3CYVXF (ORCPT
+	id S1758947Ab3CYV0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 17:26:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42362 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758631Ab3CYV0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 17:23:05 -0400
-Message-ID: <5150C01A.3030602@windriver.com>
-Date: Mon, 25 Mar 2013 16:22:34 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Mike Travis <travis@sgi.com>
-CC: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <kgdb-bugreport@lists.sourceforge.net>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>
-Subject: Re: [PATCH 03/15] KDB: up the default LINES value
-References: <20130325185007.321022858@gulag1.americas.sgi.com> <20130325185007.776886654@gulag1.americas.sgi.com>
-In-Reply-To: <20130325185007.776886654@gulag1.americas.sgi.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
+	Mon, 25 Mar 2013 17:26:32 -0400
+Date: Mon, 25 Mar 2013 14:26:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Russ Anderson <rja@sgi.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com
+Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
+Message-Id: <20130325142630.faf41b11416c2e4ac3d61550@linux-foundation.org>
+In-Reply-To: <20130321180321.GB4185@gmail.com>
+References: <20130318155619.GA18828@sgi.com>
+	<20130321105516.GC18484@gmail.com>
+	<20130321123505.GA6051@dhcp22.suse.cz>
+	<20130321180321.GB4185@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2013 01:50 PM, Mike Travis wrote:
-> Currently the default for the # of lines displayed by the KDB pager
-> is 24.  This does not allow all of the lines for the entry messages,
-> reg dump and process trace.  Increase it to something more reasonable.
+On Thu, 21 Mar 2013 19:03:21 +0100 Ingo Molnar <mingo@kernel.org> wrote:
+
+> > IMO the local scope is more obvious as this is and should only be used 
+> > for caching purposes.
 > 
+> It's a pattern we actively avoid in kernel code.
 
-
-Unfortunately this is something that breaks compatibility with the
-standard VGA console, so this patch will not be merged.
-
-Is it the case that your hardware specifies how many lines and columns
-there are in the display?  We have some hooks into the console VT code
-to properly detect this but perhaps something is wrong there, or it is
-only called in the KMS (kernel mode setting case).  Example:
-drivers/tty/vt/vt.c - look at con_debug_enter()
-
-Another option might be to add a variable which allows you to change
-the default at compile time, but I would prefer to get the auto detect
-code working properly if it is an option.
-
-Jason.
-
-
-
-> Cc: Tim Bird <tim.bird@am.sony.com>
-> Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
-> Signed-off-by: Mike Travis <travis@sgi.com>
-> ---
->  kernel/debug/kdb/kdb_io.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- linux.orig/kernel/debug/kdb/kdb_io.c
-> +++ linux/kernel/debug/kdb/kdb_io.c
-> @@ -586,7 +586,7 @@ int vkdb_printf(const char *fmt, va_list
->  
->  	diag = kdbgetintenv("LINES", &linecount);
->  	if (diag || linecount <= 1)
-> -		linecount = 24;
-> +		linecount = 60;
->  
->  	diag = kdbgetintenv("COLUMNS", &colcount);
->  	if (diag || colcount <= 1)
-> 
-> -- 
-> 
+On the contrary, I always encourage people to move the static
+definitions into function scope if possible.  So the reader can see the
+identifier's scope without having to search the whole file. 
+Unnecessarily giving the identifier file-scope seems weird.
 
