@@ -1,107 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab3CYKNn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 06:13:43 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:58555 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754986Ab3CYKNk (ORCPT
+	id S1755783Ab3CYKMH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 06:12:07 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:49692 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755423Ab3CYKL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 06:13:40 -0400
-X-AuditID: cbfee690-b7f656d0000007e3-ec-515023462cfc
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Axel Lin'" <axel.lin@ingics.com>
-Cc: "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "'John Stultz'" <john.stultz@linaro.org>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Changhwan Youn'" <chaos.youn@samsung.com>,
-        linux-kernel@vger.kernel.org
-References: <1364048887.13141.0.camel@phoenix>
- <16f801ce28f5$b9095c20$2b1c1460$%kim@samsung.com>
- <CAFRkauCDg9G3JLpB+fi3JZdu-18jr0ibFqM30tOH4rPQVO8dUQ@mail.gmail.com>
-In-reply-to: <CAFRkauCDg9G3JLpB+fi3JZdu-18jr0ibFqM30tOH4rPQVO8dUQ@mail.gmail.com>
-Subject: RE: [PATCH] clocksource: exynos_mct: Add terminating entry for
- exynos_mct_ids table
-Date: Mon, 25 Mar 2013 19:13:26 +0900
-Message-id: <177901ce2941$63c85710$2b590530$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4o9q4zcsaogIcPS6eqcVUkCjj7IgASmcRw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t8zA1035YBAg77ZshZH5nxltmhvULQ4
-	81vX4vKuOWwWmzdNZbY4NmMJowObR9vPMo871/awebw7d47do2/LKkaPz5vkAlijuGxSUnMy
-	y1KL9O0SuDKe/3UoaOWuOPvoL1MD42uOLkZODgkBE4kfC58yQdhiEhfurWfrYuTiEBJYxihx
-	b9YCRpiiP20XoRKLGCWO/T7MDuH8ZZQ4vGQBO0gVm4CGxOH3z8BsEQEViTf9r5hAipgFzjNK
-	TOr4wgLRsZJRYmHvKrCFnALBErv3H2EDsYUF4iRO7VwMZrMIqErM2bUQzOYVsJU4dP4aO4Qt
-	KPFj8j0WEJtZQEti/c7jTBC2vMTmNW+Zuxg5gG5Vl3j0VxfiCCOJ3j3H2CBKRCT2vXjHCHKD
-	hMA9dombTS0sELsEJL5NPsQC0SsrsekAM8TLkhIHV9xgmcAoMQvJ5llINs9CsnkWkhULGFlW
-	MYqmFiQXFCelF5noFSfmFpfmpesl5+duYoRE7IQdjPcOWB9iTAZaP5FZSjQ5HxjxeSXxhsZm
-	RhamJqbGRuaWZqQJK4nzqrdYBwoJpCeWpGanphakFsUXleakFh9iZOLglGpgNEi7pVav1rvj
-	Ytc804980Wp+sxd5flk/Ic/oJ2vS0sOrgtR/X65nlNe/lzxb/Pbplxq+0dJfrrmblD86/HJm
-	tJYfw3G+9/zThDL+Lp9cM+Oq5qa7CgfrEvPy3GP3XorhW3lBSLEuwfOrGVPazrDU7l/hBqvC
-	Vkde/P30c+iFi4FpXVrWIUIzlFiKMxINtZiLihMBN1GXAO4CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBKsWRmVeSWpSXmKPExsVy+t9jAV035YBAgz//JSyOzPnKbNHeoGhx
-	5reuxeVdc9gsNm+aymxxbMYSRgc2j7afZR53ru1h83h37hy7R9+WVYwenzfJBbBGNTDaZKQm
-	pqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gDtV1IoS8wpBQoF
-	JBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmPP/rUNDKXXH20V+mBsbXHF2MnBwSAiYS
-	f9ouskHYYhIX7q0Hsrk4hAQWMUoc+32YHcL5yyhxeMkCdpAqNgENicPvn4HZIgIqEm/6XzGB
-	FDELnGeUmNTxhQWiYyWjxMLeVUwgVZwCwRK79x8B2yEsECdxaudiMJtFQFVizq6FYDavgK3E
-	ofPX2CFsQYkfk++xgNjMAloS63ceZ4Kw5SU2r3nL3MXIAXSrusSjv7oQRxhJ9O45xgZRIiKx
-	78U7xgmMQrOQTJqFZNIsJJNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4HTyT
-	2sG4ssHiEKMAB6MSD69AjX+gEGtiWXFl7iFGCQ5mJRFeLaGAQCHelMTKqtSi/Pii0pzU4kOM
-	yUCPTmSWEk3OB6aqvJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLg
-	lGpgPLFSNZtb9FFgklkp85XOPVOfTtT1TUot3eB1uVz/0Wk/GeGDhn9unXfdzyFW5SpUr+qx
-	RjtI38l/QZV6+7W/ydv8bJ2m7Lzjdnab6HqfZdUH1JwuzvFyVYmzm/dyz/HNRwpVt/TJHnyn
-	Zezea7U2hjs/ZEp49seCGdbnUtQdz7F1fP7bO69ZiaU4I9FQi7moOBEAtb4BVUsDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 25 Mar 2013 06:11:59 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: arvind.chauhan@arm.com, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        arnd.bergmann@linaro.org, linux@arm.linux.org.uk,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: [PATCH 2/9] cpufreq: tegra: Move driver to drivers/cpufreq
+Date: Mon, 25 Mar 2013 15:41:33 +0530
+Message-Id: <fb8f986f4f94109ad0916917d8fa0d1692c757a0.1364205812.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1364205812.git.viresh.kumar@linaro.org>
+References: <cover.1364205812.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1364205812.git.viresh.kumar@linaro.org>
+References: <cover.1364205812.git.viresh.kumar@linaro.org>
+X-OriginalArrivalTime: 25 Mar 2013 10:11:57.0000 (UTC) FILETIME=[2E7ED480:01CE2941]
+X-MC-Unique: 113032510115752301
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r2PAERkV026824
 
-Axel Lin wrote:
-> 
-> 2013/3/25 Kukjin Kim <kgene.kim@samsung.com>:
-> > Axel Lin wrote:
-> >>
-> >> The of_device_id table is supposed to be zero-terminated.
-> >>
-> >> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> >> ---
-> >>  drivers/clocksource/exynos_mct.c |    1 +
-> >>  1 file changed, 1 insertion(+)
-> >>
-> >> diff --git a/drivers/clocksource/exynos_mct.c
-> >> b/drivers/clocksource/exynos_mct.c
-> >> index 203ac05..3cdafc0 100644
-> >> --- a/drivers/clocksource/exynos_mct.c
-> >> +++ b/drivers/clocksource/exynos_mct.c
-> >> @@ -514,6 +514,7 @@ static void __init exynos4_timer_resources(struct
-> >> device_node *np)
-> >>  static const struct of_device_id exynos_mct_ids[] = {
-> >>       { .compatible = "samsung,exynos4210-mct", .data = (void
-> >> *)MCT_INT_SPI },
-> >>       { .compatible = "samsung,exynos4412-mct", .data = (void
-> >> *)MCT_INT_PPI },
-> >> +     { }
-> >
-> > Thanks for your pointing out. But as I know, it is not mandatory now.
-> >
-> > Please correct me if I'm wrong.
-> 
-> of_find_matching_node_and_match()
-> -> __of_match_node()
->     while (matches->name[0] || matches->type[0] || matches->compatible[0])
-> 
-> My understanding is the implementation in _of_match_node() still needs
-> zero-terminated entry to break out the while loop.
+This patch moves cpufreq driver of ARM based tegra platform to drivers/cpufreq.
 
-OK, you're right. In this case, a null entry is required in
-__of_match_node().
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ arch/arm/mach-tegra/Makefile                                       | 1 -
+ drivers/cpufreq/Makefile                                           | 1 +
+ arch/arm/mach-tegra/cpu-tegra.c => drivers/cpufreq/tegra-cpufreq.c | 2 --
+ 3 files changed, 1 insertion(+), 3 deletions(-)
+ rename arch/arm/mach-tegra/cpu-tegra.c => drivers/cpufreq/tegra-cpufreq.c (99%)
 
-Thanks, applied.
+diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+index f6b46ae..09b578f 100644
+--- a/arch/arm/mach-tegra/Makefile
++++ b/arch/arm/mach-tegra/Makefile
+@@ -24,7 +24,6 @@ obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= cpuidle-tegra30.o
+ endif
+ obj-$(CONFIG_SMP)			+= platsmp.o headsmp.o
+ obj-$(CONFIG_HOTPLUG_CPU)               += hotplug.o
+-obj-$(CONFIG_CPU_FREQ)                  += cpu-tegra.o
+ obj-$(CONFIG_TEGRA_PCI)			+= pcie.o
+ 
+ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= board-dt-tegra20.o
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index e33a30e..966ea28 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -57,6 +57,7 @@ obj-$(CONFIG_ARM_S3C2416_CPUFREQ)	+= s3c2416-cpufreq.o
+ obj-$(CONFIG_ARM_S3C64XX_CPUFREQ)	+= s3c64xx-cpufreq.o
+ obj-$(CONFIG_ARM_S5PV210_CPUFREQ)	+= s5pv210-cpufreq.o
+ obj-$(CONFIG_ARM_SPEAR_CPUFREQ)		+= spear-cpufreq.o
++obj-$(CONFIG_ARCH_TEGRA)		+= tegra-cpufreq.o
+ 
+ ##################################################################################
+ # PowerPC platform drivers
+diff --git a/arch/arm/mach-tegra/cpu-tegra.c b/drivers/cpufreq/tegra-cpufreq.c
+similarity index 99%
+rename from arch/arm/mach-tegra/cpu-tegra.c
+rename to drivers/cpufreq/tegra-cpufreq.c
+index 11ca730..c74c0e1 100644
+--- a/arch/arm/mach-tegra/cpu-tegra.c
++++ b/drivers/cpufreq/tegra-cpufreq.c
+@@ -1,6 +1,4 @@
+ /*
+- * arch/arm/mach-tegra/cpu-tegra.c
+- *
+  * Copyright (C) 2010 Google, Inc.
+  *
+  * Author:
+-- 
+1.7.12.rc2.18.g61b472e
 
-- Kukjin
 
