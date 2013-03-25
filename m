@@ -1,105 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932995Ab3CYSqb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 14:46:31 -0400
-Received: from hotel311.server4you.de ([85.25.146.15]:33176 "EHLO
-	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757687Ab3CYSqa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 14:46:30 -0400
-Message-ID: <51509B84.2050106@monom.org>
-Date: Mon, 25 Mar 2013 19:46:28 +0100
-From: Daniel Wagner <wagi@monom.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: ALSA regression Macbook Air 5,2: No sound from the loudspeaker
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933125Ab3CYSuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 14:50:16 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:52033 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932920Ab3CYSuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 14:50:09 -0400
+Message-Id: <20130325185007.634432020@gulag1.americas.sgi.com>
+References: <20130325185007.321022858@gulag1.americas.sgi.com>
+User-Agent: quilt/0.46-1
+Date: Mon, 25 Mar 2013 13:50:09 -0500
+From: Mike Travis <travis@sgi.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Tim Bird <tim.bird@am.sony.com>
+Subject: [PATCH 02/15] KDB: fix errant character in KDB show regs
+Content-Disposition: inline; filename=kdb-fix-show-regs.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+When KDB prints the process regs and backtrace, every line is preceeded
+with the character 'd'.  This is the level argument to printk which
+is not interpreted when KDB is printing.  Skip over this possible
+printk level in the outgoing string to fix this.
 
-I experience a regression on my Macbook Air 2012 model with the 3.9-rc 
-kernels (v3.9-rc2-284-gaea8b5d) The symptoms are that there is just no 
-sound from the loudspeakers. The headphone output works fine.
+Here is a small sample:
 
-I was able to pin point it down to one commit
+dRIP: 0010:[<ffffffff814e96ca>]  [<ffffffff814e96ca>] poll_idle+0x4a/0x90
+dRSP: 0018:ffff88081d5eddd8  EFLAGS: 00000246
+dRAX: 0000000400000000 RBX: 00000216ae7fbf5d RCX: 0000021658a8e600
+dRDX: ffff88081d5ec010 RSI: ffffffff819a7d20 RDI: ffffffff8193c140
 
-1077a024 "ALSA: hda - Use generic parser for Cirrus codec"
+Cc: Tim Bird <tim.bird@am.sony.com>
+Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
+Signed-off-by: Mike Travis <travis@sgi.com>
+---
+ kernel/debug/kdb/kdb_io.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
-If I revert this one and all came back to work. By comparing the 
-alsa-info.txt output I figured that there is something wrong with the 
-GPIO settings on node 0x01:
+--- linux.orig/kernel/debug/kdb/kdb_io.c
++++ linux/kernel/debug/kdb/kdb_io.c
+@@ -559,6 +559,7 @@ int vkdb_printf(const char *fmt, va_list
+ 	int retlen = 0;
+ 	int fnd, len;
+ 	char *cp, *cp2, *cphold = NULL, replaced_byte = ' ';
++	const char *ostring;
+ 	char *moreprompt = "more> ";
+ 	struct console *c = console_drivers;
+ 	static DEFINE_SPINLOCK(kdb_printf_lock);
+@@ -690,20 +691,21 @@ kdb_printit:
+ 	/*
+ 	 * Write to all consoles.
+ 	 */
+-	retlen = strlen(kdb_buffer);
++	ostring = printk_skip_level(kdb_buffer);
++	retlen = strlen(ostring);
+ 	if (!dbg_kdb_mode && kgdb_connected) {
+-		gdbstub_msg_write(kdb_buffer, retlen);
++		gdbstub_msg_write(ostring, retlen);
+ 	} else {
+ 		if (dbg_io_ops && !dbg_io_ops->is_console) {
+ 			len = retlen;
+-			cp = kdb_buffer;
++			cp = (char *)ostring;
+ 			while (len--) {
+ 				dbg_io_ops->write_char(*cp);
+ 				cp++;
+ 			}
+ 		}
+ 		while (c) {
+-			c->write(c, kdb_buffer, retlen);
++			c->write(c, ostring, retlen);
+ 			touch_nmi_watchdog();
+ 			c = c->next;
+ 		}
+@@ -711,7 +713,7 @@ kdb_printit:
+ 	if (logging) {
+ 		saved_loglevel = console_loglevel;
+ 		console_loglevel = 0;
+-		printk(KERN_INFO "%s", kdb_buffer);
++		pr_info("%s", ostring);
+ 	}
+ 
+ 	if (KDB_STATE(PAGER)) {
+@@ -723,10 +725,10 @@ kdb_printit:
+ 		int got = 0;
+ 		len = retlen;
+ 		while (len--) {
+-			if (kdb_buffer[len] == '\n') {
++			if (ostring[len] == '\n') {
+ 				kdb_nextline++;
+ 				got = 0;
+-			} else if (kdb_buffer[len] == '\r') {
++			} else if (ostring[len] == '\r') {
+ 				got = 0;
+ 			} else {
+ 				got++;
 
-This is the excerpt with the previous patch mentioned reverted:
-
-
-Codec: Cirrus Logic CS4206
-Address: 0
-AFG Function Id: 0x1 (unsol 0)
-Vendor Id: 0x10134206
-Subsystem Id: 0x106b5600
-Revision Id: 0x100302
-No Modem Function Group found
-Default PCM:
-     rates [0x7f0]: 32000 44100 48000 88200 96000 176400 192000
-     bits [0x1e]: 16 20 24 32
-     formats [0x3]: PCM FLOAT
-Default Amp-In caps: N/A
-Default Amp-Out caps: N/A
-State of AFG node 0x01:
-   Power states:  D0 D3 CLKSTOP EPSS
-   Power: setting=D0, actual=D0
-GPIO: io=4, o=0, i=0, unsolicited=0, wake=0
-   IO[0]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
-   IO[1]: enable=1, dir=1, wake=0, sticky=0, data=0, unsol=0
-   IO[2]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
-   IO[3]: enable=1, dir=1, wake=0, sticky=0, data=1, unsol=0
-
-
-and here the output vanilla kernel:
-
-
-Codec: Cirrus Logic CS4206
-Address: 0
-AFG Function Id: 0x1 (unsol 0)
-Vendor Id: 0x10134206
-Subsystem Id: 0x106b5600
-Revision Id: 0x100302
-No Modem Function Group found
-Default PCM:
-     rates [0x7f0]: 32000 44100 48000 88200 96000 176400 192000
-     bits [0x1e]: 16 20 24 32
-     formats [0x3]: PCM FLOAT
-Default Amp-In caps: N/A
-Default Amp-Out caps: N/A
-State of AFG node 0x01:
-   Power states:  D0 D3 CLKSTOP EPSS
-   Power: setting=D0, actual=D0
-GPIO: io=4, o=0, i=0, unsolicited=0, wake=0
-   IO[0]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
-   IO[1]: enable=1, dir=1, wake=0, sticky=0, data=0, unsol=0
-   IO[2]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
-   IO[3]: enable=1, dir=1, wake=0, sticky=0, data=0, unsol=0
-
-
-The diff is "IO[3] data=1 vs data=0". I used then the patch function 
-from the awesome hda-analyzer tool to patch this on the vanilla kernel 
-and there suddenly I have output from the speakers.
-
-I don't know if someone else has reported this already or if there is 
-already a fix. I was without internet for few days and didn't report 
-this in time. If that is the case, sorry for the noise.
-
-
-The complete logs from hda-analyzer are here:
-
-http://www.monom.org/misc/alsa/alsa-info.txt-v3.9-rc2-284-gaea8b5d
-http://www.monom.org/misc/alsa/alsa-info.txt-revert-1077a024
-
-
-cheers,
-daniel
+-- 
