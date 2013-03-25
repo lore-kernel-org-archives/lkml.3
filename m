@@ -1,44 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab3CYDoJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 23:44:09 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:55835 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756177Ab3CYDoI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 23:44:08 -0400
+	id S1756870Ab3CYD6p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 23:58:45 -0400
+Received: from mga01.intel.com ([192.55.52.88]:12364 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755693Ab3CYD6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 23:58:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,902,1355126400"; 
+   d="scan'208";a="311365886"
+Date: Mon, 25 Mar 2013 12:08:05 -0400
+From: Youquan Song <youquan.song@linux.intel.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, htejun@gmail.com, ming.lei@canonical.com,
+        sshtylyov@mvista.com, lpechacek@suse.cz, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, seth.heasley@intel.com, jlee@suse.com,
+        james.d.ralston@intel.com, stable@vger.kernel.org,
+        youquan.song@intel.com
+Subject: Re: [PATCH v3] ata: Fix DVD not dectected at some Haswell platforms
+Message-ID: <20130325160805.GA16882@linux-youquan.bj.intel.com>
+References: <1362584945-10202-1-git-send-email-youquan.song@intel.com> <20130314140123.GA19289@linux-youquan.bj.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <514FC385.4030008@cn.fujitsu.com>
-References: <CAAO_Xo6=2PKumrxjb1XthsiVVFJcz33o5wf2OyXN9pPdu1GCRA@mail.gmail.com>
-	<514FBD6E.2030706@cn.fujitsu.com>
-	<CAAO_Xo7edAuiGQaXHuyWB5RPgPd5dDDRof3-d28eu+mryJkv+Q@mail.gmail.com>
-	<514FC385.4030008@cn.fujitsu.com>
-Date: Mon, 25 Mar 2013 11:44:06 +0800
-Message-ID: <CAAO_Xo7FbEsG=6pmcfUDyKtcPuPLTkNY+kUU+5hFnzciQBO-Aw@mail.gmail.com>
-Subject: Re: Question: How to distribute the interrupts over multiple cores?
-From: Lenky Gao <lenky.gao@gmail.com>
-To: Lin Feng <linfeng@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, yinghai@kernel.org, mingo@elte.hu,
-        gorcunov@gmail.com, rusty@rustcorp.com.au, sivanich@sgi.com,
-        agordeev@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130314140123.GA19289@linux-youquan.bj.intel.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 03/25/2013 11:18 AM, Lenky Gao wrote:
->> The irqbalance service has been stopped.
-> So try start irqbalance to see what happen?
-> It should help to give what you want ;-)
+> 
+> Can you look at the patch which required by some Haswell platforms?
+> 
+Hi Jeff,
 
-Using the irqbalance service to dynamically change the IRQ-bound? It's
-seems a software solution. In my old machine, there is no this
-problem. I need some information to explain why. Maybe is the
-apic_physflat mode only support distribute the interrupts to one
-processor, but i am not exactly sure if this is right? Or my E5504
-Machine's hardware issue?
+What's your opinion about the patch? It block the installation on some
+new platforms.
 
--- 
-Regards,
-
-Lenky
+Thanks
+-Youquan 
