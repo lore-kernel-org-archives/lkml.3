@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758270Ab3CYOUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 10:20:20 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:34264 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757816Ab3CYOUS (ORCPT
+	id S1758275Ab3CYOVo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 10:21:44 -0400
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:36391 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757934Ab3CYOVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 10:20:18 -0400
-Message-ID: <51505D1B.1050900@gmail.com>
-Date: Mon, 25 Mar 2013 22:20:11 +0800
-From: Lan Tianyu <lantianyu1986@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Firefox/17.0 Thunderbird/17.0.4
+	Mon, 25 Mar 2013 10:21:43 -0400
 MIME-Version: 1.0
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>, Pavel Machek <pavel@ucw.cz>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>,
-        kernel list <linux-kernel@vger.kernel.org>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: 3.9-rc3+: reports battery as 0 mWh capacity on thinkpad x60
-References: <20130323114011.GA11092@amd.pavel.ucw.cz> <87zjxu9spk.fsf@nemi.mork.no> <20130323202155.GC18732@amd.pavel.ucw.cz> <6726347.ehkcE9iAxU@vostro.rjw.lan> <20130324092733.GA3071@amd.pavel.ucw.cz> <514F83F8.9000604@fold.natur.cuni.cz> <CAOLK0pxtpgDdvHFRMDw3791HjWrF0wiheLv4oVW_cg2SVCrLqQ@mail.gmail.com> <515024AF.2040508@fold.natur.cuni.cz>
-In-Reply-To: <515024AF.2040508@fold.natur.cuni.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <515058D5.6060509@surriel.com>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+	<CA+i8gKKK_VxZtyyp1tqHnztd4++XyNXwbEEr-A29-J23PyuCfQ@mail.gmail.com>
+	<CA+55aFzqBEX=cGGZJJsfNWcDwQcUOP7njEog-kZZLRxuDg8Tzg@mail.gmail.com>
+	<CA+i8gK+h+FyPiOL85BPa-Pu8+bDw6LW60-oRoLHgP2AnzMADCA@mail.gmail.com>
+	<CA+55aFxjGFi+gt3UwdVCVKP5riHSR=_qLkp0SovgW2zx+gcRow@mail.gmail.com>
+	<CA+i8gKJuykoCk=O3qbDmmZXd=8U13wF7o_NzUviccaZoU6WLaA@mail.gmail.com>
+	<CA+55aFwb9v9cUG4Ton3faO6xAD18JxxoTPcObXDV_5Zf3QQ=Kw@mail.gmail.com>
+	<CA+i8gK+DNOk5tvRsVJFKyk0A2qOD_az7yJ5+3Y2xS=Ear1VkVA@mail.gmail.com>
+	<515058D5.6060509@surriel.com>
+Date: Mon, 25 Mar 2013 21:21:41 +0700
+Message-ID: <CA+i8gKKemdkjvsqMosDGsTrKbZOFPskEmfztW6vTdSAMSKmuwg@mail.gmail.com>
+Subject: Re: ipc,sem: sysv semaphore scalability
+From: Emmanuel Benisty <benisty.e@gmail.com>
+To: Rik van Riel <riel@surriel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, hhuang@redhat.com,
+        "Low, Jason" <jason.low2@hp.com>,
+        Michel Lespinasse <walken@google.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013/3/25 18:19, Martin Mokrejs 写道:
-> Hi Lan,
->    this is actually a bug of Pavel, he had the problem. I just wanted to show
-> him what works on 3.7.10 in my case (yes, different files are on my system).
-> If you feel the *missing* files are a problem, I can try some newer kernels
-> on my computer (Dell Vostro 3550), sure. I am attaching the files anyway
-> but I think 300kB won't make it into the email lists.
-> Martin
-Hi Martin:
-	Thanks for reminder.
+On Mon, Mar 25, 2013 at 9:01 PM, Rik van Riel <riel@surriel.com> wrote:
+> On 03/25/2013 09:47 AM, Emmanuel Benisty wrote:
+>>
+>> On Mon, Mar 25, 2013 at 12:10 AM, Linus Torvalds
+>> <torvalds@linux-foundation.org> wrote:
+>>>
+>>> And you never see this problem without Rik's patches?
+>>
+>>
+>> No, never.
+>>
+>>> Could you bisect
+>>> *which* patch it starts with? Are the first four ones ok (the moving
+>>> of the locking around, but without the fine-grained ones), for
+>>> example?
+>>
+>>
+>> With the first four patches only, I got some X server freeze (just tried
+>> once).
+>
+>
+> Another random question, just to rule something out. What video driver
+> are you using on your system?
 
-Hi  Pavel:
-	Could you provide following info and apply a acpi battery
-bug on the https://bugzilla.kernel.org? This can help others
-to trace the bug.
-
->> Which version you found the issue? could you provide the
->>output of dmesg on it and acpidump? They will give us more
->>clues since acpi battery driver just exposes data from Bios.
-
-
--- 
-Best regards
-Tianyu Lan
+intel on i3 330m
