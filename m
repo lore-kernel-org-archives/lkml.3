@@ -1,111 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab3CYKNp (ORCPT <rfc822;w@1wt.eu>);
+	id S1756120Ab3CYKNs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 06:13:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41540 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756034Ab3CYKNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Mar 2013 06:13:45 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55868 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755743Ab3CYKMH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 06:12:07 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: arvind.chauhan@arm.com, robin.randhawa@arm.com, Steve.Bannister@arm.com,
-        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        arnd.bergmann@linaro.org, linux@arm.linux.org.uk,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: [PATCH 6/9] cpufreq: pxa3xx: move cpufreq driver to drivers/cpufreq
-Date: Mon, 25 Mar 2013 15:41:37 +0530
-Message-Id: <2aa937c3d81776f01c2c1d6fcfcb08ba74163b53.1364205812.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1364205812.git.viresh.kumar@linaro.org>
-References: <cover.1364205812.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1364205812.git.viresh.kumar@linaro.org>
-References: <cover.1364205812.git.viresh.kumar@linaro.org>
-X-OriginalArrivalTime: 25 Mar 2013 10:12:03.0704 (UTC) FILETIME=[327DC780:01CE2941]
-X-MC-Unique: 113032510120507101
-Content-Type: text/plain; charset=WINDOWS-1252
+Date: Mon, 25 Mar 2013 11:13:40 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/10] migrate: add migrate_entry_wait_huge()
+Message-ID: <20130325101340.GQ2154@dhcp22.suse.cz>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1363983835-20184-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363983835-20184-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r2PADkMI026808
 
-This patch moves cpufreq driver of ARM based pxa3xx platform to drivers/cpufreq.
+On Fri 22-03-13 16:23:46, Naoya Horiguchi wrote:
+> When we have a page fault for the address which is backed by a hugepage
+> under migration, the kernel can't wait correctly until the migration
+> finishes. This is because pte_offset_map_lock() can't get a correct
+> migration entry for hugepage. This patch adds migration_entry_wait_huge()
+> to separate code path between normal pages and hugepages.
 
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- arch/arm/mach-pxa/Makefile                                           | 1 -
- arch/arm/mach-pxa/include/mach/generic.h                             | 1 +
- drivers/cpufreq/Makefile                                             | 1 +
- .../mach-pxa/cpufreq-pxa3xx.c => drivers/cpufreq/pxa3xx-cpufreq.c    | 5 +----
- 4 files changed, 3 insertions(+), 5 deletions(-)
- create mode 100644 arch/arm/mach-pxa/include/mach/generic.h
- rename arch/arm/mach-pxa/cpufreq-pxa3xx.c => drivers/cpufreq/pxa3xx-cpufreq.c (98%)
+The changelog is missing a description what is the effect of the bug. I
+assume that we end up busy looping on the huge page page fault until
+migration finishes, right?
 
-diff --git a/arch/arm/mach-pxa/Makefile b/arch/arm/mach-pxa/Makefile
-index 12c5005..929e700 100644
---- a/arch/arm/mach-pxa/Makefile
-+++ b/arch/arm/mach-pxa/Makefile
-@@ -10,7 +10,6 @@ obj-$(CONFIG_PM)		+= pm.o sleep.o standby.o
- ifeq ($(CONFIG_CPU_FREQ),y)
- obj-$(CONFIG_PXA25x)		+= cpufreq-pxa2xx.o
- obj-$(CONFIG_PXA27x)		+= cpufreq-pxa2xx.o
--obj-$(CONFIG_PXA3xx)		+= cpufreq-pxa3xx.o
- endif
- 
- # Generic drivers that other drivers may depend upon
-diff --git a/arch/arm/mach-pxa/include/mach/generic.h b/arch/arm/mach-pxa/include/mach/generic.h
-new file mode 100644
-index 0000000..665542e
---- /dev/null
-+++ b/arch/arm/mach-pxa/include/mach/generic.h
-@@ -0,0 +1 @@
-+#include "../../generic.h"
-diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index 170f01a..c5c276a 100644
---- a/drivers/cpufreq/Makefile
-+++ b/drivers/cpufreq/Makefile
-@@ -56,6 +56,7 @@ obj-$(CONFIG_ARM_IMX6Q_CPUFREQ)		+= imx6q-cpufreq.o
- obj-$(CONFIG_ARM_INTEGRATOR)		+= integrator-cpufreq.o
- obj-$(CONFIG_ARM_KIRKWOOD_CPUFREQ)	+= kirkwood-cpufreq.o
- obj-$(CONFIG_ARM_OMAP2PLUS_CPUFREQ)	+= omap-cpufreq.o
-+obj-$(CONFIG_PXA3xx)			+= pxa3xx-cpufreq.o
- obj-$(CONFIG_ARM_S3C2416_CPUFREQ)	+= s3c2416-cpufreq.o
- obj-$(CONFIG_ARM_S3C64XX_CPUFREQ)	+= s3c64xx-cpufreq.o
- obj-$(CONFIG_ARM_S5PV210_CPUFREQ)	+= s5pv210-cpufreq.o
-diff --git a/arch/arm/mach-pxa/cpufreq-pxa3xx.c b/drivers/cpufreq/pxa3xx-cpufreq.c
-similarity index 98%
-rename from arch/arm/mach-pxa/cpufreq-pxa3xx.c
-rename to drivers/cpufreq/pxa3xx-cpufreq.c
-index 8c45b2b..15d60f8 100644
---- a/arch/arm/mach-pxa/cpufreq-pxa3xx.c
-+++ b/drivers/cpufreq/pxa3xx-cpufreq.c
-@@ -1,6 +1,4 @@
- /*
-- * linux/arch/arm/mach-pxa/cpufreq-pxa3xx.c
-- *
-  * Copyright (C) 2008 Marvell International Ltd.
-  *
-  * This program is free software; you can redistribute it and/or modify
-@@ -17,10 +15,9 @@
- #include <linux/slab.h>
- #include <linux/io.h>
- 
-+#include <mach/generic.h>
- #include <mach/pxa3xx-regs.h>
- 
--#include "generic.h"
--
- #define HSS_104M	(0)
- #define HSS_156M	(1)
- #define HSS_208M	(2)
+Should this be applied to the stable tree or the current usage of the huge
+page migration (HWPOISON) is not spread enough?
+
+I like how you got rid of the duplication but I think this still doesn't
+work for all archs/huge page sizes.
+
+[...]
+> diff --git v3.9-rc3.orig/mm/hugetlb.c v3.9-rc3/mm/hugetlb.c
+> index 0a0be33..98a478e 100644
+> --- v3.9-rc3.orig/mm/hugetlb.c
+> +++ v3.9-rc3/mm/hugetlb.c
+> @@ -2819,7 +2819,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	if (ptep) {
+>  		entry = huge_ptep_get(ptep);
+>  		if (unlikely(is_hugetlb_entry_migration(entry))) {
+> -			migration_entry_wait(mm, (pmd_t *)ptep, address);
+> +			migration_entry_wait_huge(mm, (pmd_t *)ptep, address);
+
+e.g. ia64 returns pte_t *
+
+[...]
+> +void migration_entry_wait_huge(struct mm_struct *mm, pmd_t *pmd,
+> +				unsigned long address)
+> +{
+> +	spinlock_t *ptl = pte_lockptr(mm, pmd);
+> +	__migration_entry_wait(mm, (pte_t *)pmd, ptl);
+
+So you are trying to get lockptr from pmd but you have pte in fact. No
+biggy for !USE_SPLIT_PTLOCKS but doesn't work otherwise. So you probably
+need a arch specific huge_pte_lockptr callback for USE_SPLIT_PTLOCKS.
+
+Or am I missing something here? All the pte usage in hugetlb is one
+giant mess and I wouldn't be surprised if there were more places
+hardcoded to pmd there.
+
+> +}
+> +
+>  #ifdef CONFIG_BLOCK
+>  /* Returns true if all buffers are successfully locked */
+>  static bool buffer_migrate_lock_buffers(struct buffer_head *head,
+> -- 
+> 1.7.11.7
+> 
+
 -- 
-1.7.12.rc2.18.g61b472e
-
-
+Michal Hocko
+SUSE Labs
