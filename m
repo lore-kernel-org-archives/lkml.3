@@ -1,127 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932858Ab3CYS1d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 14:27:33 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:30426
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932207Ab3CYS1c convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 14:27:32 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zzbb2dI98dI9371Ic89bh1432Idb82hzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah906i1155h)
-Date: Mon, 25 Mar 2013 11:27:24 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <pcrost@xilinx.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <git@xilinx.com>,
-        Jan =?utf-8?B?TMO8YmJl?= <jlu@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Subject: Re: RFC v2: Zynq Clock Controller
-References: <27dae808-1d3a-4001-8eb2-b0a6e2a34b8f@AM1EHSMHS013.ehs.local>
- <515093B4.2090701@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <515093B4.2090701@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <8fd7278d-37c5-48ff-8d06-edc64d532a96@VA3EHSMHS037.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
+	id S932894Ab3CYS3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 14:29:04 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:39397 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932207Ab3CYS3C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 14:29:02 -0400
+Message-ID: <1364236133.3681.2.camel@thor.lan>
+Subject: Re: ipc/testmsg GPF.
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Mon, 25 Mar 2013 14:28:53 -0400
+In-Reply-To: <20130325163703.GA19064@redhat.com>
+References: <20130307213819.GB19543@redhat.com>
+	 <1362788821.7755.12.camel@thor.lan> <20130311182621.GA24965@redhat.com>
+	 <1363028602.3234.38.camel@thor.lan> <20130325163703.GA19064@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Mon, 2013-03-25 at 12:37 -0400, Dave Jones wrote:
+> On Mon, Mar 11, 2013 at 03:03:22PM -0400, Peter Hurley wrote:
+>  > On Mon, 2013-03-11 at 14:26 -0400, Dave Jones wrote:
+>  > > On Fri, Mar 08, 2013 at 07:27:01PM -0500, Peter Hurley wrote:
+>  > >  
+>  > >  > On Thu, 2013-03-07 at 16:38 -0500, Dave Jones wrote:
+>  > >  > 
+>  > >  > > general protection fault: 0000 [#1] PREEMPT SMP 
+>  > >  > > Modules linked in: rose ax25 phonet lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables snd_hda_codec_realtek snd_hda_intel btusb snd_hda_codec bluetooth snd_pcm snd_page_alloc snd_timer snd vhost_net rfkill tun macvtap usb_debug macvlan microcode serio_raw pcspkr kvm_amd soundcore edac_core r8169 mii kvm
+>  > >  > > CPU 0 
+>  > >  > > Pid: 845, comm: trinity-child14 Not tainted 3.9.0-rc1+ #70 Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H
+>  > >  > > RIP: 0010:[<ffffffff812b7b00>]  [<ffffffff812b7b00>] testmsg.isra.1+0x40/0x60
+>  > >  > > RSP: 0018:ffff880122b0fe78  EFLAGS: 00010246
+>  > >  > > RAX: 0000000000000000 RBX: 0000000000000002 RCX: 0000000000000001
+>  > >  > > RDX: 0000000000000002 RSI: 000000002c24a9b2 RDI: 697665642d737983
+>  > >  > > RBP: ffff880122b0fe78 R08: fffffff3f14b03ae R09: 0000000000000000
+>  > >  > > R10: ffff880127bd8000 R11: 0000000000000000 R12: 000000002c24a9b2
+>  > >  > > R13: ffff880123360798 R14: ffff8801233606e8 R15: 697665642d737973
+>  > >  > > FS:  00007f2672bd3740(0000) GS:ffff88012ae00000(0000) knlGS:0000000000000000
+>  > >  > > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>  > >  > > CR2: 00007f2672b96068 CR3: 0000000127bc1000 CR4: 00000000000007f0
+>  > >  > > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>  > >  > > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>  > >  > > Process trinity-child14 (pid: 845, threadinfo ffff880122b0e000, task ffff880127bd8000)
+>  > >  > > Stack:
+>  > >  > >  ffff880122b0ff68 ffffffff812b8e7e ffff8801276d5b90 ffff880127bd8000
+>  > >  > >  ffff880127bd8000 ffff880127bd8000 0000000000000000 ffffffff812b78c0
+>  > >  > >  0000000000000000 ffffffff81c7a260 0000000000000000 0000000000001000
+>  > >  > > Call Trace:
+>  > >  > >  [<ffffffff812b8e7e>] do_msgrcv+0x1de/0x670
+>  > >  > >  [<ffffffff812b78c0>] ? load_msg+0x180/0x180
+>  > >  > >  [<ffffffff810b8685>] ? trace_hardirqs_on_caller+0x115/0x1a0
+>  > >  > >  [<ffffffff81341aae>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>  > >  > >  [<ffffffff812b9325>] sys_msgrcv+0x15/0x20
+>  > >  > >  [<ffffffff816cd982>] system_call_fastpath+0x16/0x1b
+>  > >  > > Code: 83 fa 04 74 16 31 c0 5d c3 66 90 ff ca b8 01 00 00 00 74 f3 31 c0 eb ef 0f 1f 00 48 39 37 b8 01 00 00 00 7e e2 31 c0 eb de 66 90 <48> 3b 37 75 d5 b8 01 00 00 00 5d c3 0f 1f 40 00 48 3b 37 74 c5 
+>  > >  > > 
+>  > >  > > 0000000000000000 <.text>:
+>  > >  > >    0:	48 3b 37             	cmp    (%rdi),%rsi
+>  > >  > >    3:	75 d5                	jne    0xffffffffffffffda
+>  > >  > >    5:	b8 01 00 00 00       	mov    $0x1,%eax
+>  > >  > >    a:	5d                   	pop    %rbp
+>  > >  > >    b:	c3                   	retq   
+>  > >  > >    c:	0f 1f 40 00          	nopl   0x0(%rax)
+>  > >  > >   10:	48 3b 37             	cmp    (%rdi),%rsi
+>  > >  > >   13:	74 c5                	je     0xffffffffffffffda
+>  > >  > > 
+>  > >  > > rdi is ascii. "ived-sy�" Curious.
+>  > >  > > 
+>  > >  > > EIP is here in testmsg.
+>  > >  > > 
+>  > >  > >                 case SEARCH_EQUAL:
+>  > >  > >                         if (msg->m_type == type)
+>  > >  > >      240:       48 3b 37                cmp    (%rdi),%rsi
+>  > >  > >      243:       75 d5                   jne    21a <testmsg.isra.1+0x1a>
+>  > >  > >         {
+>  > > 
+>  > > I just hit this again on rc2 which looks like it has the fixes that
+>  > > Peter mentions above.  This time rdi was 6b6b6b6b6b6b6b7b
+>  > > 
+>  > > 	Dave
+>  > 
+>  > Sorry, Dave. The fix must be in the other 8 patches that Andrew didn't
+>  > want to apply. I run trinity 10 or more times a day and can't get this
+>  > to trigger with the whole series.
+> 
+> bad news: Turns out my recent testing where I thought your patches fixed
+> this was incorrect.  I had excluded fuzz testing of msgrcv, so it was never
+> getting exercised.
 
-On Mon, Mar 25, 2013 at 12:13:08PM -0600, Stephen Warren wrote:
-> On 03/20/2013 05:56 PM, Sören Brinkmann wrote:
-> > Hi,
-> > 
-> > I spent some time working on this and incorporating feedback. Here's an updated proposal for a clock controller for Zynq:
-> > 
-> > Required properties:
-> >  - #clock-cells : Must be 1
-> >  - compatible : "xlnx,ps7-clkc"  (this may become 'xlnx,zynq-clkc' terminology differs a bit between Xilinx internal and mainline)
-> >  - ps-clk-frequency : Frequency of the oscillator providing ps_clk in HZ
-> >                      (usually 33 MHz oscillators are used for Zynq platforms)
-> 
-> This may have been mentioned before, but shouldn't the input clock be
-> represented as an actual clock in DT, and hence as an entry in this
-> node's clocks property? The crystal/... itself can be represented in DT
-> as a fixed-clock.
-Lars-Peter brought that up, too. Please refer to my answer to him.
+I think you might have applied the wrong series. See below.
 
+> When I put that back, rc4 + your patches still crashes.
+> However the crash looks slightly different..
+> (That may be because I upgraded the compiler from 4.7->4.8 last week)
 > 
-> >  - clock-output-names : List of strings used to name the clock outputs. Shall be a list of the outputs given below.
 > 
-> That shouldn't be required.
-When I want to support of_clk_get_parent_name() for my clocks, I think
-it is. And I'm inclined to not brake this functionality.
+> general protection fault: 0000 [#1] PREEMPT SMP 
+> Modules linked in: af_key phonet cmtp rose kernelcapi l2tp_ppp l2tp_netlink l2tp_core pppoe pppox hidp can_raw ppp_generic slhc nfnetlink scsi_transport_iscsi can_bcm ipt_ULOG can irda appletalk ipx rds p8023 p8022 atm decnet crc_ccitt x25 psnap af_802154 ax25 llc nfc lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables btusb bluetooth snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_pcm snd_page_alloc rfkill vhost_net tun macvtap microcode macvlan edac_core snd_timer kvm_amd snd serio_raw kvm r8169 pcspkr soundcore mii radeon backlight drm_kms_helper ttm
+> CPU 1 
+> Pid: 1067, comm: trinity-child1 Not tainted 3.9.0-rc4+ #120 Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H
+> RIP: 0010:[<ffffffff812c2e9e>]  [<ffffffff812c2e9e>] do_msgrcv+0x1ee/0x5f0
+> RSP: 0018:ffff8800be6dde98  EFLAGS: 00010297
+> RAX: 0000000001868405 RBX: 0000000000000001 RCX: 0000000000000000
+> RDX: ffff8800be68c920 RSI: 0000000000004000 RDI: ffff8800cfb206e8
+> RBP: ffff8800be6ddf68 R08: 0000000000000001 R09: 0000000000000001
+> R10: ffff8800be68c920 R11: 0000000000000001 R12: 0000000000000000
+> R13: ffff8800cfb20798 R14: ffff8800cfb206e8 R15: 6b6b6b6b6b6b6b6b
+> FS:  00007f1bf1243740(0000) GS:ffff88012b000000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 00007f1bf1206068 CR3: 00000000be5e0000 CR4: 00000000000007e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process trinity-child1 (pid: 1067, threadinfo ffff8800be6dc000, task ffff8800be68c920)
+> Stack:
+>  ffff8800bb674f50 ffff8800be68c920 ffff8800be68c920 ffff8800be68c920
+>  ffffffff812c1b40 0000000000afb000 ffffffff81c7ad20 0000000001868405
+>  0000000000000000 000040002e16f9d4 0000000000000001 ffff8800be68c920
+> Call Trace:
+>  [<ffffffff812c1b40>] ? msg_security+0x10/0x10
+>  [<ffffffff810b6bc5>] ? trace_hardirqs_on_caller+0x115/0x1a0
+>  [<ffffffff8134aa6e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>  [<ffffffff812c32b5>] sys_msgrcv+0x15/0x20
+>  [<ffffffff816cda02>] system_call_fastpath+0x16/0x1b
+> Code: cc 83 fb 04 0f 84 f3 00 00 00 8b 74 24 4c 85 f6 0f 84 18 02 00 00 48 8b 44 24 38 48 39 44 24 50 0f 84 12 02 00 00 4c 89 7c 24 60 <4d> 8b 3f 48 ff 44 24 50 4d 39 ef 75 9d 0f 1f 44 00 00 48 81 7c 
+> 
+> 
+>   2b:*	4d 8b 3f             	mov    (%r15),%r15     <-- trapping instruction
+>   2e:	48 ff 44 24 50       	incq   0x50(%rsp)
+>   33:	4d 39 ef             	cmp    %r13,%r15
+>   36:	75 9d                	jne    0xffffffffffffffd5
+>   38:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
+>   3d:	48                   	rex.W
+>   3e:	81                   	.byte 0x81
+>   3f:	7c                   	.byte 0x7c
+> 
+> objdump -S output shows that this is here in do_msgrcv() 
+> 
+>  875                                 } else
+>  876                                         break;
+>  877                                 msg_counter++;
+>  878                         }
+>  879                         tmp = tmp->next;
 
-> 
-> > Optional properties:
-> >  - clocks : as described in the clock bindings
-> >  - clock-names : as described in the clock bindings
-> 
-> I think clocks should be required, with at least the main crystal clock
-> input always present, but perhaps having some optional entries for the
-> (E)MIO feature you mention.
-This is why I have the xtal separate. This way these props are purely
-optional and the xtal frequency is obtained separately. It also makes it
-a little easier internally, because I don't have to cope with a variable
-name for the xtal this way.
+This source line does not exist with the 'ipc IPC_MSGCOPY fixes'
+patchset applied.
 
-Describing the xtal as fixed clock in DT means a mandatory entry for
-'clocks' and 'clock-names' and a variable name for the xtal clock. I
-wanted to avoid this.
-
-> 
-> > Example:
-> >         clkc: clkc {
-> >                 #clock-cells = <1>;
-> >                 compatible = "xlnx,ps7-clkc";
-> >                 ps-clk-frequency = <33333333>;
-> >                 clock-output-names = "armpll", "ddrpll", "iopll", "cpu_6or4x", "cpu_3or2x", "cpu_2x", "cpu_1x", "ddr2x", "ddr3x", "dci", "lqspi", "smc", "pcap", "gem0", "gem1", "fclk0", "fclk1", "fclk2", "fclk3", "can0", "can1", "sdio0", "sdio1", "uart0", "uart1", "spi0", "spi1", "dma", "usb0_aper", "usb1_aper", "gem0_aper", "gem1_aper", "sdio0_aper", "sdio1_aper", "spi0_aper", "spi1_aper", "can0_aper", "can1_aper", "i2c0_aper", "i2c1_aper", "uart0_aper", "uart1_aper", "gpio_aper", "lqspi_aper", "smc_aper", "swdt", "dbg_trc", "dbg_apb";  /* long list... explanation below */
-> >                 /* optional props */
-> >                 clocks = <&clkc 16>, <&clk_foo>;
-> >                 clock-names = "gem1_emio_clk", "can_mio_clk_23";
-> >         };
-> > 
-> > The downside of supporting this is, that I don't see a way around explicitly listing the clock output names in the DT.
-> 
-> (Please wrap your emails to ~74 characters or so)
-I changed my settings.
-
-> 
-> As Mike mentioned off-list, one can create a new clk registration API
-> that takes a struct clk* as parent rather than a char *clk_name.
-Then we also have to make sure clocks are probed in a specific order. To
-obtain a 'struct clk *' through clk_get() the requested clock has to be
-already been probed. Currently clock probing relies purely on data present
-in DT. This makes this proposal not that trivial, IMHO.
-
-e.g. in this case the clock controller probe would fail if the potential
-fixed clock describing the xtal isn't probed first.
-
-> 
-> > This email and any attachments are intended for the sole use of the named recipient(s)...
-> 
-> It's not good form to include that kind of disclaimer on public mailing
-> list posts. That's why many people use their personal email when posting
-> to mailing lists.
-My apologies. IT is currently messing with the email configuration and broke
-the flows which used to work. AFAIK, it's currently fixed. And I
-sincerely hope it stays this way.
-
-	Sören
+>  880                 }
+>  881                 if (!IS_ERR(msg)) {
 
 
