@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149Ab3CYUHB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 16:07:01 -0400
-Received: from nctlincom02.orcon.net.nz ([60.234.4.76]:55265 "EHLO
-	nctlincom02.orcon.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933058Ab3CYUHA (ORCPT
+	id S933288Ab3CYUIc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 16:08:32 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:59454 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933095Ab3CYUI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 16:07:00 -0400
-Cc: "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-Id: <D7731577-A2C0-4FC5-A7E3-62F251A18798@orcon.net.nz>
-From: Michael Cree <mcree@orcon.net.nz>
-To: Tobias Klausmann <klausman@schwarzvogel.de>
-In-Reply-To: <20130325150958.GA13894@skade.schwarzvogel.de>
-Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0 (Apple Message framework v936)
-Subject: Re: [PATCH] alpha: makefile: don't enforce small data model for kernel builds
-Date: Tue, 26 Mar 2013 09:06:44 +1300
-References: <1363556926-21097-1-git-send-email-will.deacon@arm.com> <BFB01C0A-95E5-4C2B-8AF2-A06BE1FF74E0@orcon.net.nz> <20130325133710.GD14280@mudshark.cambridge.arm.com> <20130325150958.GA13894@skade.schwarzvogel.de>
-X-Mailer: Apple Mail (2.936)
-X-DSPAM-Check: by mx1.orcon.net.nz on Tue, 26 Mar 2013 09:06:57 +1300
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Tue Mar 26 09:06:57 2013
-X-DSPAM-Confidence: 0.6186
-X-DSPAM-Probability: 0.0000
-X-Bayes-Prob: 0.0006 (Score 0, tokens from: @@RPTN, default)
-X-Spam-Score: -3.00 () [Hold at 4.00] CC(NZ:-3)
-X-CanIt-Geo: ip=130.217.188.11; country=NZ; region=G1; city=Hamilton; latitude=-37.7833; longitude=175.2833; http://maps.google.com/maps?q=-37.7833,175.2833&z=6
-X-CanItPRO-Stream: base:default
-X-Canit-Stats-ID: 05JfU6V8t - 60cc7263fe1a - 20130326
+	Mon, 25 Mar 2013 16:08:29 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>
+Subject: [PATCH 3/8] ntp: Move timex validation to timekeeping do_adjtimex call.
+Date: Mon, 25 Mar 2013 13:08:13 -0700
+Message-Id: <1364242098-5977-4-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1364242098-5977-1-git-send-email-john.stultz@linaro.org>
+References: <1364242098-5977-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/03/2013, at 4:09 AM, Tobias Klausmann wrote:
-> On Mon, 25 Mar 2013, Will Deacon wrote:
->> Any news on these? I've included an updated version of the first  
->> patch, with
->> the Tested-by-tag and a tweaked commit message below.
->
-> As a data point, I tried vanilla 3.8.4 on the weekend. With my
-> usual config on a UP1500, it will fail at build time with
-> relocation errors. If I remove -msmall-data (or replace it with
-> ~big~), the machine hangs hard immediatly after aboot telling me
-> it's starting it.
+Move logic that does not need the ntp state to be done
+in the timekeeping do_adjtimex() call.
 
-You probably want the "alpha: Add irongate_io to to PCI bus resources"  
-patch posted by Matt Turner in the linux-alpha forum.  Looks like it  
-has not been sent to Linus.
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ kernel/time/ntp.c          |    5 -----
+ kernel/time/ntp_internal.h |    1 +
+ kernel/time/timekeeping.c  |    7 +++++++
+ 3 files changed, 8 insertions(+), 5 deletions(-)
 
-If Matt does not respond in the next day or two I'll collect patches  
-and send them on to Linus.
-
-Cheers
-Michael.
-
-
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index 8b10706..2dc60c6 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -668,11 +668,6 @@ int __do_adjtimex(struct timex *txc)
+ 	u32 time_tai, orig_tai;
+ 	int result;
+ 
+-	/* Validate the data before disabling interrupts */
+-	result = ntp_validate_timex(txc);
+-	if (result)
+-		return result;
+-
+ 	if (txc->modes & ADJ_SETOFFSET) {
+ 		struct timespec delta;
+ 		delta.tv_sec  = txc->time.tv_sec;
+diff --git a/kernel/time/ntp_internal.h b/kernel/time/ntp_internal.h
+index fdee80c..a2a3976 100644
+--- a/kernel/time/ntp_internal.h
++++ b/kernel/time/ntp_internal.h
+@@ -6,6 +6,7 @@ extern void ntp_clear(void);
+ /* Returns how long ticks are at present, in ns / 2^NTP_SCALE_SHIFT. */
+ extern u64 ntp_tick_length(void);
+ extern int second_overflow(unsigned long secs);
++extern int ntp_validate_timex(struct timex *);
+ extern int __do_adjtimex(struct timex *);
+ extern void __hardpps(const struct timespec *, const struct timespec *);
+ #endif /* _LINUX_NTP_INTERNAL_H */
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index a138ec2..f6c8a72 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1618,6 +1618,13 @@ EXPORT_SYMBOL_GPL(ktime_get_monotonic_offset);
+  */
+ int do_adjtimex(struct timex *txc)
+ {
++	int ret;
++
++	/* Validate the data before disabling interrupts */
++	ret = ntp_validate_timex(txc);
++	if (ret)
++		return ret;
++
+ 	return __do_adjtimex(txc);
+ }
+ 
+-- 
+1.7.10.4
 
