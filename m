@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758986Ab3CYVt1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 17:49:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:58869 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758708Ab3CYVt0 (ORCPT
+	id S1758995Ab3CYVuU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 17:50:20 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:38631 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758956Ab3CYVuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 17:49:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ryan Mallon <rmallon@gmail.com>
-Subject: Re: [PATCH 3/3] misc: ep93xx_pwm.c: fix section mismatch and use module_platform_driver
-Date: Mon, 25 Mar 2013 21:49:16 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org
-References: <201303151807.14074.hartleys@visionengravers.com> <201303161457.24825.arnd@arndb.de> <5145095D.3010304@gmail.com>
-In-Reply-To: <5145095D.3010304@gmail.com>
+	Mon, 25 Mar 2013 17:50:18 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303252149.16960.arnd@arndb.de>
-X-Provags-ID: V02:K0:6goImgU4J4HS3H8ZMLiMu+Qoc3NgNOlE/otP0O2vL07
- 2cW0XZ8l9073WUwPZplgLl2YrHy1N3Dj6Lb5WwUolNmGxhGg6a
- 9ePKO8dOWvQedWcPXETfaLBl5qKpkLNILXgXNQX4i/uKb6MQ28
- 2IVjdThbB91tDnMcwN8r3+kATLY3cd/8pJZApBsC4JL+zLQDRY
- 2+tvPTcLWI1WRpAGdNd2kOC7I6KKSKaH41nJs4cHZGLBKVivrl
- 0nmDyv5LRYPzvnG837JNfviV72UrvA9sKtOUOAiIMV4xNYe2bv
- CLyeFvapj4Ass78YuSXH7k4pGeto3jtIq16eLFH92zeO6/6NJs
- VRXFDsUNhGg7DydLUPLg=
+In-Reply-To: <20130325194245.GA7357@redhat.com>
+References: <20130320163131.GE2273@redhat.com>
+	<1363807329-24975-1-git-send-email-yinghai@kernel.org>
+	<20130325194245.GA7357@redhat.com>
+Date: Mon, 25 Mar 2013 14:50:18 -0700
+X-Google-Sender-Auth: zedtphvBSLsPpQC6QHQH_WANqAc
+Message-ID: <CAE9FiQU6bGSAODX_-Vir6D-LyY-9Sm84rYzq=gNhDZ5whbia_w@mail.gmail.com>
+Subject: Re: [PATCH] kexec: use Crash kernel for Crash kernel low
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 17 March 2013, Ryan Mallon wrote:
-> On 17/03/13 01:57, Arnd Bergmann wrote:
-> 
-> > On Saturday 16 March 2013, H Hartley Sweeten wrote:
-> >> Remove the __init tags from the ep93xx_pwm_probe() and
-> >> ep93xx_pwm_remove() functions to fix the section mismatch
-> >> warnings.
-> >>
-> >> Use module_platform_driver() to remove the init/exit boilerplate.
-> >>
-> >> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> >> Cc: Ryan Mallon <rmallon@gmail.com>
-> >> Cc: Arnd Bergmann <arnd@arndb.de>
-> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > 
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> 
-> For the whole series:
-> 
-> Acked-by: Ryan Mallon <rmallon@gmail.com>
-> 
-> Not sure if I should take these in my tree, or if they should be
-> handled by the respective subsystem maintainers. Arnd?
+On Mon, Mar 25, 2013 at 12:42 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> So it is a forgone conclusion that these new kernel changes to
+> crashkernel=X in 3.9 are incompatible with older kexec-tools and one
+> needs to upgrade kexec-tools.
 
-Doesn't matter much, as there are no dependencies. The default would
-be to ask the subsystem maintainers to put them into their trees.
-If that doesn't happen for some reason, I can take them through the
-arm-soc tree as a fallback.
+I thought that you and hpa all agreed that user need to update kexec-tools with
+new kernel v3.9. It that still right?
 
-	Arnd
+Thanks
+
+Yinghai
