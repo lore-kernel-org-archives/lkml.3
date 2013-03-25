@@ -1,97 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758777Ab3CYRS5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 13:18:57 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:39348 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757543Ab3CYRSz (ORCPT
+	id S1758767Ab3CYRWh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 13:22:37 -0400
+Received: from mail-gg0-f201.google.com ([209.85.161.201]:42709 "EHLO
+	mail-gg0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758012Ab3CYRWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 13:18:55 -0400
-Date: Mon, 25 Mar 2013 10:18:44 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] nohz: Full dynticks base interface
-Message-ID: <20130325171844.GA3637@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1363879460-21595-1-git-send-email-fweisbec@gmail.com>
- <20130324081701.GA13328@gmail.com>
- <CAFTL4hx4FLaRR6i9ap9UrCZY4ikhVtLfUqWSsjTpsO3dvShUjQ@mail.gmail.com>
- <20130325170257.GA24554@linux.vnet.ibm.com>
- <CAFTL4hwRoMGpS823ZD51sw=+AX7_GfroPqz=EspNAtkA86YZ_g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hwRoMGpS823ZD51sw=+AX7_GfroPqz=EspNAtkA86YZ_g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032517-7408-0000-0000-00000E28FC9D
+	Mon, 25 Mar 2013 13:22:35 -0400
+From: Greg Thelen <gthelen@google.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
+Subject: [PATCH] vfs: dcache: cond_resched in shrink_dentry_list
+Date: Mon, 25 Mar 2013 10:22:31 -0700
+Message-Id: <1364232151-23242-1-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 06:12:12PM +0100, Frederic Weisbecker wrote:
-> 2013/3/25 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> > On Sun, Mar 24, 2013 at 03:46:40PM +0100, Frederic Weisbecker wrote:
-> >> 2013/3/24 Ingo Molnar <mingo@kernel.org>:
-> >> >
-> >> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >> >
-> >> >> Hi Ingo,
-> >> >>
-> >> >> This settles the initial ground to start a special full dynticks tree in -tip
-> >> >> that we can iterate incrementally to accelerate the development.
-> >> >> It is based on tip:sched/core.
-> >> >>
-> >> >> I tried to rearrange a bit the naming. We are probably not yet done with
-> >> >> that but I guess we can fix it along with the rest.
-> >> >>
-> >> >> Please pull from:
-> >> >>
-> >> >> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> >> >>       full-dynticks-for-mingo
-> >> >>
-> >> >> Changes on these commits since they were part of 3.9-rc1-nohz1:
-> >> >>
-> >> >> * Force a timekeeping CPU over the full dynticks range
-> >> >> * Rename CONFIG_NO_HZ_FULL to CONFIG_NO_HZ_EXTENDED
-> >> >> * Following *_nohz_extended_* APIs renames
-> >> >> * Handle CPU hotplug for timekeeping
-> >> >> * Rename full_nohz= kernel parameter to nohz_extended=
-> >> >
-> >> > Note that boot parameters suck for pretty much any purpose but quirks -
-> >> > please also add a (default off!) Kconfig option to easily enable
-> >> > nohz_extended for all CPUs.
-> >> >
-> >> > That way I will be able to test it automatically via randconfig and such.
-> >>
-> >> Sure, I'm adding such an option.
-> >
-> > Hmmm...  This would be an option to make all but one CPU an adaptive-ticks
-> > CPU, right?  If so, this leads to the question of whether I should add a
-> > matching no-CBs Kconfig option.  My guess is "no", because the existing
-> > CONFIG_RCU_NOCB_CPU_ALL should work just fine -- there would be a CPU that
-> > was not an adaptive-ticks CPU, but does have its RCU callbacks offloaded.
-> >
-> > Or am I missing something here?
-> 
-> No that looks right. Now I wonder if I should select
-> CONFIG_RCU_NOCB_CPU_ALL at the same time. Probably.
+Call cond_resched() from shrink_dentry_list() to preserve
+shrink_dcache_parent() interactivity.
 
-Sounds like a good initial position to me.  If it somehow causes problems,
-we can always change it later.
+void shrink_dcache_parent(struct dentry * parent)
+{
+	while ((found = select_parent(parent, &dispose)) != 0)
+		shrink_dentry_list(&dispose);
+}
 
-							Thanx, Paul
+select_parent() populates the dispose list with dentries which
+shrink_dentry_list() then deletes.  select_parent() carefully uses
+need_resched() to avoid doing too much work at once.  But neither
+shrink_dcache_parent() nor its called functions call cond_resched().
+So once need_resched() is set select_parent() will return single
+dentry dispose list which is then deleted by shrink_dentry_list().
+This is inefficient when there are a lot of dentry to process.  This
+can cause softlockup and hurts interactivity on non preemptable
+kernels.
+
+This change adds a call to cond_resched() in shrink_dentry_list().
+The primary benefit of this is that need_resched() is quickly cleared
+so that future calls to select_parent() are able to efficiently return
+a big batch of dentry.  A theoretically secondary benefit of this
+change is that shrink_dentry_list() is willing to give up the
+processor when working on a huge number of dentry.
+
+These additional cond_resched() do not seem to impact performance, at
+least for the workload below.
+
+Here is a program which can cause soft lockup on a if other system
+activity sets need_resched().
+
+	int main()
+	{
+	        struct rlimit rlim;
+	        int i;
+	        int f[100000];
+	        char buf[20];
+	        struct timeval t1, t2;
+	        double diff;
+
+	        /* cleanup past run */
+	        system("rm -rf x");
+
+	        /* boost nfile rlimit */
+	        rlim.rlim_cur = 200000;
+	        rlim.rlim_max = 200000;
+	        if (setrlimit(RLIMIT_NOFILE, &rlim))
+	                err(1, "setrlimit");
+
+	        /* make directory for files */
+	        if (mkdir("x", 0700))
+	                err(1, "mkdir");
+
+	        if (gettimeofday(&t1, NULL))
+	                err(1, "gettimeofday");
+
+	        /* populate directory with open files */
+	        for (i = 0; i < 100000; i++) {
+	                snprintf(buf, sizeof(buf), "x/%d", i);
+	                f[i] = open(buf, O_CREAT);
+	                if (f[i] == -1)
+	                        err(1, "open");
+	        }
+
+	        /* close some of the files */
+	        for (i = 0; i < 85000; i++)
+	                close(f[i]);
+
+	        /* unlink all files, even open ones */
+	        system("rm -rf x");
+
+	        if (gettimeofday(&t2, NULL))
+	                err(1, "gettimeofday");
+
+	        diff = (((double)t2.tv_sec * 1000000 + t2.tv_usec) -
+	                ((double)t1.tv_sec * 1000000 + t1.tv_usec));
+
+	        printf("done: %g elapsed\n", diff/1e6);
+	        return 0;
+	}
+
+Signed-off-by: Greg Thelen <gthelen@google.com>
+---
+ fs/dcache.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index fbfae008..105e973 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -818,6 +818,8 @@ static void shrink_dentry_list(struct list_head *list)
+ 
+ 		try_prune_one_dentry(dentry);
+ 
++		cond_resched();
++
+ 		rcu_read_lock();
+ 	}
+ 	rcu_read_unlock();
+-- 
+1.8.1.3
 
