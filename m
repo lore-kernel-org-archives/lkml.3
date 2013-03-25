@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173Ab3CYA2Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 20:28:16 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:48070 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831Ab3CYA2P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 20:28:15 -0400
-Date: Sun, 24 Mar 2013 17:28:12 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-cc: Russ Anderson <rja@sgi.com>, Ingo Molnar <mingo@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
-In-Reply-To: <CAHGf_=qgsga4Juj8uNnfbmOZYtYhcQbqngbFDWg9=B-1nc1HSw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1303241727420.23613@chino.kir.corp.google.com>
-References: <20130318155619.GA18828@sgi.com> <20130321105516.GC18484@gmail.com> <alpine.DEB.2.02.1303211139110.3775@chino.kir.corp.google.com> <20130322072532.GC10608@gmail.com> <20130323152948.GA3036@sgi.com>
- <CAHGf_=qgsga4Juj8uNnfbmOZYtYhcQbqngbFDWg9=B-1nc1HSw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755071Ab3CYAeJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 20:34:09 -0400
+Received: from ozlabs.org ([203.10.76.45]:41148 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754788Ab3CYAeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 20:34:07 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Stuart Yoder <stuart.yoder@freescale.com>
+cc: chen.gang.flying.transformer@gmail.com, galak@kernel.crashing.org,
+        gang.chen@asianux.com, benh@kernel.crashing.org, sfr@canb.auug.org.au,
+        paulus@samba.org, matt@ozlabs.org, imunsie@au1.ibm.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PPC: define the conditions where the ePAPR idle hcall can be supported
+In-reply-to: <1363979533-24485-1-git-send-email-stuart.yoder@freescale.com>
+References: <1363979533-24485-1-git-send-email-stuart.yoder@freescale.com>
+Comments: In-reply-to Stuart Yoder <stuart.yoder@freescale.com>
+   message dated "Fri, 22 Mar 2013 14:12:13 -0500."
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+Date: Mon, 25 Mar 2013 11:34:04 +1100
+Message-ID: <18100.1364171644@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Mar 2013, KOSAKI Motohiro wrote:
+Stuart Yoder <stuart.yoder@freescale.com> wrote:
 
-> > --- linux.orig/mm/page_alloc.c  2013-03-19 16:09:03.736450861 -0500
-> > +++ linux/mm/page_alloc.c       2013-03-22 17:07:43.895405617 -0500
-> > @@ -4161,10 +4161,23 @@ int __meminit __early_pfn_to_nid(unsigne
-> >  {
-> >         unsigned long start_pfn, end_pfn;
-> >         int i, nid;
-> > +       /*
-> > +          NOTE: The following SMP-unsafe globals are only used early
-> > +          in boot when the kernel is running single-threaded.
-> > +        */
-> > +       static unsigned long last_start_pfn, last_end_pfn;
-> > +       static int last_nid;
+> From: Stuart Yoder <stuart.yoder@freescale.com>
 > 
-> Why don't you mark them __meminitdata? They seems freeable.
+> For 32-bit, CONFIG_EPAPR_PARAVIRT pulls in both epapr_paravirt.c
+> and epapr_hcalls.c which contains the 32-bit paravirt idle loop.
 > 
+> For 64-bit, the paravirt idle loop is in idle_book3e.S and that
+> source file is included only if CONFIG_PPC_BOOK3E_64 defined.
+> 
+> This patch makes that dependency for 64-bit explicit.
+> 
+> Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
 
-Um, defining them in a __meminit function places them in .meminit.data 
-already.
+It works for me.  Thanks.
+
+
+> ---
+>  arch/powerpc/kernel/epapr_paravirt.c |    6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/arch/powerpc/kernel/epapr_paravirt.c b/arch/powerpc/kernel/epapr_paravirt.c
+> index f3eab85..d44a571 100644
+> --- a/arch/powerpc/kernel/epapr_paravirt.c
+> +++ b/arch/powerpc/kernel/epapr_paravirt.c
+> @@ -23,8 +23,10 @@
+>  #include <asm/code-patching.h>
+>  #include <asm/machdep.h>
+>  
+> +#if !defined(CONFIG_64BIT) || defined(CONFIG_PPC_BOOK3E_64)
+>  extern void epapr_ev_idle(void);
+>  extern u32 epapr_ev_idle_start[];
+> +#endif
+
+You don't need this #ifdef
+
+>  
+>  bool epapr_paravirt_enabled;
+>  
+> @@ -47,11 +49,15 @@ static int __init epapr_paravirt_init(void)
+>  
+>  	for (i = 0; i < (len / 4); i++) {
+>  		patch_instruction(epapr_hypercall_start + i, insts[i]);
+> +#if !defined(CONFIG_64BIT) || defined(CONFIG_PPC_BOOK3E_64)
+>  		patch_instruction(epapr_ev_idle_start + i, insts[i]);
+> +#endif
+>  	}
+>  
+> +#if !defined(CONFIG_64BIT) || defined(CONFIG_PPC_BOOK3E_64)
+>  	if (of_get_property(hyper_node, "has-idle", NULL))
+>  		ppc_md.power_save = epapr_ev_idle;
+> +#endif
+>  
+>  	epapr_paravirt_enabled = true;
+>  
+> -- 
+> 1.7.9.7
+> 
+> 
