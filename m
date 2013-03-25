@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab3CYBPI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:15:08 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33782 "EHLO
+	id S1755502Ab3CYBPG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:15:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33771 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755426Ab3CYBPD (ORCPT
+	by vger.kernel.org with ESMTP id S1755299Ab3CYBPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:03 -0400
-Message-Id: <20130325010525.635277711@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:02 -0400
+Message-Id: <20130325010525.128216511@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:05:37 +0000
+Date: Mon, 25 Mar 2013 01:05:32 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+Cc: akpm@linux-foundation.org, Neal Cardwell <ncardwell@google.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 013/104] ipv6: stop multicast forwarding to process interface  scoped addresses
+Subject: [ 008/104] tcp: fix double-counted receiver RTT when leaving  receiver fast path
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -31,39 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Neal Cardwell <ncardwell@google.com>
 
-[ Upstream commit ddf64354af4a702ee0b85d0a285ba74c7278a460 ]
+[ Upstream commit aab2b4bf224ef8358d262f95b568b8ad0cecf0a0 ]
 
-v2:
-a) used struct ipv6_addr_props
+We should not update ts_recent and call tcp_rcv_rtt_measure_ts() both
+before and after going to step5. That wastes CPU and double-counts the
+receiver-side RTT sample.
 
-v3:
-a) reverted changes for ipv6_addr_props
-
-v4:
-a) do not use __ipv6_addr_needs_scope_id
-
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv6/ip6_input.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ipv4/tcp_input.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/ipv6/ip6_input.c
-+++ b/net/ipv6/ip6_input.c
-@@ -265,7 +265,8 @@ int ip6_mc_input(struct sk_buff *skb)
- 	 *      IPv6 multicast router mode is now supported ;)
- 	 */
- 	if (dev_net(skb->dev)->ipv6.devconf_all->mc_forwarding &&
--	    !(ipv6_addr_type(&hdr->daddr) & IPV6_ADDR_LINKLOCAL) &&
-+	    !(ipv6_addr_type(&hdr->daddr) &
-+	      (IPV6_ADDR_LOOPBACK|IPV6_ADDR_LINKLOCAL)) &&
- 	    likely(!(IP6CB(skb)->flags & IP6SKB_FORWARDED))) {
- 		/*
- 		 * Okay, we try to forward - split and duplicate
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -5494,6 +5494,9 @@ int tcp_rcv_established(struct sock *sk,
+ 				if (tcp_checksum_complete_user(sk, skb))
+ 					goto csum_error;
+ 
++				if ((int)skb->truesize > sk->sk_forward_alloc)
++					goto step5;
++
+ 				/* Predicted packet is in window by definition.
+ 				 * seq == rcv_nxt and rcv_wup <= rcv_nxt.
+ 				 * Hence, check seq<=rcv_wup reduces to:
+@@ -5505,9 +5508,6 @@ int tcp_rcv_established(struct sock *sk,
+ 
+ 				tcp_rcv_rtt_measure_ts(sk, skb);
+ 
+-				if ((int)skb->truesize > sk->sk_forward_alloc)
+-					goto step5;
+-
+ 				NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPHPHITS);
+ 
+ 				/* Bulk data transfer: receiver */
 
 
