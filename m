@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab3CYB2H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:28:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34023 "EHLO
+	id S1756053Ab3CYBQA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:16:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33963 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756072Ab3CYBQE (ORCPT
+	by vger.kernel.org with ESMTP id S1755942Ab3CYBP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:04 -0400
-Message-Id: <20130325010530.505948660@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:58 -0400
+Message-Id: <20130325010531.575788656@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:27 +0000
+Date: Mon, 25 Mar 2013 01:06:38 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Dmitry Artamonow <mad_soft@inbox.ru>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 063/104] usb-storage: add unusual_devs entry for Samsung YP-Z3 mp3 player
+Cc: akpm@linux-foundation.org, Seth Forshee <seth.forshee@canonical.com>,
+        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Seiji Aguchi <seiji.aguchi@hds.com>, Tony Luck <tony.luck@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [ 074/104] efivars: Allow disabling use as a pstore backend
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,37 +31,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Artamonow <mad_soft@inbox.ru>
+From: Seth Forshee <seth.forshee@canonical.com>
 
-commit 29f86e66428ee083aec106cca1748dc63d98ce23 upstream.
+commit ed9dc8ce7a1c8115dba9483a9b51df8b63a2e0ef upstream.
 
-Device stucks on filesystem writes, unless following quirk is passed:
-  echo 04e8:5136:m > /sys/module/usb_storage/parameters/quirks
+Add a new option, CONFIG_EFI_VARS_PSTORE, which can be set to N to
+avoid using efivars as a backend to pstore, as some users may want to
+compile out the code completely.
 
-Add corresponding entry to unusual_devs.h
+Set the default to Y to maintain backwards compatability, since this
+feature has always been enabled until now.
 
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
-
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -488,6 +488,13 @@ UNUSUAL_DEV(  0x04e8, 0x5122, 0x0000, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_MAX_SECTORS_64 | US_FL_BULK_IGNORE_TAG),
+--- a/drivers/firmware/Kconfig
++++ b/drivers/firmware/Kconfig
+@@ -53,6 +53,15 @@ config EFI_VARS
+ 	  Subsequent efibootmgr releases may be found at:
+ 	  <http://linux.dell.com/efibootmgr>
  
-+/* Added by Dmitry Artamonow <mad_soft@inbox.ru> */
-+UNUSUAL_DEV(  0x04e8, 0x5136, 0x0000, 0x9999,
-+		"Samsung",
-+		"YP-Z3",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64),
++config EFI_VARS_PSTORE
++	bool "Register efivars backend for pstore"
++	depends on EFI_VARS && PSTORE
++	default y
++	help
++	  Say Y here to enable use efivars as a backend to pstore. This
++	  will allow writing console messages, crash dumps, or anything
++	  else supported by pstore to EFI variables.
 +
- /* Entry and supporting patch by Theodore Kilgore <kilgota@auburn.edu>.
-  * Device uses standards-violating 32-byte Bulk Command Block Wrappers and
-  * reports itself as "Proprietary SCSI Bulk." Cf. device entry 0x084d:0x0011.
+ config EFI_PCDP
+ 	bool "Console device selection via EFI PCDP or HCDP table"
+ 	depends on ACPI && EFI && IA64
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -659,8 +659,6 @@ static struct kobj_type efivar_ktype = {
+ 	.default_attrs = def_attrs,
+ };
+ 
+-static struct pstore_info efi_pstore_info;
+-
+ static inline void
+ efivar_unregister(struct efivar_entry *var)
+ {
+@@ -697,7 +695,7 @@ static int efi_status_to_err(efi_status_
+ 	return err;
+ }
+ 
+-#ifdef CONFIG_PSTORE
++#ifdef CONFIG_EFI_VARS_PSTORE
+ 
+ static int efi_pstore_open(struct pstore_info *psi)
+ {
+@@ -847,36 +845,6 @@ static int efi_pstore_erase(enum pstore_
+ 
+ 	return 0;
+ }
+-#else
+-static int efi_pstore_open(struct pstore_info *psi)
+-{
+-	return 0;
+-}
+-
+-static int efi_pstore_close(struct pstore_info *psi)
+-{
+-	return 0;
+-}
+-
+-static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
+-			       struct timespec *timespec,
+-			       char **buf, struct pstore_info *psi)
+-{
+-	return -1;
+-}
+-
+-static int efi_pstore_write(enum pstore_type_id type, u64 *id,
+-		unsigned int part, size_t size, struct pstore_info *psi)
+-{
+-	return 0;
+-}
+-
+-static int efi_pstore_erase(enum pstore_type_id type, u64 id,
+-			    struct pstore_info *psi)
+-{
+-	return 0;
+-}
+-#endif
+ 
+ static struct pstore_info efi_pstore_info = {
+ 	.owner		= THIS_MODULE,
+@@ -888,6 +856,24 @@ static struct pstore_info efi_pstore_inf
+ 	.erase		= efi_pstore_erase,
+ };
+ 
++static void efivar_pstore_register(struct efivars *efivars)
++{
++	efivars->efi_pstore_info = efi_pstore_info;
++	efivars->efi_pstore_info.buf = kmalloc(4096, GFP_KERNEL);
++	if (efivars->efi_pstore_info.buf) {
++		efivars->efi_pstore_info.bufsize = 1024;
++		efivars->efi_pstore_info.data = efivars;
++		spin_lock_init(&efivars->efi_pstore_info.buf_lock);
++		pstore_register(&efivars->efi_pstore_info);
++	}
++}
++#else
++static void efivar_pstore_register(struct efivars *efivars)
++{
++	return;
++}
++#endif
++
+ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 			     struct bin_attribute *bin_attr,
+ 			     char *buf, loff_t pos, size_t count)
+@@ -1271,15 +1257,7 @@ int register_efivars(struct efivars *efi
+ 	if (error)
+ 		unregister_efivars(efivars);
+ 
+-	efivars->efi_pstore_info = efi_pstore_info;
+-
+-	efivars->efi_pstore_info.buf = kmalloc(4096, GFP_KERNEL);
+-	if (efivars->efi_pstore_info.buf) {
+-		efivars->efi_pstore_info.bufsize = 1024;
+-		efivars->efi_pstore_info.data = efivars;
+-		spin_lock_init(&efivars->efi_pstore_info.buf_lock);
+-		pstore_register(&efivars->efi_pstore_info);
+-	}
++	efivar_pstore_register(efivars);
+ 
+ out:
+ 	kfree(variable_name);
 
 
