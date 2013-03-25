@@ -1,46 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758473Ab3CYOyL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 10:54:11 -0400
-Received: from mail-da0-f51.google.com ([209.85.210.51]:41232 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757373Ab3CYOyK (ORCPT
+	id S1758549Ab3CYOyp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 10:54:45 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:61640 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758522Ab3CYOyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 10:54:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+3XSbxUBHvZqXUKseqxTS+YG-1E4h1_dpKfUnM8O+ctw@mail.gmail.com>
-References: <1363366923-6269-1-git-send-email-nschichan@freebox.fr>
-	<CAGXu5j+3XSbxUBHvZqXUKseqxTS+YG-1E4h1_dpKfUnM8O+ctw@mail.gmail.com>
-Date: Mon, 25 Mar 2013 09:54:09 -0500
-Message-ID: <CABqD9hbT4=10Dasq69d7i-2YZxjqH8ym1wKbfK-4XYWpj35uFg@mail.gmail.com>
-Subject: Re: [PATCH] seccomp: allow BPF_XOR based ALU instructions.
-From: Will Drewry <wad@chromium.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Nicolas Schichan <nschichan@freebox.fr>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 25 Mar 2013 10:54:44 -0400
+From: Richard Genoud <richard.genoud@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>
+Cc: linux-kernel@vger.kernel.org, Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH 2/4] pinctrl: create pinctrl_free_setting function
+Date: Mon, 25 Mar 2013 15:47:21 +0100
+Message-Id: <1364222843-30305-3-git-send-email-richard.genoud@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1364222843-30305-1-git-send-email-richard.genoud@gmail.com>
+References: <1364222843-30305-1-git-send-email-richard.genoud@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Better late than never .. right?
+This prepares the implementation of pinctrl_select_state_locked() free code.
 
-Acked-by: Will Drewry <wad@chromium.org>
+No functionnal change.
 
-Thanks!
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+---
+ drivers/pinctrl/core.c |   32 +++++++++++++++++++-------------
+ 1 files changed, 19 insertions(+), 13 deletions(-)
 
-On Fri, Mar 15, 2013 at 1:12 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Fri, Mar 15, 2013 at 10:02 AM, Nicolas Schichan <nschichan@freebox.fr> wrote:
->>
->> Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
->
-> Ah, good catch. Thanks!
->
-> Acked-by: Kees Cook <keescook@chromium.org>
->
-> --
-> Kees Cook
-> Chrome OS Security
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index b0de6e7..a28dcca 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -758,6 +758,24 @@ struct pinctrl *pinctrl_get(struct device *dev)
+ }
+ EXPORT_SYMBOL_GPL(pinctrl_get);
+ 
++static void pinctrl_free_setting(bool disable_setting,
++				 struct pinctrl_setting *setting)
++{
++	switch (setting->type) {
++	case PIN_MAP_TYPE_MUX_GROUP:
++		if (disable_setting)
++			pinmux_disable_setting(setting);
++		pinmux_free_setting(setting);
++		break;
++	case PIN_MAP_TYPE_CONFIGS_PIN:
++	case PIN_MAP_TYPE_CONFIGS_GROUP:
++		pinconf_free_setting(setting);
++		break;
++	default:
++		break;
++	}
++}
++
+ static void pinctrl_put_locked(struct pinctrl *p, bool inlist)
+ {
+ 	struct pinctrl_state *state, *n1;
+@@ -765,19 +783,7 @@ static void pinctrl_put_locked(struct pinctrl *p, bool inlist)
+ 
+ 	list_for_each_entry_safe(state, n1, &p->states, node) {
+ 		list_for_each_entry_safe(setting, n2, &state->settings, node) {
+-			switch (setting->type) {
+-			case PIN_MAP_TYPE_MUX_GROUP:
+-				if (state == p->state)
+-					pinmux_disable_setting(setting);
+-				pinmux_free_setting(setting);
+-				break;
+-			case PIN_MAP_TYPE_CONFIGS_PIN:
+-			case PIN_MAP_TYPE_CONFIGS_GROUP:
+-				pinconf_free_setting(setting);
+-				break;
+-			default:
+-				break;
+-			}
++			pinctrl_free_setting(state == p->state, setting);
+ 			list_del(&setting->node);
+ 			kfree(setting);
+ 		}
+-- 
+1.7.2.5
+
