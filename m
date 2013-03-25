@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758516Ab3CYOoa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 10:44:30 -0400
-Received: from a192-166.smtp-out.amazonses.com ([199.255.192.166]:9855 "EHLO
-	a192-166.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758445Ab3CYOoZ (ORCPT
+	id S1758544Ab3CYOro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 10:47:44 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:33904 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757335Ab3CYOrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 10:44:25 -0400
-X-Greylist: delayed 566 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Mar 2013 10:44:25 EDT
-Date: Mon, 25 Mar 2013 14:34:58 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>
-Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
- unfreeze_partials() code.
-In-Reply-To: <1364010673.6345.156.camel@gandalf.local.home>
-Message-ID: <0000013da1f93be3-c3d42ae8-ff34-4c63-8094-77a83291ea19-000000@email.amazonses.com>
-References: <1363906545.6345.81.camel@gandalf.local.home> <0000013d92c37ff3-5fb85400-bec1-4eda-8ba1-332566884c59-000000@email.amazonses.com> <1364010673.6345.156.camel@gandalf.local.home>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.192.166
+	Mon, 25 Mar 2013 10:47:43 -0400
+From: Richard Genoud <richard.genoud@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>
+Cc: linux-kernel@vger.kernel.org, Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH 0/4] pintrcl: restore old state when pinctrl_select_state fails
+Date: Mon, 25 Mar 2013 15:47:19 +0100
+Message-Id: <1364222843-30305-1-git-send-email-richard.genoud@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Mar 2013, Steven Rostedt wrote:
+If there's an error when applying a new state (for example, if a pin is already muxed), old state is not restored.
+This patch set corrects this behaviour.
+The first patch is just a small typo fix.
+The second doesn't introduce any functionnal change, but prepares for the third patch.
+The third patch undoes what have been done to enable the new state.
+The last patch re-applies the old state.
 
-> I uploaded it here:
->
-> http://rostedt.homelinux.com/private/slab_partials
->
-> See anything I should be worried about?
+Richard Genoud (4):
+  pinctrl: fix typo in header
+  pinctrl: create pinctrl_free_setting function
+  pinctrl: disable and free setting in select_state in case of error
+  pinctrl: re-enable old state in case of error in pinctrl_select_state
 
-Looks fine. Maybe its the spinlocks being contended that cause the
-long holdoff? How does RT deal with the spinlocks? Dont know too much
-about it.
+ drivers/pinctrl/core.c |   78 ++++++++++++++++++++++++++++++++++++++----------
+ drivers/pinctrl/core.h |    2 +-
+ 2 files changed, 63 insertions(+), 17 deletions(-)
 
-You can eliminate the whole thing by setting
-
-/sys/kernel/slab/<whatever/cpu_partial
-
-to zero.
+-- 
+1.7.2.5
 
