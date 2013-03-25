@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758141Ab3CYPUW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 11:20:22 -0400
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:65505 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757830Ab3CYPUV (ORCPT
+	id S1758200Ab3CYPUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 11:20:55 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:59927 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757830Ab3CYPUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 11:20:21 -0400
+	Mon, 25 Mar 2013 11:20:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <51505923.2070504@surriel.com>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	<CA+i8gKKK_VxZtyyp1tqHnztd4++XyNXwbEEr-A29-J23PyuCfQ@mail.gmail.com>
-	<CA+55aFzqBEX=cGGZJJsfNWcDwQcUOP7njEog-kZZLRxuDg8Tzg@mail.gmail.com>
-	<CA+i8gK+h+FyPiOL85BPa-Pu8+bDw6LW60-oRoLHgP2AnzMADCA@mail.gmail.com>
-	<CA+55aFxjGFi+gt3UwdVCVKP5riHSR=_qLkp0SovgW2zx+gcRow@mail.gmail.com>
-	<CA+i8gKJuykoCk=O3qbDmmZXd=8U13wF7o_NzUviccaZoU6WLaA@mail.gmail.com>
-	<CA+55aFwb9v9cUG4Ton3faO6xAD18JxxoTPcObXDV_5Zf3QQ=Kw@mail.gmail.com>
-	<CA+i8gK+DNOk5tvRsVJFKyk0A2qOD_az7yJ5+3Y2xS=Ear1VkVA@mail.gmail.com>
-	<51505881.5060409@surriel.com>
-	<51505923.2070504@surriel.com>
-Date: Mon, 25 Mar 2013 22:20:19 +0700
-Message-ID: <CA+i8gKKOPkVRBjqQb8=9T_eyw_oF5jedKMqG1U=Kwa3OHsMW_g@mail.gmail.com>
-Subject: Re: ipc,sem: sysv semaphore scalability
-From: Emmanuel Benisty <benisty.e@gmail.com>
-To: Rik van Riel <riel@surriel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hhuang@redhat.com,
-        "Low, Jason" <jason.low2@hp.com>,
-        Michel Lespinasse <walken@google.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <0000013da220b8b2-ed8dbc75-ac8c-4e1c-94df-c62f1625ec3a-000000@email.amazonses.com>
+References: <20130318222548.GG3656@linux.vnet.ibm.com>
+	<1363822338.6345.33.camel@gandalf.local.home>
+	<20130320235545.GL3637@linux.vnet.ibm.com>
+	<0000013d8db514e4-bf492080-82c9-412a-90b8-54ddc1463e4b-000000@email.amazonses.com>
+	<20130321171518.GW3637@linux.vnet.ibm.com>
+	<0000013d8e3f58ce-0f6ea95f-780a-49c1-a633-5aa0cf3e5040-000000@email.amazonses.com>
+	<20130321185821.GF3637@linux.vnet.ibm.com>
+	<0000013d8e8d24fd-d2931c45-2722-46d1-8b47-2ef11e21096d-000000@email.amazonses.com>
+	<20130321205054.GI3637@linux.vnet.ibm.com>
+	<0000013d9289cebc-e6380265-3a74-4343-b851-765f785a3754-000000@email.amazonses.com>
+	<20130322162820.GN3637@linux.vnet.ibm.com>
+	<0000013da1f6170e-7b247826-93a9-4c2d-a316-ba3b0597a805-000000@email.amazonses.com>
+	<CAFTL4hzFmrHPHhi3gBj05eJgxb5H7bACEWwCm7jp6Vb0XU15bA@mail.gmail.com>
+	<0000013da220b8b2-ed8dbc75-ac8c-4e1c-94df-c62f1625ec3a-000000@email.amazonses.com>
+Date: Mon, 25 Mar 2013 16:20:50 +0100
+Message-ID: <CAFTL4hyfQ_R=FA92aFWBmKA_4yp6CtStgz1fR71mJOKCbiCQAQ@mail.gmail.com>
+Subject: Re: [PATCH] nohz1: Documentation
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org, josh@joshtriplett.org,
+        zhong@linux.vnet.ibm.com, khilman@linaro.org, geoff@infradead.org,
+        tglx@linutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 9:03 PM, Rik van Riel <riel@surriel.com> wrote:
->>> With the first four patches only, I got some X server freeze (just
->>> tried once).
+2013/3/25 Christoph Lameter <cl@linux.com>:
+> On Mon, 25 Mar 2013, Frederic Weisbecker wrote:
+>
+>> > The vm kernel threads do no useful work if no system calls are being done.
+>> > If there is no kernel action then they can be deferred indefinitely.
+>> >
 >>
->>
->> Could you try booting with panic=1 so the kernel panics on the first
->> oops?
+>> We can certainly add some user deferrable timer_list. But that's going
+>> to be for extreme usecases (those who require pure isolation) because
+>> we'll need to settle that with a timer reprogramming into user/kernel
+>> boundaries. That won't be free.
 >
->
-> Sorry that should be "oops=panic"
->
->
->> Maybe that way (if we are lucky) we will be able to capture the first
->> oops, and maybe get an idea of what causes the problem.
+> These timers are already marked deferrable and are deferred for the idle
+> dynticks case. Could we reuse the same logic? See timer.h around the
+> define of TIMER_DEFERRABLE. I just assumed so far that the dyntick idle
+> logic would have been used for this case.
 
-Sorry Rik, I get all kind of weird behaviors (wireless dies, compiling
-gets stuck and is impossible to kill, can't kill X) with the 4
-patches+oops=panic but no trace. Here after is 7+1 patches with
-oops=panic boot: http://i.imgur.com/1jep1qx.jpg
+We need to audit all deferreable timers to check if their
+deferrability in idle also applies for userspace. If so may be we can
+consider that.
