@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab3CYC4r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 22:56:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:8828 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755674Ab3CYC4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 22:56:46 -0400
-X-IronPort-AV: E=Sophos;i="4.87,342,1363104000"; 
-   d="scan'208";a="6935467"
-Message-ID: <514FBD6E.2030706@cn.fujitsu.com>
-Date: Mon, 25 Mar 2013 10:58:54 +0800
-From: Lin Feng <linfeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756524Ab3CYDNz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 23:13:55 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:35836 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756301Ab3CYDNx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 23:13:53 -0400
+Date: Sun, 24 Mar 2013 20:09:56 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 4/5] power: pm2301_charger: Remove __dev* annotations
+Message-ID: <20130325030956.GA16489@lizard>
+References: <1362922449-27531-1-git-send-email-lars@metafoo.de>
+ <1362922449-27531-4-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-To: Lenky Gao <lenky.gao@gmail.com>
-CC: linux-kernel@vger.kernel.org, yinghai@kernel.org, mingo@elte.hu,
-        gorcunov@gmail.com, rusty@rustcorp.com.au, sivanich@sgi.com,
-        agordeev@redhat.com
-Subject: Re: Question: How to distribute the interrupts over multiple cores?
-References: <CAAO_Xo6=2PKumrxjb1XthsiVVFJcz33o5wf2OyXN9pPdu1GCRA@mail.gmail.com>
-In-Reply-To: <CAAO_Xo6=2PKumrxjb1XthsiVVFJcz33o5wf2OyXN9pPdu1GCRA@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/25 10:56:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/25 10:56:01,
-	Serialize complete at 2013/03/25 10:56:01
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1362922449-27531-4-git-send-email-lars@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gao,
+On Sun, Mar 10, 2013 at 02:34:08PM +0100, Lars-Peter Clausen wrote:
+> The removal of __devinit and friends seems to have overlapped with the addition
+> of the pm2301_charger driver. Currently the driver fails to build with the
+> following errors:
+> 
+> 	drivers/power/pm2301_charger.c:843:22: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'pm2xxx_wall_charger_probe'
+> 	drivers/power/pm2301_charger.c:1013:22: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'pm2xxx_wall_charger_remove'
+> 	drivers/power/pm2301_charger.c:1049:11: error: 'pm2xxx_wall_charger_probe' undeclared here (not in a function)
+> 	drivers/power/pm2301_charger.c:1050:2: error: implicit declaration of function '__devexit_p'
+> 	drivers/power/pm2301_charger.c:1050:24: error: 'pm2xxx_wall_charger_remove' undeclared here (not in a function)
+> 
+> This patch removes the __dev* annotations, which fixes the build errors.
+> 
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
-On 03/25/2013 10:33 AM, Lenky Gao wrote:
-> [root@localhost ~]# echo 6 > /proc/irq/25/smp_affinity
-> [root@localhost ~]# cat /proc/irq/25/smp_affinity
-> 000006
-Seems you bind the nic irq to second and third cpu for the bit mask
-you set is 110, so now eth9's irq is working on the 3rd cpu.
+Applied to battery-urgent.git, thanks a lot!
 
-Have you ever tried irqbalance service? It may help to balance irq if the 
-irq workload of 3rd cpu is too heavy.
-
-thanks,
-linfeng
-> [root@localhost ~]# cat /proc/interrupts | grep eth9
->   25:       5824      13914        159        128        210
-> 0          0          0  IR-IO-APIC-fasteoi   eth9
-> [root@localhost ~]# cat /proc/interrupts | grep eth9
->   25:       5824      13927        159        128        210
-> 0          0          0  IR-IO-APIC-fasteoi   eth9
-> [root@localhost ~]# cat /proc/interrupts | grep eth9
->   25:       5824      13939        159        128        210
-> 0          0          0  IR-IO-APIC-fasteoi   eth9
-> [root@localhost ~]# cat /proc/interrupts | grep eth9
->   25:       5824      13973        159        128        210
-> 0          0          0  IR-IO-APIC-fasteoi   eth9
+> ---
+>  drivers/power/pm2301_charger.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/power/pm2301_charger.c b/drivers/power/pm2301_charger.c
+> index ed48d75..ca424b8 100644
+> --- a/drivers/power/pm2301_charger.c
+> +++ b/drivers/power/pm2301_charger.c
+> @@ -851,7 +851,7 @@ static int pm2xxx_wall_charger_suspend(struct i2c_client *i2c_client,
+>  	return 0;
+>  }
+>  
+> -static int __devinit pm2xxx_wall_charger_probe(struct i2c_client *i2c_client,
+> +static int pm2xxx_wall_charger_probe(struct i2c_client *i2c_client,
+>  		const struct i2c_device_id *id)
+>  {
+>  	struct pm2xxx_platform_data *pl_data = i2c_client->dev.platform_data;
+> @@ -1021,7 +1021,7 @@ free_device_info:
+>  	return ret;
+>  }
+>  
+> -static int __devexit pm2xxx_wall_charger_remove(struct i2c_client *i2c_client)
+> +static int pm2xxx_wall_charger_remove(struct i2c_client *i2c_client)
+>  {
+>  	struct pm2xxx_charger *pm2 = i2c_get_clientdata(i2c_client);
+>  
+> @@ -1058,7 +1058,7 @@ MODULE_DEVICE_TABLE(i2c, pm2xxx_id);
+>  
+>  static struct i2c_driver pm2xxx_charger_driver = {
+>  	.probe = pm2xxx_wall_charger_probe,
+> -	.remove = __devexit_p(pm2xxx_wall_charger_remove),
+> +	.remove = pm2xxx_wall_charger_remove,
+>  	.suspend = pm2xxx_wall_charger_suspend,
+>  	.resume = pm2xxx_wall_charger_resume,
+>  	.driver = {
+> -- 
+> 1.8.0
+> 
+> 
