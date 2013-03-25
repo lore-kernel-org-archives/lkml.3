@@ -1,50 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758419Ab3CYO1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 10:27:40 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:60122 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758340Ab3CYO1j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 10:27:39 -0400
-Message-ID: <51505ED2.70208@redhat.com>
-Date: Mon, 25 Mar 2013 15:27:30 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Bart Van Assche <bvanassche@acm.org>
-CC: Wanlong Gao <gaowanlong@cn.fujitsu.com>, linux-scsi@vger.kernel.org,
-        kvm@vger.kernel.org, mst@redhat.com, linux-kernel@vger.kernel.org,
-        JBottomley@parallels.com, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH V7 4/5] virtio-scsi: introduce multiqueue support
-References: <1364038124-32479-1-git-send-email-gaowanlong@cn.fujitsu.com> <1364038124-32479-5-git-send-email-gaowanlong@cn.fujitsu.com> <514FFC06.9030703@acm.org>
-In-Reply-To: <514FFC06.9030703@acm.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758451Ab3CYO2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 10:28:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65001 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756682Ab3CYO2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 10:28:48 -0400
+Message-ID: <1364221712.24132.632.camel@bling.home>
+Subject: Re: [PATCH] iommu: add a function to find an iommu group by id
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Joerg Roedel <joerg.roedel@amd.com>, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org
+Date: Mon, 25 Mar 2013 08:28:32 -0600
+In-Reply-To: <1364167429-6432-1-git-send-email-aik@ozlabs.ru>
+References: <1364167429-6432-1-git-send-email-aik@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/03/2013 08:25, Bart Van Assche ha scritto:
->>
->> +        queue_num = smp_processor_id();
->> +        while (unlikely(queue_num >= vscsi->num_queues))
->> +            queue_num -= vscsi->num_queues;
->> +
->> +        tgt->req_vq = vq = &vscsi->req_vqs[queue_num];
->> +    }
->> +
->> +    spin_unlock_irqrestore(&tgt->tgt_lock, flags);
->> +    return vq;
->> +}
+On Mon, 2013-03-25 at 10:23 +1100, Alexey Kardashevskiy wrote:
+> As IOMMU groups are exposed to the user space by their numbers,
+> the user space can use them in various kernel APIs so the kernel
+> might need an API to find a group by its ID.
 > 
-> Is there any reason why the smp_processor_id() % vscsi->num_queues
-> computation in virtscsi_pick_vq() has been implemented as a loop instead
-> of as an arithmetic operation ? If so, I would appreciate it if that
-> could be explained in a comment.
+> As an example, QEMU VFIO on PPC64 platform needs it to associate
+> a logical bus number (LIOBN) with a specific IOMMU group in order
+> to support in-kernel handling of DMA map/unmap requests.
+> 
+> The patch adds the iommu_group_get_by_id(id) function which performs
+> such search.
 
-The expectation is that vscsi->num_queues is the same as the number of
-CPUs in the virtual machine; see patch 5 too.
+Subject: [PATCH v3]....
 
-Paolo
+v2 was the last one, where's the changelog for v3?
+> v2: fixed reference counting.
+> 
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> ---
+
+Acked-by: Alex Williamson <alex.williamson@redhat.com>
+
+>  drivers/iommu/iommu.c |   29 +++++++++++++++++++++++++++++
+>  include/linux/iommu.h |    1 +
+>  2 files changed, 30 insertions(+)
+> 
+> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+> index 1065a1a..0de83eb 100644
+> --- a/drivers/iommu/iommu.c
+> +++ b/drivers/iommu/iommu.c
+> @@ -204,6 +204,35 @@ again:
+>  }
+>  EXPORT_SYMBOL_GPL(iommu_group_alloc);
+>  
+> +struct iommu_group *iommu_group_get_by_id(int id)
+> +{
+> +	struct kobject *group_kobj;
+> +	struct iommu_group *group;
+> +	const char *name;
+> +
+> +	if (!iommu_group_kset)
+> +		return NULL;
+> +
+> +	name = kasprintf(GFP_KERNEL, "%d", id);
+> +	if (!name)
+> +		return NULL;
+> +
+> +	group_kobj = kset_find_obj(iommu_group_kset, name);
+> +	kfree(name);
+> +
+> +	if (!group_kobj)
+> +		return NULL;
+> +
+> +	group = container_of(group_kobj, struct iommu_group, kobj);
+> +	BUG_ON(group->id != id);
+> +
+> +	kobject_get(group->devices_kobj);
+> +	kobject_put(&group->kobj);
+> +
+> +	return group;
+> +}
+> +EXPORT_SYMBOL_GPL(iommu_group_get_by_id);
+> +
+>  /**
+>   * iommu_group_get_iommudata - retrieve iommu_data registered for a group
+>   * @group: the group
+> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+> index f3b99e1..00e5d7d 100644
+> --- a/include/linux/iommu.h
+> +++ b/include/linux/iommu.h
+> @@ -113,6 +113,7 @@ struct iommu_ops {
+>  extern int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops);
+>  extern bool iommu_present(struct bus_type *bus);
+>  extern struct iommu_domain *iommu_domain_alloc(struct bus_type *bus);
+> +extern struct iommu_group *iommu_group_get_by_id(int id);
+>  extern void iommu_domain_free(struct iommu_domain *domain);
+>  extern int iommu_attach_device(struct iommu_domain *domain,
+>  			       struct device *dev);
+
+
+
