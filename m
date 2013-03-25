@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab3CYBX6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:23:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34073 "EHLO
+	id S1756197Ab3CYBQN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:16:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34020 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756066Ab3CYBQO (ORCPT
+	by vger.kernel.org with ESMTP id S1756066Ab3CYBQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:14 -0400
-Message-Id: <20130325010529.244383592@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:04 -0400
+Message-Id: <20130325010530.023505840@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:14 +0000
+Date: Mon, 25 Mar 2013 01:06:22 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Zheng Liu <wenqing.lz@taobao.com>,
-        "Theodore Tso" <tytso@mit.edu>, Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: [ 050/104] ext4: fix the wrong number of the allocated blocks in
+Cc: akpm@linux-foundation.org,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: [ 058/104] tracing: Fix free of probe entry by calling call_rcu_sched()
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
- ext4_split_extent()
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:f137:78a:b654:affb
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,73 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zheng Liu <wenqing.lz@taobao.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 3a2256702e47f68f921dfad41b1764d05c572329 upstream.
+commit 740466bc89ad8bd5afcc8de220f715f62b21e365 upstream.
 
-This commit fixes a wrong return value of the number of the allocated
-blocks in ext4_split_extent.  When the length of blocks we want to
-allocate is greater than the length of the current extent, we return a
-wrong number.  Let's see what happens in the following case when we
-call ext4_split_extent().
+Because function tracing is very invasive, and can even trace
+calls to rcu_read_lock(), RCU access in function tracing is done
+with preempt_disable_notrace(). This requires a synchronize_sched()
+for updates and not a synchronize_rcu().
 
-  map: [48, 72]
-  ex:  [32, 64, u]
+Function probes (traceon, traceoff, etc) must be freed after
+a synchronize_sched() after its entry has been removed from the
+hash. But call_rcu() is used. Fix this by using call_rcu_sched().
 
-'ex' will be split into two parts:
-  ex1: [32, 47, u]
-  ex2: [48, 64, w]
+Also fix the usage to use hlist_del_rcu() instead of hlist_del().
 
-'map->m_len' is returned from this function, and the value is 24.  But
-the real length is 16.  So it should be fixed.
-
-Meanwhile in this commit we use right length of the allocated blocks
-when get_reserved_cluster_alloc in ext4_ext_handle_uninitialized_extents
-is called.
-
-Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/extents.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ kernel/trace/ftrace.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2960,6 +2960,7 @@ static int ext4_split_extent(handle_t *h
- 	int err = 0;
- 	int uninitialized;
- 	int split_flag1, flags1;
-+	int allocated = map->m_len;
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2725,8 +2725,8 @@ __unregister_ftrace_function_probe(char
+ 					continue;
+ 			}
  
- 	depth = ext_depth(inode);
- 	ex = path[depth].p_ext;
-@@ -2979,6 +2980,8 @@ static int ext4_split_extent(handle_t *h
- 				map->m_lblk + map->m_len, split_flag1, flags1);
- 		if (err)
- 			goto out;
-+	} else {
-+		allocated = ee_len - (map->m_lblk - ee_block);
+-			hlist_del(&entry->node);
+-			call_rcu(&entry->rcu, ftrace_free_entry_rcu);
++			hlist_del_rcu(&entry->node);
++			call_rcu_sched(&entry->rcu, ftrace_free_entry_rcu);
+ 		}
  	}
- 
- 	ext4_ext_drop_refs(path);
-@@ -3001,7 +3004,7 @@ static int ext4_split_extent(handle_t *h
- 
- 	ext4_ext_show_leaf(inode, path);
- out:
--	return err ? err : map->m_len;
-+	return err ? err : allocated;
- }
- 
- #define EXT4_EXT_ZERO_LEN 7
-@@ -3663,6 +3666,7 @@ out:
- 					allocated - map->m_len);
- 		allocated = map->m_len;
- 	}
-+	map->m_len = allocated;
- 
- 	/*
- 	 * If we have done fallocate with the offset that is already
+ 	__disable_ftrace_function_probe();
 
 
