@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933598Ab3CYWgq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 18:36:46 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61767 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933435Ab3CYWgo (ORCPT
+	id S933644Ab3CYWg6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 18:36:58 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:51584 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933435Ab3CYWg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 18:36:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH] ARM: convert arm/arm64 arch timer to use CLKSRC_OF init
-Date: Mon, 25 Mar 2013 22:36:23 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Simon Horman <horms@verge.net.au>,
-        John Stultz <john.stultz@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-References: <1363818875-15978-1-git-send-email-robherring2@gmail.com> <20130325172633.GP30923@n2100.arm.linux.org.uk> <5150C16A.3040208@gmail.com>
-In-Reply-To: <5150C16A.3040208@gmail.com>
+	Mon, 25 Mar 2013 18:36:56 -0400
+Date: Mon, 25 Mar 2013 15:36:54 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, Russ Anderson <rja@sgi.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
+In-Reply-To: <20130325143400.d226b1f7b64a209b86dd4151@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1303251533530.13531@chino.kir.corp.google.com>
+References: <20130318155619.GA18828@sgi.com> <20130321105516.GC18484@gmail.com> <alpine.DEB.2.02.1303211139110.3775@chino.kir.corp.google.com> <20130322072532.GC10608@gmail.com> <20130323152948.GA3036@sgi.com> <CAHGf_=qgsga4Juj8uNnfbmOZYtYhcQbqngbFDWg9=B-1nc1HSw@mail.gmail.com>
+ <alpine.DEB.2.02.1303241727420.23613@chino.kir.corp.google.com> <20130325143400.d226b1f7b64a209b86dd4151@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303252236.23270.arnd@arndb.de>
-X-Provags-ID: V02:K0:kSco9x/x/mz2MiK5TsT5jRoAWXWrgNUiEfw4GKCOHVT
- Fst19shejWel4rMLujHvtxiawXh9SxsOQZ7Vr3t/P9uPDG5X9k
- gIs93c3FxX+z1gAanNWIokA5lZWiDpuoFsT0CV154PEhWpgXUZ
- 50hi6LzBfjldE98WWlfgqVub34b3W53jEKcMX5BlNtpHNO1VAG
- mHXovKWhvxyHca7SPkUA6oldA+hYAlXBjgZF2CuS37ex7bUT8R
- KHIJQ5Yi3/bJZzhIa1SGKWThDwq4nJWgGmiWfriR4/AD8RDE5c
- TU70qRu4R9ROS4tcThcyr3fRlIcMSmcqRQdfW9h9TXtVRFtn4u
- Glhgi3yQ8I+GATipS5TQ=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 March 2013, Rob Herring wrote:
-> I count integrator-cp, realview, versatile and non-DT VExpress that do
-> this (not surprisingly) and 25 platforms or timer implementations plus
-> arm64 that do sched_clock setup in time_init. What's broken by not
-> moving these earlier?
+On Mon, 25 Mar 2013, Andrew Morton wrote:
 
-timekeeping_init() will leave the persistent_clock_exist variable as "false",
-which is read in rtc_suspend() and timekeeping_inject_sleeptime().
+> > Um, defining them in a __meminit function places them in .meminit.data 
+> > already.
+> 
+> I wish it did, but it doesn't.
+> 
 
-For all I can tell, you will get a little jitter every time you
-do a suspend in that case. Or perhaps it means the system clock
-will be forwarded by the amount of time spent in suspend twice
-after wakeup, but I'm probably misreading the code for that case.
+$ objdump -t mm/page_alloc.o | grep last_start_pfn
+0000000000000240 l     O .meminit.data	0000000000000008 last_start_pfn.34345
 
-	Arnd
+What version of gcc are you using?
