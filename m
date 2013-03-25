@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab3CYBQo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:16:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34175 "EHLO
+	id S1756508Ab3CYBQs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:16:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34186 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756444Ab3CYBQm (ORCPT
+	by vger.kernel.org with ESMTP id S1756332Ab3CYBQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:42 -0400
-Message-Id: <20130325010526.424976979@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:44 -0400
+Message-Id: <20130325010527.834062001@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:05:45 +0000
+Date: Mon, 25 Mar 2013 01:06:00 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 021/104] mwifiex: fix potential out-of-boundary access to ibss rate table
+Cc: akpm@linux-foundation.org, "Denis V. Lunev" <den@openvz.org>,
+        Tingwei Liu <tingw.liu@gmail.com>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 036/104] ipv4: fix definition of FIB_TABLE_HASHSZ
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,39 +31,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: "Denis V. Lunev" <den@openvz.org>
 
-commit 5f0fabf84d7b52f979dcbafa3d3c530c60d9a92c upstream.
+[ Upstream commit 5b9e12dbf92b441b37136ea71dac59f05f2673a9 ]
 
-smatch found this error:
+a long time ago by the commit
 
-CHECK   drivers/net/wireless/mwifiex/join.c
-  drivers/net/wireless/mwifiex/join.c:1121
-  mwifiex_cmd_802_11_ad_hoc_join()
-  error: testing array offset 'i' after use.
+  commit 93456b6d7753def8760b423ac6b986eb9d5a4a95
+  Author: Denis V. Lunev <den@openvz.org>
+  Date:   Thu Jan 10 03:23:38 2008 -0800
 
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+    [IPV4]: Unify access to the routing tables.
+
+the defenition of FIB_HASH_TABLE size has obtained wrong dependency:
+it should depend upon CONFIG_IP_MULTIPLE_TABLES (as was in the original
+code) but it was depended from CONFIG_IP_ROUTE_MULTIPATH
+
+This patch returns the situation to the original state.
+
+The problem was spotted by Tingwei Liu.
+
+Signed-off-by: Denis V. Lunev <den@openvz.org>
+CC: Tingwei Liu <tingw.liu@gmail.com>
+CC: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/mwifiex/join.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ include/net/ip_fib.h | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/join.c
-+++ b/drivers/net/wireless/mwifiex/join.c
-@@ -1062,10 +1062,9 @@ mwifiex_cmd_802_11_ad_hoc_join(struct mw
- 				adhoc_join->bss_descriptor.bssid,
- 				adhoc_join->bss_descriptor.ssid);
+diff --git a/include/net/ip_fib.h b/include/net/ip_fib.h
+index 10422ef..2124004 100644
+--- a/include/net/ip_fib.h
++++ b/include/net/ip_fib.h
+@@ -129,18 +129,16 @@ struct fib_result_nl {
+ };
  
--	for (i = 0; bss_desc->supported_rates[i] &&
--			i < MWIFIEX_SUPPORTED_RATES;
--			i++)
--			;
-+	for (i = 0; i < MWIFIEX_SUPPORTED_RATES &&
-+		    bss_desc->supported_rates[i]; i++)
-+		;
- 	rates_size = i;
+ #ifdef CONFIG_IP_ROUTE_MULTIPATH
+-
+ #define FIB_RES_NH(res)		((res).fi->fib_nh[(res).nh_sel])
+-
+-#define FIB_TABLE_HASHSZ 2
+-
+ #else /* CONFIG_IP_ROUTE_MULTIPATH */
+-
+ #define FIB_RES_NH(res)		((res).fi->fib_nh[0])
++#endif /* CONFIG_IP_ROUTE_MULTIPATH */
  
- 	/* Copy Data Rates from the Rates recorded in scan response */
++#ifdef CONFIG_IP_MULTIPLE_TABLES
+ #define FIB_TABLE_HASHSZ 256
+-
+-#endif /* CONFIG_IP_ROUTE_MULTIPATH */
++#else
++#define FIB_TABLE_HASHSZ 2
++#endif
+ 
+ extern __be32 fib_info_update_nh_saddr(struct net *net, struct fib_nh *nh);
+ 
 
 
