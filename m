@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757907Ab3CYBjR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:39:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33794 "EHLO
+	id S1755766Ab3CYBme (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:42:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33752 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755436Ab3CYBPE (ORCPT
+	by vger.kernel.org with ESMTP id S1755118Ab3CYBO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:04 -0400
-Message-Id: <20130325010524.898212546@decadent.org.uk>
+	Sun, 24 Mar 2013 21:14:57 -0400
+Message-Id: <20130325010524.599870322@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:05:30 +0000
+Date: Mon, 25 Mar 2013 01:05:27 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Cong Wang <amwang@redhat.com>,
-        Dave Jones <davej@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-Subject: [ 006/104] rds: limit the size allocated by rds_message_alloc()
+Cc: akpm@linux-foundation.org, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 003/104] perf,x86: fix wrmsr_on_cpu() warning on suspend/resume
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -30,70 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <amwang@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-[ Upstream commit ece6b0a2b25652d684a7ced4ae680a863af041e0 ]
+commit 2a6e06b2aed6995af401dcd4feb5e79a0c7ea554 upstream.
 
-Dave Jones reported the following bug:
+Commit 1d9d8639c063 ("perf,x86: fix kernel crash with PEBS/BTS after
+suspend/resume") fixed a crash when doing PEBS performance profiling
+after resuming, but in using init_debug_store_on_cpu() to restore the
+DS_AREA mtrr it also resulted in a new WARN_ON() triggering.
 
-"When fed mangled socket data, rds will trust what userspace gives it,
-and tries to allocate enormous amounts of memory larger than what
-kmalloc can satisfy."
+init_debug_store_on_cpu() uses "wrmsr_on_cpu()", which in turn uses CPU
+cross-calls to do the MSR update.  Which is not really valid at the
+early resume stage, and the warning is quite reasonable.  Now, it all
+happens to _work_, for the simple reason that smp_call_function_single()
+ends up just doing the call directly on the CPU when the CPU number
+matches, but we really should just do the wrmsr() directly instead.
 
-WARNING: at mm/page_alloc.c:2393 __alloc_pages_nodemask+0xa0d/0xbe0()
-Hardware name: GA-MA78GM-S2H
-Modules linked in: vmw_vsock_vmci_transport vmw_vmci vsock fuse bnep dlci bridge 8021q garp stp mrp binfmt_misc l2tp_ppp l2tp_core rfcomm s
-Pid: 24652, comm: trinity-child2 Not tainted 3.8.0+ #65
-Call Trace:
- [<ffffffff81044155>] warn_slowpath_common+0x75/0xa0
- [<ffffffff8104419a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff811444ad>] __alloc_pages_nodemask+0xa0d/0xbe0
- [<ffffffff8100a196>] ? native_sched_clock+0x26/0x90
- [<ffffffff810b2128>] ? trace_hardirqs_off_caller+0x28/0xc0
- [<ffffffff810b21cd>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff811861f8>] alloc_pages_current+0xb8/0x180
- [<ffffffff8113eaaa>] __get_free_pages+0x2a/0x80
- [<ffffffff811934fe>] kmalloc_order_trace+0x3e/0x1a0
- [<ffffffff81193955>] __kmalloc+0x2f5/0x3a0
- [<ffffffff8104df0c>] ? local_bh_enable_ip+0x7c/0xf0
- [<ffffffffa0401ab3>] rds_message_alloc+0x23/0xb0 [rds]
- [<ffffffffa04043a1>] rds_sendmsg+0x2b1/0x990 [rds]
- [<ffffffff810b21cd>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff81564620>] sock_sendmsg+0xb0/0xe0
- [<ffffffff810b2052>] ? get_lock_stats+0x22/0x70
- [<ffffffff810b24be>] ? put_lock_stats.isra.23+0xe/0x40
- [<ffffffff81567f30>] sys_sendto+0x130/0x180
- [<ffffffff810b872d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff816c547b>] ? _raw_spin_unlock_irq+0x3b/0x60
- [<ffffffff816cd767>] ? sysret_check+0x1b/0x56
- [<ffffffff810b8695>] ? trace_hardirqs_on_caller+0x115/0x1a0
- [<ffffffff81341d8e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff816cd742>] system_call_fastpath+0x16/0x1b
----[ end trace eed6ae990d018c8b ]---
+This duplicates the wrmsr() logic, but hopefully we can just remove the
+wrmsr_on_cpu() version eventually.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-Signed-off-by: Cong Wang <amwang@redhat.com>
-Acked-by: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Parag Warudkar <parag.lkml@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/rds/message.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/net/rds/message.c
-+++ b/net/rds/message.c
-@@ -197,6 +197,9 @@ struct rds_message *rds_message_alloc(un
- {
- 	struct rds_message *rm;
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -739,8 +739,10 @@ void intel_ds_init(void)
  
-+	if (extra_len > KMALLOC_MAX_SIZE - sizeof(struct rds_message))
-+		return NULL;
+ void perf_restore_debug_store(void)
+ {
++	struct debug_store *ds = __this_cpu_read(cpu_hw_events.ds);
 +
- 	rm = kzalloc(sizeof(struct rds_message) + extra_len, gfp);
- 	if (!rm)
- 		goto out;
+ 	if (!x86_pmu.bts && !x86_pmu.pebs)
+ 		return;
+ 
+-	init_debug_store_on_cpu(smp_processor_id());
++	wrmsrl(MSR_IA32_DS_AREA, (unsigned long)ds);
+ }
 
 
