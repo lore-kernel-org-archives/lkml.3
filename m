@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757968Ab3CYBjW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:39:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33788 "EHLO
+	id S1758098Ab3CYBjf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:39:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33762 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755437Ab3CYBPE (ORCPT
+	by vger.kernel.org with ESMTP id S1755017Ab3CYBPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:04 -0400
-Message-Id: <20130325010525.735872085@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:00 -0400
+Message-Id: <20130325010526.341185526@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:05:38 +0000
+Date: Mon, 25 Mar 2013 01:05:44 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 014/104] rtnl: fix info leak on RTM_GETLINK request for VF  devices
+Cc: akpm@linux-foundation.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 020/104] s390/mm: fix flush_tlb_kernel_range()
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,32 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-[ Upstream commit 84d73cd3fb142bf1298a8c13fd4ca50fd2432372 ]
+commit f6a70a07079518280022286a1dceb797d12e1edf upstream.
 
-Initialize the mac address buffer with 0 as the driver specific function
-will probably not fill the whole buffer. In fact, all in-kernel drivers
-fill only ETH_ALEN of the MAX_ADDR_LEN bytes, i.e. 6 of the 32 possible
-bytes. Therefore we currently leak 26 bytes of stack memory to userland
-via the netlink interface.
+Our flush_tlb_kernel_range() implementation calls __tlb_flush_mm() with
+&init_mm as argument. __tlb_flush_mm() however will only flush tlbs
+for the passed in mm if its mm_cpumask is not empty.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+For the init_mm however its mm_cpumask has never any bits set. Which in
+turn means that our flush_tlb_kernel_range() implementation doesn't
+work at all.
+
+This can be easily verified with a vmalloc/vfree loop which allocates
+a page, writes to it and then frees the page again. A crash will follow
+almost instantly.
+
+To fix this remove the cpumask_empty() check in __tlb_flush_mm() since
+there shouldn't be too many mms with a zero mm_cpumask, besides the
+init_mm of course.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/core/rtnetlink.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/s390/include/asm/tlbflush.h |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -973,6 +973,7 @@ static int rtnl_fill_ifinfo(struct sk_bu
- 			 * report anything.
- 			 */
- 			ivi.spoofchk = -1;
-+			memset(ivi.mac, 0, sizeof(ivi.mac));
- 			if (dev->netdev_ops->ndo_get_vf_config(dev, i, &ivi))
- 				break;
- 			vf_mac.vf =
+--- a/arch/s390/include/asm/tlbflush.h
++++ b/arch/s390/include/asm/tlbflush.h
+@@ -74,8 +74,6 @@ static inline void __tlb_flush_idte(unsi
+ 
+ static inline void __tlb_flush_mm(struct mm_struct * mm)
+ {
+-	if (unlikely(cpumask_empty(mm_cpumask(mm))))
+-		return;
+ 	/*
+ 	 * If the machine has IDTE we prefer to do a per mm flush
+ 	 * on all cpus instead of doing a local flush if the mm
 
 
