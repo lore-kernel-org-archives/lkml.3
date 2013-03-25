@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab3CYBXN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:23:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34092 "EHLO
+	id S1756828Ab3CYBXL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:23:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34096 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756247Ab3CYBQ2 (ORCPT
+	by vger.kernel.org with ESMTP id S1756249Ab3CYBQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 24 Mar 2013 21:16:28 -0400
-Message-Id: <20130325010528.427401382@decadent.org.uk>
+Message-Id: <20130325010528.150797562@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:06 +0000
+Date: Mon, 25 Mar 2013 01:06:03 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 042/104] sfc: Fix two causes of flush failure
+Cc: akpm@linux-foundation.org,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jesper Dangaard Brouer <jbrouer@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 039/104] inet: limit length of fragment queue hash table bucket  lists
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -28,224 +33,200 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commits a606f4325dca6950996abbae452d33f2af095f39,
-  d5e8cc6c946e0857826dcfbb3585068858445bfe,
-  525d9e824018cd7cc8d8d44832ddcd363abfe6e1 ]
+[ Upstream commit 5a3da1fe9561828d0ca7eca664b16ec2b9bf0055 ]
 
-The TX DMA engine issues upstream read requests when there is room in
-the TX FIFO for the completion. However, the fetches for the rest of
-the packet might be delayed by any back pressure.  Since a flush must
-wait for an EOP, the entire flush may be delayed by back pressure.
+This patch introduces a constant limit of the fragment queue hash
+table bucket list lengths. Currently the limit 128 is choosen somewhat
+arbitrary and just ensures that we can fill up the fragment cache with
+empty packets up to the default ip_frag_high_thresh limits. It should
+just protect from list iteration eating considerable amounts of cpu.
 
-Mitigate this by disabling flow control before the flushes are
-started.  Since PF and VF flushes run in parallel introduce
-fc_disable, a reference count of the number of flushes outstanding.
+If we reach the maximum length in one hash bucket a warning is printed.
+This is implemented on the caller side of inet_frag_find to distinguish
+between the different users of inet_fragment.c.
 
-The same principle could be applied to Falcon, but that
-would bring with it its own testing.
+I dropped the out of memory warning in the ipv4 fragment lookup path,
+because we already get a warning by the slab allocator.
 
-We sometimes hit a "failed to flush" timeout on some TX queues, but the
-flushes have completed and the flush completion events seem to go missing.
-In this case, we can check the TX_DESC_PTR_TBL register and drain the
-queues if the flushes had finished.
-
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-[bwh: Backported to 3.2:
- - Call efx_nic_type::finish_flush() on both success and failure paths
- - Check the TX_DESC_PTR_TBL registers in the polling loop
- - Declare efx_mcdi_set_mac() extern]
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jesper Dangaard Brouer <jbrouer@redhat.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/sfc/falcon.c     |  2 ++
- drivers/net/ethernet/sfc/mcdi.h       |  1 +
- drivers/net/ethernet/sfc/mcdi_mac.c   |  4 +++-
- drivers/net/ethernet/sfc/net_driver.h |  6 ++++++
- drivers/net/ethernet/sfc/nic.c        | 21 ++++++++++++++++++---
- drivers/net/ethernet/sfc/nic.h        |  2 ++
- drivers/net/ethernet/sfc/siena.c      | 15 ++++++++++++++-
- 7 files changed, 46 insertions(+), 5 deletions(-)
+ include/net/inet_frag.h                 |  9 +++++++++
+ net/ipv4/inet_fragment.c                | 20 +++++++++++++++++++-
+ net/ipv4/ip_fragment.c                  | 12 ++++++------
+ net/ipv6/netfilter/nf_conntrack_reasm.c | 11 ++++++-----
+ net/ipv6/reassembly.c                   |  8 ++++++--
+ 5 files changed, 46 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/net/ethernet/sfc/falcon.c b/drivers/net/ethernet/sfc/falcon.c
-index 97b606b..26cd6c0 100644
---- a/drivers/net/ethernet/sfc/falcon.c
-+++ b/drivers/net/ethernet/sfc/falcon.c
-@@ -1762,6 +1762,7 @@ const struct efx_nic_type falcon_a1_nic_type = {
- 	.remove_port = falcon_remove_port,
- 	.handle_global_event = falcon_handle_global_event,
- 	.prepare_flush = falcon_prepare_flush,
-+	.finish_flush = efx_port_dummy_op_void,
- 	.update_stats = falcon_update_nic_stats,
- 	.start_stats = falcon_start_nic_stats,
- 	.stop_stats = falcon_stop_nic_stats,
-@@ -1804,6 +1805,7 @@ const struct efx_nic_type falcon_b0_nic_type = {
- 	.remove_port = falcon_remove_port,
- 	.handle_global_event = falcon_handle_global_event,
- 	.prepare_flush = falcon_prepare_flush,
-+	.finish_flush = efx_port_dummy_op_void,
- 	.update_stats = falcon_update_nic_stats,
- 	.start_stats = falcon_start_nic_stats,
- 	.stop_stats = falcon_stop_nic_stats,
-diff --git a/drivers/net/ethernet/sfc/mcdi.h b/drivers/net/ethernet/sfc/mcdi.h
-index aced2a7..b61eea0 100644
---- a/drivers/net/ethernet/sfc/mcdi.h
-+++ b/drivers/net/ethernet/sfc/mcdi.h
-@@ -126,5 +126,6 @@ extern int efx_mcdi_wol_filter_set_magic(struct efx_nic *efx,
- extern int efx_mcdi_wol_filter_get_magic(struct efx_nic *efx, int *id_out);
- extern int efx_mcdi_wol_filter_remove(struct efx_nic *efx, int id);
- extern int efx_mcdi_wol_filter_reset(struct efx_nic *efx);
-+extern int efx_mcdi_set_mac(struct efx_nic *efx);
+diff --git a/include/net/inet_frag.h b/include/net/inet_frag.h
+index 16ff29a..b289bd2 100644
+--- a/include/net/inet_frag.h
++++ b/include/net/inet_frag.h
+@@ -33,6 +33,13 @@ struct inet_frag_queue {
  
- #endif /* EFX_MCDI_H */
-diff --git a/drivers/net/ethernet/sfc/mcdi_mac.c b/drivers/net/ethernet/sfc/mcdi_mac.c
-index 50c2077..da269d7 100644
---- a/drivers/net/ethernet/sfc/mcdi_mac.c
-+++ b/drivers/net/ethernet/sfc/mcdi_mac.c
-@@ -13,7 +13,7 @@
- #include "mcdi.h"
- #include "mcdi_pcol.h"
+ #define INETFRAGS_HASHSZ		64
  
--static int efx_mcdi_set_mac(struct efx_nic *efx)
-+int efx_mcdi_set_mac(struct efx_nic *efx)
++/* averaged:
++ * max_depth = default ipfrag_high_thresh / INETFRAGS_HASHSZ /
++ *	       rounded up (SKB_TRUELEN(0) + sizeof(struct ipq or
++ *	       struct frag_queue))
++ */
++#define INETFRAGS_MAXDEPTH		128
++
+ struct inet_frags {
+ 	struct hlist_head	hash[INETFRAGS_HASHSZ];
+ 	rwlock_t		lock;
+@@ -64,6 +71,8 @@ int inet_frag_evictor(struct netns_frags *nf, struct inet_frags *f);
+ struct inet_frag_queue *inet_frag_find(struct netns_frags *nf,
+ 		struct inet_frags *f, void *key, unsigned int hash)
+ 	__releases(&f->lock);
++void inet_frag_maybe_warn_overflow(struct inet_frag_queue *q,
++				   const char *prefix);
+ 
+ static inline void inet_frag_put(struct inet_frag_queue *q, struct inet_frags *f)
  {
- 	u32 reject, fcntl;
- 	u8 cmdbytes[MC_CMD_SET_MAC_IN_LEN];
-@@ -45,6 +45,8 @@ static int efx_mcdi_set_mac(struct efx_nic *efx)
+diff --git a/net/ipv4/inet_fragment.c b/net/ipv4/inet_fragment.c
+index 5ff2a51..210b710 100644
+--- a/net/ipv4/inet_fragment.c
++++ b/net/ipv4/inet_fragment.c
+@@ -21,6 +21,7 @@
+ #include <linux/rtnetlink.h>
+ #include <linux/slab.h>
+ 
++#include <net/sock.h>
+ #include <net/inet_frag.h>
+ 
+ static void inet_frag_secret_rebuild(unsigned long dummy)
+@@ -271,6 +272,7 @@ struct inet_frag_queue *inet_frag_find(struct netns_frags *nf,
+ {
+ 	struct inet_frag_queue *q;
+ 	struct hlist_node *n;
++	int depth = 0;
+ 
+ 	hlist_for_each_entry(q, n, &f->hash[hash], list) {
+ 		if (q->net == nf && f->match(q, key)) {
+@@ -278,9 +280,25 @@ struct inet_frag_queue *inet_frag_find(struct netns_frags *nf,
+ 			read_unlock(&f->lock);
+ 			return q;
+ 		}
++		depth++;
  	}
- 	if (efx->wanted_fc & EFX_FC_AUTO)
- 		fcntl = MC_CMD_FCNTL_AUTO;
-+	if (efx->fc_disable)
-+		fcntl = MC_CMD_FCNTL_OFF;
+ 	read_unlock(&f->lock);
  
- 	MCDI_SET_DWORD(cmdbytes, SET_MAC_IN_FCNTL, fcntl);
- 
-diff --git a/drivers/net/ethernet/sfc/net_driver.h b/drivers/net/ethernet/sfc/net_driver.h
-index b8e251a..9e2e802 100644
---- a/drivers/net/ethernet/sfc/net_driver.h
-+++ b/drivers/net/ethernet/sfc/net_driver.h
-@@ -689,6 +689,9 @@ struct efx_filter_state;
-  * @promiscuous: Promiscuous flag. Protected by netif_tx_lock.
-  * @multicast_hash: Multicast hash table
-  * @wanted_fc: Wanted flow control flags
-+ * @fc_disable: When non-zero flow control is disabled. Typically used to
-+ *	ensure that network back pressure doesn't delay dma queue flushes.
-+ *	Serialised by the rtnl lock.
-  * @mac_work: Work item for changing MAC promiscuity and multicast hash
-  * @loopback_mode: Loopback status
-  * @loopback_modes: Supported loopback mode bitmask
-@@ -782,6 +785,7 @@ struct efx_nic {
- 	bool promiscuous;
- 	union efx_multicast_hash multicast_hash;
- 	u8 wanted_fc;
-+	unsigned fc_disable;
- 
- 	atomic_t rx_reset;
- 	enum efx_loopback_mode loopback_mode;
-@@ -835,6 +839,7 @@ static inline unsigned int efx_port_num(struct efx_nic *efx)
-  * @remove_port: Free resources allocated by probe_port()
-  * @handle_global_event: Handle a "global" event (may be %NULL)
-  * @prepare_flush: Prepare the hardware for flushing the DMA queues
-+ * @finish_flush: Clean up after flushing the DMA queues
-  * @update_stats: Update statistics not provided by event handling
-  * @start_stats: Start the regular fetching of statistics
-  * @stop_stats: Stop the regular fetching of statistics
-@@ -880,6 +885,7 @@ struct efx_nic_type {
- 	void (*remove_port)(struct efx_nic *efx);
- 	bool (*handle_global_event)(struct efx_channel *channel, efx_qword_t *);
- 	void (*prepare_flush)(struct efx_nic *efx);
-+	void (*finish_flush)(struct efx_nic *efx);
- 	void (*update_stats)(struct efx_nic *efx);
- 	void (*start_stats)(struct efx_nic *efx);
- 	void (*stop_stats)(struct efx_nic *efx);
-diff --git a/drivers/net/ethernet/sfc/nic.c b/drivers/net/ethernet/sfc/nic.c
-index 3edfbaf..9cca2a6 100644
---- a/drivers/net/ethernet/sfc/nic.c
-+++ b/drivers/net/ethernet/sfc/nic.c
-@@ -1261,13 +1261,27 @@ int efx_nic_flush_queues(struct efx_nic *efx)
- 			}
- 			efx_for_each_possible_channel_tx_queue(tx_queue, channel) {
- 				if (tx_queue->initialised &&
--				    tx_queue->flushed != FLUSH_DONE)
--					++tx_pending;
-+				    tx_queue->flushed != FLUSH_DONE) {
-+					efx_oword_t txd_ptr_tbl;
+-	return inet_frag_create(nf, f, key);
++	if (depth <= INETFRAGS_MAXDEPTH)
++		return inet_frag_create(nf, f, key);
++	else
++		return ERR_PTR(-ENOBUFS);
+ }
+ EXPORT_SYMBOL(inet_frag_find);
 +
-+					efx_reado_table(efx, &txd_ptr_tbl,
-+							FR_BZ_TX_DESC_PTR_TBL,
-+							tx_queue->queue);
-+					if (EFX_OWORD_FIELD(txd_ptr_tbl,
-+							    FRF_AZ_TX_DESCQ_FLUSH) ||
-+					    EFX_OWORD_FIELD(txd_ptr_tbl,
-+							    FRF_AZ_TX_DESCQ_EN))
-+						++tx_pending;
-+					else
-+						tx_queue->flushed = FLUSH_DONE;
-+				}
- 			}
- 		}
++void inet_frag_maybe_warn_overflow(struct inet_frag_queue *q,
++				   const char *prefix)
++{
++	static const char msg[] = "inet_frag_find: Fragment hash bucket"
++		" list length grew over limit " __stringify(INETFRAGS_MAXDEPTH)
++		". Dropping fragment.\n";
++
++	if (PTR_ERR(q) == -ENOBUFS)
++		LIMIT_NETDEBUG(KERN_WARNING "%s%s", prefix, msg);
++}
++EXPORT_SYMBOL(inet_frag_maybe_warn_overflow);
+diff --git a/net/ipv4/ip_fragment.c b/net/ipv4/ip_fragment.c
+index a4e7131..b2cfe83 100644
+--- a/net/ipv4/ip_fragment.c
++++ b/net/ipv4/ip_fragment.c
+@@ -20,6 +20,8 @@
+  *		Patrick McHardy :	LRU queue of frag heads for evictor.
+  */
  
--		if (rx_pending == 0 && tx_pending == 0)
-+		if (rx_pending == 0 && tx_pending == 0) {
-+			efx->type->finish_flush(efx);
- 			return 0;
-+		}
++#define pr_fmt(fmt) "IPv4: " fmt
++
+ #include <linux/compiler.h>
+ #include <linux/module.h>
+ #include <linux/types.h>
+@@ -293,14 +295,12 @@ static inline struct ipq *ip_find(struct net *net, struct iphdr *iph, u32 user)
+ 	hash = ipqhashfn(iph->id, iph->saddr, iph->daddr, iph->protocol);
  
- 		msleep(EFX_FLUSH_INTERVAL);
- 		efx_poll_flush_events(efx);
-@@ -1293,6 +1307,7 @@ int efx_nic_flush_queues(struct efx_nic *efx)
- 		}
- 	}
+ 	q = inet_frag_find(&net->ipv4.frags, &ip4_frags, &arg, hash);
+-	if (q == NULL)
+-		goto out_nomem;
++	if (IS_ERR_OR_NULL(q)) {
++		inet_frag_maybe_warn_overflow(q, pr_fmt());
++		return NULL;
++	}
  
-+	efx->type->finish_flush(efx);
- 	return -ETIMEDOUT;
+ 	return container_of(q, struct ipq, q);
+-
+-out_nomem:
+-	LIMIT_NETDEBUG(KERN_ERR "ip_frag_create: no memory left !\n");
+-	return NULL;
  }
  
-diff --git a/drivers/net/ethernet/sfc/nic.h b/drivers/net/ethernet/sfc/nic.h
-index 66ece48..58302a2 100644
---- a/drivers/net/ethernet/sfc/nic.h
-+++ b/drivers/net/ethernet/sfc/nic.h
-@@ -210,6 +210,8 @@ extern void falcon_irq_ack_a1(struct efx_nic *efx);
+ /* Is the fragment too far ahead to be part of ipq? */
+diff --git a/net/ipv6/netfilter/nf_conntrack_reasm.c b/net/ipv6/netfilter/nf_conntrack_reasm.c
+index 38f00b0..52e2f65 100644
+--- a/net/ipv6/netfilter/nf_conntrack_reasm.c
++++ b/net/ipv6/netfilter/nf_conntrack_reasm.c
+@@ -14,6 +14,8 @@
+  * 2 of the License, or (at your option) any later version.
+  */
  
- /* Global Resources */
- extern int efx_nic_flush_queues(struct efx_nic *efx);
-+extern void siena_prepare_flush(struct efx_nic *efx);
-+extern void siena_finish_flush(struct efx_nic *efx);
- extern void falcon_start_nic_stats(struct efx_nic *efx);
- extern void falcon_stop_nic_stats(struct efx_nic *efx);
- extern void falcon_setup_xaui(struct efx_nic *efx);
-diff --git a/drivers/net/ethernet/sfc/siena.c b/drivers/net/ethernet/sfc/siena.c
-index cc2549c..c58b973 100644
---- a/drivers/net/ethernet/sfc/siena.c
-+++ b/drivers/net/ethernet/sfc/siena.c
-@@ -137,6 +137,18 @@ static void siena_remove_port(struct efx_nic *efx)
- 	efx_nic_free_buffer(efx, &efx->stats_buffer);
++#define pr_fmt(fmt) "IPv6-nf: " fmt
++
+ #include <linux/errno.h>
+ #include <linux/types.h>
+ #include <linux/string.h>
+@@ -176,13 +178,12 @@ fq_find(__be32 id, u32 user, struct in6_addr *src, struct in6_addr *dst)
+ 
+ 	q = inet_frag_find(&nf_init_frags, &nf_frags, &arg, hash);
+ 	local_bh_enable();
+-	if (q == NULL)
+-		goto oom;
++	if (IS_ERR_OR_NULL(q)) {
++		inet_frag_maybe_warn_overflow(q, pr_fmt());
++		return NULL;
++	}
+ 
+ 	return container_of(q, struct nf_ct_frag6_queue, q);
+-
+-oom:
+-	return NULL;
  }
  
-+void siena_prepare_flush(struct efx_nic *efx)
-+{
-+	if (efx->fc_disable++ == 0)
-+		efx_mcdi_set_mac(efx);
-+}
+ 
+diff --git a/net/ipv6/reassembly.c b/net/ipv6/reassembly.c
+index dfb164e..2b0a4ca 100644
+--- a/net/ipv6/reassembly.c
++++ b/net/ipv6/reassembly.c
+@@ -26,6 +26,9 @@
+  *	YOSHIFUJI,H. @USAGI	Always remove fragment header to
+  *				calculate ICV correctly.
+  */
 +
-+void siena_finish_flush(struct efx_nic *efx)
-+{
-+	if (--efx->fc_disable == 0)
-+		efx_mcdi_set_mac(efx);
-+}
++#define pr_fmt(fmt) "IPv6: " fmt
 +
- static const struct efx_nic_register_test siena_register_tests[] = {
- 	{ FR_AZ_ADR_REGION,
- 	  EFX_OWORD32(0x0003FFFF, 0x0003FFFF, 0x0003FFFF, 0x0003FFFF) },
-@@ -624,7 +636,8 @@ const struct efx_nic_type siena_a0_nic_type = {
- 	.reset = siena_reset_hw,
- 	.probe_port = siena_probe_port,
- 	.remove_port = siena_remove_port,
--	.prepare_flush = efx_port_dummy_op_void,
-+	.prepare_flush = siena_prepare_flush,
-+	.finish_flush = siena_finish_flush,
- 	.update_stats = siena_update_nic_stats,
- 	.start_stats = siena_start_nic_stats,
- 	.stop_stats = siena_stop_nic_stats,
+ #include <linux/errno.h>
+ #include <linux/types.h>
+ #include <linux/string.h>
+@@ -240,9 +243,10 @@ fq_find(struct net *net, __be32 id, const struct in6_addr *src, const struct in6
+ 	hash = inet6_hash_frag(id, src, dst, ip6_frags.rnd);
+ 
+ 	q = inet_frag_find(&net->ipv6.frags, &ip6_frags, &arg, hash);
+-	if (q == NULL)
++	if (IS_ERR_OR_NULL(q)) {
++		inet_frag_maybe_warn_overflow(q, pr_fmt());
+ 		return NULL;
+-
++	}
+ 	return container_of(q, struct frag_queue, q);
+ }
+ 
 
 
