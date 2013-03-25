@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933309Ab3CYUru (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 16:47:50 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51627 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab3CYUrt (ORCPT
+	id S933339Ab3CYUsR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 16:48:17 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:64510 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932238Ab3CYUsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 16:47:49 -0400
-Date: Mon, 25 Mar 2013 21:47:42 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mark Rutland <mark.rutland@arm.com>
-cc: Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCHv3 01/10] clocksource: add generic dummy timer driver
-In-Reply-To: <20130325180007.GA4065@e106331-lin.cambridge.arm.com>
-Message-ID: <alpine.LFD.2.02.1303252147080.22263@ionos>
-References: <1363198676-30417-1-git-send-email-sboyd@codeaurora.org> <1363198676-30417-2-git-send-email-sboyd@codeaurora.org> <20130321180922.GB10716@e106331-lin.cambridge.arm.com> <514B4DBD.4060403@codeaurora.org> <20130322180305.GB1436@e106331-lin.cambridge.arm.com>
- <5150800E.2000905@codeaurora.org> <20130325180007.GA4065@e106331-lin.cambridge.arm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 25 Mar 2013 16:48:15 -0400
+Date: Mon, 25 Mar 2013 13:48:07 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <eag0628@gmail.com>
+Cc: laijs@cn.fujitsu.com, axboe@kernel.dk, jack@suse.cz,
+        fengguang.wu@intel.com, jmoyer@redhat.com, zab@redhat.com,
+        linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au,
+        davem@davemloft.net, linux-crypto@vger.kernel.org
+Subject: Re: [PATCHSET wq/for-3.10] workqueue: NUMA affinity for unbound
+ workqueues
+Message-ID: <20130325204807.GA26033@htj.dyndns.org>
+References: <1363737629-16745-1-git-send-email-tj@kernel.org>
+ <20130320185708.GB31256@htj.dyndns.org>
+ <CACvQF53=qgUHrr944D_70dZpT-EOMtPcz2+0JPp4kOnGPzAptQ@mail.gmail.com>
+ <20130324185506.GA4378@htj.dyndns.org>
+ <20130325191500.GA12767@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130325191500.GA12767@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Mar 2013, Mark Rutland wrote:
-> Thomas, do you have an idea of if/when tip/timers/urgent will hit mainline?
+On Mon, Mar 25, 2013 at 12:15:00PM -0700, Tejun Heo wrote:
+> On Sun, Mar 24, 2013 at 11:55:06AM -0700, Tejun Heo wrote:
+> > > the whole patchset is more complicated than my brain.
+> > 
+> > It isn't that complex, is it?  I mean, the difficult part - using
+> > multiple pwqs on unbound wq - already happened, and even that wasn't
+> > too complex as it in most part synchronized the behaviors between
+> > per-cpu and unbound workqueues.  All that NUMA support is doing is
+> > mapping different pwqs to different issuing CPUs.
+> 
+> Oh, BTW, please feel free to rebase your patchset on top of the
+> current wq/for-3.10.  I'll take care of the conflicts with the numa
+> one, if there are any.
 
-Thanks for the reminder. I just sent a pull request Linuswards.
+Sorry, never mind.  I'm cherry picking wq->mutex patches.  Will apply
+the rebased versions in a couple hours.  Let's base everything else on
+top of those.
 
-Thanks,
+Thanks.
 
-	tglx
+-- 
+tejun
