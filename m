@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab3CYCcu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 22:32:50 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41337 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755674Ab3CYCcs (ORCPT
+	id S1755977Ab3CYCd7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 22:33:59 -0400
+Received: from mail-we0-f195.google.com ([74.125.82.195]:39738 "EHLO
+	mail-we0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755674Ab3CYCd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 22:32:48 -0400
-Date: Mon, 25 Mar 2013 13:32:33 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>
-Subject: linux-next: manual merge of the kvm tree with the  tree
-Message-Id: <20130325133233.0ae2af5bf7e25dca9c3999ba@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__25_Mar_2013_13_32_33_+1100_1gdbcvePjnMfTsyV"
+	Sun, 24 Mar 2013 22:33:58 -0400
+MIME-Version: 1.0
+Date: Mon, 25 Mar 2013 10:33:56 +0800
+Message-ID: <CAAO_Xo6=2PKumrxjb1XthsiVVFJcz33o5wf2OyXN9pPdu1GCRA@mail.gmail.com>
+Subject: Question: How to distribute the interrupts over multiple cores?
+From: Lenky Gao <lenky.gao@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: yinghai@kernel.org, mingo@elte.hu, gorcunov@gmail.com,
+        rusty@rustcorp.com.au, sivanich@sgi.com, agordeev@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Mar_2013_13_32_33_+1100_1gdbcvePjnMfTsyV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi everyone,
 
-Hi all,
+I faced the same problem as this URL:
+http://stackoverflow.com/questions/13641440/unable-to-distrubute-the-interrupts-over-multiple-cores
 
-Today's linux-next merge of the kvm tree got a conflict in
-drivers/s390/kvm/virtio_ccw.c between commit 9d0ca6ed6f2f ("virtio:
-remove obsolete virtqueue_get_queue_index()") from the net-next tree and
-commit 07e169335ff0 ("virtio_ccw: pass a cookie value to kvm hypercall")
-from the kvm tree.
+The question have been closed with no answer. :(
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+My machine have 2x Xeon E5504 processors and running vanilla kernel
+3.6.11 in CentOS 6.0.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Could anyone give me some tips?
 
-diff --cc drivers/s390/kvm/virtio_ccw.c
-index fb877b59,42d507c..0000000
---- a/drivers/s390/kvm/virtio_ccw.c
-+++ b/drivers/s390/kvm/virtio_ccw.c
-@@@ -166,7 -167,8 +167,7 @@@ static void virtio_ccw_kvm_notify(struc
- =20
-  	vcdev =3D to_vc_device(info->vq->vdev);
-  	ccw_device_get_schid(vcdev->cdev, &schid);
-- 	do_kvm_notify(schid, vq->index);
- -	info->cookie =3D do_kvm_notify(schid, virtqueue_get_queue_index(vq),
- -				     info->cookie);
-++	info->cookie =3D do_kvm_notify(schid, vq->index, info->cookie);
-  }
- =20
-  static int virtio_ccw_read_vq_conf(struct virtio_ccw_device *vcdev,
+PS:
+[root@localhost ~]# cat /proc/cmdline
+ro root=/dev/mapper/vg_localhost-lv_root rd_NO_LUKS LANG=en_US.UTF-8
+rd_NO_MD quiet rd_LVM_LV=vg_localhost/lv_swap
+SYSFONT=latarcyrheb-sun16 rhgb rd_LVM_LV=vg_localhost/lv_root
+KEYBOARDTYPE=pc KEYTABLE=us rd_NO_DM apic=debug pci=nomsi
+[root@localhost ~]# uname -a
+Linux localhost.lenkydomain 3.6.11 #2 SMP Fri Mar 22 21:13:41 CST 2013
+x86_64 x86_64 x86_64 GNU/Linux
+[root@localhost ~]# echo 6 > /proc/irq/25/smp_affinity
+[root@localhost ~]# cat /proc/irq/25/smp_affinity
+000006
+[root@localhost ~]# cat /proc/interrupts | grep eth9
+  25:       5824      13914        159        128        210
+0          0          0  IR-IO-APIC-fasteoi   eth9
+[root@localhost ~]# cat /proc/interrupts | grep eth9
+  25:       5824      13927        159        128        210
+0          0          0  IR-IO-APIC-fasteoi   eth9
+[root@localhost ~]# cat /proc/interrupts | grep eth9
+  25:       5824      13939        159        128        210
+0          0          0  IR-IO-APIC-fasteoi   eth9
+[root@localhost ~]# cat /proc/interrupts | grep eth9
+  25:       5824      13973        159        128        210
+0          0          0  IR-IO-APIC-fasteoi   eth9
 
---Signature=_Mon__25_Mar_2013_13_32_33_+1100_1gdbcvePjnMfTsyV
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+-- 
+Regards,
 
-iQIcBAEBCAAGBQJRT7dBAAoJEECxmPOUX5FEP+cP/1nKRZrmAQdVUwZZjUg4HrfO
-89FViPfO1YI3RYYCoyGLyj8Krx/KBvyKggBKB5CIevdc3BY0igUgXrdoNptaXQg2
-iR+46Ea9vj2AGKrZV40qFHEN4xIX6SVmRvpnLXb44boyVLtoylheTYt7+avvtc14
-UrcL+nAQeL8DczRzJjQ/9FSDfYjisC1M/4Qc1Z8YAqD1spziROdpvLTsX5Yci2pr
-0rkMoi6FVQENZFbzUtWqovbBeN6mkLiW8oqPahw/IcJkDk+WfNo3h9xt1se4c5oN
-tyS9C9/X7m3c+vtpoJy5F1YryyJwO4CvNO/RLUPpclq9kLKM3rE6k/hUIIw2r82o
-lDBKxhvr4FtZHHz8rYrH/bkpi/IHbXKDD61aiNMKEFBGsDSg6Je8uYnKq8rIpRW7
-nTycS+4vEzSbz1kT/BM0RHfv4ggvG1EueCv4rYoIlKo5lQV16uykRiCDaTtRqcRt
-xJfgPt3zQxaiIe0xlZTddPeeadI2EFTDIGDBwL/3tsRX9q43sa+LseyhgomY+RmL
-paVivi/C0/29dlnbn4l8x0ABMhF4yQDkfzL9jilr4H/Ydji7KdnIZsqH12pT1HM/
-1nLJ5osT5o5ociAzN6WMEwdOSxqF/MnDbCJA7s0MzHdQHZbzZY5443O3xLpZ8Zv+
-QzNatC67sKuV4Vmu5dI2
-=y4WA
------END PGP SIGNATURE-----
-
---Signature=_Mon__25_Mar_2013_13_32_33_+1100_1gdbcvePjnMfTsyV--
+Lenky
