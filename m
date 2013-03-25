@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab3CYGA6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 02:00:58 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39989 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755670Ab3CYGA4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 02:00:56 -0400
-Date: Mon, 25 Mar 2013 09:00:38 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: wei_wang@realsil.com.cn
-Cc: cjb@laptop.org, sameo@linux.intel.com, gregkh@linuxfoundation.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rogerable@realtek.com, devel@linuxdriverproject.org
-Subject: Re: [PATCH] mfd:rtsx: Support RTS5249
-Message-ID: <20130325060038.GD9138@mwanda>
-References: <1364177636-4294-1-git-send-email-wei_wang@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364177636-4294-1-git-send-email-wei_wang@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1757659Ab3CYGHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 02:07:23 -0400
+Received: from ozlabs.org ([203.10.76.45]:37504 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757607Ab3CYGHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 02:07:22 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Chen Gang <gang.chen@asianux.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "paulus@samba.org" <paulus@samba.org>, matt@ozlabs.org,
+        imunsie@au1.ibm.com, linuxppc-dev@lists.ozlabs.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PowerPC:kernel: make additional room in exception vector area
+In-reply-to: <20130325161435.ffff94805826bc7cad2c7de4@canb.auug.org.au>
+References: <51428C81.6000204@asianux.com> <25841.1363323174@ale.ozlabs.ibm.com> <5142AE27.7060003@asianux.com> <514AA0D9.1090509@asianux.com> <10123.1363906486@ale.ozlabs.ibm.com> <514C0061.8080004@asianux.com> <29457.1364169818@ale.ozlabs.ibm.com> <514FA8F3.1030102@asianux.com> <20130325161435.ffff94805826bc7cad2c7de4@canb.auug.org.au>
+Comments: In-reply-to Stephen Rothwell <sfr@canb.auug.org.au>
+   message dated "Mon, 25 Mar 2013 16:14:35 +1100."
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+Date: Mon, 25 Mar 2013 17:07:17 +1100
+Message-ID: <5944.1364191637@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 10:13:56AM +0800, wei_wang@realsil.com.cn wrote:
-> +static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
-> +{
-> +	int err;
-> +
-> +	err = rtsx_pci_write_phy_register(pcr, 0x19, 0xFE46);
-> +	if (err < 0)
-> +		return err;
-> +
-> +	mdelay(1);
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Why do we have the mdelay() and the later msleep(5)?
-rtsx_pci_write_phy_register() busy loops until the write succeeds or
-it returns -ETIMEOUT.  The extra wait here seems unnecessary.
+> Hi all,
+> 
+> On Mon, 25 Mar 2013 09:31:31 +0800 Chen Gang <gang.chen@asianux.com> wrote:
+> >
+> >   The FWNMI region is fixed at 0x7000 and the vector are now overflowing
+> >   that with allmodconfig. Fix that by moving slb_miss_realmode code out
+> >   of that region as it doesn't need to be that close to the call sites
+> >   (it is a _GLOBAL function)
+> > 
+> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> > ---
+> >  arch/powerpc/kernel/exceptions-64s.S |  144 +++++++++++++++++-----------------
+> >  1 files changed, 72 insertions(+), 72 deletions(-)
+> 
+> Thanks, Chen,
+> 
+> I have applied this to linux-next today and pending the builds overnight,
+> will send it to Linus tomorrow or Wednesday.
 
-regards,
-dan carpenter
+sfr,
 
+FYI you're gonna need this one also to make allmodconfig work.
 
+  http://patchwork.ozlabs.org/patch/230244/
+
+Mikey
