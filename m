@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484Ab3CYMdt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 08:33:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13142 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756606Ab3CYMds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 08:33:48 -0400
-Date: Mon, 25 Mar 2013 13:31:21 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Anton Arapov <anton@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: Re: [PATCH 5/7] uretprobes: return probe exit, invoke handlers
-Message-ID: <20130325123121.GA28660@redhat.com>
-References: <1363957745-6657-1-git-send-email-anton@redhat.com> <1363957745-6657-6-git-send-email-anton@redhat.com> <20130324162817.GD17037@redhat.com>
+	id S1757503Ab3CYMeR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 08:34:17 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:57567
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757010Ab3CYMeP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 08:34:15 -0400
+Date: Mon, 25 Mar 2013 06:34:10 -0600
+From: Jens Axboe <axboe@kernel.dk>
+To: Tanya Brokhman <tlinder@codeaurora.org>
+Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Alex.Lemberg@sandisk.com, open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 1/3] block: Add support for reinsert a dispatched req
+Message-ID: <20130325123410.GG22327@kernel.dk>
+References: <1364202150-8776-1-git-send-email-tlinder@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130324162817.GD17037@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1364202150-8776-1-git-send-email-tlinder@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last comment, I promise ;)
+On Mon, Mar 25 2013, Tanya Brokhman wrote:
+> From: Tatyana Brokhman <tlinder@codeaurora.org>
+> 
+> Add support for reinserting a dispatched request back to the
+> scheduler's internal data structures.
+> This capability is used by the device driver when it chooses to
+> interrupt the current request transmission and execute another (more
+> urgent) pending request. For example: interrupting long write in order
+> to handle pending read. The device driver re-inserts the
+> remaining write request back to the scheduler, to be rescheduled
+> for transmission later on.
+> 
+> Add API for verifying whether the current scheduler
+> supports reinserting requests mechanism. If reinsert mechanism isn't
+> supported by the scheduler, this code path will never be activated.
 
-On 03/24, Oleg Nesterov wrote:
->
-> On 03/22, Anton Arapov wrote:
-> >
-> > +static void handle_uretprobe(struct xol_area *area, struct pt_regs *regs)
-> > +{
-> > +	struct uprobe_task *utask;
-> > +	struct return_instance *ri, *tmp;
-> > +	unsigned long prev_ret_vaddr;
-> > +
-> > +	utask = get_utask();
-> > +	if (!utask)
-> > +		return;
-> > +
-> > +	ri = utask->return_instances;
-> > +	if (!ri)
-> > +		return;
->
-> Hmm. I am wondering what should the caller (handle_swbp) do in this
-> case...
+This is practically the exact same operation as a requeue. So why this
+duplication? I also don't quite understand why an IO scheduler would
+have to opt-in for this, seems like a pretty basic operation.
 
-And you do not actually need get_utask(), just check current->utask.
-
-handle_uretprobe() must not be called if either ->utask or
-->return_instances is NULL. This can only happen if we have a bug,
-or user-space tries to fool the kernel.
-
-Perhaps it makes sense to add pr_warn().
-
-Oleg.
+-- 
+Jens Axboe
 
