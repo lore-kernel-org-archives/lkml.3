@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570Ab3CYPud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 11:50:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21057 "EHLO mx1.redhat.com"
+	id S1758597Ab3CYPwr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 11:52:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4530 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758212Ab3CYPuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 11:50:32 -0400
-Date: Mon, 25 Mar 2013 16:49:40 +0100
+	id S1758534Ab3CYPwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 11:52:46 -0400
+Date: Mon, 25 Mar 2013 16:51:55 +0100
 From: Anton Arapov <anton@redhat.com>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
@@ -15,168 +15,152 @@ Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: Re: [PATCH 5/7] uretprobes: return probe exit, invoke handlers
-Message-ID: <20130325154940.GA2178@bandura.brq.redhat.com>
+Subject: Re: [PATCH 4/7] uretprobes: return probe entry, prepare_uretprobe()
+Message-ID: <20130325155155.GB2178@bandura.brq.redhat.com>
 References: <1363957745-6657-1-git-send-email-anton@redhat.com>
- <1363957745-6657-6-git-send-email-anton@redhat.com>
- <20130324162817.GD17037@redhat.com>
+ <1363957745-6657-5-git-send-email-anton@redhat.com>
+ <20130324152651.GC17037@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130324162817.GD17037@redhat.com>
+In-Reply-To: <20130324152651.GC17037@redhat.com>
 X-PGP-Key: http://people.redhat.com/aarapov/gpg
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 24, 2013 at 05:28:17PM +0100, Oleg Nesterov wrote:
+On Sun, Mar 24, 2013 at 04:26:51PM +0100, Oleg Nesterov wrote:
 > On 03/22, Anton Arapov wrote:
 > >
-> > +static void handle_uretprobe(struct xol_area *area, struct pt_regs *regs)
-> > +{
-> > +	struct uprobe_task *utask;
+> >  void uprobe_free_utask(struct task_struct *t)
+> >  {
+> >  	struct uprobe_task *utask = t->utask;
 > > +	struct return_instance *ri, *tmp;
-> > +	unsigned long prev_ret_vaddr;
-> > +
-> > +	utask = get_utask();
-> > +	if (!utask)
-> > +		return;
-> > +
+> >
+> >  	if (!utask)
+> >  		return;
+> > @@ -1325,6 +1334,15 @@ void uprobe_free_utask(struct task_struct *t)
+> >  	if (utask->active_uprobe)
+> >  		put_uprobe(utask->active_uprobe);
+> >
 > > +	ri = utask->return_instances;
-> > +	if (!ri)
-> > +		return;
-> Hmm. I am wondering what should the caller (handle_swbp) do in this
-> case...
-Not sure as well... Will look into it.
-
-> > +
-> > +	instruction_pointer_set(regs, ri->orig_ret_vaddr);
-> > +
-> > +	while (ri) {
-> > +		if (ri->uprobe->consumers)
-> > +			handler_uretprobe_chain(ri->uprobe, regs);
-> I'd suggest to either remove this check or move it into
-> handler_uretprobe_chain().
 > 
-> > +
+> You also need to nullify ->return_instances before return, otherwise
+> it can be use-after-freed later.
+> 
+> uprobe_free_utask() can also be called when the task execs.
+> 
+> > +	while (ri) {
 > > +		put_uprobe(ri->uprobe);
+> > +
 > > +		tmp = ri;
-> > +		prev_ret_vaddr = tmp->orig_ret_vaddr;
-> For what? It seems that prev_ret_vaddr should be simply killed.
-Both above are leftovers I've overlooked before git-send... :(
-
 > > +		ri = ri->next;
 > > +		kfree(tmp);
-> Another case when you do put_uprobe/kfree using the different vars...
-> Once again, the code is correct but imho a bit confusing.
-I agree will change it and align with the code in uprobe_free_utask()
-
-> > +		if (!ri || ri->dirty == false) {
+> > +	}
+> 
+> This is really minor, but I can't resist. Both put_uprobe() and kfree()
+> work with the same object, it would be more clean to use the same var.
+> Say,
+> 
+> 	while (ri) {
+> 		tmp = ri;
+> 		ri = ri->next;
+> 
+> 		put_uprobe(tmp->uprobe);
+> 		kfree(tmp);
+> 	}
+> 
+> > +static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
+> > +{
+> ...
+> > +
+> > +	prev_ret_vaddr = -1;
+> > +	if (utask->return_instances)
+> > +		prev_ret_vaddr = utask->return_instances->orig_ret_vaddr;
+> > +
+> > +	ri = kzalloc(sizeof(struct return_instance), GFP_KERNEL);
+> > +	if (!ri)
+> > +		return;
+> > +
+> > +	ri->dirty = false;
+> > +	trampoline_vaddr = get_trampoline_vaddr(area);
+> > +	ret_vaddr = arch_uretprobe_hijack_return_addr(trampoline_vaddr, regs);
+> > +
+> > +	/*
+> > +	 * We don't want to keep trampoline address in stack, rather keep the
+> > +	 * original return address of first caller thru all the consequent
+> > +	 * instances. This also makes breakpoint unwrapping easier.
+> > +	 */
+> > +	if (ret_vaddr == trampoline_vaddr) {
+> > +		if (likely(prev_ret_vaddr != -1)) {
+> > +			ri->dirty = true;
+> > +			ret_vaddr = prev_ret_vaddr;
+> > +		} else {
 > > +			/*
-> > +			 * This is the first return uprobe (chronologically)
-> > +			 * pushed for this particular instance of the probed
-> > +			 * function.
+> > +			 * This situation is not possible. Likely we have an
+> > +			 * attack from user-space. Die.
 > > +			 */
-> > +			utask->return_instances = ri;
+> > +			printk(KERN_ERR "uprobe: something went wrong "
+> > +				"pid/tgid=%d/%d", current->pid, current->tgid);
+> > +			send_sig(SIGSEGV, current, 0);
+> > +			kfree(ri);
 > > +			return;
 > > +		}
+> > +	}
+> > +
+> > +	if (likely(ret_vaddr != -1)) {
+> > +		atomic_inc(&uprobe->ref);
+> > +		ri->uprobe = uprobe;
+> > +		ri->orig_ret_vaddr = ret_vaddr;
+> > +
+> > +		/* add instance to the stack */
+> > +		ri->next = utask->return_instances;
+> > +		utask->return_instances = ri;
+> > +
+> > +		return;
+> > +	}
+> > +
+> > +	kfree(ri);
+> > +}
 > 
-> Else? we simply return without updating ->return_instances which
-> points to the freed element(s) ? OK, this must not be possible but
-> this is not obvious...
+> Anton, this really doesn't look clear/clean. Why do you need prev_ret_vaddr
+> in advance? Why do you need it at all? why do you delay the "ret_vaddr == -1"
+> errorcheck?
 > 
-> And the fact you check "ri != NULL" twice doesn't look very nice.
-> We already checked ri != NULL before while(ri), we have to do this
-> anyway for instruction_pointer_set(). Perhaps do/whild or even
-> for (;;) + break would be more clean. But this is minor.
+> And ->dirty looks confusing... perhaps ->chained ?
 > 
+> 		ri = kzalloc(...);
+> 		if (!ri)
+> 			return;
 > 
-> I am not sure the logic is correct. OK. suppose that
-> ->return_instances = NULL.
+> 		ret_vaddr = arch_uretprobe_hijack_return_addr(...);
+> 		if (ret_vaddr == -1)
+> 			goto err;
 > 
-> The task hits the rp breakoint. After that
+> 		if (ret_vaddr == trampoline_vaddr) {
+> 			if (!utask->return_instances) {
+> 				// This situation is not possible.
+> 				// (not sure we should send SIGSEGV)
+> 				pr_warn(...);
+> 				goto err;
+> 			}
 > 
-> 	return_instances -> { .dirty = false }
+> 			ri->chained = true;
+> 			ret_vaddr = utask->return_instances->orig_ret_vaddr;
+> 		}
 > 
-> The task hits the same breakoint before return (tail call), now
-> we have
+> 		fill-ri-and-add-push-it;
+> 		return;
 > 
-> 	return_instances -> { .dirty = true } -> { .dirty = false }
-> 
-> Then it returns and handle_uretprobe() should unwind the whole stack.
-> But, it seems, the main loop will stop after the 1st iteration?
-> 
-> Ignoring the fact you need put_uprobe/kfree, it seems that we should
-> do something like this,
-> 
-> 	do {
-> 		handler_uretprobe_chain(...);
-> 
-> 		if (!ri->dirty)	// not chained
-> 			break;
-> 
-> 		ri = ri->next;		
-> 	} while (ri);
-> 
-> 	utask->return_instances = ri;
-> No?
-
-Oleg, Do you mean 
-
- 	do {
- 		handler_uretprobe_chain(...);
-
-        ri = ri->next;		
-
- 		if (!ri->dirty)	// not chained
- 			break;
-  	} while (ri);
- 
- 	utask->return_instances = ri;
-
-otherwise we stuck with the first instance in stack.
-...and perhaps for(;;) would be 'more beautiful' here?
+> 	err:
+> 		kfree(ri);
+> 		return;
 
 
-> 
-> > @@ -1631,11 +1681,19 @@ static void handle_swbp(struct pt_regs *regs)
-> >  {
-> >  	struct uprobe *uprobe;
-> >  	unsigned long bp_vaddr;
-> > +	struct xol_area *area;
-> >  	int uninitialized_var(is_swbp);
-> >  
-> >  	bp_vaddr = uprobe_get_swbp_addr(regs);
-> > -	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
-> > +	area = get_xol_area();
-> 
-> Why?
-> No, we do not want this heavy and potentially unnecessary get_xol_area(),
->
-> > +	if (area) {
-> 
-> Just check uprobes_state.xol_area != NULL instead. If it is NULL
-> we simply should not call handle_uretprobe().
-> 
-> Or perhaps get_trampoline_vaddr() should simply return -1 if
-> ->xol_area == NULL.
+I will do the appropriate changes. Thanks!
 
-right.
-
-> 
-> > +		if (bp_vaddr == get_trampoline_vaddr(area)) {
-> 
-> I just noticed get_trampoline_vaddr() takes an argument... It should
-> not, I think.
-> 
-
-  Yes, at this place we must have *area allocated. And I agree with
-your arguments, I will remove *area argument from
-get_trampoline_vaddr() and handle_uretprobe() it makes sense to me as
-well.
-
-Anton
+Anton.
 
 > Oleg.
 > 
