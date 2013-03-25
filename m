@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933421Ab3CYVxi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 17:53:38 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:18502 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933323Ab3CYVxh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 17:53:37 -0400
-Message-ID: <5150C71A.3030802@oracle.com>
-Date: Mon, 25 Mar 2013 17:52:26 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130310 Thunderbird/17.0.4
+	id S933432Ab3CYV4N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 17:56:13 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:59439 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933353Ab3CYV4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 17:56:12 -0400
+Date: Mon, 25 Mar 2013 16:56:08 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com
+Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
+Message-ID: <20130325215608.GE4796@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <20130318155619.GA18828@sgi.com>
+ <20130321105516.GC18484@gmail.com>
+ <alpine.DEB.2.02.1303211139110.3775@chino.kir.corp.google.com>
+ <20130322072532.GC10608@gmail.com>
+ <20130323152948.GA3036@sgi.com>
+ <CAE9FiQUjVRUs02-ymmtO+5+SgqTWK8Ae6jJwD08uRbgR=eLJgw@mail.gmail.com>
+ <514FB24F.8080104@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Rik van Riel <riel@surriel.com>, torvalds@linux-foundation.org,
-        davidlohr.bueso@hp.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
-        lwoodman@redhat.com, chegu_vinod@hp.com, Dave Jones <davej@redhat.com>,
-        benisty.e@gmail.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH -mm -next] ipc,sem: fix lockdep false positive
-References: <1363809337-29718-1-git-send-email-riel@surriel.com> <5150B1C2.8090607@oracle.com> <20130325163844.042a45ba@annuminas.surriel.com> <CANN689FdtXs0-VKxwWHQKgnnSvcvu5hHDMmGOe0H+bdHA4BhXg@mail.gmail.com>
-In-Reply-To: <CANN689FdtXs0-VKxwWHQKgnnSvcvu5hHDMmGOe0H+bdHA4BhXg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <514FB24F.8080104@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2013 05:42 PM, Michel Lespinasse wrote:
-> On Mon, Mar 25, 2013 at 1:38 PM, Rik van Riel <riel@surriel.com> wrote:
->> > On Mon, 25 Mar 2013 16:21:22 -0400
->> > Sasha Levin <sasha.levin@oracle.com> wrote:
->> >
->>> >> On 03/20/2013 03:55 PM, Rik van Riel wrote:
->>>> >> > Include lkml in the CC: this time... *sigh*
->>>> >> > ---8<---
->>>> >> >
->>>> >> > This series makes the sysv semaphore code more scalable,
->>>> >> > by reducing the time the semaphore lock is held, and making
->>>> >> > the locking more scalable for semaphore arrays with multiple
->>>> >> > semaphores.
->>> >>
->>> >> Hi Rik,
->>> >>
->>> >> I'm getting the following false positives from lockdep:
->> >
->> > Does this patch fix it?
-> I'll be surprised if it does, because we don't actually have single
-> depth nesting here...
-> Adding Peter & Ingo for advice about how to proceed
-> (the one solution I know would involve using arch_spin_lock() directly
-> to bypass the lockdep checks, but there's got to be a better way...)
+On Mon, Mar 25, 2013 at 10:11:27AM +0800, Lin Feng wrote:
+> On 03/24/2013 04:37 AM, Yinghai Lu wrote:
+> > +#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+> > +int __init_memblock memblock_search_pfn_nid(unsigned long pfn,
+> > +			 unsigned long *start_pfn, unsigned long *end_pfn)
+> > +{
+> > +	struct memblock_type *type = &memblock.memory;
+> > +	int mid = memblock_search(type, (phys_addr_t)pfn << PAGE_SHIFT);
+> 
+> I'm really eager to see how much time can we save using binary search compared to
+> linear search in this case :)
 
-Yeah, it did not.
+I have machine time tonight to measure the difference.
 
+Based on earlier testing, a system with 9TB memory calls
+__early_pfn_to_nid() 2,377,198,300 times while booting, but
+only 6815 times does it not find that the memory range is
+the same as previous and search the table.  Caching the
+previous range avoids searching the table 2,377,191,485 times,
+saving a significant amount of time.
 
-Thanks,
-Sasha
+Of the remaining 6815 times when it searches the table, a binary
+search may help, but with relatively few calls it may not
+make much of an overall difference.  Testing will show how much.
 
+> (quote)
+> > A 4 TB (single rack) UV1 system takes 512 seconds to get through
+> > the zone code.  This performance optimization reduces the time
+> > by 189 seconds, a 36% improvement.
+> >
+> > A 2 TB (single rack) UV2 system goes from 212.7 seconds to 99.8 seconds,
+> > a 112.9 second (53%) reduction.
+> (quote)
+> 
+> thanks,
+> linfeng
+
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
