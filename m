@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756533Ab3CYBUg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:20:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34137 "EHLO
+	id S1756701Ab3CYBUx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:20:53 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34130 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756349Ab3CYBQg (ORCPT
+	by vger.kernel.org with ESMTP id S1756340Ab3CYBQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 24 Mar 2013 21:16:36 -0400
-Message-Id: <20130325010527.444644366@decadent.org.uk>
+Message-Id: <20130325010526.795498363@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:05:56 +0000
+Date: Mon, 25 Mar 2013 01:05:49 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Veaceslav Falico <vfalico@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
+Cc: akpm@linux-foundation.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 032/104] netconsole: dont call __netpoll_cleanup() while  atomic
+Subject: [ 025/104] vhost/net: fix heads usage of ubuf_info
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -30,64 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Veaceslav Falico <vfalico@redhat.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-[ Upstream commit 3f315bef23075ea8a98a6fe4221a83b83456d970 ]
+commit 46aa92d1ba162b4b3d6b7102440e459d4e4ee255 upstream.
 
-__netpoll_cleanup() is called in netconsole_netdev_event() while holding a
-spinlock. Release/acquire the spinlock before/after it and restart the
-loop. Also, disable the netconsole completely, because we won't have chance
-after the restart of the loop, and might end up in a situation where
-nt->enabled == 1 and nt->np.dev == NULL.
+ubuf info allocator uses guest controlled head as an index,
+so a malicious guest could put the same head entry in the ring twice,
+and we will get two callbacks on the same value.
+To fix use upend_idx which is guaranteed to be unique.
 
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/netconsole.c | 20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+ drivers/vhost/net.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-index 01b104e..bff6908 100644
---- a/drivers/net/netconsole.c
-+++ b/drivers/net/netconsole.c
-@@ -630,6 +630,7 @@ static int netconsole_netdev_event(struct notifier_block *this,
- 		goto done;
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -234,7 +234,8 @@ static void handle_tx(struct vhost_net *
+ 				msg.msg_controllen = 0;
+ 				ubufs = NULL;
+ 			} else {
+-				struct ubuf_info *ubuf = &vq->ubuf_info[head];
++				struct ubuf_info *ubuf;
++				ubuf = vq->ubuf_info + vq->upend_idx;
  
- 	spin_lock_irqsave(&target_list_lock, flags);
-+restart:
- 	list_for_each_entry(nt, &target_list, list) {
- 		netconsole_target_get(nt);
- 		if (nt->np.dev == dev) {
-@@ -642,20 +643,17 @@ static int netconsole_netdev_event(struct notifier_block *this,
- 			case NETDEV_UNREGISTER:
- 				/*
- 				 * rtnl_lock already held
-+				 * we might sleep in __netpoll_cleanup()
- 				 */
--				if (nt->np.dev) {
--					spin_unlock_irqrestore(
--							      &target_list_lock,
--							      flags);
--					__netpoll_cleanup(&nt->np);
--					spin_lock_irqsave(&target_list_lock,
--							  flags);
--					dev_put(nt->np.dev);
--					nt->np.dev = NULL;
--				}
-+				spin_unlock_irqrestore(&target_list_lock, flags);
-+				__netpoll_cleanup(&nt->np);
-+				spin_lock_irqsave(&target_list_lock, flags);
-+				dev_put(nt->np.dev);
-+				nt->np.dev = NULL;
- 				nt->enabled = 0;
- 				stopped = true;
--				break;
-+				netconsole_target_put(nt);
-+				goto restart;
- 			}
- 		}
- 		netconsole_target_put(nt);
+ 				vq->heads[vq->upend_idx].len = len;
+ 				ubuf->callback = vhost_zerocopy_callback;
 
 
