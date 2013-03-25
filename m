@@ -1,136 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab3CYIAY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 04:00:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60348 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755726Ab3CYIAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 04:00:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,902,1355126400"; 
-   d="scan'208";a="311441636"
-Message-ID: <5150045F.2000105@intel.com>
-Date: Mon, 25 Mar 2013 16:01:35 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH] ACPI / PM: Fix potential problem in acpi_device_get_power()
-References: <6380949.vJPdL9PvJh@vostro.rjw.lan>
-In-Reply-To: <6380949.vJPdL9PvJh@vostro.rjw.lan>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756659Ab3CYIFa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 04:05:30 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:33753 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579Ab3CYIF1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 04:05:27 -0400
+From: Joseph CHANG <josright123@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Matthew Leach <matthew@mattleach.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joseph CHANG <joseph_chang@davicom.com.tw>,
+        Jiri Pirko <jiri@resnulli.us>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Joseph CHANG <joseph_chang@davicom.com.tw>
+Subject: [PATCH 1/1] ethernet driver: dm9000: davicom: Upgrade the driver to suit for all DM9000 series chips
+Date: Mon, 25 Mar 2013 16:04:42 +0800
+Message-Id: <1364198682-1589-1-git-send-email-josright123@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2013 07:57 AM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Theoretically, in some situations acpi_device_get_power() may return
-> an incorrect result, because the settings of the power resources
-> depended on by the device may indicate a power state shallower than
-> the actual power state of the device.
-> 
-> Say that two devices, A and B, depend on two power resources, X and
-> Y, in such a way that _PR0 for both A and B list both X and Y and
-> _PR3 for both A and B list power resource Y alone.  Also suppose
-> that _PS0 and _PS3 are present for both A and B.  Then, if devices
-> A and B are initially in D0, power resources X and Y are initially
-> "on" and their reference counters are equal to 2.  To put device A
-> into power state D3hot the kernel will decrement the reference
-> counter of power resource X, but that power resource won't be turned
-> off, because it is still in use by device B (its reference counter is
-> equal to 1).  Next, _PS3 will be executed for device A.  Afterward
-> the configuration of the power resources will indicate that device
-> A is in power state D0 (both X and Y are "on"), but in fact it is
-> in D3hot (because _PS3 has been executed for it).
+From: Joseph CHANG <joseph_chang@davicom.com.tw>
 
-I'm not sure if D3hot is correct here, since the power resource X is
-still on?
+Some necessary modification for DM9000 series chips to be better in operation!
 
-I agree that, at least from OSPM's perspective, D3hot is better than D0
-here.
+Had tested to all of DM9000 series chips, include DM9000E, DM9000A, DM9000B,
+and DM9000C in X86 and ARM embedded Linux system these years.
 
-Thanks,
-Aaron
+Signed-off-by: Joseph CHANG <joseph_chang@davicom.com.tw>
+---
+ drivers/net/ethernet/davicom/dm9000.c |   28 +++++++++++++++++++++++-----
+ drivers/net/ethernet/davicom/dm9000.h |    4 +++-
+ 2 files changed, 26 insertions(+), 6 deletions(-)
 
-> 
-> In that situation, if acpi_device_get_power() is called to get the
-> power state of device A, it will first execute _PSC for it which
-> should return 3.  That will cause acpi_device_get_power() to run
-> acpi_power_get_inferred_state() for device A and the resultant power
-> state will be D0, which is incorrect.
-> 
-> To fix that change acpi_device_get_power() to first execute
-> acpi_power_get_inferred_state() for the given device (if it
-> depends on power resources) and to evaluate _PSC for it subsequently,
-> so that the result inferred from the power resources configuration
-> can be amended by the _PSC return value.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/device_pm.c |   39 ++++++++++++++++++++++++---------------
->  1 file changed, 24 insertions(+), 15 deletions(-)
-> 
-> Index: linux-pm/drivers/acpi/device_pm.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/device_pm.c
-> +++ linux-pm/drivers/acpi/device_pm.c
-> @@ -145,27 +145,36 @@ int acpi_device_get_power(struct acpi_de
->  	}
->  
->  	/*
-> -	 * Get the device's power state either directly (via _PSC) or
-> -	 * indirectly (via power resources).
-> +	 * Get the device's power state from power resources settings and _PSC,
-> +	 * if available.
->  	 */
-> +	if (device->power.flags.power_resources) {
-> +		int error = acpi_power_get_inferred_state(device, &result);
-> +		if (error)
-> +			return error;
-> +	}
->  	if (device->power.flags.explicit_get) {
-> +		acpi_handle handle = device->handle;
->  		unsigned long long psc;
-> -		acpi_status status = acpi_evaluate_integer(device->handle,
-> -							   "_PSC", NULL, &psc);
-> +		acpi_status status;
-> +
-> +		status = acpi_evaluate_integer(handle, "_PSC", NULL, &psc);
->  		if (ACPI_FAILURE(status))
->  			return -ENODEV;
->  
-> -		result = psc;
-> -	}
-> -	/* The test below covers ACPI_STATE_UNKNOWN too. */
-> -	if (result <= ACPI_STATE_D2) {
-> -	  ; /* Do nothing. */
-> -	} else if (device->power.flags.power_resources) {
-> -		int error = acpi_power_get_inferred_state(device, &result);
-> -		if (error)
-> -			return error;
-> -	} else if (result == ACPI_STATE_D3_HOT) {
-> -		result = ACPI_STATE_D3;
-> +		/*
-> +		 * The power resources settings may indicate a power state
-> +		 * shallower than the actual power state of the device.
-> +		 *
-> +		 * Moreover, on systems predating ACPI 4.0, if the device
-> +		 * doesn't depend on any power resources and _PSC returns 3,
-> +		 * that means "power off".  We need to maintain compatibility
-> +		 * with those systems.
-> +		 */
-> +		if (psc > result && psc < ACPI_STATE_D3_COLD)
-> +			result = psc;
-> +		else if (result == ACPI_STATE_UNKNOWN)
-> +			result = psc > ACPI_STATE_D2 ? ACPI_STATE_D3_COLD : psc;
->  	}
->  
->  	/*
-> 
+diff --git a/drivers/net/ethernet/davicom/dm9000.c b/drivers/net/ethernet/davicom/dm9000.c
+index 8cdf025..54bdc92 100644
+--- a/drivers/net/ethernet/davicom/dm9000.c
++++ b/drivers/net/ethernet/davicom/dm9000.c
+@@ -47,7 +47,8 @@
+ #define DM9000_PHY		0x40	/* PHY address 0x01 */
+ 
+ #define CARDNAME	"dm9000"
+-#define DRV_VERSION	"1.31"
++/* [KERN-ADD-1](upgrade) */
++#define DRV_VERSION	"1.39"
+ 
+ /*
+  * Transmit timeout, default 5 seconds.
+@@ -671,10 +672,16 @@ dm9000_poll_work(struct work_struct *w)
+ 			if (netif_msg_link(db))
+ 				dm9000_show_carrier(db, new_carrier, nsr);
+ 
+-			if (!new_carrier)
++			/* [KERN-ADD-2] */
++			if (!new_carrier) {
+ 				netif_carrier_off(ndev);
+-			else
++				netdev_info(ndev, "[%s Ethernet Driver, V%s]: Link-Down!!\n",
++					CARDNAME, DRV_VERSION);
++			} else {
+ 				netif_carrier_on(ndev);
++				netdev_info(ndev, "[%s Ethernet Driver, V%s]: Link-Up!!\n",
++					CARDNAME, DRV_VERSION);
++			}
+ 		}
+ 	} else
+ 		mii_check_media(&db->mii, netif_msg_link(db), 0);
+@@ -794,6 +801,9 @@ dm9000_init_dm9000(struct net_device *dev)
+ 			(dev->features & NETIF_F_RXCSUM) ? RCSR_CSUM : 0);
+ 
+ 	iow(db, DM9000_GPCR, GPCR_GEP_CNTL);	/* Let GPIO0 output */
++    /* [KERN-ADD-3] */
++	dm9000_phy_write(dev, 0, 0, 0x8000); /* reset PHY */
++	mdelay(2);
+ 
+ 	ncr = (db->flags & DM9000_PLATF_EXT_PHY) ? NCR_EXT_PHY : 0;
+ 
+@@ -830,6 +840,8 @@ dm9000_init_dm9000(struct net_device *dev)
+ 	db->tx_pkt_cnt = 0;
+ 	db->queue_pkt_len = 0;
+ 	dev->trans_start = jiffies;
++    /* [KERN-ADD-4]	*/
++	dm9000_phy_write(dev, 0, 27, 0xE100);
+ }
+ 
+ /* Our watchdog timed out. Called by the networking layer */
+@@ -1181,7 +1193,8 @@ dm9000_open(struct net_device *dev)
+ 
+ 	/* GPIO0 on pre-activate PHY, Reg 1F is not set by reset */
+ 	iow(db, DM9000_GPR, 0);	/* REG_1F bit0 activate phyxcer */
+-	mdelay(1); /* delay needs by DM9000B */
++	/* [KERN-ADD-5](Enable PHY) */
++	mdelay(2); /* delay needs by DM9000B */
+ 
+ 	/* Initialize DM9000 board */
+ 	dm9000_reset(db);
+@@ -1311,6 +1324,8 @@ dm9000_shutdown(struct net_device *dev)
+ 
+ 	/* RESET device */
+ 	dm9000_phy_write(dev, 0, MII_BMCR, BMCR_RESET);	/* PHY RESET */
++    /* [KERN-ADD-6](NOTICE)(by)("if (!db->wake_state) ..") */
++    /* iow(db, DM9000_GPR, 0x01); */
+ 	iow(db, DM9000_GPR, 0x01);	/* Power-Down PHY */
+ 	iow(db, DM9000_IMR, IMR_PAR);	/* Disable all interrupt */
+ 	iow(db, DM9000_RCR, 0x00);	/* Disable RX */
+@@ -1465,6 +1480,8 @@ dm9000_probe(struct platform_device *pdev)
+ 	/* fill in parameters for net-dev structure */
+ 	ndev->base_addr = (unsigned long)db->io_addr;
+ 	ndev->irq	= db->irq_res->start;
++    /* [KERN-ADD-7] */
++	netdev_info(ndev, "[dm9] %s ndev->irq=%x\n", __func__, ndev->irq);
+ 
+ 	/* ensure at least we have a default set of IO routines */
+ 	dm9000_set_io(db, iosize);
+@@ -1502,7 +1519,8 @@ dm9000_probe(struct platform_device *pdev)
+ 	db->flags |= DM9000_PLATF_SIMPLE_PHY;
+ #endif
+ 
+-	dm9000_reset(db);
++    /* [KERN-ADD-8](SPECIAL WHEN INIT_OF_PROBE)[takeover"dm9000_reset(db)"] */
++	iow(db, DM9000_NCR, NCR_MAC_LBK | NCR_RST); /* 0x03 */
+ 
+ 	/* try multiple times, DM9000 sometimes gets the read wrong */
+ 	for (i = 0; i < 8; i++) {
+diff --git a/drivers/net/ethernet/davicom/dm9000.h b/drivers/net/ethernet/davicom/dm9000.h
+index 55688bd..d644506 100644
+--- a/drivers/net/ethernet/davicom/dm9000.h
++++ b/drivers/net/ethernet/davicom/dm9000.h
+@@ -69,7 +69,9 @@
+ #define NCR_WAKEEN          (1<<6)
+ #define NCR_FCOL            (1<<4)
+ #define NCR_FDX             (1<<3)
+-#define NCR_LBK             (3<<1)
++
++#define NCR_RESERVED        (3<<1)
++#define NCR_MAC_LBK         (1<<1) /* [kern-add-0] */
+ #define NCR_RST	            (1<<0)
+ 
+ #define NSR_SPEED           (1<<7)
+-- 
+1.7.1
 
