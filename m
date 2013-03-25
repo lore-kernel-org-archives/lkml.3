@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932981Ab3CYTAq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 15:00:46 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:40614 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754263Ab3CYTAo (ORCPT
+	id S1758745Ab3CYTCl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 15:02:41 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:48424 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757379Ab3CYTCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 15:00:44 -0400
-Date: Mon, 25 Mar 2013 14:58:21 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Piotr Haber <phaber@broadcom.com>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arend van Spriel <arend@broadcom.com>,
-        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>
-Subject: Re: [PATCH regression/bisected] Revert "brcmsmac: support 4313iPA"
-Message-ID: <20130325185821.GB17454@tuxdriver.com>
-References: <1363603503-2378-1-git-send-email-dh.herrmann@gmail.com>
- <51471B85.5060404@broadcom.com>
- <CANq1E4TsM6yoSt9aELFan0ayEw3PSfYCe+PEe35YFHzZ-9rTuA@mail.gmail.com>
+	Mon, 25 Mar 2013 15:02:40 -0400
+From: =?UTF-8?q?Nick=20=C3=98stergaard?= <oe.nick@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Nick=20=C3=98stergaard?= <oe.nick@gmail.com>
+Subject: [PATCH] staging: wlan-ng: prism2usb.c: fix printk(KERN_ERR... to pr_err(...
+Date: Mon, 25 Mar 2013 20:02:28 +0100
+Message-Id: <1364238148-22329-1-git-send-email-oe.nick@gmail.com>
+X-Mailer: git-send-email 1.8.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANq1E4TsM6yoSt9aELFan0ayEw3PSfYCe+PEe35YFHzZ-9rTuA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 02:58:08PM +0100, David Herrmann wrote:
-> Hi Piotr
-> 
-> On Mon, Mar 18, 2013 at 2:49 PM, Piotr Haber <phaber@broadcom.com> wrote:
-> > On 03/18/13 11:45, David Herrmann wrote:
-> >> This reverts commit b6fc28a158076ca2764edc9a6d1e1402f56e1c0c. It breaks
-> >> wireless AP reconnection on: (14e4:4727)
-> >>   Broadcom Corporation BCM4313 802.11b/g/n Wireless LAN Controller
-> >>
-> >> Any attempt to reconnect to an AP results in timeouts no matter how near to the
-> >> AP I am:
-> >>  00:10:40 $nb kernel: wlan0: authenticate with 00:18:39:0a:8e:23
-> >>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 1/3)
-> >>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 2/3)
-> >>  00:10:41 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 3/3)
-> >>  00:10:41 $nb kernel: wlan0: authentication with 00:18:39:0a:8e:23 timed out
-> >> ---
-> >> Hi
-> >>
-> >> I tried coming up with a fix instead of reverting this commit, but the commit is
-> >> way to big for me to understand what's going on. Sorry.
-> >>
-> >> With linux-3.8 connecting to an AP broke on my machine. I could connect to an AP
-> >> one time, but any further attempt resulted in:
-> >>  00:10:40 $nb kernel: wlan0: authenticate with 00:18:39:0a:8e:23
-> >>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 1/3)
-> >>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 2/3)
-> >>  00:10:41 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 3/3)
-> >>  00:10:41 $nb kernel: wlan0: authentication with 00:18:39:0a:8e:23 timed out
-> >>
-> >> Even sitting right next to the AP didn't help so I started bisecting and it
-> >> turned out to be:
-> >>   "brcmsmac: support 4313iPA" b6fc28a158076ca2764edc9a6d1e1402f56e1c0c
-> >> Please revert it.
-> >>
-> >> Thanks
-> >> David
-> >>
-> > Hi,
-> > unfortunately this is not a first report of this patch breaking 4313 for some users.
-> > I'm pretty confident that it is hardware revision related as we have 4313ePA and iPA boards running
-> > successfully in our test setup.
-> > Could you aid us in effort of finding the problem by supplying the contents of this debugfs file:
-> > <debugfs_mount>/brcmsmac/bcma0:0/hardware
-> 
-> Hi
-> 
-> $ cat /sys/kernel/debug/brcmsmac/bcma0\:0/hardware
-> board vendor: 185f
-> board type: 51a
-> board revision: 1408
-> board flags: 8402a01
-> board flags2: 880
-> firmware revision: 262032b
-> 
-> I can also try partial reverts of that commit, but I really don't know
-> which parts might be important.
+Fixed checkpatch.pl warning, changing fix printk(KERN_ERR... to
+pr_err(...
 
-Are we going to see a fix for this (very) soon?  Or should I just go
-ahead and revert this patch?
+Signed-off-by: Nick Østergaard <oe.nick@gmail.com>
+---
+ drivers/staging/wlan-ng/prism2usb.c | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
+diff --git a/drivers/staging/wlan-ng/prism2usb.c b/drivers/staging/wlan-ng/prism2usb.c
+index b1aed1f..0f2706a 100644
+--- a/drivers/staging/wlan-ng/prism2usb.c
++++ b/drivers/staging/wlan-ng/prism2usb.c
+@@ -113,14 +113,14 @@ static int prism2sta_probe_usb(struct usb_interface *interface,
+ 	dev = interface_to_usbdev(interface);
+ 	wlandev = create_wlan();
+ 	if (wlandev == NULL) {
+-		printk(KERN_ERR "%s: Memory allocation failure.\n", dev_info);
++		pr_err("%s: Memory allocation failure.\n", dev_info);
+ 		result = -EIO;
+ 		goto failed;
+ 	}
+ 	hw = wlandev->priv;
+ 
+ 	if (wlan_setup(wlandev, &(interface->dev)) != 0) {
+-		printk(KERN_ERR "%s: wlan_setup() failed.\n", dev_info);
++		pr_err("%s: wlan_setup() failed.\n", dev_info);
+ 		result = -EIO;
+ 		goto failed;
+ 	}
+@@ -143,8 +143,7 @@ static int prism2sta_probe_usb(struct usb_interface *interface,
+ 			unregister_wlandev(wlandev);
+ 			hfa384x_destroy(hw);
+ 			result = -EIO;
+-			printk(KERN_ERR
+-			       "%s: hfa384x_corereset() failed.\n", dev_info);
++			pr_err("%s: hfa384x_corereset() failed.\n", dev_info);
+ 			goto failed;
+ 		}
+ 	}
+@@ -158,7 +157,7 @@ static int prism2sta_probe_usb(struct usb_interface *interface,
+ 	prism2sta_ifstate(wlandev, P80211ENUM_ifstate_enable);
+ 
+ 	if (register_wlandev(wlandev) != 0) {
+-		printk(KERN_ERR "%s: register_wlandev() failed.\n", dev_info);
++		pr_err("%s: register_wlandev() failed.\n", dev_info);
+ 		result = -EIO;
+ 		goto failed;
+ 	}
+@@ -329,8 +328,7 @@ static int prism2sta_resume(struct usb_interface *interface)
+ 		if (result != 0) {
+ 			unregister_wlandev(wlandev);
+ 			hfa384x_destroy(hw);
+-			printk(KERN_ERR
+-			       "%s: hfa384x_corereset() failed.\n", dev_info);
++			pr_err("%s: hfa384x_corereset() failed.\n", dev_info);
+ 			kfree(wlandev);
+ 			kfree(hw);
+ 			wlandev = NULL;
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+1.8.2
+
