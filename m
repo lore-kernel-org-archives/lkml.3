@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab3CYBRl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:17:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34173 "EHLO
+	id S1756597Ab3CYBRj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:17:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34179 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756438Ab3CYBQn (ORCPT
+	by vger.kernel.org with ESMTP id S1756470Ab3CYBQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 24 Mar 2013 21:16:43 -0400
-Message-Id: <20130325010526.510354269@decadent.org.uk>
+Message-Id: <20130325010526.608940290@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:05:46 +0000
+Date: Mon, 25 Mar 2013 01:05:47 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Larry Finger <Larry.Finger@lwfinger.net>,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 022/104] rtlwifi: rtl8192cu: Fix schedule while atomic bug splat
+Cc: akpm@linux-foundation.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Phileas Fogg <phileas-fogg@mail.ru>
+Subject: [ 023/104] powerpc: Fix cputable entry for 970MP rev 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -30,60 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 664899786cb49cb52f620e06ac19c0be524a7cfa upstream.
+commit d63ac5f6cf31c8a83170a9509b350c1489a7262b upstream.
 
-When run at debug 3 or higher, rtl8192cu reports a BUG as follows:
+Commit 44ae3ab3358e962039c36ad4ae461ae9fb29596c forgot to update
+the entry for the 970MP rev 1.0 processor when moving some CPU
+features bits to the MMU feature bit mask. This breaks booting
+on some rare G5 models using that chip revision.
 
-BUG: scheduling while atomic: kworker/u:0/5281/0x00000002
-INFO: lockdep is turned off.
-Modules linked in: rtl8192cu rtl8192c_common rtlwifi fuse af_packet bnep bluetooth b43 mac80211 cfg80211 ipv6 snd_hda_codec_conexant kvm_amd k
-vm snd_hda_intel snd_hda_codec bcma rng_core snd_pcm ssb mmc_core snd_seq snd_timer snd_seq_device snd i2c_nforce2 sr_mod pcmcia forcedeth i2c_core soundcore
- cdrom sg serio_raw k8temp hwmon joydev ac battery pcmcia_core snd_page_alloc video button wmi autofs4 ext4 mbcache jbd2 crc16 thermal processor scsi_dh_alua
- scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc scsi_dh ata_generic pata_acpi pata_amd [last unloaded: rtlwifi]
-Pid: 5281, comm: kworker/u:0 Tainted: G        W    3.8.0-wl+ #119
-Call Trace:
- [<ffffffff814531e7>] __schedule_bug+0x62/0x70
- [<ffffffff81459af0>] __schedule+0x730/0xa30
- [<ffffffff81326e49>] ? usb_hcd_link_urb_to_ep+0x19/0xa0
- [<ffffffff8145a0d4>] schedule+0x24/0x70
- [<ffffffff814575ec>] schedule_timeout+0x18c/0x2f0
- [<ffffffff81459ec0>] ? wait_for_common+0x40/0x180
- [<ffffffff8133f461>] ? ehci_urb_enqueue+0xf1/0xee0
- [<ffffffff810a579d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff81459f65>] wait_for_common+0xe5/0x180
- [<ffffffff8107d1c0>] ? try_to_wake_up+0x2d0/0x2d0
- [<ffffffff8145a08e>] wait_for_completion_timeout+0xe/0x10
- [<ffffffff8132ab1c>] usb_start_wait_urb+0x8c/0x100
- [<ffffffff8132adf9>] usb_control_msg+0xd9/0x130
- [<ffffffffa057dd8d>] _usb_read_sync+0xcd/0x140 [rtlwifi]
- [<ffffffffa057de0e>] _usb_read32_sync+0xe/0x10 [rtlwifi]
- [<ffffffffa04b0555>] rtl92cu_update_hal_rate_table+0x1a5/0x1f0 [rtl8192cu]
-
-The cause is a synchronous read from routine rtl92cu_update_hal_rate_table().
-The resulting output is not critical, thus the debug statement is
-deleted.
-
-Reported-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2: the deleted code is slightly different]
+Reported-by: Phileas Fogg <phileas-fogg@mail.ru>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c |    2 --
- 1 file changed, 2 deletions(-)
+ arch/powerpc/kernel/cputable.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-@@ -2238,8 +2238,6 @@ void rtl92cu_update_hal_rate_table(struc
- 			       (shortgi_rate << 4) | (shortgi_rate);
- 	}
- 	rtl_write_dword(rtlpriv, REG_ARFR0 + ratr_index * 4, ratr_value);
--	RT_TRACE(rtlpriv, COMP_RATR, DBG_DMESG, ("%x\n", rtl_read_dword(rtlpriv,
--		 REG_ARFR0)));
- }
- 
- void rtl92cu_update_hal_rate_mask(struct ieee80211_hw *hw, u8 rssi_level)
+--- a/arch/powerpc/kernel/cputable.c
++++ b/arch/powerpc/kernel/cputable.c
+@@ -268,7 +268,7 @@ static struct cpu_spec __initdata cpu_sp
+ 		.cpu_features		= CPU_FTRS_PPC970,
+ 		.cpu_user_features	= COMMON_USER_POWER4 |
+ 			PPC_FEATURE_HAS_ALTIVEC_COMP,
+-		.mmu_features		= MMU_FTR_HPTE_TABLE,
++		.mmu_features		= MMU_FTRS_PPC970,
+ 		.icache_bsize		= 128,
+ 		.dcache_bsize		= 128,
+ 		.num_pmcs		= 8,
 
 
