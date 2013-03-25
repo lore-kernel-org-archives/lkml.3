@@ -1,98 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399Ab3CYJEm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 05:04:42 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56987 "EHLO mga09.intel.com"
+	id S1757570Ab3CYJGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 05:06:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38648 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757255Ab3CYJEj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 05:04:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,904,1355126400"; 
-   d="scan'208";a="284131636"
-Message-ID: <1364202254.18714.101.camel@smile>
-Subject: Re: [PATCH 3/4] dw_dmac: make build of DT related methods optional
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Vinod Koul <vinod.koul@intel.com>, Viresh Kumar <viresh.kumar@linaro.org>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Date: Mon, 25 Mar 2013 11:04:14 +0200
-In-Reply-To: <201303221519.14108.arnd@arndb.de>
-References: <1363963401-7924-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1363963401-7924-4-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <201303221519.14108.arnd@arndb.de>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+	id S1755519Ab3CYJGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 05:06:34 -0400
+Date: Mon, 25 Mar 2013 10:06:29 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
+Message-ID: <20130325090629.GN2154@dhcp22.suse.cz>
+References: <514A60CD.60208@huawei.com>
+ <20130321090849.GF6094@dhcp22.suse.cz>
+ <20130321102257.GH6094@dhcp22.suse.cz>
+ <514BB23E.70908@huawei.com>
+ <20130322080749.GB31457@dhcp22.suse.cz>
+ <514C1388.6090909@huawei.com>
+ <514C14BF.3050009@parallels.com>
+ <20130322093141.GE31457@dhcp22.suse.cz>
+ <514EAC41.5050700@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <514EAC41.5050700@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-22 at 15:19 +0000, Arnd Bergmann wrote: 
-> On Friday 22 March 2013, Andy Shevchenko wrote:
-> > There is no reason to build custom filter function and translation function
-> > inside the driver in case we have no DT platform.
+On Sun 24-03-13 15:33:21, Li Zefan wrote:
+> >> Thanks for identifying and fixing this.
+> >>
+> >> Li is right. The cache name will live long, but this is because the
+> >> slab/slub caches will strdup it internally. So the actual memcg
+> >> allocation is short lived.
 > > 
-> > This patch introduces new method dw_dma_of_controller_register() and moves all
-> > DT related stuff under #ifdef CONFIG_OF. It also helps to distinguish the real
-> > -ENODEV return code of fake one when of_dma_controller_register is not
-> > implemented.
+> > OK, I have totally missed that. Sorry about the confusion. Then all the
+> > churn around the allocation is pointless, no?
+> > What about:
+> > ---
+> >>From 7ed7f53bb597e8cb40d9ac91ce16142fb60f1e93 Mon Sep 17 00:00:00 2001
+> > From: Michal Hocko <mhocko@suse.cz>
+> > Date: Fri, 22 Mar 2013 10:22:54 +0100
+> > Subject: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
 > > 
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > As cgroup supports rename, it's unsafe to dereference dentry->d_name
+> > without proper vfs locks. Fix this by using cgroup_name() rather than
+> > dentry directly.
+> > 
+> > Also open code memcg_cache_name because it is called only from
+> > kmem_cache_dup which frees the returned name right after
+> > kmem_cache_create_memcg makes a copy of it. Such a short-lived
+> > allocation doesn't make too much sense. So replace it by a static
+> > buffer as kmem_cache_dup is called with memcg_cache_mutex.
+> > 
 > 
-> This should have no impact on the object code at all, since everything
-> inside of the #ifdef is be dropped by the compiler anyway if
-> of_dma_controller_register is stubbed out.
+> I doubt it's a win to add 4K to kernel text size instead of adding
+> a few extra lines of code... but it's up to you.
 
-Right.
+I will leave the decision to Glauber. The updated version which uses
+kmalloc for the static buffer is bellow.
 
-
-> I generally prefer to have all driver code be compiled  all the time
-> to catch build regressions independent of the configuration, and leave
-> the #ifdefs in header files that provide the interfaces.
-
-I don't. For checking we have special make targets:
-
-  allnoconfig     - New config where all options are answered with no
-  allyesconfig    - New config where all options are accepted with yes
-  allmodconfig    - New config selecting modules when possible
-  alldefconfig    - New config with all symbols set to default
-
-> > -	if (pdev->dev.of_node) {
-> > -		err = of_dma_controller_register(pdev->dev.of_node,
-> > -						 dw_dma_of_xlate, dw);
-> > -		if (err && err != -ENODEV)
-> > -			dev_err(&pdev->dev,
-> > -				"could not register of_dma_controller\n");
-> > -	}
-> > +	if (pdev->dev.of_node)
-> > +		dw_dma_of_controller_register(dw);
+> > Signed-off-by: Li Zefan <lizefan@huawei.com>
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > ---
+> >  mm/memcontrol.c |   33 +++++++++++----------------------
+> >  1 file changed, 11 insertions(+), 22 deletions(-)
+> ...
+> >  static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+> >  					 struct kmem_cache *s)
+> >  {
+> >  	char *name;
+> >  	struct kmem_cache *new;
+> > +	static char tmp_name[PAGE_SIZE];
+> >  
+> > -	name = memcg_cache_name(memcg, s);
+> > -	if (!name)
+> > -		return NULL;
+> > +	lockdep_assert_held(&memcg_cache_mutex);
+> > +
+> > +	rcu_read_lock();
+> > +	tmp_name = snprintf(tmp_name, sizeof(tmp_name), "%s(%d:%s)", s->name,
+> > +			 memcg_cache_id(memcg), cgroup_name(memcg->css.cgroup));
 > 
-> If you want to remove the "err != -ENODEV" check here, we could rewrite
-> this as 
-> 
-> 	if (IS_ENABLED(CONFIG_OF)) && pdev->dev.of_node) {
-> 		err = of_dma_controller_register(pdev->dev.of_node,
-> 						 dw_dma_of_xlate, dw);
-> 		if (err)
-> 			dev_err(&pdev->dev,
-> 				"could not register of_dma_controller\n");
-> 	}
-> 
-> Or alternatively, we can change the of_dma_controller_register() stub to
-> return 0 if CONFIG_OF is disabled. That would also take care of similar
-> code in other dma engine drivers.
+> I guess you didn't turn on CONFIG_MEMCG_KMEM?
 
-Actually to be aligned with other dmaengine code it should return
--ENOSYS. And by description ENOSYS seems  suitable for "not implemented"
-cases.
+dohh. Friday effect...
 
+> snprintf() returns a int value.
+[...]
+---
+>From 6f5d4c08cde5c82ac9432608adf517916ab54634 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Mon, 25 Mar 2013 10:04:02 +0100
+Subject: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
 
-What about to move all CONFIG_OF stuff into separate file?
+As cgroup supports rename, it's unsafe to dereference dentry->d_name
+without proper vfs locks. Fix this by using cgroup_name() rather than
+dentry directly.
+
+Also open code memcg_cache_name because it is called only from
+kmem_cache_dup which frees the returned name right after
+kmem_cache_create_memcg makes a copy of it. Such a short-lived
+allocation doesn't make too much sense. So replace it by a static
+buffer as kmem_cache_dup is called with memcg_cache_mutex.
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |   64 ++++++++++++++++++++++++++++---------------------------
+ 1 file changed, 33 insertions(+), 31 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 53b8201..3a75f2c 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3214,52 +3214,54 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
+ 	schedule_work(&cachep->memcg_params->destroy);
+ }
+ 
+-static char *memcg_cache_name(struct mem_cgroup *memcg, struct kmem_cache *s)
+-{
+-	char *name;
+-	struct dentry *dentry;
+-
+-	rcu_read_lock();
+-	dentry = rcu_dereference(memcg->css.cgroup->dentry);
+-	rcu_read_unlock();
+-
+-	BUG_ON(dentry == NULL);
+-
+-	name = kasprintf(GFP_KERNEL, "%s(%d:%s)", s->name,
+-			 memcg_cache_id(memcg), dentry->d_name.name);
+-
+-	return name;
+-}
++/*
++ * This lock protects updaters, not readers. We want readers to be as fast as
++ * they can, and they will either see NULL or a valid cache value. Our model
++ * allow them to see NULL, in which case the root memcg will be selected.
++ *
++ * We need this lock because multiple allocations to the same cache from a non
++ * will span more than one worker. Only one of them can create the cache.
++ */
++static DEFINE_MUTEX(memcg_cache_mutex);
+ 
++/*
++ * Called with memcg_cache_mutex held
++ */
+ static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+ 					 struct kmem_cache *s)
+ {
+-	char *name;
+ 	struct kmem_cache *new;
++	static char *tmp_name = NULL;
+ 
+-	name = memcg_cache_name(memcg, s);
+-	if (!name)
+-		return NULL;
++	lockdep_assert_held(&memcg_cache_mutex);
++
++	/*
++	 * kmem_cache_create_memcg duplicates the given name and
++	 * cgroup_name for this name requires RCU context.
++	 * This static temporary buffer is used to prevent from
++	 * pointless shortliving allocation.
++	 */
++	if (!tmp_name) {
++		tmp_name = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		WARN_ON_ONCE(!tmp_name);
++		if (!tmp_name)
++			return NULL;
++	}
++
++	rcu_read_lock();
++	snprintf(tmp_name, PAGE_SIZE, "%s(%d:%s)", s->name,
++			 memcg_cache_id(memcg), cgroup_name(memcg->css.cgroup));
++	rcu_read_unlock();
+ 
+-	new = kmem_cache_create_memcg(memcg, name, s->object_size, s->align,
++	new = kmem_cache_create_memcg(memcg, tmp_name, s->object_size, s->align,
+ 				      (s->flags & ~SLAB_PANIC), s->ctor, s);
+ 
+ 	if (new)
+ 		new->allocflags |= __GFP_KMEMCG;
+ 
+-	kfree(name);
+ 	return new;
+ }
+ 
+-/*
+- * This lock protects updaters, not readers. We want readers to be as fast as
+- * they can, and they will either see NULL or a valid cache value. Our model
+- * allow them to see NULL, in which case the root memcg will be selected.
+- *
+- * We need this lock because multiple allocations to the same cache from a non
+- * will span more than one worker. Only one of them can create the cache.
+- */
+-static DEFINE_MUTEX(memcg_cache_mutex);
+ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+ 						  struct kmem_cache *cachep)
+ {
+-- 
+1.7.10.4
 
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Michal Hocko
+SUSE Labs
