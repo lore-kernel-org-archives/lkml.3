@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab3CYBQK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:16:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33969 "EHLO
+	id S1756979Ab3CYB0R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:26:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34045 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756017Ab3CYBQA (ORCPT
+	by vger.kernel.org with ESMTP id S1755942Ab3CYBQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:00 -0400
-Message-Id: <20130325010532.004377196@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:09 -0400
+Message-Id: <20130325010529.555742958@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:42 +0000
+Date: Mon, 25 Mar 2013 01:06:17 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Matt Fleming <matt.fleming@intel.com>,
-        Frederic Crozat <fcrozat@suse.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@redhat.com>,
-        Michael Schroeder <mls@suse.com>, "Lee, Chun-Yi" <jlee@suse.com>,
-        Lingzhu Xiang <lxiang@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>
-Subject: [ 078/104] efivars: explicitly calculate length of VariableName
+Cc: akpm@linux-foundation.org, Theodore Tso <tytso@mit.edu>,
+        Lukas Czerner <lczerner@redhat.com>
+Subject: [ 053/104] ext4: use atomic64_t for the per-flexbg free_clusters count
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -32,105 +29,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit ec50bd32f1672d38ddce10fb1841cbfda89cfe9a upstream.
+commit 90ba983f6889e65a3b506b30dc606aa9d1d46cd2 upstream.
 
-It's not wise to assume VariableNameSize represents the length of
-VariableName, as not all firmware updates VariableNameSize in the same
-way (some don't update it at all if EFI_SUCCESS is returned). There
-are even implementations out there that update VariableNameSize with
-values that are both larger than the string returned in VariableName
-and smaller than the buffer passed to GetNextVariableName(), which
-resulted in the following bug report from Michael Schroeder,
+A user who was using a 8TB+ file system and with a very large flexbg
+size (> 65536) could cause the atomic_t used in the struct flex_groups
+to overflow.  This was detected by PaX security patchset:
 
-  > On HP z220 system (firmware version 1.54), some EFI variables are
-  > incorrectly named :
-  >
-  > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
-  > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-  > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-  > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-  > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
+http://forums.grsecurity.net/viewtopic.php?f=3&t=3289&p=12551#p12551
 
-The issue here is that because we blindly use VariableNameSize without
-verifying its value, we can potentially read garbage values from the
-buffer containing VariableName if VariableNameSize is larger than the
-length of VariableName.
+This bug was introduced in commit 9f24e4208f7e, so it's been around
+since 2.6.30.  :-(
 
-Since VariableName is a string, we can calculate its size by searching
-for the terminating NULL character.
+Fix this by using an atomic64_t for struct orlav_stats's
+free_clusters.
 
-Reported-by: Frederic Crozat <fcrozat@suse.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Michael Schroeder <mls@suse.com>
-Cc: Lee, Chun-Yi <jlee@suse.com>
-Cc: Lingzhu Xiang <lxiang@redhat.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/firmware/efivars.c |   32 +++++++++++++++++++++++++++++++-
- 1 file changed, 31 insertions(+), 1 deletion(-)
+ fs/ext4/ext4.h    |    6 +++---
+ fs/ext4/ialloc.c  |    4 ++--
+ fs/ext4/mballoc.c |   12 ++++++------
+ fs/ext4/resize.c  |    4 ++--
+ fs/ext4/super.c   |    4 ++--
+ 5 files changed, 15 insertions(+), 15 deletions(-)
 
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -1043,6 +1043,31 @@ static bool variable_is_present(efi_char
- 	return found;
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -309,9 +309,9 @@ struct ext4_group_desc
+  */
+ 
+ struct flex_groups {
+-	atomic_t free_inodes;
+-	atomic_t free_clusters;
+-	atomic_t used_dirs;
++	atomic64_t	free_clusters;
++	atomic_t	free_inodes;
++	atomic_t	used_dirs;
+ };
+ 
+ #define EXT4_BG_INODE_UNINIT	0x0001 /* Inode table/bitmap not in use */
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -294,8 +294,8 @@ error_return:
  }
  
-+/*
-+ * Returns the size of variable_name, in bytes, including the
-+ * terminating NULL character, or variable_name_size if no NULL
-+ * character is found among the first variable_name_size bytes.
-+ */
-+static unsigned long var_name_strnsize(efi_char16_t *variable_name,
-+				       unsigned long variable_name_size)
-+{
-+	unsigned long len;
-+	efi_char16_t c;
-+
-+	/*
-+	 * The variable name is, by definition, a NULL-terminated
-+	 * string, so make absolutely sure that variable_name_size is
-+	 * the value we expect it to be. If not, return the real size.
-+	 */
-+	for (len = 2; len <= variable_name_size; len += sizeof(c)) {
-+		c = variable_name[(len / sizeof(c)) - 1];
-+		if (!c)
-+			break;
-+	}
-+
-+	return min(len, variable_name_size);
-+}
-+
- static void efivar_update_sysfs_entries(struct work_struct *work)
- {
- 	struct efivars *efivars = &__efivars;
-@@ -1083,10 +1108,13 @@ static void efivar_update_sysfs_entries(
- 		if (!found) {
- 			kfree(variable_name);
- 			break;
--		} else
-+		} else {
-+			variable_name_size = var_name_strnsize(variable_name,
-+							       variable_name_size);
- 			efivar_create_sysfs_entry(efivars,
- 						  variable_name_size,
- 						  variable_name, &vendor);
-+		}
+ struct orlov_stats {
++	__u64 free_clusters;
+ 	__u32 free_inodes;
+-	__u32 free_clusters;
+ 	__u32 used_dirs;
+ };
+ 
+@@ -312,7 +312,7 @@ static void get_orlov_stats(struct super
+ 
+ 	if (flex_size > 1) {
+ 		stats->free_inodes = atomic_read(&flex_group[g].free_inodes);
+-		stats->free_clusters = atomic_read(&flex_group[g].free_clusters);
++		stats->free_clusters = atomic64_read(&flex_group[g].free_clusters);
+ 		stats->used_dirs = atomic_read(&flex_group[g].used_dirs);
+ 		return;
  	}
- }
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2866,8 +2866,8 @@ ext4_mb_mark_diskspace_used(struct ext4_
+ 	if (sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group = ext4_flex_group(sbi,
+ 							  ac->ac_b_ex.fe_group);
+-		atomic_sub(ac->ac_b_ex.fe_len,
+-			   &sbi->s_flex_groups[flex_group].free_clusters);
++		atomic64_sub(ac->ac_b_ex.fe_len,
++			     &sbi->s_flex_groups[flex_group].free_clusters);
+ 	}
  
-@@ -1317,6 +1345,8 @@ int register_efivars(struct efivars *efi
- 						&vendor_guid);
- 		switch (status) {
- 		case EFI_SUCCESS:
-+			variable_name_size = var_name_strnsize(variable_name,
-+							       variable_name_size);
- 			efivar_create_sysfs_entry(efivars,
- 						  variable_name_size,
- 						  variable_name,
+ 	err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
+@@ -4724,8 +4724,8 @@ do_more:
+ 
+ 	if (sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
+-		atomic_add(count_clusters,
+-			   &sbi->s_flex_groups[flex_group].free_clusters);
++		atomic64_add(count_clusters,
++			     &sbi->s_flex_groups[flex_group].free_clusters);
+ 	}
+ 
+ 	ext4_mb_unload_buddy(&e4b);
+@@ -4869,8 +4869,8 @@ int ext4_group_add_blocks(handle_t *hand
+ 
+ 	if (sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
+-		atomic_add(EXT4_NUM_B2C(sbi, blocks_freed),
+-			   &sbi->s_flex_groups[flex_group].free_clusters);
++		atomic64_add(EXT4_NUM_B2C(sbi, blocks_freed),
++			     &sbi->s_flex_groups[flex_group].free_clusters);
+ 	}
+ 
+ 	ext4_mb_unload_buddy(&e4b);
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -946,8 +946,8 @@ int ext4_group_add(struct super_block *s
+ 	    sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group;
+ 		flex_group = ext4_flex_group(sbi, input->group);
+-		atomic_add(EXT4_NUM_B2C(sbi, input->free_blocks_count),
+-			   &sbi->s_flex_groups[flex_group].free_clusters);
++		atomic64_add(EXT4_NUM_B2C(sbi, input->free_blocks_count),
++			     &sbi->s_flex_groups[flex_group].free_clusters);
+ 		atomic_add(EXT4_INODES_PER_GROUP(sb),
+ 			   &sbi->s_flex_groups[flex_group].free_inodes);
+ 	}
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2047,8 +2047,8 @@ static int ext4_fill_flex_info(struct su
+ 		flex_group = ext4_flex_group(sbi, i);
+ 		atomic_add(ext4_free_inodes_count(sb, gdp),
+ 			   &sbi->s_flex_groups[flex_group].free_inodes);
+-		atomic_add(ext4_free_group_clusters(sb, gdp),
+-			   &sbi->s_flex_groups[flex_group].free_clusters);
++		atomic64_add(ext4_free_group_clusters(sb, gdp),
++			     &sbi->s_flex_groups[flex_group].free_clusters);
+ 		atomic_add(ext4_used_dirs_count(sb, gdp),
+ 			   &sbi->s_flex_groups[flex_group].used_dirs);
+ 	}
 
 
