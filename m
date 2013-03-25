@@ -1,153 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758090Ab3CYJPn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 05:15:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53070 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758072Ab3CYJPl (ORCPT
+	id S1758107Ab3CYJSi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 05:18:38 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57304 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757809Ab3CYJSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 05:15:41 -0400
-Date: Mon, 25 Mar 2013 10:15:34 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Andrew Murray <andrew.murray@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 0/2] PCI: Introduce MSI chip infrastructure
-Message-ID: <20130325091534.GA21054@avionic-0098.mockup.avionic-design.de>
-References: <1363942307-9327-1-git-send-email-thierry.reding@avionic-design.de>
- <20130322093027.GA521@arm.com>
- <20130324120649.6fb8c05d@skate>
- <20130325075810.GA28935@avionic-0098.mockup.avionic-design.de>
- <20130325093847.7474dc0e@skate>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
-Content-Disposition: inline
-In-Reply-To: <20130325093847.7474dc0e@skate>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:NsT70C4C7lBgpOcDCDg+yN7lVTqVYeBSw57ZZO3BdJd
- 20n3ajfw1n0Y6nCIXxzBN/AWFdFTxykkEpE5xxUmK7HwRpOUDw
- k5nZgNfUv5PBHf7QlBSbziyHd8qUcLaf6lSs3arFKfc5akeTZK
- yIzximkuC8RO+H7Sjda/YapPC7cZ4BOONOI5Ag4UvgUVJaW44/
- kjURm47XWUMK0Fa37kokWrGgaOVU46pn7KDjuFsnVjKT5HYdH9
- ZlM2incRq9s6ZzehmfAtErglq13DnpNyx7QXdlA3kvHFboOMHr
- wkhnVd93VkTtjZh2vNPO37fb69U6ShKU2NUXCe2g2dx6pxPobr
- SOpA+v2XXfnRAI3aMmFO+RgVLemnfyI1kkYitRrVaKcK4lPO2C
- ymU/zS1tsf8qkBrgnzGaBaWuHmNaKFHX1o=
+	Mon, 25 Mar 2013 05:18:37 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-eb-51501667993b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, wcohen@redhat.com
+Subject: [PATCH v2] perf report: Add --no-demangle option
+Date: Mon, 25 Mar 2013 18:18:18 +0900
+Message-Id: <1364203098-17741-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1364202536-17576-1-git-send-email-namhyung@kernel.org>
+References: <1364202536-17576-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Namhyung Kim <namhyung.kim@lge.com>
 
---5vNYLRcllDrimb99
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It's sometimes useful to see undemangled raw symbol name for example
+other tools using the perf output to do manipulation of binaries.
 
-On Mon, Mar 25, 2013 at 09:38:47AM +0100, Thomas Petazzoni wrote:
-> Dear Thierry Reding,
->=20
-> Thanks for your feedback!
->=20
-> On Mon, 25 Mar 2013 08:58:10 +0100, Thierry Reding wrote:
->=20
-> > That sounds very much like one of the use-cases that were discussed. The
-> > easiest solution would probably be to add an API to look up an MSI chip
-> > from a DT phandle, so that the PCIe controller's device node could have
-> > it as a property, somewhat like this:
-> >=20
-> > 	msi: interrupt-controller {
-> > 	};
-> >=20
-> > 	pcie-controller {
-> > 		...
-> > 		marvell,msi =3D <&msi>;
-> > 		...
-> > 	};
->=20
-> I'm not sure how to handle this msi interrupt controller with the main
-> interrupt controller. For now, I have:
->=20
->         mpic: interrupt-controller@d0020000 {
->               reg =3D <0xd0020a00 0x2d0>,
->                     <0xd0021070 0x58>;
->         };
->=20
-> 	[...]
->=20
-> 	soc {
->                 interrupt-parent =3D <&mpic>;
-> 		[...]
-> 	};
->=20
-> And the MSI interrupt controller shares the same registers as the MPIC.
-> So should it be something like:
->=20
-> 	interrupt-controller {
-> 		reg =3D <0xd0020a00 0x2d0>,
->                     <0xd0021070 0x58>;
->=20
-> 		mpic {
-> 			/* Not sure what to have here */
-> 		};
->=20
-> 		msi {
->=20
-> 			/* Here either */
-> 		};
-> 	};
->=20
-> 	soc {
->                 interrupt-parent =3D <&mpic>;
->=20
-> 		pcie-controller {
-> 			marvell,msi =3D <&msi>;
-> 		};
-> 	};
->=20
-> Or some other idea?
+Suggested-by: William Cohen <wcohen@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+Forgot to update the doc. Resending..
 
-I think you can just make this:
+ tools/perf/Documentation/perf-report.txt | 4 ++++
+ tools/perf/builtin-report.c              | 2 ++
+ tools/perf/util/symbol-elf.c             | 9 ++++++---
+ tools/perf/util/symbol.c                 | 1 +
+ tools/perf/util/symbol.h                 | 3 ++-
+ 5 files changed, 15 insertions(+), 4 deletions(-)
 
-	mpic: interrupt-controller@d0020000 {
-		...
-	};
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 02284a0067f0..71f15510ca0b 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -206,6 +206,10 @@ OPTIONS
+ --group::
+ 	Show event group information together.
+ 
++--demangle::
++	Demangle symbol names to human readable form. It's enabled by default,
++	disable with --no-demangle.
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-annotate[1]
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 296bd219977a..b5ea26cc7eb1 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -692,6 +692,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "use branch records for histogram filling", parse_branch_mode),
+ 	OPT_STRING(0, "objdump", &objdump_path, "path",
+ 		   "objdump binary to use for disassembly and annotations"),
++	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
++		    "Disable symbol demangling"),
+ 	OPT_END()
+ 	};
+ 
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 54efcb5659ac..4b12bf850325 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -806,9 +806,12 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 		 * DWARF DW_compile_unit has this, but we don't always have access
+ 		 * to it...
+ 		 */
+-		demangled = bfd_demangle(NULL, elf_name, DMGL_PARAMS | DMGL_ANSI);
+-		if (demangled != NULL)
+-			elf_name = demangled;
++		if (symbol_conf.demangle) {
++			demangled = bfd_demangle(NULL, elf_name,
++						 DMGL_PARAMS | DMGL_ANSI);
++			if (demangled != NULL)
++				elf_name = demangled;
++		}
+ new_symbol:
+ 		f = symbol__new(sym.st_value, sym.st_size,
+ 				GELF_ST_BIND(sym.st_info), elf_name);
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index e6432d85b43d..8cf3b5426a9a 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -36,6 +36,7 @@ struct symbol_conf symbol_conf = {
+ 	.use_modules	  = true,
+ 	.try_vmlinux_path = true,
+ 	.annotate_src	  = true,
++	.demangle	  = true,
+ 	.symfs            = "",
+ };
+ 
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index b62ca37c4b77..d7654c23861a 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -97,7 +97,8 @@ struct symbol_conf {
+ 			kptr_restrict,
+ 			annotate_asm_raw,
+ 			annotate_src,
+-			event_group;
++			event_group,
++			demangle;
+ 	const char	*vmlinux_name,
+ 			*kallsyms_name,
+ 			*source_prefix,
+-- 
+1.7.11.7
 
-	...
-
-	soc {
-		pcie-controller {
-			marvell,msi =3D <&mpic>;
-		};
-	};
-
-And everything else should just work given the APIs I mentioned. But as
-you said it'd be good if somebody else could share their opinion about
-this.
-
-Thierry
-
---5vNYLRcllDrimb99
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRUBW2AAoJEN0jrNd/PrOhlUgP/1lyP8ei3IS0VzjybCcXZ1Wm
-UnJQ+u9wT45cuYiP+Cew6uXR2hVuAfY/1jEgW0TafBS/CN9z/40WmkHC4R9fbyL/
-UVWyhT+6iiOAC5xWKUXScpDmgjOF2umJcq08CO/P08r2VLRm4wsuYp7SJiV+ERZr
-hCLqcQ+s0t0nyxUPSTjFdOiuDeK5KMl4zBVNHO/Q5nU4DtjvkVzkb0hmKmqAQ+gj
-xUIFS+v1n9JePfr6zQpBu6305o8a2WELI1CZSDKfb3rNbL7xeL6XSxjQB77HrB0v
-ACKtOxf9HFHUeErDPn3MnNqa8Xr+yFNnvTiAUVhA6tsVd30GlnffceFtu3ywZm8s
-ssSmvfeBgIJBuWTrjbkO5KwBf73djahMq7NpQjmkKJFEQYXoesdN3Qiy+k2caJCb
-gHxHn3nk1xmRUlSz7NglWOAceYAUuc0uv0CeiXJLBO1HUYm6Jt8CS7t6k0ro818+
-ClwZ8tY4516MkCRTk2WRVW0/BsWFjxkH9fDH06AJI9XqmJvPBsHtwuAQiP67QhEp
-7Aqb+7NRsPh8UXNroiNc/Z43JJqRO2gXnGM35g/B3z3JuKKYNa3gZjEnww3vDNYn
-4KlRdNmS7jK7gYH43etc4m7fjfBWXfGoqbAvVnbCAw42TpOU7d9MUPZ4VQzOUKLg
-r2rNTUn6Ryi/iZV+jrg1
-=GSB1
------END PGP SIGNATURE-----
-
---5vNYLRcllDrimb99--
