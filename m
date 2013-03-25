@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756508Ab3CYBQs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:16:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34186 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756332Ab3CYBQo (ORCPT
+	id S1756555Ab3CYBRJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:17:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42633 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756521Ab3CYBRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:44 -0400
-Message-Id: <20130325010527.834062001@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:00 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, "Denis V. Lunev" <den@openvz.org>,
-        Tingwei Liu <tingw.liu@gmail.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 036/104] ipv4: fix definition of FIB_TABLE_HASHSZ
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130325010524.240972766@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:f137:78a:b654:affb
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 24 Mar 2013 21:17:05 -0400
+Date: Mon, 25 Mar 2013 01:16:54 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ian Lartey <ian@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-leds@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        swarren@wwwdotorg.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rob@landley.net, mturquette@linaro.org,
+        linus.walleij@linaro.org, cooloney@gmail.com, sfr@canb.auug.org.au,
+        rpurdie@rpsys.net, akpm@linux-foundation.org, sameo@linux.intel.com,
+        wim@iguana.be, lgirdwood@gmail.com, gg@slimlogic.co.uk,
+        j-keerthy@ti.com, ldewangan@nvidia.com, t-kristo@ti.com
+Subject: Re: [PATCH v9 11/11] regulator: palmas remove palmas-charger option
+ from DT bindings
+Message-ID: <20130325011653.GI18316@opensource.wolfsonmicro.com>
+References: <1363959373-10671-1-git-send-email-ian@slimlogic.co.uk>
+ <1363959373-10671-12-git-send-email-ian@slimlogic.co.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0XMZdl/q8hSSmFeD"
+Content-Disposition: inline
+In-Reply-To: <1363959373-10671-12-git-send-email-ian@slimlogic.co.uk>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--0XMZdl/q8hSSmFeD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: "Denis V. Lunev" <den@openvz.org>
+On Fri, Mar 22, 2013 at 01:36:13PM +0000, Ian Lartey wrote:
+> Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
 
-[ Upstream commit 5b9e12dbf92b441b37136ea71dac59f05f2673a9 ]
+Applied, thanks.
 
-a long time ago by the commit
+--0XMZdl/q8hSSmFeD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-  commit 93456b6d7753def8760b423ac6b986eb9d5a4a95
-  Author: Denis V. Lunev <den@openvz.org>
-  Date:   Thu Jan 10 03:23:38 2008 -0800
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-    [IPV4]: Unify access to the routing tables.
+iQIcBAEBAgAGBQJRT6VDAAoJELSic+t+oim95LkQAJlrVFlfarcOjVYOV08eI/gI
+rF3+84syglkIYWcxct+5P+7nZPAdk4ZC0KmiVzmFIGLbJMnaMXBfrXPLtaxkOQ81
+zSqlClTV8v9WiQDDlMpP3PL5Uxo3qxE8Zdl98KDXBRGOGVzCwM8DmOFJXktBjii1
+nsDgouWNGbVVYMZDycn+f0Z7f5Q0StxaZvBnWr2QeXYv+DV3eg1qfiANw3X/kgnA
+t6Y1drXh9l0RBqckm0Mjsj4YWcvWs4auVee4hH6Pwbweo7mZaY7UIlbwJOaQnk0k
+WbpmQkB265jnEhsnpjN9eehQ3lVCJ/GayAbYXar4ekbh/CRT2FPIaSx4v79t51Jk
+0XXaVvBVcnIKvMEQkLgLi5afOVoJCzJymG9TyC/5iUcDD3YjtawNp3ywM6lnplTs
+Jq879/DpN4glXPElYzJxItVopeTqdQhvaxtTDyjH9J6Fzg7mseFAMWvmCh8LA81Z
+S6Me6yfkXitI/xs0Faxev7qHYRmeTDT9Pux/rYFmC6JwWs9XVUjJPr8ZC+5kGRlc
+lnIuh2dWonnFKxgeY0mbxmySq/cBA/CPX6ZLlkE1NReA+YzQTR4ixQcUkSQfh5Vg
+gglcypRxEGi8qnvf91wnErF0R4Cbhr8n5VIvrhJZFONPzIAKF8D7MmDgBGSly4I8
+Ry+TX87TGVZf4+TTkrbM
+=uhet
+-----END PGP SIGNATURE-----
 
-the defenition of FIB_HASH_TABLE size has obtained wrong dependency:
-it should depend upon CONFIG_IP_MULTIPLE_TABLES (as was in the original
-code) but it was depended from CONFIG_IP_ROUTE_MULTIPATH
-
-This patch returns the situation to the original state.
-
-The problem was spotted by Tingwei Liu.
-
-Signed-off-by: Denis V. Lunev <den@openvz.org>
-CC: Tingwei Liu <tingw.liu@gmail.com>
-CC: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- include/net/ip_fib.h | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
-
-diff --git a/include/net/ip_fib.h b/include/net/ip_fib.h
-index 10422ef..2124004 100644
---- a/include/net/ip_fib.h
-+++ b/include/net/ip_fib.h
-@@ -129,18 +129,16 @@ struct fib_result_nl {
- };
- 
- #ifdef CONFIG_IP_ROUTE_MULTIPATH
--
- #define FIB_RES_NH(res)		((res).fi->fib_nh[(res).nh_sel])
--
--#define FIB_TABLE_HASHSZ 2
--
- #else /* CONFIG_IP_ROUTE_MULTIPATH */
--
- #define FIB_RES_NH(res)		((res).fi->fib_nh[0])
-+#endif /* CONFIG_IP_ROUTE_MULTIPATH */
- 
-+#ifdef CONFIG_IP_MULTIPLE_TABLES
- #define FIB_TABLE_HASHSZ 256
--
--#endif /* CONFIG_IP_ROUTE_MULTIPATH */
-+#else
-+#define FIB_TABLE_HASHSZ 2
-+#endif
- 
- extern __be32 fib_info_update_nh_saddr(struct net *net, struct fib_nh *nh);
- 
-
-
+--0XMZdl/q8hSSmFeD--
