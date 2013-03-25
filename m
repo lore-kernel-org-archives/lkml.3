@@ -1,168 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933658Ab3CYWku (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 18:40:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42741 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932570Ab3CYWkt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 18:40:49 -0400
-Date: Mon, 25 Mar 2013 15:40:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
-        devicetree-discuss@lists.ozlabs.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Richard Purdie <rpurdie@rpsys.net>, linux-fbdev@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: Re: [PATCH v3 3/3] backlight: as3711: add OF support
-Message-Id: <20130325154046.82d9337f25cec12b9fa03625@linux-foundation.org>
-In-Reply-To: <1363968949-12151-4-git-send-email-g.liakhovetski@gmx.de>
-References: <1363968949-12151-1-git-send-email-g.liakhovetski@gmx.de>
-	<1363968949-12151-4-git-send-email-g.liakhovetski@gmx.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933688Ab3CYWlz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 18:41:55 -0400
+Received: from mout.gmx.net ([212.227.17.20]:53999 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932570Ab3CYWly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 18:41:54 -0400
+X-Authenticated: #20192376
+X-Provags-ID: V01U2FsdGVkX1/Sg7A7T17SX01Njgulk1KvY2hrfkc6DJMAFz5+2i
+	4Mr1r38WIFXUo0
+From: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+Subject: [PATCH 1/1] irq: get_irq_disable_depth.
+Date: Mon, 25 Mar 2013 23:41:35 +0100
+Message-Id: <1364251295-26358-1-git-send-email-andreas.fenkart@streamunlimited.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Mar 2013 17:15:49 +0100 Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
+Used to verify invariant in omap_hsmmc, were a gpio is used to detect
+sdio irqs during suspend phase. The ref count from irq_enable/irq_disable
+is used to control when the irq should be effectively enabled.
 
-> Add support for configuring AS3711 backlight driver from DT.
-> 
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-> Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/video/backlight/as3711_bl.c |  118 ++++++++++++++++++++++++++++++++++-
->  1 files changed, 117 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/video/backlight/as3711_bl.c b/drivers/video/backlight/as3711_bl.c
-> index 41d52fe..123887c 100644
-> --- a/drivers/video/backlight/as3711_bl.c
-> +++ b/drivers/video/backlight/as3711_bl.c
-> @@ -258,6 +258,109 @@ static int as3711_bl_register(struct platform_device *pdev,
->  	return 0;
->  }
->  
-> +static int as3711_backlight_parse_dt(struct device *dev)
-> +{
-> +	struct as3711_bl_pdata *pdata = dev_get_platdata(dev);
-> +	struct device_node *bl =
-> +		of_find_node_by_name(dev->parent->of_node, "backlight"), *fb;
-> +	int ret;
+                 irq en     irq dis
+            ------------------------
+  pm suspend  |    0     |   1
+  pm default  |    1     |   2
 
-It's tidier to do
+              irq disable depth
 
-	struct device_node *bl;
-	
-	bl = of_find_node_by_name(dev->parent->of_node, "backlight"), *fb;
+When the sdio irq is enabled AND the module is in runtime suspend,
+the ref must be zero so the irq is effectively enabled.
 
-and avoid the 80-col trickery.
+This function helps to verify, that the disable depth has the
+right value at different driver states.
 
-> +	if (!bl) {
-> +		dev_dbg(dev, "backlight node not found\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	fb = of_parse_phandle(bl, "su1-dev", 0);
-> +	if (fb) {
-> +		pdata->su1_fb = fb->full_name;
-> +
-> +		ret = of_property_read_u32(bl, "su1-max-uA", &pdata->su1_max_uA);
-> +		if (pdata->su1_max_uA <= 0)
-> +			ret = -EINVAL;
-> +		if (ret < 0)
-> +			return ret;
-> +	}
-> +
-> +	fb = of_parse_phandle(bl, "su2-dev", 0);
-> +	if (fb) {
-> +		int count = 0;
-> +
-> +		pdata->su2_fb = fb->full_name;
-> +
-> +		ret = of_property_read_u32(bl, "su2-max-uA", &pdata->su2_max_uA);
-> +		if (pdata->su2_max_uA <= 0)
-> +			ret = -EINVAL;
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		if (of_find_property(bl, "su2-feedback-voltage", NULL)) {
-> +			pdata->su2_feedback = AS3711_SU2_VOLTAGE;
-> +			count++;
-> +		}
-> +		if (of_find_property(bl, "su2-feedback-curr1", NULL)) {
-> +			pdata->su2_feedback = AS3711_SU2_CURR1;
-> +			count++;
-> +		}
-> +		if (of_find_property(bl, "su2-feedback-curr2", NULL)) {
-> +			pdata->su2_feedback = AS3711_SU2_CURR2;
-> +			count++;
-> +		}
-> +		if (of_find_property(bl, "su2-feedback-curr3", NULL)) {
-> +			pdata->su2_feedback = AS3711_SU2_CURR3;
-> +			count++;
-> +		}
-> +		if (of_find_property(bl, "su2-feedback-curr-auto", NULL)) {
-> +			pdata->su2_feedback = AS3711_SU2_CURR_AUTO;
-> +			count++;
-> +		}
-> +		if (count != 1)
-> +			return -EINVAL;
+Signed-off-by: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+---
+ include/linux/interrupt.h |    1 +
+ kernel/irq/manage.c       |   17 +++++++++++++++++
+ 2 files changed, 18 insertions(+)
 
-This looks odd.  If the firmware provides both su2-feedback-voltage and
-su2-feedback-curr1, we fail?  Firmware developers are notoriously
-flakey - can the code be more defensive here?
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 5fa5afe..d02816b 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -219,6 +219,7 @@ extern void disable_irq(unsigned int irq);
+ extern void disable_percpu_irq(unsigned int irq);
+ extern void enable_irq(unsigned int irq);
+ extern void enable_percpu_irq(unsigned int irq, unsigned int type);
++extern int get_irq_disable_depth(unsigned int irq);
+ 
+ /* The following three functions are for the core kernel use only. */
+ #ifdef CONFIG_GENERIC_HARDIRQS
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index fa17855..d151868 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -417,6 +417,23 @@ void disable_irq(unsigned int irq)
+ }
+ EXPORT_SYMBOL(disable_irq);
+ 
++int get_irq_disable_depth(unsigned int irq)
++{
++	int depth;
++	unsigned long flags;
++	struct irq_desc *desc = irq_get_desc_buslock(irq, &flags,
++						     IRQ_GET_DESC_CHECK_GLOBAL);
++
++	if (!desc)
++		return -1;
++
++	depth = desc->depth;
++
++	irq_put_desc_busunlock(desc, flags);
++	return depth;
++}
++EXPORT_SYMBOL(get_irq_disable_depth);
++
+ void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume)
+ {
+ 	if (resume) {
+-- 
+1.7.10.4
 
-> +		count = 0;
-> +		if (of_find_property(bl, "su2-fbprot-lx-sd4", NULL)) {
-> +			pdata->su2_fbprot = AS3711_SU2_LX_SD4;
-> +			count++;
-> +		}
-> +		if (of_find_property(bl, "su2-fbprot-gpio2", NULL)) {
-> +			pdata->su2_fbprot = AS3711_SU2_GPIO2;
-> +			count++;
-> +		}
-> +		if (of_find_property(bl, "su2-fbprot-gpio3", NULL)) {
-> +			pdata->su2_fbprot = AS3711_SU2_GPIO3;
-> +			count++;
-> +		}
-> +		if (of_find_property(bl, "su2-fbprot-gpio4", NULL)) {
-> +			pdata->su2_fbprot = AS3711_SU2_GPIO4;
-> +			count++;
-> +		}
-> +		if (count != 1)
-> +			return -EINVAL;
-> +
-> +		count = 0;
-> +		if (of_find_property(bl, "su2-auto-curr1", NULL)) {
-> +			pdata->su2_auto_curr1 = true;
-> +			count++;
-> +		}
-> +		if (of_find_property(bl, "su2-auto-curr2", NULL)) {
-> +			pdata->su2_auto_curr2 = true;
-> +			count++;
-> +		}
-> +		if (of_find_property(bl, "su2-auto-curr3", NULL)) {
-> +			pdata->su2_auto_curr3 = true;
-> +			count++;
-> +		}
-> +
-> +		/*
-> +		 * At least one su2-auto-curr* must be specified iff
-> +		 * AS3711_SU2_CURR_AUTO is used
-> +		 */
-> +		if (!count ^ (pdata->su2_feedback != AS3711_SU2_CURR_AUTO))
-> +			return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->
-> ...
->
