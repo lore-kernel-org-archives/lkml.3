@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab3CYBO6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:14:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33755 "EHLO
+	id S1755561Ab3CYBPL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:15:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33785 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755017Ab3CYBO4 (ORCPT
+	by vger.kernel.org with ESMTP id S1755427Ab3CYBPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:14:56 -0400
-Message-Id: <20130325010524.703221727@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:03 -0400
+Message-Id: <20130325010526.138440968@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:05:28 +0000
+Date: Mon, 25 Mar 2013 01:05:42 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 004/104] perf,x86: fix link failure for non-Intel configs
+Cc: akpm@linux-foundation.org, Jiri Slaby <jslaby@suse.cz>,
+        Andrew Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 018/104] perf: Revert duplicated commit 
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,47 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 6c4d3bc99b3341067775efd4d9d13cc8e655fd7c upstream.
+This reverts commit 923415295307845e614589c1cce62abedd4d1731
+'perf: Fix parsing of __print_flags() in TP_printk()'.  The same
+change was already included in 3.2 as commit
+d06c27b22aa66e48e32f03f9387328a9af9b0625 but in 3.2.1 this change
+was wrongly applied to similar code in a different function.
 
-Commit 1d9d8639c063 ("perf,x86: fix kernel crash with PEBS/BTS after
-suspend/resume") introduces a link failure since
-perf_restore_debug_store() is only defined for CONFIG_CPU_SUP_INTEL:
+Thanks to Jiri for pointing this out in 3.0.y.
 
-	arch/x86/power/built-in.o: In function `restore_processor_state':
-	(.text+0x45c): undefined reference to `perf_restore_debug_store'
-
-Fix it by defining the dummy function appropriately.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Vagin <avagin@openvz.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/perf_event.h |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ tools/perf/util/trace-event-parse.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1146,7 +1146,6 @@ extern void perf_swevent_put_recursion_c
- extern void perf_event_enable(struct perf_event *event);
- extern void perf_event_disable(struct perf_event *event);
- extern void perf_event_task_tick(void);
--extern void perf_restore_debug_store(void);
- #else
- static inline void
- perf_event_task_sched_in(struct task_struct *prev,
-@@ -1185,6 +1184,11 @@ static inline void perf_swevent_put_recu
- static inline void perf_event_enable(struct perf_event *event)		{ }
- static inline void perf_event_disable(struct perf_event *event)		{ }
- static inline void perf_event_task_tick(void)				{ }
-+#endif
-+
-+#if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_CPU_SUP_INTEL)
-+extern void perf_restore_debug_store(void);
-+#else
- static inline void perf_restore_debug_store(void)			{ }
- #endif
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -1582,8 +1582,6 @@ process_symbols(struct event *event, str
+ 	field = malloc_or_die(sizeof(*field));
+ 
+ 	type = process_arg(event, field, &token);
+-	while (type == EVENT_OP)
+-		type = process_op(event, field, &token);
+ 	if (test_type_token(type, token, EVENT_DELIM, ","))
+ 		goto out_free;
  
 
 
