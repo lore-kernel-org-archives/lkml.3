@@ -1,97 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab3CYKmP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 06:42:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45559 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756295Ab3CYKmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 06:42:13 -0400
-Message-ID: <515029FC.3030405@ti.com>
-Date: Mon, 25 Mar 2013 12:42:04 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1757285Ab3CYKmW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 06:42:22 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:55930 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755109Ab3CYKmT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 06:42:19 -0400
 MIME-Version: 1.0
-To: <sameo@linux.intel.com>
-CC: Roger Quadros <rogerq@ti.com>, <balbi@ti.com>, <b-cousson@ti.com>,
-        <mark.rutland@arm.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 0/6] mfd: omap-usb-host: Device tree support for 3.10
-References: <1363083940-20050-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1363083940-20050-1-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5150268D.2060700@ti.com>
+References: <1363939388-22412-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1363939388-22412-2-git-send-email-prabhakar.csengg@gmail.com>
+ <514FEADE.7020603@ti.com> <CA+V-a8vkYHO8Hf=LceA=Z+Qx-XxXHOmN-4RV7+BBkzueuWhcLg@mail.gmail.com>
+ <5150268D.2060700@ti.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Mon, 25 Mar 2013 16:11:58 +0530
+Message-ID: <CA+V-a8u2CyV=VH6SBqK3=oTZoj2F1f+qQksD1ZyLP2V4pivOCg@mail.gmail.com>
+Subject: Re: [PATCH v7 1/2] ARM: davinci: dm365: add support for v4l2 video display
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+Hi Sekhar,
 
-I've rebased this now on top of 3.9-rc4. Please pull this into your
-next branch when appropriate. Thanks.
+On Mon, Mar 25, 2013 at 3:57 PM, Sekhar Nori <nsekhar@ti.com> wrote:
+> On 3/25/2013 3:52 PM, Prabhakar Lad wrote:
+>> Hi Sekhar,
+>>
+>> Thanks for the review!
+>>
+>> On Mon, Mar 25, 2013 at 11:42 AM, Sekhar Nori <nsekhar@ti.com> wrote:
+>>> Prabhakar,
+>>>
+>>> On 3/22/2013 1:33 PM, Prabhakar lad wrote:
+>>>> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>>>
+>>>> Create platform devices for various video modules like venc,osd,
+>>>> vpbe and v4l2 driver for dm365.
+>>>>
+>>>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>>> ---
+>>>>  arch/arm/mach-davinci/board-dm365-evm.c |    4 +-
+>>>>  arch/arm/mach-davinci/davinci.h         |    2 +-
+>>>>  arch/arm/mach-davinci/dm365.c           |  194 +++++++++++++++++++++++++++++--
+>>>>  3 files changed, 188 insertions(+), 12 deletions(-)
+>>>>
+>>>> diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
+>>>> index c2d4958..cf77c46 100644
+>>>> --- a/arch/arm/mach-davinci/board-dm365-evm.c
+>>>> +++ b/arch/arm/mach-davinci/board-dm365-evm.c
+>>>> @@ -564,8 +564,6 @@ static struct davinci_uart_config uart_config __initdata = {
+>>>>
+>>>>  static void __init dm365_evm_map_io(void)
+>>>>  {
+>>>> -     /* setup input configuration for VPFE input devices */
+>>>> -     dm365_set_vpfe_config(&vpfe_cfg);
+>>>>       dm365_init();
+>>>>  }
+>>>>
+>>>> @@ -597,6 +595,8 @@ static __init void dm365_evm_init(void)
+>>>>
+>>>>       davinci_setup_mmc(0, &dm365evm_mmc_config);
+>>>>
+>>>> +     dm365_init_video(&vpfe_cfg, NULL);
+>>>> +
+>>>>       /* maybe setup mmc1/etc ... _after_ mmc0 */
+>>>>       evm_init_cpld();
+>>>>
+>>>> diff --git a/arch/arm/mach-davinci/davinci.h b/arch/arm/mach-davinci/davinci.h
+>>>> index 12d544b..1c2670f 100644
+>>>> --- a/arch/arm/mach-davinci/davinci.h
+>>>> +++ b/arch/arm/mach-davinci/davinci.h
+>>>> @@ -84,7 +84,7 @@ void __init dm365_init_ks(struct davinci_ks_platform_data *pdata);
+>>>>  void __init dm365_init_rtc(void);
+>>>>  void dm365_init_spi0(unsigned chipselect_mask,
+>>>>                       const struct spi_board_info *info, unsigned len);
+>>>> -void dm365_set_vpfe_config(struct vpfe_config *cfg);
+>>>> +int __init dm365_init_video(struct vpfe_config *, struct vpbe_config *);
+>>>
+>>> No need of __init specifier in function declaration.
+>>>
+>> OK
+>>
+>>>>
+>>>>  /* DM644x function declarations */
+>>>>  void __init dm644x_init(void);
+>>>> diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
+>>>> index f4c19f7..0a2dba2 100644
+>>>> --- a/arch/arm/mach-davinci/dm365.c
+>>>> +++ b/arch/arm/mach-davinci/dm365.c
+>>>> @@ -40,10 +40,16 @@
+>>>>
+>>>>  #define DM365_REF_FREQ               24000000        /* 24 MHz on the DM365 EVM */
+>>>>
+>>>> +#define DM365_VDAC_CONFIG            0x01c4002c
+>>>
+>>> Please define this in davinci.h as an offset from
+>>> DAVINCI_SYSTEM_MODULE_BASE.
+>>>
+>> OK
+>>
+>>>> +
+>>>> +#define DM365_RTC_BASE                       0x01c69000
+>>>> +
+>>>>  /* Base of key scan register bank */
+>>>>  #define DM365_KEYSCAN_BASE           0x01c69400
+>>>>
+>>>> -#define DM365_RTC_BASE                       0x01c69000
+>>>> +#define DM365_OSD_BASE                       0x01c71c00
+>>>> +
+>>>> +#define DM365_VENC_BASE                      0x01c71e00
+>>>>
+>> Are you OK with this definitions or you want all of them in davinci.h ?
+>
+> No please leave these here. The reason I asked you to use davinci.h for
+> SYSMOD is because I don't want those definitions to be strewn all over
+> the place - especially when there is already a consolidated place for them.
+>
+OK, that clears my doubt!
 
-The following changes since commit 8bb9660418e05bb1845ac1a2428444d78e322cc7:
+Regards,
+--Prabhakar
 
-  Linux 3.9-rc4 (2013-03-23 16:52:44 -0700)
-
-are available in the git repository at:
-  git://github.com/rogerq/linux.git usbhost-mfd-next
-
-Roger Quadros (5):
-      mfd: omap-usb-host: update nports in platform_data
-      mfd: omap-usb-host: Remove PHY reset handling code
-      mfd: omap-usb-tll: move configuration code to omap_tll_init()
-      mfd: omap-usb-tll: Add device tree support and binding information
-      mfd: omap-usb-host: Add device tree support and binding information
-
- .../devicetree/bindings/mfd/omap-usb-host.txt      |   80 ++++++++
- .../devicetree/bindings/mfd/omap-usb-tll.txt       |   17 ++
- drivers/mfd/omap-usb-host.c                        |  200 ++++++++++++++-----
- drivers/mfd/omap-usb-tll.c                         |  214 ++++++++++----------
- drivers/mfd/omap-usb.h                             |    5 +-
- 5 files changed, 362 insertions(+), 154 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/omap-usb-host.txt
- create mode 100644 Documentation/devicetree/bindings/mfd/omap-usb-tll.txt
-
-cheers,
--roger
-
-On 03/12/2013 12:25 PM, Roger Quadros wrote:
-> Hi Samuel,
-> 
-> These patches implement device tree support for the OMAP High Speed
-> USB Host subsystem. The corresponding EHCI & SoC patches will be sent
-> separately and this set has no build dependencies with them.
-> 
-> Patch 3 is acutally a bug fix which should go into 3.9-rc. I've sent
-> it separately to you before.
-> 
-> The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
-> 
->   Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
-> 
-> are available in the git repository at:
->   git://github.com/rogerq/linux.git usbhost-mfd-next
-> 
-> Roger Quadros (6):
->       mfd: omap-usb-host: update nports in platform_data
->       mfd: omap-usb-host: Remove PHY reset handling code
->       mfd: omap-usb-host: Actually update hostconfig
->       mfd: omap-usb-tll: move configuration code to omap_tll_init()
->       mfd: omap-usb-tll: Add device tree support and binding information
->       mfd: omap-usb-host: Add device tree support and binding information
-> 
->  .../devicetree/bindings/mfd/omap-usb-host.txt      |   80 ++++++++
->  .../devicetree/bindings/mfd/omap-usb-tll.txt       |   17 ++
->  drivers/mfd/omap-usb-host.c                        |  206 ++++++++++++++-----
->  drivers/mfd/omap-usb-tll.c                         |  214 ++++++++++----------
->  drivers/mfd/omap-usb.h                             |    5 +-
->  5 files changed, 365 insertions(+), 157 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/mfd/omap-usb-host.txt
->  create mode 100644 Documentation/devicetree/bindings/mfd/omap-usb-tll.txt
-> 
-> --
-> cheers,
-> -roger
-> 
-
+> Thanks,
+> Sekhar
