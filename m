@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab3CYBQN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:16:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34020 "EHLO
+	id S1756931Ab3CYBYq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:24:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34058 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756066Ab3CYBQE (ORCPT
+	by vger.kernel.org with ESMTP id S1756179Ab3CYBQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:04 -0400
-Message-Id: <20130325010530.023505840@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:12 -0400
+Message-Id: <20130325010529.347444888@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:22 +0000
+Date: Mon, 25 Mar 2013 01:06:15 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: [ 058/104] tracing: Fix free of probe entry by calling call_rcu_sched()
+Cc: akpm@linux-foundation.org, Jan Kara <jack@suse.cz>,
+        Zheng Liu <gnehzuil.liu@gmail.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 051/104] jbd2: fix use after free in jbd2_journal_dirty_metadata()
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -30,40 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Jan Kara <jack@suse.cz>
 
-commit 740466bc89ad8bd5afcc8de220f715f62b21e365 upstream.
+commit ad56edad089b56300fd13bb9eeb7d0424d978239 upstream.
 
-Because function tracing is very invasive, and can even trace
-calls to rcu_read_lock(), RCU access in function tracing is done
-with preempt_disable_notrace(). This requires a synchronize_sched()
-for updates and not a synchronize_rcu().
+jbd2_journal_dirty_metadata() didn't get a reference to journal_head it
+was working with. This is OK in most of the cases since the journal head
+should be attached to a transaction but in rare occasions when we are
+journalling data, __ext4_journalled_writepage() can race with
+jbd2_journal_invalidatepage() stripping buffers from a page and thus
+journal head can be freed under hands of jbd2_journal_dirty_metadata().
 
-Function probes (traceon, traceoff, etc) must be freed after
-a synchronize_sched() after its entry has been removed from the
-hash. But call_rcu() is used. Fix this by using call_rcu_sched().
+Fix the problem by getting own journal head reference in
+jbd2_journal_dirty_metadata() (and also in jbd2_journal_set_triggers()
+which can possibly have the same issue).
 
-Also fix the usage to use hlist_del_rcu() instead of hlist_del().
-
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Zheng Liu <gnehzuil.liu@gmail.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/trace/ftrace.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/jbd2/transaction.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2725,8 +2725,8 @@ __unregister_ftrace_function_probe(char
- 					continue;
- 			}
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -1016,9 +1016,12 @@ out:
+ void jbd2_journal_set_triggers(struct buffer_head *bh,
+ 			       struct jbd2_buffer_trigger_type *type)
+ {
+-	struct journal_head *jh = bh2jh(bh);
++	struct journal_head *jh = jbd2_journal_grab_journal_head(bh);
  
--			hlist_del(&entry->node);
--			call_rcu(&entry->rcu, ftrace_free_entry_rcu);
-+			hlist_del_rcu(&entry->node);
-+			call_rcu_sched(&entry->rcu, ftrace_free_entry_rcu);
- 		}
++	if (WARN_ON(!jh))
++		return;
+ 	jh->b_triggers = type;
++	jbd2_journal_put_journal_head(jh);
+ }
+ 
+ void jbd2_buffer_frozen_trigger(struct journal_head *jh, void *mapped_data,
+@@ -1070,17 +1073,18 @@ int jbd2_journal_dirty_metadata(handle_t
+ {
+ 	transaction_t *transaction = handle->h_transaction;
+ 	journal_t *journal = transaction->t_journal;
+-	struct journal_head *jh = bh2jh(bh);
++	struct journal_head *jh;
+ 	int ret = 0;
+ 
+-	jbd_debug(5, "journal_head %p\n", jh);
+-	JBUFFER_TRACE(jh, "entry");
+ 	if (is_handle_aborted(handle))
+ 		goto out;
+-	if (!buffer_jbd(bh)) {
++	jh = jbd2_journal_grab_journal_head(bh);
++	if (!jh) {
+ 		ret = -EUCLEAN;
+ 		goto out;
  	}
- 	__disable_ftrace_function_probe();
++	jbd_debug(5, "journal_head %p\n", jh);
++	JBUFFER_TRACE(jh, "entry");
+ 
+ 	jbd_lock_bh_state(bh);
+ 
+@@ -1171,6 +1175,7 @@ int jbd2_journal_dirty_metadata(handle_t
+ 	spin_unlock(&journal->j_list_lock);
+ out_unlock_bh:
+ 	jbd_unlock_bh_state(bh);
++	jbd2_journal_put_journal_head(jh);
+ out:
+ 	JBUFFER_TRACE(jh, "exit");
+ 	WARN_ON(ret);	/* All errors are bugs, so dump the stack */
 
 
