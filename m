@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab3CYBQA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:16:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33963 "EHLO
+	id S1757204Ab3CYB20 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:28:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34011 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755942Ab3CYBP6 (ORCPT
+	by vger.kernel.org with ESMTP id S1756059Ab3CYBQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:58 -0400
-Message-Id: <20130325010531.575788656@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:03 -0400
+Message-Id: <20130325010530.311406944@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:38 +0000
+Date: Mon, 25 Mar 2013 01:06:25 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Seth Forshee <seth.forshee@canonical.com>,
-        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Tony Luck <tony.luck@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [ 074/104] efivars: Allow disabling use as a pstore backend
+Cc: akpm@linux-foundation.org,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Subject: [ 061/104] tracing: Prevent buffer overwrite disabled for latency tracers
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -31,142 +29,255 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit ed9dc8ce7a1c8115dba9483a9b51df8b63a2e0ef upstream.
+commit 613f04a0f51e6e68ac6fe571ab79da3c0a5eb4da upstream.
 
-Add a new option, CONFIG_EFI_VARS_PSTORE, which can be set to N to
-avoid using efivars as a backend to pstore, as some users may want to
-compile out the code completely.
+The latency tracers require the buffers to be in overwrite mode,
+otherwise they get screwed up. Force the buffers to stay in overwrite
+mode when latency tracers are enabled.
 
-Set the default to Y to maintain backwards compatability, since this
-feature has always been enabled until now.
+Added a flag_changed() method to the tracer structure to allow
+the tracers to see what flags are being changed, and also be able
+to prevent the change from happing.
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Drop some changes that are not needed because trace_set_options() is not
+   separate from tracing_trace_options_write()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/firmware/Kconfig
-+++ b/drivers/firmware/Kconfig
-@@ -53,6 +53,15 @@ config EFI_VARS
- 	  Subsequent efibootmgr releases may be found at:
- 	  <http://linux.dell.com/efibootmgr>
- 
-+config EFI_VARS_PSTORE
-+	bool "Register efivars backend for pstore"
-+	depends on EFI_VARS && PSTORE
-+	default y
-+	help
-+	  Say Y here to enable use efivars as a backend to pstore. This
-+	  will allow writing console messages, crash dumps, or anything
-+	  else supported by pstore to EFI variables.
-+
- config EFI_PCDP
- 	bool "Console device selection via EFI PCDP or HCDP table"
- 	depends on ACPI && EFI && IA64
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -659,8 +659,6 @@ static struct kobj_type efivar_ktype = {
- 	.default_attrs = def_attrs,
- };
- 
--static struct pstore_info efi_pstore_info;
--
- static inline void
- efivar_unregister(struct efivar_entry *var)
- {
-@@ -697,7 +695,7 @@ static int efi_status_to_err(efi_status_
- 	return err;
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2636,11 +2636,25 @@ static int set_tracer_option(struct trac
+ 	return -EINVAL;
  }
  
--#ifdef CONFIG_PSTORE
-+#ifdef CONFIG_EFI_VARS_PSTORE
- 
- static int efi_pstore_open(struct pstore_info *psi)
+-static void set_tracer_flags(unsigned int mask, int enabled)
++/* Some tracers require overwrite to stay enabled */
++int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set)
++{
++	if (tracer->enabled && (mask & TRACE_ITER_OVERWRITE) && !set)
++		return -1;
++
++	return 0;
++}
++
++int set_tracer_flag(unsigned int mask, int enabled)
  {
-@@ -847,36 +845,6 @@ static int efi_pstore_erase(enum pstore_
+ 	/* do nothing if flag is already set */
+ 	if (!!(trace_flags & mask) == !!enabled)
+-		return;
++		return 0;
++
++	/* Give the tracer a chance to approve the change */
++	if (current_trace->flag_changed)
++		if (current_trace->flag_changed(current_trace, mask, !!enabled))
++			return -EINVAL;
  
- 	return 0;
+ 	if (enabled)
+ 		trace_flags |= mask;
+@@ -2656,6 +2670,8 @@ static void set_tracer_flags(unsigned in
+ 		ring_buffer_change_overwrite(max_tr.buffer, enabled);
+ #endif
+ 	}
++
++	return 0;
  }
--#else
--static int efi_pstore_open(struct pstore_info *psi)
--{
--	return 0;
--}
--
--static int efi_pstore_close(struct pstore_info *psi)
--{
--	return 0;
--}
--
--static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
--			       struct timespec *timespec,
--			       char **buf, struct pstore_info *psi)
--{
--	return -1;
--}
--
--static int efi_pstore_write(enum pstore_type_id type, u64 *id,
--		unsigned int part, size_t size, struct pstore_info *psi)
--{
--	return 0;
--}
--
--static int efi_pstore_erase(enum pstore_type_id type, u64 id,
--			    struct pstore_info *psi)
--{
--	return 0;
--}
--#endif
  
- static struct pstore_info efi_pstore_info = {
- 	.owner		= THIS_MODULE,
-@@ -888,6 +856,24 @@ static struct pstore_info efi_pstore_inf
- 	.erase		= efi_pstore_erase,
+ static ssize_t
+@@ -2686,7 +2702,7 @@ tracing_trace_options_write(struct file
+ 
+ 	for (i = 0; trace_options[i]; i++) {
+ 		if (strcmp(cmp, trace_options[i]) == 0) {
+-			set_tracer_flags(1 << i, !neg);
++			ret = set_tracer_flag(1 << i, !neg);
+ 			break;
+ 		}
+ 	}
+@@ -3022,6 +3038,9 @@ static int tracing_set_tracer(const char
+ 		goto out;
+ 
+ 	trace_branch_disable();
++
++	current_trace->enabled = false;
++
+ 	if (current_trace && current_trace->reset)
+ 		current_trace->reset(tr);
+ 	if (current_trace && current_trace->use_max_tr) {
+@@ -3051,6 +3070,7 @@ static int tracing_set_tracer(const char
+ 			goto out;
+ 	}
+ 
++	current_trace->enabled = true;
+ 	trace_branch_enable(tr);
+  out:
+ 	mutex_unlock(&trace_types_lock);
+@@ -4387,9 +4407,12 @@ trace_options_core_write(struct file *fi
+ 		return -EINVAL;
+ 
+ 	mutex_lock(&trace_types_lock);
+-	set_tracer_flags(1 << index, val);
++	ret = set_tracer_flag(1 << index, val);
+ 	mutex_unlock(&trace_types_lock);
+ 
++	if (ret < 0)
++		return ret;
++
+ 	*ppos += cnt;
+ 
+ 	return cnt;
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -271,10 +271,14 @@ struct tracer {
+ 	enum print_line_t	(*print_line)(struct trace_iterator *iter);
+ 	/* If you handled the flag setting, return 0 */
+ 	int			(*set_flag)(u32 old_flags, u32 bit, int set);
++	/* Return 0 if OK with change, else return non-zero */
++	int			(*flag_changed)(struct tracer *tracer,
++						u32 mask, int set);
+ 	struct tracer		*next;
+ 	struct tracer_flags	*flags;
+ 	int			print_max;
+ 	int			use_max_tr;
++	bool			enabled;
  };
  
-+static void efivar_pstore_register(struct efivars *efivars)
-+{
-+	efivars->efi_pstore_info = efi_pstore_info;
-+	efivars->efi_pstore_info.buf = kmalloc(4096, GFP_KERNEL);
-+	if (efivars->efi_pstore_info.buf) {
-+		efivars->efi_pstore_info.bufsize = 1024;
-+		efivars->efi_pstore_info.data = efivars;
-+		spin_lock_init(&efivars->efi_pstore_info.buf_lock);
-+		pstore_register(&efivars->efi_pstore_info);
-+	}
-+}
-+#else
-+static void efivar_pstore_register(struct efivars *efivars)
-+{
-+	return;
-+}
-+#endif
+ 
+@@ -815,6 +819,9 @@ extern struct list_head ftrace_events;
+ extern const char *__start___trace_bprintk_fmt[];
+ extern const char *__stop___trace_bprintk_fmt[];
+ 
++int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set);
++int set_tracer_flag(unsigned int mask, int enabled);
 +
- static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 			     struct bin_attribute *bin_attr,
- 			     char *buf, loff_t pos, size_t count)
-@@ -1271,15 +1257,7 @@ int register_efivars(struct efivars *efi
- 	if (error)
- 		unregister_efivars(efivars);
+ #undef FTRACE_ENTRY
+ #define FTRACE_ENTRY(call, struct_name, id, tstruct, print)		\
+ 	extern struct ftrace_event_call					\
+--- a/kernel/trace/trace_irqsoff.c
++++ b/kernel/trace/trace_irqsoff.c
+@@ -32,7 +32,7 @@ enum {
  
--	efivars->efi_pstore_info = efi_pstore_info;
--
--	efivars->efi_pstore_info.buf = kmalloc(4096, GFP_KERNEL);
--	if (efivars->efi_pstore_info.buf) {
--		efivars->efi_pstore_info.bufsize = 1024;
--		efivars->efi_pstore_info.data = efivars;
--		spin_lock_init(&efivars->efi_pstore_info.buf_lock);
--		pstore_register(&efivars->efi_pstore_info);
--	}
-+	efivar_pstore_register(efivars);
+ static int trace_type __read_mostly;
  
- out:
- 	kfree(variable_name);
+-static int save_lat_flag;
++static int save_flags;
+ 
+ static void stop_irqsoff_tracer(struct trace_array *tr, int graph);
+ static int start_irqsoff_tracer(struct trace_array *tr, int graph);
+@@ -546,8 +546,11 @@ static void stop_irqsoff_tracer(struct t
+ 
+ static void __irqsoff_tracer_init(struct trace_array *tr)
+ {
+-	save_lat_flag = trace_flags & TRACE_ITER_LATENCY_FMT;
+-	trace_flags |= TRACE_ITER_LATENCY_FMT;
++	save_flags = trace_flags;
++
++	/* non overwrite screws up the latency tracers */
++	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
++	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
+ 
+ 	tracing_max_latency = 0;
+ 	irqsoff_trace = tr;
+@@ -561,10 +564,13 @@ static void __irqsoff_tracer_init(struct
+ 
+ static void irqsoff_tracer_reset(struct trace_array *tr)
+ {
++	int lat_flag = save_flags & TRACE_ITER_LATENCY_FMT;
++	int overwrite_flag = save_flags & TRACE_ITER_OVERWRITE;
++
+ 	stop_irqsoff_tracer(tr, is_graph());
+ 
+-	if (!save_lat_flag)
+-		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
++	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
++	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
+ }
+ 
+ static void irqsoff_tracer_start(struct trace_array *tr)
+@@ -597,6 +603,7 @@ static struct tracer irqsoff_tracer __re
+ 	.print_line     = irqsoff_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= irqsoff_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_irqsoff,
+ #endif
+@@ -630,6 +637,7 @@ static struct tracer preemptoff_tracer _
+ 	.print_line     = irqsoff_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= irqsoff_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_preemptoff,
+ #endif
+@@ -665,6 +673,7 @@ static struct tracer preemptirqsoff_trac
+ 	.print_line     = irqsoff_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= irqsoff_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_preemptirqsoff,
+ #endif
+--- a/kernel/trace/trace_sched_wakeup.c
++++ b/kernel/trace/trace_sched_wakeup.c
+@@ -36,7 +36,7 @@ static void __wakeup_reset(struct trace_
+ static int wakeup_graph_entry(struct ftrace_graph_ent *trace);
+ static void wakeup_graph_return(struct ftrace_graph_ret *trace);
+ 
+-static int save_lat_flag;
++static int save_flags;
+ 
+ #define TRACE_DISPLAY_GRAPH     1
+ 
+@@ -528,8 +528,11 @@ static void stop_wakeup_tracer(struct tr
+ 
+ static int __wakeup_tracer_init(struct trace_array *tr)
+ {
+-	save_lat_flag = trace_flags & TRACE_ITER_LATENCY_FMT;
+-	trace_flags |= TRACE_ITER_LATENCY_FMT;
++	save_flags = trace_flags;
++
++	/* non overwrite screws up the latency tracers */
++	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
++	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
+ 
+ 	tracing_max_latency = 0;
+ 	wakeup_trace = tr;
+@@ -551,12 +554,15 @@ static int wakeup_rt_tracer_init(struct
+ 
+ static void wakeup_tracer_reset(struct trace_array *tr)
+ {
++	int lat_flag = save_flags & TRACE_ITER_LATENCY_FMT;
++	int overwrite_flag = save_flags & TRACE_ITER_OVERWRITE;
++
+ 	stop_wakeup_tracer(tr);
+ 	/* make sure we put back any tasks we are tracing */
+ 	wakeup_reset(tr);
+ 
+-	if (!save_lat_flag)
+-		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
++	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
++	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
+ }
+ 
+ static void wakeup_tracer_start(struct trace_array *tr)
+@@ -582,6 +588,7 @@ static struct tracer wakeup_tracer __rea
+ 	.print_line	= wakeup_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= wakeup_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_wakeup,
+ #endif
+@@ -603,6 +610,7 @@ static struct tracer wakeup_rt_tracer __
+ 	.print_line	= wakeup_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= wakeup_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_wakeup,
+ #endif
 
 
