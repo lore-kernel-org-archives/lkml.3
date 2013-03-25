@@ -1,120 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab3CYJSi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 05:18:38 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57304 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757809Ab3CYJSh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 05:18:37 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-eb-51501667993b
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, wcohen@redhat.com
-Subject: [PATCH v2] perf report: Add --no-demangle option
-Date: Mon, 25 Mar 2013 18:18:18 +0900
-Message-Id: <1364203098-17741-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1364202536-17576-1-git-send-email-namhyung@kernel.org>
-References: <1364202536-17576-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	id S1757850Ab3CYJWy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 05:22:54 -0400
+Received: from mout.gmx.net ([212.227.17.22]:61520 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755851Ab3CYJWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 05:22:53 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+da74KZxSdY/xBYePRn1/NiUL/OMeciAPGEgCTis
+	pj2x4hkM0d6dW+
+Message-ID: <1364203359.4559.66.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH] sched: wake-affine throttle
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung@kernel.org>, Alex Shi <alex.shi@intel.com>,
+        Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Date: Mon, 25 Mar 2013 10:22:39 +0100
+In-Reply-To: <514FDF76.2060806@linux.vnet.ibm.com>
+References: <514FDF76.2060806@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Mon, 2013-03-25 at 13:24 +0800, Michael Wang wrote: 
+> Recently testing show that wake-affine stuff cause regression on pgbench, the
+> hiding rat was finally catched out.
+> 
+> wake-affine stuff is always trying to pull wakee close to waker, by theory,
+> this will benefit us if waker's cpu cached hot data for wakee, or the extreme
+> ping-pong case.
+> 
+> However, the whole stuff is somewhat blindly, there is no examining on the
+> relationship between waker and wakee, and since the stuff itself
+> is time-consuming, some workload suffered, pgbench is just the one who
+> has been found.
+> 
+> Thus, throttle the wake-affine stuff for such workload is necessary.
+> 
+> This patch introduced a new knob 'sysctl_sched_wake_affine_interval' with the
+> default value 1ms, which means wake-affine stuff only effect once per 1ms, which
+> usually the minimum balance interval (the idea is that the rapid of wake-affine
+> should lower than the rapid of load-balance at least).
+> 
+> By turning the new knob, those workload who suffered will have the chance to
+> stop the regression.
 
-It's sometimes useful to see undemangled raw symbol name for example
-other tools using the perf output to do manipulation of binaries.
+I wouldn't do it quite this way.  Per task, yes (I suggested that too,
+better agree;), but for one, using jiffies in the scheduler when we have
+a spiffy clock sitting there ready to use seems wrong, and secondly,
+when you've got a bursty load, not pulling can hurt like hell.  Alex
+encountered that while working on his patch set.
 
-Suggested-by: William Cohen <wcohen@redhat.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
-Forgot to update the doc. Resending..
+> Test:
+> 	Test with 12 cpu X86 server and tip 3.9.0-rc2.
+> 
+> 	Default 1ms interval bring limited performance improvement(<5%) for
+> 	pgbench, significant improvement start to show when turning the
+> 	knob to 100ms.
 
- tools/perf/Documentation/perf-report.txt | 4 ++++
- tools/perf/builtin-report.c              | 2 ++
- tools/perf/util/symbol-elf.c             | 9 ++++++---
- tools/perf/util/symbol.c                 | 1 +
- tools/perf/util/symbol.h                 | 3 ++-
- 5 files changed, 15 insertions(+), 4 deletions(-)
+So it seems you'd be better served by an on/off switch for this load.
+100ms in the future for many tasks is akin to a human todo list entry
+scheduled for Solar radius >= Earth orbital radius day ;-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 02284a0067f0..71f15510ca0b 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -206,6 +206,10 @@ OPTIONS
- --group::
- 	Show event group information together.
- 
-+--demangle::
-+	Demangle symbol names to human readable form. It's enabled by default,
-+	disable with --no-demangle.
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-annotate[1]
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 296bd219977a..b5ea26cc7eb1 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -692,6 +692,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "use branch records for histogram filling", parse_branch_mode),
- 	OPT_STRING(0, "objdump", &objdump_path, "path",
- 		   "objdump binary to use for disassembly and annotations"),
-+	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
-+		    "Disable symbol demangling"),
- 	OPT_END()
- 	};
- 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 54efcb5659ac..4b12bf850325 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -806,9 +806,12 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 		 * DWARF DW_compile_unit has this, but we don't always have access
- 		 * to it...
- 		 */
--		demangled = bfd_demangle(NULL, elf_name, DMGL_PARAMS | DMGL_ANSI);
--		if (demangled != NULL)
--			elf_name = demangled;
-+		if (symbol_conf.demangle) {
-+			demangled = bfd_demangle(NULL, elf_name,
-+						 DMGL_PARAMS | DMGL_ANSI);
-+			if (demangled != NULL)
-+				elf_name = demangled;
-+		}
- new_symbol:
- 		f = symbol__new(sym.st_value, sym.st_size,
- 				GELF_ST_BIND(sym.st_info), elf_name);
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index e6432d85b43d..8cf3b5426a9a 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -36,6 +36,7 @@ struct symbol_conf symbol_conf = {
- 	.use_modules	  = true,
- 	.try_vmlinux_path = true,
- 	.annotate_src	  = true,
-+	.demangle	  = true,
- 	.symfs            = "",
- };
- 
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index b62ca37c4b77..d7654c23861a 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -97,7 +97,8 @@ struct symbol_conf {
- 			kptr_restrict,
- 			annotate_asm_raw,
- 			annotate_src,
--			event_group;
-+			event_group,
-+			demangle;
- 	const char	*vmlinux_name,
- 			*kallsyms_name,
- 			*source_prefix,
--- 
-1.7.11.7
+> 			    original	100ms	
+> 
+> 	| db_size | clients |  tps  |	|  tps  |
+> 	+---------+---------+-------+   +-------+
+> 	| 21 MB   |       1 | 10572 |   | 10675 |
+> 	| 21 MB   |       2 | 21275 |   | 21228 |
+> 	| 21 MB   |       4 | 41866 |   | 41946 |
+> 	| 21 MB   |       8 | 53931 |   | 55176 |
+> 	| 21 MB   |      12 | 50956 |   | 54457 |	+6.87%
+> 	| 21 MB   |      16 | 49911 |   | 55468 |	+11.11%
+> 	| 21 MB   |      24 | 46046 |   | 56446 |	+22.59%
+> 	| 21 MB   |      32 | 43405 |   | 55177 |	+27.12%
+> 	| 7483 MB |       1 |  7734 |   |  7721 |
+> 	| 7483 MB |       2 | 19375 |   | 19277 |
+> 	| 7483 MB |       4 | 37408 |   | 37685 |
+> 	| 7483 MB |       8 | 49033 |   | 49152 |
+> 	| 7483 MB |      12 | 45525 |   | 49241 |	+8.16%
+> 	| 7483 MB |      16 | 45731 |   | 51425 |	+12.45%
+> 	| 7483 MB |      24 | 41533 |   | 52349 |	+26.04%
+> 	| 7483 MB |      32 | 36370 |   | 51022 |	+40.28%
+> 	| 15 GB   |       1 |  7576 |   |  7422 |
+> 	| 15 GB   |       2 | 19157 |   | 19176 |
+> 	| 15 GB   |       4 | 37285 |   | 36982 |
+> 	| 15 GB   |       8 | 48718 |   | 48413 |
+> 	| 15 GB   |      12 | 45167 |   | 48497 |	+7.37%
+> 	| 15 GB   |      16 | 45270 |   | 51276 |	+13.27%
+> 	| 15 GB   |      24 | 40984 |   | 51628 |	+25.97%
+> 	| 15 GB   |      32 | 35918 |   | 51060 |	+42.16%
+
+The benefit you get with not pulling is two fold at least, first and
+foremost it keeps the forked off clients the hell away from the mother
+of all work so it can keep the kids fed.  Second, you keep the load
+spread out, which is the only way the full box sized load can possibly
+perform in the first place.  The full box benefit seems clear from the
+numbers.. hard working server can compete best for its share when it's
+competing against the same set of clients, that's likely why you have to
+set the knob to 100ms to get the big win.
+
+With small burst loads of short running tasks, even things like pgbench
+will benefit from pulling to local llc more frequently than 100ms, iff
+burst does not exceed socket size.  That pulling is not completely evil,
+it automagically consolidates your mostly idle NUMA box to it's most
+efficient task placement for both power saving and throughput, so IMHO,
+you can't just let tasks sit cross node over ~extended idle periods
+without doing harm.
+
+OTOH, if the box is mostly busy, or if there's only one llc, per task
+pick a smallish number is dirt simple, and should be a general case
+improvement over the overly 1:1 buddy centric current behavior.
+
+Have you tried the patch set by Alex Shi?   In my fiddling with them,
+they put a very big dent in the evil side of select_idle_sibling() and
+affine wakeups in general, and should help pgbench and ilk heaping
+truckloads.
+
+-Mike
 
