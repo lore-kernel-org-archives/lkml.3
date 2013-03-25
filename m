@@ -1,178 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026Ab3CYPQu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 11:16:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47308 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757423Ab3CYPQt (ORCPT
+	id S1758141Ab3CYPUW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 11:20:22 -0400
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:65505 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757830Ab3CYPUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 11:16:49 -0400
-Message-ID: <51505C59.1040607@infradead.org>
-Date: Mon, 25 Mar 2013 07:16:57 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Mon, 25 Mar 2013 11:20:21 -0400
 MIME-Version: 1.0
-To: Prabhakar lad <prabhakar.csengg@gmail.com>
-CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Sekhar Nori <nsekhar@ti.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: davinci: use is IS_ENABLED macro
-References: <1364210495-7938-1-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1364210495-7938-1-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51505923.2070504@surriel.com>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+	<CA+i8gKKK_VxZtyyp1tqHnztd4++XyNXwbEEr-A29-J23PyuCfQ@mail.gmail.com>
+	<CA+55aFzqBEX=cGGZJJsfNWcDwQcUOP7njEog-kZZLRxuDg8Tzg@mail.gmail.com>
+	<CA+i8gK+h+FyPiOL85BPa-Pu8+bDw6LW60-oRoLHgP2AnzMADCA@mail.gmail.com>
+	<CA+55aFxjGFi+gt3UwdVCVKP5riHSR=_qLkp0SovgW2zx+gcRow@mail.gmail.com>
+	<CA+i8gKJuykoCk=O3qbDmmZXd=8U13wF7o_NzUviccaZoU6WLaA@mail.gmail.com>
+	<CA+55aFwb9v9cUG4Ton3faO6xAD18JxxoTPcObXDV_5Zf3QQ=Kw@mail.gmail.com>
+	<CA+i8gK+DNOk5tvRsVJFKyk0A2qOD_az7yJ5+3Y2xS=Ear1VkVA@mail.gmail.com>
+	<51505881.5060409@surriel.com>
+	<51505923.2070504@surriel.com>
+Date: Mon, 25 Mar 2013 22:20:19 +0700
+Message-ID: <CA+i8gKKOPkVRBjqQb8=9T_eyw_oF5jedKMqG1U=Kwa3OHsMW_g@mail.gmail.com>
+Subject: Re: ipc,sem: sysv semaphore scalability
+From: Emmanuel Benisty <benisty.e@gmail.com>
+To: Rik van Riel <riel@surriel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, hhuang@redhat.com,
+        "Low, Jason" <jason.low2@hp.com>,
+        Michel Lespinasse <walken@google.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/13 04:21, Prabhakar lad wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> 
-> This patches replaces #if defined() by IS_ENABLED macro, which provides
-> better readability.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> ---
->  Note: This patch is compile tested only for davinci_all_defconfig
->        and da8xx_omapl_defconfig.
+On Mon, Mar 25, 2013 at 9:03 PM, Rik van Riel <riel@surriel.com> wrote:
+>>> With the first four patches only, I got some X server freeze (just
+>>> tried once).
+>>
+>>
+>> Could you try booting with panic=1 so the kernel panics on the first
+>> oops?
+>
+>
+> Sorry that should be "oops=panic"
+>
+>
+>> Maybe that way (if we are lucky) we will be able to capture the first
+>> oops, and maybe get an idea of what causes the problem.
 
-Source files that use IS_ENABLED() etc. should also
-#include <linux/kconfig.h>
-
-Is that already done in all of these source files?
-
-
->  arch/arm/mach-davinci/board-da830-evm.c   |    2 +-
->  arch/arm/mach-davinci/board-da850-evm.c   |    3 +--
->  arch/arm/mach-davinci/board-dm644x-evm.c  |    9 +++------
->  arch/arm/mach-davinci/board-dm646x-evm.c  |    3 +--
->  arch/arm/mach-davinci/board-neuros-osd2.c |    6 ++----
->  arch/arm/mach-davinci/devices.c           |    2 +-
->  arch/arm/mach-davinci/usb.c               |    2 +-
->  7 files changed, 10 insertions(+), 17 deletions(-)
-> 
-> diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
-> index 6da25ee..68ade71 100644
-> --- a/arch/arm/mach-davinci/board-da830-evm.c
-> +++ b/arch/arm/mach-davinci/board-da830-evm.c
-> @@ -298,7 +298,7 @@ static const short da830_evm_emif25_pins[] = {
->  	-1
->  };
->  
-> -#if defined(CONFIG_MMC_DAVINCI) || defined(CONFIG_MMC_DAVINCI_MODULE)
-> +#if IS_ENABLED(CONFIG_MMC_DAVINCI)
->  #define HAS_MMC	1
->  #else
->  #define HAS_MMC	0
-> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-> index c2dfe06..3475769 100644
-> --- a/arch/arm/mach-davinci/board-da850-evm.c
-> +++ b/arch/arm/mach-davinci/board-da850-evm.c
-> @@ -335,8 +335,7 @@ static const short da850_evm_nor_pins[] = {
->  	-1
->  };
->  
-> -#if defined(CONFIG_MMC_DAVINCI) || \
-> -    defined(CONFIG_MMC_DAVINCI_MODULE)
-> +#if IS_ENABLED(CONFIG_MMC_DAVINCI)
->  #define HAS_MMC 1
->  #else
->  #define HAS_MMC 0
-> diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
-> index 71735e7..d0f6365 100644
-> --- a/arch/arm/mach-davinci/board-dm644x-evm.c
-> +++ b/arch/arm/mach-davinci/board-dm644x-evm.c
-> @@ -750,22 +750,19 @@ static int davinci_phy_fixup(struct phy_device *phydev)
->  	return 0;
->  }
->  
-> -#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
-> -    defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
-> +#if IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
->  #define HAS_ATA 1
->  #else
->  #define HAS_ATA 0
->  #endif
->  
-> -#if defined(CONFIG_MTD_PHYSMAP) || \
-> -    defined(CONFIG_MTD_PHYSMAP_MODULE)
-> +#if IS_ENABLED(CONFIG_MTD_PHYSMAP)
->  #define HAS_NOR 1
->  #else
->  #define HAS_NOR 0
->  #endif
->  
-> -#if defined(CONFIG_MTD_NAND_DAVINCI) || \
-> -    defined(CONFIG_MTD_NAND_DAVINCI_MODULE)
-> +#if IS_ENABLED(CONFIG_MTD_NAND_DAVINCI)
->  #define HAS_NAND 1
->  #else
->  #define HAS_NAND 0
-> diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
-> index de7adff..c84fdd5 100644
-> --- a/arch/arm/mach-davinci/board-dm646x-evm.c
-> +++ b/arch/arm/mach-davinci/board-dm646x-evm.c
-> @@ -117,8 +117,7 @@ static struct platform_device davinci_nand_device = {
->  	},
->  };
->  
-> -#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
-> -    defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
-> +#if IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
->  #define HAS_ATA 1
->  #else
->  #define HAS_ATA 0
-> diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
-> index 1c98107..8bd0a43 100644
-> --- a/arch/arm/mach-davinci/board-neuros-osd2.c
-> +++ b/arch/arm/mach-davinci/board-neuros-osd2.c
-> @@ -168,15 +168,13 @@ static struct davinci_mmc_config davinci_ntosd2_mmc_config = {
->  };
->  
->  
-> -#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
-> -	defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
-> +#if IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
->  #define HAS_ATA 1
->  #else
->  #define HAS_ATA 0
->  #endif
->  
-> -#if defined(CONFIG_MTD_NAND_DAVINCI) || \
-> -	defined(CONFIG_MTD_NAND_DAVINCI_MODULE)
-> +#if IS_ENABLED(CONFIG_MTD_NAND_DAVINCI)
->  #define HAS_NAND 1
->  #else
->  #define HAS_NAND 0
-> diff --git a/arch/arm/mach-davinci/devices.c b/arch/arm/mach-davinci/devices.c
-> index 4c48a36..df135de 100644
-> --- a/arch/arm/mach-davinci/devices.c
-> +++ b/arch/arm/mach-davinci/devices.c
-> @@ -119,7 +119,7 @@ void __init davinci_init_ide(void)
->  	platform_device_register(&ide_device);
->  }
->  
-> -#if	defined(CONFIG_MMC_DAVINCI) || defined(CONFIG_MMC_DAVINCI_MODULE)
-> +#if IS_ENABLED(CONFIG_MMC_DAVINCI)
->  
->  static u64 mmcsd0_dma_mask = DMA_BIT_MASK(32);
->  
-> diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
-> index 34509ff..5764d65 100644
-> --- a/arch/arm/mach-davinci/usb.c
-> +++ b/arch/arm/mach-davinci/usb.c
-> @@ -17,7 +17,7 @@
->  #define DA8XX_USB0_BASE 	0x01e00000
->  #define DA8XX_USB1_BASE 	0x01e25000
->  
-> -#if defined(CONFIG_USB_MUSB_HDRC) || defined(CONFIG_USB_MUSB_HDRC_MODULE)
-> +#if IS_ENABLED(CONFIG_USB_MUSB_HDRC)
->  static struct musb_hdrc_eps_bits musb_eps[] = {
->  	{ "ep1_tx", 8, },
->  	{ "ep1_rx", 8, },
-> 
-
-
--- 
-~Randy
+Sorry Rik, I get all kind of weird behaviors (wireless dies, compiling
+gets stuck and is impossible to kill, can't kill X) with the 4
+patches+oops=panic but no trace. Here after is 7+1 patches with
+oops=panic boot: http://i.imgur.com/1jep1qx.jpg
