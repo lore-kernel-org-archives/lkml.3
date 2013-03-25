@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933280Ab3CYVcl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 17:32:41 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:62995 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932801Ab3CYVck (ORCPT
+	id S1758967Ab3CYVeE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 17:34:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42466 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758665Ab3CYVeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 17:32:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130325164600.GA11734@gmail.com>
-References: <1364223758-17621-1-git-send-email-lee.jones@linaro.org>
-	<1364223758-17621-2-git-send-email-lee.jones@linaro.org>
-	<201303251540.51104.arnd@arndb.de>
-	<20130325164600.GA11734@gmail.com>
-Date: Mon, 25 Mar 2013 22:32:40 +0100
-Message-ID: <CACRpkdbn4WARSp7_MUpCZTghTrsPYvsa9GEUC31T7nP_=9oZag@mail.gmail.com>
-Subject: Re: [PATCH 2/3] mfd: db8500-prcmu: Fetch the PRCMU TCDM base address
- from Device Tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>, devicetree-discuss@lists.ozlabs.org
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 25 Mar 2013 17:34:01 -0400
+Date: Mon, 25 Mar 2013 14:34:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, Russ Anderson <rja@sgi.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
+Message-Id: <20130325143400.d226b1f7b64a209b86dd4151@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1303241727420.23613@chino.kir.corp.google.com>
+References: <20130318155619.GA18828@sgi.com>
+	<20130321105516.GC18484@gmail.com>
+	<alpine.DEB.2.02.1303211139110.3775@chino.kir.corp.google.com>
+	<20130322072532.GC10608@gmail.com>
+	<20130323152948.GA3036@sgi.com>
+	<CAHGf_=qgsga4Juj8uNnfbmOZYtYhcQbqngbFDWg9=B-1nc1HSw@mail.gmail.com>
+	<alpine.DEB.2.02.1303241727420.23613@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 5:46 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Sun, 24 Mar 2013 17:28:12 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
 
->> >         res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
->> >                                            "prcmu-tcpm");
->> >         if (!res) {
->> > -               dev_err(&pdev->dev,
->> > -                       "Error: no prcmu tcpm memory region provided\n");
->> > -               return;
->> > -       }
->> > -       tcpm_base = ioremap(res->start, resource_size(res));
->> > +               if (np) {
->> > +                       tcpm_np = of_find_node_by_name(np->parent,
->> > +                                                      "prcmu-tcpm-per4");
->> > +                       if (!tcpm_np) {
->> > +                               dev_err(&pdev->dev,
->> > +                                       "no prcmu tcpm mem region provided\n");
->> > +                               return;
->> > +                       }
->> > +                       tcpm_base = of_iomap(tcpm_np, 0);
->> > +               }
->> > +       } else
->> > +               tcpm_base = ioremap(res->start, resource_size(res));
->> > +
->>
->> Why don't you just add these extra registers to the prcmu node itself like
->>
->> diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
->> index 9de9309..6ee6c31 100644
->> --- a/arch/arm/boot/dts/dbx5x0.dtsi
->> +++ b/arch/arm/boot/dts/dbx5x0.dtsi
->> @@ -191,8 +191,8 @@
->>
->>               prcmu: prcmu@80157000 {
->>                       compatible = "stericsson,db8500-prcmu";
->> -                     reg = <0x80157000 0x1000>;
->> -                     reg-names = "prcmu";
->> +                     reg = <0x80157000 0x1000>, <0x801b0000 0x1000>, <0x801b8000 0x1000>;
->> +                     reg-names = "prcmu", "prcmu-tcpm", "prcmu-tcdm-per4";
->>                       interrupts = <0 47 0x4>;
->>                       #address-cells = <1>;
->>                       #size-cells = <1>;
->>
->>
->> and document those in the prcmu binding?
->>
->> That would keep the code simpler and the same for both cases.
->
-> I'm not sure you can. These addresses differ from platform to
-> platform, so I'd need to provide the base PRCMU address in
-> dbx5x0.dtsi, then the other two in the dts files. Can you do that?
+> On Sat, 23 Mar 2013, KOSAKI Motohiro wrote:
+> 
+> > > --- linux.orig/mm/page_alloc.c  2013-03-19 16:09:03.736450861 -0500
+> > > +++ linux/mm/page_alloc.c       2013-03-22 17:07:43.895405617 -0500
+> > > @@ -4161,10 +4161,23 @@ int __meminit __early_pfn_to_nid(unsigne
+> > >  {
+> > >         unsigned long start_pfn, end_pfn;
+> > >         int i, nid;
+> > > +       /*
+> > > +          NOTE: The following SMP-unsafe globals are only used early
+> > > +          in boot when the kernel is running single-threaded.
+> > > +        */
+> > > +       static unsigned long last_start_pfn, last_end_pfn;
+> > > +       static int last_nid;
+> > 
+> > Why don't you mark them __meminitdata? They seems freeable.
+> > 
+> 
+> Um, defining them in a __meminit function places them in .meminit.data 
+> already.
 
-Better ask on devicetree-discuss.
-
-What it reflects are differences between SoC:s, so I think the
-right solution is to split it in a three-layer cake:
-
-dbx5x0.dtsi -> included by
-db8500.dtsi -> included by
-snowball/hrefv60plus.dts
-
-dbx5x0.dtsi -> included by
-dbx540.dtsi -> included by
-ccu9540/ccu8540.dts
-
-Here you may insert the reg property into the node at the
-db8500.dtsi or dbx540.dtsi layer.
-
-If you prefer I can cook a patch...
-
-Yours,
-Linus Walleij
+I wish it did, but it doesn't.
