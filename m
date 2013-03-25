@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab3CYBP6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:15:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33938 "EHLO
+	id S1755777Ab3CYB3c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:29:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33959 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755876Ab3CYBPx (ORCPT
+	by vger.kernel.org with ESMTP id S1755980Ab3CYBP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:53 -0400
-Message-Id: <20130325010531.903433747@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:57 -0400
+Message-Id: <20130325010532.100901964@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:41 +0000
+Date: Mon, 25 Mar 2013 01:06:43 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Matt Fleming <matt.fleming@intel.com>, Tony Luck <tony.luck@intel.com>
-Subject: [ 077/104] efi_pstore: Introducing workqueue updating sysfs
+Cc: akpm@linux-foundation.org, Matt Fleming <matt.fleming@intel.com>,
+        Andre Heider <a.heider@gmail.com>, Lingzhu Xiang <lxiang@redhat.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>
+Subject: [ 079/104] efivars: Handle duplicate names from get_next_variable()
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,180 +30,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seiji Aguchi <seiji.aguchi@hds.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit a93bc0c6e07ed9bac44700280e65e2945d864fd4 upstream.
+commit e971318bbed610e28bb3fde9d548e6aaf0a6b02e upstream.
 
-[Problem]
-efi_pstore creates sysfs entries, which enable users to access to NVRAM,
-in a write callback. If a kernel panic happens in an interrupt context,
-it may fail because it could sleep due to dynamic memory allocations during
-creating sysfs entries.
+Some firmware exhibits a bug where the same VariableName and
+VendorGuid values are returned on multiple invocations of
+GetNextVariableName(). See,
 
-[Patch Description]
-This patch removes sysfs operations from a write callback by introducing
-a workqueue updating sysfs entries which is scheduled after the write
-callback is called.
+    https://bugzilla.kernel.org/show_bug.cgi?id=47631
 
-Also, the workqueue is kicked in a just oops case.
-A system will go down in other cases such as panic, clean shutdown and emergency
-restart. And we don't need to create sysfs entries because there is no chance for
-users to access to them.
+As a consequence of such a bug, Andre reports hitting the following
+WARN_ON() in the sysfs code after updating the BIOS on his, "Gigabyte
+Technology Co., Ltd. To be filled by O.E.M./Z77X-UD3H, BIOS F19e
+11/21/2012)" machine,
 
-efi_pstore will be robust against a kernel panic in an interrupt context with this patch.
+[    0.581554] EFI Variables Facility v0.08 2004-May-17
+[    0.584914] ------------[ cut here ]------------
+[    0.585639] WARNING: at /home/andre/linux/fs/sysfs/dir.c:536 sysfs_add_one+0xd4/0x100()
+[    0.586381] Hardware name: To be filled by O.E.M.
+[    0.587123] sysfs: cannot create duplicate filename '/firmware/efi/vars/SbAslBufferPtrVar-01f33c25-764d-43ea-aeea-6b5a41f3f3e8'
+[    0.588694] Modules linked in:
+[    0.589484] Pid: 1, comm: swapper/0 Not tainted 3.8.0+ #7
+[    0.590280] Call Trace:
+[    0.591066]  [<ffffffff81208954>] ? sysfs_add_one+0xd4/0x100
+[    0.591861]  [<ffffffff810587bf>] warn_slowpath_common+0x7f/0xc0
+[    0.592650]  [<ffffffff810588bc>] warn_slowpath_fmt+0x4c/0x50
+[    0.593429]  [<ffffffff8134dd85>] ? strlcat+0x65/0x80
+[    0.594203]  [<ffffffff81208954>] sysfs_add_one+0xd4/0x100
+[    0.594979]  [<ffffffff81208b78>] create_dir+0x78/0xd0
+[    0.595753]  [<ffffffff81208ec6>] sysfs_create_dir+0x86/0xe0
+[    0.596532]  [<ffffffff81347e4c>] kobject_add_internal+0x9c/0x220
+[    0.597310]  [<ffffffff81348307>] kobject_init_and_add+0x67/0x90
+[    0.598083]  [<ffffffff81584a71>] ? efivar_create_sysfs_entry+0x61/0x1c0
+[    0.598859]  [<ffffffff81584b2b>] efivar_create_sysfs_entry+0x11b/0x1c0
+[    0.599631]  [<ffffffff8158517e>] register_efivars+0xde/0x420
+[    0.600395]  [<ffffffff81d430a7>] ? edd_init+0x2f5/0x2f5
+[    0.601150]  [<ffffffff81d4315f>] efivars_init+0xb8/0x104
+[    0.601903]  [<ffffffff8100215a>] do_one_initcall+0x12a/0x180
+[    0.602659]  [<ffffffff81d05d80>] kernel_init_freeable+0x13e/0x1c6
+[    0.603418]  [<ffffffff81d05586>] ? loglevel+0x31/0x31
+[    0.604183]  [<ffffffff816a6530>] ? rest_init+0x80/0x80
+[    0.604936]  [<ffffffff816a653e>] kernel_init+0xe/0xf0
+[    0.605681]  [<ffffffff816ce7ec>] ret_from_fork+0x7c/0xb0
+[    0.606414]  [<ffffffff816a6530>] ? rest_init+0x80/0x80
+[    0.607143] ---[ end trace 1609741ab737eb29 ]---
 
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-Acked-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-[bwh: Backported to 3.2:
- - Adjust contest
- - Don't check reason in efi_pstore_write(), as it is not given as a
-   parameter
- - Move up declaration of __efivars]
+There's not much we can do to work around and keep traversing the
+variable list once we hit this firmware bug. Our only solution is to
+terminate the loop because, as Lingzhu reports, some machines get
+stuck when they encounter duplicate names,
+
+  > I had an IBM System x3100 M4 and x3850 X5 on which kernel would
+  > get stuck in infinite loop creating duplicate sysfs files because,
+  > for some reason, there are several duplicate boot entries in nvram
+  > getting GetNextVariableName into a circle of iteration (with
+  > period > 2).
+
+Also disable the workqueue, as efivar_update_sysfs_entries() uses
+GetNextVariableName() to figure out which variables have been created
+since the last iteration. That algorithm isn't going to work if
+GetNextVariableName() returns duplicates. Note that we don't disable
+EFI variable creation completely on the affected machines, it's just
+that any pstore dump-* files won't appear in sysfs until the next
+boot.
+
+Reported-by: Andre Heider <a.heider@gmail.com>
+Reported-by: Lingzhu Xiang <lxiang@redhat.com>
+Tested-by: Lingzhu Xiang <lxiang@redhat.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+[bwh: Backported to 3.2: reason is not checked in efi_pstore_write()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
 --- a/drivers/firmware/efivars.c
 +++ b/drivers/firmware/efivars.c
-@@ -127,6 +127,8 @@ struct efivar_attribute {
- 	ssize_t (*store)(struct efivar_entry *entry, const char *buf, size_t count);
- };
+@@ -159,6 +159,7 @@ efivar_create_sysfs_entry(struct efivars
  
-+static struct efivars __efivars;
-+
- #define PSTORE_EFI_ATTRIBUTES \
- 	(EFI_VARIABLE_NON_VOLATILE | \
- 	 EFI_VARIABLE_BOOTSERVICE_ACCESS | \
-@@ -151,6 +153,13 @@ efivar_create_sysfs_entry(struct efivars
- 			  efi_char16_t *variable_name,
- 			  efi_guid_t *vendor_guid);
+ static void efivar_update_sysfs_entries(struct work_struct *);
+ static DECLARE_WORK(efivar_work, efivar_update_sysfs_entries);
++static bool efivar_wq_enabled = true;
  
-+/*
-+ * Prototype for workqueue functions updating sysfs entry
-+ */
-+
-+static void efivar_update_sysfs_entries(struct work_struct *);
-+static DECLARE_WORK(efivar_work, efivar_update_sysfs_entries);
-+
  /* Return the number of unicode characters in data */
  static unsigned long
- utf16_strnlen(efi_char16_t *s, size_t maxlength)
-@@ -833,11 +842,7 @@ static int efi_pstore_write(enum pstore_
+@@ -842,7 +843,8 @@ static int efi_pstore_write(enum pstore_
  	if (found)
  		efivar_unregister(found);
  
--	if (size)
--		ret = efivar_create_sysfs_entry(efivars,
--					  utf16_strsize(efi_name,
--							DUMP_NAME_LEN * 2),
--					  efi_name, &vendor);
-+	schedule_work(&efivar_work);
+-	schedule_work(&efivar_work);
++	if (efivar_wq_enabled)
++		schedule_work(&efivar_work);
  
  	*id = part;
  	return ret;
-@@ -1016,6 +1021,75 @@ static ssize_t efivar_delete(struct file
- 	return count;
+@@ -1305,6 +1307,35 @@ void unregister_efivars(struct efivars *
  }
+ EXPORT_SYMBOL_GPL(unregister_efivars);
  
-+static bool variable_is_present(efi_char16_t *variable_name, efi_guid_t *vendor)
++/*
++ * Print a warning when duplicate EFI variables are encountered and
++ * disable the sysfs workqueue since the firmware is buggy.
++ */
++static void dup_variable_bug(efi_char16_t *s16, efi_guid_t *vendor_guid,
++			     unsigned long len16)
 +{
-+	struct efivar_entry *entry, *n;
-+	struct efivars *efivars = &__efivars;
-+	unsigned long strsize1, strsize2;
-+	bool found = false;
++	size_t i, len8 = len16 / sizeof(efi_char16_t);
++	char *s8;
 +
-+	strsize1 = utf16_strsize(variable_name, 1024);
-+	list_for_each_entry_safe(entry, n, &efivars->list, list) {
-+		strsize2 = utf16_strsize(entry->var.VariableName, 1024);
-+		if (strsize1 == strsize2 &&
-+			!memcmp(variable_name, &(entry->var.VariableName),
-+				strsize2) &&
-+			!efi_guidcmp(entry->var.VendorGuid,
-+				*vendor)) {
-+			found = true;
-+			break;
-+		}
-+	}
-+	return found;
++	/*
++	 * Disable the workqueue since the algorithm it uses for
++	 * detecting new variables won't work with this buggy
++	 * implementation of GetNextVariableName().
++	 */
++	efivar_wq_enabled = false;
++
++	s8 = kzalloc(len8, GFP_KERNEL);
++	if (!s8)
++		return;
++
++	for (i = 0; i < len8; i++)
++		s8[i] = s16[i];
++
++	printk(KERN_WARNING "efivars: duplicate variable: %s-%pUl\n",
++	       s8, vendor_guid);
++	kfree(s8);
 +}
 +
-+static void efivar_update_sysfs_entries(struct work_struct *work)
-+{
-+	struct efivars *efivars = &__efivars;
-+	efi_guid_t vendor;
-+	efi_char16_t *variable_name;
-+	unsigned long variable_name_size = 1024;
-+	efi_status_t status = EFI_NOT_FOUND;
-+	bool found;
+ int register_efivars(struct efivars *efivars,
+ 		     const struct efivar_operations *ops,
+ 		     struct kobject *parent_kobj)
+@@ -1347,6 +1378,22 @@ int register_efivars(struct efivars *efi
+ 		case EFI_SUCCESS:
+ 			variable_name_size = var_name_strnsize(variable_name,
+ 							       variable_name_size);
 +
-+	/* Add new sysfs entries */
-+	while (1) {
-+		variable_name = kzalloc(variable_name_size, GFP_KERNEL);
-+		if (!variable_name) {
-+			pr_err("efivars: Memory allocation failed.\n");
-+			return;
-+		}
-+
-+		spin_lock_irq(&efivars->lock);
-+		found = false;
-+		while (1) {
-+			variable_name_size = 1024;
-+			status = efivars->ops->get_next_variable(
-+							&variable_name_size,
-+							variable_name,
-+							&vendor);
-+			if (status != EFI_SUCCESS) {
++			/*
++			 * Some firmware implementations return the
++			 * same variable name on multiple calls to
++			 * get_next_variable(). Terminate the loop
++			 * immediately as there is no guarantee that
++			 * we'll ever see a different variable name,
++			 * and may end up looping here forever.
++			 */
++			if (variable_is_present(variable_name, &vendor_guid)) {
++				dup_variable_bug(variable_name, &vendor_guid,
++						 variable_name_size);
++				status = EFI_NOT_FOUND;
 +				break;
-+			} else {
-+				if (!variable_is_present(variable_name,
-+				    &vendor)) {
-+					found = true;
-+					break;
-+				}
 +			}
-+		}
-+		spin_unlock_irq(&efivars->lock);
 +
-+		if (!found) {
-+			kfree(variable_name);
-+			break;
-+		} else
-+			efivar_create_sysfs_entry(efivars,
-+						  variable_name_size,
-+						  variable_name, &vendor);
-+	}
-+}
-+
- /*
-  * Let's not leave out systab information that snuck into
-  * the efivars driver
-@@ -1272,7 +1346,6 @@ out:
- }
- EXPORT_SYMBOL_GPL(register_efivars);
- 
--static struct efivars __efivars;
- static struct efivar_operations ops;
- 
- /*
-@@ -1330,6 +1403,8 @@ err_put:
- static void __exit
- efivars_exit(void)
- {
-+	cancel_work_sync(&efivar_work);
-+
- 	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
- 		unregister_efivars(&__efivars);
- 		kobject_put(efi_kobj);
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -484,7 +484,8 @@ struct efivars {
- 	 * 1) ->list - adds, removals, reads, writes
- 	 * 2) ops.[gs]et_variable() calls.
- 	 * It must not be held when creating sysfs entries or calling kmalloc.
--	 * ops.get_next_variable() is only called from register_efivars(),
-+	 * ops.get_next_variable() is only called from register_efivars()
-+	 * or efivar_update_sysfs_entries(),
- 	 * which is protected by the BKL, so that path is safe.
- 	 */
- 	spinlock_t lock;
+ 			efivar_create_sysfs_entry(efivars,
+ 						  variable_name_size,
+ 						  variable_name,
 
 
