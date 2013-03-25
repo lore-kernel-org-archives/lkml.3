@@ -1,460 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab3CYFcV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 01:32:21 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48365 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757431Ab3CYFcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 01:32:19 -0400
-Message-ID: <514FE152.4070300@ti.com>
-Date: Mon, 25 Mar 2013 11:02:02 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1757033Ab3CYFhy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 01:37:54 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:40518 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233Ab3CYFhx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 01:37:53 -0400
+Date: Mon, 25 Mar 2013 01:37:50 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-mm <linux-mm@kvack.org>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>
+Message-ID: <364499626.5604667.1364189870552.JavaMail.root@redhat.com>
+In-Reply-To: <alpine.DEB.2.02.1303220231280.12597@chino.kir.corp.google.com>
+Subject: Re: BUG at kmem_cache_alloc
 MIME-Version: 1.0
-To: Prabhakar lad <prabhakar.csengg@gmail.com>
-CC: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: [PATCH 1/2] media: davinci: vpss: enable vpss clocks
-References: <1363938793-22246-1-git-send-email-prabhakar.csengg@gmail.com> <1363938793-22246-2-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1363938793-22246-2-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.13.149]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/22/2013 1:23 PM, Prabhakar lad wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+
+
+----- Original Message -----
+> From: "David Rientjes" <rientjes@google.com>
+> To: "CAI Qian" <caiqian@redhat.com>
+> Cc: "linux-mm" kvack.org>, linux-kernel@vger.kernel.org, "Oleg Nesterov" <oleg@redhat.com>
+> Sent: Friday, March 22, 2013 5:35:34 PM
+> Subject: Re: BUG at kmem_cache_alloc
 > 
-> By default the VPSS clocks are only enabled in capture driver
-> for davinci family which creates duplicates. This
-> patch adds support to enable the VPSS clocks in VPSS driver.
-> This avoids duplication of code and also adding clock aliases.
-> This patch cleanups the VPSS clock enabling in the capture driver,
-> and also removes the clock alias in machine file. Along side adds
-> a vpss slave clock for DM365 as mentioned by Sekhar
-> (https://patchwork.kernel.org/patch/1221261/).
+> On Fri, 22 Mar 2013, CAI Qian wrote:
 > 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> ---
->  arch/arm/mach-davinci/dm355.c                |    3 -
->  arch/arm/mach-davinci/dm365.c                |    9 +++-
->  arch/arm/mach-davinci/dm644x.c               |    5 --
->  drivers/media/platform/davinci/dm355_ccdc.c  |   39 +----------------
->  drivers/media/platform/davinci/dm644x_ccdc.c |   44 -------------------
->  drivers/media/platform/davinci/isif.c        |   28 ++----------
->  drivers/media/platform/davinci/vpss.c        |   60 ++++++++++++++++++++++++++
->  7 files changed, 72 insertions(+), 116 deletions(-)
+> > Starting to see those on 3.8.4 (never saw in 3.8.2) stable kernel
+> > on a few systems
+> > during LTP run,
+> > 
+> > [11297.597242] BUG: unable to handle kernel paging request at
+> > 00000000fffffffe
+> > [11297.598022] IP: [] kmem_cache_alloc+0x68/0x1e0
 > 
->  static struct clk arm_clk = {
->  	.name		= "arm_clk",
->  	.parent		= &pll2_sysclk2,
-> @@ -450,6 +456,7 @@ static struct clk_lookup dm365_clks[] = {
->  	CLK(NULL, "pll2_sysclk9", &pll2_sysclk9),
->  	CLK(NULL, "vpss_dac", &vpss_dac_clk),
->  	CLK(NULL, "vpss_master", &vpss_master_clk),
-> +	CLK(NULL, "vpss_slave", &vpss_slave_clk),
-
-These should use device name for look-up instead of relying just on
-con_id. So the entry should look like:
-
-CLK("vpss", "slave", &vpss_slave_clk),
-
->  	CLK(NULL, "arm", &arm_clk),
->  	CLK(NULL, "uart0", &uart0_clk),
->  	CLK(NULL, "uart1", &uart1_clk),
-> @@ -1239,8 +1246,6 @@ static int __init dm365_init_devices(void)
->  	clk_add_alias(NULL, dev_name(&dm365_mdio_device.dev),
->  		      NULL, &dm365_emac_device.dev);
->  
-> -	/* Add isif clock alias */
-> -	clk_add_alias("master", dm365_isif_dev.name, "vpss_master", NULL);
->  	platform_device_register(&dm365_vpss_device);
->  	platform_device_register(&dm365_isif_dev);
->  	platform_device_register(&vpfe_capture_dev);
-> diff --git a/arch/arm/mach-davinci/dm644x.c b/arch/arm/mach-davinci/dm644x.c
-> index ee0e994..026e7e3 100644
-> --- a/arch/arm/mach-davinci/dm644x.c
-> +++ b/arch/arm/mach-davinci/dm644x.c
-> @@ -901,11 +901,6 @@ int __init dm644x_init_video(struct vpfe_config *vpfe_cfg,
->  		dm644x_vpfe_dev.dev.platform_data = vpfe_cfg;
->  		platform_device_register(&dm644x_ccdc_dev);
->  		platform_device_register(&dm644x_vpfe_dev);
-> -		/* Add ccdc clock aliases */
-> -		clk_add_alias("master", dm644x_ccdc_dev.name,
-> -			      "vpss_master", NULL);
-> -		clk_add_alias("slave", dm644x_ccdc_dev.name,
-> -			      "vpss_slave", NULL);
->  	}
->  
->  	if (vpbe_cfg) {
-> diff --git a/drivers/media/platform/davinci/dm355_ccdc.c b/drivers/media/platform/davinci/dm355_ccdc.c
-> index 2364dba..05f8fb7 100644
-> --- a/drivers/media/platform/davinci/dm355_ccdc.c
-> +++ b/drivers/media/platform/davinci/dm355_ccdc.c
-> @@ -37,7 +37,6 @@
->  #include <linux/platform_device.h>
->  #include <linux/uaccess.h>
->  #include <linux/videodev2.h>
-> -#include <linux/clk.h>
->  #include <linux/err.h>
->  #include <linux/module.h>
->  
-> @@ -59,10 +58,6 @@ static struct ccdc_oper_config {
->  	struct ccdc_params_raw bayer;
->  	/* YCbCr configuration */
->  	struct ccdc_params_ycbcr ycbcr;
-> -	/* Master clock */
-> -	struct clk *mclk;
-> -	/* slave clock */
-> -	struct clk *sclk;
->  	/* ccdc base address */
->  	void __iomem *base_addr;
->  } ccdc_cfg = {
-> @@ -997,32 +992,10 @@ static int dm355_ccdc_probe(struct platform_device *pdev)
->  		goto fail_nomem;
->  	}
->  
-> -	/* Get and enable Master clock */
-> -	ccdc_cfg.mclk = clk_get(&pdev->dev, "master");
-> -	if (IS_ERR(ccdc_cfg.mclk)) {
-> -		status = PTR_ERR(ccdc_cfg.mclk);
-> -		goto fail_nomap;
-> -	}
-> -	if (clk_prepare_enable(ccdc_cfg.mclk)) {
-> -		status = -ENODEV;
-> -		goto fail_mclk;
-> -	}
-> -
-> -	/* Get and enable Slave clock */
-> -	ccdc_cfg.sclk = clk_get(&pdev->dev, "slave");
-> -	if (IS_ERR(ccdc_cfg.sclk)) {
-> -		status = PTR_ERR(ccdc_cfg.sclk);
-> -		goto fail_mclk;
-> -	}
-> -	if (clk_prepare_enable(ccdc_cfg.sclk)) {
-> -		status = -ENODEV;
-> -		goto fail_sclk;
-> -	}
-> -
->  	/* Platform data holds setup_pinmux function ptr */
->  	if (NULL == pdev->dev.platform_data) {
->  		status = -ENODEV;
-> -		goto fail_sclk;
-> +		goto fail_nomap;
->  	}
->  	setup_pinmux = pdev->dev.platform_data;
->  	/*
-> @@ -1033,12 +1006,6 @@ static int dm355_ccdc_probe(struct platform_device *pdev)
->  	ccdc_cfg.dev = &pdev->dev;
->  	printk(KERN_NOTICE "%s is registered with vpfe.\n", ccdc_hw_dev.name);
->  	return 0;
-> -fail_sclk:
-> -	clk_disable_unprepare(ccdc_cfg.sclk);
-> -	clk_put(ccdc_cfg.sclk);
-> -fail_mclk:
-> -	clk_disable_unprepare(ccdc_cfg.mclk);
-> -	clk_put(ccdc_cfg.mclk);
->  fail_nomap:
->  	iounmap(ccdc_cfg.base_addr);
->  fail_nomem:
-> @@ -1052,10 +1019,6 @@ static int dm355_ccdc_remove(struct platform_device *pdev)
->  {
->  	struct resource	*res;
->  
-> -	clk_disable_unprepare(ccdc_cfg.sclk);
-> -	clk_disable_unprepare(ccdc_cfg.mclk);
-> -	clk_put(ccdc_cfg.mclk);
-> -	clk_put(ccdc_cfg.sclk);
->  	iounmap(ccdc_cfg.base_addr);
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (res)
-> diff --git a/drivers/media/platform/davinci/dm644x_ccdc.c b/drivers/media/platform/davinci/dm644x_ccdc.c
-> index 971d639..30fa084 100644
-> --- a/drivers/media/platform/davinci/dm644x_ccdc.c
-> +++ b/drivers/media/platform/davinci/dm644x_ccdc.c
-> @@ -38,7 +38,6 @@
->  #include <linux/uaccess.h>
->  #include <linux/videodev2.h>
->  #include <linux/gfp.h>
-> -#include <linux/clk.h>
->  #include <linux/err.h>
->  #include <linux/module.h>
->  
-> @@ -60,10 +59,6 @@ static struct ccdc_oper_config {
->  	struct ccdc_params_raw bayer;
->  	/* YCbCr configuration */
->  	struct ccdc_params_ycbcr ycbcr;
-> -	/* Master clock */
-> -	struct clk *mclk;
-> -	/* slave clock */
-> -	struct clk *sclk;
->  	/* ccdc base address */
->  	void __iomem *base_addr;
->  } ccdc_cfg = {
-> @@ -991,38 +986,9 @@ static int dm644x_ccdc_probe(struct platform_device *pdev)
->  		goto fail_nomem;
->  	}
->  
-> -	/* Get and enable Master clock */
-> -	ccdc_cfg.mclk = clk_get(&pdev->dev, "master");
-> -	if (IS_ERR(ccdc_cfg.mclk)) {
-> -		status = PTR_ERR(ccdc_cfg.mclk);
-> -		goto fail_nomap;
-> -	}
-> -	if (clk_prepare_enable(ccdc_cfg.mclk)) {
-> -		status = -ENODEV;
-> -		goto fail_mclk;
-> -	}
-> -
-> -	/* Get and enable Slave clock */
-> -	ccdc_cfg.sclk = clk_get(&pdev->dev, "slave");
-> -	if (IS_ERR(ccdc_cfg.sclk)) {
-> -		status = PTR_ERR(ccdc_cfg.sclk);
-> -		goto fail_mclk;
-> -	}
-> -	if (clk_prepare_enable(ccdc_cfg.sclk)) {
-> -		status = -ENODEV;
-> -		goto fail_sclk;
-> -	}
->  	ccdc_cfg.dev = &pdev->dev;
->  	printk(KERN_NOTICE "%s is registered with vpfe.\n", ccdc_hw_dev.name);
->  	return 0;
-> -fail_sclk:
-> -	clk_disable_unprepare(ccdc_cfg.sclk);
-> -	clk_put(ccdc_cfg.sclk);
-> -fail_mclk:
-> -	clk_disable_unprepare(ccdc_cfg.mclk);
-> -	clk_put(ccdc_cfg.mclk);
-> -fail_nomap:
-> -	iounmap(ccdc_cfg.base_addr);
->  fail_nomem:
->  	release_mem_region(res->start, resource_size(res));
->  fail_nores:
-> @@ -1034,10 +1000,6 @@ static int dm644x_ccdc_remove(struct platform_device *pdev)
->  {
->  	struct resource	*res;
->  
-> -	clk_disable_unprepare(ccdc_cfg.mclk);
-> -	clk_disable_unprepare(ccdc_cfg.sclk);
-> -	clk_put(ccdc_cfg.mclk);
-> -	clk_put(ccdc_cfg.sclk);
->  	iounmap(ccdc_cfg.base_addr);
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (res)
-> @@ -1052,18 +1014,12 @@ static int dm644x_ccdc_suspend(struct device *dev)
->  	ccdc_save_context();
->  	/* Disable CCDC */
->  	ccdc_enable(0);
-> -	/* Disable both master and slave clock */
-> -	clk_disable_unprepare(ccdc_cfg.mclk);
-> -	clk_disable_unprepare(ccdc_cfg.sclk);
->  
->  	return 0;
->  }
->  
->  static int dm644x_ccdc_resume(struct device *dev)
->  {
-> -	/* Enable both master and slave clock */
-> -	clk_prepare_enable(ccdc_cfg.mclk);
-> -	clk_prepare_enable(ccdc_cfg.sclk);
->  	/* Restore CCDC context */
->  	ccdc_restore_context();
->  
-> diff --git a/drivers/media/platform/davinci/isif.c b/drivers/media/platform/davinci/isif.c
-> index abc3ae3..3332cca 100644
-> --- a/drivers/media/platform/davinci/isif.c
-> +++ b/drivers/media/platform/davinci/isif.c
-> @@ -32,7 +32,6 @@
->  #include <linux/uaccess.h>
->  #include <linux/io.h>
->  #include <linux/videodev2.h>
-> -#include <linux/clk.h>
->  #include <linux/err.h>
->  #include <linux/module.h>
->  
-> @@ -88,8 +87,6 @@ static struct isif_oper_config {
->  	struct isif_ycbcr_config ycbcr;
->  	struct isif_params_raw bayer;
->  	enum isif_data_pack data_pack;
-> -	/* Master clock */
-> -	struct clk *mclk;
->  	/* ISIF base address */
->  	void __iomem *base_addr;
->  	/* ISIF Linear Table 0 */
-> @@ -1039,6 +1036,10 @@ static int isif_probe(struct platform_device *pdev)
->  	void *__iomem addr;
->  	int status = 0, i;
->  
-> +	/* Platform data holds setup_pinmux function ptr */
-> +	if (!pdev->dev.platform_data)
-> +		return -ENODEV;
-> +
-
-This change seems unrelated. I suggest moving it to a different patch or
-atleast note it in the description.
-
->  	/*
->  	 * first try to register with vpfe. If not correct platform, then we
->  	 * don't have to iomap
-> @@ -1047,22 +1048,6 @@ static int isif_probe(struct platform_device *pdev)
->  	if (status < 0)
->  		return status;
->  
-> -	/* Get and enable Master clock */
-> -	isif_cfg.mclk = clk_get(&pdev->dev, "master");
-> -	if (IS_ERR(isif_cfg.mclk)) {
-> -		status = PTR_ERR(isif_cfg.mclk);
-> -		goto fail_mclk;
-> -	}
-> -	if (clk_prepare_enable(isif_cfg.mclk)) {
-> -		status = -ENODEV;
-> -		goto fail_mclk;
-> -	}
-> -
-> -	/* Platform data holds setup_pinmux function ptr */
-> -	if (NULL == pdev->dev.platform_data) {
-> -		status = -ENODEV;
-> -		goto fail_mclk;
-> -	}
->  	setup_pinmux = pdev->dev.platform_data;
->  	/*
->  	 * setup Mux configuration for ccdc which may be different for
-> @@ -1124,9 +1109,6 @@ fail_nobase_res:
->  		release_mem_region(res->start, resource_size(res));
->  		i--;
->  	}
-> -fail_mclk:
-> -	clk_disable_unprepare(isif_cfg.mclk);
-> -	clk_put(isif_cfg.mclk);
->  	vpfe_unregister_ccdc_device(&isif_hw_dev);
->  	return status;
->  }
-> @@ -1146,8 +1128,6 @@ static int isif_remove(struct platform_device *pdev)
->  		i++;
->  	}
->  	vpfe_unregister_ccdc_device(&isif_hw_dev);
-> -	clk_disable_unprepare(isif_cfg.mclk);
-> -	clk_put(isif_cfg.mclk);
->  	return 0;
->  }
->  
-> diff --git a/drivers/media/platform/davinci/vpss.c b/drivers/media/platform/davinci/vpss.c
-> index a19c552..db69317 100644
-> --- a/drivers/media/platform/davinci/vpss.c
-> +++ b/drivers/media/platform/davinci/vpss.c
-> @@ -17,6 +17,7 @@
->   *
->   * common vpss system module platform driver for all video drivers.
->   */
-> +#include <linux/clk.h>
->  #include <linux/kernel.h>
->  #include <linux/sched.h>
->  #include <linux/init.h>
-> @@ -126,6 +127,10 @@ struct vpss_oper_config {
->  	enum vpss_platform_type platform;
->  	spinlock_t vpss_lock;
->  	struct vpss_hw_ops hw_ops;
-> +	/* Master clock */
-> +	struct clk *mclk;
-> +	/* slave clock */
-> +	struct clk *sclk;
->  };
->  
->  static struct vpss_oper_config oper_cfg;
-> @@ -429,6 +434,26 @@ static int vpss_probe(struct platform_device *pdev)
->  		return -ENODEV;
->  	}
->  
-> +	/* Get and enable Master clock */
-> +	oper_cfg.mclk = clk_get(&pdev->dev, "vpss_master");
-
-use devm_clk_get() here to simplify the error handling.
-
-> +	if (IS_ERR(oper_cfg.mclk)) {
-> +		status = PTR_ERR(oper_cfg.mclk);
-> +		goto fail_getclk;
-> +	}
-> +	status = clk_prepare_enable(oper_cfg.mclk);
-> +	if (status)
-> +		goto fail_mclk;
-> +
-> +	/* Get and enable Slave clock */
-> +	oper_cfg.sclk = clk_get(&pdev->dev, "vpss_slave");
-> +	if (IS_ERR(oper_cfg.sclk)) {
-> +		status = PTR_ERR(oper_cfg.sclk);
-> +		goto fail_mclk;
-> +	}
-> +	status = clk_prepare_enable(oper_cfg.sclk);
-> +	if (status)
-> +		goto fail_sclk;
-> +
->  	dev_info(&pdev->dev, "%s vpss probed\n", platform_name);
->  	r1 = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (!r1)
-> @@ -500,6 +525,13 @@ fail2:
->  	iounmap(oper_cfg.vpss_regs_base0);
->  fail1:
->  	release_mem_region(r1->start, resource_size(r1));
-> +fail_sclk:
-> +	clk_disable_unprepare(oper_cfg.sclk);
-> +	clk_put(oper_cfg.sclk);
-> +fail_mclk:
-> +	clk_disable_unprepare(oper_cfg.mclk);
-> +	clk_put(oper_cfg.mclk);
-> +fail_getclk:
->  	return status;
->  }
->  
-> @@ -510,6 +542,10 @@ static int vpss_remove(struct platform_device *pdev)
->  	iounmap(oper_cfg.vpss_regs_base0);
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	release_mem_region(res->start, resource_size(res));
-> +	clk_disable_unprepare(oper_cfg.mclk);
-> +	clk_disable_unprepare(oper_cfg.sclk);
-> +	clk_put(oper_cfg.mclk);
-> +	clk_put(oper_cfg.sclk);
->  	if (oper_cfg.platform == DM355 || oper_cfg.platform == DM365) {
->  		iounmap(oper_cfg.vpss_regs_base1);
->  		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> @@ -518,10 +554,34 @@ static int vpss_remove(struct platform_device *pdev)
->  	return 0;
->  }
->  
-
-> +static int vpss_suspend(struct device *dev)
-> +{
-> +	/* Disable both master and slave clock */
-> +	clk_disable_unprepare(oper_cfg.mclk);
-> +	clk_disable_unprepare(oper_cfg.sclk);
-> +
-> +	return 0;
-> +}
-> +
-> +static int vpss_resume(struct device *dev)
-> +{
-> +	/* Enable both master and slave clock */
-> +	clk_prepare_enable(oper_cfg.mclk);
-> +	clk_prepare_enable(oper_cfg.sclk);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct dev_pm_ops vpss_pm_ops = {
-> +	.suspend = vpss_suspend,
-> +	.resume = vpss_resume,
-> +};
-
-Addition of suspend support seems unrelated to this patch. May be make a
-seperate patch for it and while at it, please use PM runtime instead of
-direct clock enable/disable. Have a look at the davinci_emac driver
-which was converted to use PM runtime recently.
-
-Let me know how you want to handle this patch. I suppose you intend this
-should go through my tree because of other dependent platform changes?
-
-Thanks,
-Sekhar
+> Is this repeatable?  Do you have CONFIG_SLAB or CONFIG_SLUB enabled?
+Saw it on 2 systems so far - one HP server and one KVM guest. Still
+trying to reproduce. Used CONFIG_SLUB=y.
+CAI Qian
+> 
+> > [11297.598022] PGD 7b9eb067 PUD 0
+> > [11297.598022] Oops: 0000 [#2] SMP
+> > [11297.598022] Modules linked in: cmtp kernelcapi bnep
+> > scsi_transport_iscsi rfcomm l2tp_ppp l2tp_netlink l2tp_core hidp
+> > ipt_ULOG af_key nfc rds pppoe pppox ppp_generic slhc af_802154 atm
+> > ip6table_filter ip6_tables iptable_filter ip_tables btrfs
+> > zlib_deflate vfat fat nfs_layout_nfsv41_files nfsv4 auth_rpcgss
+> > nfsv3 nfs_acl nfsv2 nfs lockd sunrpc fscache nfnetlink_log
+> > nfnetlink bluetooth rfkill arc4 md4 nls_utf8 cifs dns_resolver
+> > nf_tproxy_core nls_koi8_u nls_cp932 ts_kmp sctp sg kvm_amd kvm
+> > virtio_balloon i2c_piix4 pcspkr xfs libcrc32c ata_generic
+> > pata_acpi cirrus drm_kms_helper ttm ata_piix virtio_net drm libata
+> > virtio_blk i2c_core floppy dm_mirror dm_region_hash dm_log dm_mod
+> > [last unloaded: ipt_REJECT]
+> > [11297.598022] CPU 1
+> > [11297.598022] Pid: 14134, comm: ltp-pan Tainted: G      D
+> >      3.8.4+ #1 Bochs Bochs
+> > [11297.598022] RIP: 0010:[]  [] kmem_cache_alloc+0x68/0x1e0
+> > [11297.598022] RSP: 0018:ffff8800447dbdd0  EFLAGS: 00010246
+> > [11297.598022] RAX: 0000000000000000 RBX: ffff88007c169970 RCX:
+> > 00000000018acdcd
+> > [11297.598022] RDX: 000000000006c104 RSI: 00000000000080d0 RDI:
+> > ffff88007d04ac00
+> > [11297.598022] RBP: ffff8800447dbe10 R08: 0000000000017620 R09:
+> > ffffffff810fe2e2
+> > [11297.598022] R10: 0000000000000000 R11: 0000000000000000 R12:
+> > 00000000fffffffe
+> > [11297.598022] R13: 00000000000080d0 R14: ffff88007d04ac00 R15:
+> > ffff88007d04ac00
+> > [11297.598022] FS:  00007f09c29b4740(0000)
+> > GS:ffff88007fd00000(0000) knlGS:00000000f74d86c0
+> > [11297.598022] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > [11297.598022] CR2: 00000000fffffffe CR3: 0000000037213000 CR4:
+> > 00000000000006e0
+> > [11297.598022] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+> > 0000000000000000
+> > [11297.598022] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+> > 0000000000000400
+> > [11297.598022] Process ltp-pan (pid: 14134, threadinfo
+> > ffff8800447da000, task ffff8800551ab2e0)
+> > [11297.598022] Stack:
+> > [11297.598022]  ffffffff810fe2e2 ffffffff8108cf0f 0000000001200011
+> > ffff88007c169970
+> > [11297.598022]  0000000000000000 00007f09c29b4a10 0000000000000000
+> > ffff88007c169970
+> > [11297.598022]  ffff8800447dbe30 ffffffff810fe2e2 0000000000000000
+> > 0000000001200011
+> > [11297.598022] Call Trace:
+> > [11297.598022]  [] ? __delayacct_tsk_init+0x22/0x40
+> > [11297.598022]  [] ? prepare_creds+0xdf/0x190
+> > [11297.598022]  [] __delayacct_tsk_init+0x22/0x40
+> > [11297.598022]  [] copy_process.part.25+0x31f/0x13f0
+> > [11297.598022]  [] do_fork+0xa9/0x350
+> > [11297.598022]  [] sys_clone+0x16/0x20
+> > [11297.598022]  [] stub_clone+0x69/0x90
+> > [11297.598022]  [] ? system_call_fastpath+0x16/0x1b
+> > [11297.598022] Code: 90 4d 89 fe 4d 8b 06 65 4c 03 04 25 c8 db 00
+> > 00 49 8b 50 08 4d 8b 20 4d 85 e4 0f 84 2b 01 00 00 49 63 46 20 4d
+> > 8b 06 41 f6 c0 0f <49> 8b 1c 04 0f 85 55 01 00 00 48 8d 4a 01 4c
+> > 89 e0 65 49 0f c7
+> > [11297.598022] RIP  [] kmem_cache_alloc+0x68/0x1e0
+> > [11297.598022]  RSP
+> > [11297.598022] CR2: 00000000fffffffe
+> > [11297.727799] ---[ end trace 037bde72f23b34d2 ]---
+> > 
+> > Never saw this in mainline but only something like this wondering
+> > could be related
+> > (that kmem_cache_alloc also in the trace).
+> > 
+> 
+> These are unrelated.
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: href=mailto:"dont@kvack.org"> email@kvack.org 
+> 
