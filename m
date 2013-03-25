@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935Ab3CYLw7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 07:52:59 -0400
-Received: from smtp-out-223.synserver.de ([212.40.185.223]:1036 "EHLO
-	smtp-out-222.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756878Ab3CYLw6 (ORCPT
+	id S1756995Ab3CYLyT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 07:54:19 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:50307 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756749Ab3CYLyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 07:52:58 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 3945
-Message-ID: <51503B16.1050108@metafoo.de>
-Date: Mon, 25 Mar 2013 12:55:02 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Mon, 25 Mar 2013 07:54:18 -0400
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Mike Frysinger <vapier@gentoo.org>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Subject: Re: [uclinux-dist-devel] [PATCH] Blackfin: bf537: rename "CONFIG_ADT7310"
- and friends
-References: <1364211831.1390.285.camel@x61.thuisdomein>
-In-Reply-To: <1364211831.1390.285.camel@x61.thuisdomein>
+In-Reply-To: <5149E85E.90701@gmail.com>
+References: <fa.WZVD0OA/Ooajh6BejiLf7TwBsJ8@ifi.uio.no>
+	<fa.iIqrS6k+Vb5mLqAeL7iTsNsbKyo@ifi.uio.no>
+	<fa.L0b41q+fYFZG0WOFTGKLhn/cGPA@ifi.uio.no>
+	<fa.XCuSmq9Zwp3+wqFO8NEjpwADVZ0@ifi.uio.no>
+	<6e120226-8a3c-415f-90f2-c44e7b6bbf96@googlegroups.com>
+	<5149E85E.90701@gmail.com>
+Date: Mon, 25 Mar 2013 12:54:17 +0100
+Message-ID: <CABJ1b_T2x-DkTuYZGLBiedFRWcgYbcN3VCorN2nm3Y54A--wyw@mail.gmail.com>
+Subject: Re: [PATCH v3] clk: add si5351 i2c common clock driver
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Daniel Mack <zonque@gmail.com>
+Cc: michal.bachraty@gmail.com, fa.linux.kernel@googlegroups.com,
+        Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Dom Cobley <popcornmix@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rabeeh Khoury <rabeeh@solid-run.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2013 12:43 PM, Paul Bolle wrote:
-> The Kconfig symbol ADT7310 got removed in commit
-> 2b0c856ad9571013db8fc369194b7108dff3c18e ("staging:iio: Consolidate
-> adt7310 and adt7410 driver"). That commit did not touch the references
-> to CONFIG_ADT7310 and CONFIG_ADT7310_MODULE in the BF537-STAMP code.
-> Convert these now, to their ADT7410 equivalents.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> 0) Untested. This took a bit of guesswork. I guessed that multiple AD
-> drivers can be enabled at the same time in this code. And I also guessed
-> that the "adt7310" modalias is still correct.
-> 
-> 1) If this passes testing it could go in stable (3.8.y).
+On Wed, Mar 20, 2013 at 5:48 PM, Daniel Mack <zonque@gmail.com> wrote:
+> On 20.03.2013 14:55, michal.bachraty@gmail.com wrote:
+>> Thanks for writing this driver! I have tested your si5351 clock
+>> driver and his tuning capabilities. It works well, it generates
+>> proper clock frequency, but when new frequency is generated, little
+>> clock gap (1ms) is generated. Si5351 datasheet and WP claims, clock
+>> tuning can be without gaps -
+>> http://www.silabs.com/Support%20Documents/TechnicalDocs/Si5350-51-Frequency-Shifting-WP.pdf
+>>
+>> I made some tests with Si5351A chip and I found that when tuning touch
+>> only Multisynth registers, it can tune without gaps. There is no need
+>> for soft PLL reset. I found also, accessing Multisynth registers is not
+>> atomic, so there can be another frequency at output, while not all
+>> registers are written. Writing only to one register seems to be atomic.
 
-Hi,
+Michael,
 
-Thanks for the patch. Unfortunately this has already changed again for 3.10
-since we replaced the IIO adt7410/adt7310 driver with a hwmon driver. So the
-new config name is CONFIG_SENSORS_ADT7310.
+if you don't configure the clock output to modify the pll, changing output
+frequency will not alter pll config and there will be no reset of pll.
 
-Thanks,
-- Lars
+> Yeah, but limiting possible changes to the PLLs to one single register
+> also means that you cannot offer to generate all the frequencies any
+> more. What could probably be done is refine the algorithm so that it
+> stays 'as close as possible' to the former values, but I'm not sure how
+> much work that implies.
+>
+> Can you provide a patch against Sebastian's v3 to do that? Then it can
+> be cleanly applied on top of the driver later.
 
-> 
->  arch/blackfin/mach-bf537/boards/stamp.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
-> index 95114ed..23bb55d 100644
-> --- a/arch/blackfin/mach-bf537/boards/stamp.c
-> +++ b/arch/blackfin/mach-bf537/boards/stamp.c
-> @@ -700,7 +700,7 @@ static struct bfin5xx_spi_chip ad7816_spi_chip_info = {
->  };
->  #endif
->  
-> -#if defined(CONFIG_ADT7310) || defined(CONFIG_ADT7310_MODULE)
-> +#if defined(CONFIG_ADT7410) || defined(CONFIG_ADT7410_MODULE)
->  static unsigned long adt7310_platform_data[3] = {
->  /* INT bound temperature alarm event. line 1 */
->  	IRQ_PG4, IRQF_TRIGGER_LOW,
-> @@ -1062,7 +1062,7 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
->  	},
->  #endif
->  
-> -#if defined(CONFIG_ADT7310) || defined(CONFIG_ADT7310_MODULE)
-> +#if defined(CONFIG_ADT7410) || defined(CONFIG_ADT7410_MODULE)
->  	{
->  		.modalias = "adt7310",
->  		.max_speed_hz = 1000000,
+Ack. Feel free to post a patch on top of v4 now.
 
+Sebastian
