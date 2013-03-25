@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932961Ab3CYSgv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 14:36:51 -0400
-Received: from a192-166.smtp-out.amazonses.com ([199.255.192.166]:6416 "EHLO
-	a192-166.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932748Ab3CYSgu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 14:36:50 -0400
-X-Greylist: delayed 558 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Mar 2013 14:36:50 EDT
-Date: Mon, 25 Mar 2013 18:27:30 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>
-Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
- unfreeze_partials() code.
-In-Reply-To: <1364234613.6345.184.camel@gandalf.local.home>
-Message-ID: <0000013da2ce20f8-0e3a64ef-67ed-4ab4-9f20-b77980c876c3-000000@email.amazonses.com>
-References: <1363906545.6345.81.camel@gandalf.local.home> <0000013d92c37ff3-5fb85400-bec1-4eda-8ba1-332566884c59-000000@email.amazonses.com> <1364010673.6345.156.camel@gandalf.local.home> <0000013da1f93be3-c3d42ae8-ff34-4c63-8094-77a83291ea19-000000@email.amazonses.com>
- <1364227073.6345.182.camel@gandalf.local.home> <1364228039.6345.183.camel@gandalf.local.home> <0000013da2ace21a-9e87fe8a-75c2-4b7c-b5e1-37ad196ce012-000000@email.amazonses.com> <1364234613.6345.184.camel@gandalf.local.home>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932985Ab3CYSkB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 14:40:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35383 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932611Ab3CYSj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 14:39:59 -0400
+Date: Mon, 25 Mar 2013 14:39:53 -0400
+From: Dave Jones <davej@redhat.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: ipc/testmsg GPF.
+Message-ID: <20130325183953.GA428@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Peter Hurley <peter@hurleysoftware.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Al Viro <viro@zeniv.linux.org.uk>,
+	Andrew Morton <akpm@linux-foundation.org>
+References: <20130307213819.GB19543@redhat.com>
+ <1362788821.7755.12.camel@thor.lan>
+ <20130311182621.GA24965@redhat.com>
+ <1363028602.3234.38.camel@thor.lan>
+ <20130325163703.GA19064@redhat.com>
+ <1364236133.3681.2.camel@thor.lan>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.192.166
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364236133.3681.2.camel@thor.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Mar 2013, Steven Rostedt wrote:
+On Mon, Mar 25, 2013 at 02:28:53PM -0400, Peter Hurley wrote:
+ 
+ > > bad news: Turns out my recent testing where I thought your patches fixed
+ > > this was incorrect.  I had excluded fuzz testing of msgrcv, so it was never
+ > > getting exercised.
+ > 
+ > I think you might have applied the wrong series. See below.
+ 
+The last lot I applied from you was 30-40 or so patches, then some of them
+got applied upstream, so I lost track of just what's left outstanding.
 
-> If this makes it more deterministic, and lower worse case latencies,
-> then it's definitely worth the price.
+ > >  879                         tmp = tmp->next;
+ > 
+ > This source line does not exist with the 'ipc IPC_MSGCOPY fixes'
+ > patchset applied.
 
-Yes that would make it more deterministic. Maybe I should add an option
-to be able to compile the allocator without cpu partial page support?
+Hmm, I don't see that in my lkml folder for this month.
+Can you bounce me a copy ?
 
+	Dave
