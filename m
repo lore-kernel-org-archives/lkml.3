@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab3CYBTp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:19:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34155 "EHLO
+	id S1756367Ab3CYBQh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:16:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34114 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756371Ab3CYBQi (ORCPT
+	by vger.kernel.org with ESMTP id S1756323Ab3CYBQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:38 -0400
-Message-Id: <20130325010526.700885480@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:34 -0400
+Message-Id: <20130325010527.529757689@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:05:48 +0000
+Date: Mon, 25 Mar 2013 01:05:57 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Larry Finger <Larry.Finger@lwfinger.net>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        Alessandro Lannocca <alessandro.lannocca@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 024/104] rtlwifi: rtl8192cu: Fix problem that prevents reassociation
+Cc: akpm@linux-foundation.org, Veaceslav Falico <vfalico@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 033/104] bonding: dont call update_speed_duplex() under  spinlocks
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -31,141 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Veaceslav Falico <vfalico@redhat.com>
 
-commit 9437a248e7cac427c898bdb11bd1ac6844a1ead4 upstream.
+[ Upstream commit 876254ae2758d50dcb08c7bd00caf6a806571178 ]
 
-The driver was failing to clear the BSSID when a disconnect happened. That
-prevented a reconnection. This problem is reported at
-https://bugzilla.redhat.com/show_bug.cgi?id=789605,
-https://bugzilla.redhat.com/show_bug.cgi?id=866786,
-https://bugzilla.redhat.com/show_bug.cgi?id=906734, and
-https://bugzilla.kernel.org/show_bug.cgi?id=46171.
+bond_update_speed_duplex() might sleep while calling underlying slave's
+routines. Move it out of atomic context in bond_enslave() and remove it
+from bond_miimon_commit() - it was introduced by commit 546add79, however
+when the slave interfaces go up/change state it's their responsibility to
+fire NETDEV_UP/NETDEV_CHANGE events so that bonding can properly update
+their speed.
 
-Thanks to Jussi Kivilinna for making the critical observation
-that led to the solution.
+I've tested it on all combinations of ifup/ifdown, autoneg/speed/duplex
+changes, remote-controlled and local, on (not) MII-based cards. All changes
+are visible.
 
-Reported-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Tested-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Tested-by: Alessandro Lannocca <alessandro.lannocca@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c |   87 +++++++++++----------------
- 1 file changed, 35 insertions(+), 52 deletions(-)
+ drivers/net/bonding/bond_main.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-@@ -1557,74 +1557,57 @@ void rtl92cu_card_disable(struct ieee802
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 202ae34..63e3c47 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1715,6 +1715,8 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
  
- void rtl92cu_set_check_bssid(struct ieee80211_hw *hw, bool check_bssid)
- {
--	/* dummy routine needed for callback from rtl_op_configure_filter() */
--}
--
--/*========================================================================== */
--
--static void _rtl92cu_set_check_bssid(struct ieee80211_hw *hw,
--			      enum nl80211_iftype type)
--{
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
--	u32 reg_rcr = rtl_read_dword(rtlpriv, REG_RCR);
- 	struct rtl_hal *rtlhal = rtl_hal(rtlpriv);
--	struct rtl_phy *rtlphy = &(rtlpriv->phy);
--	u8 filterout_non_associated_bssid = false;
-+	u32 reg_rcr = rtl_read_dword(rtlpriv, REG_RCR);
+ 	bond_compute_features(bond);
  
--	switch (type) {
--	case NL80211_IFTYPE_ADHOC:
--	case NL80211_IFTYPE_STATION:
--		filterout_non_associated_bssid = true;
--		break;
--	case NL80211_IFTYPE_UNSPECIFIED:
--	case NL80211_IFTYPE_AP:
--	default:
--		break;
--	}
--	if (filterout_non_associated_bssid) {
-+	if (rtlpriv->psc.rfpwr_state != ERFON)
-+		return;
++	bond_update_speed_duplex(new_slave);
 +
-+	if (check_bssid) {
-+		u8 tmp;
- 		if (IS_NORMAL_CHIP(rtlhal->version)) {
--			switch (rtlphy->current_io_type) {
--			case IO_CMD_RESUME_DM_BY_SCAN:
--				reg_rcr |= (RCR_CBSSID_DATA | RCR_CBSSID_BCN);
--				rtlpriv->cfg->ops->set_hw_reg(hw,
--						 HW_VAR_RCR, (u8 *)(&reg_rcr));
--				/* enable update TSF */
--				_rtl92cu_set_bcn_ctrl_reg(hw, 0, BIT(4));
--				break;
--			case IO_CMD_PAUSE_DM_BY_SCAN:
--				reg_rcr &= ~(RCR_CBSSID_DATA | RCR_CBSSID_BCN);
--				rtlpriv->cfg->ops->set_hw_reg(hw,
--						 HW_VAR_RCR, (u8 *)(&reg_rcr));
--				/* disable update TSF */
--				_rtl92cu_set_bcn_ctrl_reg(hw, BIT(4), 0);
--				break;
--			}
-+			reg_rcr |= (RCR_CBSSID_DATA | RCR_CBSSID_BCN);
-+			tmp = BIT(4);
- 		} else {
--			reg_rcr |= (RCR_CBSSID);
--			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
--						      (u8 *)(&reg_rcr));
--			_rtl92cu_set_bcn_ctrl_reg(hw, 0, (BIT(4)|BIT(5)));
-+			reg_rcr |= RCR_CBSSID;
-+			tmp = BIT(4) | BIT(5);
- 		}
--	} else if (filterout_non_associated_bssid == false) {
-+		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
-+					      (u8 *) (&reg_rcr));
-+		_rtl92cu_set_bcn_ctrl_reg(hw, 0, tmp);
-+	} else {
-+		u8 tmp;
- 		if (IS_NORMAL_CHIP(rtlhal->version)) {
--			reg_rcr &= (~(RCR_CBSSID_DATA | RCR_CBSSID_BCN));
--			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
--						      (u8 *)(&reg_rcr));
--			_rtl92cu_set_bcn_ctrl_reg(hw, BIT(4), 0);
-+			reg_rcr &= ~(RCR_CBSSID_DATA | RCR_CBSSID_BCN);
-+			tmp = BIT(4);
- 		} else {
--			reg_rcr &= (~RCR_CBSSID);
--			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
--						      (u8 *)(&reg_rcr));
--			_rtl92cu_set_bcn_ctrl_reg(hw, (BIT(4)|BIT(5)), 0);
-+			reg_rcr &= ~RCR_CBSSID;
-+			tmp = BIT(4) | BIT(5);
- 		}
-+		reg_rcr &= (~(RCR_CBSSID_DATA | RCR_CBSSID_BCN));
-+		rtlpriv->cfg->ops->set_hw_reg(hw,
-+					      HW_VAR_RCR, (u8 *) (&reg_rcr));
-+		_rtl92cu_set_bcn_ctrl_reg(hw, tmp, 0);
+ 	read_lock(&bond->lock);
+ 
+ 	new_slave->last_arp_rx = jiffies;
+@@ -1758,8 +1760,6 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
+ 		new_slave->link  = BOND_LINK_DOWN;
  	}
- }
  
-+/*========================================================================== */
-+
- int rtl92cu_set_network_type(struct ieee80211_hw *hw, enum nl80211_iftype type)
- {
-+	struct rtl_priv *rtlpriv = rtl_priv(hw);
-+
- 	if (_rtl92cu_set_media_status(hw, type))
- 		return -EOPNOTSUPP;
--	_rtl92cu_set_check_bssid(hw, type);
-+
-+	if (rtlpriv->mac80211.link_state == MAC80211_LINKED) {
-+		if (type != NL80211_IFTYPE_AP)
-+			rtl92cu_set_check_bssid(hw, true);
-+	} else {
-+		rtl92cu_set_check_bssid(hw, false);
-+	}
-+
- 	return 0;
- }
+-	bond_update_speed_duplex(new_slave);
+-
+ 	if (USES_PRIMARY(bond->params.mode) && bond->params.primary[0]) {
+ 		/* if there is a primary slave, remember it */
+ 		if (strcmp(bond->params.primary, new_slave->dev->name) == 0) {
+@@ -2437,8 +2437,6 @@ static void bond_miimon_commit(struct bonding *bond)
+ 				bond_set_backup_slave(slave);
+ 			}
  
+-			bond_update_speed_duplex(slave);
+-
+ 			pr_info("%s: link status definitely up for interface %s, %u Mbps %s duplex.\n",
+ 				bond->dev->name, slave->dev->name,
+ 				slave->speed, slave->duplex ? "full" : "half");
 
 
