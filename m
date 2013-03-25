@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab3CYD17 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 23:27:59 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:54664 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755180Ab3CYD16 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 23:27:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363157014-9615-1-git-send-email-ks.giri@samsung.com>
-References: <1363157014-9615-1-git-send-email-ks.giri@samsung.com>
-Date: Mon, 25 Mar 2013 08:57:56 +0530
-Message-ID: <CAKrE-Kfgw+ofmkN+aMVNeeLm=+4owJ0U=qAmj2o0oARm6BSCQQ@mail.gmail.com>
-Subject: Re: [PATCH V3 0/5] Add polling support for 64xx spi controller
-From: Girish KS <girishks2000@gmail.com>
-To: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756105Ab3CYDjK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 23:39:10 -0400
+Received: from ozlabs.org ([203.10.76.45]:34681 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755232Ab3CYDjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 23:39:08 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Andi Kleen <andi@firstfloor.org>
+cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 01/29] tsx: Add generic noop macros for RTM intrinsics
+In-reply-to: <1364001923-10796-2-git-send-email-andi@firstfloor.org>
+References: <1364001923-10796-1-git-send-email-andi@firstfloor.org> <1364001923-10796-2-git-send-email-andi@firstfloor.org>
+Comments: In-reply-to Andi Kleen <andi@firstfloor.org>
+   message dated "Fri, 22 Mar 2013 18:24:55 -0700."
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+Date: Mon, 25 Mar 2013 14:39:05 +1100
+Message-ID: <30418.1364182745@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello grant,
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Add generic noop macros (act like transaction aborted) for RTM.
+> The main use case is an occasional _xtest() added to generic
+> code, without needing ifdefs. On x86+RTM this will use
+> real TSX instructions.
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  include/linux/rtm.h |   15 +++++++++++++++
+>  1 files changed, 15 insertions(+), 0 deletions(-)
+>  create mode 100644 include/linux/rtm.h
+> 
+> diff --git a/include/linux/rtm.h b/include/linux/rtm.h
 
-any comments on this patch series?
+RTM == restricted transactional memory.  I don't understand why it's
+"restricted" and why any other architecture else would call it that and
+hence why Linux should call it that?
 
+Can we just call it TM for transactional memory?  Each arch can then
+have their own implementation and call it what they want.
 
-On Wed, Mar 13, 2013 at 12:13 PM, Girish K S <girishks2000@gmail.com> wrote:
-> [PATCH 1/5]: fixes the error handling in the interrupt handler
-> [PATCH 2/5]: The existing driver support partial polling mode.
->              This patch modifies the current driver to support
->              only polling mode.
-> [PATCH 3/5]: provision to support SoC's with dedicated i/o pins
-> [PATCH 4/5]: provision to support dedicated cs pin
-> [PATCH 5/5]: support exynos5440 SoC in polling mode
->
-> Tested this patch on exynos5250 in dma mode, and exynos5440 in
-> polling mode.
->
-> changes in v3:
->             Rebase it to the linus's master branch. After rebase
-> there was a logical code change due to the merge of generic dma
-> patch. resolved the merge conflicts and tested for the functionality
->
-> Girish K S (5):
->   spi: s3c64xx: modified error interrupt handling and init
->   spi: s3c64xx: added support for polling mode
->   spi: s3c64xx: Added provision for non-gpio i/o's
->   spi: s3c64xx: Added provision for dedicated cs pin
->   spi: s3c64xx: Added support for exynos5440 spi
->
->  drivers/spi/spi-s3c64xx.c                 | 204 +++++++++++++++++++++---------
->  include/linux/platform_data/spi-s3c64xx.h |   3 +
->  2 files changed, 148 insertions(+), 59 deletions(-)
->
+> new file mode 100644
+> index 0000000..887b221
+> --- /dev/null
+> +++ b/include/linux/rtm.h
+> @@ -0,0 +1,15 @@
+> +#ifndef _LINUX_RTM
+> +#define _LINUX_RTM 1
+> +
+> +#ifdef CONFIG_RTM_LOCKS
+> +#include <asm/rtm.h>
+> +#else
+> +/* Make transactions appear as always abort */
+> +#define _XBEGIN_STARTED 0
+> +#define _xbegin() 1
+> +#define _xtest()  0
+> +#define _xend()   do {} while (0)
+> +#define _xabort(x) do {} while (0)
+
+Similarly.. these are clearly x86 centric.  Can we just call them
+tmbegin, tmtest, tm... etc?
+
+Mikey
+
+> +#endif
+> +
+> +#endif
+> -- 
+> 1.7.7.6
+> 
 > --
-> 1.8.0
->
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
