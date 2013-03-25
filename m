@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab3CYCZE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 22:25:04 -0400
-Received: from server.atrad.com.au ([150.101.241.2]:57262 "EHLO
-	server.atrad.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755590Ab3CYCZC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 22:25:02 -0400
-Date: Mon, 25 Mar 2013 12:54:45 +1030
-From: Jonathan Woithe <jwoithe@atrad.com.au>
-To: Raymond Jennings <shentino@gmail.com>
-Cc: Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jonathan Woithe <jwoithe@atrad.com.au>
-Subject: Re: OOM triggered with plenty of memory free
-Message-ID: <20130325022445.GH29157@marvin.atrad.com.au>
-References: <CAJd=RBDHwgtm=to3WUj73d7q6cjJ7oG6capjUxvcpVk0wH-fbQ@mail.gmail.com>
- <CAGDaZ_ryxdMBm44kotjKyCeFEFk3OURjHav3zVOcQNGwP_ZwAQ@mail.gmail.com>
- <20130321070750.GV30145@marvin.atrad.com.au>
+	id S1755845Ab3CYC2I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 22:28:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:30535 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755790Ab3CYC2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 22:28:06 -0400
+X-IronPort-AV: E=Sophos;i="4.87,342,1363104000"; 
+   d="scan'208";a="6935187"
+Message-ID: <514FB24F.8080104@cn.fujitsu.com>
+Date: Mon, 25 Mar 2013 10:11:27 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321070750.GV30145@marvin.atrad.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>, Russ Anderson <rja@sgi.com>
+CC: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com
+Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
+References: <20130318155619.GA18828@sgi.com> <20130321105516.GC18484@gmail.com> <alpine.DEB.2.02.1303211139110.3775@chino.kir.corp.google.com> <20130322072532.GC10608@gmail.com> <20130323152948.GA3036@sgi.com> <CAE9FiQUjVRUs02-ymmtO+5+SgqTWK8Ae6jJwD08uRbgR=eLJgw@mail.gmail.com>
+In-Reply-To: <CAE9FiQUjVRUs02-ymmtO+5+SgqTWK8Ae6jJwD08uRbgR=eLJgw@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/25 10:08:33,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/25 10:08:52,
+	Serialize complete at 2013/03/25 10:08:52
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This post ties up a few loose ends in this thread which remained after my
-21 March 2013 post.
 
- * The memory leak was not present in 2.6.36.
 
- * The patch to 2.6.35.11 at the end of this email (based on
-   48e6b121605512d87f8da1ccd014313489c19630 from linux-stable) resolves the
-   memory leak in 2.6.35.11.
+On 03/24/2013 04:37 AM, Yinghai Lu wrote:
+> +#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+> +int __init_memblock memblock_search_pfn_nid(unsigned long pfn,
+> +			 unsigned long *start_pfn, unsigned long *end_pfn)
+> +{
+> +	struct memblock_type *type = &memblock.memory;
+> +	int mid = memblock_search(type, (phys_addr_t)pfn << PAGE_SHIFT);
 
-This gives us a workable solution while we await fixes to current mainline
-in the r8169 driver.  Once that's done we can revalidate our systems against
-a more recent kernel and start shipping that.
+I'm really eager to see how much time can we save using binary search compared to
+linear search in this case :)
 
-Thanks to those who assisted with this issue.
+(quote)
+> A 4 TB (single rack) UV1 system takes 512 seconds to get through
+> the zone code.  This performance optimization reduces the time
+> by 189 seconds, a 36% improvement.
+>
+> A 2 TB (single rack) UV2 system goes from 212.7 seconds to 99.8 seconds,
+> a 112.9 second (53%) reduction.
+(quote)
 
-Regards
-  jonathan
-
---- a/net/netlink/af_netlink.c	2013-03-25 10:32:15.365781434 +1100
-+++ b/net/netlink/af_netlink.c	2013-03-25 10:32:15.373782107 +1100
-@@ -1387,6 +1387,8 @@ static int netlink_sendmsg(struct kiocb
- 	err = netlink_unicast(sk, skb, dst_pid, msg->msg_flags&MSG_DONTWAIT);
- 
- out:
-+	scm_destroy(siocb->scm);
-+	siocb->scm = NULL;
- 	return err;
- }
+thanks,
+linfeng
