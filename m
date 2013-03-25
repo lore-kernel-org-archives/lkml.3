@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913Ab3CYBYp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:24:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34061 "EHLO
+	id S1756173Ab3CYBQL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:16:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34013 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756061Ab3CYBQM (ORCPT
+	by vger.kernel.org with ESMTP id S1756061Ab3CYBQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:12 -0400
-Message-Id: <20130325010529.043746724@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:03 -0400
+Message-Id: <20130325010530.219076216@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:12 +0000
+Date: Mon, 25 Mar 2013 01:06:24 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 048/104] sfc: Disable soft interrupt handling during  efx_device_detach_sync()
+Cc: akpm@linux-foundation.org,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Subject: [ 060/104] tracing: Keep overwrite in sync between regular and snapshot buffers
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -28,39 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-[ Upstream commit 35205b211c8d17a8a0b5e8926cb7c73e9a7ef1ad ]
+commit 80902822658aab18330569587cdb69ac1dfdcea8 upstream.
 
-efx_device_detach_sync() locks all TX queues before marking the device
-detached and thus disabling further TX scheduling.  But it can still
-be interrupted by TX completions which then result in TX scheduling in
-soft interrupt context.  This will deadlock when it tries to acquire
-a TX queue lock that efx_device_detach_sync() already acquired.
+Changing the overwrite mode for the ring buffer via the trace
+option only sets the normal buffer. But the snapshot buffer could
+swap with it, and then the snapshot would be in non overwrite mode
+and the normal buffer would be in overwrite mode, even though the
+option flag states otherwise.
 
-To avoid deadlock, we must use netif_tx_{,un}lock_bh().
+Keep the two buffers overwrite modes in sync.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/sfc/efx.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/trace/trace.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/sfc/efx.h b/drivers/net/ethernet/sfc/efx.h
-index 55e72af..9668d29 100644
---- a/drivers/net/ethernet/sfc/efx.h
-+++ b/drivers/net/ethernet/sfc/efx.h
-@@ -157,9 +157,9 @@ static inline void efx_device_detach_sync(struct efx_nic *efx)
- 	 * TX scheduler is stopped when we're done and before
- 	 * netif_device_present() becomes false.
- 	 */
--	netif_tx_lock(dev);
-+	netif_tx_lock_bh(dev);
- 	netif_device_detach(dev);
--	netif_tx_unlock(dev);
-+	netif_tx_unlock_bh(dev);
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2650,8 +2650,12 @@ static void set_tracer_flags(unsigned in
+ 	if (mask == TRACE_ITER_RECORD_CMD)
+ 		trace_event_enable_cmd_record(enabled);
+ 
+-	if (mask == TRACE_ITER_OVERWRITE)
++	if (mask == TRACE_ITER_OVERWRITE) {
+ 		ring_buffer_change_overwrite(global_trace.buffer, enabled);
++#ifdef CONFIG_TRACER_MAX_TRACE
++		ring_buffer_change_overwrite(max_tr.buffer, enabled);
++#endif
++	}
  }
  
- #endif /* EFX_EFX_H */
+ static ssize_t
 
 
