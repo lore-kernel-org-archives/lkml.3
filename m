@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758638Ab3CYPyX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 11:54:23 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:45809 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758625Ab3CYPyW (ORCPT
+	id S1758647Ab3CYP4O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 11:56:14 -0400
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:50159 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758527Ab3CYP4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 11:54:22 -0400
+	Mon, 25 Mar 2013 11:56:12 -0400
 MIME-Version: 1.0
-Date: Mon, 25 Mar 2013 09:54:22 -0600
-Message-ID: <CA+ekxPU7a-evshpjBueUD2HTtz+U=n7wDzBp1cJ8cOo01wLUAg@mail.gmail.com>
-Subject: [ANNOUNCE] Merkey's Linux Kernel Debugger MDB 2.6.37 x86_64
+Date: Mon, 25 Mar 2013 09:56:11 -0600
+Message-ID: <CA+ekxPWFEmqnnk54OEfE1h9kivuB44-jyuL7gjmt2AEeAYj8NQ@mail.gmail.com>
+Subject: [ANNOUNCE] Merkey's Linux Kernel Debugger MDB 2.6.32-279.22.1 x86_64
+ for Red Hat/Centos EL6
 From: Jeffrey Merkey <jeffmerkey@gmail.com>
 To: linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Correction to previous email, wrong linux version in title line from
+previous release
 
 CURRENT
 http://merkeydebugger.googlecode.com/files/mdb-2.6.32-279.22.1.el6-03-16-2013.patch
