@@ -1,298 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933554Ab3CYWJV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 18:09:21 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:52202 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758981Ab3CYWJS (ORCPT
+	id S933576Ab3CYWJn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 18:09:43 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52967 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933484Ab3CYWJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 18:09:18 -0400
-Message-ID: <5150CB0C.2090406@gmail.com>
-Date: Mon, 25 Mar 2013 23:09:16 +0100
-From: dmitry pervushin <dpervushin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Mon, 25 Mar 2013 18:09:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: Re: [PATCH 3/4] dw_dmac: make build of DT related methods optional
+Date: Mon, 25 Mar 2013 22:09:30 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: Vinod Koul <vinod.koul@intel.com>, Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-kernel@vger.kernel.org, "spear-devel" <spear-devel@list.st.com>
+References: <1363963401-7924-1-git-send-email-andriy.shevchenko@linux.intel.com> <201303221519.14108.arnd@arndb.de> <1364202254.18714.101.camel@smile>
+In-Reply-To: <1364202254.18714.101.camel@smile>
 MIME-Version: 1.0
-CC: pablo@netfilter.org, netfilter-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Android netfilter patches (xt_IDLETIMER) [2/3]
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Message-Id: <201303252209.30634.arnd@arndb.de>
+X-Provags-ID: V02:K0:74U/nKLd2wzWIA7MAgN+okaPuhRS4Q/TjfD1EZZFyoD
+ ZgjxGtuT44olOwQyLkZW4FXBgXR0cHz0ci0R+bG2sWJWSfEo13
+ w6aQTe+E2grDfmKWTnhifShez5Kwt1SZ/WYUN4ujB4b/JG6x/q
+ 9vdg+nHhL856O8Oq7fJTwlOTTx+haQnvYr2OVEWirBYhzCFDss
+ A40qR4Q5iLSwYyAEi866RhJio8VmlSvSAyXuvHq8CAyLPVecQe
+ 81ir39xegnaf723rXbdHwexTjL9MbjodLNePVsFfPP9MGE14Uu
+ l8a6SkECIOfaqg8ZGgOrfI7Uk/zc2+F6Vu/DjEA4Tk44pt0x4q
+ mqIIC0fwPxs046jTnr0c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Send notifications when the label becomes active after an idle period.
-Send netlink message notifications in addition to sysfs notifications.
-Using a uevent with
-      subsystem=xt_idletimer
-      INTERFACE=...
-      STATE={active,inactive}
+On Monday 25 March 2013, Andy Shevchenko wrote:
+> > I generally prefer to have all driver code be compiled  all the time
+> > to catch build regressions independent of the configuration, and leave
+> > the #ifdefs in header files that provide the interfaces.
+> 
+> I don't. For checking we have special make targets:
+> 
+>   allnoconfig     - New config where all options are answered with no
+>   allyesconfig    - New config where all options are accepted with yes
+>   allmodconfig    - New config selecting modules when possible
+>   alldefconfig    - New config with all symbols set to default
 
-This is backport from common android-3.0
-commit: beb914e987cbbd368988d2b94a6661cb907c4d5a
-with uevent support instead of a new netlink message type.
+That will only help on architectures that support CONFIG_OF, although
+that probably includes all the common ones except s390 and ia64 nowadays.
 
-Cc: netdev@vger.kernel.org
-Cc: JP Abgrall <jpa@google.com>
-Cc: Ashish Sharma <ashishsharma@google.com>
-Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Signed-off-by: Ashish Sharma <ashishsharma@google.com>
-Signed-off-by: JP Abgrall <jpa@google.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: dmitry pervushin <dpervushin@gmail.com>
+> >       if (IS_ENABLED(CONFIG_OF)) && pdev->dev.of_node) {
+> >               err = of_dma_controller_register(pdev->dev.of_node,
+> >                                                dw_dma_of_xlate, dw);
+> >               if (err)
+> >                       dev_err(&pdev->dev,
+> >                               "could not register of_dma_controller\n");
+> >       }
+> > 
+> > Or alternatively, we can change the of_dma_controller_register() stub to
+> > return 0 if CONFIG_OF is disabled. That would also take care of similar
+> > code in other dma engine drivers.
+> 
+> Actually to be aligned with other dmaengine code it should return
+> -ENOSYS. And by description ENOSYS seems  suitable for "not implemented"
+> cases.
 
-diff --git a/include/uapi/linux/netfilter/xt_IDLETIMER.h b/include/uapi/linux/netfilter/xt_IDLETIMER.h
-index 208ae93..96ed520 100644
---- a/include/uapi/linux/netfilter/xt_IDLETIMER.h
-+++ b/include/uapi/linux/netfilter/xt_IDLETIMER.h
-@@ -42,4 +42,18 @@ struct idletimer_tg_info {
- 	struct idletimer_tg *timer __attribute__((aligned(8)));
- };
+I think we use ENOSYS normally when the absence of the interface is
+a fatal error, which it would not be here. This case I think is more
+like the clk and regulator interfaces, where you want to bail out
+if the functions return an actual error but not if the subsystem is
+compiled out.
 
-+#define NL_EVENT_TYPE_INACTIVE 0
-+#define NL_EVENT_TYPE_ACTIVE 1
-+
-+struct idletimer_tg_info_v1 {
-+	__u32 timeout;
-+
-+	char label[MAX_IDLETIMER_LABEL_SIZE];
-+
-+	/* Use netlink messages for notification in addition to sysfs */
-+	__u8 send_nl_msg;
-+
-+	/* for kernel module internal use only */
-+	struct idletimer_tg *timer __attribute__((aligned(8)));
-+};
- #endif
-diff --git a/net/netfilter/xt_IDLETIMER.c b/net/netfilter/xt_IDLETIMER.c
-index 3540c04..cbf059c 100644
---- a/net/netfilter/xt_IDLETIMER.c
-+++ b/net/netfilter/xt_IDLETIMER.c
-@@ -40,6 +40,11 @@
- #include <linux/kobject.h>
- #include <linux/workqueue.h>
- #include <linux/sysfs.h>
-+#include <linux/skbuff.h>
-+#include <net/net_namespace.h>
-+#include <uapi/linux/netfilter/xt_IDLETIMER.h>
-+
-+#define NLMSG_MAX_SIZE 64
+> What about to move all CONFIG_OF stuff into separate file?
 
- struct idletimer_tg_attr {
- 	struct attribute attr;
-@@ -56,6 +61,8 @@ struct idletimer_tg {
- 	struct idletimer_tg_attr attr;
+Seems not worth it, and still would lead to the code not being
+compile tested by default. Right now, there are two small functions,
+and I would hope we can turn that into a single even smaller
+function eventually if we get right of the silly requirement to
+go through a filter function here.
 
- 	unsigned int refcnt;
-+	bool send_nl_msg;
-+	bool active;
- };
-
- static LIST_HEAD(idletimer_tg_list);
-@@ -63,6 +70,30 @@ static DEFINE_MUTEX(list_mutex);
-
- static struct kobject *idletimer_tg_kobj;
-
-+static void notify_netlink_uevent(const char *iface, struct idletimer_tg *timer)
-+{
-+	char iface_msg[NLMSG_MAX_SIZE];
-+	char state_msg[NLMSG_MAX_SIZE];
-+	char *envp[] = { iface_msg, state_msg, NULL };
-+	int res;
-+
-+	res = snprintf(iface_msg, NLMSG_MAX_SIZE, "INTERFACE=%s",
-+		       iface);
-+	if (NLMSG_MAX_SIZE <= res) {
-+		pr_err("message too long (%d)", res);
-+		return;
-+	}
-+	res = snprintf(state_msg, NLMSG_MAX_SIZE, "STATE=%s",
-+		       timer->active ? "active" : "inactive");
-+	if (NLMSG_MAX_SIZE <= res) {
-+		pr_err("message too long (%d)", res);
-+		return;
-+	}
-+	pr_debug("putting nlmsg: <%s> <%s>\n", iface_msg, state_msg);
-+	kobject_uevent_env(idletimer_tg_kobj, KOBJ_CHANGE, envp);
-+	return;
-+}
-+
- static
- struct idletimer_tg *__idletimer_tg_find_by_label(const char *label)
- {
-@@ -83,6 +114,7 @@ static ssize_t idletimer_tg_show(struct kobject *kobj, struct attribute *attr,
- {
- 	struct idletimer_tg *timer;
- 	unsigned long expires = 0;
-+	unsigned long now = jiffies;
-
- 	mutex_lock(&list_mutex);
-
-@@ -92,11 +124,15 @@ static ssize_t idletimer_tg_show(struct kobject *kobj, struct attribute *attr,
-
- 	mutex_unlock(&list_mutex);
-
--	if (time_after(expires, jiffies))
-+	if (time_after(expires, now))
- 		return sprintf(buf, "%u\n",
--			       jiffies_to_msecs(expires - jiffies) / 1000);
-+			       jiffies_to_msecs(expires - now) / 1000);
-
--	return sprintf(buf, "0\n");
-+	if (timer->send_nl_msg)
-+		return sprintf(buf, "0 %d\n",
-+			jiffies_to_msecs(now - expires) / 1000);
-+	else
-+		return sprintf(buf, "0\n");
- }
-
- static void idletimer_tg_work(struct work_struct *work)
-@@ -105,6 +141,9 @@ static void idletimer_tg_work(struct work_struct *work)
- 						  work);
-
- 	sysfs_notify(idletimer_tg_kobj, NULL, timer->attr.attr.name);
-+
-+	if (timer->send_nl_msg)
-+		notify_netlink_uevent(timer->attr.attr.name, timer);
- }
-
- static void idletimer_tg_expired(unsigned long data)
-@@ -113,12 +152,15 @@ static void idletimer_tg_expired(unsigned long data)
-
- 	pr_debug("timer %s expired\n", timer->attr.attr.name);
-
-+	timer->active = false;
- 	schedule_work(&timer->work);
- }
-
--static int idletimer_tg_create(struct idletimer_tg_info *info)
-+static int idletimer_tg_create(void *pinfo, int revision)
- {
- 	int ret;
-+	struct idletimer_tg_info *info = (struct idletimer_tg_info*)pinfo;
-+	struct idletimer_tg_info_v1 *info1 = (struct idletimer_tg_info_v1*)pinfo;
-
- 	info->timer = kmalloc(sizeof(*info->timer), GFP_KERNEL);
- 	if (!info->timer) {
-@@ -144,6 +186,10 @@ static int idletimer_tg_create(struct idletimer_tg_info *info)
-
- 	setup_timer(&info->timer->timer, idletimer_tg_expired,
- 		    (unsigned long) info->timer);
-+	info->timer->send_nl_msg = false;
-+	info->timer->active = true;
-+	if (revision == 1 && info1->send_nl_msg)
-+		info->timer->send_nl_msg = true;
- 	info->timer->refcnt = 1;
-
- 	mod_timer(&info->timer->timer,
-@@ -175,6 +221,8 @@ static unsigned int idletimer_tg_target(struct sk_buff *skb,
-
- 	BUG_ON(!info->timer);
-
-+	info->timer->active = true;
-+
- 	if (time_before(info->timer->timer.expires, now)) {
- 		schedule_work(&info->timer->work);
- 		pr_debug("Starting timer %s (Expired, Jiffies): %lu, %lu\n",
-@@ -188,7 +236,7 @@ static unsigned int idletimer_tg_target(struct sk_buff *skb,
- 	return XT_CONTINUE;
- }
-
--static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
-+static int idletimer_tg_checkentry_rev(const struct xt_tgchk_param *par, int revision)
- {
- 	struct idletimer_tg_info *info = par->targinfo;
- 	int ret;
-@@ -213,18 +261,21 @@ static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
- 	info->timer = __idletimer_tg_find_by_label(info->label);
- 	if (info->timer) {
- 		info->timer->refcnt++;
-+		info->timer->active = true;
-+
- 		if (time_before(info->timer->timer.expires, now)) {
- 			schedule_work(&info->timer->work);
- 			pr_debug("Starting Checkentry timer (Expired, Jiffies): %lu, %lu\n",
- 				info->timer->timer.expires, now);
- 		}
-+
- 		mod_timer(&info->timer->timer,
- 			  msecs_to_jiffies(info->timeout * 1000) + now);
-
- 		pr_debug("increased refcnt of timer %s to %u\n",
- 			 info->label, info->timer->refcnt);
- 	} else {
--		ret = idletimer_tg_create(info);
-+		ret = idletimer_tg_create(info, revision);
- 		if (ret < 0) {
- 			pr_debug("failed to create timer\n");
- 			mutex_unlock(&list_mutex);
-@@ -236,6 +287,16 @@ static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
- 	return 0;
- }
-
-+static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
-+{
-+	return idletimer_tg_checkentry_rev(par, 0);
-+}
-+
-+static int idletimer_tg_checkentry_v1(const struct xt_tgchk_param *par)
-+{
-+	return idletimer_tg_checkentry_rev(par, 1);
-+}
-+
- static void idletimer_tg_destroy(const struct xt_tgdtor_param *par)
- {
- 	const struct idletimer_tg_info *info = par->targinfo;
-@@ -260,14 +321,27 @@ static void idletimer_tg_destroy(const struct xt_tgdtor_param *par)
- 	mutex_unlock(&list_mutex);
- }
-
--static struct xt_target idletimer_tg __read_mostly = {
-+static struct xt_target idletimer_tg[] __read_mostly = {
-+{
- 	.name		= "IDLETIMER",
-+	.revision	= 0,
- 	.family		= NFPROTO_UNSPEC,
- 	.target		= idletimer_tg_target,
- 	.targetsize     = sizeof(struct idletimer_tg_info),
- 	.checkentry	= idletimer_tg_checkentry,
- 	.destroy        = idletimer_tg_destroy,
- 	.me		= THIS_MODULE,
-+},
-+{
-+	.name		= "IDLETIMER",
-+	.revision	= 1,
-+	.family		= NFPROTO_UNSPEC,
-+	.target		= idletimer_tg_target,
-+	.targetsize     = sizeof(struct idletimer_tg_info_v1),
-+	.checkentry	= idletimer_tg_checkentry_v1,
-+	.destroy        = idletimer_tg_destroy,
-+	.me		= THIS_MODULE,
-+},
- };
-
- static struct class *idletimer_tg_class;
-@@ -295,7 +369,7 @@ static int __init idletimer_tg_init(void)
-
- 	idletimer_tg_kobj = &idletimer_tg_device->kobj;
-
--	err =  xt_register_target(&idletimer_tg);
-+	err =  xt_register_targets(idletimer_tg, ARRAY_SIZE(idletimer_tg));
- 	if (err < 0) {
- 		pr_debug("couldn't register xt target\n");
- 		goto out_dev;
-@@ -312,7 +386,7 @@ out:
-
- static void __exit idletimer_tg_exit(void)
- {
--	xt_unregister_target(&idletimer_tg);
-+	xt_unregister_targets(idletimer_tg, ARRAY_SIZE(idletimer_tg));
-
- 	device_destroy(idletimer_tg_class, MKDEV(0, 0));
- 	class_destroy(idletimer_tg_class);
-@@ -327,3 +401,4 @@ MODULE_DESCRIPTION("Xtables: idle time monitor");
- MODULE_LICENSE("GPL v2");
- MODULE_ALIAS("ipt_IDLETIMER");
- MODULE_ALIAS("ip6t_IDLETIMER");
-+MODULE_ALIAS("arpt_IDLETIMER");
+	Arnd
