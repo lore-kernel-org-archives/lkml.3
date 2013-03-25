@@ -1,354 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab3CYCOS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 22:14:18 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:44624 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755019Ab3CYCOQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 22:14:16 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r2P2DvDf030099, This message is released by code: ctlocs8528
-From: <wei_wang@realsil.com.cn>
-To: <cjb@laptop.org>, <sameo@linux.intel.com>
-CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <rogerable@realtek.com>, Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH] mfd:rtsx: Support RTS5249
-Date: Mon, 25 Mar 2013 10:13:56 +0800
-Message-ID: <1364177636-4294-1-git-send-email-wei_wang@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755577Ab3CYCUU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 22:20:20 -0400
+Received: from ozlabs.org ([203.10.76.45]:40413 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755155Ab3CYCUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 22:20:19 -0400
+Date: Mon, 25 Mar 2013 13:12:57 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfio powerpc: implement IOMMU driver for VFIO
+Message-ID: <20130325021257.GA5598@truffula.fritz.box>
+References: <1363660844.24132.452.camel@bling.home>
+ <1363676892-3891-1-git-send-email-aik@ozlabs.ru>
+ <1363812324.24132.544.camel@bling.home>
+ <20130321015541.GA13838@truffula.fritz.box>
+ <1363835784.24132.574.camel@bling.home>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.8]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CE+1k2dSO48ffgeK"
+Content-Disposition: inline
+In-Reply-To: <1363835784.24132.574.camel@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei WANG <wei_wang@realsil.com.cn>
 
-Support new model: RTS5249
+--CE+1k2dSO48ffgeK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
----
- drivers/mfd/Makefile         |    2 +-
- drivers/mfd/rts5249.c        |  245 ++++++++++++++++++++++++++++++++++++++++++
- drivers/mfd/rtsx_pcr.c       |    5 +
- drivers/mfd/rtsx_pcr.h       |    1 +
- include/linux/mfd/rtsx_pci.h |    2 +
- 5 files changed, 254 insertions(+), 1 deletion(-)
- create mode 100644 drivers/mfd/rts5249.c
+On Wed, Mar 20, 2013 at 09:16:24PM -0600, Alex Williamson wrote:
+> On Thu, 2013-03-21 at 12:55 +1100, David Gibson wrote:
+> > On Wed, Mar 20, 2013 at 02:45:24PM -0600, Alex Williamson wrote:
+> > > On Tue, 2013-03-19 at 18:08 +1100, Alexey Kardashevskiy wrote:
+> > > > VFIO implements platform independent stuff such as
+> > > > a PCI driver, BAR access (via read/write on a file descriptor
+> > > > or direct mapping when possible) and IRQ signaling.
+> > > >=20
+> > > > The platform dependent part includes IOMMU initialization
+> > > > and handling. This patch implements an IOMMU driver for VFIO
+> > > > which does mapping/unmapping pages for the guest IO and
+> > > > provides information about DMA window (required by a POWERPC
+> > > > guest).
+> > > >=20
+> > > > The counterpart in QEMU is required to support this functionality.
+> > > >=20
+> > > > Changelog:
+> > > > * documentation updated
+> > > > * containter enable/disable ioctls added
+> > > > * request_module(spapr_iommu) added
+> > > > * various locks fixed
+> > > >=20
+> > > > Cc: David Gibson <david@gibson.dropbear.id.au>
+> > > > Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> > > > ---
+> > >=20
+> > >=20
+> > > Looking pretty good.  There's one problem with the detach_group,
+> > > otherwise just some trivial comments below.  What's the status of the
+> > > tce code that this depends on?  Thanks,
+> >=20
+> > [snip]
+> > > > +static void tce_iommu_detach_group(void *iommu_data,
+> > > > +		struct iommu_group *iommu_group)
+> > > > +{
+> > > > +	struct tce_container *container =3D iommu_data;
+> > > > +	struct iommu_table *tbl =3D iommu_group_get_iommudata(iommu_group=
+);
+> > > > +
+> > > > +	BUG_ON(!tbl);
+> > > > +	mutex_lock(&container->lock);
+> > > > +	if (tbl !=3D container->tbl) {
+> > > > +		pr_warn("tce_vfio: detaching group #%u, expected group is #%u\n",
+> > > > +				iommu_group_id(iommu_group),
+> > > > +				iommu_group_id(tbl->it_group));
+> > > > +	} else if (container->enabled) {
+> > > > +		pr_err("tce_vfio: detaching group #%u from enabled container\n",
+> > > > +				iommu_group_id(tbl->it_group));
+> > >=20
+> > > Hmm, something more than a pr_err needs to happen here.  Wouldn't this
+> > > imply a disable and going back to an unprivileged container?
+> >=20
+> > Uh, no.  I think the idea here is that we use the enable/disable
+> > semantic to address some other potential problems.  Specifically,
+> > sidestepping the problems of what happens if you change the
+> > container's capabilities by adding/removing groups while in the middle
+> > of using it.  So the point is that the detach fails when the group is
+> > enabled, rather than implicitly doing anything.
+>=20
+> The function returns void.
 
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index b90409c..f61ac02 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -9,7 +9,7 @@ obj-$(CONFIG_MFD_88PM805)	+= 88pm805.o 88pm80x.o
- obj-$(CONFIG_MFD_SM501)		+= sm501.o
- obj-$(CONFIG_MFD_ASIC3)		+= asic3.o tmio_core.o
- 
--rtsx_pci-objs			:= rtsx_pcr.o rts5209.o rts5229.o rtl8411.o rts5227.o
-+rtsx_pci-objs			:= rtsx_pcr.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
- obj-$(CONFIG_MFD_RTSX_PCI)	+= rtsx_pci.o
- 
- obj-$(CONFIG_HTC_EGPIO)		+= htc-egpio.o
-diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-new file mode 100644
-index 0000000..24a1861
---- /dev/null
-+++ b/drivers/mfd/rts5249.c
-@@ -0,0 +1,245 @@
-+/* Driver for Realtek PCI-Express card reader
-+ *
-+ * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * Author:
-+ *   Wei WANG <wei_wang@realsil.com.cn>
-+ *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/delay.h>
-+#include <linux/mfd/rtsx_pci.h>
-+
-+#include "rtsx_pcr.h"
-+
-+static u8 rts5249_get_ic_version(struct rtsx_pcr *pcr)
-+{
-+	u8 val;
-+
-+	rtsx_pci_read_register(pcr, DUMMY_REG_RESET_0, &val);
-+	return val & 0x0F;
-+}
-+
-+static int rts5249_extra_init_hw(struct rtsx_pcr *pcr)
-+{
-+	rtsx_pci_init_cmd(pcr);
-+
-+	/* Configure GPIO as output */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, GPIO_CTL, 0x02, 0x02);
-+	/* Switch LDO3318 source from DV33 to card_3v3 */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x00);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x01);
-+	/* LED shine disabled, set initial shine cycle period */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, OLT_LED_CTL, 0x0F, 0x02);
-+	/* Configure force_clock_req
-+	 * Maybe We should define 0xFF03 as some name
-+	 */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, 0xFF03, 0x08, 0x08);
-+	/* Correct driving */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
-+			SD30_CLK_DRIVE_SEL, 0xFF, 0x99);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
-+			SD30_CMD_DRIVE_SEL, 0xFF, 0x99);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
-+			SD30_DAT_DRIVE_SEL, 0xFF, 0x92);
-+
-+	return rtsx_pci_send_cmd(pcr, 100);
-+}
-+
-+static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
-+{
-+	int err;
-+
-+	err = rtsx_pci_write_phy_register(pcr, 0x19, 0xFE46);
-+	if (err < 0)
-+		return err;
-+
-+	mdelay(1);
-+
-+	return rtsx_pci_write_phy_register(pcr, 0x0A, 0x05C0);
-+}
-+
-+static int rts5249_turn_on_led(struct rtsx_pcr *pcr)
-+{
-+	return rtsx_pci_write_register(pcr, GPIO_CTL, 0x02, 0x02);
-+}
-+
-+static int rts5249_turn_off_led(struct rtsx_pcr *pcr)
-+{
-+	return rtsx_pci_write_register(pcr, GPIO_CTL, 0x02, 0x00);
-+}
-+
-+static int rts5249_enable_auto_blink(struct rtsx_pcr *pcr)
-+{
-+	return rtsx_pci_write_register(pcr, OLT_LED_CTL, 0x08, 0x08);
-+}
-+
-+static int rts5249_disable_auto_blink(struct rtsx_pcr *pcr)
-+{
-+	return rtsx_pci_write_register(pcr, OLT_LED_CTL, 0x08, 0x00);
-+}
-+
-+static int rts5249_card_power_on(struct rtsx_pcr *pcr, int card)
-+{
-+	int err;
-+
-+	rtsx_pci_init_cmd(pcr);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_PWR_CTL,
-+			SD_POWER_MASK, SD_VCC_PARTIAL_POWER_ON);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PWR_GATE_CTRL,
-+			LDO3318_PWR_MASK, 0x02);
-+	err = rtsx_pci_send_cmd(pcr, 100);
-+	if (err < 0)
-+		return err;
-+
-+	msleep(5);
-+
-+	rtsx_pci_init_cmd(pcr);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_PWR_CTL,
-+			SD_POWER_MASK, SD_VCC_POWER_ON);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PWR_GATE_CTRL,
-+			LDO3318_PWR_MASK, 0x06);
-+	err = rtsx_pci_send_cmd(pcr, 100);
-+	if (err < 0)
-+		return err;
-+
-+	return 0;
-+}
-+
-+static int rts5249_card_power_off(struct rtsx_pcr *pcr, int card)
-+{
-+	rtsx_pci_init_cmd(pcr);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_PWR_CTL,
-+			SD_POWER_MASK, SD_POWER_OFF);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PWR_GATE_CTRL,
-+			LDO3318_PWR_MASK, 0x00);
-+	return rtsx_pci_send_cmd(pcr, 100);
-+}
-+
-+static int rts5249_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
-+{
-+	int err;
-+	u8 clk_drive, cmd_drive, dat_drive;
-+
-+	if (voltage == OUTPUT_3V3) {
-+		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4FC0 | 0x24);
-+		if (err < 0)
-+			return err;
-+		clk_drive = 0x99;
-+		cmd_drive = 0x99;
-+		dat_drive = 0x92;
-+	} else if (voltage == OUTPUT_1V8) {
-+		err = rtsx_pci_write_phy_register(pcr, 0x11, 0x3C02);
-+		if (err < 0)
-+			return err;
-+		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4C40 | 0x24);
-+		if (err < 0)
-+			return err;
-+		clk_drive = 0xb3;
-+		cmd_drive = 0xb3;
-+		dat_drive = 0xb3;
-+	} else {
-+		return -EINVAL;
-+	}
-+
-+	/* set pad drive */
-+	rtsx_pci_init_cmd(pcr);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_CLK_DRIVE_SEL,
-+			0xFF, clk_drive);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_CMD_DRIVE_SEL,
-+			0xFF, cmd_drive);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_DAT_DRIVE_SEL,
-+			0xFF, dat_drive);
-+	return rtsx_pci_send_cmd(pcr, 100);
-+}
-+
-+static const struct pcr_ops rts5249_pcr_ops = {
-+	.extra_init_hw = rts5249_extra_init_hw,
-+	.optimize_phy = rts5249_optimize_phy,
-+	.turn_on_led = rts5249_turn_on_led,
-+	.turn_off_led = rts5249_turn_off_led,
-+	.enable_auto_blink = rts5249_enable_auto_blink,
-+	.disable_auto_blink = rts5249_disable_auto_blink,
-+	.card_power_on = rts5249_card_power_on,
-+	.card_power_off = rts5249_card_power_off,
-+	.switch_output_voltage = rts5249_switch_output_voltage,
-+};
-+
-+/* SD Pull Control Enable:
-+ *     SD_DAT[3:0] ==> pull up
-+ *     SD_CD       ==> pull up
-+ *     SD_WP       ==> pull up
-+ *     SD_CMD      ==> pull up
-+ *     SD_CLK      ==> pull down
-+ */
-+static const u32 rts5249_sd_pull_ctl_enable_tbl[] = {
-+	RTSX_REG_PAIR(CARD_PULL_CTL1, 0x66),
-+	RTSX_REG_PAIR(CARD_PULL_CTL2, 0xAA),
-+	RTSX_REG_PAIR(CARD_PULL_CTL3, 0xE9),
-+	RTSX_REG_PAIR(CARD_PULL_CTL4, 0xAA),
-+	0,
-+};
-+
-+/* SD Pull Control Disable:
-+ *     SD_DAT[3:0] ==> pull down
-+ *     SD_CD       ==> pull up
-+ *     SD_WP       ==> pull down
-+ *     SD_CMD      ==> pull down
-+ *     SD_CLK      ==> pull down
-+ */
-+static const u32 rts5249_sd_pull_ctl_disable_tbl[] = {
-+	RTSX_REG_PAIR(CARD_PULL_CTL1, 0x66),
-+	RTSX_REG_PAIR(CARD_PULL_CTL2, 0x55),
-+	RTSX_REG_PAIR(CARD_PULL_CTL3, 0xD5),
-+	RTSX_REG_PAIR(CARD_PULL_CTL4, 0x55),
-+	0,
-+};
-+
-+/* MS Pull Control Enable:
-+ *     MS CD       ==> pull up
-+ *     others      ==> pull down
-+ */
-+static const u32 rts5249_ms_pull_ctl_enable_tbl[] = {
-+	RTSX_REG_PAIR(CARD_PULL_CTL4, 0x55),
-+	RTSX_REG_PAIR(CARD_PULL_CTL5, 0x55),
-+	RTSX_REG_PAIR(CARD_PULL_CTL6, 0x15),
-+	0,
-+};
-+
-+/* MS Pull Control Disable:
-+ *     MS CD       ==> pull up
-+ *     others      ==> pull down
-+ */
-+static const u32 rts5249_ms_pull_ctl_disable_tbl[] = {
-+	RTSX_REG_PAIR(CARD_PULL_CTL4, 0x55),
-+	RTSX_REG_PAIR(CARD_PULL_CTL5, 0x55),
-+	RTSX_REG_PAIR(CARD_PULL_CTL6, 0x15),
-+	0,
-+};
-+
-+void rts5249_init_params(struct rtsx_pcr *pcr)
-+{
-+	pcr->extra_caps = EXTRA_CAPS_SD_SDR50 | EXTRA_CAPS_SD_SDR104;
-+	pcr->num_slots = 2;
-+	pcr->ops = &rts5249_pcr_ops;
-+
-+	pcr->ic_version = rts5249_get_ic_version(pcr);
-+	pcr->sd_pull_ctl_enable_tbl = rts5249_sd_pull_ctl_enable_tbl;
-+	pcr->sd_pull_ctl_disable_tbl = rts5249_sd_pull_ctl_disable_tbl;
-+	pcr->ms_pull_ctl_enable_tbl = rts5249_ms_pull_ctl_enable_tbl;
-+	pcr->ms_pull_ctl_disable_tbl = rts5249_ms_pull_ctl_disable_tbl;
-+}
-diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index 2f12cc1..62b0e12 100644
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -56,6 +56,7 @@ static DEFINE_PCI_DEVICE_TABLE(rtsx_pci_ids) = {
- 	{ PCI_DEVICE(0x10EC, 0x5229), PCI_CLASS_OTHERS << 16, 0xFF0000 },
- 	{ PCI_DEVICE(0x10EC, 0x5289), PCI_CLASS_OTHERS << 16, 0xFF0000 },
- 	{ PCI_DEVICE(0x10EC, 0x5227), PCI_CLASS_OTHERS << 16, 0xFF0000 },
-+	{ PCI_DEVICE(0x10EC, 0x5249), PCI_CLASS_OTHERS << 16, 0xFF0000 },
- 	{ 0, }
- };
- 
-@@ -1033,6 +1034,10 @@ static int rtsx_pci_init_chip(struct rtsx_pcr *pcr)
- 	case 0x5227:
- 		rts5227_init_params(pcr);
- 		break;
-+
-+	case 0x5249:
-+		rts5249_init_params(pcr);
-+		break;
- 	}
- 
- 	dev_dbg(&(pcr->pci->dev), "PID: 0x%04x, IC version: 0x%02x\n",
-diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
-index 2b3ab8a..55fcfc2 100644
---- a/drivers/mfd/rtsx_pcr.h
-+++ b/drivers/mfd/rtsx_pcr.h
-@@ -32,5 +32,6 @@ void rts5209_init_params(struct rtsx_pcr *pcr);
- void rts5229_init_params(struct rtsx_pcr *pcr);
- void rtl8411_init_params(struct rtsx_pcr *pcr);
- void rts5227_init_params(struct rtsx_pcr *pcr);
-+void rts5249_init_params(struct rtsx_pcr *pcr);
- 
- #endif
-diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-index 26ea7f1..ffb880b 100644
---- a/include/linux/mfd/rtsx_pci.h
-+++ b/include/linux/mfd/rtsx_pci.h
-@@ -500,6 +500,8 @@
- #define BPP_POWER_15_PERCENT_ON		0x08
- #define BPP_POWER_ON			0x00
- #define BPP_POWER_MASK			0x0F
-+#define SD_VCC_PARTIAL_POWER_ON		0x02
-+#define SD_VCC_POWER_ON			0x00
- 
- /* PWR_GATE_CTRL */
- #define PWR_GATE_EN			0x01
--- 
-1.7.9.5
+Uh, yeah, we should probably fix that.
 
+>  We're not failing the detach, just getting
+> into a broken state.  This is only called to unwind attaching groups
+> when the iommu is set or if the user explicitly calls
+> GROUP_UNSET_CONTAINER.  The former won't have had a chance to call
+> enable but the latter would need to be fixed.
+
+Well, in the latter case it's essentialy a silent failure, which isn't
+great.
+
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
+
+--CE+1k2dSO48ffgeK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlFPsqkACgkQaILKxv3ab8YijACfavY8rYi2QD9/UmV9lBeRhicP
+yTQAnj6Pf1aWXfInQwShQB3bGM3D7d3Z
+=0h8r
+-----END PGP SIGNATURE-----
+
+--CE+1k2dSO48ffgeK--
