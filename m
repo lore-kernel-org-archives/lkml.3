@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835Ab3CYBPd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:15:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33882 "EHLO
+	id S1755800Ab3CYBPb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:15:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33875 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755693Ab3CYBPZ (ORCPT
+	by vger.kernel.org with ESMTP id S1755682Ab3CYBPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:25 -0400
-Message-Id: <20130325010532.711405969@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:24 -0400
+Message-Id: <20130325010533.317542350@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:49 +0000
+Date: Mon, 25 Mar 2013 01:06:55 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 085/104] USB: ark3116: fix use-after-free in TIOCMIWAIT
+Subject: [ 091/104] USB: mct_u232: fix use-after-free in TIOCMIWAIT
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -31,7 +31,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 5018860321dc7a9e50a75d5f319bc981298fb5b7 upstream.
+commit cf1d24443677a0758cfa88ca40f24858b89261c0 upstream.
 
 Use the port wait queue and make sure to check the serial disconnected
 flag before accessing private port data after waking up.
@@ -41,35 +41,50 @@ itself) can be gone when waking up after a disconnect.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/ark3116.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/usb/serial/mct_u232.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/ark3116.c
-+++ b/drivers/usb/serial/ark3116.c
-@@ -68,7 +68,6 @@ static int is_irda(struct usb_serial *se
- }
+--- a/drivers/usb/serial/mct_u232.c
++++ b/drivers/usb/serial/mct_u232.c
+@@ -168,8 +168,6 @@ struct mct_u232_private {
+ 	unsigned char	     last_msr;      /* Modem Status Register */
+ 	unsigned int	     rx_flags;      /* Throttling flags */
+ 	struct async_icount  icount;
+-	wait_queue_head_t    msr_wait;	/* for handling sleeping while waiting
+-						for msr change to happen */
+ };
  
- struct ark3116_private {
--	wait_queue_head_t       delta_msr_wait;
- 	struct async_icount	icount;
- 	int			irda;	/* 1 for irda device */
- 
-@@ -148,7 +147,6 @@ static int ark3116_attach(struct usb_ser
+ #define THROTTLED		0x01
+@@ -449,7 +447,6 @@ static int mct_u232_startup(struct usb_s
  	if (!priv)
  		return -ENOMEM;
+ 	spin_lock_init(&priv->lock);
+-	init_waitqueue_head(&priv->msr_wait);
+ 	usb_set_serial_port_data(serial->port[0], priv);
  
--	init_waitqueue_head(&priv->delta_msr_wait);
- 	mutex_init(&priv->hw_lock);
- 	spin_lock_init(&priv->status_lock);
- 
-@@ -460,10 +458,14 @@ static int ark3116_ioctl(struct tty_stru
- 	case TIOCMIWAIT:
- 		for (;;) {
- 			struct async_icount prev = priv->icount;
--			interruptible_sleep_on(&priv->delta_msr_wait);
-+			interruptible_sleep_on(&port->delta_msr_wait);
+ 	init_waitqueue_head(&serial->port[0]->write_wait);
+@@ -675,7 +672,7 @@ static void mct_u232_read_int_callback(s
+ 		tty_kref_put(tty);
+ 	}
+ #endif
+-	wake_up_interruptible(&priv->msr_wait);
++	wake_up_interruptible(&port->delta_msr_wait);
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ exit:
+ 	retval = usb_submit_urb(urb, GFP_ATOMIC);
+@@ -896,13 +893,17 @@ static int  mct_u232_ioctl(struct tty_st
+ 		cprev = mct_u232_port->icount;
+ 		spin_unlock_irqrestore(&mct_u232_port->lock, flags);
+ 		for ( ; ; ) {
+-			prepare_to_wait(&mct_u232_port->msr_wait,
++			prepare_to_wait(&port->delta_msr_wait,
+ 					&wait, TASK_INTERRUPTIBLE);
+ 			schedule();
+-			finish_wait(&mct_u232_port->msr_wait, &wait);
++			finish_wait(&port->delta_msr_wait, &wait);
  			/* see if a signal did it */
  			if (signal_pending(current))
  				return -ERESTARTSYS;
@@ -77,17 +92,8 @@ Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 +			if (port->serial->disconnected)
 +				return -EIO;
 +
- 			if ((prev.rng == priv->icount.rng) &&
- 			    (prev.dsr == priv->icount.dsr) &&
- 			    (prev.dcd == priv->icount.dcd) &&
-@@ -584,7 +586,7 @@ static void ark3116_update_msr(struct us
- 			priv->icount.dcd++;
- 		if (msr & UART_MSR_TERI)
- 			priv->icount.rng++;
--		wake_up_interruptible(&priv->delta_msr_wait);
-+		wake_up_interruptible(&port->delta_msr_wait);
- 	}
- }
- 
+ 			spin_lock_irqsave(&mct_u232_port->lock, flags);
+ 			cnow = mct_u232_port->icount;
+ 			spin_unlock_irqrestore(&mct_u232_port->lock, flags);
 
 
