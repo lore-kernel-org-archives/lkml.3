@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab3CYBQI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:16:08 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34001 "EHLO
+	id S1757072Ab3CYB0w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:26:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34040 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755942Ab3CYBQB (ORCPT
+	by vger.kernel.org with ESMTP id S1756125Ab3CYBQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:01 -0400
-Message-Id: <20130325010530.684519756@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:08 -0400
+Message-Id: <20130325010529.845809197@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:29 +0000
+Date: Mon, 25 Mar 2013 01:06:20 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Takashi Iwai <tiwai@suse.de>
-Subject: [ 065/104] ALSA: hda/cirrus - Fix the digital beep registration
+Cc: akpm@linux-foundation.org, Kees Cook <keescook@chromium.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 056/104] drm/i915: restrict kernel address leak in debugfs
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -28,57 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Kees Cook <keescook@chromium.org>
 
-commit a86b1a2cd2f81f74e815e07f756edd7bc5b6f034 upstream.
+commit 2563a4524febe8f4a98e717e02436d1aaf672aa2 upstream.
 
-The argument passed to snd_hda_attach_beep_device() is a widget NID
-while spec->beep_amp holds the composed value for amp controls.
+Masks kernel address info-leak in object dumps with the %pK suffix,
+so they cannot be used to target kernel memory corruption attacks if
+the kptr_restrict sysctl is set.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2: the rest of the format string is different]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_conexant.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/i915_debugfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -1236,7 +1236,7 @@ static int patch_cxt5045(struct hda_code
- 	}
- 
- 	if (spec->beep_amp)
--		snd_hda_attach_beep_device(codec, spec->beep_amp);
-+		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
- 
- 	return 0;
- }
-@@ -2027,7 +2027,7 @@ static int patch_cxt5051(struct hda_code
- 	}
- 
- 	if (spec->beep_amp)
--		snd_hda_attach_beep_device(codec, spec->beep_amp);
-+		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
- 
- 	conexant_init_jacks(codec);
- 	if (spec->auto_mic & AUTO_MIC_PORTB)
-@@ -3225,7 +3225,7 @@ static int patch_cxt5066(struct hda_code
- 	}
- 
- 	if (spec->beep_amp)
--		snd_hda_attach_beep_device(codec, spec->beep_amp);
-+		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
- 
- 	return 0;
- }
-@@ -4556,7 +4556,7 @@ static int patch_conexant_auto(struct hd
- 	spec->capture_stream = &cx_auto_pcm_analog_capture;
- 	codec->patch_ops = cx_auto_patch_ops;
- 	if (spec->beep_amp)
--		snd_hda_attach_beep_device(codec, spec->beep_amp);
-+		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
- 	return 0;
- }
- 
+--- a/drivers/gpu/drm/i915/i915_debugfs.c
++++ b/drivers/gpu/drm/i915/i915_debugfs.c
+@@ -122,7 +122,7 @@ static const char *cache_level_str(int t
+ static void
+ describe_obj(struct seq_file *m, struct drm_i915_gem_object *obj)
+ {
+-	seq_printf(m, "%p: %s%s %8zd %04x %04x %d %d%s%s%s",
++	seq_printf(m, "%pK: %s%s %8zd %04x %04x %d %d%s%s%s",
+ 		   &obj->base,
+ 		   get_pin_flag(obj),
+ 		   get_tiling_flag(obj),
 
 
