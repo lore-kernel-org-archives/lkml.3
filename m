@@ -1,164 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758481Ab3CYOcH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 10:32:07 -0400
-Received: from mout.gmx.net ([212.227.17.22]:64015 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758466Ab3CYOcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 10:32:05 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18eiFdX9C0efLVukd4BZlmy7/N4XEV44bwiFR2l6T
-	UYw85JApdETwmU
-Message-ID: <1364221915.4559.188.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH] sched: wake-affine throttle
-From: Mike Galbraith <efault@gmx.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung@kernel.org>, Alex Shi <alex.shi@intel.com>,
-        Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Date: Mon, 25 Mar 2013 15:31:55 +0100
-In-Reply-To: <51502513.6010607@linux.vnet.ibm.com>
-References: <514FDF76.2060806@linux.vnet.ibm.com>
-	 <1364203359.4559.66.camel@marge.simpson.net>
-	 <51502513.6010607@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S932085Ab3CYOen (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 10:34:43 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:51373 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758386Ab3CYOem (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 10:34:42 -0400
+From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+To: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-kernel@vger.kernel.org,
+        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Subject: [PATCH] sound: soc: Use PTR_RET function
+Date: Mon, 25 Mar 2013 16:33:59 +0200
+Message-Id: <1364222039-6829-1-git-send-email-gheorghiuandru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-25 at 18:21 +0800, Michael Wang wrote: 
-> Hi, Mike
-> 
-> Thanks for your reply :)
-> 
-> On 03/25/2013 05:22 PM, Mike Galbraith wrote:
-> > On Mon, 2013-03-25 at 13:24 +0800, Michael Wang wrote: 
-> >> Recently testing show that wake-affine stuff cause regression on pgbench, the
-> >> hiding rat was finally catched out.
-> >>
-> >> wake-affine stuff is always trying to pull wakee close to waker, by theory,
-> >> this will benefit us if waker's cpu cached hot data for wakee, or the extreme
-> >> ping-pong case.
-> >>
-> >> However, the whole stuff is somewhat blindly, there is no examining on the
-> >> relationship between waker and wakee, and since the stuff itself
-> >> is time-consuming, some workload suffered, pgbench is just the one who
-> >> has been found.
-> >>
-> >> Thus, throttle the wake-affine stuff for such workload is necessary.
-> >>
-> >> This patch introduced a new knob 'sysctl_sched_wake_affine_interval' with the
-> >> default value 1ms, which means wake-affine stuff only effect once per 1ms, which
-> >> usually the minimum balance interval (the idea is that the rapid of wake-affine
-> >> should lower than the rapid of load-balance at least).
-> >>
-> >> By turning the new knob, those workload who suffered will have the chance to
-> >> stop the regression.
-> > 
-> > I wouldn't do it quite this way.  Per task, yes (I suggested that too,
-> > better agree;), but for one, using jiffies in the scheduler when we have
-> > a spiffy clock sitting there ready to use seems wrong,
-> 
-> Well, I get the approach from load-balance code, this is one existed way
-> to play interval stuff, just try to keep consistent...
-> 
->  and secondly,
-> > when you've got a bursty load, not pulling can hurt like hell.  Alex
-> > encountered that while working on his patch set.
-> > 
-> >> Test:
-> >> 	Test with 12 cpu X86 server and tip 3.9.0-rc2.
-> >>
-> >> 	Default 1ms interval bring limited performance improvement(<5%) for
-> >> 	pgbench, significant improvement start to show when turning the
-> >> 	knob to 100ms.
-> > 
-> > So it seems you'd be better served by an on/off switch for this load.
-> > 100ms in the future for many tasks is akin to a human todo list entry
-> > scheduled for Solar radius >= Earth orbital radius day ;-)
-> 
-> Do you mean 1ms interval is still too big? and you prefer to have a 0
-> option?
+Used PTR_RET function instead of IS_ERR and PTR_ERR.
+Patch found using coccinelle.
 
-Not really, I just think a fixed interval may not be good enough without
-some idle time consideration.  Once a single load gets going less
-balancing is more, it's just when load is fluctuating a lot, and mixed
-loads where I can imagine troubles.
+Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+---
+ sound/soc/soc-io.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-Perhaps ramp up to knob interval after an idle period trigger of.. say
-migration_cost, or whatever.  Something dirt simple that makes it open
-the gates when it's most likely to matter.
-
-> > 
-> >> 			    original	100ms	
-> >>
-> >> 	| db_size | clients |  tps  |	|  tps  |
-> >> 	+---------+---------+-------+   +-------+
-> >> 	| 21 MB   |       1 | 10572 |   | 10675 |
-> >> 	| 21 MB   |       2 | 21275 |   | 21228 |
-> >> 	| 21 MB   |       4 | 41866 |   | 41946 |
-> >> 	| 21 MB   |       8 | 53931 |   | 55176 |
-> >> 	| 21 MB   |      12 | 50956 |   | 54457 |	+6.87%
-> >> 	| 21 MB   |      16 | 49911 |   | 55468 |	+11.11%
-> >> 	| 21 MB   |      24 | 46046 |   | 56446 |	+22.59%
-> >> 	| 21 MB   |      32 | 43405 |   | 55177 |	+27.12%
-> >> 	| 7483 MB |       1 |  7734 |   |  7721 |
-> >> 	| 7483 MB |       2 | 19375 |   | 19277 |
-> >> 	| 7483 MB |       4 | 37408 |   | 37685 |
-> >> 	| 7483 MB |       8 | 49033 |   | 49152 |
-> >> 	| 7483 MB |      12 | 45525 |   | 49241 |	+8.16%
-> >> 	| 7483 MB |      16 | 45731 |   | 51425 |	+12.45%
-> >> 	| 7483 MB |      24 | 41533 |   | 52349 |	+26.04%
-> >> 	| 7483 MB |      32 | 36370 |   | 51022 |	+40.28%
-> >> 	| 15 GB   |       1 |  7576 |   |  7422 |
-> >> 	| 15 GB   |       2 | 19157 |   | 19176 |
-> >> 	| 15 GB   |       4 | 37285 |   | 36982 |
-> >> 	| 15 GB   |       8 | 48718 |   | 48413 |
-> >> 	| 15 GB   |      12 | 45167 |   | 48497 |	+7.37%
-> >> 	| 15 GB   |      16 | 45270 |   | 51276 |	+13.27%
-> >> 	| 15 GB   |      24 | 40984 |   | 51628 |	+25.97%
-> >> 	| 15 GB   |      32 | 35918 |   | 51060 |	+42.16%
-> > 
-> > The benefit you get with not pulling is two fold at least, first and
-> > foremost it keeps the forked off clients the hell away from the mother
-> > of all work so it can keep the kids fed.  Second, you keep the load
-> > spread out, which is the only way the full box sized load can possibly
-> > perform in the first place.  The full box benefit seems clear from the
-> > numbers.. hard working server can compete best for its share when it's
-> > competing against the same set of clients, that's likely why you have to
-> > set the knob to 100ms to get the big win.
-> 
-> Actually the 10ms will also get around 27% improvement at most, I use
-> 100ms since it looks more significant...
-> 
-> I haven't tried the interval between 1 and 10, but I suppose the benefit
-> could be some kind of parabola, it's not a suddenly change, but smoothly.
-> 
-> > 
-> > With small burst loads of short running tasks, even things like pgbench
-> > will benefit from pulling to local llc more frequently than 100ms, iff
-> > burst does not exceed socket size.  That pulling is not completely evil,
-> > it automagically consolidates your mostly idle NUMA box to it's most
-> > efficient task placement for both power saving and throughput, so IMHO,
-> > you can't just let tasks sit cross node over ~extended idle periods
-> > without doing harm.
-> 
-> I see, and actually that's the reason for this proposal, it's just try
-> to reserve all the possible benefit of wake-affine, and provide a way to
-> control the rapid.
-> 
-> I think your point here is still that we need a 0 option, it that correct?
-
-No, zero is pretty much what we've got, and it's less than wonderful
-after ramping up.
-
--Mike
+diff --git a/sound/soc/soc-io.c b/sound/soc/soc-io.c
+index 29183ef..8ca9ecc 100644
+--- a/sound/soc/soc-io.c
++++ b/sound/soc/soc-io.c
+@@ -158,10 +158,7 @@ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (IS_ERR(codec->control_data))
+-		return PTR_ERR(codec->control_data);
+-
+-	return 0;
++	return PTR_RET(codec->control_data);
+ }
+ EXPORT_SYMBOL_GPL(snd_soc_codec_set_cache_io);
+ #else
+-- 
+1.7.9.5
 
