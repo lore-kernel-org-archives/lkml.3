@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756367Ab3CYBQh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:16:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34114 "EHLO
+	id S1756685Ab3CYBUJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:20:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34139 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756323Ab3CYBQe (ORCPT
+	by vger.kernel.org with ESMTP id S1756351Ab3CYBQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:34 -0400
-Message-Id: <20130325010527.529757689@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:36 -0400
+Message-Id: <20130325010527.622745385@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:05:57 +0000
+Date: Mon, 25 Mar 2013 01:05:58 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Veaceslav Falico <vfalico@redhat.com>,
+Cc: akpm@linux-foundation.org, Vlad Yasevich <vyasevich@gmail.com>,
+        Karl Heiss <kheiss@gmail.com>, Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 033/104] bonding: dont call update_speed_duplex() under  spinlocks
+Subject: [ 034/104] sctp: Use correct sideffect command in duplicate  cookie handling
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,58 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Veaceslav Falico <vfalico@redhat.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-[ Upstream commit 876254ae2758d50dcb08c7bd00caf6a806571178 ]
+[ Upstream commit f2815633504b442ca0b0605c16bf3d88a3a0fcea ]
 
-bond_update_speed_duplex() might sleep while calling underlying slave's
-routines. Move it out of atomic context in bond_enslave() and remove it
-from bond_miimon_commit() - it was introduced by commit 546add79, however
-when the slave interfaces go up/change state it's their responsibility to
-fire NETDEV_UP/NETDEV_CHANGE events so that bonding can properly update
-their speed.
+When SCTP is done processing a duplicate cookie chunk, it tries
+to delete a newly created association.  For that, it has to set
+the right association for the side-effect processing to work.
+However, when it uses the SCTP_CMD_NEW_ASOC command, that performs
+more work then really needed (like hashing the associationa and
+assigning it an id) and there is no point to do that only to
+delete the association as a next step.  In fact, it also creates
+an impossible condition where an association may be found by
+the getsockopt() call, and that association is empty.  This
+causes a crash in some sctp getsockopts.
 
-I've tested it on all combinations of ifup/ifdown, autoneg/speed/duplex
-changes, remote-controlled and local, on (not) MII-based cards. All changes
-are visible.
+The solution is rather simple.  We simply use SCTP_CMD_SET_ASOC
+command that doesn't have all the overhead and does exactly
+what we need.
 
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Reported-by: Karl Heiss <kheiss@gmail.com>
+Tested-by: Karl Heiss <kheiss@gmail.com>
+CC: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/bonding/bond_main.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ net/sctp/sm_statefuns.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 202ae34..63e3c47 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1715,6 +1715,8 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
- 
- 	bond_compute_features(bond);
- 
-+	bond_update_speed_duplex(new_slave);
-+
- 	read_lock(&bond->lock);
- 
- 	new_slave->last_arp_rx = jiffies;
-@@ -1758,8 +1760,6 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
- 		new_slave->link  = BOND_LINK_DOWN;
+diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+index 891f5db..cb1c430 100644
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -2044,7 +2044,7 @@ sctp_disposition_t sctp_sf_do_5_2_4_dupcook(const struct sctp_endpoint *ep,
  	}
  
--	bond_update_speed_duplex(new_slave);
--
- 	if (USES_PRIMARY(bond->params.mode) && bond->params.primary[0]) {
- 		/* if there is a primary slave, remember it */
- 		if (strcmp(bond->params.primary, new_slave->dev->name) == 0) {
-@@ -2437,8 +2437,6 @@ static void bond_miimon_commit(struct bonding *bond)
- 				bond_set_backup_slave(slave);
- 			}
+ 	/* Delete the tempory new association. */
+-	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_ASOC, SCTP_ASOC(new_asoc));
++	sctp_add_cmd_sf(commands, SCTP_CMD_SET_ASOC, SCTP_ASOC(new_asoc));
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_DELETE_TCB, SCTP_NULL());
  
--			bond_update_speed_duplex(slave);
--
- 			pr_info("%s: link status definitely up for interface %s, %u Mbps %s duplex.\n",
- 				bond->dev->name, slave->dev->name,
- 				slave->speed, slave->duplex ? "full" : "half");
+ 	/* Restore association pointer to provide SCTP command interpeter
 
 
