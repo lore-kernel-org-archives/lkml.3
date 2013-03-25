@@ -1,43 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932801Ab3CYSZo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 14:25:44 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:53092 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932576Ab3CYSZm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 14:25:42 -0400
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        poeschel@lemonage.de, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com, spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH v3] gpio: mcp23s08: convert driver to DT
-References: <1362414873-17676-1-git-send-email-larsi@wh2.tu-dresden.de>
-	<CACRpkdYYsULLsDQuxoRHp=HXsaOAejwaO-CezdEK4sNprWpDYQ@mail.gmail.com>
-Date: Mon, 25 Mar 2013 19:25:33 +0100
-In-Reply-To: <CACRpkdYYsULLsDQuxoRHp=HXsaOAejwaO-CezdEK4sNprWpDYQ@mail.gmail.com>
-	(Linus Walleij's message of "Fri, 22 Mar 2013 09:33:10 +0100")
-Message-ID: <87wqsvbale.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	id S932858Ab3CYS1d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 14:27:33 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:30426
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932207Ab3CYS1c convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 14:27:32 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zzbb2dI98dI9371Ic89bh1432Idb82hzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah906i1155h)
+Date: Mon, 25 Mar 2013 11:27:24 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Peter Crosthwaite <pcrost@xilinx.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <git@xilinx.com>,
+        Jan =?utf-8?B?TMO8YmJl?= <jlu@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: Re: RFC v2: Zynq Clock Controller
+References: <27dae808-1d3a-4001-8eb2-b0a6e2a34b8f@AM1EHSMHS013.ehs.local>
+ <515093B4.2090701@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <515093B4.2090701@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <8fd7278d-37c5-48ff-8d06-edc64d532a96@VA3EHSMHS037.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Linus" == Linus Walleij <linus.walleij@linaro.org> writes:
+Hi Stephen,
 
- Linus> Hi Lars,
- Linus> sorry for taking eternities to review stuff :-(
+On Mon, Mar 25, 2013 at 12:13:08PM -0600, Stephen Warren wrote:
+> On 03/20/2013 05:56 PM, Sören Brinkmann wrote:
+> > Hi,
+> > 
+> > I spent some time working on this and incorporating feedback. Here's an updated proposal for a clock controller for Zynq:
+> > 
+> > Required properties:
+> >  - #clock-cells : Must be 1
+> >  - compatible : "xlnx,ps7-clkc"  (this may become 'xlnx,zynq-clkc' terminology differs a bit between Xilinx internal and mainline)
+> >  - ps-clk-frequency : Frequency of the oscillator providing ps_clk in HZ
+> >                      (usually 33 MHz oscillators are used for Zynq platforms)
+> 
+> This may have been mentioned before, but shouldn't the input clock be
+> represented as an actual clock in DT, and hence as an entry in this
+> node's clocks property? The crystal/... itself can be represented in DT
+> as a fixed-clock.
+Lars-Peter brought that up, too. Please refer to my answer to him.
 
- Linus> I recommend that you include SPI co-maintainer Mark Brown on
- Linus> subsequent postings.
+> 
+> >  - clock-output-names : List of strings used to name the clock outputs. Shall be a list of the outputs given below.
+> 
+> That shouldn't be required.
+When I want to support of_clk_get_parent_name() for my clocks, I think
+it is. And I'm inclined to not brake this functionality.
 
-And me, as I'm the only one who has done any significant work on that
-driver since David..
+> 
+> > Optional properties:
+> >  - clocks : as described in the clock bindings
+> >  - clock-names : as described in the clock bindings
+> 
+> I think clocks should be required, with at least the main crystal clock
+> input always present, but perhaps having some optional entries for the
+> (E)MIO feature you mention.
+This is why I have the xtal separate. This way these props are purely
+optional and the xtal frequency is obtained separately. It also makes it
+a little easier internally, because I don't have to cope with a variable
+name for the xtal this way.
 
--- 
-Bye, Peter Korsgaard
+Describing the xtal as fixed clock in DT means a mandatory entry for
+'clocks' and 'clock-names' and a variable name for the xtal clock. I
+wanted to avoid this.
+
+> 
+> > Example:
+> >         clkc: clkc {
+> >                 #clock-cells = <1>;
+> >                 compatible = "xlnx,ps7-clkc";
+> >                 ps-clk-frequency = <33333333>;
+> >                 clock-output-names = "armpll", "ddrpll", "iopll", "cpu_6or4x", "cpu_3or2x", "cpu_2x", "cpu_1x", "ddr2x", "ddr3x", "dci", "lqspi", "smc", "pcap", "gem0", "gem1", "fclk0", "fclk1", "fclk2", "fclk3", "can0", "can1", "sdio0", "sdio1", "uart0", "uart1", "spi0", "spi1", "dma", "usb0_aper", "usb1_aper", "gem0_aper", "gem1_aper", "sdio0_aper", "sdio1_aper", "spi0_aper", "spi1_aper", "can0_aper", "can1_aper", "i2c0_aper", "i2c1_aper", "uart0_aper", "uart1_aper", "gpio_aper", "lqspi_aper", "smc_aper", "swdt", "dbg_trc", "dbg_apb";  /* long list... explanation below */
+> >                 /* optional props */
+> >                 clocks = <&clkc 16>, <&clk_foo>;
+> >                 clock-names = "gem1_emio_clk", "can_mio_clk_23";
+> >         };
+> > 
+> > The downside of supporting this is, that I don't see a way around explicitly listing the clock output names in the DT.
+> 
+> (Please wrap your emails to ~74 characters or so)
+I changed my settings.
+
+> 
+> As Mike mentioned off-list, one can create a new clk registration API
+> that takes a struct clk* as parent rather than a char *clk_name.
+Then we also have to make sure clocks are probed in a specific order. To
+obtain a 'struct clk *' through clk_get() the requested clock has to be
+already been probed. Currently clock probing relies purely on data present
+in DT. This makes this proposal not that trivial, IMHO.
+
+e.g. in this case the clock controller probe would fail if the potential
+fixed clock describing the xtal isn't probed first.
+
+> 
+> > This email and any attachments are intended for the sole use of the named recipient(s)...
+> 
+> It's not good form to include that kind of disclaimer on public mailing
+> list posts. That's why many people use their personal email when posting
+> to mailing lists.
+My apologies. IT is currently messing with the email configuration and broke
+the flows which used to work. AFAIK, it's currently fixed. And I
+sincerely hope it stays this way.
+
+	Sören
+
+
