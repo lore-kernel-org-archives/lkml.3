@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570Ab3CYQMu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 12:12:50 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54062 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094Ab3CYQMs (ORCPT
+	id S1758635Ab3CYQOD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 12:14:03 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19319 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758468Ab3CYQOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 12:12:48 -0400
-Message-ID: <5150777B.8030304@wwwdotorg.org>
-Date: Mon, 25 Mar 2013 10:12:43 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] clk: tegra: Don't enable PLLs during early boot
-References: <1363953308-28828-1-git-send-email-pdeschrijver@nvidia.com> <514C7D3B.40602@wwwdotorg.org> <20130325110236.GP4977@n2100.arm.linux.org.uk>
-In-Reply-To: <20130325110236.GP4977@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 25 Mar 2013 12:14:01 -0400
+X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ZzSxI7jMevMA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=mVTtbqeYs4EA:10 a=8LN7v2X43pVAz9kI2xcA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1364228039.6345.183.camel@gandalf.local.home>
+Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
+ unfreeze_partials() code.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <clark@redhat.com>
+Date: Mon, 25 Mar 2013 12:13:59 -0400
+In-Reply-To: <1364227073.6345.182.camel@gandalf.local.home>
+References: <1363906545.6345.81.camel@gandalf.local.home>
+	 <0000013d92c37ff3-5fb85400-bec1-4eda-8ba1-332566884c59-000000@email.amazonses.com>
+	 <1364010673.6345.156.camel@gandalf.local.home>
+	 <0000013da1f93be3-c3d42ae8-ff34-4c63-8094-77a83291ea19-000000@email.amazonses.com>
+	 <1364227073.6345.182.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2013 05:02 AM, Russell King - ARM Linux wrote:
-> On Fri, Mar 22, 2013 at 09:48:11AM -0600, Stephen Warren wrote:
->> This assumption was made long ago. I know drivers are supposed to assume
->> that clocks are disabled when they're probed, but historically that
->> wasn't always the case, so if the audio drivers assumed that, and then
->> did clk_enable() as the first thing, they got a warning due to the
->> enabling an already enabled clock and/or later attempts to disable the
->> clocks wouldn't actually disable them.
+On Mon, 2013-03-25 at 11:57 -0400, Steven Rostedt wrote:
+
+> > 
+> > You can eliminate the whole thing by setting
+> > 
+> > /sys/kernel/slab/<whatever/cpu_partial
+> > 
+> > to zero.
 > 
-> No.  clocks have always been able to be enabled multiple times.  You
-> should only get a warning if you try and disable it more times than you
-> enabled it, because that's a violation of the API.
+> Thanks! I'll give this a try.
+> 
 
-That may have been the issue; the clock may have been on at boot, and
-hence the driver attempted to disable it without ever enabling it
-itself, and this triggered an error/warning.
+BTW, what impact does setting all cpu_partial files to zero have on the
+system?
 
-Equally, it's plausible this issue is long gone; the audio clocks were
-set up this way due to issues over 2 years ago when the audio code was
-upstreamed. At that time, Tegra's clock code was using very little
-standard infra-structure, whereas now it's been cleaned up to use the
-common clock framework etc.
+-- Steve
+
+
