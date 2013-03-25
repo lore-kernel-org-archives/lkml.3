@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758937Ab3CYVE4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 17:04:56 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:50350 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600Ab3CYVEz (ORCPT
+	id S1758919Ab3CYVNS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 17:13:18 -0400
+Received: from mail.windriver.com ([147.11.1.11]:54697 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758551Ab3CYVNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 17:04:55 -0400
-Date: Mon, 25 Mar 2013 14:04:53 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 5/9 RESEND] staging: ste_rmi4: kill platform_data hack
-Message-ID: <20130325210453.GA18214@kroah.com>
-References: <1364245211-21422-1-git-send-email-linus.walleij@stericsson.com>
+	Mon, 25 Mar 2013 17:13:17 -0400
+Message-ID: <5150BD98.2030606@windriver.com>
+Date: Mon, 25 Mar 2013 16:11:52 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364245211-21422-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Travis <travis@sgi.com>
+CC: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <kgdb-bugreport@lists.sourceforge.net>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 01/15] KDB: fix the interrupt of the KDB btc command
+References: <20130325185007.321022858@gulag1.americas.sgi.com> <20130325185007.496292277@gulag1.americas.sgi.com>
+In-Reply-To: <20130325185007.496292277@gulag1.americas.sgi.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 10:00:11PM +0100, Linus Walleij wrote:
-> From: Arnd Bergmann <arnd@arndb.de>
+On 03/25/2013 01:50 PM, Mike Travis wrote:
+> The KDB 'btc' (backtrace cpus) command ignores the 'quit' reply
+> to the 'more>' prompt.  This is quite annoying when you have a
+> large number of processors and thousands of lines are being
+> printed.  This fixes that problem.
 > 
-> There is only one instance of the platform data for synaptics_i2c_rmi4
-> in the mainline kernel, so there is no point of pretending its
-> variable here. The only member that has a dependency on the platform
-> is actually the interrupt number, and there is a field in the
-> i2c_client structure that gets initialized from the board info,
-> so we can trivially move the board_into into the platform without
-> knowledge of the platform_data structure.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> Hi Greg, seeking your ACK on this to take it through the ARM SoC
-> tree.
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Merged to kgdb-next and added as a cc to -stable.
+
+I'll be working my way through the rest of the patches in the series you sent and I'll merge anything that is going to -stable in the 3.9 series toward the end of the week assuming everything passes regression testing, and the rest will go into the 3.10 merge window.
+
+Cheers,
+Jason.
