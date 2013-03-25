@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933081Ab3CYUk7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 16:40:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62244 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758299Ab3CYUk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 16:40:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,907,1355126400"; 
-   d="scan'208";a="284391002"
-Subject: Re: [PATCH 06/11] Create module providing optimized SHA256
- routines using SSSE3, AVX or AVX2 instructions.
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "David S.Miller" <davem@davemloft.net>,
-        Kirk Yap <kirk.s.yap@intel.com>, David Cote <david.m.cote@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-In-Reply-To: <514F75BB.3080501@iki.fi>
-References: <cover.1363961999.git.tim.c.chen@linux.intel.com>
-	 <1363987761.8972.60.camel@schen9-DESK>  <514F75BB.3080501@iki.fi>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Mar 2013 13:40:40 -0700
-Message-ID: <1364244040.8972.71.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S933176Ab3CYUpv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 16:45:51 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:42164 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758894Ab3CYUpt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 16:45:49 -0400
+Date: Mon, 25 Mar 2013 16:40:25 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth-next 2013-03-21
+Message-ID: <20130325204025.GF17454@tuxdriver.com>
+References: <20130321222408.GA8890@joana>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130321222408.GA8890@joana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-03-24 at 23:52 +0200, Jussi Kivilinna wrote:
-> On 22.03.2013 23:29, Tim Chen wrote:
-> > We added glue code and config options to create crypto
-> > module that uses SSE/AVX/AVX2 optimized SHA256 x86_64 assembly routines.
-> > 
-> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+On Thu, Mar 21, 2013 at 07:24:08PM -0300, Gustavo Padovan wrote:
+> Hi John,
 > 
-> ..snip..
+> This is our first batch of patches for 3.10. The biggest changes of this pull
+> request are from Johan Hedberg, he implemented a HCI request framework to make
+> life easier when we have to send many HCI commands and a block and wait for
+> all of the to finish, we were able to fix a few issues in stack with the
+> introduction of this framework.
 > 
-> > diff --git a/arch/x86/crypto/sha256_ssse3_glue.c b/arch/x86/crypto/sha256_ssse3_glue.c
-> > new file mode 100644
-> > index 0000000..5876a19
-> > --- /dev/null
-> > +++ b/arch/x86/crypto/sha256_ssse3_glue.c
+> Other than that Dean Jenkins did a good work cleaning the RFCOMM code, the
+> refcnt infrastructure was removed and now we use NULL pointer checks to know
+> when a object was freed or not. That code was buggy and now it looks a way
+> better.
 > 
-> ..snip..
+> The rest of changes are clean ups, fixes and small improvements all over the
+> Bluetooth subsystem. 
 > 
-> > +static int __init sha256_ssse3_mod_init(void)
-> > +{
-> > +	/* test for SSE3 first */
-> > +	if (cpu_has_xmm3)
-> > +		sha256_transform_asm = sha256_transform_ssse3;
-> > +
+> Please pull, or let me know of any issues! Thanks.
 > 
-> This causes OOPS on my computer. Maybe use 'cpu_has_ssse3' instead?
+> 	Gustavo
 > 
+> ---
+> The following changes since commit 7da060c1c01b103d181dba39bce9bd141a945f99:
+> 
+>   mwifiex: add WOWLAN support (2013-03-06 16:29:17 -0500)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next for-upstream
+> 
+> for you to fetch changes up to 0227c7b56959cd8f5edd20b6a47db86fa553e91a:
+> 
+>   Bluetooth: fix error return code in rfcomm_add_listener() (2013-03-20 14:17:52 -0300)
 
-Thanks and appreciate your feedback.  I'll be sending an update of the
-patch series to address the issues.
+Pulling now...
 
-Tim
-
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
