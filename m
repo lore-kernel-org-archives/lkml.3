@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757124Ab3CYB11 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:27:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34026 "EHLO
+	id S1757164Ab3CYB1o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:27:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34033 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756120Ab3CYBQH (ORCPT
+	by vger.kernel.org with ESMTP id S1756098Ab3CYBQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:07 -0400
-Message-Id: <20130325010530.122444643@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:06 -0400
+Message-Id: <20130325010529.933837586@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:23 +0000
+Date: Mon, 25 Mar 2013 01:06:21 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-Subject: [ 059/104] tracing: Protect tracer flags with trace_types_lock
+Cc: akpm@linux-foundation.org, Kees Cook <keescook@chromium.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 057/104] drm/i915: bounds check execbuffer relocation count
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,73 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Kees Cook <keescook@chromium.org>
 
-commit 69d34da2984c95b33ea21518227e1f9470f11d95 upstream.
+commit 3118a4f652c7b12c752f3222af0447008f9b2368 upstream.
 
-Seems that the tracer flags have never been protected from
-synchronous writes. Luckily, admins don't usually modify the
-tracing flags via two different tasks. But if scripts were to
-be used to modify them, then they could get corrupted.
+It is possible to wrap the counter used to allocate the buffer for
+relocation copies. This could lead to heap writing overflows.
 
-Move the trace_types_lock that protects against tracers changing
-to also protect the flags being set.
+CVE-2013-0913
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[bwh: Backported to 3.2: also move failure return in
- tracing_trace_options_write() after unlocking]
+v3: collapse test, improve comment
+v2: move check into validate_exec_list
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Pinkie Pie
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2661,7 +2661,7 @@ tracing_trace_options_write(struct file
- 	char buf[64];
- 	char *cmp;
- 	int neg = 0;
--	int ret;
-+	int ret = 0;
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -907,15 +907,20 @@ validate_exec_list(struct drm_i915_gem_e
+ 		   int count)
+ {
  	int i;
++	int relocs_total = 0;
++	int relocs_max = INT_MAX / sizeof(struct drm_i915_gem_relocation_entry);
  
- 	if (cnt >= sizeof(buf))
-@@ -2678,6 +2678,8 @@ tracing_trace_options_write(struct file
- 		cmp += 2;
- 	}
+ 	for (i = 0; i < count; i++) {
+ 		char __user *ptr = (char __user *)(uintptr_t)exec[i].relocs_ptr;
+ 		int length; /* limited by fault_in_pages_readable() */
  
-+	mutex_lock(&trace_types_lock);
-+
- 	for (i = 0; trace_options[i]; i++) {
- 		if (strcmp(cmp, trace_options[i]) == 0) {
- 			set_tracer_flags(1 << i, !neg);
-@@ -2686,13 +2688,13 @@ tracing_trace_options_write(struct file
- 	}
+-		/* First check for malicious input causing overflow */
+-		if (exec[i].relocation_count >
+-		    INT_MAX / sizeof(struct drm_i915_gem_relocation_entry))
++		/* First check for malicious input causing overflow in
++		 * the worst case where we need to allocate the entire
++		 * relocation tree as a single array.
++		 */
++		if (exec[i].relocation_count > relocs_max - relocs_total)
+ 			return -EINVAL;
++		relocs_total += exec[i].relocation_count;
  
- 	/* If no option could be set, test the specific tracer options */
--	if (!trace_options[i]) {
--		mutex_lock(&trace_types_lock);
-+	if (!trace_options[i])
- 		ret = set_tracer_option(current_trace, cmp, neg);
--		mutex_unlock(&trace_types_lock);
--		if (ret)
--			return ret;
--	}
-+
-+	mutex_unlock(&trace_types_lock);
-+
-+	if (ret)
-+		return ret;
- 
- 	*ppos += cnt;
- 
-@@ -4379,7 +4381,10 @@ trace_options_core_write(struct file *fi
- 
- 	if (val != 0 && val != 1)
- 		return -EINVAL;
-+
-+	mutex_lock(&trace_types_lock);
- 	set_tracer_flags(1 << index, val);
-+	mutex_unlock(&trace_types_lock);
- 
- 	*ppos += cnt;
- 
+ 		length = exec[i].relocation_count *
+ 			sizeof(struct drm_i915_gem_relocation_entry);
 
 
