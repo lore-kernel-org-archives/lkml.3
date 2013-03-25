@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab3CYGw5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 02:52:57 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:54729 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755299Ab3CYGw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 02:52:56 -0400
-Date: Mon, 25 Mar 2013 06:52:47 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm exynos + intel fixes
-Message-ID: <alpine.DEB.2.00.1303250651190.17260@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756210Ab3CYGxg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 02:53:36 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:55940 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754714Ab3CYGxf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 02:53:35 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <514FDE5F.5020500@cn.fujitsu.com>
+References: <CAAO_Xo6=2PKumrxjb1XthsiVVFJcz33o5wf2OyXN9pPdu1GCRA@mail.gmail.com>
+	<514FBD6E.2030706@cn.fujitsu.com>
+	<CAAO_Xo7edAuiGQaXHuyWB5RPgPd5dDDRof3-d28eu+mryJkv+Q@mail.gmail.com>
+	<514FC385.4030008@cn.fujitsu.com>
+	<CAAO_Xo7FbEsG=6pmcfUDyKtcPuPLTkNY+kUU+5hFnzciQBO-Aw@mail.gmail.com>
+	<514FDE5F.5020500@cn.fujitsu.com>
+Date: Mon, 25 Mar 2013 14:46:03 +0800
+Message-ID: <CAAO_Xo6dG8C_-e4mHuKm12vQ7MVoYR8fPggK00T28i0JzqpDyA@mail.gmail.com>
+Subject: Re: Question: How to distribute the interrupts over multiple cores?
+From: Lenky Gao <lenky.gao@gmail.com>
+To: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, yinghai@kernel.org, mingo@elte.hu,
+        gorcunov@gmail.com, rusty@rustcorp.com.au, sivanich@sgi.com,
+        agordeev@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Do you mean on your old machine the irq will be distributed automatically
+> among the cpus set by smp_affinity?
+>
 
-Hi,
+Yes. My another machine's interrupts are as follows:
 
-The intel fixes are fairly straightforward, mostly reverts due to bugs 
-found, the exynos one is a big larger since they found some issues with 
-the G2D engine and iommu interaction, and needed to verify the operations 
-a lot better than they were previously, otherwise a user app can just 
-crash the kernel with an iommu fault.
+[root@localhost ~]# cat /proc/cpuinfo
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 23
+model name	: Pentium(R) Dual-Core  CPU      E6700  @ 3.20GHz
+...
+[root@localhost ~]# echo 3 > /proc/irq/18/smp_affinity
+[root@localhost ~]# cat /proc/irq/18/smp_affinity
+3
+[root@localhost ~]# cat /proc/interrupts | grep eth2
+  18:        455       458   IO-APIC-fasteoi   eth2
+[root@localhost ~]# cat /proc/interrupts | grep eth2
+  18:        463       467   IO-APIC-fasteoi   eth2
+[root@localhost ~]# cat /proc/interrupts | grep eth2
+  18:        471       476   IO-APIC-fasteoi   eth2
 
-Dave.
 
-The following changes since commit 8bb9660418e05bb1845ac1a2428444d78e322cc7:
+-- 
+Regards,
 
-  Linux 3.9-rc4 (2013-03-23 16:52:44 -0700)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux.git drm-fixes
-
-for you to fetch changes up to 7ac8833f5920a4a58190743697c9c8920c2fab4e:
-
-  Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into HEAD (2013-03-25 12:20:00 +1000)
-
-----------------------------------------------------------------
-
-Alexandru Gheorghiu (1):
-      drm/exynos: Replaced kzalloc & memcpy with kmemdup
-
-Daniel Vetter (2):
-      Revert "drm/i915: set TRANSCODER_EDP even earlier"
-      Revert "drm/i915: write backlight harder"
-
-Dave Airlie (2):
-      Merge branch 'exynos-drm-fixes' of git://git.kernel.org/.../daeinki/drm-exynos into HEAD
-      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into HEAD
-
-Inki Dae (1):
-      drm/exynos: Add a new function to get gem buffer size
-
-Leela Krishna Amudala (1):
-      drm/exynos: fimd: calculate the correct address offset
-
-Paulo Zanoni (1):
-      drm/i915: don't disable the power well yet
-
-Sachin Kamat (1):
-      drm/exynos: Make mixer_check_timing static
-
-Vikas Sajjan (1):
-      drm/exynos: modify the compatible string for exynos fimd
-
-YoungJun Cho (6):
-      drm/exynos: Fix error routine to getting dma addr.
-      drm/exynos: clear node object type at gem unmap
-      drm/exynos: Fix G2D core malfunctioning issue
-      drm/exynos: Clean up some G2D codes for readability
-      drm/exynos: Deal with g2d buffer info more efficiently
-      drm/exynos: Check g2d cmd list for g2d restrictions
-
- drivers/gpu/drm/exynos/exynos_drm_fimd.c |  21 +-
- drivers/gpu/drm/exynos/exynos_drm_g2d.c  | 370 +++++++++++++++++++++++++++----
- drivers/gpu/drm/exynos/exynos_drm_gem.c  |  21 ++
- drivers/gpu/drm/exynos/exynos_drm_gem.h  |   5 +
- drivers/gpu/drm/exynos/exynos_drm_vidi.c |   6 +-
- drivers/gpu/drm/exynos/exynos_mixer.c    |   2 +-
- drivers/gpu/drm/i915/i915_drv.c          |   5 +
- drivers/gpu/drm/i915/i915_drv.h          |   1 +
- drivers/gpu/drm/i915/intel_display.c     |  10 +-
- drivers/gpu/drm/i915/intel_panel.c       |  13 +-
- drivers/gpu/drm/i915/intel_pm.c          |   3 +
- 11 files changed, 384 insertions(+), 73 deletions(-)
+Lenky
