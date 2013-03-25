@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758737Ab3CYQlU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 12:41:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55699 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758609Ab3CYQlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 12:41:20 -0400
-Date: Mon, 25 Mar 2013 17:38:00 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Anton Arapov <anton@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: Re: [PATCH 5/7] uretprobes: return probe exit, invoke handlers
-Message-ID: <20130325163800.GA8324@redhat.com>
-References: <1363957745-6657-1-git-send-email-anton@redhat.com> <1363957745-6657-6-git-send-email-anton@redhat.com> <20130324162817.GD17037@redhat.com> <20130325154940.GA2178@bandura.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130325154940.GA2178@bandura.brq.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758754Ab3CYQmN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 12:42:13 -0400
+Received: from na3sys010aog109.obsmtp.com ([74.125.245.86]:37336 "HELO
+	na3sys010aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757925Ab3CYQmL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 12:42:11 -0400
+From: Roland Dreier <roland@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+Date: Mon, 25 Mar 2013 09:42:03 -0700
+Message-Id: <1364229723-6092-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25, Anton Arapov wrote:
->
-> On Sun, Mar 24, 2013 at 05:28:17PM +0100, Oleg Nesterov wrote:
-> >
-> > Ignoring the fact you need put_uprobe/kfree, it seems that we should
-> > do something like this,
-> >
-> > 	do {
-> > 		handler_uretprobe_chain(...);
-> >
-> > 		if (!ri->dirty)	// not chained
-> > 			break;
-> >
-> > 		ri = ri->next;
-> > 	} while (ri);
-> >
-> > 	utask->return_instances = ri;
-> > No?
->
-> Oleg, Do you mean
->
->  	do {
->  		handler_uretprobe_chain(...);
->
->         ri = ri->next;
->
->  		if (!ri->dirty)	// not chained
->  			break;
->   	} while (ri);
->
->  	utask->return_instances = ri;
->
-> otherwise we stuck with the first instance in stack.
+Hi Linus,
 
-Not sure I understand... but it is very possible I missed something.
+Please pull from
 
-But the pseudo code I wrote is not correct, I meant
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
 
-	utask->return_instances = ri->next;
+----------------------------------------------------------------
 
-after the main loop.
+Small batch of InfiniBand/RDMA fixes for 3.9:
 
-> ...and perhaps for(;;) would be 'more beautiful' here?
+ - Fix for TX lockup in IPoIB
+ - QLogic -> Intel update for qib driver
+ - Small static checker fix for qib
+ - Fix error path return value in cxgb4
 
-Oh, I would not mind either way. In fact we do not really need
-ri != NULL check inside the loop (again, unless I am confused).
-We must see a non-chained entry in the stack unless we have a
-bug.
+----------------------------------------------------------------
+Dan Carpenter (1):
+      IB/ipath: Silence a static checker warning
 
-Oleg.
+Mike Marciniszyn (1):
+      IPoIB: Fix send lockup due to missed TX completion
 
+Roland Dreier (1):
+      Merge branches 'cxgb4', 'ipoib' and 'qib' into for-next
+
+Vinit Agnihotri (1):
+      IB/qib: change QLogic to Intel
+
+Wei Yongjun (1):
+      RDMA/cxgb4: Fix error return code in create_qp()
+
+ drivers/infiniband/hw/cxgb4/qp.c          | 4 +++-
+ drivers/infiniband/hw/ipath/ipath_verbs.c | 2 +-
+ drivers/infiniband/hw/qib/Kconfig         | 6 +++---
+ drivers/infiniband/hw/qib/qib_driver.c    | 5 +++--
+ drivers/infiniband/hw/qib/qib_iba6120.c   | 3 ++-
+ drivers/infiniband/hw/qib/qib_init.c      | 8 ++++----
+ drivers/infiniband/hw/qib/qib_sd7220.c    | 4 ++--
+ drivers/infiniband/hw/qib/qib_verbs.c     | 4 ++--
+ drivers/infiniband/ulp/ipoib/ipoib_cm.c   | 8 ++++++--
+ firmware/Makefile                         | 2 +-
+ firmware/{qlogic => intel}/sd7220.fw.ihex | 0
+ 11 files changed, 27 insertions(+), 19 deletions(-)
+ rename firmware/{qlogic => intel}/sd7220.fw.ihex (100%)
