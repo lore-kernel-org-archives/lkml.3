@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab3CYBP3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:15:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33871 "EHLO
+	id S1757507Ab3CYBeb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:34:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33902 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755661Ab3CYBPY (ORCPT
+	by vger.kernel.org with ESMTP id S1755726Ab3CYBP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:24 -0400
-Message-Id: <20130325010533.226506900@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:28 -0400
+Message-Id: <20130325010534.313135591@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:54 +0000
+Date: Mon, 25 Mar 2013 01:07:05 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 090/104] USB: io_ti: fix use-after-free in TIOCMIWAIT
+Cc: akpm@linux-foundation.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 101/104] mm/hugetlb: fix total hugetlbfs pages count when using memory
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+ overcommit accouting
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:f137:78a:b654:affb
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,67 +34,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-commit 7b2459690584f239650a365f3411ba2ec1c6d1e0 upstream.
+commit d00285884c0892bb1310df96bce6056e9ce9b9d9 upstream.
 
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
+hugetlb_total_pages is used for overcommit calculations but the current
+implementation considers only the default hugetlb page size (which is
+either the first defined hugepage size or the one specified by
+default_hugepagesz kernel boot parameter).
 
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
+If the system is configured for more than one hugepage size, which is
+possible since commit a137e1cc6d6e ("hugetlbfs: per mount huge page
+sizes") then the overcommit estimation done by __vm_enough_memory()
+(resp.  shown by meminfo_proc_show) is not precise - there is an
+impression of more available/allowed memory.  This can lead to an
+unexpected ENOMEM/EFAULT resp.  SIGSEGV when memory is accounted.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Testcase:
+  boot: hugepagesz=1G hugepages=1
+  the default overcommit ratio is 50
+  before patch:
+
+    egrep 'CommitLimit' /proc/meminfo
+    CommitLimit:     55434168 kB
+
+  after patch:
+
+    egrep 'CommitLimit' /proc/meminfo
+    CommitLimit:     54909880 kB
+
+[akpm@linux-foundation.org: coding-style tweak]
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/io_ti.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ mm/hugetlb.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -98,9 +98,6 @@ struct edgeport_port {
- 	int close_pending;
- 	int lsr_event;
- 	struct async_icount	icount;
--	wait_queue_head_t	delta_msr_wait;	/* for handling sleeping while
--						   waiting for msr change to
--						   happen */
- 	struct edgeport_serial	*edge_serial;
- 	struct usb_serial_port	*port;
- 	__u8 bUartMode;		/* Port type, 0: RS232, etc. */
-@@ -1557,7 +1554,7 @@ static void handle_new_msr(struct edgepo
- 			icount->dcd++;
- 		if (msr & EDGEPORT_MSR_DELTA_RI)
- 			icount->rng++;
--		wake_up_interruptible(&edge_port->delta_msr_wait);
-+		wake_up_interruptible(&edge_port->port->delta_msr_wait);
- 	}
- 
- 	/* Save the new modem status */
-@@ -1876,7 +1873,6 @@ static int edge_open(struct tty_struct *
- 	dev = port->serial->dev;
- 
- 	memset(&(edge_port->icount), 0x00, sizeof(edge_port->icount));
--	init_waitqueue_head(&edge_port->delta_msr_wait);
- 
- 	/* turn off loopback */
- 	status = ti_do_config(edge_port, UMPC_SET_CLR_LOOPBACK, 0);
-@@ -2574,10 +2570,14 @@ static int edge_ioctl(struct tty_struct
- 		dbg("%s - (%d) TIOCMIWAIT", __func__, port->number);
- 		cprev = edge_port->icount;
- 		while (1) {
--			interruptible_sleep_on(&edge_port->delta_msr_wait);
-+			interruptible_sleep_on(&port->delta_msr_wait);
- 			/* see if a signal did it */
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2092,8 +2092,12 @@ int hugetlb_report_node_meminfo(int nid,
+ /* Return the number pages of memory we physically have, in PAGE_SIZE units. */
+ unsigned long hugetlb_total_pages(void)
+ {
+-	struct hstate *h = &default_hstate;
+-	return h->nr_huge_pages * pages_per_huge_page(h);
++	struct hstate *h;
++	unsigned long nr_total_pages = 0;
 +
-+			if (port->serial->disconnected)
-+				return -EIO;
-+
- 			cnow = edge_port->icount;
- 			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
- 			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
++	for_each_hstate(h)
++		nr_total_pages += h->nr_huge_pages * pages_per_huge_page(h);
++	return nr_total_pages;
+ }
+ 
+ static int hugetlb_acct_memory(struct hstate *h, long delta)
 
 
