@@ -1,324 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129Ab3CYGNb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 02:13:31 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:40030 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757755Ab3CYGNa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 02:13:30 -0400
+	id S932191Ab3CYGUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 02:20:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:6786 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932156Ab3CYGUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 02:20:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,902,1355126400"; 
+   d="scan'208";a="311411876"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: "Zhang, Rui" <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/2] thermal: introduce thermal_zone_lookup_temperature
+ helper function
+Thread-Topic: [PATCH 1/2] thermal: introduce thermal_zone_lookup_temperature
+ helper function
+Thread-Index: AQHOJ0KDnJ+mHwhbq0aIU2P+QPfuzJi1lDeAgABeXtA=
+Date: Mon, 25 Mar 2013 06:20:27 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59C57DBF@BGSMSX101.gar.corp.intel.com>
+References: <1363986787-28147-1-git-send-email-eduardo.valentin@ti.com>
+	 <1363986787-28147-2-git-send-email-eduardo.valentin@ti.com>
+ <1364191837.2465.7.camel@rzhang1-mobl4>
+In-Reply-To: <1364191837.2465.7.camel@rzhang1-mobl4>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <87fvzncp91.fsf@linaro.org>
-References: <1363872506-3630-1-git-send-email-rajagopal.venkat@linaro.org>
-	<1363872506-3630-3-git-send-email-rajagopal.venkat@linaro.org>
-	<87fvzncp91.fsf@linaro.org>
-Date: Mon, 25 Mar 2013 11:43:29 +0530
-Message-ID: <CA+Z25wWE8wNiDeDXs2Xc9tW8kDQwUWgPScUaz7NqkkoKv1XLUA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] PM / devfreq: tie suspend/resume to runtime-pm
-From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: myungjoo.ham@samsung.com, rjw@sisk.pl, linaro-kernel@lists.linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2P6Kapo026128
 
-On 22 March 2013 23:04, Kevin Hilman <khilman@linaro.org> wrote:
-> Hi Rajagopal,
->
-> Rajagopal Venkat <rajagopal.venkat@linaro.org> writes:
->
->> Allow device devfreq to be suspend/resume automatically with
->> runtime pm suspend/resume. The devfreq drivers should be least
->> cared when to suspend/resume the devfreq.
->
-> That is the "what", but the changelog should also answer the question
-> "why?".
->
->> pm_runtime_suspend(dev) will first suspend device devfreq(if available)
->> before device is suspended from runtime pm core.
->
-> And here you should describe what you mentioned in your response to Alan
-> to clarify that suspending devfreq is suspending/resuming the load
-> monitoring, not any actual device hardware.  You should also describe
-> the rationale behind the ordering of devfreq susepnd/resume and device
-> suspend/resume.
->
+> -----Original Message-----
+> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
+> owner@vger.kernel.org] On Behalf Of Zhang Rui
+> Sent: Monday, March 25, 2013 11:41 AM
+> To: Eduardo Valentin
+> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 1/2] thermal: introduce
+> thermal_zone_lookup_temperature helper function
+> 
+> On Fri, 2013-03-22 at 17:13 -0400, Eduardo Valentin wrote:
+> > This patch adds a helper function to get temperature of
+> > a thermal zone, based on the zone type name.
+> >
+> > It will perform a zone name lookup and return the last
+> > sensor temperature reading. In case the zone is not found
+> > or if the required parameters are invalid, it will return
+> > the corresponding error code.
+> >
+> > Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> > ---
+> >  drivers/thermal/thermal_sys.c |   32
+> ++++++++++++++++++++++++++++++++
+> >  include/linux/thermal.h       |    1 +
+> >  2 files changed, 33 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+> > index 5bd95d4..f0caa13 100644
+> > --- a/drivers/thermal/thermal_sys.c
+> > +++ b/drivers/thermal/thermal_sys.c
+> > @@ -1790,6 +1790,38 @@ void thermal_zone_device_unregister(struct
+> thermal_zone_device *tz)
+> >  }
+> >  EXPORT_SYMBOL_GPL(thermal_zone_device_unregister);
+> >
+> > +/**
+> > + * thermal_lookup_temperature - search for a zone and returns its
+> temperature
+> > + * @name: thermal zone name to fetch the temperature
+> > + * @temperature: pointer to store the zone temperature, in case it is
+> found
+> > + *
+> > + * When the zone is found, updates @temperature and returns 0.
+> > + *
+> > + * Return: -EINVAL in case of wrong parameters, -ENODEV in case the
+> zone
+> > + * is not found and 0 when it is successfully found.
+> > + */
+> > +int thermal_zone_lookup_temperature(const char *name, int
+> *temperature)
+> > +{
+> > +	struct thermal_zone_device *pos = NULL;
+> > +	bool found = false;
+> > +
+> > +	if (!name || !temperature)
+> > +		return -EINVAL;
+> > +
+> > +	mutex_lock(&thermal_list_lock);
+> > +	list_for_each_entry(pos, &thermal_tz_list, node)
+> > +		if (!strcmp(pos->type, name)) {
+> > +			found = true;
+> > +			break;
+> > +		}
+> > +	if (found)
+> > +		*temperature = pos->last_temperature;
+> > +	mutex_unlock(&thermal_list_lock);
+> > +
+> > +	return found ? 0 : -ENODEV;
+> > +}
+> > +EXPORT_SYMBOL_GPL(thermal_zone_lookup_temperature);
+> > +
+> please do not use thermal zone type as the parameter because unique
+> thermal zone type string is not a hard rule.
 
-Kevin, Thanks for the review, I am taking in all your comments. I will
-improve the changelog and code comments and send new version.
+Okay, agree with this. This is what I am implementing in
+my changes as well.
 
->> pm_runtime_resume(dev) will resume device devfreq(if available) after
->> device is resumed from runtime pm core.
->>
->> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
->> ---
->>  drivers/base/power/runtime.c |   18 ++++++++++++++-
->>  drivers/devfreq/devfreq.c    |   51 ++++++++++++++++++++++++++++++++++++++----
->>  include/linux/devfreq.h      |   18 ++++-----------
->>  include/linux/pm.h           |    2 ++
->>  4 files changed, 70 insertions(+), 19 deletions(-)
->>
->> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
->> index 3148b10..951bf92 100644
->> --- a/drivers/base/power/runtime.c
->> +++ b/drivers/base/power/runtime.c
->> @@ -11,6 +11,7 @@
->>  #include <linux/export.h>
->>  #include <linux/pm_runtime.h>
->>  #include <trace/events/rpm.h>
->> +#include <linux/devfreq.h>
->>  #include "power.h"
->>
->>  static int rpm_resume(struct device *dev, int rpmflags);
->> @@ -406,6 +407,10 @@ static int rpm_suspend(struct device *dev, int rpmflags)
->>
->>       __update_runtime_status(dev, RPM_SUSPENDING);
->>
->> +     if (dev->power.devfreq &&
->> +                     dev->power.devfreq->runtime_suspend(dev))
->> +             goto fail;
->
-> It's not obvious to me why you want to abort the entire runtime suspend
-> path if the devfreq governor fails to runtime suspend.  That should also
-> be described someplace.
->
-> Same comment on skipping the callbacks in rpm_resume below.
->
->>       if (dev->pm_domain)
->>               callback = dev->pm_domain->ops.runtime_suspend;
->>       else if (dev->type && dev->type->pm)
->> @@ -421,8 +426,11 @@ static int rpm_suspend(struct device *dev, int rpmflags)
->>               callback = dev->driver->pm->runtime_suspend;
->>
->>       retval = rpm_callback(callback, dev);
->> -     if (retval)
->> +     if (retval) {
->> +             if (dev->power.devfreq)
->> +                     dev->power.devfreq->runtime_resume(dev);
->
-> What if ->runtime_resume is NULL?
->
->>               goto fail;
->> +     }
->>
->>   no_callback:
->>       __update_runtime_status(dev, RPM_SUSPENDED);
->> @@ -638,6 +646,11 @@ static int rpm_resume(struct device *dev, int rpmflags)
->>
->>       __update_runtime_status(dev, RPM_RESUMING);
->>
->> +     if (dev->power.devfreq)
->> +             retval = dev->power.devfreq->runtime_resume(dev);
->
-> ditto.
->
-> I see that the devfreq core always sets these function pointers in this
-> patch, but that's not an assumption the PM core should make, IMO.
->
->> +             if (retval)
->> +                     goto skip_callback;
->> +
->>       if (dev->pm_domain)
->>               callback = dev->pm_domain->ops.runtime_resume;
->>       else if (dev->type && dev->type->pm)
->> @@ -653,9 +666,12 @@ static int rpm_resume(struct device *dev, int rpmflags)
->>               callback = dev->driver->pm->runtime_resume;
->>
->>       retval = rpm_callback(callback, dev);
->> +skip_callback:
->>       if (retval) {
->>               __update_runtime_status(dev, RPM_SUSPENDED);
->>               pm_runtime_cancel_pending(dev);
->> +             if (dev->power.devfreq)
->> +                     dev->power.devfreq->runtime_suspend(dev);
->>       } else {
->>   no_callback:
->>               __update_runtime_status(dev, RPM_ACTIVE);
->> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
->> index 44c4079..ed6cb88 100644
->> --- a/drivers/devfreq/devfreq.c
->> +++ b/drivers/devfreq/devfreq.c
->> @@ -25,6 +25,7 @@
->>  #include <linux/list.h>
->>  #include <linux/printk.h>
->>  #include <linux/hrtimer.h>
->> +#include <linux/pm_runtime.h>
->>  #include "governor.h"
->>
->>  static struct class *devfreq_class;
->> @@ -42,6 +43,9 @@ static LIST_HEAD(devfreq_governor_list);
->>  static LIST_HEAD(devfreq_list);
->>  static DEFINE_MUTEX(devfreq_list_lock);
->>
->> +static int devfreq_runtime_suspend(struct device *dev);
->> +static int devfreq_runtime_resume(struct device *dev);
->> +
->>  /**
->>   * find_device_devfreq() - find devfreq struct using device pointer
->>   * @dev:     device pointer used to lookup device devfreq.
->> @@ -476,6 +480,9 @@ struct devfreq *devfreq_add_device(struct device *dev,
->>       devfreq->previous_freq = profile->initial_freq;
->>       devfreq->data = data;
->>       devfreq->nb.notifier_call = devfreq_notifier_call;
->> +     devfreq->runtime_suspend = devfreq_runtime_suspend;
->> +     devfreq->runtime_resume = devfreq_runtime_resume;
->> +     dev->power.devfreq = devfreq;
->>
->>       devfreq->trans_table =  devm_kzalloc(dev, sizeof(unsigned int) *
->>                                               devfreq->profile->max_state *
->> @@ -549,7 +556,7 @@ EXPORT_SYMBOL(devfreq_remove_device);
->>   * (e.g., runtime_suspend, suspend) of the device driver that
->>   * holds the devfreq.
->>   */
->> -int devfreq_suspend_device(struct devfreq *devfreq)
->> +static int devfreq_suspend_device(struct devfreq *devfreq)
->>  {
->>       if (!devfreq)
->>               return -EINVAL;
->> @@ -560,7 +567,6 @@ int devfreq_suspend_device(struct devfreq *devfreq)
->>       return devfreq->governor->event_handler(devfreq,
->>                               DEVFREQ_GOV_SUSPEND, NULL);
->>  }
->> -EXPORT_SYMBOL(devfreq_suspend_device);
->
->>  /**
->>   * devfreq_resume_device() - Resume devfreq of a device.
->> @@ -570,7 +576,7 @@ EXPORT_SYMBOL(devfreq_suspend_device);
->>   * (e.g., runtime_resume, resume) of the device driver that
->>   * holds the devfreq.
->>   */
->> -int devfreq_resume_device(struct devfreq *devfreq)
->> +static int devfreq_resume_device(struct devfreq *devfreq)
->>  {
->>       if (!devfreq)
->>               return -EINVAL;
->> @@ -581,7 +587,44 @@ int devfreq_resume_device(struct devfreq *devfreq)
->>       return devfreq->governor->event_handler(devfreq,
->>                               DEVFREQ_GOV_RESUME, NULL);
->>  }
->> -EXPORT_SYMBOL(devfreq_resume_device);
->> +
->> +/**
->> + * devfreq_runtime_suspend() - Suspend devfreq of a device.
->> + * @dev: the device associated with devfreq
->> + *
->> + * This function is intended to be called by the runtime-pm
->> + * core when the device associated with devfreq is
->> + * runtime suspended.
->> + */
->> +static int devfreq_runtime_suspend(struct device *dev)
->> +{
->> +     struct devfreq *devfreq;
->> +
->> +     mutex_lock(&devfreq_list_lock);
->> +     devfreq = find_device_devfreq(dev);
->> +     mutex_unlock(&devfreq_list_lock);
->> +
->> +     return devfreq_suspend_device(devfreq);
->> +}
->> +
->> +/**
->> + * devfreq_runtime_resume() - Resume devfreq of a device.
->> + * @dev: the device associated with devfreq
->> + *
->> + * This function is intended to be called by the runtime-pm
->> + * core when the device associated with devfreq is
->> + * runtime resumed.
->> + */
->> +static int devfreq_runtime_resume(struct device *dev)
->> +{
->> +     struct devfreq *devfreq;
->> +
->> +     mutex_lock(&devfreq_list_lock);
->> +     devfreq = find_device_devfreq(dev);
->> +     mutex_unlock(&devfreq_list_lock);
->> +
->> +     return devfreq_resume_device(devfreq);
->> +}
->>
->>  /**
->>   * devfreq_add_governor() - Add devfreq governor
->> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
->> index 5f1ab92..f50f46e 100644
->> --- a/include/linux/devfreq.h
->> +++ b/include/linux/devfreq.h
->> @@ -140,6 +140,8 @@ struct devfreq_governor {
->>   * @trans_table:     Statistics of devfreq transitions
->>   * @time_in_state:   Statistics of devfreq states
->>   * @last_stat_updated:       The last time stat updated
->> + * @runtime_suspend: func to runtime suspend devfreq from runtime core
->> + * @runtime_resume:  func to runtime resume devfreq from runtime core
->>   *
->>   * This structure stores the devfreq information for a give device.
->>   *
->> @@ -173,6 +175,8 @@ struct devfreq {
->>       unsigned int *trans_table;
->>       unsigned long *time_in_state;
->>       unsigned long last_stat_updated;
->> +     int (*runtime_suspend)(struct device *dev);
->> +     int (*runtime_resume)(struct device *dev);
->>  };
->>
->>  #if defined(CONFIG_PM_DEVFREQ)
->> @@ -182,10 +186,6 @@ extern struct devfreq *devfreq_add_device(struct device *dev,
->>                                 void *data);
->>  extern int devfreq_remove_device(struct devfreq *devfreq);
->>
->> -/* Supposed to be called by PM_SLEEP/PM_RUNTIME callbacks */
->> -extern int devfreq_suspend_device(struct devfreq *devfreq);
->> -extern int devfreq_resume_device(struct devfreq *devfreq);
->
-> Remvoing these, and removing the EXPORT_SYMBOL()s is an API change that
-> is not described in the changelog.
->
-> Kevin
->
->> -
->>  /* Helper functions for devfreq user device driver with OPP. */
->>  extern struct opp *devfreq_recommended_opp(struct device *dev,
->>                                          unsigned long *freq, u32 flags);
->> @@ -228,16 +228,6 @@ static inline int devfreq_remove_device(struct devfreq *devfreq)
->>       return 0;
->>  }
->>
->> -static inline int devfreq_suspend_device(struct devfreq *devfreq)
->> -{
->> -     return 0;
->> -}
->> -
->> -static inline int devfreq_resume_device(struct devfreq *devfreq)
->> -{
->> -     return 0;
->> -}
->> -
->>  static inline struct opp *devfreq_recommended_opp(struct device *dev,
->>                                          unsigned long *freq, u32 flags)
->>  {
->> diff --git a/include/linux/pm.h b/include/linux/pm.h
->> index 03d7bb1..6097db1 100644
->> --- a/include/linux/pm.h
->> +++ b/include/linux/pm.h
->> @@ -40,6 +40,7 @@ extern void (*pm_power_off_prepare)(void);
->>   */
->>
->>  struct device;
->> +struct devfreq;
->>
->>  #ifdef CONFIG_PM
->>  extern const char power_group_name[];                /* = "power" */
->> @@ -549,6 +550,7 @@ struct dev_pm_info {
->>  #endif
->>       struct pm_subsys_data   *subsys_data;  /* Owned by the subsystem. */
->>       struct dev_pm_qos       *qos;
->> +     struct devfreq          *devfreq;
->>  };
->>
->>  extern void update_pm_runtime_accounting(struct device *dev);
+> If this is really needed, I'd prefer two APIs instead
+> 1. struct thermal_zone_device * thermal_zone_get_zone_by_name(char
+> *name);
+> 2. int thermal_zone_get_temperature(struct thermal_zone_device *, int
+> *temperature);
 
+Why do we need this second API?
+If the driver has a 'tz' pointer, it can use tz->ops->get_temp
+to retrieve the temperature, right ?
 
-
--- 
-Regards,
-Rajagopal
+Thanks,
+Durga
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
