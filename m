@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab3CYAeJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 20:34:09 -0400
-Received: from ozlabs.org ([203.10.76.45]:41148 "EHLO ozlabs.org"
+	id S1755126Ab3CYA7N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 20:59:13 -0400
+Received: from ozlabs.org ([203.10.76.45]:39072 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754788Ab3CYAeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 20:34:07 -0400
+	id S1754831Ab3CYA7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 20:59:12 -0400
 From: Michael Neuling <mikey@neuling.org>
-To: Stuart Yoder <stuart.yoder@freescale.com>
-cc: chen.gang.flying.transformer@gmail.com, galak@kernel.crashing.org,
-        gang.chen@asianux.com, benh@kernel.crashing.org, sfr@canb.auug.org.au,
-        paulus@samba.org, matt@ozlabs.org, imunsie@au1.ibm.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PPC: define the conditions where the ePAPR idle hcall can be supported
-In-reply-to: <1363979533-24485-1-git-send-email-stuart.yoder@freescale.com>
-References: <1363979533-24485-1-git-send-email-stuart.yoder@freescale.com>
-Comments: In-reply-to Stuart Yoder <stuart.yoder@freescale.com>
-   message dated "Fri, 22 Mar 2013 14:12:13 -0500."
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+cc: Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: RFC: Kernel lock elision for TSX
+In-reply-to: <1364134657.11644.16.camel@pasglop>
+References: <1364001923-10796-1-git-send-email-andi@firstfloor.org> <CA+55aFyWMqwBfd6aYfRaLpX6gGqNxEkD5TFM3HRQpi9nAhn+0g@mail.gmail.com> <20130323180010.GK20853@two.firstfloor.org> <1364134657.11644.16.camel@pasglop>
+Comments: In-reply-to Benjamin Herrenschmidt <benh@kernel.crashing.org>
+   message dated "Sun, 24 Mar 2013 15:17:37 +0100."
 X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-Date: Mon, 25 Mar 2013 11:34:04 +1100
-Message-ID: <18100.1364171644@ale.ozlabs.ibm.com>
+Date: Mon, 25 Mar 2013 11:59:07 +1100
+Message-ID: <19753.1364173147@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stuart Yoder <stuart.yoder@freescale.com> wrote:
-
-> From: Stuart Yoder <stuart.yoder@freescale.com>
+> On Sat, 2013-03-23 at 19:00 +0100, Andi Kleen wrote:
+> > Hi Linux,
+> > 
+> > Thanks.  Other code/design review would be still appreciated, even
+> > under the current constraints.
+> > 
+> > > The other comment I have is that since it does touch non-x86 header
+> > > files etc (although not a lot), you really need to talk to the POWER8
+> > > people about naming of the thing. Calling it <linux/rtm.h> and having
+> > > "generic" helpers called _xtest() used by the generic spinlock code
+> > > sounds a bit suspect.
+> > 
+> > I can make up another name for _xtest()/_xabort() and linux/rtm.h,
+> > (any suggestions?)
+> > 
+> > The basic concepts implemented there should be pretty universal.
+> > If others have a equivalent of "is this a transaction" and "abort
+> > this tranction" they can just plug it in. Otherwise they will nop it,
+> > as it's only hints anyways.
+> > 
+> > The only things used outside x86 code is _xtest()/_xabort(), can
+> > remove the rest from linux/*. Without transactions this is all nops.
+> > The primary interface for the lock code is the much higher level
+> > elide()/elide_lock_adapt() interface anyways.
 > 
-> For 32-bit, CONFIG_EPAPR_PARAVIRT pulls in both epapr_paravirt.c
-> and epapr_hcalls.c which contains the 32-bit paravirt idle loop.
-> 
-> For 64-bit, the paravirt idle loop is in idle_book3e.S and that
-> source file is included only if CONFIG_PPC_BOOK3E_64 defined.
-> 
-> This patch makes that dependency for 64-bit explicit.
-> 
-> Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
+> Adding Michael Neuling to the CC list, he's probably the LTC person who
+> is the most familiar with POWER8 TM at the moment.
 
-It works for me.  Thanks.
+Thanks. I'll respond inline, but agree, the naming convention is very
+x86 centrinc and will not suit powerpc at all.
 
+Also, like Andy, we don't have permission to post any performance
+numbers so have held off on bothering with any thing like this for now.
 
-> ---
->  arch/powerpc/kernel/epapr_paravirt.c |    6 ++++++
->  1 file changed, 6 insertions(+)
+Mikey
+
 > 
-> diff --git a/arch/powerpc/kernel/epapr_paravirt.c b/arch/powerpc/kernel/epapr_paravirt.c
-> index f3eab85..d44a571 100644
-> --- a/arch/powerpc/kernel/epapr_paravirt.c
-> +++ b/arch/powerpc/kernel/epapr_paravirt.c
-> @@ -23,8 +23,10 @@
->  #include <asm/code-patching.h>
->  #include <asm/machdep.h>
->  
-> +#if !defined(CONFIG_64BIT) || defined(CONFIG_PPC_BOOK3E_64)
->  extern void epapr_ev_idle(void);
->  extern u32 epapr_ev_idle_start[];
-> +#endif
-
-You don't need this #ifdef
-
->  
->  bool epapr_paravirt_enabled;
->  
-> @@ -47,11 +49,15 @@ static int __init epapr_paravirt_init(void)
->  
->  	for (i = 0; i < (len / 4); i++) {
->  		patch_instruction(epapr_hypercall_start + i, insts[i]);
-> +#if !defined(CONFIG_64BIT) || defined(CONFIG_PPC_BOOK3E_64)
->  		patch_instruction(epapr_ev_idle_start + i, insts[i]);
-> +#endif
->  	}
->  
-> +#if !defined(CONFIG_64BIT) || defined(CONFIG_PPC_BOOK3E_64)
->  	if (of_get_property(hyper_node, "has-idle", NULL))
->  		ppc_md.power_save = epapr_ev_idle;
-> +#endif
->  
->  	epapr_paravirt_enabled = true;
->  
-> -- 
-> 1.7.9.7
+> Cheers,
+> Ben.
 > 
+> > -Andi
+> > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
