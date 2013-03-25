@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab3CYHbw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 03:31:52 -0400
-Received: from moltke.seatribe.se ([178.63.100.209]:55546 "EHLO
+	id S1756057Ab3CYHez (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 03:34:55 -0400
+Received: from moltke.seatribe.se ([178.63.100.209]:55631 "EHLO
 	moltke.seatribe.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755394Ab3CYHbv (ORCPT
+	with ESMTP id S1753370Ab3CYHey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 03:31:51 -0400
-Date: Mon, 25 Mar 2013 08:31:43 +0100 (CET)
+	Mon, 25 Mar 2013 03:34:54 -0400
+Date: Mon, 25 Mar 2013 08:34:50 +0100 (CET)
 From: Fredrik Tolf <fredrik@dolda2000.com>
-To: Bart Van Assche <bvanassche@acm.org>
+To: Eric Wong <normalperson@yhbt.net>
 cc: linux-kernel@vger.kernel.org
 Subject: Re: I/O blocked while dirty pages are being flushed
-In-Reply-To: <514ED516.4020009@acm.org>
-Message-ID: <alpine.DEB.2.02.1303250827120.4028@shack.dolda2000.com>
-References: <alpine.DEB.2.02.1303240543280.4028@shack.dolda2000.com> <514ED516.4020009@acm.org>
+In-Reply-To: <20130324065605.GA19984@dcvr.yhbt.net>
+Message-ID: <alpine.DEB.2.02.1303250833070.4028@shack.dolda2000.com>
+References: <alpine.DEB.2.02.1303240543280.4028@shack.dolda2000.com> <20130324065605.GA19984@dcvr.yhbt.net>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
@@ -22,28 +22,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Mar 2013, Bart Van Assche wrote:
-> On 03/24/13 06:12, Fredrik Tolf wrote:
->> While this flush is running, I find that many a process goes into disk
->> sleep waiting for the flush to complete. This includes the process
->> manipulating the mmapped file whenever it tries to redirty a page
->> currently waiting to be flushed, but also, for instance, programs that
->> write() to log files (since, I guess, the buffer page backing the last
->> written portion of the log file is being flushed).
+On Sun, 24 Mar 2013, Eric Wong wrote:
+> Fredrik Tolf <fredrik@dolda2000.com> wrote:
+>> It is worth noting, also, that this seems to be a situation
+>> introduced somewhere between 2.6.26 and 2.6.32, because I started
+>> noticing it when I upgraded from Debian 5.0 to 6.0. I've since tried
+>> it on 3.2.0, 3.5.4 and 3.7.1, and it appears in every version.
+>> However, I can't easily go back and bisect, because the new init
+>> scripts don't support kernels older than 2.6.32, unfortunately.
 >
-> Had you already encountered this article: Jonathan Corbet, The trouble with 
-> stable pages, March 13, 2012 (http://lwn.net/Articles/486311/) ?
+> So try lowering these sysctls to 2.6.26 levels (or lower) and see if
+> that helps.
 
-I had not, but that certainly does seem to be the exact problem I'm 
-having. Thanks for the link; it was a very interesting read! Does anyone 
-know if any progress has been made since about any resolution of the 
-situation?
+Thanks for the tip, but since the page dirtying happens in fast bursts for 
+me, rather than gradually over time, that just caused the same sizes of 
+writes to happen more often instead, which only made it worse. :)
 
-I notice linked mail threads with people saying that they have simply 
-removed the calls to wait_on_page_writeback to resolve their problems. Can 
-this still be considered safe, or have other systems than this 
-block-device checksumming started depending on stable pages since? Like 
-software RAID, for instance?
+I'll continue investigating the stable-page route, instead, since that 
+seems to be my exact problem.
 
 --
 
