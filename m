@@ -1,145 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758981Ab3CYVhe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 17:37:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16158 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758665Ab3CYVhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 17:37:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,907,1355126400"; 
-   d="scan'208";a="275798164"
-Subject: [PATCH] ioatdma: Adding Haswell devid for ioatdma
-To: djbw@fb.com
-From: Dave Jiang <dave.jiang@intel.com>
-Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org
-Date: Mon, 25 Mar 2013 14:37:31 -0700
-Message-ID: <20130325213731.19210.21417.stgit@djiang5-linux2.ch.intel.com>
-User-Agent: StGit/0.16
+	id S1758984Ab3CYVmS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 17:42:18 -0400
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:45032 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab3CYVmR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 17:42:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130325163844.042a45ba@annuminas.surriel.com>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+	<5150B1C2.8090607@oracle.com>
+	<20130325163844.042a45ba@annuminas.surriel.com>
+Date: Mon, 25 Mar 2013 14:42:17 -0700
+Message-ID: <CANN689FdtXs0-VKxwWHQKgnnSvcvu5hHDMmGOe0H+bdHA4BhXg@mail.gmail.com>
+Subject: Re: [PATCH -mm -next] ipc,sem: fix lockdep false positive
+From: Michel Lespinasse <walken@google.com>
+To: Rik van Riel <riel@surriel.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, torvalds@linux-foundation.org,
+        davidlohr.bueso@hp.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
+        lwoodman@redhat.com, chegu_vinod@hp.com, Dave Jones <davej@redhat.com>,
+        benisty.e@gmail.com, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Haswell PCI device IDs for ioatdma and simplify the detection of
-certain Xeon CPUs that has alignment bugs so that modifications can be
-changed at a single place going forward.
+On Mon, Mar 25, 2013 at 1:38 PM, Rik van Riel <riel@surriel.com> wrote:
+> On Mon, 25 Mar 2013 16:21:22 -0400
+> Sasha Levin <sasha.levin@oracle.com> wrote:
+>
+>> On 03/20/2013 03:55 PM, Rik van Riel wrote:
+>> > Include lkml in the CC: this time... *sigh*
+>> > ---8<---
+>> >
+>> > This series makes the sysv semaphore code more scalable,
+>> > by reducing the time the semaphore lock is held, and making
+>> > the locking more scalable for semaphore arrays with multiple
+>> > semaphores.
+>>
+>> Hi Rik,
+>>
+>> I'm getting the following false positives from lockdep:
+>
+> Does this patch fix it?
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
----
- drivers/dma/ioat/dma_v3.c |   28 +++++++++++++++++++++++++++-
- drivers/dma/ioat/hw.h     |   22 +++++++++++++++++-----
- drivers/dma/ioat/pci.c    |   11 +++++++++++
- 3 files changed, 55 insertions(+), 6 deletions(-)
+I'll be surprised if it does, because we don't actually have single
+depth nesting here...
+Adding Peter & Ingo for advice about how to proceed
+(the one solution I know would involve using arch_spin_lock() directly
+to bypass the lockdep checks, but there's got to be a better way...)
 
-diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-index a1dcfb2..ab5655e 100644
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -1260,6 +1260,32 @@ static bool is_ivb_ioat(struct pci_dev *pdev)
- 
- }
- 
-+static bool is_hsw_ioat(struct pci_dev *pdev)
-+{
-+	switch (pdev->device) {
-+	case PCI_DEVICE_ID_INTEL_IOAT_HSW0:
-+	case PCI_DEVICE_ID_INTEL_IOAT_HSW1:
-+	case PCI_DEVICE_ID_INTEL_IOAT_HSW2:
-+	case PCI_DEVICE_ID_INTEL_IOAT_HSW3:
-+	case PCI_DEVICE_ID_INTEL_IOAT_HSW4:
-+	case PCI_DEVICE_ID_INTEL_IOAT_HSW5:
-+	case PCI_DEVICE_ID_INTEL_IOAT_HSW6:
-+	case PCI_DEVICE_ID_INTEL_IOAT_HSW7:
-+	case PCI_DEVICE_ID_INTEL_IOAT_HSW8:
-+	case PCI_DEVICE_ID_INTEL_IOAT_HSW9:
-+		return true;
-+	default:
-+		return false;
-+	}
-+
-+}
-+
-+static bool is_xeon_cb32(struct pci_dev *pdev)
-+{
-+	return is_jf_ioat(pdev) || is_snb_ioat(pdev) || is_ivb_ioat(pdev) ||
-+		is_hsw_ioat(pdev);
-+}
-+
- int ioat3_dma_probe(struct ioatdma_device *device, int dca)
- {
- 	struct pci_dev *pdev = device->pdev;
-@@ -1280,7 +1306,7 @@ int ioat3_dma_probe(struct ioatdma_device *device, int dca)
- 	dma->device_alloc_chan_resources = ioat2_alloc_chan_resources;
- 	dma->device_free_chan_resources = ioat2_free_chan_resources;
- 
--	if (is_jf_ioat(pdev) || is_snb_ioat(pdev) || is_ivb_ioat(pdev))
-+	if (is_xeon_cb32(pdev))
- 		dma->copy_align = 6;
- 
- 	dma_cap_set(DMA_INTERRUPT, dma->cap_mask);
-diff --git a/drivers/dma/ioat/hw.h b/drivers/dma/ioat/hw.h
-index 7cb74c6..8cfa077 100644
---- a/drivers/dma/ioat/hw.h
-+++ b/drivers/dma/ioat/hw.h
-@@ -30,11 +30,6 @@
- #define IOAT_PCI_DID_SCNB       0x65FF
- #define IOAT_PCI_DID_SNB        0x402F
- 
--#define IOAT_VER_1_2            0x12    /* Version 1.2 */
--#define IOAT_VER_2_0            0x20    /* Version 2.0 */
--#define IOAT_VER_3_0            0x30    /* Version 3.0 */
--#define IOAT_VER_3_2            0x32    /* Version 3.2 */
--
- #define PCI_DEVICE_ID_INTEL_IOAT_IVB0	0x0e20
- #define PCI_DEVICE_ID_INTEL_IOAT_IVB1	0x0e21
- #define PCI_DEVICE_ID_INTEL_IOAT_IVB2	0x0e22
-@@ -46,6 +41,23 @@
- #define PCI_DEVICE_ID_INTEL_IOAT_IVB8	0x0e2e
- #define PCI_DEVICE_ID_INTEL_IOAT_IVB9	0x0e2f
- 
-+#define PCI_DEVICE_ID_INTEL_IOAT_HSW0	0x2f20
-+#define PCI_DEVICE_ID_INTEL_IOAT_HSW1	0x2f21
-+#define PCI_DEVICE_ID_INTEL_IOAT_HSW2	0x2f22
-+#define PCI_DEVICE_ID_INTEL_IOAT_HSW3	0x2f23
-+#define PCI_DEVICE_ID_INTEL_IOAT_HSW4	0x2f24
-+#define PCI_DEVICE_ID_INTEL_IOAT_HSW5	0x2f25
-+#define PCI_DEVICE_ID_INTEL_IOAT_HSW6	0x2f26
-+#define PCI_DEVICE_ID_INTEL_IOAT_HSW7	0x2f27
-+#define PCI_DEVICE_ID_INTEL_IOAT_HSW8	0x2f2e
-+#define PCI_DEVICE_ID_INTEL_IOAT_HSW9	0x2f2f
-+
-+#define IOAT_VER_1_2            0x12    /* Version 1.2 */
-+#define IOAT_VER_2_0            0x20    /* Version 2.0 */
-+#define IOAT_VER_3_0            0x30    /* Version 3.0 */
-+#define IOAT_VER_3_2            0x32    /* Version 3.2 */
-+
-+
- int system_has_dca_enabled(struct pci_dev *pdev);
- 
- struct ioat_dma_descriptor {
-diff --git a/drivers/dma/ioat/pci.c b/drivers/dma/ioat/pci.c
-index 71c7ecd..67c8e83 100644
---- a/drivers/dma/ioat/pci.c
-+++ b/drivers/dma/ioat/pci.c
-@@ -94,6 +94,17 @@ static struct pci_device_id ioat_pci_tbl[] = {
- 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB8) },
- 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB9) },
- 
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_HSW0) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_HSW1) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_HSW2) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_HSW3) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_HSW4) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_HSW5) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_HSW6) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_HSW7) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_HSW8) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_HSW9) },
-+
- 	{ 0, }
- };
- MODULE_DEVICE_TABLE(pci, ioat_pci_tbl);
+> Andrew, this looks like another one for the queue...
+> ---8<---
+> Subject: [PATCH -mm -next] ipc,sem: fix lockdep false positive
+>
+> When locking all the semaphores inside a sem_array, the kernel ends up
+> locking a large number of locks with identical lockdep status. This
+> trips up lockdep.  Annotate the code to prevent such warnings.
+>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+>  ipc/sem.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/ipc/sem.c b/ipc/sem.c
+> index 450248e..f46441a 100644
+> --- a/ipc/sem.c
+> +++ b/ipc/sem.c
+> @@ -357,7 +357,7 @@ static inline int sem_lock(struct sem_array *sma, struct sembuf *sops,
+>                 spin_lock(&sma->sem_perm.lock);
+>                 for (i = 0; i < sma->sem_nsems; i++) {
+>                         struct sem *sem = sma->sem_base + i;
+> -                       spin_lock(&sem->lock);
+> +                       spin_lock_nested(&sem->lock, SINGLE_DEPTH_NESTING);
+>                 }
+>                 locknum = -1;
+>         }
+> @@ -558,7 +558,7 @@ static int newary(struct ipc_namespace *ns, struct ipc_params *params)
+>         for (i = 0; i < nsems; i++) {
+>                 INIT_LIST_HEAD(&sma->sem_base[i].sem_pending);
+>                 spin_lock_init(&sma->sem_base[i].lock);
+> -               spin_lock(&sma->sem_base[i].lock);
+> +               spin_lock_nested(&sma->sem_base[i].lock, SINGLE_DEPTH_NESTING);
+>         }
+>
+>         sma->complex_count = 0;
+>
 
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
