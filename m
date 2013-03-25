@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758612Ab3CYQXD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 12:23:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62849 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757896Ab3CYQXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 12:23:01 -0400
-Date: Mon, 25 Mar 2013 13:22:47 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, jolsa@redhat.com, namhyung.kim@lge.com
-Subject: Re: [PATCH v2 1/3] perf stat: refactor aggregation code
-Message-ID: <20130325162247.GA14604@infradead.org>
-References: <1360846649-6411-1-git-send-email-eranian@google.com>
- <1360846649-6411-2-git-send-email-eranian@google.com>
+	id S932300Ab3CYQX6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 12:23:58 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:47936 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932102Ab3CYQX5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 12:23:57 -0400
+Message-ID: <51507A1A.6050802@free-electrons.com>
+Date: Mon, 25 Mar 2013 17:23:54 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360846649-6411-2-git-send-email-eranian@google.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Rob Herring <robherring2@gmail.com>
+CC: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, kevin@allwinnertech.com
+Subject: Re: [PATCH 03/10] clocksource: sunxi: make use of CLKSRC_OF
+References: <1364218233-29636-1-git-send-email-maxime.ripard@free-electrons.com> <1364218233-29636-4-git-send-email-maxime.ripard@free-electrons.com> <5150561E.2070103@gmail.com>
+In-Reply-To: <5150561E.2070103@gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Feb 14, 2013 at 01:57:27PM +0100, Stephane Eranian escreveu:
-> Refactor aggregation code by introducing a single aggr_mode variable
-> and an enum for aggregation.
+Hi Rob,
 
-<SNIP>
- 
-> @@ -542,26 +553,37 @@ static void print_noise(struct perf_evsel *evsel, double avg)
->  	print_noise_pct(stddev_stats(&ps->res_stats[0]), avg);
->  }
->  
-> -static void nsec_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
-> +static void aggr_printout(int cpu, int nr)
->  {
-> -	double msecs = avg / 1e6;
-> -	char cpustr[16] = { '\0', };
-> -	const char *fmt = csv_output ? "%s%.6f%s%s" : "%s%18.6f%s%-25s";
-> -
-> -	if (aggr_socket)
-> -		sprintf(cpustr, "S%*d%s%*d%s",
-> +	switch (aggr_mode) {
-> +	case AGGR_SOCKET:
-> +		fprintf(output, "S%*d%s%*d%s",
->  			csv_output ? 0 : -5,
->  			cpu,
->  			csv_sep,
->  			csv_output ? 0 : 4,
->  			nr,
->  			csv_sep);
-> -	else if (no_aggr)
-> -		sprintf(cpustr, "CPU%*d%s",
-> +			break;
-> +	case AGGR_NONE:
-> +		fprintf(output, "CPU%*d%s",
->  			csv_output ? 0 : -4,
->  			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
+Le 25/03/2013 14:50, Rob Herring a écrit :
+> On 03/25/2013 08:30 AM, Maxime Ripard wrote:
+>> Using CLKSRC_OF allows to remove the SoC specific sunxi_timer.h header,
+>> and instead of using a custom init function in the machine definition
+>> use the standard clocksource_of_init function.
+>>
+>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> 
+> [...]
+> 
+>> @@ -158,3 +157,5 @@ void __init sunxi_timer_init(void)
+>>  	clockevents_config_and_register(&sunxi_clockevent, rate / TIMER_SCAL,
+>>  					0x1, 0xff);
+>>  }
+>> +CLOCKSOURCE_OF_DECLARE(sunxi, "allwinner,sun4i-timer",
+>> +		       sunxi_timer_init);
+> 
+> You should base this on clocksource clean-up branch "clksrc/cleanup" in
+> arm-soc. That will get rid of double matching and match table.
+> 
+> Also, sunxi_timer_init can be static now.
 
-I'm fixing this up, how would evsel here work if it is not passed to
-aggr_printout()?
+Ah, thanks, I missed these patches.
 
-I'm also fixing it up wrt the --forever patch and the one Namyung sent
-that makes perf stat use perf_evlist__prepare_workload that I had
-applied before this one. Will do some tests, put on a separate branch
-for you to check that all is still ok and works as expected,
+I'll do that and send a v2.
 
-thanks,
+Maxime
 
-- Arnaldo
+-- 
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
