@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab3CYLny (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 07:43:54 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:63111 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756461Ab3CYLnx (ORCPT
+	id S1756770Ab3CYLtc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 07:49:32 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43770 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756237Ab3CYLtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 07:43:53 -0400
-Message-ID: <1364211831.1390.285.camel@x61.thuisdomein>
-Subject: [PATCH] Blackfin: bf537: rename "CONFIG_ADT7310" and friends
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Date: Mon, 25 Mar 2013 12:43:51 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Mar 2013 11:43:51.0652 (UTC) FILETIME=[057BF240:01CE294E]
-X-RcptDomain: vger.kernel.org
+	Mon, 25 Mar 2013 07:49:31 -0400
+Date: Mon, 25 Mar 2013 11:48:08 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kevin Hilman <khilman@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [patch 08/34] arm: Use generic idle loop
+Message-ID: <20130325114808.GQ4977@n2100.arm.linux.org.uk>
+References: <20130321214930.752934102@linutronix.de> <20130321215233.826238797@linutronix.de> <87zjxv9lga.fsf@linaro.org> <alpine.LFD.2.02.1303251230440.22263@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1303251230440.22263@ionos>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig symbol ADT7310 got removed in commit
-2b0c856ad9571013db8fc369194b7108dff3c18e ("staging:iio: Consolidate
-adt7310 and adt7410 driver"). That commit did not touch the references
-to CONFIG_ADT7310 and CONFIG_ADT7310_MODULE in the BF537-STAMP code.
-Convert these now, to their ADT7410 equivalents.
+On Mon, Mar 25, 2013 at 12:31:20PM +0100, Thomas Gleixner wrote:
+> On Fri, 22 Mar 2013, Kevin Hilman wrote:
+> 
+> > Hi Thomas,
+> > 
+> > Thomas Gleixner <tglx@linutronix.de> writes:
+> > 
+> > > Use the generic idle loop and replace enable/disable_hlt with the
+> > > respective core functions.
+> > >
+> > > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > > Cc: Russell King <linux@arm.linux.org.uk>
+> > 
+> > I gave patches 1-5 + this a quick spin on ARM (specifially some OMAP3 and
+> > OMAP4 platforms, with and without CPUidle enabled.)
+> > 
+> > The OMAP stuff needed a couple minor compile fixes (below), but
+> > otherwise it passes the quick "seems to work" test.
+> 
+> Yeah, that's needed for the other arch/arm conversions as well.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Untested. This took a bit of guesswork. I guessed that multiple AD
-drivers can be enabled at the same time in this code. And I also guessed
-that the "adt7310" modalias is still correct.
-
-1) If this passes testing it could go in stable (3.8.y).
-
- arch/blackfin/mach-bf537/boards/stamp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
-index 95114ed..23bb55d 100644
---- a/arch/blackfin/mach-bf537/boards/stamp.c
-+++ b/arch/blackfin/mach-bf537/boards/stamp.c
-@@ -700,7 +700,7 @@ static struct bfin5xx_spi_chip ad7816_spi_chip_info = {
- };
- #endif
- 
--#if defined(CONFIG_ADT7310) || defined(CONFIG_ADT7310_MODULE)
-+#if defined(CONFIG_ADT7410) || defined(CONFIG_ADT7410_MODULE)
- static unsigned long adt7310_platform_data[3] = {
- /* INT bound temperature alarm event. line 1 */
- 	IRQ_PG4, IRQF_TRIGGER_LOW,
-@@ -1062,7 +1062,7 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
- 	},
- #endif
- 
--#if defined(CONFIG_ADT7310) || defined(CONFIG_ADT7310_MODULE)
-+#if defined(CONFIG_ADT7410) || defined(CONFIG_ADT7410_MODULE)
- 	{
- 		.modalias = "adt7310",
- 		.max_speed_hz = 1000000,
--- 
-1.7.11.7
-
+So, the only patch I got was this one, which is useless to test on its
+own...
