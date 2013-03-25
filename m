@@ -1,80 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab3CYJ65 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 05:58:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41562 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755526Ab3CYJ6y (ORCPT
+	id S1752431Ab3CYJ7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 05:59:42 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:56082 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab3CYJ7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 05:58:54 -0400
-Date: Mon, 25 Mar 2013 02:57:39 -0700
-From: tip-bot for David Daney <tipbot@zytor.com>
-Message-ID: <tip-8ffbc7d9ff0064ce000788272a609fa79d06ead1@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        trivial@kernel.org, ddaney.cavm@gmail.com, david.daney@cavium.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        trivial@kernel.org, ddaney.cavm@gmail.com, david.daney@cavium.com,
-        tglx@linutronix.de
-In-Reply-To: <1363202438-21234-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1363202438-21234-1-git-send-email-ddaney.cavm@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] hrtimer/trivial: Fix comment text in hrtimer.c
-Git-Commit-ID: 8ffbc7d9ff0064ce000788272a609fa79d06ead1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 25 Mar 2013 02:57:45 -0700 (PDT)
+	Mon, 25 Mar 2013 05:59:40 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-35-5150200addd9
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Linus Walleij'" <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] pinctrl: plgpio: add CONFIG_PM_SLEEP to suspend/resume
+ functions
+Date: Mon, 25 Mar 2013 18:59:38 +0900
+Message-id: <003901ce293f$76639800$632ac800$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4pP3ZG1HYF/xTUQGOH688xjotmCA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsVy+t8zfV1uhYBAgxP3GC0uL7zEajHlz3Im
+	i8u75rA5MHvcubaHzaNvyypGj8+b5AKYo7hsUlJzMstSi/TtErgyDs39yVjwlafi/MJuxgbG
+	b1xdjJwcEgImEptunWWHsMUkLtxbz9bFyMUhJLCMUeJa82R2mKJLP7YxQSSmM0psn9bCBpIQ
+	EvjFKDFzFQ+IzSagJvHly2GwBhEBPYk3X1uAbA4OZgEXiaPTREDCwgLBEhM61oGVsAioStzf
+	uIoRxOYVsJWYsfg0G4QtKPFj8j0WEJtZQEti87YmVghbXmLzmrfMICMlBNQlHv3VBTFBNh34
+	KAdRISKx78U7RpArJQRWsUv8bjkOtUpA4tvkQywQrbISmw4wQ3wlKXFwxQ2WCYxis5AsnoVk
+	8Swki2chWbGAkWUVo2hqQXJBcVJ6kZFecWJucWleul5yfu4mRkg09e1gvHnA+hBjMtD6icxS
+	osn5wGjMK4k3NDYzsjA1MTU2Mrc0I01YSZxXrcU6UEggPbEkNTs1tSC1KL6oNCe1+BAjEwen
+	VANj1r73qavvOzpe/dvzQ72xL9+8QzTGyq1dha/n3XQrXnf7yN9qJypcdn/0e+9x+6LGnfpL
+	Ux1XLJgvrZ8xbfIfpnnb91dbHj4mb1hzeGu7c81q17g+56lP8p3mnM/6WS1WW1Ko82TX1PyX
+	pxc7rNOr6ONwZG/JW1ceuD04bL/h+uJ3kdMqmCYrsRRnJBpqMRcVJwIAVm9zZbwCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjleLIzCtJLcpLzFFi42I5/e+xoC6XQkCgwbqHVhaXF15itZjyZzmT
+	xeVdc9gcmD3uXNvD5tG3ZRWjx+dNcgHMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaG
+	uoaWFuZKCnmJuam2Si4+AbpumTlAm5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUY
+	GaCBhHWMGYfm/mQs+MpTcX5hN2MD4zeuLkZODgkBE4lLP7YxQdhiEhfurWfrYuTiEBKYziix
+	fVoLG0hCSOAXo8TMVTwgNpuAmsSXL4fZQWwRAT2JN19bgGwODmYBF4mj00RAwsICwRITOtaB
+	lbAIqErc37iKEcTmFbCVmLH4NBuELSjxY/I9FhCbWUBLYvO2JlYIW15i85q3zCAjJQTUJR79
+	1QUxQTYd+CgHUSEise/FO8YJjAKzkAyahWTQLCSDZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4
+	NC9dLzk/dxMjOFafSe1gXNlgcYhRgINRiYdXoMY/UIg1say4MvcQowQHs5IIr5ZQQKAQb0pi
+	ZVVqUX58UWlOavEhxmSgPycyS4km5wPTSF5JvKGxiZmRpZGZhZGJuTlpwkrivAdarQOFBNIT
+	S1KzU1MLUotgtjBxcEo1MJb1ett6LRZclCFRr/1Ad/3RW38WOHPtVb5if+n7ljvXL1msjPNW
+	3SydscJy+TPFhZETLC+9lnlm2agx7c03h6OqayQdkquSWRji89nfnjXJ6fla6bOasfcQz2vF
+	x/JvREWOxj2LXLb89qbElbN8T5dJlu9O2LpikdTEK4oqWVkNAQuORu5u9lBiKc5INNRiLipO
+	BAC96bsHGQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8ffbc7d9ff0064ce000788272a609fa79d06ead1
-Gitweb:     http://git.kernel.org/tip/8ffbc7d9ff0064ce000788272a609fa79d06ead1
-Author:     David Daney <ddaney.cavm@gmail.com>
-AuthorDate: Wed, 13 Mar 2013 12:20:38 -0700
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 25 Mar 2013 10:46:59 +0100
+Add CONFIG_PM_SLEEP to suspend/resume functions to fix the following
+build warning when CONFIG_PM_SLEEP is not selected. This is because
+sleep PM callbacks defined by SIMPLE_DEV_PM_OPS are only used when
+the CONFIG_PM_SLEEP is enabled.
 
-hrtimer/trivial: Fix comment text in hrtimer.c
+drivers/pinctrl/spear/pinctrl-plgpio.c:645:12: warning: 'plgpio_suspend' defined but not used [-Wunused-function]
+drivers/pinctrl/spear/pinctrl-plgpio.c:684:12: warning: 'plgpio_resume' defined but not used [-Wunused-function]
 
-The comments mention HRTIMER_ABS and HRTIMER_REL, these symbols don't
-exist, the proper names are HRTIMER_MODE_ABS and HRTIMER_MODE_REL.
-
-Signed-off-by: David Daney <david.daney@cavium.com>
-Cc: Jiri Kosina <trivial@kernel.org>
-Link: http://lkml.kernel.org/r/1363202438-21234-1-git-send-email-ddaney.cavm@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- kernel/hrtimer.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/pinctrl/spear/pinctrl-plgpio.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index cc47812..031184e 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1010,7 +1010,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
-  * @timer:	the timer to be added
-  * @tim:	expiry time
-  * @delta_ns:	"slack" range for the timer
-- * @mode:	expiry mode: absolute (HRTIMER_ABS) or relative (HRTIMER_REL)
-+ * @mode:	expiry mode: absolute (HRTIMER_MODE_ABS) or
-+ *		relative (HRTIMER_MODE_REL)
-  *
-  * Returns:
-  *  0 on success
-@@ -1027,7 +1028,8 @@ EXPORT_SYMBOL_GPL(hrtimer_start_range_ns);
-  * hrtimer_start - (re)start an hrtimer on the current CPU
-  * @timer:	the timer to be added
-  * @tim:	expiry time
-- * @mode:	expiry mode: absolute (HRTIMER_ABS) or relative (HRTIMER_REL)
-+ * @mode:	expiry mode: absolute (HRTIMER_MODE_ABS) or
-+ *		relative (HRTIMER_MODE_REL)
-  *
-  * Returns:
-  *  0 on success
+diff --git a/drivers/pinctrl/spear/pinctrl-plgpio.c b/drivers/pinctrl/spear/pinctrl-plgpio.c
+index 295b349..05e07d7 100644
+--- a/drivers/pinctrl/spear/pinctrl-plgpio.c
++++ b/drivers/pinctrl/spear/pinctrl-plgpio.c
+@@ -75,7 +75,7 @@ struct plgpio {
+ 	int			(*o2p)(int offset);	/* offset_to_pin */
+ 	u32			p2o_regs;
+ 	struct plgpio_regs	regs;
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ 	struct plgpio_regs	*csave_regs;
+ #endif
+ };
+@@ -554,7 +554,7 @@ static int plgpio_probe(struct platform_device *pdev)
+ 	if (IS_ERR(plgpio->clk))
+ 		dev_warn(&pdev->dev, "clk_get() failed, work without it\n");
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ 	plgpio->csave_regs = devm_kzalloc(&pdev->dev,
+ 			sizeof(*plgpio->csave_regs) *
+ 			DIV_ROUND_UP(plgpio->chip.ngpio, MAX_GPIO_PER_REG),
+@@ -641,7 +641,7 @@ unprepare_clk:
+ 	return ret;
+ }
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int plgpio_suspend(struct device *dev)
+ {
+ 	struct plgpio *plgpio = dev_get_drvdata(dev);
+-- 
+1.7.2.5
+
+
