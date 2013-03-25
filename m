@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759077Ab3CYXQA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 19:16:00 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:35558 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759063Ab3CYXP7 (ORCPT
+	id S933769Ab3CYXRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 19:17:30 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50861 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932338Ab3CYXR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 19:15:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOMZO5CWE-Q0Oh_LnP3ZOcnm5D68rJ6JGun=Tpq4EbS4TDQ+bw@mail.gmail.com>
-References: <51502C87.8050902@digi.com>
-	<CAOMZO5CWE-Q0Oh_LnP3ZOcnm5D68rJ6JGun=Tpq4EbS4TDQ+bw@mail.gmail.com>
-Date: Mon, 25 Mar 2013 20:15:58 -0300
-Message-ID: <CAOMZO5CvrkfGPi7=4-JXnSLzU+8NKV=RD9n3eLvCehXdv6JHEg@mail.gmail.com>
-Subject: Re: BUG: soft lockup when recording audio on MX28EVK with ASoC sgtl5000
-From: Fabio Estevam <festevam@gmail.com>
-To: Hector Palacios <hector.palacios@digi.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marek Vasut <marex@denx.de>, alsa-devel@alsa-project.org,
-        Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <b29396@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 25 Mar 2013 19:17:29 -0400
+Date: Tue, 26 Mar 2013 10:17:17 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: failed to fetch the osd tree
+Message-Id: <20130326101717.36b4a4c2e23b108a9592b32c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__26_Mar_2013_10_17_17_+1100_pTRxlc_KQUCO.qnf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hector,
+--Signature=_Tue__26_Mar_2013_10_17_17_+1100_pTRxlc_KQUCO.qnf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Mar 25, 2013 at 4:31 PM, Fabio Estevam <festevam@gmail.com> wrote:
-> Hi Hector,
->
-> On Mon, Mar 25, 2013 at 7:52 AM, Hector Palacios
-> <hector.palacios@digi.com> wrote:
->> Hello,
->>
->> I just tried recording audio on Freescale's MX28EVK that uses ASoC sgtl5000
->> (kernel v3.8) with:
->>
->>         arecord -M -f cd sound.wav --duration 10
->>
->> and got a scheduler message:
->>
->> [  789.041847] [sched_delayed] sched: RT throttling activated
->
-> I have just tested arecord on 3.8,4 and I haven't seen the 'soft lockup' bug.
->
-> However, I see that mxs saif gets busy after the record and any
-> attempt to do an 'aplay' after the first arecord fails.
->
-> With the attached patch applied I am able to do arecord/aplay sequence
-> several times.
->
-> I don't have a cable handy here to actually test if the sound is
-> recorded properly or not.
->
-> Could you please test it against 3.8.4?
+Hi Boaz,
 
-I managed to test arecord and it works with the following as follows:
+Fetching the osd tree
+(git://git.open-osd.org/linux-open-osd.git#linux-next) produces a time
+out and this error:
 
-1. Run alsamixer and select LINE_IN in the Capture element
+fatal: read error: Connection reset by peer
 
-2. Record with the following command line:
+I will continue to use the last osd tree I fetched.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-arecord -D hw:0,1 -d 10 -f S16_LE -r 44100 -c  test.wav
+--Signature=_Tue__26_Mar_2013_10_17_17_+1100_pTRxlc_KQUCO.qnf
+Content-Type: application/pgp-signature
 
-3. Then listen test.wav on your PC or in your board itself.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-The sequence above works fine.
+iQIcBAEBCAAGBQJRUNr9AAoJEECxmPOUX5FEDg4P/RDV5U3U47yRfP3HO9RrkeBF
+1f6gALTEInAmeXb5FKC0mNK/H2kF9wQ/KHPm3uewqfpZ3OHoh6AQWZh+HuEbsNQK
+lS+1/MXxSu+BcrLP42J+x4lT8FzhvjpOouWkH1OoqCq3fcINiBKGy26dSWzr/oCh
+Q+NkKR3NMnVYQCoCjuktMbgPuhUoEQ+H2xmQI9EKDH5GW+9yXqn8V/eycmfw4lDl
+EFtUSCslC8vg1QNROHh7uXlTGoR8JgfIINsMYXNtG0MF/bh04WMJsw+1plli1cgD
+3Wf/3+JMBiYdpnNlhh9e5KIS7B7hbQIy0crkWSKK0hLBv1oMBY4ey/UOpAH+Es8Z
+oIYqdS3yXpED3c4UzrKPfV0WvUELdsctPILObrC46K1EKl9P5ibU25TiFOccaWfP
+TmQEuxwU8w26QIC34uHUcsKsiHYjQt2cFGdFTwMPg1DU7F2dOVF200Vzd1Bt5Irs
+RIVd0O1PzQzHk1PQjkNcmrgspLJVoUnPcH9wYt4NrzFlPK5xWxdNYJQKaMrwkrfu
+b1aKF48v5+NXXmuSzcVpZBf0rJdiADZDQNDCffGaKil0N++Z6YxNtoFScR9yhddH
+glDvnSyvYbU6NtzabGqnoqrVBKp5UIOyVzT4w3FT5IfK+mVbUalVjjWhCQpFiKnQ
+N0Um2QBLluCJJ2enYCZk
+=UKJ7
+-----END PGP SIGNATURE-----
 
-Anyway, I will submit the patch I sent earlier as it prevents the
-system to get unresponsive.
-
-Regards,
-
-Fabio Estevam
+--Signature=_Tue__26_Mar_2013_10_17_17_+1100_pTRxlc_KQUCO.qnf--
