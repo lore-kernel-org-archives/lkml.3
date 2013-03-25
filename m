@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757683Ab3CYBgk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:36:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33852 "EHLO
+	id S1757809Ab3CYBhl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:37:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33838 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755634Ab3CYBPW (ORCPT
+	by vger.kernel.org with ESMTP id S1755577Ab3CYBPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:22 -0400
-Message-Id: <20130325010533.732708594@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:17 -0400
+Message-Id: <20130325010534.518165721@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:59 +0000
+Date: Mon, 25 Mar 2013 01:07:07 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 095/104] USB: pl2303: fix use-after-free in TIOCMIWAIT
+Cc: akpm@linux-foundation.org, Torsten Duwe <torsten@lst.de>,
+        Torsten Duwe <duwe@lst.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 103/104] KMS: fix EDID detailed timing frame rate
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,74 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Torsten Duwe <torsten@lst.de>
 
-commit 40509ca982c00c4b70fc00be887509feca0bff15 upstream.
+commit c19b3b0f6eed552952845e4ad908dba2113d67b4 upstream.
 
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
+When KMS has parsed an EDID "detailed timing", it leaves the frame rate
+zeroed.  Consecutive (debug-) output of that mode thus yields 0 for
+vsync.  This simple fix also speeds up future invocations of
+drm_mode_vrefresh().
 
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
+While it is debatable whether this qualifies as a -stable fix I'd apply
+it for consistency's sake; drm_helper_probe_single_connector_modes()
+does the same thing already for all probed modes.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Torsten Duwe <duwe@lst.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/pl2303.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/drm_edid.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -150,7 +150,6 @@ enum pl2303_type {
- 
- struct pl2303_private {
- 	spinlock_t lock;
--	wait_queue_head_t delta_msr_wait;
- 	u8 line_control;
- 	u8 line_status;
- 	enum pl2303_type type;
-@@ -204,7 +203,6 @@ static int pl2303_startup(struct usb_ser
- 		if (!priv)
- 			goto cleanup;
- 		spin_lock_init(&priv->lock);
--		init_waitqueue_head(&priv->delta_msr_wait);
- 		priv->type = type;
- 		usb_set_serial_port_data(serial->port[i], priv);
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -933,6 +933,7 @@ set_size:
  	}
-@@ -599,11 +597,14 @@ static int wait_modem_info(struct usb_se
- 	spin_unlock_irqrestore(&priv->lock, flags);
  
- 	while (1) {
--		interruptible_sleep_on(&priv->delta_msr_wait);
-+		interruptible_sleep_on(&port->delta_msr_wait);
- 		/* see if a signal did it */
- 		if (signal_pending(current))
- 			return -ERESTARTSYS;
+ 	mode->type = DRM_MODE_TYPE_DRIVER;
++	mode->vrefresh = drm_mode_vrefresh(mode);
+ 	drm_mode_set_name(mode);
  
-+		if (port->serial->disconnected)
-+			return -EIO;
-+
- 		spin_lock_irqsave(&priv->lock, flags);
- 		status = priv->line_status;
- 		spin_unlock_irqrestore(&priv->lock, flags);
-@@ -725,7 +726,7 @@ static void pl2303_update_line_status(st
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 	if (priv->line_status & UART_BREAK_ERROR)
- 		usb_serial_handle_break(port);
--	wake_up_interruptible(&priv->delta_msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
- 
- 	tty = tty_port_tty_get(&port->port);
- 	if (!tty)
-@@ -792,7 +793,7 @@ static void pl2303_process_read_urb(stru
- 	line_status = priv->line_status;
- 	priv->line_status &= ~UART_STATE_TRANSIENT_MASK;
- 	spin_unlock_irqrestore(&priv->lock, flags);
--	wake_up_interruptible(&priv->delta_msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
- 
- 	if (!urb->actual_length)
- 		return;
+ 	return mode;
 
 
