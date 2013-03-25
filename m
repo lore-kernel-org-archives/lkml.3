@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758081Ab3CYBjc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:39:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33765 "EHLO
+	id S1758058Ab3CYBja (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:39:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33769 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755419Ab3CYBPB (ORCPT
+	by vger.kernel.org with ESMTP id S1755218Ab3CYBPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:01 -0400
-Message-Id: <20130325010525.328988649@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:02 -0400
+Message-Id: <20130325010524.802679721@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:05:34 +0000
+Date: Mon, 25 Mar 2013 01:05:29 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Vlad Yasevich <vyasevic@redhat.com>,
+Cc: akpm@linux-foundation.org, Guillaume Nault <g.nault@alphalink.fr>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 010/104] macvlan: Set IFF_UNICAST_FLT flag to prevent  unnecessary promisc mode.
+Subject: [ 005/104] l2tp: Restore socket refcount when sendmsg succeeds
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,31 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Guillaume Nault <g.nault@alphalink.fr>
 
-[ Upstream commit 87ab7f6f2874f1115817e394a7ed2dea1c72549e ]
+[ Upstream commit 8b82547e33e85fc24d4d172a93c796de1fefa81a ]
 
-Macvlan already supports hw address filters.  Set the IFF_UNICAST_FLT
-so that it doesn't needlesly enter PROMISC mode when macvlans are
-stacked.
+The sendmsg() syscall handler for PPPoL2TP doesn't decrease the socket
+reference counter after successful transmissions. Any successful
+sendmsg() call from userspace will then increase the reference counter
+forever, thus preventing the kernel's session and tunnel data from
+being freed later on.
 
-Signed-of-by: Vlad Yasevich <vyasevic@redhat.com>
+The problem only happens when writing directly on L2TP sockets.
+PPP sockets attached to L2TP are unaffected as the PPP subsystem
+uses pppol2tp_xmit() which symmetrically increase/decrease reference
+counters.
 
+This patch adds the missing call to sock_put() before returning from
+pppol2tp_sendmsg().
+
+Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/macvlan.c | 1 +
+ net/l2tp/l2tp_ppp.c | 1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -585,6 +585,7 @@ void macvlan_common_setup(struct net_dev
- 	ether_setup(dev);
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -360,6 +360,7 @@ static int pppol2tp_sendmsg(struct kiocb
+ 	l2tp_xmit_skb(session, skb, session->hdr_len);
  
- 	dev->priv_flags	       &= ~(IFF_XMIT_DST_RELEASE | IFF_TX_SKB_SHARING);
-+	dev->priv_flags	       |= IFF_UNICAST_FLT;
- 	dev->netdev_ops		= &macvlan_netdev_ops;
- 	dev->destructor		= free_netdev;
- 	dev->header_ops		= &macvlan_hard_header_ops,
+ 	sock_put(ps->tunnel_sock);
++	sock_put(sk);
+ 
+ 	return error;
+ 
 
 
