@@ -1,80 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab3CYLSu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 07:18:50 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43970 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755379Ab3CYLSs (ORCPT
+	id S1756006Ab3CYLVq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 07:21:46 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:45294 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755855Ab3CYLVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 07:18:48 -0400
-Message-ID: <5150328C.80303@ti.com>
-Date: Mon, 25 Mar 2013 07:18:36 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>
-CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] staging: ti-soc-thermal: remove external heat while
- extrapolating hotspot
-References: <1363986787-28147-1-git-send-email-eduardo.valentin@ti.com>  <1363986787-28147-3-git-send-email-eduardo.valentin@ti.com> <1364192605.2465.18.camel@rzhang1-mobl4>
-In-Reply-To: <1364192605.2465.18.camel@rzhang1-mobl4>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Mar 2013 07:21:44 -0400
+From: Prabhakar lad <prabhakar.csengg@gmail.com>
+To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Sekhar Nori <nsekhar@ti.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH] ARM: davinci: use is IS_ENABLED macro
+Date: Mon, 25 Mar 2013 16:51:35 +0530
+Message-Id: <1364210495-7938-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25-03-2013 02:23, Zhang Rui wrote:
-> On Fri, 2013-03-22 at 17:13 -0400, Eduardo Valentin wrote:
->> For boards that provide a PCB sensor close to SoC junction
->> temperature, it is possible to remove the cumulative heat
->> reported by the SoC temperature sensor.
->>
->> This patch changes the extrapolation computation to consider
->> an external sensor in the extrapolation equations.
->>
->> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->> ---
->>   drivers/staging/ti-soc-thermal/ti-thermal-common.c |    5 ++---
->>   1 files changed, 2 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/staging/ti-soc-thermal/ti-thermal-common.c b/drivers/staging/ti-soc-thermal/ti-thermal-common.c
->> index 231c549..52d3c1b 100644
->> --- a/drivers/staging/ti-soc-thermal/ti-thermal-common.c
->> +++ b/drivers/staging/ti-soc-thermal/ti-thermal-common.c
->> @@ -92,10 +92,9 @@ static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
->>   	if (ret)
->>   		return ret;
->>
->> -	pcb_temp = 0;
->> -	/* TODO: Introduce pcb temperature lookup */
->> +	ret = thermal_zone_lookup_temperature("pcb", &pcb_temp);
->>   	/* In case pcb zone is available, use the extrapolation rule with it */
->> -	if (pcb_temp) {
->> +	if (!ret) {
->>   		tmp -= pcb_temp;
->>   		slope = s->slope_pcb;
->>   		constant = s->constant_pcb;
->
-> I can not see this piece of code.
-> But I assume that the thermal_zone_device is registered in another
-> driver, right?
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-It is because I made this patch based on staging-next. But you will find 
-the same under drivers/stating/omap-thermal/omap-bandgap.c
+This patches replaces #if defined() by IS_ENABLED macro, which provides
+better readability.
 
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Cc: Sekhar Nori <nsekhar@ti.com>
+---
+ Note: This patch is compile tested only for davinci_all_defconfig
+       and da8xx_omapl_defconfig.
 
-Yes. The sensor managed by another driver. And the temperature lookup is 
-assumed to be done by the fw.
+ arch/arm/mach-davinci/board-da830-evm.c   |    2 +-
+ arch/arm/mach-davinci/board-da850-evm.c   |    3 +--
+ arch/arm/mach-davinci/board-dm644x-evm.c  |    9 +++------
+ arch/arm/mach-davinci/board-dm646x-evm.c  |    3 +--
+ arch/arm/mach-davinci/board-neuros-osd2.c |    6 ++----
+ arch/arm/mach-davinci/devices.c           |    2 +-
+ arch/arm/mach-davinci/usb.c               |    2 +-
+ 7 files changed, 10 insertions(+), 17 deletions(-)
 
-> or else you can use the thermal_zone_device pointer directly instead.
->
-
-I'd not recommend this because of the above statements
-
-> thanks,
-> rui
->
->
->
+diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
+index 6da25ee..68ade71 100644
+--- a/arch/arm/mach-davinci/board-da830-evm.c
++++ b/arch/arm/mach-davinci/board-da830-evm.c
+@@ -298,7 +298,7 @@ static const short da830_evm_emif25_pins[] = {
+ 	-1
+ };
+ 
+-#if defined(CONFIG_MMC_DAVINCI) || defined(CONFIG_MMC_DAVINCI_MODULE)
++#if IS_ENABLED(CONFIG_MMC_DAVINCI)
+ #define HAS_MMC	1
+ #else
+ #define HAS_MMC	0
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index c2dfe06..3475769 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -335,8 +335,7 @@ static const short da850_evm_nor_pins[] = {
+ 	-1
+ };
+ 
+-#if defined(CONFIG_MMC_DAVINCI) || \
+-    defined(CONFIG_MMC_DAVINCI_MODULE)
++#if IS_ENABLED(CONFIG_MMC_DAVINCI)
+ #define HAS_MMC 1
+ #else
+ #define HAS_MMC 0
+diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
+index 71735e7..d0f6365 100644
+--- a/arch/arm/mach-davinci/board-dm644x-evm.c
++++ b/arch/arm/mach-davinci/board-dm644x-evm.c
+@@ -750,22 +750,19 @@ static int davinci_phy_fixup(struct phy_device *phydev)
+ 	return 0;
+ }
+ 
+-#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
+-    defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
++#if IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
+ #define HAS_ATA 1
+ #else
+ #define HAS_ATA 0
+ #endif
+ 
+-#if defined(CONFIG_MTD_PHYSMAP) || \
+-    defined(CONFIG_MTD_PHYSMAP_MODULE)
++#if IS_ENABLED(CONFIG_MTD_PHYSMAP)
+ #define HAS_NOR 1
+ #else
+ #define HAS_NOR 0
+ #endif
+ 
+-#if defined(CONFIG_MTD_NAND_DAVINCI) || \
+-    defined(CONFIG_MTD_NAND_DAVINCI_MODULE)
++#if IS_ENABLED(CONFIG_MTD_NAND_DAVINCI)
+ #define HAS_NAND 1
+ #else
+ #define HAS_NAND 0
+diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
+index de7adff..c84fdd5 100644
+--- a/arch/arm/mach-davinci/board-dm646x-evm.c
++++ b/arch/arm/mach-davinci/board-dm646x-evm.c
+@@ -117,8 +117,7 @@ static struct platform_device davinci_nand_device = {
+ 	},
+ };
+ 
+-#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
+-    defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
++#if IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
+ #define HAS_ATA 1
+ #else
+ #define HAS_ATA 0
+diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
+index 1c98107..8bd0a43 100644
+--- a/arch/arm/mach-davinci/board-neuros-osd2.c
++++ b/arch/arm/mach-davinci/board-neuros-osd2.c
+@@ -168,15 +168,13 @@ static struct davinci_mmc_config davinci_ntosd2_mmc_config = {
+ };
+ 
+ 
+-#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
+-	defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
++#if IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
+ #define HAS_ATA 1
+ #else
+ #define HAS_ATA 0
+ #endif
+ 
+-#if defined(CONFIG_MTD_NAND_DAVINCI) || \
+-	defined(CONFIG_MTD_NAND_DAVINCI_MODULE)
++#if IS_ENABLED(CONFIG_MTD_NAND_DAVINCI)
+ #define HAS_NAND 1
+ #else
+ #define HAS_NAND 0
+diff --git a/arch/arm/mach-davinci/devices.c b/arch/arm/mach-davinci/devices.c
+index 4c48a36..df135de 100644
+--- a/arch/arm/mach-davinci/devices.c
++++ b/arch/arm/mach-davinci/devices.c
+@@ -119,7 +119,7 @@ void __init davinci_init_ide(void)
+ 	platform_device_register(&ide_device);
+ }
+ 
+-#if	defined(CONFIG_MMC_DAVINCI) || defined(CONFIG_MMC_DAVINCI_MODULE)
++#if IS_ENABLED(CONFIG_MMC_DAVINCI)
+ 
+ static u64 mmcsd0_dma_mask = DMA_BIT_MASK(32);
+ 
+diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
+index 34509ff..5764d65 100644
+--- a/arch/arm/mach-davinci/usb.c
++++ b/arch/arm/mach-davinci/usb.c
+@@ -17,7 +17,7 @@
+ #define DA8XX_USB0_BASE 	0x01e00000
+ #define DA8XX_USB1_BASE 	0x01e25000
+ 
+-#if defined(CONFIG_USB_MUSB_HDRC) || defined(CONFIG_USB_MUSB_HDRC_MODULE)
++#if IS_ENABLED(CONFIG_USB_MUSB_HDRC)
+ static struct musb_hdrc_eps_bits musb_eps[] = {
+ 	{ "ep1_tx", 8, },
+ 	{ "ep1_rx", 8, },
+-- 
+1.7.4.1
 
