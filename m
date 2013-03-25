@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757968Ab3CYNam (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 09:30:42 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:46859 "EHLO
+	id S1758027Ab3CYNdn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 09:33:43 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:46869 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757940Ab3CYNal (ORCPT
+	with ESMTP id S1757938Ab3CYNam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 09:30:41 -0400
+	Mon, 25 Mar 2013 09:30:42 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: kevin@allwinnertech.com, sunny@allwinnertech.com, shuge@allwinnertech.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
         John Stultz <john.stultz@linaro.org>,
         Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 02/10] clocksource: sunxi: Cleanup the timer code
-Date: Mon, 25 Mar 2013 14:30:25 +0100
-Message-Id: <1364218233-29636-3-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 03/10] clocksource: sunxi: make use of CLKSRC_OF
+Date: Mon, 25 Mar 2013 14:30:26 +0100
+Message-Id: <1364218233-29636-4-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1364218233-29636-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1364218233-29636-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -22,119 +24,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The timer code was not exact to some aspects, since most of this code
-was written wihout any datasheet. Make the needed corrections to match
-the datasheet.
+Using CLKSRC_OF allows to remove the SoC specific sunxi_timer.h header,
+and instead of using a custom init function in the machine definition
+use the standard clocksource_of_init function.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/clocksource/sunxi_timer.c |   48 ++++++++++++++++++-------------------
- 1 file changed, 24 insertions(+), 24 deletions(-)
+ arch/arm/mach-sunxi/Kconfig       |    1 +
+ arch/arm/mach-sunxi/sunxi.c       |    4 ++--
+ drivers/clocksource/sunxi_timer.c |    3 ++-
+ include/linux/sunxi_timer.h       |   24 ------------------------
+ 4 files changed, 5 insertions(+), 27 deletions(-)
+ delete mode 100644 include/linux/sunxi_timer.h
 
+diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
+index 8709a39..06c2894 100644
+--- a/arch/arm/mach-sunxi/Kconfig
++++ b/arch/arm/mach-sunxi/Kconfig
+@@ -1,6 +1,7 @@
+ config ARCH_SUNXI
+ 	bool "Allwinner A1X SOCs" if ARCH_MULTI_V7
+ 	select CLKSRC_MMIO
++	select CLKSRC_OF
+ 	select COMMON_CLK
+ 	select GENERIC_CLOCKEVENTS
+ 	select GENERIC_IRQ_CHIP
+diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
+index 23afb73..2c01182 100644
+--- a/arch/arm/mach-sunxi/sunxi.c
++++ b/arch/arm/mach-sunxi/sunxi.c
+@@ -10,6 +10,7 @@
+  * warranty of any kind, whether express or implied.
+  */
+ 
++#include <linux/clocksource.h>
+ #include <linux/delay.h>
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+@@ -17,7 +18,6 @@
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+ #include <linux/io.h>
+-#include <linux/sunxi_timer.h>
+ 
+ #include <linux/irqchip/sunxi.h>
+ 
+@@ -100,6 +100,6 @@ DT_MACHINE_START(SUNXI_DT, "Allwinner A1X (Device Tree)")
+ 	.init_irq	= sunxi_init_irq,
+ 	.handle_irq	= sunxi_handle_irq,
+ 	.restart	= sunxi_restart,
+-	.init_time	= &sunxi_timer_init,
++	.init_time	= clocksource_of_init,
+ 	.dt_compat	= sunxi_board_dt_compat,
+ MACHINE_END
 diff --git a/drivers/clocksource/sunxi_timer.c b/drivers/clocksource/sunxi_timer.c
-index 0ce85e2..7a3ea23 100644
+index 7a3ea23..0b46b7f 100644
 --- a/drivers/clocksource/sunxi_timer.c
 +++ b/drivers/clocksource/sunxi_timer.c
-@@ -25,15 +25,15 @@
- #include <linux/sunxi_timer.h>
+@@ -22,7 +22,6 @@
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+-#include <linux/sunxi_timer.h>
  #include <linux/clk/sunxi.h>
  
--#define TIMER_CTL_REG		0x00
--#define TIMER_CTL_ENABLE		(1 << 0)
-+#define TIMER_IRQ_EN_REG	0x00
-+#define TIMER_IRQ_EN(val)		(1 << val)
- #define TIMER_IRQ_ST_REG	0x04
--#define TIMER0_CTL_REG		0x10
--#define TIMER0_CTL_ENABLE		(1 << 0)
--#define TIMER0_CTL_AUTORELOAD		(1 << 1)
--#define TIMER0_CTL_ONESHOT		(1 << 7)
--#define TIMER0_INTVAL_REG	0x14
--#define TIMER0_CNTVAL_REG	0x18
-+#define TIMER_CTL_REG(val)	(0x10 * val + 0x10)
-+#define TIMER_CTL_ENABLE		(1 << 0)
-+#define TIMER_CTL_AUTORELOAD		(1 << 1)
-+#define TIMER_CTL_ONESHOT		(1 << 7)
-+#define TIMER_INTVAL_REG(val)	(0x10 * val + 0x14)
-+#define TIMER_CNTVAL_REG(val)	(0x10 * val + 0x18)
- 
- #define TIMER_SCAL		16
- 
-@@ -42,21 +42,21 @@ static void __iomem *timer_base;
- static void sunxi_clkevt_mode(enum clock_event_mode mode,
- 			      struct clock_event_device *clk)
- {
--	u32 u = readl(timer_base + TIMER0_CTL_REG);
-+	u32 u = readl(timer_base + TIMER_CTL_REG(0));
- 
- 	switch (mode) {
- 	case CLOCK_EVT_MODE_PERIODIC:
--		u &= ~(TIMER0_CTL_ONESHOT);
--		writel(u | TIMER0_CTL_ENABLE, timer_base + TIMER0_CTL_REG);
-+		u &= ~(TIMER_CTL_ONESHOT);
-+		writel(u | TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(0));
- 		break;
- 
- 	case CLOCK_EVT_MODE_ONESHOT:
--		writel(u | TIMER0_CTL_ONESHOT, timer_base + TIMER0_CTL_REG);
-+		writel(u | TIMER_CTL_ONESHOT, timer_base + TIMER_CTL_REG(0));
- 		break;
- 	case CLOCK_EVT_MODE_UNUSED:
- 	case CLOCK_EVT_MODE_SHUTDOWN:
- 	default:
--		writel(u & ~(TIMER0_CTL_ENABLE), timer_base + TIMER0_CTL_REG);
-+		writel(u & ~(TIMER_CTL_ENABLE), timer_base + TIMER_CTL_REG(0));
- 		break;
- 	}
+ #define TIMER_IRQ_EN_REG	0x00
+@@ -158,3 +157,5 @@ void __init sunxi_timer_init(void)
+ 	clockevents_config_and_register(&sunxi_clockevent, rate / TIMER_SCAL,
+ 					0x1, 0xff);
  }
-@@ -64,10 +64,10 @@ static void sunxi_clkevt_mode(enum clock_event_mode mode,
- static int sunxi_clkevt_next_event(unsigned long evt,
- 				   struct clock_event_device *unused)
- {
--	u32 u = readl(timer_base + TIMER0_CTL_REG);
--	writel(evt, timer_base + TIMER0_CNTVAL_REG);
--	writel(u | TIMER0_CTL_ENABLE | TIMER0_CTL_AUTORELOAD,
--	       timer_base + TIMER0_CTL_REG);
-+	u32 u = readl(timer_base + TIMER_CTL_REG(0));
-+	writel(evt, timer_base + TIMER_CNTVAL_REG(0));
-+	writel(u | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
-+	       timer_base + TIMER_CTL_REG(0));
- 
- 	return 0;
- }
-@@ -132,26 +132,26 @@ void __init sunxi_timer_init(void)
- 	rate = clk_get_rate(clk);
- 
- 	writel(rate / (TIMER_SCAL * HZ),
--	       timer_base + TIMER0_INTVAL_REG);
-+	       timer_base + TIMER_INTVAL_REG(0));
- 
- 	/* set clock source to HOSC, 16 pre-division */
--	val = readl(timer_base + TIMER0_CTL_REG);
-+	val = readl(timer_base + TIMER_CTL_REG(0));
- 	val &= ~(0x07 << 4);
- 	val &= ~(0x03 << 2);
- 	val |= (4 << 4) | (1 << 2);
--	writel(val, timer_base + TIMER0_CTL_REG);
-+	writel(val, timer_base + TIMER_CTL_REG(0));
- 
- 	/* set mode to auto reload */
--	val = readl(timer_base + TIMER0_CTL_REG);
--	writel(val | TIMER0_CTL_AUTORELOAD, timer_base + TIMER0_CTL_REG);
-+	val = readl(timer_base + TIMER_CTL_REG(0));
-+	writel(val | TIMER_CTL_AUTORELOAD, timer_base + TIMER_CTL_REG(0));
- 
- 	ret = setup_irq(irq, &sunxi_timer_irq);
- 	if (ret)
- 		pr_warn("failed to setup irq %d\n", irq);
- 
- 	/* Enable timer0 interrupt */
--	val = readl(timer_base + TIMER_CTL_REG);
--	writel(val | TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG);
-+	val = readl(timer_base + TIMER_IRQ_EN_REG);
-+	writel(val | TIMER_IRQ_EN(0), timer_base + TIMER_IRQ_EN_REG);
- 
- 	sunxi_clockevent.cpumask = cpumask_of(0);
- 
++CLOCKSOURCE_OF_DECLARE(sunxi, "allwinner,sun4i-timer",
++		       sunxi_timer_init);
+diff --git a/include/linux/sunxi_timer.h b/include/linux/sunxi_timer.h
+deleted file mode 100644
+index 1808178..0000000
+--- a/include/linux/sunxi_timer.h
++++ /dev/null
+@@ -1,24 +0,0 @@
+-/*
+- * Copyright 2012 Maxime Ripard
+- *
+- * Maxime Ripard <maxime.ripard@free-electrons.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- */
+-
+-#ifndef __SUNXI_TIMER_H
+-#define __SUNXI_TIMER_H
+-
+-#include <asm/mach/time.h>
+-
+-void sunxi_timer_init(void);
+-
+-#endif
 -- 
 1.7.10.4
 
