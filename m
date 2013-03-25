@@ -1,154 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758425Ab3CYPfm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 11:35:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50928 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757479Ab3CYPfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 11:35:41 -0400
-Message-ID: <51506EBA.8060708@redhat.com>
-Date: Mon, 25 Mar 2013 16:35:22 +0100
-From: Jan Vesely <jvesely@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        fujita.tomonori@lab.ntt.co.jp,
-        =?UTF-8?B?S2FpIE3DpGtpc2FyYQ==?= <kai.makisara@kolumbus.fi>,
-        James Bottomley <james.bottomley@hansenpartnership.com>
-Subject: Re: [PATCH RESEND v2] block: modify __bio_add_page check to accept
- pages that don't start a new segment
-References: <51505AC1.60809@redhat.com> <20130325142457.GD5401@kernel.dk>
-In-Reply-To: <20130325142457.GD5401@kernel.dk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1758512Ab3CYPj0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 11:39:26 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:49415 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758275Ab3CYPjY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 11:39:24 -0400
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, pjt@google.com,
+        vincent.guittot@linaro.org
+Cc: alex.shi@intel.com, preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, corbet@lwn.net, amit.kucheria@linaro.org,
+        robin.randhawa@arm.com, morten.rasmussen@arm.com
+Subject: [RFC PATCH 2/2] sched: Pull tasks from cpus with multiple tasks when idle
+Date: Mon, 25 Mar 2013 15:40:06 +0000
+Message-Id: <1364226006-21419-3-git-send-email-morten.rasmussen@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1364226006-21419-1-git-send-email-morten.rasmussen@arm.com>
+References: <1364226006-21419-1-git-send-email-morten.rasmussen@arm.com>
+X-OriginalArrivalTime: 25 Mar 2013 15:39:21.0416 (UTC) FILETIME=[EB7AD480:01CE296E]
+X-MC-Unique: 113032515392204301
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r2PFdTCP028446
 
-On Mon 25 Mar 2013 15:24:57 CET, Jens Axboe wrote:
-> On Mon, Mar 25 2013, Jan Vesely wrote:
->> v2: changed a comment
->>
->> The original behavior was to refuse all pages after the maximum number of
->> segments has been reached. However, some drivers (like st) craft their buffers
->> to potentially require exactly max segments and multiple pages in the last
->> segment. This patch modifies the check to allow pages that can be merged into
->> the last segment.
->>
->> Fixes EBUSY failures when using large tape block size in high
->> memory fragmentation condition.
->> This regression was introduced by commit
->>  46081b166415acb66d4b3150ecefcd9460bb48a1
->>  st: Increase success probability in driver buffer allocation
->>
->> Signed-off-by: Jan Vesely <jvesely@redhat.com>
->>
->> CC: Alexander Viro <viro@zeniv.linux.org.uk>
->> CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
->> CC: Kai Makisara <kai.makisara@kolumbus.fi>
->> CC: James Bottomley <james.bottomley@hansenpartnership.com>
->> CC: Jens Axboe <axboe@kernel.dk>
->> CC: stable@vger.kernel.org
->> ---
->>  fs/bio.c | 27 +++++++++++++++++----------
->>  1 file changed, 17 insertions(+), 10 deletions(-)
->>
->> diff --git a/fs/bio.c b/fs/bio.c
->> index bb5768f..bc6af71 100644
->> --- a/fs/bio.c
->> +++ b/fs/bio.c
->> @@ -500,7 +500,6 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
->>  			  *page, unsigned int len, unsigned int offset,
->>  			  unsigned short max_sectors)
->>  {
->> -	int retried_segments = 0;
->>  	struct bio_vec *bvec;
->>
->>  	/*
->> @@ -551,18 +550,13 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
->>  		return 0;
->>
->>  	/*
->> -	 * we might lose a segment or two here, but rather that than
->> -	 * make this too complex.
->> +	 * The first part of the segment count check,
->> +	 * reduce segment count if possible
->>  	 */
->>
->> -	while (bio->bi_phys_segments >= queue_max_segments(q)) {
->> -
->> -		if (retried_segments)
->> -			return 0;
->> -
->> -		retried_segments = 1;
->> +	if (bio->bi_phys_segments >= queue_max_segments(q))
->>  		blk_recount_segments(q, bio);
->> -	}
->> +
->>
->>  	/*
->>  	 * setup the new entry, we might clear it again later if we
->> @@ -572,6 +566,19 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
->>  	bvec->bv_page = page;
->>  	bvec->bv_len = len;
->>  	bvec->bv_offset = offset;
->> +	
->> +	/*
->> +	 * the other part of the segment count check, allow mergeable pages
->> +	 */
->> +	if ((bio->bi_phys_segments > queue_max_segments(q)) ||
->> +		( (bio->bi_phys_segments == queue_max_segments(q)) &&
->> +		!BIOVEC_PHYS_MERGEABLE(bvec - 1, bvec))) {
->> +			bvec->bv_page = NULL;
->> +			bvec->bv_len = 0;
->> +			bvec->bv_offset = 0;
->> +			return 0;
->> +	}
->> +
->
-> This is a bit messy, I think. bi_phys_segments should never be allowed
-> to go beyond queue_ma_segments(), so the > test does not look right.
-> Maybe it's an artifact of when we fall through with this patch, we bump
-> bi_phys_segments even if the segments are physicall contig and
-> mergeable.
+If a cpu is idle and another cpu has more than one runnable task,
+pull one of them without considering cpu_power source or target.
+This allows low cpu_power cpus to offload potentially oversubscribed
+high cpu_power cpus.
 
-yeah. it is messy, I tried to go for the least invasive changes.
+In heterogeneous systems containing cpus with different cpu_power,
+the load-balancer will put more tasks on sched_domains with high
+(above default) cpu_power cpus and fewer on sched_domains with low
+cpu_power cpus. Hence, if the number of running tasks is equal to
+the number of cpus, the load-balancer may decide to leave low
+cpu_power idle and placing more than one task on each high cpu_power
+cpu. This is not optimal use of the available compute resources.
 
-I took the '>' test from the original while loop '>='. The original 
-behavior
-guaranteed bio->bi_phys_segments <= max_segments, if the bio satisfied
-this condition to begin with.
-I did not find any guarantees that the 'bio' parameter of this function 
-has
-to satisfy this condition in general.
+Placing one task on each cpu before adding more to any of the high
+cpu_power cpus should generally give a better overall throughput
+regardless of the cpu_power of the cpus.
 
-My understanding is that if a caller of this function (or one of the 
-two that call this one)
-provides an invalid (segment-count-wise) bio, it will fail (return 0 
-added length),
-and let the caller handle the situation.
-I admit, I did not check all the call paths that use these functions.
+Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+Reviewed-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ kernel/sched/fair.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
->
-> What happens when the segment is physically mergeable, but the resulting
-> merged segment is too large (bigger than q->limits.max_segment_size)?
->
-
-ah, yes. I guess I need a check that follows __blk_recalc_rq_segments 
-more closely.
-We know that at this point all pages are merged into segments, so a 
-helper function that would be used
-by both  __blk_recalc_rq_segments and this check is possible.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 4781cdd..095885c 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4039,7 +4039,8 @@ static int move_tasks(struct lb_env *env)
+ 		if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
+ 			goto next;
+ 
+-		if ((load / 2) > env->imbalance)
++		if ((load / 2) > env->imbalance &&
++			(env->idle != CPU_IDLE && env->idle != CPU_NEWLY_IDLE))
+ 			goto next;
+ 
+ 		if (!can_migrate_task(p, env))
+@@ -4539,6 +4540,15 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 	if (overloaded_cpu)
+ 		sgs->group_imb = 1;
+ 
++	/*
++	 * When idle balancing pull tasks if more than one task per cpu
++	 * in group
++	 */
++	if (env->idle == CPU_IDLE || env->idle == CPU_NEWLY_IDLE) {
++		if (group->group_weight < sgs->sum_nr_running)
++			sgs->group_imb = 1;
++	}
++
+ 	sgs->group_capacity = DIV_ROUND_CLOSEST(group->sgp->power,
+ 						SCHED_POWER_SCALE);
+ 	if (!sgs->group_capacity)
+@@ -4766,8 +4776,13 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+ 			min(sds->this_load_per_task, sds->this_load + tmp);
+ 	pwr_move /= SCHED_POWER_SCALE;
+ 
+-	/* Move if we gain throughput */
+-	if (pwr_move > pwr_now)
++	/*
++	 * Move if we gain throughput, or if we have cpus idling while others
++	 * are running more than one task.
++	 */
++	if ((pwr_move > pwr_now) ||
++		(sds->busiest_group_weight < sds->busiest_nr_running &&
++		(env->idle == CPU_IDLE || env->idle == CPU_NEWLY_IDLE)))
+ 		env->imbalance = sds->busiest_load_per_task;
+ }
+ 
+-- 
+1.7.9.5
 
 
-I still assume that a temporary increase of bi_phys_segments above 
-max_segments is ok.
-If we want to avoid this situation we would need to merge tail pages 
-right away. That's imo uglier.
-
-thanks
---
-Jan Vesely <jvesely@redhat.com>
