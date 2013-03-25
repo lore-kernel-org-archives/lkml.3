@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab3CYBdK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:33:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33916 "EHLO
+	id S1755858Ab3CYBPg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:15:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33883 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755882Ab3CYBPi (ORCPT
+	by vger.kernel.org with ESMTP id S1755629Ab3CYBPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:38 -0400
-Message-Id: <20130325010532.502038825@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:25 -0400
+Message-Id: <20130325010534.116563310@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:47 +0000
+Date: Mon, 25 Mar 2013 01:07:03 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 083/104] USB: serial: fix interface refcounting
+Cc: akpm@linux-foundation.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>, Wolfram Sang <wsa@the-dreams.de>
+Subject: [ 099/104] i2c: tegra: check the clk_prepare_enable() return value
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,41 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Laxman Dewangan <ldewangan@nvidia.com>
 
-commit d7971051e4df825e0bc11b995e87bfe86355b8e5 upstream.
+commit 132c803f7b70b17322579f6f4f3f65cf68e55135 upstream.
 
-Make sure the interface is not released before our serial device.
+NVIDIA's Tegra SoC allows read/write of controller register only
+if controller clock is enabled. System hangs if read/write happens
+to registers without enabling clock.
 
-Note that drivers are still not allowed to access the interface in
-any way that may interfere with another driver that may have gotten
-bound to the same interface after disconnect returns.
+clk_prepare_enable() can be fail due to unknown reason and hence
+adding check for return value of this function. If this function
+success then only access register otherwise return to caller with
+error.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Keep calling clk_enable() directly]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/usb-serial.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/i2c/busses/i2c-tegra.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -168,6 +168,7 @@ static void destroy_serial(struct kref *
- 		}
- 	}
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -341,7 +341,11 @@ static int tegra_i2c_init(struct tegra_i
+ 	u32 val;
+ 	int err = 0;
  
-+	usb_put_intf(serial->interface);
- 	usb_put_dev(serial->dev);
- 	kfree(serial);
- }
-@@ -624,7 +625,7 @@ static struct usb_serial *create_serial(
- 	}
- 	serial->dev = usb_get_dev(dev);
- 	serial->type = driver;
--	serial->interface = interface;
-+	serial->interface = usb_get_intf(interface);
- 	kref_init(&serial->kref);
- 	mutex_init(&serial->disc_mutex);
- 	serial->minor = SERIAL_TTY_NO_MINOR;
+-	clk_enable(i2c_dev->clk);
++	err = clk_enable(i2c_dev->clk);
++	if (err < 0) {
++		dev_err(i2c_dev->dev, "Clock enable failed %d\n", err);
++		return err;
++	}
+ 
+ 	tegra_periph_reset_assert(i2c_dev->clk);
+ 	udelay(2);
+@@ -536,7 +540,12 @@ static int tegra_i2c_xfer(struct i2c_ada
+ 	if (i2c_dev->is_suspended)
+ 		return -EBUSY;
+ 
+-	clk_enable(i2c_dev->clk);
++	ret = clk_enable(i2c_dev->clk);
++	if (ret < 0) {
++		dev_err(i2c_dev->dev, "Clock enable failed %d\n", ret);
++		return ret;
++	}
++
+ 	for (i = 0; i < num; i++) {
+ 		int stop = (i == (num - 1)) ? 1  : 0;
+ 		ret = tegra_i2c_xfer_msg(i2c_dev, &msgs[i], stop);
 
 
