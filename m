@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab3CYBUJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:20:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34139 "EHLO
+	id S1756533Ab3CYBUg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:20:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34137 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756351Ab3CYBQg (ORCPT
+	by vger.kernel.org with ESMTP id S1756349Ab3CYBQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 24 Mar 2013 21:16:36 -0400
-Message-Id: <20130325010527.622745385@decadent.org.uk>
+Message-Id: <20130325010527.444644366@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:05:58 +0000
+Date: Mon, 25 Mar 2013 01:05:56 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Vlad Yasevich <vyasevich@gmail.com>,
-        Karl Heiss <kheiss@gmail.com>, Neil Horman <nhorman@tuxdriver.com>,
+Cc: akpm@linux-foundation.org, Veaceslav Falico <vfalico@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 034/104] sctp: Use correct sideffect command in duplicate  cookie handling
+Subject: [ 032/104] netconsole: dont call __netpoll_cleanup() while  atomic
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -30,48 +30,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevich@gmail.com>
+From: Veaceslav Falico <vfalico@redhat.com>
 
-[ Upstream commit f2815633504b442ca0b0605c16bf3d88a3a0fcea ]
+[ Upstream commit 3f315bef23075ea8a98a6fe4221a83b83456d970 ]
 
-When SCTP is done processing a duplicate cookie chunk, it tries
-to delete a newly created association.  For that, it has to set
-the right association for the side-effect processing to work.
-However, when it uses the SCTP_CMD_NEW_ASOC command, that performs
-more work then really needed (like hashing the associationa and
-assigning it an id) and there is no point to do that only to
-delete the association as a next step.  In fact, it also creates
-an impossible condition where an association may be found by
-the getsockopt() call, and that association is empty.  This
-causes a crash in some sctp getsockopts.
+__netpoll_cleanup() is called in netconsole_netdev_event() while holding a
+spinlock. Release/acquire the spinlock before/after it and restart the
+loop. Also, disable the netconsole completely, because we won't have chance
+after the restart of the loop, and might end up in a situation where
+nt->enabled == 1 and nt->np.dev == NULL.
 
-The solution is rather simple.  We simply use SCTP_CMD_SET_ASOC
-command that doesn't have all the overhead and does exactly
-what we need.
-
-Reported-by: Karl Heiss <kheiss@gmail.com>
-Tested-by: Karl Heiss <kheiss@gmail.com>
-CC: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
 Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sctp/sm_statefuns.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/netconsole.c | 20 +++++++++-----------
+ 1 file changed, 9 insertions(+), 11 deletions(-)
 
-diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index 891f5db..cb1c430 100644
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -2044,7 +2044,7 @@ sctp_disposition_t sctp_sf_do_5_2_4_dupcook(const struct sctp_endpoint *ep,
- 	}
+diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
+index 01b104e..bff6908 100644
+--- a/drivers/net/netconsole.c
++++ b/drivers/net/netconsole.c
+@@ -630,6 +630,7 @@ static int netconsole_netdev_event(struct notifier_block *this,
+ 		goto done;
  
- 	/* Delete the tempory new association. */
--	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_ASOC, SCTP_ASOC(new_asoc));
-+	sctp_add_cmd_sf(commands, SCTP_CMD_SET_ASOC, SCTP_ASOC(new_asoc));
- 	sctp_add_cmd_sf(commands, SCTP_CMD_DELETE_TCB, SCTP_NULL());
- 
- 	/* Restore association pointer to provide SCTP command interpeter
+ 	spin_lock_irqsave(&target_list_lock, flags);
++restart:
+ 	list_for_each_entry(nt, &target_list, list) {
+ 		netconsole_target_get(nt);
+ 		if (nt->np.dev == dev) {
+@@ -642,20 +643,17 @@ static int netconsole_netdev_event(struct notifier_block *this,
+ 			case NETDEV_UNREGISTER:
+ 				/*
+ 				 * rtnl_lock already held
++				 * we might sleep in __netpoll_cleanup()
+ 				 */
+-				if (nt->np.dev) {
+-					spin_unlock_irqrestore(
+-							      &target_list_lock,
+-							      flags);
+-					__netpoll_cleanup(&nt->np);
+-					spin_lock_irqsave(&target_list_lock,
+-							  flags);
+-					dev_put(nt->np.dev);
+-					nt->np.dev = NULL;
+-				}
++				spin_unlock_irqrestore(&target_list_lock, flags);
++				__netpoll_cleanup(&nt->np);
++				spin_lock_irqsave(&target_list_lock, flags);
++				dev_put(nt->np.dev);
++				nt->np.dev = NULL;
+ 				nt->enabled = 0;
+ 				stopped = true;
+-				break;
++				netconsole_target_put(nt);
++				goto restart;
+ 			}
+ 		}
+ 		netconsole_target_put(nt);
 
 
