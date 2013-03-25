@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403Ab3CYBQj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:16:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34117 "EHLO
+	id S1756650Ab3CYBTY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:19:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34160 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756189Ab3CYBQe (ORCPT
+	by vger.kernel.org with ESMTP id S1756392Ab3CYBQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:34 -0400
-Message-Id: <20130325010527.163432857@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:39 -0400
+Message-Id: <20130325010527.713288947@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:05:53 +0000
+Date: Mon, 25 Mar 2013 01:05:59 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Mathias Krause <minipli@googlemail.com>,
-        Jan Kara <jack@suse.cz>
-Subject: [ 029/104] isofs: avoid info leak on export
+Cc: akpm@linux-foundation.org, Xufeng Zhang <xufeng.zhang@windriver.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 035/104] sctp: dont break the loop while meeting the  active_path so as to find the matched transport
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,29 +31,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-commit fe685aabf7c8c9f138e5ea900954d295bf229175 upstream.
+[ Upstream commit 2317f449af30073cfa6ec8352e4a65a89e357bdd ]
 
-For type 1 the parent_offset member in struct isofs_fid gets copied
-uninitialized to userland. Fix this by initializing it to 0.
+sctp_assoc_lookup_tsn() function searchs which transport a certain TSN
+was sent on, if not found in the active_path transport, then go search
+all the other transports in the peer's transport_addr_list, however, we
+should continue to the next entry rather than break the loop when meet
+the active_path transport.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/isofs/export.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/sctp/associola.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/isofs/export.c
-+++ b/fs/isofs/export.c
-@@ -135,6 +135,7 @@ isofs_export_encode_fh(struct dentry *de
- 	len = 3;
- 	fh32[0] = ei->i_iget5_block;
-  	fh16[2] = (__u16)ei->i_iget5_offset;  /* fh16 [sic] */
-+	fh16[3] = 0;  /* avoid leaking uninitialized data */
- 	fh32[2] = inode->i_generation;
- 	if (connectable && !S_ISDIR(inode->i_mode)) {
- 		struct inode *parent;
+diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+index acd2edb..3c04692 100644
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -1050,7 +1050,7 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *asoc,
+ 			transports) {
+ 
+ 		if (transport == active)
+-			break;
++			continue;
+ 		list_for_each_entry(chunk, &transport->transmitted,
+ 				transmitted_list) {
+ 			if (key == chunk->subh.data_hdr->tsn) {
 
 
