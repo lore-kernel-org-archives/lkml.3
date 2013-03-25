@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933735Ab3CYWoX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 18:44:23 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39516 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932517Ab3CYWoV (ORCPT
+	id S933720Ab3CYWxJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 18:53:09 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:40225 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932811Ab3CYWxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 18:44:21 -0400
-Message-ID: <5150D33F.1000206@wwwdotorg.org>
-Date: Mon, 25 Mar 2013 16:44:15 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 25 Mar 2013 18:53:05 -0400
+Message-ID: <5150D54D.1070004@linaro.org>
+Date: Mon, 25 Mar 2013 15:53:01 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <achew@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 00/14] Tegra114 clockframework
-References: <1363956029-31873-1-git-send-email-pdeschrijver@nvidia.com> <514CAB71.7020005@wwwdotorg.org>
-In-Reply-To: <514CAB71.7020005@wwwdotorg.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Rob Herring <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Simon Horman <horms@verge.net.au>, Will Deacon <Will.Deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] ARM: convert arm/arm64 arch timer to use CLKSRC_OF init
+References: <1363818875-15978-1-git-send-email-robherring2@gmail.com> <20130325172633.GP30923@n2100.arm.linux.org.uk> <5150C16A.3040208@gmail.com> <201303252236.23270.arnd@arndb.de>
+In-Reply-To: <201303252236.23270.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2013 01:05 PM, Stephen Warren wrote:
-> On 03/22/2013 06:39 AM, Peter De Schrijver wrote:
->> This is the eight version of the Tegra114 clockframework. It is based on the
->> next-20130320-fixed branch of
->> git://nv-tegra.nvidia.com/user/swarren/linux-2.6.git,
-> 
-> Hmmm. Basing this on v3.9-rcX would be better, since when I apply it to
-> the Tegra tree, that's what it will be based on. Luckily, it applies
-> there with trivial conflicts.
-> 
->> http://patchwork.ozlabs.org/patch/229972/ and
->> http://patchwork.ozlabs.org/patch/229978/
-> 
-> The series,
-> 
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> 
-> (based on my personal next-20130318-fixed branch, without
-> http://patchwork.ozlabs.org/patch/229972/ applied, but instead with the
-> audio clocks initialized per the patch I posted yesterday to do this).
-> 
-> I tested: serial console, eMMC for the root filesystem, audio playback
-> using different pll_a rates, reboot, and shutdown.
-> 
-> This version also solves the hard hang I was seeing with V7 during
-> shutdown or reboot. Now I don't have to rely on my filesystem journal:-)
+On 03/25/2013 03:36 PM, Arnd Bergmann wrote:
+> On Monday 25 March 2013, Rob Herring wrote:
+>> I count integrator-cp, realview, versatile and non-DT VExpress that do
+>> this (not surprisingly) and 25 platforms or timer implementations plus
+>> arm64 that do sched_clock setup in time_init. What's broken by not
+>> moving these earlier?
+> timekeeping_init() will leave the persistent_clock_exist variable as "false",
+> which is read in rtc_suspend() and timekeeping_inject_sleeptime().
 
-Hmm. I retract that Tested-by now.
+Are you mixing up the persistent_clock and sched_clock here? From a 
+generic stand-point they have different requirements.
 
-If I apply the series on top of Tegra's for-next branch (which is
-currently entirely based on v3.9-rc1) then it works fine. (Similarly, it
-works fine on top of next-20130318, as I reported above).
+> For all I can tell, you will get a little jitter every time you
+> do a suspend in that case. Or perhaps it means the system clock
+> will be forwarded by the amount of time spent in suspend twice
+> after wakeup, but I'm probably misreading the code for that case.
 
-If I merge in v3.9-rc3, it's still fine. If I merge in v3.9-rc4, I see a
-hard hang during boot. I believe that "hard hang" here means that some
-module's registers are being touched with the clock turned off, which
-locks up the CPU/bus. Certainly, sysrq doesn't work once it's hung.
+No, you shouldn't see timekeeping being incremented twice, we check in 
+rtc_resume code if the persistent clock is present if so we won't inject 
+any measured suspend time there. But you're probably right that we're 
+being a little overly paranoid checking the same value twice.
 
-I tracked this down to some interaction with commit f7db706 "ARM:
-7674/1: smp: Avoid dummy clockevent being preferred over real hardware
-clock-event". So says a "git bisect" between v3.9-rc3 and v3.9-rc4,
-applying this CCF V8 series at each point.
+As far as the benefit to the persistent clock: it is just a little 
+better to use, since we can access it earlier in resume, prior to 
+interrupts being enabled. So we should see less time error introduced 
+each suspend.
 
-If I revert that commit, the problem is solved/hidden. I tested this in
-my local dev branch that's based on next-20130325 plus this CCF V8
-series, plus a bunch of other cruft.
+thanks
+-john
 
-Can you please investigate what the problem is? Thanks.
