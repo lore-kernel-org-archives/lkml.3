@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab3CYBfY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:35:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33866 "EHLO
+	id S1757615Ab3CYBgF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:36:05 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33854 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755647Ab3CYBPX (ORCPT
+	by vger.kernel.org with ESMTP id S1755635Ab3CYBPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:23 -0400
-Message-Id: <20130325010533.424286449@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:22 -0400
+Message-Id: <20130325010533.648791175@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:56 +0000
+Date: Mon, 25 Mar 2013 01:06:58 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 092/104] USB: mos7840: fix broken TIOCMIWAIT
+Subject: [ 094/104] USB: oti6858: fix use-after-free in TIOCMIWAIT
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -31,41 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit e670c6af12517d08a403487b1122eecf506021cf upstream.
+commit 8edfdab37157d2683e51b8be5d3d5697f66a9f7b upstream.
 
-Make sure waiting processes are woken on modem-status changes.
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
 
-Currently processes are only woken on termios changes regardless of
-whether the modem status has changed.
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
+[bwh: Backported to 3.2: adjust context, indentation]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/mos7840.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/serial/oti6858.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -453,6 +453,9 @@ static void mos7840_handle_new_msr(struc
- 			icount->rng++;
- 			smp_wmb();
- 		}
-+
-+		mos7840_port->delta_msr_cond = 1;
-+		wake_up_interruptible(&mos7840_port->delta_msr_wait);
- 	}
- }
+--- a/drivers/usb/serial/oti6858.c
++++ b/drivers/usb/serial/oti6858.c
+@@ -196,7 +196,6 @@ struct oti6858_private {
+ 	u8 setup_done;
+ 	struct delayed_work delayed_setup_work;
  
-@@ -2073,8 +2076,6 @@ static void mos7840_change_port_settings
- 			mos7840_port->read_urb_busy = false;
+-	wait_queue_head_t intr_wait;
+ 	struct usb_serial_port *port;   /* USB port with which associated */
+ };
+ 
+@@ -357,7 +356,6 @@ static int oti6858_startup(struct usb_se
+ 			break;
+ 
+ 		spin_lock_init(&priv->lock);
+-		init_waitqueue_head(&priv->intr_wait);
+ /*		INIT_WORK(&priv->setup_work, setup_line, serial->port[i]); */
+ /*		INIT_WORK(&priv->write_work, send_data, serial->port[i]); */
+ 		priv->port = port;
+@@ -705,11 +703,15 @@ static int wait_modem_info(struct usb_se
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
+ 	while (1) {
+-		wait_event_interruptible(priv->intr_wait,
++		wait_event_interruptible(port->delta_msr_wait,
++					port->serial->disconnected ||
+ 					priv->status.pin_state != prev);
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
+ 
++		if (port->serial->disconnected)
++			return -EIO;
++
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 		status = priv->status.pin_state & PIN_MASK;
+ 		spin_unlock_irqrestore(&priv->lock, flags);
+@@ -821,7 +823,7 @@ static void oti6858_read_int_callback(st
+ 
+ 		if (!priv->transient) {
+ 			if (xs->pin_state != priv->status.pin_state)
+-				wake_up_interruptible(&priv->intr_wait);
++				wake_up_interruptible(&port->delta_msr_wait);
+ 			memcpy(&priv->status, xs, OTI6858_CTRL_PKT_SIZE);
  		}
- 	}
--	wake_up(&mos7840_port->delta_msr_wait);
--	mos7840_port->delta_msr_cond = 1;
- 	dbg("mos7840_change_port_settings mos7840_port->shadowLCR is End %x",
- 	    mos7840_port->shadowLCR);
- }
+ 
 
 
