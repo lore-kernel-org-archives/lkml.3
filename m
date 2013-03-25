@@ -1,79 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933224Ab3CYUNe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 16:13:34 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:50634 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932801Ab3CYUNd (ORCPT
+	id S933313Ab3CYUSE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 16:18:04 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:64365 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933156Ab3CYUSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 16:13:33 -0400
-Message-ID: <1364242347.1390.294.camel@x61.thuisdomein>
-Subject: [PATCH] [TRIVIAL] Some header guard comments are contagious
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 25 Mar 2013 21:12:27 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Mar 2013 20:12:27.0000 (UTC) FILETIME=[120C8780:01CE2995]
-X-RcptDomain: vger.kernel.org
+	Mon, 25 Mar 2013 16:18:02 -0400
+Date: Mon, 25 Mar 2013 13:17:59 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ryan Mallon <rmallon@gmail.com>, arnd@arndb.de
+Subject: Re: [PATCH 3/3] misc: ep93xx_pwm.c: fix section mismatch and use
+ module_platform_driver
+Message-ID: <20130325201759.GA30544@kroah.com>
+References: <201303151807.14074.hartleys@visionengravers.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201303151807.14074.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Bravely untested. 
+On Fri, Mar 15, 2013 at 06:07:13PM -0700, H Hartley Sweeten wrote:
+> Remove the __init tags from the ep93xx_pwm_probe() and
+> ep93xx_pwm_remove() functions to fix the section mismatch
+> warnings.
+> 
+> Use module_platform_driver() to remove the init/exit boilerplate.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Ryan Mallon <rmallon@gmail.com>
 
- include/linux/evm.h       | 2 +-
- include/linux/ima.h       | 4 ++--
- include/linux/integrity.h | 2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/evm.h b/include/linux/evm.h
-index 9fc13a7..1fcb88c 100644
---- a/include/linux/evm.h
-+++ b/include/linux/evm.h
-@@ -96,5 +96,5 @@ static inline int evm_inode_init_security(struct inode *inode,
- 	return 0;
- }
- 
--#endif /* CONFIG_EVM_H */
-+#endif /* CONFIG_EVM */
- #endif /* LINUX_EVM_H */
-diff --git a/include/linux/ima.h b/include/linux/ima.h
-index 86c361e..1b7f268 100644
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -46,7 +46,7 @@ static inline int ima_module_check(struct file *file)
- 	return 0;
- }
- 
--#endif /* CONFIG_IMA_H */
-+#endif /* CONFIG_IMA */
- 
- #ifdef CONFIG_IMA_APPRAISE
- extern void ima_inode_post_setattr(struct dentry *dentry);
-@@ -72,5 +72,5 @@ static inline int ima_inode_removexattr(struct dentry *dentry,
- {
- 	return 0;
- }
--#endif /* CONFIG_IMA_APPRAISE_H */
-+#endif /* CONFIG_IMA_APPRAISE */
- #endif /* _LINUX_IMA_H */
-diff --git a/include/linux/integrity.h b/include/linux/integrity.h
-index 66c5fe9..83222ce 100644
---- a/include/linux/integrity.h
-+++ b/include/linux/integrity.h
-@@ -36,5 +36,5 @@ static inline void integrity_inode_free(struct inode *inode)
- {
- 	return;
- }
--#endif /* CONFIG_INTEGRITY_H */
-+#endif /* CONFIG_INTEGRITY */
- #endif /* _LINUX_INTEGRITY_H */
--- 
-1.7.11.7
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
