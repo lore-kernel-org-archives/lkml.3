@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758904Ab3CYTwE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 15:52:04 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:61506 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758884Ab3CYTwD (ORCPT
+	id S933063Ab3CYTzN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 15:55:13 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:48686 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758889Ab3CYTzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 15:52:03 -0400
-Message-ID: <1364241121.1390.292.camel@x61.thuisdomein>
-Subject: [PATCH] [TRIVIAL] fix comment typo "CONFIG_HID_PICOLCD_LIRC"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 25 Mar 2013 20:52:01 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Mar 2013 19:52:01.0531 (UTC) FILETIME=[379CCCB0:01CE2992]
-X-RcptDomain: vger.kernel.org
+	Mon, 25 Mar 2013 15:55:11 -0400
+Date: Mon, 25 Mar 2013 16:55:04 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Noguchi Kazutosi <linux@mofmof.scaltinof.net>
+Cc: marcel@holtmann.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Bluetooth: Add support for Foxconn / Hon Hai [0489:e04d]
+ Add support for the AR3012 chip in SONY SVS13129.
+Message-ID: <20130325195504.GA15335@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Noguchi Kazutosi <linux@scaltinof.net>, marcel@holtmann.org,
+	johan.hedberg@gmail.com, linux-bluetooth@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1364136070-4426-1-git-send-email-linux@scaltinof.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364136070-4426-1-git-send-email-linux@scaltinof.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+Hi Noguchi,
 
- drivers/hid/hid-picolcd.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+* Noguchi Kazutosi <linux@scaltinof.net> [2013-03-24 23:41:10 +0900]:
 
-diff --git a/drivers/hid/hid-picolcd.h b/drivers/hid/hid-picolcd.h
-index 020cef6..88c7c93 100644
---- a/drivers/hid/hid-picolcd.h
-+++ b/drivers/hid/hid-picolcd.h
-@@ -302,7 +302,7 @@ static inline int picolcd_init_cir(struct picolcd_data *data, struct hid_report
- static inline void picolcd_exit_cir(struct picolcd_data *data)
- {
- }
--#endif /* CONFIG_HID_PICOLCD_LIRC */
-+#endif /* CONFIG_HID_PICOLCD_CIR */
- 
- int picolcd_reset(struct hid_device *hdev);
- struct picolcd_pending *picolcd_send_and_wait(struct hid_device *hdev,
--- 
-1.7.11.7
+> T:  Bus=01 Lev=02 Prnt=02 Port=05 Cnt=03 Dev#= 21 Spd=12  MxCh= 0
+> D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+> P:  Vendor=0489 ProdID=e04d Rev=00.02
+> S:  Manufacturer=Atheros Communications
+> S:  Product=Bluetooth USB Host Controller
+> S:  SerialNumber=Alaska Day 2006
+> C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+> I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> 
+> Signed-off-by: Noguchi Kazutosi <linux@scaltinof.net>
+> ---
+>  drivers/bluetooth/ath3k.c |    2 ++
+>  drivers/bluetooth/btusb.c |    1 +
+>  2 files changed, 3 insertions(+)
 
+Patch has been applied to bluetooth-next. Thanks.
+
+	Gustavo
