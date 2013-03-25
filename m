@@ -1,19 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933228Ab3CYUrI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 16:47:08 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51614 "EHLO
+	id S933309Ab3CYUru (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 16:47:50 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51627 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758581Ab3CYUrH (ORCPT
+	with ESMTP id S932238Ab3CYUrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 16:47:07 -0400
-Date: Mon, 25 Mar 2013 21:47:05 +0100 (CET)
+	Mon, 25 Mar 2013 16:47:49 -0400
+Date: Mon, 25 Mar 2013 21:47:42 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT pull] timer fixes for 3.9
-Message-ID: <alpine.LFD.2.02.1303252145040.22263@ionos>
+To: Mark Rutland <mark.rutland@arm.com>
+cc: Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCHv3 01/10] clocksource: add generic dummy timer driver
+In-Reply-To: <20130325180007.GA4065@e106331-lin.cambridge.arm.com>
+Message-ID: <alpine.LFD.2.02.1303252147080.22263@ionos>
+References: <1363198676-30417-1-git-send-email-sboyd@codeaurora.org> <1363198676-30417-2-git-send-email-sboyd@codeaurora.org> <20130321180922.GB10716@e106331-lin.cambridge.arm.com> <514B4DBD.4060403@codeaurora.org> <20130322180305.GB1436@e106331-lin.cambridge.arm.com>
+ <5150800E.2000905@codeaurora.org> <20130325180007.GA4065@e106331-lin.cambridge.arm.com>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -24,39 +32,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, 25 Mar 2013, Mark Rutland wrote:
+> Thomas, do you have an idea of if/when tip/timers/urgent will hit mainline?
 
-please pull the latest timers-urgent-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
-
-A single bugfix which prevents that a non functional timer device is
-selected to provide the fallback device, which is supposed to serve
-timer interrupts on behalf of non functional devices ...
+Thanks for the reminder. I just sent a pull request Linuswards.
 
 Thanks,
 
 	tglx
-
------------------->
-Mark Rutland (1):
-      clockevents: Don't allow dummy broadcast timers
-
-
- kernel/time/tick-broadcast.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 2fb8cb8..7f32fe0 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -67,7 +67,8 @@ static void tick_broadcast_start_periodic(struct clock_event_device *bc)
-  */
- int tick_check_broadcast_device(struct clock_event_device *dev)
- {
--	if ((tick_broadcast_device.evtdev &&
-+	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
-+	    (tick_broadcast_device.evtdev &&
- 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
- 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
- 		return 0;
