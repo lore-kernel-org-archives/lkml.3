@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab3CYIoV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 04:44:21 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:48752 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757312Ab3CYIoU (ORCPT
+	id S1757395Ab3CYIpu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 04:45:50 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:61779 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757357Ab3CYIpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 04:44:20 -0400
-Date: Mon, 25 Mar 2013 08:44:14 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] regulator: ab8500: Use regulator_list_voltage_linear
- for fixed voltage
-Message-ID: <20130325084414.GA3568@gmail.com>
-References: <1364194430.25717.1.camel@phoenix>
- <1364194740.27158.1.camel@phoenix>
+	Mon, 25 Mar 2013 04:45:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1364194740.27158.1.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51500C81.7040307@ti.com>
+References: <2ece6d9fe8dfb6882a1c83a1cb2404bacc40b22d.1364138740.git.viresh.kumar@linaro.org>
+	<07b96c5b68470001197445fb3d28786ad9acdbe0.1364138740.git.viresh.kumar@linaro.org>
+	<51500C81.7040307@ti.com>
+Date: Mon, 25 Mar 2013 14:15:46 +0530
+Message-ID: <CAKohpomTt-ajNeh-OwV9X-HNBddJzL=JB+ggFY0msmsuZabvjA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cpufreq: drivers: Remove unnecessary assignments of
+ policy-> members
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: rjw@sisk.pl, arvind.chauhan@arm.com, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, Sascha Hauer <kernel@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Mar 2013, Axel Lin wrote:
+On 25 March 2013 14:06, Sekhar Nori <nsekhar@ti.com> wrote:
+> There is a line in the code a little above the ones you deleted that
+> also sets these same variables. I guess you were relying on that line to
+> set policy->cur, but that also sets policy->{min, max} which can be
+> cleaned up.
 
-> 
-> Both ab8500_regulator_mode_ops and ab8500_regulator_ops do not have volt_table
-> setting, thus we can not use regulator_list_voltage_table for them.
-> However, they have min_uV setting with n_voltages = 1, so use
-> regulator_list_voltage_linear instead.
-> 
-> Also remove setting set_voltage_time_sel for ab8500_regulator_mode_ops.
-> It is used only for fixed voltage, so it does not need to implement
-> set_voltage_time_sel.
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+This code is rather confusing or wrong, this was the state of code before
+this patch:
 
-Looks good to me.
+	policy->cur = policy->min = policy->max = davinci_getspeed(0);
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+	if (freq_table) {
+		result = cpufreq_frequency_table_cpuinfo(policy, freq_table);
+		if (!result)
+			cpufreq_frequency_table_get_attr(freq_table,
+							policy->cpu);
+	} else {
+		policy->cpuinfo.min_freq = policy->min;
+		policy->cpuinfo.max_freq = policy->max;
+	}
 
-> ---
->  drivers/regulator/ab8500.c |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-> index a2d19c6..12e2740 100644
-> --- a/drivers/regulator/ab8500.c
-> +++ b/drivers/regulator/ab8500.c
-> @@ -363,8 +363,7 @@ static struct regulator_ops ab8500_regulator_mode_ops = {
->  	.set_mode		= ab8500_regulator_set_mode,
->  	.get_mode		= ab8500_regulator_get_mode,
->  	.get_voltage_sel 	= ab8500_regulator_get_voltage_sel,
-> -	.list_voltage		= regulator_list_voltage_table,
-> -	.set_voltage_time_sel	= ab8500_regulator_set_voltage_time_sel,
-> +	.list_voltage		= regulator_list_voltage_linear,
->  };
->  
->  static struct regulator_ops ab8500_regulator_ops = {
-> @@ -372,7 +371,7 @@ static struct regulator_ops ab8500_regulator_ops = {
->  	.disable		= ab8500_regulator_disable,
->  	.is_enabled		= ab8500_regulator_is_enabled,
->  	.get_voltage_sel 	= ab8500_regulator_get_voltage_sel,
-> -	.list_voltage		= regulator_list_voltage_table,
-> +	.list_voltage		= regulator_list_voltage_linear,
->  };
->  
->  static struct ab8500_regulator_info
+        policy->min = policy->cpuinfo.min_freq;
+        policy->max = policy->cpuinfo.max_freq;
+        policy->cur = davinci_getspeed(0);
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+The tricky part is if/else, where if don't return error if
+cpufreq_frequency_table_cpuinfo() fails. We want to set ->min[max]
+and cpuinfo.min[max] always. And i can see this code not doing that for some
+case even with my patch.
+
+Possible scenarios:
+1. Valid freq_table: My patch + what you suggested is required.
+2. Invalid freq_table: We never set cpuinfo.min[max] with or without my patch
+3. No freq_table: Only my patch is required.
+
+If i do what you suggested then 2 and 3 would fail... If you want to
+return error
+in case cpufreq_frequency_table_cpuinfo(), then i can fix it properly.
