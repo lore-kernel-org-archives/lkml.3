@@ -1,108 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756394Ab3CYJvF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 05:51:05 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:28857 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752971Ab3CYJvD (ORCPT
+	id S1755982Ab3CYJ63 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 05:58:29 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:42441 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755351Ab3CYJ62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 05:51:03 -0400
-X-AuditID: cbfee690-b7f656d0000007e3-26-51501df03ef0
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Doug Anderson'" <dianders@chromium.org>
-Cc: "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Stephen Warren'" <swarren@nvidia.com>,
-        "'Changhwan Youn'" <chaos.youn@samsung.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Olof Johansson'" <olof@lixom.net>,
-        "'Simon Glass'" <sjg@chromium.org>,
-        "'John Stultz'" <john.stultz@linaro.org>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-References: <1363967587-19154-1-git-send-email-dianders@chromium.org>
-In-reply-to: <1363967587-19154-1-git-send-email-dianders@chromium.org>
-Subject: RE: [PATCH] ARM: EXYNOS: Add missing semicolons in exynos_mct.c
-Date: Mon, 25 Mar 2013 18:50:40 +0900
-Message-id: <177201ce293e$35753cf0$a05fb6d0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4nFYzHc5cbeMU/TPm/xNx7B7wcdwB5fXaw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+Zge4H2YBAg64P6hZ/Jx1jt2hvULR4
-	eUjT4uyyg2wWZ37rWlzeNYfN4tT1z2wW37ZsY7S4Mb2F1WLzpqnMFsdmLGF04Pb4/WsSo8fs
-	hossHneu7WHzeHfuHLvHlRNNrB69ze/YPPq2rGL0+LxJLoAjissmJTUnsyy1SN8ugSuje9Vh
-	toJb3BW3Fzs2MH7k7GLk5JAQMJHY/283K4QtJnHh3nq2LkYuDiGBZYwSL5/eYYcp2n1iMitE
-	YjqjxJmG68wQzl9GiWf737KAVLEJaEgcfv8MrENEQFvi5YOVYEXMAg+YJB4dO8AEkhAScJW4
-	8XYRmM0p4CbxtG0WI4gtLOAhcfTwXrA7WARUJVavms8MYvMK2Eq0nL/FCmELSvyYfA9sGbOA
-	lsT6nceZIGx5ic1r3gLVcwCdqi7x6K8uxA1GEqt7e9khSkQk9r14xwhyj4TAXA6JbXd+s0Ps
-	EpD4NvkQC0SvrMSmA8wQH0tKHFxxg2UCo8QsJJtnIdk8C8nmWUhWLGBkWcUomlqQXFCclF5k
-	olecmFtcmpeul5yfu4kREv8TdjDeO2B9iDEZaP1EZinR5Hxg+sgriTc0NjOyMDUxNTYytzQj
-	TVhJnFe9xTpQSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6Pljx3fP/hqnU/YdIP56/NVdhb3
-	HnfI/yj3nKnNIHHI/WXXOm7WXEnNCy/tVtuf5PNqbDwZJ+yrPvVRMXNQorpEuHSH0erpKoVl
-	GjHB/yWuyD0vnmddcnYHZ0PfvoO7678zPoroqYt7fXD3z5fZxxQf3L+07JXr0+yG/EdSLx/E
-	1Sve/pZq76TEUpyRaKjFXFScCACHtrqUFQMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPKsWRmVeSWpSXmKPExsVy+t9jQd0PsgGBBh0blSz+TjrGbtHeoGjx
-	8pCmxdllB9kszvzWtbi8aw6bxanrn9ksvm3ZxmhxY3oLq8XmTVOZLY7NWMLowO3x+9ckRo/Z
-	DRdZPO5c28Pm8e7cOXaPKyeaWD16m9+xefRtWcXo8XmTXABHVAOjTUZqYkpqkUJqXnJ+SmZe
-	uq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QnUoKZYk5pUChgMTiYiV9O0wTQkPc
-	dC1gGiN0fUOC4HqMDNBAwjrGjO5Vh9kKbnFX3F7s2MD4kbOLkZNDQsBEYveJyawQtpjEhXvr
-	2boYuTiEBKYzSpxpuM4M4fxllHi2/y0LSBWbgIbE4ffP2EFsEQFtiZcPVoIVMQs8YJJ4dOwA
-	E0hCSMBV4sbbRWA2p4CbxNO2WYwgtrCAh8TRw3vB1rEIqEqsXjWfGcTmFbCVaDl/ixXCFpT4
-	Mfke2DJmAS2J9TuPM0HY8hKb17wFqucAOlVd4tFfXYgbjCRW9/ayQ5SISOx78Y5xAqPQLCST
-	ZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECE4uz6R2MK5ssDjEKMDB
-	qMTDK1DjHyjEmlhWXJl7iFGCg1lJhFdLKCBQiDclsbIqtSg/vqg0J7X4EGMy0KMTmaVEk/OB
-	iS+vJN7Q2MTMyNLIzMLIxNycNGElcd4DrdaBQgLpiSWp2ampBalFMFuYODilGhhXOi3Pf/hw
-	65+7yazd5f/0E2bu8basL9w1M2x2Y5bX9r+sx34rNS9q/Nm95/TFwN/8pwt2KHe6vfr6xe6Y
-	/ssL9ydPOsbDF/4g9rzFbxezsCWPpma+37o4/kU/42tRUZbXEqkfd+V8eKjgvo595camU9Ou
-	iy+zd/zzcnXYH9V7N/inKrjecZbarcRSnJFoqMVcVJwIAFHdW7FyAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 25 Mar 2013 05:58:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <514D9837.6050300@linux.vnet.ibm.com>
+References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
+	<514D9837.6050300@linux.vnet.ibm.com>
+Date: Mon, 25 Mar 2013 10:58:26 +0100
+Message-ID: <CAKfTPtATncavrhMTeidH+hC_emwpmS0Mugwh3+oar-XVXzjNzg@mail.gmail.com>
+Subject: Re: [RFC PATCH v3 0/6] sched: packing small tasks
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, peterz@infradead.org, mingo@kernel.org,
+        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
+        morten.rasmussen@arm.com, chander.kashyap@linaro.org,
+        cmetcalf@tilera.com, tony.luck@intel.com, alex.shi@intel.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, len.brown@intel.com,
+        arjan@linux.intel.com, amit.kucheria@linaro.org, corbet@lwn.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug Anderson wrote:
-> 
-> The CLOCKSOURCE_OF_DECLARE lines were added without a semicolon at the
-> end.  On my system this causes a compile-time error that looks like:
-> 
->  .../drivers/clocksource/exynos_mct.c:557:202: warning: comparison of
-> distinct pointer types lacks a cast [enabled by default]
->  .../drivers/clocksource/exynos_mct.c:558:1: error: expected ',' or ';'
-> before 'static'
-> 
-> The error didn't show up till now because there was an extra semicolon
+On 23 March 2013 12:55, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+> Hi Vincent,
+>
+> The power aware scheduler patchset that has been released by Alex
+> recently [https://lkml.org/lkml/2013/2/18/4], also has the idea of
+> packing of small tasks.In that patchset, the waking of small tasks in
+> done on a leader cpu, which of course varies dynamically.
+> https://lkml.org/lkml/2013/2/18/6
+>
+> I will refer henceforth to the above patchset as Patch A and your
+> current patchset in this mail as Patch B.
+>
+> The difference in Patch A is that it is packing small tasks onto a
+> leader cpu, i.e. a cpu which has just enough capacity to take on itself
+> a light weight task. Essentially belonging to a group which has a
+> favourable grp_power and the leader cpu having a suitable rq->util.
+>
+> In Patch B, you are choosing a buddy cpu, belonging to a group with the
+> least cpu power, and while deciding to pack tasks onto the buddy cpu,
+> this again boils down to, verifying if the
+> grp_power is favourable and the buddy cpu has a suitable rq->util.
+>
+> In my opinion, this goes to say that both the patches are using similar
+> metrics to decide if a cpu is capable of handling the light weight task.
+> The difference lies in how far the search for the appropriate cpu can
+> proceed. While Patch A continues to search at all levels of sched
+> domains till the last to find the appropriate cpu, Patch B queries only
+> the buddy CPU.
+>
+> The point I am trying to make is that, considering the above
+> similarities and differences, is it possible for us to see if the ideas
+> that both these patches bring in can be merged into one, since both of
+> them are having the common goal of packing small tasks.
 
-Yeah.
+Hi Preeti,
 
-> at end of the CLOCKSOURCE_OF_DECLARE definition that was removed by
-> Arnd Bergmann in "clocksource: make CLOCKSOURCE_OF_DECLARE type safe"
-> 
-OK, thanks.
+I agree that the final goal is similar but we also have important
+differences to keep in mind among which the share (or not) of power
+domain that is used to decide where it's worth packing, the selection
+of leader CPU which is the most power efficient core and the use of a
+knob to select a policy. So, you're right that we should find a way to
+have both working together and still keep these specificities.
 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->  drivers/clocksource/exynos_mct.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/clocksource/exynos_mct.c
-> b/drivers/clocksource/exynos_mct.c
-> index 203ac05..106228d 100644
-> --- a/drivers/clocksource/exynos_mct.c
-> +++ b/drivers/clocksource/exynos_mct.c
-> @@ -554,5 +554,5 @@ void __init mct_init(void)
->  	exynos4_clocksource_init();
->  	exynos4_clockevent_init();
->  }
-> -CLOCKSOURCE_OF_DECLARE(exynos4210, "samsung,exynos4210-mct", mct_init)
-> -CLOCKSOURCE_OF_DECLARE(exynos4412, "samsung,exynos4412-mct", mct_init)
-> +CLOCKSOURCE_OF_DECLARE(exynos4210, "samsung,exynos4210-mct", mct_init);
-> +CLOCKSOURCE_OF_DECLARE(exynos4412, "samsung,exynos4412-mct", mct_init);
-> --
-> 1.8.1.3
+Regards,
+Vincent
 
-Applied, thanks.
-
-- Kukjin
-
+>
+> Thanks
+>
+> Regards
+> Preeti U Murthy
+>
+> On 03/22/2013 05:55 PM, Vincent Guittot wrote:
+>> Hi,
+>>
+>> This patchset takes advantage of the new per-task load tracking that is
+>> available in the kernel for packing the small tasks in as few as possible
+>> CPU/Cluster/Core. The main goal of packing small tasks is to reduce the power
+>> consumption in the low load use cases by minimizing the number of power domain
+>> that are enabled. The packing is done in 2 steps:
+>>
+>> The 1st step looks for the best place to pack tasks in a system according to
+>> its topology and it defines a pack buddy CPU for each CPU if there is one
+>> available. We define the best CPU during the build of the sched_domain instead
+>> of evaluating it at runtime because it can be difficult to define a stable
+>> buddy CPU in a low CPU load situation. The policy for defining a buddy CPU is
+>> that we pack at all levels inside a node where a group of CPU can be power
+>> gated independently from others. For describing this capability, a new flag
+>> has been introduced SD_SHARE_POWERDOMAIN that is used to indicate whether the
+>> groups of CPUs of a scheduling domain are sharing their power state. By
+>> default, this flag has been set in all sched_domain in order to keep unchanged
+>> the current behavior of the scheduler and only ARM platform clears the
+>> SD_SHARE_POWERDOMAIN flag for MC and CPU level.
+>>
+>> In a 2nd step, the scheduler checks the load average of a task which wakes up
+>> as well as the load average of the buddy CPU and it can decide to migrate the
+>> light tasks on a not busy buddy. This check is done during the wake up because
+>> small tasks tend to wake up between periodic load balance and asynchronously
+>> to each other which prevents the default mechanism to catch and migrate them
+>> efficiently. A light task is defined by a runnable_avg_sum that is less than
+>> 20% of the runnable_avg_period. In fact, the former condition encloses 2 ones:
+>> The average CPU load of the task must be less than 20% and the task must have
+>> been runnable less than 10ms when it woke up last time in order to be
+>> electable for the packing migration. So, a task than runs 1 ms each 5ms will
+>> be considered as a small task but a task that runs 50 ms with a period of
+>> 500ms, will not.
+>> Then, the business of the buddy CPU depends of the load average for the rq and
+>> the number of running tasks. A CPU with a load average greater than 50% will
+>> be considered as busy CPU whatever the number of running tasks is and this
+>> threshold will be reduced by the number of running tasks in order to not
+>> increase too much the wake up latency of a task. When the buddy CPU is busy,
+>> the scheduler falls back to default CFS policy.
+>>
+>> Change since V2:
+>>
+>>  - Migrate only a task that wakes up
+>>  - Change the light tasks threshold to 20%
+>>  - Change the loaded CPU threshold to not pull tasks if the current number of
+>>    running tasks is null but the load average is already greater than 50%
+>>  - Fix the algorithm for selecting the buddy CPU.
+>>
+>> Change since V1:
+>>
+>> Patch 2/6
+>>  - Change the flag name which was not clear. The new name is
+>>    SD_SHARE_POWERDOMAIN.
+>>  - Create an architecture dependent function to tune the sched_domain flags
+>> Patch 3/6
+>>  - Fix issues in the algorithm that looks for the best buddy CPU
+>>  - Use pr_debug instead of pr_info
+>>  - Fix for uniprocessor
+>> Patch 4/6
+>>  - Remove the use of usage_avg_sum which has not been merged
+>> Patch 5/6
+>>  - Change the way the coherency of runnable_avg_sum and runnable_avg_period is
+>>    ensured
+>> Patch 6/6
+>>  - Use the arch dependent function to set/clear SD_SHARE_POWERDOMAIN for ARM
+>>    platform
+>>
+>>
+>> New results for v3:
+>>
+>> This series has been tested with hackbench on ARM platform and the results
+>> don't show any performance regression
+>>
+>> Hackbench             3.9-rc2  +patches
+>> Mean Time (10 tests): 2.048    2.015
+>> stdev               : 0.047    0.068
+>>
+>> Previous results for V2:
+>>
+>> This series has been tested with MP3 play back on ARM platform:
+>> TC2 HMP (dual CA-15 and 3xCA-7 cluster).
+>>
+>> The measurements have been done on an Ubuntu image during 60 seconds of
+>> playback and the result has been normalized to 100.
+>>
+>>               | CA15 | CA7  | total |
+>> -------------------------------------
+>> default       |  81  |   97 | 178   |
+>> pack          |  13  |  100 | 113   |
+>> -------------------------------------
+>>
+>> Previous results for V1:
+>>
+>> The patch-set has been tested on ARM platforms: quad CA-9 SMP and TC2 HMP
+>> (dual CA-15 and 3xCA-7 cluster). For ARM platform, the results have
+>> demonstrated that it's worth packing small tasks at all topology levels.
+>>
+>> The performance tests have been done on both platforms with sysbench. The
+>> results don't show any performance regressions. These results are aligned with
+>> the policy which uses the normal behavior with heavy use cases.
+>>
+>> test: sysbench --test=cpu --num-threads=N --max-requests=R run
+>>
+>> Results below is the average duration of 3 tests on the quad CA-9.
+>> default is the current scheduler behavior (pack buddy CPU is -1)
+>> pack is the scheduler with the pack mechanism
+>>
+>>               | default |  pack   |
+>> -----------------------------------
+>> N=8;  R=200   |  3.1999 |  3.1921 |
+>> N=8;  R=2000  | 31.4939 | 31.4844 |
+>> N=12; R=200   |  3.2043 |  3.2084 |
+>> N=12; R=2000  | 31.4897 | 31.4831 |
+>> N=16; R=200   |  3.1774 |  3.1824 |
+>> N=16; R=2000  | 31.4899 | 31.4897 |
+>> -----------------------------------
+>>
+>> The power consumption tests have been done only on TC2 platform which has got
+>> accessible power lines and I have used cyclictest to simulate small tasks. The
+>> tests show some power consumption improvements.
+>>
+>> test: cyclictest -t 8 -q -e 1000000 -D 20 & cyclictest -t 8 -q -e 1000000 -D 20
+>>
+>> The measurements have been done during 16 seconds and the result has been
+>> normalized to 100
+>>
+>>               | CA15 | CA7  | total |
+>> -------------------------------------
+>> default       | 100  |  40  | 140   |
+>> pack          |  <1  |  45  | <46   |
+>> -------------------------------------
+>>
+>> The A15 cluster is less power efficient than the A7 cluster but if we assume
+>> that the tasks is well spread on both clusters, we can guest estimate that the
+>> power consumption on a dual cluster of CA7 would have been for a default
+>> kernel:
+>>
+>>               | CA7  | CA7  | total |
+>> -------------------------------------
+>> default       |  40  |  40  |  80   |
+>> -------------------------------------
+>>
+>> Vincent Guittot (6):
+>>   Revert "sched: Introduce temporary FAIR_GROUP_SCHED dependency for
+>>     load-tracking"
+>>   sched: add a new SD_SHARE_POWERDOMAIN flag for sched_domain
+>>   sched: pack small tasks
+>>   sched: secure access to other CPU statistics
+>>   sched: pack the idle load balance
+>>   ARM: sched: clear SD_SHARE_POWERDOMAIN
+>>
+>>  arch/arm/kernel/topology.c       |    9 +++
+>>  arch/ia64/include/asm/topology.h |    1 +
+>>  arch/tile/include/asm/topology.h |    1 +
+>>  include/linux/sched.h            |    9 +--
+>>  include/linux/topology.h         |    4 +
+>>  kernel/sched/core.c              |   14 ++--
+>>  kernel/sched/fair.c              |  149 +++++++++++++++++++++++++++++++++++---
+>>  kernel/sched/sched.h             |   14 ++--
+>>  8 files changed, 169 insertions(+), 32 deletions(-)
+>>
+>
