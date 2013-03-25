@@ -1,79 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759043Ab3CYXHd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 19:07:33 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39380 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753825Ab3CYXHb (ORCPT
+	id S933621Ab3CYXIe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 19:08:34 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:43244 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759018Ab3CYXIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 19:07:31 -0400
-Date: Mon, 25 Mar 2013 23:07:30 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, Magnus Damm <magnus.damm@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Simon Horman <horms@verge.net.au>,
-        John Stultz <john.stultz@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] ARM: convert arm/arm64 arch timer to use CLKSRC_OF init
-Message-ID: <20130325230730.GA5518@MacBook-Pro.local>
-References: <1363818875-15978-1-git-send-email-robherring2@gmail.com>
- <20130321110646.GE15279@e106331-lin.cambridge.arm.com>
- <20130325172633.GP30923@n2100.arm.linux.org.uk>
- <5150C16A.3040208@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5150C16A.3040208@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 25 Mar 2013 19:08:32 -0400
+Message-ID: <1364252231.11659.99.camel@misato.fc.hp.com>
+Subject: Re: [Update 4][PATCH 2/7] ACPI / scan: Introduce common code for
+ ACPI-based device hotplug
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jiang Liu <liuj97@gmail.com>
+Date: Mon, 25 Mar 2013 16:57:11 -0600
+In-Reply-To: <2776997.5VXf3okT8O@vostro.rjw.lan>
+References: <3260206.bhaAobGhpZ@vostro.rjw.lan>
+	 <20130315104732.GA4401@dhcp-192-168-178-175.profitbricks.localdomain>
+	 <1364244336.11659.75.camel@misato.fc.hp.com>
+	 <2776997.5VXf3okT8O@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 09:28:10PM +0000, Rob Herring wrote:
-> On 03/25/2013 12:26 PM, Russell King - ARM Linux wrote:
-> > On Thu, Mar 21, 2013 at 11:06:47AM +0000, Mark Rutland wrote:
-> >> On TC2 this series leads to using the vexpress 24MHz clock as the sched clock
-> >> in preference to the architected timer:
-> >>
-> >>   Architected local timer running at 24.00MHz (virt).
-> >>   Switching to timer-based delay loop
-> >>   Registered arch_counter_get_cntvct+0x0/0x14 as sched_clock source
-> >>   sched_clock: 32 bits at 24MHz, resolution 41ns, wraps every 178956ms
-> >>   Registered versatile_read_sched_clock+0x0/0x28 as sched_clock source
-> >>
-> >> As they both have the same frequency, neither overrides the other, and
-> >> whichever gets registered last is used as the sched_clock. As accesses
-> >> to the architected timer are going to have a much lower overhead, this
-> >> isn't very nice (and it could be better to use it even if it had a lower
-> >> frequency).
+On Mon, 2013-03-25 at 23:29 +0100, Rafael J. Wysocki wrote:
+> On Monday, March 25, 2013 02:45:36 PM Toshi Kani wrote:
+> > On Fri, 2013-03-15 at 11:47 +0100, Vasilis Liaskovitis wrote:
+> > > Hi,
+> > > 
+> > > On Thu, Mar 14, 2013 at 06:16:30PM +0100, Rafael J. Wysocki wrote:
+> > > > Sorry for the sluggish response, I've been travelling recently. ->
+> > > [...]
+> > > > > > > So, I'd suggest the following changes.
+> > > > > > >  - Remove the "uevents" attribute.  KOBJ_ONLINE/OFFLINE are not used for
+> > > > > > > ACPI device objects.
+> > > > > > >  - Make the !autoeject case as an exception for now, and emit
+> > > > > > > KOBJ_OFFLINE as a way to request off-lining to user.  This uevent is
+> > > > > > > tied with the !autoeject case.  We can then revisit if this use-case
+> > > > > > > needs to be supported going forward.  If so, we may want to consider a
+> > > > > > > different event type.
+> > > > > > 
+> > > > > > Well, what about avoiding to expose uevents and autoeject for now and
+> > > > > > exposing enabled only?  Drivers would still be able to set the other flags on
+> > > > > > init on init to enforce the backwards-compatible behavior.
+> > > > > 
+> > > > > Now that we don't define uevents and autoeject in v2 of this series, could you
+> > > > > explain how we get safe ejection from userspace e.g. for memory hot-remove? What
+> > > > > are the other flags drivers can use (on init?) to avoid autoeject and only issue
+> > > > > KOBJ_OFFLINE?
+> > > > > 
+> > > > > > 
+> > > > > > I agree that it would be sufficient to use one additional flag then, to start
+> > > > > > with, but its meaning would be something like "keep backwards compatibility
+> > > > > > with the old container driver", so perhaps "autoeject" is not a good name.
+> > > > > > 
+> > > > > > What about "user_eject" (that won't be exposed to user space) instead?  Where,
+> > > > > > if set, it would meand "do not autoeject and emit KOBJ_OFFLINE/ONLINE uevents
+> > > > > > like the old container driver did"?
+> > > > > 
+> > > > > I don't see user_eject in v2. Is it unnecessary for userspace ejection control
+> > > > > or planned for later? Also why shouldn't it be exposed to userpace?
+> > > > 
+> > > > -> At this point we are not sure if it is necessary to have an attribute for
+> > > > direct ejection control.  Since the plan is to have a separate offline/online
+> > > > attribute anyway (and a check preventing us from ejecting things that haven't
+> > > > been put offline), it is not clear how useful it is going to be to control
+> > > > ejection directly from user space.
+> > > 
+> > > ok.
+> > > Regarding the offline/online attribute and ejection prevention checking, do you
+> > > mean the offline/online framework from Toshi:
+> > > http://thread.gmane.org/gmane.linux.kernel/1420262
+> > > or something else? I assume this is the long-term plan.
 > > 
-> > I'll remind people that sched_clock() is supposed to be functional at
-> > the point in the boot sequence where the call to sched_init() is called.
-> > That is after setup_arch() and *before* time_init() is called.
+> > Unfortunately, the idea of adding a new set of common hotplug framework
+> > was not well-received.  Since the driver-core does not allow any eject
+> > failure case, integrating into the driver-core framework seems also
+> > impractical.
+> > 
+> > > Is there any other short-term solution planned? If i understand correctly, until
+> > > this framework is accepted, memory hot-remove is broken (=unsafe). 
+> > 
+> > That is correct.  The alternative plan is to go with an ACPI-specific
+> > approach that user has to off-line a target device and its children
+> > beforehand from sysfs before initiating a hot-delete request.  This
+> > hot-delete request will fail if any of the devices are still on-line.
+> > The sysfs online/offline interfaces may fail, and user (or user tool)
+> > has to take care of the rollback as necessary.  It would move all the
+> > error handling & rollback stuff into the user space, and make the kernel
+> > part very simple & straightforward -- just delete target device
+> > objects.  
+> > 
+> > After looking further, however, I think this isn't the case...  In case
+> > of memory hot-delete, for example, off-lining is only a part of the job
+> > done in remove_memory().  So, ACPI-core still needs to call
+> > device-specific handlers to perform device-specific hot-delete
+> > operations, such as calling remove_memory() or its sub-set function,
+> > which can fail when a device is online.  In order to make sure all
+> > devices stay off-line, we need to delete their sysfs interfaces.
 > 
-> I count integrator-cp, realview, versatile and non-DT VExpress that do
-> this (not surprisingly) and 25 platforms or timer implementations plus
-> arm64 that do sched_clock setup in time_init.
+> No, we don't need to.
+> 
+> > Since we do not have a way to serialize all online/offline & hot-plug
+> > operations (the above patchset had such serialization, but did not get
+> > thru), we cannot change all devices at once but delete sysfs interface
+> > for each device one by one.  If it failed on one of the devices, we need
+> > to rollback to put them back into the original state.  Other implication
+> > is that this approach is not backward compatible.
+> 
+> No.  No rollbacks, please.
+> 
+> There are three things that are needed: (1) online/offline, (2) a flag in
+> struct acpi_device indicating whether or not the "physical" device represented
+> by that struct acpi_device has been offlined, 
 
-Before time_init(), sched_clock() currently returns 0 with the
-architected timers (though I don't particularly like this for arm64).
-Marc Rutland has patches to make arch_timer_read_counter() a function
-which always returns the virtual counter. It requires the CNTVOFF
-register to be set to 0 on AArch32 during boot. But this way
-sched_clock() on arm64 would always return meaningful values as we have
-the architected timers.
+acpi_device and its associated device(s) do not match 1 to 1.  For
+instance, a memory acpi_device usually associates with multiple memblks
+sysfs files, which can be individually on-lined / off-lined.  This
+association can be M:N matching.  I am not sure if the flag can be
+implemented easily.
 
--- 
-Catalin
+> and (3) a synchronization
+> mechanism that will make the manipulation of the flag and device eject mutually
+> exclusive (it actually would need to tie the manipulation of the flag to
+> the online/offline).
+
+This needs to be a global lock that can serialize online/offline
+operations of all system devices.
+
+> Then, acpi_scan_hot_remove() will only need to check, before it calls
+> acpi_bus_trim(), if all of the devices that correspond to the struct device
+> objects to be removed have been offlined.  Of course, it will have to ensure
+> that the "online/offline" status of any of those devices won't change while
+> it is running (hence, the synchronization mechanism).
+> 
+> And once everything has been offlined, there's no reason why the removal should
+> fail, right?
+
+Yes, if we can introduce such global lock, we can prevent rollbacks.  I
+was under an assumption that we cannot make such changes to the common
+code.  
+
+> > Given this, I am inclined to other alternative -- rework on my patchset
+> > and make it as ACPI device hotplug framework.
+> 
+> Please don't.
+
+OK, I will keep it myself for now.  Are you going to make the code
+changes which you summarized?  I am hoping that we can make some
+improvement for 3.10.
+
+Thanks,
+-Toshi
+
