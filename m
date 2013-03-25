@@ -1,90 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab3CYIhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 04:37:16 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33201 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757155Ab3CYIhO (ORCPT
+	id S1757246Ab3CYIix (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 04:38:53 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:45349 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755325Ab3CYIiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 04:37:14 -0400
-Message-ID: <51500C81.7040307@ti.com>
-Date: Mon, 25 Mar 2013 14:06:17 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: <rjw@sisk.pl>, <arvind.chauhan@arm.com>, <robin.randhawa@arm.com>,
-        <Steve.Bannister@arm.com>, <Liviu.Dudau@arm.com>,
-        <charles.garcia-tobin@arm.com>, <cpufreq@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linaro-kernel@lists.linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, <linux-sh@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 2/2] cpufreq: drivers: Remove unnecessary assignments
- of policy-> members
-References: <2ece6d9fe8dfb6882a1c83a1cb2404bacc40b22d.1364138740.git.viresh.kumar@linaro.org> <07b96c5b68470001197445fb3d28786ad9acdbe0.1364138740.git.viresh.kumar@linaro.org>
-In-Reply-To: <07b96c5b68470001197445fb3d28786ad9acdbe0.1364138740.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 25 Mar 2013 04:38:51 -0400
+Date: Mon, 25 Mar 2013 09:38:47 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Andrew Murray <andrew.murray@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 0/2] PCI: Introduce MSI chip infrastructure
+Message-ID: <20130325093847.7474dc0e@skate>
+In-Reply-To: <20130325075810.GA28935@avionic-0098.mockup.avionic-design.de>
+References: <1363942307-9327-1-git-send-email-thierry.reding@avionic-design.de>
+	<20130322093027.GA521@arm.com>
+	<20130324120649.6fb8c05d@skate>
+	<20130325075810.GA28935@avionic-0098.mockup.avionic-design.de>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/24/2013 8:59 PM, Viresh Kumar wrote:
-> Some assignments of policy-> min/max/cur/cpuinfo.min_freq/cpuinfo.max_freq
-> aren't required as part of it is done by cpufreq driver or cpufreq core.
-> 
-> Remove them.
-> 
-> At some places we merge multiple lines together too.
-> 
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> Cc: Sascha Hauer <kernel@pengutronix.de>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: linux-sh@vger.kernel.org
-> Cc: linux-omap@vger.kernel.org
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  Documentation/cpu-freq/cpu-drivers.txt | 5 +++--
->  arch/arm/mach-davinci/cpufreq.c        | 4 ----
->  arch/arm/mach-imx/cpufreq.c            | 3 ---
->  arch/sh/kernel/cpufreq.c               | 9 +++------
->  drivers/cpufreq/cpufreq-nforce2.c      | 6 ++----
->  drivers/cpufreq/omap-cpufreq.c         | 4 +---
->  6 files changed, 9 insertions(+), 22 deletions(-)
-> 
-> diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
-> index 72f70b1..c94383f 100644
-> --- a/Documentation/cpu-freq/cpu-drivers.txt
-> +++ b/Documentation/cpu-freq/cpu-drivers.txt
-> @@ -108,8 +108,9 @@ policy->governor		must contain the "default policy" for
->  				cpufreq_driver.target is called with
->  				these values.
->  
-> -For setting some of these values, the frequency table helpers might be
-> -helpful. See the section 2 for more information on them.
-> +For setting some of these values (cpuinfo.min[max]_freq, policy->min[max]), the
-> +frequency table helpers might be helpful. See the section 2 for more information
-> +on them.
->  
->  SMP systems normally have same clock source for a group of cpus. For these the
->  .init() would be called only once for the first online cpu. Here the .init()
-> diff --git a/arch/arm/mach-davinci/cpufreq.c b/arch/arm/mach-davinci/cpufreq.c
-> index 8fb0c2a..ff46862 100644
-> --- a/arch/arm/mach-davinci/cpufreq.c
-> +++ b/arch/arm/mach-davinci/cpufreq.c
-> @@ -149,10 +149,6 @@ static int davinci_cpu_init(struct cpufreq_policy *policy)
->  		policy->cpuinfo.max_freq = policy->max;
->  	}
->  
-> -	policy->min = policy->cpuinfo.min_freq;
-> -	policy->max = policy->cpuinfo.max_freq;
-> -	policy->cur = davinci_getspeed(0);
+Dear Thierry Reding,
 
-There is a line in the code a little above the ones you deleted that
-also sets these same variables. I guess you were relying on that line to
-set policy->cur, but that also sets policy->{min, max} which can be
-cleaned up.
+Thanks for your feedback!
 
-Thanks,
-Sekhar
+On Mon, 25 Mar 2013 08:58:10 +0100, Thierry Reding wrote:
+
+> That sounds very much like one of the use-cases that were discussed. The
+> easiest solution would probably be to add an API to look up an MSI chip
+> from a DT phandle, so that the PCIe controller's device node could have
+> it as a property, somewhat like this:
+> 
+> 	msi: interrupt-controller {
+> 	};
+> 
+> 	pcie-controller {
+> 		...
+> 		marvell,msi = <&msi>;
+> 		...
+> 	};
+
+I'm not sure how to handle this msi interrupt controller with the main
+interrupt controller. For now, I have:
+
+        mpic: interrupt-controller@d0020000 {
+              reg = <0xd0020a00 0x2d0>,
+                    <0xd0021070 0x58>;
+        };
+
+	[...]
+
+	soc {
+                interrupt-parent = <&mpic>;
+		[...]
+	};
+
+And the MSI interrupt controller shares the same registers as the MPIC.
+So should it be something like:
+
+	interrupt-controller {
+		reg = <0xd0020a00 0x2d0>,
+                    <0xd0021070 0x58>;
+
+		mpic {
+			/* Not sure what to have here */
+		};
+
+		msi {
+
+			/* Here either */
+		};
+	};
+
+	soc {
+                interrupt-parent = <&mpic>;
+
+		pcie-controller {
+			marvell,msi = <&msi>;
+		};
+	};
+
+Or some other idea?
+
+> Then add some basic infrastructure to register the MSI chip with a
+> global list, call that from the interrupt controller initialization:
+> 
+> 	...
+> 	msi_chip_add(&msi);
+> 	...
+> 
+> And finally look it up from the PCIe controller driver:
+> 
+> 	node = of_parse_phandle(dev->of_node, "marvell,msi", 0);
+> 	if (node)
+> 		msi = of_find_msi_chip_by_node(node);
+> 
+> That's roughly what other subsystems do. I wrote something similar once
+> for backlight devices, though the registration step (msi_chip_add)
+> wasn't necessary there since backlight devices all go into a common
+> struct class so class_find_device() can be used instead of going through
+> a separate registry.
+
+Ok, that part sounds good to me. I'm still unsure about the DT
+representation, though (see above), and experience has shown that's
+it's a pretty good idea to discuss a little bit the DT representation
+before going on with some code :)
+
+Thanks again for your feedback!
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
