@@ -1,215 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757407Ab3CYFTL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 01:19:11 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:49163 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757381Ab3CYFTH (ORCPT
+	id S1757412Ab3CYFY1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 01:24:27 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:36929 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755959Ab3CYFYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 01:19:07 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sun, 24 Mar 2013 22:19:14 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Tony Chung <tonychung00@gmail.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] watchdog:improve w83627hf_wdt to timeout in minutes
-Message-ID: <20130325051914.GB17618@roeck-us.net>
-References: <1364184957-32386-1-git-send-email-tonychung00@gmail.com>
+	Mon, 25 Mar 2013 01:24:25 -0400
+Message-ID: <514FDF76.2060806@linux.vnet.ibm.com>
+Date: Mon, 25 Mar 2013 13:24:06 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364184957-32386-1-git-send-email-tonychung00@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: [RFC PATCH] sched: wake-affine throttle
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032505-4790-0000-0000-0000078BC762
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 24, 2013 at 09:15:57PM -0700, Tony Chung wrote:
-> The current maximum of 255 seconds is insufficient.
-> For example, crash dump could take 5+ minutes.
-> 
-> Signed-off-by: Tony Chung <tonychung00@gmail.com>
+Recently testing show that wake-affine stuff cause regression on pgbench, the
+hiding rat was finally catched out.
 
-I would suggest to use the port to the watchdog infrastructure for any
-changes on this driver.
+wake-affine stuff is always trying to pull wakee close to waker, by theory,
+this will benefit us if waker's cpu cached hot data for wakee, or the extreme
+ping-pong case.
 
-> ---
->  drivers/watchdog/w83627hf_wdt.c |   73 ++++++++++++++++++++++++++++++--------
->  1 files changed, 57 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/watchdog/w83627hf_wdt.c b/drivers/watchdog/w83627hf_wdt.c
-> index 92f1326..d26adfb 100644
-> --- a/drivers/watchdog/w83627hf_wdt.c
-> +++ b/drivers/watchdog/w83627hf_wdt.c
-> @@ -58,7 +58,7 @@ MODULE_PARM_DESC(wdt_io, "w83627hf/thf WDT io port (default 0x2E)");
->  static int timeout = WATCHDOG_TIMEOUT;	/* in seconds */
->  module_param(timeout, int, 0);
->  MODULE_PARM_DESC(timeout,
-> -		"Watchdog timeout in seconds. 1 <= timeout <= 255, default="
-> +		"Watchdog timeout in seconds. 1 <= timeout <= 15300, default="
->  				__MODULE_STRING(WATCHDOG_TIMEOUT) ".");
->  
->  static bool nowayout = WATCHDOG_NOWAYOUT;
-> @@ -67,6 +67,29 @@ MODULE_PARM_DESC(nowayout,
->  		"Watchdog cannot be stopped once started (default="
->  				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
->  
-> +/* timeout unit in minute */
-> +static bool use_minute;
-> +static char *unit;
-> +static int max_timeout = 15300; /* 255*60 seconds */
-> +
-> +static inline int wdt_round_secs_to_minute(int t)
-> +{
-> +	return (t + 59) / 60;
-> +}
+However, the whole stuff is somewhat blindly, there is no examining on the
+relationship between waker and wakee, and since the stuff itself
+is time-consuming, some workload suffered, pgbench is just the one who
+has been found.
 
-Use DIV_ROUND_UP().
+Thus, throttle the wake-affine stuff for such workload is necessary.
 
-> +
-> +static inline int wdt_use_minute(int t)
-> +{
-> +	if (t > 255) {
-> +		t = wdt_round_secs_to_minute(t);
-> +		use_minute = 1;
+This patch introduced a new knob 'sysctl_sched_wake_affine_interval' with the
+default value 1ms, which means wake-affine stuff only effect once per 1ms, which
+usually the minimum balance interval (the idea is that the rapid of wake-affine
+should lower than the rapid of load-balance at least).
 
-bool has true / false.
+By turning the new knob, those workload who suffered will have the chance to
+stop the regression.
 
-> +		unit = "minutes";
-> +	} else {
-> +		use_minute = 0;
-> +		unit = "secs";
-> +	}
-> +	return t;
-> +}
-> +
->  /*
->   *	Kernel methods.
->   */
-> @@ -107,6 +130,23 @@ static void w83627hf_unselect_wd_register(void)
->  	outb_p(0xAA, WDT_EFER); /* Leave extended function mode */
->  }
->  
-> +/* set CRF5 register */
-> +static void w83627hf_set_crf5(void)
-> +{
-> +	unsigned char t;
-> +
-> +	outb_p(0xF5, WDT_EFER); /* Select CRF5 */
-> +	t = inb_p(WDT_EFDR);      /* read CRF5 */
-> +	t &= ~0x0C;               /* set second mode & disable keyboard
-> +				    turning off watchdog */
-> +	t |= 0x02;		  /* enable the WDTO# output low pulse
-> +				    to the KBRST# pin (PIN60) */
-> +	if (use_minute)
-> +		t |= 0x80;        /* set timeout in minute */
-> +
-> +	outb_p(t, WDT_EFDR);    /* Write back to CRF5 */
-> +}
-> +
->  /* tyan motherboards seem to set F5 to 0x4C ?
->   * So explicitly init to appropriate value. */
->  
-> @@ -116,21 +156,16 @@ static void w83627hf_init(void)
->  
->  	w83627hf_select_wd_register();
->  
-> +	w83627hf_set_crf5();
-> +
->  	outb_p(0xF6, WDT_EFER); /* Select CRF6 */
->  	t = inb_p(WDT_EFDR);      /* read CRF6 */
->  	if (t != 0) {
-> -		pr_info("Watchdog already running. Resetting timeout to %d sec\n",
-> -			timeout);
-> +		pr_info("Watchdog already running.  Reset timeout to %d %s\n",
-> +			timeout, unit);
->  		outb_p(timeout, WDT_EFDR);    /* Write back to CRF6 */
->  	}
->  
-> -	outb_p(0xF5, WDT_EFER); /* Select CRF5 */
-> -	t = inb_p(WDT_EFDR);      /* read CRF5 */
-> -	t &= ~0x0C;               /* set second mode & disable keyboard
-> -				    turning off watchdog */
-> -	t |= 0x02;		  /* enable the WDTO# output low pulse
-> -				    to the KBRST# pin (PIN60) */
-> -	outb_p(t, WDT_EFDR);    /* Write back to CRF5 */
->  
->  	outb_p(0xF7, WDT_EFER); /* Select CRF7 */
->  	t = inb_p(WDT_EFDR);      /* read CRF7 */
-> @@ -147,6 +182,9 @@ static void wdt_set_time(int timeout)
->  
->  	w83627hf_select_wd_register();
->  
-> +	if (use_minute)
-> +		w83627hf_set_crf5();
+Test:
+	Test with 12 cpu X86 server and tip 3.9.0-rc2.
 
-What if the new timeout is less than 256 seconds ?
+	Default 1ms interval bring limited performance improvement(<5%) for
+	pgbench, significant improvement start to show when turning the
+	knob to 100ms.
 
-> +
->  	outb_p(0xF6, WDT_EFER);    /* Select CRF6 */
->  	outb_p(timeout, WDT_EFDR); /* Write Timeout counter to CRF6 */
->  
-> @@ -169,9 +207,9 @@ static int wdt_disable(void)
->  
->  static int wdt_set_heartbeat(int t)
->  {
-> -	if (t < 1 || t > 255)
-> +	if (t < 1 || t > max_timeout)
->  		return -EINVAL;
-> -	timeout = t;
-> +	timeout = wdt_use_minute(t);
+			    original	100ms	
 
-This should probably also update the watchdog timer register.
+	| db_size | clients |  tps  |	|  tps  |
+	+---------+---------+-------+   +-------+
+	| 21 MB   |       1 | 10572 |   | 10675 |
+	| 21 MB   |       2 | 21275 |   | 21228 |
+	| 21 MB   |       4 | 41866 |   | 41946 |
+	| 21 MB   |       8 | 53931 |   | 55176 |
+	| 21 MB   |      12 | 50956 |   | 54457 |	+6.87%
+	| 21 MB   |      16 | 49911 |   | 55468 |	+11.11%
+	| 21 MB   |      24 | 46046 |   | 56446 |	+22.59%
+	| 21 MB   |      32 | 43405 |   | 55177 |	+27.12%
+	| 7483 MB |       1 |  7734 |   |  7721 |
+	| 7483 MB |       2 | 19375 |   | 19277 |
+	| 7483 MB |       4 | 37408 |   | 37685 |
+	| 7483 MB |       8 | 49033 |   | 49152 |
+	| 7483 MB |      12 | 45525 |   | 49241 |	+8.16%
+	| 7483 MB |      16 | 45731 |   | 51425 |	+12.45%
+	| 7483 MB |      24 | 41533 |   | 52349 |	+26.04%
+	| 7483 MB |      32 | 36370 |   | 51022 |	+40.28%
+	| 15 GB   |       1 |  7576 |   |  7422 |
+	| 15 GB   |       2 | 19157 |   | 19176 |
+	| 15 GB   |       4 | 37285 |   | 36982 |
+	| 15 GB   |       8 | 48718 |   | 48413 |
+	| 15 GB   |      12 | 45167 |   | 48497 |	+7.37%
+	| 15 GB   |      16 | 45270 |   | 51276 |	+13.27%
+	| 15 GB   |      24 | 40984 |   | 51628 |	+25.97%
+	| 15 GB   |      32 | 35918 |   | 51060 |	+42.16%
 
->  	return 0;
->  }
->  
-> @@ -262,9 +300,11 @@ static long wdt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
->  		wdt_ping();
->  		/* Fall */
->  	case WDIOC_GETTIMEOUT:
-> -		return put_user(timeout, p);
-> +		timeval = (use_minute) ? timeout * 60 : timeout;
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+---
+ include/linux/sched.h |    5 +++++
+ kernel/sched/fair.c   |   33 ++++++++++++++++++++++++++++++++-
+ kernel/sysctl.c       |   10 ++++++++++
+ 3 files changed, 47 insertions(+), 1 deletions(-)
 
-Isn't timeout always in seconds ?
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d35d2b6..e9efd3a 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1197,6 +1197,10 @@ enum perf_event_task_context {
+ 	perf_nr_task_contexts,
+ };
+ 
++#ifdef CONFIG_SMP
++extern unsigned int sysctl_sched_wake_affine_interval;
++#endif
++
+ struct task_struct {
+ 	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
+ 	void *stack;
+@@ -1207,6 +1211,7 @@ struct task_struct {
+ #ifdef CONFIG_SMP
+ 	struct llist_node wake_entry;
+ 	int on_cpu;
++	unsigned long next_wake_affine;
+ #endif
+ 	int on_rq;
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7a33e59..00d7f45 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3087,6 +3087,22 @@ static inline unsigned long effective_load(struct task_group *tg, int cpu,
+ 
+ #endif
+ 
++/*
++ * Default is 1ms, to prevent the wake_affine() stuff working too frequently.
++ */
++unsigned int sysctl_sched_wake_affine_interval = 1U;
++
++static inline int wake_affine_throttled(struct task_struct *p)
++{
++	return time_before(jiffies, p->next_wake_affine);
++}
++
++static inline void wake_affine_throttle(struct task_struct *p)
++{
++	p->next_wake_affine = jiffies +
++			msecs_to_jiffies(sysctl_sched_wake_affine_interval);
++}
++
+ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ {
+ 	s64 this_load, load;
+@@ -3096,6 +3112,9 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 	unsigned long weight;
+ 	int balanced;
+ 
++	if (wake_affine_throttled(p))
++		return 0;
++
+ 	idx	  = sd->wake_idx;
+ 	this_cpu  = smp_processor_id();
+ 	prev_cpu  = task_cpu(p);
+@@ -3342,8 +3361,20 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 	}
+ 
+ 	if (affine_sd) {
+-		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
++		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync)) {
++			/*
++			 * wake_affine() stuff try to pull wakee to the cpu
++			 * around waker, this will benefit us if the data
++			 * cached on waker cpu is hot for wakee, or the extreme
++			 * ping-pong case.
++			 *
++			 * However, do such blindly work too frequently will
++			 * cause regression to some workload, thus, each time
++			 * when wake_affine() succeed, throttle it for a while.
++			 */
++			wake_affine_throttle(p);
+ 			prev_cpu = cpu;
++		}
+ 
+ 		new_cpu = select_idle_sibling(p, prev_cpu);
+ 		goto unlock;
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index afc1dc6..6b798b6 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -437,6 +437,16 @@ static struct ctl_table kern_table[] = {
+ 		.extra1		= &one,
+ 	},
+ #endif
++#ifdef CONFIG_SMP
++	{
++		.procname	= "sched_wake_affine_interval",
++		.data		= &sysctl_sched_wake_affine_interval,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &one,
++	},
++#endif
+ #ifdef CONFIG_PROVE_LOCKING
+ 	{
+ 		.procname	= "prove_locking",
+-- 
+1.7.4.1
 
-> +		return put_user(timeval, p);
->  	case WDIOC_GETTIMELEFT:
->  		timeval = wdt_get_time();
-> +		timeval = (use_minute) ? timeval * 60 : timeval;
->  		return put_user(timeval, p);
->  	default:
->  		return -ENOTTY;
-> @@ -346,7 +386,8 @@ static int __init wdt_init(void)
->  
->  	if (wdt_set_heartbeat(timeout)) {
->  		wdt_set_heartbeat(WATCHDOG_TIMEOUT);
-> -		pr_info("timeout value must be 1 <= timeout <= 255, using %d\n",
-> +		pr_info("timeout value must be 1 <= timeout <= %d, using %d\n",
-> +			max_timeout,
-
-That is still a constant, isn't it ? Why use a variable ?
-
->  			WATCHDOG_TIMEOUT);
->  	}
->  
-> @@ -371,8 +412,8 @@ static int __init wdt_init(void)
->  		goto unreg_reboot;
->  	}
->  
-> -	pr_info("initialized. timeout=%d sec (nowayout=%d)\n",
-> -		timeout, nowayout);
-> +	pr_info("initialized. timeout=%d %s (nowayout=%d)\n",
-> +		timeout, unit, nowayout);
->  
->  out:
->  	return ret;
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
