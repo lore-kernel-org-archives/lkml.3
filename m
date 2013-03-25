@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab3CYILp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 04:11:45 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:58157 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755935Ab3CYILo (ORCPT
+	id S1756755Ab3CYIPF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 04:15:05 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60081 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756724Ab3CYIPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 04:11:44 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        olof@lixom.net, Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH] arm: vt8500: Add wm8850 config options to multi_v7_defconfig
-Date: Mon, 25 Mar 2013 21:11:40 +1300
-Message-Id: <1364199100-12300-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 25 Mar 2013 04:15:03 -0400
+Message-ID: <5150076D.3080904@ti.com>
+Date: Mon, 25 Mar 2013 13:44:37 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Philip Avinash <avinashphilip@ti.com>
+CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <prakash.pm@ti.com>,
+        <jacmet@sunsite.dk>
+Subject: Re: [PATCH v3 0/3] Platform support for EHRPWM & ECAP devices in
+ DAVINCI.
+References: <1364197789-16783-1-git-send-email-avinashphilip@ti.com>
+In-Reply-To: <1364197789-16783-1-git-send-email-avinashphilip@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch finally adds the WM8850 SoC to the multi_v7_defconfig.
-We don't have a seperate defconfig for this SoC as it is only
-available as a multiplatform option.
+On 3/25/2013 1:19 PM, Philip Avinash wrote:
+> Add platform support for EHRPWM and ECAP by providing clock nodes and
+> device tree nodes.
+> This series depends on [1] and [2] and is available for testing at [3].
+> Tested for back light support in da850 EVM with EHRPWM PWM device.
+> 
+> [1] http://gitorious.org/linux-davinci/linux-davinci/trees/davinci-for-v3.9/dt-2
+> [2] https://gitorious.org/linux-pwm/linux-pwm/trees/for-next
+> [3] https://github.com/avinashphilip/am335x_linux/tree/davinci-for-v3.9_soc_pwm
+> 
+> Note:
+> DT support for EHRPWM backlight has not been added in da850-evm.dts as there is
+> conflicting pin-mux requirement with SPI flash.
+> 
+> Philip Avinash (3):
+>   ARM: davinci: clk framework support for enable/disable functionality
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
- arch/arm/configs/multi_v7_defconfig |    8 ++++++++
- 1 file changed, 8 insertions(+)
+Patch 1/3 did not reach me. I cant find it in archives either so most
+likely no one received it. Can you please send that one patch again?
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index e31d442..206119c 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -7,6 +7,7 @@ CONFIG_MACH_ARMADA_XP=y
- CONFIG_ARCH_HIGHBANK=y
- CONFIG_ARCH_SOCFPGA=y
- CONFIG_ARCH_SUNXI=y
-+CONFIG_ARCH_WM8850=y
- # CONFIG_ARCH_VEXPRESS_CORTEX_A5_A9_ERRATA is not set
- CONFIG_ARCH_ZYNQ=y
- CONFIG_ARM_ERRATA_754322=y
-@@ -34,6 +35,8 @@ CONFIG_SERIAL_8250_DW=y
- CONFIG_SERIAL_AMBA_PL011=y
- CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
- CONFIG_SERIAL_OF_PLATFORM=y
-+CONFIG_SERIAL_VT8500=y
-+CONFIG_SERIAL_VT8500_CONSOLE=y
- CONFIG_IPMI_HANDLER=y
- CONFIG_IPMI_SI=y
- CONFIG_I2C=y
-@@ -42,6 +45,7 @@ CONFIG_SPI=y
- CONFIG_SPI_PL022=y
- CONFIG_FB=y
- CONFIG_FB_ARMCLCD=y
-+CONFIG_FB_WM8505=y
- CONFIG_FRAMEBUFFER_CONSOLE=y
- CONFIG_USB=y
- CONFIG_USB_ISP1760_HCD=y
-@@ -50,11 +54,15 @@ CONFIG_MMC=y
- CONFIG_MMC_ARMMMCI=y
- CONFIG_MMC_SDHCI=y
- CONFIG_MMC_SDHCI_PLTFM=y
-+CONFIG_MMC_WMT=y
- CONFIG_EDAC=y
- CONFIG_EDAC_MM_EDAC=y
- CONFIG_EDAC_HIGHBANK_MC=y
- CONFIG_EDAC_HIGHBANK_L2=y
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_PL031=y
-+CONFIG_RTC_DRV_VT8500=y
-+CONFIG_PWM=y
-+CONFIG_PWM_VT8500=y
- CONFIG_DMADEVICES=y
- CONFIG_PL330_DMA=y
--- 
-1.7.9.5
+>   arm: davinci: clock node support for ECAP & EHRPWM
 
+For future, please be consistent and capitalize 'ARM' in subject line.
+
+>   ARM: davinci: da850: add EHRPWM & ECAP DT node
+> 
+>  arch/arm/boot/dts/da850.dtsi               |   30 ++++++++++++++++++
+>  arch/arm/mach-davinci/clock.c              |   21 ++++++++-----
+>  arch/arm/mach-davinci/clock.h              |    2 ++
+>  arch/arm/mach-davinci/da850.c              |   46 ++++++++++++++++++++++++++++
+>  arch/arm/mach-davinci/da8xx-dt.c           |    5 +++
+>  arch/arm/mach-davinci/include/mach/da8xx.h |    1 +
+>  6 files changed, 98 insertions(+), 7 deletions(-)
+> 
+
+Thanks,
+Sekhar
