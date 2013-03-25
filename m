@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933204Ab3CYVb4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 17:31:56 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:56660 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932801Ab3CYVbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 17:31:55 -0400
-Message-ID: <5150C248.7020407@sgi.com>
-Date: Mon, 25 Mar 2013 14:31:52 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S933280Ab3CYVcl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 17:32:41 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:62995 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932801Ab3CYVck (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 17:32:40 -0400
 MIME-Version: 1.0
-To: Jason Wessel <jason.wessel@windriver.com>
-CC: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Tim Bird <tim.bird@am.sony.com>
-Subject: Re: [PATCH 03/15] KDB: up the default LINES value
-References: <20130325185007.321022858@gulag1.americas.sgi.com> <20130325185007.776886654@gulag1.americas.sgi.com> <5150C01A.3030602@windriver.com>
-In-Reply-To: <5150C01A.3030602@windriver.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130325164600.GA11734@gmail.com>
+References: <1364223758-17621-1-git-send-email-lee.jones@linaro.org>
+	<1364223758-17621-2-git-send-email-lee.jones@linaro.org>
+	<201303251540.51104.arnd@arndb.de>
+	<20130325164600.GA11734@gmail.com>
+Date: Mon, 25 Mar 2013 22:32:40 +0100
+Message-ID: <CACRpkdbn4WARSp7_MUpCZTghTrsPYvsa9GEUC31T7nP_=9oZag@mail.gmail.com>
+Subject: Re: [PATCH 2/3] mfd: db8500-prcmu: Fetch the PRCMU TCDM base address
+ from Device Tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>, devicetree-discuss@lists.ozlabs.org
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 25, 2013 at 5:46 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
+>> >         res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+>> >                                            "prcmu-tcpm");
+>> >         if (!res) {
+>> > -               dev_err(&pdev->dev,
+>> > -                       "Error: no prcmu tcpm memory region provided\n");
+>> > -               return;
+>> > -       }
+>> > -       tcpm_base = ioremap(res->start, resource_size(res));
+>> > +               if (np) {
+>> > +                       tcpm_np = of_find_node_by_name(np->parent,
+>> > +                                                      "prcmu-tcpm-per4");
+>> > +                       if (!tcpm_np) {
+>> > +                               dev_err(&pdev->dev,
+>> > +                                       "no prcmu tcpm mem region provided\n");
+>> > +                               return;
+>> > +                       }
+>> > +                       tcpm_base = of_iomap(tcpm_np, 0);
+>> > +               }
+>> > +       } else
+>> > +               tcpm_base = ioremap(res->start, resource_size(res));
+>> > +
+>>
+>> Why don't you just add these extra registers to the prcmu node itself like
+>>
+>> diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
+>> index 9de9309..6ee6c31 100644
+>> --- a/arch/arm/boot/dts/dbx5x0.dtsi
+>> +++ b/arch/arm/boot/dts/dbx5x0.dtsi
+>> @@ -191,8 +191,8 @@
+>>
+>>               prcmu: prcmu@80157000 {
+>>                       compatible = "stericsson,db8500-prcmu";
+>> -                     reg = <0x80157000 0x1000>;
+>> -                     reg-names = "prcmu";
+>> +                     reg = <0x80157000 0x1000>, <0x801b0000 0x1000>, <0x801b8000 0x1000>;
+>> +                     reg-names = "prcmu", "prcmu-tcpm", "prcmu-tcdm-per4";
+>>                       interrupts = <0 47 0x4>;
+>>                       #address-cells = <1>;
+>>                       #size-cells = <1>;
+>>
+>>
+>> and document those in the prcmu binding?
+>>
+>> That would keep the code simpler and the same for both cases.
+>
+> I'm not sure you can. These addresses differ from platform to
+> platform, so I'd need to provide the base PRCMU address in
+> dbx5x0.dtsi, then the other two in the dts files. Can you do that?
 
-On 3/25/2013 2:22 PM, Jason Wessel wrote:
-> On 03/25/2013 01:50 PM, Mike Travis wrote:
->> Currently the default for the # of lines displayed by the KDB pager
->> is 24.  This does not allow all of the lines for the entry messages,
->> reg dump and process trace.  Increase it to something more reasonable.
->>
-> 
-> 
-> Unfortunately this is something that breaks compatibility with the
-> standard VGA console, so this patch will not be merged.
-> 
-> Is it the case that your hardware specifies how many lines and columns
-> there are in the display?  We have some hooks into the console VT code
-> to properly detect this but perhaps something is wrong there, or it is
-> only called in the KMS (kernel mode setting case).  Example:
-> drivers/tty/vt/vt.c - look at con_debug_enter()
-> 
-> Another option might be to add a variable which allows you to change
-> the default at compile time, but I would prefer to get the auto detect
-> code working properly if it is an option.
-> 
-> Jason.
+Better ask on devicetree-discuss.
 
-Nah, this was more of an annoyance before I added the "system nmi" entry
-reason code, which changes the entry message to be more like it is for a
-requested entry (like sysreq 'g') than it is for a real error which 
-dumps a ton of stuff.  Our primary system console is a serial connection,
-so we can't use the VT stuff (though the VT console is an option).
-> 
-> 
-> 
->> Cc: Tim Bird <tim.bird@am.sony.com>
->> Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
->> Signed-off-by: Mike Travis <travis@sgi.com>
->> ---
->>  kernel/debug/kdb/kdb_io.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> --- linux.orig/kernel/debug/kdb/kdb_io.c
->> +++ linux/kernel/debug/kdb/kdb_io.c
->> @@ -586,7 +586,7 @@ int vkdb_printf(const char *fmt, va_list
->>  
->>  	diag = kdbgetintenv("LINES", &linecount);
->>  	if (diag || linecount <= 1)
->> -		linecount = 24;
->> +		linecount = 60;
->>  
->>  	diag = kdbgetintenv("COLUMNS", &colcount);
->>  	if (diag || colcount <= 1)
->>
->> -- 
->>
-> 
+What it reflects are differences between SoC:s, so I think the
+right solution is to split it in a three-layer cake:
+
+dbx5x0.dtsi -> included by
+db8500.dtsi -> included by
+snowball/hrefv60plus.dts
+
+dbx5x0.dtsi -> included by
+dbx540.dtsi -> included by
+ccu9540/ccu8540.dts
+
+Here you may insert the reg property into the node at the
+db8500.dtsi or dbx540.dtsi layer.
+
+If you prefer I can cook a patch...
+
+Yours,
+Linus Walleij
