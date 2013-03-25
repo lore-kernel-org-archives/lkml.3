@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757885Ab3CYBi5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:38:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33776 "EHLO
+	id S1757968Ab3CYBjW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:39:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33788 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755325Ab3CYBPF (ORCPT
+	by vger.kernel.org with ESMTP id S1755437Ab3CYBPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:05 -0400
-Message-Id: <20130325010524.415118117@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:04 -0400
+Message-Id: <20130325010525.735872085@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:05:25 +0000
+Date: Mon, 25 Mar 2013 01:05:38 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Jiri Slaby <jslaby@suse.cz>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Bryan Mason <bmason@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 001/104] TTY: do not reset masters packet mode
+Cc: akpm@linux-foundation.org, Mathias Krause <minipli@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 014/104] rtnl: fix info leak on RTM_GETLINK request for VF  devices
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -31,63 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit b81273a132177edd806476b953f6afeb17b786d5 upstream.
+[ Upstream commit 84d73cd3fb142bf1298a8c13fd4ca50fd2432372 ]
 
-Now that login from util-linux is forced to drop all references to a
-TTY which it wants to hangup (to reach reference count 1) we are
-seeing issues with telnet. When login closes its last reference to the
-slave PTY, it also resets packet mode on the *master* side. And we
-have a race here.
+Initialize the mac address buffer with 0 as the driver specific function
+will probably not fill the whole buffer. In fact, all in-kernel drivers
+fill only ETH_ALEN of the MAX_ADDR_LEN bytes, i.e. 6 of the 32 possible
+bytes. Therefore we currently leak 26 bytes of stack memory to userland
+via the netlink interface.
 
-What telnet does is fork+exec of `login'. Then there are two
-scenarios:
-* `login' closes the slave TTY and resets thus master's packet mode,
-  but even now telnet properly sets the mode, or
-* `telnetd' sets packet mode on the master, `login' closes the slave
-  TTY and resets master's packet mode.
-
-The former case is OK. However the latter happens in much more cases,
-by the order of magnitude to be precise. So when one tries to login to
-such a messed telnet setup, they see the following:
-inux login:
-            ogin incorrect
-
-Note the missing first letters -- telnet thinks it is still in the
-packet mode, so when it receives "linux login" from `login', it
-considers "l" as the type of the packet and strips it.
-
-SuS does not mention how the implementation should behave. Both BSDs I
-checked (Free and Net) do not reset the flag upon the last close.
-
-By this I am resurrecting an old bug, see References. We are hitting
-it regularly now, i.e. with updated util-linux, ergo login.
-
-Here, I am changing a behavior introduced back in 2.1 times. It would
-better have a long time testing before goes upstream.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Bryan Mason <bmason@redhat.com>
-References: https://lkml.org/lkml/2009/11/11/223
-References: https://bugzilla.redhat.com/show_bug.cgi?id=504703
-References: https://bugzilla.novell.com/show_bug.cgi?id=797042
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/pty.c |    1 -
- 1 file changed, 1 deletion(-)
+ net/core/rtnetlink.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -49,7 +49,6 @@ static void pty_close(struct tty_struct
- 	tty->packet = 0;
- 	if (!tty->link)
- 		return;
--	tty->link->packet = 0;
- 	set_bit(TTY_OTHER_CLOSED, &tty->link->flags);
- 	wake_up_interruptible(&tty->link->read_wait);
- 	wake_up_interruptible(&tty->link->write_wait);
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -973,6 +973,7 @@ static int rtnl_fill_ifinfo(struct sk_bu
+ 			 * report anything.
+ 			 */
+ 			ivi.spoofchk = -1;
++			memset(ivi.mac, 0, sizeof(ivi.mac));
+ 			if (dev->netdev_ops->ndo_get_vf_config(dev, i, &ivi))
+ 				break;
+ 			vf_mac.vf =
 
 
