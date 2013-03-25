@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab3CYBWL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:22:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34110 "EHLO
+	id S1756301Ab3CYBQc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:16:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34088 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755381Ab3CYBQd (ORCPT
+	by vger.kernel.org with ESMTP id S1755381Ab3CYBQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:33 -0400
-Message-Id: <20130325010527.925867168@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:26 -0400
+Message-Id: <20130325010528.611222516@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:01 +0000
+Date: Mon, 25 Mar 2013 01:06:08 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Eric Dumazet <edumazet@google.com>,
-        Mukesh Agrawal <quiche@chromium.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 037/104] tcp: fix skb_availroom()
+Cc: akpm@linux-foundation.org, Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 044/104] sfc: Fix timekeeping in efx_mcdi_poll()
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -30,83 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-[ Upstream commit 16fad69cfe4adbbfa813de516757b87bcae36d93 ]
+[ Upstream commit ebf98e797b4e26ad52ace1511a0b503ee60a6cd4 ]
 
-Chrome OS team reported a crash on a Pixel ChromeBook in TCP stack :
+efx_mcdi_poll() uses get_seconds() to read the current time and to
+implement a polling timeout.  The use of this function was chosen
+partly because it could easily be replaced in a co-sim environment
+with a macro that read the simulated time.
 
-https://code.google.com/p/chromium/issues/detail?id=182056
+Unfortunately the real get_seconds() returns the system time (real
+time) which is subject to adjustment by e.g. ntpd.  If the system time
+is adjusted forward during a polled MCDI operation, the effective
+timeout can be shorter than the intended 10 seconds, resulting in a
+spurious failure.  It is also possible for a backward adjustment to
+delay detection of a areal failure.
 
-commit a21d45726acac (tcp: avoid order-1 allocations on wifi and tx
-path) did a poor choice adding an 'avail_size' field to skb, while
-what we really needed was a 'reserved_tailroom' one.
+Use jiffies instead, and change MCDI_RPC_TIMEOUT to be denominated in
+jiffies.  Also correct rounding of the timeout: check time > finish
+(or rather time_after(time, finish)) and not time >= finish.
 
-It would have avoided commit 22b4a4f22da (tcp: fix retransmit of
-partially acked frames) and this commit.
-
-Crash occurs because skb_split() is not aware of the 'avail_size'
-management (and should not be aware)
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Mukesh Agrawal <quiche@chromium.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/skbuff.h | 7 +++++--
- net/ipv4/tcp.c         | 2 +-
- net/ipv4/tcp_output.c  | 1 -
- 3 files changed, 6 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/sfc/mcdi.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 53dc7e7..da65890 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -455,7 +455,7 @@ struct sk_buff {
- 	union {
- 		__u32		mark;
- 		__u32		dropcount;
--		__u32		avail_size;
-+		__u32		reserved_tailroom;
- 	};
+diff --git a/drivers/net/ethernet/sfc/mcdi.c b/drivers/net/ethernet/sfc/mcdi.c
+index 85e070e..c1000ce 100644
+--- a/drivers/net/ethernet/sfc/mcdi.c
++++ b/drivers/net/ethernet/sfc/mcdi.c
+@@ -30,7 +30,7 @@
+ #define REBOOT_FLAG_PORT0 0x3f8
+ #define REBOOT_FLAG_PORT1 0x3fc
  
- 	__u16			vlan_tci;
-@@ -1332,7 +1332,10 @@ static inline int skb_tailroom(const struct sk_buff *skb)
-  */
- static inline int skb_availroom(const struct sk_buff *skb)
+-#define MCDI_RPC_TIMEOUT       10 /*seconds */
++#define MCDI_RPC_TIMEOUT       (10 * HZ)
+ 
+ #define MCDI_PDU(efx)							\
+ 	(efx_port_num(efx) ? CMD_PDU_PORT1 : CMD_PDU_PORT0)
+@@ -120,7 +120,7 @@ static void efx_mcdi_copyout(struct efx_nic *efx, u8 *outbuf, size_t outlen)
+ static int efx_mcdi_poll(struct efx_nic *efx)
  {
--	return skb_is_nonlinear(skb) ? 0 : skb->avail_size - skb->len;
-+	if (skb_is_nonlinear(skb))
-+		return 0;
-+
-+	return skb->end - skb->tail - skb->reserved_tailroom;
- }
+ 	struct efx_mcdi_iface *mcdi = efx_mcdi(efx);
+-	unsigned int time, finish;
++	unsigned long time, finish;
+ 	unsigned int respseq, respcmd, error;
+ 	unsigned int pdu = FR_CZ_MC_TREG_SMEM + MCDI_PDU(efx);
+ 	unsigned int rc, spins;
+@@ -136,7 +136,7 @@ static int efx_mcdi_poll(struct efx_nic *efx)
+ 	 * and poll once a jiffy (approximately)
+ 	 */
+ 	spins = TICK_USEC;
+-	finish = get_seconds() + MCDI_RPC_TIMEOUT;
++	finish = jiffies + MCDI_RPC_TIMEOUT;
  
- /**
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 52edbb8..fe381c2 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -704,7 +704,7 @@ struct sk_buff *sk_stream_alloc_skb(struct sock *sk, int size, gfp_t gfp)
- 			 * Make sure that we have exactly size bytes
- 			 * available to the caller, no more, no less.
- 			 */
--			skb->avail_size = size;
-+			skb->reserved_tailroom = skb->end - skb->tail - size;
- 			return skb;
+ 	while (1) {
+ 		if (spins != 0) {
+@@ -146,7 +146,7 @@ static int efx_mcdi_poll(struct efx_nic *efx)
+ 			schedule_timeout_uninterruptible(1);
  		}
- 		__kfree_skb(skb);
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 921cbac..9bb7400 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1096,7 +1096,6 @@ static void __pskb_trim_head(struct sk_buff *skb, int len)
- 	eat = min_t(int, len, skb_headlen(skb));
- 	if (eat) {
- 		__skb_pull(skb, eat);
--		skb->avail_size -= eat;
- 		len -= eat;
- 		if (!len)
- 			return;
+ 
+-		time = get_seconds();
++		time = jiffies;
+ 
+ 		rmb();
+ 		efx_readd(efx, &reg, pdu);
+@@ -158,7 +158,7 @@ static int efx_mcdi_poll(struct efx_nic *efx)
+ 		    EFX_DWORD_FIELD(reg, MCDI_HEADER_RESPONSE))
+ 			break;
+ 
+-		if (time >= finish)
++		if (time_after(time, finish))
+ 			return -ETIMEDOUT;
+ 	}
+ 
+@@ -250,7 +250,7 @@ static int efx_mcdi_await_completion(struct efx_nic *efx)
+ 	if (wait_event_timeout(
+ 		    mcdi->wq,
+ 		    atomic_read(&mcdi->state) == MCDI_STATE_COMPLETED,
+-		    msecs_to_jiffies(MCDI_RPC_TIMEOUT * 1000)) == 0)
++		    MCDI_RPC_TIMEOUT) == 0)
+ 		return -ETIMEDOUT;
+ 
+ 	/* Check if efx_mcdi_set_mode() switched us back to polled completions.
 
 
