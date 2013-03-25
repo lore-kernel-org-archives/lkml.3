@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794Ab3CYBhk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:37:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33840 "EHLO
+	id S1757878Ab3CYBiN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:38:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33837 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755578Ab3CYBPR (ORCPT
+	by vger.kernel.org with ESMTP id S1755571Ab3CYBPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:17 -0400
-Message-Id: <20130325010534.420002557@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:16 -0400
+Message-Id: <20130325010534.210656963@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:07:06 +0000
+Date: Mon, 25 Mar 2013 01:07:04 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Torsten Duwe <torsten@lst.de>,
-        Torsten Duwe <duwe@lst.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 102/104] KMS: fix EDID detailed timing vsync parsing
+Cc: akpm@linux-foundation.org, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 100/104] vfs,proc: guarantee unique inodes in /proc
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -30,39 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Torsten Duwe <torsten@lst.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 16dad1d743d31a104a849c8944e6b9eb479f6cd7 upstream.
+commit 51f0885e5415b4cc6535e9cdcc5145bfbc134353 upstream.
 
-EDID spreads some values across multiple bytes; bit-fiddling is needed
-to retrieve these.  The current code to parse "detailed timings" has a
-cut&paste error that results in a vsync offset of at most 15 lines
-instead of 63.
+Dave Jones found another /proc issue with his Trinity tool: thanks to
+the namespace model, we can have multiple /proc dentries that point to
+the same inode, aliasing directories in /proc/<pid>/net/ for example.
 
-See
+This ends up being a total disaster, because it acts like hardlinked
+directories, and causes locking problems.  We rely on the topological
+sort of the inodes pointed to by dentries, and if we have aliased
+directories, that odering becomes unreliable.
 
-   http://en.wikipedia.org/wiki/EDID
+In short: don't do this.  Multiple dentries with the same (directory)
+inode is just a bad idea, and the namespace code should never have
+exposed things this way.  But we're kind of stuck with it.
 
-and in the "EDID Detailed Timing Descriptor" see bytes 10+11 show why
-that needs to be a left shift.
+This solves things by just always allocating a new inode during /proc
+dentry lookup, instead of using "iget_locked()" to look up existing
+inodes by superblock and number.  That actually simplies the code a bit,
+at the cost of potentially doing more inode [de]allocations.
 
-Signed-off-by: Torsten Duwe <duwe@lst.de>
+That said, the inode lookup wasn't free either (and did a lot of locking
+of inodes), so it is probably not that noticeable.  We could easily keep
+the old lookup model for non-directory entries, but rather than try to
+be excessively clever this just implements the minimal and simplest
+workaround for the problem.
+
+Reported-and-tested-by: Dave Jones <davej@redhat.com>
+Analyzed-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Never drop the pde reference in proc_get_inode(), as callers only
+   expect this when we return an existing inode, and we never do that now]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/drm_edid.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -852,7 +852,7 @@ static struct drm_display_mode *drm_mode
- 	unsigned vblank = (pt->vactive_vblank_hi & 0xf) << 8 | pt->vblank_lo;
- 	unsigned hsync_offset = (pt->hsync_vsync_offset_pulse_width_hi & 0xc0) << 2 | pt->hsync_offset_lo;
- 	unsigned hsync_pulse_width = (pt->hsync_vsync_offset_pulse_width_hi & 0x30) << 4 | pt->hsync_pulse_width_lo;
--	unsigned vsync_offset = (pt->hsync_vsync_offset_pulse_width_hi & 0xc) >> 2 | pt->vsync_offset_pulse_width_lo >> 4;
-+	unsigned vsync_offset = (pt->hsync_vsync_offset_pulse_width_hi & 0xc) << 2 | pt->vsync_offset_pulse_width_lo >> 4;
- 	unsigned vsync_pulse_width = (pt->hsync_vsync_offset_pulse_width_hi & 0x3) << 4 | (pt->vsync_offset_pulse_width_lo & 0xf);
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -427,12 +427,10 @@ static const struct file_operations proc
  
- 	/* ignore tiny modes */
+ struct inode *proc_get_inode(struct super_block *sb, struct proc_dir_entry *de)
+ {
+-	struct inode * inode;
++	struct inode *inode = new_inode_pseudo(sb);
+ 
+-	inode = iget_locked(sb, de->low_ino);
+-	if (!inode)
+-		return NULL;
+-	if (inode->i_state & I_NEW) {
++	if (inode) {
++		inode->i_ino = de->low_ino;
+ 		inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
+ 		PROC_I(inode)->fd = 0;
+ 		PROC_I(inode)->pde = de;
+@@ -461,9 +459,7 @@ struct inode *proc_get_inode(struct supe
+ 				inode->i_fop = de->proc_fops;
+ 			}
+ 		}
+-		unlock_new_inode(inode);
+-	} else
+-	       pde_put(de);
++	}
+ 	return inode;
+ }			
+ 
 
 
