@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932657Ab3CYTPI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 15:15:08 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:39735 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756888Ab3CYTPG (ORCPT
+	id S1758869Ab3CYTRg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 15:17:36 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:46554 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758361Ab3CYTRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 15:15:06 -0400
-Date: Mon, 25 Mar 2013 12:15:00 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <eag0628@gmail.com>
-Cc: laijs@cn.fujitsu.com, axboe@kernel.dk, jack@suse.cz,
-        fengguang.wu@intel.com, jmoyer@redhat.com, zab@redhat.com,
-        linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au,
-        davem@davemloft.net, linux-crypto@vger.kernel.org
-Subject: Re: [PATCHSET wq/for-3.10] workqueue: NUMA affinity for unbound
- workqueues
-Message-ID: <20130325191500.GA12767@htj.dyndns.org>
-References: <1363737629-16745-1-git-send-email-tj@kernel.org>
- <20130320185708.GB31256@htj.dyndns.org>
- <CACvQF53=qgUHrr944D_70dZpT-EOMtPcz2+0JPp4kOnGPzAptQ@mail.gmail.com>
- <20130324185506.GA4378@htj.dyndns.org>
+	Mon, 25 Mar 2013 15:17:35 -0400
+Date: Mon, 25 Mar 2013 12:17:32 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Nick =?iso-8859-1?Q?=D8stergaard?= <oe.nick@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: wlan-ng: prism2usb.c: fix printk(KERN_ERR... to
+ pr_err(...
+Message-ID: <20130325191732.GA22609@kroah.com>
+References: <1364238148-22329-1-git-send-email-oe.nick@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130324185506.GA4378@htj.dyndns.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1364238148-22329-1-git-send-email-oe.nick@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 24, 2013 at 11:55:06AM -0700, Tejun Heo wrote:
-> > the whole patchset is more complicated than my brain.
+On Mon, Mar 25, 2013 at 08:02:28PM +0100, Nick Østergaard wrote:
+> Fixed checkpatch.pl warning, changing fix printk(KERN_ERR... to
+> pr_err(...
 > 
-> It isn't that complex, is it?  I mean, the difficult part - using
-> multiple pwqs on unbound wq - already happened, and even that wasn't
-> too complex as it in most part synchronized the behaviors between
-> per-cpu and unbound workqueues.  All that NUMA support is doing is
-> mapping different pwqs to different issuing CPUs.
+> Signed-off-by: Nick Østergaard <oe.nick@gmail.com>
+> ---
+>  drivers/staging/wlan-ng/prism2usb.c | 12 +++++-------
+>  1 file changed, 5 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/staging/wlan-ng/prism2usb.c b/drivers/staging/wlan-ng/prism2usb.c
+> index b1aed1f..0f2706a 100644
+> --- a/drivers/staging/wlan-ng/prism2usb.c
+> +++ b/drivers/staging/wlan-ng/prism2usb.c
+> @@ -113,14 +113,14 @@ static int prism2sta_probe_usb(struct usb_interface *interface,
+>  	dev = interface_to_usbdev(interface);
+>  	wlandev = create_wlan();
+>  	if (wlandev == NULL) {
+> -		printk(KERN_ERR "%s: Memory allocation failure.\n", dev_info);
+> +		pr_err("%s: Memory allocation failure.\n", dev_info);
 
-Oh, BTW, please feel free to rebase your patchset on top of the
-current wq/for-3.10.  I'll take care of the conflicts with the numa
-one, if there are any.
+Please use dev_err() instead, as you do have a valid struct device in
+which to use.
 
-Thanks.
+thanks,
 
--- 
-tejun
+greg k-h
