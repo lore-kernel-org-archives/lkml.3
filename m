@@ -1,75 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579Ab3CYKVz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 06:21:55 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50470 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753081Ab3CYKVx (ORCPT
+	id S1756615Ab3CYKWy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 06:22:54 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:39590 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756585Ab3CYKWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 06:21:53 -0400
-Date: Mon, 25 Mar 2013 10:21:06 +0000
-From: Andrew Murray <andrew.murray@arm.com>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/6] of/pci: Provide support for parsing PCI DT ranges
- property
-Message-ID: <20130325102106.GA20770@arm.com>
-References: <00c001ce277b$92b26ab0$b8174010$%han@samsung.com>
- <20130323104156.GL4977@n2100.arm.linux.org.uk>
- <20130323143704.5da5d20c@skate>
+	Mon, 25 Mar 2013 06:22:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130323143704.5da5d20c@skate>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <514FEADE.7020603@ti.com>
+References: <1363939388-22412-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1363939388-22412-2-git-send-email-prabhakar.csengg@gmail.com> <514FEADE.7020603@ti.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Mon, 25 Mar 2013 15:52:31 +0530
+Message-ID: <CA+V-a8vkYHO8Hf=LceA=Z+Qx-XxXHOmN-4RV7+BBkzueuWhcLg@mail.gmail.com>
+Subject: Re: [PATCH v7 1/2] ARM: davinci: dm365: add support for v4l2 video display
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 23, 2013 at 01:37:04PM +0000, Thomas Petazzoni wrote:
-> 
-> On Sat, 23 Mar 2013 10:41:56 +0000, Russell King - ARM Linux wrote:
-> 
-> > Please look at how IORESOURCE_* stuff is defined:
-> > #define IORESOURCE_TYPE_BITS    0x00001f00      /* Resource type */
-> > #define IORESOURCE_IO           0x00000100      /* PCI/ISA I/O ports */
-> > #define IORESOURCE_MEM          0x00000200
-> > #define IORESOURCE_REG          0x00000300      /* Register offsets */
-> > #define IORESOURCE_IRQ          0x00000400
-> > #define IORESOURCE_DMA          0x00000800
-> > #define IORESOURCE_BUS          0x00001000
-> > 
-> > Notice that it's not an array of bits.
-> > 
-> > So this should be:
-> > 		if ((iter.flags & IORESOURCE_TYPE_BITS) == IORESOURCE_IO) {
-> 
-> What I've done for the Marvell PCIe driver is:
-> 
-> +	for_each_of_pci_range(&iter, np) {
-> +		unsigned long restype = iter.flags & IORESOURCE_TYPE_BITS;
-> +		if (restype == IORESOURCE_IO) {
-> [...]
-> +		if (restype == IORESOURCE_MEM) {
-> [...]
+Hi Sekhar,
 
-OK I'll update this patch and also include Thierry's suggestions.
+Thanks for the review!
 
-Andrew Murray
+On Mon, Mar 25, 2013 at 11:42 AM, Sekhar Nori <nsekhar@ti.com> wrote:
+> Prabhakar,
+>
+> On 3/22/2013 1:33 PM, Prabhakar lad wrote:
+>> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>
+>> Create platform devices for various video modules like venc,osd,
+>> vpbe and v4l2 driver for dm365.
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>> ---
+>>  arch/arm/mach-davinci/board-dm365-evm.c |    4 +-
+>>  arch/arm/mach-davinci/davinci.h         |    2 +-
+>>  arch/arm/mach-davinci/dm365.c           |  194 +++++++++++++++++++++++++++++--
+>>  3 files changed, 188 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
+>> index c2d4958..cf77c46 100644
+>> --- a/arch/arm/mach-davinci/board-dm365-evm.c
+>> +++ b/arch/arm/mach-davinci/board-dm365-evm.c
+>> @@ -564,8 +564,6 @@ static struct davinci_uart_config uart_config __initdata = {
+>>
+>>  static void __init dm365_evm_map_io(void)
+>>  {
+>> -     /* setup input configuration for VPFE input devices */
+>> -     dm365_set_vpfe_config(&vpfe_cfg);
+>>       dm365_init();
+>>  }
+>>
+>> @@ -597,6 +595,8 @@ static __init void dm365_evm_init(void)
+>>
+>>       davinci_setup_mmc(0, &dm365evm_mmc_config);
+>>
+>> +     dm365_init_video(&vpfe_cfg, NULL);
+>> +
+>>       /* maybe setup mmc1/etc ... _after_ mmc0 */
+>>       evm_init_cpld();
+>>
+>> diff --git a/arch/arm/mach-davinci/davinci.h b/arch/arm/mach-davinci/davinci.h
+>> index 12d544b..1c2670f 100644
+>> --- a/arch/arm/mach-davinci/davinci.h
+>> +++ b/arch/arm/mach-davinci/davinci.h
+>> @@ -84,7 +84,7 @@ void __init dm365_init_ks(struct davinci_ks_platform_data *pdata);
+>>  void __init dm365_init_rtc(void);
+>>  void dm365_init_spi0(unsigned chipselect_mask,
+>>                       const struct spi_board_info *info, unsigned len);
+>> -void dm365_set_vpfe_config(struct vpfe_config *cfg);
+>> +int __init dm365_init_video(struct vpfe_config *, struct vpbe_config *);
+>
+> No need of __init specifier in function declaration.
+>
+OK
+
+>>
+>>  /* DM644x function declarations */
+>>  void __init dm644x_init(void);
+>> diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
+>> index f4c19f7..0a2dba2 100644
+>> --- a/arch/arm/mach-davinci/dm365.c
+>> +++ b/arch/arm/mach-davinci/dm365.c
+>> @@ -40,10 +40,16 @@
+>>
+>>  #define DM365_REF_FREQ               24000000        /* 24 MHz on the DM365 EVM */
+>>
+>> +#define DM365_VDAC_CONFIG            0x01c4002c
+>
+> Please define this in davinci.h as an offset from
+> DAVINCI_SYSTEM_MODULE_BASE.
+>
+OK
+
+>> +
+>> +#define DM365_RTC_BASE                       0x01c69000
+>> +
+>>  /* Base of key scan register bank */
+>>  #define DM365_KEYSCAN_BASE           0x01c69400
+>>
+>> -#define DM365_RTC_BASE                       0x01c69000
+>> +#define DM365_OSD_BASE                       0x01c71c00
+>> +
+>> +#define DM365_VENC_BASE                      0x01c71e00
+>>
+Are you OK with this definitions or you want all of them in davinci.h ?
+
+>>  #define DAVINCI_DM365_VC_BASE                0x01d0c000
+>>  #define DAVINCI_DMA_VC_TX            2
+>> @@ -56,6 +62,11 @@
+>>  #define DM365_EMAC_CNTRL_RAM_OFFSET  0x1000
+>>  #define DM365_EMAC_CNTRL_RAM_SIZE    0x2000
+>>
+>> +#define DM365_VPSS_CLK_CTRL_ADDR             0x44
+>
+> This is already defined in davinci.h as SYSMOD_VPSS_CLKCTL. Please use
+> the existing definition.
+>
+OK
+
+>> +#define DM365_VPSS_VENCCLKEN_ENABLE          BIT(3)
+>> +#define DM365_VPSS_DACCLKEN_ENABLE           BIT(4)
+>> +#define DM365_VPSS_PLLC2SYSCLK5_ENABLE               BIT(5)
+>
+> Please move these related defintions to davinci.h as well.
+>
+OK
+
+>> +
+>>  static struct pll_data pll1_data = {
+>>       .num            = 1,
+>>       .phys_base      = DAVINCI_PLL1_BASE,
+>> @@ -1233,6 +1244,179 @@ static struct platform_device dm365_isif_dev = {
+>>       },
+>>  };
+>>
+>> +static struct resource dm365_osd_resources[] = {
+>> +     {
+>> +             .start = DM365_OSD_BASE,
+>> +             .end   = DM365_OSD_BASE + 0x100,
+>
+> You ignored by earlier comment to fix this to 0xFF and other such
+> occurrences in this patch.
+>
+Ah missed it, will fix it in next version.
+
+Regards,
+--Prabhakar
+
+> Thanks,
+> Sekhar
