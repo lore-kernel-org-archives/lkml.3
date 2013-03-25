@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738Ab3CYDWz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 23:22:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:8947 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756543Ab3CYDWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 23:22:47 -0400
-X-IronPort-AV: E=Sophos;i="4.87,342,1363104000"; 
-   d="scan'208";a="6935788"
-Message-ID: <514FC385.4030008@cn.fujitsu.com>
-Date: Mon, 25 Mar 2013 11:24:53 +0800
-From: Lin Feng <linfeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756140Ab3CYD17 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 23:27:59 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:54664 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755180Ab3CYD16 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 23:27:58 -0400
 MIME-Version: 1.0
-To: Lenky Gao <lenky.gao@gmail.com>
-CC: linux-kernel@vger.kernel.org, yinghai@kernel.org, mingo@elte.hu,
-        gorcunov@gmail.com, rusty@rustcorp.com.au, sivanich@sgi.com,
-        agordeev@redhat.com
-Subject: Re: Question: How to distribute the interrupts over multiple cores?
-References: <CAAO_Xo6=2PKumrxjb1XthsiVVFJcz33o5wf2OyXN9pPdu1GCRA@mail.gmail.com> <514FBD6E.2030706@cn.fujitsu.com> <CAAO_Xo7edAuiGQaXHuyWB5RPgPd5dDDRof3-d28eu+mryJkv+Q@mail.gmail.com>
-In-Reply-To: <CAAO_Xo7edAuiGQaXHuyWB5RPgPd5dDDRof3-d28eu+mryJkv+Q@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/25 11:21:59,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/25 11:22:00,
-	Serialize complete at 2013/03/25 11:22:00
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1363157014-9615-1-git-send-email-ks.giri@samsung.com>
+References: <1363157014-9615-1-git-send-email-ks.giri@samsung.com>
+Date: Mon, 25 Mar 2013 08:57:56 +0530
+Message-ID: <CAKrE-Kfgw+ofmkN+aMVNeeLm=+4owJ0U=qAmj2o0oARm6BSCQQ@mail.gmail.com>
+Subject: Re: [PATCH V3 0/5] Add polling support for 64xx spi controller
+From: Girish KS <girishks2000@gmail.com>
+To: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello grant,
 
-On 03/25/2013 11:18 AM, Lenky Gao wrote:
-> The irqbalance service has been stopped.
-So try start irqbalance to see what happen?
-It should help to give what you want ;-)
+any comments on this patch series?
 
-thanks,
-linfeng
+
+On Wed, Mar 13, 2013 at 12:13 PM, Girish K S <girishks2000@gmail.com> wrote:
+> [PATCH 1/5]: fixes the error handling in the interrupt handler
+> [PATCH 2/5]: The existing driver support partial polling mode.
+>              This patch modifies the current driver to support
+>              only polling mode.
+> [PATCH 3/5]: provision to support SoC's with dedicated i/o pins
+> [PATCH 4/5]: provision to support dedicated cs pin
+> [PATCH 5/5]: support exynos5440 SoC in polling mode
+>
+> Tested this patch on exynos5250 in dma mode, and exynos5440 in
+> polling mode.
+>
+> changes in v3:
+>             Rebase it to the linus's master branch. After rebase
+> there was a logical code change due to the merge of generic dma
+> patch. resolved the merge conflicts and tested for the functionality
+>
+> Girish K S (5):
+>   spi: s3c64xx: modified error interrupt handling and init
+>   spi: s3c64xx: added support for polling mode
+>   spi: s3c64xx: Added provision for non-gpio i/o's
+>   spi: s3c64xx: Added provision for dedicated cs pin
+>   spi: s3c64xx: Added support for exynos5440 spi
+>
+>  drivers/spi/spi-s3c64xx.c                 | 204 +++++++++++++++++++++---------
+>  include/linux/platform_data/spi-s3c64xx.h |   3 +
+>  2 files changed, 148 insertions(+), 59 deletions(-)
+>
+> --
+> 1.8.0
+>
