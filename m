@@ -1,129 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab3CYGUe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 02:20:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6786 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932156Ab3CYGUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 02:20:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,902,1355126400"; 
-   d="scan'208";a="311411876"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: "Zhang, Rui" <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+	id S932223Ab3CYGUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 02:20:49 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53472 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932156Ab3CYGUq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 02:20:46 -0400
+Date: Mon, 25 Mar 2013 17:20:35 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Michael Neuling <mikey@neuling.org>
+Cc: Chen Gang <gang.chen@asianux.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "paulus@samba.org" <paulus@samba.org>, matt@ozlabs.org,
+        imunsie@au1.ibm.com, linuxppc-dev@lists.ozlabs.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/2] thermal: introduce thermal_zone_lookup_temperature
- helper function
-Thread-Topic: [PATCH 1/2] thermal: introduce thermal_zone_lookup_temperature
- helper function
-Thread-Index: AQHOJ0KDnJ+mHwhbq0aIU2P+QPfuzJi1lDeAgABeXtA=
-Date: Mon, 25 Mar 2013 06:20:27 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59C57DBF@BGSMSX101.gar.corp.intel.com>
-References: <1363986787-28147-1-git-send-email-eduardo.valentin@ti.com>
-	 <1363986787-28147-2-git-send-email-eduardo.valentin@ti.com>
- <1364191837.2465.7.camel@rzhang1-mobl4>
-In-Reply-To: <1364191837.2465.7.camel@rzhang1-mobl4>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+Subject: Re: [PATCH] PowerPC:kernel: make additional room in exception
+ vector area
+Message-Id: <20130325172035.7ecf486f05009afb4b603529@canb.auug.org.au>
+In-Reply-To: <5944.1364191637@ale.ozlabs.ibm.com>
+References: <51428C81.6000204@asianux.com>
+	<25841.1363323174@ale.ozlabs.ibm.com>
+	<5142AE27.7060003@asianux.com>
+	<514AA0D9.1090509@asianux.com>
+	<10123.1363906486@ale.ozlabs.ibm.com>
+	<514C0061.8080004@asianux.com>
+	<29457.1364169818@ale.ozlabs.ibm.com>
+	<514FA8F3.1030102@asianux.com>
+	<20130325161435.ffff94805826bc7cad2c7de4@canb.auug.org.au>
+	<5944.1364191637@ale.ozlabs.ibm.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__25_Mar_2013_17_20_35_+1100_1iDW93=VQb7Fu_FA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2P6Kapo026128
 
-> -----Original Message-----
-> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
-> owner@vger.kernel.org] On Behalf Of Zhang Rui
-> Sent: Monday, March 25, 2013 11:41 AM
-> To: Eduardo Valentin
-> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 1/2] thermal: introduce
-> thermal_zone_lookup_temperature helper function
-> 
-> On Fri, 2013-03-22 at 17:13 -0400, Eduardo Valentin wrote:
-> > This patch adds a helper function to get temperature of
-> > a thermal zone, based on the zone type name.
-> >
-> > It will perform a zone name lookup and return the last
-> > sensor temperature reading. In case the zone is not found
-> > or if the required parameters are invalid, it will return
-> > the corresponding error code.
-> >
-> > Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> > ---
-> >  drivers/thermal/thermal_sys.c |   32
-> ++++++++++++++++++++++++++++++++
-> >  include/linux/thermal.h       |    1 +
-> >  2 files changed, 33 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> > index 5bd95d4..f0caa13 100644
-> > --- a/drivers/thermal/thermal_sys.c
-> > +++ b/drivers/thermal/thermal_sys.c
-> > @@ -1790,6 +1790,38 @@ void thermal_zone_device_unregister(struct
-> thermal_zone_device *tz)
-> >  }
-> >  EXPORT_SYMBOL_GPL(thermal_zone_device_unregister);
-> >
-> > +/**
-> > + * thermal_lookup_temperature - search for a zone and returns its
-> temperature
-> > + * @name: thermal zone name to fetch the temperature
-> > + * @temperature: pointer to store the zone temperature, in case it is
-> found
-> > + *
-> > + * When the zone is found, updates @temperature and returns 0.
-> > + *
-> > + * Return: -EINVAL in case of wrong parameters, -ENODEV in case the
-> zone
-> > + * is not found and 0 when it is successfully found.
-> > + */
-> > +int thermal_zone_lookup_temperature(const char *name, int
-> *temperature)
-> > +{
-> > +	struct thermal_zone_device *pos = NULL;
-> > +	bool found = false;
-> > +
-> > +	if (!name || !temperature)
-> > +		return -EINVAL;
-> > +
-> > +	mutex_lock(&thermal_list_lock);
-> > +	list_for_each_entry(pos, &thermal_tz_list, node)
-> > +		if (!strcmp(pos->type, name)) {
-> > +			found = true;
-> > +			break;
-> > +		}
-> > +	if (found)
-> > +		*temperature = pos->last_temperature;
-> > +	mutex_unlock(&thermal_list_lock);
-> > +
-> > +	return found ? 0 : -ENODEV;
-> > +}
-> > +EXPORT_SYMBOL_GPL(thermal_zone_lookup_temperature);
-> > +
-> please do not use thermal zone type as the parameter because unique
-> thermal zone type string is not a hard rule.
+--Signature=_Mon__25_Mar_2013_17_20_35_+1100_1iDW93=VQb7Fu_FA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Okay, agree with this. This is what I am implementing in
-my changes as well.
+Hi Mikey,
 
-> If this is really needed, I'd prefer two APIs instead
-> 1. struct thermal_zone_device * thermal_zone_get_zone_by_name(char
-> *name);
-> 2. int thermal_zone_get_temperature(struct thermal_zone_device *, int
-> *temperature);
+On Mon, 25 Mar 2013 17:07:17 +1100 Michael Neuling <mikey@neuling.org> wrot=
+e:
+>
+> FYI you're gonna need this one also to make allmodconfig work.
+>=20
+>   http://patchwork.ozlabs.org/patch/230244/
 
-Why do we need this second API?
-If the driver has a 'tz' pointer, it can use tz->ops->get_temp
-to retrieve the temperature, right ?
+Thanks for that, I will add it to linux-next tomorrow.
 
-Thanks,
-Durga
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__25_Mar_2013_17_20_35_+1100_1iDW93=VQb7Fu_FA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRT+yzAAoJEECxmPOUX5FEMX4P/1sgJBPMfROG7pOapNG2xaBw
+EtJqvTu3h1E1X0yFH5FbbAdYSmJgICFsg2l9RMPzf6pWL/dlAPoAfNsbCcMNLzGb
+kyP7pmxWWwlCSA8SVRIvOb9ea270gwTxoR0RUsnPFfBQRFEXeq7wsqZwO1orMXKz
+KgaPsqLXKJBy1TLsTQBRpiitae1UWR7mD2FDWc25yfwtRbEK0ZKvFl3LRAchxODx
+JLeVX40iejEwWTnSqwJgaXuK6LEv123w9yFwM1sL3Q2EJvBzITaX8YfGRcB4h6un
+tHZrPg5PXegHNhrmTViZhpUR9wmk22cUkr6HV67WUpe42PEGm5G+QUNodL8q71gS
+l7rtdBJnXJA2WqU4Br/8lgJaeTEChVXMxulxHCvQO79HswLvSYq5REXwDJ2yJaCM
+elA6ZxCCguLSa0yhw5/vDbxSn3zU0iJpqXdKxhxInet7ht4rA/vuTl95N8xB6G9S
+B4rKDmkfFM+Y88L/3olzfKNEDnO4WQ1UTYy+wpbyhvNmcbeOiuvAECuOuqaf2q1F
+NBGR6RZ+xt516PhUnQG7qJV6o+s2spsxXahl3RLlrbRQOfQmDQzB4S4/sU8PZobd
+XwZIISeeKucMNA5zDlcMvjFLGoXAmhQF06j3T8hniFmBcYZxDrvzJfu/sLB5C+4h
+V4TCX98M2a32FLG4PP6M
+=eNIn
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__25_Mar_2013_17_20_35_+1100_1iDW93=VQb7Fu_FA--
