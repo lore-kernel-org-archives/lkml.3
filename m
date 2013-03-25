@@ -1,104 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758710Ab3CYRDj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 13:03:39 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:32823 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758635Ab3CYRDi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 13:03:38 -0400
-Date: Mon, 25 Mar 2013 10:02:57 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] nohz: Full dynticks base interface
-Message-ID: <20130325170257.GA24554@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1363879460-21595-1-git-send-email-fweisbec@gmail.com>
- <20130324081701.GA13328@gmail.com>
- <CAFTL4hx4FLaRR6i9ap9UrCZY4ikhVtLfUqWSsjTpsO3dvShUjQ@mail.gmail.com>
+	id S932363Ab3CYRFA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 13:05:00 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:47200 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758675Ab3CYRE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 13:04:58 -0400
+Date: Mon, 25 Mar 2013 11:04:48 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Andrew Murray'" <andrew.murray@arm.com>,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>
+Subject: Re: [PATCH 6/6] ARM: dts: Add pcie controller node for Samsung
+ EXYNOS5440 SoC
+Message-ID: <20130325170448.GB16690@obsidianresearch.com>
+References: <00c001ce277b$92b26ab0$b8174010$%han@samsung.com>
+ <00c501ce277c$30e49dc0$92add940$%han@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFTL4hx4FLaRR6i9ap9UrCZY4ikhVtLfUqWSsjTpsO3dvShUjQ@mail.gmail.com>
+In-Reply-To: <00c501ce277c$30e49dc0$92add940$%han@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032517-7408-0000-0000-00000E28C9AB
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 24, 2013 at 03:46:40PM +0100, Frederic Weisbecker wrote:
-> 2013/3/24 Ingo Molnar <mingo@kernel.org>:
-> >
-> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >
-> >> Hi Ingo,
-> >>
-> >> This settles the initial ground to start a special full dynticks tree in -tip
-> >> that we can iterate incrementally to accelerate the development.
-> >> It is based on tip:sched/core.
-> >>
-> >> I tried to rearrange a bit the naming. We are probably not yet done with
-> >> that but I guess we can fix it along with the rest.
-> >>
-> >> Please pull from:
-> >>
-> >> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> >>       full-dynticks-for-mingo
-> >>
-> >> Changes on these commits since they were part of 3.9-rc1-nohz1:
-> >>
-> >> * Force a timekeeping CPU over the full dynticks range
-> >> * Rename CONFIG_NO_HZ_FULL to CONFIG_NO_HZ_EXTENDED
-> >> * Following *_nohz_extended_* APIs renames
-> >> * Handle CPU hotplug for timekeeping
-> >> * Rename full_nohz= kernel parameter to nohz_extended=
-> >
-> > Note that boot parameters suck for pretty much any purpose but quirks -
-> > please also add a (default off!) Kconfig option to easily enable
-> > nohz_extended for all CPUs.
-> >
-> > That way I will be able to test it automatically via randconfig and such.
-> 
-> Sure, I'm adding such an option.
+On Sat, Mar 23, 2013 at 01:09:18PM +0900, Jingoo Han wrote:
 
-Hmmm...  This would be an option to make all but one CPU an adaptive-ticks
-CPU, right?  If so, this leads to the question of whether I should add a
-matching no-CBs Kconfig option.  My guess is "no", because the existing
-CONFIG_RCU_NOCB_CPU_ALL should work just fine -- there would be a CPU that
-was not an adaptive-ticks CPU, but does have its RCU callbacks offloaded.
+> +	pcie0@40000000 {
+> +		compatible = "samsung,exynos5440-pcie";
+> +		reg = <0x40000000 0x4000
+> +			0x290000 0x1000
+> +			0x270000 0x1000
+> +			0x271000 0x40>;
+> +		interrupts = <0 20 0>, <0 21 0>, <0 22 0>;
+> +		#address-cells = <3>;
+> +		#size-cells = <2>;
+> +		device_type = "pci";
+> +		bus-range = <0x0 0xf>;
+> +		ranges = <0x00000800 0 0x40000000 0x40000000 0 0x00200000   /* configuration space */
+> +			  0x81000000 0 0	  0x40200000 0 0x00004000   /* downstream I/O */
+> +			  0x82000000 0 0	  0x40204000 0 0x10000000>; /* non-prefetchable memory */
+> +	};
 
-Or am I missing something here?
+Can you send the lspci output so these bindings can be properly
+reviewed? What PCI devices are internal to the SOC?
 
-							Thanx, Paul
+What is behind 'exynos_pcie_wr_own_conf' ? Is this a root port bridge
+config space? What line is it in the lspci output? Can you include a
+lspci -vv for it as well?
 
-> > My next question/request after that would be: could we make sure that
-> > enabling this option does not break any applications or kernel
-> > functionality, ASAP? Once that is offered, it becomes pushable to v3.10 I
-> > think.
-> 
-> So that's already the case. I'm careful that, as we iterate, the
-> changes aren't supposed to break something in the middle. the final
-> code that eventually shuts the tick down should be the last one in the
-> series: once we know it is safe to do so.
-> 
-> >
-> > Meanwhile I have pulled your tree into tip:sched/nohz to stage and test
-> > it, in the hope that it becomes mergable quickly! :-)
-> 
-> Thanks! :)
-> 
+Your DT has overlapping bus-ranges, and two top level nodes. This is
+going to require separate PCI domains in Linux.
 
+However, based on your driver this HW looks similar to tegra, did you
+review how tegra is setup? Merging all the ports into a single domain
+is certainly preferred.
+
+> +	pcie1@60000000 {
+> +		compatible = "samsung,exynos5440-pcie";
+> +		reg = <0x60000000 0x4000
+> +			0x2a0000 0x1000
+> +			0x272000 0x1000
+> +			0x271040 0x40>;
+> +		interrupts = <0 23 0>, <0 24 0>, <0 25 0>;
+> +		#address-cells = <3>;
+> +		#size-cells = <2>;
+> +		device_type = "pci";
+> +		bus-range = <0x0 0xf>;
+> +		ranges = <0x00000800 0 0x60000000 0x60000000 0 0x00200000   /* configuration space */
+
+Do not include configuration space in ranges
+
+> +			  0x81000000 0 0	  0x60200000 0 0x00004000   /* downstream I/O */
+
+Please confirm that an MMIO to 0x60200000 produces a PCI-E IO TLP to
+address 0
+
+> +			  0x82000000 0 0	  0x60204000 0 0x10000000>; /* non-prefetchable memory */
+
+Please check this, generally it should be:
+
+			  0x82000000 0 0x60204000 0x60204000 0 0x10000000>; /* non-prefetchable memory */
+
+Reflecting an identity mapping for MMIO - eg MMIO access to 0x60204000
+producse a PCI Memory TLP to address 0x60204000 - unless your hardware
+is actually doing address translation (then there are other things to
+confirm..)
+
+It is usual to have an interrupt-map - have you tested that interrupts
+resolve properly?
+
+It looks like the INTx's should be routed by an interrupt-map to the
+pulse pin. Consider an interrupt controller to decode the INT ABCD.
+
+Regards,
+Jason
