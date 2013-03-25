@@ -1,90 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075Ab3CYLOU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 07:14:20 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8414 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755262Ab3CYLOS (ORCPT
+	id S1756296Ab3CYLOv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 07:14:51 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:37861 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab3CYLOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 07:14:18 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 25 Mar 2013 04:14:02 -0700
-Message-ID: <51503183.2010609@nvidia.com>
-Date: Mon, 25 Mar 2013 16:44:11 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 25 Mar 2013 07:14:48 -0400
+Message-ID: <51503188.8060706@huawei.com>
+Date: Mon, 25 Mar 2013 19:14:16 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: tegra: Don't enable PLLs during early boot
-References: <1363953308-28828-1-git-send-email-pdeschrijver@nvidia.com> <514C7D3B.40602@wwwdotorg.org> <20130325101542.GB18519@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20130325101542.GB18519@tbergstrom-lnx.Nvidia.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: "Luck, Tony" <tony.luck@intel.com>, <vgoyal@redhat.com>,
+        <hbabu@us.ibm.com>, <rob@landley.net>
+CC: <kexec@lists.infradead.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-ia64@vger.kernel.org>
+Subject: [PATCH] ia64/mm: add size restriction to the kdump
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 March 2013 03:45 PM, Peter De Schrijver wrote:
-> On Fri, Mar 22, 2013 at 04:48:11PM +0100, Stephen Warren wrote:
->> On 03/22/2013 05:54 AM, Peter De Schrijver wrote:
->>> The PLL code relies on udelay() which is not available when CCF is
->>> initialized. Hence we can't enable any PLL during this phase.
->>>
->>> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
->>>
->>> --
->>>
->>> Stephen,
->>>
->>> Can you confirm this is ok for the audio drivers?
->>>
->>> We used to be lucky that this has worked up to now, but I will introduce some
->>> changes to the pll lock check code which cause this to fail due to the
->>> slight differences in timing.
->> No, this won't work for the audio drivers; they assume the clock is
->> enabled when they start.
->>
->> This assumption was made long ago. I know drivers are supposed to assume
->> that clocks are disabled when they're probed, but historically that
->> wasn't always the case, so if the audio drivers assumed that, and then
->> did clk_enable() as the first thing, they got a warning due to the
->> enabling an already enabled clock and/or later attempts to disable the
-> That should be ok. You can enable a clock more than once.
->
->> clocks wouldn't actually disable them. Perhaps this has changed now, but
->> either way, audio driver changes would be needed to support this change.
->>
-> But indeed, the clock won't be disabled then when the driver does
-> clk_disable(). The reference count will just be decremented. That's however
-> not a functional problem, just not optimal from a power consumption point of
-> view. So we could change the drivers first and keep the clocks disabled at
-> boottime in a second phase.
->
->> Perhaps this is due to initializing the Tegra clock driver in the
->> machine descriptor's init_irq function, rather than in the init_machine
->> function? Can this be moved?
-> Maybe. But we need the clockframework before the timers are initialized...
-> So I have to check the dependencies.
+In efi_init() memory aligns in IA64_GRANULE_SIZE(16M). If set "crashkernel=1024M-:600M"
+and use sparse memory model, when crash kernel booting it changes [128M-728M] to [128M-720M].
 
-I have moved the initialization after slab allocator is initialized and 
-before timer initialization.
-This is later that it used to happen with our legacy framework or which 
-happens in our downstream kernel.
+But initrd memory is in [709M-727M], and virt_addr_valid() *can not* check the invalid pages
+when freeing initrd memory, because there are some pages missed at the end of the seciton,
+and this causes error.
 
-Isn't this problem observed in downstream kernel?
+...
+Unpacking initramfs...
+Freeing initrd memory: 19648kB freed
+BUG: Bad page state in process swapper  pfn:02d00
+page:e0000000102dd800 flags:(null) count:0 mapcount:1 mapping:(null) index:0
 
-May be we can split the clock initialization and move clock init from 
-table to some later stage.
+Call Trace:
+ [<a000000100018dc0>] show_stack+0x80/0xa0
+                                sp=e000000021e8fbd0 bsp=e000000021e81360
+ [<a00000010090fcc0>] dump_stack+0x30/0x50
+                                sp=e000000021e8fda0 bsp=e000000021e81348
+ [<a0000001001a3180>] bad_page+0x280/0x380
+                                sp=e000000021e8fda0 bsp=e000000021e81308
+ [<a0000001001a8740>] free_hot_cold_page+0x3a0/0x5c0
+                                sp=e000000021e8fda0 bsp=e000000021e812a0
+ [<a0000001001a8a50>] free_hot_page+0x30/0x60
+                                sp=e000000021e8fda0 bsp=e000000021e81280
+ [<a0000001001a8b30>] __free_pages+0xb0/0xe0
+                                sp=e000000021e8fda0 bsp=e000000021e81258
+ [<a0000001001a8c00>] free_pages+0xa0/0xc0
+                                sp=e000000021e8fda0 bsp=e000000021e81230
+ [<a000000100bb40c0>] free_initrd_mem+0x230/0x290
+                                sp=e000000021e8fda0 bsp=e000000021e811d8
+ [<a000000100ba6620>] populate_rootfs+0x1c0/0x280
+                                sp=e000000021e8fdb0 bsp=e000000021e811a0
+ [<a00000010000ac30>] do_one_initcall+0x3b0/0x3e0
+                                sp=e000000021e8fdb0 bsp=e000000021e81158
+ [<a000000100ba0a90>] kernel_init+0x3f0/0x4b0
+                                sp=e000000021e8fdb0 bsp=e000000021e81108
+ [<a000000100016890>] kernel_thread_helper+0xd0/0x100
+                                sp=e000000021e8fe30 bsp=e000000021e810e0
+ [<a00000010000a4c0>] start_kernel_thread+0x20/0x40
+                                sp=e000000021e8fe30 bsp=e000000021e810e0
+...
 
-> Cheers,
->
-> Peter.
+In "http://marc.info/?l=linux-arch&m=136147092429314&w=2" Tony said:
+"Perhaps in Documentation/kdump/kdump.txt (which the crashkernel entry
+in kernel-parameters.txt points at).  The ia64 section of kdump.txt
+notes that the start address will be rounded up to a GRANULE boundary,
+but doesn't talk about restrictions on the size."
+
+This patch add size restriction to the documentation of kdump.
+
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+---
+ Documentation/kdump/kdump.txt |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
+index 13f1aa0..9c7fd98 100644
+--- a/Documentation/kdump/kdump.txt
++++ b/Documentation/kdump/kdump.txt
+@@ -297,6 +297,7 @@ Boot into System Kernel
+    On ia64, 256M@256M is a generous value that typically works.
+    The region may be automatically placed on ia64, see the
+    dump-capture kernel config option notes above.
++   If use sparse memory, the size should be rounded to GRANULE boundaries.
+
+    On s390x, typically use "crashkernel=xxM". The value of xx is dependent
+    on the memory consumption of the kdump system. In general this is not
+-- 
+1.7.6.1
+
 
