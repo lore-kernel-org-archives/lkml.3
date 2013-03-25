@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756939Ab3CYKwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 06:52:23 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:56783 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756092Ab3CYKwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 06:52:22 -0400
-Date: Mon, 25 Mar 2013 11:52:11 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: Jingoo Han <jg1.han@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "'Magnus Damm'" <magnus.damm@gmail.com>,
-        "'Simon Horman'" <horms@verge.net.au>,
-        devicetree-discuss@lists.ozlabs.org,
-        "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH v3 3/3] backlight: as3711: add OF support
-In-Reply-To: <20130325101442.GJ18316@opensource.wolfsonmicro.com>
-Message-ID: <Pine.LNX.4.64.1303251151430.11549@axis700.grange>
-References: <1363968949-12151-1-git-send-email-g.liakhovetski@gmx.de>
- <1363968949-12151-4-git-send-email-g.liakhovetski@gmx.de>
- <00da01ce2917$54856ce0$fd9046a0$%han@samsung.com>
- <20130325101442.GJ18316@opensource.wolfsonmicro.com>
+	id S1757307Ab3CYKxw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 06:53:52 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:53857 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756146Ab3CYKxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 06:53:51 -0400
+Message-ID: <51502D29.1010307@ti.com>
+Date: Mon, 25 Mar 2013 16:25:37 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:k6UCtzae2GS8cuuil2IFw8byLdgfSNRckBatUlUt7Lt
- fdK3/2fG0odvHkGHY/q80rNjB6CbPDTL7hvPKDq2XYteMkpM0D
- PnGalVrZYk/IbmnMyXEEpN2tyjAdKJYBs7AfAKE7JmGvGIL7bj
- 07XNsG/YsZ5dWQfGv1Y/oZzUun3Run0YVeX4s8izYr8QA23mLL
- 6x7uRAAnPtLAS6tSlApG42Tdti+G0FpqM6BG/V54XH/g88DBt3
- ZVocV6ef+saezoM9Nbn5pPHI9VBzlaMPZooBG113gZqlrDfmTK
- Mu7mXLLypZPMP1ONM8MI3Yfe/VdJ1TPJa3AWp9VFMm08g0Z9lZ
- fWOyKvuoGoiOBZcf1rZapKEMQCwf/yjccE/mBdAXv1yrDvSp1J
- rcQJyjxdkhafw==
+To: Will Deacon <will.deacon@arm.com>
+CC: Will Deacon <will@willdeacon.co.uk>, Lokesh Vutla <lokeshvutla@ti.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] ARM: hw_breakpoint: Enable debug powerdown only if system
+ supports 'has_ossr'
+References: <51407120.7030709@ti.com> <51417E58.5050501@ti.com> <20130315050014.GA15706@tiny-lites> <5146B972.1010002@ti.com> <20130318150724.GC28585@mudshark.cambridge.arm.com> <514736D4.4070906@ti.com> <20130318170649.GA29585@mudshark.cambridge.arm.com> <5148082A.3060503@ti.com> <20130319102803.GB22452@mudshark.cambridge.arm.com> <515014A4.5020504@ti.com> <20130325104910.GE12110@mudshark.cambridge.arm.com>
+In-Reply-To: <20130325104910.GE12110@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Mar 2013, Mark Brown wrote:
-
-> On Mon, Mar 25, 2013 at 02:12:21PM +0900, Jingoo Han wrote:
-> > On Saturday, March 23, 2013 1:16 AM, Guennadi Liakhovetski wrote:
+On Monday 25 March 2013 04:19 PM, Will Deacon wrote:
+> On Mon, Mar 25, 2013 at 09:11:00AM +0000, Santosh Shilimkar wrote:
+>> Will,
 > 
-> > But, there is a typo in comment.
-> > > +		 * At least one su2-auto-curr* must be specified iff
-> > s/iff/if
+> Hi Santosh,
 > 
-> Are you sure that's a typo?  "Iff" is a bit of mathematical jargon
-> which means "if and only if" that's fairly often used in a computing
-> context.
+>> Are you going to send the patch for 3.9-rcx ? As I said before without the
+>> patch OMAP4 CPUILDE is unusable because of that debug noise and hence it
+>> will be good to get that patch in
+> 
+> It's in Russell's tree, so should be queued for mainline fairly soon.
+> 
+Thanks Will !!
 
-Thanks, Mark, that's exactly what I was trying to say there :)
+Regards
+Santosh
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
