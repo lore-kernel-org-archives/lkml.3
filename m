@@ -1,166 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758597Ab3CYPwr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 11:52:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4530 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758534Ab3CYPwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 11:52:46 -0400
-Date: Mon, 25 Mar 2013 16:51:55 +0100
-From: Anton Arapov <anton@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: Re: [PATCH 4/7] uretprobes: return probe entry, prepare_uretprobe()
-Message-ID: <20130325155155.GB2178@bandura.brq.redhat.com>
-References: <1363957745-6657-1-git-send-email-anton@redhat.com>
- <1363957745-6657-5-git-send-email-anton@redhat.com>
- <20130324152651.GC17037@redhat.com>
+	id S1758621Ab3CYPxo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 11:53:44 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:49086 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758602Ab3CYPxn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 11:53:43 -0400
+Message-ID: <51507301.3050601@surriel.com>
+Date: Mon, 25 Mar 2013 11:53:37 -0400
+From: Rik van Riel <riel@surriel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130324152651.GC17037@redhat.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Emmanuel Benisty <benisty.e@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, hhuang@redhat.com,
+        "Low, Jason" <jason.low2@hp.com>,
+        Michel Lespinasse <walken@google.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>
+Subject: Re: ipc,sem: sysv semaphore scalability
+References: <1363809337-29718-1-git-send-email-riel@surriel.com> <CA+i8gKKK_VxZtyyp1tqHnztd4++XyNXwbEEr-A29-J23PyuCfQ@mail.gmail.com> <CA+55aFzqBEX=cGGZJJsfNWcDwQcUOP7njEog-kZZLRxuDg8Tzg@mail.gmail.com> <CA+i8gK+h+FyPiOL85BPa-Pu8+bDw6LW60-oRoLHgP2AnzMADCA@mail.gmail.com> <CA+55aFxjGFi+gt3UwdVCVKP5riHSR=_qLkp0SovgW2zx+gcRow@mail.gmail.com> <CA+i8gKJuykoCk=O3qbDmmZXd=8U13wF7o_NzUviccaZoU6WLaA@mail.gmail.com> <CA+55aFwb9v9cUG4Ton3faO6xAD18JxxoTPcObXDV_5Zf3QQ=Kw@mail.gmail.com> <CA+i8gK+DNOk5tvRsVJFKyk0A2qOD_az7yJ5+3Y2xS=Ear1VkVA@mail.gmail.com> <51505881.5060409@surriel.com> <51505923.2070504@surriel.com> <CA+i8gKKOPkVRBjqQb8=9T_eyw_oF5jedKMqG1U=Kwa3OHsMW_g@mail.gmail.com>
+In-Reply-To: <CA+i8gKKOPkVRBjqQb8=9T_eyw_oF5jedKMqG1U=Kwa3OHsMW_g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 24, 2013 at 04:26:51PM +0100, Oleg Nesterov wrote:
-> On 03/22, Anton Arapov wrote:
-> >
-> >  void uprobe_free_utask(struct task_struct *t)
-> >  {
-> >  	struct uprobe_task *utask = t->utask;
-> > +	struct return_instance *ri, *tmp;
-> >
-> >  	if (!utask)
-> >  		return;
-> > @@ -1325,6 +1334,15 @@ void uprobe_free_utask(struct task_struct *t)
-> >  	if (utask->active_uprobe)
-> >  		put_uprobe(utask->active_uprobe);
-> >
-> > +	ri = utask->return_instances;
-> 
-> You also need to nullify ->return_instances before return, otherwise
-> it can be use-after-freed later.
-> 
-> uprobe_free_utask() can also be called when the task execs.
-> 
-> > +	while (ri) {
-> > +		put_uprobe(ri->uprobe);
-> > +
-> > +		tmp = ri;
-> > +		ri = ri->next;
-> > +		kfree(tmp);
-> > +	}
-> 
-> This is really minor, but I can't resist. Both put_uprobe() and kfree()
-> work with the same object, it would be more clean to use the same var.
-> Say,
-> 
-> 	while (ri) {
-> 		tmp = ri;
-> 		ri = ri->next;
-> 
-> 		put_uprobe(tmp->uprobe);
-> 		kfree(tmp);
-> 	}
-> 
-> > +static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
-> > +{
-> ...
-> > +
-> > +	prev_ret_vaddr = -1;
-> > +	if (utask->return_instances)
-> > +		prev_ret_vaddr = utask->return_instances->orig_ret_vaddr;
-> > +
-> > +	ri = kzalloc(sizeof(struct return_instance), GFP_KERNEL);
-> > +	if (!ri)
-> > +		return;
-> > +
-> > +	ri->dirty = false;
-> > +	trampoline_vaddr = get_trampoline_vaddr(area);
-> > +	ret_vaddr = arch_uretprobe_hijack_return_addr(trampoline_vaddr, regs);
-> > +
-> > +	/*
-> > +	 * We don't want to keep trampoline address in stack, rather keep the
-> > +	 * original return address of first caller thru all the consequent
-> > +	 * instances. This also makes breakpoint unwrapping easier.
-> > +	 */
-> > +	if (ret_vaddr == trampoline_vaddr) {
-> > +		if (likely(prev_ret_vaddr != -1)) {
-> > +			ri->dirty = true;
-> > +			ret_vaddr = prev_ret_vaddr;
-> > +		} else {
-> > +			/*
-> > +			 * This situation is not possible. Likely we have an
-> > +			 * attack from user-space. Die.
-> > +			 */
-> > +			printk(KERN_ERR "uprobe: something went wrong "
-> > +				"pid/tgid=%d/%d", current->pid, current->tgid);
-> > +			send_sig(SIGSEGV, current, 0);
-> > +			kfree(ri);
-> > +			return;
-> > +		}
-> > +	}
-> > +
-> > +	if (likely(ret_vaddr != -1)) {
-> > +		atomic_inc(&uprobe->ref);
-> > +		ri->uprobe = uprobe;
-> > +		ri->orig_ret_vaddr = ret_vaddr;
-> > +
-> > +		/* add instance to the stack */
-> > +		ri->next = utask->return_instances;
-> > +		utask->return_instances = ri;
-> > +
-> > +		return;
-> > +	}
-> > +
-> > +	kfree(ri);
-> > +}
-> 
-> Anton, this really doesn't look clear/clean. Why do you need prev_ret_vaddr
-> in advance? Why do you need it at all? why do you delay the "ret_vaddr == -1"
-> errorcheck?
-> 
-> And ->dirty looks confusing... perhaps ->chained ?
-> 
-> 		ri = kzalloc(...);
-> 		if (!ri)
-> 			return;
-> 
-> 		ret_vaddr = arch_uretprobe_hijack_return_addr(...);
-> 		if (ret_vaddr == -1)
-> 			goto err;
-> 
-> 		if (ret_vaddr == trampoline_vaddr) {
-> 			if (!utask->return_instances) {
-> 				// This situation is not possible.
-> 				// (not sure we should send SIGSEGV)
-> 				pr_warn(...);
-> 				goto err;
-> 			}
-> 
-> 			ri->chained = true;
-> 			ret_vaddr = utask->return_instances->orig_ret_vaddr;
-> 		}
-> 
-> 		fill-ri-and-add-push-it;
-> 		return;
-> 
-> 	err:
-> 		kfree(ri);
-> 		return;
+On 03/25/2013 11:20 AM, Emmanuel Benisty wrote:
+> On Mon, Mar 25, 2013 at 9:03 PM, Rik van Riel <riel@surriel.com> wrote:
+>>>> With the first four patches only, I got some X server freeze (just
+>>>> tried once).
+>>>
+>>>
+>>> Could you try booting with panic=1 so the kernel panics on the first
+>>> oops?
+>>
+>>
+>> Sorry that should be "oops=panic"
+>>
+>>
+>>> Maybe that way (if we are lucky) we will be able to capture the first
+>>> oops, and maybe get an idea of what causes the problem.
+>
+> Sorry Rik, I get all kind of weird behaviors (wireless dies, compiling
+> gets stuck and is impossible to kill, can't kill X) with the 4
+> patches+oops=panic but no trace. Here after is 7+1 patches with
+> oops=panic boot: http://i.imgur.com/1jep1qx.jpg
 
+This may be a stupid question, but you re-compile and re-install
+the kernel modules every time you changed the kernel?
 
-I will do the appropriate changes. Thanks!
+The behaviour you report with just the first four patches is so
+random, it sounds almost like a mismatched data structure between
+compiles...
 
-Anton.
-
-> Oleg.
-> 
+-- 
+All rights reversed.
