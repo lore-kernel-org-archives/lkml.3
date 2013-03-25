@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758493Ab3CYPlt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 11:41:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:30765 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758422Ab3CYPlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 11:41:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,905,1355126400"; 
-   d="scan'208";a="284269603"
-Message-ID: <51507136.4020308@linux.intel.com>
-Date: Mon, 25 Mar 2013 08:45:58 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1758525Ab3CYPnf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 11:43:35 -0400
+Received: from smtp-out-223.synserver.de ([212.40.185.223]:1037 "EHLO
+	smtp-out-223.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758470Ab3CYPne (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 11:43:34 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 9195
+Message-ID: <51507126.2040002@metafoo.de>
+Date: Mon, 25 Mar 2013 16:45:42 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-To: daniel.leung@linux.intel.com
-CC: jkosina@suse.cz, srinivas.pandruvada@intel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: hid-sensor-hub: do not process feature reports in
- raw_event
-References: <1363886546-6517-1-git-send-email-daniel.leung@linux.intel.com>
-In-Reply-To: <1363886546-6517-1-git-send-email-daniel.leung@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Paul Bolle <pebolle@tiscali.nl>, Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Blackfin: bf537: rename "CONFIG_ADT7310" and friends
+References: <1364211831.1390.285.camel@x61.thuisdomein> <20130325152258.GA17467@roeck-us.net>
+In-Reply-To: <20130325152258.GA17467@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel,
+On 03/25/2013 04:22 PM, Guenter Roeck wrote:
+> On Mon, Mar 25, 2013 at 12:43:51PM +0100, Paul Bolle wrote:
+>> The Kconfig symbol ADT7310 got removed in commit
+>> 2b0c856ad9571013db8fc369194b7108dff3c18e ("staging:iio: Consolidate
+>> adt7310 and adt7410 driver"). That commit did not touch the references
+>> to CONFIG_ADT7310 and CONFIG_ADT7310_MODULE in the BF537-STAMP code.
+>> Convert these now, to their ADT7410 equivalents.
+>>
+>> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+>> ---
+>> 0) Untested. This took a bit of guesswork. I guessed that multiple AD
+>> drivers can be enabled at the same time in this code. And I also guessed
+>> that the "adt7310" modalias is still correct.
+>>
+>> 1) If this passes testing it could go in stable (3.8.y).
+>>
+>>  arch/blackfin/mach-bf537/boards/stamp.c | 4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
+>> index 95114ed..23bb55d 100644
+>> --- a/arch/blackfin/mach-bf537/boards/stamp.c
+>> +++ b/arch/blackfin/mach-bf537/boards/stamp.c
+>> @@ -700,7 +700,7 @@ static struct bfin5xx_spi_chip ad7816_spi_chip_info = {
+>>  };
+>>  #endif
+>>  
+>> -#if defined(CONFIG_ADT7310) || defined(CONFIG_ADT7310_MODULE)
+>> +#if defined(CONFIG_ADT7410) || defined(CONFIG_ADT7410_MODULE)
+> 
+> It might be easier and more future-proof to just drop the conditional.
+> If the driver isn't there, it won't be loaded anyway. It would also make
+> back-porting much easier.
+> 
+> Guenter
 
-I am looking at 3.9.rc1.
-The only place I see the raw_event callback is called from 
-hid/hid_input_report(). hid_input_report is called with type 
-HID_INPUT_REPORT in all cases, except hid_ctrl(), where it can be 
-different depending on xx.report->type. But here, the return value is 
-not checked.
 
-Do you know the call chain for HID_FETURE_REPORT, where this is creating 
-problem?
+The situation is unfortunately really messy. The issue is that these are
+add-on board and the same SPI chip select pin is used for multiple devices.
+If we add the spi_board_info for all devices unconditionally the SPI core
+will scream at us because we tried to register multiple devices with the
+same chip select pin and none of the devices gets actually registered.
 
-Thanks,
-Srinivas
-
-On 03/21/2013 10:22 AM, daniel.leung@linux.intel.com wrote:
-> From: Daniel Leung <daniel.leung@linux.intel.com>
->
-> In sensor_hub_raw_event(), HID feature reports are ignored but are
-> still marked as processed. This causes the in-kernel struct not to be
-> updated. Any non-updated fields in the feature reports are zero, and
-> they are being sent to the device. This causes confusion in the
-> sensor hub firmware, and some sensors are not powered up as a result.
->
-> This changes the raw_event rountine to only process input reports,
-> and let the hid core handle the incoming feature reports.
->
-> The issue has been observed on Acer Iconia W700.
->
-> Signed-off-by: Daniel Leung <daniel.leung@linux.intel.com>
-> ---
->   drivers/hid/hid-sensor-hub.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
-> index ca749810..3f7df68 100644
-> --- a/drivers/hid/hid-sensor-hub.c
-> +++ b/drivers/hid/hid-sensor-hub.c
-> @@ -413,7 +413,7 @@ static int sensor_hub_raw_event(struct hid_device *hdev,
->   			 report->id, size, report->type);
->   	hid_dbg(hdev, "maxfield:%d\n", report->maxfield);
->   	if (report->type != HID_INPUT_REPORT)
-> -		return 1;
-> +		return 0;
->   
->   	ptr = raw_data;
->   	ptr++; /*Skip report id*/
-
+- Lars
