@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab3CYBP4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:15:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33940 "EHLO
+	id S1757304Ab3CYBap (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:30:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33958 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755942Ab3CYBPx (ORCPT
+	by vger.kernel.org with ESMTP id S1755964Ab3CYBP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:53 -0400
-Message-Id: <20130325010531.791492307@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:56 -0400
+Message-Id: <20130325010532.304885756@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:40 +0000
+Date: Mon, 25 Mar 2013 01:06:45 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Seth Forshee <seth.forshee@canonical.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [ 076/104] efivars: Fix check for CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE
+Cc: akpm@linux-foundation.org, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 081/104] USB: garmin_gps: fix memory leak on disconnect
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,29 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit ca0ba26fbbd2d81c43085df49ce0abfe34535a90 upstream.
+commit 618aa1068df29c37a58045fe940f9106664153fd upstream.
 
-The 'CONFIG_' prefix is not implicit in IS_ENABLED().
+Remove bogus disconnect test introduced by 95bef012e ("USB: more serial
+drivers writing after disconnect") which prevented queued data from
+being freed on disconnect.
 
+The possible IO it was supposed to prevent is long gone.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Seth Forshee <seth.forshee@canonical.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- drivers/firmware/efivars.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/garmin_gps.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -93,7 +93,7 @@ MODULE_VERSION(EFIVARS_VERSION);
- #define DUMP_NAME_LEN 52
+--- a/drivers/usb/serial/garmin_gps.c
++++ b/drivers/usb/serial/garmin_gps.c
+@@ -973,10 +973,7 @@ static void garmin_close(struct usb_seri
+ 	if (!serial)
+ 		return;
  
- static bool efivars_pstore_disable =
--	IS_ENABLED(EFI_VARS_PSTORE_DEFAULT_DISABLE);
-+	IS_ENABLED(CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE);
+-	mutex_lock(&port->serial->disc_mutex);
+-
+-	if (!port->serial->disconnected)
+-		garmin_clear(garmin_data_p);
++	garmin_clear(garmin_data_p);
  
- module_param_named(pstore_disable, efivars_pstore_disable, bool, 0644);
+ 	/* shutdown our urbs */
+ 	usb_kill_urb(port->read_urb);
+@@ -985,8 +982,6 @@ static void garmin_close(struct usb_seri
+ 	/* keep reset state so we know that we must start a new session */
+ 	if (garmin_data_p->state != STATE_RESET)
+ 		garmin_data_p->state = STATE_DISCONNECTED;
+-
+-	mutex_unlock(&port->serial->disc_mutex);
+ }
+ 
  
 
 
