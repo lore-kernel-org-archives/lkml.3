@@ -1,126 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457Ab3CYJtc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 05:49:32 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5548 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755212Ab3CYJta (ORCPT
+	id S1756394Ab3CYJvF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 05:51:05 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:28857 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971Ab3CYJvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 05:49:30 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 25 Mar 2013 02:49:02 -0700
-Message-ID: <51501CFB.4020905@nvidia.com>
-Date: Mon, 25 Mar 2013 15:16:35 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: "balbi@ti.com" <balbi@ti.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "s-guiriec@ti.com" <s-guiriec@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v3] USB: PHY: Palmas USB Transceiver Driver
-References: <1362662506-14823-4-git-send-email-kishon@ti.com> <1364203926-24488-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1364203926-24488-1-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Mar 2013 05:51:03 -0400
+X-AuditID: cbfee690-b7f656d0000007e3-26-51501df03ef0
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Doug Anderson'" <dianders@chromium.org>
+Cc: "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Stephen Warren'" <swarren@nvidia.com>,
+        "'Changhwan Youn'" <chaos.youn@samsung.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Olof Johansson'" <olof@lixom.net>,
+        "'Simon Glass'" <sjg@chromium.org>,
+        "'John Stultz'" <john.stultz@linaro.org>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+References: <1363967587-19154-1-git-send-email-dianders@chromium.org>
+In-reply-to: <1363967587-19154-1-git-send-email-dianders@chromium.org>
+Subject: RE: [PATCH] ARM: EXYNOS: Add missing semicolons in exynos_mct.c
+Date: Mon, 25 Mar 2013 18:50:40 +0900
+Message-id: <177201ce293e$35753cf0$a05fb6d0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4nFYzHc5cbeMU/TPm/xNx7B7wcdwB5fXaw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+Zge4H2YBAg64P6hZ/Jx1jt2hvULR4
+	eUjT4uyyg2wWZ37rWlzeNYfN4tT1z2wW37ZsY7S4Mb2F1WLzpqnMFsdmLGF04Pb4/WsSo8fs
+	hossHneu7WHzeHfuHLvHlRNNrB69ze/YPPq2rGL0+LxJLoAjissmJTUnsyy1SN8ugSuje9Vh
+	toJb3BW3Fzs2MH7k7GLk5JAQMJHY/283K4QtJnHh3nq2LkYuDiGBZYwSL5/eYYcp2n1iMitE
+	YjqjxJmG68wQzl9GiWf737KAVLEJaEgcfv8MrENEQFvi5YOVYEXMAg+YJB4dO8AEkhAScJW4
+	8XYRmM0p4CbxtG0WI4gtLOAhcfTwXrA7WARUJVavms8MYvMK2Eq0nL/FCmELSvyYfA9sGbOA
+	lsT6nceZIGx5ic1r3gLVcwCdqi7x6K8uxA1GEqt7e9khSkQk9r14xwhyj4TAXA6JbXd+s0Ps
+	EpD4NvkQC0SvrMSmA8wQH0tKHFxxg2UCo8QsJJtnIdk8C8nmWUhWLGBkWcUomlqQXFCclF5k
+	olecmFtcmpeul5yfu4kREv8TdjDeO2B9iDEZaP1EZinR5Hxg+sgriTc0NjOyMDUxNTYytzQj
+	TVhJnFe9xTpQSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6Pljx3fP/hqnU/YdIP56/NVdhb3
+	HnfI/yj3nKnNIHHI/WXXOm7WXEnNCy/tVtuf5PNqbDwZJ+yrPvVRMXNQorpEuHSH0erpKoVl
+	GjHB/yWuyD0vnmddcnYHZ0PfvoO7678zPoroqYt7fXD3z5fZxxQf3L+07JXr0+yG/EdSLx/E
+	1Sve/pZq76TEUpyRaKjFXFScCACHtrqUFQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPKsWRmVeSWpSXmKPExsVy+t9jQd0PsgGBBh0blSz+TjrGbtHeoGjx
+	8pCmxdllB9kszvzWtbi8aw6bxanrn9ksvm3ZxmhxY3oLq8XmTVOZLY7NWMLowO3x+9ckRo/Z
+	DRdZPO5c28Pm8e7cOXaPKyeaWD16m9+xefRtWcXo8XmTXABHVAOjTUZqYkpqkUJqXnJ+SmZe
+	uq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QnUoKZYk5pUChgMTiYiV9O0wTQkPc
+	dC1gGiN0fUOC4HqMDNBAwjrGjO5Vh9kKbnFX3F7s2MD4kbOLkZNDQsBEYveJyawQtpjEhXvr
+	2boYuTiEBKYzSpxpuM4M4fxllHi2/y0LSBWbgIbE4ffP2EFsEQFtiZcPVoIVMQs8YJJ4dOwA
+	E0hCSMBV4sbbRWA2p4CbxNO2WYwgtrCAh8TRw3vB1rEIqEqsXjWfGcTmFbCVaDl/ixXCFpT4
+	Mfke2DJmAS2J9TuPM0HY8hKb17wFqucAOlVd4tFfXYgbjCRW9/ayQ5SISOx78Y5xAqPQLCST
+	ZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECE4uz6R2MK5ssDjEKMDB
+	qMTDK1DjHyjEmlhWXJl7iFGCg1lJhFdLKCBQiDclsbIqtSg/vqg0J7X4EGMy0KMTmaVEk/OB
+	iS+vJN7Q2MTMyNLIzMLIxNycNGElcd4DrdaBQgLpiSWp2ampBalFMFuYODilGhhXOi3Pf/hw
+	65+7yazd5f/0E2bu8basL9w1M2x2Y5bX9r+sx34rNS9q/Nm95/TFwN/8pwt2KHe6vfr6xe6Y
+	/ssL9ydPOsbDF/4g9rzFbxezsCWPpma+37o4/kU/42tRUZbXEqkfd+V8eKjgvo595camU9Ou
+	iy+zd/zzcnXYH9V7N/inKrjecZbarcRSnJFoqMVcVJwIAFHdW7FyAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 March 2013 03:02 PM, Kishon Vijay Abraham I wrote:
-> From: Graeme Gregory <gg@slimlogic.co.uk>
->
-> This is the driver for the OTG transceiver built into the Palmas chip. It
-> handles the various USB OTG events that can be generated by cable
-> insertion/removal.
->
-> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> Signed-off-by: Moiz Sonasath <m-sonasath@ti.com>
-> Signed-off-by: Ruchika Kharwar <ruchika@ti.com>
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> Signed-off-by: Sebastien Guiriec <s-guiriec@ti.com>
+Doug Anderson wrote:
+> 
+> The CLOCKSOURCE_OF_DECLARE lines were added without a semicolon at the
+> end.  On my system this causes a compile-time error that looks like:
+> 
+>  .../drivers/clocksource/exynos_mct.c:557:202: warning: comparison of
+> distinct pointer types lacks a cast [enabled by default]
+>  .../drivers/clocksource/exynos_mct.c:558:1: error: expected ',' or ';'
+> before 'static'
+> 
+> The error didn't show up till now because there was an extra semicolon
+
+Yeah.
+
+> at end of the CLOCKSOURCE_OF_DECLARE definition that was removed by
+> Arnd Bergmann in "clocksource: make CLOCKSOURCE_OF_DECLARE type safe"
+> 
+OK, thanks.
+
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 > ---
+>  drivers/clocksource/exynos_mct.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/clocksource/exynos_mct.c
+> b/drivers/clocksource/exynos_mct.c
+> index 203ac05..106228d 100644
+> --- a/drivers/clocksource/exynos_mct.c
+> +++ b/drivers/clocksource/exynos_mct.c
+> @@ -554,5 +554,5 @@ void __init mct_init(void)
+>  	exynos4_clocksource_init();
+>  	exynos4_clockevent_init();
+>  }
+> -CLOCKSOURCE_OF_DECLARE(exynos4210, "samsung,exynos4210-mct", mct_init)
+> -CLOCKSOURCE_OF_DECLARE(exynos4412, "samsung,exynos4412-mct", mct_init)
+> +CLOCKSOURCE_OF_DECLARE(exynos4210, "samsung,exynos4210-mct", mct_init);
+> +CLOCKSOURCE_OF_DECLARE(exynos4412, "samsung,exynos4412-mct", mct_init);
+> --
+> 1.8.1.3
 
-I think this driver is more over the cable connection like vbus 
-detetcion or ID pin detection.
-Then why not it is implemented based on extcon framework?
+Applied, thanks.
 
-That way, generic usb driver (like tegra_usb driver) will get 
-notification through extcon.
-
-We need this cable detection through extcon on our tegra solution 
-through the Palmas.
-
-
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+
-+static int palmas_usb_read(struct palmas *palmas, unsigned int reg,
-+               unsigned int *dest)
-+{
-+       unsigned int addr;
-+       int slave;
-+
-+       slave = PALMAS_BASE_TO_SLAVE(PALMAS_USB_OTG_BASE);
-+       addr = PALMAS_BASE_TO_REG(PALMAS_USB_OTG_BASE, reg);
-+
-+       return regmap_read(palmas->regmap[slave], addr, dest);
-
-
-Please use the generic api for palmas_read()/palmas_write(0 as it will 
-be ease on debugging on register access.
-Direct regmap_read() does not help much on this.
-
-> +}
-> +
-> +static int palmas_usb_write(struct palmas *palmas, unsigned int reg,
-> +               unsigned int data)
-> +{
-> +       unsigned int addr;
-> +       int slave;
-> +
-> +       slave = PALMAS_BASE_TO_SLAVE(PALMAS_USB_OTG_BASE);
-> +       addr = PALMAS_BASE_TO_REG(PALMAS_USB_OTG_BASE, reg);
-> +
-> +       return regmap_write(palmas->regmap[slave], addr, data);
-
-Same as above.
-
-
-
-> +
-> +       if (status != OMAP_DWC3_UNKNOWN) {
-> +               palmas_usb->linkstat = status;
-> +               palmas_usb->mailboxstat = dwc3_omap_mailbox(status);
-Omap specific call, why? This is generic palma driver.
-
-
-> +
-
-> +       palmas_usb->dev         = &pdev->dev;
-> +
-> +       palmas_usb->irq1 = regmap_irq_get_virq(palmas->irq_data,
-> +                                               PALMAS_ID_OTG_IRQ);
-> +       palmas_usb->irq2 = regmap_irq_get_virq(palmas->irq_data,
-> +                                               PALMAS_ID_IRQ);
-> +       palmas_usb->irq3 = regmap_irq_get_virq(palmas->irq_data,
-> +                                               PALMAS_VBUS_OTG_IRQ);
-> +       palmas_usb->irq4 = regmap_irq_get_virq(palmas->irq_data,
-> +                                               PALMAS_VBUS_IRQ);
-
-Should be come from platform_get_irq() through platform driver.
-
-
+- Kukjin
 
