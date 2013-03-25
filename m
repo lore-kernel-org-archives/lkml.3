@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054Ab3CYB0u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:26:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34037 "EHLO
+	id S1757124Ab3CYB11 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:27:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34026 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756057Ab3CYBQI (ORCPT
+	by vger.kernel.org with ESMTP id S1756120Ab3CYBQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:08 -0400
-Message-Id: <20130325010529.642960311@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:07 -0400
+Message-Id: <20130325010530.122444643@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:18 +0000
+Date: Mon, 25 Mar 2013 01:06:23 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org,
         "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-Subject: [ 054/104] tracing: Fix race in snapshot swapping
+Subject: [ 059/104] tracing: Protect tracer flags with trace_types_lock
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -31,48 +31,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 2721e72dd10f71a3ba90f59781becf02638aa0d9 upstream.
+commit 69d34da2984c95b33ea21518227e1f9470f11d95 upstream.
 
-Although the swap is wrapped with a spin_lock, the assignment
-of the temp buffer used to swap is not within that lock.
-It needs to be moved into that lock, otherwise two swaps
-happening on two different CPUs, can end up using the wrong
-temp buffer to assign in the swap.
+Seems that the tracer flags have never been protected from
+synchronous writes. Luckily, admins don't usually modify the
+tracing flags via two different tasks. But if scripts were to
+be used to modify them, then they could get corrupted.
 
-Luckily, all current callers of the swap function appear to have
-their own locks. But in case something is added that allows two
-different callers to call the swap, then there's a chance that
-this race can trigger and corrupt the buffers.
-
-New code is coming soon that will allow for this race to trigger.
-
-I've Cc'd stable, so this bug will not show up if someone backports
-one of the changes that can trigger this bug.
+Move the trace_types_lock that protects against tracers changing
+to also protect the flags being set.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[bwh: Backported to 3.2: also move failure return in
+ tracing_trace_options_write() after unlocking]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/trace/trace.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -652,7 +652,7 @@ __update_max_tr(struct trace_array *tr,
- void
- update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
- {
--	struct ring_buffer *buf = tr->buffer;
-+	struct ring_buffer *buf;
+@@ -2661,7 +2661,7 @@ tracing_trace_options_write(struct file
+ 	char buf[64];
+ 	char *cmp;
+ 	int neg = 0;
+-	int ret;
++	int ret = 0;
+ 	int i;
  
- 	if (trace_stop_count)
- 		return;
-@@ -664,6 +664,7 @@ update_max_tr(struct trace_array *tr, st
+ 	if (cnt >= sizeof(buf))
+@@ -2678,6 +2678,8 @@ tracing_trace_options_write(struct file
+ 		cmp += 2;
  	}
- 	arch_spin_lock(&ftrace_max_lock);
  
-+	buf = tr->buffer;
- 	tr->buffer = max_tr.buffer;
- 	max_tr.buffer = buf;
++	mutex_lock(&trace_types_lock);
++
+ 	for (i = 0; trace_options[i]; i++) {
+ 		if (strcmp(cmp, trace_options[i]) == 0) {
+ 			set_tracer_flags(1 << i, !neg);
+@@ -2686,13 +2688,13 @@ tracing_trace_options_write(struct file
+ 	}
+ 
+ 	/* If no option could be set, test the specific tracer options */
+-	if (!trace_options[i]) {
+-		mutex_lock(&trace_types_lock);
++	if (!trace_options[i])
+ 		ret = set_tracer_option(current_trace, cmp, neg);
+-		mutex_unlock(&trace_types_lock);
+-		if (ret)
+-			return ret;
+-	}
++
++	mutex_unlock(&trace_types_lock);
++
++	if (ret)
++		return ret;
+ 
+ 	*ppos += cnt;
+ 
+@@ -4379,7 +4381,10 @@ trace_options_core_write(struct file *fi
+ 
+ 	if (val != 0 && val != 1)
+ 		return -EINVAL;
++
++	mutex_lock(&trace_types_lock);
+ 	set_tracer_flags(1 << index, val);
++	mutex_unlock(&trace_types_lock);
+ 
+ 	*ppos += cnt;
  
 
 
