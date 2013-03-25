@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845Ab3CYC2I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 22:28:08 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:30535 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755790Ab3CYC2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 22:28:06 -0400
-X-IronPort-AV: E=Sophos;i="4.87,342,1363104000"; 
-   d="scan'208";a="6935187"
-Message-ID: <514FB24F.8080104@cn.fujitsu.com>
-Date: Mon, 25 Mar 2013 10:11:27 +0800
-From: Lin Feng <linfeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>, Russ Anderson <rja@sgi.com>
-CC: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com
-Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
-References: <20130318155619.GA18828@sgi.com> <20130321105516.GC18484@gmail.com> <alpine.DEB.2.02.1303211139110.3775@chino.kir.corp.google.com> <20130322072532.GC10608@gmail.com> <20130323152948.GA3036@sgi.com> <CAE9FiQUjVRUs02-ymmtO+5+SgqTWK8Ae6jJwD08uRbgR=eLJgw@mail.gmail.com>
-In-Reply-To: <CAE9FiQUjVRUs02-ymmtO+5+SgqTWK8Ae6jJwD08uRbgR=eLJgw@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/25 10:08:33,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/25 10:08:52,
-	Serialize complete at 2013/03/25 10:08:52
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755896Ab3CYCcu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 22:32:50 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41337 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755674Ab3CYCcs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 22:32:48 -0400
+Date: Mon, 25 Mar 2013 13:32:33 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>
+Subject: linux-next: manual merge of the kvm tree with the  tree
+Message-Id: <20130325133233.0ae2af5bf7e25dca9c3999ba@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__25_Mar_2013_13_32_33_+1100_1gdbcvePjnMfTsyV"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__25_Mar_2013_13_32_33_+1100_1gdbcvePjnMfTsyV
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
-On 03/24/2013 04:37 AM, Yinghai Lu wrote:
-> +#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
-> +int __init_memblock memblock_search_pfn_nid(unsigned long pfn,
-> +			 unsigned long *start_pfn, unsigned long *end_pfn)
-> +{
-> +	struct memblock_type *type = &memblock.memory;
-> +	int mid = memblock_search(type, (phys_addr_t)pfn << PAGE_SHIFT);
+Today's linux-next merge of the kvm tree got a conflict in
+drivers/s390/kvm/virtio_ccw.c between commit 9d0ca6ed6f2f ("virtio:
+remove obsolete virtqueue_get_queue_index()") from the net-next tree and
+commit 07e169335ff0 ("virtio_ccw: pass a cookie value to kvm hypercall")
+from the kvm tree.
 
-I'm really eager to see how much time can we save using binary search compared to
-linear search in this case :)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-(quote)
-> A 4 TB (single rack) UV1 system takes 512 seconds to get through
-> the zone code.  This performance optimization reduces the time
-> by 189 seconds, a 36% improvement.
->
-> A 2 TB (single rack) UV2 system goes from 212.7 seconds to 99.8 seconds,
-> a 112.9 second (53%) reduction.
-(quote)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-thanks,
-linfeng
+diff --cc drivers/s390/kvm/virtio_ccw.c
+index fb877b59,42d507c..0000000
+--- a/drivers/s390/kvm/virtio_ccw.c
++++ b/drivers/s390/kvm/virtio_ccw.c
+@@@ -166,7 -167,8 +167,7 @@@ static void virtio_ccw_kvm_notify(struc
+ =20
+  	vcdev =3D to_vc_device(info->vq->vdev);
+  	ccw_device_get_schid(vcdev->cdev, &schid);
+- 	do_kvm_notify(schid, vq->index);
+ -	info->cookie =3D do_kvm_notify(schid, virtqueue_get_queue_index(vq),
+ -				     info->cookie);
+++	info->cookie =3D do_kvm_notify(schid, vq->index, info->cookie);
+  }
+ =20
+  static int virtio_ccw_read_vq_conf(struct virtio_ccw_device *vcdev,
+
+--Signature=_Mon__25_Mar_2013_13_32_33_+1100_1gdbcvePjnMfTsyV
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRT7dBAAoJEECxmPOUX5FEP+cP/1nKRZrmAQdVUwZZjUg4HrfO
+89FViPfO1YI3RYYCoyGLyj8Krx/KBvyKggBKB5CIevdc3BY0igUgXrdoNptaXQg2
+iR+46Ea9vj2AGKrZV40qFHEN4xIX6SVmRvpnLXb44boyVLtoylheTYt7+avvtc14
+UrcL+nAQeL8DczRzJjQ/9FSDfYjisC1M/4Qc1Z8YAqD1spziROdpvLTsX5Yci2pr
+0rkMoi6FVQENZFbzUtWqovbBeN6mkLiW8oqPahw/IcJkDk+WfNo3h9xt1se4c5oN
+tyS9C9/X7m3c+vtpoJy5F1YryyJwO4CvNO/RLUPpclq9kLKM3rE6k/hUIIw2r82o
+lDBKxhvr4FtZHHz8rYrH/bkpi/IHbXKDD61aiNMKEFBGsDSg6Je8uYnKq8rIpRW7
+nTycS+4vEzSbz1kT/BM0RHfv4ggvG1EueCv4rYoIlKo5lQV16uykRiCDaTtRqcRt
+xJfgPt3zQxaiIe0xlZTddPeeadI2EFTDIGDBwL/3tsRX9q43sa+LseyhgomY+RmL
+paVivi/C0/29dlnbn4l8x0ABMhF4yQDkfzL9jilr4H/Ydji7KdnIZsqH12pT1HM/
+1nLJ5osT5o5ociAzN6WMEwdOSxqF/MnDbCJA7s0MzHdQHZbzZY5443O3xLpZ8Zv+
+QzNatC67sKuV4Vmu5dI2
+=y4WA
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__25_Mar_2013_13_32_33_+1100_1gdbcvePjnMfTsyV--
