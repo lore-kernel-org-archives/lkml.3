@@ -1,100 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757773Ab3CYJJL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 05:09:11 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53304 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757742Ab3CYJJJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 05:09:09 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-b4-5150142fbc9e
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, wcohen@redhat.com
-Subject: [PATCH] perf report: Add --no-demangle option
-Date: Mon, 25 Mar 2013 18:08:56 +0900
-Message-Id: <1364202536-17576-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-X-Brightmail-Tracker: AAAAAA==
+	id S1758019Ab3CYJKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 05:10:20 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39220 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757807Ab3CYJKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 05:10:17 -0400
+Message-ID: <515014A4.5020504@ti.com>
+Date: Mon, 25 Mar 2013 14:41:00 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: Will Deacon <will@willdeacon.co.uk>, Lokesh Vutla <lokeshvutla@ti.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] ARM: hw_breakpoint: Enable debug powerdown only if system
+ supports 'has_ossr'
+References: <1363157553-21085-1-git-send-email-lokeshvutla@ti.com> <51406BA7.8010306@arm.com> <51407120.7030709@ti.com> <51417E58.5050501@ti.com> <20130315050014.GA15706@tiny-lites> <5146B972.1010002@ti.com> <20130318150724.GC28585@mudshark.cambridge.arm.com> <514736D4.4070906@ti.com> <20130318170649.GA29585@mudshark.cambridge.arm.com> <5148082A.3060503@ti.com> <20130319102803.GB22452@mudshark.cambridge.arm.com>
+In-Reply-To: <20130319102803.GB22452@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Will,
 
-It's sometimes useful to see undemangled raw symbol name for example
-other tools using the perf output to do manipulation of binaries.
+On Tuesday 19 March 2013 03:58 PM, Will Deacon wrote:
+> On Tue, Mar 19, 2013 at 06:39:38AM +0000, Santosh Shilimkar wrote:
+>> On Monday 18 March 2013 10:36 PM, Will Deacon wrote:
 
-Suggested-by: William Cohen <wcohen@redhat.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-report.c  | 2 ++
- tools/perf/util/symbol-elf.c | 9 ++++++---
- tools/perf/util/symbol.c     | 1 +
- tools/perf/util/symbol.h     | 3 ++-
- 4 files changed, 11 insertions(+), 4 deletions(-)
+[..]
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 296bd219977a..b5ea26cc7eb1 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -692,6 +692,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "use branch records for histogram filling", parse_branch_mode),
- 	OPT_STRING(0, "objdump", &objdump_path, "path",
- 		   "objdump binary to use for disassembly and annotations"),
-+	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
-+		    "Disable symbol demangling"),
- 	OPT_END()
- 	};
- 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 54efcb5659ac..4b12bf850325 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -806,9 +806,12 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 		 * DWARF DW_compile_unit has this, but we don't always have access
- 		 * to it...
- 		 */
--		demangled = bfd_demangle(NULL, elf_name, DMGL_PARAMS | DMGL_ANSI);
--		if (demangled != NULL)
--			elf_name = demangled;
-+		if (symbol_conf.demangle) {
-+			demangled = bfd_demangle(NULL, elf_name,
-+						 DMGL_PARAMS | DMGL_ANSI);
-+			if (demangled != NULL)
-+				elf_name = demangled;
-+		}
- new_symbol:
- 		f = symbol__new(sym.st_value, sym.st_size,
- 				GELF_ST_BIND(sym.st_info), elf_name);
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index e6432d85b43d..8cf3b5426a9a 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -36,6 +36,7 @@ struct symbol_conf symbol_conf = {
- 	.use_modules	  = true,
- 	.try_vmlinux_path = true,
- 	.annotate_src	  = true,
-+	.demangle	  = true,
- 	.symfs            = "",
- };
- 
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index b62ca37c4b77..d7654c23861a 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -97,7 +97,8 @@ struct symbol_conf {
- 			kptr_restrict,
- 			annotate_asm_raw,
- 			annotate_src,
--			event_group;
-+			event_group,
-+			demangle;
- 	const char	*vmlinux_name,
- 			*kallsyms_name,
- 			*source_prefix,
--- 
-1.7.11.7
+>>> Well, we could just add the warn_once prints but that doesn't stop debug
+>>> from breaking after the first pm/suspend/hotplug operation.
+>>>
+>> Probably we should drop the $subject patch approach and use warn_once
+>> at least for current rc. Ofcourse it doesn't help to get working
+>> hw_breakpoint support. Patch end of the email with warn_once.
+> 
+> Yeah, I'll merge that, but it's a real shame that this breaks hardware debug
+> on one of the few platforms where it was reported to work.
+> 
+Are you going to send the patch for 3.9-rcx ? As I said before without the
+patch OMAP4 CPUILDE is unusable because of that debug noise and hence it
+will be good to get that patch in
 
+Regards,
+Santosh
