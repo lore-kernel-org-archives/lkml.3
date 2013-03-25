@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933569Ab3CYW1f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 18:27:35 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:41643 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933513Ab3CYW1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 18:27:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Accardi, Kristen C" <kristen.c.accardi@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] PCI / ACPI: Always resume devices on ACPI wakeup notifications
-Date: Mon, 25 Mar 2013 23:34:59 +0100
-Message-ID: <1467919.Hcd6xNPBOK@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130325164551.GA6869@xanatos>
-References: <2282655.IicBMMa6jN@vostro.rjw.lan> <20130325164551.GA6869@xanatos>
+	id S933598Ab3CYWgq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 18:36:46 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61767 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933435Ab3CYWgo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 18:36:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCH] ARM: convert arm/arm64 arch timer to use CLKSRC_OF init
+Date: Mon, 25 Mar 2013 22:36:23 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Simon Horman <horms@verge.net.au>,
+        John Stultz <john.stultz@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+References: <1363818875-15978-1-git-send-email-robherring2@gmail.com> <20130325172633.GP30923@n2100.arm.linux.org.uk> <5150C16A.3040208@gmail.com>
+In-Reply-To: <5150C16A.3040208@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303252236.23270.arnd@arndb.de>
+X-Provags-ID: V02:K0:kSco9x/x/mz2MiK5TsT5jRoAWXWrgNUiEfw4GKCOHVT
+ Fst19shejWel4rMLujHvtxiawXh9SxsOQZ7Vr3t/P9uPDG5X9k
+ gIs93c3FxX+z1gAanNWIokA5lZWiDpuoFsT0CV154PEhWpgXUZ
+ 50hi6LzBfjldE98WWlfgqVub34b3W53jEKcMX5BlNtpHNO1VAG
+ mHXovKWhvxyHca7SPkUA6oldA+hYAlXBjgZF2CuS37ex7bUT8R
+ KHIJQ5Yi3/bJZzhIa1SGKWThDwq4nJWgGmiWfriR4/AD8RDE5c
+ TU70qRu4R9ROS4tcThcyr3fRlIcMSmcqRQdfW9h9TXtVRFtn4u
+ Glhgi3yQ8I+GATipS5TQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 25, 2013 09:45:51 AM Sarah Sharp wrote:
-> On Sat, Mar 23, 2013 at 03:33:03PM +0100, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > It turns out that _Lxx control methods provided by some BIOSes clear
-> > the PME Status bit of PCI devices they handle, which means that
-> > pci_acpi_wake_dev() cannot really use that bit to check whether or
-> > not the device has signalled wakeup.
-> > 
-> > For this reason, make pci_acpi_wake_dev() always attempt to resume
-> > the device it is called for regardless of the device's PME Status bit
-> > value (that bit still has to be cleared if set at this point,
-> > though).
-> > 
-> > Reported-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Should this be marked for stable?  I had this issue on 3.7 and 3.8 as
-> well.
+On Monday 25 March 2013, Rob Herring wrote:
+> I count integrator-cp, realview, versatile and non-DT VExpress that do
+> this (not surprisingly) and 25 platforms or timer implementations plus
+> arm64 that do sched_clock setup in time_init. What's broken by not
+> moving these earlier?
 
-Yes, it probably should, but that's the maintainer's call.
+timekeeping_init() will leave the persistent_clock_exist variable as "false",
+which is read in rtc_suspend() and timekeeping_inject_sleeptime().
 
-Thanks,
-Rafael
+For all I can tell, you will get a little jitter every time you
+do a suspend in that case. Or perhaps it means the system clock
+will be forwarded by the amount of time spent in suspend twice
+after wakeup, but I'm probably misreading the code for that case.
 
-
-> > ---
-> >  drivers/pci/pci-acpi.c |   15 ++++++++-------
-> >  1 file changed, 8 insertions(+), 7 deletions(-)
-> > 
-> > Index: linux-pm/drivers/pci/pci-acpi.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/pci/pci-acpi.c
-> > +++ linux-pm/drivers/pci/pci-acpi.c
-> > @@ -53,14 +53,15 @@ static void pci_acpi_wake_dev(acpi_handl
-> >  		return;
-> >  	}
-> >  
-> > -	if (!pci_dev->pm_cap || !pci_dev->pme_support
-> > -	     || pci_check_pme_status(pci_dev)) {
-> > -		if (pci_dev->pme_poll)
-> > -			pci_dev->pme_poll = false;
-> > +	/* Clear PME Status if set. */
-> > +	if (pci_dev->pme_support)
-> > +		pci_check_pme_status(pci_dev);
-> >  
-> > -		pci_wakeup_event(pci_dev);
-> > -		pm_runtime_resume(&pci_dev->dev);
-> > -	}
-> > +	if (pci_dev->pme_poll)
-> > +		pci_dev->pme_poll = false;
-> > +
-> > +	pci_wakeup_event(pci_dev);
-> > +	pm_runtime_resume(&pci_dev->dev);
-> >  
-> >  	if (pci_dev->subordinate)
-> >  		pci_pme_wakeup_bus(pci_dev->subordinate);
-> > 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+	Arnd
