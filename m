@@ -1,71 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933720Ab3CYWxJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 18:53:09 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:40225 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932811Ab3CYWxF (ORCPT
+	id S933726Ab3CYWxu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 18:53:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42779 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932811Ab3CYWxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 18:53:05 -0400
-Message-ID: <5150D54D.1070004@linaro.org>
-Date: Mon, 25 Mar 2013 15:53:01 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Rob Herring <robherring2@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Simon Horman <horms@verge.net.au>, Will Deacon <Will.Deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] ARM: convert arm/arm64 arch timer to use CLKSRC_OF init
-References: <1363818875-15978-1-git-send-email-robherring2@gmail.com> <20130325172633.GP30923@n2100.arm.linux.org.uk> <5150C16A.3040208@gmail.com> <201303252236.23270.arnd@arndb.de>
-In-Reply-To: <201303252236.23270.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 25 Mar 2013 18:53:48 -0400
+Date: Mon, 25 Mar 2013 15:53:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Cc: user-mode-linux-user@lists.sourceforge.net,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: linux-v3.9-rc3: BUG: Bad page map in process trinity-child6 
+ pte:002f9045 pmd:29e421e1
+Message-Id: <20130325155347.75290358a6985e17fb10ad14@linux-foundation.org>
+In-Reply-To: <514C94C4.4050008@gmx.de>
+References: <514C94C4.4050008@gmx.de>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2013 03:36 PM, Arnd Bergmann wrote:
-> On Monday 25 March 2013, Rob Herring wrote:
->> I count integrator-cp, realview, versatile and non-DT VExpress that do
->> this (not surprisingly) and 25 platforms or timer implementations plus
->> arm64 that do sched_clock setup in time_init. What's broken by not
->> moving these earlier?
-> timekeeping_init() will leave the persistent_clock_exist variable as "false",
-> which is read in rtc_suspend() and timekeeping_inject_sleeptime().
+On Fri, 22 Mar 2013 18:28:36 +0100 Toralf F__rster <toralf.foerster@gmx.de> wrote:
 
-Are you mixing up the persistent_clock and sched_clock here? From a 
-generic stand-point they have different requirements.
+> Using trinity I often trigger under a user mode linux image with host kernel 3.8.4
+> and guest kernel linux-v3.9-rc3-244-g9217cbb the following :
+> (The UML guest is a 32bit stable Gentoo Linux)
 
-> For all I can tell, you will get a little jitter every time you
-> do a suspend in that case. Or perhaps it means the system clock
-> will be forwarded by the amount of time spent in suspend twice
-> after wakeup, but I'm probably misreading the code for that case.
+I assume 3.8 is OK?
 
-No, you shouldn't see timekeeping being incremented twice, we check in 
-rtc_resume code if the persistent clock is present if so we won't inject 
-any measured suspend time there. But you're probably right that we're 
-being a little overly paranoid checking the same value twice.
+> 
+> 2013-03-22T18:03:01.232+01:00 trinity kernel: BUG: Bad page map in process trinity-child6  pte:002f9045 pmd:29e421e1
+> 2013-03-22T18:03:01.232+01:00 trinity kernel: page:0920df20 count:1 mapcount:-1 mapping:  (null) index:0x0
 
-As far as the benefit to the persistent clock: it is just a little 
-better to use, since we can access it earlier in resume, prior to 
-interrupts being enabled. So we should see less time error introduced 
-each suspend.
+mapcount=-1.
 
-thanks
--john
-
+> 2013-03-22T18:03:01.232+01:00 trinity kernel: page flags: 0x400(reserved)
+> 2013-03-22T18:03:01.232+01:00 trinity kernel: addr:00100000 vm_flags:00060055 anon_vma:  (null) mapping:  (null) index:100
+> 2013-03-22T18:03:01.232+01:00 trinity kernel: vma->vm_ops->fault: special_mapping_fault+0x0/0x80
+> 2013-03-22T18:03:01.232+01:00 trinity kernel: 31e87d1c:  [<0833b8b8>] dump_stack+0x22/0x24
+> 2013-03-22T18:03:01.232+01:00 trinity kernel: 31e87d34:  [<0833cc71>] print_bad_pte+0x17b/0x197
+> 2013-03-22T18:03:01.232+01:00 trinity kernel: 31e87d78:  [<080e1138>] unmap_single_vma+0x268/0x430
+> 2013-03-22T18:03:01.232+01:00 trinity kernel: 31e87dd8:  [<080e1837>] unmap_vmas+0x37/0x50
+> 2013-03-22T18:03:01.232+01:00 trinity kernel: 31e87df4:  [<080e4970>] unmap_region+0x80/0xe0
+> 2013-03-22T18:03:01.233+01:00 trinity kernel: 31e87e30:  [<080e6661>] do_munmap+0x231/0x2a0
+> 2013-03-22T18:03:01.233+01:00 trinity kernel: 31e87e68:  [<080e8ae8>] sys_mremap+0x248/0x480
+> 2013-03-22T18:03:01.233+01:00 trinity kernel: 31e87eac:  [<08062a82>] handle_syscall+0x82/0xb0
+> 2013-03-22T18:03:01.233+01:00 trinity kernel: 31e87ef4:  [<08074dfd>] userspace+0x46d/0x590
+> 2013-03-22T18:03:01.233+01:00 trinity kernel: 31e87fec:  [<0805f7bc>] fork_handler+0x6c/0x70
+> 2013-03-22T18:03:01.233+01:00 trinity kernel: 31e87ffc:  [<00000000>] 0x0
+> 2013-03-22T18:03:01.233+01:00 trinity kernel: 2013-03-22T18:03:01.233+01:00 trinity kernel: Disabling lock debugging due to kernel taint
+> 2013-03-22T18:03:01.233+01:00 trinity kernel: BUG: Bad page state in process trinity-child6  pfn:002f9
+> 2013-03-22T18:03:01.233+01:00 trinity kernel: page:0920df20 count:0 mapcount:-1 mapping:  (null) index:0x0
+> 2013-03-22T18:03:01.235+01:00 trinity kernel: page flags: 0x400(reserved)
+> 2013-03-22T18:03:01.235+01:00 trinity kernel: 31e87cd4:  [<0833b8b8>] dump_stack+0x22/0x24
+> 2013-03-22T18:03:01.235+01:00 trinity kernel: 31e87cec:  [<080cd755>] bad_page+0xb5/0xe0
+> 2013-03-22T18:03:01.235+01:00 trinity kernel: 31e87d08:  [<080cd7f3>] free_pages_prepare+0x73/0xb0
+> 2013-03-22T18:03:01.235+01:00 trinity kernel: 31e87d24:  [<080cec1d>] free_hot_cold_page+0x1d/0x100
+> 2013-03-22T18:03:01.235+01:00 trinity kernel: 31e87d4c:  [<080d15ae>] __put_single_page+0x1e/0x30
+> 2013-03-22T18:03:01.235+01:00 trinity kernel: 31e87d60:  [<080d16d7>] put_page+0x27/0x30
+> 2013-03-22T18:03:01.235+01:00 trinity kernel: 31e87d68:  [<080ee6ec>] free_page_and_swap_cache+0x3c/0x50
+> 2013-03-22T18:03:01.235+01:00 trinity kernel: 31e87d78:  [<080e1155>] unmap_single_vma+0x285/0x430
+> 2013-03-22T18:03:01.235+01:00 trinity kernel: 31e87dd8:  [<080e1837>] unmap_vmas+0x37/0x50
+> 2013-03-22T18:03:01.236+01:00 trinity kernel: 31e87df4:  [<080e4970>] unmap_region+0x80/0xe0
+> 2013-03-22T18:03:01.236+01:00 trinity kernel: 31e87e30:  [<080e6661>] do_munmap+0x231/0x2a0
+> 2013-03-22T18:03:01.236+01:00 trinity kernel: 31e87e68:  [<080e8ae8>] sys_mremap+0x248/0x480
+> 2013-03-22T18:03:01.236+01:00 trinity kernel: 31e87eac:  [<08062a82>] handle_syscall+0x82/0xb0
+> 2013-03-22T18:03:01.236+01:00 trinity kernel: 31e87ef4:  [<08074dfd>] userspace+0x46d/0x590
+> 2013-03-22T18:03:01.236+01:00 trinity kernel: 31e87fec:  [<0805f7bc>] fork_handler+0x6c/0x70
+> 2013-03-22T18:03:01.236+01:00 trinity kernel: 31e87ffc:  [<00000000>] 0x0
+> 2013-03-22T18:03:01.236+01:00 trinity kernel: 2013-03-22T18:03:01.236+01:00 trinity kernel: BUG: Bad page map in process trinity-child6  pte:29e38045 pmd:29e421e1
+> 2013-03-22T18:03:01.236+01:00 trinity kernel: page:09744700 count:1 mapcount:-1 mapping:  (null) index:0x0
+> 2013-03-22T18:03:01.237+01:00 trinity kernel: page flags: 0x0()
+> 2013-03-22T18:03:01.237+01:00 trinity kernel: addr:00101000 vm_flags:00060055 anon_vma:  (null) mapping:  (null) index:101
+> 2013-03-22T18:03:01.237+01:00 trinity kernel: vma->vm_ops->fault: special_mapping_fault+0x0/0x80
+> 2013-03-22T18:03:01.237+01:00 trinity kernel: 31e87d1c:  [<0833b8b8>] dump_stack+0x22/0x24
+> 2013-03-22T18:03:01.237+01:00 trinity kernel: 31e87d34:  [<0833cc71>] print_bad_pte+0x17b/0x197
+> 2013-03-22T18:03:01.237+01:00 trinity kernel: 31e87d78:  [<080e1138>] unmap_single_vma+0x268/0x430
+> 2013-03-22T18:03:01.237+01:00 trinity kernel: 31e87dd8:  [<080e1837>] unmap_vmas+0x37/0x50
+> 2013-03-22T18:03:01.237+01:00 trinity kernel: 31e87df4:  [<080e4970>] unmap_region+0x80/0xe0
+> 2013-03-22T18:03:01.237+01:00 trinity kernel: 31e87e30:  [<080e6661>] do_munmap+0x231/0x2a0
+> 2013-03-22T18:03:01.237+01:00 trinity kernel: 31e87e68:  [<080e8ae8>] sys_mremap+0x248/0x480
+> 2013-03-22T18:03:01.238+01:00 trinity kernel: 31e87eac:  [<08062a82>] handle_syscall+0x82/0xb0
+> 2013-03-22T18:03:01.238+01:00 trinity kernel: 31e87ef4:  [<08074dfd>] userspace+0x46d/0x590
+> 2013-03-22T18:03:01.238+01:00 trinity kernel: 31e87fec:  [<0805f7bc>] fork_handler+0x6c/0x70
+> 2013-03-22T18:03:01.238+01:00 trinity kernel: 31e87ffc:  [<00000000>] 0x0
+> 2013-03-22T18:03:01.238+01:00 trinity kernel: 2013-03-22T18:03:01.238+01:00 trinity kernel: BUG: Bad page state in process trinity-child6  pfn:29e38
+> 2013-03-22T18:03:01.238+01:00 trinity kernel: page:09744700 count:0 mapcount:-1 mapping:  (null) index:0x0
+> 2013-03-22T18:03:01.238+01:00 trinity kernel: page flags: 0x0()
+> 2013-03-22T18:03:01.238+01:00 trinity kernel: 31e87cd4:  [<0833b8b8>] dump_stack+0x22/0x24
+> 2013-03-22T18:03:01.238+01:00 trinity kernel: 31e87cec:  [<080cd755>] bad_page+0xb5/0xe0
+> 2013-03-22T18:03:01.239+01:00 trinity kernel: 31e87d08:  [<080cd7f3>] free_pages_prepare+0x73/0xb0
+> 2013-03-22T18:03:01.239+01:00 trinity kernel: 31e87d24:  [<080cec1d>] free_hot_cold_page+0x1d/0x100
+> 2013-03-22T18:03:01.239+01:00 trinity kernel: 31e87d4c:  [<080d15ae>] __put_single_page+0x1e/0x30
+> 2013-03-22T18:03:01.239+01:00 trinity kernel: 31e87d60:  [<080d16d7>] put_page+0x27/0x30
+> 2013-03-22T18:03:01.239+01:00 trinity kernel: 31e87d68:  [<080ee6ec>] free_page_and_swap_cache+0x3c/0x50
+> 2013-03-22T18:03:01.239+01:00 trinity kernel: 31e87d78:  [<080e1155>] unmap_single_vma+0x285/0x430
+> 2013-03-22T18:03:01.239+01:00 trinity kernel: 31e87dd8:  [<080e1837>] unmap_vmas+0x37/0x50
+> 2013-03-22T18:03:01.239+01:00 trinity kernel: 31e87df4:  [<080e4970>] unmap_region+0x80/0xe0
+> 2013-03-22T18:03:01.239+01:00 trinity kernel: 31e87e30:  [<080e6661>] do_munmap+0x231/0x2a0
+> 2013-03-22T18:03:01.239+01:00 trinity kernel: 31e87e68:  [<080e8ae8>] sys_mremap+0x248/0x480
+> 2013-03-22T18:03:01.240+01:00 trinity kernel: 31e87eac:  [<08062a82>] handle_syscall+0x82/0xb0
+> 2013-03-22T18:03:01.240+01:00 trinity kernel: 31e87ef4:  [<08074dfd>] userspace+0x46d/0x590
+> 2013-03-22T18:03:01.240+01:00 trinity kernel: 31e87fec:  [<0805f7bc>] fork_handler+0x6c/0x70
+> 2013-03-22T18:03:01.240+01:00 trinity kernel: 31e87ffc:  [<00000000>] 0x0
+> 2013-03-22T18:03:01.240+01:00 trinity kernel: 2013-03-22T18:03:01.240+01:00 trinity kernel: Stub registers -
+> 2013-03-22T18:03:01.240+01:00 trinity kernel:   0 - 100000
+> 2013-03-22T18:03:01.240+01:00 trinity kernel:   1 - 300000
+> 2013-03-22T18:03:01.240+01:00 trinity kernel:   2 - 0
+> 2013-03-22T18:03:01.240+01:00 trinity kernel:   3 - 0
+> 2013-03-22T18:03:01.243+01:00 trinity kernel:   4 - 0
+> 2013-03-22T18:03:01.243+01:00 trinity kernel:   5 - 0
+> 2013-03-22T18:03:01.243+01:00 trinity kernel:   6 - 0
+> 2013-03-22T18:03:01.243+01:00 trinity kernel:   7 - 7b
+> 2013-03-22T18:03:01.243+01:00 trinity kernel:   8 - 7b
+> 2013-03-22T18:03:01.243+01:00 trinity kernel:   9 - 0
+> 2013-03-22T18:03:01.243+01:00 trinity kernel:   10 - 33
+> 2013-03-22T18:03:01.243+01:00 trinity kernel:   11 - ffffffff
+> 2013-03-22T18:03:01.243+01:00 trinity kernel:   12 - 1000c3
+> 2013-03-22T18:03:01.243+01:00 trinity kernel:   13 - 73
+> 2013-03-22T18:03:01.244+01:00 trinity kernel:   14 - 10206
+> 2013-03-22T18:03:01.244+01:00 trinity kernel:   15 - 101028
+> 2013-03-22T18:03:01.244+01:00 trinity kernel:   16 - 7b
+> 2013-03-22T18:03:01.244+01:00 trinity kernel: wait_stub_done : failed to wait for SIGTRAP, pid = 3143, n = 3143, errno = 0, status = 0xb7f
+> 
+> 
+> -- 
+> MfG/Sincerely
+> Toralf F__rster
+> pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+> 
