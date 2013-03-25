@@ -1,131 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757850Ab3CYJWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 05:22:54 -0400
-Received: from mout.gmx.net ([212.227.17.22]:61520 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755851Ab3CYJWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 05:22:53 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+da74KZxSdY/xBYePRn1/NiUL/OMeciAPGEgCTis
-	pj2x4hkM0d6dW+
-Message-ID: <1364203359.4559.66.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH] sched: wake-affine throttle
-From: Mike Galbraith <efault@gmx.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung@kernel.org>, Alex Shi <alex.shi@intel.com>,
-        Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Date: Mon, 25 Mar 2013 10:22:39 +0100
-In-Reply-To: <514FDF76.2060806@linux.vnet.ibm.com>
-References: <514FDF76.2060806@linux.vnet.ibm.com>
+	id S1758149Ab3CYJ1Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 05:27:16 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:63750 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758121Ab3CYJ1O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 05:27:14 -0400
+Message-ID: <1364203632.1390.254.camel@x61.thuisdomein>
+Subject: [PATCH] staging: lirc: remove dead code
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jarod Wilson <jarod@wilsonet.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 25 Mar 2013 10:27:12 +0100
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Mar 2013 09:27:12.0542 (UTC) FILETIME=[EE6F0BE0:01CE293A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-25 at 13:24 +0800, Michael Wang wrote: 
-> Recently testing show that wake-affine stuff cause regression on pgbench, the
-> hiding rat was finally catched out.
-> 
-> wake-affine stuff is always trying to pull wakee close to waker, by theory,
-> this will benefit us if waker's cpu cached hot data for wakee, or the extreme
-> ping-pong case.
-> 
-> However, the whole stuff is somewhat blindly, there is no examining on the
-> relationship between waker and wakee, and since the stuff itself
-> is time-consuming, some workload suffered, pgbench is just the one who
-> has been found.
-> 
-> Thus, throttle the wake-affine stuff for such workload is necessary.
-> 
-> This patch introduced a new knob 'sysctl_sched_wake_affine_interval' with the
-> default value 1ms, which means wake-affine stuff only effect once per 1ms, which
-> usually the minimum balance interval (the idea is that the rapid of wake-affine
-> should lower than the rapid of load-balance at least).
-> 
-> By turning the new knob, those workload who suffered will have the chance to
-> stop the regression.
+lirc uses the CONFIG_SA1100_BITSY Kconfig macro. But its Kconfig symbol
+was removed in v2.4.13. So we can remove a few lines of dead code.
 
-I wouldn't do it quite this way.  Per task, yes (I suggested that too,
-better agree;), but for one, using jiffies in the scheduler when we have
-a spiffy clock sitting there ready to use seems wrong, and secondly,
-when you've got a bursty load, not pulling can hurt like hell.  Alex
-encountered that while working on his patch set.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested, but of rather low risk. Note that support for the
+machine_is_bitsy() macro was already removed in v2.4.10. 
 
-> Test:
-> 	Test with 12 cpu X86 server and tip 3.9.0-rc2.
-> 
-> 	Default 1ms interval bring limited performance improvement(<5%) for
-> 	pgbench, significant improvement start to show when turning the
-> 	knob to 100ms.
+ drivers/staging/media/lirc/lirc_sir.c | 10 ----------
+ 1 file changed, 10 deletions(-)
 
-So it seems you'd be better served by an on/off switch for this load.
-100ms in the future for many tasks is akin to a human todo list entry
-scheduled for Solar radius >= Earth orbital radius day ;-)
-
-> 			    original	100ms	
-> 
-> 	| db_size | clients |  tps  |	|  tps  |
-> 	+---------+---------+-------+   +-------+
-> 	| 21 MB   |       1 | 10572 |   | 10675 |
-> 	| 21 MB   |       2 | 21275 |   | 21228 |
-> 	| 21 MB   |       4 | 41866 |   | 41946 |
-> 	| 21 MB   |       8 | 53931 |   | 55176 |
-> 	| 21 MB   |      12 | 50956 |   | 54457 |	+6.87%
-> 	| 21 MB   |      16 | 49911 |   | 55468 |	+11.11%
-> 	| 21 MB   |      24 | 46046 |   | 56446 |	+22.59%
-> 	| 21 MB   |      32 | 43405 |   | 55177 |	+27.12%
-> 	| 7483 MB |       1 |  7734 |   |  7721 |
-> 	| 7483 MB |       2 | 19375 |   | 19277 |
-> 	| 7483 MB |       4 | 37408 |   | 37685 |
-> 	| 7483 MB |       8 | 49033 |   | 49152 |
-> 	| 7483 MB |      12 | 45525 |   | 49241 |	+8.16%
-> 	| 7483 MB |      16 | 45731 |   | 51425 |	+12.45%
-> 	| 7483 MB |      24 | 41533 |   | 52349 |	+26.04%
-> 	| 7483 MB |      32 | 36370 |   | 51022 |	+40.28%
-> 	| 15 GB   |       1 |  7576 |   |  7422 |
-> 	| 15 GB   |       2 | 19157 |   | 19176 |
-> 	| 15 GB   |       4 | 37285 |   | 36982 |
-> 	| 15 GB   |       8 | 48718 |   | 48413 |
-> 	| 15 GB   |      12 | 45167 |   | 48497 |	+7.37%
-> 	| 15 GB   |      16 | 45270 |   | 51276 |	+13.27%
-> 	| 15 GB   |      24 | 40984 |   | 51628 |	+25.97%
-> 	| 15 GB   |      32 | 35918 |   | 51060 |	+42.16%
-
-The benefit you get with not pulling is two fold at least, first and
-foremost it keeps the forked off clients the hell away from the mother
-of all work so it can keep the kids fed.  Second, you keep the load
-spread out, which is the only way the full box sized load can possibly
-perform in the first place.  The full box benefit seems clear from the
-numbers.. hard working server can compete best for its share when it's
-competing against the same set of clients, that's likely why you have to
-set the knob to 100ms to get the big win.
-
-With small burst loads of short running tasks, even things like pgbench
-will benefit from pulling to local llc more frequently than 100ms, iff
-burst does not exceed socket size.  That pulling is not completely evil,
-it automagically consolidates your mostly idle NUMA box to it's most
-efficient task placement for both power saving and throughput, so IMHO,
-you can't just let tasks sit cross node over ~extended idle periods
-without doing harm.
-
-OTOH, if the box is mostly busy, or if there's only one llc, per task
-pick a smallish number is dirt simple, and should be a general case
-improvement over the overly 1:1 buddy centric current behavior.
-
-Have you tried the patch set by Alex Shi?   In my fiddling with them,
-they put a very big dent in the evil side of select_idle_sibling() and
-affine wakeups in general, and should help pgbench and ilk heaping
-truckloads.
-
--Mike
+diff --git a/drivers/staging/media/lirc/lirc_sir.c b/drivers/staging/media/lirc/lirc_sir.c
+index 63a554c..f781c53 100644
+--- a/drivers/staging/media/lirc/lirc_sir.c
++++ b/drivers/staging/media/lirc/lirc_sir.c
+@@ -787,12 +787,6 @@ static int init_hardware(void)
+ 	spin_lock_irqsave(&hardware_lock, flags);
+ 	/* reset UART */
+ #ifdef LIRC_ON_SA1100
+-#ifdef CONFIG_SA1100_BITSY
+-	if (machine_is_bitsy()) {
+-		pr_info("Power on IR module\n");
+-		set_bitsy_egpio(EGPIO_BITSY_IR_ON);
+-	}
+-#endif
+ #ifdef CONFIG_SA1100_COLLIE
+ 	sa1100_irda_set_power_collie(3);	/* power on */
+ #endif
+@@ -942,10 +936,6 @@ static void drop_hardware(void)
+ 	Ser2UTCR3 = sr.utcr3;
+ 
+ 	Ser2HSCR0 = sr.hscr0;
+-#ifdef CONFIG_SA1100_BITSY
+-	if (machine_is_bitsy())
+-		clr_bitsy_egpio(EGPIO_BITSY_IR_ON);
+-#endif
+ #ifdef CONFIG_SA1100_COLLIE
+ 	sa1100_irda_set_power_collie(0);	/* power off */
+ #endif
+-- 
+1.7.11.7
 
