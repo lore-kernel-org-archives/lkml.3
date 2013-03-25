@@ -1,372 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758110Ab3CYNcB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 09:32:01 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:46890 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758026Ab3CYNas (ORCPT
+	id S1758073Ab3CYNc3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 09:32:29 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:50007 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757941Ab3CYNc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 09:30:48 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: kevin@allwinnertech.com, sunny@allwinnertech.com, shuge@allwinnertech.com,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 07/10] irqchip: sunxi: Rename sunxi to sun4i
-Date: Mon, 25 Mar 2013 14:30:30 +0100
-Message-Id: <1364218233-29636-8-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1364218233-29636-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1364218233-29636-1-git-send-email-maxime.ripard@free-electrons.com>
+	Mon, 25 Mar 2013 09:32:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] arm-soc: bug fixes for 3.9-rc4
+Date: Mon, 25 Mar 2013 13:32:13 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303251332.13859.arnd@arndb.de>
+X-Provags-ID: V02:K0:FnyFvtdY3NA98fBDuNTWe/xMAzL+juu+LZjtsTAKICV
+ m2HL+i8SjPRVcf2Bsi3SRlrDxB2I5TuRh9CmrVv+rHT21nOa8h
+ OfI84EL6qLzJjIP6D4g2RLeo9x+wGslkrLaVaYS27eALTHveos
+ XuKpfluQ/Ve6fzRc8yjDol6gzHoFCvvUhIAtqDXReacigvTtGJ
+ h+SwB0cheuF1PXJu9nWDunaSPZOIjhuFENLfHO3gGUFechg/wa
+ vq0kg8uKXijiu++jzJMYdNI4t3dtgdy0aUOPf93ECejm93+QxV
+ lLLIdxTvSct2OpFdnOYGYTIjN18foYx0OpSCIqfBCS7rd6Y1vP
+ kdp6jXjuqhzLnkhLIk9I=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During the introduction of the Allwinner SoC platforms, sunxi was
-initially meant as a generic name for all the variants of the Allwinner
-SoC.
+The following changes since commit a937536b868b8369b98967929045f1df54234323:
 
-It was ok at the time of the support of only the A10 and A13 that
-looks pretty much the same, but it's beginning to be troublesome with
-the future addition of the Allwinner A31 (sun6i) that is quite
-different, and would introduce some weird logic, where sunxi would
-actually mean in some case sun4i and sun5i but without sun6i...
+  Linux 3.9-rc3 (2013-03-17 15:59:32 -0700)
 
-Moreover, it makes the compatible strings naming scheme not consistent
-with other architectures, where usually for this kind of compability, we
-just use the oldest SoC name that has this IP, so let's do just this.
+are available in the git repository at:
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/irqchip/Makefile    |    2 +-
- drivers/irqchip/irq-sun4i.c |  149 +++++++++++++++++++++++++++++++++++++++++++
- drivers/irqchip/irq-sunxi.c |  149 -------------------------------------------
- 3 files changed, 150 insertions(+), 150 deletions(-)
- create mode 100644 drivers/irqchip/irq-sun4i.c
- delete mode 100644 drivers/irqchip/irq-sunxi.c
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes
 
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index 98e3b87..5416965 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -4,7 +4,7 @@ obj-$(CONFIG_ARCH_BCM2835)		+= irq-bcm2835.o
- obj-$(CONFIG_ARCH_EXYNOS)		+= exynos-combiner.o
- obj-$(CONFIG_METAG)			+= irq-metag-ext.o
- obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)	+= irq-metag.o
--obj-$(CONFIG_ARCH_SUNXI)		+= irq-sunxi.o
-+obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
- obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
- obj-$(CONFIG_ARM_GIC)			+= irq-gic.o
- obj-$(CONFIG_ARM_VIC)			+= irq-vic.o
-diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
-new file mode 100644
-index 0000000..b66d4ae
---- /dev/null
-+++ b/drivers/irqchip/irq-sun4i.c
-@@ -0,0 +1,149 @@
-+/*
-+ * Allwinner A1X SoCs IRQ chip driver.
-+ *
-+ * Copyright (C) 2012 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * Based on code from
-+ * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
-+ * Benn Huang <benn@allwinnertech.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+
-+#include <asm/exception.h>
-+#include <asm/mach/irq.h>
-+
-+#include "irqchip.h"
-+
-+#define SUN4I_IRQ_VECTOR_REG		0x00
-+#define SUN4I_IRQ_PROTECTION_REG	0x08
-+#define SUN4I_IRQ_NMI_CTRL_REG		0x0c
-+#define SUN4I_IRQ_PENDING_REG(x)	(0x10 + 0x4 * x)
-+#define SUN4I_IRQ_FIQ_PENDING_REG(x)	(0x20 + 0x4 * x)
-+#define SUN4I_IRQ_ENABLE_REG(x)		(0x40 + 0x4 * x)
-+#define SUN4I_IRQ_MASK_REG(x)		(0x50 + 0x4 * x)
-+
-+static void __iomem *sun4i_irq_base;
-+static struct irq_domain *sun4i_irq_domain;
-+
-+static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs);
-+
-+void sun4i_irq_ack(struct irq_data *irqd)
-+{
-+	unsigned int irq = irqd_to_hwirq(irqd);
-+	unsigned int irq_off = irq % 32;
-+	int reg = irq / 32;
-+	u32 val;
-+
-+	val = readl(sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
-+	writel(val | (1 << irq_off),
-+	       sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
-+}
-+
-+static void sun4i_irq_mask(struct irq_data *irqd)
-+{
-+	unsigned int irq = irqd_to_hwirq(irqd);
-+	unsigned int irq_off = irq % 32;
-+	int reg = irq / 32;
-+	u32 val;
-+
-+	val = readl(sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(reg));
-+	writel(val & ~(1 << irq_off),
-+	       sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(reg));
-+}
-+
-+static void sun4i_irq_unmask(struct irq_data *irqd)
-+{
-+	unsigned int irq = irqd_to_hwirq(irqd);
-+	unsigned int irq_off = irq % 32;
-+	int reg = irq / 32;
-+	u32 val;
-+
-+	val = readl(sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(reg));
-+	writel(val | (1 << irq_off),
-+	       sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(reg));
-+}
-+
-+static struct irq_chip sun4i_irq_chip = {
-+	.name		= "sun4i_irq",
-+	.irq_ack	= sun4i_irq_ack,
-+	.irq_mask	= sun4i_irq_mask,
-+	.irq_unmask	= sun4i_irq_unmask,
-+};
-+
-+static int sun4i_irq_map(struct irq_domain *d, unsigned int virq,
-+			 irq_hw_number_t hw)
-+{
-+	irq_set_chip_and_handler(virq, &sun4i_irq_chip,
-+				 handle_level_irq);
-+	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
-+
-+	return 0;
-+}
-+
-+static struct irq_domain_ops sun4i_irq_ops = {
-+	.map = sun4i_irq_map,
-+	.xlate = irq_domain_xlate_onecell,
-+};
-+
-+static int __init sun4i_of_init(struct device_node *node,
-+				struct device_node *parent)
-+{
-+	sun4i_irq_base = of_iomap(node, 0);
-+	if (!sun4i_irq_base)
-+		panic("%s: unable to map IC registers\n",
-+			node->full_name);
-+
-+	/* Disable all interrupts */
-+	writel(0, sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(0));
-+	writel(0, sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(1));
-+	writel(0, sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(2));
-+
-+	/* Mask all the interrupts */
-+	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(0));
-+	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(1));
-+	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(2));
-+
-+	/* Clear all the pending interrupts */
-+	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(0));
-+	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(1));
-+	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(2));
-+
-+	/* Enable protection mode */
-+	writel(0x01, sun4i_irq_base + SUN4I_IRQ_PROTECTION_REG);
-+
-+	/* Configure the external interrupt source type */
-+	writel(0x00, sun4i_irq_base + SUN4I_IRQ_NMI_CTRL_REG);
-+
-+	sun4i_irq_domain = irq_domain_add_linear(node, 3 * 32,
-+						 &sun4i_irq_ops, NULL);
-+	if (!sun4i_irq_domain)
-+		panic("%s: unable to create IRQ domain\n", node->full_name);
-+
-+	set_handle_irq(sun4i_handle_irq);
-+
-+	return 0;
-+}
-+IRQCHIP_DECLARE(allwinner_sun4i_ic, "allwinner,sun4i-ic", sun4i_of_init);
-+
-+static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs)
-+{
-+	u32 irq, hwirq;
-+
-+	hwirq = readl(sun4i_irq_base + SUN4I_IRQ_VECTOR_REG) >> 2;
-+	while (hwirq != 0) {
-+		irq = irq_find_mapping(sun4i_irq_domain, hwirq);
-+		handle_IRQ(irq, regs);
-+		hwirq = readl(sun4i_irq_base + SUN4I_IRQ_VECTOR_REG) >> 2;
-+	}
-+}
-diff --git a/drivers/irqchip/irq-sunxi.c b/drivers/irqchip/irq-sunxi.c
-deleted file mode 100644
-index 0fc49c5..0000000
---- a/drivers/irqchip/irq-sunxi.c
-+++ /dev/null
-@@ -1,149 +0,0 @@
--/*
-- * Allwinner A1X SoCs IRQ chip driver.
-- *
-- * Copyright (C) 2012 Maxime Ripard
-- *
-- * Maxime Ripard <maxime.ripard@free-electrons.com>
-- *
-- * Based on code from
-- * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
-- * Benn Huang <benn@allwinnertech.com>
-- *
-- * This file is licensed under the terms of the GNU General Public
-- * License version 2.  This program is licensed "as is" without any
-- * warranty of any kind, whether express or implied.
-- */
--
--#include <linux/io.h>
--#include <linux/irq.h>
--#include <linux/of.h>
--#include <linux/of_address.h>
--#include <linux/of_irq.h>
--
--#include <asm/exception.h>
--#include <asm/mach/irq.h>
--
--#include "irqchip.h"
--
--#define SUNXI_IRQ_VECTOR_REG		0x00
--#define SUNXI_IRQ_PROTECTION_REG	0x08
--#define SUNXI_IRQ_NMI_CTRL_REG		0x0c
--#define SUNXI_IRQ_PENDING_REG(x)	(0x10 + 0x4 * x)
--#define SUNXI_IRQ_FIQ_PENDING_REG(x)	(0x20 + 0x4 * x)
--#define SUNXI_IRQ_ENABLE_REG(x)		(0x40 + 0x4 * x)
--#define SUNXI_IRQ_MASK_REG(x)		(0x50 + 0x4 * x)
--
--static void __iomem *sunxi_irq_base;
--static struct irq_domain *sunxi_irq_domain;
--
--static asmlinkage void __exception_irq_entry sunxi_handle_irq(struct pt_regs *regs);
--
--void sunxi_irq_ack(struct irq_data *irqd)
--{
--	unsigned int irq = irqd_to_hwirq(irqd);
--	unsigned int irq_off = irq % 32;
--	int reg = irq / 32;
--	u32 val;
--
--	val = readl(sunxi_irq_base + SUNXI_IRQ_PENDING_REG(reg));
--	writel(val | (1 << irq_off),
--	       sunxi_irq_base + SUNXI_IRQ_PENDING_REG(reg));
--}
--
--static void sunxi_irq_mask(struct irq_data *irqd)
--{
--	unsigned int irq = irqd_to_hwirq(irqd);
--	unsigned int irq_off = irq % 32;
--	int reg = irq / 32;
--	u32 val;
--
--	val = readl(sunxi_irq_base + SUNXI_IRQ_ENABLE_REG(reg));
--	writel(val & ~(1 << irq_off),
--	       sunxi_irq_base + SUNXI_IRQ_ENABLE_REG(reg));
--}
--
--static void sunxi_irq_unmask(struct irq_data *irqd)
--{
--	unsigned int irq = irqd_to_hwirq(irqd);
--	unsigned int irq_off = irq % 32;
--	int reg = irq / 32;
--	u32 val;
--
--	val = readl(sunxi_irq_base + SUNXI_IRQ_ENABLE_REG(reg));
--	writel(val | (1 << irq_off),
--	       sunxi_irq_base + SUNXI_IRQ_ENABLE_REG(reg));
--}
--
--static struct irq_chip sunxi_irq_chip = {
--	.name		= "sunxi_irq",
--	.irq_ack	= sunxi_irq_ack,
--	.irq_mask	= sunxi_irq_mask,
--	.irq_unmask	= sunxi_irq_unmask,
--};
--
--static int sunxi_irq_map(struct irq_domain *d, unsigned int virq,
--			 irq_hw_number_t hw)
--{
--	irq_set_chip_and_handler(virq, &sunxi_irq_chip,
--				 handle_level_irq);
--	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
--
--	return 0;
--}
--
--static struct irq_domain_ops sunxi_irq_ops = {
--	.map = sunxi_irq_map,
--	.xlate = irq_domain_xlate_onecell,
--};
--
--static int __init sunxi_of_init(struct device_node *node,
--				struct device_node *parent)
--{
--	sunxi_irq_base = of_iomap(node, 0);
--	if (!sunxi_irq_base)
--		panic("%s: unable to map IC registers\n",
--			node->full_name);
--
--	/* Disable all interrupts */
--	writel(0, sunxi_irq_base + SUNXI_IRQ_ENABLE_REG(0));
--	writel(0, sunxi_irq_base + SUNXI_IRQ_ENABLE_REG(1));
--	writel(0, sunxi_irq_base + SUNXI_IRQ_ENABLE_REG(2));
--
--	/* Mask all the interrupts */
--	writel(0, sunxi_irq_base + SUNXI_IRQ_MASK_REG(0));
--	writel(0, sunxi_irq_base + SUNXI_IRQ_MASK_REG(1));
--	writel(0, sunxi_irq_base + SUNXI_IRQ_MASK_REG(2));
--
--	/* Clear all the pending interrupts */
--	writel(0xffffffff, sunxi_irq_base + SUNXI_IRQ_PENDING_REG(0));
--	writel(0xffffffff, sunxi_irq_base + SUNXI_IRQ_PENDING_REG(1));
--	writel(0xffffffff, sunxi_irq_base + SUNXI_IRQ_PENDING_REG(2));
--
--	/* Enable protection mode */
--	writel(0x01, sunxi_irq_base + SUNXI_IRQ_PROTECTION_REG);
--
--	/* Configure the external interrupt source type */
--	writel(0x00, sunxi_irq_base + SUNXI_IRQ_NMI_CTRL_REG);
--
--	sunxi_irq_domain = irq_domain_add_linear(node, 3 * 32,
--						 &sunxi_irq_ops, NULL);
--	if (!sunxi_irq_domain)
--		panic("%s: unable to create IRQ domain\n", node->full_name);
--
--	set_handle_irq(sunxi_handle_irq);
--
--	return 0;
--}
--IRQCHIP_DECLARE(allwinner_sunxi_ic, "allwinner,sunxi-ic", sunxi_of_init);
--
--static asmlinkage void __exception_irq_entry sunxi_handle_irq(struct pt_regs *regs)
--{
--	u32 irq, hwirq;
--
--	hwirq = readl(sunxi_irq_base + SUNXI_IRQ_VECTOR_REG) >> 2;
--	while (hwirq != 0) {
--		irq = irq_find_mapping(sunxi_irq_domain, hwirq);
--		handle_IRQ(irq, regs);
--		hwirq = readl(sunxi_irq_base + SUNXI_IRQ_VECTOR_REG) >> 2;
--	}
--}
--- 
-1.7.10.4
+for you to fetch changes up to c69d72aec52eb5234f433259ac5dcc3b68f1480d:
 
+  MAINTAINERS: update email address for Kevin Hilman (2013-03-22 21:57:15 +0100)
+
+----------------------------------------------------------------
+Four patches for arm-soc this week:
+- Kevin Hilman is no longer reachable under his previous email address.
+  He submitted the patch earlier, but nobody felt responsible to pick
+  it up.
+
+- One Tegra fix for an incorect register address in device tree.
+
+- IMX multiplatform support exposes a configuration option that
+  leads to unbootable kernels on all other machines and that needs
+  to depend on that platform.
+
+- A nontrivial bug fix for the setup of the mxs video output.
+
+----------------------------------------------------------------
+Arnd Bergmann (2):
+      Merge tag 'mxs-fixes-3.9-3' of git://git.linaro.org/people/shawnguo/linux-2.6 into fixes
+      Merge tag 'imx-fixes-3.9-3' of git://git.linaro.org/people/shawnguo/linux-2.6 into fixes
+
+Kevin Hilman (1):
+      MAINTAINERS: update email address for Kevin Hilman
+
+Laxman Dewangan (1):
+      ARM: tegra: fix register address of slink controller
+
+Marek Vasut (1):
+      ARM: video: mxs: Fix mxsfb misconfiguring VDCTRL0
+
+Shawn Guo (1):
+      ARM: imx: add dependency check for DEBUG_IMX_UART_PORT
+
+ MAINTAINERS                    |  6 +++---
+ arch/arm/Kconfig.debug         |  1 +
+ arch/arm/boot/dts/tegra20.dtsi |  2 +-
+ arch/arm/boot/dts/tegra30.dtsi |  2 +-
+ arch/arm/mach-mxs/mach-mxs.c   | 24 ++++++++++++------------
+ drivers/video/mxsfb.c          |  7 +++++--
+ include/linux/mxsfb.h          |  7 +++++--
+ 7 files changed, 28 insertions(+), 21 deletions(-)
