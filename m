@@ -1,131 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757285Ab3CYKmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 06:42:22 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:55930 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755109Ab3CYKmT (ORCPT
+	id S1756068Ab3CYKta (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 06:49:30 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60401 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755605Ab3CYKt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 06:42:19 -0400
+	Mon, 25 Mar 2013 06:49:29 -0400
+Date: Mon, 25 Mar 2013 10:49:11 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Will Deacon <will@willdeacon.co.uk>, Lokesh Vutla <lokeshvutla@ti.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] ARM: hw_breakpoint: Enable debug powerdown only if
+ system supports 'has_ossr'
+Message-ID: <20130325104910.GE12110@mudshark.cambridge.arm.com>
+References: <51407120.7030709@ti.com>
+ <51417E58.5050501@ti.com>
+ <20130315050014.GA15706@tiny-lites>
+ <5146B972.1010002@ti.com>
+ <20130318150724.GC28585@mudshark.cambridge.arm.com>
+ <514736D4.4070906@ti.com>
+ <20130318170649.GA29585@mudshark.cambridge.arm.com>
+ <5148082A.3060503@ti.com>
+ <20130319102803.GB22452@mudshark.cambridge.arm.com>
+ <515014A4.5020504@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <5150268D.2060700@ti.com>
-References: <1363939388-22412-1-git-send-email-prabhakar.csengg@gmail.com>
- <1363939388-22412-2-git-send-email-prabhakar.csengg@gmail.com>
- <514FEADE.7020603@ti.com> <CA+V-a8vkYHO8Hf=LceA=Z+Qx-XxXHOmN-4RV7+BBkzueuWhcLg@mail.gmail.com>
- <5150268D.2060700@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Mon, 25 Mar 2013 16:11:58 +0530
-Message-ID: <CA+V-a8u2CyV=VH6SBqK3=oTZoj2F1f+qQksD1ZyLP2V4pivOCg@mail.gmail.com>
-Subject: Re: [PATCH v7 1/2] ARM: davinci: dm365: add support for v4l2 video display
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515014A4.5020504@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sekhar,
+On Mon, Mar 25, 2013 at 09:11:00AM +0000, Santosh Shilimkar wrote:
+> Will,
 
-On Mon, Mar 25, 2013 at 3:57 PM, Sekhar Nori <nsekhar@ti.com> wrote:
-> On 3/25/2013 3:52 PM, Prabhakar Lad wrote:
->> Hi Sekhar,
->>
->> Thanks for the review!
->>
->> On Mon, Mar 25, 2013 at 11:42 AM, Sekhar Nori <nsekhar@ti.com> wrote:
->>> Prabhakar,
->>>
->>> On 3/22/2013 1:33 PM, Prabhakar lad wrote:
->>>> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->>>>
->>>> Create platform devices for various video modules like venc,osd,
->>>> vpbe and v4l2 driver for dm365.
->>>>
->>>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->>>> ---
->>>>  arch/arm/mach-davinci/board-dm365-evm.c |    4 +-
->>>>  arch/arm/mach-davinci/davinci.h         |    2 +-
->>>>  arch/arm/mach-davinci/dm365.c           |  194 +++++++++++++++++++++++++++++--
->>>>  3 files changed, 188 insertions(+), 12 deletions(-)
->>>>
->>>> diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
->>>> index c2d4958..cf77c46 100644
->>>> --- a/arch/arm/mach-davinci/board-dm365-evm.c
->>>> +++ b/arch/arm/mach-davinci/board-dm365-evm.c
->>>> @@ -564,8 +564,6 @@ static struct davinci_uart_config uart_config __initdata = {
->>>>
->>>>  static void __init dm365_evm_map_io(void)
->>>>  {
->>>> -     /* setup input configuration for VPFE input devices */
->>>> -     dm365_set_vpfe_config(&vpfe_cfg);
->>>>       dm365_init();
->>>>  }
->>>>
->>>> @@ -597,6 +595,8 @@ static __init void dm365_evm_init(void)
->>>>
->>>>       davinci_setup_mmc(0, &dm365evm_mmc_config);
->>>>
->>>> +     dm365_init_video(&vpfe_cfg, NULL);
->>>> +
->>>>       /* maybe setup mmc1/etc ... _after_ mmc0 */
->>>>       evm_init_cpld();
->>>>
->>>> diff --git a/arch/arm/mach-davinci/davinci.h b/arch/arm/mach-davinci/davinci.h
->>>> index 12d544b..1c2670f 100644
->>>> --- a/arch/arm/mach-davinci/davinci.h
->>>> +++ b/arch/arm/mach-davinci/davinci.h
->>>> @@ -84,7 +84,7 @@ void __init dm365_init_ks(struct davinci_ks_platform_data *pdata);
->>>>  void __init dm365_init_rtc(void);
->>>>  void dm365_init_spi0(unsigned chipselect_mask,
->>>>                       const struct spi_board_info *info, unsigned len);
->>>> -void dm365_set_vpfe_config(struct vpfe_config *cfg);
->>>> +int __init dm365_init_video(struct vpfe_config *, struct vpbe_config *);
->>>
->>> No need of __init specifier in function declaration.
->>>
->> OK
->>
->>>>
->>>>  /* DM644x function declarations */
->>>>  void __init dm644x_init(void);
->>>> diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
->>>> index f4c19f7..0a2dba2 100644
->>>> --- a/arch/arm/mach-davinci/dm365.c
->>>> +++ b/arch/arm/mach-davinci/dm365.c
->>>> @@ -40,10 +40,16 @@
->>>>
->>>>  #define DM365_REF_FREQ               24000000        /* 24 MHz on the DM365 EVM */
->>>>
->>>> +#define DM365_VDAC_CONFIG            0x01c4002c
->>>
->>> Please define this in davinci.h as an offset from
->>> DAVINCI_SYSTEM_MODULE_BASE.
->>>
->> OK
->>
->>>> +
->>>> +#define DM365_RTC_BASE                       0x01c69000
->>>> +
->>>>  /* Base of key scan register bank */
->>>>  #define DM365_KEYSCAN_BASE           0x01c69400
->>>>
->>>> -#define DM365_RTC_BASE                       0x01c69000
->>>> +#define DM365_OSD_BASE                       0x01c71c00
->>>> +
->>>> +#define DM365_VENC_BASE                      0x01c71e00
->>>>
->> Are you OK with this definitions or you want all of them in davinci.h ?
->
-> No please leave these here. The reason I asked you to use davinci.h for
-> SYSMOD is because I don't want those definitions to be strewn all over
-> the place - especially when there is already a consolidated place for them.
->
-OK, that clears my doubt!
+Hi Santosh,
 
-Regards,
---Prabhakar
+> Are you going to send the patch for 3.9-rcx ? As I said before without the
+> patch OMAP4 CPUILDE is unusable because of that debug noise and hence it
+> will be good to get that patch in
 
-> Thanks,
-> Sekhar
+It's in Russell's tree, so should be queued for mainline fairly soon.
+
+Will
