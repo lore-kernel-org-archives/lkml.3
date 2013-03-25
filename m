@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758112Ab3CYNt3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 09:49:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52675 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757818Ab3CYNt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 09:49:28 -0400
-Date: Mon, 25 Mar 2013 14:49:26 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/10] mbind: add hugepage migration code to mbind()
-Message-ID: <20130325134926.GZ2154@dhcp22.suse.cz>
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1363983835-20184-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1758065Ab3CYNu3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 09:50:29 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:54905 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757880Ab3CYNu2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 09:50:28 -0400
+Message-ID: <5150561E.2070103@gmail.com>
+Date: Mon, 25 Mar 2013 08:50:22 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363983835-20184-8-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, kevin@allwinnertech.com
+Subject: Re: [PATCH 03/10] clocksource: sunxi: make use of CLKSRC_OF
+References: <1364218233-29636-1-git-send-email-maxime.ripard@free-electrons.com> <1364218233-29636-4-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1364218233-29636-4-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-03-13 16:23:52, Naoya Horiguchi wrote:
+On 03/25/2013 08:30 AM, Maxime Ripard wrote:
+> Using CLKSRC_OF allows to remove the SoC specific sunxi_timer.h header,
+> and instead of using a custom init function in the machine definition
+> use the standard clocksource_of_init function.
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+
 [...]
-> --- v3.9-rc3.orig/mm/mempolicy.c
-> +++ v3.9-rc3/mm/mempolicy.c
-> @@ -1173,6 +1173,8 @@ static struct page *new_vma_page(struct page *page, unsigned long private, int *
->  		vma = vma->vm_next;
->  	}
->  
-> +	if (PageHuge(page))
-> +		return alloc_huge_page(vma, address, 1);
->  	/*
->  	 * if !vma, alloc_page_vma() will use task or system default policy
->  	 */
-[...]
-> diff --git v3.9-rc3.orig/mm/migrate.c v3.9-rc3/mm/migrate.c
-> index ef8e4e3..e64cd55 100644
-> --- v3.9-rc3.orig/mm/migrate.c
-> +++ v3.9-rc3/mm/migrate.c
-> @@ -951,7 +951,12 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
->  	struct page *new_hpage = get_new_page(hpage, private, &result);
->  	struct anon_vma *anon_vma = NULL;
->  
-> -	if (!new_hpage)
-> +	/*
-> +	 * Getting a new hugepage with alloc_huge_page() (which can happen
-> +	 * when migration is caused by mbind()) can return ERR_PTR value,
-> +	 * so we need take care of the case here.
-> +	 */
-> +	if (!new_hpage || IS_ERR_VALUE(new_hpage))
->  		return -ENOMEM;
 
-Please no. get_new_page returns NULL or a page. You are hooking a wrong
-callback here. The error value doesn't make any sense here. IMO you
-should just wrap alloc_huge_page by something that returns NULL or page.
+> @@ -158,3 +157,5 @@ void __init sunxi_timer_init(void)
+>  	clockevents_config_and_register(&sunxi_clockevent, rate / TIMER_SCAL,
+>  					0x1, 0xff);
+>  }
+> +CLOCKSOURCE_OF_DECLARE(sunxi, "allwinner,sun4i-timer",
+> +		       sunxi_timer_init);
 
->  
->  	rc = -EAGAIN;
+You should base this on clocksource clean-up branch "clksrc/cleanup" in
+arm-soc. That will get rid of double matching and match table.
 
--- 
-Michal Hocko
-SUSE Labs
+Also, sunxi_timer_init can be static now.
+
+Rob
+
