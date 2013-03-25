@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758525Ab3CYPnf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 11:43:35 -0400
-Received: from smtp-out-223.synserver.de ([212.40.185.223]:1037 "EHLO
-	smtp-out-223.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758470Ab3CYPne (ORCPT
+	id S1758538Ab3CYPoo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 11:44:44 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:64845 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758473Ab3CYPom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 11:43:34 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 9195
-Message-ID: <51507126.2040002@metafoo.de>
-Date: Mon, 25 Mar 2013 16:45:42 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Mon, 25 Mar 2013 11:44:42 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: josh.h.morris@us.ibm.com, pjk1939@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] block: remove unused variable
+Date: Mon, 25 Mar 2013 16:48:21 +0100
+Message-Id: <1364226501-28745-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Paul Bolle <pebolle@tiscali.nl>, Mike Frysinger <vapier@gentoo.org>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Blackfin: bf537: rename "CONFIG_ADT7310" and friends
-References: <1364211831.1390.285.camel@x61.thuisdomein> <20130325152258.GA17467@roeck-us.net>
-In-Reply-To: <20130325152258.GA17467@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2013 04:22 PM, Guenter Roeck wrote:
-> On Mon, Mar 25, 2013 at 12:43:51PM +0100, Paul Bolle wrote:
->> The Kconfig symbol ADT7310 got removed in commit
->> 2b0c856ad9571013db8fc369194b7108dff3c18e ("staging:iio: Consolidate
->> adt7310 and adt7410 driver"). That commit did not touch the references
->> to CONFIG_ADT7310 and CONFIG_ADT7310_MODULE in the BF537-STAMP code.
->> Convert these now, to their ADT7410 equivalents.
->>
->> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
->> ---
->> 0) Untested. This took a bit of guesswork. I guessed that multiple AD
->> drivers can be enabled at the same time in this code. And I also guessed
->> that the "adt7310" modalias is still correct.
->>
->> 1) If this passes testing it could go in stable (3.8.y).
->>
->>  arch/blackfin/mach-bf537/boards/stamp.c | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
->> index 95114ed..23bb55d 100644
->> --- a/arch/blackfin/mach-bf537/boards/stamp.c
->> +++ b/arch/blackfin/mach-bf537/boards/stamp.c
->> @@ -700,7 +700,7 @@ static struct bfin5xx_spi_chip ad7816_spi_chip_info = {
->>  };
->>  #endif
->>  
->> -#if defined(CONFIG_ADT7310) || defined(CONFIG_ADT7310_MODULE)
->> +#if defined(CONFIG_ADT7410) || defined(CONFIG_ADT7410_MODULE)
-> 
-> It might be easier and more future-proof to just drop the conditional.
-> If the driver isn't there, it won't be loaded anyway. It would also make
-> back-porting much easier.
-> 
-> Guenter
+The struct rsxx_dma pointer tmp is not used, we can remove it.
+Introduced by: c95246c3a2ac
+("Adding in EEH support to the IBM FlashSystem 70/80 device driver")
 
+Sparse gives a warning:
+drivers/block/rsxx/dma.c:1050:19: warning:
+	unused variable ‘tmp’ [-Wunused-variable]
 
-The situation is unfortunately really messy. The issue is that these are
-add-on board and the same SPI chip select pin is used for multiple devices.
-If we add the spi_board_info for all devices unconditionally the SPI core
-will scream at us because we tried to register multiple devices with the
-same chip select pin and none of the devices gets actually registered.
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ drivers/block/rsxx/dma.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-- Lars
+diff --git a/drivers/block/rsxx/dma.c b/drivers/block/rsxx/dma.c
+index d523e9c..bacbaa0 100644
+--- a/drivers/block/rsxx/dma.c
++++ b/drivers/block/rsxx/dma.c
+@@ -1047,7 +1047,6 @@ void rsxx_eeh_cancel_dmas(struct rsxx_cardinfo *card)
+ int rsxx_eeh_remap_dmas(struct rsxx_cardinfo *card)
+ {
+ 	struct rsxx_dma *dma;
+-	struct rsxx_dma *tmp;
+ 	int i;
+ 
+ 	for (i = 0; i < card->n_targets; i++) {
+-- 
+1.7.10.4
+
