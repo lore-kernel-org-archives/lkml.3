@@ -1,134 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab3CYLZn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 07:25:43 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48165 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755930Ab3CYLZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 07:25:41 -0400
-Message-ID: <51503428.2060807@ti.com>
-Date: Mon, 25 Mar 2013 07:25:28 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1756200Ab3CYL04 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 07:26:56 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47125 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755978Ab3CYL0x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 07:26:53 -0400
+Date: Mon, 25 Mar 2013 12:26:50 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: James Hogan <james.hogan@imgtec.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Magnus Damm <magnus.damm@gmail.com>, Arnd <arnd@arndb.de>
+Subject: Re: [patch 20/34] metag: Use generic idle loop
+In-Reply-To: <514C2F88.2030904@imgtec.com>
+Message-ID: <alpine.LFD.2.02.1303251221500.22263@ionos>
+References: <20130321214930.752934102@linutronix.de> <20130321215234.606480852@linutronix.de> <514C2F88.2030904@imgtec.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>
-CC: "R, Durgadoss" <durgadoss.r@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] thermal: introduce thermal_zone_lookup_temperature
- helper function
-References: <1363986787-28147-1-git-send-email-eduardo.valentin@ti.com>  <1363986787-28147-2-git-send-email-eduardo.valentin@ti.com>  <1364191837.2465.7.camel@rzhang1-mobl4>  <4D68720C2E767A4AA6A8796D42C8EB59C57DBF@BGSMSX101.gar.corp.intel.com> <1364192766.2465.21.camel@rzhang1-mobl4>
-In-Reply-To: <1364192766.2465.21.camel@rzhang1-mobl4>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25-03-2013 02:26, Zhang Rui wrote:
-> On Mon, 2013-03-25 at 00:20 -0600, R, Durgadoss wrote:
->>> -----Original Message-----
->>> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
->>> owner@vger.kernel.org] On Behalf Of Zhang Rui
->>> Sent: Monday, March 25, 2013 11:41 AM
->>> To: Eduardo Valentin
->>> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org
->>> Subject: Re: [PATCH 1/2] thermal: introduce
->>> thermal_zone_lookup_temperature helper function
->>>
->>> On Fri, 2013-03-22 at 17:13 -0400, Eduardo Valentin wrote:
->>>> This patch adds a helper function to get temperature of
->>>> a thermal zone, based on the zone type name.
->>>>
->>>> It will perform a zone name lookup and return the last
->>>> sensor temperature reading. In case the zone is not found
->>>> or if the required parameters are invalid, it will return
->>>> the corresponding error code.
->>>>
->>>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->>>> ---
->>>>   drivers/thermal/thermal_sys.c |   32
->>> ++++++++++++++++++++++++++++++++
->>>>   include/linux/thermal.h       |    1 +
->>>>   2 files changed, 33 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
->>>> index 5bd95d4..f0caa13 100644
->>>> --- a/drivers/thermal/thermal_sys.c
->>>> +++ b/drivers/thermal/thermal_sys.c
->>>> @@ -1790,6 +1790,38 @@ void thermal_zone_device_unregister(struct
->>> thermal_zone_device *tz)
->>>>   }
->>>>   EXPORT_SYMBOL_GPL(thermal_zone_device_unregister);
->>>>
->>>> +/**
->>>> + * thermal_lookup_temperature - search for a zone and returns its
->>> temperature
->>>> + * @name: thermal zone name to fetch the temperature
->>>> + * @temperature: pointer to store the zone temperature, in case it is
->>> found
->>>> + *
->>>> + * When the zone is found, updates @temperature and returns 0.
->>>> + *
->>>> + * Return: -EINVAL in case of wrong parameters, -ENODEV in case the
->>> zone
->>>> + * is not found and 0 when it is successfully found.
->>>> + */
->>>> +int thermal_zone_lookup_temperature(const char *name, int
->>> *temperature)
->>>> +{
->>>> +	struct thermal_zone_device *pos = NULL;
->>>> +	bool found = false;
->>>> +
->>>> +	if (!name || !temperature)
->>>> +		return -EINVAL;
->>>> +
->>>> +	mutex_lock(&thermal_list_lock);
->>>> +	list_for_each_entry(pos, &thermal_tz_list, node)
->>>> +		if (!strcmp(pos->type, name)) {
->>>> +			found = true;
->>>> +			break;
->>>> +		}
->>>> +	if (found)
->>>> +		*temperature = pos->last_temperature;
->>>> +	mutex_unlock(&thermal_list_lock);
->>>> +
->>>> +	return found ? 0 : -ENODEV;
->>>> +}
->>>> +EXPORT_SYMBOL_GPL(thermal_zone_lookup_temperature);
->>>> +
->>> please do not use thermal zone type as the parameter because unique
->>> thermal zone type string is not a hard rule.
+On Fri, 22 Mar 2013, James Hogan wrote:
 
-OK. I didn't consider this, as I was just resending the patch and the FW 
-has evolve since last time I sent it.
+> On 21/03/13 21:53, Thomas Gleixner wrote:
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: James Hogan <james.hogan@imgtec.com>
+> > ---
+> >  arch/metag/Kconfig          |    1 +
+> >  arch/metag/kernel/process.c |   32 +++-----------------------------
+> >  arch/metag/kernel/smp.c     |    2 +-
+> >  3 files changed, 5 insertions(+), 30 deletions(-)
+> > 
+> > Index: linux-2.6/arch/metag/Kconfig
+> > ===================================================================
+> > --- linux-2.6.orig/arch/metag/Kconfig
+> > +++ linux-2.6/arch/metag/Kconfig
+> > @@ -9,6 +9,7 @@ config METAG
+> >  	select GENERIC_CLOCKEVENTS
+> >  	select GENERIC_IRQ_SHOW
+> >  	select GENERIC_SMP_IDLE_THREAD
+> > +	select GENERIC_IDLE_LOOP
+> 
+> Please preserve alphabetical ordering
 
->>
->> Okay, agree with this. This is what I am implementing in
->> my changes as well.
->>
->>> If this is really needed, I'd prefer two APIs instead
->>> 1. struct thermal_zone_device * thermal_zone_get_zone_by_name(char
->>> *name);
->>> 2. int thermal_zone_get_temperature(struct thermal_zone_device *, int
->>> *temperature);
->>
->> Why do we need this second API?
->> If the driver has a 'tz' pointer, it can use tz->ops->get_temp
->> to retrieve the temperature, right ?
->>
->
-> probably it is because one driver want to get the temperature of a
-> sensor registered by another driver.
+Ok.
+ 
+> >  	select HAVE_64BIT_ALIGNED_ACCESS
+> >  	select HAVE_ARCH_TRACEHOOK
+> >  	select HAVE_C_RECORDMCOUNT
+> > Index: linux-2.6/arch/metag/kernel/process.c
+> > ===================================================================
+> > --- linux-2.6.orig/arch/metag/kernel/process.c
+> > +++ linux-2.6/arch/metag/kernel/process.c
+> > @@ -31,7 +31,7 @@
+> >  /*
+> >   * Wait for the next interrupt and enable local interrupts
+> >   */
+> > -static inline void arch_idle(void)
+> > +void arch_cpu_idle(void)
+> >  {
+> >  	int tmp;
+> >  
+> > @@ -59,35 +59,9 @@ static inline void arch_idle(void)
+> >  		      : "r" (get_trigger_mask()));
+> >  }
+> >  
+> > -void cpu_idle(void)
+> > +void arch_cpu_idle_dead(void)
+> >  {
+> > -	set_thread_flag(TIF_POLLING_NRFLAG);
+> > -
+> > -	while (1) {
+> > -		tick_nohz_idle_enter();
+> > -		rcu_idle_enter();
+> > -
+> > -		while (!need_resched()) {
+> > -			/*
+> > -			 * We need to disable interrupts here to ensure we don't
+> > -			 * miss a wakeup call.
+> > -			 */
+> > -			local_irq_disable();
+> > -			if (!need_resched()) {
+> > -#ifdef CONFIG_HOTPLUG_CPU
+> > -				if (cpu_is_offline(smp_processor_id()))
+> > -					cpu_die();
+> > -#endif
+> > -				arch_idle();
+> > -			} else {
+> > -				local_irq_enable();
+> > -			}
+> > -		}
+> > -
+> > -		rcu_idle_exit();
+> > -		tick_nohz_idle_exit();
+> > -		schedule_preempt_disabled();
+> > -	 }
+> > +	cpu_die();
+> 
+> This requires #include <linux/smp.h> and even then the definition of
+> cpu_die() is guarded by #ifdef CONFIG_HOTPLUG_CPU, like blackfin & s390.
 
-Unless API 1. can be used on other cases, why do we need two APIs? Why 
-not keep the same signature I proposed, but with the same care on 'type' 
-you mentioned for 1.?
+Will fix.
+ 
+> >  }
+> >  
+> >  void (*pm_power_off)(void);
+> > Index: linux-2.6/arch/metag/kernel/smp.c
+> > ===================================================================
+> > --- linux-2.6.orig/arch/metag/kernel/smp.c
+> > +++ linux-2.6/arch/metag/kernel/smp.c
+> > @@ -297,7 +297,7 @@ asmlinkage void secondary_start_kernel(v
+> >  	/*
+> >  	 * OK, it's off to the idle thread for us
+> >  	 */
+> > -	cpu_idle();
+> > +	cpu_startup_entry(CPUHP_ONLINE);
+> >  }
+> >  
+> >  void __init smp_cpus_done(unsigned int max_cpus)
+> > 
+> > 
+> 
+> I also hit the same problems Tony Breeds hit.
+> 
+> After hacking around them, and enabling SMP and HOTPLUG_CPU, I hit the
+> WARN_ON_ONCE(!irqs_disabled()) after arch_cpu_idle() in cpu_idle_loop():
 
->
-> thanks,
-> rui
->
->
->
+My stupidity. I fatfingered it when last minute changing it to
+WARN_ON_ONCE
+ 
+> > META213-Thread1 DSP [LogF] WARNING: at kernel/cpu/idle.c:94 _cpu_startup_entry+0x1cc/0x1e0()
+> 
+> arch_cpu_idle() enables interrupts. See Arnd's comment in
+> https://patchwork.kernel.org/patch/2002571/:
+> 
+> > To avoid that, you need to disable interrupts around
+> > the inner loop. The sleep instruction should return with
+> > interrupts implicitly enabled if ARC behaves like most
+> > other architectures doing this.
 
+Right. My fault. See above.
+
+Thanks,
+
+	tglx
