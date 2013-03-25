@@ -1,175 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162Ab3CYKPs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 06:15:48 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:52837 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755420Ab3CYKMD (ORCPT
+	id S1756193Ab3CYKP7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 06:15:59 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3522 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755420Ab3CYKP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 06:12:03 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: arvind.chauhan@arm.com, robin.randhawa@arm.com, Steve.Bannister@arm.com,
-        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        arnd.bergmann@linaro.org, linux@arm.linux.org.uk,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>
-Subject: [PATCH 4/9] cpufreq: imx: move cpufreq driver to drivers/cpufreq
-Date: Mon, 25 Mar 2013 15:41:35 +0530
-Message-Id: <6c0d4611de3586b12d5df9beaa5d21e4703dd38b.1364205812.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1364205812.git.viresh.kumar@linaro.org>
-References: <cover.1364205812.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1364205812.git.viresh.kumar@linaro.org>
-References: <cover.1364205812.git.viresh.kumar@linaro.org>
-X-OriginalArrivalTime: 25 Mar 2013 10:12:00.0344 (UTC) FILETIME=[307D1580:01CE2941]
-X-MC-Unique: 113032510120134301
-Content-Type: text/plain; charset=WINDOWS-1252
+	Mon, 25 Mar 2013 06:15:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 25 Mar 2013 03:15:32 -0700
+Date: Mon, 25 Mar 2013 12:15:42 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: tegra: Don't enable PLLs during early boot
+Message-ID: <20130325101542.GB18519@tbergstrom-lnx.Nvidia.com>
+References: <1363953308-28828-1-git-send-email-pdeschrijver@nvidia.com>
+ <514C7D3B.40602@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <514C7D3B.40602@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r2PAFqWw026849
 
-This patch moves cpufreq driver of ARM based imx platform to drivers/cpufreq.
+On Fri, Mar 22, 2013 at 04:48:11PM +0100, Stephen Warren wrote:
+> On 03/22/2013 05:54 AM, Peter De Schrijver wrote:
+> > The PLL code relies on udelay() which is not available when CCF is
+> > initialized. Hence we can't enable any PLL during this phase.
+> > 
+> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> > 
+> > --
+> > 
+> > Stephen,
+> > 
+> > Can you confirm this is ok for the audio drivers?
+> > 
+> > We used to be lucky that this has worked up to now, but I will introduce some
+> > changes to the pll lock check code which cause this to fail due to the
+> > slight differences in timing.
+> 
+> No, this won't work for the audio drivers; they assume the clock is
+> enabled when they start.
+> 
+> This assumption was made long ago. I know drivers are supposed to assume
+> that clocks are disabled when they're probed, but historically that
+> wasn't always the case, so if the audio drivers assumed that, and then
+> did clk_enable() as the first thing, they got a warning due to the
+> enabling an already enabled clock and/or later attempts to disable the
 
-Cc: Sascha Hauer <kernel@pengutronix.de>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- arch/arm/Kconfig                                             |  7 -------
- arch/arm/mach-imx/Makefile                                   |  1 -
- arch/arm/mach-imx/mxc.h                                      |  6 +-----
- drivers/cpufreq/Kconfig.arm                                  |  7 +++++++
- drivers/cpufreq/Makefile                                     |  1 +
- arch/arm/mach-imx/cpufreq.c => drivers/cpufreq/imx-cpufreq.c |  7 +++----
- include/linux/cpufreq/imx.h                                  | 10 ++++++++++
- 7 files changed, 22 insertions(+), 17 deletions(-)
- rename arch/arm/mach-imx/cpufreq.c => drivers/cpufreq/imx-cpufreq.c (99%)
- create mode 100644 include/linux/cpufreq/imx.h
+That should be ok. You can enable a clock more than once.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 2c3bdce..0295a08 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -2156,13 +2156,6 @@ if ARCH_HAS_CPUFREQ
- 
- source "drivers/cpufreq/Kconfig"
- 
--config CPU_FREQ_IMX
--	tristate "CPUfreq driver for i.MX CPUs"
--	depends on ARCH_MXC && CPU_FREQ
--	select CPU_FREQ_TABLE
--	help
--	  This enables the CPUfreq driver for i.MX CPUs.
--
- config CPU_FREQ_SA1100
- 	bool
- 
-diff --git a/arch/arm/mach-imx/Makefile b/arch/arm/mach-imx/Makefile
-index c4ce090..e313433 100644
---- a/arch/arm/mach-imx/Makefile
-+++ b/arch/arm/mach-imx/Makefile
-@@ -27,7 +27,6 @@ obj-$(CONFIG_IRAM_ALLOC) += iram_alloc.o
- obj-$(CONFIG_MXC_ULPI) += ulpi.o
- obj-$(CONFIG_MXC_USE_EPIT) += epit.o
- obj-$(CONFIG_MXC_DEBUG_BOARD) += 3ds_debugboard.o
--obj-$(CONFIG_CPU_FREQ_IMX)    += cpufreq.o
- 
- ifeq ($(CONFIG_CPU_IDLE),y)
- obj-y += cpuidle.o
-diff --git a/arch/arm/mach-imx/mxc.h b/arch/arm/mach-imx/mxc.h
-index 7dce17a..ec8d752 100644
---- a/arch/arm/mach-imx/mxc.h
-+++ b/arch/arm/mach-imx/mxc.h
-@@ -151,13 +151,9 @@ extern unsigned int __mxc_cpu_type;
- 
- #ifndef __ASSEMBLY__
- 
--struct cpu_op {
--	u32 cpu_rate;
--};
-+#include <linux/cpufreq/imx.h>
- 
- int tzic_enable_wake(void);
--
--extern struct cpu_op *(*get_cpu_op)(int *op);
- #endif
- 
- #define cpu_is_mx3()	(cpu_is_mx31() || cpu_is_mx35())
-diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-index b72a2b3..3d83bc5 100644
---- a/drivers/cpufreq/Kconfig.arm
-+++ b/drivers/cpufreq/Kconfig.arm
-@@ -45,6 +45,13 @@ config ARM_HIGHBANK_CPUFREQ
- 
- 	  If in doubt, say N.
- 
-+config ARM_IMX_CPUFREQ
-+	tristate "CPUfreq driver for i.MX CPUs"
-+	depends on ARCH_MXC
-+	select CPU_FREQ_TABLE
-+	help
-+	  This enables the CPUfreq driver for i.MX CPUs.
-+
- config ARM_IMX6Q_CPUFREQ
- 	tristate "Freescale i.MX6Q cpufreq support"
- 	depends on SOC_IMX6Q
-diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index efce6c7..2759192 100644
---- a/drivers/cpufreq/Makefile
-+++ b/drivers/cpufreq/Makefile
-@@ -51,6 +51,7 @@ obj-$(CONFIG_ARM_EXYNOS4210_CPUFREQ)	+= exynos4210-cpufreq.o
- obj-$(CONFIG_ARM_EXYNOS4X12_CPUFREQ)	+= exynos4x12-cpufreq.o
- obj-$(CONFIG_ARM_EXYNOS5250_CPUFREQ)	+= exynos5250-cpufreq.o
- obj-$(CONFIG_ARM_HIGHBANK_CPUFREQ)	+= highbank-cpufreq.o
-+obj-$(CONFIG_ARM_IMX_CPUFREQ)		+= imx-cpufreq.o
- obj-$(CONFIG_ARM_IMX6Q_CPUFREQ)		+= imx6q-cpufreq.o
- obj-$(CONFIG_ARM_KIRKWOOD_CPUFREQ)	+= kirkwood-cpufreq.o
- obj-$(CONFIG_ARM_OMAP2PLUS_CPUFREQ)	+= omap-cpufreq.o
-diff --git a/arch/arm/mach-imx/cpufreq.c b/drivers/cpufreq/imx-cpufreq.c
-similarity index 99%
-rename from arch/arm/mach-imx/cpufreq.c
-rename to drivers/cpufreq/imx-cpufreq.c
-index cfce5e3..3b856e0 100644
---- a/arch/arm/mach-imx/cpufreq.c
-+++ b/drivers/cpufreq/imx-cpufreq.c
-@@ -17,14 +17,13 @@
-  * the CPU clock speed on the fly.
-  */
- 
--#include <linux/module.h>
--#include <linux/cpufreq.h>
- #include <linux/clk.h>
-+#include <linux/cpufreq.h>
-+#include <linux/cpufreq/imx.h>
- #include <linux/err.h>
-+#include <linux/module.h>
- #include <linux/slab.h>
- 
--#include "hardware.h"
--
- #define CLK32_FREQ	32768
- #define NANOSECOND	(1000 * 1000 * 1000)
- 
-diff --git a/include/linux/cpufreq/imx.h b/include/linux/cpufreq/imx.h
-new file mode 100644
-index 0000000..dd2cc49
---- /dev/null
-+++ b/include/linux/cpufreq/imx.h
-@@ -0,0 +1,10 @@
-+#ifndef CPUFREQ_IMX_H
-+#define CPUFREQ_IMX_H
-+
-+struct cpu_op {
-+	u32 cpu_rate;
-+};
-+
-+extern struct cpu_op *(*get_cpu_op)(int *op);
-+
-+#endif
--- 
-1.7.12.rc2.18.g61b472e
+> clocks wouldn't actually disable them. Perhaps this has changed now, but
+> either way, audio driver changes would be needed to support this change.
+> 
 
+But indeed, the clock won't be disabled then when the driver does
+clk_disable(). The reference count will just be decremented. That's however
+not a functional problem, just not optimal from a power consumption point of
+view. So we could change the drivers first and keep the clocks disabled at
+boottime in a second phase.
 
+> Perhaps this is due to initializing the Tegra clock driver in the
+> machine descriptor's init_irq function, rather than in the init_machine
+> function? Can this be moved?
+
+Maybe. But we need the clockframework before the timers are initialized...
+So I have to check the dependencies.
+
+Cheers,
+
+Peter.
