@@ -1,55 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757659Ab3CYGHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 02:07:23 -0400
-Received: from ozlabs.org ([203.10.76.45]:37504 "EHLO ozlabs.org"
+	id S1757689Ab3CYGKm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 02:10:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:26601 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757607Ab3CYGHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 02:07:22 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: Chen Gang <gang.chen@asianux.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "paulus@samba.org" <paulus@samba.org>, matt@ozlabs.org,
-        imunsie@au1.ibm.com, linuxppc-dev@lists.ozlabs.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PowerPC:kernel: make additional room in exception vector area
-In-reply-to: <20130325161435.ffff94805826bc7cad2c7de4@canb.auug.org.au>
-References: <51428C81.6000204@asianux.com> <25841.1363323174@ale.ozlabs.ibm.com> <5142AE27.7060003@asianux.com> <514AA0D9.1090509@asianux.com> <10123.1363906486@ale.ozlabs.ibm.com> <514C0061.8080004@asianux.com> <29457.1364169818@ale.ozlabs.ibm.com> <514FA8F3.1030102@asianux.com> <20130325161435.ffff94805826bc7cad2c7de4@canb.auug.org.au>
-Comments: In-reply-to Stephen Rothwell <sfr@canb.auug.org.au>
-   message dated "Mon, 25 Mar 2013 16:14:35 +1100."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-Date: Mon, 25 Mar 2013 17:07:17 +1100
-Message-ID: <5944.1364191637@ale.ozlabs.ibm.com>
+	id S1757662Ab3CYGKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 02:10:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,902,1355126400"; 
+   d="scan'208";a="306944298"
+Message-ID: <1364191837.2465.7.camel@rzhang1-mobl4>
+Subject: Re: [PATCH 1/2] thermal: introduce thermal_zone_lookup_temperature
+ helper function
+From: Zhang Rui <rui.zhang@intel.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 25 Mar 2013 14:10:37 +0800
+In-Reply-To: <1363986787-28147-2-git-send-email-eduardo.valentin@ti.com>
+References: <1363986787-28147-1-git-send-email-eduardo.valentin@ti.com>
+	 <1363986787-28147-2-git-send-email-eduardo.valentin@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-
-> Hi all,
+On Fri, 2013-03-22 at 17:13 -0400, Eduardo Valentin wrote:
+> This patch adds a helper function to get temperature of
+> a thermal zone, based on the zone type name.
 > 
-> On Mon, 25 Mar 2013 09:31:31 +0800 Chen Gang <gang.chen@asianux.com> wrote:
-> >
-> >   The FWNMI region is fixed at 0x7000 and the vector are now overflowing
-> >   that with allmodconfig. Fix that by moving slb_miss_realmode code out
-> >   of that region as it doesn't need to be that close to the call sites
-> >   (it is a _GLOBAL function)
-> > 
-> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> > ---
-> >  arch/powerpc/kernel/exceptions-64s.S |  144 +++++++++++++++++-----------------
-> >  1 files changed, 72 insertions(+), 72 deletions(-)
+> It will perform a zone name lookup and return the last
+> sensor temperature reading. In case the zone is not found
+> or if the required parameters are invalid, it will return
+> the corresponding error code.
 > 
-> Thanks, Chen,
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> ---
+>  drivers/thermal/thermal_sys.c |   32 ++++++++++++++++++++++++++++++++
+>  include/linux/thermal.h       |    1 +
+>  2 files changed, 33 insertions(+), 0 deletions(-)
 > 
-> I have applied this to linux-next today and pending the builds overnight,
-> will send it to Linus tomorrow or Wednesday.
+> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+> index 5bd95d4..f0caa13 100644
+> --- a/drivers/thermal/thermal_sys.c
+> +++ b/drivers/thermal/thermal_sys.c
+> @@ -1790,6 +1790,38 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
+>  }
+>  EXPORT_SYMBOL_GPL(thermal_zone_device_unregister);
+>  
+> +/**
+> + * thermal_lookup_temperature - search for a zone and returns its temperature
+> + * @name: thermal zone name to fetch the temperature
+> + * @temperature: pointer to store the zone temperature, in case it is found
+> + *
+> + * When the zone is found, updates @temperature and returns 0.
+> + *
+> + * Return: -EINVAL in case of wrong parameters, -ENODEV in case the zone
+> + * is not found and 0 when it is successfully found.
+> + */
+> +int thermal_zone_lookup_temperature(const char *name, int *temperature)
+> +{
+> +	struct thermal_zone_device *pos = NULL;
+> +	bool found = false;
+> +
+> +	if (!name || !temperature)
+> +		return -EINVAL;
+> +
+> +	mutex_lock(&thermal_list_lock);
+> +	list_for_each_entry(pos, &thermal_tz_list, node)
+> +		if (!strcmp(pos->type, name)) {
+> +			found = true;
+> +			break;
+> +		}
+> +	if (found)
+> +		*temperature = pos->last_temperature;
+> +	mutex_unlock(&thermal_list_lock);
+> +
+> +	return found ? 0 : -ENODEV;
+> +}
+> +EXPORT_SYMBOL_GPL(thermal_zone_lookup_temperature);
+> +
+please do not use thermal zone type as the parameter because unique
+thermal zone type string is not a hard rule.
+If this is really needed, I'd prefer two APIs instead
+1. struct thermal_zone_device * thermal_zone_get_zone_by_name(char
+*name);
+2. int thermal_zone_get_temperature(struct thermal_zone_device *, int
+*temperature);
 
-sfr,
+And in thermal_zone_get_zone_by_name(), you should parse all the thermal
+zone list and return an error code instead if multiple zones are found.
 
-FYI you're gonna need this one also to make allmodconfig work.
+thanks,
+rui
+>  #ifdef CONFIG_NET
+>  static struct genl_family thermal_event_genl_family = {
+>  	.id = GENL_ID_GENERATE,
+> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> index 542a39c..2b2f902 100644
+> --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -237,6 +237,7 @@ void thermal_zone_device_update(struct thermal_zone_device *);
+>  struct thermal_cooling_device *thermal_cooling_device_register(char *, void *,
+>  		const struct thermal_cooling_device_ops *);
+>  void thermal_cooling_device_unregister(struct thermal_cooling_device *);
+> +int thermal_zone_lookup_temperature(const char *name, int *temperature);
+>  
+>  int thermal_zone_trend_get(struct thermal_zone_device *, int);
+>  struct thermal_instance *thermal_instance_get(struct thermal_zone_device *,
 
-  http://patchwork.ozlabs.org/patch/230244/
 
-Mikey
