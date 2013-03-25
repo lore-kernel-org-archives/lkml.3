@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab3CYCd7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 22:33:59 -0400
-Received: from mail-we0-f195.google.com ([74.125.82.195]:39738 "EHLO
-	mail-we0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755674Ab3CYCd6 (ORCPT
+	id S1756096Ab3CYCgy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 22:36:54 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:59006 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755674Ab3CYCgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 22:33:58 -0400
+	Sun, 24 Mar 2013 22:36:53 -0400
+X-Spam-Score: -100.8
+Message-ID: <514FB826.9020302@asianux.com>
+Date: Mon, 25 Mar 2013 10:36:22 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Date: Mon, 25 Mar 2013 10:33:56 +0800
-Message-ID: <CAAO_Xo6=2PKumrxjb1XthsiVVFJcz33o5wf2OyXN9pPdu1GCRA@mail.gmail.com>
-Subject: Question: How to distribute the interrupts over multiple cores?
-From: Lenky Gao <lenky.gao@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: yinghai@kernel.org, mingo@elte.hu, gorcunov@gmail.com,
-        rusty@rustcorp.com.au, sivanich@sgi.com, agordeev@redhat.com
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "nico@linaro.org" <nico@linaro.org>, Arnd Bergmann <arnd@arndb.de>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] include/linux/platform_data: beautify code, 'inline' is better
+ in front of 'void'
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
 
-I faced the same problem as this URL:
-http://stackoverflow.com/questions/13641440/unable-to-distrubute-the-interrupts-over-multiple-cores
+  better to let 'inline' in front of 'void'
 
-The question have been closed with no answer. :(
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ include/linux/platform_data/usb-ohci-s3c2410.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-My machine have 2x Xeon E5504 processors and running vanilla kernel
-3.6.11 in CentOS 6.0.
-
-Could anyone give me some tips?
-
-PS:
-[root@localhost ~]# cat /proc/cmdline
-ro root=/dev/mapper/vg_localhost-lv_root rd_NO_LUKS LANG=en_US.UTF-8
-rd_NO_MD quiet rd_LVM_LV=vg_localhost/lv_swap
-SYSFONT=latarcyrheb-sun16 rhgb rd_LVM_LV=vg_localhost/lv_root
-KEYBOARDTYPE=pc KEYTABLE=us rd_NO_DM apic=debug pci=nomsi
-[root@localhost ~]# uname -a
-Linux localhost.lenkydomain 3.6.11 #2 SMP Fri Mar 22 21:13:41 CST 2013
-x86_64 x86_64 x86_64 GNU/Linux
-[root@localhost ~]# echo 6 > /proc/irq/25/smp_affinity
-[root@localhost ~]# cat /proc/irq/25/smp_affinity
-000006
-[root@localhost ~]# cat /proc/interrupts | grep eth9
-  25:       5824      13914        159        128        210
-0          0          0  IR-IO-APIC-fasteoi   eth9
-[root@localhost ~]# cat /proc/interrupts | grep eth9
-  25:       5824      13927        159        128        210
-0          0          0  IR-IO-APIC-fasteoi   eth9
-[root@localhost ~]# cat /proc/interrupts | grep eth9
-  25:       5824      13939        159        128        210
-0          0          0  IR-IO-APIC-fasteoi   eth9
-[root@localhost ~]# cat /proc/interrupts | grep eth9
-  25:       5824      13973        159        128        210
-0          0          0  IR-IO-APIC-fasteoi   eth9
-
-
+diff --git a/include/linux/platform_data/usb-ohci-s3c2410.h b/include/linux/platform_data/usb-ohci-s3c2410.h
+index 7fa1fbe..cc7554a 100644
+--- a/include/linux/platform_data/usb-ohci-s3c2410.h
++++ b/include/linux/platform_data/usb-ohci-s3c2410.h
+@@ -31,7 +31,7 @@ struct s3c2410_hcd_info {
+ 	void		(*report_oc)(struct s3c2410_hcd_info *, int ports);
+ };
+ 
+-static void inline s3c2410_usb_report_oc(struct s3c2410_hcd_info *info, int ports)
++static inline void s3c2410_usb_report_oc(struct s3c2410_hcd_info *info, int ports)
+ {
+ 	if (info->report_oc != NULL) {
+ 		(info->report_oc)(info, ports);
 -- 
-Regards,
-
-Lenky
+1.7.7.6
