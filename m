@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab3CYB20 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:28:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34011 "EHLO
+	id S1757227Ab3CYB2r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:28:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33988 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756059Ab3CYBQD (ORCPT
+	by vger.kernel.org with ESMTP id S1755876Ab3CYBP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:16:03 -0400
-Message-Id: <20130325010530.311406944@decadent.org.uk>
+	Sun, 24 Mar 2013 21:15:59 -0400
+Message-Id: <20130325010530.415166395@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:25 +0000
+Date: Mon, 25 Mar 2013 01:06:26 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-Subject: [ 061/104] tracing: Prevent buffer overwrite disabled for latency tracers
+Cc: akpm@linux-foundation.org, Hannes Reinecke <hare@suse.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, Oliver Neukum <oneukum@suse.de>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Frederik Himpe <fhimpe@vub.ac.be>, David Haerdeman <david@hardeman.nu>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 062/104] USB: xhci: correctly enable interrupts
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,255 +34,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Hannes Reinecke <hare@suse.de>
 
-commit 613f04a0f51e6e68ac6fe571ab79da3c0a5eb4da upstream.
+commit 00eed9c814cb8f281be6f0f5d8f45025dc0a97eb upstream.
 
-The latency tracers require the buffers to be in overwrite mode,
-otherwise they get screwed up. Force the buffers to stay in overwrite
-mode when latency tracers are enabled.
+xhci has its own interrupt enabling routine, which will try to
+use MSI-X/MSI if present. So the usb core shouldn't try to enable
+legacy interrupts; on some machines the xhci legacy IRQ setting
+is invalid.
 
-Added a flag_changed() method to the tracer structure to allow
-the tracers to see what flags are being changed, and also be able
-to prevent the change from happing.
+v3: Be careful to not break XHCI_BROKEN_MSI workaround (by trenn)
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[bwh: Backported to 3.2:
- - Adjust context
- - Drop some changes that are not needed because trace_set_options() is not
-   separate from tracing_trace_options_write()]
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Oliver Neukum <oneukum@suse.de>
+Cc: Thomas Renninger <trenn@suse.de>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Frederik Himpe <fhimpe@vub.ac.be>
+Cc: David Haerdeman <david@hardeman.nu>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reviewed-by: Thomas Renninger <trenn@suse.de>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2636,11 +2636,25 @@ static int set_tracer_option(struct trac
- 	return -EINVAL;
- }
+ drivers/usb/core/hcd-pci.c |   23 ++++++++++++++---------
+ drivers/usb/host/xhci.c    |    3 ++-
+ 2 files changed, 16 insertions(+), 10 deletions(-)
+
+--- a/drivers/usb/core/hcd-pci.c
++++ b/drivers/usb/core/hcd-pci.c
+@@ -173,6 +173,7 @@ int usb_hcd_pci_probe(struct pci_dev *de
+ 	struct hc_driver	*driver;
+ 	struct usb_hcd		*hcd;
+ 	int			retval;
++	int			hcd_irq = 0;
  
--static void set_tracer_flags(unsigned int mask, int enabled)
-+/* Some tracers require overwrite to stay enabled */
-+int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set)
-+{
-+	if (tracer->enabled && (mask & TRACE_ITER_OVERWRITE) && !set)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+int set_tracer_flag(unsigned int mask, int enabled)
- {
- 	/* do nothing if flag is already set */
- 	if (!!(trace_flags & mask) == !!enabled)
--		return;
-+		return 0;
-+
-+	/* Give the tracer a chance to approve the change */
-+	if (current_trace->flag_changed)
-+		if (current_trace->flag_changed(current_trace, mask, !!enabled))
-+			return -EINVAL;
+ 	if (usb_disabled())
+ 		return -ENODEV;
+@@ -187,15 +188,19 @@ int usb_hcd_pci_probe(struct pci_dev *de
+ 		return -ENODEV;
+ 	dev->current_state = PCI_D0;
  
- 	if (enabled)
- 		trace_flags |= mask;
-@@ -2656,6 +2670,8 @@ static void set_tracer_flags(unsigned in
- 		ring_buffer_change_overwrite(max_tr.buffer, enabled);
- #endif
- 	}
-+
-+	return 0;
- }
- 
- static ssize_t
-@@ -2686,7 +2702,7 @@ tracing_trace_options_write(struct file
- 
- 	for (i = 0; trace_options[i]; i++) {
- 		if (strcmp(cmp, trace_options[i]) == 0) {
--			set_tracer_flags(1 << i, !neg);
-+			ret = set_tracer_flag(1 << i, !neg);
- 			break;
- 		}
- 	}
-@@ -3022,6 +3038,9 @@ static int tracing_set_tracer(const char
- 		goto out;
- 
- 	trace_branch_disable();
-+
-+	current_trace->enabled = false;
-+
- 	if (current_trace && current_trace->reset)
- 		current_trace->reset(tr);
- 	if (current_trace && current_trace->use_max_tr) {
-@@ -3051,6 +3070,7 @@ static int tracing_set_tracer(const char
- 			goto out;
+-	/* The xHCI driver supports MSI and MSI-X,
+-	 * so don't fail if the BIOS doesn't provide a legacy IRQ.
++	/*
++	 * The xHCI driver has its own irq management
++	 * make sure irq setup is not touched for xhci in generic hcd code
+ 	 */
+-	if (!dev->irq && (driver->flags & HCD_MASK) != HCD_USB3) {
+-		dev_err(&dev->dev,
+-			"Found HC with no IRQ.  Check BIOS/PCI %s setup!\n",
+-			pci_name(dev));
+-		retval = -ENODEV;
+-		goto disable_pci;
++	if ((driver->flags & HCD_MASK) != HCD_USB3) {
++		if (!dev->irq) {
++			dev_err(&dev->dev,
++			"Found HC with no IRQ. Check BIOS/PCI %s setup!\n",
++				pci_name(dev));
++			retval = -ENODEV;
++			goto disable_pci;
++		}
++		hcd_irq = dev->irq;
  	}
  
-+	current_trace->enabled = true;
- 	trace_branch_enable(tr);
-  out:
- 	mutex_unlock(&trace_types_lock);
-@@ -4387,9 +4407,12 @@ trace_options_core_write(struct file *fi
+ 	hcd = usb_create_hcd(driver, &dev->dev, pci_name(dev));
+@@ -245,7 +250,7 @@ int usb_hcd_pci_probe(struct pci_dev *de
+ 
+ 	pci_set_master(dev);
+ 
+-	retval = usb_add_hcd(hcd, dev->irq, IRQF_SHARED);
++	retval = usb_add_hcd(hcd, hcd_irq, IRQF_SHARED);
+ 	if (retval != 0)
+ 		goto unmap_registers;
+ 	set_hs_companion(dev, hcd);
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -342,7 +342,7 @@ static int xhci_try_enable_msi(struct us
+ 	 * generate interrupts.  Don't even try to enable MSI.
+ 	 */
+ 	if (xhci->quirks & XHCI_BROKEN_MSI)
+-		return 0;
++		goto legacy_irq;
+ 
+ 	/* unregister the legacy interrupt */
+ 	if (hcd->irq)
+@@ -363,6 +363,7 @@ static int xhci_try_enable_msi(struct us
  		return -EINVAL;
+ 	}
  
- 	mutex_lock(&trace_types_lock);
--	set_tracer_flags(1 << index, val);
-+	ret = set_tracer_flag(1 << index, val);
- 	mutex_unlock(&trace_types_lock);
- 
-+	if (ret < 0)
-+		return ret;
-+
- 	*ppos += cnt;
- 
- 	return cnt;
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -271,10 +271,14 @@ struct tracer {
- 	enum print_line_t	(*print_line)(struct trace_iterator *iter);
- 	/* If you handled the flag setting, return 0 */
- 	int			(*set_flag)(u32 old_flags, u32 bit, int set);
-+	/* Return 0 if OK with change, else return non-zero */
-+	int			(*flag_changed)(struct tracer *tracer,
-+						u32 mask, int set);
- 	struct tracer		*next;
- 	struct tracer_flags	*flags;
- 	int			print_max;
- 	int			use_max_tr;
-+	bool			enabled;
- };
- 
- 
-@@ -815,6 +819,9 @@ extern struct list_head ftrace_events;
- extern const char *__start___trace_bprintk_fmt[];
- extern const char *__stop___trace_bprintk_fmt[];
- 
-+int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set);
-+int set_tracer_flag(unsigned int mask, int enabled);
-+
- #undef FTRACE_ENTRY
- #define FTRACE_ENTRY(call, struct_name, id, tstruct, print)		\
- 	extern struct ftrace_event_call					\
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -32,7 +32,7 @@ enum {
- 
- static int trace_type __read_mostly;
- 
--static int save_lat_flag;
-+static int save_flags;
- 
- static void stop_irqsoff_tracer(struct trace_array *tr, int graph);
- static int start_irqsoff_tracer(struct trace_array *tr, int graph);
-@@ -546,8 +546,11 @@ static void stop_irqsoff_tracer(struct t
- 
- static void __irqsoff_tracer_init(struct trace_array *tr)
- {
--	save_lat_flag = trace_flags & TRACE_ITER_LATENCY_FMT;
--	trace_flags |= TRACE_ITER_LATENCY_FMT;
-+	save_flags = trace_flags;
-+
-+	/* non overwrite screws up the latency tracers */
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
- 
- 	tracing_max_latency = 0;
- 	irqsoff_trace = tr;
-@@ -561,10 +564,13 @@ static void __irqsoff_tracer_init(struct
- 
- static void irqsoff_tracer_reset(struct trace_array *tr)
- {
-+	int lat_flag = save_flags & TRACE_ITER_LATENCY_FMT;
-+	int overwrite_flag = save_flags & TRACE_ITER_OVERWRITE;
-+
- 	stop_irqsoff_tracer(tr, is_graph());
- 
--	if (!save_lat_flag)
--		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
- }
- 
- static void irqsoff_tracer_start(struct trace_array *tr)
-@@ -597,6 +603,7 @@ static struct tracer irqsoff_tracer __re
- 	.print_line     = irqsoff_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= irqsoff_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_irqsoff,
- #endif
-@@ -630,6 +637,7 @@ static struct tracer preemptoff_tracer _
- 	.print_line     = irqsoff_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= irqsoff_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_preemptoff,
- #endif
-@@ -665,6 +673,7 @@ static struct tracer preemptirqsoff_trac
- 	.print_line     = irqsoff_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= irqsoff_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_preemptirqsoff,
- #endif
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -36,7 +36,7 @@ static void __wakeup_reset(struct trace_
- static int wakeup_graph_entry(struct ftrace_graph_ent *trace);
- static void wakeup_graph_return(struct ftrace_graph_ret *trace);
- 
--static int save_lat_flag;
-+static int save_flags;
- 
- #define TRACE_DISPLAY_GRAPH     1
- 
-@@ -528,8 +528,11 @@ static void stop_wakeup_tracer(struct tr
- 
- static int __wakeup_tracer_init(struct trace_array *tr)
- {
--	save_lat_flag = trace_flags & TRACE_ITER_LATENCY_FMT;
--	trace_flags |= TRACE_ITER_LATENCY_FMT;
-+	save_flags = trace_flags;
-+
-+	/* non overwrite screws up the latency tracers */
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
- 
- 	tracing_max_latency = 0;
- 	wakeup_trace = tr;
-@@ -551,12 +554,15 @@ static int wakeup_rt_tracer_init(struct
- 
- static void wakeup_tracer_reset(struct trace_array *tr)
- {
-+	int lat_flag = save_flags & TRACE_ITER_LATENCY_FMT;
-+	int overwrite_flag = save_flags & TRACE_ITER_OVERWRITE;
-+
- 	stop_wakeup_tracer(tr);
- 	/* make sure we put back any tasks we are tracing */
- 	wakeup_reset(tr);
- 
--	if (!save_lat_flag)
--		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
- }
- 
- static void wakeup_tracer_start(struct trace_array *tr)
-@@ -582,6 +588,7 @@ static struct tracer wakeup_tracer __rea
- 	.print_line	= wakeup_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= wakeup_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_wakeup,
- #endif
-@@ -603,6 +610,7 @@ static struct tracer wakeup_rt_tracer __
- 	.print_line	= wakeup_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= wakeup_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_wakeup,
- #endif
++ legacy_irq:
+ 	/* fall back to legacy interrupt*/
+ 	ret = request_irq(pdev->irq, &usb_hcd_irq, IRQF_SHARED,
+ 			hcd->irq_descr, hcd);
 
 
