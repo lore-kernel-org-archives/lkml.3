@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933339Ab3CYUsR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 16:48:17 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:64510 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab3CYUsP (ORCPT
+	id S1758940Ab3CYUzx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 16:55:53 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:60243 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758898Ab3CYUzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 16:48:15 -0400
-Date: Mon, 25 Mar 2013 13:48:07 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <eag0628@gmail.com>
-Cc: laijs@cn.fujitsu.com, axboe@kernel.dk, jack@suse.cz,
-        fengguang.wu@intel.com, jmoyer@redhat.com, zab@redhat.com,
-        linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au,
-        davem@davemloft.net, linux-crypto@vger.kernel.org
-Subject: Re: [PATCHSET wq/for-3.10] workqueue: NUMA affinity for unbound
- workqueues
-Message-ID: <20130325204807.GA26033@htj.dyndns.org>
-References: <1363737629-16745-1-git-send-email-tj@kernel.org>
- <20130320185708.GB31256@htj.dyndns.org>
- <CACvQF53=qgUHrr944D_70dZpT-EOMtPcz2+0JPp4kOnGPzAptQ@mail.gmail.com>
- <20130324185506.GA4378@htj.dyndns.org>
- <20130325191500.GA12767@htj.dyndns.org>
+	Mon, 25 Mar 2013 16:55:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130325191500.GA12767@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <D7731577-A2C0-4FC5-A7E3-62F251A18798@orcon.net.nz>
+References: <1363556926-21097-1-git-send-email-will.deacon@arm.com>
+ <BFB01C0A-95E5-4C2B-8AF2-A06BE1FF74E0@orcon.net.nz> <20130325133710.GD14280@mudshark.cambridge.arm.com>
+ <20130325150958.GA13894@skade.schwarzvogel.de> <D7731577-A2C0-4FC5-A7E3-62F251A18798@orcon.net.nz>
+From: Matt Turner <mattst88@gmail.com>
+Date: Mon, 25 Mar 2013 13:55:28 -0700
+Message-ID: <CAEdQ38Hx0fbFW615XhhNwv0Spg4pyeqo7BhiOTV-9CrPenPwNQ@mail.gmail.com>
+Subject: Re: [PATCH] alpha: makefile: don't enforce small data model for
+ kernel builds
+To: Michael Cree <mcree@orcon.net.nz>
+Cc: Tobias Klausmann <klausman@schwarzvogel.de>,
+        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 12:15:00PM -0700, Tejun Heo wrote:
-> On Sun, Mar 24, 2013 at 11:55:06AM -0700, Tejun Heo wrote:
-> > > the whole patchset is more complicated than my brain.
-> > 
-> > It isn't that complex, is it?  I mean, the difficult part - using
-> > multiple pwqs on unbound wq - already happened, and even that wasn't
-> > too complex as it in most part synchronized the behaviors between
-> > per-cpu and unbound workqueues.  All that NUMA support is doing is
-> > mapping different pwqs to different issuing CPUs.
-> 
-> Oh, BTW, please feel free to rebase your patchset on top of the
-> current wq/for-3.10.  I'll take care of the conflicts with the numa
-> one, if there are any.
+On Mon, Mar 25, 2013 at 1:06 PM, Michael Cree <mcree@orcon.net.nz> wrote:
+> On 26/03/2013, at 4:09 AM, Tobias Klausmann wrote:
+>>
+>> On Mon, 25 Mar 2013, Will Deacon wrote:
+>>>
+>>> Any news on these? I've included an updated version of the first patch,
+>>> with
+>>> the Tested-by-tag and a tweaked commit message below.
+>>
+>>
+>> As a data point, I tried vanilla 3.8.4 on the weekend. With my
+>> usual config on a UP1500, it will fail at build time with
+>> relocation errors. If I remove -msmall-data (or replace it with
+>> ~big~), the machine hangs hard immediatly after aboot telling me
+>> it's starting it.
+>
+>
+> You probably want the "alpha: Add irongate_io to to PCI bus resources" patch
+> posted by Matt Turner in the linux-alpha forum.  Looks like it has not been
+> sent to Linus.
+>
+> If Matt does not respond in the next day or two I'll collect patches and
+> send them on to Linus.
 
-Sorry, never mind.  I'm cherry picking wq->mutex patches.  Will apply
-the rebased versions in a couple hours.  Let's base everything else on
-top of those.
+Yes, please do. I haven't powered on an alpha in a few months.
 
-Thanks.
-
--- 
-tejun
+Matt
