@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757309Ab3CYImh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 04:42:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:7721 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757275Ab3CYIme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 04:42:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,904,1355126400"; 
-   d="scan'208";a="284124712"
-Date: Mon, 25 Mar 2013 10:42:30 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Rob Landley <rob@landley.net>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCHv2 2/2] serial: of_serial: Handle fifo-size property
-Message-ID: <20130325084230.GA20052@xps8300>
-References: <20130322074154.GA9250@xps8300>
- <1363939516-17308-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1363940208.2289.22.camel@leyfoon-vm>
- <20130322092421.GA3134@xps8300>
+	id S1757345Ab3CYIoV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 04:44:21 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:48752 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757312Ab3CYIoU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 04:44:20 -0400
+Date: Mon, 25 Mar 2013 08:44:14 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] regulator: ab8500: Use regulator_list_voltage_linear
+ for fixed voltage
+Message-ID: <20130325084414.GA3568@gmail.com>
+References: <1364194430.25717.1.camel@phoenix>
+ <1364194740.27158.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130322092421.GA3134@xps8300>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1364194740.27158.1.camel@phoenix>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 25 Mar 2013, Axel Lin wrote:
 
-On Fri, Mar 22, 2013 at 11:24:21AM +0200, Heikki Krogerus wrote:
-> On Fri, Mar 22, 2013 at 04:16:48PM +0800, Ley Foon Tan wrote:
-> > Besides the fifo size, we need to have hardware flow control setting
-> > from device tree as well.
 > 
-> This is a bit problematic. We can set the uart_8250_port.capabilities
-> flag UART_CAP_AFE based on "hw-flow-control" property, but then the
-> properties from the type will not be used, just like in case of
-> fifosize. We would need to know all the flags of the type that are
-> normally taken from the uart_config[] array.
+> Both ab8500_regulator_mode_ops and ab8500_regulator_ops do not have volt_table
+> setting, thus we can not use regulator_list_voltage_table for them.
+> However, they have min_uV setting with n_voltages = 1, so use
+> regulator_list_voltage_linear instead.
 > 
-> The UART_CAP_FIFO can be set by checking if we have set the
-> port.fifosize or not, so if the bellow is acceptable then I can make a
-> patch. There is no risk of overriding the capabilities for the
-> existing uarts, as we only touch the uart_8250_port.capabilities if
-> the new properties are used. So is it OK?
+> Also remove setting set_voltage_time_sel for ab8500_regulator_mode_ops.
+> It is used only for fixed voltage, so it does not need to implement
+> set_voltage_time_sel.
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-I'll resend these two patches and add the support for hardware flow
-control.
+Looks good to me.
+
+Acked-by: Lee Jones <lee.jones@linaro.org>
+
+> ---
+>  drivers/regulator/ab8500.c |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+> index a2d19c6..12e2740 100644
+> --- a/drivers/regulator/ab8500.c
+> +++ b/drivers/regulator/ab8500.c
+> @@ -363,8 +363,7 @@ static struct regulator_ops ab8500_regulator_mode_ops = {
+>  	.set_mode		= ab8500_regulator_set_mode,
+>  	.get_mode		= ab8500_regulator_get_mode,
+>  	.get_voltage_sel 	= ab8500_regulator_get_voltage_sel,
+> -	.list_voltage		= regulator_list_voltage_table,
+> -	.set_voltage_time_sel	= ab8500_regulator_set_voltage_time_sel,
+> +	.list_voltage		= regulator_list_voltage_linear,
+>  };
+>  
+>  static struct regulator_ops ab8500_regulator_ops = {
+> @@ -372,7 +371,7 @@ static struct regulator_ops ab8500_regulator_ops = {
+>  	.disable		= ab8500_regulator_disable,
+>  	.is_enabled		= ab8500_regulator_is_enabled,
+>  	.get_voltage_sel 	= ab8500_regulator_get_voltage_sel,
+> -	.list_voltage		= regulator_list_voltage_table,
+> +	.list_voltage		= regulator_list_voltage_linear,
+>  };
+>  
+>  static struct ab8500_regulator_info
 
 -- 
-heikki
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
