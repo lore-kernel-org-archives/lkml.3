@@ -1,121 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab3CYHtm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 03:49:42 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55893 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756472Ab3CYHtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 03:49:40 -0400
-From: Philip Avinash <avinashphilip@ti.com>
-To: <nsekhar@ti.com>, <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <prakash.pm@ti.com>,
-        <jacmet@sunsite.dk>, Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH v3 2/3] arm: davinci: clock node support for ECAP & EHRPWM
-Date: Mon, 25 Mar 2013 13:19:48 +0530
-Message-ID: <1364197789-16783-3-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364197789-16783-1-git-send-email-avinashphilip@ti.com>
-References: <1364197789-16783-1-git-send-email-avinashphilip@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756542Ab3CYHuj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 03:50:39 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:31452 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756436Ab3CYHui (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 03:50:38 -0400
+X-AuditID: cbfee690-b7f656d0000007e3-82-515001cc9ce2
+Message-id: <1364197791.29882.5.camel@kjgkr>
+Subject: Re: [PATCH 1/4] f2fs: fix the recovery flow to handle errors correctly
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Date: Mon, 25 Mar 2013 16:49:51 +0900
+In-reply-to: <CAKYAXd-999ACB+QNpOYXj=3WmH2OGYdrR9hpUn1WtpRCOJ8qiA@mail.gmail.com>
+References: <1364168414-12815-1-git-send-email-jaegeuk.kim@samsung.com>
+ <CAKYAXd-999ACB+QNpOYXj=3WmH2OGYdrR9hpUn1WtpRCOJ8qiA@mail.gmail.com>
+Organization: samsung
+Content-type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature"; boundary="=-ZIR4ytBvMOqTRxIlyQUk"
+X-Mailer: Evolution 3.2.3-0ubuntu6
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsVy+t8zQ90zjAGBBi9+GFlcv3uL2eLSIneL
+	PXtPslhc3jWHzYHFY+esu+weuxd8ZvL4vEkugDmKyyYlNSezLLVI3y6BK6O7bRpzwX/Jio/P
+	j7A3MP4T7WLk5JAQMJF4deYoO4QtJnHh3nq2LkYuDiGBZYwSi04tZIMpuvj2NDtEYhGjxOGT
+	F5hAEkICrxklDn6LB7F5BXQkZn86yApiCwv4S0x83sDSxcjBwSagLbF5vwFEuaLE2/13WUHC
+	IgJqEhOepYKEmQUyJea8ngzWySKgKrHh4GKw6ZwCwRIv9v9jhFjbxyhx6tMEZpAEv4CoxMnW
+	T4wQzVUSM9pbWSDuVJLY3d7JDnGOoMSPyfdYQJolBP6ySzzY0sQEsUFA4tvkQ2C3SQjISmw6
+	wAzRKylxcMUNlgmM4rOQjJ2FZBREXFOidftvdghbW2LZwtfMELatxLp176FqbCQ2XV3ACGHL
+	S2x/O4d5ASP7KkbR1ILkguKk9CITveLE3OLSvHS95PzcTYyQyJ2wg/HeAetDjFVAJ05klhJN
+	zgdGfl5JvKGxmZGFqYmpsZG5pRlVhJXEedVbrAOFBNITS1KzU1MLUovii0pzUosPMTJxcEo1
+	MJbs8dY3ic74t8SK7XLB95A2r41z39xzn3JC8Mi86slppsJ/TxhKvP2wna3knjNHlEajWjvj
+	Gbd/H35rm6byfpboCpy0lO252JzZC/kj+K7KZp/5xv+5N8wyc22v6H5bM9OspNST7B7b9cTm
+	bTCrOirT837jhFVx3M7L5Dx+7VJunLtI6mnieSWW4oxEQy3mouJEAP8vADkJAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOKsWRmVeSWpSXmKPExsVy+t9jAd0zjAGBBsc+61pcv3uL2eLSIneL
+	PXtPslhc3jWHzYHFY+esu+weuxd8ZvL4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON45
+	3tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2ibkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3f
+	kCC4HiMDNJCwjjGju20ac8F/yYqPz4+wNzD+E+1i5OSQEDCRuPj2NDuELSZx4d56ti5GLg4h
+	gUWMEodPXmACSQgJvGaUOPgtHsTmFdCRmP3pICuILSzgLzHxeQNLFyMHB5uAtsTm/QYQ5YoS
+	b/ffZQUJiwioSUx4lgoSZhbIlJjzejJYJ4uAqsSGg4vBpnMKBEu82P+PEWJtH6PEqU8TmEES
+	/AKiEidbPzFCNFdJzGhvZYG4U0lid3snO8Q5ghI/Jt9jmcAoOAtJ2SwkKYi4pkTr9t/sELa2
+	xLKFr5khbFuJdeveQ9XYSGy6uoARwpaX2P52DvMCRvZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ
+	+bmbGMFp4ZnUDsaVDRaHGAU4GJV4eAVq/AOFWBPLiitzDzGqAM15tGH1BUYplrz8vFQlEd7o
+	e0Bp3pTEyqrUovz4otKc1OJDjBMZgeExkVlKNDkfmMzySuINjU3MjCyNzCyMTMzNaSmsJM57
+	oNU6UEggPbEkNTs1tSC1COYoJg5OqQbGStFPf78Ll5ZsWOt7b4HWfkbVlJsLT6yQujF7b7Fe
+	AtNaDQMOzoebHDV4GkqnXjb9URkv1WEqkS0t6ONWO3WV29r21dNYqoKNj1RsClcTVXSae181
+	btfv0H3tW014dijtTdIpuMN6sbljrbPmwTdKPXeOtiUoNAYW9araevz6Y6K+tkD84WYlluKM
+	REMt5qLiRACrOKz+igMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add clock node support for ECAP and EHRPWM modules.
-Also adds TBCLK for EHRWPM TBCLK to comply with pwm-tiehrpwm
-driver.
 
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
----
-Changes Since v2:
-	- Add prefix of ehrpwm to tblck_enable and tblck_disable functions
-	- Make functions as static.
+--=-ZIR4ytBvMOqTRxIlyQUk
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Changes Since v1:
-	- TBCLK make it as actual clock with enable/disable feature.
+2013-03-25 (=EC=9B=94), 15:30 +0900, Namjae Jeon:
+> 2013/3/25, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+> > We should handle errors during the recovery flow correctly.
+> > For example, if we get -ENOMEM, we should report a mount failure instea=
+d of
+> > conducting the remained mount procedure.
+> >
+> > Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> > ---
+> >  fs/f2fs/f2fs.h     |  2 +-
+> >  fs/f2fs/recovery.c | 46 ++++++++++++++++++++++++++++------------------
+> >  fs/f2fs/super.c    |  9 +++++++--
+> >  3 files changed, 36 insertions(+), 21 deletions(-)
+> >
+> > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> > index 5bb87e0..109e12d 100644
+> > --- a/fs/f2fs/f2fs.h
+> > +++ b/fs/f2fs/f2fs.h
+> > @@ -1027,7 +1027,7 @@ void destroy_gc_caches(void);
+> >  /*
+> >   * recovery.c
+> >   */
+> > -void recover_fsync_data(struct f2fs_sb_info *);
+> > +int recover_fsync_data(struct f2fs_sb_info *);
+> >  bool space_for_roll_forward(struct f2fs_sb_info *);
+> >
+> >  /*
+> > diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+> > index 2d86eb2..61bdaa7 100644
+> > --- a/fs/f2fs/recovery.c
+> > +++ b/fs/f2fs/recovery.c
+> > @@ -118,10 +118,8 @@ static int find_fsync_dnodes(struct f2fs_sb_info *=
+sbi,
+> > struct list_head *head)
+> >
+> >  		lock_page(page);
+> >
+> Hi Jaegeuk.
+> I have a question.
+> > -		if (cp_ver !=3D cpver_of_node(page)) {
+> > -			err =3D -EINVAL;
+> > +		if (cp_ver !=3D cpver_of_node(page))
+> >  			goto unlock_out;
+> > -		}
+> err =3D 0 is initialized to zero in the start of function
+> Why have you remove err =3D -EINVAL; code when mismatching cp_ver ?
 
- arch/arm/mach-davinci/da850.c              |   46 ++++++++++++++++++++++++++++
- arch/arm/mach-davinci/include/mach/da8xx.h |    1 +
- 2 files changed, 47 insertions(+)
+This ending condition is used to find the latest node pages that we have
+to recover, not to detect an error to exit the recovery routine.
+For example, the error conditions include -ENOMEM or -EIO, something
+like such the obvious errors.
+Thanks,
 
-diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
-index 0c4a26d..2a2f60c 100644
---- a/arch/arm/mach-davinci/da850.c
-+++ b/arch/arm/mach-davinci/da850.c
-@@ -383,6 +383,49 @@ static struct clk dsp_clk = {
- 	.flags		= PSC_LRST | PSC_FORCE,
- };
- 
-+static struct clk ehrpwm_clk = {
-+	.name		= "ehrpwm",
-+	.parent		= &pll0_sysclk2,
-+	.lpsc		= DA8XX_LPSC1_PWM,
-+	.gpsc		= 1,
-+	.flags		= DA850_CLK_ASYNC3,
-+};
-+
-+#define DA8XX_EHRPWM_TBCLKSYNC	BIT(12)
-+
-+static void ehrpwm_tblck_enable(struct clk *clk)
-+{
-+	u32 val;
-+
-+	val = readl(DA8XX_SYSCFG0_VIRT(DA8XX_CFGCHIP1_REG));
-+	val |= DA8XX_EHRPWM_TBCLKSYNC;
-+	writel(val, DA8XX_SYSCFG0_VIRT(DA8XX_CFGCHIP1_REG));
-+}
-+
-+static void ehrpwm_tblck_disable(struct clk *clk)
-+{
-+	u32 val;
-+
-+	val = readl(DA8XX_SYSCFG0_VIRT(DA8XX_CFGCHIP1_REG));
-+	val &= ~DA8XX_EHRPWM_TBCLKSYNC;
-+	writel(val, DA8XX_SYSCFG0_VIRT(DA8XX_CFGCHIP1_REG));
-+}
-+
-+static struct clk ehrpwm_tbclk = {
-+	.name		= "ehrpwm_tbclk",
-+	.parent		= &ehrpwm_clk,
-+	.clk_enable	= ehrpwm_tblck_enable,
-+	.clk_disable	= ehrpwm_tblck_disable,
-+};
-+
-+static struct clk ecap_clk = {
-+	.name		= "ecap",
-+	.parent		= &pll0_sysclk2,
-+	.lpsc		= DA8XX_LPSC1_ECAP,
-+	.gpsc		= 1,
-+	.flags		= DA850_CLK_ASYNC3,
-+};
-+
- static struct clk_lookup da850_clks[] = {
- 	CLK(NULL,		"ref",		&ref_clk),
- 	CLK(NULL,		"pll0",		&pll0_clk),
-@@ -430,6 +473,9 @@ static struct clk_lookup da850_clks[] = {
- 	CLK("vpif",		NULL,		&vpif_clk),
- 	CLK("ahci",		NULL,		&sata_clk),
- 	CLK("davinci-rproc.0",	NULL,		&dsp_clk),
-+	CLK("ehrpwm",		"fck",		&ehrpwm_clk),
-+	CLK("ehrpwm",		"tbclk",	&ehrpwm_tbclk),
-+	CLK("ecap",		"fck",		&ecap_clk),
- 	CLK(NULL,		NULL,		NULL),
- };
- 
-diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h b/arch/arm/mach-davinci/include/mach/da8xx.h
-index de439b7..be77ce2 100644
---- a/arch/arm/mach-davinci/include/mach/da8xx.h
-+++ b/arch/arm/mach-davinci/include/mach/da8xx.h
-@@ -55,6 +55,7 @@ extern unsigned int da850_max_speed;
- #define DA8XX_SYSCFG0_VIRT(x)	(da8xx_syscfg0_base + (x))
- #define DA8XX_JTAG_ID_REG	0x18
- #define DA8XX_CFGCHIP0_REG	0x17c
-+#define DA8XX_CFGCHIP1_REG	0x180
- #define DA8XX_CFGCHIP2_REG	0x184
- #define DA8XX_CFGCHIP3_REG	0x188
- 
--- 
-1.7.9.5
+>=20
+> Thanks.
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" =
+in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+--=20
+Jaegeuk Kim
+Samsung
+
+--=-ZIR4ytBvMOqTRxIlyQUk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJRUAGfAAoJEEAUqH6CSFDS9VIQAIm2DH7GWiR2iV2H5PfTg2hd
+3Uqt5cdpdIqxXKc3DEjumSUjpkQmUBu0WolCMyDnq2H4r7jJ5W/rWP5tdILPJ6VE
+FheuAFAGDdAi+02jrPC2QvPAv5xI9tiKIkbIy3F1J71ocMhd30okZuwZ0PsjH8H/
+b7QMhpMGcgLf7lfNTqLZ7VciZwOPi5cfa7ISpArLjkwvIrMhS5SS7mJqgsFfS8H7
+Qg6mlvHRGSKIhwERjdHSVms4kJMsMpAWhRkW5VwWKcOBEQzgYrnV6aoslr7kEPuu
+XDZXa7+1cry4gcwS23GxdDeq7EY8aVAgjqJUmOD2QZ/wU1XrSLVgm2XJ5a1ap1OF
+/S93V+EC2TMLzLdNXL2utqwO4NiH/3B56IPtAYn2HPDdXM5BptAh2kuvjadB5ymB
+Q+ZPwEZonrvNtLgWIpsyo4osn/8/Ki5iNpm6jifyetIytTNx/aUQT/xudb+HiZ3Q
+99WxgBK08ZXymKPIad7bQW9jaif45po53E94jwX9ovHjCAgTsi4NDRBBfiYX5eXR
+cY3cpibeUGe02psx4ZhlEXo+CGenkXioPEbFnvOn8OmW2V6FmaocHZzOmN5fzzeD
+lLwHCg5Kw6QsfDMj2KVNFyEyB8tzc9CmQ1oBbozrhMEebriFsYlD4tF8n6tEuecb
+7WAqaLwwmM4v/G4ED6FY
+=sBIl
+-----END PGP SIGNATURE-----
+
+--=-ZIR4ytBvMOqTRxIlyQUk--
 
