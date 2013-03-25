@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999Ab3CYELK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 00:11:10 -0400
+	id S1754708Ab3CYELI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 00:11:08 -0400
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44180 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab3CYEKg (ORCPT
+	with ESMTP id S1751233Ab3CYEKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 00:10:36 -0400
-X-AuditID: 9c930197-b7c9dae000006959-6b-514fce3958a7
+	Mon, 25 Mar 2013 00:10:38 -0400
+X-AuditID: 9c930197-b7c9dae000006959-77-514fce3b89ef
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [RFC PATCH 2/6] ARM, crashkernel: use ___alloc_bootmem_node_nopanic() for reserving memory
-Date: Mon, 25 Mar 2013 13:11:10 +0900
-Message-Id: <1364184674-13798-3-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [RFC PATCH 6/6] ARM, mm: enable NO_BOOTMEM for default ARM build
+Date: Mon, 25 Mar 2013 13:11:14 +0900
+Message-Id: <1364184674-13798-7-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1364184674-13798-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1364184674-13798-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -24,43 +24,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For crashkernel, specific address should be reserved.
-It can be achived by reserve_bootmem(), but this function is
-only for bootmem.
+If we use NO_BOOTMEM, we don't need to initialize a bitmap and
+we don't need to do bitmap operation, so we can boot slightly faster.
 
-Now, we try to enable nobootmem, therfore change it more general function,
-___alloc_bootmem_node_nopanic(). It can be use for both,
-bootmem and nobootmem.
+Additionaly advantage of enabling NO_BOOTMEM is saving more memory.
+bootmem allocator manage memories as page unit, so if we request
+4 bytes area to bootmem, it actually give us PAGE_SIZE area.
+nobootmem manage memory as byte unit, so there is no waste.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index b3990a3..99ffe87 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -674,15 +674,20 @@ static void __init reserve_crashkernel(void)
- {
- 	unsigned long long crash_size, crash_base;
- 	unsigned long long total_mem;
-+	unsigned long limit = 0;
- 	int ret;
- 
- 	total_mem = get_total_mem();
- 	ret = parse_crashkernel(boot_command_line, total_mem,
- 				&crash_size, &crash_base);
--	if (ret)
-+	if (ret != 0 || crash_size == 0)
- 		return;
- 
--	ret = reserve_bootmem(crash_base, crash_size, BOOTMEM_EXCLUSIVE);
-+	if (crash_base != 0)
-+		limit = crash_base + crash_size;
-+
-+	ret = ___alloc_bootmem_node_nopanic(NODE_DATA(0), crash_size,
-+						PAGE_ALIGN, crash_base, limit);
- 	if (ret < 0) {
- 		printk(KERN_WARNING "crashkernel reservation failed - "
- 		       "memory is in use (0x%lx)\n", (unsigned long)crash_base);
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 13b7394..8b73417 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -58,6 +58,7 @@ config ARM
+ 	select CLONE_BACKWARDS
+ 	select OLD_SIGSUSPEND3
+ 	select OLD_SIGACTION
++	select NO_BOOTMEM
+ 	help
+ 	  The ARM series is a line of low-power-consumption RISC chip designs
+ 	  licensed by ARM Ltd and targeted at embedded applications and
 -- 
 1.7.9.5
 
