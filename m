@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab3CYADn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 20:03:43 -0400
-Received: from ozlabs.org ([203.10.76.45]:42492 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754788Ab3CYADm convert rfc822-to-8bit (ORCPT
+	id S1755173Ab3CYA2Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 20:28:16 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:48070 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754831Ab3CYA2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 20:03:42 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Chen Gang <gang.chen@asianux.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, sfr@canb.auug.org.au,
-        "paulus\@samba.org" <paulus@samba.org>, matt@ozlabs.org,
-        imunsie@au1.ibm.com, linuxppc-dev@lists.ozlabs.org,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] PowerPC: kernel: cross compiling issue with allmodconfig
-In-reply-to: <514C0061.8080004@asianux.com>
-References: <51428C81.6000204@asianux.com> <25841.1363323174@ale.ozlabs.ibm.com> <5142AE27.7060003@asianux.com> <514AA0D9.1090509@asianux.com> <10123.1363906486@ale.ozlabs.ibm.com> <514C0061.8080004@asianux.com>
-Comments: In-reply-to Chen Gang <gang.chen@asianux.com>
-   message dated "Fri, 22 Mar 2013 14:55:29 +0800."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+	Sun, 24 Mar 2013 20:28:15 -0400
+Date: Sun, 24 Mar 2013 17:28:12 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+cc: Russ Anderson <rja@sgi.com>, Ingo Molnar <mingo@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [patch] mm: speedup in __early_pfn_to_nid
+In-Reply-To: <CAHGf_=qgsga4Juj8uNnfbmOZYtYhcQbqngbFDWg9=B-1nc1HSw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1303241727420.23613@chino.kir.corp.google.com>
+References: <20130318155619.GA18828@sgi.com> <20130321105516.GC18484@gmail.com> <alpine.DEB.2.02.1303211139110.3775@chino.kir.corp.google.com> <20130322072532.GC10608@gmail.com> <20130323152948.GA3036@sgi.com>
+ <CAHGf_=qgsga4Juj8uNnfbmOZYtYhcQbqngbFDWg9=B-1nc1HSw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 25 Mar 2013 11:03:38 +1100
-Message-ID: <29457.1364169818@ale.ozlabs.ibm.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chen Gang <gang.chen@asianux.com> wrote:
+On Sat, 23 Mar 2013, KOSAKI Motohiro wrote:
 
-> On 2013年03月22日 06:54, Michael Neuling wrote:
-> > This is great, thanks a lot.  
-> > 
-> > If you want this to be picked up by the maintainer, you'll need to add
-> > your signed-off-by.
-> > 
-> > The signed-off-by is to indicate that your happy for it to be included
-> > and that you're legally allowed to do so.  See
-> > http://gerrit.googlecode.com/svn/documentation/2.0/user-signedoffby.html
-> > for more info.
-> > 
-> > Mikey
+> > --- linux.orig/mm/page_alloc.c  2013-03-19 16:09:03.736450861 -0500
+> > +++ linux/mm/page_alloc.c       2013-03-22 17:07:43.895405617 -0500
+> > @@ -4161,10 +4161,23 @@ int __meminit __early_pfn_to_nid(unsigne
+> >  {
+> >         unsigned long start_pfn, end_pfn;
+> >         int i, nid;
+> > +       /*
+> > +          NOTE: The following SMP-unsafe globals are only used early
+> > +          in boot when the kernel is running single-threaded.
+> > +        */
+> > +       static unsigned long last_start_pfn, last_end_pfn;
+> > +       static int last_nid;
 > 
->   thanks, too.
->   I prefer Benjamin to have a closer look for my fixing.
->   if pass his checking, I will send a patch.
->     (he is on vacation, now, and he will check it when he is back).
+> Why don't you mark them __meminitdata? They seems freeable.
+> 
 
-benh asked paulus or sfr to send in while he was away.
-
-So please send your signed off by now (if you can), or someone is going
-to rewrite it, sent it upstream bypassing you.
-
-Mikey
+Um, defining them in a __meminit function places them in .meminit.data 
+already.
