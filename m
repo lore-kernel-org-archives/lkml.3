@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab3CYITb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 04:19:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:54771 "EHLO mga03.intel.com"
+	id S1756916Ab3CYIUw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 04:20:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36883 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756821Ab3CYIT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 04:19:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,904,1355126400"; 
-   d="scan'208";a="275499637"
-Date: Mon, 25 Mar 2013 01:19:28 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        x86@kernel.org
-Subject: Re: [PATCH 01/29] tsx: Add generic noop macros for RTM intrinsics
-Message-ID: <20130325081928.GT19692@tassilo.jf.intel.com>
-References: <1364001923-10796-1-git-send-email-andi@firstfloor.org>
- <1364001923-10796-2-git-send-email-andi@firstfloor.org>
- <30418.1364182745@ale.ozlabs.ibm.com>
+	id S1756153Ab3CYIUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 04:20:50 -0400
+Date: Mon, 25 Mar 2013 09:20:44 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
+Message-ID: <20130325082044.GM2154@dhcp22.suse.cz>
+References: <514C1388.6090909@huawei.com>
+ <514C14BF.3050009@parallels.com>
+ <20130322093141.GE31457@dhcp22.suse.cz>
+ <514C2754.4080701@parallels.com>
+ <20130322094832.GG31457@dhcp22.suse.cz>
+ <514C2C72.5090402@parallels.com>
+ <20130322100609.GI31457@dhcp22.suse.cz>
+ <514C3193.9010609@parallels.com>
+ <20130322105616.GK31457@dhcp22.suse.cz>
+ <514EAC9B.1010706@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <30418.1364182745@ale.ozlabs.ibm.com>
+In-Reply-To: <514EAC9B.1010706@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> RTM == restricted transactional memory.  I don't understand why it's
-> "restricted" and why any other architecture else would call it that and
-
-It's restricted as in there is no guarantee that a transaction ever succeeds
-and always needs a fallback path. My understanding is that this is true for 
-PPC too, but not necessarily zSeries.
-
-> hence why Linux should call it that?
+On Sun 24-03-13 15:34:51, Li Zefan wrote:
+> >> I read the code as lockdep_assert(memcg_cache_mutex), and then later on
+> >> mutex_lock(&memcg_mutex). But reading again, that was a just an
+> >> rcu_read_lock(). Good thing it is Friday
+> >>
+> >> You guys can add my Acked-by, and thanks again
+> > 
+> > Li, are you ok to take the page via your tree?
+> > 
 > 
-> Can we just call it TM for transactional memory?  Each arch can then
-> have their own implementation and call it what they want.
+> I don't have a git tree in kernel.org. It's Tejun that picks up
+> cgroup patches.
 
-I don't think the name will stop them to do anything.
-
-If people feel strongly about it can change it, but it's not
-actually making a real difference.
-
--Andi
+Oh, I thought both of you push to that tree. Anyway, I will rework the
+patch and send it again.
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Michal Hocko
+SUSE Labs
