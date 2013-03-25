@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab3CYBHU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:07:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37292 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755017Ab3CYBHT (ORCPT
+	id S1755294Ab3CYBHi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:07:38 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:5754 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233Ab3CYBHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:07:19 -0400
-Date: Mon, 25 Mar 2013 01:07:11 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: lrg@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: Fix typo in of_get_regulator function comments
-Message-ID: <20130325010708.GF18316@opensource.wolfsonmicro.com>
-References: <1364032842-6467-1-git-send-email-maxime.ripard@free-electrons.com>
+	Sun, 24 Mar 2013 21:07:35 -0400
+X-Spam-Score: -100.8
+Message-ID: <514FA336.7020207@asianux.com>
+Date: Mon, 25 Mar 2013 09:07:02 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="H4SyuGOnfnj3aJqJ"
-Content-Disposition: inline
-In-Reply-To: <1364032842-6467-1-git-send-email-maxime.ripard@free-electrons.com>
-X-Cookie: Your aim is high and to the right.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michael Neuling <mikey@neuling.org>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>, sfr@canb.auug.org.au,
+        "paulus@samba.org" <paulus@samba.org>, matt@ozlabs.org,
+        imunsie@au1.ibm.com, linuxppc-dev@lists.ozlabs.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Suggestion] PowerPC: kernel: cross compiling issue with allmodconfig
+References: <51428C81.6000204@asianux.com> <25841.1363323174@ale.ozlabs.ibm.com> <5142AE27.7060003@asianux.com> <514AA0D9.1090509@asianux.com> <10123.1363906486@ale.ozlabs.ibm.com> <514C0061.8080004@asianux.com> <29457.1364169818@ale.ozlabs.ibm.com>
+In-Reply-To: <29457.1364169818@ale.ozlabs.ibm.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2013Äê03ÔÂ25ÈÕ 08:03, Michael Neuling wrote:
+> 
+> benh asked paulus or sfr to send in while he was away.
+> 
+> So please send your signed off by now (if you can), or someone is going
+> to rewrite it, sent it upstream bypassing you.
+> 
+> Mikey
+> 
+> 
 
---H4SyuGOnfnj3aJqJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+  thanks, I will send patch now.
 
-On Sat, Mar 23, 2013 at 11:00:41AM +0100, Maxime Ripard wrote:
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+  :-)
 
-Applied, thanks.
+-- 
+Chen Gang
 
---H4SyuGOnfnj3aJqJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRT6MzAAoJELSic+t+oim9TjkP/3MPzZUX5jnFGcxSM0oEZn42
-5QyOtJqemM24AmYbzj1WopWzrf34i4lAlnRW4a04AHl916QExltmh+1NWz4IItOT
-BCjdFttIBTBhBif+BrMS61PvUB8WXlW15XkQbngexfGELmm29teiVKRJEdK6P1/R
-W8aiUwBLOK5HOnNpJw/3Hw1Lg5LQjc2q0mAWYJfIE18wbLOl0TfyLfs1didqUKUa
-U7rrzle+5deIF3ZlCrNYDGkPeflN5ZjST7s5ApSJVjaXc9SWo4je6UvDsTNeV3YU
-q5ghrioe/AI2SheQVzbzkf+3uWC8p2Sx0ywDGx4kE4Zu239SvWaH9w3vNMqnoEnG
-HvvZhmywPgK2ILl457ew0dzWrJyEjCNz0M242SX0jSwoj46I7cGPKb9uYrVM5gS9
-2zntmZf+aiYPbE7NEZbLnCzvJSyAcXzeTGfbGaml+mjAi6zBb9bJEg1RdnURG7tS
-j2wYjcrT2Okt6W+6FrXgeijUkFKEQsIW6f6AEvNbO5ddQ6R7yzcilZri7eVzPBYU
-o7ZqVM1qSVphN2R+BP/iSVl7KzvvSlBW7mywnnlmFXS5Y7LVD3IAkka0JJm5oz2j
-T0UAjyfI35qkAlVFMHXGUMxy7XJ9lnS3i003Xp8JuxwwdGlmhqmmC14czvIOJKO/
-N2/rlSQYEbQhKJltjZHt
-=BjGV
------END PGP SIGNATURE-----
-
---H4SyuGOnfnj3aJqJ--
+Asianux Corporation
