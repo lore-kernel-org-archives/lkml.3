@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982Ab3CYKMR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 06:12:17 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:58982 "EHLO
+	id S1755925Ab3CYKMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 06:12:16 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:58989 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755893Ab3CYKMM (ORCPT
+	with ESMTP id S1755895Ab3CYKMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Mar 2013 06:12:12 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
@@ -14,271 +14,514 @@ Cc: arvind.chauhan@arm.com, robin.randhawa@arm.com, Steve.Bannister@arm.com,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         arnd.bergmann@linaro.org, linux@arm.linux.org.uk,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 9/9] cpufreq: sa11x0: move cpufreq driver to drivers/cpufreq
-Date: Mon, 25 Mar 2013 15:41:40 +0530
-Message-Id: <87d2cd71a29fb826efe15a3d97cc3444031387c0.1364205812.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc@vger.kernel.org
+Subject: [PATCH 8/9] cpufreq: s3c24xx: move cpufreq driver to drivers/cpufreq
+Date: Mon, 25 Mar 2013 15:41:39 +0530
+Message-Id: <918ff6cc407525d682817cf736347ec572e0316d.1364205812.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1364205812.git.viresh.kumar@linaro.org>
 References: <cover.1364205812.git.viresh.kumar@linaro.org>
 In-Reply-To: <cover.1364205812.git.viresh.kumar@linaro.org>
 References: <cover.1364205812.git.viresh.kumar@linaro.org>
-X-OriginalArrivalTime: 25 Mar 2013 10:12:08.0766 (UTC) FILETIME=[35822DE0:01CE2941]
-X-MC-Unique: 113032510121017201
+X-OriginalArrivalTime: 25 Mar 2013 10:12:07.0094 (UTC) FILETIME=[34830D60:01CE2941]
+X-MC-Unique: 113032510120917301
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r2PACN1G026792
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r2PAChsl026796
 
-This patch moves cpufreq driver of ARM based sa11x0 platform to drivers/cpufreq.
+This patch moves cpufreq driver of Samsung's ARM based s3c24xx platform to
+drivers/cpufreq.
 
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- arch/arm/Kconfig                                   |  8 -------
- arch/arm/mach-sa1100/Kconfig                       | 26 +++++++++++-----------
- arch/arm/mach-sa1100/Makefile                      |  3 ---
- arch/arm/mach-sa1100/include/mach/generic.h        |  1 +
- drivers/cpufreq/Kconfig.arm                        |  6 +++++
- drivers/cpufreq/Makefile                           |  2 ++
- .../cpufreq/sa1100-cpufreq.c                       |  3 +--
- .../cpufreq/sa1110-cpufreq.c                       |  3 +--
- 8 files changed, 24 insertions(+), 28 deletions(-)
- create mode 100644 arch/arm/mach-sa1100/include/mach/generic.h
- rename arch/arm/mach-sa1100/cpu-sa1100.c => drivers/cpufreq/sa1100-cpufreq.c (99%)
- rename arch/arm/mach-sa1100/cpu-sa1110.c => drivers/cpufreq/sa1110-cpufreq.c (99%)
+ arch/arm/Kconfig                                   | 46 ---------------
+ arch/arm/mach-s3c24xx/Kconfig                      | 66 +++++++++-------------
+ arch/arm/mach-s3c24xx/Makefile                     |  6 --
+ arch/arm/mach-s3c24xx/{ => include/mach}/s3c2412.h |  0
+ arch/arm/mach-s3c24xx/iotiming-s3c2412.c           |  2 +-
+ arch/arm/plat-samsung/include/plat/cpu-freq-core.h | 10 ++--
+ arch/arm/plat-samsung/include/plat/cpu-freq.h      |  6 +-
+ drivers/cpufreq/Kconfig.arm                        | 58 +++++++++++++++++++
+ drivers/cpufreq/Makefile                           |  5 ++
+ .../cpufreq/s3c2410-cpufreq.c                      |  0
+ .../cpufreq/s3c2412-cpufreq.c                      |  3 +-
+ .../cpufreq/s3c2440-cpufreq.c                      |  0
+ .../cpufreq/s3c24xx-cpufreq-debugfs.c              |  0
+ .../cpufreq.c => drivers/cpufreq/s3c24xx-cpufreq.c |  0
+ 14 files changed, 100 insertions(+), 102 deletions(-)
+ rename arch/arm/mach-s3c24xx/{ => include/mach}/s3c2412.h (100%)
+ rename arch/arm/mach-s3c24xx/cpufreq-s3c2410.c => drivers/cpufreq/s3c2410-cpufreq.c (100%)
+ rename arch/arm/mach-s3c24xx/cpufreq-s3c2412.c => drivers/cpufreq/s3c2412-cpufreq.c (99%)
+ rename arch/arm/mach-s3c24xx/cpufreq-s3c2440.c => drivers/cpufreq/s3c2440-cpufreq.c (100%)
+ rename arch/arm/mach-s3c24xx/cpufreq-debugfs.c => drivers/cpufreq/s3c24xx-cpufreq-debugfs.c (100%)
+ rename arch/arm/mach-s3c24xx/cpufreq.c => drivers/cpufreq/s3c24xx-cpufreq.c (100%)
 
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index cdbe688..8d73413 100644
+index 39c8a3b..cdbe688 100644
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
-@@ -2153,15 +2153,7 @@ endmenu
- menu "CPU Power Management"
+@@ -2162,52 +2162,6 @@ config CPU_FREQ_SA1100
+ config CPU_FREQ_SA1110
+ 	bool
  
- if ARCH_HAS_CPUFREQ
--
- source "drivers/cpufreq/Kconfig"
--
--config CPU_FREQ_SA1100
+-config CPU_FREQ_S3C
 -	bool
+-	help
+-	  Internal configuration node for common cpufreq on Samsung SoC
 -
--config CPU_FREQ_SA1110
--	bool
+-config CPU_FREQ_S3C24XX
+-	bool "CPUfreq driver for Samsung S3C24XX series CPUs (EXPERIMENTAL)"
+-	depends on ARCH_S3C24XX && CPU_FREQ
+-	select CPU_FREQ_S3C
+-	help
+-	  This enables the CPUfreq driver for the Samsung S3C24XX family
+-	  of CPUs.
+-
+-	  For details, take a look at <file:Documentation/cpu-freq>.
+-
+-	  If in doubt, say N.
+-
+-config CPU_FREQ_S3C24XX_PLL
+-	bool "Support CPUfreq changing of PLL frequency (EXPERIMENTAL)"
+-	depends on CPU_FREQ_S3C24XX
+-	help
+-	  Compile in support for changing the PLL frequency from the
+-	  S3C24XX series CPUfreq driver. The PLL takes time to settle
+-	  after a frequency change, so by default it is not enabled.
+-
+-	  This also means that the PLL tables for the selected CPU(s) will
+-	  be built which may increase the size of the kernel image.
+-
+-config CPU_FREQ_S3C24XX_DEBUG
+-	bool "Debug CPUfreq Samsung driver core"
+-	depends on CPU_FREQ_S3C24XX
+-	help
+-	  Enable s3c_freq_dbg for the Samsung S3C CPUfreq core
+-
+-config CPU_FREQ_S3C24XX_IODEBUG
+-	bool "Debug CPUfreq Samsung driver IO timing"
+-	depends on CPU_FREQ_S3C24XX
+-	help
+-	  Enable s3c_freq_iodbg for the Samsung S3C CPUfreq core
+-
+-config CPU_FREQ_S3C24XX_DEBUGFS
+-	bool "Export debugfs for CPUFreq"
+-	depends on CPU_FREQ_S3C24XX && DEBUG_FS
+-	help
+-	  Export status information via debugfs.
 -
  endif
  
  source "drivers/cpuidle/Kconfig"
-diff --git a/arch/arm/mach-sa1100/Kconfig b/arch/arm/mach-sa1100/Kconfig
-index ca14dbd..04f9784 100644
---- a/arch/arm/mach-sa1100/Kconfig
-+++ b/arch/arm/mach-sa1100/Kconfig
-@@ -4,7 +4,7 @@ menu "SA11x0 Implementations"
- 
- config SA1100_ASSABET
- 	bool "Assabet"
--	select CPU_FREQ_SA1110
-+	select ARM_SA1110_CPUFREQ
+diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
+index 37f513d..81d2f3c 100644
+--- a/arch/arm/mach-s3c24xx/Kconfig
++++ b/arch/arm/mach-s3c24xx/Kconfig
+@@ -28,7 +28,7 @@ config CPU_S3C2410
+ 	select CPU_ARM920T
+ 	select CPU_LLSERIAL_S3C2410
+ 	select S3C2410_CLOCK
+-	select S3C2410_CPUFREQ if CPU_FREQ_S3C24XX
++	select ARM_S3C2410_CPUFREQ if ARM_S3C24XX_CPUFREQ
+ 	select S3C2410_PM if PM
  	help
- 	  Say Y here if you are using the Intel(R) StrongARM(R) SA-1110
- 	  Microprocessor Development Board (also known as the Assabet).
-@@ -20,7 +20,7 @@ config ASSABET_NEPONSET
+ 	  Support for S3C2410 and S3C2410A family from the S3C24XX line
+@@ -202,27 +202,38 @@ config S3C24XX_GPIO_EXTRA128
+ 	  Add an extra 128 gpio numbers to the available GPIO pool. This is
+ 	  available for boards that need extra gpios for external devices.
  
- config SA1100_CERF
- 	bool "CerfBoard"
--	select CPU_FREQ_SA1110
-+	select ARM_SA1110_CPUFREQ
++config S3C24XX_PLL
++	bool "Support CPUfreq changing of PLL frequency (EXPERIMENTAL)"
++	depends on ARM_S3C24XX
++	help
++	  Compile in support for changing the PLL frequency from the
++	  S3C24XX series CPUfreq driver. The PLL takes time to settle
++	  after a frequency change, so by default it is not enabled.
++
++	  This also means that the PLL tables for the selected CPU(s) will
++	  be built which may increase the size of the kernel image.
++
+ # cpu frequency items common between s3c2410 and s3c2440/s3c2442
+ 
+ config S3C2410_IOTIMING
+ 	bool
+-	depends on CPU_FREQ_S3C24XX
++	depends on ARM_S3C24XX_CPUFREQ
  	help
- 	  The Intrinsyc CerfBoard is based on the StrongARM 1110 (Discontinued).
- 	  More information is available at:
-@@ -47,7 +47,7 @@ endchoice
+ 	  Internal node to select io timing code that is common to the s3c2410
+ 	  and s3c2440/s3c2442 cpu frequency support.
  
- config SA1100_COLLIE
- 	bool "Sharp Zaurus SL5500"
--	# FIXME: select CPU_FREQ_SA11x0
-+	# FIXME: select ARM_SA11x0_CPUFREQ
- 	select SHARP_LOCOMO
- 	select SHARP_PARAM
- 	select SHARP_SCOOP
-@@ -56,7 +56,7 @@ config SA1100_COLLIE
+ config S3C2410_CPUFREQ_UTILS
+-	bool
+-	depends on CPU_FREQ_S3C24XX
+-	help
+-	  Internal node to select timing code that is common to the s3c2410
+-	  and s3c2440/s3c244 cpu frequency support.
++       bool
++       depends on ARM_S3C24XX_CPUFREQ
++       help
++         Internal node to select timing code that is common to the s3c2410
++         and s3c2440/s3c244 cpu frequency support.
  
- config SA1100_H3100
- 	bool "Compaq iPAQ H3100"
--	select CPU_FREQ_SA1110
-+	select ARM_SA1110_CPUFREQ
- 	select HTC_EGPIO
+ # cpu frequency support common to s3c2412, s3c2413 and s3c2442
+ 
+ config S3C2412_IOTIMING
+ 	bool
+-	depends on CPU_FREQ_S3C24XX && (CPU_S3C2412 || CPU_S3C2443)
++	depends on ARM_S3C24XX_CPUFREQ && (CPU_S3C2412 || CPU_S3C2443)
  	help
- 	  Say Y here if you intend to run this kernel on the Compaq iPAQ
-@@ -67,7 +67,7 @@ config SA1100_H3100
+ 	  Intel node to select io timing code that is common to the s3c2412
+ 	  and the s3c2443.
+@@ -231,16 +242,9 @@ config S3C2412_IOTIMING
  
- config SA1100_H3600
- 	bool "Compaq iPAQ H3600/H3700"
--	select CPU_FREQ_SA1110
-+	select ARM_SA1110_CPUFREQ
- 	select HTC_EGPIO
- 	help
- 	  Say Y here if you intend to run this kernel on the Compaq iPAQ
-@@ -78,7 +78,7 @@ config SA1100_H3600
+ if CPU_S3C2410
  
- config SA1100_BADGE4
- 	bool "HP Labs BadgePAD 4"
--	select CPU_FREQ_SA1100
-+	select ARM_SA1100_CPUFREQ
- 	select SA1111
- 	help
- 	  Say Y here if you want to build a kernel for the HP Laboratories
-@@ -86,7 +86,7 @@ config SA1100_BADGE4
- 
- config SA1100_JORNADA720
- 	bool "HP Jornada 720"
--	# FIXME: select CPU_FREQ_SA11x0
-+	# FIXME: select ARM_SA11x0_CPUFREQ
- 	select SA1111
- 	help
- 	  Say Y here if you want to build a kernel for the HP Jornada 720
-@@ -105,14 +105,14 @@ config SA1100_JORNADA720_SSP
- 
- config SA1100_HACKKIT
- 	bool "HackKit Core CPU Board"
--	select CPU_FREQ_SA1100
-+	select ARM_SA1100_CPUFREQ
- 	help
- 	  Say Y here to support the HackKit Core CPU Board
- 	  <http://hackkit.eletztrick.de>;
- 
- config SA1100_LART
- 	bool "LART"
--	select CPU_FREQ_SA1100
-+	select ARM_SA1100_CPUFREQ
- 	help
- 	  Say Y here if you are using the Linux Advanced Radio Terminal
- 	  (also known as the LART).  See <http://www.lartmaker.nl/> for
-@@ -120,7 +120,7 @@ config SA1100_LART
- 
- config SA1100_NANOENGINE
- 	bool "nanoEngine"
--	select CPU_FREQ_SA1110
-+	select ARM_SA1110_CPUFREQ
- 	select PCI
- 	select PCI_NANOENGINE
- 	help
-@@ -130,7 +130,7 @@ config SA1100_NANOENGINE
- 
- config SA1100_PLEB
- 	bool "PLEB"
--	select CPU_FREQ_SA1100
-+	select ARM_SA1100_CPUFREQ
- 	help
- 	  Say Y here if you are using version 1 of the Portable Linux
- 	  Embedded Board (also known as PLEB).
-@@ -139,7 +139,7 @@ config SA1100_PLEB
- 
- config SA1100_SHANNON
- 	bool "Shannon"
--	select CPU_FREQ_SA1100
-+	select ARM_SA1100_CPUFREQ
- 	help
- 	  The Shannon (also known as a Tuxscreen, and also as a IS2630) was a
- 	  limited edition webphone produced by Philips. The Shannon is a SA1100
-@@ -148,7 +148,7 @@ config SA1100_SHANNON
- 
- config SA1100_SIMPAD
- 	bool "Simpad"
--	select CPU_FREQ_SA1110
-+	select ARM_SA1110_CPUFREQ
- 	help
- 	  The SIEMENS webpad SIMpad is based on the StrongARM 1110. There
- 	  are two different versions CL4 and SL4. CL4 has 32MB RAM and 16MB
-diff --git a/arch/arm/mach-sa1100/Makefile b/arch/arm/mach-sa1100/Makefile
-index 1aed9e7..2732eef 100644
---- a/arch/arm/mach-sa1100/Makefile
-+++ b/arch/arm/mach-sa1100/Makefile
-@@ -8,9 +8,6 @@ obj-m :=
- obj-n :=
- obj-  :=
- 
--obj-$(CONFIG_CPU_FREQ_SA1100)		+= cpu-sa1100.o
--obj-$(CONFIG_CPU_FREQ_SA1110)		+= cpu-sa1110.o
+-config S3C2410_CPUFREQ
+-	bool
+-	depends on CPU_FREQ_S3C24XX && CPU_S3C2410
+-	select S3C2410_CPUFREQ_UTILS
+-	help
+-	  CPU Frequency scaling support for S3C2410
 -
- # Specific board support
- obj-$(CONFIG_SA1100_ASSABET)		+= assabet.o
- obj-$(CONFIG_ASSABET_NEPONSET)		+= neponset.o
-diff --git a/arch/arm/mach-sa1100/include/mach/generic.h b/arch/arm/mach-sa1100/include/mach/generic.h
-new file mode 100644
-index 0000000..665542e
---- /dev/null
-+++ b/arch/arm/mach-sa1100/include/mach/generic.h
-@@ -0,0 +1 @@
-+#include "../../generic.h"
+ config S3C2410_PLL
+ 	bool
+-	depends on S3C2410_CPUFREQ && CPU_FREQ_S3C24XX_PLL
++	depends on ARM_S3C2410_CPUFREQ && S3C24XX_PLL
+ 	default y
+ 	help
+ 	  Select the PLL table for the S3C2410
+@@ -276,7 +280,7 @@ config ARCH_BAST
+ 	bool "Simtec Electronics BAST (EB2410ITX)"
+ 	select ISA
+ 	select MACH_BAST_IDE
+-	select S3C2410_IOTIMING if S3C2410_CPUFREQ
++	select S3C2410_IOTIMING if ARM_S3C2410_CPUFREQ
+ 	select S3C24XX_DCLK
+ 	select S3C24XX_SIMTEC_NOR
+ 	select S3C24XX_SIMTEC_PM if PM
+@@ -385,14 +389,6 @@ config CPU_S3C2412_ONLY
+ 		   !CPU_S3C2443 && CPU_S3C2412
+ 	default y
+ 
+-config S3C2412_CPUFREQ
+-	bool
+-	depends on CPU_FREQ_S3C24XX && CPU_S3C2412
+-	default y
+-	select S3C2412_IOTIMING
+-	help
+-	  CPU Frequency scaling support for S3C2412 and S3C2413 SoC CPUs.
+-
+ config S3C2412_DMA
+ 	bool
+ 	help
+@@ -493,14 +489,6 @@ endif	# CPU_S3C2416
+ 
+ if CPU_S3C2440
+ 
+-config S3C2440_CPUFREQ
+-	bool "S3C2440/S3C2442 CPU Frequency scaling support"
+-	depends on CPU_FREQ_S3C24XX && (CPU_S3C2440 || CPU_S3C2442)
+-	default y
+-	select S3C2410_CPUFREQ_UTILS
+-	help
+-	  CPU Frequency scaling support for S3C2440 and S3C2442 SoC CPUs.
+-
+ config S3C2440_DMA
+ 	bool
+ 	help
+@@ -520,15 +508,15 @@ config S3C2440_XTAL_16934400
+ 
+ config S3C2440_PLL_12000000
+ 	bool
+-	depends on S3C2440_CPUFREQ && S3C2440_XTAL_12000000
+-	default y if CPU_FREQ_S3C24XX_PLL
++	depends on ARM_S3C2440_CPUFREQ && S3C2440_XTAL_12000000
++	default y if S3C24XX_PLL
+ 	help
+ 	  PLL tables for S3C2440 or S3C2442 CPUs with 12MHz crystals.
+ 
+ config S3C2440_PLL_16934400
+ 	bool
+-	depends on S3C2440_CPUFREQ && S3C2440_XTAL_16934400
+-	default y if CPU_FREQ_S3C24XX_PLL
++	depends on ARM_S3C2440_CPUFREQ && S3C2440_XTAL_16934400
++	default y if S3C24XX_PLL
+ 	help
+ 	  PLL tables for S3C2440 or S3C2442 CPUs with 16.934MHz crystals.
+ 
+@@ -582,7 +570,7 @@ config MACH_NEXCODER_2440
+ 
+ config MACH_OSIRIS
+ 	bool "Simtec IM2440D20 (OSIRIS) module"
+-	select S3C2410_IOTIMING if S3C2440_CPUFREQ
++	select S3C2410_IOTIMING if ARM_S3C2440_CPUFREQ
+ 	select S3C2440_XTAL_12000000
+ 	select S3C24XX_DCLK
+ 	select S3C24XX_GPIO_EXTRA128
+@@ -655,7 +643,7 @@ config MACH_RX1950
+ 	bool "HP iPAQ rx1950"
+ 	select I2C
+ 	select PM_H1940 if PM
+-	select S3C2410_IOTIMING if S3C2440_CPUFREQ
++	select S3C2410_IOTIMING if ARM_S3C2440_CPUFREQ
+ 	select S3C2440_XTAL_16934400
+ 	select S3C24XX_DCLK
+ 	select S3C24XX_PWM
+diff --git a/arch/arm/mach-s3c24xx/Makefile b/arch/arm/mach-s3c24xx/Makefile
+index af53d27..15ce13c 100644
+--- a/arch/arm/mach-s3c24xx/Makefile
++++ b/arch/arm/mach-s3c24xx/Makefile
+@@ -17,13 +17,11 @@ obj-				:=
+ obj-y				+= common.o irq.o
+ 
+ obj-$(CONFIG_CPU_S3C2410)	+= s3c2410.o
+-obj-$(CONFIG_S3C2410_CPUFREQ)	+= cpufreq-s3c2410.o
+ obj-$(CONFIG_S3C2410_DMA)	+= dma-s3c2410.o
+ obj-$(CONFIG_S3C2410_PLL)	+= pll-s3c2410.o
+ obj-$(CONFIG_S3C2410_PM)	+= pm-s3c2410.o sleep-s3c2410.o
+ 
+ obj-$(CONFIG_CPU_S3C2412)	+= s3c2412.o irq-s3c2412.o clock-s3c2412.o
+-obj-$(CONFIG_S3C2412_CPUFREQ)	+= cpufreq-s3c2412.o
+ obj-$(CONFIG_S3C2412_DMA)	+= dma-s3c2412.o
+ obj-$(CONFIG_S3C2412_PM)	+= pm-s3c2412.o
+ obj-$(CONFIG_S3C2412_PM_SLEEP)	+= sleep-s3c2412.o
+@@ -34,7 +32,6 @@ obj-$(CONFIG_S3C2416_PM)	+= pm-s3c2416.o
+ obj-$(CONFIG_CPU_S3C2440)	+= s3c2440.o irq-s3c2440.o clock-s3c2440.o
+ obj-$(CONFIG_CPU_S3C2442)	+= s3c2442.o
+ obj-$(CONFIG_CPU_S3C244X)	+= s3c244x.o irq-s3c244x.o clock-s3c244x.o
+-obj-$(CONFIG_S3C2440_CPUFREQ)	+= cpufreq-s3c2440.o
+ obj-$(CONFIG_S3C2440_DMA)	+= dma-s3c2440.o
+ obj-$(CONFIG_S3C2440_PLL_12000000) += pll-s3c2440-12000000.o
+ obj-$(CONFIG_S3C2440_PLL_16934400) += pll-s3c2440-16934400.o
+@@ -59,9 +56,6 @@ obj-$(CONFIG_S3C2412_IOTIMING)	+= iotiming-s3c2412.o
+ obj-$(CONFIG_S3C2443_COMMON)	+= common-s3c2443.o
+ obj-$(CONFIG_S3C2443_DMA)	+= dma-s3c2443.o
+ 
+-obj-$(CONFIG_CPU_FREQ_S3C24XX)	+= cpufreq.o
+-obj-$(CONFIG_CPU_FREQ_S3C24XX_DEBUGFS) += cpufreq-debugfs.o
+-
+ #
+ # machine support
+ # following is ordered alphabetically by option text.
+diff --git a/arch/arm/mach-s3c24xx/s3c2412.h b/arch/arm/mach-s3c24xx/include/mach/s3c2412.h
+similarity index 100%
+rename from arch/arm/mach-s3c24xx/s3c2412.h
+rename to arch/arm/mach-s3c24xx/include/mach/s3c2412.h
+diff --git a/arch/arm/mach-s3c24xx/iotiming-s3c2412.c b/arch/arm/mach-s3c24xx/iotiming-s3c2412.c
+index 663436d..bd064c0 100644
+--- a/arch/arm/mach-s3c24xx/iotiming-s3c2412.c
++++ b/arch/arm/mach-s3c24xx/iotiming-s3c2412.c
+@@ -31,7 +31,7 @@
+ #include <plat/cpu-freq-core.h>
+ #include <plat/clock.h>
+ 
+-#include "s3c2412.h"
++#include <mach/s3c2412.h>
+ 
+ #define print_ns(x) ((x) / 10), ((x) % 10)
+ 
+diff --git a/arch/arm/plat-samsung/include/plat/cpu-freq-core.h b/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+index 95509d8..d7e1715 100644
+--- a/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
++++ b/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+@@ -202,7 +202,7 @@ extern int s3c_plltab_register(struct cpufreq_frequency_table *plls,
+ extern struct s3c_cpufreq_config *s3c_cpufreq_getconfig(void);
+ extern struct s3c_iotimings *s3c_cpufreq_getiotimings(void);
+ 
+-#ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
++#ifdef CONFIG_ARM_S3C24XX_CPUFREQ_DEBUGFS
+ #define s3c_cpufreq_debugfs_call(x) x
+ #else
+ #define s3c_cpufreq_debugfs_call(x) NULL
+@@ -259,17 +259,17 @@ extern void s3c2412_iotiming_set(struct s3c_cpufreq_config *cfg,
+ #define s3c2412_iotiming_set NULL
+ #endif /* CONFIG_S3C2412_IOTIMING */
+ 
+-#ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUG
++#ifdef CONFIG_ARM_S3C24XX_CPUFREQ_DEBUG
+ #define s3c_freq_dbg(x...) printk(KERN_INFO x)
+ #else
+ #define s3c_freq_dbg(x...) do { if (0) printk(x); } while (0)
+-#endif /* CONFIG_CPU_FREQ_S3C24XX_DEBUG */
++#endif /* CONFIG_ARM_S3C24XX_CPUFREQ_DEBUG */
+ 
+-#ifdef CONFIG_CPU_FREQ_S3C24XX_IODEBUG
++#ifdef CONFIG_ARM_S3C24XX_CPUFREQ_IODEBUG
+ #define s3c_freq_iodbg(x...) printk(KERN_INFO x)
+ #else
+ #define s3c_freq_iodbg(x...) do { if (0) printk(x); } while (0)
+-#endif /* CONFIG_CPU_FREQ_S3C24XX_IODEBUG */
++#endif /* CONFIG_ARM_S3C24XX_CPUFREQ_IODEBUG */
+ 
+ static inline int s3c_cpufreq_addfreq(struct cpufreq_frequency_table *table,
+ 				      int index, size_t table_size,
+diff --git a/arch/arm/plat-samsung/include/plat/cpu-freq.h b/arch/arm/plat-samsung/include/plat/cpu-freq.h
+index 80c4a80..85517ab 100644
+--- a/arch/arm/plat-samsung/include/plat/cpu-freq.h
++++ b/arch/arm/plat-samsung/include/plat/cpu-freq.h
+@@ -126,7 +126,7 @@ struct s3c_cpufreq_board {
+ };
+ 
+ /* Things depending on frequency scaling. */
+-#ifdef CONFIG_CPU_FREQ_S3C
++#ifdef CONFIG_ARM_S3C_CPUFREQ
+ #define __init_or_cpufreq
+ #else
+ #define __init_or_cpufreq __init
+@@ -134,7 +134,7 @@ struct s3c_cpufreq_board {
+ 
+ /* Board functions */
+ 
+-#ifdef CONFIG_CPU_FREQ_S3C
++#ifdef CONFIG_ARM_S3C_CPUFREQ
+ extern int s3c_cpufreq_setboard(struct s3c_cpufreq_board *board);
+ #else
+ 
+@@ -142,4 +142,4 @@ static inline int s3c_cpufreq_setboard(struct s3c_cpufreq_board *board)
+ {
+ 	return 0;
+ }
+-#endif  /* CONFIG_CPU_FREQ_S3C */
++#endif  /* CONFIG_ARM_S3C_CPUFREQ */
 diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-index 3021e35..cdaadcb 100644
+index a345e20..3021e35 100644
 --- a/drivers/cpufreq/Kconfig.arm
 +++ b/drivers/cpufreq/Kconfig.arm
-@@ -180,6 +180,12 @@ config ARM_S5PV210_CPUFREQ
+@@ -81,6 +81,56 @@ config ARM_OMAP2PLUS_CPUFREQ
+ 	default ARCH_OMAP2PLUS
+ 	select CPU_FREQ_TABLE
+ 
++config ARM_S3C_CPUFREQ
++	bool
++	help
++	  Internal configuration node for common cpufreq on Samsung SoC
++
++config ARM_S3C24XX_CPUFREQ
++	bool "CPUfreq driver for Samsung S3C24XX series CPUs (EXPERIMENTAL)"
++	depends on ARCH_S3C24XX
++	select ARM_S3C_CPUFREQ
++	help
++	  This enables the CPUfreq driver for the Samsung S3C24XX family
++	  of CPUs.
++
++	  For details, take a look at <file:Documentation/cpu-freq>.
++
++	  If in doubt, say N.
++
++config ARM_S3C24XX_CPUFREQ_DEBUG
++	bool "Debug CPUfreq Samsung driver core"
++	depends on ARM_S3C24XX_CPUFREQ
++	help
++	  Enable s3c_freq_dbg for the Samsung S3C CPUfreq core
++
++config ARM_S3C24XX_CPUFREQ_IODEBUG
++	bool "Debug CPUfreq Samsung driver IO timing"
++	depends on ARM_S3C24XX_CPUFREQ
++	help
++	  Enable s3c_freq_iodbg for the Samsung S3C CPUfreq core
++
++config ARM_S3C24XX_CPUFREQ_DEBUGFS
++	bool "Export debugfs for CPUFreq"
++	depends on ARM_S3C24XX_CPUFREQ && DEBUG_FS
++	help
++	  Export status information via debugfs.
++
++config ARM_S3C2410_CPUFREQ
++	bool
++	depends on ARM_S3C24XX_CPUFREQ && CPU_S3C2410
++	select S3C2410_CPUFREQ_UTILS
++	help
++	  CPU Frequency scaling support for S3C2410
++
++config ARM_S3C2412_CPUFREQ
++	bool
++	depends on ARM_S3C24XX_CPUFREQ && CPU_S3C2412
++	default y
++	select S3C2412_IOTIMING
++	help
++	  CPU Frequency scaling support for S3C2412 and S3C2413 SoC CPUs.
++
+ config ARM_S3C2416_CPUFREQ
+ 	bool "S3C2416 CPU Frequency scaling support"
+ 	depends on CPU_S3C2416
+@@ -103,6 +153,14 @@ config ARM_S3C2416_CPUFREQ_VCORESCALE
  
  	  If in doubt, say N.
  
-+config ARM_SA1100_CPUFREQ
-+	bool
++config ARM_S3C2440_CPUFREQ
++	bool "S3C2440/S3C2442 CPU Frequency scaling support"
++	depends on ARM_S3C24XX_CPUFREQ && (CPU_S3C2440 || CPU_S3C2442)
++	select S3C2410_CPUFREQ_UTILS
++	default y
++	help
++	  CPU Frequency scaling support for S3C2440 and S3C2442 SoC CPUs.
 +
-+config ARM_SA1110_CPUFREQ
-+	bool
-+
- config ARM_SPEAR_CPUFREQ
- 	bool "SPEAr CPUFreq support"
- 	depends on PLAT_SPEAR
+ config ARM_S3C64XX_CPUFREQ
+ 	bool "Samsung S3C64XX"
+ 	depends on CPU_S3C6410
 diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index 3886eda..c113af2 100644
+index aa00ca4..3886eda 100644
 --- a/drivers/cpufreq/Makefile
 +++ b/drivers/cpufreq/Makefile
-@@ -67,6 +67,8 @@ obj-$(CONFIG_ARM_S3C2416_CPUFREQ)	+= s3c2416-cpufreq.o
- obj-$(CONFIG_ARM_S3C2440_CPUFREQ)	+= s3c2440-cpufreq.o
+@@ -59,7 +59,12 @@ obj-$(CONFIG_ARM_OMAP2PLUS_CPUFREQ)	+= omap-cpufreq.o
+ obj-$(CONFIG_PXA25x)			+= pxa2xx-cpufreq.o
+ obj-$(CONFIG_PXA27x)			+= pxa2xx-cpufreq.o
+ obj-$(CONFIG_PXA3xx)			+= pxa3xx-cpufreq.o
++obj-$(CONFIG_ARM_S3C24XX_CPUFREQ)	+= s3c24xx-cpufreq.o
++obj-$(CONFIG_ARM_S3C24XX_CPUFREQ_DEBUGFS) += s3c24xx-cpufreq-debugfs.o
++obj-$(CONFIG_ARM_S3C2410_CPUFREQ)	+= s3c2410-cpufreq.o
++obj-$(CONFIG_ARM_S3C2412_CPUFREQ)	+= s3c2412-cpufreq.o
+ obj-$(CONFIG_ARM_S3C2416_CPUFREQ)	+= s3c2416-cpufreq.o
++obj-$(CONFIG_ARM_S3C2440_CPUFREQ)	+= s3c2440-cpufreq.o
  obj-$(CONFIG_ARM_S3C64XX_CPUFREQ)	+= s3c64xx-cpufreq.o
  obj-$(CONFIG_ARM_S5PV210_CPUFREQ)	+= s5pv210-cpufreq.o
-+obj-$(CONFIG_ARM_SA1100_CPUFREQ)	+= sa1100-cpufreq.o
-+obj-$(CONFIG_ARM_SA1110_CPUFREQ)	+= sa1110-cpufreq.o
  obj-$(CONFIG_ARM_SPEAR_CPUFREQ)		+= spear-cpufreq.o
- obj-$(CONFIG_ARCH_TEGRA)		+= tegra-cpufreq.o
- 
-diff --git a/arch/arm/mach-sa1100/cpu-sa1100.c b/drivers/cpufreq/sa1100-cpufreq.c
+diff --git a/arch/arm/mach-s3c24xx/cpufreq-s3c2410.c b/drivers/cpufreq/s3c2410-cpufreq.c
+similarity index 100%
+rename from arch/arm/mach-s3c24xx/cpufreq-s3c2410.c
+rename to drivers/cpufreq/s3c2410-cpufreq.c
+diff --git a/arch/arm/mach-s3c24xx/cpufreq-s3c2412.c b/drivers/cpufreq/s3c2412-cpufreq.c
 similarity index 99%
-rename from arch/arm/mach-sa1100/cpu-sa1100.c
-rename to drivers/cpufreq/sa1100-cpufreq.c
-index 3268761..cff18e8 100644
---- a/arch/arm/mach-sa1100/cpu-sa1100.c
-+++ b/drivers/cpufreq/sa1100-cpufreq.c
-@@ -91,10 +91,9 @@
+rename from arch/arm/mach-s3c24xx/cpufreq-s3c2412.c
+rename to drivers/cpufreq/s3c2412-cpufreq.c
+index 8bf0f3a..4645b48 100644
+--- a/arch/arm/mach-s3c24xx/cpufreq-s3c2412.c
++++ b/drivers/cpufreq/s3c2412-cpufreq.c
+@@ -25,13 +25,12 @@
+ #include <asm/mach/map.h>
  
- #include <asm/cputype.h>
+ #include <mach/regs-clock.h>
++#include <mach/s3c2412.h>
  
-+#include <mach/generic.h>
- #include <mach/hardware.h>
+ #include <plat/cpu.h>
+ #include <plat/clock.h>
+ #include <plat/cpu-freq-core.h>
  
--#include "generic.h"
+-#include "s3c2412.h"
 -
- struct sa1100_dram_regs {
- 	int speed;
- 	u32 mdcnfg;
-diff --git a/arch/arm/mach-sa1100/cpu-sa1110.c b/drivers/cpufreq/sa1110-cpufreq.c
-similarity index 99%
-rename from arch/arm/mach-sa1100/cpu-sa1110.c
-rename to drivers/cpufreq/sa1110-cpufreq.c
-index 38a7733..39c90b6 100644
---- a/arch/arm/mach-sa1100/cpu-sa1110.c
-+++ b/drivers/cpufreq/sa1110-cpufreq.c
-@@ -27,10 +27,9 @@
- #include <asm/cputype.h>
- #include <asm/mach-types.h>
- 
-+#include <mach/generic.h>
- #include <mach/hardware.h>
- 
--#include "generic.h"
--
- #undef DEBUG
- 
- struct sdram_params {
+ /* our clock resources. */
+ static struct clk *xtal;
+ static struct clk *fclk;
+diff --git a/arch/arm/mach-s3c24xx/cpufreq-s3c2440.c b/drivers/cpufreq/s3c2440-cpufreq.c
+similarity index 100%
+rename from arch/arm/mach-s3c24xx/cpufreq-s3c2440.c
+rename to drivers/cpufreq/s3c2440-cpufreq.c
+diff --git a/arch/arm/mach-s3c24xx/cpufreq-debugfs.c b/drivers/cpufreq/s3c24xx-cpufreq-debugfs.c
+similarity index 100%
+rename from arch/arm/mach-s3c24xx/cpufreq-debugfs.c
+rename to drivers/cpufreq/s3c24xx-cpufreq-debugfs.c
+diff --git a/arch/arm/mach-s3c24xx/cpufreq.c b/drivers/cpufreq/s3c24xx-cpufreq.c
+similarity index 100%
+rename from arch/arm/mach-s3c24xx/cpufreq.c
+rename to drivers/cpufreq/s3c24xx-cpufreq.c
 -- 
 1.7.12.rc2.18.g61b472e
 
