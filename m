@@ -1,302 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757869Ab3CYNS0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 09:18:26 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:3980 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757729Ab3CYNSY convert rfc822-to-8bit (ORCPT
+	id S1757931Ab3CYNSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 09:18:50 -0400
+Received: from mail-bn1lp0156.outbound.protection.outlook.com ([207.46.163.156]:17544
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757907Ab3CYNSs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 09:18:24 -0400
-From: "Luca Porzio (lporzio)" <lporzio@micron.com>
-To: "merez@codeaurora.org" <merez@codeaurora.org>
-CC: Yaniv Gardi <ygardi@codeaurora.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "tj@kernel.org" <tj@kernel.org>,
+	Mon, 25 Mar 2013 09:18:48 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -3
+X-BigFish: PS-3(zz98dI9371I936eI542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahz97hz17326ah8275dh8275bhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB061;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>, Michal Hocko <mhocko@suse.cz>
+CC: "olaf@aepfle.de" <olaf@aepfle.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: RE: [PATCH v1] mmc: card: Adding support for sanitize in eMMC 4.5
-Thread-Topic: [PATCH v1] mmc: card: Adding support for sanitize in eMMC 4.5
-Thread-Index: AQHOEoOVvKTWzXh8tUGn859P256raJig6MqggA+75QCABexW4A==
-Date: Mon, 25 Mar 2013 13:17:57 +0000
-Message-ID: <26E7A31274623843B0E8CF86148BFE32B02FEC37@NTXAVZMBX04.azit.micron.com>
-References: <1361705927-10524-1-git-send-email-ygardi@codeaurora.org>
-    <26E7A31274623843B0E8CF86148BFE32B02F5779@NTXAVZMBX04.azit.micron.com>
- <024eaaf711ee8e1438484a3bf8436cc9.squirrel@www.codeaurora.org>
-In-Reply-To: <024eaaf711ee8e1438484a3bf8436cc9.squirrel@www.codeaurora.org>
-Accept-Language: it-IT, en-US
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "yinghan@google.com" <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>
+Subject: RE: [PATCH V2 1/3]  mm: Export split_page()
+Thread-Topic: [PATCH V2 1/3]  mm: Export split_page()
+Thread-Index: AQHOJBZDnHfz24Hs5E6pg/ppxgF85pitD6GAgAB8eHCACOFsoA==
+Date: Mon, 25 Mar 2013 13:18:15 +0000
+Message-ID: <d81345b0dd4b4f509ef7206f58876afc@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1363639873-1576-1-git-send-email-kys@microsoft.com>
+ <1363639898-1615-1-git-send-email-kys@microsoft.com>
+ <20130319141317.GI7869@dhcp22.suse.cz>
+ <3c47db9f28b944f985e8050d41334193@SN2PR03MB061.namprd03.prod.outlook.com>
+In-Reply-To: <3c47db9f28b944f985e8050d41334193@SN2PR03MB061.namprd03.prod.outlook.com>
+Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.176.66.86]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19746.005
-X-TM-AS-Result: No--29.837500-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
+x-originating-ip: [98.110.61.163]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PR03MB061.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CMPXCHG.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GOOGLE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUX-FOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.CZ$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%FIRSTFLOOR.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%KVACK.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(13464002)(24454001)(377454001)(377424002)(51704002)(189002)(199002)(1511001)(80022001)(65816001)(56816002)(66066001)(46406002)(54356001)(76482001)(53806001)(46102001)(23726001)(33646001)(74662001)(44976002)(56776001)(16676001)(15202345001)(31966008)(51856001)(54316002)(47446002)(6806001)(74502001)(77982001)(59766001)(50466001)(4396001)(47976001)(50986001)(79102001)(47736001)(49866001)(69226001)(63696002)(20776003)(47776003)(5343655001)(5343635001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB018;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 0796EBEDE1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maya,
-
-It sounds good for me.
-What about the second comment about issuing the HPI on timeout?
-
-If you think we can accept to issue an HPI on timeout, I think the first comment about the timeout duration can also be neglected.
-
-Thanks,
-   Luca
 
 
 > -----Original Message-----
-> From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
-> owner@vger.kernel.org] On Behalf Of merez@codeaurora.org
-> Sent: Thursday, March 21, 2013 8:50 PM
-> To: Luca Porzio (lporzio)
-> Cc: Yaniv Gardi; linux-mmc@vger.kernel.org; vgoyal@redhat.com;
-> tj@kernel.org; linux-kernel@vger.kernel.org; linux-arm-msm@vger.kernel.org
-> Subject: RE: [PATCH v1] mmc: card: Adding support for sanitize in eMMC 4.5
+> From: devel [mailto:devel-bounces@linuxdriverproject.org] On Behalf Of KY
+> Srinivasan
+> Sent: Tuesday, March 19, 2013 5:40 PM
+> To: Michal Hocko
+> Cc: olaf@aepfle.de; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> linux-mm@kvack.org; andi@firstfloor.org; yinghan@google.com;
+> hannes@cmpxchg.org; apw@canonical.com; devel@linuxdriverproject.org;
+> akpm@linux-foundation.org; kamezawa.hiroyuki@gmail.com
+> Subject: RE: [PATCH V2 1/3] mm: Export split_page()
 > 
-> Hi Luca,
 > 
-> Having a timeout that takes into consideration the card size would be
-> artificial as we cannot have the ability to create a function for its
-> calculation that will fit all the card vendors.
 > 
-> I suggest keeping it as a constant value for simplicity, as 4 minutes
-> cover all the card sizes.
+> > -----Original Message-----
+> > From: Michal Hocko [mailto:mhocko@suse.cz]
+> > Sent: Tuesday, March 19, 2013 10:13 AM
+> > To: KY Srinivasan
+> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> > andi@firstfloor.org; akpm@linux-foundation.org; linux-mm@kvack.org;
+> > kamezawa.hiroyuki@gmail.com; hannes@cmpxchg.org; yinghan@google.com
+> > Subject: Re: [PATCH V2 1/3] mm: Export split_page()
+> >
+> > On Mon 18-03-13 13:51:36, K. Y. Srinivasan wrote:
+> > > This symbol would be used in the Hyper-V balloon driver to support 2M
+> > > allocations.
+> > >
+> > > In this version of the patch, based on feedback from Michal Hocko
+> > > <mhocko@suse.cz>, I have updated the patch description.
+> >
+> > I guess this part is not necessary ;)
+> >
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> >
+> > Anyway
+> > Acked-by: Michal Hocko <mhocko@suse.cz>
 > 
-> Thanks,
-> Maya
-> > Hi Yaniv,
+> Greg,
+> 
+> Would you be taking this patch through your tree?
+> 
+> Regards,
+
+Andrew,
+
+Could you take this patch through your tree.
+
+Regards,
+
+K. Y
+> 
+> K. Y
 > >
-> >> -----Original Message-----
-> >> From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
-> >> owner@vger.kernel.org] On Behalf Of Yaniv Gardi
-> >> Sent: Sunday, February 24, 2013 12:39 PM
-> >> To: linux-mmc@vger.kernel.org; vgoyal@redhat.com; tj@kernel.org; linux-
-> >> kernel@vger.kernel.org
-> >> Cc: linux-arm-msm@vger.kernel.org; Yaniv Gardi
-> >> Subject: [PATCH v1] mmc: card: Adding support for sanitize in eMMC 4.5
-> >>
-> >> The sanitize support is added as a user-app ioctl call, and
-> >> was removed from the block-device request, since its purpose is
-> >> to be invoked not via File-System but by a user.
-> >> This feature deletes the unmap memory region of the eMMC card,
-> >> by writing to a specific register in the EXT_CSD.
-> >> unmap region is the memory region that was previously deleted
-> >> (by erase, trim or discard operation).
-> >> In order to avoid timeout when sanitizing large-scale cards,
-> >> the timeout for sanitize operation is 240 seconds.
-> >>
-> >> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
-> >>
-> >> ---
-> >>  drivers/mmc/card/block.c |   68
-> >> +++++++++++++++++++++++++++++++-----------
-> >> ---
-> >>  drivers/mmc/card/queue.c |    2 +-
-> >>  include/linux/mmc/host.h |    1 +
-> >>  3 files changed, 49 insertions(+), 22 deletions(-)
-> >>
-> >> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-> >> index 21056b9..21bb8b4 100644
-> >> --- a/drivers/mmc/card/block.c
-> >> +++ b/drivers/mmc/card/block.c
-> >> @@ -58,6 +58,8 @@ MODULE_ALIAS("mmc:block");
-> >>  #define INAND_CMD38_ARG_SECTRIM1 0x81
-> >>  #define INAND_CMD38_ARG_SECTRIM2 0x88
-> >>  #define MMC_BLK_TIMEOUT_MS  (10 * 60 * 1000)        /* 10 minute
-> >> timeout
-> >> */
-> >> +#define MMC_SANITIZE_REQ_TIMEOUT 240000
+> > > ---
+> > >  mm/page_alloc.c |    1 +
+> > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > >
+> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > index 6cacfee..7e0ead6 100644
+> > > --- a/mm/page_alloc.c
+> > > +++ b/mm/page_alloc.c
+> > > @@ -1404,6 +1404,7 @@ void split_page(struct page *page, unsigned int
+> order)
+> > >  	for (i = 1; i < (1 << order); i++)
+> > >  		set_page_refcounted(page + i);
+> > >  }
+> > > +EXPORT_SYMBOL_GPL(split_page);
+> > >
+> > >  static int __isolate_free_page(struct page *page, unsigned int order)
+> > >  {
+> > > --
+> > > 1.7.4.1
+> > >
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
 > >
-> > Though I would agree that 4 minutes is a reasonable sanitize time,
-> > the sanitize command may also depend on card size.
-> > As such I am not sure whether it can be regarded as a constant or
-> > needs to be proportional to card size.
-> >
-> >> +#define MMC_EXTRACT_INDEX_FROM_ARG(x) ((x & 0x00FF0000) >> 16)
-> >>
-> >>  static DEFINE_MUTEX(block_mutex);
-> >>
-> >> @@ -394,6 +396,35 @@ static int ioctl_rpmb_card_status_poll(struct
-> >> mmc_card
-> >> *card, u32 *status,
-> >>  	return err;
-> >>  }
-> >>
-> >> +static int ioctl_do_sanitize(struct mmc_card *card)
-> >> +{
-> >> +	int err;
-> >> +
-> >> +	if (!(mmc_can_sanitize(card) &&
-> >> +	      (card->host->caps2 & MMC_CAP2_SANITIZE))) {
-> >> +			pr_warn("%s: %s - SANITIZE is not supported\n",
-> >> +				mmc_hostname(card->host), __func__);
-> >> +			err = -EOPNOTSUPP;
-> >> +			goto out;
-> >> +	}
-> >> +
-> >> +	pr_debug("%s: %s - SANITIZE IN PROGRESS...\n",
-> >> +		mmc_hostname(card->host), __func__);
-> >> +
-> >> +	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-> >> +					EXT_CSD_SANITIZE_START, 1,
-> >> +					MMC_SANITIZE_REQ_TIMEOUT);
-> >> +
-> >> +	if (err)
-> >> +		pr_err("%s: %s - EXT_CSD_SANITIZE_START failed. err=%d\n",
-> >> +		       mmc_hostname(card->host), __func__, err);
-> >> +
-> >
-> > In case of Sanitize timeout, the eMMC might go in an unclear state.
-> > May I suggest to:
-> > - issue an HPI before leaving thus bring the eMMC back into safe status
-> > - report the 'sanitize not complete error' and let the user decide on
-> >   Whether he wants to re-issue (i.e. continue) the sanitize or just let
-> >   it go.
-> >
-> > Thanks,
-> >    Luca
-> >
-> >> +	pr_debug("%s: %s - SANITIZE COMPLETED\n", mmc_hostname(card->host),
-> >> +					     __func__);
-> >> +out:
-> >> +	return err;
-> >> +}
-> >> +
-> >>  static int mmc_blk_ioctl_cmd(struct block_device *bdev,
-> >>  	struct mmc_ioc_cmd __user *ic_ptr)
-> >>  {
-> >> @@ -496,6 +527,16 @@ static int mmc_blk_ioctl_cmd(struct block_device
-> >> *bdev,
-> >>  			goto cmd_rel_host;
-> >>  	}
-> >>
-> >> +	if (MMC_EXTRACT_INDEX_FROM_ARG(cmd.arg) == EXT_CSD_SANITIZE_START) {
-> >> +		err = ioctl_do_sanitize(card);
-> >> +
-> >> +		if (err)
-> >> +			pr_err("%s: ioctl_do_sanitize() failed. err = %d",
-> >> +			       __func__, err);
-> >> +
-> >> +		goto cmd_rel_host;
-> >> +	}
-> >> +
-> >>  	mmc_wait_for_req(card->host, &mrq);
-> >>
-> >>  	if (cmd.error) {
-> >> @@ -925,10 +966,10 @@ static int mmc_blk_issue_secdiscard_rq(struct
-> >> mmc_queue *mq,
-> >>  {
-> >>  	struct mmc_blk_data *md = mq->data;
-> >>  	struct mmc_card *card = md->queue.card;
-> >> -	unsigned int from, nr, arg, trim_arg, erase_arg;
-> >> +	unsigned int from, nr, arg;
-> >>  	int err = 0, type = MMC_BLK_SECDISCARD;
-> >>
-> >> -	if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
-> >> +	if (!(mmc_can_secure_erase_trim(card))) {
-> >>  		err = -EOPNOTSUPP;
-> >>  		goto out;
-> >>  	}
-> >> @@ -936,23 +977,11 @@ static int mmc_blk_issue_secdiscard_rq(struct
-> >> mmc_queue *mq,
-> >>  	from = blk_rq_pos(req);
-> >>  	nr = blk_rq_sectors(req);
-> >>
-> >> -	/* The sanitize operation is supported at v4.5 only */
-> >> -	if (mmc_can_sanitize(card)) {
-> >> -		erase_arg = MMC_ERASE_ARG;
-> >> -		trim_arg = MMC_TRIM_ARG;
-> >> -	} else {
-> >> -		erase_arg = MMC_SECURE_ERASE_ARG;
-> >> -		trim_arg = MMC_SECURE_TRIM1_ARG;
-> >> -	}
-> >> +	if (mmc_can_trim(card) && !mmc_erase_group_aligned(card, from, nr))
-> >> +		arg = MMC_SECURE_TRIM1_ARG;
-> >> +	else
-> >> +		arg = MMC_SECURE_ERASE_ARG;
-> >>
-> >> -	if (mmc_erase_group_aligned(card, from, nr))
-> >> -		arg = erase_arg;
-> >> -	else if (mmc_can_trim(card))
-> >> -		arg = trim_arg;
-> >> -	else {
-> >> -		err = -EINVAL;
-> >> -		goto out;
-> >> -	}
-> >>  retry:
-> >>  	if (card->quirks & MMC_QUIRK_INAND_CMD38) {
-> >>  		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-> >> @@ -988,9 +1017,6 @@ retry:
-> >>  			goto out;
-> >>  	}
-> >>
-> >> -	if (mmc_can_sanitize(card))
-> >> -		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-> >> -				 EXT_CSD_SANITIZE_START, 1, 0);
-> >>  out_retry:
-> >>  	if (err && !mmc_blk_reset(md, card->host, type))
-> >>  		goto retry;
-> >> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-> >> index fadf52e..483f0e8 100644
-> >> --- a/drivers/mmc/card/queue.c
-> >> +++ b/drivers/mmc/card/queue.c
-> >> @@ -148,7 +148,7 @@ static void mmc_queue_setup_discard(struct
-> >> request_queue *q,
-> >>  	/* granularity must not be greater than max. discard */
-> >>  	if (card->pref_erase > max_discard)
-> >>  		q->limits.discard_granularity = 0;
-> >> -	if (mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))
-> >> +	if (mmc_can_secure_erase_trim(card))
-> >>  		queue_flag_set_unlocked(QUEUE_FLAG_SECDISCARD, q);
-> >>  }
-> >>
-> >> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-> >> index 61a10c1..045e9f7 100644
-> >> --- a/include/linux/mmc/host.h
-> >> +++ b/include/linux/mmc/host.h
-> >> @@ -258,6 +258,7 @@ struct mmc_host {
-> >>  #define MMC_CAP2_HC_ERASE_SZ	(1 << 9)	/* High-capacity erase size */
-> >>  #define MMC_CAP2_CD_ACTIVE_HIGH	(1 << 10)	/* Card-detect signal
-> active
-> >> high */
-> >>  #define MMC_CAP2_RO_ACTIVE_HIGH	(1 << 11)	/* Write-protect signal
-> >> active
-> >> high */
-> >> +#define MMC_CAP2_SANITIZE	(1 << 12)		/* Support Sanitize */
-> >>
-> >>  	mmc_pm_flag_t		pm_caps;	/* supported pm features */
-> >>
-> >> --
-> >> 1.7.6
-> >> --
-> >> Sent by a consultant of the Qualcomm Innovation Center, Inc.
-> >> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-> >> Forum
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Michal Hocko
+> > SUSE Labs
 > >
 > 
 > 
-> --
-> Maya Erez
-> QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-> of Code Aurora Forum, hosted by The Linux Foundation
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
