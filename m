@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757321Ab3CYBbB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:31:01 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33954 "EHLO
+	id S1757335Ab3CYBbU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:31:20 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33944 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755960Ab3CYBPz (ORCPT
+	by vger.kernel.org with ESMTP id S1755952Ab3CYBPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 24 Mar 2013 21:15:55 -0400
-Message-Id: <20130325010530.792145638@decadent.org.uk>
+Message-Id: <20130325010530.999616790@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:30 +0000
+Date: Mon, 25 Mar 2013 01:06:32 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Dmitry Torokhov <dtor@vmware.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 066/104] USB: xhci - fix bit definitions for IMAN register
+Cc: akpm@linux-foundation.org, Daniel Mack <zonque@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 068/104] ALSA: snd-usb: mixer: propagate errors up the call chain
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,41 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dtor@vmware.com>
+From: Daniel Mack <zonque@gmail.com>
 
-commit f8264340e694604863255cc0276491d17c402390 upstream.
+commit 4d7b86c98e445b075c2c4c3757eb6d3d6efbe72e upstream.
 
-According to XHCI specification (5.5.2.1) the IP is bit 0 and IE is bit 1
-of IMAN register. Previously their definitions were reversed.
+In check_input_term() and parse_audio_feature_unit(), propagate the
+error value that has been returned by a failing function instead of
+-EINVAL. That helps cleaning up the error pathes in the mixer.
 
-Even though there are no ill effects being observed from the swapped
-definitions (because IMAN_IP is RW1C and in legacy PCI case we come in
-with it already set to 1 so it was clearing itself even though we were
-setting IMAN_IE instead of IMAN_IP), we should still correct the values.
-
-This patch should be backported to kernels as old as 2.6.36, that
-contain the commit 4e833c0b87a30798e67f06120cecebef6ee9644c "xhci: don't
-re-enable IE constantly".
-
-Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/usb/mixer.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -206,8 +206,8 @@ struct xhci_op_regs {
- /* bits 12:31 are reserved (and should be preserved on writes). */
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -711,8 +711,9 @@ static int check_input_term(struct mixer
+ 		case UAC2_CLOCK_SELECTOR: {
+ 			struct uac_selector_unit_descriptor *d = p1;
+ 			/* call recursively to retrieve the channel info */
+-			if (check_input_term(state, d->baSourceID[0], term) < 0)
+-				return -ENODEV;
++			err = check_input_term(state, d->baSourceID[0], term);
++			if (err < 0)
++				return err;
+ 			term->type = d->bDescriptorSubtype << 16; /* virtual type */
+ 			term->id = id;
+ 			term->name = uac_selector_unit_iSelector(d);
+@@ -1263,8 +1264,9 @@ static int parse_audio_feature_unit(stru
+ 		return err;
  
- /* IMAN - Interrupt Management Register */
--#define IMAN_IP		(1 << 1)
--#define IMAN_IE		(1 << 0)
-+#define IMAN_IE		(1 << 1)
-+#define IMAN_IP		(1 << 0)
+ 	/* determine the input source type and name */
+-	if (check_input_term(state, hdr->bSourceID, &iterm) < 0)
+-		return -EINVAL;
++	err = check_input_term(state, hdr->bSourceID, &iterm);
++	if (err < 0)
++		return err;
  
- /* USBSTS - USB status - status bitmasks */
- /* HC not running - set to 1 when run/stop bit is cleared. */
+ 	master_bits = snd_usb_combine_bytes(bmaControls, csize);
+ 	/* master configuration quirks */
 
 
