@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932171Ab3CYPlF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 11:41:05 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61995 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758468Ab3CYPlD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 11:41:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 2/3] mfd: db8500-prcmu: Fetch the PRCMU TCDM base address from Device Tree
-Date: Mon, 25 Mar 2013 15:40:50 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com
-References: <1364223758-17621-1-git-send-email-lee.jones@linaro.org> <1364223758-17621-2-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1364223758-17621-2-git-send-email-lee.jones@linaro.org>
+	id S1758493Ab3CYPlt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 11:41:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30765 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758422Ab3CYPlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 11:41:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,905,1355126400"; 
+   d="scan'208";a="284269603"
+Message-ID: <51507136.4020308@linux.intel.com>
+Date: Mon, 25 Mar 2013 08:45:58 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: daniel.leung@linux.intel.com
+CC: jkosina@suse.cz, srinivas.pandruvada@intel.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: hid-sensor-hub: do not process feature reports in
+ raw_event
+References: <1363886546-6517-1-git-send-email-daniel.leung@linux.intel.com>
+In-Reply-To: <1363886546-6517-1-git-send-email-daniel.leung@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303251540.51104.arnd@arndb.de>
-X-Provags-ID: V02:K0:66l1pnHHoPBAHMx9RAiopiFvAlFdLm0uBQoeabw0ZWX
- L6MRmqhrm5hTU8E8z/tiheCQNmK2bEg8lUOj9hH9sKsqAkRnri
- Wo1DlxiMTt1o5IJXi5/KQwFasveKQ07X45Ao8FmuDTO6236wXT
- Ggoc6S9eEgZost4UNr+1D1oawePvlbI6Yw/GHAww2pPk8GUWJk
- ajL8xhalBl9KpoTpjCJQxEKGCdBa0r1S362WnOhQ9kIRwemW47
- pdAyaCsiKetLwr25qNr4TcP0S8eeb/c7jUHWHlM1ZOlGVdxUVZ
- 5xo9a2WE5knZW1QeNU2/LtRadFcYinTrTEoSIeNVsoH2WY+dzf
- TztUg+VWnjKNkp+g0LDU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 March 2013, Lee Jones wrote:
->         res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
->                                            "prcmu-tcpm");
->         if (!res) {
-> -               dev_err(&pdev->dev,
-> -                       "Error: no prcmu tcpm memory region provided\n");
-> -               return;
-> -       }
-> -       tcpm_base = ioremap(res->start, resource_size(res));
-> +               if (np) {
-> +                       tcpm_np = of_find_node_by_name(np->parent,
-> +                                                      "prcmu-tcpm-per4");
-> +                       if (!tcpm_np) {
-> +                               dev_err(&pdev->dev,
-> +                                       "no prcmu tcpm mem region provided\n");
-> +                               return;
-> +                       }
-> +                       tcpm_base = of_iomap(tcpm_np, 0);
-> +               }
-> +       } else
-> +               tcpm_base = ioremap(res->start, resource_size(res));
-> +
+Daniel,
 
-Why don't you just add these extra registers to the prcmu node itself like
+I am looking at 3.9.rc1.
+The only place I see the raw_event callback is called from 
+hid/hid_input_report(). hid_input_report is called with type 
+HID_INPUT_REPORT in all cases, except hid_ctrl(), where it can be 
+different depending on xx.report->type. But here, the return value is 
+not checked.
 
-diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-index 9de9309..6ee6c31 100644
---- a/arch/arm/boot/dts/dbx5x0.dtsi
-+++ b/arch/arm/boot/dts/dbx5x0.dtsi
-@@ -191,8 +191,8 @@
- 
- 		prcmu: prcmu@80157000 {
- 			compatible = "stericsson,db8500-prcmu";
--			reg = <0x80157000 0x1000>;
--			reg-names = "prcmu";
-+			reg = <0x80157000 0x1000>, <0x801b0000 0x1000>, <0x801b8000 0x1000>;
-+			reg-names = "prcmu", "prcmu-tcpm", "prcmu-tcdm-per4";
- 			interrupts = <0 47 0x4>;
- 			#address-cells = <1>;
- 			#size-cells = <1>;
+Do you know the call chain for HID_FETURE_REPORT, where this is creating 
+problem?
 
+Thanks,
+Srinivas
 
-and document those in the prcmu binding?
+On 03/21/2013 10:22 AM, daniel.leung@linux.intel.com wrote:
+> From: Daniel Leung <daniel.leung@linux.intel.com>
+>
+> In sensor_hub_raw_event(), HID feature reports are ignored but are
+> still marked as processed. This causes the in-kernel struct not to be
+> updated. Any non-updated fields in the feature reports are zero, and
+> they are being sent to the device. This causes confusion in the
+> sensor hub firmware, and some sensors are not powered up as a result.
+>
+> This changes the raw_event rountine to only process input reports,
+> and let the hid core handle the incoming feature reports.
+>
+> The issue has been observed on Acer Iconia W700.
+>
+> Signed-off-by: Daniel Leung <daniel.leung@linux.intel.com>
+> ---
+>   drivers/hid/hid-sensor-hub.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
+> index ca749810..3f7df68 100644
+> --- a/drivers/hid/hid-sensor-hub.c
+> +++ b/drivers/hid/hid-sensor-hub.c
+> @@ -413,7 +413,7 @@ static int sensor_hub_raw_event(struct hid_device *hdev,
+>   			 report->id, size, report->type);
+>   	hid_dbg(hdev, "maxfield:%d\n", report->maxfield);
+>   	if (report->type != HID_INPUT_REPORT)
+> -		return 1;
+> +		return 0;
+>   
+>   	ptr = raw_data;
+>   	ptr++; /*Skip report id*/
 
-That would keep the code simpler and the same for both cases.
-
-	Arnd
