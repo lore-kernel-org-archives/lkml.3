@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757179Ab3CYEon (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 00:44:43 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:37332 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757027Ab3CYEol (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 00:44:41 -0400
+	id S1757211Ab3CYEwa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 00:52:30 -0400
+Received: from mga03.intel.com ([143.182.124.21]:9265 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757151Ab3CYEw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 00:52:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,902,1355126400"; 
+   d="scan'208";a="275429672"
+Message-ID: <514FD801.8070403@intel.com>
+Date: Mon, 25 Mar 2013 12:52:17 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <1363380204.2433.12.camel@joe-AO722>
-References: <1363128287.23052.21.camel@joe-AO722>
-	<1363174614.2031.9.camel@joe-AO722>
-	<20130313075155.7464a34a@tlielax.poochiereds.net>
-	<1363178421.2031.29.camel@joe-AO722>
-	<1363289077.2146.19.camel@joe-AO722>
-	<20130315150136.7f7a262a@tlielax.poochiereds.net>
-	<CAH2r5mvW29FV+stH5CsjY5S2FdaHn48TfiSEk_beC=NzHC7-MQ@mail.gmail.com>
-	<1363380204.2433.12.camel@joe-AO722>
-Date: Sun, 24 Mar 2013 23:44:41 -0500
-Message-ID: <CAH2r5mtOC149YigDxnHLfSU64jLk5bzGcMhpqTTQgS0Eyg3HqA@mail.gmail.com>
-Subject: Re: [PATCH] cifs: Rename cERROR and cFYI to cifs_dbg
-From: Steve French <smfrench@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Subject: Re: [patch v5 14/15] sched: power aware load balance
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-15-git-send-email-alex.shi@intel.com> <514941C5.6080007@linux.vnet.ibm.com> <514ABA19.1080807@intel.com> <514AC7B2.7030400@linux.vnet.ibm.com> <514AD26F.9010905@intel.com> <514AE07A.10100@linux.vnet.ibm.com> <514BB452.2070906@intel.com> <514BE8AC.6000607@linux.vnet.ibm.com>
+In-Reply-To: <514BE8AC.6000607@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 3:43 PM, Joe Perches <joe@perches.com> wrote:
-> On Fri, 2013-03-15 at 15:16 -0500, Steve French wrote:
->
->> I would like to merge the three we have (one still has to be put in
->> for-next - the one from Jeff) for for-next in the next three or fouir
->> days - but I can create another temporary branch for the ones for 3.10
->> - but ... I would like to simplify things by merging the other cleanup
->> patches we already have first.  I agree that we are going to have to
->> let people know to rebase everything for cifs for 3.10 on this big
->> cleanup patch.
->
-> Another possibility is to extend the
-> cifs_dbg(type, fmt. ...) types from
->
-> VFS, FYI, NOISY
->
-> so that the messages could be
-> filtered/classified better.
->
-> Also, perhaps it'd be better to use
-> pr_debug instead of KERN_ERR for
-> the VFS messages.
+On 03/22/2013 01:14 PM, Preeti U Murthy wrote:
+>> > 
+>> > the value get from decay_load():
+>> >  sa->runnable_avg_sum = decay_load(sa->runnable_avg_sum,
+>> > in decay_load it is possible to be set zero.
+> Yes you are right, it is possible to be set to 0, but after a very long
+> time, to be more precise, nearly 2 seconds. If you look at decay_load(),
+> if the period between last update and now has crossed (32*63),only then
+> will the runnable_avg_sum become 0, else it will simply decay.
+> 
+> This means that for nearly 2seconds,consolidation of loads may not be
+> possible even after the runqueues have finished executing tasks running
+> on them.
 
-Although it required hand merging, this large patch is now merged into
-cifs-2.6.git (for-next branch, destined for 3.10) but ... I only
-merged three obvious other patches (destined for 3.10) before it
+Look into the decay_load(), since the LOAD_AVG_MAX is about 47742, so
+after 16 * 32ms, the maximum avg sum will be decay to zero. 2^16 = 65536
 
-4521ba9ca4138f424769f17ae7166ff5ccf08805 fs: cifs: use kmemdup instead
-of kmalloc + memcpy
-41057e5a5d673015fc0d0e587e993d26f1818b1c cifs: replaced kmalloc +
-memset with kzalloc
-8f43465d17982767dd5b3f5d48216ef5c100c274 cifs: ignore the unc= and
-prefixpath= mount options
+Yes, compare to accumulate time 345ms, the decay is not symmetry, and
+not precise, seems it has space to tune well. But it is acceptable now.
+> 
+> The exact experiment that I performed was running ebizzy, with just two
+> threads. My setup was 2 socket,2 cores each,4 threads each core. So a 16
+> logical cpu machine.When I begin running ebizzy with balance policy, the
+> 2 threads of ebizzy are found one on each socket, while I would expect
+> them to be on the same socket. All other cpus, except the ones running
+> ebizzy threads are idle and not running anything on either socket.
+> I am not running any other processes.
 
-and I merged one so far after it that Jeff had already rebased ontop
-of Joe's large patch
-
-457d2157ec2da6f9fa755e16ab740979f581e328 cifs: remove ENOSPC handling
-in smb_sendv
-
-So ... going forward for 3.10 make sure to fixup subsequent new cifs
-patches ontop Joe's large "cifs: Rename cERROR and cFYI to cifs_dbg"
-patch or else it will make merging a mess since Joe's patch changes
-just about very cifs file due to the macro renaming.
-
+did you try the simplest benchmark: while true; do :; done
+I am writing the v6 version which include rt_util etc. you may test on
+it after I send out. :)
+> 
+> You could run a similar experiment and let me know if you see otherwise.
+> I am at a loss to understand why else would such a spreading of load
+> occur, if not for the rq->util not becoming 0 quickly,when it is not
+> running anything. I have used trace_printks to keep track of runqueue
+> util of those runqueues not running anything after maybe some initial
+> load and it does not become 0 till the end of the run.
 
 
 -- 
-Thanks,
-
-Steve
+Thanks Alex
