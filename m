@@ -1,80 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758722Ab3CYRJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 13:09:20 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:52746 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757434Ab3CYRJS (ORCPT
+	id S932396Ab3CYRJf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 13:09:35 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53922 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758209Ab3CYRJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 13:09:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <51507301.3050601@surriel.com>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	<CA+i8gKKK_VxZtyyp1tqHnztd4++XyNXwbEEr-A29-J23PyuCfQ@mail.gmail.com>
-	<CA+55aFzqBEX=cGGZJJsfNWcDwQcUOP7njEog-kZZLRxuDg8Tzg@mail.gmail.com>
-	<CA+i8gK+h+FyPiOL85BPa-Pu8+bDw6LW60-oRoLHgP2AnzMADCA@mail.gmail.com>
-	<CA+55aFxjGFi+gt3UwdVCVKP5riHSR=_qLkp0SovgW2zx+gcRow@mail.gmail.com>
-	<CA+i8gKJuykoCk=O3qbDmmZXd=8U13wF7o_NzUviccaZoU6WLaA@mail.gmail.com>
-	<CA+55aFwb9v9cUG4Ton3faO6xAD18JxxoTPcObXDV_5Zf3QQ=Kw@mail.gmail.com>
-	<CA+i8gK+DNOk5tvRsVJFKyk0A2qOD_az7yJ5+3Y2xS=Ear1VkVA@mail.gmail.com>
-	<51505881.5060409@surriel.com>
-	<51505923.2070504@surriel.com>
-	<CA+i8gKKOPkVRBjqQb8=9T_eyw_oF5jedKMqG1U=Kwa3OHsMW_g@mail.gmail.com>
-	<51507301.3050601@surriel.com>
-Date: Tue, 26 Mar 2013 00:09:15 +0700
-Message-ID: <CA+i8gKLY=ssqkHUsbLY-31RgVUhxLfkqV1QYort3mGH2Vd8xGg@mail.gmail.com>
-Subject: Re: ipc,sem: sysv semaphore scalability
-From: Emmanuel Benisty <benisty.e@gmail.com>
-To: Rik van Riel <riel@surriel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hhuang@redhat.com,
-        "Low, Jason" <jason.low2@hp.com>,
-        Michel Lespinasse <walken@google.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 25 Mar 2013 13:09:33 -0400
+Date: Mon, 25 Mar 2013 13:09:24 -0400 (EDT)
+Message-Id: <20130325.130924.1771800578429290181.davem@davemloft.net>
+To: josright123@gmail.com
+Cc: wfp5p@virginia.edu, matthew@mattleach.net, gregkh@linuxfoundation.org,
+        joseph_chang@davicom.com.tw, jiri@resnulli.us, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ethernet driver: dm9000: davicom: Upgrade the
+ driver to suit for all DM9000 series chips
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1364198682-1589-1-git-send-email-josright123@gmail.com>
+References: <1364198682-1589-1-git-send-email-josright123@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 25 Mar 2013 10:09:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 10:53 PM, Rik van Riel <riel@surriel.com> wrote:
-> On 03/25/2013 11:20 AM, Emmanuel Benisty wrote:
->>
->> On Mon, Mar 25, 2013 at 9:03 PM, Rik van Riel <riel@surriel.com> wrote:
->>>>>
->>>>> With the first four patches only, I got some X server freeze (just
->>>>> tried once).
->>>>
->>>>
->>>>
->>>> Could you try booting with panic=1 so the kernel panics on the first
->>>> oops?
->>>
->>>
->>>
->>> Sorry that should be "oops=panic"
->>>
->>>
->>>> Maybe that way (if we are lucky) we will be able to capture the first
->>>> oops, and maybe get an idea of what causes the problem.
->>
->>
->> Sorry Rik, I get all kind of weird behaviors (wireless dies, compiling
->> gets stuck and is impossible to kill, can't kill X) with the 4
->> patches+oops=panic but no trace. Here after is 7+1 patches with
->> oops=panic boot: http://i.imgur.com/1jep1qx.jpg
->
->
-> This may be a stupid question, but you re-compile and re-install
-> the kernel modules every time you changed the kernel?
->
-> The behaviour you report with just the first four patches is so
-> random, it sounds almost like a mismatched data structure between
-> compiles...
+From: Joseph CHANG <josright123@gmail.com>
+Date: Mon, 25 Mar 2013 16:04:42 +0800
 
-Yes it's OK. I even started from scratch just in case but I'm still
-getting the same weird things. Everything works just fine with a build
-from Linus' tree which I normally use. I'll try the patches on another
-machine tomorrow.
+>  #define CARDNAME	"dm9000"
+> -#define DRV_VERSION	"1.31"
+> +/* [KERN-ADD-1](upgrade) */
+> +#define DRV_VERSION	"1.39"
+ ...
+> +			/* [KERN-ADD-2] */
+
+These kinds of comments are absolutely inapproprate.
