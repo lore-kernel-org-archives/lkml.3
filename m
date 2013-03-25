@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab3CYMNU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 08:13:20 -0400
-Received: from mail-pa0-f68.google.com ([209.85.220.68]:37475 "EHLO
-	mail-pa0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756907Ab3CYMNS (ORCPT
+	id S1757010Ab3CYMPK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 08:15:10 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:52259 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756585Ab3CYMPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 08:13:18 -0400
-X-Greylist: delayed 802 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Mar 2013 08:13:18 EDT
-Date: Mon, 25 Mar 2013 19:59:43 +0800 (CST)
-From: Xiong Zhou <jencce.kernel@gmail.com>
-X-X-Sender: zx@M2420
-To: linux-next@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        jencce.kernel@gmail.com
-Subject: [patch] sound/soc/codec : fix build failure in next-201303225
-Message-ID: <alpine.DEB.2.02.1303251950440.20514@M2420>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 25 Mar 2013 08:15:08 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1364211788.5053.3.camel@laptop>
+References: <1363949499-3728-1-git-send-email-eranian@google.com>
+	<1363949499-3728-3-git-send-email-eranian@google.com>
+	<1364211788.5053.3.camel@laptop>
+Date: Mon, 25 Mar 2013 13:15:07 +0100
+Message-ID: <CABPqkBSAqd25rGLiK6AOwu8QRrA3jKV=A0zDKpWaFikYd3dKSg@mail.gmail.com>
+Subject: Re: [PATCH v5 2/2] perf: add sysfs entry to adjust multiplexing
+ interval per PMU
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiong Zhou <jencce.kernel@gmail.com>
+On Mon, Mar 25, 2013 at 12:43 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> On Fri, 2013-03-22 at 11:51 +0100, Stephane Eranian wrote:
+> > In the 4th version, we renamed the sysfs file to be more
+> > consistent with the other /proc/sys/kernel entries for
+> > perf_events.
+>
+> >  static struct device_attribute pmu_dev_attrs[] = {
+> > -       __ATTR_RO(type),
+> > -       __ATTR_NULL,
+> > +       __ATTR_RO(type),
+> > +       __ATTR_RW(perf_event_mux_interval_ms),
+> > +       __ATTR_NULL,
+> >  };
+>
+> but but but, the file doesn't live in /proc/sys/kernel/, its in
+> /sys/bus/event_source/devices/*/$foo and none of the files there are
+> perf_event_* prefixed.
+>
+True. Some leftover from the earlier patch. The sysfs entry is now
+per pmu instance. So yes, it is in /sys/devices/*/
 
-This patch fixes build failure of next-20130325 (and also next-20130322), 
-about sound soc codec modules, based on previous implementation. 
-Failing message:
-
-  MODPOST 2490 modules
-  ERROR: "arizona_rate_text" [sound/soc/codecs/snd-soc-wm-adsp.ko] undefined!
-  ERROR: "arizona_rate_val" [sound/soc/codecs/snd-soc-wm-adsp.ko] undefined!
-  WARNING: modpost: Found 5 section mismatch(es).
-
-Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
----
-sound/soc/codecs/arizona.c |    8 ++------
-sound/soc/codecs/arizona.h |   10 ++++++++--
-2 files changed, 10 insertions(+), 8 deletions(-)
-
-diff --git a/sound/soc/codecs/arizona.c b/sound/soc/codecs/arizona.c
-index 26e1579..166db32 100644
---- a/sound/soc/codecs/arizona.c
-+++ b/sound/soc/codecs/arizona.c
-@@ -433,14 +433,10 @@ EXPORT_SYMBOL_GPL(arizona_mixer_values);
- const DECLARE_TLV_DB_SCALE(arizona_mixer_tlv, -3200, 100, 0);
- EXPORT_SYMBOL_GPL(arizona_mixer_tlv);
- 
--const char *arizona_rate_text[ARIZONA_RATE_ENUM_SIZE] = {
--	"SYNCCLK rate", "8kHz", "16kHz", "ASYNCCLK rate",
--};
-+extern const char *arizona_rate_text[ARIZONA_RATE_ENUM_SIZE];
- EXPORT_SYMBOL_GPL(arizona_rate_text);
- 
--const int arizona_rate_val[ARIZONA_RATE_ENUM_SIZE] = {
--	0, 1, 2, 8,
--};
-+extern const int arizona_rate_val[ARIZONA_RATE_ENUM_SIZE];
- EXPORT_SYMBOL_GPL(arizona_rate_val);
- 
- 
-diff --git a/sound/soc/codecs/arizona.h b/sound/soc/codecs/arizona.h
-index a754a1c..3e43456 100644
---- a/sound/soc/codecs/arizona.h
-+++ b/sound/soc/codecs/arizona.h
-@@ -181,8 +181,14 @@ extern int arizona_mixer_values[ARIZONA_NUM_MIXER_INPUTS];
- 	ARIZONA_MIXER_ROUTES(name, name "R")
- 
- #define ARIZONA_RATE_ENUM_SIZE 4
--extern const char *arizona_rate_text[ARIZONA_RATE_ENUM_SIZE];
--extern const int arizona_rate_val[ARIZONA_RATE_ENUM_SIZE];
-+
-+const char *arizona_rate_text[ARIZONA_RATE_ENUM_SIZE] = {
-+	"SYNCCLK rate", "8kHz", "16kHz", "ASYNCCLK rate",
-+};
-+
-+const int arizona_rate_val[ARIZONA_RATE_ENUM_SIZE] = {
-+	0, 1, 2, 8,
-+};
- 
- extern const struct soc_enum arizona_isrc_fsl[];
- 
+>
+> Other than that, the patches look fine.
+>
+Thanks.
