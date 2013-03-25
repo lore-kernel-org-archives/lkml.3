@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758635Ab3CYQOD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 12:14:03 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19319 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758468Ab3CYQOB (ORCPT
+	id S932242Ab3CYQTq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 12:19:46 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:45813 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932174Ab3CYQTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 12:14:01 -0400
-X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ZzSxI7jMevMA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=mVTtbqeYs4EA:10 a=8LN7v2X43pVAz9kI2xcA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1364228039.6345.183.camel@gandalf.local.home>
-Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
- unfreeze_partials() code.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>
-Date: Mon, 25 Mar 2013 12:13:59 -0400
-In-Reply-To: <1364227073.6345.182.camel@gandalf.local.home>
-References: <1363906545.6345.81.camel@gandalf.local.home>
-	 <0000013d92c37ff3-5fb85400-bec1-4eda-8ba1-332566884c59-000000@email.amazonses.com>
-	 <1364010673.6345.156.camel@gandalf.local.home>
-	 <0000013da1f93be3-c3d42ae8-ff34-4c63-8094-77a83291ea19-000000@email.amazonses.com>
-	 <1364227073.6345.182.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+	Mon, 25 Mar 2013 12:19:45 -0400
+Message-ID: <51507916.6030402@gmail.com>
+Date: Tue, 26 Mar 2013 00:19:34 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2, part4 00/39] Simplify mem_init() implementations
+ and kill num_physpages
+References: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com> <1364112719.1975.4.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1364112719.1975.4.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-25 at 11:57 -0400, Steven Rostedt wrote:
-
-> > 
-> > You can eliminate the whole thing by setting
-> > 
-> > /sys/kernel/slab/<whatever/cpu_partial
-> > 
-> > to zero.
+Hi James,
+	Thanks for reminder, my patch series have been screwed up.
+I will send another version and build a git tree on github.
+	Thanks!
+	Gerry
+On 03/24/2013 04:11 PM, James Bottomley wrote:
+> On Sun, 2013-03-24 at 15:24 +0800, Jiang Liu wrote:
+>> The original goal of this patchset is to fix the bug reported by
+>> https://bugzilla.kernel.org/show_bug.cgi?id=53501
+>> Now it has also been expanded to reduce common code used by memory
+>> initializion.
+>>
+>> This is the last part, previous three patch sets could be accessed at:
+>> http://marc.info/?l=linux-mm&m=136289696323825&w=2
+>> http://marc.info/?l=linux-mm&m=136290291524901&w=2
+>> http://marc.info/?l=linux-mm&m=136345342831592&w=2
+>>
+>> This patchset applies to
+>> https://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git since-3.8
 > 
-> Thanks! I'll give this a try.
+> You're going to have to have a git tree for this if you want this series
+> testing on other architectures.  Plus cc'ing linux-arch would be a good
+> idea for that case.  The patch series seems to be screwed up in the
+> numbering:  The parisc patches 26/39 and 27/39 are identical.
 > 
-
-BTW, what impact does setting all cpu_partial files to zero have on the
-system?
-
--- Steve
-
+> James
+> 
+> 
+> 
+> 
+> 
 
