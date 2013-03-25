@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab3CYBPq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:15:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33931 "EHLO
+	id S1756242Ab3CYBQQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Mar 2013 21:16:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34068 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755876Ab3CYBPn (ORCPT
+	by vger.kernel.org with ESMTP id S1756189Ab3CYBQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Mar 2013 21:15:43 -0400
-Message-Id: <20130325010531.474691079@decadent.org.uk>
+	Sun, 24 Mar 2013 21:16:13 -0400
+Message-Id: <20130325010528.719100602@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:37 +0000
+Date: Mon, 25 Mar 2013 01:06:09 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Joe Thornber <ejt@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 073/104] dm thin: fix discard corruption
+Cc: akpm@linux-foundation.org, Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 045/104] sfc: Properly sync RX DMA buffer when it is not the  last in the page
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
@@ -29,192 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit f046f89a99ccfd9408b94c653374ff3065c7edb3 upstream.
+[ Upstream commit 3a68f19d7afb80f548d016effbc6ed52643a8085 ]
 
-Fix a bug in dm_btree_remove that could leave leaf values with incorrect
-reference counts.  The effect of this was that removal of a shared block
-could result in the space maps thinking the block was no longer used.
-More concretely, if you have a thin device and a snapshot of it, sending
-a discard to a shared region of the thin could corrupt the snapshot.
+We may currently allocate two RX DMA buffers to a page, and only unmap
+the page when the second is completed.  We do not sync the first RX
+buffer to be completed; this can result in packet loss or corruption
+if the last RX buffer completed in a NAPI poll is the first in a page
+and is not DMA-coherent.  (In the middle of a NAPI poll, we will
+handle the following RX completion and unmap the page *before* looking
+at the content of the first buffer.)
 
-Thinp uses a 2-level nested btree to store it's mappings.  This first
-level is indexed by thin device, and the second level by logical
-block.
-
-Often when we're removing an entry in this mapping tree we need to
-rebalance nodes, which can involve shadowing them, possibly creating a
-copy if the block is shared.  If we do create a copy then children of
-that node need to have their reference counts incremented.  In this
-way reference counts percolate down the tree as shared trees diverge.
-
-The rebalance functions were incrementing the children at the
-appropriate time, but they were always assuming the children were
-internal nodes.  This meant the leaf values (in our case packed
-block/flags entries) were not being incremented.
-
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-[bwh: Backported to 3.2: bump target version numbers from 1.0.1 to 1.0.2]
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/dm-thin.c                         |    4 +--
- drivers/md/persistent-data/dm-btree-remove.c |   46 ++++++++++++++------------
- 2 files changed, 26 insertions(+), 24 deletions(-)
+ drivers/net/ethernet/sfc/rx.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -2212,7 +2212,7 @@ static struct target_type pool_target =
- 	.name = "thin-pool",
- 	.features = DM_TARGET_SINGLETON | DM_TARGET_ALWAYS_WRITEABLE |
- 		    DM_TARGET_IMMUTABLE,
--	.version = {1, 0, 1},
-+	.version = {1, 0, 2},
- 	.module = THIS_MODULE,
- 	.ctr = pool_ctr,
- 	.dtr = pool_dtr,
-@@ -2428,7 +2428,7 @@ static void thin_io_hints(struct dm_targ
- 
- static struct target_type thin_target = {
- 	.name = "thin",
--	.version = {1, 0, 1},
-+	.version = {1, 0, 2},
- 	.module	= THIS_MODULE,
- 	.ctr = thin_ctr,
- 	.dtr = thin_dtr,
---- a/drivers/md/persistent-data/dm-btree-remove.c
-+++ b/drivers/md/persistent-data/dm-btree-remove.c
-@@ -139,15 +139,8 @@ struct child {
- 	struct btree_node *n;
- };
- 
--static struct dm_btree_value_type le64_type = {
--	.context = NULL,
--	.size = sizeof(__le64),
--	.inc = NULL,
--	.dec = NULL,
--	.equal = NULL
--};
--
--static int init_child(struct dm_btree_info *info, struct btree_node *parent,
-+static int init_child(struct dm_btree_info *info, struct dm_btree_value_type *vt,
-+		      struct btree_node *parent,
- 		      unsigned index, struct child *result)
- {
- 	int r, inc;
-@@ -164,7 +157,7 @@ static int init_child(struct dm_btree_in
- 	result->n = dm_block_data(result->block);
- 
- 	if (inc)
--		inc_children(info->tm, result->n, &le64_type);
-+		inc_children(info->tm, result->n, vt);
- 
- 	*((__le64 *) value_ptr(parent, index, sizeof(__le64))) =
- 		cpu_to_le64(dm_block_location(result->block));
-@@ -236,7 +229,7 @@ static void __rebalance2(struct dm_btree
+diff --git a/drivers/net/ethernet/sfc/rx.c b/drivers/net/ethernet/sfc/rx.c
+index 5ef4cc0..b4d3cd5 100644
+--- a/drivers/net/ethernet/sfc/rx.c
++++ b/drivers/net/ethernet/sfc/rx.c
+@@ -246,7 +246,8 @@ static int efx_init_rx_buffers_page(struct efx_rx_queue *rx_queue)
  }
  
- static int rebalance2(struct shadow_spine *s, struct dm_btree_info *info,
--		      unsigned left_index)
-+		      struct dm_btree_value_type *vt, unsigned left_index)
+ static void efx_unmap_rx_buffer(struct efx_nic *efx,
+-				struct efx_rx_buffer *rx_buf)
++				struct efx_rx_buffer *rx_buf,
++				unsigned int used_len)
  {
- 	int r;
- 	struct btree_node *parent;
-@@ -244,11 +237,11 @@ static int rebalance2(struct shadow_spin
- 
- 	parent = dm_block_data(shadow_current(s));
- 
--	r = init_child(info, parent, left_index, &left);
-+	r = init_child(info, vt, parent, left_index, &left);
- 	if (r)
- 		return r;
- 
--	r = init_child(info, parent, left_index + 1, &right);
-+	r = init_child(info, vt, parent, left_index + 1, &right);
- 	if (r) {
- 		exit_child(info, &left);
- 		return r;
-@@ -368,7 +361,7 @@ static void __rebalance3(struct dm_btree
+ 	if (rx_buf->is_page && rx_buf->u.page) {
+ 		struct efx_rx_page_state *state;
+@@ -257,6 +258,10 @@ static void efx_unmap_rx_buffer(struct efx_nic *efx,
+ 				       state->dma_addr,
+ 				       efx_rx_buf_size(efx),
+ 				       PCI_DMA_FROMDEVICE);
++		} else if (used_len) {
++			dma_sync_single_for_cpu(&efx->pci_dev->dev,
++						rx_buf->dma_addr, used_len,
++						DMA_FROM_DEVICE);
+ 		}
+ 	} else if (!rx_buf->is_page && rx_buf->u.skb) {
+ 		pci_unmap_single(efx->pci_dev, rx_buf->dma_addr,
+@@ -279,7 +284,7 @@ static void efx_free_rx_buffer(struct efx_nic *efx,
+ static void efx_fini_rx_buffer(struct efx_rx_queue *rx_queue,
+ 			       struct efx_rx_buffer *rx_buf)
+ {
+-	efx_unmap_rx_buffer(rx_queue->efx, rx_buf);
++	efx_unmap_rx_buffer(rx_queue->efx, rx_buf, 0);
+ 	efx_free_rx_buffer(rx_queue->efx, rx_buf);
  }
  
- static int rebalance3(struct shadow_spine *s, struct dm_btree_info *info,
--		      unsigned left_index)
-+		      struct dm_btree_value_type *vt, unsigned left_index)
- {
- 	int r;
- 	struct btree_node *parent = dm_block_data(shadow_current(s));
-@@ -377,17 +370,17 @@ static int rebalance3(struct shadow_spin
- 	/*
- 	 * FIXME: fill out an array?
- 	 */
--	r = init_child(info, parent, left_index, &left);
-+	r = init_child(info, vt, parent, left_index, &left);
- 	if (r)
- 		return r;
- 
--	r = init_child(info, parent, left_index + 1, &center);
-+	r = init_child(info, vt, parent, left_index + 1, &center);
- 	if (r) {
- 		exit_child(info, &left);
- 		return r;
+@@ -550,10 +555,10 @@ void efx_rx_packet(struct efx_rx_queue *rx_queue, unsigned int index,
+ 		goto out;
  	}
  
--	r = init_child(info, parent, left_index + 2, &right);
-+	r = init_child(info, vt, parent, left_index + 2, &right);
- 	if (r) {
- 		exit_child(info, &left);
- 		exit_child(info, &center);
-@@ -434,7 +427,8 @@ static int get_nr_entries(struct dm_tran
- }
+-	/* Release card resources - assumes all RX buffers consumed in-order
+-	 * per RX queue
++	/* Release and/or sync DMA mapping - assumes all RX buffers
++	 * consumed in-order per RX queue
+ 	 */
+-	efx_unmap_rx_buffer(efx, rx_buf);
++	efx_unmap_rx_buffer(efx, rx_buf, len);
  
- static int rebalance_children(struct shadow_spine *s,
--			      struct dm_btree_info *info, uint64_t key)
-+			      struct dm_btree_info *info,
-+			      struct dm_btree_value_type *vt, uint64_t key)
- {
- 	int i, r, has_left_sibling, has_right_sibling;
- 	uint32_t child_entries;
-@@ -472,13 +466,13 @@ static int rebalance_children(struct sha
- 	has_right_sibling = i < (le32_to_cpu(n->header.nr_entries) - 1);
- 
- 	if (!has_left_sibling)
--		r = rebalance2(s, info, i);
-+		r = rebalance2(s, info, vt, i);
- 
- 	else if (!has_right_sibling)
--		r = rebalance2(s, info, i - 1);
-+		r = rebalance2(s, info, vt, i - 1);
- 
- 	else
--		r = rebalance3(s, info, i - 1);
-+		r = rebalance3(s, info, vt, i - 1);
- 
- 	return r;
- }
-@@ -529,7 +523,7 @@ static int remove_raw(struct shadow_spin
- 		if (le32_to_cpu(n->header.flags) & LEAF_NODE)
- 			return do_leaf(n, key, index);
- 
--		r = rebalance_children(s, info, key);
-+		r = rebalance_children(s, info, vt, key);
- 		if (r)
- 			break;
- 
-@@ -550,6 +544,14 @@ static int remove_raw(struct shadow_spin
- 	return r;
- }
- 
-+static struct dm_btree_value_type le64_type = {
-+	.context = NULL,
-+	.size = sizeof(__le64),
-+	.inc = NULL,
-+	.dec = NULL,
-+	.equal = NULL
-+};
-+
- int dm_btree_remove(struct dm_btree_info *info, dm_block_t root,
- 		    uint64_t *keys, dm_block_t *new_root)
- {
+ 	/* Prefetch nice and early so data will (hopefully) be in cache by
+ 	 * the time we look at it.
 
 
