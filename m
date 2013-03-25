@@ -1,151 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149Ab3CYSux (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 14:50:53 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:37463 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933026Ab3CYSuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 14:50:11 -0400
-Message-Id: <20130325185009.556418899@gulag1.americas.sgi.com>
+	id S933408Ab3CYSvd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 14:51:33 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:55857 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932974Ab3CYSuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 14:50:10 -0400
+Message-Id: <20130325185008.996233401@gulag1.americas.sgi.com>
 References: <20130325185007.321022858@gulag1.americas.sgi.com>
 User-Agent: quilt/0.46-1
-Date: Mon, 25 Mar 2013 13:50:22 -0500
+Date: Mon, 25 Mar 2013 13:50:18 -0500
 From: Mike Travis <travis@sgi.com>
 To: Jason Wessel <jason.wessel@windriver.com>
 Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Alexander Gordeev <agordeev@redhat.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Steffen Persvold <sp@numascale.com>
-Subject: [PATCH 15/15] x86/UV: Add call to KGDB/KDB from NMI handler
-Content-Disposition: inline; filename=uv-add-nmi-call-kdb.patch
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 11/15] KDB: add new system NMI entry code to KDB
+Content-Disposition: inline; filename=kdb-add-system-nmi.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch restores the ability to enter KDB (and KGDB) from the UV
-NMI handler.  It utilizes the newly added kgdb_nmicallin function
-to gain entry to KGDB/KDB by the master.  The slaves still enter via
-the standard kgdb_nmicallback function.
+This patch adds a new "KDB_REASON" code (KDB_REASON_SYSTEM_NMI).
+This is purely cosmetic to distinguish it from the other various
+reasons that NMI may occur and are usually after an error occurred.
+Also the dumping of registers is not done to more closely match
+what happens when KDB is entered manually via the sysreq 'g' key.
 
-The handler also uses the new 'send_ready' pointer to tell KGDB/KDB
-to signal the slaves when to proceed into the KGDB slave loop.
-
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Steffen Persvold <sp@numascale.com>
 Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
 Signed-off-by: Mike Travis <travis@sgi.com>
 ---
- arch/x86/platform/uv/uv_nmi.c |   73 ++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 71 insertions(+), 2 deletions(-)
+ include/linux/kdb.h             |    1 +
+ include/linux/kgdb.h            |    1 +
+ kernel/debug/debug_core.c       |    5 +++++
+ kernel/debug/kdb/kdb_debugger.c |    5 ++++-
+ kernel/debug/kdb/kdb_main.c     |    3 +++
+ 5 files changed, 14 insertions(+), 1 deletion(-)
 
---- linux.orig/arch/x86/platform/uv/uv_nmi.c
-+++ linux/arch/x86/platform/uv/uv_nmi.c
-@@ -21,6 +21,8 @@
+--- linux.orig/include/linux/kdb.h
++++ linux/include/linux/kdb.h
+@@ -110,6 +110,7 @@ typedef enum {
+ 	KDB_REASON_RECURSE,	/* Recursive entry to kdb;
+ 				 * regs probably valid */
+ 	KDB_REASON_SSTEP,	/* Single Step trap. - regs valid */
++	KDB_REASON_SYSTEM_NMI,	/* In NMI due to SYSTEM cmd; regs valid */
+ } kdb_reason_t;
  
- #include <linux/cpu.h>
- #include <linux/delay.h>
-+#include <linux/kgdb.h>
-+#include <linux/kdb.h>
- #include <linux/module.h>
- #include <linux/nmi.h>
- #include <linux/sched.h>
-@@ -34,6 +36,7 @@
- #include <asm/current.h>
- #include <asm/kdebug.h>
- #include <asm/local64.h>
-+#include <asm/traps.h>
- #include <asm/uv/uv.h>
- #include <asm/uv/uv_hub.h>
- #include <asm/uv/uv_mmrs.h>
-@@ -521,6 +524,68 @@ static void uv_nmi_touch_watchdogs(void)
- 	touch_nmi_watchdog();
- }
+ extern int kdb_trap_printk;
+--- linux.orig/include/linux/kgdb.h
++++ linux/include/linux/kgdb.h
+@@ -52,6 +52,7 @@ extern int kgdb_connected;
+ extern int kgdb_io_module_registered;
  
-+#ifdef CONFIG_KGDB_KDB
-+
-+/* Disable to force process dump instead of entering KDB or KGDB */
-+static int uv_nmi_kdb_on = 1;
-+module_param_named(kdb_on, uv_nmi_kdb_on, int, 0644);
-+
-+/* Call KDB from NMI handler */
-+static void uv_call_kdb(int cpu, struct pt_regs *regs,
-+			int master, unsigned long *flags)
-+{
-+	int ret;
-+
-+	if (master) {
-+		/* call KGDB NMI handler as MASTER */
-+		local_irq_restore(*flags);
-+		ret = kgdb_nmicallin(cpu, X86_TRAP_NMI, regs,
-+					&uv_nmi_slave_continue);
-+		local_irq_save(*flags);
-+
-+		/*
-+		 * if KGDB/KDB did not handle the NMI, then signal slaves
-+		 *   to do process dump instead.
-+		 */
-+		if (ret) {
-+			uv_nmi_dump_state(cpu, regs, 1);
-+			return;
-+		}
-+	} else {
-+		int sig;
-+
-+		/* wait for KGDB to say it's ready for slaves to enter */
-+		do {
-+			cpu_relax();
-+			sig = atomic_read(&uv_nmi_slave_continue);
-+		} while (!sig);
-+
-+		/*
-+		 * if KGDB/KDB did not handle the NMI for the master, then
-+		 *   the master signals the slaves to do process dump instead.
-+		 */
-+		if (sig == 2) {
-+			uv_nmi_dump_state(cpu, regs, 0);
-+			return;
-+		}
-+
-+		/* call KGDB as slave */
-+		local_irq_restore(*flags);
-+		ret = kgdb_nmicallback(cpu, regs);
-+		local_irq_save(*flags);
-+	}
-+	uv_nmi_sync_exit(master);
-+}
-+
-+#else /* !CONFIG_KGDB_KDB */
-+static inline void uv_call_kdb(int cpu, struct pt_regs *regs,
-+				int master, unsigned long *flags)
-+{
-+	pr_err("UV: NMI error: KDB is not enabled in this kernel\n");
-+	uv_nmi_dump_state(cpu, regs, master);
-+}
-+#endif /* !CONFIG_KGDB_KDB */
-+
- /*
-  * UV NMI handler
-  */
-@@ -547,8 +612,12 @@ int uv_handle_nmi(unsigned int reason, s
- 	if (master && uv_nmi_kdump_requested)
- 		uv_nmi_kdump(regs);
+ extern atomic_t			kgdb_setting_breakpoint;
++extern atomic_t			kgdb_system_nmi;
+ extern atomic_t			kgdb_cpu_doing_single_step;
  
--	/* Dump state of each cpu */
--	uv_nmi_dump_state(cpu, regs, master);
-+	/* Call KDB if enabled */
-+	if (uv_nmi_kdb_on)
-+		uv_call_kdb(cpu, regs, master, &flags);
-+
-+	else	/* Otherwise dump state of each cpu */
-+		uv_nmi_dump_state(cpu, regs, master);
+ extern struct task_struct	*kgdb_usethread;
+--- linux.orig/kernel/debug/debug_core.c
++++ linux/kernel/debug/debug_core.c
+@@ -125,6 +125,7 @@ static atomic_t			masters_in_kgdb;
+ static atomic_t			slaves_in_kgdb;
+ static atomic_t			kgdb_break_tasklet_var;
+ atomic_t			kgdb_setting_breakpoint;
++atomic_t			kgdb_system_nmi;
  
- 	/* Clear per_cpu "in nmi" flag */
- 	atomic_set(&uv_cpu_nmi.state, UV_NMI_STATE_OUT);
+ struct task_struct		*kgdb_usethread;
+ struct task_struct		*kgdb_contthread;
+@@ -760,7 +761,11 @@ int kgdb_nmicallin(int cpu, int trapnr,
+ 
+ 		/* Indicate there are slaves waiting */
+ 		kgdb_info[cpu].send_ready = send_ready;
++
++		/* Use new reason code "SYSTEM_NMI" */
++		atomic_inc(&kgdb_system_nmi);
+ 		kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
++		atomic_dec(&kgdb_system_nmi);
+ 		kgdb_do_roundup = save_kgdb_do_roundup;
+ 		kgdb_info[cpu].send_ready = NULL;
+ 
+--- linux.orig/kernel/debug/kdb/kdb_debugger.c
++++ linux/kernel/debug/kdb/kdb_debugger.c
+@@ -69,7 +69,10 @@ int kdb_stub(struct kgdb_state *ks)
+ 	if (atomic_read(&kgdb_setting_breakpoint))
+ 		reason = KDB_REASON_KEYBOARD;
+ 
+-	if (in_nmi())
++	if (atomic_read(&kgdb_system_nmi))
++		reason = KDB_REASON_SYSTEM_NMI;
++
++	else if (in_nmi())
+ 		reason = KDB_REASON_NMI;
+ 
+ 	for (i = 0, bp = kdb_breakpoints; i < KDB_MAXBPT; i++, bp++) {
+--- linux.orig/kernel/debug/kdb/kdb_main.c
++++ linux/kernel/debug/kdb/kdb_main.c
+@@ -1216,6 +1216,9 @@ static int kdb_local(kdb_reason_t reason
+ 			   instruction_pointer(regs));
+ 		kdb_dumpregs(regs);
+ 		break;
++	case KDB_REASON_SYSTEM_NMI:
++		kdb_printf("due to System NonMaskable Interrupt\n");
++		break;
+ 	case KDB_REASON_NMI:
+ 		kdb_printf("due to NonMaskable Interrupt @ "
+ 			   kdb_machreg_fmt "\n",
 
 -- 
