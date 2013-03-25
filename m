@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289Ab3CYBaV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Mar 2013 21:30:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33953 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755967Ab3CYBP4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755984Ab3CYBP4 (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 24 Mar 2013 21:15:56 -0400
-Message-Id: <20130325010531.384661104@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33940 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755942Ab3CYBPx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Mar 2013 21:15:53 -0400
+Message-Id: <20130325010531.791492307@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Mar 2013 01:06:36 +0000
+Date: Mon, 25 Mar 2013 01:06:40 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Alan Stern <stern@rowland.harvard.edu>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [ 072/104] usb: gadget: udc-core: fix a regression during gadget driver
+Cc: akpm@linux-foundation.org, Seth Forshee <seth.forshee@canonical.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [ 076/104] efivars: Fix check for CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
- unbinding
 In-Reply-To: <20130325010524.240972766@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:f137:78a:b654:affb
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,39 +29,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 511f3c5326eabe1ece35202a404c24c0aeacc246 upstream.
+commit ca0ba26fbbd2d81c43085df49ce0abfe34535a90 upstream.
 
-This patch (as1666) fixes a regression in the UDC core.  The core
-takes care of unbinding gadget drivers, and it does the unbinding
-before telling the UDC driver to turn off the controller hardware.
-When the call to the udc_stop callback is made, the gadget no longer
-has a driver.  The callback routine should not be invoked with a
-pointer to the old driver; doing so can cause problems (such as
-use-after-free accesses in net2280).
+The 'CONFIG_' prefix is not implicit in IS_ENABLED().
 
-This patch should be applied, with appropriate context changes, to all
-the stable kernels going back to 3.1.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[bwh: Backported to 3.2: adjust context, indentation]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Seth Forshee <seth.forshee@canonical.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- drivers/usb/gadget/udc-core.c |    2 +-
+ drivers/firmware/efivars.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/gadget/udc-core.c
-+++ b/drivers/usb/gadget/udc-core.c
-@@ -213,7 +213,7 @@ static void usb_gadget_remove_driver(str
- 		udc->driver->disconnect(udc->gadget);
- 		usb_gadget_disconnect(udc->gadget);
- 		udc->driver->unbind(udc->gadget);
--		usb_gadget_udc_stop(udc->gadget, udc->driver);
-+		usb_gadget_udc_stop(udc->gadget, NULL);
- 	} else {
- 		usb_gadget_stop(udc->gadget, udc->driver);
- 	}
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -93,7 +93,7 @@ MODULE_VERSION(EFIVARS_VERSION);
+ #define DUMP_NAME_LEN 52
+ 
+ static bool efivars_pstore_disable =
+-	IS_ENABLED(EFI_VARS_PSTORE_DEFAULT_DISABLE);
++	IS_ENABLED(CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE);
+ 
+ module_param_named(pstore_disable, efivars_pstore_disable, bool, 0644);
+ 
 
 
