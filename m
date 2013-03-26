@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910Ab3CZRj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:39:28 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27419 "EHLO
+	id S1754887Ab3CZRj1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:39:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30328 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754342Ab3CZRgd (ORCPT
+	with ESMTP id S1754343Ab3CZRge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:36:33 -0400
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=HMXTXvYb6IcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=CIneEAQuiPsA:10 a=1XWaLZrsAAAA:8 a=J1Y8HTJGAAAA:8 a=GZK3lcuhIWR5GrNAc6YA:9 a=UTB_XpHje0EA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Tue, 26 Mar 2013 13:36:34 -0400
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=VYTfRPD44rIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=fplUzVOZNGgA:10 a=1XWaLZrsAAAA:8 a=QyXUC8HyAAAA:8 a=J1Y8HTJGAAAA:8 a=ayC55rCoAAAA:8 a=GZK3lcuhIWR5GrNAc6YA:9 a=UTB_XpHje0EA:10 a=dGJ0OcVc7YAA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130326173609.952397441@goodmis.org>
+Message-Id: <20130326173609.800328331@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 26 Mar 2013 13:22:02 -0400
+Date: Tue, 26 Mar 2013 13:22:01 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: =?UTF-8?q?Maciej=20=C5=BBenczykowski?= <maze@google.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 63/86] tcp: fix incorrect LOCKDROPPEDICMPS counter
+Subject: [PATCH 62/86] macvlan: fix macvlan_get_size()
 References: <20130326172059.136127374@goodmis.org>
-Content-Disposition: inline; filename=0063-tcp-fix-incorrect-LOCKDROPPEDICMPS-counter.patch
+Content-Disposition: inline; filename=0062-macvlan-fix-macvlan_get_size.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,46 +33,35 @@ If anyone has any objections, please let me know.
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 55ef74760190fb39eacaaee1816dfaeeadd5b92d ]
+[ Upstream commit ee19a438d8f4f7ff5a9469a2f30bba7bb15f00ec ]
 
-commit 563d34d057 (tcp: dont drop MTU reduction indications)
-added an error leading to incorrect accounting of
-LINUX_MIB_LOCKDROPPEDICMPS
+commit df8ef8f3aaa (macvlan: add FDB bridge ops and macvlan flags)
+forgot to update macvlan_get_size() after the addition of
+IFLA_MACVLAN_FLAGS
 
-If socket is owned by the user, we want to increment
-this SNMP counter, unless the message is a
-(ICMP_DEST_UNREACH,ICMP_FRAG_NEEDED) one.
-
-Reported-by: Maciej Żenczykowski <maze@google.com>
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: Maciej Żenczykowski <maze@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
+Cc: John Fastabend <john.r.fastabend@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- net/ipv4/tcp_ipv4.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/net/macvlan.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 4705caf..c883f4f 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -379,11 +379,10 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
- 	 * We do take care of PMTU discovery (RFC1191) special case :
- 	 * we can receive locally generated ICMP messages while socket is held.
- 	 */
--	if (sock_owned_by_user(sk) &&
--	    type != ICMP_DEST_UNREACH &&
--	    code != ICMP_FRAG_NEEDED)
--		NET_INC_STATS_BH(net, LINUX_MIB_LOCKDROPPEDICMPS);
--
-+	if (sock_owned_by_user(sk)) {
-+		if (!(type == ICMP_DEST_UNREACH && code == ICMP_FRAG_NEEDED))
-+			NET_INC_STATS_BH(net, LINUX_MIB_LOCKDROPPEDICMPS);
-+	}
- 	if (sk->sk_state == TCP_CLOSE)
- 		goto out;
+diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+index ea2c5d4..666fc20 100644
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -823,7 +823,10 @@ static int macvlan_changelink(struct net_device *dev,
  
+ static size_t macvlan_get_size(const struct net_device *dev)
+ {
+-	return nla_total_size(4);
++	return (0
++		+ nla_total_size(4) /* IFLA_MACVLAN_MODE */
++		+ nla_total_size(2) /* IFLA_MACVLAN_FLAGS */
++		);
+ }
+ 
+ static int macvlan_fill_info(struct sk_buff *skb,
 -- 
 1.7.10.4
 
