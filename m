@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318Ab3CZWwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:52:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53094 "EHLO
+	id S1756680Ab3CZXAA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:00:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53097 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755224Ab3CZWwp (ORCPT
+	with ESMTP id S1756288Ab3CZWwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:45 -0400
+	Tue, 26 Mar 2013 18:52:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Jerome Glisse <jglisse@redhat.com>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 46/72] drm/radeon: add Richland pci ids
-Date: Tue, 26 Mar 2013 15:51:29 -0700
-Message-Id: <20130326224924.424097200@linuxfoundation.org>
+Subject: [ 47/72] drm/radeon: add support for Richland APUs
+Date: Tue, 26 Mar 2013 15:51:30 -0700
+Message-Id: <20130326224924.529571708@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -29,44 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit b75bbaa038ffc426e88ea3df6c4ae11834fc3e4f upstream.
+commit e4d170633fde379f39a90f8a5e7eb619b5d1144d upstream.
+
+Richland APUs are a new version of the Trinity APUs
+with performance and power management improvements.
 
 Reviewed-by: Jerome Glisse <jglisse@redhat.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/drm/drm_pciids.h |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/ni.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -572,7 +572,11 @@
- 	{0x1002, 0x9908, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9909, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x990A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
--	{0x1002, 0x990F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x990B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x990C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x990D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x990E, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x990F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9910, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9913, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9917, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-@@ -583,6 +587,13 @@
- 	{0x1002, 0x9992, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9993, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9994, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x9995, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x9996, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x9997, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x9998, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x9999, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x999A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x999B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x99A0, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x99A2, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x99A4, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -663,13 +663,19 @@ static void cayman_gpu_init(struct radeo
+ 		    (rdev->pdev->device == 0x9907) ||
+ 		    (rdev->pdev->device == 0x9908) ||
+ 		    (rdev->pdev->device == 0x9909) ||
++		    (rdev->pdev->device == 0x990B) ||
++		    (rdev->pdev->device == 0x990C) ||
++		    (rdev->pdev->device == 0x990F) ||
+ 		    (rdev->pdev->device == 0x9910) ||
+-		    (rdev->pdev->device == 0x9917)) {
++		    (rdev->pdev->device == 0x9917) ||
++		    (rdev->pdev->device == 0x9999)) {
+ 			rdev->config.cayman.max_simds_per_se = 6;
+ 			rdev->config.cayman.max_backends_per_se = 2;
+ 		} else if ((rdev->pdev->device == 0x9903) ||
+ 			   (rdev->pdev->device == 0x9904) ||
+ 			   (rdev->pdev->device == 0x990A) ||
++			   (rdev->pdev->device == 0x990D) ||
++			   (rdev->pdev->device == 0x990E) ||
+ 			   (rdev->pdev->device == 0x9913) ||
+ 			   (rdev->pdev->device == 0x9918)) {
+ 			rdev->config.cayman.max_simds_per_se = 4;
+@@ -678,6 +684,9 @@ static void cayman_gpu_init(struct radeo
+ 			   (rdev->pdev->device == 0x9990) ||
+ 			   (rdev->pdev->device == 0x9991) ||
+ 			   (rdev->pdev->device == 0x9994) ||
++			   (rdev->pdev->device == 0x9995) ||
++			   (rdev->pdev->device == 0x9996) ||
++			   (rdev->pdev->device == 0x999A) ||
+ 			   (rdev->pdev->device == 0x99A0)) {
+ 			rdev->config.cayman.max_simds_per_se = 3;
+ 			rdev->config.cayman.max_backends_per_se = 1;
 
 
