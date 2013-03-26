@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934918Ab3CZP4Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:56:25 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57274 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934869Ab3CZP4V (ORCPT
+	id S965111Ab3CZP4D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:56:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53720 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964985Ab3CZPW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:56:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <514F5480.6040501@suse.cz>
-References: <20130320201554.GA18281@kroah.com>
-	<kidd01$2o6$1@ger.gmane.org>
-	<514F5480.6040501@suse.cz>
-Date: Tue, 26 Mar 2013 08:56:20 -0700
-X-Google-Sender-Auth: TsgTUvcHtq7o79jHfe3Ig1uj31c
-Message-ID: <CAGXu5jJdbDabBjNoaZUeqCT6a6yHqHcQNnqXNM6T1S=bwig8Fw@mail.gmail.com>
-Subject: Re: Build breakage in 3.8.4 [was: Linux 3.8.4]
-From: Kees Cook <keescook@chromium.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Sebastian Gottschall <s.gottschall@dd-wrt.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "# 3.4.x" <stable@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 26 Mar 2013 11:22:26 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: James Ralston <james.d.ralston@intel.com>,
+        Jeff Garzik <jgarzik@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 052/150] ahci: Add Device IDs for Intel Wellsburg PCH
+Date: Tue, 26 Mar 2013 15:19:11 +0000
+Message-Id: <1364311249-14454-53-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 24, 2013 at 12:31 PM, Jiri Slaby <jslaby@suse.cz> wrote:
-> On 03/20/2013 11:25 PM, Sebastian Gottschall wrote:
->
->> Am 20.03.2013 21:15, schrieb Greg KH:
->>> I'm announcing the release of the 3.8.4 kernel.
-> ...
->>>        signal: always clear sa_restorer on execve
->> consider that this kernel is not compileable on mips targets due the
->> patch in kernel/signal.c
->>
->> SA_RESTORER is defined in mips, but sa_restorer does not exist on that
->> platform
->
-> The same for ia64...
->
-> kernel/signal.c: In function 'flush_signal_handlers':
-> kernel/signal.c:441: error: 'struct sigaction' has no member named
-> 'sa_restorer'
->
-> Do we need this in 3.0, 3.4, 3.8 too?
-> commit 522cff142d7d2f9230839c9e1f21a4d8bcc22a4a
-> Author: Andrew Morton <akpm@linux-foundation.org>
-> Date:   Wed Mar 13 14:59:34 2013 -0700
->
->     kernel/signal.c: use __ARCH_HAS_SA_RESTORER instead of SA_RESTORER
->
->     __ARCH_HAS_SA_RESTORER is the preferred conditional for use in 3.9 and
->     later kernels, per Kees.
+3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
 
-Hrm, if so, we'll need to also backport the changes that aded
-__ARCH_HAS_SA_RESTORER...
+------------------
 
--Kees
+From: James Ralston <james.d.ralston@intel.com>
 
->
-> thanks,
-> --
-> js
-> suse labs
+commit 151743fd8dfb02956c5184b5f4f0f42677eb75bc upstream.
 
+This patch adds the AHCI-mode SATA Device IDs for the Intel Wellsburg PCH
 
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/ata/ahci.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---
-Kees Cook
-Chrome OS Security
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 557c871..edd842d 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -292,6 +292,14 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x1f37), board_ahci }, /* Avoton RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x1f3e), board_ahci }, /* Avoton RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x1f3f), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x8d02), board_ahci }, /* Wellsburg AHCI */
++	{ PCI_VDEVICE(INTEL, 0x8d04), board_ahci }, /* Wellsburg RAID */
++	{ PCI_VDEVICE(INTEL, 0x8d06), board_ahci }, /* Wellsburg RAID */
++	{ PCI_VDEVICE(INTEL, 0x8d0e), board_ahci }, /* Wellsburg RAID */
++	{ PCI_VDEVICE(INTEL, 0x8d62), board_ahci }, /* Wellsburg AHCI */
++	{ PCI_VDEVICE(INTEL, 0x8d64), board_ahci }, /* Wellsburg RAID */
++	{ PCI_VDEVICE(INTEL, 0x8d66), board_ahci }, /* Wellsburg RAID */
++	{ PCI_VDEVICE(INTEL, 0x8d6e), board_ahci }, /* Wellsburg RAID */
+ 
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+-- 
+1.8.1.2
+
