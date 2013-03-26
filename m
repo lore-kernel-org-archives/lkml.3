@@ -1,147 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757039Ab3CZL2a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 07:28:30 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51594 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756213Ab3CZL23 (ORCPT
+	id S1757264Ab3CZL3z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 07:29:55 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:57988 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756814Ab3CZL3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 07:28:29 -0400
-Date: Tue, 26 Mar 2013 11:28:11 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCHv3 01/10] clocksource: add generic dummy timer driver
-Message-ID: <20130326112811.GD4065@e106331-lin.cambridge.arm.com>
-References: <1363198676-30417-1-git-send-email-sboyd@codeaurora.org>
- <1363198676-30417-2-git-send-email-sboyd@codeaurora.org>
- <20130321180922.GB10716@e106331-lin.cambridge.arm.com>
- <514B4DBD.4060403@codeaurora.org>
- <20130322180305.GB1436@e106331-lin.cambridge.arm.com>
- <5150800E.2000905@codeaurora.org>
- <20130325180007.GA4065@e106331-lin.cambridge.arm.com>
- <5151049D.5040400@codeaurora.org>
+	Tue, 26 Mar 2013 07:29:53 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/10] soft-offline: use migrate_pages() instead of migrate_huge_page()
+In-Reply-To: <1363983835-20184-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1363983835-20184-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Notmuch/0.15.1+22~gc34effa (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Tue, 26 Mar 2013 16:59:40 +0530
+Message-ID: <87boa69z6j.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5151049D.5040400@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032611-4790-0000-0000-00000791DFC9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 02:14:53AM +0000, Stephen Boyd wrote:
-> On 03/25/13 11:00, Mark Rutland wrote:
-> >
-> >>> I've spent the last few hours trying to get the dummy_timer driver working on
-> >>> tc2 with the sp804 as the broadcast source (with architected timer support
-> >>> disabled). It turns out that having dummy timer's rating so low means that it
-> >>> won't be selected as the tick device on cpu0 in preference to the sp804, and
-> >>> thus won't push the sp804 out of that spot (allowing it to become the broadcast
-> >>> source). This leads to boot stalling.
-> >> I'm not following here. Why would we want to remove sp804 from the tick
-> >> duty?
-> > To run an SMP system without local timers, we need the sp804 to be the
-> > broadcast timer. Unfortunately the tick device and broadcast timer are mutually
-> > exclusive positions, so we need to have a dummy timer knock the sp804 out of
-> > tick device duty to enable broadcast.
-> >
-> > When the dummy timer's rating was 400 (against the sp804's 350), this worked.
-> > The sp804 would be registered, and would become cpu0's tick device. Later the
-> > dummy would get registered, knocking the sp804 out (whereupon it would get
-> > cycled back through tick_check_new_device and become the broadcast timer).
-> >
-> > With the dummy timer's rating lower, the sp804 stays as cpu0's tick device, all
-> > other cpus get dummy timers, but there's no broadcast source, so the system
-> > locks up waiting for secondary cpus.
-> 
-> Ok. Thanks for clearing up my confusion.
-> 
-> Like you say, increasing the dummy timer rating seems like a hack. But
-> it also sounds like you want to keep the dummy timer driver fully self
-> contained. I'm not opposed to calling dummy_timer_register() at the
-> bottom of tick_init() if we have to, but it sounds like you don't like that.
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
 
-I'd like to keep the dummy timer driver self-contained if we can, but if it
-makes it more robust and/or easier to deal with by having an external call to
-register the driver, then I'm not opposed to that.
+> Currently migrate_huge_page() takes a pointer to a hugepage to be
+> migrated as an argument, instead of taking a pointer to the list of
+> hugepages to be migrated. This behavior was introduced in commit
+> 189ebff28 ("hugetlb: simplify migrate_huge_page()"), and was OK
+> because until now hugepage migration is enabled only for soft-offlining
+> which takes only one hugepage in a single call.
+>
+> But the situation will change in the later patches in this series
+> which enable other users of page migration to support hugepage migration.
+> They can kick migration for both of normal pages and hugepages
+> in a single call, so we need to go back to original implementation
+> of using linked lists to collect the hugepages to be migrated.
+>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  mm/memory-failure.c | 15 ++++++++++++---
+>  mm/migrate.c        |  2 ++
+>  2 files changed, 14 insertions(+), 3 deletions(-)
+>
+> diff --git v3.9-rc3.orig/mm/memory-failure.c v3.9-rc3/mm/memory-failure.c
+> index df0694c..4e01082 100644
+> --- v3.9-rc3.orig/mm/memory-failure.c
+> +++ v3.9-rc3/mm/memory-failure.c
+> @@ -1467,6 +1467,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
+>  	int ret;
+>  	unsigned long pfn = page_to_pfn(page);
+>  	struct page *hpage = compound_head(page);
+> +	LIST_HEAD(pagelist);
+>
+>  	/*
+>  	 * This double-check of PageHWPoison is to avoid the race with
+> @@ -1482,12 +1483,20 @@ static int soft_offline_huge_page(struct page *page, int flags)
+>  	unlock_page(hpage);
+>
+>  	/* Keep page count to indicate a given hugepage is isolated. */
+> -	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL,
+> -				MIGRATE_SYNC);
+> -	put_page(hpage);
+> +	list_move(&hpage->lru, &pagelist);
 
-> 
-> An alternative would be to push the dummy timer logic into the core
-> clockevents layer under the ifdef for arch has broadcast. This is
-> probably the correct approach because most devices don't want to have a
-> dummy timer sitting around unused. I might be able to take a look at
-> this tomorrow.
-
-I'm also not opposed to this idea.
-
-> 
-> One final question, if you remove all other CPUs besides the CPU that is
-> servicing the sp804 interrupt do we end up in a situation where the
-> sp804 is broadcasting to the dummy tick device? I haven't read through
-> all the code yet for that one. I would think tick_switch_to_oneshot()
-> would complain on your device?
-
-The current code in arch/arm/kernel/smp.c only registers the local timer on
-cpu0 if we have more than one CPU, so the sp804 stays as cpu0's tick device.
-
-With the generic dummy timer (with a rating bumped up to 400, using an
-early_initcall, and the dummy timers rejected as broadcast sources [1]), even
-when booting only with one cpu described in the dt the sp804 is relegated to
-broadcast timer duty, broadcasting to the dummy timer on cpu0. Echoing 'q' to
-/proc/sysrq-trigger gives me:
-
-Tick Device: mode:     0
-Broadcast device
-Clock Event Device: v2m-timer0
- max_delta_ns:   4294966591000
- min_delta_ns:   14999
- mult:           2147484
- shift:          31
- mode:           2
- next_event:     9223372036854775807 nsecs
- set_next_event: sp804_set_next_event
- set_mode:       sp804_set_mode
- event_handler:  tick_handle_periodic_broadcast
- retries:        0
-tick_broadcast_mask: 00000001
-tick_broadcast_oneshot_mask: 00000000
+we use hpage->lru to add the hpage to h->hugepage_activelist. This will
+break a hugetlb cgroup removal isn't it ?
 
 
-Tick Device: mode:     0
-Per CPU device: 0
-Clock Event Device: dummy_timer
- max_delta_ns:   0
- min_delta_ns:   0
- mult:           0
- shift:          0
- mode:           1
- next_event:     9223372036854775807 nsecs
- set_next_event: <00000000>
- set_mode:       dummy_timer_set_mode
- event_handler:  tick_handle_periodic
- retries:        0
+> +	ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
+> +				MIGRATE_SYNC, MR_MEMORY_FAILURE);
+>  	if (ret) {
+>  		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+>  			pfn, ret, page->flags);
+> +		/*
+> +		 * We know that soft_offline_huge_page() tries to migrate
+> +		 * only one hugepage pointed to by hpage, so we need not
+> +		 * run through the pagelist here.
+> +		 */
+> +		putback_active_hugepage(hpage);
+> +		if (ret > 0)
+> +			ret = -EIO;
+>  	} else {
+>  		set_page_hwpoison_huge_page(hpage);
+>  		dequeue_hwpoisoned_huge_page(hpage);
+> diff --git v3.9-rc3.orig/mm/migrate.c v3.9-rc3/mm/migrate.c
+> index f69f354..66030b6 100644
+> --- v3.9-rc3.orig/mm/migrate.c
+> +++ v3.9-rc3/mm/migrate.c
+> @@ -981,6 +981,8 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+>
+>  	unlock_page(hpage);
+>  out:
+> +	if (rc != -EAGAIN)
+> +		putback_active_hugepage(hpage);
+>  	put_page(new_hpage);
+>  	if (result) {
+>  		if (rc)
+> -- 
 
-Though "broadcasting" to the same cpu is special-cased in tick_do_broadcast,
-which will call the tick device's event_handler directly rather than having the
-cpu attempt to IPI to itself.
+-aneesh
 
-As you suggest, tick_switch_to_oneshot does complain:
-
-Clockevents: could not switch to one-shot mode: dummy_timer is not functional.
-Could not switch to high resolution mode on CPU 0
-
-To handle this case we could check cpu_possible_mask when initialising the
-dummy and only register it if more than 1 cpu is possible. That would be
-roughly in line with how we handle this case in smp.c.
-
-Thanks,
-Mark.
-
-[1] https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=a7dc19b8652c862d5b7c4d2339bd3c428bd29c4a
