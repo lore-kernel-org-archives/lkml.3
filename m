@@ -1,137 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757712Ab3CZLs4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 07:48:56 -0400
-Received: from mout.web.de ([212.227.15.3]:62264 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757217Ab3CZLsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 07:48:54 -0400
-From: Danny Baumann <dannybaumann@web.de>
-To: David Airlie <airlied@linux.ie>
-Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Danny Baumann <dannybaumann@web.de>
-Subject: [PATCH 1/1] drm/i915: Allow specifying a minimum brightness level for sysfs control.
-Date: Tue, 26 Mar 2013 12:48:45 +0100
-Message-Id: <1364298525-4337-2-git-send-email-dannybaumann@web.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1364298525-4337-1-git-send-email-dannybaumann@web.de>
-References: <1364298525-4337-1-git-send-email-dannybaumann@web.de>
-X-Provags-ID: V02:K0:3rtyXq0UeWjy0H9UcXSuIMEp+2h8FFoken+WQN1LE57
- fJ4ovX/0smjuhEuZfCYqvW3oqqtfixTLuTxRzHeuCdgfz2RlRg
- 9tPI4CBK7OZXD/n2O+mDaaU/Q2ZVddeDlau1y8TQ57jN116RGE
- /lifUlWdBeImJXiRd+kBRajR06VAOQFkANQhA5co8SNK5nz6Mr
- QMaxzr+3N/UdShWtJa5gg==
+	id S1757856Ab3CZLuT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 07:50:19 -0400
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.199]:47065 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757377Ab3CZLuS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 07:50:18 -0400
+X-Greylist: delayed 385 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Mar 2013 07:50:17 EDT
+X-Env-Sender: Hector.Palacios@digi.com
+X-Msg-Ref: server-11.tower-45.messagelabs.com!1364298229!30913148!1
+X-Originating-IP: [66.77.174.13]
+X-StarScan-Received: 
+X-StarScan-Version: 6.8.6.1; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <515189ED.3080807@digi.com>
+Date: Tue, 26 Mar 2013 12:43:41 +0100
+From: Hector Palacios <hector.palacios@digi.com>
+Organization: Digi International
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Fabio Estevam <festevam@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marek Vasut <marex@denx.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Dong Aisheng <b29396@freescale.com>,
+        "Mark Brown" <broonie@opensource.wolfsonmicro.com>
+Subject: Re: BUG: soft lockup when recording audio on MX28EVK with ASoC sgtl5000
+References: <51502C87.8050902@digi.com> <CAOMZO5CWE-Q0Oh_LnP3ZOcnm5D68rJ6JGun=Tpq4EbS4TDQ+bw@mail.gmail.com> <CAOMZO5CvrkfGPi7=4-JXnSLzU+8NKV=RD9n3eLvCehXdv6JHEg@mail.gmail.com>
+In-Reply-To: <CAOMZO5CvrkfGPi7=4-JXnSLzU+8NKV=RD9n3eLvCehXdv6JHEg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When controlling backlight devices via sysfs interface, user space
-generally assumes the minimum level (0) still providing a brightness
-that is usable by the user (probably due to the most commonly used
-backlight device, acpi_videoX, behaving exactly like that). This doesn't
-match the current behaviour of the intel_backlight control, though, as
-the value 0 means 'backlight off'.
+Hi Fabio,
 
-In order to make intel_backlight consistent to other backlight devices,
-introduce a module parameter that allows shifting the 0 level of the
-intel_backlight device. It's expressed in percentages of the maximum
-level. The default is 5, which provides a backlight level that is barely
-readable. Setting it to 0 restores the old behaviour.
+On 03/26/2013 12:15 AM, Fabio Estevam wrote:
+> Hector,
+>
+> On Mon, Mar 25, 2013 at 4:31 PM, Fabio Estevam <festevam@gmail.com> wrote:
+>> Hi Hector,
+>>
+>> On Mon, Mar 25, 2013 at 7:52 AM, Hector Palacios
+>> <hector.palacios@digi.com> wrote:
+>>> Hello,
+>>>
+>>> I just tried recording audio on Freescale's MX28EVK that uses ASoC sgtl5000
+>>> (kernel v3.8) with:
+>>>
+>>>          arecord -M -f cd sound.wav --duration 10
+>>>
+>>> and got a scheduler message:
+>>>
+>>> [  789.041847] [sched_delayed] sched: RT throttling activated
+>>
+>> I have just tested arecord on 3.8,4 and I haven't seen the 'soft lockup' bug.
+>>
+>> However, I see that mxs saif gets busy after the record and any
+>> attempt to do an 'aplay' after the first arecord fails.
+>>
+>> With the attached patch applied I am able to do arecord/aplay sequence
+>> several times.
+>>
+>> I don't have a cable handy here to actually test if the sound is
+>> recorded properly or not.
+>>
+>> Could you please test it against 3.8.4?
+>
+> I managed to test arecord and it works with the following as follows:
+>
+> 1. Run alsamixer and select LINE_IN in the Capture element
+>
+> 2. Record with the following command line:
+>
+> arecord -D hw:0,1 -d 10 -f S16_LE -r 44100 -c  test.wav
 
-Signed-off-by: Danny Baumann <dannybaumann@web.de>
----
- drivers/gpu/drm/i915/intel_panel.c | 48 ++++++++++++++++++++++++++++++++------
- 1 file changed, 41 insertions(+), 7 deletions(-)
+This command works on v3.8 even without your patch. I can arecord/aplay several times 
+without problems.
 
-diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-index bee8cb6..5bad49d 100644
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -395,10 +395,35 @@ intel_panel_detect(struct drm_device *dev)
- }
- 
- #ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
-+
-+static int i915_panel_min_brightness_percent = 5;
-+MODULE_PARM_DESC(min_sysfs_brightness, "Minimum brightness percentage settable "
-+	"via sysfs. This adjusts the brightness level of the value '0' in the "
-+	"intel_backlight sysfs backlight interface.");
-+module_param_named(min_sysfs_brightness,
-+		   i915_panel_min_brightness_percent, int, 0400);
-+
-+static int intel_panel_min_brightness(struct drm_device *dev)
-+{
-+	int max;
-+
-+	if (i915_panel_min_brightness_percent <= 0)
-+		return 0;
-+
-+	max = intel_panel_get_max_backlight(dev);
-+	if (i915_panel_min_brightness_percent >= 100)
-+		return max;
-+
-+	return max * i915_panel_min_brightness_percent / 100;
-+}
-+
- static int intel_panel_update_status(struct backlight_device *bd)
- {
- 	struct drm_device *dev = bl_get_data(bd);
--	intel_panel_set_backlight(dev, bd->props.brightness);
-+	int brightness =
-+		bd->props.brightness + intel_panel_min_brightness(dev);
-+
-+	intel_panel_set_backlight(dev, brightness);
- 	return 0;
- }
- 
-@@ -406,7 +431,10 @@ static int intel_panel_get_brightness(struct backlight_device *bd)
- {
- 	struct drm_device *dev = bl_get_data(bd);
- 	struct drm_i915_private *dev_priv = dev->dev_private;
--	return dev_priv->backlight_level;
-+	int brightness =
-+		dev_priv->backlight_level - intel_panel_min_brightness(dev);
-+
-+	return brightness;
- }
- 
- static const struct backlight_ops intel_panel_bl_ops = {
-@@ -419,16 +447,21 @@ int intel_panel_setup_backlight(struct drm_connector *connector)
- 	struct drm_device *dev = connector->dev;
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	struct backlight_properties props;
-+	int max_brightness;
- 
- 	intel_panel_init_backlight(dev);
- 
--	memset(&props, 0, sizeof(props));
--	props.type = BACKLIGHT_RAW;
--	props.max_brightness = _intel_panel_get_max_backlight(dev);
--	if (props.max_brightness == 0) {
-+	max_brightness = _intel_panel_get_max_backlight(dev);
-+	if (max_brightness == 0) {
- 		DRM_DEBUG_DRIVER("Failed to get maximum backlight value\n");
- 		return -ENODEV;
- 	}
-+
-+	memset(&props, 0, sizeof(props));
-+	props.type = BACKLIGHT_RAW;
-+	props.max_brightness =
-+		max_brightness - intel_panel_min_brightness(dev);
-+
- 	dev_priv->backlight =
- 		backlight_device_register("intel_backlight",
- 					  &connector->kdev, dev,
-@@ -440,7 +473,8 @@ int intel_panel_setup_backlight(struct drm_connector *connector)
- 		dev_priv->backlight = NULL;
- 		return -ENODEV;
- 	}
--	dev_priv->backlight->props.brightness = intel_panel_get_backlight(dev);
-+	dev_priv->backlight->props.brightness = intel_panel_get_backlight(dev)
-+		- intel_panel_min_brightness(dev);
- 	return 0;
- }
- 
+With my original command 'arecord [-M] -f cd sound.wav --duration 10', the soft lockup 
+appears both in v3.8 and v3.8.4 with and without your patch. So it looks like the 
+patch does not help here.
+
+Regards,
 -- 
-1.8.1.4
-
+Héctor Palacios
