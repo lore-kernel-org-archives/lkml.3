@@ -1,125 +1,421 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138Ab3CZUpU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 16:45:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56394 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822Ab3CZUpS (ORCPT
+	id S1752993Ab3CZUrA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 16:47:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51457 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659Ab3CZUq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 16:45:18 -0400
-Date: Tue, 26 Mar 2013 13:44:07 -0700
-From: tip-bot for Michael Bohan <tipbot@zytor.com>
-Message-ID: <tip-84cc8fd2fe65866e49d70b38b3fdf7219dd92fe0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        mbohan@codeaurora.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mbohan@codeaurora.org, tglx@linutronix.de
-In-Reply-To: <1363745965-23475-1-git-send-email-mbohan@codeaurora.org>
-References: <1363745965-23475-1-git-send-email-mbohan@codeaurora.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] hrtimer: Don'
- t reinitialize a cpu_base lock on CPU_UP
-Git-Commit-ID: 84cc8fd2fe65866e49d70b38b3fdf7219dd92fe0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 26 Mar 2013 13:44:13 -0700 (PDT)
+	Tue, 26 Mar 2013 16:46:58 -0400
+Date: Tue, 26 Mar 2013 13:46:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH v3] memcg: Add memory.pressure_level events
+Message-Id: <20130326134656.4e0e0aefcf881bffae769b1e@linux-foundation.org>
+In-Reply-To: <20130322071351.GA3971@lizard.gateway.2wire.net>
+References: <20130322071351.GA3971@lizard.gateway.2wire.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  84cc8fd2fe65866e49d70b38b3fdf7219dd92fe0
-Gitweb:     http://git.kernel.org/tip/84cc8fd2fe65866e49d70b38b3fdf7219dd92fe0
-Author:     Michael Bohan <mbohan@codeaurora.org>
-AuthorDate: Tue, 19 Mar 2013 19:19:25 -0700
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 26 Mar 2013 21:34:57 +0100
+On Fri, 22 Mar 2013 00:13:51 -0700 Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
 
-hrtimer: Don't reinitialize a cpu_base lock on CPU_UP
+> With this patch userland applications that want to maintain the
+> interactivity/memory allocation cost can use the pressure level
+> notifications. The levels are defined like this:
+> 
+> The "low" level means that the system is reclaiming memory for new
+> allocations. Monitoring this reclaiming activity might be useful for
+> maintaining cache level. Upon notification, the program (typically
+> "Activity Manager") might analyze vmstat and act in advance (i.e.
+> prematurely shutdown unimportant services).
+> 
+> The "medium" level means that the system is experiencing medium memory
+> pressure, the system might be making swap, paging out active file caches,
+> etc. Upon this event applications may decide to further analyze
+> vmstat/zoneinfo/memcg or internal memory usage statistics and free any
+> resources that can be easily reconstructed or re-read from a disk.
+> 
+> The "critical" level means that the system is actively thrashing, it is
+> about to out of memory (OOM) or even the in-kernel OOM killer is on its
+> way to trigger. Applications should do whatever they can to help the
+> system. It might be too late to consult with vmstat or any other
+> statistics, so it's advisable to take an immediate action.
+> 
+> The events are propagated upward until the event is handled, i.e. the
+> events are not pass-through. Here is what this means: for example you have
+> three cgroups: A->B->C. Now you set up an event listener on cgroups A, B
+> and C, and suppose group C experiences some pressure. In this situation,
+> only group C will receive the notification, i.e. groups A and B will not
+> receive it. This is done to avoid excessive "broadcasting" of messages,
+> which disturbs the system and which is especially bad if we are low on
+> memory or thrashing. So, organize the cgroups wisely, or propagate the
+> events manually (or, ask us to implement the pass-through events,
+> explaining why would you need them.)
+> 
+> Performance wise, the memory pressure notifications feature itself is
+> lightweight and does not require much of bookkeeping, in contrast to the
+> rest of memcg features. Unfortunately, as of current memcg implementation,
+> pages accounting is an inseparable part and cannot be turned off. The good
+> news is that there are some efforts[1] to improve the situation; plus,
+> implementing the same, fully API-compatible[2] interface for
+> CONFIG_MEMCG=n case (e.g. embedded) is also a viable option, so it will
+> not require any changes on the userland side.
 
-The current code makes the assumption that a cpu_base lock won't be
-held if the CPU corresponding to that cpu_base is offline, which isn't
-always true.
+Nicely presented patch, thanks.
 
-If a hrtimer is not queued, then it will not be migrated by
-migrate_hrtimers() when a CPU is offlined. Therefore, the hrtimer's
-cpu_base may still point to a CPU which has subsequently gone offline
-if the timer wasn't enqueued at the time the CPU went down.
+The interface still seems a bit of a toy, but is a conservative
+approach: anything less toy-like would expose (and hence be dependent
+upon) more VM internals.
 
-Normally this wouldn't be a problem, but a cpu_base's lock is blindly
-reinitialized each time a CPU is brought up. If a CPU is brought
-online during the period that another thread is performing a hrtimer
-operation on a stale hrtimer, then the lock will be reinitialized
-under its feet, and a SPIN_BUG() like the following will be observed:
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -40,6 +40,7 @@ Features:
+>   - soft limit
+>   - moving (recharging) account at moving a task is selectable.
+>   - usage threshold notifier
+> + - memory pressure notifier
+>   - oom-killer disable knob and oom-notifier
+>   - Root cgroup has no limit controls.
+>  
+> @@ -65,6 +66,7 @@ Brief summary of control files.
+>   memory.stat			 # show various statistics
+>   memory.use_hierarchy		 # set/show hierarchical account enabled
+>   memory.force_empty		 # trigger forced move charge to parent
+> + memory.pressure_level		 # set memory pressure notifications
+>   memory.swappiness		 # set/show swappiness parameter of vmscan
+>  				 (See sysctl's vm.swappiness)
+>   memory.move_charge_at_immigrate # set/show controls of moving charges
+> @@ -778,7 +780,64 @@ At reading, current status of OOM is shown.
+>  	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
+>  				 be stopped.)
+>  
+> -11. TODO
+> +11. Memory Pressure
+> +
+> +The pressure level notifications can be used to monitor the memory
+> +allocation cost; based on the pressure, applications can implement
+> +different strategies of managing their memory resources. The pressure
+> +levels are defined as following:
+> +
+> +The "low" level means that the system is reclaiming memory for new
+> +allocations. Monitoring this reclaiming activity might be useful for
+> +maintaining cache level. Upon notification, the program (typically
+> +"Activity Manager") might analyze vmstat and act in advance (i.e.
+> +prematurely shutdown unimportant services).
+> +
+> +The "medium" level means that the system is experiencing medium memory
+> +pressure, the system might be making swap, paging out active file caches,
+> +etc. Upon this event applications may decide to further analyze
+> +vmstat/zoneinfo/memcg or internal memory usage statistics and free any
+> +resources that can be easily reconstructed or re-read from a disk.
+> +
+> +The "critical" level means that the system is actively thrashing, it is
+> +about to out of memory (OOM) or even the in-kernel OOM killer is on its
+> +way to trigger. Applications should do whatever they can to help the
+> +system. It might be too late to consult with vmstat or any other
+> +statistics, so it's advisable to take an immediate action.
+> +
+> +The events are propagated upward until the event is handled, i.e. the
+> +events are not pass-through. Here is what this means: for example you have
+> +three cgroups: A->B->C. Now you set up an event listener on cgroups A, B
+> +and C, and suppose group C experiences some pressure. In this situation,
+> +only group C will receive the notification, i.e. groups A and B will not
+> +receive it. This is done to avoid excessive "broadcasting" of messages,
+> +which disturbs the system and which is especially bad if we are low on
+> +memory or thrashing. So, organize the cgroups wisely, or propagate the
+> +events manually (or, ask us to implement the pass-through events,
+> +explaining why would you need them.)
+> +
+> +The file memory.pressure_level is only used to setup an eventfd,
+> +read/write operations are no implemented.
+> +
+> +Test:
+> +
+> +   Here is a small script example that makes a new cgroup, sets up a
+> +   memory limit, sets up a notification in the cgroup and then makes child
+> +   cgroup experience a critical pressure:
+> +
+> +   # cd /sys/fs/cgroup/memory/
+> +   # mkdir foo
+> +   # cd foo
+> +   # cgroup_event_listener memory.pressure_level low &
+> +   # echo 8000000 > memory.limit_in_bytes
+> +   # echo 8000000 > memory.memsw.limit_in_bytes
+> +   # echo $$ > tasks
+> +   # dd if=/dev/zero | read x
+> +
+> +   (Expect a bunch of notifications, and eventually, the oom-killer will
+> +   trigger.)
+> +
+> +12. TODO
 
-<0>[   28.082085] BUG: spinlock already unlocked on CPU#0, swapper/0/0
-<0>[   28.087078]  lock: 0xc4780b40, value 0x0 .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
-<4>[   42.451150] [<c0014398>] (unwind_backtrace+0x0/0x120) from [<c0269220>] (do_raw_spin_unlock+0x44/0xdc)
-<4>[   42.460430] [<c0269220>] (do_raw_spin_unlock+0x44/0xdc) from [<c071b5bc>] (_raw_spin_unlock+0x8/0x30)
-<4>[   42.469632] [<c071b5bc>] (_raw_spin_unlock+0x8/0x30) from [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8)
-<4>[   42.479521] [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8) from [<c00aa014>] (hrtimer_start+0x20/0x28)
-<4>[   42.489247] [<c00aa014>] (hrtimer_start+0x20/0x28) from [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320)
-<4>[   42.498709] [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320) from [<c00e6440>] (rcu_idle_enter+0xa0/0xb8)
-<4>[   42.508259] [<c00e6440>] (rcu_idle_enter+0xa0/0xb8) from [<c000f268>] (cpu_idle+0x24/0xf0)
-<4>[   42.516503] [<c000f268>] (cpu_idle+0x24/0xf0) from [<c06ed3c0>] (rest_init+0x88/0xa0)
-<4>[   42.524319] [<c06ed3c0>] (rest_init+0x88/0xa0) from [<c0c00978>] (start_kernel+0x3d0/0x434)
+Did we tell people how to use the eventfd interface anywhere?
 
-As an example, this particular crash occurred when hrtimer_start() was
-executed on CPU #0. The code locked the hrtimer's current cpu_base
-corresponding to CPU #1. CPU #0 then tried to switch the hrtimer's
-cpu_base to an optimal CPU which was online. In this case, it selected
-the cpu_base corresponding to CPU #3.
+>  1. Add support for accounting huge pages (as a separate controller)
+>  2. Make per-cgroup scanner reclaim not-shared pages first
+> diff --git a/include/linux/vmpressure.h b/include/linux/vmpressure.h
+> --- /dev/null
+> +++ b/include/linux/vmpressure.h
+> @@ -0,0 +1,47 @@
+> +#ifndef __LINUX_VMPRESSURE_H
+> +#define __LINUX_VMPRESSURE_H
+> +
+> +#include <linux/mutex.h>
+> +#include <linux/list.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/gfp.h>
+> +#include <linux/types.h>
+> +#include <linux/cgroup.h>
+> +
+> +struct vmpressure {
+> +	unsigned int scanned;
+> +	unsigned int reclaimed;
+> +	/* The lock is used to keep the scanned/reclaimed above in sync. */
+> +	struct mutex sr_lock;
+> +
+> +	struct list_head events;
 
-Before it could proceed, CPU #1 came online and reinitialized the
-spinlock corresponding to its cpu_base. Thus now CPU #0 held a lock
-which was reinitialized. When CPU #0 finally ended up unlocking the
-old cpu_base corresponding to CPU #1 so that it could switch to CPU
-#3, we hit this SPIN_BUG() above while in switch_hrtimer_base().
+A comment describing what goes at `events' would be nice.  Reference
+"struct vmpressure_event".
 
-CPU #0                            CPU #1
-----                              ----
-...                               <offline>
-hrtimer_start()
-lock_hrtimer_base(base #1)
-...                               init_hrtimers_cpu()
-switch_hrtimer_base()             ...
-...                               raw_spin_lock_init(&cpu_base->lock)
-raw_spin_unlock(&cpu_base->lock)  ...
-<spin_bug>
+> +	/* Have to grab the lock on events traversal or modifications. */
+> +	struct mutex events_lock;
+> +
+> +	struct work_struct work;
+> +};
+>
+> ...
+>
+> +/*
+> + * The window size is the number of scanned pages before we try to analyze
+> + * the scanned/reclaimed ratio (or difference).
+> + *
+> + * It is used as a rate-limit tunable for the "low" level notification,
+> + * and for averaging medium/critical levels. Using small window sizes can
+> + * cause lot of false positives, but too big window size will delay the
+> + * notifications.
+> + *
+> + * TODO: Make the window size depend on machine size, as we do for vmstat
+> + * thresholds.
 
-Solve this by statically initializing the lock.
+Here "the window size" refers to vmpressure_win, yes?
 
-Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
-Link: http://lkml.kernel.org/r/1363745965-23475-1-git-send-email-mbohan@codeaurora.org
-Cc: stable@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/hrtimer.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> + */
+> +static const unsigned int vmpressure_win = SWAP_CLUSTER_MAX * 16;
+> +static const unsigned int vmpressure_level_med = 60;
+> +static const unsigned int vmpressure_level_critical = 95;
+> +static const unsigned int vmpressure_level_critical_prio = 3;
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index cc47812..14be27f 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -63,6 +63,7 @@
- DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
- {
- 
-+	.lock = __RAW_SPIN_LOCK_UNLOCKED(hrtimer_bases.lock),
- 	.clock_base =
- 	{
- 		{
-@@ -1642,8 +1643,6 @@ static void __cpuinit init_hrtimers_cpu(int cpu)
- 	struct hrtimer_cpu_base *cpu_base = &per_cpu(hrtimer_bases, cpu);
- 	int i;
- 
--	raw_spin_lock_init(&cpu_base->lock);
--
- 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
- 		cpu_base->clock_base[i].cpu_base = cpu_base;
- 		timerqueue_init_head(&cpu_base->clock_base[i].active);
+vmpressure_level_critical_prio is a bit mysterious and undocumented. 
+Please document it here and/or at vmpressure_prio().
+
+> +
+> +enum vmpressure_levels {
+> +	VMPRESSURE_LOW = 0,
+> +	VMPRESSURE_MEDIUM,
+> +	VMPRESSURE_CRITICAL,
+> +	VMPRESSURE_NUM_LEVELS,
+> +};
+>
+> ...
+>
+> +static enum vmpressure_levels vmpressure_calc_level(unsigned int scanned,
+> +						    unsigned int reclaimed)
+> +{
+> +	unsigned long scale = scanned + reclaimed;
+> +	unsigned long pressure;
+> +
+> +	if (!scanned)
+> +		return VMPRESSURE_LOW;
+> +
+> +	/*
+> +	 * We calculate the ratio (in percents) of how many pages were
+> +	 * scanned vs. reclaimed in a given time frame (window). Note that
+> +	 * time is in VM reclaimer's "ticks", i.e. number of pages
+> +	 * scanned. This makes it possible to set desired reaction time
+> +	 * and serves as a ratelimit.
+> +	 */
+> +	pressure = scale - (reclaimed * scale / scanned);
+> +	pressure = pressure * 100 / scale;
+> +
+> +	pr_debug("%s: %3lu  (s: %6u  r: %6u)\n", __func__, pressure,
+> +		 scanned, reclaimed);
+> +
+> +	return vmpressure_level(pressure);
+> +}
+
+The types worry me.  The patch switches the vm's unsigned longs into
+unsigneds.  We have a long and sorry history of overflowing 32-bit
+counters in VM corner cases.  I suggest that this patch should
+carefully use `unsigned longs' in all the appropriate places and do
+away with its present truncation and overflow risks.
+
+> +void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
+> +		unsigned long scanned, unsigned long reclaimed)
+
+Exported function and a primary inteface.  Needs nice documentation, please ;)
+
+> +{
+> +	struct vmpressure *vmpr = memcg_to_vmpr(memcg);
+> +
+> +	/*
+> +	 * So far we are only interested application memory, or, in case
+
+"interested in"
+
+> +	 * of low pressure, in FS/IO memory reclaim. We are also
+> +	 * interested indirect reclaim (kswapd sets sc->gfp_mask to
+> +	 * GFP_KERNEL).
+
+This is all pretty obvious from reading the code.  Good comments
+explain "why", not "what".  *why* did we make these decisions?
+
+> +	 */
+> +	if (!(gfp & (__GFP_HIGHMEM | __GFP_MOVABLE | __GFP_IO | __GFP_FS)))
+
+I'm surprised at __GFP_HIGHMEM's inclusion.  On some machines the great
+majority of user memory is in highmem.  What's up?
+
+> +		return;
+> +
+> +	if (!scanned)
+> +		return;
+> +
+> +	mutex_lock(&vmpr->sr_lock);
+> +	vmpr->scanned += scanned;
+> +	vmpr->reclaimed += reclaimed;
+
+See, here we're accumulating into a 32-bit variable quantities which used
+to be held in 64-bit variables.    The overflow risk gets higher...
+
+> +	mutex_unlock(&vmpr->sr_lock);
+> +
+> +	if (scanned < vmpressure_win || work_pending(&vmpr->work))
+> +		return;
+> +	schedule_work(&vmpr->work);
+> +}
+> +
+> +void vmpressure_prio(gfp_t gfp, struct mem_cgroup *memcg, int prio)
+
+Documentation please.
+
+> +{
+> +	if (prio > vmpressure_level_critical_prio)
+> +		return;
+> +
+> +	/*
+> +	 * OK, the prio is below the threshold, updating vmpressure
+
+But you never told me what that threshold is for!  And I have no means
+of working out why you chose "3", nor the effects of altering it, etc.
+
+> +	 * information before diving into long shrinking of long range
+> +	 * vmscan.
+> +	 */
+> +	vmpressure(gfp, memcg, vmpressure_win, 0);
+> +}
+> +
+> +static struct vmpressure *wk_to_vmpr(struct work_struct *wk)
+> +{
+> +	return container_of(wk, struct vmpressure, work);
+> +}
+> +
+> +static struct vmpressure *cg_to_vmpr(struct cgroup *cg)
+> +{
+> +	return css_to_vmpr(cgroup_subsys_state(cg, mem_cgroup_subsys_id));
+> +}
+> +
+> +struct vmpressure_event {
+> +	struct eventfd_ctx *efd;
+> +	enum vmpressure_levels level;
+> +	struct list_head node;
+> +};
+> +
+> +static bool vmpressure_event(struct vmpressure *vmpr,
+> +			     unsigned long scanned, unsigned long reclaimed)
+> +{
+> +	struct vmpressure_event *ev;
+> +	int level = vmpressure_calc_level(scanned, reclaimed);
+
+Here's where we go from 64-bit to 32-bit.
+
+> +	bool signalled = false;
+> +
+> +	mutex_lock(&vmpr->events_lock);
+> +
+> +	list_for_each_entry(ev, &vmpr->events, node) {
+> +		if (level >= ev->level) {
+> +			eventfd_signal(ev->efd, 1);
+> +			signalled = true;
+> +		}
+> +	}
+> +
+> +	mutex_unlock(&vmpr->events_lock);
+> +
+> +	return signalled;
+> +}
+>
+> ...
+>
+> +int vmpressure_register_event(struct cgroup *cg, struct cftype *cft,
+> +			      struct eventfd_ctx *eventfd, const char *args)
+
+Document the interface, please.
+
+> +{
+> +	struct vmpressure *vmpr = cg_to_vmpr(cg);
+> +	struct vmpressure_event *ev;
+> +	int lvl;
+
+These abbreviations are rather unlinuxy.  wk->work, vmpr->vmpressure,
+lvl->level, etc.
+
+> +	for (lvl = 0; lvl < VMPRESSURE_NUM_LEVELS; lvl++) {
+> +		if (!strcmp(vmpressure_str_levels[lvl], args))
+> +			break;
+> +	}
+> +
+> +	if (lvl >= VMPRESSURE_NUM_LEVELS)
+> +		return -EINVAL;
+> +
+> +	ev = kzalloc(sizeof(*ev), GFP_KERNEL);
+> +	if (!ev)
+> +		return -ENOMEM;
+> +
+> +	ev->efd = eventfd;
+> +	ev->level = lvl;
+> +
+> +	mutex_lock(&vmpr->events_lock);
+> +	list_add(&ev->node, &vmpr->events);
+
+What's the upper bound on the length of this list?
+
+> +	mutex_unlock(&vmpr->events_lock);
+> +
+> +	return 0;
+> +}
+> +
+>
+> ...
+>
+
