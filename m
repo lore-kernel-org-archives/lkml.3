@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759953Ab3CZSDQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:03:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9615 "EHLO
+	id S932349Ab3CZSDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:03:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19020 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab3CZRgE (ORCPT
+	with ESMTP id S1753864Ab3CZRgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 13:36:04 -0400
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Wjw9aU-4INEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=_34Hw5B3_qIA:10 a=zhf81SHlAAAA:8 a=J1Y8HTJGAAAA:8 a=yAcoP-ATsIItWhWqB8UA:9 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=5ZE14NXf7Z8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=YtEFkIHGzRcA:10 a=pGLkceISAAAA:8 a=1XWaLZrsAAAA:8 a=J1Y8HTJGAAAA:8 a=AqJ00D3vZjHJZuhkqGEA:9 a=MSl-tDqOz04A:10 a=UTB_XpHje0EA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130326173602.671906380@goodmis.org>
+Message-Id: <20130326173600.516165568@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 26 Mar 2013 13:21:16 -0400
+Date: Tue, 26 Mar 2013 13:21:03 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>,
-        Francois Romieu <romieu@fr.zoreil.com>,
+Cc: Stefan Hasko <hasko.stevo@gmail.com>, Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 17/86] r8169: remove the obsolete and incorrect AMD workaround
+Subject: [PATCH 04/86] net: sched: integer overflow fix
 References: <20130326172059.136127374@goodmis.org>
-Content-Disposition: inline; filename=0017-r8169-remove-the-obsolete-and-incorrect-AMD-workarou.patch
+Content-Disposition: inline; filename=0004-net-sched-integer-overflow-fix.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,59 +30,32 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>
+From: Stefan Hasko <hasko.stevo@gmail.com>
 
-[ Upstream commit 5d0feaff230c0abfe4a112e6f09f096ed99e0b2d ]
+[ Upstream commit d2fe85da52e89b8012ffad010ef352a964725d5f ]
 
-This was introduced in commit 6dccd16 "r8169: merge with version
-6.001.00 of Realtek's r8169 driver". I did not find the version
-6.001.00 online, but in 6.002.00 or any later r8169 from Realtek
-this hunk is no longer present.
+Fixed integer overflow in function htb_dequeue
 
-Also commit 05af214 "r8169: fix Ethernet Hangup for RTL8110SC
-rev d" claims to have fixed this issue otherwise.
-
-The magic compare mask of 0xfffe000 is dubious as it masks
-parts of the Reserved part, and parts of the VLAN tag. But this
-does not make much sense as the VLAN tag parts are perfectly
-valid there. In matter of fact this seems to be triggered with
-any VLAN tagged packet as RxVlanTag bit is matched. I would
-suspect 0xfffe0000 was intended to test reserved part only.
-
-Finally, this hunk is evil as it can cause more packets to be
-handled than what was NAPI quota causing net/core/dev.c:
-net_rx_action(): WARN_ON_ONCE(work > weight) to trigger, and
-mess up the NAPI state causing device to hang.
-
-As result, any system using VLANs and having high receive
-traffic (so that NAPI poll budget limits rtl_rx) would result
-in device hang.
-
-Signed-off-by: Timo Teräs <timo.teras@iki.fi>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: Stefan Hasko <hasko.stevo@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- drivers/net/ethernet/realtek/r8169.c |    7 -------
- 1 file changed, 7 deletions(-)
+ net/sched/sch_htb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index df7bbba..6c1c396 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -6088,13 +6088,6 @@ process_pkt:
- 			tp->rx_stats.bytes += pkt_size;
- 			u64_stats_update_end(&tp->rx_stats.syncp);
- 		}
--
--		/* Work around for AMD plateform. */
--		if ((desc->opts2 & cpu_to_le32(0xfffe000)) &&
--		    (tp->mac_version == RTL_GIGA_MAC_VER_05)) {
--			desc->opts2 = 0;
--			cur_rx++;
--		}
- 	}
+diff --git a/net/sched/sch_htb.c b/net/sched/sch_htb.c
+index 9d75b77..e9ea2f3 100644
+--- a/net/sched/sch_htb.c
++++ b/net/sched/sch_htb.c
+@@ -874,7 +874,7 @@ ok:
+ 	q->now = psched_get_time();
+ 	start_at = jiffies;
  
- 	count = cur_rx - tp->cur_rx;
+-	next_event = q->now + 5 * PSCHED_TICKS_PER_SEC;
++	next_event = q->now + 5LLU * PSCHED_TICKS_PER_SEC;
+ 
+ 	for (level = 0; level < TC_HTB_MAXDEPTH; level++) {
+ 		/* common case optimization - skip event handler quickly */
 -- 
 1.7.10.4
 
