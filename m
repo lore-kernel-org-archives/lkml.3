@@ -1,74 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759368Ab3CZG3t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 02:29:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39467 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759477Ab3CZG31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 02:29:27 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: mst@redhat.com, Jason Wang <jasowang@redhat.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: [net-next 2/5] tuntap: set transport header before passing it to kernel
-Date: Tue, 26 Mar 2013 14:19:56 +0800
-Message-Id: <1364278799-37285-3-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1364278799-37285-1-git-send-email-jasowang@redhat.com>
-References: <1364278799-37285-1-git-send-email-jasowang@redhat.com>
+	id S934087Ab3CZGcS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 02:32:18 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60921 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756759Ab3CZGcR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 02:32:17 -0400
+Date: Tue, 26 Mar 2013 17:31:59 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kent Overstreet <koverstreet@google.com>
+Subject: linux-next: build failure after merge of the final tree (block tree
+ related)
+Message-Id: <20130326173159.09dad51a1b8825a264f3171f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__26_Mar_2013_17_31_59_+1100_aiRggckB+t4XII3R"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, for the packets receives from tuntap, before doing header check,
-kernel just reset the transport header in netif_receive_skb() which pretends no
-l4 header. This is suboptimal for precise packet length estimation (introduced
-in 1def9238) which needs correct l4 header for gso packets.
+--Signature=_Tue__26_Mar_2013_17_31_59_+1100_aiRggckB+t4XII3R
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So this patch set the transport header to csum_start for partial checksum
-packets, otherwise it first try skb_flow_dissect(), if it fails, just reset the
-transport header.
+Hi all,
 
-Cc: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+After merging the final tree, today's linux-next build (powerpc allyesconfi=
+g)
+failed like this:
+
+drivers/built-in.o: In function `bio_alloc_pages':
+(.opd+0x2364a8): multiple definition of `bio_alloc_pages'
+fs/built-in.o:(.opd+0x7188): first defined here
+
+Caused by an interaction between commits a07876064a0b ("block: Add
+bio_alloc_pages()") and commit cafe56359144 ("bcache: A block layer
+cache") from the block tree.
+
+I have applied the following fix patch (this should have happened in
+merge commit 12f45f28441e "Merge branch 'for-3.10/drivers' into
+for-next"):
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 26 Mar 2013 17:26:45 +1100
+Subject: [PATCH] block: remove the extra copy of bio_alloc_pages
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- drivers/net/tun.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ drivers/md/bcache/util.c | 18 ------------------
+ drivers/md/bcache/util.h |  2 --
+ 2 files changed, 20 deletions(-)
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 95837c1..48cd73a 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -70,6 +70,7 @@
- #include <net/sock.h>
- 
- #include <asm/uaccess.h>
-+#include <net/flow_keys.h>
- 
- /* Uncomment to enable debugging */
- /* #define TUN_DEBUG 1 */
-@@ -1049,6 +1050,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	bool zerocopy = false;
- 	int err;
- 	u32 rxhash;
-+	struct flow_keys keys;
- 
- 	if (!(tun->flags & TUN_NO_PI)) {
- 		if ((len -= sizeof(pi)) > total_len)
-@@ -1203,6 +1205,14 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	}
- 
- 	skb_reset_network_header(skb);
-+
-+	if (skb->ip_summed == CHECKSUM_PARTIAL)
-+		skb_set_transport_header(skb, skb_checksum_start_offset(skb));
-+	else if (skb_flow_dissect(skb, &keys))
-+		skb_set_transport_header(skb, keys.thoff);
-+	else
-+		skb_reset_transport_header(skb);
-+
- 	rxhash = skb_get_rxhash(skb);
- 	netif_rx_ni(skb);
- 
--- 
-1.7.1
+diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
+index dcec2e4..671a55d 100644
+--- a/drivers/md/bcache/util.c
++++ b/drivers/md/bcache/util.c
+@@ -237,24 +237,6 @@ start:		bv->bv_len	=3D min_t(size_t, PAGE_SIZE - bv->b=
+v_offset,
+ }
+ EXPORT_SYMBOL_GPL(bio_map);
+=20
+-int bio_alloc_pages(struct bio *bio, gfp_t gfp)
+-{
+-	int i;
+-	struct bio_vec *bv;
+-
+-	bio_for_each_segment(bv, bio, i) {
+-		bv->bv_page =3D alloc_page(gfp);
+-		if (!bv->bv_page) {
+-			while (bv-- !=3D bio->bi_io_vec + bio->bi_idx)
+-				__free_page(bv->bv_page);
+-			return -ENOMEM;
+-		}
+-	}
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(bio_alloc_pages);
+-
+ /*
+  * Portions Copyright (c) 1996-2001, PostgreSQL Global Development Group (=
+Any
+  * use permitted, subject to terms of PostgreSQL license; see.)
+diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
+index 56705fd..499d746 100644
+--- a/drivers/md/bcache/util.h
++++ b/drivers/md/bcache/util.h
+@@ -570,8 +570,6 @@ static inline unsigned fract_exp_two(unsigned x, unsign=
+ed fract_bits)
+=20
+ void bio_map(struct bio *bio, void *base);
+=20
+-int bio_alloc_pages(struct bio *bio, gfp_t gfp);
+-
+ static inline sector_t bdev_sectors(struct block_device *bdev)
+ {
+ 	return bdev->bd_inode->i_size >> 9;
+--=20
+1.8.1
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__26_Mar_2013_17_31_59_+1100_aiRggckB+t4XII3R
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRUUDfAAoJEECxmPOUX5FE9k4P/2GhCwPScZSaxuQECwjDcGru
+8obxB1u871+FW1v9PHwrKwuiV6qvKxJJgOUf2/3Q7RVqmVEFgX8IvK5+HbnmhyV+
+r7C9vZ0n/MgMzAwtEeRjBtekonvwV/HpM4+CeiAnUdpQIJqCBr7n4JF1YgExIZhq
+kPS1skRqp1fxVj435bmqMvwv+L3/LimGUCxYzQxUBNEGRI2/slhkU9qLWav4CEv/
+IZEasFcEN9/6T4qCjk1vVwPOhwoxVB/syA9b9yJ8uobQr+r53CZYICFl0jDRyIdO
+N5IqisofwhJS0YqpoGnKs6SuHN9uC3F1O1KhogOTHnhbtx0cvSaEYeCt4S7mMwJM
+WLlt3vv3d3BMRs8Ws37d/ywIC2gbsF+SMcguhAGtjbzhg1N6uzGqzg0a+qIshSr/
+ixY0uIPZJWLmJM1qYnwfXi80she/mpY8cmvcteden8FG7HTuBKeGTNw4ERqkCpx1
+VXUasVD7WrbDvVxIo0e0sqn9pgyZTdMtC11gTNbhpaY9jD2HsUKAfJIMtVtKF+hJ
+CmVTvabcSe0YI0A6MMofx02nX3mRnlMcXRKnSEDFpra6CIIG0ZUxa1odd/jMJgPH
+qwpIfEaQytBt6VFRuWw5YXJm1fOj+7bZX1/EC0PF7AHcjJeH3Ze21obDfqkT2kOU
+OTCLPaTcO3ikcOA6KtE0
+=DXGh
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__26_Mar_2013_17_31_59_+1100_aiRggckB+t4XII3R--
