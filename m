@@ -1,120 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759438Ab3CZHHV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 03:07:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49290 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756886Ab3CZHHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 03:07:19 -0400
-Date: Tue, 26 Mar 2013 03:06:18 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <1364281578-4bs50rjv-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130325133644.GY2154@dhcp22.suse.cz>
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1363983835-20184-7-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130325133644.GY2154@dhcp22.suse.cz>
-Subject: Re: [PATCH 06/10] migrate: add hugepage migration code to
- move_pages()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <20130325133644.GY2154@dhcp22.suse.cz>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1759584Ab3CZHIV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 03:08:21 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:50411 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932620Ab3CZHIT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 03:08:19 -0400
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
+To: linux@roeck-us.net, khali@linux-fr.org, lm-sensors@lm-sensors.org,
+        cbou@mail.ru, dwmw2@infradead.org
+Cc: linaro-kernel@lists.linaro.org, STEricsson_nomadik_linux@list.st.com,
+        linus.walleij@linaro.org, lee.jones@linaro.org,
+        linux-kernel@vger.kernel.org, Hongbo Zhang <hongbo.zhang@linaro.org>
+Subject: [PATCH v6 0/5] Add ST-Ericsson AB8500 HWMON driver
+Date: Tue, 26 Mar 2013 15:06:54 +0800
+Message-Id: <1364281619-13208-1-git-send-email-hongbo.zhang@linaro.org>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 02:36:44PM +0100, Michal Hocko wrote:
-> On Fri 22-03-13 16:23:51, Naoya Horiguchi wrote:
-> > This patch extends move_pages() to handle vma with VM_HUGETLB set.
-> > We will be able to migrate hugepage with move_pages(2) after
-> > applying the enablement patch which comes later in this series.
-> > 
-> > We avoid getting refcount on tail pages of hugepage, because unlike thp,
-> > hugepage is not split and we need not care about races with splitting.
-> > 
-> > And migration of larger (1GB for x86_64) hugepage are not enabled.
-> > 
-> > ChangeLog v2:
-> >  - updated description and renamed patch title
-> > 
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > ---
-> >  mm/memory.c  |  6 ++++--
-> >  mm/migrate.c | 26 +++++++++++++++++++-------
-> >  2 files changed, 23 insertions(+), 9 deletions(-)
-> > 
-> > diff --git v3.9-rc3.orig/mm/memory.c v3.9-rc3/mm/memory.c
-> > index 494526a..3b6ad3d 100644
-> > --- v3.9-rc3.orig/mm/memory.c
-> > +++ v3.9-rc3/mm/memory.c
-> > @@ -1503,7 +1503,8 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
-> >  	if (pud_none(*pud))
-> >  		goto no_page_table;
-> >  	if (pud_huge(*pud) && vma->vm_flags & VM_HUGETLB) {
-> > -		BUG_ON(flags & FOLL_GET);
-> > +		if (flags & FOLL_GET)
-> > +			goto out;
-> 
-> 
-> >  		page = follow_huge_pud(mm, address, pud, flags & FOLL_WRITE);
-> >  		goto out;
-> >  	}
-> > @@ -1514,8 +1515,9 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
-> >  	if (pmd_none(*pmd))
-> >  		goto no_page_table;
-> >  	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB) {
-> > -		BUG_ON(flags & FOLL_GET);
-> >  		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
-> > +		if (flags & FOLL_GET && PageHead(page))
-> > +			get_page_foll(page);
-> 
-> Hmm, so the caller gets a non-null page without elevated ref counted
-> even when he asked for it. This means that all callers have to check
-> PageTail && hugetlb and put_page according to that. That is _really_
-> fragile.
+Guenter,
+Please check this v6 patches,
+thanks for all your reviews/comments for this patch set.
 
-I agree. And refcounting of tail pages are already very fragile,
-because get_page_foll() does something very tricky on tail pages,
-where we use page->_mapcount for refcount.
-This seems to be to handle some thp splitting problem,
-and is never intended to be used for hugepage.
-So I just avoid calling it for tail pages of hugepage in caller's side.
+Anton Vorontsov, for this v5 and v6 patches:
+I have add your Acked-by: into patch [1/5] (which was [1/3]); and split the
+old [2/3] into new [2/5], [3/5] and [4/5] patches, so please have a look them
+again, thank you.
 
-> I think that returning NULL would make more sense in this case.
+v5 -> v6 changes:
+- add depend on AB8500_BM in Kconfig
+- fix wrong usage of clamp_val()
+- export symbols for module compiling
 
-Sounds nice. I'll do this with some comment.
+v4 -> v5 changes:
+- split the old [2/3]-ab8500-re-arrange-ab8500-power-and-temperature-data into
+  new three [2/5], [3/5] and [4/5] patches.
+- hwmon driver minor coding style clean ups:
+  - {} usage in if-else statement in ab8500_read_sensor function
+  - index error fix in gpadc_monitor function
+  - fix issue of clamp_val() usage
+  - remove unnecessary else in function abx500_attrs_visible
+  - remove redundant print message about irq set up
+  - return the calling function return value directly in probe function
 
-> >  		goto out;
-> >  	}
-> >  	if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
-> > @@ -1164,6 +1175,12 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
-> [...]
-> >  				!migrate_all)
-> >  			goto put_and_set;
-> >  
-> > +		if (PageHuge(page)) {
-> > +			get_page(page);
-> > +			list_move_tail(&page->lru, &pagelist);
-> > +			goto put_and_set;
-> > +		}
-> 
-> Why do you take an additional reference here? You have one from
-> follow_page already.
+v3 -> v4 changes:
+for patch [3/3]
+- define delays in HZ
+- update ab8500_read_sensor function, returning temp by parameter
+- remove ab8500_is_visible function
+- use clamp_val in set_min and set_max callback
+- remove unnecessary locks in remove and suspend functions
+- let abx500 and ab8500 use its own data structure
+for patch [2/3]
+- move the data tables from driver/power/ab8500_bmdata.c to
+  include/linux/power/ab8500.h
+- rename driver/power/ab8500_bmdata.c to driver/power/ab8500_bm.c
+- rename these variable names to eliminate CamelCase warnings
+- add const attribute to these data
 
-For normal pages, follow_page(FOLL_GET) takes a refcount and
-isolate_lru_page() takes another one, so I think the same should
-be done for hugepages. Refcounting of this function looks tricky,
-and I'm not sure why existing code does like that.
+v2 -> v3 changes:
+- Add interface for converting voltage to temperature
+- Remove temp5 sensor since we cannot offer temperature read interface of it
+- Update hyst to use absolute temperature instead of a difference
+- Add the 3/3 patch
 
-Thanks,
-Naoya
+v1 -> v2 changes:
+- Add Documentation/hwmon/abx500 and Documentation/hwmon/abx500
+- Make devices which cannot report milli-Celsius invisible
+- Add temp5_crit interface
+- Re-work the old find_active_thresholds() to threshold_updated()
+- Reset updated_min_alarm and updated_max_alarm at the end of each loop
+- Update the hyst mechamisn to make it works as real hyst
+- Remove non-stand attributes
+- Re-order the operations sequence inside probe and remove functions
+- Update all the lock usages to eliminate race conditions
+- Make attibutes index starts from 0
+also changes:
+- Since the old [1/2] "ARM: ux500: rename ab8500 to abx500 for hwmon driver"
+  has been merged by Samuel, so won't send it again.
+- Add another new patch "ab8500_btemp: export two symblols" as [2/2] of this
+  patch set.
+
+Hongbo Zhang (5):
+  ab8500_btemp: make ab8500_btemp_get* interfaces public
+  ab8500: power: eliminate CamelCase warning of some variables
+  ab8500: power: add const attributes to some data arrays
+  ab8500: power: export abx500_res_to_temp tables for hwmon
+  hwmon: add ST-Ericsson ABX500 hwmon driver
+
+ Documentation/hwmon/ab8500           |  22 ++
+ Documentation/hwmon/abx500           |  28 ++
+ drivers/hwmon/Kconfig                |  13 +
+ drivers/hwmon/Makefile               |   1 +
+ drivers/hwmon/ab8500.c               | 206 +++++++++++++++
+ drivers/hwmon/abx500.c               | 491 +++++++++++++++++++++++++++++++++++
+ drivers/hwmon/abx500.h               |  69 +++++
+ drivers/power/ab8500_bmdata.c        |  42 +--
+ drivers/power/ab8500_btemp.c         |   5 +-
+ drivers/power/ab8500_fg.c            |   4 +-
+ include/linux/mfd/abx500.h           |   6 +-
+ include/linux/mfd/abx500/ab8500-bm.h |   5 +
+ include/linux/power/ab8500.h         |  16 ++
+ 13 files changed, 885 insertions(+), 23 deletions(-)
+ create mode 100644 Documentation/hwmon/ab8500
+ create mode 100644 Documentation/hwmon/abx500
+ create mode 100644 drivers/hwmon/ab8500.c
+ create mode 100644 drivers/hwmon/abx500.c
+ create mode 100644 drivers/hwmon/abx500.h
+ create mode 100644 include/linux/power/ab8500.h
+
+-- 
+1.8.0
+
