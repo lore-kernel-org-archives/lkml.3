@@ -1,130 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964799Ab3CZOzw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 10:55:52 -0400
-Received: from mga01.intel.com ([192.55.52.88]:32838 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964786Ab3CZOyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 10:54:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,911,1355126400"; 
-   d="scan'208";a="312126548"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 2/4] dw_dmac: rename DT related methods to reflect their belonging
-Date: Tue, 26 Mar 2013 16:53:55 +0200
-Message-Id: <1364309637-25860-3-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
-In-Reply-To: <1364309637-25860-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1364309637-25860-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S964859Ab3CZO4G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 10:56:06 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:33360 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964786Ab3CZO4E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 10:56:04 -0400
+Message-ID: <1364309757.4090.2.camel@phoenix>
+Subject: [PATCH 2/2] pwm: tiehrpwm: Staticize non-exported symbols
+From: Axel Lin <axel.lin@ingics.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Philip Avinash <avinashphilip@ti.com>, linux-kernel@vger.kernel.org
+Date: Tue, 26 Mar 2013 22:55:57 +0800
+In-Reply-To: <1364309698.4090.1.camel@phoenix>
+References: <1364309698.4090.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we will have not only DT cases in future let's rename DT related methods
-to reflect their belonging.
+Both ehrpwm_pwm_save_context() and ehrpwm_pwm_restore_context() are only used in
+this file, make them static.
 
-The rename was done as follows:
-	struct dw_dma_filter_args	-> struct dw_dma_of_filter_args
-	dw_dma_generic_filter()		-> dw_dma_of_filter()
-	dw_dma_xlate()			-> dw_dma_of_xlate()
-	dw_dma_id_table			-> dw_dma_of_id_table
-
-There is no functional change.
-
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/dma/dw_dmac.c | 24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ drivers/pwm/pwm-tiehrpwm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index d6dbb14..274fd7d 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1242,18 +1242,20 @@ static void dwc_free_chan_resources(struct dma_chan *chan)
- 	dev_vdbg(chan2dev(chan), "%s: done\n", __func__);
+diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
+index d058ba9..6a21759 100644
+--- a/drivers/pwm/pwm-tiehrpwm.c
++++ b/drivers/pwm/pwm-tiehrpwm.c
+@@ -533,7 +533,7 @@ static int ehrpwm_pwm_remove(struct platform_device *pdev)
+ 	return pwmchip_remove(&pc->chip);
  }
  
--struct dw_dma_filter_args {
-+/*----------------------------------------------------------------------*/
-+
-+struct dw_dma_of_filter_args {
- 	struct dw_dma *dw;
- 	unsigned int req;
- 	unsigned int src;
- 	unsigned int dst;
- };
- 
--static bool dw_dma_generic_filter(struct dma_chan *chan, void *param)
-+static bool dw_dma_of_filter(struct dma_chan *chan, void *param)
+-void ehrpwm_pwm_save_context(struct ehrpwm_pwm_chip *pc)
++static void ehrpwm_pwm_save_context(struct ehrpwm_pwm_chip *pc)
  {
- 	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
- 	struct dw_dma *dw = to_dw_dma(chan->device);
--	struct dw_dma_filter_args *fargs = param;
-+	struct dw_dma_of_filter_args *fargs = param;
- 	struct dw_dma_slave *dws = &dwc->slave;
- 
- 	/* Ensure the device matches our channel */
-@@ -1273,11 +1275,11 @@ static bool dw_dma_generic_filter(struct dma_chan *chan, void *param)
- 	return true;
+ 	pm_runtime_get_sync(pc->chip.dev);
+ 	pc->ctx.tbctl = ehrpwm_read(pc->mmio_base, TBCTL);
+@@ -547,7 +547,7 @@ void ehrpwm_pwm_save_context(struct ehrpwm_pwm_chip *pc)
+ 	pm_runtime_put_sync(pc->chip.dev);
  }
  
--static struct dma_chan *dw_dma_xlate(struct of_phandle_args *dma_spec,
--					 struct of_dma *ofdma)
-+static struct dma_chan *dw_dma_of_xlate(struct of_phandle_args *dma_spec,
-+					struct of_dma *ofdma)
+-void ehrpwm_pwm_restore_context(struct ehrpwm_pwm_chip *pc)
++static void ehrpwm_pwm_restore_context(struct ehrpwm_pwm_chip *pc)
  {
- 	struct dw_dma *dw = ofdma->of_dma_data;
--	struct dw_dma_filter_args fargs = {
-+	struct dw_dma_of_filter_args fargs = {
- 		.dw = dw,
- 	};
- 	dma_cap_mask_t cap;
-@@ -1298,7 +1300,7 @@ static struct dma_chan *dw_dma_xlate(struct of_phandle_args *dma_spec,
- 	dma_cap_set(DMA_SLAVE, cap);
- 
- 	/* TODO: there should be a simpler way to do this */
--	return dma_request_channel(cap, dw_dma_generic_filter, &fargs);
-+	return dma_request_channel(cap, dw_dma_of_filter, &fargs);
- }
- 
- /* --------------------- Cyclic DMA API extensions -------------------- */
-@@ -1843,7 +1845,7 @@ static int dw_probe(struct platform_device *pdev)
- 
- 	if (pdev->dev.of_node) {
- 		err = of_dma_controller_register(pdev->dev.of_node,
--						 dw_dma_xlate, dw);
-+						 dw_dma_of_xlate, dw);
- 		if (err && err != -ENODEV)
- 			dev_err(&pdev->dev,
- 				"could not register of_dma_controller\n");
-@@ -1913,11 +1915,11 @@ static const struct dev_pm_ops dw_dev_pm_ops = {
- };
- 
- #ifdef CONFIG_OF
--static const struct of_device_id dw_dma_id_table[] = {
-+static const struct of_device_id dw_dma_of_id_table[] = {
- 	{ .compatible = "snps,dma-spear1340" },
- 	{}
- };
--MODULE_DEVICE_TABLE(of, dw_dma_id_table);
-+MODULE_DEVICE_TABLE(of, dw_dma_of_id_table);
- #endif
- 
- static const struct platform_device_id dw_dma_ids[] = {
-@@ -1933,7 +1935,7 @@ static struct platform_driver dw_driver = {
- 	.driver = {
- 		.name	= "dw_dmac",
- 		.pm	= &dw_dev_pm_ops,
--		.of_match_table = of_match_ptr(dw_dma_id_table),
-+		.of_match_table = of_match_ptr(dw_dma_of_id_table),
- 	},
- 	.id_table	= dw_dma_ids,
- };
+ 	ehrpwm_write(pc->mmio_base, TBPRD, pc->ctx.tbprd);
+ 	ehrpwm_write(pc->mmio_base, CMPA, pc->ctx.cmpa);
 -- 
-1.8.2.rc0.22.gb3600c3
+1.7.10.4
+
+
 
