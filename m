@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965709Ab3CZQgL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:36:11 -0400
-Received: from exprod5og111.obsmtp.com ([64.18.0.22]:50249 "EHLO
-	exprod5og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965531Ab3CZQgJ (ORCPT
+	id S1759841Ab3CZQgr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:36:47 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:55496 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753687Ab3CZQgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:36:09 -0400
-Message-ID: <5151CE72.5090800@ge.com>
-Date: Tue, 26 Mar 2013 16:36:02 +0000
-From: Martyn Welch <martyn.welch@ge.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 26 Mar 2013 12:36:45 -0400
+Date: Tue, 26 Mar 2013 09:36:35 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Jeff Layton <jlayton@redhat.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
+        skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
+        axboe@kernel.dk
+Subject: Re: [PATCHSET] idr: implement idr_alloc() and convert existing users
+Message-ID: <20130326163635.GC3061@htj.dyndns.org>
+References: <20130203170241.GA24778@fieldses.org>
+ <20130204001557.GB24778@fieldses.org>
+ <20130204171031.GK27963@mtj.dyndns.org>
+ <20130204171128.GL27963@mtj.dyndns.org>
+ <20130321140618.GD27838@fieldses.org>
+ <20130321183513.GC20500@htj.dyndns.org>
+ <20130326111936.550110bf@tlielax.poochiereds.net>
+ <20130326152653.GA3061@htj.dyndns.org>
+ <20130326163011.GC3353@fieldses.org>
+ <20130326163351.GB3061@htj.dyndns.org>
 MIME-Version: 1.0
-To: Kumar Amit Mehta <gmate.amit@gmail.com>
-CC: manohar.vanga@gmail.com, gregkh@linuxfoundation.org, yamanetoshi@gmail.com,
-        joe@perches.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] staging: vme: fix for a potential NULL pointer dereference
-References: <1364189869-9275-1-git-send-email-gmate.amit@gmail.com>
-In-Reply-To: <1364189869-9275-1-git-send-email-gmate.amit@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130326163351.GB3061@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/03/13 05:37, Kumar Amit Mehta wrote:
-> Audit the return value of cdev_alloc and hence fixes a potential NULL pointer
-> dereferencing.
-> 
-> Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
+On Tue, Mar 26, 2013 at 09:33:51AM -0700, Tejun Heo wrote:
+> not be too bad.  The optimal would be bitmap + hashtable, I suppose.
 
-Looks good to me, thanks.
+Oops, with more restricted (or at least dynamically adjusted) ID
+space, that is.
 
-Signed-off-by: Martyn Welch <martyn.welch@ge.com>
+The problem with idr is that it can get pretty wasteful if the IDs
+become very scattered - the worst case being one ID per each idr_layer
+(the internal allocation block).  That said, even cyclic allocation
+should yield somewhat clustered IDs, so I don't think it'd be too bad.
 
-> ---
->  drivers/staging/vme/devices/vme_user.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
-> index d074b1e..da7f759 100644
-> --- a/drivers/staging/vme/devices/vme_user.c
-> +++ b/drivers/staging/vme/devices/vme_user.c
-> @@ -710,6 +710,10 @@ static int vme_user_probe(struct vme_dev *vdev)
->  
->  	/* Register the driver as a char device */
->  	vme_user_cdev = cdev_alloc();
-> +	if (!vme_user_cdev) {
-> +		err = -ENOMEM;
-> +		goto err_char;
-> +	}
->  	vme_user_cdev->ops = &vme_user_fops;
->  	vme_user_cdev->owner = THIS_MODULE;
->  	err = cdev_add(vme_user_cdev, MKDEV(VME_MAJOR, 0), VME_DEVS);
-> 
-
+Thanks.
 
 -- 
-Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
-GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
-T +44(0)1327322748                     | Manchester, M2 3AB
-E martyn.welch@ge.com                  | VAT:GB 927559189
+tejun
