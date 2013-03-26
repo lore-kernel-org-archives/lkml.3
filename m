@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab3CZTD5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 15:03:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48853 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752222Ab3CZTD4 (ORCPT
+	id S1759895Ab3CZTE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 15:04:58 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:48894 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754160Ab3CZTE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 15:03:56 -0400
-Date: Tue, 26 Mar 2013 19:03:52 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Message-ID: <20130326190352.GO9079@decadent.org.uk>
-References: <20130325010524.240972766@decadent.org.uk>
- <87obe6e2m1.wl%satoru.takeuchi@gmail.com>
+	Tue, 26 Mar 2013 15:04:57 -0400
+Date: Tue, 26 Mar 2013 15:04:56 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Florian Fainelli <florian@openwrt.org>
+cc: linux-kernel@vger.kernel.org, <arnd@arndb.de>,
+        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/5] USB: drop depends on USB and enclose everything
+ into an if USB block
+In-Reply-To: <1364321177-12146-2-git-send-email-florian@openwrt.org>
+Message-ID: <Pine.LNX.4.44L0.1303261456400.999-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87obe6e2m1.wl%satoru.takeuchi@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [ 000/104] 3.2.42-stable review
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 10:01:58PM +0900, Satoru Takeuchi wrote:
-> At Mon, 25 Mar 2013 00:34:24 +0000,
-> Ben Hutchings wrote:
-> > 
-> > This is the start of the stable review cycle for the 3.2.42 release.
-> > There are 104 patches in this series, which will be posted as responses
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> > 
-> > Responses should be made by Wed Mar 27 01:00:00 UTC 2013.
-> > Anything received after that time might be too late.
-> > 
-> > A combined patch relative to 3.2.41 will be posted as an additional
-> > response to this.  A shortlog and diffstat can be found below.
-> 
-> This kernel can be built and boot without any problem.
-> Building a kernel with this kernel also works fine.
-> 
->  - Build Machine: debian wheezy x86_64
->    CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
->    memory: 8GB
-> 
->  - Test machine: debian wheezy x86_64(KVM guest on the Build Machine)
->    vCPU: x2
->    memory: 2GB
+On Tue, 26 Mar 2013, Florian Fainelli wrote:
 
-Thanks.
+> This patch removes the depends on USB from all config symbols in
+> drivers/usb/host/Kconfig and replace that with an if USB / endif block
+> as suggested by Alan Stern.
 
-Ben.
+I'm afraid this patch is filled with errors.
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+For one thing, it doesn't appreciate the difference between host-side
+USB and device-side USB.  CONFIG_USB describes support for the
+host-side part of the stack, whereas CONFIG_USB_GADGET describes
+support for the device-side (or gadget-side) part.  This means you must
+not make things like drivers/usb/gadget/Kconfig dependent on 
+CONFIG_USB.
+
+For another, the patch doesn't understand the difference between && and 
+||.  As an example, putting chipidea/Kconfig inside "if USB" and then 
+doing this:
+
+> --- a/drivers/usb/chipidea/Kconfig
+> +++ b/drivers/usb/chipidea/Kconfig
+> @@ -1,6 +1,6 @@
+>  config USB_CHIPIDEA
+>  	tristate "ChipIdea Highspeed Dual Role Controller"
+> -	depends on USB || USB_GADGET
+> +	depends on USB_GADGET
+>  	help
+>  	  Say Y here if your system has a dual role high speed USB
+>  	  controller based on ChipIdea silicon IP. Currently, only the
+
+effectively changes the || to an &&.  This is not what we want.
+
+You need to be a lot more careful about the distinction between hosts
+and gadgets.  The situation becomes even more complicated when you
+realize that some of the code applies to Dual-Role Devices, which can
+be either hosts or gadgets (this includes OTG).  In addition, there are
+a few things (such as gadget/dummy_hcd.c) which require _both_
+host-side and device-side support.
+
+Alan Stern
+
