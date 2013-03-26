@@ -1,79 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964947Ab3CZQME (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:12:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53668 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964929Ab3CZPWP (ORCPT
+	id S934976Ab3CZQMO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:12:14 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:59273 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934963Ab3CZQMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:15 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Paul Moore <pmoore@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 043/150] netlabel: correctly list all the static label mappings
-Date: Tue, 26 Mar 2013 15:19:02 +0000
-Message-Id: <1364311249-14454-44-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 26 Mar 2013 12:12:06 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>
+Subject: [PATCH v3, part4 36/39] mm/x86: prepare for removing num_physpages and simplify mem_init()
+Date: Tue, 26 Mar 2013 23:54:55 +0800
+Message-Id: <1364313298-17336-37-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
+References: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
+Prepare for removing num_physpages and simplify mem_init().
 
-------------------
-
-From: Paul Moore <pmoore@redhat.com>
-
-commit 0c1233aba1e948c37f6dc7620cb7c253fcd71ce9 upstream.
-
-When we have a large number of static label mappings that spill across
-the netlink message boundary we fail to properly save our state in the
-netlink_callback struct which causes us to repeat the same listings.
-This patch fixes this problem by saving the state correctly between
-calls to the NetLabel static label netlink "dumpit" routines.
-
-Signed-off-by: Paul Moore <pmoore@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>
+Cc: linux-kernel@vger.kernel.org
 ---
- net/netlabel/netlabel_unlabeled.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+Hi all,
+	Sorry for my mistake that my previous patch series has been screwed up.
+So I regenerate a third version and also set up a git tree at:
+	git://github.com/jiangliu/linux.git mem_init
+	Any help to review and test are welcomed!
 
-diff --git a/net/netlabel/netlabel_unlabeled.c b/net/netlabel/netlabel_unlabeled.c
-index e7ff694..8a0df47 100644
---- a/net/netlabel/netlabel_unlabeled.c
-+++ b/net/netlabel/netlabel_unlabeled.c
-@@ -1250,10 +1250,10 @@ static int netlbl_unlabel_staticlist(struct sk_buff *skb,
+	Regards!
+	Gerry
+---
+ arch/x86/kernel/cpu/amd.c |    2 +-
+ arch/x86/kernel/setup.c   |    2 --
+ arch/x86/mm/init_32.c     |   30 ++----------------------------
+ arch/x86/mm/init_64.c     |   20 +-------------------
+ arch/x86/mm/numa_32.c     |    2 --
+ 5 files changed, 4 insertions(+), 52 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 15239ff..3465db2 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -91,7 +91,7 @@ static void __cpuinit init_amd_k5(struct cpuinfo_x86 *c)
+ static void __cpuinit init_amd_k6(struct cpuinfo_x86 *c)
+ {
+ 	u32 l, h;
+-	int mbytes = num_physpages >> (20-PAGE_SHIFT);
++	int mbytes = get_num_physpages() >> (20-PAGE_SHIFT);
  
- unlabel_staticlist_return:
- 	rcu_read_unlock();
--	cb->args[0] = skip_bkt;
--	cb->args[1] = skip_chain;
--	cb->args[2] = skip_addr4;
--	cb->args[3] = skip_addr6;
-+	cb->args[0] = iter_bkt;
-+	cb->args[1] = iter_chain;
-+	cb->args[2] = iter_addr4;
-+	cb->args[3] = iter_addr6;
- 	return skb->len;
+ 	if (c->x86_model < 6) {
+ 		/* Based on AMD doc 20734R - June 2000 */
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 342b1a7..5e5e26e 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -934,8 +934,6 @@ void __init setup_arch(char **cmdline_p)
+ 	/* max_low_pfn get updated here */
+ 	find_low_pfn_range();
+ #else
+-	num_physpages = max_pfn;
+-
+ 	check_x2apic();
+ 
+ 	/* How many end-of-memory variables you have, grandma! */
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 857032c..62e8920 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -634,10 +634,8 @@ void __init initmem_init(void)
+ 		highstart_pfn = max_low_pfn;
+ 	printk(KERN_NOTICE "%ldMB HIGHMEM available.\n",
+ 		pages_to_mb(highend_pfn - highstart_pfn));
+-	num_physpages = highend_pfn;
+ 	high_memory = (void *) __va(highstart_pfn * PAGE_SIZE - 1) + 1;
+ #else
+-	num_physpages = max_low_pfn;
+ 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE - 1) + 1;
+ #endif
+ 
+@@ -645,7 +643,7 @@ void __init initmem_init(void)
+ 	sparse_memory_present_with_active_regions(0);
+ 
+ #ifdef CONFIG_FLATMEM
+-	max_mapnr = num_physpages;
++	max_mapnr = IS_ENABLED(CONFIG_HIGHMEM) ? highend_pfn : max_low_pfn;
+ #endif
+ 	__vmalloc_start_set = true;
+ 
+@@ -715,9 +713,6 @@ static void __init test_wp_bit(void)
+ 
+ void __init mem_init(void)
+ {
+-	int codesize, reservedpages, datasize, initsize;
+-	int tmp;
+-
+ 	pci_iommu_alloc();
+ 
+ #ifdef CONFIG_FLATMEM
+@@ -737,28 +732,7 @@ void __init mem_init(void)
+ 	/* this will put all low memory onto the freelists */
+ 	free_all_bootmem();
+ 
+-	reservedpages = 0;
+-	for (tmp = 0; tmp < max_low_pfn; tmp++)
+-		/*
+-		 * Only count reserved RAM pages:
+-		 */
+-		if (page_is_ram(tmp) && PageReserved(pfn_to_page(tmp)))
+-			reservedpages++;
+-
+-	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
+-	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
+-	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
+-
+-	printk(KERN_INFO "Memory: %luk/%luk available (%dk kernel code, "
+-			"%dk reserved, %dk data, %dk init, %ldk highmem)\n",
+-		nr_free_pages() << (PAGE_SHIFT-10),
+-		num_physpages << (PAGE_SHIFT-10),
+-		codesize >> 10,
+-		reservedpages << (PAGE_SHIFT-10),
+-		datasize >> 10,
+-		initsize >> 10,
+-		totalhigh_pages << (PAGE_SHIFT-10));
+-
++	mem_init_print_info(NULL);
+ 	printk(KERN_INFO "virtual kernel memory layout:\n"
+ 		"    fixmap  : 0x%08lx - 0x%08lx   (%4ld kB)\n"
+ #ifdef CONFIG_HIGHMEM
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index f524138..a1c1db1 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -1029,9 +1029,6 @@ static void __init register_page_bootmem_info(void)
+ 
+ void __init mem_init(void)
+ {
+-	long codesize, reservedpages, datasize, initsize;
+-	unsigned long absent_pages;
+-
+ 	pci_iommu_alloc();
+ 
+ 	/* clear_bss() already clear the empty_zero_page */
+@@ -1040,28 +1037,13 @@ void __init mem_init(void)
+ 
+ 	/* this will put all memory onto the freelists */
+ 	free_all_bootmem();
+-
+-	absent_pages = absent_pages_in_range(0, max_pfn);
+-	reservedpages = max_pfn - totalram_pages - absent_pages;
+ 	after_bootmem = 1;
+ 
+-	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
+-	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
+-	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
+-
+ 	/* Register memory areas for /proc/kcore */
+ 	kclist_add(&kcore_vsyscall, (void *)VSYSCALL_START,
+ 			 VSYSCALL_END - VSYSCALL_START, KCORE_OTHER);
+ 
+-	printk(KERN_INFO "Memory: %luk/%luk available (%ldk kernel code, "
+-			 "%ldk absent, %ldk reserved, %ldk data, %ldk init)\n",
+-		nr_free_pages() << (PAGE_SHIFT-10),
+-		max_pfn << (PAGE_SHIFT-10),
+-		codesize >> 10,
+-		absent_pages << (PAGE_SHIFT-10),
+-		reservedpages << (PAGE_SHIFT-10),
+-		datasize >> 10,
+-		initsize >> 10);
++	mem_init_print_info(NULL);
  }
  
-@@ -1320,8 +1320,8 @@ static int netlbl_unlabel_staticlistdef(struct sk_buff *skb,
- 
- unlabel_staticlistdef_return:
- 	rcu_read_unlock();
--	cb->args[0] = skip_addr4;
--	cb->args[1] = skip_addr6;
-+	cb->args[0] = iter_addr4;
-+	cb->args[1] = iter_addr6;
- 	return skb->len;
- }
- 
+ #ifdef CONFIG_DEBUG_RODATA
+diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
+index 534255a..dc32528 100644
+--- a/arch/x86/mm/numa_32.c
++++ b/arch/x86/mm/numa_32.c
+@@ -244,10 +244,8 @@ void __init initmem_init(void)
+ 		highstart_pfn = max_low_pfn;
+ 	printk(KERN_NOTICE "%ldMB HIGHMEM available.\n",
+ 	       pages_to_mb(highend_pfn - highstart_pfn));
+-	num_physpages = highend_pfn;
+ 	high_memory = (void *) __va(highstart_pfn * PAGE_SIZE - 1) + 1;
+ #else
+-	num_physpages = max_low_pfn;
+ 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE - 1) + 1;
+ #endif
+ 	printk(KERN_NOTICE "%ldMB LOWMEM available.\n",
 -- 
-1.8.1.2
+1.7.9.5
 
