@@ -1,80 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965588Ab3CZQUX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:20:23 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:38896 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964853Ab3CZQUR (ORCPT
+	id S965290Ab3CZQUB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:20:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53524 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934729Ab3CZPVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:20:17 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <5151C94B.7000407@canonical.com>
-References: <5151C94B.7000407@canonical.com>
-Date: Tue, 26 Mar 2013 17:20:16 +0100
-Message-ID: <CAKMK7uFT1Xj0=WY4bq1oo7M8rgNh1VSEPjfKwt9Y1dtkc3zVwQ@mail.gmail.com>
-Subject: Re: [PATCH] lockdep/selftest: Add tests for the mixed read-write case.
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 26 Mar 2013 11:21:43 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Oliver Neukum <oliver@neukum.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 015/150] USB: cdc-wdm: fix buffer overflow
+Date: Tue, 26 Mar 2013 15:18:34 +0000
+Message-Id: <1364311249-14454-16-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 5:14 PM, Maarten Lankhorst
-<maarten.lankhorst@canonical.com> wrote:
-> rlock_AA5 will pass unexpectedly, marking the test as FAILED and breaking lockdep for everyone.
->
-> The following test should make lockdep complain, but currently doesn't:
->
-> lock(a); readlock(x);
->
-> writelock(x); lock(a);
->
-> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
 
-Note that workqueues use readlock annotations to supposed catch
-deadlocks around flush_workqueue. But it doesn't really work, and
-we've been bitten by that in drm/i915 pretty badly. See the commit
-note in
+------------------
 
-commit b4a98e57fc27854b5938fc8b08b68e5e68b91e1f
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Thu Nov 1 09:26:26 2012 +0000
+From: Oliver Neukum <oneukum@suse.de>
 
-    drm/i915: Flush outstanding unpin tasks before pageflipping
+commit c0f5ecee4e741667b2493c742b60b6218d40b3aa upstream.
 
-    If we accumulate unpin tasks because we are pageflipping faster than the
-    system can schedule its workers, we can effectively create a
-    pin-leak. The solution taken here is to limit the number of unpin tasks
-    we have per-crtc and to flush those outstanding tasks if we accumulate
-    too many. This should prevent any jitter in the normal case, and also
-    prevent the hang if we should run too fast.
+The buffer for responses must not overflow.
+If this would happen, set a flag, drop the data and return
+an error after user space has read all remaining data.
 
-    Note: It is important that we switch from the system workqueue to our
-    own dev_priv->wq since all work items on that queue are guaranteed to
-    only need the dev->struct_mutex and not any modeset resources. For
-    otherwise if we have a work item ahead in the queue which needs the
-    modeset lock (like the output detect work used by both polling or
-    hpd), this work and so the unpin work will never execute since the
-    pageflip code already holds that lock. Unfortunately there's no
-    lockdep support for this scenario in the workqueue code.
+Signed-off-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/usb/class/cdc-wdm.c | 23 ++++++++++++++++++++---
+ 1 file changed, 20 insertions(+), 3 deletions(-)
 
-    Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=46991
-    Reported-and-tested-by: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-    [danvet: Added note about workqueu deadlock.]
-    Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=56337
-    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-
-Later investigations showed that there _is_ lockdep support, it just
-doesn't work. Maarten's patch here boils the failure scenario down to
-its essence.
--Daniel
+diff --git a/drivers/usb/class/cdc-wdm.c b/drivers/usb/class/cdc-wdm.c
+index 3cc771e..97c1d8e 100644
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -81,6 +81,7 @@ MODULE_DEVICE_TABLE (usb, wdm_ids);
+ #define WDM_RESPONDING		7
+ #define WDM_SUSPENDING		8
+ #define WDM_RESETTING		9
++#define WDM_OVERFLOW		10
+ 
+ #define WDM_MAX			16
+ 
+@@ -180,6 +181,7 @@ static void wdm_in_callback(struct urb *urb)
+ {
+ 	struct wdm_device *desc = urb->context;
+ 	int status = urb->status;
++	int length = urb->actual_length;
+ 
+ 	spin_lock(&desc->iuspin);
+ 	clear_bit(WDM_RESPONDING, &desc->flags);
+@@ -210,9 +212,17 @@ static void wdm_in_callback(struct urb *urb)
+ 	}
+ 
+ 	desc->rerr = status;
+-	desc->reslength = urb->actual_length;
+-	memmove(desc->ubuf + desc->length, desc->inbuf, desc->reslength);
+-	desc->length += desc->reslength;
++	if (length + desc->length > desc->wMaxCommand) {
++		/* The buffer would overflow */
++		set_bit(WDM_OVERFLOW, &desc->flags);
++	} else {
++		/* we may already be in overflow */
++		if (!test_bit(WDM_OVERFLOW, &desc->flags)) {
++			memmove(desc->ubuf + desc->length, desc->inbuf, length);
++			desc->length += length;
++			desc->reslength = length;
++		}
++	}
+ skip_error:
+ 	wake_up(&desc->wait);
+ 
+@@ -460,6 +470,11 @@ retry:
+ 			rv = -ENODEV;
+ 			goto err;
+ 		}
++		if (test_bit(WDM_OVERFLOW, &desc->flags)) {
++			clear_bit(WDM_OVERFLOW, &desc->flags);
++			rv = -ENOBUFS;
++			goto err;
++		}
+ 		i++;
+ 		if (file->f_flags & O_NONBLOCK) {
+ 			if (!test_bit(WDM_READ, &desc->flags)) {
+@@ -503,6 +518,7 @@ retry:
+ 			spin_unlock_irq(&desc->iuspin);
+ 			goto retry;
+ 		}
++
+ 		if (!desc->reslength) { /* zero length read */
+ 			dev_dbg(&desc->intf->dev, "%s: zero length - clearing WDM_READ\n", __func__);
+ 			clear_bit(WDM_READ, &desc->flags);
+@@ -1029,6 +1045,7 @@ static int wdm_post_reset(struct usb_interface *intf)
+ 	struct wdm_device *desc = wdm_find_device(intf);
+ 	int rv;
+ 
++	clear_bit(WDM_OVERFLOW, &desc->flags);
+ 	clear_bit(WDM_RESETTING, &desc->flags);
+ 	rv = recover_from_urb_loss(desc);
+ 	mutex_unlock(&desc->wlock);
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.8.1.2
+
