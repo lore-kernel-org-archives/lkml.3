@@ -1,110 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759522Ab3CZG3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 02:29:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55307 "EHLO mx1.redhat.com"
+	id S1759368Ab3CZG3t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 02:29:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39467 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759478Ab3CZG3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 02:29:30 -0400
+	id S1759477Ab3CZG31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 02:29:27 -0400
 From: Jason Wang <jasowang@redhat.com>
 To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: mst@redhat.com, Jason Wang <jasowang@redhat.com>,
         Eric Dumazet <edumazet@google.com>
-Subject: [net-next 3/5] packet: set transport header before doing xmit
-Date: Tue, 26 Mar 2013 14:19:57 +0800
-Message-Id: <1364278799-37285-4-git-send-email-jasowang@redhat.com>
+Subject: [net-next 2/5] tuntap: set transport header before passing it to kernel
+Date: Tue, 26 Mar 2013 14:19:56 +0800
+Message-Id: <1364278799-37285-3-git-send-email-jasowang@redhat.com>
 In-Reply-To: <1364278799-37285-1-git-send-email-jasowang@redhat.com>
 References: <1364278799-37285-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the transport header for 1) some drivers (e.g ixgbe needs l4 header to do
-atr) 2) precise packet length estimation (introduced in 1def9238) needs l4
-header to compute header length.
+Currently, for the packets receives from tuntap, before doing header check,
+kernel just reset the transport header in netif_receive_skb() which pretends no
+l4 header. This is suboptimal for precise packet length estimation (introduced
+in 1def9238) which needs correct l4 header for gso packets.
 
-So this patch first tries to get l4 header for packet socket through
-skb_flow_dissect(), and pretend no l4 header if skb_flow_dissect() fails.
+So this patch set the transport header to csum_start for partial checksum
+packets, otherwise it first try skb_flow_dissect(), if it fails, just reset the
+transport header.
 
 Cc: Eric Dumazet <edumazet@google.com>
 Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- net/packet/af_packet.c |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
+ drivers/net/tun.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index bd0d14c..83fdd0a 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -88,6 +88,7 @@
- #include <linux/virtio_net.h>
- #include <linux/errqueue.h>
- #include <linux/net_tstamp.h>
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 95837c1..48cd73a 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -70,6 +70,7 @@
+ #include <net/sock.h>
+ 
+ #include <asm/uaccess.h>
 +#include <net/flow_keys.h>
  
- #ifdef CONFIG_INET
- #include <net/inet_common.h>
-@@ -1412,6 +1413,7 @@ static int packet_sendmsg_spkt(struct kiocb *iocb, struct socket *sock,
- 	__be16 proto = 0;
+ /* Uncomment to enable debugging */
+ /* #define TUN_DEBUG 1 */
+@@ -1049,6 +1050,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 	bool zerocopy = false;
  	int err;
- 	int extra_len = 0;
+ 	u32 rxhash;
 +	struct flow_keys keys;
  
- 	/*
- 	 *	Get and verify the address.
-@@ -1512,6 +1514,11 @@ retry:
- 	if (unlikely(extra_len == 4))
- 		skb->no_fcs = 1;
- 
-+	if (skb_flow_dissect(skb, &keys))
-+		skb_set_transport_header(skb, keys.thoff);
-+	else
-+		skb_reset_transport_header(skb);
-+
- 	dev_queue_xmit(skb);
- 	rcu_read_unlock();
- 	return len;
-@@ -1918,6 +1925,7 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
- 	struct page *page;
- 	void *data;
- 	int err;
-+	struct flow_keys keys;
- 
- 	ph.raw = frame;
- 
-@@ -1943,6 +1951,11 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
- 	skb_reserve(skb, hlen);
- 	skb_reset_network_header(skb);
- 
-+	if (skb_flow_dissect(skb, &keys))
-+		skb_set_transport_header(skb, keys.thoff);
-+	else
-+		skb_reset_transport_header(skb);
-+
- 	if (po->tp_tx_has_off) {
- 		int off_min, off_max, off;
- 		off_min = po->tp_hdrlen - sizeof(struct sockaddr_ll);
-@@ -2199,6 +2212,7 @@ static int packet_snd(struct socket *sock,
- 	unsigned short gso_type = 0;
- 	int hlen, tlen;
- 	int extra_len = 0;
-+	struct flow_keys keys;
- 
- 	/*
- 	 *	Get and verify the address.
-@@ -2351,6 +2365,13 @@ static int packet_snd(struct socket *sock,
- 		len += vnet_hdr_len;
+ 	if (!(tun->flags & TUN_NO_PI)) {
+ 		if ((len -= sizeof(pi)) > total_len)
+@@ -1203,6 +1205,14 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
  	}
  
+ 	skb_reset_network_header(skb);
++
 +	if (skb->ip_summed == CHECKSUM_PARTIAL)
 +		skb_set_transport_header(skb, skb_checksum_start_offset(skb));
 +	else if (skb_flow_dissect(skb, &keys))
 +		skb_set_transport_header(skb, keys.thoff);
 +	else
-+		skb_set_transport_header(skb, reserve);
++		skb_reset_transport_header(skb);
 +
- 	if (unlikely(extra_len == 4))
- 		skb->no_fcs = 1;
+ 	rxhash = skb_get_rxhash(skb);
+ 	netif_rx_ni(skb);
  
 -- 
 1.7.1
