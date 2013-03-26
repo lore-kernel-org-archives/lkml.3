@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965434Ab3CZPgy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:36:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54056 "EHLO
+	id S965503Ab3CZPhY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:37:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54048 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965267Ab3CZPXg (ORCPT
+	with ESMTP id S965290Ab3CZPXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:36 -0400
+	Tue, 26 Mar 2013 11:23:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 114/150] USB: ti_usb_3410_5052: fix use-after-free in TIOCMIWAIT
-Date: Tue, 26 Mar 2013 15:20:13 +0000
-Message-Id: <1364311249-14454-115-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 112/150] USB: spcp8x5: fix use-after-free in TIOCMIWAIT
+Date: Tue, 26 Mar 2013 15:20:11 +0000
+Message-Id: <1364311249-14454-113-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -30,7 +30,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit fc98ab873aa3dbe783ce56a2ffdbbe7c7609521a upstream.
+commit dbcea7615d8d7d58f6ff49d2c5568113f70effe9 upstream.
 
 Use the port wait queue and make sure to check the serial disconnected
 flag before accessing private port data after waking up.
@@ -43,53 +43,55 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 [ luis: backported to 3.5; adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/ti_usb_3410_5052.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/usb/serial/spcp8x5.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/serial/ti_usb_3410_5052.c b/drivers/usb/serial/ti_usb_3410_5052.c
-index a4404f5..d9f43247 100644
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -75,7 +75,6 @@ struct ti_port {
- 	int			tp_flags;
- 	int			tp_closing_wait;/* in .01 secs */
- 	struct async_icount	tp_icount;
--	wait_queue_head_t	tp_msr_wait;	/* wait for msr change */
- 	wait_queue_head_t	tp_write_wait;
- 	struct ti_device	*tp_tdev;
- 	struct usb_serial_port	*tp_port;
-@@ -421,7 +420,6 @@ static int ti_startup(struct usb_serial *serial)
- 		tport->tp_uart_base_addr = (i == 0 ?
- 				TI_UART1_BASE_ADDR : TI_UART2_BASE_ADDR);
- 		tport->tp_closing_wait = closing_wait;
--		init_waitqueue_head(&tport->tp_msr_wait);
- 		init_waitqueue_head(&tport->tp_write_wait);
- 		if (kfifo_alloc(&tport->write_fifo, TI_WRITE_BUF_SIZE,
- 								GFP_KERNEL)) {
-@@ -800,9 +798,13 @@ static int ti_ioctl(struct tty_struct *tty,
- 		dbg("%s - (%d) TIOCMIWAIT", __func__, port->number);
- 		cprev = tport->tp_icount;
- 		while (1) {
--			interruptible_sleep_on(&tport->tp_msr_wait);
-+			interruptible_sleep_on(&port->delta_msr_wait);
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
-+
-+			if (port->serial->disconnected)
-+				return -EIO;
-+
- 			cnow = tport->tp_icount;
- 			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
- 			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
-@@ -1414,7 +1416,7 @@ static void ti_handle_new_msr(struct ti_port *tport, __u8 msr)
- 			icount->dcd++;
- 		if (msr & TI_MSR_DELTA_RI)
- 			icount->rng++;
--		wake_up_interruptible(&tport->tp_msr_wait);
-+		wake_up_interruptible(&tport->tp_port->delta_msr_wait);
- 		spin_unlock_irqrestore(&tport->tp_lock, flags);
- 	}
+diff --git a/drivers/usb/serial/spcp8x5.c b/drivers/usb/serial/spcp8x5.c
+index cad6089..66a4871 100644
+--- a/drivers/usb/serial/spcp8x5.c
++++ b/drivers/usb/serial/spcp8x5.c
+@@ -154,7 +154,6 @@ enum spcp8x5_type {
+ struct spcp8x5_private {
+ 	spinlock_t 	lock;
+ 	enum spcp8x5_type	type;
+-	wait_queue_head_t	delta_msr_wait;
+ 	u8 			line_control;
+ 	u8 			line_status;
+ };
+@@ -188,7 +187,6 @@ static int spcp8x5_startup(struct usb_serial *serial)
+ 			goto cleanup;
  
+ 		spin_lock_init(&priv->lock);
+-		init_waitqueue_head(&priv->delta_msr_wait);
+ 		priv->type = type;
+ 		usb_set_serial_port_data(serial->port[i] , priv);
+ 	}
+@@ -491,7 +489,7 @@ static void spcp8x5_process_read_urb(struct urb *urb)
+ 	priv->line_status &= ~UART_STATE_TRANSIENT_MASK;
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 	/* wake up the wait for termios */
+-	wake_up_interruptible(&priv->delta_msr_wait);
++	wake_up_interruptible(&port->delta_msr_wait);
+ 
+ 	if (!urb->actual_length)
+ 		return;
+@@ -541,12 +539,15 @@ static int spcp8x5_wait_modem_info(struct usb_serial_port *port,
+ 
+ 	while (1) {
+ 		/* wake up in bulk read */
+-		interruptible_sleep_on(&priv->delta_msr_wait);
++		interruptible_sleep_on(&port->delta_msr_wait);
+ 
+ 		/* see if a signal did it */
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
+ 
++		if (port->serial->disconnected)
++			return -EIO;
++
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 		status = priv->line_status;
+ 		spin_unlock_irqrestore(&priv->lock, flags);
 -- 
 1.8.1.2
 
