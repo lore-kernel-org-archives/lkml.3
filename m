@@ -1,163 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965817Ab3CZQDJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:03:09 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:45508 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759822Ab3CZQDF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:03:05 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH v3, part4 33/39] mm/tile: prepare for removing num_physpages and simplify mem_init()
-Date: Tue, 26 Mar 2013 23:54:52 +0800
-Message-Id: <1364313298-17336-34-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
-References: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
+	id S1759866Ab3CZQDW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:03:22 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:39922 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756018Ab3CZQDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 12:03:15 -0400
+Date: Tue, 26 Mar 2013 11:03:07 -0500
+From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, klebers@linux.vnet.ibm.com
+Subject: [PATCHv2 01/02] block: removes dynamic allocation on stack
+Message-ID: <20130326160307.GD7136@oc6784271780.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032616-7182-0000-0000-000005F3FE21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for removing num_physpages and simplify mem_init().
+From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
----
-Hi all,
-	Sorry for my mistake that my previous patch series has been screwed up.
-So I regenerate a third version and also set up a git tree at:
-	git://github.com/jiangliu/linux.git mem_init
-	Any help to review and test are welcomed!
+Removing the dynamic allocation on the stack.
 
-	Regards!
-	Gerry
----
- arch/tile/kernel/setup.c |   16 ++++++++--------
- arch/tile/mm/init.c      |   15 +--------------
- 2 files changed, 9 insertions(+), 22 deletions(-)
+Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+-------------------------------------------------------------------------------
+o Version 2 consists of the error checking that was foolishly left out.
+o Added error checking to multiple functions to support the dynamically
+  allocated list_head array.
 
-diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
-index a986b71..54469a5 100644
---- a/arch/tile/kernel/setup.c
-+++ b/arch/tile/kernel/setup.c
-@@ -329,6 +329,7 @@ static void __init setup_memory(void)
- #if defined(CONFIG_HIGHMEM) || defined(__tilegx__)
- 	long lowmem_pages;
- #endif
-+	unsigned long physpages = 0;
+
+diff -uprN -X linux-block/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/core.c linux-block/drivers/block/rsxx/core.c
+--- linux-block-vanilla/drivers/block/rsxx/core.c	2013-03-26 09:56:33.508217353 -0500
++++ linux-block/drivers/block/rsxx/core.c	2013-03-26 10:00:21.211964584 -0500
+@@ -323,10 +323,11 @@ static int card_shutdown(struct rsxx_car
+ 	return 0;
+ }
  
- 	/* We are using a char to hold the cpu_2_node[] mapping */
- 	BUILD_BUG_ON(MAX_NUMNODES > 127);
-@@ -388,8 +389,8 @@ static void __init setup_memory(void)
- 				continue;
- 			}
- 		}
--		if (num_physpages + PFN_DOWN(range.size) > maxmem_pfn) {
--			int max_size = maxmem_pfn - num_physpages;
-+		if (physpages + PFN_DOWN(range.size) > maxmem_pfn) {
-+			int max_size = maxmem_pfn - physpages;
- 			if (max_size > 0) {
- 				pr_err("Maxmem reduced node %d to %d pages\n",
- 				       i, max_size);
-@@ -446,7 +447,7 @@ static void __init setup_memory(void)
- 		node_start_pfn[i] = start;
- 		node_end_pfn[i] = end;
- 		node_controller[i] = range.controller;
--		num_physpages += size;
-+		physpages += size;
- 		max_pfn = end;
- 
- 		/* Mark node as online */
-@@ -465,7 +466,7 @@ static void __init setup_memory(void)
- 	 * we're willing to use at 8 million pages (32GB of 4KB pages).
- 	 */
- 	cap = 8 * 1024 * 1024;  /* 8 million pages */
--	if (num_physpages > cap) {
-+	if (physpages > cap) {
- 		int num_nodes = num_online_nodes();
- 		int cap_each = cap / num_nodes;
- 		unsigned long dropped_pages = 0;
-@@ -476,10 +477,10 @@ static void __init setup_memory(void)
- 				node_end_pfn[i] = node_start_pfn[i] + cap_each;
- 			}
- 		}
--		num_physpages -= dropped_pages;
-+		physpages -= dropped_pages;
- 		pr_warning("Only using %ldMB memory;"
- 		       " ignoring %ldMB.\n",
--		       num_physpages >> (20 - PAGE_SHIFT),
-+		       physpages >> (20 - PAGE_SHIFT),
- 		       dropped_pages >> (20 - PAGE_SHIFT));
- 		pr_warning("Consider using a larger page size.\n");
- 	}
-@@ -497,7 +498,7 @@ static void __init setup_memory(void)
- 
- 	lowmem_pages = (mappable_physpages > MAXMEM_PFN) ?
- 		MAXMEM_PFN : mappable_physpages;
--	highmem_pages = (long) (num_physpages - lowmem_pages);
-+	highmem_pages = (long) (physpages - lowmem_pages);
- 
- 	pr_notice("%ldMB HIGHMEM available.\n",
- 	       pages_to_mb(highmem_pages > 0 ? highmem_pages : 0));
-@@ -514,7 +515,6 @@ static void __init setup_memory(void)
- 		pr_warning("Use a HIGHMEM enabled kernel.\n");
- 		max_low_pfn = MAXMEM_PFN;
- 		max_pfn = MAXMEM_PFN;
--		num_physpages = MAXMEM_PFN;
- 		node_end_pfn[0] = MAXMEM_PFN;
- 	} else {
- 		pr_notice("%ldMB memory available.\n",
-diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
-index f2ac2f4..e182958 100644
---- a/arch/tile/mm/init.c
-+++ b/arch/tile/mm/init.c
-@@ -821,7 +821,6 @@ static void __init set_max_mapnr_init(void)
- 
- void __init mem_init(void)
+-static void rsxx_eeh_frozen(struct pci_dev *dev)
++static int rsxx_eeh_frozen(struct pci_dev *dev)
  {
--	int codesize, datasize, initsize;
+ 	struct rsxx_cardinfo *card = pci_get_drvdata(dev);
  	int i;
- #ifndef __tilegx__
- 	void *last;
-@@ -853,19 +852,7 @@ void __init mem_init(void)
- 	set_non_bootmem_pages_init();
- #endif
++	int st;
  
--	codesize =  (unsigned long)&_etext - (unsigned long)&_text;
--	datasize =  (unsigned long)&_end - (unsigned long)&_sdata;
--	initsize =  (unsigned long)&_einittext - (unsigned long)&_sinittext;
--	initsize += (unsigned long)&_einitdata - (unsigned long)&_sinitdata;
--
--	pr_info("Memory: %luk/%luk available (%dk kernel code, %dk data, %dk init, %ldk highmem)\n",
--		(unsigned long) nr_free_pages() << (PAGE_SHIFT-10),
--		num_physpages << (PAGE_SHIFT-10),
--		codesize >> 10,
--		datasize >> 10,
--		initsize >> 10,
--		(unsigned long) (totalhigh_pages << (PAGE_SHIFT-10))
--	       );
-+	mem_init_print_info(NULL);
+ 	dev_warn(&dev->dev, "IBM FlashSystem PCI: preparing for slot reset.\n");
  
- 	/*
- 	 * In debug mode, dump some interesting memory mappings.
--- 
-1.7.9.5
+@@ -342,7 +343,9 @@ static void rsxx_eeh_frozen(struct pci_d
+ 
+ 	pci_disable_device(dev);
+ 
+-	rsxx_eeh_save_issued_dmas(card);
++	st = rsxx_eeh_save_issued_dmas(card);
++	if (st)
++		return st;
+ 
+ 	rsxx_eeh_save_issued_creg(card);
+ 
+@@ -356,6 +359,8 @@ static void rsxx_eeh_frozen(struct pci_d
+ 					    card->ctrl[i].cmd.buf,
+ 					    card->ctrl[i].cmd.dma_addr);
+ 	}
++
++	return 0;
+ }
+ 
+ static void rsxx_eeh_failure(struct pci_dev *dev)
+@@ -399,6 +404,8 @@ static int rsxx_eeh_fifo_flush_poll(stru
+ static pci_ers_result_t rsxx_error_detected(struct pci_dev *dev,
+ 					    enum pci_channel_state error)
+ {
++	int st;
++
+ 	if (dev->revision < RSXX_EEH_SUPPORT)
+ 		return PCI_ERS_RESULT_NONE;
+ 
+@@ -407,7 +414,13 @@ static pci_ers_result_t rsxx_error_detec
+ 		return PCI_ERS_RESULT_DISCONNECT;
+ 	}
+ 
+-	rsxx_eeh_frozen(dev);
++	st = rsxx_eeh_frozen(dev);
++	if (st) {
++		dev_err(&dev->dev, "Slot reset setup failed\n");
++		rsxx_eeh_failure(dev);
++		return PCI_ERS_RESULT_DISCONNECT;
++	}
++
+ 	return PCI_ERS_RESULT_NEED_RESET;
+ }
+ 
+diff -uprN -X linux-block/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/dma.c linux-block/drivers/block/rsxx/dma.c
+--- linux-block-vanilla/drivers/block/rsxx/dma.c	2013-03-26 09:57:10.071023932 -0500
++++ linux-block/drivers/block/rsxx/dma.c	2013-03-26 09:57:22.186976829 -0500
+@@ -980,7 +980,7 @@ void rsxx_dma_destroy(struct rsxx_cardin
+ 	}
+ }
+ 
+-void rsxx_eeh_save_issued_dmas(struct rsxx_cardinfo *card)
++int rsxx_eeh_save_issued_dmas(struct rsxx_cardinfo *card)
+ {
+ 	int i;
+ 	int j;
+@@ -990,6 +990,8 @@ void rsxx_eeh_save_issued_dmas(struct rs
+ 
+ 	issued_dmas = kzalloc(sizeof(*issued_dmas) * card->n_targets,
+ 			      GFP_KERNEL);
++	if (!issued_dmas)
++		return -ENOMEM;
+ 
+ 	for (i = 0; i < card->n_targets; i++) {
+ 		INIT_LIST_HEAD(&issued_dmas[i]);
+@@ -1030,6 +1032,8 @@ void rsxx_eeh_save_issued_dmas(struct rs
+ 	}
+ 
+ 	kfree(issued_dmas);
++
++	return 0;
+ }
+ 
+ void rsxx_eeh_cancel_dmas(struct rsxx_cardinfo *card)
+diff -uprN -X linux-block/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h linux-block/drivers/block/rsxx/rsxx_priv.h
+--- linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h	2013-03-26 09:56:33.531059843 -0500
++++ linux-block/drivers/block/rsxx/rsxx_priv.h	2013-03-26 09:57:22.192990813 -0500
+@@ -381,7 +381,7 @@ int rsxx_dma_queue_bio(struct rsxx_cardi
+ 			   rsxx_dma_cb cb,
+ 			   void *cb_data);
+ int rsxx_hw_buffers_init(struct pci_dev *dev, struct rsxx_dma_ctrl *ctrl);
+-void rsxx_eeh_save_issued_dmas(struct rsxx_cardinfo *card);
++int rsxx_eeh_save_issued_dmas(struct rsxx_cardinfo *card);
+ void rsxx_eeh_cancel_dmas(struct rsxx_cardinfo *card);
+ int rsxx_eeh_remap_dmas(struct rsxx_cardinfo *card);
+ 
 
