@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757028Ab3CZXD6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:03:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53480 "EHLO
+	id S1756890Ab3CZXCT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:02:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53426 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756898Ab3CZXCU (ORCPT
+	with ESMTP id S1752172Ab3CZXCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:02:20 -0400
+	Tue, 26 Mar 2013 19:02:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Jim Trigg <jtrigg@spamcop.net>
-Subject: [ 39/49] udf: Fix bitmap overflow on large filesystems with small block size
-Date: Tue, 26 Mar 2013 16:01:36 -0700
-Message-Id: <20130326225843.631536053@linuxfoundation.org>
+        Dean Luick <dean.luick@intel.com>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 34/49] IPoIB: Fix send lockup due to missed TX completion
+Date: Tue, 26 Mar 2013 16:01:31 -0700
+Message-Id: <20130326225843.099781572@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -26,38 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
-commit 89b1f39eb4189de745fae554b0d614d87c8d5c63 upstream.
+commit 1ee9e2aa7b31427303466776f455d43e5e3c9275 upstream.
 
-For large UDF filesystems with 512-byte blocks the number of necessary
-bitmap blocks is larger than 2^16 so s_nr_groups in udf_bitmap overflows
-(the number will overflow for filesystems larger than 128 GB with
-512-byte blocks). That results in ENOSPC errors despite the filesystem
-has plenty of free space.
+Commit f0dc117abdfa ("IPoIB: Fix TX queue lockup with mixed UD/CM
+traffic") attempts to solve an issue where unprocessed UD send
+completions can deadlock the netdev.
 
-Fix the problem by changing s_nr_groups' type to 'int'. That is enough
-even for filesystems 2^32 blocks (UDF maximum) and 512-byte blocksize.
+The patch doesn't fully resolve the issue because if more than half
+the tx_outstanding's were UD and all of the destinations are RC
+reachable, arming the CQ doesn't solve the issue.
 
-Reported-and-tested-by: v10lator@myway.de
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Jim Trigg <jtrigg@spamcop.net>
+This patch uses the IB_CQ_REPORT_MISSED_EVENTS on the
+ib_req_notify_cq().  If the rc is above 0, the UD send cq completion
+callback is called directly to re-arm the send completion timer.
+
+This issue is seen in very large parallel filesystem deployments
+and the patch has been shown to correct the issue.
+
+Reviewed-by: Dean Luick <dean.luick@intel.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/udf/udf_sb.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/ulp/ipoib/ipoib_cm.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/fs/udf/udf_sb.h
-+++ b/fs/udf/udf_sb.h
-@@ -79,7 +79,7 @@ struct udf_virtual_data {
- struct udf_bitmap {
- 	__u32			s_extLength;
- 	__u32			s_extPosition;
--	__u16			s_nr_groups;
-+	int			s_nr_groups;
- 	struct buffer_head 	**s_block_bitmap;
- };
- 
+--- a/drivers/infiniband/ulp/ipoib/ipoib_cm.c
++++ b/drivers/infiniband/ulp/ipoib/ipoib_cm.c
+@@ -753,9 +753,13 @@ void ipoib_cm_send(struct net_device *de
+ 		if (++priv->tx_outstanding == ipoib_sendq_size) {
+ 			ipoib_dbg(priv, "TX ring 0x%x full, stopping kernel net queue\n",
+ 				  tx->qp->qp_num);
+-			if (ib_req_notify_cq(priv->send_cq, IB_CQ_NEXT_COMP))
+-				ipoib_warn(priv, "request notify on send CQ failed\n");
+ 			netif_stop_queue(dev);
++			rc = ib_req_notify_cq(priv->send_cq,
++				IB_CQ_NEXT_COMP | IB_CQ_REPORT_MISSED_EVENTS);
++			if (rc < 0)
++				ipoib_warn(priv, "request notify on send CQ failed\n");
++			else if (rc)
++				ipoib_send_comp_handler(priv->send_cq, dev);
+ 		}
+ 	}
+ }
 
 
