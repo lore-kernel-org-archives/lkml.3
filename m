@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756963Ab3CZSQG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:16:06 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:57010 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755588Ab3CZSQE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 14:16:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH v2.2] dw_dmac: remove unnecessary ENODEV check
-Date: Tue, 26 Mar 2013 18:15:54 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        "spear-devel" <spear-devel@list.st.com>,
-        "Lars-Peter Clausen" <lars@metafoo.de>
-References: <CAKohponTj8iHTZqs2pS9m1mOqgbGX5WUDa7B2-xcDP_0sN7ZsQ@mail.gmail.com> <1364318953-5219-1-git-send-email-andriy.shevchenko@linux.intel.com> <CAKohpomxgQy0f51nYePaKs03Us4zfxQy+-_C6J9kYqNK8_iJoQ@mail.gmail.com>
-In-Reply-To: <CAKohpomxgQy0f51nYePaKs03Us4zfxQy+-_C6J9kYqNK8_iJoQ@mail.gmail.com>
+	id S1755543Ab3CZSRU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:17:20 -0400
+Received: from fieldses.org ([174.143.236.118]:47983 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751513Ab3CZSRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 14:17:17 -0400
+Date: Tue, 26 Mar 2013 14:17:17 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+Cc: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kernel 3.8.4 : kernel BUG at fs/locks.c:2093!   part #2
+Message-ID: <20130326181717.GA8978@fieldses.org>
+References: <514F31AF.3080709@gmx.de>
+ <20130325220143.GD10887@fieldses.org>
+ <20130326144640.GB3353@fieldses.org>
+ <5151DEF7.3060003@gmx.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303261815.54755.arnd@arndb.de>
-X-Provags-ID: V02:K0:b8gHssOnY1+hY44yd8KyU199qec1srVIG2DyHfISv0x
- oa+46IPWydC7/3/B8yvlqiPDefHxTFWv3JkyYjrVzyYW4fBD81
- 677SdyCb1uWQaBgEvDF9SFEqEtNOyLcu1cHY20GsWgJa6MLBmA
- SqTA62Nyc0mm1qp1rKRZ9pfJlW5vMalgi3HWQJHlti06aEMjCG
- MpAN+8Bn7sfL9XTdg5UU3iQe4a9SXx0fF9zd7x3iQvqDn8YlkQ
- Z7vcf7jt8fsV2XtrUZ8vb9dy7nTqC4kYtNYh+0t9mSMyXPW2bX
- Vv+5u64aZI82Ri6sNSnPBhOqjFQglstf+ArS1fJ6BGELpSRP77
- xPxt588uas9BBjSAEYAU=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5151DEF7.3060003@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 26 March 2013, Viresh Kumar wrote:
+On Tue, Mar 26, 2013 at 06:46:31PM +0100, Toralf Förster wrote:
+> On 03/26/2013 03:46 PM, J. Bruce Fields wrote:
+> > Can you run with test patches?
+> > 
+> > This just makes nfsd's fput calls synchronous so that we see in the
+> > backtrace who called them.
 > 
-> On 26 March 2013 22:59, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> > If CONFIG_OF is not set the of_node of the device will always be NULL.
-> >
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > ---
-> >  drivers/dma/dw_dmac.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> > index 274fd7d..736cffa 100644
-> > --- a/drivers/dma/dw_dmac.c
-> > +++ b/drivers/dma/dw_dmac.c
-> > @@ -1846,7 +1846,7 @@ static int dw_probe(struct platform_device *pdev)
-> >         if (pdev->dev.of_node) {
-> >                 err = of_dma_controller_register(pdev->dev.of_node,
-> >                                                  dw_dma_of_xlate, dw);
-> > -               if (err && err != -ENODEV)
-> > +               if (err)
-> >                         dev_err(&pdev->dev,
-> >                                 "could not register of_dma_controller\n");
-> 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Well - the patched 3.8.4 host kernel now survives the stress test of the UML system.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Bah, too bad.  That patch was definitely not a fix, so there may be some
+race here.
+
+> What I get at the host is now :
+> 
+> 2013-03-26T18:32:17.487+01:00 n22 kernel: ------------[ cut here ]------------
+> 2013-03-26T18:32:17.487+01:00 n22 kernel: WARNING: at mm/page_alloc.c:2376 __alloc_pages_nodemask+0x262/0x7c0()
+...
+> 2013-03-26T18:32:17.487+01:00 n22 kernel: [<c110f149>] __kmalloc+0x1b9/0x1e0
+> 2013-03-26T18:32:17.487+01:00 n22 kernel: [<f85835bf>] ? cache_check+0x22f/0x340 [sunrpc]
+> 2013-03-26T18:32:17.487+01:00 n22 kernel: [<f90a0b1c>] nfs4_acl_new+0x1c/0x30 [nfsd]
+> 2013-03-26T18:32:17.488+01:00 n22 kernel: [<f9095482>] nfsd4_decode_fattr+0x302/0x6c0 [nfsd]
+...
+
+A different bug, but thanks for catching it, I suspect the following is
+all we need.
+
+--b.
+
+commit 814d9d4f9164c3d778dadd093a54bb55d9a0c576
+Author: J. Bruce Fields <bfields@redhat.com>
+Date:   Tue Mar 26 14:11:13 2013 -0400
+
+    nfsd4: reject "negative" acl lengths
+    
+    Since we only enforce an upper bound, not a lower bound, a "negative"
+    length can get through here.
+    
+    The symptom seen was a warning when we attempt to a kmalloc with an
+    excessive size.
+    
+    Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 0dc1158..d1dd710 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -264,7 +264,7 @@ nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
+ 		iattr->ia_valid |= ATTR_SIZE;
+ 	}
+ 	if (bmval[0] & FATTR4_WORD0_ACL) {
+-		int nace;
++		u32 nace;
+ 		struct nfs4_ace *ace;
+ 
+ 		READ_BUF(4); len += 4;
