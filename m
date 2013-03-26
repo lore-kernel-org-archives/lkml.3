@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934409Ab3CZQpF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:45:05 -0400
-Received: from mout.gmx.net ([212.227.15.18]:56943 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934186Ab3CZQpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:45:03 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX19f24la22pfD1bAd37NX0XkamuKXH4FMlIGqouElI
-	LAhzJnr+ixdsB3
-Message-ID: <5151D08A.2060400@gmx.de>
-Date: Tue, 26 Mar 2013 17:44:58 +0100
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130309 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: user-mode-linux-user@lists.sourceforge.net,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: linux-v3.9-rc3: BUG: Bad page map in process trinity-child6 pte:002f9045
- pmd:29e421e1
-References: <514C94C4.4050008@gmx.de> <20130325155347.75290358a6985e17fb10ad14@linux-foundation.org>
-In-Reply-To: <20130325155347.75290358a6985e17fb10ad14@linux-foundation.org>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	id S934733Ab3CZQpj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:45:39 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41007 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934186Ab3CZQpi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 12:45:38 -0400
+Date: Tue, 26 Mar 2013 12:45:35 -0400 (EDT)
+Message-Id: <20130326.124535.2213486098970156228.davem@davemloft.net>
+To: jasowang@redhat.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com
+Subject: Re: [net-next 0/5] set transport header for untrusted packets
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1364278799-37285-1-git-send-email-jasowang@redhat.com>
+References: <1364278799-37285-1-git-send-email-jasowang@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 26 Mar 2013 09:45:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2013 11:53 PM, Andrew Morton wrote:
-> On Fri, 22 Mar 2013 18:28:36 +0100 Toralf F__rster <toralf.foerster@gmx.de> wrote:
+From: Jason Wang <jasowang@redhat.com>
+Date: Tue, 26 Mar 2013 14:19:54 +0800
+
+> We don't set transport header for untrusted packets in the past, but for the
+> follwoing reasons, we need to do it now.
 > 
->> > Using trinity I often trigger under a user mode linux image with host kernel 3.8.4
->> > and guest kernel linux-v3.9-rc3-244-g9217cbb the following :
->> > (The UML guest is a 32bit stable Gentoo Linux)
-> I assume 3.8 is OK?
+> - Better packet length estimation (introduced in 1def9238) needs l4 header for
+>   gso packets to compute the header length.
+> - Some driver needs l4 header (e.g. ixgbe needs tcp header to do atr).
 > 
-With UML kernel 3.7.10 (host kernel still 3.8.4) I can trigger this
-issue too.
-Just to clarify it - here the bug appears in the UML kernel - the host
-kernel is ok (I can of course crash a host kernel too by trinity'ing an
-UML guest, but that's another thread - see [1])
+> So this patches tries to set transport header for packets from untrusted source
+> (netback, packet, tuntap, macvtap). Plus a fix for better estimation on packet
+> length for DODGY packet.
+> 
+> Tested on tun/macvtap/packet, compile test on netback.
 
-
-FWIW he trinity command is just a test of 1 syscall:
-
-$> trinity --children 1 --victims /mnt/nfs/n22/victims -c mremap
-
-
-
-[1] https://lkml.org/lkml/2013/3/24/174
-
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Looks good to me, series applied, thanks Jason.
