@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934925Ab3CZPvR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:51:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53812 "EHLO
+	id S934840Ab3CZPve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:51:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53807 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965065Ab3CZPWm (ORCPT
+	with ESMTP id S965062Ab3CZPWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:42 -0400
+	Tue, 26 Mar 2013 11:22:41 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 067/150] tracing: Fix race in snapshot swapping
-Date: Tue, 26 Mar 2013 15:19:26 +0000
-Message-Id: <1364311249-14454-68-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 065/150] jbd2: fix use after free in jbd2_journal_dirty_metadata()
+Date: Tue, 26 Mar 2013 15:19:24 +0000
+Message-Id: <1364311249-14454-66-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,53 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Jan Kara <jack@suse.cz>
 
-commit 2721e72dd10f71a3ba90f59781becf02638aa0d9 upstream.
+commit ad56edad089b56300fd13bb9eeb7d0424d978239 upstream.
 
-Although the swap is wrapped with a spin_lock, the assignment
-of the temp buffer used to swap is not within that lock.
-It needs to be moved into that lock, otherwise two swaps
-happening on two different CPUs, can end up using the wrong
-temp buffer to assign in the swap.
+jbd2_journal_dirty_metadata() didn't get a reference to journal_head it
+was working with. This is OK in most of the cases since the journal head
+should be attached to a transaction but in rare occasions when we are
+journalling data, __ext4_journalled_writepage() can race with
+jbd2_journal_invalidatepage() stripping buffers from a page and thus
+journal head can be freed under hands of jbd2_journal_dirty_metadata().
 
-Luckily, all current callers of the swap function appear to have
-their own locks. But in case something is added that allows two
-different callers to call the swap, then there's a chance that
-this race can trigger and corrupt the buffers.
+Fix the problem by getting own journal head reference in
+jbd2_journal_dirty_metadata() (and also in jbd2_journal_set_triggers()
+which can possibly have the same issue).
 
-New code is coming soon that will allow for this race to trigger.
-
-I've Cc'd stable, so this bug will not show up if someone backports
-one of the changes that can trigger this bug.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Zheng Liu <gnehzuil.liu@gmail.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/trace.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/jbd2/transaction.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index a7fa070..bd1df78 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -693,7 +693,7 @@ __update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
- void
- update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
+diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
+index 2fb20f5..399e4ee 100644
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -1047,9 +1047,12 @@ out:
+ void jbd2_journal_set_triggers(struct buffer_head *bh,
+ 			       struct jbd2_buffer_trigger_type *type)
  {
--	struct ring_buffer *buf = tr->buffer;
-+	struct ring_buffer *buf;
+-	struct journal_head *jh = bh2jh(bh);
++	struct journal_head *jh = jbd2_journal_grab_journal_head(bh);
  
- 	if (trace_stop_count)
- 		return;
-@@ -705,6 +705,7 @@ update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
++	if (WARN_ON(!jh))
++		return;
+ 	jh->b_triggers = type;
++	jbd2_journal_put_journal_head(jh);
+ }
+ 
+ void jbd2_buffer_frozen_trigger(struct journal_head *jh, void *mapped_data,
+@@ -1101,17 +1104,18 @@ int jbd2_journal_dirty_metadata(handle_t *handle, struct buffer_head *bh)
+ {
+ 	transaction_t *transaction = handle->h_transaction;
+ 	journal_t *journal = transaction->t_journal;
+-	struct journal_head *jh = bh2jh(bh);
++	struct journal_head *jh;
+ 	int ret = 0;
+ 
+-	jbd_debug(5, "journal_head %p\n", jh);
+-	JBUFFER_TRACE(jh, "entry");
+ 	if (is_handle_aborted(handle))
+ 		goto out;
+-	if (!buffer_jbd(bh)) {
++	jh = jbd2_journal_grab_journal_head(bh);
++	if (!jh) {
+ 		ret = -EUCLEAN;
+ 		goto out;
  	}
- 	arch_spin_lock(&ftrace_max_lock);
++	jbd_debug(5, "journal_head %p\n", jh);
++	JBUFFER_TRACE(jh, "entry");
  
-+	buf = tr->buffer;
- 	tr->buffer = max_tr.buffer;
- 	max_tr.buffer = buf;
+ 	jbd_lock_bh_state(bh);
  
+@@ -1202,6 +1206,7 @@ int jbd2_journal_dirty_metadata(handle_t *handle, struct buffer_head *bh)
+ 	spin_unlock(&journal->j_list_lock);
+ out_unlock_bh:
+ 	jbd_unlock_bh_state(bh);
++	jbd2_journal_put_journal_head(jh);
+ out:
+ 	JBUFFER_TRACE(jh, "exit");
+ 	WARN_ON(ret);	/* All errors are bugs, so dump the stack */
 -- 
 1.8.1.2
 
