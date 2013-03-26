@@ -1,129 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965826Ab3CZQDs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:03:48 -0400
-Received: from mail-da0-f43.google.com ([209.85.210.43]:44615 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759842Ab3CZQDc (ORCPT
+	id S965755Ab3CZQBK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:01:10 -0400
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:47802 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965745Ab3CZQBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:03:32 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: [PATCH v3, part4 35/39] mm/unicore32: prepare for removing num_physpages and simplify mem_init()
-Date: Tue, 26 Mar 2013 23:54:54 +0800
-Message-Id: <1364313298-17336-36-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
-References: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
+	Tue, 26 Mar 2013 12:01:05 -0400
+Date: Tue, 26 Mar 2013 12:01:02 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v2 6/6] [RFC] arm: use PSCI if available
+In-Reply-To: <20130326153730.GA22368@mudshark.cambridge.arm.com>
+Message-ID: <alpine.LFD.2.03.1303261152141.1372@syhkavp.arg>
+References: <alpine.DEB.2.02.1303261423530.4430@kaball.uk.xensource.com> <1364308875-26484-6-git-send-email-stefano.stabellini@eu.citrix.com> <20130326150444.GI20252@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1303261509080.4430@kaball.uk.xensource.com>
+ <20130326153730.GA22368@mudshark.cambridge.arm.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for removing num_physpages and simplify mem_init().
+On Tue, 26 Mar 2013, Will Deacon wrote:
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org
----
-Hi all,
-	Sorry for my mistake that my previous patch series has been screwed up.
-So I regenerate a third version and also set up a git tree at:
-	git://github.com/jiangliu/linux.git mem_init
-	Any help to review and test are welcomed!
+> On Tue, Mar 26, 2013 at 03:25:55PM +0000, Stefano Stabellini wrote:
+> > On Tue, 26 Mar 2013, Will Deacon wrote:
+> > > On Tue, Mar 26, 2013 at 02:41:15PM +0000, Stefano Stabellini wrote:
+> > > > +struct smp_operations __initdata psci_smp_ops = {
+> > > > +	.smp_init_cpus		= psci_smp_init_cpus,
+> > > > +	.smp_prepare_cpus	= psci_smp_prepare_cpus,
+> > > > +	.smp_secondary_init	= psci_secondary_init,
+> > > > +	.smp_boot_secondary	= psci_boot_secondary,
+> > > > +};
+> > > 
+> > > Whilst I like the idea of this, I don't think things will pan out this
+> > > nicely in practice. There will almost always be a level of indirection
+> > > required between the internal Linux SMP operations and the expectations of
+> > > the PSCI firmware, whether this is in CPU numbering or other,
+> > > platform-specific fields in various parameters.
+> > > 
+> > > Tying these two things together like this confuses the layering in my
+> > > opinion and will likely lead to potentially subtle breakages if platforms
+> > > start trying to adopt this.
+> > 
+> > What you are saying is that psci could either be used directly, like we
+> > are doing, or it could just be the base of some higher level platform
+> > specific smp_ops.
+> > 
+> > Honestly I think that psci is already high level enough that I would
+> > worry if somebody started to wrap it around something else.
+> 
+> I don't agree. PSCI is a low-level firmware interface, which will naturally
+> have implementation-specific parts to it. For example, many of the CPU power
+> functions have platform-specific state ID parameters which we can't just
+> ignore. Furthermore, the method by which a CPU is identified needn't match
+> the value in our logical map. The purpose of the PSCI code in Linux is to
+> provide a basic abstraction on top of this interface, so that platforms can
+> incorporate them into higher-level power management functions, which
+> themselves might be plumbed into smp_operations structures.
 
-	Regards!
-	Gerry
----
- arch/unicore32/mm/init.c |   49 ++--------------------------------------------
- 1 file changed, 2 insertions(+), 47 deletions(-)
+Absolutely.  PSCI is _not_ a Linux API.  It is a firmware API.  And 
+remember that Linux has no stable API by design. So it is best to keep 
+PSCI as one possible way to talk to the firmware, but a flexible shim 
+layer (flexible as in "we can change its interface whenever we want to") 
+around PSCI to provide a Linux API which also encompass all possible 
+low-level implementations alternatives is a better idea.
 
-diff --git a/arch/unicore32/mm/init.c b/arch/unicore32/mm/init.c
-index 119b9e8..39a967a 100644
---- a/arch/unicore32/mm/init.c
-+++ b/arch/unicore32/mm/init.c
-@@ -383,10 +383,6 @@ static void __init free_unused_memmap(struct meminfo *mi)
-  */
- void __init mem_init(void)
- {
--	unsigned long reserved_pages, free_pages;
--	struct memblock_region *reg;
--	int i;
--
- 	max_mapnr   = pfn_to_page(max_pfn + PHYS_PFN_OFFSET) - mem_map;
- 
- 	free_unused_memmap(&meminfo);
-@@ -394,48 +390,7 @@ void __init mem_init(void)
- 	/* this will put all unused low memory onto the freelists */
- 	free_all_bootmem();
- 
--	reserved_pages = free_pages = 0;
--
--	for_each_bank(i, &meminfo) {
--		struct membank *bank = &meminfo.bank[i];
--		unsigned int pfn1, pfn2;
--		struct page *page, *end;
--
--		pfn1 = bank_pfn_start(bank);
--		pfn2 = bank_pfn_end(bank);
--
--		page = pfn_to_page(pfn1);
--		end  = pfn_to_page(pfn2 - 1) + 1;
--
--		do {
--			if (PageReserved(page))
--				reserved_pages++;
--			else if (!page_count(page))
--				free_pages++;
--			page++;
--		} while (page < end);
--	}
--
--	/*
--	 * Since our memory may not be contiguous, calculate the
--	 * real number of pages we have in this system
--	 */
--	printk(KERN_INFO "Memory:");
--	num_physpages = 0;
--	for_each_memblock(memory, reg) {
--		unsigned long pages = memblock_region_memory_end_pfn(reg) -
--			memblock_region_memory_base_pfn(reg);
--		num_physpages += pages;
--		printk(" %ldMB", pages >> (20 - PAGE_SHIFT));
--	}
--	printk(" = %luMB total\n", num_physpages >> (20 - PAGE_SHIFT));
--
--	printk(KERN_NOTICE "Memory: %luk/%luk available, %luk reserved, %luK highmem\n",
--		nr_free_pages() << (PAGE_SHIFT-10),
--		free_pages << (PAGE_SHIFT-10),
--		reserved_pages << (PAGE_SHIFT-10),
--		totalhigh_pages << (PAGE_SHIFT-10));
--
-+	mem_init_print_info(NULL);
- 	printk(KERN_NOTICE "Virtual kernel memory layout:\n"
- 		"    vector  : 0x%08lx - 0x%08lx   (%4ld kB)\n"
- 		"    vmalloc : 0x%08lx - 0x%08lx   (%4ld MB)\n"
-@@ -464,7 +419,7 @@ void __init mem_init(void)
- 	BUILD_BUG_ON(TASK_SIZE				> MODULES_VADDR);
- 	BUG_ON(TASK_SIZE				> MODULES_VADDR);
- 
--	if (PAGE_SIZE >= 16384 && num_physpages <= 128) {
-+	if (PAGE_SIZE >= 16384 && get_num_physpages() <= 128) {
- 		/*
- 		 * On a machine this small we won't get
- 		 * anywhere without overcommit, so turn
--- 
-1.7.9.5
 
+Nicolas
