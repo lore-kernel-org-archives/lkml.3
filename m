@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419Ab3CZXBw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:01:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53069 "EHLO
+	id S1756389Ab3CZXQL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:16:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53315 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756227Ab3CZWwm (ORCPT
+	with ESMTP id S1754670Ab3CZXBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:42 -0400
+	Tue, 26 Mar 2013 19:01:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 41/72] drm/i915: bounds check execbuffer relocation count
-Date: Tue, 26 Mar 2013 15:51:24 -0700
-Message-Id: <20130326224923.931850868@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Stephen Thirlwall <sdt@dr.com>
+Subject: [ 01/49] Revert "USB: EHCI: dont check DMA values in QH overlays"
+Date: Tue, 26 Mar 2013 16:00:58 -0700
+Message-Id: <20130326225839.713484743@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
-References: <20130326224919.675227837@linuxfoundation.org>
+In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
+References: <20130326225839.554028294@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+This reverts commit 0319f9909ce68a7516dfc8d53400e07168d281a8, which is commit
+feca7746d5d9e84b105a613b7f3b6ad00d327372 upstream.
 
-commit 3118a4f652c7b12c752f3222af0447008f9b2368 upstream.
+It shouldn't have gone into this stable release.
 
-It is possible to wrap the counter used to allocate the buffer for
-relocation copies. This could lead to heap writing overflows.
-
-CVE-2013-0913
-
-v3: collapse test, improve comment
-v2: move check into validate_exec_list
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: Pinkie Pie
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: Stephen Thirlwall <sdt@dr.com>
 
 ---
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/usb/host/ehci-q.c |   18 +++++-------------
+ 1 file changed, 5 insertions(+), 13 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -957,15 +957,20 @@ validate_exec_list(struct drm_i915_gem_e
- 		   int count)
- {
- 	int i;
-+	int relocs_total = 0;
-+	int relocs_max = INT_MAX / sizeof(struct drm_i915_gem_relocation_entry);
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -137,7 +137,7 @@ qh_refresh (struct ehci_hcd *ehci, struc
+ 		 * qtd is updated in qh_completions(). Update the QH
+ 		 * overlay here.
+ 		 */
+-		if (qh->hw->hw_token & ACTIVE_BIT(ehci)) {
++		if (cpu_to_hc32(ehci, qtd->qtd_dma) == qh->hw->hw_current) {
+ 			qh->hw->hw_qtd_next = qtd->hw_next;
+ 			qtd = NULL;
+ 		}
+@@ -450,19 +450,11 @@ qh_completions (struct ehci_hcd *ehci, s
+ 			else if (last_status == -EINPROGRESS && !urb->unlinked)
+ 				continue;
  
- 	for (i = 0; i < count; i++) {
- 		char __user *ptr = (char __user *)(uintptr_t)exec[i].relocs_ptr;
- 		int length; /* limited by fault_in_pages_readable() */
+-			/*
+-			 * If this was the active qtd when the qh was unlinked
+-			 * and the overlay's token is active, then the overlay
+-			 * hasn't been written back to the qtd yet so use its
+-			 * token instead of the qtd's.  After the qtd is
+-			 * processed and removed, the overlay won't be valid
+-			 * any more.
+-			 */
+-			if (state == QH_STATE_IDLE &&
+-					qh->qtd_list.next == &qtd->qtd_list &&
+-					(hw->hw_token & ACTIVE_BIT(ehci))) {
++			/* qh unlinked; token in overlay may be most current */
++			if (state == QH_STATE_IDLE
++					&& cpu_to_hc32(ehci, qtd->qtd_dma)
++						== hw->hw_current) {
+ 				token = hc32_to_cpu(ehci, hw->hw_token);
+-				hw->hw_token &= ~ACTIVE_BIT(ehci);
  
--		/* First check for malicious input causing overflow */
--		if (exec[i].relocation_count >
--		    INT_MAX / sizeof(struct drm_i915_gem_relocation_entry))
-+		/* First check for malicious input causing overflow in
-+		 * the worst case where we need to allocate the entire
-+		 * relocation tree as a single array.
-+		 */
-+		if (exec[i].relocation_count > relocs_max - relocs_total)
- 			return -EINVAL;
-+		relocs_total += exec[i].relocation_count;
- 
- 		length = exec[i].relocation_count *
- 			sizeof(struct drm_i915_gem_relocation_entry);
+ 				/* An unlink may leave an incomplete
+ 				 * async transaction in the TT buffer.
 
 
