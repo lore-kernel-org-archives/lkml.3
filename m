@@ -1,96 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab3CZXON (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:14:13 -0400
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:33177
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752626Ab3CZXNl (ORCPT
+	id S1756699Ab3CZXBz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:01:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53305 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756244Ab3CZXBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:13:41 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dh8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Kim Phillips <kim.phillips@freescale.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: "David S. Miller" <davem@davemloft.net>, <linux-crypto@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 2/2] v2 crypto: caam - static constify error data
-Date: Tue, 26 Mar 2013 18:10:15 -0500
-Message-ID: <1364339415-23068-2-git-send-email-kim.phillips@freescale.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1364339415-23068-1-git-send-email-kim.phillips@freescale.com>
-References: <1364339415-23068-1-git-send-email-kim.phillips@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Tue, 26 Mar 2013 19:01:50 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
+Subject: [ 02/49] sunsu: Fix panic in case of nonexistent port at "console=ttySY" cmdline option
+Date: Tue, 26 Mar 2013 16:00:59 -0700
+Message-Id: <20130326225839.805395627@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
+References: <20130326225839.554028294@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-checkstack reports report_deco_status(), report_ccb_status() as
-particularly excessive stack users.  Move their lookup tables
-off the stack and put them in .rodata.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
+------------------
+
+
+From: Tkhai Kirill <tkhai@yandex.ru>
+
+[ Upstream commit cb29529ea0030e60ef1bbbf8399a43d397a51526 ]
+
+If a machine has X (X < 4) sunsu ports and cmdline
+option "console=ttySY" is passed, where X < Y <= 4,
+than the following panic happens:
+
+Unable to handle kernel NULL pointer dereference
+TPC: <sunsu_console_setup+0x78/0xe0>
+RPC: <sunsu_console_setup+0x74/0xe0>
+I7: <register_console+0x378/0x3e0>
+Call Trace:
+ [0000000000453a38] register_console+0x378/0x3e0
+ [0000000000576fa0] uart_add_one_port+0x2e0/0x340
+ [000000000057af40] su_probe+0x160/0x2e0
+ [00000000005b8a4c] platform_drv_probe+0xc/0x20
+ [00000000005b6c2c] driver_probe_device+0x12c/0x220
+ [00000000005b6da8] __driver_attach+0x88/0xa0
+ [00000000005b4df4] bus_for_each_dev+0x54/0xa0
+ [00000000005b5a54] bus_add_driver+0x154/0x260
+ [00000000005b7190] driver_register+0x50/0x180
+ [00000000006d250c] sunsu_init+0x18c/0x1e0
+ [00000000006c2668] do_one_initcall+0xe8/0x160
+ [00000000006c282c] kernel_init_freeable+0x12c/0x1e0
+ [0000000000603764] kernel_init+0x4/0x100
+ [0000000000405f64] ret_from_syscall+0x1c/0x2c
+ [0000000000000000]           (null)
+
+1)Fix the panic;
+2)Increment registered port number every successful
+probe.
+
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: David Miller <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
-v1 posted here:
-    http://article.gmane.org/gmane.linux.kernel.cryptoapi/7571
-v2: made cha_id_list, err_id_list, and rng_err_id_list
-    static const char * const, instead of just static const.
+ drivers/tty/serial/sunsu.c |   21 +++++++++------------
+ 1 file changed, 9 insertions(+), 12 deletions(-)
 
- drivers/crypto/caam/error.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/crypto/caam/error.c b/drivers/crypto/caam/error.c
-index 30b8f74..9f25f52 100644
---- a/drivers/crypto/caam/error.c
-+++ b/drivers/crypto/caam/error.c
-@@ -36,7 +36,7 @@ static void report_jump_idx(u32 status, char *outstr)
+--- a/drivers/tty/serial/sunsu.c
++++ b/drivers/tty/serial/sunsu.c
+@@ -968,6 +968,7 @@ static struct uart_ops sunsu_pops = {
+ #define UART_NR	4
  
- static void report_ccb_status(u32 status, char *outstr)
- {
--	char *cha_id_list[] = {
-+	static const char * const cha_id_list[] = {
- 		"",
- 		"AES",
- 		"DES",
-@@ -51,7 +51,7 @@ static void report_ccb_status(u32 status, char *outstr)
- 		"ZUCE",
- 		"ZUCA",
- 	};
--	char *err_id_list[] = {
-+	static const char * const err_id_list[] = {
- 		"No error.",
- 		"Mode error.",
- 		"Data size error.",
-@@ -69,7 +69,7 @@ static void report_ccb_status(u32 status, char *outstr)
- 		"Invalid CHA combination was selected",
- 		"Invalid CHA selected.",
- 	};
--	char *rng_err_id_list[] = {
-+	static const char * const rng_err_id_list[] = {
- 		"",
- 		"",
- 		"",
-@@ -117,7 +117,7 @@ static void report_jump_status(u32 status, char *outstr)
+ static struct uart_sunsu_port sunsu_ports[UART_NR];
++static int nr_inst; /* Number of already registered ports */
  
- static void report_deco_status(u32 status, char *outstr)
- {
--	const struct {
-+	static const struct {
- 		u8 value;
- 		char *error_text;
- 	} desc_error_list[] = {
-@@ -245,7 +245,7 @@ static void report_cond_code_status(u32 status, char *outstr)
+ #ifdef CONFIG_SERIO
  
- char *caam_jr_strstatus(char *outstr, u32 status)
+@@ -1337,13 +1338,8 @@ static int __init sunsu_console_setup(st
+ 	printk("Console: ttyS%d (SU)\n",
+ 	       (sunsu_reg.minor - 64) + co->index);
+ 
+-	/*
+-	 * Check whether an invalid uart number has been specified, and
+-	 * if so, search for the first available port that does have
+-	 * console support.
+-	 */
+-	if (co->index >= UART_NR)
+-		co->index = 0;
++	if (co->index > nr_inst)
++		return -ENODEV;
+ 	port = &sunsu_ports[co->index].port;
+ 
+ 	/*
+@@ -1408,7 +1404,6 @@ static enum su_type __devinit su_get_typ
+ 
+ static int __devinit su_probe(struct platform_device *op)
  {
--	struct stat_src {
-+	static const struct stat_src {
- 		void (*report_ssed)(u32 status, char *outstr);
- 		char *error;
- 	} status_src[] = {
--- 
-1.8.1.5
+-	static int inst;
+ 	struct device_node *dp = op->dev.of_node;
+ 	struct uart_sunsu_port *up;
+ 	struct resource *rp;
+@@ -1418,16 +1413,16 @@ static int __devinit su_probe(struct pla
+ 
+ 	type = su_get_type(dp);
+ 	if (type == SU_PORT_PORT) {
+-		if (inst >= UART_NR)
++		if (nr_inst >= UART_NR)
+ 			return -EINVAL;
+-		up = &sunsu_ports[inst];
++		up = &sunsu_ports[nr_inst];
+ 	} else {
+ 		up = kzalloc(sizeof(*up), GFP_KERNEL);
+ 		if (!up)
+ 			return -ENOMEM;
+ 	}
+ 
+-	up->port.line = inst;
++	up->port.line = nr_inst;
+ 
+ 	spin_lock_init(&up->port.lock);
+ 
+@@ -1461,6 +1456,8 @@ static int __devinit su_probe(struct pla
+ 		}
+ 		dev_set_drvdata(&op->dev, up);
+ 
++		nr_inst++;
++
+ 		return 0;
+ 	}
+ 
+@@ -1488,7 +1485,7 @@ static int __devinit su_probe(struct pla
+ 
+ 	dev_set_drvdata(&op->dev, up);
+ 
+-	inst++;
++	nr_inst++;
+ 
+ 	return 0;
+ 
 
 
