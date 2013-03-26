@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965283Ab3CZPmX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:42:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53985 "EHLO
+	id S965214Ab3CZPXP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:23:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53940 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965229Ab3CZPXU (ORCPT
+	with ESMTP id S965188Ab3CZPXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:20 -0400
+	Tue, 26 Mar 2013 11:23:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Paul Taysom <taysom@chromium.org>, Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 100/150] USB: ch341: fix use-after-free in TIOCMIWAIT
-Date: Tue, 26 Mar 2013 15:19:59 +0000
-Message-Id: <1364311249-14454-101-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 091/150] dm verity: avoid deadlock
+Date: Tue, 26 Mar 2013 15:19:50 +0000
+Message-Id: <1364311249-14454-92-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -28,77 +28,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit fa1e11d5231c001c80a479160b5832933c5d35fb upstream.
+commit 3b6b7813b198b578aa7e04e4047ddb8225c37b7f upstream.
 
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
+A deadlock was found in the prefetch code in the dm verity map
+function.  This patch fixes this by transferring the prefetch
+to a worker thread and skipping it completely if kmalloc fails.
 
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
+If generic_make_request is called recursively, it queues the I/O
+request on the current->bio_list without making the I/O request
+and returns. The routine making the recursive call cannot wait
+for the I/O to complete.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The deadlock occurs when one thread grabs the bufio_client
+mutex and waits for an I/O to complete but the I/O is queued
+on another thread's current->bio_list and is waiting to get
+the mutex held by the first thread.
+
+The fix recognises that prefetching is not essential.  If memory
+can be allocated, it queues the prefetch request to the worker thread,
+but if not, it does nothing.
+
+Signed-off-by: Paul Taysom <taysom@chromium.org>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+[ luis: backported to 3.5: bump verify_target version from 1.0.0 to 1.0.1 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/ch341.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/md/dm-bufio.c  |  2 ++
+ drivers/md/dm-verity.c | 39 ++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 36 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/serial/ch341.c b/drivers/usb/serial/ch341.c
-index cabd1b1..93c835e 100644
---- a/drivers/usb/serial/ch341.c
-+++ b/drivers/usb/serial/ch341.c
-@@ -82,7 +82,6 @@ MODULE_DEVICE_TABLE(usb, id_table);
+diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+index cc06a1e..c0fc827 100644
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -1029,6 +1029,8 @@ void dm_bufio_prefetch(struct dm_bufio_client *c,
+ {
+ 	struct blk_plug plug;
  
- struct ch341_private {
- 	spinlock_t lock; /* access lock */
--	wait_queue_head_t delta_msr_wait; /* wait queue for modem status */
- 	unsigned baud_rate; /* set baud rate */
- 	u8 line_control; /* set line control value RTS/DTR */
- 	u8 line_status; /* active status of modem control inputs */
-@@ -253,7 +252,6 @@ static int ch341_attach(struct usb_serial *serial)
- 		return -ENOMEM;
++	BUG_ON(dm_bufio_in_request());
++
+ 	blk_start_plug(&plug);
+ 	dm_bufio_lock(c);
  
- 	spin_lock_init(&priv->lock);
--	init_waitqueue_head(&priv->delta_msr_wait);
- 	priv->baud_rate = DEFAULT_BAUD_RATE;
- 	priv->line_control = CH341_BIT_RTS | CH341_BIT_DTR;
+diff --git a/drivers/md/dm-verity.c b/drivers/md/dm-verity.c
+index 68bf5c3..adb32e7 100644
+--- a/drivers/md/dm-verity.c
++++ b/drivers/md/dm-verity.c
+@@ -95,6 +95,13 @@ struct dm_verity_io {
+ 	 */
+ };
  
-@@ -289,7 +287,7 @@ static void ch341_dtr_rts(struct usb_serial_port *port, int on)
- 		priv->line_control &= ~(CH341_BIT_RTS | CH341_BIT_DTR);
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 	ch341_set_handshake(port->serial->dev, priv->line_control);
--	wake_up_interruptible(&priv->delta_msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
++struct dm_verity_prefetch_work {
++	struct work_struct work;
++	struct dm_verity *v;
++	sector_t block;
++	unsigned n_blocks;
++};
++
+ static struct shash_desc *io_hash_desc(struct dm_verity *v, struct dm_verity_io *io)
+ {
+ 	return (struct shash_desc *)(io + 1);
+@@ -428,15 +435,18 @@ static void verity_end_io(struct bio *bio, int error)
+  * The root buffer is not prefetched, it is assumed that it will be cached
+  * all the time.
+  */
+-static void verity_prefetch_io(struct dm_verity *v, struct dm_verity_io *io)
++static void verity_prefetch_io(struct work_struct *work)
+ {
++	struct dm_verity_prefetch_work *pw =
++		container_of(work, struct dm_verity_prefetch_work, work);
++	struct dm_verity *v = pw->v;
+ 	int i;
+ 
+ 	for (i = v->levels - 2; i >= 0; i--) {
+ 		sector_t hash_block_start;
+ 		sector_t hash_block_end;
+-		verity_hash_at_level(v, io->block, i, &hash_block_start, NULL);
+-		verity_hash_at_level(v, io->block + io->n_blocks - 1, i, &hash_block_end, NULL);
++		verity_hash_at_level(v, pw->block, i, &hash_block_start, NULL);
++		verity_hash_at_level(v, pw->block + pw->n_blocks - 1, i, &hash_block_end, NULL);
+ 		if (!i) {
+ 			unsigned cluster = *(volatile unsigned *)&dm_verity_prefetch_cluster;
+ 
+@@ -456,6 +466,25 @@ no_prefetch_cluster:
+ 		dm_bufio_prefetch(v->bufio, hash_block_start,
+ 				  hash_block_end - hash_block_start + 1);
+ 	}
++
++	kfree(pw);
++}
++
++static void verity_submit_prefetch(struct dm_verity *v, struct dm_verity_io *io)
++{
++	struct dm_verity_prefetch_work *pw;
++
++	pw = kmalloc(sizeof(struct dm_verity_prefetch_work),
++		GFP_NOIO | __GFP_NORETRY | __GFP_NOMEMALLOC | __GFP_NOWARN);
++
++	if (!pw)
++		return;
++
++	INIT_WORK(&pw->work, verity_prefetch_io);
++	pw->v = v;
++	pw->block = io->block;
++	pw->n_blocks = io->n_blocks;
++	queue_work(v->verify_wq, &pw->work);
  }
  
- static void ch341_close(struct usb_serial_port *port)
-@@ -482,7 +480,7 @@ static void ch341_read_int_callback(struct urb *urb)
- 			tty_kref_put(tty);
- 		}
+ /*
+@@ -504,7 +533,7 @@ static int verity_map(struct dm_target *ti, struct bio *bio,
+ 	memcpy(io->io_vec, bio_iovec(bio),
+ 	       io->io_vec_size * sizeof(struct bio_vec));
  
--		wake_up_interruptible(&priv->delta_msr_wait);
-+		wake_up_interruptible(&port->delta_msr_wait);
- 	}
+-	verity_prefetch_io(v, io);
++	verity_submit_prefetch(v, io);
  
- exit:
-@@ -508,11 +506,14 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
- 	spin_unlock_irqrestore(&priv->lock, flags);
+ 	generic_make_request(bio);
  
- 	while (!multi_change) {
--		interruptible_sleep_on(&priv->delta_msr_wait);
-+		interruptible_sleep_on(&port->delta_msr_wait);
- 		/* see if a signal did it */
- 		if (signal_pending(current))
- 			return -ERESTARTSYS;
+@@ -875,7 +904,7 @@ bad:
  
-+		if (port->serial->disconnected)
-+			return -EIO;
-+
- 		spin_lock_irqsave(&priv->lock, flags);
- 		status = priv->line_status;
- 		multi_change = priv->multi_status_change;
+ static struct target_type verity_target = {
+ 	.name		= "verity",
+-	.version	= {1, 0, 0},
++	.version	= {1, 0, 1},
+ 	.module		= THIS_MODULE,
+ 	.ctr		= verity_ctr,
+ 	.dtr		= verity_dtr,
 -- 
 1.8.1.2
 
