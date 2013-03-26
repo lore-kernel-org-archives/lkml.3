@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab3CZWol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:44:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52723 "EHLO
+	id S1755561Ab3CZWqY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:46:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52732 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753571Ab3CZWof (ORCPT
+	with ESMTP id S1755410Ab3CZWok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:35 -0400
+	Tue, 26 Mar 2013 18:44:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 85/98] USB: EHCI: fix regression during bus resume
-Date: Tue, 26 Mar 2013 15:43:14 -0700
-Message-Id: <20130326224251.302220133@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
+Subject: [ 98/98] rt2x00: error in configurations with mesh support disabled
+Date: Tue, 26 Mar 2013 15:43:27 -0700
+Message-Id: <20130326224252.616310498@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -26,85 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 2a40f324541ee61c22146214349c2ce9f5c30bcf upstream.
+commit 6ef9e2f6d12ce9e2120916804d2ddd46b954a70b upstream.
 
-This patch (as1663) fixes a regression caused by commit
-6e0c3339a6f19d748f16091d0a05adeb1e1f822b (USB: EHCI: unlink one async
-QH at a time).  In order to avoid keeping multiple QHs in an unusable
-intermediate state, that commit changed unlink_empty_async() so that
-it unlinks only one empty QH at a time.
+If CONFIG_MAC80211_MESH is not set, cfg80211 will now allow advertising
+interface combinations with NL80211_IFTYPE_MESH_POINT present.
+Add appropriate ifdefs to avoid running into errors.
 
-However, when the EHCI root hub is suspended, _all_ async QHs need to
-be unlinked.  ehci_bus_suspend() used to do this by calling
-unlink_empty_async(), but now this only unlinks one of the QHs, not
-all of them.
+[Backported for 3.8-stable. Removed code of simultaneous AP and mesh
+mode added in 4a5fc6d 3.9-rc1.]
 
-The symptom is that when the root hub is resumed, USB communications
-don't work for some period of time.  This is because ehci-hcd doesn't
-realize it needs to restart the async schedule; it assumes that
-because some QHs are already on the schedule, the schedule must be
-running.
-
-The easiest way to fix the problem is add a new function that unlinks
-all the async QHs when the root hub is suspended.
-
-This patch should be applied to all kernels that have the 6e0c3339a6f1
-commit.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Adrian Bassett <adrian.bassett@hotmail.co.uk>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
+Reviewed-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-hcd.c |    1 +
- drivers/usb/host/ehci-hub.c |    2 +-
- drivers/usb/host/ehci-q.c   |   13 +++++++++++++
- 3 files changed, 15 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2x00dev.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -302,6 +302,7 @@ static void ehci_quiesce (struct ehci_hc
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -1209,7 +1209,9 @@ int rt2x00lib_probe_dev(struct rt2x00_de
+ 		rt2x00dev->hw->wiphy->interface_modes |=
+ 		    BIT(NL80211_IFTYPE_ADHOC) |
+ 		    BIT(NL80211_IFTYPE_AP) |
++#ifdef CONFIG_MAC80211_MESH
+ 		    BIT(NL80211_IFTYPE_MESH_POINT) |
++#endif
+ 		    BIT(NL80211_IFTYPE_WDS);
  
- static void end_unlink_async(struct ehci_hcd *ehci);
- static void unlink_empty_async(struct ehci_hcd *ehci);
-+static void unlink_empty_async_suspended(struct ehci_hcd *ehci);
- static void ehci_work(struct ehci_hcd *ehci);
- static void start_unlink_intr(struct ehci_hcd *ehci, struct ehci_qh *qh);
- static void end_unlink_intr(struct ehci_hcd *ehci, struct ehci_qh *qh);
---- a/drivers/usb/host/ehci-hub.c
-+++ b/drivers/usb/host/ehci-hub.c
-@@ -328,7 +328,7 @@ static int ehci_bus_suspend (struct usb_
- 	ehci->rh_state = EHCI_RH_SUSPENDED;
- 
- 	end_unlink_async(ehci);
--	unlink_empty_async(ehci);
-+	unlink_empty_async_suspended(ehci);
- 	ehci_handle_intr_unlinks(ehci);
- 	end_free_itds(ehci);
- 
---- a/drivers/usb/host/ehci-q.c
-+++ b/drivers/usb/host/ehci-q.c
-@@ -1316,6 +1316,19 @@ static void unlink_empty_async(struct eh
- 	}
- }
- 
-+/* The root hub is suspended; unlink all the async QHs */
-+static void unlink_empty_async_suspended(struct ehci_hcd *ehci)
-+{
-+	struct ehci_qh		*qh;
-+
-+	while (ehci->async->qh_next.qh) {
-+		qh = ehci->async->qh_next.qh;
-+		WARN_ON(!list_empty(&qh->qtd_list));
-+		single_unlink_async(ehci, qh);
-+	}
-+	start_iaa_cycle(ehci, false);
-+}
-+
- /* makes sure the async qh will become idle */
- /* caller must own ehci->lock */
- 
+ 	rt2x00dev->hw->wiphy->flags |= WIPHY_FLAG_IBSS_RSN;
 
 
