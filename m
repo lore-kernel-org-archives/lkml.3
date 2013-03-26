@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759262Ab3CZCxj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 22:53:39 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:27089 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665Ab3CZCxh (ORCPT
+	id S1759277Ab3CZDBM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 23:01:12 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:50997 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756391Ab3CZDBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 22:53:37 -0400
-X-IronPort-AV: E=Sophos;i="4.84,909,1355126400"; 
-   d="scan'208";a="32429301"
-Message-ID: <ed19f23c22d5a92cda8e3622060bed61.squirrel@www.codeaurora.org>
-In-Reply-To: <1363872898.1390.143.camel@x61.thuisdomein>
-References: <1363872898.1390.143.camel@x61.thuisdomein>
-Date: Mon, 25 Mar 2013 19:53:37 -0700
-Subject: Re: [PATCH] arch: remove CONFIG_GENERIC_FIND_NEXT_BIT again
-From: rkuo@codeaurora.org
-To: "Paul Bolle" <pebolle@tiscali.nl>
-Cc: "Richard Kuo" <rkuo@codeaurora.org>, "Jonas Bonn" <jonas@southpole.se>,
-        linux-hexagon@vger.kernel.org, linux@openrisc.net,
-        linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22
+	Mon, 25 Mar 2013 23:01:10 -0400
+X-Spam-Score: -100.8
+Message-ID: <51510F58.70602@asianux.com>
+Date: Tue, 26 Mar 2013 11:00:40 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] include/linux/platform_data: beautify code, 'inline'
+ is better in front of 'void'
+References: <514FB826.9020302@asianux.com> <20130325233213.GA29245@kroah.com> <5150F871.5050306@asianux.com> <20130326014830.GB6496@kroah.com> <515107DB.4060508@asianux.com> <alpine.LFD.2.03.1303252246540.1372@syhkavp.arg>
+In-Reply-To: <alpine.LFD.2.03.1303252246540.1372@syhkavp.arg>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> CONFIG_GENERIC_FIND_NEXT_BIT was removed in v3.0, but reappeared in two
-> architectures. Remove it again.
->
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> 0) Untested.
->
-> 1) See commit 63e424c84429903c92a0f1e9654c31ccaf6694d0 ("arch: remove
-> CONFIG_GENERIC_FIND_{NEXT_BIT,BIT_LE,LAST_BIT}") for the removal of this
-> Kconfig symbol.
->
-> 2) Sent as one patch. Feel free to tell me to split it up in two
-> patches.
->
->  arch/hexagon/Kconfig  | 3 ---
->  arch/openrisc/Kconfig | 3 ---
->  2 files changed, 6 deletions(-)
->
+On 2013年03月26日 10:47, Nicolas Pitre wrote:
+> On Tue, 26 Mar 2013, Chen Gang wrote:
+> 
+>>   a hacker may find something "valuable" with the aid of compiler   ;-)
+>>
+>>   maybe, it is a patch which is too minor to apply. I can understand :-)
+> 
+> You should send such patches to Jiri Kosina <trivial@kernel.org>.
+> 
 
-I'd be fine pulling these into my tree to go with my next batch of
-changes, or the OpenRISC folks can if they want.  Ack would be nice.
+  ok
 
-Just in case:
-
-Acked-by: Richard Kuo <rkuo@codeaurora.org>
+> 
+> Nicolas
+> 
+> 
 
 
-Thanks,
-Richard Kuo
+-- 
+Chen Gang
 
-
-
---
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
-
+Asianux Corporation
