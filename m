@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab3CZWrK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:47:10 -0400
+	id S1755353Ab3CZWoh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:44:37 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:52718 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab3CZWoi (ORCPT
+	with ESMTP id S1753555Ab3CZWoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:38 -0400
+	Tue, 26 Mar 2013 18:44:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 95/98] USB: io_ti: fix get_icount for two port adapters
-Date: Tue, 26 Mar 2013 15:43:24 -0700
-Message-Id: <20130326224252.305345782@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>, Johan Hovold <jhovold@gmail.com>
+Subject: [ 84/98] USB: cdc-acm: fix device unregistration
+Date: Tue, 26 Mar 2013 15:43:13 -0700
+Message-Id: <20130326224251.200506888@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -28,30 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 5492bf3d5655b4954164f69c02955a7fca267611 upstream.
+commit cb25505fc604292c70fc02143fc102f54c8595f0 upstream.
 
-Add missing get_icount field to two-port driver.
+Unregister tty device in disconnect as is required by the USB stack.
 
-The two-port driver was not updated when switching to the new icount
-interface in commit 0bca1b913aff ("tty: Convert the USB drivers to the
-new icount interface").
+By deferring unregistration to when the last tty reference is dropped,
+the parent interface device can get unregistered before the child
+resulting in broken hotplug events being generated when the tty is
+finally closed:
 
+KERNEL[2290.798128] remove   /devices/pci0000:00/0000:00:1d.7/usb2/2-1/2-1:3.1 (usb)
+KERNEL[2290.804589] remove   /devices/pci0000:00/0000:00:1d.7/usb2/2-1 (usb)
+KERNEL[2294.554799] remove   /2-1:3.1/tty/ttyACM0 (tty)
+
+The driver must deal with tty callbacks after disconnect by checking the
+disconnected flag. Specifically, further opens must be prevented and
+this is already implemented.
+
+Acked-by: Oliver Neukum <oneukum@suse.de>
+Cc: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/io_ti.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/class/cdc-acm.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -2702,6 +2702,7 @@ static struct usb_serial_driver edgeport
- 	.set_termios		= edge_set_termios,
- 	.tiocmget		= edge_tiocmget,
- 	.tiocmset		= edge_tiocmset,
-+	.get_icount		= edge_get_icount,
- 	.write			= edge_write,
- 	.write_room		= edge_write_room,
- 	.chars_in_buffer	= edge_chars_in_buffer,
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -600,7 +600,6 @@ static void acm_port_destruct(struct tty
+ 
+ 	dev_dbg(&acm->control->dev, "%s\n", __func__);
+ 
+-	tty_unregister_device(acm_tty_driver, acm->minor);
+ 	acm_release_minor(acm);
+ 	usb_put_intf(acm->control);
+ 	kfree(acm->country_codes);
+@@ -1418,6 +1417,8 @@ static void acm_disconnect(struct usb_in
+ 
+ 	stop_data_traffic(acm);
+ 
++	tty_unregister_device(acm_tty_driver, acm->minor);
++
+ 	usb_free_urb(acm->ctrlurb);
+ 	for (i = 0; i < ACM_NW; i++)
+ 		usb_free_urb(acm->wb[i].urb);
 
 
