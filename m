@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965087Ab3CZPwZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:52:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53791 "EHLO
+	id S965147Ab3CZPwm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:52:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53785 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965048Ab3CZPWi (ORCPT
+	with ESMTP id S965042Ab3CZPWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:38 -0400
+	Tue, 26 Mar 2013 11:22:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Cox <alan@linux.intel.com>, David Howells <dhowells@redhat.com>,
+Cc: Guo Chao <yan@linux.vnet.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "M. Hindess" <hindessm@uk.ibm.com>,
+        Nikanth Karthikesan <knikanth@suse.de>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 063/150] key: Fix resource leak
-Date: Tue, 26 Mar 2013 15:19:22 +0000
-Message-Id: <1364311249-14454-64-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 024/150] block: use i_size_write() in bd_set_size()
+Date: Tue, 26 Mar 2013 15:18:43 +0000
+Message-Id: <1364311249-14454-25-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,38 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Guo Chao <yan@linux.vnet.ibm.com>
 
-commit a84a921978b7d56e0e4b87ffaca6367429b4d8ff upstream.
+commit d646a02a9d44d1421f273ae3923d97b47b918176 upstream.
 
-On an error iov may still have been reallocated and need freeing
+blkdev_ioctl(GETBLKSIZE) uses i_size_read() to read size of block device.
+If we update block size directly, reader may see intermediate result in
+some machines and configurations.  Use i_size_write() instead.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: M. Hindess <hindessm@uk.ibm.com>
+Cc: Nikanth Karthikesan <knikanth@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- security/keys/keyctl.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/block_dev.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-index 0f5b3f0..44d8758 100644
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -1112,12 +1112,12 @@ long keyctl_instantiate_key_iov(key_serial_t id,
- 	ret = rw_copy_check_uvector(WRITE, _payload_iov, ioc,
- 				    ARRAY_SIZE(iovstack), iovstack, &iov);
- 	if (ret < 0)
--		return ret;
-+		goto err;
- 	if (ret == 0)
- 		goto no_payload_free;
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index db64e31..77e86b3 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1086,7 +1086,9 @@ void bd_set_size(struct block_device *bdev, loff_t size)
+ {
+ 	unsigned bsize = bdev_logical_block_size(bdev);
  
- 	ret = keyctl_instantiate_key_common(id, iov, ioc, ret, ringid);
--
-+err:
- 	if (iov != iovstack)
- 		kfree(iov);
- 	return ret;
+-	bdev->bd_inode->i_size = size;
++	mutex_lock(&bdev->bd_inode->i_mutex);
++	i_size_write(bdev->bd_inode, size);
++	mutex_unlock(&bdev->bd_inode->i_mutex);
+ 	while (bsize < PAGE_CACHE_SIZE) {
+ 		if (size & bsize)
+ 			break;
 -- 
 1.8.1.2
 
