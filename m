@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328Ab3CZU7B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 16:59:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27696 "EHLO mga09.intel.com"
+	id S1753712Ab3CZU7I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 16:59:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:39770 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753941Ab3CZU65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 16:58:57 -0400
+	id S1753941Ab3CZU7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 16:59:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,913,1355126400"; 
-   d="scan'208";a="284913546"
-Subject: [PATCH v2 02/10] Optimized sha256 x86_64 assembly routine using
- Supplemental SSE3 instructions.
+   d="scan'208";a="284913606"
+Subject: [PATCH v2 03/10] Optimized sha256 x86_64 assembly routine with AVX
+ instructions.
 From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Herbert Xu <herbert@gondor.hengli.com.au>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -25,8 +25,8 @@ Cc: Jussi Kivilinna <jussi.kivilinna@iki.fi>,
 In-Reply-To: <cover.1364303479.git.tim.c.chen@linux.intel.com>
 References: <cover.1364303479.git.tim.c.chen@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Mar 2013 13:58:58 -0700
-Message-ID: <1364331538.27102.12.camel@schen9-DESK>
+Date: Tue, 26 Mar 2013 13:59:05 -0700
+Message-ID: <1364331545.27102.13.camel@schen9-DESK>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -34,23 +34,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provides SHA256 x86_64 assembly routine optimized with SSSE3 instructions.
-Speedup of 40% or more has been measured over the generic implementation.
+Provides SHA256 x86_64 assembly routine optimized with SSE and AVX instructions.
+Speedup of 60% or more has been measured over the generic implementation.
 
 Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 ---
- arch/x86/crypto/sha256-ssse3-asm.S | 506 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 506 insertions(+)
- create mode 100644 arch/x86/crypto/sha256-ssse3-asm.S
+ arch/x86/crypto/sha256-avx-asm.S | 496 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 496 insertions(+)
+ create mode 100644 arch/x86/crypto/sha256-avx-asm.S
 
-diff --git a/arch/x86/crypto/sha256-ssse3-asm.S b/arch/x86/crypto/sha256-ssse3-asm.S
+diff --git a/arch/x86/crypto/sha256-avx-asm.S b/arch/x86/crypto/sha256-avx-asm.S
 new file mode 100644
-index 0000000..98d3c39
+index 0000000..56610c4
 --- /dev/null
-+++ b/arch/x86/crypto/sha256-ssse3-asm.S
-@@ -0,0 +1,506 @@
++++ b/arch/x86/crypto/sha256-avx-asm.S
+@@ -0,0 +1,496 @@
 +########################################################################
-+# Implement fast SHA-256 with SSSE3 instructions. (x86_64)
++# Implement fast SHA-256 with AVX1 instructions. (x86_64)
 +#
 +# Copyright (C) 2013 Intel Corporation.
 +#
@@ -86,7 +86,6 @@ index 0000000..98d3c39
 +# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 +# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 +# SOFTWARE.
-+#
 +########################################################################
 +#
 +# This code is described in an Intel White-Paper:
@@ -96,19 +95,27 @@ index 0000000..98d3c39
 +# and search for that title.
 +#
 +########################################################################
++# This code schedules 1 block at a time, with 4 lanes per block
++########################################################################
 +
++#ifdef CONFIG_AS_AVX
 +#include <linux/linkage.h>
 +
 +## assume buffers not aligned
-+#define    MOVDQ movdqu
++#define    VMOVDQ vmovdqu
 +
 +################################ Define Macros
 +
 +# addm [mem], reg
 +# Add reg to mem using reg-mem add and store
 +.macro addm p1 p2
-+        add     \p1, \p2
-+        mov     \p2, \p1
++	add     \p1, \p2
++	mov     \p2, \p1
++.endm
++
++
++.macro MY_ROR p1 p2
++	shld    $(32-(\p1)), \p2, \p2
 +.endm
 +
 +################################
@@ -116,8 +123,8 @@ index 0000000..98d3c39
 +# COPY_XMM_AND_BSWAP xmm, [mem], byte_flip_mask
 +# Load xmm with mem and byte swap each dword
 +.macro COPY_XMM_AND_BSWAP p1 p2 p3
-+        MOVDQ \p2, \p1
-+        pshufb \p3, \p1
++	VMOVDQ \p2, \p1
++	vpshufb \p3, \p1, \p1
 +.endm
 +
 +################################
@@ -133,10 +140,11 @@ index 0000000..98d3c39
 +XTMP3 = %xmm3
 +XTMP4 = %xmm8
 +XFER = %xmm9
++XTMP5 = %xmm11
 +
 +SHUF_00BA = %xmm10      # shuffle xBxA -> 00BA
-+SHUF_DC00 = %xmm11      # shuffle xDxC -> DC00
-+BYTE_FLIP_MASK = %xmm12
++SHUF_DC00 = %xmm12      # shuffle xDxC -> DC00
++BYTE_FLIP_MASK = %xmm13
 +
 +NUM_BLKS = %rdx   # 3rd arg
 +CTX = %rsi        # 2nd arg
@@ -157,7 +165,6 @@ index 0000000..98d3c39
 +y0 = %r13d
 +y1 = %r14d
 +y2 = %r15d
-+
 +
 +
 +_INP_END_SIZE = 8
@@ -198,213 +205,200 @@ index 0000000..98d3c39
 +.macro FOUR_ROUNDS_AND_SCHED
 +	## compute s0 four at a time and s1 two at a time
 +	## compute W[-16] + W[-7] 4 at a time
-+	movdqa  X3, XTMP0
++
 +	mov     e, y0			# y0 = e
-+	ror     $(25-11), y0            # y0 = e >> (25-11)
++	MY_ROR  (25-11), y0             # y0 = e >> (25-11)
 +	mov     a, y1                   # y1 = a
-+	palignr $4, X2, XTMP0           # XTMP0 = W[-7]
-+	ror     $(22-13), y1            # y1 = a >> (22-13)
++	vpalignr $4, X2, X3, XTMP0      # XTMP0 = W[-7]
++	MY_ROR  (22-13), y1             # y1 = a >> (22-13)
 +	xor     e, y0                   # y0 = e ^ (e >> (25-11))
 +	mov     f, y2                   # y2 = f
-+	ror     $(11-6), y0             # y0 = (e >> (11-6)) ^ (e >> (25-6))
-+	movdqa  X1, XTMP1
++	MY_ROR  (11-6), y0              # y0 = (e >> (11-6)) ^ (e >> (25-6))
 +	xor     a, y1                   # y1 = a ^ (a >> (22-13)
 +	xor     g, y2                   # y2 = f^g
-+	paddd   X0, XTMP0               # XTMP0 = W[-7] + W[-16]
++	vpaddd  X0, XTMP0, XTMP0        # XTMP0 = W[-7] + W[-16]
 +	xor     e, y0                   # y0 = e ^ (e >> (11-6)) ^ (e >> (25-6))
 +	and     e, y2                   # y2 = (f^g)&e
-+	ror     $(13-2), y1             # y1 = (a >> (13-2)) ^ (a >> (22-2))
++	MY_ROR  (13-2), y1              # y1 = (a >> (13-2)) ^ (a >> (22-2))
 +	## compute s0
-+	palignr $4, X0, XTMP1           # XTMP1 = W[-15]
++	vpalignr $4, X0, X1, XTMP1      # XTMP1 = W[-15]
 +	xor     a, y1                   # y1 = a ^ (a >> (13-2)) ^ (a >> (22-2))
-+	ror     $6, y0                  # y0 = S1 = (e>>6) & (e>>11) ^ (e>>25)
++	MY_ROR  6, y0                   # y0 = S1 = (e>>6) & (e>>11) ^ (e>>25)
 +	xor     g, y2                   # y2 = CH = ((f^g)&e)^g
-+	movdqa  XTMP1, XTMP2            # XTMP2 = W[-15]
-+	ror     $2, y1                  # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>22)
++	MY_ROR  2, y1                   # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>22)
 +	add     y0, y2                  # y2 = S1 + CH
-+	add     _XFER(%rsp) , y2        # y2 = k + w + S1 + CH
-+	movdqa  XTMP1, XTMP3            # XTMP3 = W[-15]
++	add     _XFER(%rsp), y2         # y2 = k + w + S1 + CH
 +	mov     a, y0                   # y0 = a
 +	add     y2, h                   # h = h + S1 + CH + k + w
 +	mov     a, y2                   # y2 = a
-+	pslld   $(32-7), XTMP1          #
++	vpsrld  $7, XTMP1, XTMP2
 +	or      c, y0                   # y0 = a|c
 +	add     h, d                    # d = d + h + S1 + CH + k + w
 +	and     c, y2                   # y2 = a&c
-+	psrld   $7, XTMP2               #
++	vpslld  $(32-7), XTMP1, XTMP3
 +	and     b, y0                   # y0 = (a|c)&b
 +	add     y1, h                   # h = h + S1 + CH + k + w + S0
-+	por     XTMP2, XTMP1            # XTMP1 = W[-15] ror 7
++	vpor    XTMP2, XTMP3, XTMP3     # XTMP1 = W[-15] MY_ROR 7
 +	or      y2, y0                  # y0 = MAJ = (a|c)&b)|(a&c)
 +	add     y0, h                   # h = h + S1 + CH + k + w + S0 + MAJ
-+					#
-+	ROTATE_ARGS                     #
-+	movdqa  XTMP3, XTMP2            # XTMP2 = W[-15]
++	ROTATE_ARGS
 +	mov     e, y0                   # y0 = e
 +	mov     a, y1                   # y1 = a
-+	movdqa  XTMP3, XTMP4            # XTMP4 = W[-15]
-+	ror     $(25-11), y0            # y0 = e >> (25-11)
++	MY_ROR  (25-11), y0             # y0 = e >> (25-11)
 +	xor     e, y0                   # y0 = e ^ (e >> (25-11))
 +	mov     f, y2                   # y2 = f
-+	ror     $(22-13), y1            # y1 = a >> (22-13)
-+	pslld   $(32-18), XTMP3         #
++	MY_ROR  (22-13), y1             # y1 = a >> (22-13)
++	vpsrld  $18, XTMP1, XTMP2       #
 +	xor     a, y1                   # y1 = a ^ (a >> (22-13)
-+	ror     $(11-6), y0             # y0 = (e >> (11-6)) ^ (e >> (25-6))
++	MY_ROR  (11-6), y0              # y0 = (e >> (11-6)) ^ (e >> (25-6))
 +	xor     g, y2                   # y2 = f^g
-+	psrld   $18, XTMP2              #
-+	ror     $(13-2), y1             # y1 = (a >> (13-2)) ^ (a >> (22-2))
++	vpsrld  $3, XTMP1, XTMP4        # XTMP4 = W[-15] >> 3
++	MY_ROR  (13-2), y1              # y1 = (a >> (13-2)) ^ (a >> (22-2))
 +	xor     e, y0                   # y0 = e ^ (e >> (11-6)) ^ (e >> (25-6))
 +	and     e, y2                   # y2 = (f^g)&e
-+	ror     $6, y0                  # y0 = S1 = (e>>6) & (e>>11) ^ (e>>25)
-+	pxor    XTMP3, XTMP1
++	MY_ROR  6, y0                   # y0 = S1 = (e>>6) & (e>>11) ^ (e>>25)
++	vpslld  $(32-18), XTMP1, XTMP1
 +	xor     a, y1                   # y1 = a ^ (a >> (13-2)) ^ (a >> (22-2))
 +	xor     g, y2                   # y2 = CH = ((f^g)&e)^g
-+	psrld   $3, XTMP4               # XTMP4 = W[-15] >> 3
++	vpxor   XTMP1, XTMP3, XTMP3     #
 +	add     y0, y2                  # y2 = S1 + CH
 +	add     (1*4 + _XFER)(%rsp), y2 # y2 = k + w + S1 + CH
-+	ror     $2, y1                  # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>22)
-+	pxor    XTMP2, XTMP1            # XTMP1 = W[-15] ror 7 ^ W[-15] ror 18
++	MY_ROR  2, y1                   # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>22)
++	vpxor   XTMP2, XTMP3, XTMP3     # XTMP1 = W[-15] MY_ROR 7 ^ W[-15] MY_ROR
 +	mov     a, y0                   # y0 = a
 +	add     y2, h                   # h = h + S1 + CH + k + w
 +	mov     a, y2                   # y2 = a
-+	pxor    XTMP4, XTMP1            # XTMP1 = s0
++	vpxor   XTMP4, XTMP3, XTMP1     # XTMP1 = s0
 +	or      c, y0                   # y0 = a|c
 +	add     h, d                    # d = d + h + S1 + CH + k + w
 +	and     c, y2                   # y2 = a&c
 +	## compute low s1
-+	pshufd  $0b11111010, X3, XTMP2   # XTMP2 = W[-2] {BBAA}
-+	and     b, y0			# y0 = (a|c)&b
++	vpshufd $0b11111010, X3, XTMP2  # XTMP2 = W[-2] {BBAA}
++	and     b, y0                   # y0 = (a|c)&b
 +	add     y1, h                   # h = h + S1 + CH + k + w + S0
-+	paddd   XTMP1, XTMP0            # XTMP0 = W[-16] + W[-7] + s0
++	vpaddd  XTMP1, XTMP0, XTMP0     # XTMP0 = W[-16] + W[-7] + s0
 +	or      y2, y0                  # y0 = MAJ = (a|c)&b)|(a&c)
 +	add     y0, h                   # h = h + S1 + CH + k + w + S0 + MAJ
-+
 +	ROTATE_ARGS
-+	movdqa  XTMP2, XTMP3            # XTMP3 = W[-2] {BBAA}
 +	mov     e, y0                   # y0 = e
 +	mov     a, y1                   # y1 = a
-+	ror     $(25-11), y0            # y0 = e >> (25-11)
-+	movdqa  XTMP2, XTMP4            # XTMP4 = W[-2] {BBAA}
++	MY_ROR  (25-11), y0             # y0 = e >> (25-11)
 +	xor     e, y0                   # y0 = e ^ (e >> (25-11))
-+	ror     $(22-13), y1            # y1 = a >> (22-13)
++	MY_ROR  (22-13), y1             # y1 = a >> (22-13)
 +	mov     f, y2                   # y2 = f
 +	xor     a, y1                   # y1 = a ^ (a >> (22-13)
-+	ror     $(11-6), y0             # y0 = (e >> (11-6)) ^ (e >> (25-6))
-+	psrlq   $17, XTMP2              # XTMP2 = W[-2] ror 17 {xBxA}
++	MY_ROR  (11-6), y0              # y0 = (e >> (11-6)) ^ (e >> (25-6))
++	vpsrld  $10, XTMP2, XTMP4       # XTMP4 = W[-2] >> 10 {BBAA}
 +	xor     g, y2                   # y2 = f^g
-+	psrlq   $19, XTMP3              # XTMP3 = W[-2] ror 19 {xBxA}
++	vpsrlq  $19, XTMP2, XTMP3       # XTMP3 = W[-2] MY_ROR 19 {xBxA}
 +	xor     e, y0                   # y0 = e ^ (e >> (11-6)) ^ (e >> (25-6))
 +	and     e, y2                   # y2 = (f^g)&e
-+	psrld   $10, XTMP4              # XTMP4 = W[-2] >> 10 {BBAA}
-+	ror     $(13-2), y1             # y1 = (a >> (13-2)) ^ (a >> (22-2))
++	vpsrlq  $17, XTMP2, XTMP2       # XTMP2 = W[-2] MY_ROR 17 {xBxA}
++	MY_ROR  (13-2), y1              # y1 = (a >> (13-2)) ^ (a >> (22-2))
 +	xor     a, y1                   # y1 = a ^ (a >> (13-2)) ^ (a >> (22-2))
 +	xor     g, y2                   # y2 = CH = ((f^g)&e)^g
-+	ror     $6, y0                  # y0 = S1 = (e>>6) & (e>>11) ^ (e>>25)
-+	pxor    XTMP3, XTMP2
++	MY_ROR  6, y0                   # y0 = S1 = (e>>6) & (e>>11) ^ (e>>25)
++	vpxor   XTMP3, XTMP2, XTMP2     #
 +	add     y0, y2                  # y2 = S1 + CH
-+	ror     $2, y1                  # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>22)
++	MY_ROR  2, y1                   # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>22)
 +	add     (2*4 + _XFER)(%rsp), y2 # y2 = k + w + S1 + CH
-+	pxor    XTMP2, XTMP4            # XTMP4 = s1 {xBxA}
++	vpxor   XTMP2, XTMP4, XTMP4     # XTMP4 = s1 {xBxA}
 +	mov     a, y0                   # y0 = a
 +	add     y2, h                   # h = h + S1 + CH + k + w
 +	mov     a, y2                   # y2 = a
-+	pshufb  SHUF_00BA, XTMP4        # XTMP4 = s1 {00BA}
++	vpshufb SHUF_00BA, XTMP4, XTMP4 # XTMP4 = s1 {00BA}
 +	or      c, y0                   # y0 = a|c
 +	add     h, d                    # d = d + h + S1 + CH + k + w
 +	and     c, y2                   # y2 = a&c
-+	paddd   XTMP4, XTMP0            # XTMP0 = {..., ..., W[1], W[0]}
++	vpaddd  XTMP4, XTMP0, XTMP0     # XTMP0 = {..., ..., W[1], W[0]}
 +	and     b, y0                   # y0 = (a|c)&b
 +	add     y1, h                   # h = h + S1 + CH + k + w + S0
 +	## compute high s1
-+	pshufd  $0b01010000, XTMP0, XTMP2 # XTMP2 = W[-2] {BBAA}
++	vpshufd $0b01010000, XTMP0, XTMP2 # XTMP2 = W[-2] {DDCC}
 +	or      y2, y0                  # y0 = MAJ = (a|c)&b)|(a&c)
 +	add     y0, h                   # h = h + S1 + CH + k + w + S0 + MAJ
-+					#
-+	ROTATE_ARGS                     #
-+	movdqa  XTMP2, XTMP3            # XTMP3 = W[-2] {DDCC}
++	ROTATE_ARGS
 +	mov     e, y0                   # y0 = e
-+	ror     $(25-11), y0            # y0 = e >> (25-11)
++	MY_ROR  (25-11), y0             # y0 = e >> (25-11)
 +	mov     a, y1                   # y1 = a
-+	movdqa  XTMP2, X0               # X0    = W[-2] {DDCC}
-+	ror     $(22-13), y1            # y1 = a >> (22-13)
++	MY_ROR  (22-13), y1             # y1 = a >> (22-13)
 +	xor     e, y0                   # y0 = e ^ (e >> (25-11))
 +	mov     f, y2                   # y2 = f
-+	ror     $(11-6), y0             # y0 = (e >> (11-6)) ^ (e >> (25-6))
-+	psrlq   $17, XTMP2              # XTMP2 = W[-2] ror 17 {xDxC}
++	MY_ROR  (11-6), y0              # y0 = (e >> (11-6)) ^ (e >> (25-6))
++	vpsrld  $10, XTMP2, XTMP5       # XTMP5 = W[-2] >> 10 {DDCC}
 +	xor     a, y1                   # y1 = a ^ (a >> (22-13)
 +	xor     g, y2                   # y2 = f^g
-+	psrlq   $19, XTMP3              # XTMP3 = W[-2] ror 19 {xDxC}
-+	xor     e, y0                   # y0 = e ^ (e >> (11-6)) ^ (e >> (25
++	vpsrlq  $19, XTMP2, XTMP3       # XTMP3 = W[-2] MY_ROR 19 {xDxC}
++	xor     e, y0                   # y0 = e ^ (e >> (11-6)) ^ (e >> (25-6))
 +	and     e, y2                   # y2 = (f^g)&e
-+	ror     $(13-2), y1             # y1 = (a >> (13-2)) ^ (a >> (22-2))
-+	psrld   $10, X0                 # X0 = W[-2] >> 10 {DDCC}
-+	xor     a, y1                   # y1 = a ^ (a >> (13-2)) ^ (a >> (22
-+	ror     $6, y0                  # y0 = S1 = (e>>6) & (e>>11) ^ (e>>2
++	MY_ROR  (13-2), y1              # y1 = (a >> (13-2)) ^ (a >> (22-2))
++	vpsrlq  $17, XTMP2, XTMP2       # XTMP2 = W[-2] MY_ROR 17 {xDxC}
++	xor     a, y1                   # y1 = a ^ (a >> (13-2)) ^ (a >> (22-2))
++	MY_ROR  6, y0                   # y0 = S1 = (e>>6) & (e>>11) ^ (e>>25)
 +	xor     g, y2                   # y2 = CH = ((f^g)&e)^g
-+	pxor    XTMP3, XTMP2            #
-+	ror     $2, y1                  # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>2
++	vpxor   XTMP3, XTMP2, XTMP2
++	MY_ROR  2, y1                   # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>22)
 +	add     y0, y2                  # y2 = S1 + CH
 +	add     (3*4 + _XFER)(%rsp), y2 # y2 = k + w + S1 + CH
-+	pxor    XTMP2, X0               # X0 = s1 {xDxC}
++	vpxor   XTMP2, XTMP5, XTMP5     # XTMP5 = s1 {xDxC}
 +	mov     a, y0                   # y0 = a
 +	add     y2, h                   # h = h + S1 + CH + k + w
 +	mov     a, y2                   # y2 = a
-+	pshufb  SHUF_DC00, X0           # X0 = s1 {DC00}
++	vpshufb SHUF_DC00, XTMP5, XTMP5 # XTMP5 = s1 {DC00}
 +	or      c, y0                   # y0 = a|c
 +	add     h, d                    # d = d + h + S1 + CH + k + w
 +	and     c, y2                   # y2 = a&c
-+	paddd   XTMP0, X0               # X0 = {W[3], W[2], W[1], W[0]}
++	vpaddd  XTMP0, XTMP5, X0        # X0 = {W[3], W[2], W[1], W[0]}
 +	and     b, y0                   # y0 = (a|c)&b
 +	add     y1, h                   # h = h + S1 + CH + k + w + S0
 +	or      y2, y0                  # y0 = MAJ = (a|c)&b)|(a&c)
 +	add     y0, h                   # h = h + S1 + CH + k + w + S0 + MAJ
-+
 +	ROTATE_ARGS
 +	rotate_Xs
 +.endm
 +
 +## input is [rsp + _XFER + %1 * 4]
 +.macro DO_ROUND round
-+	mov     e, y0                 # y0 = e
-+	ror     $(25-11), y0          # y0 = e >> (25-11)
-+	mov     a, y1                 # y1 = a
-+	xor     e, y0                 # y0 = e ^ (e >> (25-11))
-+	ror     $(22-13), y1          # y1 = a >> (22-13)
-+	mov     f, y2                 # y2 = f
-+	xor     a, y1                 # y1 = a ^ (a >> (22-13)
-+	ror     $(11-6), y0           # y0 = (e >> (11-6)) ^ (e >> (25-6))
-+	xor     g, y2                 # y2 = f^g
-+	xor     e, y0                 # y0 = e ^ (e >> (11-6)) ^ (e >> (25-6))
-+	ror     $(13-2), y1           # y1 = (a >> (13-2)) ^ (a >> (22-2))
-+	and     e, y2                 # y2 = (f^g)&e
-+	xor     a, y1                 # y1 = a ^ (a >> (13-2)) ^ (a >> (22-2))
-+	ror     $6, y0                # y0 = S1 = (e>>6) & (e>>11) ^ (e>>25)
-+	xor     g, y2                 # y2 = CH = ((f^g)&e)^g
-+	add     y0, y2                # y2 = S1 + CH
-+	ror     $2, y1                # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>22)
-+	offset = \round * 4 + _XFER
-+	add     offset(%rsp), y2      # y2 = k + w + S1 + CH
-+	mov     a, y0                 # y0 = a
-+	add     y2, h                 # h = h + S1 + CH + k + w
-+	mov     a, y2                 # y2 = a
-+	or      c, y0                 # y0 = a|c
-+	add     h, d                  # d = d + h + S1 + CH + k + w
-+	and     c, y2                 # y2 = a&c
-+	and     b, y0                 # y0 = (a|c)&b
-+	add     y1, h                 # h = h + S1 + CH + k + w + S0
-+	or      y2, y0		      # y0 = MAJ = (a|c)&b)|(a&c)
-+	add     y0, h		      # h = h + S1 + CH + k + w + S0 + MAJ
-+	ROTATE_ARGS
++	mov	e, y0			# y0 = e
++        MY_ROR  (25-11), y0             # y0 = e >> (25-11)
++        mov     a, y1                   # y1 = a
++        xor     e, y0                   # y0 = e ^ (e >> (25-11))
++        MY_ROR  (22-13), y1             # y1 = a >> (22-13)
++        mov     f, y2                   # y2 = f
++        xor     a, y1                   # y1 = a ^ (a >> (22-13)
++        MY_ROR  (11-6), y0              # y0 = (e >> (11-6)) ^ (e >> (25-6))
++        xor     g, y2                   # y2 = f^g
++        xor     e, y0                   # y0 = e ^ (e >> (11-6)) ^ (e >> (25-6))
++        MY_ROR  (13-2), y1              # y1 = (a >> (13-2)) ^ (a >> (22-2))
++        and     e, y2                   # y2 = (f^g)&e
++        xor     a, y1                   # y1 = a ^ (a >> (13-2)) ^ (a >> (22-2))
++        MY_ROR  6, y0                   # y0 = S1 = (e>>6) & (e>>11) ^ (e>>25)
++        xor     g, y2                   # y2 = CH = ((f^g)&e)^g
++        add     y0, y2                  # y2 = S1 + CH
++        MY_ROR  2, y1                   # y1 = S0 = (a>>2) ^ (a>>13) ^ (a>>22)
++        offset = \round * 4 + _XFER     #
++        add     offset(%rsp), y2	# y2 = k + w + S1 + CH
++        mov     a, y0			# y0 = a
++        add     y2, h                   # h = h + S1 + CH + k + w
++        mov     a, y2                   # y2 = a
++        or      c, y0                   # y0 = a|c
++        add     h, d                    # d = d + h + S1 + CH + k + w
++        and     c, y2                   # y2 = a&c
++        and     b, y0                   # y0 = (a|c)&b
++        add     y1, h                   # h = h + S1 + CH + k + w + S0
++        or      y2, y0                  # y0 = MAJ = (a|c)&b)|(a&c)
++        add     y0, h                   # h = h + S1 + CH + k + w + S0 + MAJ
++        ROTATE_ARGS
 +.endm
 +
 +########################################################################
-+## void sha256_transform_ssse3(void *input_data, UINT32 digest[8], UINT64 num_blks)
++## void sha256_transform_avx(void *input_data, UINT32 digest[8], UINT64 num_blks)
 +## arg 1 : pointer to input data
 +## arg 2 : pointer to digest
 +## arg 3 : Num blocks
 +########################################################################
 +.text
-+ENTRY(sha256_transform_ssse3)
++ENTRY(sha256_transform_avx)
 +.align 32
 +	pushq   %rbx
 +	pushq   %rbp
@@ -414,13 +408,13 @@ index 0000000..98d3c39
 +	pushq   %r12
 +
 +	mov	%rsp, %r12
-+	subq    $STACK_SIZE, %rsp
-+	and	$~15, %rsp
++	subq    $STACK_SIZE, %rsp	# allocate stack space
++	and	$~15, %rsp		# align stack pointer
 +
-+	shl     $6, NUM_BLKS		 # convert to bytes
++	shl     $6, NUM_BLKS		# convert to bytes
 +	jz      done_hash
-+	add     INP, NUM_BLKS
-+	mov     NUM_BLKS, _INP_END(%rsp) # pointer to end of data
++	add     INP, NUM_BLKS		# pointer to end of data
++	mov     NUM_BLKS, _INP_END(%rsp)
 +
 +	## load initial digest
 +	mov     4*0(CTX), a
@@ -432,10 +426,9 @@ index 0000000..98d3c39
 +	mov     4*6(CTX), g
 +	mov     4*7(CTX), h
 +
-+	movdqa  PSHUFFLE_BYTE_FLIP_MASK(%rip), BYTE_FLIP_MASK
-+	movdqa  _SHUF_00BA(%rip), SHUF_00BA
-+	movdqa  _SHUF_DC00(%rip), SHUF_DC00
-+
++	vmovdqa  PSHUFFLE_BYTE_FLIP_MASK(%rip), BYTE_FLIP_MASK
++	vmovdqa  _SHUF_00BA(%rip), SHUF_00BA
++	vmovdqa  _SHUF_DC00(%rip), SHUF_DC00
 +loop0:
 +	lea     K256(%rip), TBL
 +
@@ -451,25 +444,21 @@ index 0000000..98d3c39
 +	mov     $3, SRND
 +.align 16
 +loop1:
-+	movdqa  (TBL), XFER
-+	paddd   X0, XFER
-+	movdqa  XFER, _XFER(%rsp)
++	vpaddd  (TBL), X0, XFER
++	vmovdqa XFER, _XFER(%rsp)
 +	FOUR_ROUNDS_AND_SCHED
 +
-+	movdqa  1*16(TBL), XFER
-+	paddd   X0, XFER
-+	movdqa  XFER, _XFER(%rsp)
++	vpaddd  1*16(TBL), X0, XFER
++	vmovdqa XFER, _XFER(%rsp)
 +	FOUR_ROUNDS_AND_SCHED
 +
-+	movdqa  2*16(TBL), XFER
-+	paddd   X0, XFER
-+	movdqa  XFER, _XFER(%rsp)
++	vpaddd  2*16(TBL), X0, XFER
++	vmovdqa XFER, _XFER(%rsp)
 +	FOUR_ROUNDS_AND_SCHED
 +
-+	movdqa  3*16(TBL), XFER
-+	paddd   X0, XFER
-+	movdqa  XFER, _XFER(%rsp)
-+	add     $4*16, TBL
++	vpaddd  3*16(TBL), X0, XFER
++	vmovdqa XFER, _XFER(%rsp)
++	add	$4*16, TBL
 +	FOUR_ROUNDS_AND_SCHED
 +
 +	sub     $1, SRND
@@ -477,22 +466,23 @@ index 0000000..98d3c39
 +
 +	mov     $2, SRND
 +loop2:
-+	paddd   (TBL), X0
-+	movdqa  X0, _XFER(%rsp)
++	vpaddd  (TBL), X0, XFER
++	vmovdqa XFER, _XFER(%rsp)
 +	DO_ROUND        0
 +	DO_ROUND        1
 +	DO_ROUND        2
 +	DO_ROUND        3
-+	paddd   1*16(TBL), X1
-+	movdqa  X1, _XFER(%rsp)
++
++	vpaddd  1*16(TBL), X1, XFER
++	vmovdqa XFER, _XFER(%rsp)
 +	add     $2*16, TBL
 +	DO_ROUND        0
 +	DO_ROUND        1
 +	DO_ROUND        2
 +	DO_ROUND        3
 +
-+	movdqa  X2, X0
-+	movdqa  X3, X1
++	vmovdqa X2, X0
++	vmovdqa X3, X1
 +
 +	sub     $1, SRND
 +	jne     loop2
@@ -515,35 +505,34 @@ index 0000000..98d3c39
 +
 +	mov	%r12, %rsp
 +
-+	popq    %r12
++	popq	%r12
 +	popq    %r15
 +	popq    %r14
 +	popq    %r13
 +	popq    %rbp
 +	popq    %rbx
-+
 +	ret
-+ENDPROC(sha256_transform_ssse3)
++ENDPROC(sha256_transform_avx)
 +
 +.data
 +.align 64
 +K256:
-+        .long 0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5
-+        .long 0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5
-+        .long 0xd807aa98,0x12835b01,0x243185be,0x550c7dc3
-+        .long 0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174
-+        .long 0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc
-+        .long 0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da
-+        .long 0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7
-+        .long 0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967
-+        .long 0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13
-+        .long 0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85
-+        .long 0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3
-+        .long 0xd192e819,0xd6990624,0xf40e3585,0x106aa070
-+        .long 0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5
-+        .long 0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3
-+        .long 0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208
-+        .long 0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
++	.long 0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5
++	.long 0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5
++	.long 0xd807aa98,0x12835b01,0x243185be,0x550c7dc3
++	.long 0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174
++	.long 0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc
++	.long 0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da
++	.long 0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7
++	.long 0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967
++	.long 0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13
++	.long 0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85
++	.long 0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3
++	.long 0xd192e819,0xd6990624,0xf40e3585,0x106aa070
++	.long 0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5
++	.long 0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3
++	.long 0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208
++	.long 0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 +
 +PSHUFFLE_BYTE_FLIP_MASK:
 +	.octa 0x0c0d0e0f08090a0b0405060700010203
@@ -555,6 +544,7 @@ index 0000000..98d3c39
 +# shuffle xDxC -> DC00
 +_SHUF_DC00:
 +	.octa 0x0b0a090803020100FFFFFFFFFFFFFFFF
++#endif
 -- 
 1.7.11.7
 
