@@ -1,151 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934456Ab3CZJzq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 05:55:46 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:51003 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759640Ab3CZJzo (ORCPT
+	id S1759796Ab3CZJ4r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 05:56:47 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:53791 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab3CZJ4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 05:55:44 -0400
+	Tue, 26 Mar 2013 05:56:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH] ARM: convert arm/arm64 arch timer to use CLKSRC_OF init
+Date: Tue, 26 Mar 2013 09:56:28 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: Rob Herring <robherring2@gmail.com>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Simon Horman <horms@verge.net.au>, Will Deacon <Will.Deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+References: <1363818875-15978-1-git-send-email-robherring2@gmail.com> <201303252236.23270.arnd@arndb.de> <5150D54D.1070004@linaro.org>
+In-Reply-To: <5150D54D.1070004@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20130214101130.GB12290@nekote.pengutronix.de>
-References: <1360663374-30951-1-git-send-email-s.hauer@pengutronix.de>
- <1360663374-30951-3-git-send-email-s.hauer@pengutronix.de> <20130214101130.GB12290@nekote.pengutronix.de>
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Tue, 26 Mar 2013 10:55:22 +0100
-Message-ID: <CAH9NwWd2soWW-Fx_ESYErL2wioUqxrq=57rnfi7GOsg9LSiBWw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] i2c: Add Congatec CGEB I2C driver
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, linux-i2c@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303260956.28784.arnd@arndb.de>
+X-Provags-ID: V02:K0:GwIxWl9iLwNwWzTIAD7d3K4DUDv7TiUB8U7mbraSZn9
+ Kgyp3ozSmZfxHUJd7x5/86GNs40eYpvYwPRXQFKAnb8b+uFK8E
+ HGhlFQG6+GSZ85glvbrW9ZmPch7E2eqi8nN9s126r+oe9qhhD/
+ MiztdpWUOwgkF7Rghbp4rrz/AXmwJAvXcocEXxokT0+QgB3rvG
+ Qi3wbCOt18q2aeaPt5esXWMzt9dvEoNM8xFARWh+aDHt2io7Te
+ PEDo8bxpES7LKTQSVwNbAtVcpHzr9dq3xHkeiBFbtxBkzJDByI
+ CoHt8NFBmKifE/qXBVKTHMNvxs4W4s7A6d/Jw1ENTSCMdo7GWh
+ ZVMn1xkiOi24GfUUSaUw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/14 Wolfram Sang <wsa@the-dreams.de>:
-> Hi Sascha,
->
->> diff --git a/drivers/i2c/busses/i2c-congatec-cgeb.c b/drivers/i2c/busses/i2c-congatec-cgeb.c
->> new file mode 100644
->> index 0000000..5f48ca4
->> --- /dev/null
->> +++ b/drivers/i2c/busses/i2c-congatec-cgeb.c
->> @@ -0,0 +1,194 @@
->> +/*
->> + * CGEB i2c driver
->> + *
->> + * (c) 2011 Sascha Hauer, Pengutronix
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License as published by
->> + * the Free Software Foundation; version 2 of the License.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +#include <linux/module.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/slab.h>
->> +#include <linux/i2c.h>
->> +#include <asm/congatec-cgeb.h>
->
-> Is asm a good place? Maybe linux/platform_data?
->
->> +
->> +#define CG_I2C_FLAG_START   0x00080  /* send START condition */
->> +#define CG_I2C_FLAG_STOP    0x00040  /* send STOP condition */
->> +#define CG_I2C_FLAG_ALL_ACK 0x08000  /* send ACK on all read bytes */
->> +#define CG_I2C_FLAG_ALL_NAK 0x04000  /* send NAK on all read bytes */
->> +
->> +struct cgeb_i2c_priv {
->> +     struct cgeb_board_data          *board;
->> +     struct i2c_adapter      adapter;
->> +     int unit;
->> +};
->> +
->> +static u32 cgeb_i2c_func(struct i2c_adapter *adapter)
->> +{
->> +     return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
->> +}
->
-> To make sure: Have you checked if the driver can do SMBUS_QUICK by using
-> 'i2cdetect'?
->
-> ...
->
->> +static int cgeb_i2c_probe(struct platform_device *pdev)
->> +{
->> +     struct cgeb_i2c_priv *priv;
->> +     struct cgeb_pdata *pdata = pdev->dev.platform_data;
->> +     int ret;
->> +
->> +     priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
->> +     if (!priv)
->> +             return -ENOMEM;
->> +
->> +     strcpy(priv->adapter.name, pdev->name);
->> +     priv->adapter.owner             = THIS_MODULE;
->> +     priv->adapter.algo              = &cgeb_i2c_algo;
->> +     priv->adapter.dev.parent        = &pdev->dev;
->> +     priv->unit = pdata->unit;
->> +     priv->board = pdata->board;
->> +     i2c_set_adapdata(&priv->adapter, priv);
->> +
->> +     platform_set_drvdata(pdev, priv);
->> +
->> +     ret = cgeb_i2c_set_speed(priv, 400000);
->
-> Not all slaves handle 400kHz. So, this might be a bit demanding. Then
-> again, it is probably fix which slaves are connected and they work
-> currently?
->
-> ...
->
->> +MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
->> +MODULE_DESCRIPTION("cgeb i2c driver");
->> +MODULE_LICENSE("GPL");
->
-> GPLv2 is mentioned in the header.
->
-> Other than that, the driver looks fine to me. If it should go via mfd,
-> here is my
->
-> Acked-by: Wolfram Sang <wsa@the-dreams.de>
->
-> Otherwise, let me know if and when I should pick it up.
->
+On Monday 25 March 2013, John Stultz wrote:
+> On 03/25/2013 03:36 PM, Arnd Bergmann wrote:
+> > On Monday 25 March 2013, Rob Herring wrote:
+> >> I count integrator-cp, realview, versatile and non-DT VExpress that do
+> >> this (not surprisingly) and 25 platforms or timer implementations plus
+> >> arm64 that do sched_clock setup in time_init. What's broken by not
+> >> moving these earlier?
+> > timekeeping_init() will leave the persistent_clock_exist variable as "false",
+> > which is read in rtc_suspend() and timekeeping_inject_sleeptime().
+> 
+> Are you mixing up the persistent_clock and sched_clock here? From a 
+> generic stand-point they have different requirements.
 
-root@OT:/home/vis# i2cdetect -l
-i2c-0   i2c             cgeb-i2c                                I2C adapter
-i2c-1   i2c             Radeon i2c bit bus 0x90                 I2C adapter
-i2c-2   i2c             Radeon i2c bit bus 0x91                 I2C adapter
-i2c-3   i2c             Radeon i2c bit bus 0x92                 I2C adapter
-i2c-4   i2c             Radeon i2c bit bus 0x93                 I2C adapter
-i2c-5   i2c             Radeon i2c bit bus 0x94                 I2C adapter
-i2c-6   i2c             Radeon i2c bit bus 0x95                 I2C adapter
-i2c-7   i2c             Radeon i2c bit bus 0x96                 I2C adapter
-i2c-8   i2c             Radeon i2c bit bus 0x97                 I2C adapter
-i2c-9   i2c             Radeon aux bus DP-auxch                 I2C adapter
-root@OT:/home/vis# i2cdetect 0
-WARNING! This program can confuse your I2C bus, cause data loss and worse!
-I will probe file /dev/i2c-0.
-I will probe address range 0x03-0x77.
-Continue? [Y/n]
-     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
-00:          -- -- -- -- -- -- -- -- -- -- -- -- --
-10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-20: -- 21 -- -- -- -- -- -- -- -- -- -- -- -- -- --
-30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-40: -- -- -- -- -- -- -- -- 48 -- -- -- -- -- -- --
-50: 50 51 -- -- -- -- -- -- -- -- -- -- -- -- -- --
-60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-70: -- -- -- -- -- -- -- --
+Ah, sorry about that. I had stumbled over the persistent_clock
+issue earlier and was confusing the two.
 
+> > For all I can tell, you will get a little jitter every time you
+> > do a suspend in that case. Or perhaps it means the system clock
+> > will be forwarded by the amount of time spent in suspend twice
+> > after wakeup, but I'm probably misreading the code for that case.
+> 
+> No, you shouldn't see timekeeping being incremented twice, we check in 
+> rtc_resume code if the persistent clock is present if so we won't inject 
+> any measured suspend time there. But you're probably right that we're 
+> being a little overly paranoid checking the same value twice.
 
-Tested-by: Christian Gmeiner <christian.gmeiner@gmail.com>
---
-Christian Gmeiner, MSc
+Well, the point is that has_persistent_clock() returns false because
+it is not yet active when the flag gets set in timekeeping_init(),
+but when we call read_persistent_clock() in timekeeping_suspend(),
+it will actually return a non-zero time.
+ 
+> As far as the benefit to the persistent clock: it is just a little 
+> better to use, since we can access it earlier in resume, prior to 
+> interrupts being enabled. So we should see less time error introduced 
+> each suspend.
+
+Ok.
+
+	Arnd
