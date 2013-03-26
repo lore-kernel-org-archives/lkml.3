@@ -1,42 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371Ab3CZXsy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:48:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50786 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755824Ab3CZXsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:48:25 -0400
-Message-ID: <515233C8.40205@suse.cz>
-Date: Wed, 27 Mar 2013 00:48:24 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MODSIGN: Discard previous signature when signing modules
-References: <1364338701-24306-1-git-send-email-mmarek@suse.cz> <960.1364340890@warthog.procyon.org.uk>
-In-Reply-To: <960.1364340890@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	id S932105Ab3CZXtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:49:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52393 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754211Ab3CZWnl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 18:43:41 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Marcin Miotk <marcinmiotk81@gmail.com>,
+        Benjamin Li <benli@broadcom.com>,
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 08/98] tg3: 5715 does not link up when autoneg off
+Date: Tue, 26 Mar 2013 15:41:57 -0700
+Message-Id: <20130326224243.313320947@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
+References: <20130326224242.449070940@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.3.2013 00:34, David Howells wrote:
-> Michal Marek <mmarek@suse.cz> wrote:
-> 
->> The format only supports one signature, so discard any previous
->> signature before signing the module.
-> 
-> That's not totally true.  The format does not preclude multiple signatures.
-> You can just add another signature block on the end that signs everything
-> inside of that, including all previous signatures.  The alteration to the code
-> to check all of them would be very small, I think.
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-The question is if this would be useful and desired, as opposed to
-supporting a list of signatures that all sign the *same* message. My bet
-is that such chain of signatures is more likely going to indicate error
-than intention. But I don't care much, I haven't run into this myself, I
-just thought that others migh do.
+------------------
 
-Michal
+
+From: Nithin Sujir <nsujir@broadcom.com>
+
+[ Upstream commit 7c6cdead7cc9a99650d15497aae47d7472217eb1 ]
+
+Commit d13ba512cbba7de5d55d7a3b2aae7d83c8921457 ("tg3: Remove
+SPEED_UNKNOWN checks") cleaned up the autoneg advertisement by
+removing some dead code. One effect of this change was that the
+advertisement register would not be updated if autoneg is turned off.
+
+This exposed a bug on the 5715 device w.r.t linking. The 5715 defaults
+to advertise only 10Mb Full duplex. But with autoneg disabled, it needs
+the configured speed enabled in the advertisement register to link up.
+
+This patch adds the work around to advertise all speeds on the 5715 when
+autoneg is disabled.
+
+Reported-by: Marcin Miotk <marcinmiotk81@gmail.com>
+Reviewed-by: Benjamin Li <benli@broadcom.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/ethernet/broadcom/tg3.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -4093,6 +4093,14 @@ static void tg3_phy_copper_begin(struct
+ 		tp->link_config.active_speed = tp->link_config.speed;
+ 		tp->link_config.active_duplex = tp->link_config.duplex;
+ 
++		if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5714) {
++			/* With autoneg disabled, 5715 only links up when the
++			 * advertisement register has the configured speed
++			 * enabled.
++			 */
++			tg3_writephy(tp, MII_ADVERTISE, ADVERTISE_ALL);
++		}
++
+ 		bmcr = 0;
+ 		switch (tp->link_config.speed) {
+ 		default:
+
+
