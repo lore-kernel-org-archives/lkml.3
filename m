@@ -1,116 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab3CZXTh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:19:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53020 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756110Ab3CZWwc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:32 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 27/72] sfc: Fix efx_rx_buf_offset() in the presence of swiotlb
-Date: Tue, 26 Mar 2013 15:51:10 -0700
-Message-Id: <20130326224922.504284603@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
-References: <20130326224919.675227837@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1756389Ab3CZXTp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:19:45 -0400
+Received: from 8bytes.org ([85.214.48.195]:46529 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755311Ab3CZXTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 19:19:43 -0400
+Date: Wed, 27 Mar 2013 00:19:41 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: zsmalloc: Fix link error on ARM
+Message-ID: <20130326231941.GE30540@8bytes.org>
+References: <1364337232-3513-1-git-send-email-joro@8bytes.org>
+ <20130326224536.GA29952@kroah.com>
+ <20130326230359.GD30540@8bytes.org>
+ <20130326230910.GA31021@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130326230910.GA31021@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Mar 27 00:19:42 2013
+X-DSPAM-Confidence: 0.9990
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51522d0e23671643012000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Mar 26, 2013 at 04:09:10PM -0700, Greg Kroah-Hartman wrote:
+> On Wed, Mar 27, 2013 at 12:03:59AM +0100, Joerg Roedel wrote:
 
-------------------
+> Then should I just mark the driver as broken on ARM?
+
+Well, at least ARM on SMP, for !SMP the missing function is defined and
+will be inlined.
+
+> Any reason for not including the driver authors on the Cc: for this
+> patch?
+
+I wasn't sure who the driver author is in the long list of persons from
+the get_maintainer script. So it was more or less lazyness :)
+
+Should I try to get that patch through the driver authors instead of
+you?
 
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-
-[ Upstream commits b590ace09d51cd39744e0f7662c5e4a0d1b5d952 and
-  c73e787a8db9117d59b5180baf83203a42ecadca ]
-
-We assume that the mapping between DMA and virtual addresses is done
-on whole pages, so we can find the page offset of an RX buffer using
-the lower bits of the DMA address.  However, swiotlb maps in units of
-2K, breaking this assumption.
-
-Add an explicit page_offset field to struct efx_rx_buffer.
-
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/sfc/net_driver.h |    4 +++-
- drivers/net/ethernet/sfc/rx.c         |   10 +++++-----
- 2 files changed, 8 insertions(+), 6 deletions(-)
-
---- a/drivers/net/ethernet/sfc/net_driver.h
-+++ b/drivers/net/ethernet/sfc/net_driver.h
-@@ -206,6 +206,7 @@ struct efx_tx_queue {
-  *	Will be %NULL if the buffer slot is currently free.
-  * @page: The associated page buffer. Valif iff @flags & %EFX_RX_BUF_PAGE.
-  *	Will be %NULL if the buffer slot is currently free.
-+ * @page_offset: Offset within page. Valid iff @flags & %EFX_RX_BUF_PAGE.
-  * @len: Buffer length, in bytes.
-  * @flags: Flags for buffer and packet state.
-  */
-@@ -215,7 +216,8 @@ struct efx_rx_buffer {
- 		struct sk_buff *skb;
- 		struct page *page;
- 	} u;
--	unsigned int len;
-+	u16 page_offset;
-+	u16 len;
- 	u16 flags;
- };
- #define EFX_RX_BUF_PAGE		0x0001
---- a/drivers/net/ethernet/sfc/rx.c
-+++ b/drivers/net/ethernet/sfc/rx.c
-@@ -95,11 +95,7 @@ static unsigned int rx_refill_limit = 95
- static inline unsigned int efx_rx_buf_offset(struct efx_nic *efx,
- 					     struct efx_rx_buffer *buf)
- {
--	/* Offset is always within one page, so we don't need to consider
--	 * the page order.
--	 */
--	return ((unsigned int) buf->dma_addr & (PAGE_SIZE - 1)) +
--		efx->type->rx_buffer_hash_size;
-+	return buf->page_offset + efx->type->rx_buffer_hash_size;
- }
- static inline unsigned int efx_rx_buf_size(struct efx_nic *efx)
- {
-@@ -193,6 +189,7 @@ static int efx_init_rx_buffers_page(stru
- 	struct efx_rx_buffer *rx_buf;
- 	struct page *page;
- 	void *page_addr;
-+	unsigned int page_offset;
- 	struct efx_rx_page_state *state;
- 	dma_addr_t dma_addr;
- 	unsigned index, count;
-@@ -219,12 +216,14 @@ static int efx_init_rx_buffers_page(stru
- 
- 		page_addr += sizeof(struct efx_rx_page_state);
- 		dma_addr += sizeof(struct efx_rx_page_state);
-+		page_offset = sizeof(struct efx_rx_page_state);
- 
- 	split:
- 		index = rx_queue->added_count & rx_queue->ptr_mask;
- 		rx_buf = efx_rx_buffer(rx_queue, index);
- 		rx_buf->dma_addr = dma_addr + EFX_PAGE_IP_ALIGN;
- 		rx_buf->u.page = page;
-+		rx_buf->page_offset = page_offset + EFX_PAGE_IP_ALIGN;
- 		rx_buf->len = efx->rx_buffer_len - EFX_PAGE_IP_ALIGN;
- 		rx_buf->flags = EFX_RX_BUF_PAGE;
- 		++rx_queue->added_count;
-@@ -236,6 +235,7 @@ static int efx_init_rx_buffers_page(stru
- 			get_page(page);
- 			dma_addr += (PAGE_SIZE >> 1);
- 			page_addr += (PAGE_SIZE >> 1);
-+			page_offset += (PAGE_SIZE >> 1);
- 			++count;
- 			goto split;
- 		}
+	Joerg
 
 
