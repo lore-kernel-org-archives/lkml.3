@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965205Ab3CZPyJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:54:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53757 "EHLO
+	id S965132Ab3CZPyk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:54:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53756 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965023Ab3CZPWe (ORCPT
+	with ESMTP id S965022Ab3CZPWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 11:22:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Lingzhu Xiang <lxiang@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 059/150] vhost/net: fix heads usage of ubuf_info
-Date: Tue, 26 Mar 2013 15:19:18 +0000
-Message-Id: <1364311249-14454-60-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 055/150] rt2x00: error in configurations with mesh support disabled
+Date: Tue, 26 Mar 2013 15:19:14 +0000
+Message-Id: <1364311249-14454-56-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -28,37 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Lingzhu Xiang <lxiang@redhat.com>
 
-commit 46aa92d1ba162b4b3d6b7102440e459d4e4ee255 upstream.
+commit 6ef9e2f6d12ce9e2120916804d2ddd46b954a70b upstream.
 
-ubuf info allocator uses guest controlled head as an index,
-so a malicious guest could put the same head entry in the ring twice,
-and we will get two callbacks on the same value.
-To fix use upend_idx which is guaranteed to be unique.
+Backported for 3.4-stable. Removed code of simultaneous AP and mesh
+mode added in 4a5fc6d 3.9-rc1.
 
-Reported-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+From: Felix Fietkau <nbd@openwrt.org>
+
+If CONFIG_MAC80211_MESH is not set, cfg80211 will now allow advertising
+interface combinations with NL80211_IFTYPE_MESH_POINT present.
+Add appropriate ifdefs to avoid running into errors.
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
+Reviewed-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/vhost/net.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2x00dev.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 3c4dcc3d9..f2e8236 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -235,7 +235,8 @@ static void handle_tx(struct vhost_net *net)
- 				msg.msg_controllen = 0;
- 				ubufs = NULL;
- 			} else {
--				struct ubuf_info *ubuf = &vq->ubuf_info[head];
-+				struct ubuf_info *ubuf;
-+				ubuf = vq->ubuf_info + vq->upend_idx;
+diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
+index 0cf05c3..499c68f 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -1157,7 +1157,9 @@ int rt2x00lib_probe_dev(struct rt2x00_dev *rt2x00dev)
+ 		rt2x00dev->hw->wiphy->interface_modes |=
+ 		    BIT(NL80211_IFTYPE_ADHOC) |
+ 		    BIT(NL80211_IFTYPE_AP) |
++#ifdef CONFIG_MAC80211_MESH
+ 		    BIT(NL80211_IFTYPE_MESH_POINT) |
++#endif
+ 		    BIT(NL80211_IFTYPE_WDS);
  
- 				vq->heads[vq->upend_idx].len = len;
- 				ubuf->callback = vhost_zerocopy_callback;
+ 	/*
 -- 
 1.8.1.2
 
