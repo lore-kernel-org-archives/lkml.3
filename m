@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab3CZRmZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:42:25 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30328 "EHLO
+	id S1755350Ab3CZRmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:42:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21945 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253Ab3CZRg0 (ORCPT
+	with ESMTP id S1754313Ab3CZRga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:36:26 -0400
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=ev9VbeT8_cIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=HvVMjYLLFOsA:10 a=1XWaLZrsAAAA:8 a=J1Y8HTJGAAAA:8 a=GZK3lcuhIWR5GrNAc6YA:9 a=UTB_XpHje0EA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Tue, 26 Mar 2013 13:36:30 -0400
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=4JHeR3tA3QcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=6GrpG05Fc7EA:10 a=7ZN4cI0QAAAA:8 a=J1Y8HTJGAAAA:8 a=dcFJ2uQ09p7-OfnmQJ8A:9 a=Vn2gH7L4UmAA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130326173611.677254864@goodmis.org>
+Message-Id: <20130326173610.895331779@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 26 Mar 2013 13:22:13 -0400
+Date: Tue, 26 Mar 2013 13:22:08 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Eric Dumazet <edumazet@google.com>, Willy Tarreau <w@1wt.eu>,
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 74/86] tcp: splice: fix an infinite loop in tcp_read_sock()
+Subject: [PATCH 69/86] ipv4: Add a socket release callback for datagram sockets
 References: <20130326172059.136127374@goodmis.org>
-Content-Disposition: inline; filename=0074-tcp-splice-fix-an-infinite-loop-in-tcp_read_sock.patch
+Content-Disposition: inline; filename=0069-ipv4-Add-a-socket-release-callback-for-datagram-sock.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,57 +30,107 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Steffen Klassert <steffen.klassert@secunet.com>
 
-[ Upstream commit 74b2a7b4ea60d5c1c94ac01ad001e16ac40132f3 ]
+[ Upstream commit 1c4fa590068ef4e257cb7b27643a3ee34cf9163b ]
 
-commit 02275a2ee7c0 (tcp: don't abort splice() after small transfers)
-added a regression.
+This implements a socket release callback function to check
+if the socket cached route got invalid during the time
+we owned the socket. The function is used from udp, raw
+and ping sockets.
 
-[   83.843570] INFO: rcu_sched self-detected stall on CPU
-[   83.844575] INFO: rcu_sched detected stalls on CPUs/tasks: { 6} (detected by 0, t=21002 jiffies, g=4457, c=4456, q=13132)
-[   83.844582] Task dump for CPU 6:
-[   83.844584] netperf         R  running task        0  8966   8952 0x0000000c
-[   83.844587]  0000000000000000 0000000000000006 0000000000006c6c 0000000000000000
-[   83.844589]  000000000000006c 0000000000000096 ffffffff819ce2bc ffffffffffffff10
-[   83.844592]  ffffffff81088679 0000000000000010 0000000000000246 ffff880c4b9ddcd8
-[   83.844594] Call Trace:
-[   83.844596]  [<ffffffff81088679>] ? vprintk_emit+0x1c9/0x4c0
-[   83.844601]  [<ffffffff815ad449>] ? schedule+0x29/0x70
-[   83.844606]  [<ffffffff81537bd2>] ? tcp_splice_data_recv+0x42/0x50
-[   83.844610]  [<ffffffff8153beaa>] ? tcp_read_sock+0xda/0x260
-[   83.844613]  [<ffffffff81537b90>] ? tcp_prequeue_process+0xb0/0xb0
-[   83.844615]  [<ffffffff8153c0f0>] ? tcp_splice_read+0xc0/0x250
-[   83.844618]  [<ffffffff814dc0c2>] ? sock_splice_read+0x22/0x30
-[   83.844622]  [<ffffffff811b820b>] ? do_splice_to+0x7b/0xa0
-[   83.844627]  [<ffffffff811ba4bc>] ? sys_splice+0x59c/0x5d0
-[   83.844630]  [<ffffffff8119745b>] ? putname+0x2b/0x40
-[   83.844633]  [<ffffffff8118bcb4>] ? do_sys_open+0x174/0x1e0
-[   83.844636]  [<ffffffff815b6202>] ? system_call_fastpath+0x16/0x1b
-
-if recv_actor() returns 0, we should stop immediately,
-because looping wont give a chance to drain the pipe.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- net/ipv4/tcp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/net/ip.h    |    2 ++
+ net/ipv4/datagram.c |   25 +++++++++++++++++++++++++
+ net/ipv4/ping.c     |    1 +
+ net/ipv4/raw.c      |    1 +
+ net/ipv4/udp.c      |    1 +
+ 5 files changed, 30 insertions(+)
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 5fe7a59..8720b83 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1508,7 +1508,7 @@ int tcp_read_sock(struct sock *sk, read_descriptor_t *desc,
- 					break;
- 			}
- 			used = recv_actor(desc, skb, offset, len);
--			if (used < 0) {
-+			if (used <= 0) {
- 				if (!copied)
- 					copied = used;
- 				break;
+diff --git a/include/net/ip.h b/include/net/ip.h
+index 5a5d84d..2d03843 100644
+--- a/include/net/ip.h
++++ b/include/net/ip.h
+@@ -141,6 +141,8 @@ static inline struct sk_buff *ip_finish_skb(struct sock *sk, struct flowi4 *fl4)
+ extern int		ip4_datagram_connect(struct sock *sk, 
+ 					     struct sockaddr *uaddr, int addr_len);
+ 
++extern void ip4_datagram_release_cb(struct sock *sk);
++
+ struct ip_reply_arg {
+ 	struct kvec iov[1];   
+ 	int	    flags;
+diff --git a/net/ipv4/datagram.c b/net/ipv4/datagram.c
+index 424fafb..b28e863 100644
+--- a/net/ipv4/datagram.c
++++ b/net/ipv4/datagram.c
+@@ -85,3 +85,28 @@ out:
+ 	return err;
+ }
+ EXPORT_SYMBOL(ip4_datagram_connect);
++
++void ip4_datagram_release_cb(struct sock *sk)
++{
++	const struct inet_sock *inet = inet_sk(sk);
++	const struct ip_options_rcu *inet_opt;
++	__be32 daddr = inet->inet_daddr;
++	struct flowi4 fl4;
++	struct rtable *rt;
++
++	if (! __sk_dst_get(sk) || __sk_dst_check(sk, 0))
++		return;
++
++	rcu_read_lock();
++	inet_opt = rcu_dereference(inet->inet_opt);
++	if (inet_opt && inet_opt->opt.srr)
++		daddr = inet_opt->opt.faddr;
++	rt = ip_route_output_ports(sock_net(sk), &fl4, sk, daddr,
++				   inet->inet_saddr, inet->inet_dport,
++				   inet->inet_sport, sk->sk_protocol,
++				   RT_CONN_FLAGS(sk), sk->sk_bound_dev_if);
++	if (!IS_ERR(rt))
++		__sk_dst_set(sk, &rt->dst);
++	rcu_read_unlock();
++}
++EXPORT_SYMBOL_GPL(ip4_datagram_release_cb);
+diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
+index 920cb0b..af8739a 100644
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -744,6 +744,7 @@ struct proto ping_prot = {
+ 	.recvmsg =	ping_recvmsg,
+ 	.bind =		ping_bind,
+ 	.backlog_rcv =	ping_queue_rcv_skb,
++	.release_cb =	ip4_datagram_release_cb,
+ 	.hash =		ping_v4_hash,
+ 	.unhash =	ping_v4_unhash,
+ 	.get_port =	ping_v4_get_port,
+diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
+index d23c657..f9c0d05 100644
+--- a/net/ipv4/raw.c
++++ b/net/ipv4/raw.c
+@@ -894,6 +894,7 @@ struct proto raw_prot = {
+ 	.recvmsg	   = raw_recvmsg,
+ 	.bind		   = raw_bind,
+ 	.backlog_rcv	   = raw_rcv_skb,
++	.release_cb	   = ip4_datagram_release_cb,
+ 	.hash		   = raw_hash_sk,
+ 	.unhash		   = raw_unhash_sk,
+ 	.obj_size	   = sizeof(struct raw_sock),
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index 2814f66..ee4b36a 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1952,6 +1952,7 @@ struct proto udp_prot = {
+ 	.recvmsg	   = udp_recvmsg,
+ 	.sendpage	   = udp_sendpage,
+ 	.backlog_rcv	   = __udp_queue_rcv_skb,
++	.release_cb	   = ip4_datagram_release_cb,
+ 	.hash		   = udp_lib_hash,
+ 	.unhash		   = udp_lib_unhash,
+ 	.rehash		   = udp_v4_rehash,
 -- 
 1.7.10.4
 
