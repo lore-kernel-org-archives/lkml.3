@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab3CZXdx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:33:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52593 "EHLO
+	id S1756769Ab3CZXff (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:35:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754927Ab3CZWoP (ORCPT
+	with ESMTP id S1754904Ab3CZWoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:15 -0400
+	Tue, 26 Mar 2013 18:44:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>, Jan Kara <jack@suse.cz>
-Subject: [ 72/98] ext4: fix data=journal fast mount/umount hang
-Date: Tue, 26 Mar 2013 15:43:01 -0700
-Message-Id: <20130326224249.962795102@linuxfoundation.org>
+        Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 54/98] target/iscsi: Fix mutual CHAP auth on big-endian arches
+Date: Tue, 26 Mar 2013 15:42:43 -0700
+Message-Id: <20130326224248.155383340@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -26,75 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Andy Grover <agrover@redhat.com>
 
-commit 2b405bfa84063bfa35621d2d6879f52693c614b0 upstream.
+commit 7ac9ad11b2a5cf77a92b58ee6b672ad2fa155eb1 upstream.
 
-In data=journal mode, if we unmount the file system before a
-transaction has a chance to complete, when the journal inode is being
-evicted, we can end up calling into jbd2_log_wait_commit() for the
-last transaction, after the journalling machinery has been shut down.
+See https://bugzilla.redhat.com/show_bug.cgi?id=916290
 
-Arguably we should adjust ext4_should_journal_data() to return FALSE
-for the journal inode, but the only place it matters is
-ext4_evict_inode(), and so to save a bit of CPU time, and to make the
-patch much more obviously correct by inspection(tm), we'll fix it by
-explicitly not trying to waiting for a journal commit when we are
-evicting the journal inode, since it's guaranteed to never succeed in
-this case.
+Used a temp var since we take its address in sg_init_one.
 
-This can be easily replicated via:
-
-     mount -t ext4 -o data=journal /dev/vdb /vdb ; umount /vdb
-
-------------[ cut here ]------------
-WARNING: at /usr/projects/linux/ext4/fs/jbd2/journal.c:542 __jbd2_log_start_commit+0xba/0xcd()
-Hardware name: Bochs
-JBD2: bad log_start_commit: 3005630206 3005630206 0 0
-Modules linked in:
-Pid: 2909, comm: umount Not tainted 3.8.0-rc3 #1020
-Call Trace:
- [<c015c0ef>] warn_slowpath_common+0x68/0x7d
- [<c02b7e7d>] ? __jbd2_log_start_commit+0xba/0xcd
- [<c015c177>] warn_slowpath_fmt+0x2b/0x2f
- [<c02b7e7d>] __jbd2_log_start_commit+0xba/0xcd
- [<c02b8075>] jbd2_log_start_commit+0x24/0x34
- [<c0279ed5>] ext4_evict_inode+0x71/0x2e3
- [<c021f0ec>] evict+0x94/0x135
- [<c021f9aa>] iput+0x10a/0x110
- [<c02b7836>] jbd2_journal_destroy+0x190/0x1ce
- [<c0175284>] ? bit_waitqueue+0x50/0x50
- [<c028d23f>] ext4_put_super+0x52/0x294
- [<c020efe3>] generic_shutdown_super+0x48/0xb4
- [<c020f071>] kill_block_super+0x22/0x60
- [<c020f3e0>] deactivate_locked_super+0x22/0x49
- [<c020f5d6>] deactivate_super+0x30/0x33
- [<c0222795>] mntput_no_expire+0x107/0x10c
- [<c02233a7>] sys_umount+0x2cf/0x2e0
- [<c02233ca>] sys_oldumount+0x12/0x14
- [<c08096b8>] syscall_call+0x7/0xb
----[ end trace 6a954cc790501c1f ]---
-jbd2_log_wait_commit: error: j_commit_request=-1289337090, tid=0
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target_auth.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -211,7 +211,8 @@ void ext4_evict_inode(struct inode *inod
- 		 * don't use page cache.
- 		 */
- 		if (ext4_should_journal_data(inode) &&
--		    (S_ISLNK(inode->i_mode) || S_ISREG(inode->i_mode))) {
-+		    (S_ISLNK(inode->i_mode) || S_ISREG(inode->i_mode)) &&
-+		    inode->i_ino != EXT4_JOURNAL_INO) {
- 			journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
- 			tid_t commit_tid = EXT4_I(inode)->i_datasync_tid;
+--- a/drivers/target/iscsi/iscsi_target_auth.c
++++ b/drivers/target/iscsi/iscsi_target_auth.c
+@@ -166,6 +166,7 @@ static int chap_server_compute_md5(
+ {
+ 	char *endptr;
+ 	unsigned long id;
++	unsigned char id_as_uchar;
+ 	unsigned char digest[MD5_SIGNATURE_SIZE];
+ 	unsigned char type, response[MD5_SIGNATURE_SIZE * 2 + 2];
+ 	unsigned char identifier[10], *challenge = NULL;
+@@ -355,7 +356,9 @@ static int chap_server_compute_md5(
+ 		goto out;
+ 	}
  
+-	sg_init_one(&sg, &id, 1);
++	/* To handle both endiannesses */
++	id_as_uchar = id;
++	sg_init_one(&sg, &id_as_uchar, 1);
+ 	ret = crypto_hash_update(&desc, &sg, 1);
+ 	if (ret < 0) {
+ 		pr_err("crypto_hash_update() failed for id\n");
 
 
