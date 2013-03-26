@@ -1,68 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934899Ab3CZQIN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:08:13 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:64742 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933665Ab3CZQIJ convert rfc822-to-8bit (ORCPT
+	id S965581Ab3CZP6U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:58:20 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:65372 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965348Ab3CZP6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:08:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130326154442.GE18316@opensource.wolfsonmicro.com>
-References: <201302170046.26569@pali>
-	<201303242345.00176@pali>
-	<20130324230435.GE18316@opensource.wolfsonmicro.com>
-	<201303261602.40219@pali>
-	<20130326154442.GE18316@opensource.wolfsonmicro.com>
-Date: Tue, 26 Mar 2013 09:08:08 -0700
-X-Google-Sender-Auth: fkLgM2PUwUUnzDHWbgejvac7n1c
-Message-ID: <CA+55aFwYvq5fZawbDVDPBu0ox2W7DQf5JmmyQHJYpBTOOTu_nQ@mail.gmail.com>
-Subject: Re: Driver lis3lv02d_i2c not working on Nokia RX-51
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Eric Piel <eric.piel@tremplin-utc.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 26 Mar 2013 11:58:15 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH v3, part4 08/39] mm: introduce helper function mem_init_print_info() to simplify mem_init()
+Date: Tue, 26 Mar 2013 23:54:27 +0800
+Message-Id: <1364313298-17336-9-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
+References: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 8:44 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Mar 26, 2013 at 04:02:39PM +0100, Pali Rohár wrote:
->
->> What do you think how to fix this problem? I do not know about any
->> HW regulator for n900 accelerometer and possible solutions could
->> be revert that commit or adding fake regulator to board code...
->
-> Reverting the fix is not an option, this is a clear bug in the platform.
->
-> There will be a regulator here, the device needs power.
+Introduce helper function mem_init_print_info() to simplify mem_init()
+across different architectures, which also unifies the format and
+information printed.
 
-Bullshit.
+Function mem_init_print_info() calculates memory statistics information
+without walking each page, so it should be a little faster on some
+architectures.
 
-This is a regression, and it needs to be fixed. The "device needs
-power" crap is just that - crap. Nobody cares. OF COURSE all devices
-need power, but that is totally irrelevant for a driver. The SSD in my
-system "needs power", but I have absolutely zero regulator information
-for it NOR DO I F*CKING NEED ANY!
+Also introduce another helper get_num_physpages() to kill the global
+variable num_physpages.
 
-Claiming that we need to know the power regulator for an accelerometer
-is total utter idiocy and crap.
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+---
+Hi all,
+	Sorry for my mistake that my previous patch series has been screwed up.
+So I regenerate a third version and also set up a git tree at:
+	git://github.com/jiangliu/linux.git mem_init
+	Any help to review and test are welcomed!
 
-I'm going to revert that commit unless you can fix it some other way
-(dummy regulators when you can't find a real one or whatever). The
-notion that you have to have regulator information in order to use
-some random device is insanity. I don't understand how you can even
-start to make excuses like that. It's so obviously bogus that it's not
-even funny.
+	Regards!
+	Gerry
+---
+ include/linux/mm.h |   12 ++++++++++++
+ mm/page_alloc.c    |   52 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 64 insertions(+)
 
-Why do I have to explain the "no regressions" to long-time kernel
-maintainers EVERY SINGLE RELEASE? What the f*ck is *wrong* with you
-people? Seriously?
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index c03d029..c225a4f 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1312,6 +1312,7 @@ extern void free_highmem_page(struct page *page);
+ #endif
+ 
+ extern void adjust_managed_page_count(struct page *page, long count);
++extern void mem_init_print_info(const char *str);
+ 
+ /* Free the reserved page into the buddy system, so it gets managed. */
+ static inline void __free_reserved_page(struct page *page)
+@@ -1348,6 +1349,17 @@ static inline unsigned long free_initmem_default(int poison)
+ 				  poison, "unused kernel");
+ }
+ 
++static inline unsigned long get_num_physpages(void)
++{
++	int nid;
++	unsigned long phys_pages = 0;
++
++	for_each_online_node(nid)
++		phys_pages += node_present_pages(nid);
++
++	return phys_pages;
++}
++
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ /*
+  * With CONFIG_HAVE_MEMBLOCK_NODE_MAP set, an architecture may initialise its
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index ebfb042..577acec 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -59,6 +59,7 @@
+ #include <linux/migrate.h>
+ #include <linux/page-debug-flags.h>
+ 
++#include <asm/sections.h>
+ #include <asm/tlbflush.h>
+ #include <asm/div64.h>
+ #include "internal.h"
+@@ -5168,6 +5169,57 @@ void free_highmem_page(struct page *page)
+ }
+ #endif
+ 
++
++void __init mem_init_print_info(const char *str)
++{
++	unsigned long physpages, codesize, datasize, rosize;
++	unsigned long init_code_size, init_data_size;
++
++	physpages = get_num_physpages();
++	codesize = _etext - _stext;
++	datasize = _edata - _sdata;
++	rosize = __end_rodata - __start_rodata;
++	init_data_size = __init_end - __init_begin;
++	init_code_size = _einittext - _sinittext;
++
++	/*
++	 * Detect special cases and adjust section sizes accordingly:
++	 * 1) .init.* may be embedded into .data sections
++	 * 2) .init.text.* may be out of [__init_begin, __init_end],
++	 *    please refer to arch/tile/kernel/vmlinux.lds.S.
++	 * 3) .rodata.* may be embedded into .text or .data sections.
++	 */
++#define adj_init_size(start, end, size, pos, adj) \
++	if (start <= pos && pos < end && size > adj) \
++		size -= adj;
++
++	adj_init_size(__init_begin, __init_end, init_data_size,
++		     _sinittext, init_code_size);
++	adj_init_size(_stext, _etext, codesize, _sinittext, init_code_size);
++	adj_init_size(_sdata, _edata, datasize, __init_begin, init_data_size);
++	adj_init_size(_stext, _etext, codesize, __start_rodata, rosize);
++	adj_init_size(_sdata, _edata, datasize, __start_rodata, rosize);
++
++#undef	adj_init_size
++
++	printk("Memory: %luK/%luK available "
++	       "(%luK kernel code, %luK rwdata, %luK rodata, "
++	       "%luK init, %luK bss, %luK reserved"
++#ifdef	CONFIG_HIGHMEM
++	       ", %luK highmem"
++#endif
++	       "%s%s)\n",
++	       nr_free_pages() << (PAGE_SHIFT-10), physpages << (PAGE_SHIFT-10),
++	       codesize >> 10, datasize >> 10, rosize >> 10,
++	       (init_data_size + init_code_size) >> 10,
++	       (__bss_stop - __bss_start) >> 10,
++	       (physpages - totalram_pages) << (PAGE_SHIFT-10),
++#ifdef	CONFIG_HIGHMEM
++	       totalhigh_pages << (PAGE_SHIFT-10),
++#endif
++	       str ? ", " : "", str ? str : "");
++}
++
+ /**
+  * set_dma_reserve - set the specified number of pages reserved in the first zone
+  * @new_dma_reserve: The number of pages to mark reserved
+-- 
+1.7.9.5
 
-          Linus
