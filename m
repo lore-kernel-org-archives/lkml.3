@@ -1,170 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965581Ab3CZP6U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:58:20 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:65372 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965348Ab3CZP6P (ORCPT
+	id S965476Ab3CZQJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:09:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53717 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964977Ab3CZPWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:58:15 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH v3, part4 08/39] mm: introduce helper function mem_init_print_info() to simplify mem_init()
-Date: Tue, 26 Mar 2013 23:54:27 +0800
-Message-Id: <1364313298-17336-9-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
-References: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
+	Tue, 26 Mar 2013 11:22:25 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Seth Heasley <seth.heasley@intel.com>, Jeff Garzik <jgarzik@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 051/150] ahci: AHCI-mode SATA patch for Intel Avoton DeviceIDs
+Date: Tue, 26 Mar 2013 15:19:10 +0000
+Message-Id: <1364311249-14454-52-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce helper function mem_init_print_info() to simplify mem_init()
-across different architectures, which also unifies the format and
-information printed.
+3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
 
-Function mem_init_print_info() calculates memory statistics information
-without walking each page, so it should be a little faster on some
-architectures.
+------------------
 
-Also introduce another helper get_num_physpages() to kill the global
-variable num_physpages.
+From: Seth Heasley <seth.heasley@intel.com>
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
+commit 29e674dd5c8e781589f09c3ee139c80f6da274e4 upstream.
+
+This patch adds the AHCI and RAID-mode SATA DeviceIDs for the Intel Avoton SOC.
+
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
-Hi all,
-	Sorry for my mistake that my previous patch series has been screwed up.
-So I regenerate a third version and also set up a git tree at:
-	git://github.com/jiangliu/linux.git mem_init
-	Any help to review and test are welcomed!
+ drivers/ata/ahci.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-	Regards!
-	Gerry
----
- include/linux/mm.h |   12 ++++++++++++
- mm/page_alloc.c    |   52 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 64 insertions(+)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index c03d029..c225a4f 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1312,6 +1312,7 @@ extern void free_highmem_page(struct page *page);
- #endif
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 3d7583d..557c871 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -276,6 +276,22 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x9c07), board_ahci }, /* Lynx Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c0e), board_ahci }, /* Lynx Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c0f), board_ahci }, /* Lynx Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f22), board_ahci }, /* Avoton AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1f23), board_ahci }, /* Avoton AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1f24), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f25), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f26), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f27), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f2e), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f2f), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f32), board_ahci }, /* Avoton AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1f33), board_ahci }, /* Avoton AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1f34), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f35), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f36), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f37), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f3e), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f3f), board_ahci }, /* Avoton RAID */
  
- extern void adjust_managed_page_count(struct page *page, long count);
-+extern void mem_init_print_info(const char *str);
- 
- /* Free the reserved page into the buddy system, so it gets managed. */
- static inline void __free_reserved_page(struct page *page)
-@@ -1348,6 +1349,17 @@ static inline unsigned long free_initmem_default(int poison)
- 				  poison, "unused kernel");
- }
- 
-+static inline unsigned long get_num_physpages(void)
-+{
-+	int nid;
-+	unsigned long phys_pages = 0;
-+
-+	for_each_online_node(nid)
-+		phys_pages += node_present_pages(nid);
-+
-+	return phys_pages;
-+}
-+
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- /*
-  * With CONFIG_HAVE_MEMBLOCK_NODE_MAP set, an architecture may initialise its
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ebfb042..577acec 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -59,6 +59,7 @@
- #include <linux/migrate.h>
- #include <linux/page-debug-flags.h>
- 
-+#include <asm/sections.h>
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
- #include "internal.h"
-@@ -5168,6 +5169,57 @@ void free_highmem_page(struct page *page)
- }
- #endif
- 
-+
-+void __init mem_init_print_info(const char *str)
-+{
-+	unsigned long physpages, codesize, datasize, rosize;
-+	unsigned long init_code_size, init_data_size;
-+
-+	physpages = get_num_physpages();
-+	codesize = _etext - _stext;
-+	datasize = _edata - _sdata;
-+	rosize = __end_rodata - __start_rodata;
-+	init_data_size = __init_end - __init_begin;
-+	init_code_size = _einittext - _sinittext;
-+
-+	/*
-+	 * Detect special cases and adjust section sizes accordingly:
-+	 * 1) .init.* may be embedded into .data sections
-+	 * 2) .init.text.* may be out of [__init_begin, __init_end],
-+	 *    please refer to arch/tile/kernel/vmlinux.lds.S.
-+	 * 3) .rodata.* may be embedded into .text or .data sections.
-+	 */
-+#define adj_init_size(start, end, size, pos, adj) \
-+	if (start <= pos && pos < end && size > adj) \
-+		size -= adj;
-+
-+	adj_init_size(__init_begin, __init_end, init_data_size,
-+		     _sinittext, init_code_size);
-+	adj_init_size(_stext, _etext, codesize, _sinittext, init_code_size);
-+	adj_init_size(_sdata, _edata, datasize, __init_begin, init_data_size);
-+	adj_init_size(_stext, _etext, codesize, __start_rodata, rosize);
-+	adj_init_size(_sdata, _edata, datasize, __start_rodata, rosize);
-+
-+#undef	adj_init_size
-+
-+	printk("Memory: %luK/%luK available "
-+	       "(%luK kernel code, %luK rwdata, %luK rodata, "
-+	       "%luK init, %luK bss, %luK reserved"
-+#ifdef	CONFIG_HIGHMEM
-+	       ", %luK highmem"
-+#endif
-+	       "%s%s)\n",
-+	       nr_free_pages() << (PAGE_SHIFT-10), physpages << (PAGE_SHIFT-10),
-+	       codesize >> 10, datasize >> 10, rosize >> 10,
-+	       (init_data_size + init_code_size) >> 10,
-+	       (__bss_stop - __bss_start) >> 10,
-+	       (physpages - totalram_pages) << (PAGE_SHIFT-10),
-+#ifdef	CONFIG_HIGHMEM
-+	       totalhigh_pages << (PAGE_SHIFT-10),
-+#endif
-+	       str ? ", " : "", str ? str : "");
-+}
-+
- /**
-  * set_dma_reserve - set the specified number of pages reserved in the first zone
-  * @new_dma_reserve: The number of pages to mark reserved
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 -- 
-1.7.9.5
+1.8.1.2
 
