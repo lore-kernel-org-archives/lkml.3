@@ -1,1042 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760167Ab3CZTPF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 15:15:05 -0400
-Received: from fe2.lbl.gov ([128.3.41.134]:5700 "EHLO fe2.lbl.gov"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751656Ab3CZTO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 15:14:57 -0400
-X-Ironport-SBRS: 2.2
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmoGAEryUVHRVaDIemdsb2JhbABDgzqucgGRan4IFg4BAQkLDAgUBFqCQA1SJl0SAQUBNQiIDAyjAI4jj3GNaIEqg0cDiHiNb4EfjgYWKYROHIEv
-X-IronPort-AV: E=Sophos;i="4.84,913,1355126400"; 
-   d="scan'208";a="14589329"
+	id S1754900Ab3CZTSv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 15:18:51 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38282 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab3CZTSu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 15:18:50 -0400
+Date: Tue, 26 Mar 2013 19:18:48 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v6] fs: imgdafs: Add IMG DAFS filesystem for metag
+Message-ID: <20130326191848.GW21522@ZenIV.linux.org.uk>
+References: <1364311169-3413-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
-Date: Tue, 26 Mar 2013 12:14:49 -0700
-Message-ID: <CA+BNSkWCX2TVYU26A7qHFqr6F5Pw44wy76BSfnS5MnVDKGCh9w@mail.gmail.com>
-Subject: [PATCH v2] perf: add callgrind conversion tool
-From: Roberto Vitillo <ravitillo@lbl.gov>
-To: linux-kernel@vger.kernel.org
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@ghostprotocols.net, namhyung@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364311169-3413-1-git-send-email-james.hogan@imgtec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The proposed patch adds the convert tool to perf which allows to convert a
-perf.data file to a set of callgrind data files which can subsequently be
-displayed with kcachegrind.
+On Tue, Mar 26, 2013 at 03:19:29PM +0000, James Hogan wrote:
 
-Note that the code may trigger the following bug in libbfd:
-http://sourceware.org/bugzilla/show_bug.cgi?id=15106
+> +struct da_stat {
+> +	short st_dev;
+> +	unsigned short st_ino;
+> +	unsigned st_mode;
+> +	unsigned short st_nlink;
+> +	unsigned short st_uid;
+> +	unsigned short st_gid;
+> +	short st_rdev;
+> +	int st_size;
+> +	int st_atime;
+> +	int st_spare1;
+> +	int st_mtime;
+> +	int st_spare2;
+> +	int st_ctime;
+> +	int st_spare3;
+> +	int st_blksize;
+> +	int st_blocks;
+> +	int st_spare4[2];
+> +};
 
-Signed-off-by: Roberto Agostino Vitillo <ravitillo@lbl.gov>
----
- tools/perf/Documentation/perf-convert.txt |  74 ++++
- tools/perf/Makefile                       |  12 +
- tools/perf/builtin-convert.c              | 652 ++++++++++++++++++++++++++++++
- tools/perf/builtin.h                      |   1 +
- tools/perf/command-list.txt               |   1 +
- tools/perf/perf.c                         |   3 +
- tools/perf/util/a2l.c                     | 147 +++++++
- tools/perf/util/a2l.h                     |   9 +
- 8 files changed, 899 insertions(+)
- create mode 100644 tools/perf/Documentation/perf-convert.txt
- create mode 100644 tools/perf/builtin-convert.c
- create mode 100644 tools/perf/util/a2l.c
- create mode 100644 tools/perf/util/a2l.h
+Please, use explicitly-sized types.
 
-diff --git a/tools/perf/Documentation/perf-convert.txt
-b/tools/perf/Documentation/perf-convert.txt
-new file mode 100644
-index 0000000..fa75933
---- /dev/null
-+++ b/tools/perf/Documentation/perf-convert.txt
-@@ -0,0 +1,74 @@
-+perf-convert(1)
-+================
-+
-+NAME
-+----
-+perf-convert - Convert perf.data (created by perf record) to a set of
-callgrind
-+data files.
-+
-+SYNOPSIS
-+--------
-+[verse]
-+'perf convert' [-i <file> | --input=file] [-p <name> | --prefix=name]
-+
-+DESCRIPTION
-+-----------
-+This command converts the input file to a set of callgrind data files
-which can
-+be subsequently displayed with kcachegrind. A distinct callgrind data file is
-+generated for each recorded event.
-+
-+OPTIONS
-+-------
-+-i::
-+--input=::
-+        Input file name. (default: perf.data unless stdin is a fifo)
-+
-+-p::
-+--prefix=::
-+        Filename prefix of the generated callgrind files. (default: callgrind_)
-+
-+-d::
-+--dsos=<dso[,dso...]>::
-+        Only consider symbols in these dsos.
-+
-+-f::
-+--force::
-+        Don't complain, do it.
-+
-+-k::
-+--vmlinux=<file>::
-+        vmlinux pathname.
-+
-+-m::
-+--modules::
-+        Load module symbols. WARNING: use only with -k and LIVE kernel.
-+
-+-C::
-+--cpu:: Only report samples for the list of CPUs provided. Multiple CPUs can
-+	be provided as a comma-separated list with no space: 0,1. Ranges of
-+	CPUs are specified with -: 0-2. Default is to report samples on all
-+	CPUs.
-+
-+--symfs=<directory>::
-+        Look for files with symbols relative to this directory.
-+
-+EXAMPLE
-+-------
-+	Given a perf.data file with a certain set of events, that has
-+	been previously generated by perf record, e.g.:
-+
-+	perf record -g -e cycles -e instructions ...
-+	
-+	The convert tool generates a callgrind file for each of the collected
-+	events, i.e. cycles and instructions:
-+	
-+	perf convert
-+
-+	The generated callgrind files are named callgrind_cycles and
-+	callgrind_instructions. To display callgrind_instructions:
-+
-+	kcachegrind callgrind_instructions
-+
-+SEE ALSO
-+--------
-+linkperf:perf-record[1], linkperf:perf-report[1]
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index bb74c79..5c47df3 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -808,16 +808,19 @@ else
- 		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
- 		ifeq ($(has_bfd),y)
- 			EXTLIBS += -lbfd
-+			bfd_available = y
- 		else
- 			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
- 			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
- 			ifeq ($(has_bfd_iberty),y)
- 				EXTLIBS += -lbfd -liberty
-+				bfd_available = y
- 			else
- 				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
- 				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
- 				ifeq ($(has_bfd_iberty_z),y)
- 					EXTLIBS += -lbfd -liberty -lz
-+					bfd_available = y
- 				else
- 					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
- 					has_cplus_demangle := $(call
-try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
-@@ -834,6 +837,15 @@ else
- 	endif
- endif
+> +struct da_finddata {
+> +	unsigned long size;
+> +	unsigned long attrib;
+> +	char name[260];
+> +};
 
-+ifeq ($(bfd_available),y)
-+	LIB_H += util/a2l.h
-+	LIB_OBJS += $(OUTPUT)util/a2l.o
-+	BUILTIN_OBJS += $(OUTPUT)builtin-convert.o
-+	BASIC_CFLAGS += -DLIBBFD_SUPPORT
-+else
-+	msg := $(warning No bfd.h/libbfd found, install
-binutils-dev[el]/zlib-static to enable the convert tool)
-+endif
-+
- ifeq ($(NO_PERF_REGS),0)
- 	ifeq ($(ARCH),x86)
- 		LIB_H += arch/x86/include/perf_regs.h
-diff --git a/tools/perf/builtin-convert.c b/tools/perf/builtin-convert.c
-new file mode 100644
-index 0000000..2582221
---- /dev/null
-+++ b/tools/perf/builtin-convert.c
-@@ -0,0 +1,652 @@
-+/*
-+ * builtin-convert.c
-+ *
-+ * Builtin convert command: Convert a perf.data input file
-+ * to a set of callgrind profile data files.
-+ */
-+
-+#include <linux/list.h>
-+#include <linux/rbtree.h>
-+#include <linux/bitmap.h>
-+
-+#include "util/util.h"
-+#include "util/cache.h"
-+#include "util/symbol.h"
-+#include "util/evlist.h"
-+#include "util/evsel.h"
-+#include "util/annotate.h"
-+#include "util/event.h"
-+#include "util/parse-options.h"
-+#include "util/parse-events.h"
-+#include "util/thread.h"
-+#include "util/session.h"
-+#include "util/tool.h"
-+#include "util/a2l.h"
-+
-+#include "builtin.h"
-+#include "perf.h"
-+
-+struct perf_convert {
-+	struct perf_tool tool;
-+	char const *input_name;
-+	char const *output_prefix;
-+	bool	   force;
-+	const char *cpu_list;
-+	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
-+};
-+
-+struct stats {
-+	u64 hits;
-+	bool has_callees;
-+};
-+
-+struct graph_node {
-+	const char *filename;
-+	struct rb_node rb_node;
-+	struct map *map;
-+	struct symbol *sym;
-+	struct rb_root callees;
-+	struct stats stats[0];
-+};
-+
-+struct callee {
-+	struct rb_node rb_node;
-+	struct map *map;
-+	struct symbol *sym;
-+	u64 hits[0];
-+};
-+
-+static const char *last_source_name;
-+static unsigned nr_events;
-+static unsigned last_line;
-+static u64 last_off;
-+static FILE **output_files;
-+static struct rb_root graph_root;
-+
-+static inline int64_t cmp_null(void *l, void *r)
-+{
-+	if (!l && !r)
-+		return 0;
-+	else if (!l)
-+		return -1;
-+	else
-+		return 1;
-+}
-+
-+static int64_t map_cmp(struct map *map_l, struct map *map_r)
-+{
-+	struct dso *dso_l = map_l ? map_l->dso : NULL;
-+	struct dso *dso_r = map_r ? map_r->dso : NULL;
-+	const char *dso_name_l, *dso_name_r;
-+
-+	if (!dso_l || !dso_r)
-+		return cmp_null(dso_l, dso_r);
-+
-+	if (verbose) {
-+		dso_name_l = dso_l->long_name;
-+		dso_name_r = dso_r->long_name;
-+	} else {
-+		dso_name_l = dso_l->short_name;
-+		dso_name_r = dso_r->short_name;
-+	}
-+
-+	return strcmp(dso_name_l, dso_name_r);
-+}
-+
-+static int64_t sym_cmp(struct symbol *sym_l, struct symbol *sym_r)
-+{
-+	u64 ip_l, ip_r;
-+
-+	if (!sym_l || !sym_r)
-+		return cmp_null(sym_l, sym_r);
-+
-+	if (sym_l == sym_r)
-+		return 0;
-+
-+	ip_l = sym_l->start;
-+	ip_r = sym_r->start;
-+
-+	return (int64_t)(ip_r - ip_l);
-+}
-+
-+static inline int64_t map_sym_cmp(struct map *map_l, struct symbol *sym_l,
-+				  struct map *map_r, struct symbol *sym_r)
-+{
-+	int64_t cmp = map_cmp(map_l, map_r);
-+
-+	if (!cmp)
-+		return sym_cmp(sym_l, sym_r);
-+	else
-+		return cmp;
-+}
-+
-+static struct graph_node *add_graph_node(struct map *map, struct symbol *sym)
-+{
-+	struct rb_node **rb_node = &(&graph_root)->rb_node, *parent = NULL;
-+	struct graph_node *node;
-+	int64_t cmp;
-+
-+	while (*rb_node) {
-+		parent = *rb_node;
-+		node = rb_entry(parent, struct graph_node, rb_node);
-+		cmp = map_sym_cmp(map, sym, node->map, node->sym);
-+
-+		if (cmp < 0)
-+			rb_node = &(*rb_node)->rb_left;
-+		else if (cmp > 0)
-+			rb_node = &(*rb_node)->rb_right;
-+		else {
-+			if (map != node->map)
-+				node->map = map;
-+
-+			if (map)
-+				map->referenced = true;
-+
-+			return node;
-+		}
-+	}
-+
-+	node = zalloc(sizeof(*node) + nr_events * sizeof(node->stats[0]));
-+	if (node) {
-+		node->map = map;
-+		node->sym = sym;
-+		node->filename = "";
-+		node->callees = RB_ROOT;
-+
-+		if (map)
-+			map->referenced = true;
-+
-+		rb_link_node(&node->rb_node, parent, rb_node);
-+		rb_insert_color(&node->rb_node, &graph_root);
-+	}
-+
-+	return node;
-+}
-+
-+static struct graph_node *get_graph_node(struct map *map, struct symbol *sym)
-+{
-+	struct rb_node *rb_node = (&graph_root)->rb_node;
-+	struct graph_node *node;
-+	int64_t cmp;
-+
-+	while (rb_node) {
-+		node = rb_entry(rb_node, struct graph_node, rb_node);
-+		cmp = map_sym_cmp(map, sym, node->map, node->sym);
-+
-+		if (cmp < 0)
-+			rb_node = rb_node->rb_left;
-+		else if (cmp > 0)
-+			rb_node = rb_node->rb_right;
-+		else
-+			return node;
-+	}
-+
-+	return NULL;
-+}
-+
-+static int graph_node__add_callee(struct graph_node *caller, struct map *map,
-+				  struct symbol *sym, int idx)
-+{
-+	struct rb_node **rb_node = &caller->callees.rb_node, *parent = NULL;
-+	struct callee *callee;
-+	int64_t cmp;
-+
-+	while (*rb_node) {
-+		parent = *rb_node;
-+		callee = rb_entry(parent, struct callee, rb_node);
-+		cmp = map_sym_cmp(map, sym, callee->map, callee->sym);
-+
-+		if (cmp < 0)
-+			rb_node = &(*rb_node)->rb_left;
-+		else if (cmp > 0)
-+			rb_node = &(*rb_node)->rb_right;
-+		else{
-+			callee->hits[idx]++;
-+			caller->stats[idx].has_callees = true;
-+
-+			if (map != callee->map)
-+				callee->map = map;
-+
-+			if (map)
-+				map->referenced = true;
-+
-+			return 0;
-+		}
-+	}
-+
-+	callee = zalloc(sizeof(*callee) + nr_events * sizeof(callee->hits[0]));
-+	if (callee) {
-+		callee->map = map;
-+		callee->sym = sym;
-+		callee->hits[idx] = 1;
-+		caller->stats[idx].has_callees = true;
-+
-+		if (map)
-+			map->referenced = true;
-+
-+		rb_link_node(&callee->rb_node, parent, rb_node);
-+		rb_insert_color(&callee->rb_node, &caller->callees);
-+
-+		return 0;
-+	} else
-+		return -ENOMEM;
-+}
-+
-+static int add_callchain_to_callgraph(int idx)
-+{
-+	struct callchain_cursor_node *caller, *callee;
-+	struct graph_node *node;
-+	int err;
-+
-+	callchain_cursor_commit(&callchain_cursor);
-+	callee = callchain_cursor_current(&callchain_cursor);
-+
-+	if (!callee)
-+		return 0;
-+
-+	while (true) {
-+		callchain_cursor_advance(&callchain_cursor);
-+		caller = callchain_cursor_current(&callchain_cursor);
-+
-+		if (!caller)
-+			break;
-+
-+		node = add_graph_node(caller->map, caller->sym);
-+		if (!node)
-+			return -ENOMEM;
-+
-+		err = graph_node__add_callee(node, callee->map, callee->sym, idx);
-+		if (err)
-+			return err;
-+
-+		callee = caller;
-+	}
-+
-+	return 0;
-+}
-+
-+static int accumulate_sample(struct perf_evsel *evsel, struct
-perf_sample *sample,
-+			     struct addr_location *al, struct machine *machine)
-+{
-+	struct symbol *parent = NULL;
-+	struct graph_node *node;
-+	int err;
-+
-+	if (sample->callchain) {
-+		err = machine__resolve_callchain(machine, evsel, al->thread,
-+						 sample, &parent);
-+
-+		if (err)
-+			return err;
-+	}
-+
-+	node = add_graph_node(al->map, al->sym);
-+	if (!node)
-+		return -ENOMEM;
-+
-+	err = add_callchain_to_callgraph(evsel->idx);
-+	if (err)
-+		return err;
-+
-+	node->stats[evsel->idx].hits++;
-+
-+	if (node->sym != NULL) {
-+		struct annotation *notes = symbol__annotation(node->sym);
-+		if (notes->src == NULL && symbol__alloc_hist(node->sym) < 0)
-+			return -ENOMEM;
-+
-+		err = symbol__inc_addr_samples(node->sym, node->map, evsel->idx,
-+					       al->addr);
-+		if (err)
-+			return err;
-+	}
-+
-+	return 0;
-+}
-+
-+static int process_sample_event(struct perf_tool *tool,
-+				union perf_event *event,
-+				struct perf_sample *sample,
-+				struct perf_evsel *evsel,
-+				struct machine *machine)
-+{
-+	struct perf_convert *cnv = container_of(tool, struct perf_convert, tool);
-+	struct addr_location al;
-+	int err;
-+
-+	if (perf_event__preprocess_sample(event, machine, &al, sample,
-+					  symbol__annotate_init) < 0) {
-+		pr_warning("problem processing %d event, skipping it.\n",
-+			   event->header.type);
-+		return -1;
-+	}
-+
-+	if (cnv->cpu_list && !test_bit(sample->cpu, cnv->cpu_bitmap))
-+		return 0;
-+
-+	if (!al.filtered) {
-+		err = accumulate_sample(evsel, sample, &al, machine);
-+		if (err) {
-+			pr_warning("problem incrementing symbol count, skipping event\n");
-+			return err;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static inline void print_header(const char *evname, int idx)
-+{
-+	fprintf(output_files[idx], "positions: instr line\nevents: %s\n", evname);
-+}
-+
-+static void print_function_header(struct graph_node *node, u64 offset, int idx)
-+{
-+	FILE *output = output_files[idx];
-+	const char *filename;
-+	struct map *map = node->map;
-+	struct symbol *sym = node->sym;
-+	struct annotation *notes = symbol__annotation(sym);
-+	u64 function_start = map__rip_2objdump(map, sym->start);
-+	u64 address = function_start + offset;
-+	int ret;
-+
-+	filename = "";
-+	addr2line(function_start, &filename, &last_line);
-+
-+	/* Cache filename to speedup the callgraph generation */
-+	node->filename = strdup(filename);
-+
-+	fprintf(output, "ob=%s\n", map->dso->long_name);
-+	fprintf(output, "fl=%s\n", filename);
-+	fprintf(output, "fn=%s\n", sym->name);
-+	fprintf(output, "0 0\n");
-+
-+	ret = addr2line(address, &last_source_name, &last_line);
-+	if (ret && strcmp(filename, last_source_name))
-+		fprintf(output, "fl=%s\n", last_source_name);
-+
-+	fprintf(output, "%#" PRIx64 " %u %" PRIu64 "\n", address, last_line,
-+		annotation__histogram(notes, idx)->addr[offset]);
-+
-+	last_off = offset;
-+}
-+
-+static inline bool event_has_samples(struct annotation *notes, u64
-offset, int idx)
-+{
-+	return annotation__histogram(notes, idx)->addr[offset];
-+}
-+
-+static void print_function_tail(struct graph_node *node, u64 offset, int idx)
-+{
-+	int ret;
-+	unsigned line;
-+	const char *filename = NULL;
-+	FILE *output = output_files[idx];
-+	struct map *map = node->map;
-+	struct symbol *sym = node->sym;
-+	struct annotation *notes = symbol__annotation(sym);
-+
-+	ret = addr2line(map__rip_2objdump(map, sym->start) + offset,
-+			&filename, &line);
-+	if (ret && strcmp(filename, last_source_name)) {
-+		fprintf(output, "fl=%s\n", filename);
-+		last_source_name = filename;
-+	}
-+
-+	if (ret)
-+		fprintf(output, "+%" PRIu64 " %+d", offset - last_off,
-+			(int)(line - last_line));
-+	else{
-+		fprintf(output, "+%" PRIu64 " 0", offset - last_off);
-+		line = 0;
-+	}
-+
-+	fprintf(output, " %" PRIu64 "\n",
-+		annotation__histogram(notes, idx)->addr[offset]);
-+
-+	last_off = offset;
-+	last_line = line;
-+}
-+
-+static void print_function_summary(struct graph_node *node, int idx)
-+{
-+	FILE *output = output_files[idx];
-+
-+	fprintf(output, "ob=%s\n", node->map && node->map->dso ?
-+		node->map->dso->long_name : "");
-+
-+	/* Without the empty fl declaration kcachegrind would apply the last
-+	 * valid fl declaration in the file*/
-+	fprintf(output, "fl=\n");
-+	fprintf(output, "fn=%s\n", node->sym ? node->sym->name : "");
-+	fprintf(output, "0 0 %" PRIu64, node->stats[idx].hits);
-+	fprintf(output, "\n");
-+}
-+
-+static void print_function(struct graph_node *node, int idx)
-+{
-+	struct annotation *notes;
-+	struct map *map;
-+	struct symbol *sym;
-+	u64 sym_len, i;
-+
-+	if (!node->stats[idx].hits)
-+		return;
-+
-+	map = node->map;
-+	sym = node->sym;
-+
-+	if (!map || !sym || addr2line_init(map->dso->long_name)) {
-+		print_function_summary(node, idx);
-+		return;
-+	}
-+
-+	notes = symbol__annotation(sym);
-+	sym_len = sym->end - sym->start;
-+
-+	for (i = 0; i < sym_len; i++) {
-+		if (event_has_samples(notes, i, idx)) {
-+			print_function_header(node, i, idx);
-+			break;
-+		}
-+	}
-+
-+	for (++i; i < sym_len; i++) {
-+		if (event_has_samples(notes, i, idx))
-+			print_function_tail(node, i, idx);
-+	}
-+}
-+
-+static void print_functions(void){
-+	struct rb_node *rb_node;
-+	struct graph_node *node;
-+	u64 i = 0;
-+
-+	for (rb_node = rb_first(&graph_root); rb_node; rb_node = rb_next(rb_node)) {
-+		node = rb_entry(rb_node, struct graph_node, rb_node);
-+
-+		for (i = 0; i < nr_events; i++)
-+			print_function(node, i);
-+	}
-+}
-+
-+static void print_callee(struct callee *callee, int idx)
-+{
-+	FILE *output = output_files[idx];
-+	struct graph_node *callee_node;
-+
-+	if (!callee->hits[idx])
-+		return;
-+
-+	if (callee->sym) {
-+		callee_node = get_graph_node(callee->map, callee->sym);
-+		fprintf(output, "cob=%s\ncfl=%s\ncfn=%s\n",
-+			callee->map->dso->long_name, callee_node->filename,
-+			callee->sym->name);
-+	} else
-+		fprintf(output, "cob=%s\ncfl=\ncfn=\n", callee->map ?
-+			callee->map->dso->long_name : "");
-+
-+	fprintf(output, "calls=%" PRIu64 "\n0 0 %" PRIu64 "\n",
-+		callee->hits[idx], callee->hits[idx]);
-+
-+}
-+
-+static void print_caller(struct graph_node *node, int idx)
-+{
-+	FILE *output = output_files[idx];
-+	struct callee *callee;
-+	struct rb_node *rb_node;
-+
-+	if (!node->stats[idx].has_callees)
-+		return;
-+
-+	if (node->sym)
-+		fprintf(output, "ob=%s\nfl=%s\nfn=%s\n",
-+				node->map->dso->long_name,
-+				node->filename, node->sym->name);
-+	else
-+		fprintf(output, "ob=%s\nfl=\nfn=\n",
-+			node->map ? node->map->dso->long_name : "");
-+
-+	for (rb_node = rb_first(&node->callees); rb_node; rb_node =
-rb_next(rb_node)) {
-+		callee = rb_entry(rb_node, struct callee, rb_node);
-+		print_callee(callee, idx);
-+	}
-+}
-+
-+static void print_calls(void)
-+{
-+	struct rb_node *rb_node;
-+	struct graph_node *node;
-+	u64 i = 0;
-+
-+	for (rb_node = rb_first(&graph_root); rb_node; rb_node = rb_next(rb_node)) {
-+		node = rb_entry(rb_node, struct graph_node, rb_node);
-+
-+		for (i = 0; i < nr_events; i++)
-+			print_caller(node, i);
-+	}
-+}
-+
-+static int __cmd_convert(struct perf_convert *cnv)
-+{
-+	int ret;
-+	unsigned i = 0;
-+	struct perf_session *session;
-+	struct perf_evsel *pos;
-+	char output_filename[100];
-+
-+	session = perf_session__new(cnv->input_name, O_RDONLY,
-+				    cnv->force, false, &cnv->tool);
-+	if (session == NULL)
-+		return -ENOMEM;
-+
-+	nr_events = session->evlist->nr_entries;
-+
-+	if (cnv->cpu_list) {
-+		ret = perf_session__cpu_bitmap(session, cnv->cpu_list,
-+					       cnv->cpu_bitmap);
-+		if (ret)
-+			goto out_delete;
-+	}
-+
-+	ret = perf_session__process_events(session, &cnv->tool);
-+	if (ret)
-+		goto out_delete;
-+
-+	output_files = malloc(sizeof(*output_files)*nr_events);
-+	list_for_each_entry(pos, &session->evlist->entries, node) {
-+		const char *evname = perf_evsel__name(pos);
-+
-+		snprintf(output_filename, sizeof(output_filename), "%s%s",
-+			 cnv->output_prefix, evname);
-+		output_files[i] = fopen(output_filename, "w");
-+
-+		if (!output_files[i]) {
-+			fprintf(stderr, "Cannot open %s for output\n",
-+				output_filename);
-+			return -1;
-+		}
-+
-+		print_header(evname, i++);
-+	}
-+
-+	print_functions();
-+	print_calls();
-+
-+	for (i = 0; i < nr_events; i++)
-+		fclose(output_files[i]);
-+
-+out_delete:
-+	/*
-+	 * Speed up the exit process, for large files this can
-+	 * take quite a while.
-+	 *
-+	 * XXX Enable this when using valgrind or if we ever
-+	 * librarize this command.
-+	 *
-+	 * Also experiment with obstacks to see how much speed
-+	 * up we'll get here.
-+	 *
-+	 * perf_session__delete(session);
-+	 */
-+	return ret;
-+}
-+
-+static const char * const convert_usage[] = {
-+	"perf convert [<options>]",
-+	NULL
-+};
-+
-+int cmd_convert(int argc, const char **argv, const char *prefix __maybe_unused)
-+{
-+	struct perf_convert convert = {
-+		.tool = {
-+			.sample	= process_sample_event,
-+			.mmap	= perf_event__process_mmap,
-+			.comm	= perf_event__process_comm,
-+			.exit	= perf_event__process_exit,
-+			.fork	= perf_event__process_fork,
-+			.ordered_samples = true,
-+			.ordering_requires_timestamps = true,
-+		},
-+		.output_prefix = "callgrind_"
-+	};
-+	const struct option options[] = {
-+	OPT_STRING('i', "input", &convert.input_name, "file",
-+		    "input file name"),
-+	OPT_STRING('p', "prefix", &convert.output_prefix, "prefix", "filename "
-+		   "prefix of the generated callgrind files, default is 'callgrind_'"),
-+	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
-+		   "only consider symbols in these dsos"),
-+	OPT_BOOLEAN('f', "force", &convert.force, "don't complain, do it"),
-+	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
-+		   "file", "vmlinux pathname"),
-+	OPT_BOOLEAN('m', "modules", &symbol_conf.use_modules,
-+		    "load module symbols - WARNING: use only with -k and LIVE kernel"),
-+	OPT_STRING('C', "cpu", &convert.cpu_list, "cpu", "list of cpus to profile"),
-+	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
-+		   "Look for files with symbols relative to this directory"),
-+	OPT_END()
-+	};
-+
-+	argc = parse_options(argc, argv, options, convert_usage, 0);
-+
-+	symbol_conf.priv_size = sizeof(struct annotation);
-+	symbol_conf.try_vmlinux_path = true;
-+	symbol_conf.use_callchain = true;
-+
-+	if (callchain_register_param(&callchain_param) < 0) {
-+		fprintf(stderr, "Can't register callchain params\n");
-+		return -1;
-+	}
-+
-+	if (symbol__init() < 0)
-+		return -1;
-+
-+	graph_root = RB_ROOT;
-+
-+	return __cmd_convert(&convert);
-+}
-diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
-index 08143bd..e4f7d5a 100644
---- a/tools/perf/builtin.h
-+++ b/tools/perf/builtin.h
-@@ -36,6 +36,7 @@ extern int cmd_kvm(int argc, const char **argv,
-const char *prefix);
- extern int cmd_test(int argc, const char **argv, const char *prefix);
- extern int cmd_trace(int argc, const char **argv, const char *prefix);
- extern int cmd_inject(int argc, const char **argv, const char *prefix);
-+extern int cmd_convert(int argc, const char **argv, const char *prefix);
+... especially for this - unlike int and short, long really is arch-dependent.
+And yes, I realize that this thing is arch-specific, but...
 
- extern int find_scripts(char **scripts_array, char **scripts_path_array);
- #endif
-diff --git a/tools/perf/command-list.txt b/tools/perf/command-list.txt
-index 3e86bbd..74e792c 100644
---- a/tools/perf/command-list.txt
-+++ b/tools/perf/command-list.txt
-@@ -7,6 +7,7 @@ perf-archive			mainporcelain common
- perf-bench			mainporcelain common
- perf-buildid-cache		mainporcelain common
- perf-buildid-list		mainporcelain common
-+perf-convert			mainporcelain common
- perf-diff			mainporcelain common
- perf-evlist			mainporcelain common
- perf-inject			mainporcelain common
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 095b882..01104f1 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -60,6 +60,9 @@ static struct cmd_struct commands[] = {
- 	{ "trace",	cmd_trace,	0 },
- #endif
- 	{ "inject",	cmd_inject,	0 },
-+#ifdef LIBBFD_SUPPORT
-+	{ "convert",	cmd_convert,	0 },
-+#endif
- };
+> +struct dafs_inode_info {
+> +	int fd;
+> +	int mode;
 
- struct pager_config {
-diff --git a/tools/perf/util/a2l.c b/tools/perf/util/a2l.c
-new file mode 100644
-index 0000000..3df6b7e
---- /dev/null
-+++ b/tools/perf/util/a2l.c
-@@ -0,0 +1,147 @@
-+/* based on addr2line */
-+
-+#define PACKAGE "perf"
-+
-+#include <linux/kernel.h>
-+
-+#include <bfd.h>
-+#include <stdlib.h>
-+#include <stdio.h>
-+#include <string.h>
-+
-+#include "a2l.h"
-+
-+static const char *filename;
-+static const char *functionname;
-+static const char *last_opened_file;
-+static unsigned int line;
-+static asymbol **syms;
-+static bfd_vma pc;
-+static bfd_boolean found;
-+static bfd *abfd;
-+
-+static void bfd_nonfatal(const char *string)
-+{
-+	const char *errmsg;
-+
-+	errmsg = bfd_errmsg(bfd_get_error());
-+	fflush(stdout);
-+	if (string)
-+		pr_warning("%s: %s\n", string, errmsg);
-+	else
-+		pr_warning("%s\n", errmsg);
-+}
-+
-+static int bfd_fatal(const char *string)
-+{
-+	bfd_nonfatal(string);
-+	return -1;
-+}
-+
-+static int slurp_symtab(void)
-+{
-+	long storage;
-+	long symcount;
-+	bfd_boolean dynamic = FALSE;
-+
-+	if ((bfd_get_file_flags(abfd) & HAS_SYMS) == 0)
-+		return bfd_fatal(bfd_get_filename(abfd));
-+
-+	storage = bfd_get_symtab_upper_bound(abfd);
-+	if (storage == 0) {
-+		storage = bfd_get_dynamic_symtab_upper_bound(abfd);
-+		dynamic = TRUE;
-+	}
-+	if (storage < 0)
-+		return bfd_fatal(bfd_get_filename(abfd));
-+
-+	syms = (asymbol **) malloc(storage);
-+	if (dynamic)
-+		symcount = bfd_canonicalize_dynamic_symtab(abfd, syms);
-+	else
-+		symcount = bfd_canonicalize_symtab(abfd, syms);
-+
-+	if (symcount < 0)
-+		return bfd_fatal(bfd_get_filename(abfd));
-+
-+	return 0;
-+}
-+
-+static void find_address_in_section(bfd *mybfd, asection *section,
-+				    void *data ATTRIBUTE_UNUSED)
-+{
-+	bfd_vma vma;
-+	bfd_size_type size;
-+	(void)mybfd;
-+
-+	if (found)
-+		return;
-+
-+	if ((bfd_get_section_flags(abfd, section) & SEC_ALLOC) == 0)
-+		return;
-+
-+	vma = bfd_get_section_vma(abfd, section);
-+	if (pc < vma)
-+		return;
-+
-+	size = bfd_get_section_size(section);
-+	if (pc >= vma + size)
-+		return;
-+
-+	found = bfd_find_nearest_line(abfd, section, syms, pc - vma,
-+			&filename, &functionname, &line);
-+}
-+
-+int addr2line_init(const char *file_name)
-+{
-+	if (last_opened_file && !strcmp(last_opened_file, file_name))
-+		return 0;
-+	else
-+		addr2line_cleanup();
-+
-+	abfd = bfd_openr(file_name, NULL);
-+	if (abfd == NULL)
-+		return -1;
-+
-+	if (!bfd_check_format(abfd, bfd_object))
-+		return bfd_fatal(bfd_get_filename(abfd));
-+
-+	last_opened_file = file_name;
-+	return slurp_symtab();
-+
-+}
-+
-+void addr2line_cleanup(void)
-+{
-+	if (syms != NULL) {
-+		free(syms);
-+		syms = NULL;
-+	}
-+
-+	if (abfd)
-+		bfd_close(abfd);
-+
-+	line = found = 0;
-+	last_opened_file = NULL;
-+	abfd = 0;
-+}
-+
-+int addr2line_inline(const char **file, unsigned *line_nr)
-+{
-+	return bfd_find_inliner_info(abfd, file, &functionname, line_nr);
-+}
-+
-+int addr2line(unsigned long addr, const char **file, unsigned *line_nr)
-+{
-+	found = 0;
-+	pc = addr;
-+	bfd_map_over_sections(abfd, find_address_in_section, NULL);
-+
-+	if (found) {
-+		*file = filename ? filename : "";
-+		*line_nr = line;
-+		return found;
-+	}
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/a2l.h b/tools/perf/util/a2l.h
-new file mode 100644
-index 0000000..b248429
---- /dev/null
-+++ b/tools/perf/util/a2l.h
-@@ -0,0 +1,9 @@
-+#ifndef __A2L_H_
-+#define __A2L_H_
-+
-+int addr2line_init(const char *file_name);
-+int addr2line(unsigned long addr, const char **file, unsigned *line_nr);
-+int addr2line_inline(const char **file, unsigned *line_nr);
-+void addr2line_cleanup(void);
-+
-+#endif
+umm... int or fmode_t?
+
+> +	struct inode vfs_inode;
+> +};
+
+> +#define DAFS_SUPER_MAGIC 0xdadadaf5
+
+-> linux/magic.h
+
+> +static char *dentry_name(struct dentry *dentry)
+> +{
+> +	char *name = __getname();
+> +	if (!name)
+> +		return NULL;
+> +
+> +	return __dentry_name(dentry, name); /* will unlock */
+
+will unlock what?
+
+> +	hi = kzalloc(sizeof(*hi), GFP_KERNEL);
+> +	if (hi == NULL)
+> +		return NULL;
+> +
+> +	hi->fd = -1;
+> +	inode_init_once(&hi->vfs_inode);
+> +	return &hi->vfs_inode;
+
+Umm...  kzalloc() looks odd, seeing that you proceed to initialize two
+fields out of 3 (including the really big one) explicitly...
+
+> +static int open_dir(char *path, struct da_finddata *finddata, int *fserrno)
+> +{
+> +	int len = strlen(path);
+> +	char buf[len + 3];
+
+Bad idea, considering that strlen(path) is user-controlled and can
+theoretically go up to 4Kb...
+
+> +static int dafs_readdir(struct file *file, void *ent, filldir_t filldir)
+> +{
+> +	struct inode *inode = file->f_path.dentry->d_inode;
+
+minor nit, but... that's file_inode(file)
+
+> +	name = dentry_name(file->f_path.dentry);
+> +	if (name == NULL)
+> +		return -ENOMEM;
+> +	handle = open_dir(name, &finddata, &fserrno);
+
+... and what if the sucker's parent gets renamed between dentry_name() and
+open_dir()?  The same goes for the rest of dentry_name() users, actually.
+
+> +static int dafs_rename(struct inode *from_ino, struct dentry *from,
+> +		  struct inode *to_ino, struct dentry *to)
+> +{
+> +	char *from_name, *to_name;
+> +	int err;
+> +
+> +	from_name = dentry_name(from);
+> +	if (from_name == NULL)
+> +		return -ENOMEM;
+> +	to_name = dentry_name(to);
+> +	if (to_name == NULL) {
+> +		__putname(from_name);
+> +		return -ENOMEM;
+> +	}
+> +	err = -EINVAL;
+> +	__putname(from_name);
+> +	__putname(to_name);
+> +	return err;
+> +}
+
+Aha.  No rename(2), IOW.  Is one planned?
