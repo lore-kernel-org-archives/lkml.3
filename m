@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965132Ab3CZPyk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:54:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53756 "EHLO
+	id S965197Ab3CZPy4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:54:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53749 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965022Ab3CZPWe (ORCPT
+	with ESMTP id S964993Ab3CZPWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:34 -0400
+	Tue, 26 Mar 2013 11:22:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Lingzhu Xiang <lxiang@redhat.com>,
+Cc: Bing Zhao <bzhao@marvell.com>, "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 055/150] rt2x00: error in configurations with mesh support disabled
-Date: Tue, 26 Mar 2013 15:19:14 +0000
-Message-Id: <1364311249-14454-56-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 056/150] mwifiex: fix potential out-of-boundary access to ibss rate table
+Date: Tue, 26 Mar 2013 15:19:15 +0000
+Message-Id: <1364311249-14454-57-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -29,44 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lingzhu Xiang <lxiang@redhat.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit 6ef9e2f6d12ce9e2120916804d2ddd46b954a70b upstream.
+commit 5f0fabf84d7b52f979dcbafa3d3c530c60d9a92c upstream.
 
-Backported for 3.4-stable. Removed code of simultaneous AP and mesh
-mode added in 4a5fc6d 3.9-rc1.
+smatch found this error:
 
-From: Felix Fietkau <nbd@openwrt.org>
+CHECK   drivers/net/wireless/mwifiex/join.c
+  drivers/net/wireless/mwifiex/join.c:1121
+  mwifiex_cmd_802_11_ad_hoc_join()
+  error: testing array offset 'i' after use.
 
-If CONFIG_MAC80211_MESH is not set, cfg80211 will now allow advertising
-interface combinations with NL80211_IFTYPE_MESH_POINT present.
-Add appropriate ifdefs to avoid running into errors.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
-Reviewed-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rt2x00/rt2x00dev.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/mwifiex/join.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
-index 0cf05c3..499c68f 100644
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -1157,7 +1157,9 @@ int rt2x00lib_probe_dev(struct rt2x00_dev *rt2x00dev)
- 		rt2x00dev->hw->wiphy->interface_modes |=
- 		    BIT(NL80211_IFTYPE_ADHOC) |
- 		    BIT(NL80211_IFTYPE_AP) |
-+#ifdef CONFIG_MAC80211_MESH
- 		    BIT(NL80211_IFTYPE_MESH_POINT) |
-+#endif
- 		    BIT(NL80211_IFTYPE_WDS);
+diff --git a/drivers/net/wireless/mwifiex/join.c b/drivers/net/wireless/mwifiex/join.c
+index d6b4fb0..97bb759 100644
+--- a/drivers/net/wireless/mwifiex/join.c
++++ b/drivers/net/wireless/mwifiex/join.c
+@@ -1093,10 +1093,9 @@ mwifiex_cmd_802_11_ad_hoc_join(struct mwifiex_private *priv,
+ 		adhoc_join->bss_descriptor.bssid,
+ 		adhoc_join->bss_descriptor.ssid);
  
- 	/*
+-	for (i = 0; bss_desc->supported_rates[i] &&
+-			i < MWIFIEX_SUPPORTED_RATES;
+-			i++)
+-			;
++	for (i = 0; i < MWIFIEX_SUPPORTED_RATES &&
++		    bss_desc->supported_rates[i]; i++)
++		;
+ 	rates_size = i;
+ 
+ 	/* Copy Data Rates from the Rates recorded in scan response */
 -- 
 1.8.1.2
 
