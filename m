@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab3CZWxD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:53:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53168 "EHLO
+	id S1756601Ab3CZWxa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:53:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53194 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756171Ab3CZWw5 (ORCPT
+	with ESMTP id S1756449Ab3CZWxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:57 -0400
+	Tue, 26 Mar 2013 18:53:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 60/72] USB: serial: fix interface refcounting
-Date: Tue, 26 Mar 2013 15:51:43 -0700
-Message-Id: <20130326224925.873580220@linuxfoundation.org>
+        ryan <draziw+deb@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [ 72/72] asus-laptop: Do not call HWRS on init
+Date: Tue, 26 Mar 2013 15:51:55 -0700
+Message-Id: <20130326224927.061431180@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -26,41 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit d7971051e4df825e0bc11b995e87bfe86355b8e5 upstream.
+commit cb7da022450cdaaebd33078b6b32fb7dd2aaf6db upstream.
 
-Make sure the interface is not released before our serial device.
+Since commit 8871e99f89b7 ('asus-laptop: HRWS/HWRS typo'), module
+initialisation is very slow on the Asus UL30A.  The HWRS method takes
+about 12 seconds to run, and subsequent initialisation also seems to
+be delayed.  Since we don't really need the result, don't bother
+calling it on init.  Those who are curious can still get the result
+through the 'infos' device attribute.
 
-Note that drivers are still not allowed to access the interface in
-any way that may interfere with another driver that may have gotten
-bound to the same interface after disconnect returns.
+Update the comment about HWRS in show_infos().
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Reported-by: ryan <draziw+deb@gmail.com>
+References: http://bugs.debian.org/692436
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb-serial.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/platform/x86/asus-laptop.c |   17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -168,6 +168,7 @@ static void destroy_serial(struct kref *
- 		}
- 	}
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -860,8 +860,10 @@ static ssize_t show_infos(struct device
+ 	/*
+ 	 * The HWRS method return informations about the hardware.
+ 	 * 0x80 bit is for WLAN, 0x100 for Bluetooth.
++	 * 0x40 for WWAN, 0x10 for WIMAX.
+ 	 * The significance of others is yet to be found.
+-	 * If we don't find the method, we assume the device are present.
++	 * We don't currently use this for device detection, and it
++	 * takes several seconds to run on some systems.
+ 	 */
+ 	rv = acpi_evaluate_integer(asus->handle, "HWRS", NULL, &temp);
+ 	if (!ACPI_FAILURE(rv))
+@@ -1682,7 +1684,7 @@ static int asus_laptop_get_info(struct a
+ {
+ 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+ 	union acpi_object *model = NULL;
+-	unsigned long long bsts_result, hwrs_result;
++	unsigned long long bsts_result;
+ 	char *string = NULL;
+ 	acpi_status status;
  
-+	usb_put_intf(serial->interface);
- 	usb_put_dev(serial->dev);
- 	kfree(serial);
- }
-@@ -625,7 +626,7 @@ static struct usb_serial *create_serial(
- 	}
- 	serial->dev = usb_get_dev(dev);
- 	serial->type = driver;
--	serial->interface = interface;
-+	serial->interface = usb_get_intf(interface);
- 	kref_init(&serial->kref);
- 	mutex_init(&serial->disc_mutex);
- 	serial->minor = SERIAL_TTY_NO_MINOR;
+@@ -1744,17 +1746,6 @@ static int asus_laptop_get_info(struct a
+ 	if (*string)
+ 		pr_notice("  %s model detected\n", string);
+ 
+-	/*
+-	 * The HWRS method return informations about the hardware.
+-	 * 0x80 bit is for WLAN, 0x100 for Bluetooth,
+-	 * 0x40 for WWAN, 0x10 for WIMAX.
+-	 * The significance of others is yet to be found.
+-	 */
+-	status =
+-	    acpi_evaluate_integer(asus->handle, "HWRS", NULL, &hwrs_result);
+-	if (!ACPI_FAILURE(status))
+-		pr_notice("  HWRS returned %x", (int)hwrs_result);
+-
+ 	if (!acpi_check_handle(asus->handle, METHOD_WL_STATUS, NULL))
+ 		asus->have_rsts = true;
+ 
 
 
