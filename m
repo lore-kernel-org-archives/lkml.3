@@ -1,121 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759327Ab3CZEff (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 00:35:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36775 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752172Ab3CZEfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 00:35:33 -0400
-Date: Tue, 26 Mar 2013 00:34:40 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <1364272480-bmzkqzs6-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130325123128.GU2154@dhcp22.suse.cz>
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1363983835-20184-4-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130325123128.GU2154@dhcp22.suse.cz>
-Subject: Re: [PATCH 03/10] soft-offline: use migrate_pages() instead of
- migrate_huge_page()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <20130325123128.GU2154@dhcp22.suse.cz>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1759384Ab3CZEgT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 00:36:19 -0400
+Received: from mail-qe0-f74.google.com ([209.85.128.74]:51607 "EHLO
+	mail-qe0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330Ab3CZEgQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 00:36:16 -0400
+From: Greg Thelen <gthelen@google.com>
+To: Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] vfs: dcache: cond_resched in shrink_dentry_list
+References: <1364232151-23242-1-git-send-email-gthelen@google.com>
+	<20130325235614.GI6369@dastard>
+	<xr93fvzjgfke.fsf@gthelen.mtv.corp.google.com>
+	<20130326024032.GJ6369@dastard>
+cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 25 Mar 2013 21:36:14 -0700
+Message-ID: <xr934nfyg4ld.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 01:31:28PM +0100, Michal Hocko wrote:
-> On Fri 22-03-13 16:23:48, Naoya Horiguchi wrote:
-> > Currently migrate_huge_page() takes a pointer to a hugepage to be
-> > migrated as an argument, instead of taking a pointer to the list of
-> > hugepages to be migrated. This behavior was introduced in commit
-> > 189ebff28 ("hugetlb: simplify migrate_huge_page()"), and was OK
-> > because until now hugepage migration is enabled only for soft-offlining
-> > which takes only one hugepage in a single call.
-> > 
-> > But the situation will change in the later patches in this series
-> > which enable other users of page migration to support hugepage migration.
-> > They can kick migration for both of normal pages and hugepages
-> > in a single call, so we need to go back to original implementation
-> > of using linked lists to collect the hugepages to be migrated.
-> 
-> If the purpose of this patch is to reduce code duplication then you
-> should remove migrate_huge_page as it doesn't have any caller anymore.
+On Mon, Mar 25 2013, Dave Chinner wrote:
 
-Yes, that makes sense. I'll do this.
+> On Mon, Mar 25, 2013 at 05:39:13PM -0700, Greg Thelen wrote:
+>> On Mon, Mar 25 2013, Dave Chinner wrote:
+>> > On Mon, Mar 25, 2013 at 10:22:31AM -0700, Greg Thelen wrote:
+>> >> Call cond_resched() from shrink_dentry_list() to preserve
+>> >> shrink_dcache_parent() interactivity.
+>> >> 
+>> >> void shrink_dcache_parent(struct dentry * parent)
+>> >> {
+>> >> 	while ((found = select_parent(parent, &dispose)) != 0)
+>> >> 		shrink_dentry_list(&dispose);
+>> >> }
+>> >> 
+>> >> select_parent() populates the dispose list with dentries which
+>> >> shrink_dentry_list() then deletes.  select_parent() carefully uses
+>> >> need_resched() to avoid doing too much work at once.  But neither
+>> >> shrink_dcache_parent() nor its called functions call cond_resched().
+>> >> So once need_resched() is set select_parent() will return single
+>> >> dentry dispose list which is then deleted by shrink_dentry_list().
+>> >> This is inefficient when there are a lot of dentry to process.  This
+>> >> can cause softlockup and hurts interactivity on non preemptable
+>> >> kernels.
+>> >
+>> > Hi Greg,
+>> >
+>> > I can see how this coul dcause problems, but isn't the problem then
+>> > that shrink_dcache_parent()/select_parent() itself is mishandling
+>> > the need for rescheduling rather than being a problem with
+>> > the shrink_dentry_list() implementation?  i.e. select_parent() is
+>> > aborting batching based on a need for rescheduling, but then not
+>> > doing that itself and assuming that someone else will do the
+>> > reschedule for it?
+>> >
+>> > Perhaps this is a better approach:
+>> >
+>> > -	while ((found = select_parent(parent, &dispose)) != 0)
+>> > +	while ((found = select_parent(parent, &dispose)) != 0) {
+>> >                 shrink_dentry_list(&dispose);
+>> > +		cond_resched();
+>> > +	}
+>> >
+>> > With this, select_parent() stops batching when a resched is needed,
+>> > we dispose of the list as a single batch and only then resched if it
+>> > was needed before we go and grab the next batch. That should fix the
+>> > "small batch" problem without the potential for changing the
+>> > shrink_dentry_list() behaviour adversely for other users....
+>> 
+>> I considered only modifying shrink_dcache_parent() as you show above.
+>> Either approach fixes the problem I've seen.  My initial approach adds
+>> cond_resched() deeper into shrink_dentry_list() because I thought that
+>> there might a secondary benefit: shrink_dentry_list() would be willing
+>> to give up the processor when working on a huge number of dentry.  This
+>> could improve interactivity during shrinker and umount.  I don't feel
+>> strongly on this and would be willing to test and post the
+>> add-cond_resched-to-shrink_dcache_parent approach.
+>
+> The shrinker has interactivity problems because of the global
+> dcache_lru_lock, not because of ithe size of the list passed to
+> shrink_dentry_list(). The amount of work that shrink_dentry_list()
+> does here is already bound by the shrinker batch size. Hence in the
+> absence of the RT folk complaining about significant holdoffs I
+> don't think there is an interactivity problem through the shrinker
+> path.
 
-> [...]
-> > @@ -1482,12 +1483,20 @@ static int soft_offline_huge_page(struct page *page, int flags)
-> >  	unlock_page(hpage);
-> >  
-> >  	/* Keep page count to indicate a given hugepage is isolated. */
-> > -	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL,
-> > -				MIGRATE_SYNC);
-> > -	put_page(hpage);
-> > +	list_move(&hpage->lru, &pagelist);
-> > +	ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
-> > +				MIGRATE_SYNC, MR_MEMORY_FAILURE);
-> >  	if (ret) {
-> >  		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
-> >  			pfn, ret, page->flags);
-> > +		/*
-> > +		 * We know that soft_offline_huge_page() tries to migrate
-> > +		 * only one hugepage pointed to by hpage, so we need not
-> > +		 * run through the pagelist here.
-> > +		 */
-> > +		putback_active_hugepage(hpage);
-> 
-> Maybe I am missing something but why we didn't need to call this before
-> when using migrate_huge_page?
+No arguments from me.
 
-migrate_huge_page() does not need list handling before/after the call,
-because it's defined to migrate only one hugepage, and it has a page as
-an argument, not list_head.
+> As for the unmount path - shrink_dcache_for_umount_subtree() - that
+> doesn't use shrink_dentry_list() and so would need it's own internal
+> calls to cond_resched().  Perhaps it's shrink_dcache_sb() that you
+> are concerned about?  Either way, And there are lots more similar
+> issues in the unmount path such as evict_inodes(), so unless you are
+> going to give every possible path through unmount/remount/bdev
+> invalidation the same treatment then changing shrink_dentry_list()
+> won't significantly improve the interactivity of the system
+> situation in these paths...
 
-> > +		if (ret > 0)
-> > +			ret = -EIO;
-> >  	} else {
-> >  		set_page_hwpoison_huge_page(hpage);
-> >  		dequeue_hwpoisoned_huge_page(hpage);
-> > diff --git v3.9-rc3.orig/mm/migrate.c v3.9-rc3/mm/migrate.c
-> > index f69f354..66030b6 100644
-> > --- v3.9-rc3.orig/mm/migrate.c
-> > +++ v3.9-rc3/mm/migrate.c
-> > @@ -981,6 +981,8 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
-> >  
-> >  	unlock_page(hpage);
-> >  out:
-> > +	if (rc != -EAGAIN)
-> > +		putback_active_hugepage(hpage);
-> 
-> And why do you put it here? If it is called from migrate_pages then the
-> caller already does the clean-up (putback_lru_pages).
+Ok.  As stated, I wasn't sure if the cond_resched() in
+shrink_dentry_list() had any appeal.  Apparently it doesn't.  I'll drop
+this approach in favor of the following:
 
-What the caller of migrate_pages() cleans up is the (huge)pages which failed
-to be migrated. And what the above code cleans up is the source hugepage
-after the migration succeeds.
+--->8---
 
-The latter clean-up code originally existed, but removed in 189ebff28
-("hugetlb: simplify migrate_huge_page()").
-This commit cleans up the code based on that there was only one user
-of hugepage migration, but that's not true any more.
-So the above hunk is a part of revert of the commit.
-But it's not a simple revert, because there's one difference between
-now and before 189ebff28 that we link hugepages in-use to hugepage_activelist.
-Then we finally come to the above change.
+From: Greg Thelen <gthelen@google.com>
+Date: Sat, 23 Mar 2013 18:25:02 -0700
+Subject: [PATCH] vfs: dcache: cond_resched in shrink_dcache_parent
 
-Thanks,
-Naoya
+Call cond_resched() in shrink_dcache_parent() to maintain
+interactivity.
 
-> >  	put_page(new_hpage);
-> >  	if (result) {
-> >  		if (rc)
+Before this patch:
+
+void shrink_dcache_parent(struct dentry * parent)
+{
+	while ((found = select_parent(parent, &dispose)) != 0)
+		shrink_dentry_list(&dispose);
+}
+
+select_parent() populates the dispose list with dentries which
+shrink_dentry_list() then deletes.  select_parent() carefully uses
+need_resched() to avoid doing too much work at once.  But neither
+shrink_dcache_parent() nor its called functions call cond_resched().
+So once need_resched() is set select_parent() will return single
+dentry dispose list which is then deleted by shrink_dentry_list().
+This is inefficient when there are a lot of dentry to process.  This
+can cause softlockup and hurts interactivity on non preemptable
+kernels.
+
+This change adds cond_resched() in shrink_dcache_parent().  The
+benefit of this is that need_resched() is quickly cleared so that
+future calls to select_parent() are able to efficiently return a big
+batch of dentry.
+
+These additional cond_resched() do not seem to impact performance, at
+least for the workload below.
+
+Here is a program which can cause soft lockup on a if other system
+activity sets need_resched().
+
+	int main()
+	{
+	        struct rlimit rlim;
+	        int i;
+	        int f[100000];
+	        char buf[20];
+	        struct timeval t1, t2;
+	        double diff;
+
+	        /* cleanup past run */
+	        system("rm -rf x");
+
+	        /* boost nfile rlimit */
+	        rlim.rlim_cur = 200000;
+	        rlim.rlim_max = 200000;
+	        if (setrlimit(RLIMIT_NOFILE, &rlim))
+	                err(1, "setrlimit");
+
+	        /* make directory for files */
+	        if (mkdir("x", 0700))
+	                err(1, "mkdir");
+
+	        if (gettimeofday(&t1, NULL))
+	                err(1, "gettimeofday");
+
+	        /* populate directory with open files */
+	        for (i = 0; i < 100000; i++) {
+	                snprintf(buf, sizeof(buf), "x/%d", i);
+	                f[i] = open(buf, O_CREAT);
+	                if (f[i] == -1)
+	                        err(1, "open");
+	        }
+
+	        /* close some of the files */
+	        for (i = 0; i < 85000; i++)
+	                close(f[i]);
+
+	        /* unlink all files, even open ones */
+	        system("rm -rf x");
+
+	        if (gettimeofday(&t2, NULL))
+	                err(1, "gettimeofday");
+
+	        diff = (((double)t2.tv_sec * 1000000 + t2.tv_usec) -
+	                ((double)t1.tv_sec * 1000000 + t1.tv_usec));
+
+	        printf("done: %g elapsed\n", diff/1e6);
+	        return 0;
+	}
+
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
+---
+ fs/dcache.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index fbfae008..e52c07e 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1230,8 +1230,10 @@ void shrink_dcache_parent(struct dentry * parent)
+ 	LIST_HEAD(dispose);
+ 	int found;
+ 
+-	while ((found = select_parent(parent, &dispose)) != 0)
++	while ((found = select_parent(parent, &dispose)) != 0) {
+ 		shrink_dentry_list(&dispose);
++		cond_resched();
++	}
+ }
+ EXPORT_SYMBOL(shrink_dcache_parent);
+ 
+-- 
+1.8.1.3
+
+
