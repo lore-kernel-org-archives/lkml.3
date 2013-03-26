@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934607Ab3CZPF1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:05:27 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56496 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934567Ab3CZPF0 (ORCPT
+	id S934615Ab3CZPGy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:06:54 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:52928 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934567Ab3CZPGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:05:26 -0400
-Date: Tue, 26 Mar 2013 15:04:44 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "nico@linaro.org" <nico@linaro.org>
-Subject: Re: [PATCH v2 6/6] [RFC] arm: use PSCI if available
-Message-ID: <20130326150444.GI20252@mudshark.cambridge.arm.com>
-References: <alpine.DEB.2.02.1303261423530.4430@kaball.uk.xensource.com>
- <1364308875-26484-6-git-send-email-stefano.stabellini@eu.citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364308875-26484-6-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 26 Mar 2013 11:06:52 -0400
+Message-ID: <1364310407.1716.16.camel@edumazet-glaptop>
+Subject: Re: [net-next 1/5] macvtap: set transport header before passing skb
+ to lower device
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, Eric Dumazet <edumazet@google.com>
+Date: Tue, 26 Mar 2013 08:06:47 -0700
+In-Reply-To: <1364278799-37285-2-git-send-email-jasowang@redhat.com>
+References: <1364278799-37285-1-git-send-email-jasowang@redhat.com>
+	 <1364278799-37285-2-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefano,
-
-On Tue, Mar 26, 2013 at 02:41:15PM +0000, Stefano Stabellini wrote:
-> Check for the presence of PSCI before setting smp_ops, use PSCI if it is
-> available.
+On Tue, 2013-03-26 at 14:19 +0800, Jason Wang wrote:
+> Set the transport header for 1) some drivers (e.g ixgbe) needs l4 header 2)
+> precise packet length estimation (introduced in 1def9238) needs l4 header to
+> compute header length.
 > 
-> This is useful because at least when running on Xen it's possible to have a
-> PSCI node for example on a Versatile Express or an Exynos5 machine. In these
-> cases the PSCI SMP calls should be the ones to be called.
+> For the packets with partial checksum, the patch just set the transport header
+> to csum_start. Otherwise tries to use skb_flow_dissect() to get l4 offset, if it
+> fails, just pretend no l4 header.
 > 
-> Remove virt_smp_ops and platsmp.c from mach-virt because they aren't needed
-> anymore.
+> Cc: Eric Dumazet <edumazet@google.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/net/macvtap.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+> index a449439..acf6450 100644
+> --- a/drivers/net/macvtap.c
+> +++ b/drivers/net/macvtap.c
+> @@ -21,6 +21,7 @@
+>  #include <net/rtnetlink.h>
+>  #include <net/sock.h>
+>  #include <linux/virtio_net.h>
+> +#include <net/flow_keys.h>
+>  
+>  /*
+>   * A macvtap queue is the central object of this driver, it connects
+> @@ -645,6 +646,7 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+>  	int vnet_hdr_len = 0;
+>  	int copylen = 0;
+>  	bool zerocopy = false;
+> +	struct flow_keys keys;
+>  
+>  	if (q->flags & IFF_VNET_HDR) {
+>  		vnet_hdr_len = q->vnet_hdr_sz;
+> @@ -725,6 +727,13 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+>  			goto err_kfree;
+>  	}
+>  
+> +	if (skb->ip_summed == CHECKSUM_PARTIAL)
 
-[...]
+where ip_summed is set to this value ?
 
-> +struct smp_operations __initdata psci_smp_ops = {
-> +	.smp_init_cpus		= psci_smp_init_cpus,
-> +	.smp_prepare_cpus	= psci_smp_prepare_cpus,
-> +	.smp_secondary_init	= psci_secondary_init,
-> +	.smp_boot_secondary	= psci_boot_secondary,
-> +};
+> +		skb_set_transport_header(skb, skb_checksum_start_offset(skb));
+> +	else if (skb_flow_dissect(skb, &keys))
+> +		skb_set_transport_header(skb, keys.thoff);
+> +	else
+> +		skb_set_transport_header(skb, ETH_HLEN);
+> +
+>  	rcu_read_lock_bh();
+>  	vlan = rcu_dereference_bh(q->vlan);
+>  	/* copy skb_ubuf_info for callback when skb has no error */
 
-Whilst I like the idea of this, I don't think things will pan out this
-nicely in practice. There will almost always be a level of indirection
-required between the internal Linux SMP operations and the expectations of
-the PSCI firmware, whether this is in CPU numbering or other,
-platform-specific fields in various parameters.
+This driver has nice helpers.
 
-Tying these two things together like this confuses the layering in my
-opinion and will likely lead to potentially subtle breakages if platforms
-start trying to adopt this.
+You should add this code in a helper as well.
 
-If this can indeed work for the virtual platforms (Xen and KVM), then I
-think it would be better expressed using `virt' smp_ops, which map directly
-to PSCI, rather than putting them here. Even then, it's tying KVM and Xen
-together on the firmware side of things...
+Because its not clear at this point if csum_start/csum_offset/ip_summed
+are consistent.
 
-Will
+
+
