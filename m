@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725Ab3CZRf7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:35:59 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38557 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753629Ab3CZRf4 (ORCPT
+	id S1755214Ab3CZSKw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:10:52 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:63751 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753427Ab3CZSKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:35:56 -0400
-Message-ID: <5151DBD3.6080201@oracle.com>
-Date: Tue, 26 Mar 2013 13:33:07 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130310 Thunderbird/17.0.4
+	Tue, 26 Mar 2013 14:10:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Florian Fainelli <florian@openwrt.org>
+Subject: Re: [RFC PATCH 2/5] USB: remove USB_EHCI_BIG_ENDIAN_{DESC,MMIO} depends on architecture symbol
+Date: Tue, 26 Mar 2013 18:10:43 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: stern@rowland.harvard.edu, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
+References: <1364321177-12146-1-git-send-email-florian@openwrt.org> <1364321177-12146-3-git-send-email-florian@openwrt.org>
+In-Reply-To: <1364321177-12146-3-git-send-email-florian@openwrt.org>
 MIME-Version: 1.0
-To: Rik van Riel <riel@surriel.com>
-CC: torvalds@linux-foundation.org, davidlohr.bueso@hp.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        hhuang@redhat.com, jason.low2@hp.com, walken@google.com,
-        lwoodman@redhat.com, chegu_vinod@hp.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: ipc,sem: sysv semaphore scalability
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-In-Reply-To: <1363809337-29718-1-git-send-email-riel@surriel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Message-Id: <201303261810.44154.arnd@arndb.de>
+X-Provags-ID: V02:K0:6lwvjN2pFxykZWIXaVh5iVrlcFDzD3UcwK2Tiek9yI2
+ 5Km7FSJUQiTv4NzlqW5SSt1fBEFpSqCBqB0Js/MT9zEVbJ0Btf
+ i4PxQVikO0MGVZGYzZR/L5prq+0Tf/HuoCAyoxfnj9xXgZvWrP
+ JVRoGrOliQRHkIGTlICZstee8DeC8LYL+h/FzsBd1SDOxtWI9w
+ VZlm/lTMCUKkA2DDEUdwVav64tgr9pbDvpxYVqKI37/ScsAhJd
+ /kTceTxFk9IvM38WvgXVrbBsurRLYjtSTC8kxvxDCRLdZ2L2EC
+ ZsBuR5pw//4mpnTjy1IoFjx2gONCWwkuDWg+Uaugop/lq2ZMMF
+ iNuOb9ukjD4zXBZ9AKUI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2013 03:55 PM, Rik van Riel wrote:
-> This series makes the sysv semaphore code more scalable,
-> by reducing the time the semaphore lock is held, and making
-> the locking more scalable for semaphore arrays with multiple
-> semaphores.
+On Tuesday 26 March 2013, Florian Fainelli wrote:
+> 
+> Just like the OHCI counter part we just can remove the architecture
+> specific symbols which prevent these configuration symbols from being
+> selected by platforms/architectures requiring it. The original
+> implementation did not scale at all since it required each and every
+> single architecture to be added for these configuration symbols to be
+> selected. Now it is up to the EHCI driver and/or platform to select
+> these configuration symbols accordingly.
+> 
+> Signed-off-by: Florian Fainelli <florian@openwrt.org>
 
-Hi Rik,
+Good idea, just one suggestion:
 
-Another issue that came up is:
+>  config USB_EHCI_BIG_ENDIAN_MMIO
+>         bool
+> -       depends on USB_EHCI_HCD && (PPC_CELLEB || PPC_PS3 || 440EPX || \
+> -                                   ARCH_IXP4XX || XPS_USB_HCD_XILINX || \
+> -                                   PPC_MPC512x || CPU_CAVIUM_OCTEON || \
+> -                                   PMC_MSP || SPARC_LEON || MIPS_SEAD3)
+> -       default y
+> +       depends on USB_EHCI_HCD
+> +       default n
+>  
+>  config USB_EHCI_BIG_ENDIAN_DESC
+>         bool
+> -       depends on USB_EHCI_HCD && (440EPX || ARCH_IXP4XX || XPS_USB_HCD_XILINX || \
+> -                                   PPC_MPC512x || PMC_MSP || SPARC_LEON || \
+> -                                   MIPS_SEAD3)
+> -       default y
+> +       depends on USB_EHCI_HCD
+> +       default n
+>  
+>  config XPS_USB_HCD_XILINX
+>         bool "Use Xilinx usb host EHCI controller core"
 
-[   96.347341] ================================================
-[   96.348085] [ BUG: lock held when returning to user space! ]
-[   96.348834] 3.9.0-rc4-next-20130326-sasha-00011-gbcb2313 #318 Tainted: G        W
-[   96.360300] ------------------------------------------------
-[   96.361084] trinity-child9/7583 is leaving the kernel with locks still held!
-[   96.362019] 1 lock held by trinity-child9/7583:
-[   96.362610]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff8192eafb>] SYSC_semtimedop+0x1fb/0xec0
+You can drop the "default n" line as well, it's the default.
 
-It seems that we can leave semtimedop without releasing the rcu read lock.
-
-I'm a bit confused by what's going on in semtimedop with regards to rcu read lock, it
-seems that this behaviour is actually intentional?
-
-        rcu_read_lock();
-        sma = sem_obtain_object_check(ns, semid);
-        if (IS_ERR(sma)) {
-                if (un)
-                        rcu_read_unlock();
-                error = PTR_ERR(sma);
-                goto out_free;
-        }
-
-When I've looked at that it seems that not releasing the read lock was (very)
-intentional.
-
-After that, the only code path that would release the lock starts with:
-
-        if (un) {
-		...
-
-So we won't release the lock at all if un is NULL?
-
-
-Thanks,
-Sasha
+	Arnd
