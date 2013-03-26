@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483Ab3CZXQy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:16:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53065 "EHLO
+	id S1756321Ab3CZXRU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:17:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53059 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756209Ab3CZWwl (ORCPT
+	with ESMTP id S1756196Ab3CZWwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:41 -0400
+	Tue, 26 Mar 2013 18:52:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dean Luick <dean.luick@intel.com>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 54/72] IPoIB: Fix send lockup due to missed TX completion
-Date: Tue, 26 Mar 2013 15:51:37 -0700
-Message-Id: <20130326224925.254574148@linuxfoundation.org>
+        Dmitry Artamonow <mad_soft@inbox.ru>
+Subject: [ 52/72] usb-storage: add unusual_devs entry for Samsung YP-Z3 mp3 player
+Date: Tue, 26 Mar 2013 15:51:35 -0700
+Message-Id: <20130326224925.051271993@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -28,51 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Dmitry Artamonow <mad_soft@inbox.ru>
 
-commit 1ee9e2aa7b31427303466776f455d43e5e3c9275 upstream.
+commit 29f86e66428ee083aec106cca1748dc63d98ce23 upstream.
 
-Commit f0dc117abdfa ("IPoIB: Fix TX queue lockup with mixed UD/CM
-traffic") attempts to solve an issue where unprocessed UD send
-completions can deadlock the netdev.
+Device stucks on filesystem writes, unless following quirk is passed:
+  echo 04e8:5136:m > /sys/module/usb_storage/parameters/quirks
 
-The patch doesn't fully resolve the issue because if more than half
-the tx_outstanding's were UD and all of the destinations are RC
-reachable, arming the CQ doesn't solve the issue.
+Add corresponding entry to unusual_devs.h
 
-This patch uses the IB_CQ_REPORT_MISSED_EVENTS on the
-ib_req_notify_cq().  If the rc is above 0, the UD send cq completion
-callback is called directly to re-arm the send completion timer.
-
-This issue is seen in very large parallel filesystem deployments
-and the patch has been shown to correct the issue.
-
-Reviewed-by: Dean Luick <dean.luick@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/ipoib/ipoib_cm.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-@@ -755,9 +755,13 @@ void ipoib_cm_send(struct net_device *de
- 		if (++priv->tx_outstanding == ipoib_sendq_size) {
- 			ipoib_dbg(priv, "TX ring 0x%x full, stopping kernel net queue\n",
- 				  tx->qp->qp_num);
--			if (ib_req_notify_cq(priv->send_cq, IB_CQ_NEXT_COMP))
--				ipoib_warn(priv, "request notify on send CQ failed\n");
- 			netif_stop_queue(dev);
-+			rc = ib_req_notify_cq(priv->send_cq,
-+				IB_CQ_NEXT_COMP | IB_CQ_REPORT_MISSED_EVENTS);
-+			if (rc < 0)
-+				ipoib_warn(priv, "request notify on send CQ failed\n");
-+			else if (rc)
-+				ipoib_send_comp_handler(priv->send_cq, dev);
- 		}
- 	}
- }
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -488,6 +488,13 @@ UNUSUAL_DEV(  0x04e8, 0x5122, 0x0000, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_MAX_SECTORS_64 | US_FL_BULK_IGNORE_TAG),
+ 
++/* Added by Dmitry Artamonow <mad_soft@inbox.ru> */
++UNUSUAL_DEV(  0x04e8, 0x5136, 0x0000, 0x9999,
++		"Samsung",
++		"YP-Z3",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64),
++
+ /* Entry and supporting patch by Theodore Kilgore <kilgota@auburn.edu>.
+  * Device uses standards-violating 32-byte Bulk Command Block Wrappers and
+  * reports itself as "Proprietary SCSI Bulk." Cf. device entry 0x084d:0x0011.
 
 
