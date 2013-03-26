@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab3CZWwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:52:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52942 "EHLO
+	id S1756723Ab3CZXYc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:24:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52951 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939Ab3CZWwJ (ORCPT
+	with ESMTP id S1755960Ab3CZWwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:09 -0400
+	Tue, 26 Mar 2013 18:52:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, stable@kernel.org
-Subject: [ 12/72] vhost/net: fix heads usage of ubuf_info
-Date: Tue, 26 Mar 2013 15:50:55 -0700
-Message-Id: <20130326224921.001996044@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        Mukesh Agrawal <quiche@chromium.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 10/72] tcp: fix skb_availroom()
+Date: Tue, 26 Mar 2013 15:50:53 -0700
+Message-Id: <20130326224920.763275054@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -29,35 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 46aa92d1ba162b4b3d6b7102440e459d4e4ee255 ]
+[ Upstream commit 16fad69cfe4adbbfa813de516757b87bcae36d93 ]
 
-ubuf info allocator uses guest controlled head as an index,
-so a malicious guest could put the same head entry in the ring twice,
-and we will get two callbacks on the same value.
-To fix use upend_idx which is guaranteed to be unique.
+Chrome OS team reported a crash on a Pixel ChromeBook in TCP stack :
 
-Reported-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Cc: stable@kernel.org
+https://code.google.com/p/chromium/issues/detail?id=182056
+
+commit a21d45726acac (tcp: avoid order-1 allocations on wifi and tx
+path) did a poor choice adding an 'avail_size' field to skb, while
+what we really needed was a 'reserved_tailroom' one.
+
+It would have avoided commit 22b4a4f22da (tcp: fix retransmit of
+partially acked frames) and this commit.
+
+Crash occurs because skb_split() is not aware of the 'avail_size'
+management (and should not be aware)
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Mukesh Agrawal <quiche@chromium.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/vhost/net.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/linux/skbuff.h |    7 +++++--
+ net/ipv4/tcp.c         |    2 +-
+ net/ipv4/tcp_output.c  |    1 -
+ 3 files changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -235,7 +235,8 @@ static void handle_tx(struct vhost_net *
- 				msg.msg_controllen = 0;
- 				ubufs = NULL;
- 			} else {
--				struct ubuf_info *ubuf = &vq->ubuf_info[head];
-+				struct ubuf_info *ubuf;
-+				ubuf = vq->ubuf_info + vq->upend_idx;
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -479,7 +479,7 @@ struct sk_buff {
+ 	union {
+ 		__u32		mark;
+ 		__u32		dropcount;
+-		__u32		avail_size;
++		__u32		reserved_tailroom;
+ 	};
  
- 				vq->heads[vq->upend_idx].len = len;
- 				ubuf->callback = vhost_zerocopy_callback;
+ 	sk_buff_data_t		transport_header;
+@@ -1373,7 +1373,10 @@ static inline int skb_tailroom(const str
+  */
+ static inline int skb_availroom(const struct sk_buff *skb)
+ {
+-	return skb_is_nonlinear(skb) ? 0 : skb->avail_size - skb->len;
++	if (skb_is_nonlinear(skb))
++		return 0;
++
++	return skb->end - skb->tail - skb->reserved_tailroom;
+ }
+ 
+ /**
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -704,7 +704,7 @@ struct sk_buff *sk_stream_alloc_skb(stru
+ 			 * Make sure that we have exactly size bytes
+ 			 * available to the caller, no more, no less.
+ 			 */
+-			skb->avail_size = size;
++			skb->reserved_tailroom = skb->end - skb->tail - size;
+ 			return skb;
+ 		}
+ 		__kfree_skb(skb);
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1096,7 +1096,6 @@ static void __pskb_trim_head(struct sk_b
+ 	eat = min_t(int, len, skb_headlen(skb));
+ 	if (eat) {
+ 		__skb_pull(skb, eat);
+-		skb->avail_size -= eat;
+ 		len -= eat;
+ 		if (!len)
+ 			return;
 
 
