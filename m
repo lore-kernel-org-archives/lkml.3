@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965435Ab3CZPYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:24:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54156 "EHLO
+	id S965487Ab3CZPYR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:24:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54182 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965410Ab3CZPYB (ORCPT
+	with ESMTP id S965410Ab3CZPYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:24:01 -0400
+	Tue, 26 Mar 2013 11:24:08 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
+Cc: David Ward <david.ward@ll.mit.edu>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 136/150] sfc: Detach net device when stopping queues for reconfiguration
-Date: Tue, 26 Mar 2013 15:20:35 +0000
-Message-Id: <1364311249-14454-137-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 141/150] net/ipv4: Ensure that location of timestamp option is stored
+Date: Tue, 26 Mar 2013 15:20:40 +0000
+Message-Id: <1364311249-14454-142-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,92 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: David Ward <david.ward@ll.mit.edu>
 
-commit 29c69a4882641285a854d6d03ca5adbba68c0034 upstream.
+commit 4660c7f498c07c43173142ea95145e9dac5a6d14 upstream.
 
-We must only ever stop TX queues when they are full or the net device
-is not 'ready' so far as the net core, and specifically the watchdog,
-is concerned.  Otherwise, the watchdog may fire *immediately* if no
-packets have been added to the queue in the last 5 seconds.
+This is needed in order to detect if the timestamp option appears
+more than once in a packet, to remove the option if the packet is
+fragmented, etc. My previous change neglected to store the option
+location when the router addresses were prespecified and Pointer >
+Length. But now the option location is also stored when Flag is an
+unrecognized value, to ensure these option handling behaviors are
+still performed.
 
-The device is ready if all the following are true:
-
-(a) It has a qdisc
-(b) It is marked present
-(c) It is running
-(d) The link is reported up
-
-(a) and (c) are normally true, and must not be changed by a driver.
-(d) is under our control, but fake link changes may disturb userland.
-This leaves (b).  We already mark the device absent during reset
-and self-test, but we need to do the same during MTU changes and ring
-reallocation.  We don't need to do this when the device is brought
-down because then (c) is already false.
-
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David Ward <david.ward@ll.mit.edu>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/sfc/efx.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ net/ipv4/ip_options.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/sfc/efx.c b/drivers/net/ethernet/sfc/efx.c
-index 3d49f44..5fe7b35 100644
---- a/drivers/net/ethernet/sfc/efx.c
-+++ b/drivers/net/ethernet/sfc/efx.c
-@@ -754,6 +754,7 @@ efx_realloc_channels(struct efx_nic *efx, u32 rxq_entries, u32 txq_entries)
- 						tx_queue->txd.entries);
- 	}
- 
-+	efx_device_detach_sync(efx);
- 	efx_stop_all(efx);
- 	efx_stop_interrupts(efx, true);
- 
-@@ -807,6 +808,7 @@ out:
- 
- 	efx_start_interrupts(efx, true);
- 	efx_start_all(efx);
-+	netif_device_attach(efx->net_dev);
- 	return rc;
- 
- rollback:
-@@ -1601,8 +1603,12 @@ static void efx_stop_all(struct efx_nic *efx)
- 	/* Flush efx_mac_work(), refill_workqueue, monitor_work */
- 	efx_flush_all(efx);
- 
--	/* Stop the kernel transmit interface late, so the watchdog
--	 * timer isn't ticking over the flush */
-+	/* Stop the kernel transmit interface.  This is only valid if
-+	 * the device is stopped or detached; otherwise the watchdog
-+	 * may fire immediately.
-+	 */
-+	WARN_ON(netif_running(efx->net_dev) &&
-+		netif_device_present(efx->net_dev));
- 	netif_tx_disable(efx->net_dev);
- 
- 	efx_stop_datapath(efx);
-@@ -1921,10 +1927,11 @@ static int efx_change_mtu(struct net_device *net_dev, int new_mtu)
- 	if (new_mtu > EFX_MAX_MTU)
- 		return -EINVAL;
- 
--	efx_stop_all(efx);
--
- 	netif_dbg(efx, drv, efx->net_dev, "changing MTU to %d\n", new_mtu);
- 
-+	efx_device_detach_sync(efx);
-+	efx_stop_all(efx);
-+
- 	mutex_lock(&efx->mac_lock);
- 	/* Reconfigure the MAC before enabling the dma queues so that
- 	 * the RX buffers don't overflow */
-@@ -1933,6 +1940,7 @@ static int efx_change_mtu(struct net_device *net_dev, int new_mtu)
- 	mutex_unlock(&efx->mac_lock);
- 
- 	efx_start_all(efx);
-+	netif_device_attach(efx->net_dev);
- 	return 0;
- }
- 
+diff --git a/net/ipv4/ip_options.c b/net/ipv4/ip_options.c
+index 708b994..ba9eb94 100644
+--- a/net/ipv4/ip_options.c
++++ b/net/ipv4/ip_options.c
+@@ -360,7 +360,6 @@ int ip_options_compile(struct net *net,
+ 				}
+ 				switch (optptr[3]&0xF) {
+ 				      case IPOPT_TS_TSONLY:
+-					opt->ts = optptr - iph;
+ 					if (skb)
+ 						timeptr = &optptr[optptr[2]-1];
+ 					opt->ts_needtime = 1;
+@@ -371,7 +370,6 @@ int ip_options_compile(struct net *net,
+ 						pp_ptr = optptr + 2;
+ 						goto error;
+ 					}
+-					opt->ts = optptr - iph;
+ 					if (rt)  {
+ 						memcpy(&optptr[optptr[2]-1], &rt->rt_spec_dst, 4);
+ 						timeptr = &optptr[optptr[2]+3];
+@@ -385,7 +383,6 @@ int ip_options_compile(struct net *net,
+ 						pp_ptr = optptr + 2;
+ 						goto error;
+ 					}
+-					opt->ts = optptr - iph;
+ 					{
+ 						__be32 addr;
+ 						memcpy(&addr, &optptr[optptr[2]-1], 4);
+@@ -418,12 +415,12 @@ int ip_options_compile(struct net *net,
+ 					pp_ptr = optptr + 3;
+ 					goto error;
+ 				}
+-				opt->ts = optptr - iph;
+ 				if (skb) {
+ 					optptr[3] = (optptr[3]&0xF)|((overflow+1)<<4);
+ 					opt->is_changed = 1;
+ 				}
+ 			}
++			opt->ts = optptr - iph;
+ 			break;
+ 		      case IPOPT_RA:
+ 			if (optlen < 4) {
 -- 
 1.8.1.2
 
