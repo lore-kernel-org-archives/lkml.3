@@ -1,41 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933841Ab3CZAsU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 20:48:20 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:55493 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933799Ab3CZAsT (ORCPT
+	id S933917Ab3CZAtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 20:49:19 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36382 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933799Ab3CZAtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 20:48:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <1364168414-12815-2-git-send-email-jaegeuk.kim@samsung.com>
-References: <1364168414-12815-1-git-send-email-jaegeuk.kim@samsung.com>
-	<1364168414-12815-2-git-send-email-jaegeuk.kim@samsung.com>
-Date: Tue, 26 Mar 2013 09:48:18 +0900
-Message-ID: <CAKYAXd_z6oWgrRj3dQ=_OieZ1twnoQqhGLaQah5rp_j9ge858A@mail.gmail.com>
-Subject: Re: [PATCH 2/4] f2fs: do not skip writing file meta during fsync
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
+	Mon, 25 Mar 2013 20:49:16 -0400
+Date: Tue, 26 Mar 2013 11:48:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: linux-next: manual merge of the net-next tree with the wireless
+ tree
+Message-Id: <20130326114852.770f3e14f4b59aa29800e7f7@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__26_Mar_2013_11_48_52_+1100_6L665DeZ_WM_m89W"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/25, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> This patch removes data_version check flow during the fsync call.
-> The original purpose for the use of data_version was to avoid writng inode
-> pages redundantly by the fsync calls repeatedly.
-Hi Jaegeuk.
-> However, when user can modify file meta and then call fsync, we should not
-> skip fsync procedure.
-I have a question.
-Which case does user can directly modify meta ? Recovery tool ?
+--Signature=_Tue__26_Mar_2013_11_48_52_+1100_6L665DeZ_WM_m89W
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+Hi all,
 
-> So, let's remove this condition check and hope that user triggers in right
-> manner.
->
-> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Today's linux-next merge of the net-next tree got a conflict in
+net/mac80211/sta_info.c between commit 27a737ff7cb0 ("mac80211: always
+synchronize_net() during station removal") from the wireless tree and
+commit 8d1f7ecd2af5 ("mac80211: defer tailroom counter manipulation when
+roaming") from the net-next tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc net/mac80211/sta_info.c
+index 238a0cc,3644ad7..0000000
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@@ -794,19 -798,14 +799,21 @@@ int __must_check __sta_info_destroy(str
+  	list_del_rcu(&sta->list);
+ =20
+  	mutex_lock(&local->key_mtx);
+ -	for (i =3D 0; i < NUM_DEFAULT_KEYS; i++)
+ +	for (i =3D 0; i < NUM_DEFAULT_KEYS; i++) {
+- 		__ieee80211_key_free(key_mtx_dereference(local, sta->gtk[i]));
++ 		__ieee80211_key_free(key_mtx_dereference(local, sta->gtk[i]),
++ 				     true);
+ -	if (sta->ptk)
+ +		have_key =3D true;
+ +	}
+ +	if (sta->ptk) {
+- 		__ieee80211_key_free(key_mtx_dereference(local, sta->ptk));
++ 		__ieee80211_key_free(key_mtx_dereference(local, sta->ptk),
++ 				     true);
+ +		have_key =3D true;
+ +	}
+  	mutex_unlock(&local->key_mtx);
+ =20
+ +	if (!have_key)
+ +		synchronize_net();
+ +
+  	sta->dead =3D true;
+ =20
+  	local->num_sta--;
+
+--Signature=_Tue__26_Mar_2013_11_48_52_+1100_6L665DeZ_WM_m89W
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRUPB0AAoJEECxmPOUX5FE+aYP/iDCN0u9SHvJEULCvqb+zekQ
+qqSUJdj90rKT4Sa4/PSWE9CtzTdPgAJyDjFid3qgvMF7E4XlOroyxzFmLGUEBZFZ
+yBt09RHVbkoOQgzAYKhN9laxQiZR7C+V5JM8hG5ddncL76UvzoqOZjXrHDNeSFmH
+XWx6zdVTho02SHHSwJbMSiPOHesBJN0pS+KpxIz64TGv20W/rU1IoATcHt1Hcrza
+QOIoDoCtzzFzrhfr8rYinNtIvCIZoCh74gijPv9K5gOM/K0RukTnYGdhkXOE8hHG
+/RTMVjirIRVgUBgaiCO4/YDdCW8gPEd73D4EjES60XjMX7KZDNeFGnm2fCpQsoOx
+1xQOts0SZWetprbz/5GjsGKMeNQq9YH+f3VUrDYB1fS3NBBuLH3W7dMANHhULkiW
+I4u2Dg+QTgEQGRUTEU7IPLcqoEGrMUSMt/Kh2tQx4fb8qsc+pO4YZLKKwtEuXKiw
+h6rmlh6bqRHpd0tP4q2Sk1/EeI0rWAPaFAUNsBHRAKDcqZEYbMtUZDgiseJl0TTR
+awbJUq8nMwvoHV1ALIfkwx5TcVp4GsQKJP85GFZf8KD8xSdUgv1Xu9kchtHR+dBf
+zcw5KtvAETzr9ZyxIpHKgNsUHQlWkm3vk43Db8iFj9DFcYdewF31KF3YhI/OBFHx
+80SGRm0yw10ucrqP2NNp
+=8Y81
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__26_Mar_2013_11_48_52_+1100_6L665DeZ_WM_m89W--
