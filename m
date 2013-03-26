@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab3CZXej (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:34:39 -0400
-Received: from mail-da0-f41.google.com ([209.85.210.41]:45543 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176Ab3CZXeg (ORCPT
+	id S1756783Ab3CZXet (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:34:49 -0400
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:37113 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202Ab3CZXeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:34:36 -0400
-Date: Tue, 26 Mar 2013 16:34:33 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org, kevin@allwinnertech.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-serial@vger.kernel.org,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] serial: 8250_dw: add support for clk api
-Message-ID: <20130326233433.GA31077@kroah.com>
-References: <1363689316-7847-2-git-send-email-maxime.ripard@free-electrons.com>
- <1363690369-8067-1-git-send-email-maxime.ripard@free-electrons.com>
- <20130321084707.GB2862@xps8300>
- <515179E6.4020709@free-electrons.com>
+	Tue, 26 Mar 2013 19:34:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <515179E6.4020709@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo4nAN7wFaRebw5fM3gQVppaQoSSh3PdFumgCS1SGhcxcw@mail.gmail.com>
+References: <1361182193-31894-1-git-send-email-hare@suse.de>
+	<CAE9FiQWP1F5mLUoHoTHXy-wQoGxVK66QuuHYydaq3YfysS5Etg@mail.gmail.com>
+	<5124820D.2080900@suse.de>
+	<CAE9FiQXHteymDNzu0GqWtVSVhu3g2hCT+K9e5tB1mR-OBX1ffA@mail.gmail.com>
+	<5125C45A.5020208@suse.de>
+	<CAErSpo5j3Qge5Q2S+hyMGOcmoN77V0T=1+6OJdNJfJdnvT8wgg@mail.gmail.com>
+	<51305B99.6080806@suse.de>
+	<20130305224150.GE8339@xanatos>
+	<CAErSpo4nAN7wFaRebw5fM3gQVppaQoSSh3PdFumgCS1SGhcxcw@mail.gmail.com>
+Date: Tue, 26 Mar 2013 16:34:45 -0700
+X-Google-Sender-Auth: E3wen_oAli4NKSrHacrDWW6IG9w
+Message-ID: <CAE9FiQUUyqY_FHCRZQ0aHu+2V-yqqdD1YVRp5rHnULBMY7BUfA@mail.gmail.com>
+Subject: Re: [PATCH] pci: do not try to assign irq 255
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Hannes Reinecke <hare@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Frederik Himpe <fhimpe@vub.ac.be>, Oliver Neukum <oneukum@suse.de>,
+        David Haerdeman <david@hardeman.nu>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Andy Grover <agrover@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 11:35:18AM +0100, Maxime Ripard wrote:
-> Hi Greg,
-> 
-> Le 21/03/2013 09:47, Heikki Krogerus a écrit :
-> > On Tue, Mar 19, 2013 at 11:52:49AM +0100, Maxime Ripard wrote:
-> >> From: Emilio López <emilio@elopez.com.ar>
-> >>
-> >> This commit implements support for using the clk api; this lets us use
-> >> the "clocks" property with device tree, instead of having to use
-> >> clock-frequency.
-> >>
-> >> Signed-off-by: Emilio López <emilio@elopez.com.ar>
-> > 
-> > FWIW,
-> > 
-> > Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> 
-> Would you consider merging this patch, or do you have additional comments?
-> 
-> We have several patch series that depends on this one that I'd like to
-> see included in 3.10, and we begin to see the end of the 3.9 release cycle.
+On Tue, Mar 26, 2013 at 2:54 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
 
-You resent one patch, in the middle of a 7 patch series, with me on the
- cc: and somehow expected me to know that I was supposed to apply it?
+> Where are we at with this?  I don't see Sarah's patch in the tree, and
+> I haven't applied any changes, so my guess is this is still broken.
 
-Please be specific and realistic with your requests.
+Yes, the fix is in the linus tree.
 
-Resend it if you feel I should apply it.
-
-greg k-h
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=00eed9c814cb8f281be6f0f5d8f45025dc0a97eb
