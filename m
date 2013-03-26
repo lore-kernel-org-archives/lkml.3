@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab3CZUJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 16:09:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56154 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977Ab3CZUJ5 (ORCPT
+	id S1760124Ab3CZUKy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 16:10:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51147 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753660Ab3CZUKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 16:09:57 -0400
-Date: Tue, 26 Mar 2013 13:08:44 -0700
-From: tip-bot for Abhijeet Dharmapurikar <tipbot@zytor.com>
-Message-ID: <tip-bad9a43a20372a3b41e15e8aa03b918c76f360f0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        adharmap@codeaurora.org, tglx@linutronix.de, sboyd@codeaurora.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        adharmap@codeaurora.org, tglx@linutronix.de, sboyd@codeaurora.org
-In-Reply-To: <1363734349-32635-1-git-send-email-sboyd@codeaurora.org>
-References: <1363734349-32635-1-git-send-email-sboyd@codeaurora.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] irqchip: gic: fix irq_trigger return
-Git-Commit-ID: bad9a43a20372a3b41e15e8aa03b918c76f360f0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 26 Mar 2013 13:08:50 -0700 (PDT)
+	Tue, 26 Mar 2013 16:10:53 -0400
+Date: Tue, 26 Mar 2013 13:10:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the final tree (akpm
+ and block tree related)
+Message-Id: <20130326131051.a47fe83fdbdab4b824394f18@linux-foundation.org>
+In-Reply-To: <20130326195523.GB24935@google.com>
+References: <20130326170554.f9f113fa24a1e5ec6d5d1ee6@canb.auug.org.au>
+	<20130326195523.GB24935@google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bad9a43a20372a3b41e15e8aa03b918c76f360f0
-Gitweb:     http://git.kernel.org/tip/bad9a43a20372a3b41e15e8aa03b918c76f360f0
-Author:     Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-AuthorDate: Tue, 19 Mar 2013 16:05:49 -0700
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 26 Mar 2013 20:52:25 +0100
+On Tue, 26 Mar 2013 12:55:23 -0700 Kent Overstreet <koverstreet@google.com> wrote:
 
-irqchip: gic: fix irq_trigger return
+> On Tue, Mar 26, 2013 at 05:05:54PM +1100, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > After merging the final tree, today's linux-next build
+> > produced this warning:
+> > 
+> > fs/bio.c: In function 'submit_bio_wait':
+> > fs/bio.c:786:17: warning: assignment from incompatible pointer type [enabled by default]
+> > 
+> > This is due to an interaction between commit 9e882242c ("block: Add
+> > submit_bio_wait(), remove from md") from the block tree and commit
+> > "block: prep work for batch completion" from the akpm tree.
+> 
+> In hindsight maybe it would've been better if the batch completion stuff
+> had gone in via Jens' tree, though I'm sure there would've still been
+> some conflicts.
+> 
+> What's the procedure for me to fix these? I can send you a fixup patch
+> but if you've pushed this version of linux-next somewhere public I'm not
+> sure where to look.
 
-The genirq layer expects a 0 in case that the retrigger function is
-not able to resend the irq in hardware, but the code is returning
--ENXIO. Fix it.
-
-[ tglx: Reworked comment and changelog ]
-
-Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Link: http://lkml.kernel.org/r/1363734349-32635-1-git-send-email-sboyd@codeaurora.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/irqchip/irq-gic.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index a32e0d5..fc6aebf 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -236,7 +236,8 @@ static int gic_retrigger(struct irq_data *d)
- 	if (gic_arch_extn.irq_retrigger)
- 		return gic_arch_extn.irq_retrigger(d);
- 
--	return -ENXIO;
-+	/* the genirq layer expects 0 if we can't retrigger in hardware */
-+	return 0;
- }
- 
- #ifdef CONFIG_SMP
+Stephen and I quietly fix up this sort of thing.
