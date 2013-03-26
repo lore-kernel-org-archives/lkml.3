@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab3CZRqh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:46:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24362 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754157Ab3CZRgV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:36:21 -0400
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=nLQbshE984MA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=mPrkuYEkOtMA:10 a=1XWaLZrsAAAA:8 a=J1Y8HTJGAAAA:8 a=ayC55rCoAAAA:8 a=RvlEQHu-AAAA:8 a=1YAWUHBhtAeQkI5-w-YA:9 a=E6k37eg1NvgA:10 a=UTB_XpHje0EA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130326173613.234745718@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 26 Mar 2013 13:22:23 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Yuchung Cheng <ycheng@google.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 84/86] tcp: fix SYN-data space mis-accounting
-References: <20130326172059.136127374@goodmis.org>
-Content-Disposition: inline; filename=0084-tcp-fix-SYN-data-space-mis-accounting.patch
+	id S1755848Ab3CZRqq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:46:46 -0400
+Received: from mout.gmx.net ([212.227.17.20]:63725 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751969Ab3CZRqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 13:46:43 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1+qWOI839KqKJH0Lcpl83eKSAygcMwFklYbF+w4kY
+	Ox7Z3pEnDoqNWv
+Message-ID: <5151DEF7.3060003@gmx.de>
+Date: Tue, 26 Mar 2013 18:46:31 +0100
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130309 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kernel 3.8.4 : kernel BUG at fs/locks.c:2093!   part #2
+References: <514F31AF.3080709@gmx.de> <20130325220143.GD10887@fieldses.org> <20130326144640.GB3353@fieldses.org>
+In-Reply-To: <20130326144640.GB3353@fieldses.org>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.1 stable review patch.
-If anyone has any objections, please let me know.
+On 03/26/2013 03:46 PM, J. Bruce Fields wrote:
+> Can you run with test patches?
+> 
+> This just makes nfsd's fput calls synchronous so that we see in the
+> backtrace who called them.
 
-------------------
+Well - the patched 3.8.4 host kernel now survives the stress test of the UML system.
+What I get at the host is now :
 
-From: Yuchung Cheng <ycheng@google.com>
+2013-03-26T18:32:17.487+01:00 n22 kernel: ------------[ cut here ]------------
+2013-03-26T18:32:17.487+01:00 n22 kernel: WARNING: at mm/page_alloc.c:2376 __alloc_pages_nodemask+0x262/0x7c0()
+2013-03-26T18:32:17.487+01:00 n22 kernel: Hardware name: 4180F65
+2013-03-26T18:32:17.487+01:00 n22 kernel: Modules linked in: md5 nfsd auth_rpcgss ipt_MASQUERADE xt_owner xt_multiport ipt_REJECT xt_tcpudp xt_recent xt_conntrack nf_conntrack_ftp xt_limit xt_LOG iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_filter ip_tables x_tables af_packet pppoe pppox ppp_generic slhc bridge stp llc tun msr snd_hda_codec_conexant snd_hda_intel uvcvideo i915 usblp snd_hda_codec sdhci_pci snd_pcm cfbfillrect videobuf2_vmalloc arc4 iwldvm cfbimgblt i2c_algo_bit cfbcopyarea intel_agp videobuf2_memops sdhci coretemp videobuf2_core mac80211 snd_page_alloc kvm_intel acpi_cpufreq fbcon mperf bitblit softcursor font intel_gtt videodev mmc_core snd_timer kvm drm_kms_helper thinkpad_acpi drm nvram agpgart fb snd i2c_i801 video i2c_core tpm_tis soundcore processor 8250_pci 8250_core iwlwifi thermal battery cfg80211 fbdev ac tpm rfkill psmouse serial_core e1000e evdev thermal_sys button tpm_bios wmi hwmon aesni_intel ablk_helper cryptd lr
+w aes_i586 xts gf128mul cbc sha256_generic fuse nfs lockd sunrpc dm_crypt dm_mod hid_monterey hid_microsoft hid_logitech hid_ezkey hid_cypress hid_chicony hid_cherry hid_belkin hid_apple hid_a4tech hid_generic usbhid hid sr_mod cdrom sg [last unloaded: microcode]
+2013-03-26T18:32:17.487+01:00 n22 kernel: Pid: 6614, comm: nfsd Not tainted 3.8.4 #9
+2013-03-26T18:32:17.487+01:00 n22 kernel: Call Trace:
+2013-03-26T18:32:17.487+01:00 n22 kernel: [<c1033ba2>] warn_slowpath_common+0x72/0xa0
+2013-03-26T18:32:17.487+01:00 n22 kernel: [<c10db802>] ? __alloc_pages_nodemask+0x262/0x7c0
+2013-03-26T18:32:17.487+01:00 n22 kernel: [<c10db802>] ? __alloc_pages_nodemask+0x262/0x7c0
+2013-03-26T18:32:17.487+01:00 n22 kernel: [<c1033bf2>] warn_slowpath_null+0x22/0x30
+2013-03-26T18:32:17.487+01:00 n22 kernel: [<c10db802>] __alloc_pages_nodemask+0x262/0x7c0
+2013-03-26T18:32:17.487+01:00 n22 kernel: [<c1069758>] ? dequeue_task_fair+0x258/0x6f0
+2013-03-26T18:32:17.487+01:00 n22 kernel: [<c13a8803>] ? inet_recvmsg+0x73/0x90
+2013-03-26T18:32:17.487+01:00 n22 kernel: [<c10dbd7c>] __get_free_pages+0x1c/0x30
+2013-03-26T18:32:17.487+01:00 n22 kernel: [<c110e0f9>] kmalloc_order_trace+0x29/0xb0
+2013-03-26T18:32:17.487+01:00 n22 kernel: [<f857e480>] ? ip_map_request+0xd0/0xd0 [sunrpc]
+2013-03-26T18:32:17.487+01:00 n22 kernel: [<f85824d6>] ? cache_revisit_request+0x26/0xd0 [sunrpc]
+2013-03-26T18:32:17.487+01:00 n22 kernel: [<c110f149>] __kmalloc+0x1b9/0x1e0
+2013-03-26T18:32:17.487+01:00 n22 kernel: [<f85835bf>] ? cache_check+0x22f/0x340 [sunrpc]
+2013-03-26T18:32:17.487+01:00 n22 kernel: [<f90a0b1c>] nfs4_acl_new+0x1c/0x30 [nfsd]
+2013-03-26T18:32:17.488+01:00 n22 kernel: [<f9095482>] nfsd4_decode_fattr+0x302/0x6c0 [nfsd]
+2013-03-26T18:32:17.488+01:00 n22 kernel: [<c110f068>] ? __kmalloc+0xd8/0x1e0
+2013-03-26T18:32:17.488+01:00 n22 kernel: [<f9095871>] nfsd4_decode_setattr+0x31/0x40 [nfsd]
+2013-03-26T18:32:17.488+01:00 n22 kernel: [<f909804d>] nfs4svc_decode_compoundargs+0x23d/0x280 [nfsd]
+2013-03-26T18:32:17.488+01:00 n22 kernel: [<f9097e10>] ? nfsd4_release_compoundargs+0x70/0x70 [nfsd]
+2013-03-26T18:32:17.488+01:00 n22 kernel: [<f9081b3f>] nfsd_dispatch+0x3f/0x1b0 [nfsd]
+2013-03-26T18:32:17.488+01:00 n22 kernel: [<f857b8a8>] svc_process+0x3f8/0x6d0 [sunrpc]
+2013-03-26T18:32:17.488+01:00 n22 kernel: [<f8586d5e>] ? svc_xprt_received+0x3e/0x80 [sunrpc]
+2013-03-26T18:32:17.488+01:00 n22 kernel: [<f85879e1>] ? svc_recv+0x2d1/0x3c0 [sunrpc]
+2013-03-26T18:32:17.488+01:00 n22 kernel: [<f908165d>] nfsd+0xad/0x110 [nfsd]
+2013-03-26T18:32:17.488+01:00 n22 kernel: [<f90815b0>] ? nfsd_destroy+0x70/0x70 [nfsd]
+2013-03-26T18:32:17.488+01:00 n22 kernel: [<c1053b94>] kthread+0x94/0xa0
+2013-03-26T18:32:17.488+01:00 n22 kernel: [<c13d0f77>] ret_from_kernel_thread+0x1b/0x28
+2013-03-26T18:32:17.488+01:00 n22 kernel: [<c1053b00>] ? flush_kthread_work+0xd0/0xd0
+2013-03-26T18:32:17.488+01:00 n22 kernel: ---[ end trace 82b96ff8bcd5453f ]---
 
-[ Upstream commit f7983d26995f85994a08ee173ee7d0c4ff3da356 ]
 
-In fast open the sender unncessarily reduces the space available
-for data in SYN by 12 bytes.  This is because in the sender
-incorrectly reserves space for TS option twice in tcp_send_syn_data():
-tcp_mtu_to_mss() already accounts for TS option space. But it further
-reserves MAX_TCP_OPTION_SPACE when computing the payload space.
-
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/ipv4/tcp_output.c |   18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
-
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 6735bea..6a1cdc8 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1342,8 +1342,8 @@ int tcp_trim_head(struct sock *sk, struct sk_buff *skb, u32 len)
- 	return 0;
- }
- 
--/* Calculate MSS. Not accounting for SACKs here.  */
--int tcp_mtu_to_mss(struct sock *sk, int pmtu)
-+/* Calculate MSS not accounting any TCP options.  */
-+static inline int __tcp_mtu_to_mss(struct sock *sk, int pmtu)
- {
- 	const struct tcp_sock *tp = tcp_sk(sk);
- 	const struct inet_connection_sock *icsk = inet_csk(sk);
-@@ -1372,13 +1372,17 @@ int tcp_mtu_to_mss(struct sock *sk, int pmtu)
- 	/* Then reserve room for full set of TCP options and 8 bytes of data */
- 	if (mss_now < 48)
- 		mss_now = 48;
--
--	/* Now subtract TCP options size, not including SACKs */
--	mss_now -= tp->tcp_header_len - sizeof(struct tcphdr);
--
- 	return mss_now;
- }
- 
-+/* Calculate MSS. Not accounting for SACKs here.  */
-+int tcp_mtu_to_mss(struct sock *sk, int pmtu)
-+{
-+	/* Subtract TCP options size, not including SACKs */
-+	return __tcp_mtu_to_mss(sk, pmtu) -
-+	       (tcp_sk(sk)->tcp_header_len - sizeof(struct tcphdr));
-+}
-+
- /* Inverse of above */
- int tcp_mss_to_mtu(struct sock *sk, int mss)
- {
-@@ -2914,7 +2918,7 @@ static int tcp_send_syn_data(struct sock *sk, struct sk_buff *syn)
- 	 */
- 	if (tp->rx_opt.user_mss && tp->rx_opt.user_mss < tp->rx_opt.mss_clamp)
- 		tp->rx_opt.mss_clamp = tp->rx_opt.user_mss;
--	space = tcp_mtu_to_mss(sk, inet_csk(sk)->icsk_pmtu_cookie) -
-+	space = __tcp_mtu_to_mss(sk, inet_csk(sk)->icsk_pmtu_cookie) -
- 		MAX_TCP_OPTION_SPACE;
- 
- 	syn_data = skb_copy_expand(syn, skb_headroom(syn), space,
 -- 
-1.7.10.4
-
-
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
