@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab3CZWwn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:52:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53042 "EHLO
+	id S1756275Ab3CZXBh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:01:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53074 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755843Ab3CZWwh (ORCPT
+	with ESMTP id S1756228Ab3CZWwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:37 -0400
+	Tue, 26 Mar 2013 18:52:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 34/72] ALSA: snd-usb: mixer: ignore -EINVAL in snd_usb_mixer_controls()
-Date: Tue, 26 Mar 2013 15:51:17 -0700
-Message-Id: <20130326224923.216836194@linuxfoundation.org>
+        Torsten Duwe <duwe@lst.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 42/72] KMS: fix EDID detailed timing vsync parsing
+Date: Tue, 26 Mar 2013 15:51:25 -0700
+Message-Id: <20130326224924.049621163@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -26,57 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Torsten Duwe <torsten@lst.de>
 
-commit 83ea5d18d74f032a760fecde78c0210f66f7f70c upstream.
+commit 16dad1d743d31a104a849c8944e6b9eb479f6cd7 upstream.
 
-Creation of individual mixer controls may fail, but that shouldn't cause
-the entire mixer creation to fail. Even worse, if the mixer creation
-fails, that will error out the entire device probing.
+EDID spreads some values across multiple bytes; bit-fiddling is needed
+to retrieve these.  The current code to parse "detailed timings" has a
+cut&paste error that results in a vsync offset of at most 15 lines
+instead of 63.
 
-All the functions called by parse_audio_unit() should return -EINVAL if
-they find descriptors that are unsupported or believed to be malformed,
-so we can safely handle this error code as a non-fatal condition in
-snd_usb_mixer_controls().
+See
 
-That fixes a long standing bug which is commonly worked around by
-adding quirks which make the driver ignore entire interfaces. Some of
-them might now be unnecessary.
+   http://en.wikipedia.org/wiki/EDID
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-and-tested-by: Rodolfo Thomazelli <pe.soberbo@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+and in the "EDID Detailed Timing Descriptor" see bytes 10+11 show why
+that needs to be a left shift.
+
+Signed-off-by: Torsten Duwe <duwe@lst.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/mixer.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/drm_edid.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -2027,7 +2027,7 @@ static int snd_usb_mixer_controls(struct
- 			state.oterm.type = le16_to_cpu(desc->wTerminalType);
- 			state.oterm.name = desc->iTerminal;
- 			err = parse_audio_unit(&state, desc->bSourceID);
--			if (err < 0)
-+			if (err < 0 && err != -EINVAL)
- 				return err;
- 		} else { /* UAC_VERSION_2 */
- 			struct uac2_output_terminal_descriptor *desc = p;
-@@ -2039,12 +2039,12 @@ static int snd_usb_mixer_controls(struct
- 			state.oterm.type = le16_to_cpu(desc->wTerminalType);
- 			state.oterm.name = desc->iTerminal;
- 			err = parse_audio_unit(&state, desc->bSourceID);
--			if (err < 0)
-+			if (err < 0 && err != -EINVAL)
- 				return err;
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -836,7 +836,7 @@ static struct drm_display_mode *drm_mode
+ 	unsigned vblank = (pt->vactive_vblank_hi & 0xf) << 8 | pt->vblank_lo;
+ 	unsigned hsync_offset = (pt->hsync_vsync_offset_pulse_width_hi & 0xc0) << 2 | pt->hsync_offset_lo;
+ 	unsigned hsync_pulse_width = (pt->hsync_vsync_offset_pulse_width_hi & 0x30) << 4 | pt->hsync_pulse_width_lo;
+-	unsigned vsync_offset = (pt->hsync_vsync_offset_pulse_width_hi & 0xc) >> 2 | pt->vsync_offset_pulse_width_lo >> 4;
++	unsigned vsync_offset = (pt->hsync_vsync_offset_pulse_width_hi & 0xc) << 2 | pt->vsync_offset_pulse_width_lo >> 4;
+ 	unsigned vsync_pulse_width = (pt->hsync_vsync_offset_pulse_width_hi & 0x3) << 4 | (pt->vsync_offset_pulse_width_lo & 0xf);
  
- 			/* for UAC2, use the same approach to also add the clock selectors */
- 			err = parse_audio_unit(&state, desc->bCSourceID);
--			if (err < 0)
-+			if (err < 0 && err != -EINVAL)
- 				return err;
- 		}
- 	}
+ 	/* ignore tiny modes */
 
 
