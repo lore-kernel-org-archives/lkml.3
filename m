@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964823Ab3CZOyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 10:54:19 -0400
+	id S964850Ab3CZOyg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 10:54:36 -0400
 Received: from mga01.intel.com ([192.55.52.88]:32838 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934586Ab3CZOyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 10:54:17 -0400
+	id S964797Ab3CZOyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 10:54:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,911,1355126400"; 
-   d="scan'208";a="308635552"
+   d="scan'208";a="312126552"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
         Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
         spear-devel <spear-devel@list.st.com>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 1/4] dw_dmac: fix style of the comments
-Date: Tue, 26 Mar 2013 16:53:54 +0200
-Message-Id: <1364309637-25860-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v2 3/4] dw_dmac: make wrapper on of_dma_controller_register()
+Date: Tue, 26 Mar 2013 16:53:56 +0200
+Message-Id: <1364309637-25860-4-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
 In-Reply-To: <1364309637-25860-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1364309637-25860-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -24,142 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's use capital letter as a first one in the comments.
-There is no functional changes.
+This patch introduces new method dw_dma_of_controller_register() and adds
+checks of the of_node presence together with CONFIG_OF before calling the
+wrapper. It helps to distinguish the real -ENODEV return code of fake one when
+of_dma_controller_register is not implemented.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/dma/dw_dmac.c | 30 +++++++++++++++---------------
- 1 file changed, 15 insertions(+), 15 deletions(-)
+ drivers/dma/dw_dmac.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 43e2e89..d6dbb14 100644
+index 274fd7d..c1f017b 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -173,7 +173,7 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
- 		return;
- 
- 	if (dws && dws->cfg_hi == ~0 && dws->cfg_lo == ~0) {
--		/* autoconfigure based on request line from DT */
-+		/* Autoconfigure based on request line from DT */
- 		if (dwc->direction == DMA_MEM_TO_DEV)
- 			cfghi = DWC_CFGH_DST_PER(dwc->request_line);
- 		else if (dwc->direction == DMA_DEV_TO_MEM)
-@@ -473,16 +473,16 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 			(unsigned long long)llp);
- 
- 	list_for_each_entry_safe(desc, _desc, &dwc->active_list, desc_node) {
--		/* initial residue value */
-+		/* Initial residue value */
- 		dwc->residue = desc->total_len;
- 
--		/* check first descriptors addr */
-+		/* Check first descriptors addr */
- 		if (desc->txd.phys == llp) {
- 			spin_unlock_irqrestore(&dwc->lock, flags);
- 			return;
- 		}
- 
--		/* check first descriptors llp */
-+		/* Check first descriptors llp */
- 		if (desc->lli.llp == llp) {
- 			/* This one is currently in progress */
- 			dwc->residue -= dwc_get_sent(dwc);
-@@ -588,7 +588,7 @@ inline dma_addr_t dw_dma_get_dst_addr(struct dma_chan *chan)
+@@ -1303,6 +1303,16 @@ static struct dma_chan *dw_dma_of_xlate(struct of_phandle_args *dma_spec,
+ 	return dma_request_channel(cap, dw_dma_of_filter, &fargs);
  }
- EXPORT_SYMBOL(dw_dma_get_dst_addr);
  
--/* called with dwc->lock held and all DMAC interrupts disabled */
-+/* Called with dwc->lock held and all DMAC interrupts disabled */
- static void dwc_handle_cyclic(struct dw_dma *dw, struct dw_dma_chan *dwc,
- 		u32 status_err, u32 status_xfer)
- {
-@@ -626,7 +626,7 @@ static void dwc_handle_cyclic(struct dw_dma *dw, struct dw_dma_chan *dwc,
++static void dw_dma_of_controller_register(struct dw_dma *dw)
++{
++	struct device *dev = dw->dma.dev;
++	int err;
++
++	err = of_dma_controller_register(dev->of_node, dw_dma_of_xlate, dw);
++	if (err)
++		dev_err(dev, "could not register of_dma_controller\n");
++}
++
+ /* --------------------- Cyclic DMA API extensions -------------------- */
  
- 		dwc_chan_disable(dw, dwc);
+ /**
+@@ -1843,13 +1853,8 @@ static int dw_probe(struct platform_device *pdev)
  
--		/* make sure DMA does not restart by loading a new list */
-+		/* Make sure DMA does not restart by loading a new list */
- 		channel_writel(dwc, LLP, 0);
- 		channel_writel(dwc, CTL_LO, 0);
- 		channel_writel(dwc, CTL_HI, 0);
-@@ -1256,7 +1256,7 @@ static bool dw_dma_generic_filter(struct dma_chan *chan, void *param)
- 	struct dw_dma_filter_args *fargs = param;
- 	struct dw_dma_slave *dws = &dwc->slave;
+ 	dma_async_device_register(&dw->dma);
  
--	/* ensure the device matches our channel */
-+	/* Ensure the device matches our channel */
-         if (chan->device != &fargs->dw->dma)
-                 return false;
+-	if (pdev->dev.of_node) {
+-		err = of_dma_controller_register(pdev->dev.of_node,
+-						 dw_dma_of_xlate, dw);
+-		if (err && err != -ENODEV)
+-			dev_err(&pdev->dev,
+-				"could not register of_dma_controller\n");
+-	}
++	if (IS_ENABLED(CONFIG_OF) && pdev->dev.of_node)
++		dw_dma_of_controller_register(dw);
  
-@@ -1323,7 +1323,7 @@ int dw_dma_cyclic_start(struct dma_chan *chan)
- 
- 	spin_lock_irqsave(&dwc->lock, flags);
- 
--	/* assert channel is idle */
-+	/* Assert channel is idle */
- 	if (dma_readl(dw, CH_EN) & dwc->mask) {
- 		dev_err(chan2dev(&dwc->chan),
- 			"BUG: Attempted to start non-idle channel\n");
-@@ -1335,7 +1335,7 @@ int dw_dma_cyclic_start(struct dma_chan *chan)
- 	dma_writel(dw, CLEAR.ERROR, dwc->mask);
- 	dma_writel(dw, CLEAR.XFER, dwc->mask);
- 
--	/* setup DMAC channel registers */
-+	/* Setup DMAC channel registers */
- 	channel_writel(dwc, LLP, dwc->cdesc->desc[0]->txd.phys);
- 	channel_writel(dwc, CTL_LO, DWC_CTLL_LLP_D_EN | DWC_CTLL_LLP_S_EN);
- 	channel_writel(dwc, CTL_HI, 0);
-@@ -1502,7 +1502,7 @@ struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
- 		last = desc;
- 	}
- 
--	/* lets make a cyclic list */
-+	/* Let's make a cyclic list */
- 	last->lli.llp = cdesc->desc[0]->txd.phys;
- 
- 	dev_dbg(chan2dev(&dwc->chan), "cyclic prepared buf 0x%llx len %zu "
-@@ -1707,7 +1707,7 @@ static int dw_probe(struct platform_device *pdev)
- 
- 	dw->regs = regs;
- 
--	/* get hardware configuration parameters */
-+	/* Get hardware configuration parameters */
- 	if (autocfg) {
- 		max_blk_size = dma_readl(dw, MAX_BLK_SIZE);
- 
-@@ -1729,10 +1729,10 @@ static int dw_probe(struct platform_device *pdev)
- 	/* Calculate all channel mask before DMA setup */
- 	dw->all_chan_mask = (1 << nr_channels) - 1;
- 
--	/* force dma off, just in case */
-+	/* Force dma off, just in case */
- 	dw_dma_off(dw);
- 
--	/* disable BLOCK interrupts as well */
-+	/* Disable BLOCK interrupts as well */
- 	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
- 
- 	err = devm_request_irq(&pdev->dev, irq, dw_dma_interrupt, 0,
-@@ -1742,7 +1742,7 @@ static int dw_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, dw);
- 
--	/* create a pool of consistent memory blocks for hardware descriptors */
-+	/* Create a pool of consistent memory blocks for hardware descriptors */
- 	dw->desc_pool = dmam_pool_create("dw_dmac_desc_pool", &pdev->dev,
- 					 sizeof(struct dw_desc), 4, 0);
- 	if (!dw->desc_pool) {
-@@ -1783,7 +1783,7 @@ static int dw_probe(struct platform_device *pdev)
- 
- 		dwc->direction = DMA_TRANS_NONE;
- 
--		/* hardware configuration */
-+		/* Hardware configuration */
- 		if (autocfg) {
- 			unsigned int dwc_params;
- 
+ 	return 0;
+ }
 -- 
 1.8.2.rc0.22.gb3600c3
 
