@@ -1,129 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965459Ab3CZPjy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:39:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54000 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965245Ab3CZPXX (ORCPT
+	id S965277Ab3CZPkW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:40:22 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49952 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965245Ab3CZPkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:23 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 103/150] USB: ftdi_sio: fix use-after-free in TIOCMIWAIT
-Date: Tue, 26 Mar 2013 15:20:02 +0000
-Message-Id: <1364311249-14454-104-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 26 Mar 2013 11:40:18 -0400
+Date: Tue, 26 Mar 2013 15:40:14 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: [GIT PULL] extcon/ASoC: arizona: Fix interactions around HPDET
+Message-ID: <20130326154014.GD18316@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dKeYJkA19bNVVKdr"
+Content-Disposition: inline
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--dKeYJkA19bNVVKdr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Johan Hovold <jhovold@gmail.com>
+This patch series fixes an interaction between the extcon and ASoC
+drivers for arizona.  Since both drivers are under active development
+there are likely going to be cross tree issues - there's already some
+further patches on the ASoC side - so it'd be good to get this pulled
+into both trees.
 
-commit 71ccb9b01981fabae27d3c98260ea4613207618e upstream.
+I've taken the liberty of pulling into ASoC already, if there's a
+problem with that I can drop the changes easily enough.
 
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
+The following changes since commit 8bb9660418e05bb1845ac1a2428444d78e322cc7:
 
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
+  Linux 3.9-rc4 (2013-03-23 16:52:44 -0700)
 
-When switching to tty ports, some lifetime assumptions were changed.
-Specifically, close can now be called before the final tty reference is
-dropped as part of hangup at device disconnect. Even with the ftdi
-private-data refcounting this means that the port private data can be
-freed while a process is sleeping on modem-status changes and thus
-cannot be relied on to detect disconnects when woken up.
+are available in the git repository at:
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: adjust context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/serial/ftdi_sio.c | 19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git tags/arizona-extcon-asoc
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 1f939cb..b2f4001 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -74,9 +74,7 @@ struct ftdi_private {
- 	int flags;		/* some ASYNC_xxxx flags are supported */
- 	unsigned long last_dtr_rts;	/* saved modem control outputs */
- 	struct async_icount	icount;
--	wait_queue_head_t delta_msr_wait; /* Used for TIOCMIWAIT */
- 	char prev_status;        /* Used for TIOCMIWAIT */
--	bool dev_gone;        /* Used to abort TIOCMIWAIT */
- 	char transmit_empty;	/* If transmitter is empty or not */
- 	struct usb_serial_port *port;
- 	__u16 interface;	/* FT2232C, FT2232H or FT4232H port interface
-@@ -1694,10 +1692,8 @@ static int ftdi_sio_port_probe(struct usb_serial_port *port)
- 	kref_init(&priv->kref);
- 	mutex_init(&priv->cfg_lock);
- 	memset(&priv->icount, 0x00, sizeof(priv->icount));
--	init_waitqueue_head(&priv->delta_msr_wait);
- 
- 	priv->flags = ASYNC_LOW_LATENCY;
--	priv->dev_gone = false;
- 
- 	if (quirk && quirk->port_probe)
- 		quirk->port_probe(priv);
-@@ -1844,8 +1840,7 @@ static int ftdi_sio_port_remove(struct usb_serial_port *port)
- {
- 	struct ftdi_private *priv = usb_get_serial_port_data(port);
- 
--	priv->dev_gone = true;
--	wake_up_interruptible_all(&priv->delta_msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
- 
- 	remove_sysfs_attrs(port);
- 
-@@ -1994,7 +1989,7 @@ static int ftdi_process_packet(struct tty_struct *tty,
- 		if (diff_status & FTDI_RS0_RLSD)
- 			priv->icount.dcd++;
- 
--		wake_up_interruptible_all(&priv->delta_msr_wait);
-+		wake_up_interruptible(&port->delta_msr_wait);
- 		priv->prev_status = status;
- 	}
- 
-@@ -2393,11 +2388,15 @@ static int ftdi_ioctl(struct tty_struct *tty,
- 	 */
- 	case TIOCMIWAIT:
- 		cprev = priv->icount;
--		while (!priv->dev_gone) {
--			interruptible_sleep_on(&priv->delta_msr_wait);
-+		for (;;) {
-+			interruptible_sleep_on(&port->delta_msr_wait);
- 			/* see if a signal did it */
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
-+
-+			if (port->serial->disconnected)
-+				return -EIO;
-+
- 			cnow = priv->icount;
- 			if (((arg & TIOCM_RNG) && (cnow.rng != cprev.rng)) ||
- 			    ((arg & TIOCM_DSR) && (cnow.dsr != cprev.dsr)) ||
-@@ -2407,8 +2406,6 @@ static int ftdi_ioctl(struct tty_struct *tty,
- 			}
- 			cprev = cnow;
- 		}
--		return -EIO;
--		break;
- 	case TIOCSERGETLSR:
- 		return get_lsr_info(port, (struct serial_struct __user *)arg);
- 		break;
--- 
-1.8.1.2
+for you to fetch changes up to 63fea17128397d440753883d16e7d2d9aa95a66b:
 
+  extcon: arizona: Fix interaction between headphone outputs and identification (2013-03-26 14:26:05 +0000)
+
+----------------------------------------------------------------
+ASoC/extcon: arizona: Fix interaction between HPDET and headphone outputs
+
+This patch series covers both ASoC and extcon subsystems and fixes an
+interaction between the HPDET function and the headphone outputs - we
+really shouldn't run HPDET while the headphone is active.  The first
+patch is a refactoring to make the extcon side easier.
+
+----------------------------------------------------------------
+Mark Brown (3):
+      extcon: arizona: Factor out magic application
+      ASoC: arizona: Fix interaction between headphone outputs and identification
+      extcon: arizona: Fix interaction between headphone outputs and identification
+
+ drivers/extcon/extcon-arizona.c  |  107 ++++++++++++++++++--------------------
+ include/linux/mfd/arizona/core.h |    3 ++
+ sound/soc/codecs/arizona.c       |   33 ++++++++++++
+ sound/soc/codecs/arizona.h       |    3 ++
+ sound/soc/codecs/wm5102.c        |    8 +--
+ sound/soc/codecs/wm5110.c        |    8 +--
+ 6 files changed, 99 insertions(+), 63 deletions(-)
+
+--dKeYJkA19bNVVKdr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRUcFXAAoJELSic+t+oim92ucP/RFV0ZxCQaUoC2PYshNMG2PY
+IG6I9g0BqWN0qCEJID0hBvjzrh8lkudGdYJ3FGcPheNEtrCiIaFPZKueo152WX1T
+H9oWviTZ+jFXkUqTbKDAvb1J5wdDMR+9bULYg13XEuc6RSpqDgQvqYaKcy2zGeST
+T0Nqoqex+4GpX1Bt9oGicfEDVbp2ypDJSQyD4LxsFOtao0y5OhMcgfqp8ub28Zl9
+eDMfPQT0Dxqbh3ftCDwcKNRGhKaebGLSLJiXxFmbZacqdf2Sh5BI8R/6deDY7CAd
+Wso1gPt91vi0NOUrvMutS8/BHkJ3wWaeAqUWgNc0mlcYVeJ6Ng3ERvGFakup2oju
+lw7RPyHd1ViRuoPtYAjDrm3HdHeXiKNntXqIndctqPnVPRKecFj85XXNvQCMxwsv
+GynTq8iyKu781lDbb8h5K5lnWDyOvCFC0riGLLm17BLeMJA/1F/UfbjZjJtC0+Nl
+jFCxGeN9ZxFdL+WbpvksVfmSn5vYjFtwC7uIVdqzGHxfu4bzQyiEiEwKhFEtkQWt
+ErFaQMYpV8iZdp/ToJYmObBLjcckFbDsmORk+RONkz6SjsPDgU7XLFYK4Q8g63VI
+48IC3pb7U0hA7STULQ5JazMlSJj9xOlxLXQgWa7w+5GphAM8hkiNvijRSUAGvxm/
+zh+RL5anCuVzWzOQ5Mds
+=gA3f
+-----END PGP SIGNATURE-----
+
+--dKeYJkA19bNVVKdr--
