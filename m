@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934796Ab3CZPoT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:44:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53931 "EHLO
+	id S1755936Ab3CZPoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:44:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53933 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965177Ab3CZPXI (ORCPT
+	with ESMTP id S965181Ab3CZPXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 11:23:08 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joe Thornber <ejt@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
+Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 090/150] dm thin: fix discard corruption
-Date: Tue, 26 Mar 2013 15:19:49 +0000
-Message-Id: <1364311249-14454-91-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 089/150] usb: gadget: ffs: fix enable multiple instances
+Date: Tue, 26 Mar 2013 15:19:48 +0000
+Message-Id: <1364311249-14454-90-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,199 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
 
-commit f046f89a99ccfd9408b94c653374ff3065c7edb3 upstream.
+commit 3416905ba058e43112ad7b1b4859797f027f5a07 upstream.
 
-Fix a bug in dm_btree_remove that could leave leaf values with incorrect
-reference counts.  The effect of this was that removal of a shared block
-could result in the space maps thinking the block was no longer used.
-More concretely, if you have a thin device and a snapshot of it, sending
-a discard to a shared region of the thin could corrupt the snapshot.
+This patch fixes an "off-by-one" bug found in
+581791f (FunctionFS: enable multiple functions).
 
-Thinp uses a 2-level nested btree to store it's mappings.  This first
-level is indexed by thin device, and the second level by logical
-block.
+During gfs_bind/gfs_unbind the functionfs_bind/functionfs_unbind should be
+called for every functionfs instance. With the "i" pre-decremented they
+were not called for the zeroth instance.
 
-Often when we're removing an entry in this mapping tree we need to
-rebalance nodes, which can involve shadowing them, possibly creating a
-copy if the block is shared.  If we do create a copy then children of
-that node need to have their reference counts incremented.  In this
-way reference counts percolate down the tree as shared trees diverge.
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-The rebalance functions were incrementing the children at the
-appropriate time, but they were always assuming the children were
-internal nodes.  This meant the leaf values (in our case packed
-block/flags entries) were not being incremented.
+[ balbi@ti.com : added offending commit's subject ]
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-[ luis: backported to 3.5:
-  - bump pool_target version from 1.2.0 to 1.2.1
-  - bump thin_target version from 1.1.0 to 1.1.1 ]
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-thin.c                         |  4 +--
- drivers/md/persistent-data/dm-btree-remove.c | 46 +++++++++++++++-------------
- 2 files changed, 26 insertions(+), 24 deletions(-)
+ drivers/usb/gadget/g_ffs.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
-index e1bce79..5f52a9a 100644
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -2514,7 +2514,7 @@ static struct target_type pool_target = {
- 	.name = "thin-pool",
- 	.features = DM_TARGET_SINGLETON | DM_TARGET_ALWAYS_WRITEABLE |
- 		    DM_TARGET_IMMUTABLE,
--	.version = {1, 2, 0},
-+	.version = {1, 2, 1},
- 	.module = THIS_MODULE,
- 	.ctr = pool_ctr,
- 	.dtr = pool_dtr,
-@@ -2787,7 +2787,7 @@ static void thin_io_hints(struct dm_target *ti, struct queue_limits *limits)
+diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
+index d3ace90..919177b 100644
+--- a/drivers/usb/gadget/g_ffs.c
++++ b/drivers/usb/gadget/g_ffs.c
+@@ -358,7 +358,7 @@ static int gfs_bind(struct usb_composite_dev *cdev)
+ 	if (unlikely(ret < 0))
+ 		goto error;
  
- static struct target_type thin_target = {
- 	.name = "thin",
--	.version = {1, 1, 0},
-+	.version = {1, 1, 1},
- 	.module	= THIS_MODULE,
- 	.ctr = thin_ctr,
- 	.dtr = thin_dtr,
-diff --git a/drivers/md/persistent-data/dm-btree-remove.c b/drivers/md/persistent-data/dm-btree-remove.c
-index c4f2813..b88757c 100644
---- a/drivers/md/persistent-data/dm-btree-remove.c
-+++ b/drivers/md/persistent-data/dm-btree-remove.c
-@@ -139,15 +139,8 @@ struct child {
- 	struct btree_node *n;
- };
+-	for (i = func_num; --i; ) {
++	for (i = func_num; i--; ) {
+ 		ret = functionfs_bind(ffs_tab[i].ffs_data, cdev);
+ 		if (unlikely(ret < 0)) {
+ 			while (++i < func_num)
+@@ -413,7 +413,7 @@ static int gfs_unbind(struct usb_composite_dev *cdev)
+ 		gether_cleanup();
+ 	gfs_ether_setup = false;
  
--static struct dm_btree_value_type le64_type = {
--	.context = NULL,
--	.size = sizeof(__le64),
--	.inc = NULL,
--	.dec = NULL,
--	.equal = NULL
--};
--
--static int init_child(struct dm_btree_info *info, struct btree_node *parent,
-+static int init_child(struct dm_btree_info *info, struct dm_btree_value_type *vt,
-+		      struct btree_node *parent,
- 		      unsigned index, struct child *result)
- {
- 	int r, inc;
-@@ -164,7 +157,7 @@ static int init_child(struct dm_btree_info *info, struct btree_node *parent,
- 	result->n = dm_block_data(result->block);
+-	for (i = func_num; --i; )
++	for (i = func_num; i--; )
+ 		if (ffs_tab[i].ffs_data)
+ 			functionfs_unbind(ffs_tab[i].ffs_data);
  
- 	if (inc)
--		inc_children(info->tm, result->n, &le64_type);
-+		inc_children(info->tm, result->n, vt);
- 
- 	*((__le64 *) value_ptr(parent, index)) =
- 		cpu_to_le64(dm_block_location(result->block));
-@@ -236,7 +229,7 @@ static void __rebalance2(struct dm_btree_info *info, struct btree_node *parent,
- }
- 
- static int rebalance2(struct shadow_spine *s, struct dm_btree_info *info,
--		      unsigned left_index)
-+		      struct dm_btree_value_type *vt, unsigned left_index)
- {
- 	int r;
- 	struct btree_node *parent;
-@@ -244,11 +237,11 @@ static int rebalance2(struct shadow_spine *s, struct dm_btree_info *info,
- 
- 	parent = dm_block_data(shadow_current(s));
- 
--	r = init_child(info, parent, left_index, &left);
-+	r = init_child(info, vt, parent, left_index, &left);
- 	if (r)
- 		return r;
- 
--	r = init_child(info, parent, left_index + 1, &right);
-+	r = init_child(info, vt, parent, left_index + 1, &right);
- 	if (r) {
- 		exit_child(info, &left);
- 		return r;
-@@ -368,7 +361,7 @@ static void __rebalance3(struct dm_btree_info *info, struct btree_node *parent,
- }
- 
- static int rebalance3(struct shadow_spine *s, struct dm_btree_info *info,
--		      unsigned left_index)
-+		      struct dm_btree_value_type *vt, unsigned left_index)
- {
- 	int r;
- 	struct btree_node *parent = dm_block_data(shadow_current(s));
-@@ -377,17 +370,17 @@ static int rebalance3(struct shadow_spine *s, struct dm_btree_info *info,
- 	/*
- 	 * FIXME: fill out an array?
- 	 */
--	r = init_child(info, parent, left_index, &left);
-+	r = init_child(info, vt, parent, left_index, &left);
- 	if (r)
- 		return r;
- 
--	r = init_child(info, parent, left_index + 1, &center);
-+	r = init_child(info, vt, parent, left_index + 1, &center);
- 	if (r) {
- 		exit_child(info, &left);
- 		return r;
- 	}
- 
--	r = init_child(info, parent, left_index + 2, &right);
-+	r = init_child(info, vt, parent, left_index + 2, &right);
- 	if (r) {
- 		exit_child(info, &left);
- 		exit_child(info, &center);
-@@ -434,7 +427,8 @@ static int get_nr_entries(struct dm_transaction_manager *tm,
- }
- 
- static int rebalance_children(struct shadow_spine *s,
--			      struct dm_btree_info *info, uint64_t key)
-+			      struct dm_btree_info *info,
-+			      struct dm_btree_value_type *vt, uint64_t key)
- {
- 	int i, r, has_left_sibling, has_right_sibling;
- 	uint32_t child_entries;
-@@ -472,13 +466,13 @@ static int rebalance_children(struct shadow_spine *s,
- 	has_right_sibling = i < (le32_to_cpu(n->header.nr_entries) - 1);
- 
- 	if (!has_left_sibling)
--		r = rebalance2(s, info, i);
-+		r = rebalance2(s, info, vt, i);
- 
- 	else if (!has_right_sibling)
--		r = rebalance2(s, info, i - 1);
-+		r = rebalance2(s, info, vt, i - 1);
- 
- 	else
--		r = rebalance3(s, info, i - 1);
-+		r = rebalance3(s, info, vt, i - 1);
- 
- 	return r;
- }
-@@ -529,7 +523,7 @@ static int remove_raw(struct shadow_spine *s, struct dm_btree_info *info,
- 		if (le32_to_cpu(n->header.flags) & LEAF_NODE)
- 			return do_leaf(n, key, index);
- 
--		r = rebalance_children(s, info, key);
-+		r = rebalance_children(s, info, vt, key);
- 		if (r)
- 			break;
- 
-@@ -550,6 +544,14 @@ static int remove_raw(struct shadow_spine *s, struct dm_btree_info *info,
- 	return r;
- }
- 
-+static struct dm_btree_value_type le64_type = {
-+	.context = NULL,
-+	.size = sizeof(__le64),
-+	.inc = NULL,
-+	.dec = NULL,
-+	.equal = NULL
-+};
-+
- int dm_btree_remove(struct dm_btree_info *info, dm_block_t root,
- 		    uint64_t *keys, dm_block_t *new_root)
- {
 -- 
 1.8.1.2
 
