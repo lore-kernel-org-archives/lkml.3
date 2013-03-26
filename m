@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab3CZXUk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:20:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53011 "EHLO
+	id S1756199Ab3CZXVF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:21:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53007 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755979Ab3CZWwa (ORCPT
+	with ESMTP id S1755023Ab3CZWw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:30 -0400
+	Tue, 26 Mar 2013 18:52:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        Alessandro Lannocca <alessandro.lannocca@gmail.com>,
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
         Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 39/72] rtlwifi: rtl8192cu: Fix problem that prevents reassociation
-Date: Tue, 26 Mar 2013 15:51:22 -0700
-Message-Id: <20130326224923.715934084@linuxfoundation.org>
+Subject: [ 38/72] rtlwifi: rtl8192cu: Fix schedule while atomic bug splat
+Date: Tue, 26 Mar 2013 15:51:21 -0700
+Message-Id: <20130326224923.618487600@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -31,140 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 9437a248e7cac427c898bdb11bd1ac6844a1ead4 upstream.
+commit 664899786cb49cb52f620e06ac19c0be524a7cfa upstream.
 
-The driver was failing to clear the BSSID when a disconnect happened. That
-prevented a reconnection. This problem is reported at
-https://bugzilla.redhat.com/show_bug.cgi?id=789605,
-https://bugzilla.redhat.com/show_bug.cgi?id=866786,
-https://bugzilla.redhat.com/show_bug.cgi?id=906734, and
-https://bugzilla.kernel.org/show_bug.cgi?id=46171.
+When run at debug 3 or higher, rtl8192cu reports a BUG as follows:
 
-Thanks to Jussi Kivilinna for making the critical observation
-that led to the solution.
+BUG: scheduling while atomic: kworker/u:0/5281/0x00000002
+INFO: lockdep is turned off.
+Modules linked in: rtl8192cu rtl8192c_common rtlwifi fuse af_packet bnep bluetooth b43 mac80211 cfg80211 ipv6 snd_hda_codec_conexant kvm_amd k
+vm snd_hda_intel snd_hda_codec bcma rng_core snd_pcm ssb mmc_core snd_seq snd_timer snd_seq_device snd i2c_nforce2 sr_mod pcmcia forcedeth i2c_core soundcore
+ cdrom sg serio_raw k8temp hwmon joydev ac battery pcmcia_core snd_page_alloc video button wmi autofs4 ext4 mbcache jbd2 crc16 thermal processor scsi_dh_alua
+ scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc scsi_dh ata_generic pata_acpi pata_amd [last unloaded: rtlwifi]
+Pid: 5281, comm: kworker/u:0 Tainted: G        W    3.8.0-wl+ #119
+Call Trace:
+ [<ffffffff814531e7>] __schedule_bug+0x62/0x70
+ [<ffffffff81459af0>] __schedule+0x730/0xa30
+ [<ffffffff81326e49>] ? usb_hcd_link_urb_to_ep+0x19/0xa0
+ [<ffffffff8145a0d4>] schedule+0x24/0x70
+ [<ffffffff814575ec>] schedule_timeout+0x18c/0x2f0
+ [<ffffffff81459ec0>] ? wait_for_common+0x40/0x180
+ [<ffffffff8133f461>] ? ehci_urb_enqueue+0xf1/0xee0
+ [<ffffffff810a579d>] ? trace_hardirqs_on+0xd/0x10
+ [<ffffffff81459f65>] wait_for_common+0xe5/0x180
+ [<ffffffff8107d1c0>] ? try_to_wake_up+0x2d0/0x2d0
+ [<ffffffff8145a08e>] wait_for_completion_timeout+0xe/0x10
+ [<ffffffff8132ab1c>] usb_start_wait_urb+0x8c/0x100
+ [<ffffffff8132adf9>] usb_control_msg+0xd9/0x130
+ [<ffffffffa057dd8d>] _usb_read_sync+0xcd/0x140 [rtlwifi]
+ [<ffffffffa057de0e>] _usb_read32_sync+0xe/0x10 [rtlwifi]
+ [<ffffffffa04b0555>] rtl92cu_update_hal_rate_table+0x1a5/0x1f0 [rtl8192cu]
 
-Reported-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Tested-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Tested-by: Alessandro Lannocca <alessandro.lannocca@gmail.com>
+The cause is a synchronous read from routine rtl92cu_update_hal_rate_table().
+The resulting output is not critical, thus the debug statement is
+deleted.
+
+Reported-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c |   87 +++++++++++-----------------
- 1 file changed, 35 insertions(+), 52 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c |    2 --
+ 1 file changed, 2 deletions(-)
 
 --- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
 +++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-@@ -1377,74 +1377,57 @@ void rtl92cu_card_disable(struct ieee802
- 
- void rtl92cu_set_check_bssid(struct ieee80211_hw *hw, bool check_bssid)
- {
--	/* dummy routine needed for callback from rtl_op_configure_filter() */
--}
--
--/*========================================================================== */
--
--static void _rtl92cu_set_check_bssid(struct ieee80211_hw *hw,
--			      enum nl80211_iftype type)
--{
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
--	u32 reg_rcr = rtl_read_dword(rtlpriv, REG_RCR);
- 	struct rtl_hal *rtlhal = rtl_hal(rtlpriv);
--	struct rtl_phy *rtlphy = &(rtlpriv->phy);
--	u8 filterout_non_associated_bssid = false;
-+	u32 reg_rcr = rtl_read_dword(rtlpriv, REG_RCR);
- 
--	switch (type) {
--	case NL80211_IFTYPE_ADHOC:
--	case NL80211_IFTYPE_STATION:
--		filterout_non_associated_bssid = true;
--		break;
--	case NL80211_IFTYPE_UNSPECIFIED:
--	case NL80211_IFTYPE_AP:
--	default:
--		break;
--	}
--	if (filterout_non_associated_bssid) {
-+	if (rtlpriv->psc.rfpwr_state != ERFON)
-+		return;
-+
-+	if (check_bssid) {
-+		u8 tmp;
- 		if (IS_NORMAL_CHIP(rtlhal->version)) {
--			switch (rtlphy->current_io_type) {
--			case IO_CMD_RESUME_DM_BY_SCAN:
--				reg_rcr |= (RCR_CBSSID_DATA | RCR_CBSSID_BCN);
--				rtlpriv->cfg->ops->set_hw_reg(hw,
--						 HW_VAR_RCR, (u8 *)(&reg_rcr));
--				/* enable update TSF */
--				_rtl92cu_set_bcn_ctrl_reg(hw, 0, BIT(4));
--				break;
--			case IO_CMD_PAUSE_DM_BY_SCAN:
--				reg_rcr &= ~(RCR_CBSSID_DATA | RCR_CBSSID_BCN);
--				rtlpriv->cfg->ops->set_hw_reg(hw,
--						 HW_VAR_RCR, (u8 *)(&reg_rcr));
--				/* disable update TSF */
--				_rtl92cu_set_bcn_ctrl_reg(hw, BIT(4), 0);
--				break;
--			}
-+			reg_rcr |= (RCR_CBSSID_DATA | RCR_CBSSID_BCN);
-+			tmp = BIT(4);
- 		} else {
--			reg_rcr |= (RCR_CBSSID);
--			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
--						      (u8 *)(&reg_rcr));
--			_rtl92cu_set_bcn_ctrl_reg(hw, 0, (BIT(4)|BIT(5)));
-+			reg_rcr |= RCR_CBSSID;
-+			tmp = BIT(4) | BIT(5);
- 		}
--	} else if (filterout_non_associated_bssid == false) {
-+		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
-+					      (u8 *) (&reg_rcr));
-+		_rtl92cu_set_bcn_ctrl_reg(hw, 0, tmp);
-+	} else {
-+		u8 tmp;
- 		if (IS_NORMAL_CHIP(rtlhal->version)) {
--			reg_rcr &= (~(RCR_CBSSID_DATA | RCR_CBSSID_BCN));
--			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
--						      (u8 *)(&reg_rcr));
--			_rtl92cu_set_bcn_ctrl_reg(hw, BIT(4), 0);
-+			reg_rcr &= ~(RCR_CBSSID_DATA | RCR_CBSSID_BCN);
-+			tmp = BIT(4);
- 		} else {
--			reg_rcr &= (~RCR_CBSSID);
--			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
--						      (u8 *)(&reg_rcr));
--			_rtl92cu_set_bcn_ctrl_reg(hw, (BIT(4)|BIT(5)), 0);
-+			reg_rcr &= ~RCR_CBSSID;
-+			tmp = BIT(4) | BIT(5);
- 		}
-+		reg_rcr &= (~(RCR_CBSSID_DATA | RCR_CBSSID_BCN));
-+		rtlpriv->cfg->ops->set_hw_reg(hw,
-+					      HW_VAR_RCR, (u8 *) (&reg_rcr));
-+		_rtl92cu_set_bcn_ctrl_reg(hw, tmp, 0);
+@@ -2059,8 +2059,6 @@ void rtl92cu_update_hal_rate_table(struc
+ 			       (shortgi_rate << 4) | (shortgi_rate);
  	}
+ 	rtl_write_dword(rtlpriv, REG_ARFR0 + ratr_index * 4, ratr_value);
+-	RT_TRACE(rtlpriv, COMP_RATR, DBG_DMESG, "%x\n",
+-		 rtl_read_dword(rtlpriv, REG_ARFR0));
  }
  
-+/*========================================================================== */
-+
- int rtl92cu_set_network_type(struct ieee80211_hw *hw, enum nl80211_iftype type)
- {
-+	struct rtl_priv *rtlpriv = rtl_priv(hw);
-+
- 	if (_rtl92cu_set_media_status(hw, type))
- 		return -EOPNOTSUPP;
--	_rtl92cu_set_check_bssid(hw, type);
-+
-+	if (rtlpriv->mac80211.link_state == MAC80211_LINKED) {
-+		if (type != NL80211_IFTYPE_AP)
-+			rtl92cu_set_check_bssid(hw, true);
-+	} else {
-+		rtl92cu_set_check_bssid(hw, false);
-+	}
-+
- 	return 0;
- }
- 
+ void rtl92cu_update_hal_rate_mask(struct ieee80211_hw *hw, u8 rssi_level)
 
 
