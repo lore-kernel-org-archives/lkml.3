@@ -1,233 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755663Ab3CZSZJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:25:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11925 "EHLO mx1.redhat.com"
+	id S1759895Ab3CZS0N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:26:13 -0400
+Received: from mx12.netapp.com ([216.240.18.77]:56727 "EHLO mx12.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753173Ab3CZSZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 14:25:06 -0400
-Date: Tue, 26 Mar 2013 14:23:24 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <1364322204-ah777uqs-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130325150952.GA2154@dhcp22.suse.cz>
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1363983835-20184-10-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130325150952.GA2154@dhcp22.suse.cz>
-Subject: Re: [PATCH 09/10] memory-hotplug: enable memory hotplug to handle
- hugepage
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1752941Ab3CZS0L convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 14:26:11 -0400
+X-IronPort-AV: E=Sophos;i="4.84,913,1355126400"; 
+   d="scan'208";a="34235088"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Please pull NFS client bugfixes
+Thread-Topic: [GIT PULL] Please pull NFS client bugfixes
+Thread-Index: AQHOKk9i2IQAUn98/U+jBi8uwqVuug==
+Date: Tue, 26 Mar 2013 18:26:09 +0000
+Message-ID: <1364322369.4784.1.camel@leira.trondhjem.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.114]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <7FF345FE26097A4BA86FC9DA32236373@tahoe.netapp.com>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 04:09:52PM +0100, Michal Hocko wrote:
-> On Fri 22-03-13 16:23:54, Naoya Horiguchi wrote:
-...
-> > index d9d3dd7..ef79871 100644
-> > --- v3.9-rc3.orig/mm/hugetlb.c
-> > +++ v3.9-rc3/mm/hugetlb.c
-> > @@ -844,6 +844,36 @@ static int free_pool_huge_page(struct hstate *h, nodemask_t *nodes_allowed,
-> >  	return ret;
-> >  }
-> >  
-> > +/* Dissolve a given free hugepage into free pages. */
-> > +static void dissolve_free_huge_page(struct page *page)
-> > +{
-> > +	spin_lock(&hugetlb_lock);
-> > +	if (PageHuge(page) && !page_count(page)) {
-> > +		struct hstate *h = page_hstate(page);
-> > +		int nid = page_to_nid(page);
-> > +		list_del(&page->lru);
-> > +		h->free_huge_pages--;
-> > +		h->free_huge_pages_node[nid]--;
-> > +		update_and_free_page(h, page);
-> > +	}
-> 
-> What about surplus pages?
+Hi Linus,
 
-This function is only for free hugepage, not for surplus hugepages
-(which are considered as in-use hugepages.)
-dissolve_free_huge_pages() can be called only when all source hugepages
-are free (all in-use hugepages are successfully migrated.)
+The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
 
-> > +	spin_unlock(&hugetlb_lock);
-> > +}
-> > +
-> > +/* Dissolve free hugepages in a given pfn range. Used by memory hotplug. */
-> > +void dissolve_free_huge_pages(unsigned long start_pfn, unsigned long end_pfn)
-> > +{
-> > +	unsigned int order = 8 * sizeof(void *);
-> > +	unsigned long pfn;
-> > +	struct hstate *h;
-> > +
-> > +	/* Set scan step to minimum hugepage size */
-> > +	for_each_hstate(h)
-> > +		if (order > huge_page_order(h))
-> > +			order = huge_page_order(h);
-> > +	for (pfn = start_pfn; pfn < end_pfn; pfn += 1 << order)
-> > +		dissolve_free_huge_page(pfn_to_page(pfn));
-> 
-> This assumes that start_pfn doesn't at a tail page otherwise you could
-> end up traversing only tail pages. This shouldn't happen normally as
-> start_pfn will be bound to a memblock but it looks a bit fragile.
+  Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
 
-I think that this function is never called for such a memblock because
-scan_movable_pages() (scan_lru_pages in old name) skips the memblock
-starting with a tail page.
-But OK, to make code robuster I'll add checking whether first pfn is a
-tail page or not.
+are available in the git repository at:
 
-> 
-> It is a bit unfortunate that the offlining code is pfn range oriented
-> while hugetlb pages are organized by nodes.
-> 
-> > +}
-> > +
-> >  static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
-> >  {
-> >  	struct page *page;
-> > @@ -3155,6 +3185,34 @@ static int is_hugepage_on_freelist(struct page *hpage)
-> >  	return 0;
-> >  }
-> >  
-> > +/* Returns true for head pages of in-use hugepages, otherwise returns false. */
-> > +bool is_hugepage_movable(struct page *hpage)
-> > +{
-> > +	struct page *page;
-> > +	struct hstate *h;
-> > +	bool ret = false;
-> > +
-> > +	VM_BUG_ON(!PageHuge(hpage));
-> > +	/*
-> > +	 * This function can be called for a tail page because memory hotplug
-> > +	 * scans movability of pages by pfn range of a memory block.
-> > +	 * Larger hugepages (1GB for x86_64) are larger than memory block, so
-> > +	 * the scan can start at the tail page of larger hugepages.
-> > +	 * 1GB hugepage is not movable now, so we return with false for now.
-> > +	 */
-> > +	if (PageTail(hpage))
-> > +		return false;
-> > +	h = page_hstate(hpage);
-> > +	spin_lock(&hugetlb_lock);
-> > +	list_for_each_entry(page, &h->hugepage_activelist, lru)
-> > +		if (page == hpage) {
-> > +			ret = true;
-> > +			break;
-> > +		}
-> 
-> Why are you checking that the page is active?
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.9-3
 
-This is the counterpart to doing PageLRU check for normal pages.
+for you to fetch changes up to 1166fde6a923c30f4351515b6a9a1efc513e7d00:
 
-> It doesn't make much sense
-> to me because nothing prevents it from being freed/allocated right after
-> you release hugetlb_lock.
+  SUNRPC: Add barriers to ensure read ordering in rpc_wake_up_task_queue_locked (2013-03-25 11:23:40 -0400)
 
-Such a race can also happen for normal pages because scan_movable_pages()
-just check PageLRU flags without holding any lock.
-But the caller, __offline_pages(), repeats to call scan_movable_pages()
-until no page in the memblock are judged as movable, and in the repeat loop
-do_migrate_range() does nothing for free (unmovable) pages.
-So there is no behavioral problem even if the movable page is freed just
-after the if(PageLRU) check in scan_movable_page().
-Note that in this loop, allocating pages in the memblock is forbidden
-because we already do set_migratetype_isolate() for them, so we don't have
-to worry about being allocated just after scan_movable_pages().
+----------------------------------------------------------------
+NFS client bugfixes for Linux 3.9
 
-I want the same thing to be the case for hugepage. As you pointed out,
-is_hugepage_movable() is not safe from such a race, but in "being freed
-just after is_hugepage_movable() returns true" case we have no problem
-for the same reason described above.
-However, in "being allocated just after is_hugepage_movable() returns false"
-case, it seems to be possible to hot-remove an active hugepage. I think we
-can avoid this by adding migratetype check in alloc_huge_page().
+- Fix an NFSv4 idmapper regression
+- Fix an Oops in the pNFS blocks client
+- Fix up various issues with pNFS layoutcommit
+- Ensure correct read ordering of variables in rpc_wake_up_task_queue_locked
 
-> > +	spin_unlock(&hugetlb_lock);
-> > +	return ret;
-> > +}
-> > +
-> >  /*
-> >   * This function is called from memory failure code.
-> >   * Assume the caller holds page lock of the head page.
-> > diff --git v3.9-rc3.orig/mm/memory_hotplug.c v3.9-rc3/mm/memory_hotplug.c
-> > index 9597eec..2d206e8 100644
-> > --- v3.9-rc3.orig/mm/memory_hotplug.c
-> > +++ v3.9-rc3/mm/memory_hotplug.c
-> > @@ -30,6 +30,7 @@
-> >  #include <linux/mm_inline.h>
-> >  #include <linux/firmware-map.h>
-> >  #include <linux/stop_machine.h>
-> > +#include <linux/hugetlb.h>
-> >  
-> >  #include <asm/tlbflush.h>
-> >  
-> > @@ -1215,10 +1216,12 @@ static int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
-> >  }
-> >  
-> >  /*
-> > - * Scanning pfn is much easier than scanning lru list.
-> > - * Scan pfn from start to end and Find LRU page.
-> > + * Scan pfn range [start,end) to find movable/migratable pages (LRU pages
-> > + * and hugepages). We scan pfn because it's much easier than scanning over
-> > + * linked list. This function returns the pfn of the first found movable
-> > + * page if it's found, otherwise 0.
-> >   */
-> > -static unsigned long scan_lru_pages(unsigned long start, unsigned long end)
-> > +static unsigned long scan_movable_pages(unsigned long start, unsigned long end)
-> >  {
-> >  	unsigned long pfn;
-> >  	struct page *page;
-> > @@ -1227,6 +1230,12 @@ static unsigned long scan_lru_pages(unsigned long start, unsigned long end)
-> >  			page = pfn_to_page(pfn);
-> >  			if (PageLRU(page))
-> >  				return pfn;
-> > +			if (PageHuge(page)) {
-> > +				if (is_hugepage_movable(page))
-> > +					return pfn;
-> > +				else
-> > +					pfn += (1 << compound_order(page)) - 1;
-> 
-> This doesn't look right to me. You have to consider where is your tail
-> page.
-> 					pfn += (1 << compound_order(page)) - (page - compound_head(page)) - 1;
-> Or something nicer ;)
+----------------------------------------------------------------
+Trond Myklebust (5):
+      NFSv4: Fix the string length returned by the idmapper
+      NFSv4.1: Fix a race in pNFS layoutcommit
+      NFSv4.1: Always clear the NFS_INO_LAYOUTCOMMIT in layoutreturn
+      NFSv4.1: Add a helper pnfs_commit_and_return_layout
+      SUNRPC: Add barriers to ensure read ordering in rpc_wake_up_task_queue_locked
 
-OK.
+fanchaoting (1):
+      pnfs-block: removing DM device maybe cause oops when call dev_remove
 
-> > +			}
-> >  		}
-> >  	}
-> >  	return 0;
-> > @@ -1247,6 +1256,21 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
-> >  		if (!pfn_valid(pfn))
-> >  			continue;
-> >  		page = pfn_to_page(pfn);
-> > +
-> > +		if (PageHuge(page)) {
-> > +			struct page *head = compound_head(page);
-> > +			pfn = page_to_pfn(head) + (1<<compound_order(head)) - 1;
-> > +			if (compound_order(head) > PFN_SECTION_SHIFT) {
-> > +				ret = -EBUSY;
-> > +				break;
-> > +			}
-> > +			if (!get_page_unless_zero(page))
-> > +				continue;
-> 
-> s/page/hpage/
+ fs/nfs/blocklayout/blocklayoutdm.c |  4 +-
+ fs/nfs/idmap.c                     | 13 +++---
+ fs/nfs/nfs4filelayout.c            |  1 -
+ fs/nfs/nfs4proc.c                  | 16 +-------
+ fs/nfs/pnfs.c                      | 81 +++++++++++++++++++++++++++++++++-----
+ fs/nfs/pnfs.h                      |  6 +++
+ net/sunrpc/sched.c                 |  9 ++++-
+ 7 files changed, 96 insertions(+), 34 deletions(-)
 
-Yes, we should pin head page.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Thanks,
-Naoya
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
