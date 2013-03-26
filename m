@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756363Ab3CZX0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:26:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52908 "EHLO
+	id S1756173Ab3CZX0q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:26:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52920 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755922Ab3CZWwG (ORCPT
+	with ESMTP id S1755927Ab3CZWwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 18:52:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcin Miotk <marcinmiotk81@gmail.com>,
-        Benjamin Li <benli@broadcom.com>,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
+        Karl Heiss <kheiss@gmail.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 06/72] tg3: 5715 does not link up when autoneg off
-Date: Tue, 26 Mar 2013 15:50:49 -0700
-Message-Id: <20130326224920.362879900@linuxfoundation.org>
+Subject: [ 07/72] sctp: Use correct sideffect command in duplicate cookie handling
+Date: Tue, 26 Mar 2013 15:50:50 -0700
+Message-Id: <20130326224920.454665091@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -31,48 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Nithin Sujir <nsujir@broadcom.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-[ Upstream commit 7c6cdead7cc9a99650d15497aae47d7472217eb1 ]
+[ Upstream commit f2815633504b442ca0b0605c16bf3d88a3a0fcea ]
 
-Commit d13ba512cbba7de5d55d7a3b2aae7d83c8921457 ("tg3: Remove
-SPEED_UNKNOWN checks") cleaned up the autoneg advertisement by
-removing some dead code. One effect of this change was that the
-advertisement register would not be updated if autoneg is turned off.
+When SCTP is done processing a duplicate cookie chunk, it tries
+to delete a newly created association.  For that, it has to set
+the right association for the side-effect processing to work.
+However, when it uses the SCTP_CMD_NEW_ASOC command, that performs
+more work then really needed (like hashing the associationa and
+assigning it an id) and there is no point to do that only to
+delete the association as a next step.  In fact, it also creates
+an impossible condition where an association may be found by
+the getsockopt() call, and that association is empty.  This
+causes a crash in some sctp getsockopts.
 
-This exposed a bug on the 5715 device w.r.t linking. The 5715 defaults
-to advertise only 10Mb Full duplex. But with autoneg disabled, it needs
-the configured speed enabled in the advertisement register to link up.
+The solution is rather simple.  We simply use SCTP_CMD_SET_ASOC
+command that doesn't have all the overhead and does exactly
+what we need.
 
-This patch adds the work around to advertise all speeds on the 5715 when
-autoneg is disabled.
-
-Reported-by: Marcin Miotk <marcinmiotk81@gmail.com>
-Reviewed-by: Benjamin Li <benli@broadcom.com>
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
+Reported-by: Karl Heiss <kheiss@gmail.com>
+Tested-by: Karl Heiss <kheiss@gmail.com>
+CC: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/broadcom/tg3.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/sctp/sm_statefuns.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -3946,6 +3946,14 @@ static void tg3_phy_copper_begin(struct
- 		tp->link_config.active_speed = tp->link_config.speed;
- 		tp->link_config.active_duplex = tp->link_config.duplex;
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -2044,7 +2044,7 @@ sctp_disposition_t sctp_sf_do_5_2_4_dupc
+ 	}
  
-+		if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5714) {
-+			/* With autoneg disabled, 5715 only links up when the
-+			 * advertisement register has the configured speed
-+			 * enabled.
-+			 */
-+			tg3_writephy(tp, MII_ADVERTISE, ADVERTISE_ALL);
-+		}
-+
- 		bmcr = 0;
- 		switch (tp->link_config.speed) {
- 		default:
+ 	/* Delete the tempory new association. */
+-	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_ASOC, SCTP_ASOC(new_asoc));
++	sctp_add_cmd_sf(commands, SCTP_CMD_SET_ASOC, SCTP_ASOC(new_asoc));
+ 	sctp_add_cmd_sf(commands, SCTP_CMD_DELETE_TCB, SCTP_NULL());
+ 
+ 	/* Restore association pointer to provide SCTP command interpeter
 
 
