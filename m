@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab3CZSOK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:14:10 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:63703 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913Ab3CZSOJ (ORCPT
+	id S1755355Ab3CZSPF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:15:05 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:44742 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754330Ab3CZSPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 14:14:09 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: stern@rowland.harvard.edu
-Cc: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCHv2] usb: ehci: unlink_empty_async_suspended() only used with CONFIG_PM
-Date: Wed, 27 Mar 2013 07:14:33 +1300
-Message-Id: <1364321673-2030-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 26 Mar 2013 14:15:00 -0400
+Message-ID: <5151E590.70909@surriel.com>
+Date: Tue, 26 Mar 2013 14:14:40 -0400
+From: Rik van Riel <riel@surriel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+CC: Emmanuel Benisty <benisty.e@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, hhuang@redhat.com,
+        "Low, Jason" <jason.low2@hp.com>,
+        Michel Lespinasse <walken@google.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>
+Subject: Re: ipc,sem: sysv semaphore scalability
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>  <CA+i8gKKK_VxZtyyp1tqHnztd4++XyNXwbEEr-A29-J23PyuCfQ@mail.gmail.com>  <CA+55aFzqBEX=cGGZJJsfNWcDwQcUOP7njEog-kZZLRxuDg8Tzg@mail.gmail.com>  <CA+i8gK+h+FyPiOL85BPa-Pu8+bDw6LW60-oRoLHgP2AnzMADCA@mail.gmail.com>  <CA+55aFxjGFi+gt3UwdVCVKP5riHSR=_qLkp0SovgW2zx+gcRow@mail.gmail.com>  <CA+i8gKJuykoCk=O3qbDmmZXd=8U13wF7o_NzUviccaZoU6WLaA@mail.gmail.com>  <CA+55aFwb9v9cUG4Ton3faO6xAD18JxxoTPcObXDV_5Zf3QQ=Kw@mail.gmail.com>  <CA+i8gK+DNOk5tvRsVJFKyk0A2qOD_az7yJ5+3Y2xS=Ear1VkVA@mail.gmail.com> <1364320767.5146.11.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1364320767.5146.11.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compiling with !CONFIG_PM generates an unused function warning on
-unlink_empty_async_suspended().
+On 03/26/2013 01:59 PM, Davidlohr Bueso wrote:
 
-Enclose the function in a #ifdef CONFIG_PM
+> From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> Subject: [PATCH] ipc, sem: prevent possible deadlock
+>
+> In semctl_main(), when cmd == GETALL, we're locking
+> sma->sem_perm.lock (through sem_lock_and_putref), yet
+> after the conditional, we lock it again.
+> Unlock sma right after exiting the conditional.
+>
+> Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
-Fixed up the commit message.
- drivers/usb/host/ehci-q.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-diff --git a/drivers/usb/host/ehci-q.c b/drivers/usb/host/ehci-q.c
-index 23d1369..3638b28 100644
---- a/drivers/usb/host/ehci-q.c
-+++ b/drivers/usb/host/ehci-q.c
-@@ -1316,6 +1316,7 @@ static void unlink_empty_async(struct ehci_hcd *ehci)
- 	}
- }
- 
-+#ifdef CONFIG_PM
- /* The root hub is suspended; unlink all the async QHs */
- static void unlink_empty_async_suspended(struct ehci_hcd *ehci)
- {
-@@ -1328,7 +1329,7 @@ static void unlink_empty_async_suspended(struct ehci_hcd *ehci)
- 	}
- 	start_iaa_cycle(ehci, false);
- }
--
-+#endif
- /* makes sure the async qh will become idle */
- /* caller must own ehci->lock */
- 
 -- 
-1.7.9.5
-
+All rights reversed.
