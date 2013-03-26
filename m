@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965369Ab3CZPi5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:38:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54016 "EHLO
+	id S965546Ab3CZPj1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:39:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54006 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965259Ab3CZPX0 (ORCPT
+	with ESMTP id S965188Ab3CZPXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:26 -0400
+	Tue, 26 Mar 2013 11:23:24 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 106/150] USB: mct_u232: fix use-after-free in TIOCMIWAIT
-Date: Tue, 26 Mar 2013 15:20:05 +0000
-Message-Id: <1364311249-14454-107-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 104/150] USB: io_edgeport: fix use-after-free in TIOCMIWAIT
+Date: Tue, 26 Mar 2013 15:20:03 +0000
+Message-Id: <1364311249-14454-105-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -30,7 +30,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit cf1d24443677a0758cfa88ca40f24858b89261c0 upstream.
+commit 333576255d4cfc53efd056aad438568184b36af6 upstream.
 
 Use the port wait queue and make sure to check the serial disconnected
 flag before accessing private port data after waking up.
@@ -42,56 +42,38 @@ Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/mct_u232.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/usb/serial/io_edgeport.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/serial/mct_u232.c b/drivers/usb/serial/mct_u232.c
-index 66b91d5..5f005cc 100644
---- a/drivers/usb/serial/mct_u232.c
-+++ b/drivers/usb/serial/mct_u232.c
-@@ -118,8 +118,6 @@ struct mct_u232_private {
- 	unsigned char	     last_msr;      /* Modem Status Register */
- 	unsigned int	     rx_flags;      /* Throttling flags */
- 	struct async_icount  icount;
--	wait_queue_head_t    msr_wait;	/* for handling sleeping while waiting
--						for msr change to happen */
- };
+diff --git a/drivers/usb/serial/io_edgeport.c b/drivers/usb/serial/io_edgeport.c
+index e1f5ccd..457743a 100644
+--- a/drivers/usb/serial/io_edgeport.c
++++ b/drivers/usb/serial/io_edgeport.c
+@@ -114,7 +114,6 @@ struct edgeport_port {
+ 	wait_queue_head_t	wait_chase;		/* for handling sleeping while waiting for chase to finish */
+ 	wait_queue_head_t	wait_open;		/* for handling sleeping while waiting for open to finish */
+ 	wait_queue_head_t	wait_command;		/* for handling sleeping while waiting for command to finish */
+-	wait_queue_head_t	delta_msr_wait;		/* for handling sleeping while waiting for msr change to happen */
  
- #define THROTTLED		0x01
-@@ -399,7 +397,6 @@ static int mct_u232_startup(struct usb_serial *serial)
- 	if (!priv)
- 		return -ENOMEM;
- 	spin_lock_init(&priv->lock);
--	init_waitqueue_head(&priv->msr_wait);
- 	usb_set_serial_port_data(serial->port[0], priv);
+ 	struct async_icount	icount;
+ 	struct usb_serial_port	*port;			/* loop back to the owner of this object */
+@@ -884,7 +883,6 @@ static int edge_open(struct tty_struct *tty, struct usb_serial_port *port)
+ 	/* initialize our wait queues */
+ 	init_waitqueue_head(&edge_port->wait_open);
+ 	init_waitqueue_head(&edge_port->wait_chase);
+-	init_waitqueue_head(&edge_port->delta_msr_wait);
+ 	init_waitqueue_head(&edge_port->wait_command);
  
- 	init_waitqueue_head(&serial->port[0]->write_wait);
-@@ -416,7 +413,6 @@ static int mct_u232_startup(struct usb_serial *serial)
- 	return 0;
- } /* mct_u232_startup */
- 
--
- static void mct_u232_release(struct usb_serial *serial)
- {
- 	struct mct_u232_private *priv;
-@@ -616,7 +612,7 @@ static void mct_u232_read_int_callback(struct urb *urb)
- 		tty_kref_put(tty);
- 	}
- #endif
--	wake_up_interruptible(&priv->msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
- 	spin_unlock_irqrestore(&priv->lock, flags);
- exit:
- 	retval = usb_submit_urb(urb, GFP_ATOMIC);
-@@ -827,13 +823,17 @@ static int  mct_u232_ioctl(struct tty_struct *tty,
- 		cprev = mct_u232_port->icount;
- 		spin_unlock_irqrestore(&mct_u232_port->lock, flags);
- 		for ( ; ; ) {
--			prepare_to_wait(&mct_u232_port->msr_wait,
+ 	/* initialize our icount structure */
+@@ -1701,13 +1699,17 @@ static int edge_ioctl(struct tty_struct *tty,
+ 		dbg("%s (%d) TIOCMIWAIT", __func__,  port->number);
+ 		cprev = edge_port->icount;
+ 		while (1) {
+-			prepare_to_wait(&edge_port->delta_msr_wait,
 +			prepare_to_wait(&port->delta_msr_wait,
- 					&wait, TASK_INTERRUPTIBLE);
+ 						&wait, TASK_INTERRUPTIBLE);
  			schedule();
--			finish_wait(&mct_u232_port->msr_wait, &wait);
+-			finish_wait(&edge_port->delta_msr_wait, &wait);
 +			finish_wait(&port->delta_msr_wait, &wait);
  			/* see if a signal did it */
  			if (signal_pending(current))
@@ -100,9 +82,18 @@ index 66b91d5..5f005cc 100644
 +			if (port->serial->disconnected)
 +				return -EIO;
 +
- 			spin_lock_irqsave(&mct_u232_port->lock, flags);
- 			cnow = mct_u232_port->icount;
- 			spin_unlock_irqrestore(&mct_u232_port->lock, flags);
+ 			cnow = edge_port->icount;
+ 			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
+ 			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
+@@ -2088,7 +2090,7 @@ static void handle_new_msr(struct edgeport_port *edge_port, __u8 newMsr)
+ 			icount->dcd++;
+ 		if (newMsr & EDGEPORT_MSR_DELTA_RI)
+ 			icount->rng++;
+-		wake_up_interruptible(&edge_port->delta_msr_wait);
++		wake_up_interruptible(&edge_port->port->delta_msr_wait);
+ 	}
+ 
+ 	/* Save the new modem status */
 -- 
 1.8.1.2
 
