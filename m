@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965164Ab3CZPqY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:46:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53909 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965060Ab3CZPXC (ORCPT
+	id S965202Ab3CZPqw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:46:52 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63134 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965146Ab3CZPXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:02 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Daniel Mack <zonque@gmail.com>, Takashi Iwai <tiwai@suse.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 085/150] ALSA: snd-usb: mixer: ignore -EINVAL in snd_usb_mixer_controls()
-Date: Tue, 26 Mar 2013 15:19:44 +0000
-Message-Id: <1364311249-14454-86-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 26 Mar 2013 11:23:01 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 26 Mar 2013 08:23:10 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Hongbo Zhang <hongbo.zhang@linaro.org>
+Cc: khali@linux-fr.org, lm-sensors@lm-sensors.org, cbou@mail.ru,
+        dwmw2@infradead.org, linaro-kernel@lists.linaro.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@linaro.org,
+        lee.jones@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 5/5] hwmon: add ST-Ericsson ABX500 hwmon driver
+Message-ID: <20130326152310.GA9153@roeck-us.net>
+References: <1364281619-13208-1-git-send-email-hongbo.zhang@linaro.org>
+ <1364281619-13208-6-git-send-email-hongbo.zhang@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364281619-13208-6-git-send-email-hongbo.zhang@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Mar 26, 2013 at 03:06:59PM +0800, Hongbo Zhang wrote:
+> Each of ST-Ericsson X500 chip set series consists of both ABX500 and DBX500
+> chips. This is ABX500 hwmon driver, where the abx500.c is a common layer for
+> all ABX500s, and the ab8500.c is specific for AB8500 chip. Under this designed
+> structure, other chip specific files can be added simply using the same common
+> layer abx500.c.
+> 
+> Signed-off-by: Hongbo Zhang <hongbo.zhang@linaro.org>
 
-------------------
+Looks good except ...
 
-From: Daniel Mack <zonque@gmail.com>
+> diff --git a/drivers/power/ab8500_bmdata.c b/drivers/power/ab8500_bmdata.c
+> index d9f1f25..05a1077 100644
+> --- a/drivers/power/ab8500_bmdata.c
+> +++ b/drivers/power/ab8500_bmdata.c
+> @@ -28,8 +28,10 @@ const struct abx500_res_to_temp ab8500_temp_tbl_a_thermistor[] = {
+>  	{60, 13437},
+>  	{65, 12500},
+>  };
+> +EXPORT_SYMBOL(ab8500_temp_tbl_a_thermistor);
+>  
+Those exports should be in the previous patch where you start exporting the symbols,
+not in this patch.
 
-commit 83ea5d18d74f032a760fecde78c0210f66f7f70c upstream.
-
-Creation of individual mixer controls may fail, but that shouldn't cause
-the entire mixer creation to fail. Even worse, if the mixer creation
-fails, that will error out the entire device probing.
-
-All the functions called by parse_audio_unit() should return -EINVAL if
-they find descriptors that are unsupported or believed to be malformed,
-so we can safely handle this error code as a non-fatal condition in
-snd_usb_mixer_controls().
-
-That fixes a long standing bug which is commonly worked around by
-adding quirks which make the driver ignore entire interfaces. Some of
-them might now be unnecessary.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-and-tested-by: Rodolfo Thomazelli <pe.soberbo@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- sound/usb/mixer.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/sound/usb/mixer.c b/sound/usb/mixer.c
-index 1b523a1..4d8ddc6 100644
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -2047,7 +2047,7 @@ static int snd_usb_mixer_controls(struct usb_mixer_interface *mixer)
- 			state.oterm.type = le16_to_cpu(desc->wTerminalType);
- 			state.oterm.name = desc->iTerminal;
- 			err = parse_audio_unit(&state, desc->bSourceID);
--			if (err < 0)
-+			if (err < 0 && err != -EINVAL)
- 				return err;
- 		} else { /* UAC_VERSION_2 */
- 			struct uac2_output_terminal_descriptor *desc = p;
-@@ -2059,12 +2059,12 @@ static int snd_usb_mixer_controls(struct usb_mixer_interface *mixer)
- 			state.oterm.type = le16_to_cpu(desc->wTerminalType);
- 			state.oterm.name = desc->iTerminal;
- 			err = parse_audio_unit(&state, desc->bSourceID);
--			if (err < 0)
-+			if (err < 0 && err != -EINVAL)
- 				return err;
- 
- 			/* for UAC2, use the same approach to also add the clock selectors */
- 			err = parse_audio_unit(&state, desc->bCSourceID);
--			if (err < 0)
-+			if (err < 0 && err != -EINVAL)
- 				return err;
- 		}
- 	}
--- 
-1.8.1.2
-
+Thanks,
+Guenter
