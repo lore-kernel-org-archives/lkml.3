@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759991Ab3CZSLM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:11:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50442 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759949Ab3CZSLJ (ORCPT
+	id S1754085Ab3CZSOK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:14:10 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:63703 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752913Ab3CZSOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 14:11:09 -0400
-Date: Tue, 26 Mar 2013 11:11:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk
-Subject: Re: [PATCH 26/27] block: Add an explicit bio flag for bios that own
- their bvec
-Message-Id: <20130326111106.dc255f73804de1f8577fea52@linux-foundation.org>
-In-Reply-To: <1361319761-23873-27-git-send-email-koverstreet@google.com>
-References: <1361319761-23873-1-git-send-email-koverstreet@google.com>
-	<1361319761-23873-27-git-send-email-koverstreet@google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Mar 2013 14:14:09 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: stern@rowland.harvard.edu
+Cc: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCHv2] usb: ehci: unlink_empty_async_suspended() only used with CONFIG_PM
+Date: Wed, 27 Mar 2013 07:14:33 +1300
+Message-Id: <1364321673-2030-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Feb 2013 16:22:40 -0800 Kent Overstreet <koverstreet@google.com> wrote:
+Compiling with !CONFIG_PM generates an unused function warning on
+unlink_empty_async_suspended().
 
-> This is for the new bio splitting code. When we split a bio, if the
-> split occured on a bvec boundry we reuse the bvec for the new bio. But
-> that means bio_free() can't free it, hence the explicit flag.
-> 
-> --- a/include/linux/blk_types.h
-> +++ b/include/linux/blk_types.h
-> @@ -117,6 +117,7 @@ struct bio {
->   * BIO_POOL_IDX()
->   */
->  #define BIO_RESET_BITS	12
-> +#define BIO_OWNS_VEC	12	/* bio_free() should free bvec */
->  
->  #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+Enclose the function in a #ifdef CONFIG_PM
 
-The BIO_OWNS_VEC definition seems to be in the wrong place - it should
-be grouped with the "bio flags" group above?
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+---
+Fixed up the commit message.
+ drivers/usb/host/ehci-q.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/usb/host/ehci-q.c b/drivers/usb/host/ehci-q.c
+index 23d1369..3638b28 100644
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -1316,6 +1316,7 @@ static void unlink_empty_async(struct ehci_hcd *ehci)
+ 	}
+ }
+ 
++#ifdef CONFIG_PM
+ /* The root hub is suspended; unlink all the async QHs */
+ static void unlink_empty_async_suspended(struct ehci_hcd *ehci)
+ {
+@@ -1328,7 +1329,7 @@ static void unlink_empty_async_suspended(struct ehci_hcd *ehci)
+ 	}
+ 	start_iaa_cycle(ehci, false);
+ }
+-
++#endif
+ /* makes sure the async qh will become idle */
+ /* caller must own ehci->lock */
+ 
+-- 
+1.7.9.5
 
