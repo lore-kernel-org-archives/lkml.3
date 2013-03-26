@@ -1,103 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965537Ab3CZPif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:38:35 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:51043 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965268Ab3CZPX3 (ORCPT
+	id S965393Ab3CZPid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:38:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54031 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965269Ab3CZPX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 11:23:29 -0400
-Message-ID: <5151BD61.7020401@gmail.com>
-Date: Tue, 26 Mar 2013 23:23:13 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Mark Salter <msalter@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org
-Subject: Re: [RFC PATCH v2, part4 03/39] c6x: normalize global variables exported
- by vmlinux.lds
-References: <1364109934-7851-1-git-send-email-jiang.liu@huawei.com>  <1364109934-7851-4-git-send-email-jiang.liu@huawei.com> <1364234218.2334.2.camel@t520.redhat.com>
-In-Reply-To: <1364234218.2334.2.camel@t520.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 109/150] USB: oti6858: fix use-after-free in TIOCMIWAIT
+Date: Tue, 26 Mar 2013 15:20:08 +0000
+Message-Id: <1364311249-14454-110-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2013 01:56 AM, Mark Salter wrote:
-> On Sun, 2013-03-24 at 15:24 +0800, Jiang Liu wrote:
->> Normalize global variables exported by vmlinux.lds to conform usage
->> guidelines from include/asm-generic/sections.h.
->>
->> Use _text to mark the start of the kernel image including the head text,
->> and _stext to mark the start of the .text section.
->>
->> This patch also fixes possible bugs due to current address layout that
->> [__init_begin, __init_end] is a sub-range of [_stext, _etext] and pages
->> within range [__init_begin, __init_end] will be freed by free_initmem().
-> 
-> I won't have time to look at this in detail until later this week, but
-> the reason for that layout is because c6x commonly stores text in flash.
-> Not all of the xip support is in-tree yet, but when it is, we don't want
-> to free init text.
-Hi Mark,
-	Thanks for reminder. It's possible to support the usage case you
-have described, please take a look at arch/tile/kernel/vmlinux.lds.S.
-By that way, we could only free init.data sections without freeing init.text
-sections.
-	Regards!
-	Gerry
+3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
 
-> 
-> --Mark
-> 
->>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Cc: Mark Salter <msalter@redhat.com>
->> Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
->> Cc: linux-c6x-dev@linux-c6x.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>  arch/c6x/kernel/vmlinux.lds.S |    4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/c6x/kernel/vmlinux.lds.S b/arch/c6x/kernel/vmlinux.lds.S
->> index 1d81c4c..279d807 100644
->> --- a/arch/c6x/kernel/vmlinux.lds.S
->> +++ b/arch/c6x/kernel/vmlinux.lds.S
->> @@ -54,16 +54,15 @@ SECTIONS
->>  	}
->>  
->>  	. = ALIGN(PAGE_SIZE);
->> +	__init_begin = .;
->>  	.init :
->>  	{
->> -		_stext = .;
->>  		_sinittext = .;
->>  		HEAD_TEXT
->>  		INIT_TEXT
->>  		_einittext = .;
->>  	}
->>  
->> -	__init_begin = _stext;
->>  	INIT_DATA_SECTION(16)
->>  
->>  	PERCPU_SECTION(128)
->> @@ -74,6 +73,7 @@ SECTIONS
->>  	.text :
->>  	{
->>  		_text = .;
->> +		_stext = .;
->>  		TEXT_TEXT
->>  		SCHED_TEXT
->>  		LOCK_TEXT
-> 
-> 
+------------------
+
+From: Johan Hovold <jhovold@gmail.com>
+
+commit 8edfdab37157d2683e51b8be5d3d5697f66a9f7b upstream.
+
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
+
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.5; adjust context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/usb/serial/oti6858.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/usb/serial/oti6858.c b/drivers/usb/serial/oti6858.c
+index 5976b65..d9c40b1 100644
+--- a/drivers/usb/serial/oti6858.c
++++ b/drivers/usb/serial/oti6858.c
+@@ -191,7 +191,6 @@ struct oti6858_private {
+ 	u8 setup_done;
+ 	struct delayed_work delayed_setup_work;
+ 
+-	wait_queue_head_t intr_wait;
+ 	struct usb_serial_port *port;   /* USB port with which associated */
+ };
+ 
+@@ -345,7 +344,6 @@ static int oti6858_startup(struct usb_serial *serial)
+ 			break;
+ 
+ 		spin_lock_init(&priv->lock);
+-		init_waitqueue_head(&priv->intr_wait);
+ /*		INIT_WORK(&priv->setup_work, setup_line, serial->port[i]); */
+ /*		INIT_WORK(&priv->write_work, send_data, serial->port[i]); */
+ 		priv->port = port;
+@@ -672,11 +670,15 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
+ 	while (1) {
+-		wait_event_interruptible(priv->intr_wait,
++		wait_event_interruptible(port->delta_msr_wait,
++					port->serial->disconnected ||
+ 					priv->status.pin_state != prev);
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
+ 
++		if (port->serial->disconnected)
++			return -EIO;
++
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 		status = priv->status.pin_state & PIN_MASK;
+ 		spin_unlock_irqrestore(&priv->lock, flags);
+@@ -783,7 +785,7 @@ static void oti6858_read_int_callback(struct urb *urb)
+ 
+ 		if (!priv->transient) {
+ 			if (xs->pin_state != priv->status.pin_state)
+-				wake_up_interruptible(&priv->intr_wait);
++				wake_up_interruptible(&port->delta_msr_wait);
+ 			memcpy(&priv->status, xs, OTI6858_CTRL_PKT_SIZE);
+ 		}
+ 
+-- 
+1.8.1.2
 
