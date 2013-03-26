@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905Ab3CZXns (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:43:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52437 "EHLO
+	id S1756543Ab3CZXoK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:44:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52407 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754500Ab3CZWnw (ORCPT
+	with ESMTP id S1754475Ab3CZWnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:43:52 -0400
+	Tue, 26 Mar 2013 18:43:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Ben Hutchings <bhutchings@solarflare.com>,
+        dormando <dormando@rydia.net>, Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 23/98] drivers/net/ethernet/sfc/ptp.c: adjust duplicate test
-Date: Tue, 26 Mar 2013 15:42:12 -0700
-Message-Id: <20130326224244.872052613@linuxfoundation.org>
+Subject: [ 21/98] tcp: dont handle MTU reduction on LISTEN socket
+Date: Tue, 26 Mar 2013 15:42:10 -0700
+Message-Id: <20130326224244.684801566@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -29,51 +28,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 56567c6f8751c633581ca7c8e1cf08eed503f5ea ]
+[ Upstream commit 0d4f0608619de59fd8169dd8e72aadc28d80e715 ]
 
-Delete successive tests to the same location.  rc was previously tested and
-not subsequently updated.  efx_phc_adjtime can return an error code, so the
-call is updated so that is tested instead.
+When an ICMP ICMP_FRAG_NEEDED (or ICMPV6_PKT_TOOBIG) message finds a
+LISTEN socket, and this socket is currently owned by the user, we
+set TCP_MTU_REDUCED_DEFERRED flag in listener tsq_flags.
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+This is bad because if we clone the parent before it had a chance to
+clear the flag, the child inherits the tsq_flags value, and next
+tcp_release_cb() on the child will decrement sk_refcnt.
 
-// <smpl>
-@s exists@
-local idexpression y;
-expression x,e;
-@@
+Result is that we might free a live TCP socket, as reported by
+Dormando.
 
-*if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
- { ... when forall
-   return ...; }
-... when != \(y = e\|y += e\|y -= e\|y |= e\|y &= e\|y++\|y--\|&y\)
-    when != \(XT_GETPAGE(...,y)\|WMI_CMD_BUF(...)\)
-*if ( \(x == NULL\|IS_ERR(x)\|y != 0\) )
- { ... when forall
-   return ...; }
-// </smpl>
+IPv4: Attempt to release TCP socket in state 1
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-Acked-by: Ben Hutchings <bhutchings@solarflare.com>
+Fix this issue by testing sk_state against TCP_LISTEN early, so that we
+set TCP_MTU_REDUCED_DEFERRED on appropriate sockets (not a LISTEN one)
+
+This bug was introduced in commit 563d34d05786
+(tcp: dont drop MTU reduction indications)
+
+Reported-by: dormando <dormando@rydia.net>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/sfc/ptp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/tcp_ipv4.c |   14 +++++++-------
+ net/ipv6/tcp_ipv6.c |    7 +++++++
+ 2 files changed, 14 insertions(+), 7 deletions(-)
 
---- a/drivers/net/ethernet/sfc/ptp.c
-+++ b/drivers/net/ethernet/sfc/ptp.c
-@@ -1439,7 +1439,7 @@ static int efx_phc_settime(struct ptp_cl
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -274,13 +274,6 @@ static void tcp_v4_mtu_reduced(struct so
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	u32 mtu = tcp_sk(sk)->mtu_info;
  
- 	delta = timespec_sub(*e_ts, time_now);
+-	/* We are not interested in TCP_LISTEN and open_requests (SYN-ACKs
+-	 * send out by Linux are always <576bytes so they should go through
+-	 * unfragmented).
+-	 */
+-	if (sk->sk_state == TCP_LISTEN)
+-		return;
+-
+ 	dst = inet_csk_update_pmtu(sk, mtu);
+ 	if (!dst)
+ 		return;
+@@ -408,6 +401,13 @@ void tcp_v4_err(struct sk_buff *icmp_skb
+ 			goto out;
  
--	efx_phc_adjtime(ptp, timespec_to_ns(&delta));
-+	rc = efx_phc_adjtime(ptp, timespec_to_ns(&delta));
- 	if (rc != 0)
- 		return rc;
+ 		if (code == ICMP_FRAG_NEEDED) { /* PMTU discovery (RFC1191) */
++			/* We are not interested in TCP_LISTEN and open_requests
++			 * (SYN-ACKs send out by Linux are always <576bytes so
++			 * they should go through unfragmented).
++			 */
++			if (sk->sk_state == TCP_LISTEN)
++				goto out;
++
+ 			tp->mtu_info = info;
+ 			if (!sock_owned_by_user(sk)) {
+ 				tcp_v4_mtu_reduced(sk);
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -389,6 +389,13 @@ static void tcp_v6_err(struct sk_buff *s
+ 	}
  
+ 	if (type == ICMPV6_PKT_TOOBIG) {
++		/* We are not interested in TCP_LISTEN and open_requests
++		 * (SYN-ACKs send out by Linux are always <576bytes so
++		 * they should go through unfragmented).
++		 */
++		if (sk->sk_state == TCP_LISTEN)
++			goto out;
++
+ 		tp->mtu_info = ntohl(info);
+ 		if (!sock_owned_by_user(sk))
+ 			tcp_v6_mtu_reduced(sk);
 
 
