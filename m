@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965514Ab3CZP0C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:26:02 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:28258 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934781Ab3CZPZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:25:59 -0400
-X-IronPort-AV: E=Sophos;i="4.84,913,1355097600"; 
-   d="scan'208";a="15642119"
-Date: Tue, 26 Mar 2013 15:25:55 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Will Deacon <will.deacon@arm.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "nico@linaro.org" <nico@linaro.org>
-Subject: Re: [PATCH v2 6/6] [RFC] arm: use PSCI if available
-In-Reply-To: <20130326150444.GI20252@mudshark.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.02.1303261509080.4430@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1303261423530.4430@kaball.uk.xensource.com> <1364308875-26484-6-git-send-email-stefano.stabellini@eu.citrix.com> <20130326150444.GI20252@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S934677Ab3CZPZy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:25:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54220 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965477Ab3CZPYP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 11:24:15 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Maciej=20=C5=BBenczykowski?= <maze@google.com>,
+        Mintz Yuval <yuvalmin@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 148/150] bnx2x: fix occasional statistics off-by-4GB error
+Date: Tue, 26 Mar 2013 15:20:47 +0000
+Message-Id: <1364311249-14454-149-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Mar 2013, Will Deacon wrote:
-> Hi Stefano,
-> 
-> On Tue, Mar 26, 2013 at 02:41:15PM +0000, Stefano Stabellini wrote:
-> > Check for the presence of PSCI before setting smp_ops, use PSCI if it is
-> > available.
-> > 
-> > This is useful because at least when running on Xen it's possible to have a
-> > PSCI node for example on a Versatile Express or an Exynos5 machine. In these
-> > cases the PSCI SMP calls should be the ones to be called.
-> > 
-> > Remove virt_smp_ops and platsmp.c from mach-virt because they aren't needed
-> > anymore.
-> 
-> [...]
-> 
-> > +struct smp_operations __initdata psci_smp_ops = {
-> > +	.smp_init_cpus		= psci_smp_init_cpus,
-> > +	.smp_prepare_cpus	= psci_smp_prepare_cpus,
-> > +	.smp_secondary_init	= psci_secondary_init,
-> > +	.smp_boot_secondary	= psci_boot_secondary,
-> > +};
-> 
-> Whilst I like the idea of this, I don't think things will pan out this
-> nicely in practice. There will almost always be a level of indirection
-> required between the internal Linux SMP operations and the expectations of
-> the PSCI firmware, whether this is in CPU numbering or other,
-> platform-specific fields in various parameters.
-> 
-> Tying these two things together like this confuses the layering in my
-> opinion and will likely lead to potentially subtle breakages if platforms
-> start trying to adopt this.
+3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
 
-What you are saying is that psci could either be used directly, like we
-are doing, or it could just be the base of some higher level platform
-specific smp_ops.
+------------------
 
-Honestly I think that psci is already high level enough that I would
-worry if somebody started to wrap it around something else.
+From: =?UTF-8?q?Maciej=20=C5=BBenczykowski?= <maze@google.com>
 
-However we still support that use case just fine:  they can just avoid
-having a psci node on device tree and just keep using their machine
-specific smp_ops. It's up to them really.
-They can even base the implementation of their smp_ops on the current
-psci code, in order to facilitate that I could get rid of psci_ops
-(which initialization is based on device tree) and export the psci_cpu_*
-functions instead, so that they can be called directly by other smp_ops.
+commit b009aac12cd0fe34293c68af8ac48b85be3bd858 upstream.
 
+The UPDATE_QSTAT function introduced on February 15, 2012
+in commit 1355b704b9ba "bnx2x: consistent statistics after
+internal driver reload" incorrectly fails to handle overflow
+during addition of the lower 32-bit field of a stat.
 
-> If this can indeed work for the virtual platforms (Xen and KVM), then I
-> think it would be better expressed using `virt' smp_ops, which map directly
-> to PSCI, rather than putting them here. Even then, it's tying KVM and Xen
-> together on the firmware side of things...
+This bug is present since 3.4-rc1 and should thus be considered
+a candidate for stable 3.4+ releases.
 
-Keep in mind that dom0 on Xen boots as a native machine (versatile
-express or exynos5 for example) with a Xen hypervisor node on it.  We
-would need to find a way to override the default machine smp_ops with
-a set of xen_smp_ops early at boot.
-I don't like this option very much, I think is fragile.
+Google-Bug-Id: 8374428
+Signed-off-by: Maciej Żenczykowski <maze@google.com>
+Cc: Mintz Yuval <yuvalmin@broadcom.com>
+Acked-by: Eilon Greenstein <eilong@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.h b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.h
+index 93e689fd..c664a61 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.h
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.h
+@@ -451,8 +451,9 @@ struct bnx2x_fw_port_stats_old {
+ 
+ #define UPDATE_QSTAT(s, t) \
+ 	do { \
+-		qstats->t##_hi = qstats_old->t##_hi + le32_to_cpu(s.hi); \
+ 		qstats->t##_lo = qstats_old->t##_lo + le32_to_cpu(s.lo); \
++		qstats->t##_hi = qstats_old->t##_hi + le32_to_cpu(s.hi) \
++			+ ((qstats->t##_lo < qstats_old->t##_lo) ? 1 : 0); \
+ 	} while (0)
+ 
+ #define UPDATE_QSTAT_OLD(f) \
+-- 
+1.8.1.2
+
