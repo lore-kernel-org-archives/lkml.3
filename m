@@ -1,111 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759528Ab3CZMp6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 08:45:58 -0400
-Received: from mail.us.es ([193.147.175.20]:54127 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758136Ab3CZMp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 08:45:57 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.97.7/16905. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-97.2/7.5):. 
- Processed in 1.912218 secs); 26 Mar 2013 12:45:55 -0000
-X-Envelope-From: pneira@us.es
-Date: Tue, 26 Mar 2013 13:45:52 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: dmitry pervushin <dpervushin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: Android netfilter patches (xt_IDLETIMER) [1/3]
-Message-ID: <20130326124552.GA5434@localhost>
-References: <5150CB02.2090105@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5150CB02.2090105@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932306Ab3CZMqn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 08:46:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49888 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759426Ab3CZMqm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 08:46:42 -0400
+Message-ID: <1364301998.5053.17.camel@laptop>
+Subject: Re: [RFC PATCH v3 3/6] sched: pack small tasks
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, mingo@kernel.org,
+        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
+        morten.rasmussen@arm.com, chander.kashyap@linaro.org,
+        cmetcalf@tilera.com, tony.luck@intel.com, alex.shi@intel.com,
+        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
+        amit.kucheria@linaro.org, corbet@lwn.net
+Date: Tue, 26 Mar 2013 13:46:38 +0100
+In-Reply-To: <1363955155-18382-4-git-send-email-vincent.guittot@linaro.org>
+References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
+	 <1363955155-18382-4-git-send-email-vincent.guittot@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Fri, 2013-03-22 at 13:25 +0100, Vincent Guittot wrote:
+> During the creation of sched_domain, we define a pack buddy CPU for
+> each CPU
+> when one is available. We want to pack at all levels where a group of
+> CPU can
+> be power gated independently from others.
+> On a system that can't power gate a group of CPUs independently, the
+> flag is
+> set at all sched_domain level and the buddy is set to -1. This is the
+> default
+> behavior.
+> On a dual clusters / dual cores system which can power gate each core
+> and
+> cluster independently, the buddy configuration will be :
+> 
+>       | Cluster 0   | Cluster 1   |
+>       | CPU0 | CPU1 | CPU2 | CPU3 |
+> -----------------------------------
+> buddy | CPU0 | CPU0 | CPU0 | CPU2 |
 
-On Mon, Mar 25, 2013 at 11:09:06PM +0100, dmitry pervushin wrote:
-> Fix the case in which timer has expired and we refresh it without
-> sending the notification
->
-> Signed-off-by: Ashish Sharma <ashishsharma@google.com>
-> Signed-off-by: JP Abgrall <jpa@google.com>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> Signed-off-by: dmitry pervushin <dpervushin@gmail.com>
->
-> diff --git a/net/netfilter/xt_IDLETIMER.c b/net/netfilter/xt_IDLETIMER.c
-> index f407ebc1..3540c04 100644
-> --- a/net/netfilter/xt_IDLETIMER.c
-> +++ b/net/netfilter/xt_IDLETIMER.c
-> @@ -168,14 +168,22 @@ static unsigned int idletimer_tg_target(struct sk_buff *skb,
->  					 const struct xt_action_param *par)
->  {
->  	const struct idletimer_tg_info *info = par->targinfo;
-> +	unsigned long now = jiffies;
->
->  	pr_debug("resetting timer %s, timeout period %u\n",
->  		 info->label, info->timeout);
->
->  	BUG_ON(!info->timer);
->
-> +	if (time_before(info->timer->timer.expires, now)) {
-> +		schedule_work(&info->timer->work);
-> +		pr_debug("Starting timer %s (Expired, Jiffies): %lu, %lu\n",
-> +			 info->label, info->timer->timer.expires, now);
-> +	}
+I suppose this is adequate for the 'small' systems you currently have;
+but given that Samsung is already bragging with its 'octo'-core Exynos
+5 (4+4 big-little thing) does this solution scale?
 
-Hm, this seems to me like a new feature. With this change, IDLETIMER
-is sending notifications once the timer becomes active again.
+Isn't this basically related to picking the NO_HZ cpu; if the system
+isn't fully symmetric with its power gates you want the NO_HZ cpu to be
+the 'special' cpu. If it is symmetric we really don't care which core
+is left 'running' and we can even select a new pack cpu from the idle
+cores once the old one is fully utilized.
 
-> +
-> +	/* TODO: Avoid modifying timers on each packet */
+Re-using (or integrating) with NO_HZ has the dual advantage that you'll
+make NO_HZ do the right thing for big-little (you typically want a
+little core to be the one staying 'awake' and once someone makes NO_HZ
+scale this all gets to scale along with it.
 
-Regarding this TODO, you can adapt this code snippet for this:
-
-unsigned long newtime = jiffies + extra_jiffies;
-
-/* Only update the timeout if the new timeout is at
- * least HZ jiffies from the old timeout. Need del_timer
- * for race avoidance (may already be dying).
- */
-if (newtime - ct->timeout.expires >= HZ)
-        mod_timer_pending(&ct->timeout, newtime);
-
-We're using it in nf_conntrack.
-
-This should come in a separate patch.
-
->  	mod_timer(&info->timer->timer,
-> -		  msecs_to_jiffies(info->timeout * 1000) + jiffies);
-> +		  msecs_to_jiffies(info->timeout * 1000) + now);
->
->  	return XT_CONTINUE;
->  }
-> @@ -184,6 +192,7 @@ static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
->  {
->  	struct idletimer_tg_info *info = par->targinfo;
->  	int ret;
-> +	unsigned long now = jiffies;
->
->  	pr_debug("checkentry targinfo%s\n", info->label);
->
-> @@ -204,8 +213,13 @@ static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
->  	info->timer = __idletimer_tg_find_by_label(info->label);
->  	if (info->timer) {
->  		info->timer->refcnt++;
-> +		if (time_before(info->timer->timer.expires, now)) {
-> +			schedule_work(&info->timer->work);
-> +			pr_debug("Starting Checkentry timer (Expired, Jiffies): %lu, %lu\n",
-> +				info->timer->timer.expires, now);
-> +		}
->  		mod_timer(&info->timer->timer,
-> -			  msecs_to_jiffies(info->timeout * 1000) + jiffies);
-> +			  msecs_to_jiffies(info->timeout * 1000) + now);
->
->  		pr_debug("increased refcnt of timer %s to %u\n",
->  			 info->label, info->timer->refcnt);
