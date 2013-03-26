@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934881Ab3CZPsa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:48:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53869 "EHLO
+	id S965121Ab3CZPWw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:22:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53845 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965125Ab3CZPWx (ORCPT
+	with ESMTP id S965095Ab3CZPWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:53 -0400
+	Tue, 26 Mar 2013 11:22:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 077/150] drm/radeon: add support for Richland APUs
-Date: Tue, 26 Mar 2013 15:19:36 +0000
-Message-Id: <1364311249-14454-78-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 072/150] tracing: Keep overwrite in sync between regular and snapshot buffers
+Date: Tue, 26 Mar 2013 15:19:31 +0000
+Message-Id: <1364311249-14454-73-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,55 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit e4d170633fde379f39a90f8a5e7eb619b5d1144d upstream.
+commit 80902822658aab18330569587cdb69ac1dfdcea8 upstream.
 
-Richland APUs are a new version of the Trinity APUs
-with performance and power management improvements.
+Changing the overwrite mode for the ring buffer via the trace
+option only sets the normal buffer. But the snapshot buffer could
+swap with it, and then the snapshot would be in non overwrite mode
+and the normal buffer would be in overwrite mode, even though the
+option flag states otherwise.
 
-Reviewed-by: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Keep the two buffers overwrite modes in sync.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/ni.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ kernel/trace/trace.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
-index c3abd25..0aa705e 100644
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -466,13 +466,19 @@ static void cayman_gpu_init(struct radeon_device *rdev)
- 		    (rdev->pdev->device == 0x9907) ||
- 		    (rdev->pdev->device == 0x9908) ||
- 		    (rdev->pdev->device == 0x9909) ||
-+		    (rdev->pdev->device == 0x990B) ||
-+		    (rdev->pdev->device == 0x990C) ||
-+		    (rdev->pdev->device == 0x990F) ||
- 		    (rdev->pdev->device == 0x9910) ||
--		    (rdev->pdev->device == 0x9917)) {
-+		    (rdev->pdev->device == 0x9917) ||
-+		    (rdev->pdev->device == 0x9999)) {
- 			rdev->config.cayman.max_simds_per_se = 6;
- 			rdev->config.cayman.max_backends_per_se = 2;
- 		} else if ((rdev->pdev->device == 0x9903) ||
- 			   (rdev->pdev->device == 0x9904) ||
- 			   (rdev->pdev->device == 0x990A) ||
-+			   (rdev->pdev->device == 0x990D) ||
-+			   (rdev->pdev->device == 0x990E) ||
- 			   (rdev->pdev->device == 0x9913) ||
- 			   (rdev->pdev->device == 0x9918)) {
- 			rdev->config.cayman.max_simds_per_se = 4;
-@@ -481,6 +487,9 @@ static void cayman_gpu_init(struct radeon_device *rdev)
- 			   (rdev->pdev->device == 0x9990) ||
- 			   (rdev->pdev->device == 0x9991) ||
- 			   (rdev->pdev->device == 0x9994) ||
-+			   (rdev->pdev->device == 0x9995) ||
-+			   (rdev->pdev->device == 0x9996) ||
-+			   (rdev->pdev->device == 0x999A) ||
- 			   (rdev->pdev->device == 0x99A0)) {
- 			rdev->config.cayman.max_simds_per_se = 3;
- 			rdev->config.cayman.max_backends_per_se = 1;
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index bd1df78..199f77b 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2776,8 +2776,12 @@ static void set_tracer_flags(unsigned int mask, int enabled)
+ 	if (mask == TRACE_ITER_RECORD_CMD)
+ 		trace_event_enable_cmd_record(enabled);
+ 
+-	if (mask == TRACE_ITER_OVERWRITE)
++	if (mask == TRACE_ITER_OVERWRITE) {
+ 		ring_buffer_change_overwrite(global_trace.buffer, enabled);
++#ifdef CONFIG_TRACER_MAX_TRACE
++		ring_buffer_change_overwrite(max_tr.buffer, enabled);
++#endif
++	}
+ }
+ 
+ static ssize_t
 -- 
 1.8.1.2
 
