@@ -1,30 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965118Ab3CZPwB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:52:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53795 "EHLO
+	id S965054Ab3CZPWj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:22:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53764 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965032Ab3CZPWk (ORCPT
+	with ESMTP id S965032Ab3CZPWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:40 -0400
+	Tue, 26 Mar 2013 11:22:35 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Minchan Kim <minchan@kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Yinghai Lu <yinghai@kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Keping Chen <chenkeping@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Mathias Krause <minipli@googlemail.com>, Jan Kara <jack@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 023/150] mm/hotplug: correctly add new zone to all other nodes' zone lists
-Date: Tue, 26 Mar 2013 15:18:42 +0000
-Message-Id: <1364311249-14454-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 061/150] udf: avoid info leak on export
+Date: Tue, 26 Mar 2013 15:19:20 +0000
+Message-Id: <1364311249-14454-62-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -37,86 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <jiang.liu@huawei.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 08dff7b7d629807dbb1f398c68dd9cd58dd657a1 upstream.
+commit 0143fc5e9f6f5aad4764801015bc8d4b4a278200 upstream.
 
-When online_pages() is called to add new memory to an empty zone, it
-rebuilds all zone lists by calling build_all_zonelists().  But there's a
-bug which prevents the new zone to be added to other nodes' zone lists.
+For type 0x51 the udf.parent_partref member in struct fid gets copied
+uninitialized to userland. Fix this by initializing it to 0.
 
-online_pages() {
-	build_all_zonelists()
-	.....
-	node_set_state(zone_to_nid(zone), N_HIGH_MEMORY)
-}
-
-Here the node of the zone is put into N_HIGH_MEMORY state after calling
-build_all_zonelists(), but build_all_zonelists() only adds zones from
-nodes in N_HIGH_MEMORY state to the fallback zone lists.
-build_all_zonelists()
-
-    ->__build_all_zonelists()
-	->build_zonelists()
-	    ->find_next_best_node()
-		->for_each_node_state(n, N_HIGH_MEMORY)
-
-So memory in the new zone will never be used by other nodes, and it may
-cause strange behavor when system is under memory pressure.  So put node
-into N_HIGH_MEMORY state before calling build_all_zonelists().
-
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Keping Chen <chenkeping@huawei.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.5 ]
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/memory_hotplug.c | 15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ fs/udf/namei.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 0086ac9..17651cd 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -516,19 +516,20 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
+diff --git a/fs/udf/namei.c b/fs/udf/namei.c
+index 1802417..c31deb3 100644
+--- a/fs/udf/namei.c
++++ b/fs/udf/namei.c
+@@ -1279,6 +1279,7 @@ static int udf_encode_fh(struct inode *inode, __u32 *fh, int *lenp,
+ 	*lenp = 3;
+ 	fid->udf.block = location.logicalBlockNum;
+ 	fid->udf.partref = location.partitionReferenceNum;
++	fid->udf.parent_partref = 0;
+ 	fid->udf.generation = inode->i_generation;
  
- 	zone->present_pages += onlined_pages;
- 	zone->zone_pgdat->node_present_pages += onlined_pages;
--	if (need_zonelists_rebuild)
--		build_all_zonelists(zone);
--	else
--		zone_pcp_update(zone);
-+	if (onlined_pages) {
-+		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
-+		if (need_zonelists_rebuild)
-+			build_all_zonelists(zone);
-+		else
-+			zone_pcp_update(zone);
-+	}
- 
- 	mutex_unlock(&zonelists_mutex);
- 
- 	init_per_zone_wmark_min();
- 
--	if (onlined_pages) {
-+	if (onlined_pages)
- 		kswapd_run(zone_to_nid(zone));
--		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
--	}
- 
- 	vm_total_pages = nr_free_pagecache_pages();
- 
+ 	if (parent) {
 -- 
 1.8.1.2
 
