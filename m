@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab3CZXCH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:02:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53370 "EHLO
+	id S1756956Ab3CZXCZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:02:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53489 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756668Ab3CZXCB (ORCPT
+	with ESMTP id S1756914Ab3CZXCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:02:01 -0400
+	Tue, 26 Mar 2013 19:02:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 27/49] mwifiex: fix potential out-of-boundary access to ibss rate table
-Date: Tue, 26 Mar 2013 16:01:24 -0700
-Message-Id: <20130326225842.345990024@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 41/49] USB: io_ti: fix get_icount for two port adapters
+Date: Tue, 26 Mar 2013 16:01:38 -0700
+Message-Id: <20130326225843.833624169@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -27,40 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 5f0fabf84d7b52f979dcbafa3d3c530c60d9a92c upstream.
+commit 5492bf3d5655b4954164f69c02955a7fca267611 upstream.
 
-smatch found this error:
+Add missing get_icount field to two-port driver.
 
-CHECK   drivers/net/wireless/mwifiex/join.c
-  drivers/net/wireless/mwifiex/join.c:1121
-  mwifiex_cmd_802_11_ad_hoc_join()
-  error: testing array offset 'i' after use.
+The two-port driver was not updated when switching to the new icount
+interface in commit 0bca1b913aff ("tty: Convert the USB drivers to the
+new icount interface").
 
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/join.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/usb/serial/io_ti.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/mwifiex/join.c
-+++ b/drivers/net/wireless/mwifiex/join.c
-@@ -1102,10 +1102,9 @@ mwifiex_cmd_802_11_ad_hoc_join(struct mw
- 				adhoc_join->bss_descriptor.bssid,
- 				adhoc_join->bss_descriptor.ssid);
- 
--	for (i = 0; bss_desc->supported_rates[i] &&
--			i < MWIFIEX_SUPPORTED_RATES;
--			i++)
--			;
-+	for (i = 0; i < MWIFIEX_SUPPORTED_RATES &&
-+		    bss_desc->supported_rates[i]; i++)
-+		;
- 	rates_size = i;
- 
- 	/* Copy Data Rates from the Rates recorded in scan response */
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -2793,6 +2793,7 @@ static struct usb_serial_driver edgeport
+ 	.set_termios		= edge_set_termios,
+ 	.tiocmget		= edge_tiocmget,
+ 	.tiocmset		= edge_tiocmset,
++	.get_icount		= edge_get_icount,
+ 	.write			= edge_write,
+ 	.write_room		= edge_write_room,
+ 	.chars_in_buffer	= edge_chars_in_buffer,
 
 
