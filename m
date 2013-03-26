@@ -1,85 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759535Ab3CZG3x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 02:29:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18666 "EHLO mx1.redhat.com"
+	id S1759522Ab3CZG3v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 02:29:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55307 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934081Ab3CZG3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 02:29:35 -0400
+	id S1759478Ab3CZG3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 02:29:30 -0400
 From: Jason Wang <jasowang@redhat.com>
 To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: mst@redhat.com, Jason Wang <jasowang@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: [net-next 4/5] netback: set transport header before passing it to kernel
-Date: Tue, 26 Mar 2013 14:19:58 +0800
-Message-Id: <1364278799-37285-5-git-send-email-jasowang@redhat.com>
+        Eric Dumazet <edumazet@google.com>
+Subject: [net-next 3/5] packet: set transport header before doing xmit
+Date: Tue, 26 Mar 2013 14:19:57 +0800
+Message-Id: <1364278799-37285-4-git-send-email-jasowang@redhat.com>
 In-Reply-To: <1364278799-37285-1-git-send-email-jasowang@redhat.com>
 References: <1364278799-37285-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, for the packets receives from netback, before doing header check,
-kernel just reset the transport header in netif_receive_skb() which pretends non
-l4 header. This is suboptimal for precise packet length estimation (introduced
-in 1def9238: net_sched: more precise pkt_len computation) which needs correct l4
-header for gso packets.
+Set the transport header for 1) some drivers (e.g ixgbe needs l4 header to do
+atr) 2) precise packet length estimation (introduced in 1def9238) needs l4
+header to compute header length.
 
-The patch just reuse the header probed by netback for partial checksum packets
-and tries to use skb_flow_dissect() for other cases, if both fail, just pretend
-no l4 header.
+So this patch first tries to get l4 header for packet socket through
+skb_flow_dissect(), and pretend no l4 header if skb_flow_dissect() fails.
 
 Cc: Eric Dumazet <edumazet@google.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>
 Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/net/xen-netback/netback.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+ net/packet/af_packet.c |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index aa28550..fc8faa7 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -39,6 +39,7 @@
- #include <linux/udp.h>
- 
- #include <net/tcp.h>
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index bd0d14c..83fdd0a 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -88,6 +88,7 @@
+ #include <linux/virtio_net.h>
+ #include <linux/errqueue.h>
+ #include <linux/net_tstamp.h>
 +#include <net/flow_keys.h>
  
- #include <xen/xen.h>
- #include <xen/events.h>
-@@ -1184,6 +1185,7 @@ static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
- 	if (th >= skb_tail_pointer(skb))
- 		goto out;
+ #ifdef CONFIG_INET
+ #include <net/inet_common.h>
+@@ -1412,6 +1413,7 @@ static int packet_sendmsg_spkt(struct kiocb *iocb, struct socket *sock,
+ 	__be16 proto = 0;
+ 	int err;
+ 	int extra_len = 0;
++	struct flow_keys keys;
  
-+	skb_set_transport_header(skb, 4 * iph->ihl);
- 	skb->csum_start = th - skb->head;
- 	switch (iph->protocol) {
- 	case IPPROTO_TCP:
-@@ -1495,6 +1497,7 @@ static void xen_netbk_tx_submit(struct xen_netbk *netbk)
+ 	/*
+ 	 *	Get and verify the address.
+@@ -1512,6 +1514,11 @@ retry:
+ 	if (unlikely(extra_len == 4))
+ 		skb->no_fcs = 1;
  
- 		skb->dev      = vif->dev;
- 		skb->protocol = eth_type_trans(skb, skb->dev);
-+		skb_reset_network_header(skb);
- 
- 		if (checksum_setup(vif, skb)) {
- 			netdev_dbg(vif->dev,
-@@ -1503,6 +1506,15 @@ static void xen_netbk_tx_submit(struct xen_netbk *netbk)
- 			continue;
- 		}
- 
-+		if (!skb_transport_header_was_set(skb)) {
-+			struct flow_keys keys;
++	if (skb_flow_dissect(skb, &keys))
++		skb_set_transport_header(skb, keys.thoff);
++	else
++		skb_reset_transport_header(skb);
 +
-+			if (skb_flow_dissect(skb, &keys))
-+				skb_set_transport_header(skb, keys.thoff);
-+			else
-+				skb_reset_transport_header(skb);
-+		}
+ 	dev_queue_xmit(skb);
+ 	rcu_read_unlock();
+ 	return len;
+@@ -1918,6 +1925,7 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
+ 	struct page *page;
+ 	void *data;
+ 	int err;
++	struct flow_keys keys;
+ 
+ 	ph.raw = frame;
+ 
+@@ -1943,6 +1951,11 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
+ 	skb_reserve(skb, hlen);
+ 	skb_reset_network_header(skb);
+ 
++	if (skb_flow_dissect(skb, &keys))
++		skb_set_transport_header(skb, keys.thoff);
++	else
++		skb_reset_transport_header(skb);
 +
- 		vif->dev->stats.rx_bytes += skb->len;
- 		vif->dev->stats.rx_packets++;
+ 	if (po->tp_tx_has_off) {
+ 		int off_min, off_max, off;
+ 		off_min = po->tp_hdrlen - sizeof(struct sockaddr_ll);
+@@ -2199,6 +2212,7 @@ static int packet_snd(struct socket *sock,
+ 	unsigned short gso_type = 0;
+ 	int hlen, tlen;
+ 	int extra_len = 0;
++	struct flow_keys keys;
+ 
+ 	/*
+ 	 *	Get and verify the address.
+@@ -2351,6 +2365,13 @@ static int packet_snd(struct socket *sock,
+ 		len += vnet_hdr_len;
+ 	}
+ 
++	if (skb->ip_summed == CHECKSUM_PARTIAL)
++		skb_set_transport_header(skb, skb_checksum_start_offset(skb));
++	else if (skb_flow_dissect(skb, &keys))
++		skb_set_transport_header(skb, keys.thoff);
++	else
++		skb_set_transport_header(skb, reserve);
++
+ 	if (unlikely(extra_len == 4))
+ 		skb->no_fcs = 1;
  
 -- 
 1.7.1
