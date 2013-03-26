@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965147Ab3CZPwm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:52:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53785 "EHLO
+	id S965127Ab3CZPwk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:52:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53788 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965042Ab3CZPWh (ORCPT
+	with ESMTP id S965043Ab3CZPWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 11:22:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Guo Chao <yan@linux.vnet.ibm.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "M. Hindess" <hindessm@uk.ibm.com>,
-        Nikanth Karthikesan <knikanth@suse.de>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 024/150] block: use i_size_write() in bd_set_size()
-Date: Tue, 26 Mar 2013 15:18:43 +0000
-Message-Id: <1364311249-14454-25-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 057/150] rtlwifi: rtl8192cu: Fix schedule while atomic bug splat
+Date: Tue, 26 Mar 2013 15:19:16 +0000
+Message-Id: <1364311249-14454-58-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -31,42 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guo Chao <yan@linux.vnet.ibm.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit d646a02a9d44d1421f273ae3923d97b47b918176 upstream.
+commit 664899786cb49cb52f620e06ac19c0be524a7cfa upstream.
 
-blkdev_ioctl(GETBLKSIZE) uses i_size_read() to read size of block device.
-If we update block size directly, reader may see intermediate result in
-some machines and configurations.  Use i_size_write() instead.
+When run at debug 3 or higher, rtl8192cu reports a BUG as follows:
 
-Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Guo Chao <yan@linux.vnet.ibm.com>
-Cc: M. Hindess <hindessm@uk.ibm.com>
-Cc: Nikanth Karthikesan <knikanth@suse.de>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+BUG: scheduling while atomic: kworker/u:0/5281/0x00000002
+INFO: lockdep is turned off.
+Modules linked in: rtl8192cu rtl8192c_common rtlwifi fuse af_packet bnep bluetooth b43 mac80211 cfg80211 ipv6 snd_hda_codec_conexant kvm_amd k
+vm snd_hda_intel snd_hda_codec bcma rng_core snd_pcm ssb mmc_core snd_seq snd_timer snd_seq_device snd i2c_nforce2 sr_mod pcmcia forcedeth i2c_core soundcore
+ cdrom sg serio_raw k8temp hwmon joydev ac battery pcmcia_core snd_page_alloc video button wmi autofs4 ext4 mbcache jbd2 crc16 thermal processor scsi_dh_alua
+ scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc scsi_dh ata_generic pata_acpi pata_amd [last unloaded: rtlwifi]
+Pid: 5281, comm: kworker/u:0 Tainted: G        W    3.8.0-wl+ #119
+Call Trace:
+ [<ffffffff814531e7>] __schedule_bug+0x62/0x70
+ [<ffffffff81459af0>] __schedule+0x730/0xa30
+ [<ffffffff81326e49>] ? usb_hcd_link_urb_to_ep+0x19/0xa0
+ [<ffffffff8145a0d4>] schedule+0x24/0x70
+ [<ffffffff814575ec>] schedule_timeout+0x18c/0x2f0
+ [<ffffffff81459ec0>] ? wait_for_common+0x40/0x180
+ [<ffffffff8133f461>] ? ehci_urb_enqueue+0xf1/0xee0
+ [<ffffffff810a579d>] ? trace_hardirqs_on+0xd/0x10
+ [<ffffffff81459f65>] wait_for_common+0xe5/0x180
+ [<ffffffff8107d1c0>] ? try_to_wake_up+0x2d0/0x2d0
+ [<ffffffff8145a08e>] wait_for_completion_timeout+0xe/0x10
+ [<ffffffff8132ab1c>] usb_start_wait_urb+0x8c/0x100
+ [<ffffffff8132adf9>] usb_control_msg+0xd9/0x130
+ [<ffffffffa057dd8d>] _usb_read_sync+0xcd/0x140 [rtlwifi]
+ [<ffffffffa057de0e>] _usb_read32_sync+0xe/0x10 [rtlwifi]
+ [<ffffffffa04b0555>] rtl92cu_update_hal_rate_table+0x1a5/0x1f0 [rtl8192cu]
+
+The cause is a synchronous read from routine rtl92cu_update_hal_rate_table().
+The resulting output is not critical, thus the debug statement is
+deleted.
+
+Reported-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/block_dev.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index db64e31..77e86b3 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1086,7 +1086,9 @@ void bd_set_size(struct block_device *bdev, loff_t size)
- {
- 	unsigned bsize = bdev_logical_block_size(bdev);
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+index 0c74d4f..1539eb8 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+@@ -2059,8 +2059,6 @@ void rtl92cu_update_hal_rate_table(struct ieee80211_hw *hw,
+ 			       (shortgi_rate << 4) | (shortgi_rate);
+ 	}
+ 	rtl_write_dword(rtlpriv, REG_ARFR0 + ratr_index * 4, ratr_value);
+-	RT_TRACE(rtlpriv, COMP_RATR, DBG_DMESG, "%x\n",
+-		 rtl_read_dword(rtlpriv, REG_ARFR0));
+ }
  
--	bdev->bd_inode->i_size = size;
-+	mutex_lock(&bdev->bd_inode->i_mutex);
-+	i_size_write(bdev->bd_inode, size);
-+	mutex_unlock(&bdev->bd_inode->i_mutex);
- 	while (bsize < PAGE_CACHE_SIZE) {
- 		if (size & bsize)
- 			break;
+ void rtl92cu_update_hal_rate_mask(struct ieee80211_hw *hw, u8 rssi_level)
 -- 
 1.8.1.2
 
