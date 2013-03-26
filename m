@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab3CZUrd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 16:47:33 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:32930 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754500Ab3CZUr2 (ORCPT
+	id S1755340Ab3CZUvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 16:51:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52719 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab3CZUvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 16:47:28 -0400
-Date: Tue, 26 Mar 2013 13:47:25 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Gerlando Falauto <gerlando.falauto@keymile.com>,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Simon Guinot <sguinot@lacie.com>, stable@vger.kernel.org
-Subject: Re: [PATCH v3b 0/9] refactoring for mask_cache
-Message-ID: <20130326204725.GA4521@kroah.com>
-References: <1363885931-20571-1-git-send-email-gerlando.falauto@keymile.com>
- <20130321215709.GA27612@kroah.com>
- <alpine.LFD.2.02.1303262136350.22263@ionos>
+	Tue, 26 Mar 2013 16:51:44 -0400
+Date: Tue, 26 Mar 2013 14:51:28 -0600
+From: Jens Axboe <axboe@kernel.dk>
+To: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, klebers@linux.vnet.ibm.com
+Subject: Re: [PATCHv2 01/02] block: removes dynamic allocation on stack
+Message-ID: <20130326205128.GV19488@kernel.dk>
+References: <20130326160307.GD7136@oc6784271780.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1303262136350.22263@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130326160307.GD7136@oc6784271780.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 09:37:53PM +0100, Thomas Gleixner wrote:
-> On Thu, 21 Mar 2013, Greg KH wrote:
+On Tue, Mar 26 2013, Philip J. Kelleher wrote:
+> From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 > 
-> > On Thu, Mar 21, 2013 at 06:12:02PM +0100, Gerlando Falauto wrote:
-> > > This patchset addresses a regression found with the Orion GPIO controller
-> > > when both Edge- and Level- based interrupts are requested within the same
-> > > GPIO chip. The regression was introduced by e59347a
-> > > "arm: orion: Use generic irq chip"
-> > > 
-> > > thereby affecting all kernel releases since 3.0.x.
-> > 
-> > <formletter>
-> > 
-> > This is not the correct way to submit patches for inclusion in the
-> > stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-> > for how to do this properly.
-> > 
-> > </formletter>
+> Removing the dynamic allocation on the stack.
 > 
-> Aside of that it would be less intrusive for the stable series to
-> revert the offending commit(s), if that is possible.
+> Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+> -------------------------------------------------------------------------------
+> o Version 2 consists of the error checking that was foolishly left out.
+> o Added error checking to multiple functions to support the dynamically
+>   allocated list_head array.
 
-If it is reverted in Linus's tree, yes, I can do that.  But if so,
-please just tag that revert with the Cc: stable marking and then I can
-pick it up properly.
+I've been fixing up your patch formats for a while now, lets please just
+improve on it a little bit. First of all, your subject line should be
+prefixed with the driver name. So just use rsxx or similar. Secondly,
+for this patch, you are using the same subject line as the original
+patch. This is a fixup patch, it should be labelled as such. A proper
+subject line for this patch would be:
 
-Otherwise, no, I can't revert something that isn't already fixed in
-upstream first.
+rsxx: enable error return of rsxx_eeh_save_issued_dmas()
 
-thanks,
+and the body could be:
 
-greg k-h
+Commit d8d595df introduced a bug where we did not check for a NULL
+return from kmalloc(). Make rsxx_eeh_save_issued_dmas() return an
+error for that case, and make the callers handle that.
+
+You appear to put the description of the patch in a section below your
+signed-off-by, which doesn't really work. Your --- divider gets broken
+with git am as well.
+
+
+-- 
+Jens Axboe
+
