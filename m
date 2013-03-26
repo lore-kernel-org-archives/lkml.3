@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab3CZXRU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:17:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53059 "EHLO
+	id S1756195Ab3CZWwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:52:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53025 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756196Ab3CZWwk (ORCPT
+	with ESMTP id S1755224Ab3CZWwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:40 -0400
+	Tue, 26 Mar 2013 18:52:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Artamonow <mad_soft@inbox.ru>
-Subject: [ 52/72] usb-storage: add unusual_devs entry for Samsung YP-Z3 mp3 player
-Date: Tue, 26 Mar 2013 15:51:35 -0700
-Message-Id: <20130326224925.051271993@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 29/72] sfc: Disable soft interrupt handling during efx_device_detach_sync()
+Date: Tue, 26 Mar 2013 15:51:12 -0700
+Message-Id: <20130326224922.704109328@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -26,37 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Artamonow <mad_soft@inbox.ru>
 
-commit 29f86e66428ee083aec106cca1748dc63d98ce23 upstream.
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-Device stucks on filesystem writes, unless following quirk is passed:
-  echo 04e8:5136:m > /sys/module/usb_storage/parameters/quirks
+[ Upstream commit 35205b211c8d17a8a0b5e8926cb7c73e9a7ef1ad ]
 
-Add corresponding entry to unusual_devs.h
+efx_device_detach_sync() locks all TX queues before marking the device
+detached and thus disabling further TX scheduling.  But it can still
+be interrupted by TX completions which then result in TX scheduling in
+soft interrupt context.  This will deadlock when it tries to acquire
+a TX queue lock that efx_device_detach_sync() already acquired.
 
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+To avoid deadlock, we must use netif_tx_{,un}lock_bh().
+
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/net/ethernet/sfc/efx.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -488,6 +488,13 @@ UNUSUAL_DEV(  0x04e8, 0x5122, 0x0000, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_MAX_SECTORS_64 | US_FL_BULK_IGNORE_TAG),
+--- a/drivers/net/ethernet/sfc/efx.h
++++ b/drivers/net/ethernet/sfc/efx.h
+@@ -170,9 +170,9 @@ static inline void efx_device_detach_syn
+ 	 * TX scheduler is stopped when we're done and before
+ 	 * netif_device_present() becomes false.
+ 	 */
+-	netif_tx_lock(dev);
++	netif_tx_lock_bh(dev);
+ 	netif_device_detach(dev);
+-	netif_tx_unlock(dev);
++	netif_tx_unlock_bh(dev);
+ }
  
-+/* Added by Dmitry Artamonow <mad_soft@inbox.ru> */
-+UNUSUAL_DEV(  0x04e8, 0x5136, 0x0000, 0x9999,
-+		"Samsung",
-+		"YP-Z3",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64),
-+
- /* Entry and supporting patch by Theodore Kilgore <kilgota@auburn.edu>.
-  * Device uses standards-violating 32-byte Bulk Command Block Wrappers and
-  * reports itself as "Proprietary SCSI Bulk." Cf. device entry 0x084d:0x0011.
+ #endif /* EFX_EFX_H */
 
 
