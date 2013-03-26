@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756983Ab3CZXCm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:02:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53507 "EHLO
+	id S1756931Ab3CZXCX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:02:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53442 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756935Ab3CZXCY (ORCPT
+	with ESMTP id S1752307Ab3CZXCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:02:24 -0400
+	Tue, 26 Mar 2013 19:02:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, halfdog <me@halfdog.net>,
-        P J P <ppandit@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 47/49] exec: use -ELOOP for max recursion depth
-Date: Tue, 26 Mar 2013 16:01:44 -0700
-Message-Id: <20130326225844.449983336@linuxfoundation.org>
+        Zheng Liu <wenqing.lz@taobao.com>, "Theodore Tso" <tytso@mit.edu>,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [ 32/49] ext4: fix the wrong number of the allocated blocks in ext4_split_extent()
+Date: Tue, 26 Mar 2013 16:01:29 -0700
+Message-Id: <20130326225842.890119631@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -30,139 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Zheng Liu <wenqing.lz@taobao.com>
 
-commit d740269867021faf4ce38a449353d2b986c34a67 upstream.
+commit 3a2256702e47f68f921dfad41b1764d05c572329 upstream.
 
-To avoid an explosion of request_module calls on a chain of abusive
-scripts, fail maximum recursion with -ELOOP instead of -ENOEXEC. As soon
-as maximum recursion depth is hit, the error will fail all the way back
-up the chain, aborting immediately.
+This commit fixes a wrong return value of the number of the allocated
+blocks in ext4_split_extent.  When the length of blocks we want to
+allocate is greater than the length of the current extent, we return a
+wrong number.  Let's see what happens in the following case when we
+call ext4_split_extent().
 
-This also has the side-effect of stopping the user's shell from attempting
-to reexecute the top-level file as a shell script. As seen in the
-dash source:
+  map: [48, 72]
+  ex:  [32, 64, u]
 
-        if (cmd != path_bshell && errno == ENOEXEC) {
-                *argv-- = cmd;
-                *argv = cmd = path_bshell;
-                goto repeat;
-        }
+'ex' will be split into two parts:
+  ex1: [32, 47, u]
+  ex2: [48, 64, w]
 
-The above logic was designed for running scripts automatically that lacked
-the "#!" header, not to re-try failed recursion. On a legitimate -ENOEXEC,
-things continue to behave as the shell expects.
+'map->m_len' is returned from this function, and the value is 24.  But
+the real length is 16.  So it should be fixed.
 
-Additionally, when tracking recursion, the binfmt handlers should not be
-involved. The recursion being tracked is the depth of calls through
-search_binary_handler(), so that function should be exclusively responsible
-for tracking the depth.
+Meanwhile in this commit we use right length of the allocated blocks
+when get_reserved_cluster_alloc in ext4_ext_handle_uninitialized_extents
+is called.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: halfdog <me@halfdog.net>
-Cc: P J P <ppandit@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Dmitry Monakhov <dmonakhov@openvz.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/binfmt_em86.c        |    1 -
- fs/binfmt_misc.c        |    6 ------
- fs/binfmt_script.c      |    4 +---
- fs/exec.c               |   10 +++++-----
- include/linux/binfmts.h |    2 --
- 5 files changed, 6 insertions(+), 17 deletions(-)
+ fs/ext4/extents.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/binfmt_em86.c
-+++ b/fs/binfmt_em86.c
-@@ -42,7 +42,6 @@ static int load_em86(struct linux_binprm
- 			return -ENOEXEC;
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -2901,6 +2901,7 @@ static int ext4_split_extent(handle_t *h
+ 	int err = 0;
+ 	int uninitialized;
+ 	int split_flag1, flags1;
++	int allocated = map->m_len;
+ 
+ 	depth = ext_depth(inode);
+ 	ex = path[depth].p_ext;
+@@ -2919,6 +2920,8 @@ static int ext4_split_extent(handle_t *h
+ 				map->m_lblk + map->m_len, split_flag1, flags1);
+ 		if (err)
+ 			goto out;
++	} else {
++		allocated = ee_len - (map->m_lblk - ee_block);
  	}
  
--	bprm->recursion_depth++; /* Well, the bang-shell is implicit... */
- 	allow_write_access(bprm->file);
- 	fput(bprm->file);
- 	bprm->file = NULL;
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -116,10 +116,6 @@ static int load_misc_binary(struct linux
- 	if (!enabled)
- 		goto _ret;
+ 	ext4_ext_drop_refs(path);
+@@ -2941,7 +2944,7 @@ static int ext4_split_extent(handle_t *h
  
--	retval = -ENOEXEC;
--	if (bprm->recursion_depth > BINPRM_MAX_RECURSION)
--		goto _ret;
--
- 	/* to keep locking time low, we copy the interpreter string */
- 	read_lock(&entries_lock);
- 	fmt = check_file(bprm);
-@@ -200,8 +196,6 @@ static int load_misc_binary(struct linux
- 	if (retval < 0)
- 		goto _error;
+ 	ext4_ext_show_leaf(inode, path);
+ out:
+-	return err ? err : map->m_len;
++	return err ? err : allocated;
+ }
  
--	bprm->recursion_depth++;
--
- 	retval = search_binary_handler (bprm, regs);
- 	if (retval < 0)
- 		goto _error;
---- a/fs/binfmt_script.c
-+++ b/fs/binfmt_script.c
-@@ -22,15 +22,13 @@ static int load_script(struct linux_binp
- 	char interp[BINPRM_BUF_SIZE];
- 	int retval;
+ #define EXT4_EXT_ZERO_LEN 7
+@@ -3309,6 +3312,7 @@ out:
+ 					allocated - map->m_len);
+ 		allocated = map->m_len;
+ 	}
++	map->m_len = allocated;
  
--	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!') ||
--	    (bprm->recursion_depth > BINPRM_MAX_RECURSION))
-+	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!'))
- 		return -ENOEXEC;
  	/*
- 	 * This section does the #! interpretation.
- 	 * Sorta complicated, but hopefully it will work.  -TYT
- 	 */
- 
--	bprm->recursion_depth++;
- 	allow_write_access(bprm->file);
- 	fput(bprm->file);
- 	bprm->file = NULL;
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1369,6 +1369,10 @@ int search_binary_handler(struct linux_b
- 	int try,retval;
- 	struct linux_binfmt *fmt;
- 
-+	/* This allows 4 levels of binfmt rewrites before failing hard. */
-+	if (depth > 5)
-+		return -ELOOP;
-+
- 	retval = security_bprm_check(bprm);
- 	if (retval)
- 		return retval;
-@@ -1387,12 +1391,8 @@ int search_binary_handler(struct linux_b
- 			if (!try_module_get(fmt->module))
- 				continue;
- 			read_unlock(&binfmt_lock);
-+			bprm->recursion_depth = depth + 1;
- 			retval = fn(bprm, regs);
--			/*
--			 * Restore the depth counter to its starting value
--			 * in this call, so we don't have to rely on every
--			 * load_binary function to restore it on return.
--			 */
- 			bprm->recursion_depth = depth;
- 			if (retval >= 0) {
- 				if (depth == 0)
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -67,8 +67,6 @@ struct linux_binprm {
- #define BINPRM_FLAGS_EXECFD_BIT 1
- #define BINPRM_FLAGS_EXECFD (1 << BINPRM_FLAGS_EXECFD_BIT)
- 
--#define BINPRM_MAX_RECURSION 4
--
- /* Function parameter for binfmt->coredump */
- struct coredump_params {
- 	long signr;
+ 	 * If we have done fallocate with the offset that is already
 
 
