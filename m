@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab3CZWrp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:47:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52718 "EHLO
+	id S1755702Ab3CZWrq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:47:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52727 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755332Ab3CZWog (ORCPT
+	with ESMTP id S1755033Ab3CZWog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 18:44:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jonathan Brassow <jbrassow@redhat.com>, NeilBrown <neilb@suse.de>
-Subject: [ 77/98] MD RAID5: Avoid accessing gendisk or queue structs when not available
-Date: Tue, 26 Mar 2013 15:43:06 -0700
-Message-Id: <20130326224250.477244454@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>, Andreas Bombe <aeb@debian.org>
+Subject: [ 86/98] USB: EHCI: fix regression in QH unlinking
+Date: Tue, 26 Mar 2013 15:43:15 -0700
+Message-Id: <20130326224251.403352299@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -26,105 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Brassow <jbrassow@redhat.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit e3620a3ad52609f64a2402e4b59300afb4b83b77 upstream.
+commit d714aaf649460cbfd5e82e75520baa856b4fa0a0 upstream.
 
-MD RAID5:  Fix kernel oops when RAID4/5/6 is used via device-mapper
+This patch (as1670) fixes a regression caused by commit
+6402c796d3b4205d3d7296157956c5100a05d7d6 (USB: EHCI: work around
+silicon bug in Intel's EHCI controllers).  The workaround goes through
+two IAA cycles for each QH being unlinked.  During the first cycle,
+the QH is not added to the async_iaa list (because it isn't fully gone
+from the hardware yet), which means that list will be empty.
 
-Commit a9add5d (v3.8-rc1) added blktrace calls to the RAID4/5/6 driver.
-However, when device-mapper is used to create RAID4/5/6 arrays, the
-mddev->gendisk and mddev->queue fields are not setup.  Therefore, calling
-things like trace_block_bio_remap will cause a kernel oops.  This patch
-conditionalizes those calls on whether the proper fields exist to make
-the calls.  (Device-mapper will call trace_block_bio_remap on its own.)
+Unfortunately, I forgot to update the IAA watchdog timer routine.  It
+thinks that an empty async_iaa list means the timer expiration was an
+error, which isn't true any more.  This problem didn't show up during
+initial testing because the controllers being tested all had working
+IAA interrupts.  But not all controllers do, and when the watchdog
+timer expires, the empty-list check prevents the second IAA cycle from
+starting.  As a result, URB unlinks never complete.  The check needs
+to be removed.
 
-This patch is suitable for the 3.8.y stable kernel.
+Among the symptoms of the regression are processes stuck in D wait
+states and hangs during system shutdown.
 
-Signed-off-by: Jonathan Brassow <jbrassow@redhat.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Stephen Warren <swarren@wwwdotorg.org>
+Reported-and-tested-by: Sven Joachim <svenjoac@gmx.de>
+Reported-by: Andreas Bombe <aeb@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid5.c |   33 ++++++++++++++++++++-------------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+ drivers/usb/host/ehci-timer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -674,9 +674,11 @@ static void ops_run_io(struct stripe_hea
- 			bi->bi_next = NULL;
- 			if (rrdev)
- 				set_bit(R5_DOUBLE_LOCKED, &sh->dev[i].flags);
--			trace_block_bio_remap(bdev_get_queue(bi->bi_bdev),
--					      bi, disk_devt(conf->mddev->gendisk),
--					      sh->dev[i].sector);
-+
-+			if (conf->mddev->gendisk)
-+				trace_block_bio_remap(bdev_get_queue(bi->bi_bdev),
-+						      bi, disk_devt(conf->mddev->gendisk),
-+						      sh->dev[i].sector);
- 			generic_make_request(bi);
- 		}
- 		if (rrdev) {
-@@ -704,9 +706,10 @@ static void ops_run_io(struct stripe_hea
- 			rbi->bi_io_vec[0].bv_offset = 0;
- 			rbi->bi_size = STRIPE_SIZE;
- 			rbi->bi_next = NULL;
--			trace_block_bio_remap(bdev_get_queue(rbi->bi_bdev),
--					      rbi, disk_devt(conf->mddev->gendisk),
--					      sh->dev[i].sector);
-+			if (conf->mddev->gendisk)
-+				trace_block_bio_remap(bdev_get_queue(rbi->bi_bdev),
-+						      rbi, disk_devt(conf->mddev->gendisk),
-+						      sh->dev[i].sector);
- 			generic_make_request(rbi);
- 		}
- 		if (!rdev && !rrdev) {
-@@ -2871,8 +2874,10 @@ static void handle_stripe_dirtying(struc
- 	set_bit(STRIPE_HANDLE, &sh->state);
- 	if (rmw < rcw && rmw > 0) {
- 		/* prefer read-modify-write, but need to get some data */
--		blk_add_trace_msg(conf->mddev->queue, "raid5 rmw %llu %d",
--				  (unsigned long long)sh->sector, rmw);
-+		if (conf->mddev->queue)
-+			blk_add_trace_msg(conf->mddev->queue,
-+					  "raid5 rmw %llu %d",
-+					  (unsigned long long)sh->sector, rmw);
- 		for (i = disks; i--; ) {
- 			struct r5dev *dev = &sh->dev[i];
- 			if ((dev->towrite || i == sh->pd_idx) &&
-@@ -2922,7 +2927,7 @@ static void handle_stripe_dirtying(struc
- 				}
- 			}
- 		}
--		if (rcw)
-+		if (rcw && conf->mddev->queue)
- 			blk_add_trace_msg(conf->mddev->queue, "raid5 rcw %llu %d %d %d",
- 					  (unsigned long long)sh->sector,
- 					  rcw, qread, test_bit(STRIPE_DELAYED, &sh->state));
-@@ -4029,9 +4034,10 @@ static int chunk_aligned_read(struct mdd
- 		atomic_inc(&conf->active_aligned_reads);
- 		spin_unlock_irq(&conf->device_lock);
+--- a/drivers/usb/host/ehci-timer.c
++++ b/drivers/usb/host/ehci-timer.c
+@@ -304,7 +304,7 @@ static void ehci_iaa_watchdog(struct ehc
+ 	 * (a) SMP races against real IAA firing and retriggering, and
+ 	 * (b) clean HC shutdown, when IAA watchdog was pending.
+ 	 */
+-	if (ehci->async_iaa) {
++	if (1) {
+ 		u32 cmd, status;
  
--		trace_block_bio_remap(bdev_get_queue(align_bi->bi_bdev),
--				      align_bi, disk_devt(mddev->gendisk),
--				      raid_bio->bi_sector);
-+		if (mddev->gendisk)
-+			trace_block_bio_remap(bdev_get_queue(align_bi->bi_bdev),
-+					      align_bi, disk_devt(mddev->gendisk),
-+					      raid_bio->bi_sector);
- 		generic_make_request(align_bi);
- 		return 1;
- 	} else {
-@@ -4125,7 +4131,8 @@ static void raid5_unplug(struct blk_plug
- 		}
- 		spin_unlock_irq(&conf->device_lock);
- 	}
--	trace_block_unplug(mddev->queue, cnt, !from_schedule);
-+	if (mddev->queue)
-+		trace_block_unplug(mddev->queue, cnt, !from_schedule);
- 	kfree(cb);
- }
- 
+ 		/* If we get here, IAA is *REALLY* late.  It's barely
 
 
