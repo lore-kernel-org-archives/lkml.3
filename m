@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759959Ab3CZSEA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:04:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12218 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850Ab3CZRgD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:36:03 -0400
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=mKjyBuRDuoEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=9QNw7ezHX68A:10 a=pGLkceISAAAA:8 a=J1Y8HTJGAAAA:8 a=1XWaLZrsAAAA:8 a=GZK3lcuhIWR5GrNAc6YA:9 a=MSl-tDqOz04A:10 a=4N9Db7Z2_RYA:10 a=UTB_XpHje0EA:10 a=F_LzExPamZkqyrRJ:21 a=bcjW1IVmddlFHSXU:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130326173601.140156860@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 26 Mar 2013 13:21:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: nitin padalia <padalia.nitin@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: [PATCH 08/86] net: prevent setting ttl=0 via IP_TTL
-References: <20130326172059.136127374@goodmis.org>
-Content-Disposition: inline; filename=0008-net-prevent-setting-ttl-0-via-IP_TTL.patch
+	id S1759972Ab3CZSEK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:04:10 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33047 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753850Ab3CZSEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 14:04:06 -0400
+Date: Tue, 26 Mar 2013 20:03:34 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Roland Stigge <stigge@antcom.de>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: Fix compile error by selecting USB_OTG_UTILS
+Message-ID: <20130326180334.GL20785@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1364319361-28265-1-git-send-email-stigge@antcom.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pFej7zHSL6C5fFIz"
+Content-Disposition: inline
+In-Reply-To: <1364319361-28265-1-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.1 stable review patch.
-If anyone has any objections, please let me know.
+--pFej7zHSL6C5fFIz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi,
 
-From: Cong Wang <xiyou.wangcong@gmail.com>
+On Tue, Mar 26, 2013 at 06:36:01PM +0100, Roland Stigge wrote:
+> The current lpc32xx_defconfig breaks like this, caused by recent phy
+> restructuring:
 
-[ Upstream commit c9be4a5c49cf51cc70a993f004c5bb30067a65ce ]
+which commit actually caused this ? I need to know to make sure if this
+should be sent to stable or not.
 
-A regression is introduced by the following commit:
+--=20
+balbi
 
-	commit 4d52cfbef6266092d535237ba5a4b981458ab171
-	Author: Eric Dumazet <eric.dumazet@gmail.com>
-	Date:   Tue Jun 2 00:42:16 2009 -0700
+--pFej7zHSL6C5fFIz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	    net: ipv4/ip_sockglue.c cleanups
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-	    Pure cleanups
+iQIcBAEBAgAGBQJRUeL2AAoJEIaOsuA1yqREx78P/2rdN5HNfjVJoJbdmn2VAzSW
+7YgoffrvJeRzQLu2LPNkO4vIN53iclOxTM33/QLjHh7l9d1t9K1zaUT3fsvsZXjh
+PbvdRe+ZK3IqiPnnzO3lgHLydnLgSQmlva1nL6s/flOEbc5Vx9Ti4mzssV9BXada
+0zO+7/B3zOkI84u+DwGuADEptcDAEXxW932ynXTJY/0HVKSHpv5l9X5zxnVHOXbM
++lVY58Dw8D/VY4bBb4+4vPdKFUagUPsP4Y6UUVhCOtqPuZKWVh+KPrQ/UNfg+btP
+dk841Hum4IozANEgQ6tLBEGsU02KoaSrJNQYrza2NTc0n/gsHzW1mfg+9TVMslQ9
+4qiHhdS9jvAB15brA6SKsK2XAME4+s6M6yiJ/oc/RUcfKzuDwz4p3AQl24A4/J8G
+BadBcvgW7YMTjH7dt2w5FR4MnDTPkOXslYNAFxdvXs4enfi22Zmdr8PT8G3xTWa+
+M8+aGK09UUJ91C0FXki1fk0afDwoxmKAbyEe4ztmjLKma4/64F99XUA7ATBDEhfH
+GkHczkIe6/rrmnK6ur6xgS1x7I8ueS5QROFlq+6X/v1zTQmlzzjECEwho4tgdaVe
+ZOXLAev1b52xl11+cxiBaUkLrf5lNCvNpRHD1P/RwmhUzPKr+wwAsKYx0Ee9PnJQ
+RzCy5ABrlCFigrFdHjZm
+=NOsU
+-----END PGP SIGNATURE-----
 
-but it is not a pure cleanup...
-
-	-               if (val != -1 && (val < 1 || val>255))
-	+               if (val != -1 && (val < 0 || val > 255))
-
-Since there is no reason provided to allow ttl=0, change it back.
-
-Reported-by: nitin padalia <padalia.nitin@gmail.com>
-Cc: nitin padalia <padalia.nitin@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/ipv4/ip_sockglue.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
-index 14bbfcf..e95d72b 100644
---- a/net/ipv4/ip_sockglue.c
-+++ b/net/ipv4/ip_sockglue.c
-@@ -590,7 +590,7 @@ static int do_ip_setsockopt(struct sock *sk, int level,
- 	case IP_TTL:
- 		if (optlen < 1)
- 			goto e_inval;
--		if (val != -1 && (val < 0 || val > 255))
-+		if (val != -1 && (val < 1 || val > 255))
- 			goto e_inval;
- 		inet->uc_ttl = val;
- 		break;
--- 
-1.7.10.4
-
-
+--pFej7zHSL6C5fFIz--
