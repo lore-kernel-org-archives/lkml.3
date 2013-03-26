@@ -1,347 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934218Ab3CZNY1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 09:24:27 -0400
-Received: from mail.us.es ([193.147.175.20]:34598 "EHLO mail.us.es"
+	id S1759770Ab3CZN1B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 09:27:01 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:43079 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934013Ab3CZNYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 09:24:24 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.97.7/16905. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-97.2/7.5):. 
- Processed in 2.057618 secs); 26 Mar 2013 13:24:22 -0000
-X-Envelope-From: pneira@us.es
-Date: Tue, 26 Mar 2013 14:24:19 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: dmitry pervushin <dpervushin@gmail.com>
-Cc: netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Android netfilter patches (xt_IDLETIMER) [2/3]
-Message-ID: <20130326132419.GC5434@localhost>
-References: <5150CB0C.2090406@gmail.com>
+	id S1758206Ab3CZN07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 09:26:59 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Paul Bolle <pebolle@tiscali.nl>, Lv Zheng <lv.zheng@intel.com>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: remove "config ACPI_DEBUG_FUNC_TRACE"
+Date: Tue, 26 Mar 2013 14:34:25 +0100
+Message-ID: <3588021.V98D5VToQr@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1363689661.1390.9.camel@x61.thuisdomein>
+References: <1363689661.1390.9.camel@x61.thuisdomein>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5150CB0C.2090406@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 11:09:16PM +0100, dmitry pervushin wrote:
-> Send notifications when the label becomes active after an idle period.
-> Send netlink message notifications in addition to sysfs notifications.
-> Using a uevent with
->       subsystem=xt_idletimer
->       INTERFACE=...
->       STATE={active,inactive}
-> 
-> This is backport from common android-3.0
-> commit: beb914e987cbbd368988d2b94a6661cb907c4d5a
-> with uevent support instead of a new netlink message type.
-> 
-> Cc: netdev@vger.kernel.org
-> Cc: JP Abgrall <jpa@google.com>
-> Cc: Ashish Sharma <ashishsharma@google.com>
-> Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> Signed-off-by: Ashish Sharma <ashishsharma@google.com>
-> Signed-off-by: JP Abgrall <jpa@google.com>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> Signed-off-by: dmitry pervushin <dpervushin@gmail.com>
-> 
-> diff --git a/include/uapi/linux/netfilter/xt_IDLETIMER.h b/include/uapi/linux/netfilter/xt_IDLETIMER.h
-> index 208ae93..96ed520 100644
-> --- a/include/uapi/linux/netfilter/xt_IDLETIMER.h
-> +++ b/include/uapi/linux/netfilter/xt_IDLETIMER.h
-> @@ -42,4 +42,18 @@ struct idletimer_tg_info {
->  	struct idletimer_tg *timer __attribute__((aligned(8)));
->  };
-> 
-> +#define NL_EVENT_TYPE_INACTIVE 0
-> +#define NL_EVENT_TYPE_ACTIVE 1
+On Tuesday, March 19, 2013 11:41:01 AM Paul Bolle wrote:
+> Kconfig symbol ACPI_DEBUG_FUNC_TRACE was only used (through its
+> corresponding macro) in drivers/acpi/acpica/acmacros.h. That macro was
+> removed from that header in v3.8, with commit
+> 86ff0e508f88eda6e479a897476026055831d2d8 ("ACPICA: Fix unmerged
+> acmacros.h divergences."). That commit did not explain why that macro
+> was removed. But it seems that ACPI_DEBUG_FUNC_TRACE can now be removed
+> too, as it is unused.
 
-This definitions above are not unused.
+Lv, can you please comment here?
 
-> +struct idletimer_tg_info_v1 {
-> +	__u32 timeout;
-> +
-> +	char label[MAX_IDLETIMER_LABEL_SIZE];
-> +
-> +	/* Use netlink messages for notification in addition to sysfs */
-> +	__u8 send_nl_msg;
+Rafael
 
-I think it's better if you add __u32 flags here instead, and you
-define XT_IDLETIMER_F_NL (1 << 0). This can be used later on to extend
-IDLETIMER more easily if needed.
 
-> +	/* for kernel module internal use only */
-> +	struct idletimer_tg *timer __attribute__((aligned(8)));
-> +};
->  #endif
-> diff --git a/net/netfilter/xt_IDLETIMER.c b/net/netfilter/xt_IDLETIMER.c
-> index 3540c04..cbf059c 100644
-> --- a/net/netfilter/xt_IDLETIMER.c
-> +++ b/net/netfilter/xt_IDLETIMER.c
-> @@ -40,6 +40,11 @@
->  #include <linux/kobject.h>
->  #include <linux/workqueue.h>
->  #include <linux/sysfs.h>
-> +#include <linux/skbuff.h>
-> +#include <net/net_namespace.h>
-> +#include <uapi/linux/netfilter/xt_IDLETIMER.h>
-> +
-> +#define NLMSG_MAX_SIZE 64
-
-Better rename this to IDLETIME_BUFSIZ, so people grepping for NLMSG_
-stuff don't hit this.
-
->  struct idletimer_tg_attr {
->  	struct attribute attr;
-> @@ -56,6 +61,8 @@ struct idletimer_tg {
->  	struct idletimer_tg_attr attr;
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Eyeball tested.
 > 
->  	unsigned int refcnt;
-> +	bool send_nl_msg;
-> +	bool active;
-
-I think you can use timer_pending instead of this new active variable.
-
->  };
+>  drivers/acpi/Kconfig | 8 --------
+>  1 file changed, 8 deletions(-)
 > 
->  static LIST_HEAD(idletimer_tg_list);
-> @@ -63,6 +70,30 @@ static DEFINE_MUTEX(list_mutex);
+> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+> index 92ed969..006b714 100644
+> --- a/drivers/acpi/Kconfig
+> +++ b/drivers/acpi/Kconfig
+> @@ -298,14 +298,6 @@ config ACPI_DEBUG
+>  	  Documentation/kernel-parameters.txt to control the type and
+>  	  amount of debug output.
+>  
+> -config ACPI_DEBUG_FUNC_TRACE
+> -	bool "Additionally enable ACPI function tracing"
+> -	default n
+> -	depends on ACPI_DEBUG
+> -	help
+> -	  ACPI Debug Statements slow down ACPI processing. Function trace
+> -	  is about half of the penalty and is rarely useful.
+> -
+>  config ACPI_PCI_SLOT
+>  	bool "PCI slot detection driver"
+>  	depends on SYSFS
 > 
->  static struct kobject *idletimer_tg_kobj;
-> 
-> +static void notify_netlink_uevent(const char *iface, struct idletimer_tg *timer)
-> +{
-> +	char iface_msg[NLMSG_MAX_SIZE];
-> +	char state_msg[NLMSG_MAX_SIZE];
-> +	char *envp[] = { iface_msg, state_msg, NULL };
-> +	int res;
-> +
-> +	res = snprintf(iface_msg, NLMSG_MAX_SIZE, "INTERFACE=%s",
-> +		       iface);
-> +	if (NLMSG_MAX_SIZE <= res) {
-> +		pr_err("message too long (%d)", res);
-> +		return;
-> +	}
-> +	res = snprintf(state_msg, NLMSG_MAX_SIZE, "STATE=%s",
-> +		       timer->active ? "active" : "inactive");
-> +	if (NLMSG_MAX_SIZE <= res) {
-> +		pr_err("message too long (%d)", res);
-> +		return;
-> +	}
-> +	pr_debug("putting nlmsg: <%s> <%s>\n", iface_msg, state_msg);
-> +	kobject_uevent_env(idletimer_tg_kobj, KOBJ_CHANGE, envp);
-> +	return;
-> +}
-> +
->  static
->  struct idletimer_tg *__idletimer_tg_find_by_label(const char *label)
->  {
-> @@ -83,6 +114,7 @@ static ssize_t idletimer_tg_show(struct kobject *kobj, struct attribute *attr,
->  {
->  	struct idletimer_tg *timer;
->  	unsigned long expires = 0;
-> +	unsigned long now = jiffies;
-> 
->  	mutex_lock(&list_mutex);
-> 
-> @@ -92,11 +124,15 @@ static ssize_t idletimer_tg_show(struct kobject *kobj, struct attribute *attr,
-> 
->  	mutex_unlock(&list_mutex);
-> 
-> -	if (time_after(expires, jiffies))
-> +	if (time_after(expires, now))
->  		return sprintf(buf, "%u\n",
-> -			       jiffies_to_msecs(expires - jiffies) / 1000);
-> +			       jiffies_to_msecs(expires - now) / 1000);
-> 
-> -	return sprintf(buf, "0\n");
-> +	if (timer->send_nl_msg)
-> +		return sprintf(buf, "0 %d\n",
-> +			jiffies_to_msecs(now - expires) / 1000);
-> +	else
-> +		return sprintf(buf, "0\n");
->  }
-> 
->  static void idletimer_tg_work(struct work_struct *work)
-> @@ -105,6 +141,9 @@ static void idletimer_tg_work(struct work_struct *work)
->  						  work);
-> 
->  	sysfs_notify(idletimer_tg_kobj, NULL, timer->attr.attr.name);
-> +
-> +	if (timer->send_nl_msg)
-> +		notify_netlink_uevent(timer->attr.attr.name, timer);
->  }
-> 
->  static void idletimer_tg_expired(unsigned long data)
-> @@ -113,12 +152,15 @@ static void idletimer_tg_expired(unsigned long data)
-> 
->  	pr_debug("timer %s expired\n", timer->attr.attr.name);
-> 
-> +	timer->active = false;
->  	schedule_work(&timer->work);
->  }
-> 
-> -static int idletimer_tg_create(struct idletimer_tg_info *info)
-> +static int idletimer_tg_create(void *pinfo, int revision)
->  {
->  	int ret;
-> +	struct idletimer_tg_info *info = (struct idletimer_tg_info*)pinfo;
-> +	struct idletimer_tg_info_v1 *info1 = (struct idletimer_tg_info_v1*)pinfo;
-> 
->  	info->timer = kmalloc(sizeof(*info->timer), GFP_KERNEL);
->  	if (!info->timer) {
-> @@ -144,6 +186,10 @@ static int idletimer_tg_create(struct idletimer_tg_info *info)
-> 
->  	setup_timer(&info->timer->timer, idletimer_tg_expired,
->  		    (unsigned long) info->timer);
-> +	info->timer->send_nl_msg = false;
-
-This won't work. info->timer points to the wrong offset if revision 1
-is used.
-
-You can add add some shim code for this, eg.
-
-static int idletimer_tg_checkentry_v0(const struct xt_tgchk_param *par)
-{
-        struct idletimer_tg_info *info = par->targinfo;
-        struct idletimer_tg_info_v1 info_v1 = {
-                .timeout = info->timeout,
-        };
-        memcpy(&info_v1.label, info->label, MAX_IDLETIMER_LABEL_SIZE);
-
-        return idletimer_tg_check(par, &info_v1);
-}
-
-static int idletimer_tg_checkentry_v1(const struct xt_tgchk_param *par)
-{
-        return idletimer_tg_check(par, par->targinfo);
-}
-
-I know, it's ugly, but this is how our limited revision support works.
-
-See net/netfilter/xt_CT.c in the new current linux git tree for
-instance.
-
-> +	info->timer->active = true;
-> +	if (revision == 1 && info1->send_nl_msg)
-> +		info->timer->send_nl_msg = true;
->  	info->timer->refcnt = 1;
-> 
->  	mod_timer(&info->timer->timer,
-> @@ -175,6 +221,8 @@ static unsigned int idletimer_tg_target(struct sk_buff *skb,
-> 
->  	BUG_ON(!info->timer);
-> 
-> +	info->timer->active = true;
-> +
->  	if (time_before(info->timer->timer.expires, now)) {
->  		schedule_work(&info->timer->work);
->  		pr_debug("Starting timer %s (Expired, Jiffies): %lu, %lu\n",
-> @@ -188,7 +236,7 @@ static unsigned int idletimer_tg_target(struct sk_buff *skb,
->  	return XT_CONTINUE;
->  }
-> 
-> -static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
-> +static int idletimer_tg_checkentry_rev(const struct xt_tgchk_param *par, int revision)
->  {
->  	struct idletimer_tg_info *info = par->targinfo;
->  	int ret;
-> @@ -213,18 +261,21 @@ static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
->  	info->timer = __idletimer_tg_find_by_label(info->label);
->  	if (info->timer) {
->  		info->timer->refcnt++;
-> +		info->timer->active = true;
-> +
->  		if (time_before(info->timer->timer.expires, now)) {
->  			schedule_work(&info->timer->work);
->  			pr_debug("Starting Checkentry timer (Expired, Jiffies): %lu, %lu\n",
->  				info->timer->timer.expires, now);
->  		}
-> +
->  		mod_timer(&info->timer->timer,
->  			  msecs_to_jiffies(info->timeout * 1000) + now);
-> 
->  		pr_debug("increased refcnt of timer %s to %u\n",
->  			 info->label, info->timer->refcnt);
->  	} else {
-> -		ret = idletimer_tg_create(info);
-> +		ret = idletimer_tg_create(info, revision);
->  		if (ret < 0) {
->  			pr_debug("failed to create timer\n");
->  			mutex_unlock(&list_mutex);
-> @@ -236,6 +287,16 @@ static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
->  	return 0;
->  }
-> 
-> +static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
-> +{
-> +	return idletimer_tg_checkentry_rev(par, 0);
-> +}
-> +
-> +static int idletimer_tg_checkentry_v1(const struct xt_tgchk_param *par)
-> +{
-> +	return idletimer_tg_checkentry_rev(par, 1);
-> +}
-> +
->  static void idletimer_tg_destroy(const struct xt_tgdtor_param *par)
->  {
->  	const struct idletimer_tg_info *info = par->targinfo;
-> @@ -260,14 +321,27 @@ static void idletimer_tg_destroy(const struct xt_tgdtor_param *par)
->  	mutex_unlock(&list_mutex);
->  }
-> 
-> -static struct xt_target idletimer_tg __read_mostly = {
-> +static struct xt_target idletimer_tg[] __read_mostly = {
-> +{
->  	.name		= "IDLETIMER",
-> +	.revision	= 0,
->  	.family		= NFPROTO_UNSPEC,
->  	.target		= idletimer_tg_target,
->  	.targetsize     = sizeof(struct idletimer_tg_info),
->  	.checkentry	= idletimer_tg_checkentry,
->  	.destroy        = idletimer_tg_destroy,
->  	.me		= THIS_MODULE,
-> +},
-> +{
-> +	.name		= "IDLETIMER",
-> +	.revision	= 1,
-> +	.family		= NFPROTO_UNSPEC,
-> +	.target		= idletimer_tg_target,
-> +	.targetsize     = sizeof(struct idletimer_tg_info_v1),
-> +	.checkentry	= idletimer_tg_checkentry_v1,
-> +	.destroy        = idletimer_tg_destroy,
-> +	.me		= THIS_MODULE,
-> +},
->  };
-> 
->  static struct class *idletimer_tg_class;
-> @@ -295,7 +369,7 @@ static int __init idletimer_tg_init(void)
-> 
->  	idletimer_tg_kobj = &idletimer_tg_device->kobj;
-> 
-> -	err =  xt_register_target(&idletimer_tg);
-> +	err =  xt_register_targets(idletimer_tg, ARRAY_SIZE(idletimer_tg));
->  	if (err < 0) {
->  		pr_debug("couldn't register xt target\n");
->  		goto out_dev;
-> @@ -312,7 +386,7 @@ out:
-> 
->  static void __exit idletimer_tg_exit(void)
->  {
-> -	xt_unregister_target(&idletimer_tg);
-> +	xt_unregister_targets(idletimer_tg, ARRAY_SIZE(idletimer_tg));
-> 
->  	device_destroy(idletimer_tg_class, MKDEV(0, 0));
->  	class_destroy(idletimer_tg_class);
-> @@ -327,3 +401,4 @@ MODULE_DESCRIPTION("Xtables: idle time monitor");
->  MODULE_LICENSE("GPL v2");
->  MODULE_ALIAS("ipt_IDLETIMER");
->  MODULE_ALIAS("ip6t_IDLETIMER");
-> +MODULE_ALIAS("arpt_IDLETIMER");
-
-We don't currently have the userspace code in arptables to use
-IDLETIMER from there. Do you have that code in your tree? Should be
-good to pass it to get it mainstream.
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
