@@ -1,91 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759361Ab3CZD44 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 23:56:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42585 "EHLO mx1.redhat.com"
+	id S933035Ab3CZEMI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 00:12:08 -0400
+Received: from ozlabs.org ([203.10.76.45]:59920 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753969Ab3CZD4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 23:56:54 -0400
-Message-ID: <51511C6A.1000001@redhat.com>
-Date: Tue, 26 Mar 2013 11:56:26 +0800
-From: WANG Chao <chaowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S932815Ab3CZEMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 00:12:06 -0400
+Date: Tue, 26 Mar 2013 15:12:01 +1100
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc: remove two lines of dead code
+Message-ID: <20130326041201.GB22382@concordia>
+References: <1364207531.1390.271.camel@x61.thuisdomein>
 MIME-Version: 1.0
-To: =?UTF-8?B?5ZGo5rSy5Luq?= <yizhouzhou@ict.ac.cn>
-CC: zhouzhouyi@gmail.com, kexec@lists.infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vgoyal@redhat.com
-Subject: Re: [PATCH 1/1 v1] the recommended crash memory reservation is too
- small for x86_64.
-References: <5150350A.5050002@redhat.com> <1364209009-11592-1-git-send-email-zhouzhouyi@gmail.com> <1cd75ef.b411.13da1646593.Coremail.yizhouzhou@ict.ac.cn>
-In-Reply-To: <1cd75ef.b411.13da1646593.Coremail.yizhouzhou@ict.ac.cn>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364207531.1390.271.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2013 07:52 PM, 周洲仪 wrote:
-> Thanks for reviewing
->   Is it sounds good to add following line into section "Boot into System Kernel":
-> 
->   The memory reserved for crash kernel should be no less than the unpacked init ram disk size
-> that loaded with dump-capture kernel plus wired memory used by kernel itself.
+On Mon, Mar 25, 2013 at 11:32:11AM +0100, Paul Bolle wrote:
+> Commit c1fb6816fb1b78dd94b673b0fdaa9a7a16e97bd1 ("powerpc: Add
+> relocation on exception vector handlers") added two lines of code that
+> depend on the macro CONFIG_HVC_SCOM. That macro doesn't exist. Perhaps
+> it was intended to use CONFIG_PPC_SCOM here. But since
+> "maintence_interrupt" is a typo and there's nothing in arch/powerpc that
+> looks like maintenance_interrupt it seems best to just delete these
+> lines.
 
-Sorry, that is just basic knowledge for everyone.
+It's cruft from our internal tree that snuck into the patch. I was
+meaning to remove it but you beat me to it.
 
-> 
->   #################
->   After all, I have been trapped into "hang after capture" problem when sticking strictly to this document.
-> Cheers
-> Zhouyi  
-> 
->>  
->>  On 03/25/2013 06:56 PM, zhouzhouyi@gmail.com wrote:
->>  > From: root <root@zzy-Lenovo.(none)>
->>  > 
->>  > 
->>  >  On Documentation/kdump/kdump.txt, section Boot into  System Kernel: On x86 and x86_64, use
->>  >  "crashkernel=64M@16M", but some OSes like ubuntu 12.10 use ram fs larger than 64M, so in these cases the
->>  >  memory reserved for crashkernel should be at least 128M.
->>  
->>  People use different initramfs generators for different purpose. That means
->>  the size of initramfs and also its memory consuming can vary very much from
->>  each other. You just can't list all these generators and their recommended
->>  reserved memory here. Though I have to say crashkernel=128M is good choice.
->>  
->>  I think it would be better to leave this to user or distribution itself to
->>  determine how much memory should be reserved for crash kernel, then export
->>  this value to kernel in some ways.
->>  
->>  Thanks,
->>  WANG Chao
->>  
->>  > 
->>  > 
->>  > Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
->>  > ---
->>  >  Documentation/kdump/kdump.txt |    4 +++-
->>  >  1 file changed, 3 insertions(+), 1 deletion(-)
->>  > 
->>  > diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
->>  > index 13f1aa0..1e850e0 100644
->>  > --- a/Documentation/kdump/kdump.txt
->>  > +++ b/Documentation/kdump/kdump.txt
->>  > @@ -290,7 +290,9 @@ Boot into System Kernel
->>  >     "crashkernel=64M@16M" tells the system kernel to reserve 64 MB of memory
->>  >     starting at physical address 0x01000000 (16MB) for the dump-capture kernel.
->>  >  
->>  > -   On x86 and x86_64, use "crashkernel=64M@16M".
->>  > +   On x86 and x86_64, use "crashkernel=64M@16M" (some OSes use init ram fs larger
->>  > +than 64M, for example ubuntu-12.10, use crashkernel=128M@16M instead, or dump-capture
->>  > +kernel will out of memory).
->>  >  
->>  >     On ppc64, use "crashkernel=128M@32M".
->>  >  
->>  > 
->>  
-> 
-> 
-> 
-> 
+Acked-by: Michael Ellerman <michael@ellerman.id.au>
 
+cheers
