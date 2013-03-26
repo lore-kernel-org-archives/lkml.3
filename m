@@ -1,266 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759279Ab3CZJCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 05:02:36 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:37745 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147Ab3CZJCd (ORCPT
+	id S1759405Ab3CZJLQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 05:11:16 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:52268 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758729Ab3CZJLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 05:02:33 -0400
-Message-ID: <51516422.8000804@redhat.com>
-Date: Tue, 26 Mar 2013 10:02:26 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Tue, 26 Mar 2013 05:11:14 -0400
 MIME-Version: 1.0
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, Evgeniy Polyakov <zbr@ioremap.net>
-Subject: Re: [PATCH V2 1/1] Drivers: hv: Add a new driver to support host
- initiated backup
-References: <1363375806-19979-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1363375806-19979-1-git-send-email-kys@microsoft.com>
-X-Enigmail-Version: 1.5.1
+In-Reply-To: <20130326081704.GB11734@gmail.com>
+References: <1364223758-17621-1-git-send-email-lee.jones@linaro.org>
+	<1364223758-17621-2-git-send-email-lee.jones@linaro.org>
+	<201303251540.51104.arnd@arndb.de>
+	<20130325164600.GA11734@gmail.com>
+	<CACRpkdbn4WARSp7_MUpCZTghTrsPYvsa9GEUC31T7nP_=9oZag@mail.gmail.com>
+	<20130326081704.GB11734@gmail.com>
+Date: Tue, 26 Mar 2013 10:11:13 +0100
+Message-ID: <CACRpkdZxU197moM_00UQr-tHdip4b50c+CfYkR5OK+MbwsE-aw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] mfd: db8500-prcmu: Fetch the PRCMU TCDM base address
+ from Device Tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: devicetree-discuss@lists.ozlabs.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c
-> new file mode 100644
-> index 0000000..9526995
-> --- /dev/null
-> +++ b/tools/hv/hv_vss_daemon.c
-> @@ -0,0 +1,220 @@
-> +/*
-> + * An implementation of the host initiated guest snapshot for Hyper-V.
-> + *
-> + *
-> + * Copyright (C) 2013, Microsoft, Inc.
-> + * Author : K. Y. Srinivasan <kys@microsoft.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published
-> + * by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-> + * NON INFRINGEMENT.  See the GNU General Public License for more
-> + * details.
-> + *
-> + */
-> +
-> +
-> +#include <sys/types.h>
-> +#include <sys/socket.h>
-> +#include <sys/poll.h>
-> +#include <linux/types.h>
-> +#include <stdio.h>
-> +#include <stdlib.h>
-> +#include <unistd.h>
-> +#include <string.h>
-> +#include <ctype.h>
-> +#include <errno.h>
-> +#include <arpa/inet.h>
-> +#include <linux/connector.h>
-> +#include <linux/hyperv.h>
-> +#include <linux/netlink.h>
-> +#include <syslog.h>
-> +
-> +static char vss_recv_buffer[4096];
-> +static char vss_send_buffer[4096];
-> +static struct sockaddr_nl addr;
-> +
-> +#ifndef SOL_NETLINK
-> +#define SOL_NETLINK 270
-> +#endif
-> +
-> +
-> +static int vss_operate(int operation)
-> +{
-> +	char *fs_op;
-> +	char cmd[512];
-> +	char buf[512];
-> +	FILE *file;
-> +	char *p;
-> +	char *x;
-> +	int error;
-> +
-> +	switch (operation) {
-> +	case VSS_OP_FREEZE:
-> +		fs_op = "-f ";
-> +		break;
-> +	case VSS_OP_THAW:
-> +		fs_op = "-u ";
-> +		break;
-> +	}
-> +
-> +	file = popen("mount | awk '/^\/dev\// { print $3}'", "r");
-> +	if (file == NULL)
-> +		return;
-> +
-> +	while ((p = fgets(buf, sizeof(buf), file)) != NULL) {
-> +		x = strchr(p, '\n');
-> +		*x = '\0';
-> +		if (!strncmp(p, "/", sizeof("/")))
-> +			continue;
-> +
-> +		sprintf(cmd, "%s %s %s", "fsfreeze ", fs_op, p);
+On Tue, Mar 26, 2013 at 9:17 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Mon, 25 Mar 2013, Linus Walleij wrote:
+>> On Mon, Mar 25, 2013 at 5:46 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>>
+>> >> >         res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+>> >> >                                            "prcmu-tcpm");
+>> >> >         if (!res) {
+>> >> > -               dev_err(&pdev->dev,
+>> >> > -                       "Error: no prcmu tcpm memory region provided\n");
+>> >> > -               return;
+>> >> > -       }
+>> >> > -       tcpm_base = ioremap(res->start, resource_size(res));
+>> >> > +               if (np) {
+>> >> > +                       tcpm_np = of_find_node_by_name(np->parent,
+>> >> > +                                                      "prcmu-tcpm-per4");
+>> >> > +                       if (!tcpm_np) {
+>> >> > +                               dev_err(&pdev->dev,
+>> >> > +                                       "no prcmu tcpm mem region provided\n");
+>> >> > +                               return;
+>> >> > +                       }
+>> >> > +                       tcpm_base = of_iomap(tcpm_np, 0);
+>> >> > +               }
+>> >> > +       } else
+>> >> > +               tcpm_base = ioremap(res->start, resource_size(res));
+>> >> > +
+>> >>
+>> >> Why don't you just add these extra registers to the prcmu node itself like
+>> >>
+>> >> diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
+>> >> index 9de9309..6ee6c31 100644
+>> >> --- a/arch/arm/boot/dts/dbx5x0.dtsi
+>> >> +++ b/arch/arm/boot/dts/dbx5x0.dtsi
+>> >> @@ -191,8 +191,8 @@
+>> >>
+>> >>               prcmu: prcmu@80157000 {
+>> >>                       compatible = "stericsson,db8500-prcmu";
+>> >> -                     reg = <0x80157000 0x1000>;
+>> >> -                     reg-names = "prcmu";
+>> >> +                     reg = <0x80157000 0x1000>, <0x801b0000 0x1000>, <0x801b8000 0x1000>;
+>> >> +                     reg-names = "prcmu", "prcmu-tcpm", "prcmu-tcdm-per4";
+>> >>                       interrupts = <0 47 0x4>;
+>> >>                       #address-cells = <1>;
+>> >>                       #size-cells = <1>;
+>> >>
+>> >>
+>> >> and document those in the prcmu binding?
+>> >>
+>> >> That would keep the code simpler and the same for both cases.
+>> >
+>> > I'm not sure you can. These addresses differ from platform to
+>> > platform, so I'd need to provide the base PRCMU address in
+>> > dbx5x0.dtsi, then the other two in the dts files. Can you do that?
+>>
+>> Better ask on devicetree-discuss.
+>>
+>> What it reflects are differences between SoC:s, so I think the
+>> right solution is to split it in a three-layer cake:
+>>
+>> dbx5x0.dtsi -> included by
+>> db8500.dtsi -> included by
+>> snowball/hrefv60plus.dts
+>>
+>> dbx5x0.dtsi -> included by
+>> dbx540.dtsi -> included by
+>> ccu9540/ccu8540.dts
+>>
+>> Here you may insert the reg property into the node at the
+>> db8500.dtsi or dbx540.dtsi layer.
+>
+> It's easy done, if that's the right way.
+>
+>> If you prefer I can cook a patch...
+>
+> ... and I'm fine to do it.
+>
+> [5 mins later]
+>
+> Hmm... it appears that in STE's kernel, the same address is used for
+> all SoCs:
+>
+>   #define U8500_PRCMU_TCDM_BASE    (U8500_PER4_BASE + 0x68000)
 
-Please use getmntent and FIFREEZE/FITHAW.
+Yes that's correct...
 
-However, I wonder if a dedicated daemon is really the best mechanism.
-Perhaps you can use uevents instead, and trigger the freeze/thaw with
-udev rules?
+> However, in Mainline there is another definition:
+>
+>   #define U9540_PRCMU_TCDM_BASE    (U8500_PER4_BASE + 0x6A000)
+>
+> ... which doesn't seem to be in use anywhere - even for the u9540.
+>
+> What's the deal big-man?
 
-Paolo
+Probably there was another address at some point in some FPGA or
+early silicon and it now needs fixing.
 
-> +		syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
-> +		error = system(cmd);
-> +	}
-> +	pclose(file);
-> +
-> +	sprintf(cmd, "%s %s %s", "fsfreeze ", fs_op, "/");
-> +	syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
-> +	error = system(cmd);
-> +
-> +	return error;
-> +}
-> +
-> +static int netlink_send(int fd, struct cn_msg *msg)
-> +{
-> +	struct nlmsghdr *nlh;
-> +	unsigned int size;
-> +	struct msghdr message;
-> +	char buffer[64];
-> +	struct iovec iov[2];
-> +
-> +	size = NLMSG_SPACE(sizeof(struct cn_msg) + msg->len);
-> +
-> +	nlh = (struct nlmsghdr *)buffer;
-> +	nlh->nlmsg_seq = 0;
-> +	nlh->nlmsg_pid = getpid();
-> +	nlh->nlmsg_type = NLMSG_DONE;
-> +	nlh->nlmsg_len = NLMSG_LENGTH(size - sizeof(*nlh));
-> +	nlh->nlmsg_flags = 0;
-> +
-> +	iov[0].iov_base = nlh;
-> +	iov[0].iov_len = sizeof(*nlh);
-> +
-> +	iov[1].iov_base = msg;
-> +	iov[1].iov_len = size;
-> +
-> +	memset(&message, 0, sizeof(message));
-> +	message.msg_name = &addr;
-> +	message.msg_namelen = sizeof(addr);
-> +	message.msg_iov = iov;
-> +	message.msg_iovlen = 2;
-> +
-> +	return sendmsg(fd, &message, 0);
-> +}
-> +
-> +int main(void)
-> +{
-> +	int fd, len, nl_group;
-> +	int error;
-> +	struct cn_msg *message;
-> +	struct pollfd pfd;
-> +	struct nlmsghdr *incoming_msg;
-> +	struct cn_msg	*incoming_cn_msg;
-> +	int	op;
-> +	struct hv_vss_msg *vss_msg;
-> +
-> +	daemon(1, 0);
-> +	openlog("Hyper-V VSS", 0, LOG_USER);
-> +	syslog(LOG_INFO, "VSS starting; pid is:%d", getpid());
-> +
-> +	fd = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_CONNECTOR);
-> +	if (fd < 0) {
-> +		syslog(LOG_ERR, "netlink socket creation failed; error:%d", fd);
-> +		exit(EXIT_FAILURE);
-> +	}
-> +	addr.nl_family = AF_NETLINK;
-> +	addr.nl_pad = 0;
-> +	addr.nl_pid = 0;
-> +	addr.nl_groups = 0;
-> +
-> +
-> +	error = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
-> +	if (error < 0) {
-> +		syslog(LOG_ERR, "bind failed; error:%d", error);
-> +		close(fd);
-> +		exit(EXIT_FAILURE);
-> +	}
-> +	nl_group = CN_VSS_IDX;
-> +	setsockopt(fd, SOL_NETLINK, NETLINK_ADD_MEMBERSHIP, &nl_group, sizeof(nl_group));
-> +	/*
-> +	 * Register ourselves with the kernel.
-> +	 */
-> +	message = (struct cn_msg *)vss_send_buffer;
-> +	message->id.idx = CN_VSS_IDX;
-> +	message->id.val = CN_VSS_VAL;
-> +	message->ack = 0;
-> +	vss_msg = (struct hv_vss_msg *)message->data;
-> +	vss_msg->vss_hdr.operation = VSS_OP_REGISTER;
-> +
-> +	message->len = sizeof(struct hv_vss_msg);
-> +
-> +	len = netlink_send(fd, message);
-> +	if (len < 0) {
-> +		syslog(LOG_ERR, "netlink_send failed; error:%d", len);
-> +		close(fd);
-> +		exit(EXIT_FAILURE);
-> +	}
-> +
-> +	pfd.fd = fd;
-> +
-> +	while (1) {
-> +		struct sockaddr *addr_p = (struct sockaddr *) &addr;
-> +		socklen_t addr_l = sizeof(addr);
-> +		pfd.events = POLLIN;
-> +		pfd.revents = 0;
-> +		poll(&pfd, 1, -1);
-> +
-> +		len = recvfrom(fd, vss_recv_buffer, sizeof(vss_recv_buffer), 0,
-> +				addr_p, &addr_l);
-> +
-> +		if (len < 0 || addr.nl_pid) {
-> +			syslog(LOG_ERR, "recvfrom failed; pid:%u error:%d %s",
-> +					addr.nl_pid, errno, strerror(errno));
-> +			close(fd);
-> +			return -1;
-> +		}
-> +
-> +		incoming_msg = (struct nlmsghdr *)vss_recv_buffer;
-> +
-> +		if (incoming_msg->nlmsg_type != NLMSG_DONE)
-> +			continue;
-> +
-> +		incoming_cn_msg = (struct cn_msg *)NLMSG_DATA(incoming_msg);
-> +		vss_msg = (struct hv_vss_msg *)incoming_cn_msg->data;
-> +		op = vss_msg->vss_hdr.operation;
-> +		error =  HV_S_OK;
-> +
-> +		switch (op) {
-> +		case VSS_OP_FREEZE:
-> +		case VSS_OP_THAW:
-> +			error = vss_operate(op);
-> +			if (error)
-> +				error = HV_E_FAIL;
-> +			break;
-> +		default:
-> +			syslog(LOG_ERR, "Illegal op:%d\n", op);
-> +		}
-> +		vss_msg->error = error;
-> +		len = netlink_send(fd, incoming_cn_msg);
-> +		if (len < 0) {
-> +			syslog(LOG_ERR, "net_link send failed; error:%d", len);
-> +			exit(EXIT_FAILURE);
-> +		}
-> +	}
-> +
-> +}
-> 
+So you should be able to use the same thing on all ASICs, put one
+single value in the dbx5x0.dtsi *and* fix this bug at the same time,
+good!
 
+Yours,
+Linus Walleij
