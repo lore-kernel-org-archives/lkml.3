@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab3CZXkB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:40:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52519 "EHLO
+	id S1754902Ab3CZXkh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:40:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52523 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754694Ab3CZWoD (ORCPT
+	with ESMTP id S1754672Ab3CZWoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 18:44:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 40/98] tracing: Protect tracer flags with trace_types_lock
-Date: Tue, 26 Mar 2013 15:42:29 -0700
-Message-Id: <20130326224246.637101658@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: [ 39/98] tracing: Fix free of probe entry by calling call_rcu_sched()
+Date: Tue, 26 Mar 2013 15:42:28 -0700
+Message-Id: <20130326224246.528206396@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -28,59 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 69d34da2984c95b33ea21518227e1f9470f11d95 upstream.
+commit 740466bc89ad8bd5afcc8de220f715f62b21e365 upstream.
 
-Seems that the tracer flags have never been protected from
-synchronous writes. Luckily, admins don't usually modify the
-tracing flags via two different tasks. But if scripts were to
-be used to modify them, then they could get corrupted.
+Because function tracing is very invasive, and can even trace
+calls to rcu_read_lock(), RCU access in function tracing is done
+with preempt_disable_notrace(). This requires a synchronize_sched()
+for updates and not a synchronize_rcu().
 
-Move the trace_types_lock that protects against tracers changing
-to also protect the flags being set.
+Function probes (traceon, traceoff, etc) must be freed after
+a synchronize_sched() after its entry has been removed from the
+hash. But call_rcu() is used. Fix this by using call_rcu_sched().
+
+Also fix the usage to use hlist_del_rcu() instead of hlist_del().
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ kernel/trace/ftrace.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2871,6 +2871,8 @@ static int trace_set_options(char *optio
- 		cmp += 2;
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3082,8 +3082,8 @@ __unregister_ftrace_function_probe(char
+ 					continue;
+ 			}
+ 
+-			hlist_del(&entry->node);
+-			call_rcu(&entry->rcu, ftrace_free_entry_rcu);
++			hlist_del_rcu(&entry->node);
++			call_rcu_sched(&entry->rcu, ftrace_free_entry_rcu);
+ 		}
  	}
- 
-+	mutex_lock(&trace_types_lock);
-+
- 	for (i = 0; trace_options[i]; i++) {
- 		if (strcmp(cmp, trace_options[i]) == 0) {
- 			set_tracer_flags(1 << i, !neg);
-@@ -2879,11 +2881,10 @@ static int trace_set_options(char *optio
- 	}
- 
- 	/* If no option could be set, test the specific tracer options */
--	if (!trace_options[i]) {
--		mutex_lock(&trace_types_lock);
-+	if (!trace_options[i])
- 		ret = set_tracer_option(current_trace, cmp, neg);
--		mutex_unlock(&trace_types_lock);
--	}
-+
-+	mutex_unlock(&trace_types_lock);
- 
- 	return ret;
- }
-@@ -4641,7 +4642,10 @@ trace_options_core_write(struct file *fi
- 
- 	if (val != 0 && val != 1)
- 		return -EINVAL;
-+
-+	mutex_lock(&trace_types_lock);
- 	set_tracer_flags(1 << index, val);
-+	mutex_unlock(&trace_types_lock);
- 
- 	*ppos += cnt;
- 
+ 	__disable_ftrace_function_probe();
 
 
