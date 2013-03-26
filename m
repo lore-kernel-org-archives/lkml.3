@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab3CZWnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:43:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52358 "EHLO
+	id S1757422Ab3CZXuE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:50:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52383 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211Ab3CZWnf (ORCPT
+	with ESMTP id S1754237Ab3CZWnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:43:35 -0400
+	Tue, 26 Mar 2013 18:43:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Williams <dcbw@redhat.com>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 12/98] net: qmi_wwan: set correct altsetting for Gobi 1K devices
-Date: Tue, 26 Mar 2013 15:42:01 -0700
-Message-Id: <20130326224243.734398687@linuxfoundation.org>
+Subject: [ 05/98] netconsole: dont call __netpoll_cleanup() while atomic
+Date: Tue, 26 Mar 2013 15:41:54 -0700
+Message-Id: <20130326224242.996778945@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,128 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Veaceslav Falico <vfalico@redhat.com>
 
-[ Upstream commit b701f16dd490d3f346724050f17d60beda094998 ]
+[ Upstream commit 3f315bef23075ea8a98a6fe4221a83b83456d970 ]
 
-commit bd877e4 ("net: qmi_wwan: use a single bind function for
-all device types") made Gobi 1K devices fail probing.
+__netpoll_cleanup() is called in netconsole_netdev_event() while holding a
+spinlock. Release/acquire the spinlock before/after it and restart the
+loop. Also, disable the netconsole completely, because we won't have chance
+after the restart of the loop, and might end up in a situation where
+nt->enabled == 1 and nt->np.dev == NULL.
 
-Using the number of endpoints in the default altsetting to decide
-whether the function use one or two interfaces is wrong.  Other
-altsettings may provide more endpoints.
-
-With Gobi 1K devices, USB interface #3's altsetting is 0 by default, but
-altsetting 0 only provides one interrupt endpoint and is not sufficent
-for QMI.  Altsetting 1 provides all 3 endpoints required for qmi_wwan
-and works with QMI. Gobi 1K layout for intf#3 is:
-
-    Interface Descriptor:  255/255/255
-      bInterfaceNumber        3
-      bAlternateSetting       0
-      Endpoint Descriptor:  Interrupt IN
-    Interface Descriptor:  255/255/255
-      bInterfaceNumber        3
-      bAlternateSetting       1
-      Endpoint Descriptor:  Interrupt IN
-      Endpoint Descriptor:  Bulk IN
-      Endpoint Descriptor:  Bulk OUT
-
-Prior to commit bd877e4, we would call usbnet_get_endpoints
-before giving up finding enough endpoints. Removing the early
-endpoint number test and the strict functional descriptor
-requirement allow qmi_wwan_bind to continue until
-usbnet_get_endpoints has made the final attempt to collect
-endpoints.  This restores the behaviour from before commit
-bd877e4 without losing the added benefit of using a single bind
-function.
-
-The driver has always required a CDC Union functional descriptor
-for two-interface functions. Using the existence of this
-descriptor to detect two-interface functions is the logically
-correct method.
-
-Reported-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Tested-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/qmi_wwan.c |   49 ++++++++++++++-------------------------------
- 1 file changed, 16 insertions(+), 33 deletions(-)
+ drivers/net/netconsole.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -139,16 +139,9 @@ static int qmi_wwan_bind(struct usbnet *
+--- a/drivers/net/netconsole.c
++++ b/drivers/net/netconsole.c
+@@ -630,6 +630,7 @@ static int netconsole_netdev_event(struc
+ 		goto done;
  
- 	BUILD_BUG_ON((sizeof(((struct usbnet *)0)->data) < sizeof(struct qmi_wwan_state)));
- 
--	/* control and data is shared? */
--	if (intf->cur_altsetting->desc.bNumEndpoints == 3) {
--		info->control = intf;
--		info->data = intf;
--		goto shared;
--	}
--
--	/* else require a single interrupt status endpoint on control intf */
--	if (intf->cur_altsetting->desc.bNumEndpoints != 1)
--		goto err;
-+	/* set up initial state */
-+	info->control = intf;
-+	info->data = intf;
- 
- 	/* and a number of CDC descriptors */
- 	while (len > 3) {
-@@ -207,25 +200,14 @@ next_desc:
- 		buf += h->bLength;
- 	}
- 
--	/* did we find all the required ones? */
--	if (!(found & (1 << USB_CDC_HEADER_TYPE)) ||
--	    !(found & (1 << USB_CDC_UNION_TYPE))) {
--		dev_err(&intf->dev, "CDC functional descriptors missing\n");
--		goto err;
--	}
--
--	/* verify CDC Union */
--	if (desc->bInterfaceNumber != cdc_union->bMasterInterface0) {
--		dev_err(&intf->dev, "bogus CDC Union: master=%u\n", cdc_union->bMasterInterface0);
--		goto err;
--	}
--
--	/* need to save these for unbind */
--	info->control = intf;
--	info->data = usb_ifnum_to_if(dev->udev,	cdc_union->bSlaveInterface0);
--	if (!info->data) {
--		dev_err(&intf->dev, "bogus CDC Union: slave=%u\n", cdc_union->bSlaveInterface0);
--		goto err;
-+	/* Use separate control and data interfaces if we found a CDC Union */
-+	if (cdc_union) {
-+		info->data = usb_ifnum_to_if(dev->udev, cdc_union->bSlaveInterface0);
-+		if (desc->bInterfaceNumber != cdc_union->bMasterInterface0 || !info->data) {
-+			dev_err(&intf->dev, "bogus CDC Union: master=%u, slave=%u\n",
-+				cdc_union->bMasterInterface0, cdc_union->bSlaveInterface0);
-+			goto err;
-+		}
- 	}
- 
- 	/* errors aren't fatal - we can live with the dynamic address */
-@@ -235,11 +217,12 @@ next_desc:
- 	}
- 
- 	/* claim data interface and set it up */
--	status = usb_driver_claim_interface(driver, info->data, dev);
--	if (status < 0)
--		goto err;
-+	if (info->control != info->data) {
-+		status = usb_driver_claim_interface(driver, info->data, dev);
-+		if (status < 0)
-+			goto err;
-+	}
- 
--shared:
- 	status = qmi_wwan_register_subdriver(dev);
- 	if (status < 0 && info->control != info->data) {
- 		usb_set_intfdata(info->data, NULL);
+ 	spin_lock_irqsave(&target_list_lock, flags);
++restart:
+ 	list_for_each_entry(nt, &target_list, list) {
+ 		netconsole_target_get(nt);
+ 		if (nt->np.dev == dev) {
+@@ -642,15 +643,17 @@ static int netconsole_netdev_event(struc
+ 			case NETDEV_UNREGISTER:
+ 				/*
+ 				 * rtnl_lock already held
++				 * we might sleep in __netpoll_cleanup()
+ 				 */
+-				if (nt->np.dev) {
+-					__netpoll_cleanup(&nt->np);
+-					dev_put(nt->np.dev);
+-					nt->np.dev = NULL;
+-				}
++				spin_unlock_irqrestore(&target_list_lock, flags);
++				__netpoll_cleanup(&nt->np);
++				spin_lock_irqsave(&target_list_lock, flags);
++				dev_put(nt->np.dev);
++				nt->np.dev = NULL;
+ 				nt->enabled = 0;
+ 				stopped = true;
+-				break;
++				netconsole_target_put(nt);
++				goto restart;
+ 			}
+ 		}
+ 		netconsole_target_put(nt);
 
 
