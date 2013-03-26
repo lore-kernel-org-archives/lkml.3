@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab3CZRs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:48:27 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:60236 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753955Ab3CZRsX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:48:23 -0400
+	id S1755963Ab3CZRtE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:49:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18699 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754550Ab3CZRtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 13:49:00 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] UAPI: Remove empty Kbuild files
+To: torvalds@linux-foundation.org, arnd@arndb.de
+From: David Howells <dhowells@redhat.com>
+Cc: linux-arch@vger.kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 26 Mar 2013 17:48:53 +0000
+Message-ID: <20130326174853.10144.36253.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <20130326162228.288994ef@laptop3>
-References: <20130326162228.288994ef@laptop3>
-Date: Tue, 26 Mar 2013 13:48:23 -0400
-Message-ID: <CA+5PVA6s_FrJ63Sb-Kcj7JZVBc+iG9AgCT3_NyR0UVBLx+aKxw@mail.gmail.com>
-Subject: Re: Git bisect problem
-From: Josh Boyer <jwboyer@gmail.com>
-To: Mike Keehan <mike@keehan.net>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 12:22 PM, Mike Keehan <mike@keehan.net> wrote:
-> Hi,
->
-> I'm trying to find out which update causes my 5G Wifi
-> connection to time out when authenticating.
->
-> Following the instructions in git help bisect, I
-> git cloned the kernel, then git bisect start, and
-> git bisect bad v3.9.0-rc2.
->
-> This errors with :-
->   fatal: Needed a single revision
->   Bad rev input: v3.9.0-rc2
->
-> and git bisect good v3.9.0-rc1 gives same error.
->
-> How are you supposed to specify the revision?
+Remove empty Kbuild files as they cause problems with the patch program which
+removes files that become empty.
 
-It has to match a tag name if you're doing that.  So it would be:
+Should I also remove include/Kbuild as that now does nothing?  Or should it be
+left as an anchor just in case we want it in future?
 
-git bisect good v3.9-rc1; git bisect bad v3.9-rc2
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-Note the lack of .0.
+ include/Kbuild         |    3 ---
+ include/scsi/Kbuild    |    1 -
+ include/scsi/fc/Kbuild |    0 
+ include/video/Kbuild   |    0 
+ 4 files changed, 4 deletions(-)
+ delete mode 100644 include/scsi/Kbuild
+ delete mode 100644 include/scsi/fc/Kbuild
+ delete mode 100644 include/video/Kbuild
 
-josh
+diff --git a/include/Kbuild b/include/Kbuild
+index 1dfd33e..bab1145 100644
+--- a/include/Kbuild
++++ b/include/Kbuild
+@@ -1,5 +1,2 @@
+ # Top-level Makefile calls into asm-$(ARCH)
+ # List only non-arch directories below
+-
+-header-y += video/
+-header-y += scsi/
+diff --git a/include/scsi/Kbuild b/include/scsi/Kbuild
+deleted file mode 100644
+index 562ff9d..0000000
+--- a/include/scsi/Kbuild
++++ /dev/null
+@@ -1 +0,0 @@
+-header-y += fc/
+diff --git a/include/scsi/fc/Kbuild b/include/scsi/fc/Kbuild
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/include/video/Kbuild b/include/video/Kbuild
+deleted file mode 100644
+index e69de29..0000000
+
