@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759972Ab3CZSEK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:04:10 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:33047 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753850Ab3CZSEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 14:04:06 -0400
-Date: Tue, 26 Mar 2013 20:03:34 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Roland Stigge <stigge@antcom.de>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: Fix compile error by selecting USB_OTG_UTILS
-Message-ID: <20130326180334.GL20785@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1364319361-28265-1-git-send-email-stigge@antcom.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pFej7zHSL6C5fFIz"
-Content-Disposition: inline
-In-Reply-To: <1364319361-28265-1-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759997Ab3CZSEp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:04:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4135 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753711Ab3CZRgB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 13:36:01 -0400
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=RGOdwypfkeUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=d467tr5auRgA:10 a=pGLkceISAAAA:8 a=K33ine3eAAAA:8 a=sPyYOCAXAAAA:8 a=J1Y8HTJGAAAA:8 a=VwQbUJbxAAAA:8 a=GZK3lcuhIWR5GrNAc6YA:9 a=MSl-tDqOz04A:10 a=o7nkWXKJ22EA:10 a=6UCq8DqREAUA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130326173600.211530324@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 26 Mar 2013 13:21:01 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Antonio Quartulli <ordex@autistici.org>,
+        Marek Lindner <lindner_marek@yahoo.de>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        <b.a.t.m.a.n@lists.open-mesh.org>,
+        "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: [PATCH 02/86] batman-adv: fix random jitter calculation
+References: <20130326172059.136127374@goodmis.org>
+Content-Disposition: inline; filename=0002-batman-adv-fix-random-jitter-calculation.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---pFej7zHSL6C5fFIz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.6.11.1 stable review patch.
+If anyone has any objections, please let me know.
 
-Hi,
+------------------
 
-On Tue, Mar 26, 2013 at 06:36:01PM +0100, Roland Stigge wrote:
-> The current lpc32xx_defconfig breaks like this, caused by recent phy
-> restructuring:
+From: Akinobu Mita <akinobu.mita@gmail.com>
 
-which commit actually caused this ? I need to know to make sure if this
-should be sent to stable or not.
+[ Upstream commit 143cdd8f33909ff5a153e3f02048738c5964ba26 ]
 
---=20
-balbi
+batadv_iv_ogm_emit_send_time() attempts to calculates a random integer
+in the range of 'orig_interval +- BATADV_JITTER' by the below lines.
 
---pFej7zHSL6C5fFIz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+        msecs = atomic_read(&bat_priv->orig_interval) - BATADV_JITTER;
+        msecs += (random32() % 2 * BATADV_JITTER);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+But it actually gets 'orig_interval' or 'orig_interval - BATADV_JITTER'
+because '%' and '*' have same precedence and associativity is
+left-to-right.
 
-iQIcBAEBAgAGBQJRUeL2AAoJEIaOsuA1yqREx78P/2rdN5HNfjVJoJbdmn2VAzSW
-7YgoffrvJeRzQLu2LPNkO4vIN53iclOxTM33/QLjHh7l9d1t9K1zaUT3fsvsZXjh
-PbvdRe+ZK3IqiPnnzO3lgHLydnLgSQmlva1nL6s/flOEbc5Vx9Ti4mzssV9BXada
-0zO+7/B3zOkI84u+DwGuADEptcDAEXxW932ynXTJY/0HVKSHpv5l9X5zxnVHOXbM
-+lVY58Dw8D/VY4bBb4+4vPdKFUagUPsP4Y6UUVhCOtqPuZKWVh+KPrQ/UNfg+btP
-dk841Hum4IozANEgQ6tLBEGsU02KoaSrJNQYrza2NTc0n/gsHzW1mfg+9TVMslQ9
-4qiHhdS9jvAB15brA6SKsK2XAME4+s6M6yiJ/oc/RUcfKzuDwz4p3AQl24A4/J8G
-BadBcvgW7YMTjH7dt2w5FR4MnDTPkOXslYNAFxdvXs4enfi22Zmdr8PT8G3xTWa+
-M8+aGK09UUJ91C0FXki1fk0afDwoxmKAbyEe4ztmjLKma4/64F99XUA7ATBDEhfH
-GkHczkIe6/rrmnK6ur6xgS1x7I8ueS5QROFlq+6X/v1zTQmlzzjECEwho4tgdaVe
-ZOXLAev1b52xl11+cxiBaUkLrf5lNCvNpRHD1P/RwmhUzPKr+wwAsKYx0Ee9PnJQ
-RzCy5ABrlCFigrFdHjZm
-=NOsU
------END PGP SIGNATURE-----
+This adds the parentheses at the appropriate position so that it matches
+original intension.
 
---pFej7zHSL6C5fFIz--
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Acked-by: Antonio Quartulli <ordex@autistici.org>
+Cc: Marek Lindner <lindner_marek@yahoo.de>
+Cc: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+Cc: Antonio Quartulli <ordex@autistici.org>
+Cc: b.a.t.m.a.n@lists.open-mesh.org
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/batman-adv/bat_iv_ogm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/batman-adv/bat_iv_ogm.c b/net/batman-adv/bat_iv_ogm.c
+index 469daab..1476f26 100644
+--- a/net/batman-adv/bat_iv_ogm.c
++++ b/net/batman-adv/bat_iv_ogm.c
+@@ -119,7 +119,7 @@ batadv_iv_ogm_emit_send_time(const struct batadv_priv *bat_priv)
+ 	unsigned int msecs;
+ 
+ 	msecs = atomic_read(&bat_priv->orig_interval) - BATADV_JITTER;
+-	msecs += (random32() % 2 * BATADV_JITTER);
++	msecs += random32() % (2 * BATADV_JITTER);
+ 
+ 	return jiffies + msecs_to_jiffies(msecs);
+ }
+-- 
+1.7.10.4
+
+
