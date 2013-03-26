@@ -1,220 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965505Ab3CZPYW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:24:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54232 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965410Ab3CZPYT (ORCPT
+	id S965524Ab3CZPYm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:24:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52636 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965313Ab3CZPYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:24:19 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ben Hutchings <ben@decadent.org.uk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 149/150] signal: Define __ARCH_HAS_SA_RESTORER so we know whether to clear sa_restorer
-Date: Tue, 26 Mar 2013 15:20:48 +0000
-Message-Id: <1364311249-14454-150-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 26 Mar 2013 11:24:38 -0400
+Date: Tue, 26 Mar 2013 16:24:32 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Arun R Murthy <arun.murthy@stericsson.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pwm: ab8500: Fix trivial typo in dev_err message
+Message-ID: <20130326152432.GA28997@avionic-0098.mockup.avionic-design.de>
+References: <1364308490.4090.0.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
+Content-Disposition: inline
+In-Reply-To: <1364308490.4090.0.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:fm3GrKSGTneu5SRS1TdL60DNm1TH2qBp3L+4etTV/4S
+ dog3yKboV4uNwcPt3cDosuc1HUfLjYFK1WeJ3jAuIL11rlsIxc
+ IOZ74HUK1GumQCnM5fucbnBF41AvqnHauMrkDqv7yAcKFu28P1
+ SzyNuk5q5c5dPUlvIQzfuBccD0/sAG6J6SrYRY/LQMQH298uls
+ D6QOBi2TCFtd0Qvqn2yAE+2syVG176AbFGJSoSK3LJZmuhqj+U
+ L2+t7f8SfNWHMaKNjFZodw0KWUXzQ01L9zX6qnS36wFJjHcbS6
+ mZ/j+xftoIDIs8MywpwpvFhQnARPT9oj8PMVpBbi4FGtqEFNam
+ 3g5AAb+Hjgv1joEDiDqJIvfrgN+pnpl/RN6RG0lTHWxTD/Bqhm
+ RLi5OCRGOMoT0RXtEo7tAcvVESRvvu0dGT6Gm3MtugYxwL9vbT
+ an7uq
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--PNTmBPCT7hxwcZjr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Ben Hutchings <ben@decadent.org.uk>
+On Tue, Mar 26, 2013 at 10:34:50PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>  drivers/pwm/pwm-ab8500.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/pwm/pwm-ab8500.c b/drivers/pwm/pwm-ab8500.c
+> index 93af1bb..3beb2b5 100644
+> --- a/drivers/pwm/pwm-ab8500.c
+> +++ b/drivers/pwm/pwm-ab8500.c
+> @@ -66,7 +66,7 @@ static int ab8500_pwm_enable(struct pwm_chip *chip, str=
+uct pwm_device *pwm)
+>  				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
+>  				1 << (chip->base - 1), ENABLE_PWM);
+>  	if (ret < 0)
+> -		dev_err(chip->dev, "%s: Failed to disable PWM, Error %d\n",
+> +		dev_err(chip->dev, "%s: Failed to enable PWM, Error %d\n",
+>  							pwm->label, ret);
+>  	return ret;
+>  }
 
-flush_signal_handlers() needs to know whether sigaction::sa_restorer
-is defined, not whether SA_RESTORER is defined.  Define the
-__ARCH_HAS_SA_RESTORER macro to indicate this.
+Applied, thanks.
 
-Vaguely based on upstream commit 574c4866e33d 'consolidate kernel-side
-struct sigaction declarations'.
+Thierry
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/arm/include/asm/signal.h     | 1 +
- arch/avr32/include/asm/signal.h   | 1 +
- arch/cris/include/asm/signal.h    | 1 +
- arch/h8300/include/asm/signal.h   | 1 +
- arch/m32r/include/asm/signal.h    | 1 +
- arch/m68k/include/asm/signal.h    | 1 +
- arch/mn10300/include/asm/signal.h | 1 +
- arch/powerpc/include/asm/signal.h | 1 +
- arch/s390/include/asm/signal.h    | 1 +
- arch/sparc/include/asm/signal.h   | 1 +
- arch/x86/include/asm/signal.h     | 2 ++
- arch/xtensa/include/asm/signal.h  | 1 +
- include/asm-generic/signal.h      | 4 ++++
- 13 files changed, 17 insertions(+)
+--PNTmBPCT7hxwcZjr
+Content-Type: application/pgp-signature
 
-diff --git a/arch/arm/include/asm/signal.h b/arch/arm/include/asm/signal.h
-index 43ba0fb..559ee24 100644
---- a/arch/arm/include/asm/signal.h
-+++ b/arch/arm/include/asm/signal.h
-@@ -127,6 +127,7 @@ struct sigaction {
- 	__sigrestore_t sa_restorer;
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
-diff --git a/arch/avr32/include/asm/signal.h b/arch/avr32/include/asm/signal.h
-index ae56849..116a2b4 100644
---- a/arch/avr32/include/asm/signal.h
-+++ b/arch/avr32/include/asm/signal.h
-@@ -121,6 +121,7 @@ struct sigaction {
- 	__sigrestore_t sa_restorer;
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
-diff --git a/arch/cris/include/asm/signal.h b/arch/cris/include/asm/signal.h
-index ea6af9a..057fea2 100644
---- a/arch/cris/include/asm/signal.h
-+++ b/arch/cris/include/asm/signal.h
-@@ -122,6 +122,7 @@ struct sigaction {
- 	void (*sa_restorer)(void);
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
-diff --git a/arch/h8300/include/asm/signal.h b/arch/h8300/include/asm/signal.h
-index fd8b66e..8695707 100644
---- a/arch/h8300/include/asm/signal.h
-+++ b/arch/h8300/include/asm/signal.h
-@@ -121,6 +121,7 @@ struct sigaction {
- 	void (*sa_restorer)(void);
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
-diff --git a/arch/m32r/include/asm/signal.h b/arch/m32r/include/asm/signal.h
-index ea5f95e..4d420ad 100644
---- a/arch/m32r/include/asm/signal.h
-+++ b/arch/m32r/include/asm/signal.h
-@@ -116,6 +116,7 @@ struct sigaction {
- 	__sigrestore_t sa_restorer;
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
-diff --git a/arch/m68k/include/asm/signal.h b/arch/m68k/include/asm/signal.h
-index 93fe83e..a20ae63 100644
---- a/arch/m68k/include/asm/signal.h
-+++ b/arch/m68k/include/asm/signal.h
-@@ -119,6 +119,7 @@ struct sigaction {
- 	__sigrestore_t sa_restorer;
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
-diff --git a/arch/mn10300/include/asm/signal.h b/arch/mn10300/include/asm/signal.h
-index 1865d72..eecaa76 100644
---- a/arch/mn10300/include/asm/signal.h
-+++ b/arch/mn10300/include/asm/signal.h
-@@ -131,6 +131,7 @@ struct sigaction {
- 	__sigrestore_t sa_restorer;
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
-diff --git a/arch/powerpc/include/asm/signal.h b/arch/powerpc/include/asm/signal.h
-index 3eb13be..ec63a0a 100644
---- a/arch/powerpc/include/asm/signal.h
-+++ b/arch/powerpc/include/asm/signal.h
-@@ -109,6 +109,7 @@ struct sigaction {
- 	__sigrestore_t sa_restorer;
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
-diff --git a/arch/s390/include/asm/signal.h b/arch/s390/include/asm/signal.h
-index cdf5cb2..c872626 100644
---- a/arch/s390/include/asm/signal.h
-+++ b/arch/s390/include/asm/signal.h
-@@ -131,6 +131,7 @@ struct sigaction {
-         void (*sa_restorer)(void);
-         sigset_t sa_mask;               /* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
-         struct sigaction sa;
-diff --git a/arch/sparc/include/asm/signal.h b/arch/sparc/include/asm/signal.h
-index aa42fe3..d07beb3 100644
---- a/arch/sparc/include/asm/signal.h
-+++ b/arch/sparc/include/asm/signal.h
-@@ -192,6 +192,7 @@ struct __old_sigaction {
- 	unsigned long		sa_flags;
- 	void			(*sa_restorer)(void);  /* not used by Linux/SPARC yet */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- typedef struct sigaltstack {
- 	void			__user *ss_sp;
-diff --git a/arch/x86/include/asm/signal.h b/arch/x86/include/asm/signal.h
-index 598457c..6cbc795 100644
---- a/arch/x86/include/asm/signal.h
-+++ b/arch/x86/include/asm/signal.h
-@@ -125,6 +125,8 @@ typedef unsigned long sigset_t;
- extern void do_notify_resume(struct pt_regs *, void *, __u32);
- # endif /* __KERNEL__ */
- 
-+#define __ARCH_HAS_SA_RESTORER
-+
- #ifdef __i386__
- # ifdef __KERNEL__
- struct old_sigaction {
-diff --git a/arch/xtensa/include/asm/signal.h b/arch/xtensa/include/asm/signal.h
-index 7f201b9..696d28a 100644
---- a/arch/xtensa/include/asm/signal.h
-+++ b/arch/xtensa/include/asm/signal.h
-@@ -126,6 +126,7 @@ struct sigaction {
- 	void (*sa_restorer)(void);
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
-diff --git a/include/asm-generic/signal.h b/include/asm-generic/signal.h
-index 555c0ae..743f7a5 100644
---- a/include/asm-generic/signal.h
-+++ b/include/asm-generic/signal.h
-@@ -99,6 +99,10 @@ typedef unsigned long old_sigset_t;
- 
- #include <asm-generic/signal-defs.h>
- 
-+#ifdef SA_RESTORER
-+#define __ARCH_HAS_SA_RESTORER
-+#endif
-+
- struct sigaction {
- 	__sighandler_t sa_handler;
- 	unsigned long sa_flags;
--- 
-1.8.1.2
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRUb2wAAoJEN0jrNd/PrOhTY8P/1NLTplHrifgtEKRQfE1khQo
+Lq+Z0dhS6RnHJ+ILlbZ67Qp7AT5j2UmZ+MADqkxxeQPyCYaY94niMLT14YG3ZA94
+vwmG6eY8tmBTlwH+Z/Hn1oAUtkqWyv0ebtJXsa8781+NXSsyOgPd2K7QIb52cO7s
+wxwpwDSUcxiV0ZyUnlFxpXKoidx5x/EvIAu6gSNlbWFK+I48s5ExUn3MsI77StKV
+kLOiPjZ1d0UWwrf+qYk//w9ahM/tk64cFdjiCBDbWvTiswmLtqAK1pz6hwrUrFoj
+nqLu+5/M+2X1fNfkm3TN16DPX0HMCeouxpJxNouVIGf0YO69KUDJSX1KFE8VrzYj
+YqFVKJv1vkI1GWMujsgVjxnh2nT8wmPRuX8WbInNSdmC9i5WHF+8vD22DXdLrMx7
+B7oVd/c7XuxYD6Te3Zfssy7xKfAWAgvOrdRt7OkEzeiNl48L3MuxQDWvkXX/pI/y
+XuxaUZCyOucd/9uvwpsegMDZ+jxXrTTKHMLCKIx+MRWrPII/IsrPQrhsEiaFKUXJ
+abk26XQe+uGpQBI2CRg1ulRlNaHpNFFzpGuSUCEIxF82tqiPM4XkIABwZFmcHrA1
+08ofhUwS/KStnCmiP7RFr0Ifo6ysRIN/znAPrl1NnSeowiGD43kv+4lwgpRb+9Wh
+ooNPDEJHwgFvBj1o1w06
+=1dU9
+-----END PGP SIGNATURE-----
+
+--PNTmBPCT7hxwcZjr--
