@@ -1,128 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933944Ab3CZIRN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 04:17:13 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:33931 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758719Ab3CZIRK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 04:17:10 -0400
-Date: Tue, 26 Mar 2013 08:17:04 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: devicetree-discuss@lists.ozlabs.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com
-Subject: Re: [PATCH 2/3] mfd: db8500-prcmu: Fetch the PRCMU TCDM base address
- from Device Tree
-Message-ID: <20130326081704.GB11734@gmail.com>
-References: <1364223758-17621-1-git-send-email-lee.jones@linaro.org>
- <1364223758-17621-2-git-send-email-lee.jones@linaro.org>
- <201303251540.51104.arnd@arndb.de>
- <20130325164600.GA11734@gmail.com>
- <CACRpkdbn4WARSp7_MUpCZTghTrsPYvsa9GEUC31T7nP_=9oZag@mail.gmail.com>
+	id S1759562Ab3CZI1s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 04:27:48 -0400
+Received: from londo.lunn.ch ([80.238.139.98]:33631 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757905Ab3CZI1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 04:27:46 -0400
+Date: Tue, 26 Mar 2013 09:27:10 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Soeren Moch <smoch@web.de>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Willy Tarreau <w@1wt.eu>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: kirkwood: make use of DT mvsdio on guruplug board
+Message-ID: <20130326082710.GM5627@lunn.ch>
+References: <1364043489-17683-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdbn4WARSp7_MUpCZTghTrsPYvsa9GEUC31T7nP_=9oZag@mail.gmail.com>
+In-Reply-To: <1364043489-17683-1-git-send-email-sebastian.hesselbarth@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Mar 2013, Linus Walleij wrote:
-
-> On Mon, Mar 25, 2013 at 5:46 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Sat, Mar 23, 2013 at 01:58:09PM +0100, Sebastian Hesselbarth wrote:
+> Device tree based guruplug boards still use mvsdio platform_data and
+> kirkwood_sdio_init to enable sdio. DT support for sdio is already there,
+> so make use of it.
 > 
-> >> >         res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
-> >> >                                            "prcmu-tcpm");
-> >> >         if (!res) {
-> >> > -               dev_err(&pdev->dev,
-> >> > -                       "Error: no prcmu tcpm memory region provided\n");
-> >> > -               return;
-> >> > -       }
-> >> > -       tcpm_base = ioremap(res->start, resource_size(res));
-> >> > +               if (np) {
-> >> > +                       tcpm_np = of_find_node_by_name(np->parent,
-> >> > +                                                      "prcmu-tcpm-per4");
-> >> > +                       if (!tcpm_np) {
-> >> > +                               dev_err(&pdev->dev,
-> >> > +                                       "no prcmu tcpm mem region provided\n");
-> >> > +                               return;
-> >> > +                       }
-> >> > +                       tcpm_base = of_iomap(tcpm_np, 0);
-> >> > +               }
-> >> > +       } else
-> >> > +               tcpm_base = ioremap(res->start, resource_size(res));
-> >> > +
-> >>
-> >> Why don't you just add these extra registers to the prcmu node itself like
-> >>
-> >> diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-> >> index 9de9309..6ee6c31 100644
-> >> --- a/arch/arm/boot/dts/dbx5x0.dtsi
-> >> +++ b/arch/arm/boot/dts/dbx5x0.dtsi
-> >> @@ -191,8 +191,8 @@
-> >>
-> >>               prcmu: prcmu@80157000 {
-> >>                       compatible = "stericsson,db8500-prcmu";
-> >> -                     reg = <0x80157000 0x1000>;
-> >> -                     reg-names = "prcmu";
-> >> +                     reg = <0x80157000 0x1000>, <0x801b0000 0x1000>, <0x801b8000 0x1000>;
-> >> +                     reg-names = "prcmu", "prcmu-tcpm", "prcmu-tcdm-per4";
-> >>                       interrupts = <0 47 0x4>;
-> >>                       #address-cells = <1>;
-> >>                       #size-cells = <1>;
-> >>
-> >>
-> >> and document those in the prcmu binding?
-> >>
-> >> That would keep the code simpler and the same for both cases.
-> >
-> > I'm not sure you can. These addresses differ from platform to
-> > platform, so I'd need to provide the base PRCMU address in
-> > dbx5x0.dtsi, then the other two in the dts files. Can you do that?
+> This also fixes mvsdio accidentially breaking nand by configuring mpp0
+> to gpio, while used also by nand (nand_io2 on mpp0).
 > 
-> Better ask on devicetree-discuss.
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Tested-by: Soeren Moch <smoch@web.de>
+
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+
+> ---
+> Cc: Soeren Moch <smoch@web.de>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Willy Tarreau <w@1wt.eu>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts |    4 ++++
+>  arch/arm/mach-kirkwood/board-guruplug.c             |    6 ------
+>  2 files changed, 4 insertions(+), 6 deletions(-)
 > 
-> What it reflects are differences between SoC:s, so I think the
-> right solution is to split it in a three-layer cake:
+> diff --git a/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts b/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
+> index 9555a86..44fd97d 100644
+> --- a/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
+> +++ b/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
+> @@ -69,6 +69,10 @@
+>  			status = "okay";
+>  			nr-ports = <1>;
+>  		};
+> +
+> +		mvsdio@90000 {
+> +			status = "okay";
+> +		};
+>  	};
+>  
+>  	gpio-leds {
+> diff --git a/arch/arm/mach-kirkwood/board-guruplug.c b/arch/arm/mach-kirkwood/board-guruplug.c
+> index 0a0df45..a857163 100644
+> --- a/arch/arm/mach-kirkwood/board-guruplug.c
+> +++ b/arch/arm/mach-kirkwood/board-guruplug.c
+> @@ -13,7 +13,6 @@
+>  #include <linux/init.h>
+>  #include <linux/mv643xx_eth.h>
+>  #include <linux/gpio.h>
+> -#include <linux/platform_data/mmc-mvsdio.h>
+>  #include "common.h"
+>  
+>  static struct mv643xx_eth_platform_data guruplug_ge00_data = {
+> @@ -24,10 +23,6 @@ static struct mv643xx_eth_platform_data guruplug_ge01_data = {
+>  	.phy_addr	= MV643XX_ETH_PHY_ADDR(1),
+>  };
+>  
+> -static struct mvsdio_platform_data guruplug_mvsdio_data = {
+> -	/* unfortunately the CD signal has not been connected */
+> -};
+> -
+>  void __init guruplug_dt_init(void)
+>  {
+>  	/*
+> @@ -35,5 +30,4 @@ void __init guruplug_dt_init(void)
+>  	 */
+>  	kirkwood_ge00_init(&guruplug_ge00_data);
+>  	kirkwood_ge01_init(&guruplug_ge01_data);
+> -	kirkwood_sdio_init(&guruplug_mvsdio_data);
+>  }
+> -- 
+> 1.7.10.4
 > 
-> dbx5x0.dtsi -> included by
-> db8500.dtsi -> included by
-> snowball/hrefv60plus.dts
-> 
-> dbx5x0.dtsi -> included by
-> dbx540.dtsi -> included by
-> ccu9540/ccu8540.dts
-> 
-> Here you may insert the reg property into the node at the
-> db8500.dtsi or dbx540.dtsi layer.
-
-It's easy done, if that's the right way.
-
-> If you prefer I can cook a patch...
-
-... and I'm fine to do it.
-
-[5 mins later]
-
-Hmm... it appears that in STE's kernel, the same address is used for
-all SoCs: 
-
-  #define U8500_PRCMU_TCDM_BASE    (U8500_PER4_BASE + 0x68000)
-
-However, in Mainline there is another definition:
-
-  #define U9540_PRCMU_TCDM_BASE    (U8500_PER4_BASE + 0x6A000)
-
-... which doesn't seem to be in use anywhere - even for the u9540.
-
-What's the deal big-man?
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
