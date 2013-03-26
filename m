@@ -1,124 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab3CZW7B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:59:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53105 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756322Ab3CZWws (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:48 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Burgess <jason@jacknife2.dns2go.com>,
-        Yan Li <elliot.li.tech@gmail.com>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [ 49/72] cifs: ignore everything in SPNEGO blob after mechTypes
-Date: Tue, 26 Mar 2013 15:51:32 -0700
-Message-Id: <20130326224924.731351479@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
-References: <20130326224919.675227837@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1756560Ab3CZW7K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:59:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48918 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756378Ab3CZW7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 18:59:07 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] MODSIGN: Discard previous signature when signing modules
+Date: Tue, 26 Mar 2013 23:58:21 +0100
+Message-Id: <1364338701-24306-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+The format only supports one signature, so discard any previous
+signature before signing the module.
 
-------------------
-
-From: Jeff Layton <jlayton@redhat.com>
-
-commit f853c616883a8de966873a1dab283f1369e275a1 upstream.
-
-We've had several reports of people attempting to mount Windows 8 shares
-and getting failures with a return code of -EINVAL. The default sec=
-mode changed recently to sec=ntlmssp. With that, we expect and parse a
-SPNEGO blob from the server in the NEGOTIATE reply.
-
-The current decode_negTokenInit function first parses all of the
-mechTypes and then tries to parse the rest of the negTokenInit reply.
-The parser however currently expects a mechListMIC or nothing to follow the
-mechTypes, but Windows 8 puts a mechToken field there instead to carry
-some info for the new NegoEx stuff.
-
-In practice, we don't do anything with the fields after the mechTypes
-anyway so I don't see any real benefit in continuing to parse them.
-This patch just has the kernel ignore the fields after the mechTypes.
-We'll probably need to reinstate some of this if we ever want to support
-NegoEx.
-
-Reported-by: Jason Burgess <jason@jacknife2.dns2go.com>
-Reported-by: Yan Li <elliot.li.tech@gmail.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- fs/cifs/asn1.c |   53 +++++------------------------------------------------
- 1 file changed, 5 insertions(+), 48 deletions(-)
+ scripts/sign-file |   62 ++++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 43 insertions(+), 19 deletions(-)
 
---- a/fs/cifs/asn1.c
-+++ b/fs/cifs/asn1.c
-@@ -614,53 +614,10 @@ decode_negTokenInit(unsigned char *secur
- 		}
- 	}
- 
--	/* mechlistMIC */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		/* Check if we have reached the end of the blob, but with
--		   no mechListMic (e.g. NTLMSSP instead of KRB5) */
--		if (ctx.error == ASN1_ERR_DEC_EMPTY)
--			goto decode_negtoken_exit;
--		cFYI(1, "Error decoding last part negTokenInit exit3");
--		return 0;
--	} else if ((cls != ASN1_CTX) || (con != ASN1_CON)) {
--		/* tag = 3 indicating mechListMIC */
--		cFYI(1, "Exit 4 cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--		return 0;
--	}
--
--	/* sequence */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		cFYI(1, "Error decoding last part negTokenInit exit5");
--		return 0;
--	} else if ((cls != ASN1_UNI) || (con != ASN1_CON)
--		   || (tag != ASN1_SEQ)) {
--		cFYI(1, "cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--	}
--
--	/* sequence of */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		cFYI(1, "Error decoding last part negTokenInit exit 7");
--		return 0;
--	} else if ((cls != ASN1_CTX) || (con != ASN1_CON)) {
--		cFYI(1, "Exit 8 cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--		return 0;
--	}
--
--	/* general string */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		cFYI(1, "Error decoding last part negTokenInit exit9");
--		return 0;
--	} else if ((cls != ASN1_UNI) || (con != ASN1_PRI)
--		   || (tag != ASN1_GENSTR)) {
--		cFYI(1, "Exit10 cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--		return 0;
--	}
--	cFYI(1, "Need to call asn1_octets_decode() function for %s",
--		ctx.pointer);	/* is this UTF-8 or ASCII? */
--decode_negtoken_exit:
-+	/*
-+	 * We currently ignore anything at the end of the SPNEGO blob after
-+	 * the mechTypes have been parsed, since none of that info is
-+	 * used at the moment.
-+	 */
- 	return 1;
+diff --git a/scripts/sign-file b/scripts/sign-file
+index 2b7c448..b390dc3 100755
+--- a/scripts/sign-file
++++ b/scripts/sign-file
+@@ -60,6 +60,23 @@ sub read_file($)
+     return $contents;
  }
-
+ 
++sub openssl_pipe($$) {
++	my ($input, $cmd) = @_;
++	my ($pid, $res);
++
++	$pid = open2(*read_from, *write_to, $cmd) || die $cmd;
++	binmode write_to;
++	print write_to $input || die "pipe to $cmd";
++	close(write_to) || die "pipe to $cmd";
++
++	binmode read_from;
++	read(read_from, $res, 4096) || die "pipe from $cmd";
++	close(read_from) || die "pipe from $cmd";
++	waitpid($pid, 0) || die;
++	die "$cmd died: $?" if ($? >> 8);
++	return $res;
++}
++
+ ###############################################################################
+ #
+ # First of all, we have to parse the X.509 certificate to find certain details
+@@ -350,6 +367,24 @@ if ($dgst eq "sha1") {
+     die "Unknown hash algorithm: $dgst\n";
+ }
+ 
++my $unsigned_module = read_file($module);
++
++my $magic_number = "~Module signature appended~\n";
++my $magic_len = length($magic_number);
++my $info_len = 12;
++
++# Truncate existing signarure, if any
++if (substr($unsigned_module, -$magic_len) eq $magic_number) {
++	my $info = substr($unsigned_module, -$magic_len - $info_len, $info_len);
++	my ($name_len, $key_len, $sig_len) = unpack("xxxCCxxxN", $info);
++	my $subtract = $name_len + $key_len + $sig_len + $info_len + $magic_len;
++	if ($subtract > length($unsigned_module)) {
++		die "$module: Existing signature is malformed\n";
++	}
++	$unsigned_module = substr($unsigned_module, 0,
++		length($unsigned_module) - $subtract);
++}
++
+ my $signature;
+ if ($signature_file) {
+ 	$signature = read_file($signature_file);
+@@ -357,41 +392,30 @@ if ($signature_file) {
+ 	#
+ 	# Generate the digest and read from openssl's stdout
+ 	#
+-	my $digest;
+-	$digest = readpipe("openssl dgst -$dgst -binary $module") || die "openssl dgst";
++	my $digest = openssl_pipe($unsigned_module,
++		"openssl dgst -$dgst -binary");
+ 
+ 	#
+ 	# Generate the binary signature, which will be just the integer that
+ 	# comprises the signature with no metadata attached.
+ 	#
+-	my $pid;
+-	$pid = open2(*read_from, *write_to,
+-		     "openssl rsautl -sign -inkey $private_key -keyform PEM") ||
+-	    die "openssl rsautl";
+-	binmode write_to;
+-	print write_to $prologue . $digest || die "pipe to openssl rsautl";
+-	close(write_to) || die "pipe to openssl rsautl";
+-
+-	binmode read_from;
+-	read(read_from, $signature, 4096) || die "pipe from openssl rsautl";
+-	close(read_from) || die "pipe from openssl rsautl";
+-	waitpid($pid, 0) || die;
+-	die "openssl rsautl died: $?" if ($? >> 8);
++	$signature = openssl_pipe($prologue . $digest,
++		     "openssl rsautl -sign -inkey $private_key -keyform PEM");
+ }
+ $signature = pack("n", length($signature)) . $signature,
+ 
+ #
+ # Build the signed binary
+ #
+-my $unsigned_module = read_file($module);
+-
+-my $magic_number = "~Module signature appended~\n";
+-
+ my $info = pack("CCCCCxxxN",
+ 		$algo, $hash, $id_type,
+ 		length($signers_name),
+ 		length($key_identifier),
+ 		length($signature));
++# Make sure that $info_len value used above matches reality
++if (length($info) != $info_len) {
++	die "Signature info size changed ($info_len -> @{[length($info)]}";
++}
+ 
+ if ($verbose) {
+     print "Size of unsigned module: ", length($unsigned_module), "\n";
+-- 
+1.7.3.1
 
