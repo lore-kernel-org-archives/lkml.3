@@ -1,96 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965598Ab3CZP6W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:58:22 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37363 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965414Ab3CZP6Q (ORCPT
+	id S965617Ab3CZP6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:58:35 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:46141 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965181Ab3CZP6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:58:16 -0400
-Date: Tue, 26 Mar 2013 15:58:13 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [GIT PULL] extcon/ASoC: arizona: Fix interactions around HPDET
-Message-ID: <20130326155812.GF18316@opensource.wolfsonmicro.com>
-References: <20130326154014.GD18316@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s5wWjIzCVkCTLRpN"
-Content-Disposition: inline
-In-Reply-To: <20130326154014.GD18316@opensource.wolfsonmicro.com>
-X-Cookie: Your aim is high and to the right.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 26 Mar 2013 11:58:31 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, fuse-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org
+Subject: [PATCH v3, part4 09/39] mm: use totalram_pages instead of num_physpages at runtime
+Date: Tue, 26 Mar 2013 23:54:28 +0800
+Message-Id: <1364313298-17336-10-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
+References: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The global variable num_physpages is scheduled to be removed, so use
+totalram_pages instead of num_physpages at runtime.
 
---s5wWjIzCVkCTLRpN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Tue, Mar 26, 2013 at 03:40:14PM +0000, Mark Brown wrote:
-
-> I've taken the liberty of pulling into ASoC already, if there's a
-> problem with that I can drop the changes easily enough.
-
-While adding the ASoC stuff on top I realised that one of the
-overlapping changes should just be squashed down into the ASoC change
-here so I've gone ahead and done that and redone the tag, sorry about
-the noise.
-
-=46rom 04f2108cbde151329b7222d5399df71376a76358 Mon Sep 17 00:00:00 2001
-=46rom: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Mon, 25 Mar 2013 10:10:35 +0000
-Subject: [PATCH] ASoC: arizona: Ensure generic output event is run for
- headphones
-
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: fuse-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org
 ---
- sound/soc/codecs/arizona.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hi all,
+	Sorry for my mistake that my previous patch series has been screwed up.
+So I regenerate a third version and also set up a git tree at:
+	git://github.com/jiangliu/linux.git mem_init
+	Any help to review and test are welcomed!
 
-diff --git a/sound/soc/codecs/arizona.c b/sound/soc/codecs/arizona.c
-index 05f36bc..1e6b1c0 100644
---- a/sound/soc/codecs/arizona.c
-+++ b/sound/soc/codecs/arizona.c
-@@ -631,7 +631,7 @@ int arizona_hp_ev(struct snd_soc_dapm_widget *w,
-=20
- 	snd_soc_update_bits(w->codec, ARIZONA_OUTPUT_ENABLES_1, mask, val);
-=20
--	return 0;
-+	return arizona_out_ev(w, kcontrol, event);
- }
- EXPORT_SYMBOL_GPL(arizona_hp_ev);
-=20
---=20
-1.7.10.4
+	Regards!
+	Gerry
+---
+ fs/fuse/inode.c          |    2 +-
+ kernel/power/snapshot.c  |    4 ++--
+ net/ipv4/inet_fragment.c |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index b730fda..4c2a420 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -781,7 +781,7 @@ static const struct super_operations fuse_super_operations = {
+ static void sanitize_global_limit(unsigned *limit)
+ {
+ 	if (*limit == 0)
+-		*limit = ((num_physpages << PAGE_SHIFT) >> 13) /
++		*limit = ((totalram_pages << PAGE_SHIFT) >> 13) /
+ 			 sizeof(struct fuse_req);
+ 
+ 	if (*limit >= 1 << 16)
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index 0de2857..8b5d1cd 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1651,7 +1651,7 @@ unsigned long snapshot_get_image_size(void)
+ static int init_header(struct swsusp_info *info)
+ {
+ 	memset(info, 0, sizeof(struct swsusp_info));
+-	info->num_physpages = num_physpages;
++	info->num_physpages = get_num_physpages();
+ 	info->image_pages = nr_copy_pages;
+ 	info->pages = snapshot_get_image_size();
+ 	info->size = info->pages;
+@@ -1795,7 +1795,7 @@ static int check_header(struct swsusp_info *info)
+ 	char *reason;
+ 
+ 	reason = check_image_kernel(info);
+-	if (!reason && info->num_physpages != num_physpages)
++	if (!reason && info->num_physpages != get_num_physpages())
+ 		reason = "memory size";
+ 	if (reason) {
+ 		printk(KERN_ERR "PM: Image mismatch: %s\n", reason);
+diff --git a/net/ipv4/inet_fragment.c b/net/ipv4/inet_fragment.c
+index 4750d2b..87c4b09 100644
+--- a/net/ipv4/inet_fragment.c
++++ b/net/ipv4/inet_fragment.c
+@@ -60,7 +60,7 @@ void inet_frags_init(struct inet_frags *f)
+ 
+ 	rwlock_init(&f->lock);
+ 
+-	f->rnd = (u32) ((num_physpages ^ (num_physpages>>7)) ^
++	f->rnd = (u32) ((totalram_pages ^ (totalram_pages >> 7)) ^
+ 				   (jiffies ^ (jiffies >> 6)));
+ 
+ 	setup_timer(&f->secret_timer, inet_frag_secret_rebuild,
+-- 
+1.7.9.5
 
---s5wWjIzCVkCTLRpN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRUcSzAAoJELSic+t+oim9dacP/2cUMwhDzQdZ8ZTfAoce0AYg
-VW8ko5bWIUtqHXEyyv7ugp3uH2YyWoA3NaYqe8m2PE26oFe+gJXHhs98JQMC+Feo
-gMiMTaW4/vc/vw2LjvXiGB0hhGQBG9rYkUS4PWjme203sgSp9QJECv01IGSnX/tC
-cN8fDVBeSWWF+VOnDhIs5F6VdXTVn8uAVSWuiaLy1liiDPuC6pWMJTUIIBqa5uF7
-9OmnHkxw2mN2cZoRlkaFshbrap+LiqFVMgc9qt5o4oKJdC6lanDrxuxmW0aua6Wg
-grJCzm2wpyBGSh2j8lQjkA2/XqroscoNVwgZhqDTPYe8duJ2dOAzSrWbbgVkGAAH
-LZ9B3CuWI2EW/ZXVq2PFvKbuKOuIw/jFZzb8HcAmqmftmpyfctnFBrthGtJ5w2sm
-8g5or1lI1NAK2QEg/IEaDg2HXXgXxjdIt51JsGGHi5c2JO3usnqHVWip47/3xOzx
-+Y1YzTh0gt5MmB5phNKbRFcsqTGctP+0VZ+I3Ic0w7XT7Sa0A3H6QklWD0BYI0G5
-8Eo76BcG3EJhOKQ+uCTTwFGyvHiWPikVj7gwfDp9CTSKiIu4LzAnMIWWpjhwUDI+
-5EmkcXRkwkWsQBPqJuwHfo6p5Ju6yW5G9d7fR0ra/Bi3TyL9lKDGPYMczhQwWs09
-et+CJca1FtN6CNp9Mtld
-=aTe/
------END PGP SIGNATURE-----
-
---s5wWjIzCVkCTLRpN--
