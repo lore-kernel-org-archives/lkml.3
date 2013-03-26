@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756653Ab3CZXlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:41:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52492 "EHLO
+	id S1754895Ab3CZXlY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:41:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52407 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754606Ab3CZWn5 (ORCPT
+	with ESMTP id S1754462Ab3CZWn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:43:57 -0400
+	Tue, 26 Mar 2013 18:43:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 45/98] drm/i915: bounds check execbuffer relocation count
-Date: Tue, 26 Mar 2013 15:42:34 -0700
-Message-Id: <20130326224247.197788296@linuxfoundation.org>
+        Daniel Mack <zonque@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 33/98] ALSA: snd-usb: mixer: ignore -EINVAL in snd_usb_mixer_controls()
+Date: Tue, 26 Mar 2013 15:42:22 -0700
+Message-Id: <20130326224245.866927590@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -28,53 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Daniel Mack <zonque@gmail.com>
 
-commit 3118a4f652c7b12c752f3222af0447008f9b2368 upstream.
+commit 83ea5d18d74f032a760fecde78c0210f66f7f70c upstream.
 
-It is possible to wrap the counter used to allocate the buffer for
-relocation copies. This could lead to heap writing overflows.
+Creation of individual mixer controls may fail, but that shouldn't cause
+the entire mixer creation to fail. Even worse, if the mixer creation
+fails, that will error out the entire device probing.
 
-CVE-2013-0913
+All the functions called by parse_audio_unit() should return -EINVAL if
+they find descriptors that are unsupported or believed to be malformed,
+so we can safely handle this error code as a non-fatal condition in
+snd_usb_mixer_controls().
 
-v3: collapse test, improve comment
-v2: move check into validate_exec_list
+That fixes a long standing bug which is commonly worked around by
+adding quirks which make the driver ignore entire interfaces. Some of
+them might now be unnecessary.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: Pinkie Pie
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Reported-and-tested-by: Rodolfo Thomazelli <pe.soberbo@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ sound/usb/mixer.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -706,15 +706,20 @@ validate_exec_list(struct drm_i915_gem_e
- 		   int count)
- {
- 	int i;
-+	int relocs_total = 0;
-+	int relocs_max = INT_MAX / sizeof(struct drm_i915_gem_relocation_entry);
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -2122,7 +2122,7 @@ static int snd_usb_mixer_controls(struct
+ 			state.oterm.type = le16_to_cpu(desc->wTerminalType);
+ 			state.oterm.name = desc->iTerminal;
+ 			err = parse_audio_unit(&state, desc->bSourceID);
+-			if (err < 0)
++			if (err < 0 && err != -EINVAL)
+ 				return err;
+ 		} else { /* UAC_VERSION_2 */
+ 			struct uac2_output_terminal_descriptor *desc = p;
+@@ -2134,12 +2134,12 @@ static int snd_usb_mixer_controls(struct
+ 			state.oterm.type = le16_to_cpu(desc->wTerminalType);
+ 			state.oterm.name = desc->iTerminal;
+ 			err = parse_audio_unit(&state, desc->bSourceID);
+-			if (err < 0)
++			if (err < 0 && err != -EINVAL)
+ 				return err;
  
- 	for (i = 0; i < count; i++) {
- 		char __user *ptr = (char __user *)(uintptr_t)exec[i].relocs_ptr;
- 		int length; /* limited by fault_in_pages_readable() */
- 
--		/* First check for malicious input causing overflow */
--		if (exec[i].relocation_count >
--		    INT_MAX / sizeof(struct drm_i915_gem_relocation_entry))
-+		/* First check for malicious input causing overflow in
-+		 * the worst case where we need to allocate the entire
-+		 * relocation tree as a single array.
-+		 */
-+		if (exec[i].relocation_count > relocs_max - relocs_total)
- 			return -EINVAL;
-+		relocs_total += exec[i].relocation_count;
- 
- 		length = exec[i].relocation_count *
- 			sizeof(struct drm_i915_gem_relocation_entry);
+ 			/* for UAC2, use the same approach to also add the clock selectors */
+ 			err = parse_audio_unit(&state, desc->bCSourceID);
+-			if (err < 0)
++			if (err < 0 && err != -EINVAL)
+ 				return err;
+ 		}
+ 	}
 
 
