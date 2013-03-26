@@ -1,99 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab3CZRAG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:00:06 -0400
-Received: from mga14.intel.com ([143.182.124.37]:51102 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751624Ab3CZRAE convert rfc822-to-8bit (ORCPT
+	id S1752625Ab3CZRCJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:02:09 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:47420 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268Ab3CZRCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:00:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,913,1355126400"; 
-   d="scan'208";a="219083107"
-Message-ID: <1364317183.6652.31.camel@smile>
-Subject: Re: [PATCH v2 3/4] dw_dmac: make wrapper on
- of_dma_controller_register()
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Date: Tue, 26 Mar 2013 18:59:43 +0200
-In-Reply-To: <5151B91B.7060404@metafoo.de>
-References: <1364309637-25860-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1364309637-25860-4-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <5151B91B.7060404@metafoo.de>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+	Tue, 26 Mar 2013 13:02:07 -0400
+Date: Tue, 26 Mar 2013 17:02:03 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Danny Baumann <dannybaumann@web.de>
+Cc: David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/1] drm/i915: Allow specifying a minimum brightness
+ level for sysfs control.
+Message-ID: <20130326170203.GA23549@srcf.ucam.org>
+References: <1364298525-4337-1-git-send-email-dannybaumann@web.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364298525-4337-1-git-send-email-dannybaumann@web.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-26 at 16:04 +0100, Lars-Peter Clausen wrote: 
-> On 03/26/2013 03:53 PM, Andy Shevchenko wrote:
-> > This patch introduces new method dw_dma_of_controller_register() and adds
-> > checks of the of_node presence together with CONFIG_OF before calling the
-> > wrapper. It helps to distinguish the real -ENODEV return code of fake one when
-> > of_dma_controller_register is not implemented.
-> 
-> If CONFIG_OF is not set the of_node of the device will always be NULL. Which
-> means of_dma_controller_register() will only be called if it is implemented.
-> So you'll never get the -ENODEV from the of_dma_controller_register() stub.
+On Tue, Mar 26, 2013 at 12:48:44PM +0100, Danny Baumann wrote:
+> This patch makes the behaviour of the intel_backlight backlight device
+> consistent to e.g. acpi_videoX: When writing the value 0, the set brightness
+> makes the panel content barely readable instead of turning the backlight off.
+> This matches the expectations of user space (e.g. kde-workspace or the Intel
+> X11 driver), which expects that it can use intel_backlight as a drop-in
+> replacement for acpi_videoX.
 
-Thanks for clarification, I'll update the patch.
-
-
-> 
-> - Lars
-> 
-> > 
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > ---
-> >  drivers/dma/dw_dmac.c | 19 ++++++++++++-------
-> >  1 file changed, 12 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> > index 274fd7d..c1f017b 100644
-> > --- a/drivers/dma/dw_dmac.c
-> > +++ b/drivers/dma/dw_dmac.c
-> > @@ -1303,6 +1303,16 @@ static struct dma_chan *dw_dma_of_xlate(struct of_phandle_args *dma_spec,
-> >  	return dma_request_channel(cap, dw_dma_of_filter, &fargs);
-> >  }
-> >  
-> > +static void dw_dma_of_controller_register(struct dw_dma *dw)
-> > +{
-> > +	struct device *dev = dw->dma.dev;
-> > +	int err;
-> > +
-> > +	err = of_dma_controller_register(dev->of_node, dw_dma_of_xlate, dw);
-> > +	if (err)
-> > +		dev_err(dev, "could not register of_dma_controller\n");
-> > +}
-> > +
-> >  /* --------------------- Cyclic DMA API extensions -------------------- */
-> >  
-> >  /**
-> > @@ -1843,13 +1853,8 @@ static int dw_probe(struct platform_device *pdev)
-> >  
-> >  	dma_async_device_register(&dw->dma);
-> >  
-> > -	if (pdev->dev.of_node) {
-> > -		err = of_dma_controller_register(pdev->dev.of_node,
-> > -						 dw_dma_of_xlate, dw);
-> > -		if (err && err != -ENODEV)
-> > -			dev_err(&pdev->dev,
-> > -				"could not register of_dma_controller\n");
-> > -	}
-> > +	if (IS_ENABLED(CONFIG_OF) && pdev->dev.of_node)
-> > +		dw_dma_of_controller_register(dw);
-> >  
-> >  	return 0;
-> >  }
-> 
+I'm not quite clear what you mean here. The behaviour of "0" isn't well 
+defined for the ACPI backlight driver - it's perfectly reasonable for it 
+to turn the backlight off entirely. Anything assuming that "0" is still 
+visible is broken.
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Matthew Garrett | mjg59@srcf.ucam.org
