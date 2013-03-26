@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab3CZRm0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:42:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27419 "EHLO
+	id S1755407Ab3CZRmZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:42:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30328 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777Ab3CZRg0 (ORCPT
+	with ESMTP id S1754253Ab3CZRg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 13:36:26 -0400
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=9VNr2J4BuNkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=pBGalg-FbGAA:10 a=1XWaLZrsAAAA:8 a=PTBWqnBOAAAA:8 a=J1Y8HTJGAAAA:8 a=ayC55rCoAAAA:8 a=RvlEQHu-AAAA:8 a=3hRvB8WrXdXxB_3RvqwA:9 a=E6k37eg1NvgA:10 a=UTB_XpHje0EA:10 a=2va5FzKkd9YA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=ev9VbeT8_cIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=HvVMjYLLFOsA:10 a=1XWaLZrsAAAA:8 a=J1Y8HTJGAAAA:8 a=GZK3lcuhIWR5GrNAc6YA:9 a=UTB_XpHje0EA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130326173611.835729997@goodmis.org>
+Message-Id: <20130326173611.677254864@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 26 Mar 2013 13:22:14 -0400
+Date: Tue, 26 Mar 2013 13:22:13 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Christian Becker <c.becker@traviangames.com>, Willy Tarreau <w@1wt.eu>,
-        Eric Dumazet <edumazet@google.com>,
+Cc: Eric Dumazet <edumazet@google.com>, Willy Tarreau <w@1wt.eu>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 75/86] tcp: fix splice() and tcp collapsing interaction
+Subject: [PATCH 74/86] tcp: splice: fix an infinite loop in tcp_read_sock()
 References: <20130326172059.136127374@goodmis.org>
-Content-Disposition: inline; filename=0075-tcp-fix-splice-and-tcp-collapsing-interaction.patch
+Content-Disposition: inline; filename=0074-tcp-splice-fix-an-infinite-loop-in-tcp_read_sock.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,75 +32,55 @@ If anyone has any objections, please let me know.
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit fdd384558afc89793bf35db6b5263e80ee92093d ]
+[ Upstream commit 74b2a7b4ea60d5c1c94ac01ad001e16ac40132f3 ]
 
-Under unusual circumstances, TCP collapse can split a big GRO TCP packet
-while its being used in a splice(socket->pipe) operation.
+commit 02275a2ee7c0 (tcp: don't abort splice() after small transfers)
+added a regression.
 
-skb_splice_bits() releases the socket lock before calling
-splice_to_pipe().
+[   83.843570] INFO: rcu_sched self-detected stall on CPU
+[   83.844575] INFO: rcu_sched detected stalls on CPUs/tasks: { 6} (detected by 0, t=21002 jiffies, g=4457, c=4456, q=13132)
+[   83.844582] Task dump for CPU 6:
+[   83.844584] netperf         R  running task        0  8966   8952 0x0000000c
+[   83.844587]  0000000000000000 0000000000000006 0000000000006c6c 0000000000000000
+[   83.844589]  000000000000006c 0000000000000096 ffffffff819ce2bc ffffffffffffff10
+[   83.844592]  ffffffff81088679 0000000000000010 0000000000000246 ffff880c4b9ddcd8
+[   83.844594] Call Trace:
+[   83.844596]  [<ffffffff81088679>] ? vprintk_emit+0x1c9/0x4c0
+[   83.844601]  [<ffffffff815ad449>] ? schedule+0x29/0x70
+[   83.844606]  [<ffffffff81537bd2>] ? tcp_splice_data_recv+0x42/0x50
+[   83.844610]  [<ffffffff8153beaa>] ? tcp_read_sock+0xda/0x260
+[   83.844613]  [<ffffffff81537b90>] ? tcp_prequeue_process+0xb0/0xb0
+[   83.844615]  [<ffffffff8153c0f0>] ? tcp_splice_read+0xc0/0x250
+[   83.844618]  [<ffffffff814dc0c2>] ? sock_splice_read+0x22/0x30
+[   83.844622]  [<ffffffff811b820b>] ? do_splice_to+0x7b/0xa0
+[   83.844627]  [<ffffffff811ba4bc>] ? sys_splice+0x59c/0x5d0
+[   83.844630]  [<ffffffff8119745b>] ? putname+0x2b/0x40
+[   83.844633]  [<ffffffff8118bcb4>] ? do_sys_open+0x174/0x1e0
+[   83.844636]  [<ffffffff815b6202>] ? system_call_fastpath+0x16/0x1b
 
-[ 1081.353685] WARNING: at net/ipv4/tcp.c:1330 tcp_cleanup_rbuf+0x4d/0xfc()
-[ 1081.371956] Hardware name: System x3690 X5 -[7148Z68]-
-[ 1081.391820] cleanup rbuf bug: copied AD3BCF1 seq AD370AF rcvnxt AD3CF13
+if recv_actor() returns 0, we should stop immediately,
+because looping wont give a chance to drain the pipe.
 
-To fix this problem, we must eat skbs in tcp_recv_skb().
-
-Remove the inline keyword from tcp_recv_skb() definition since
-it has three call sites.
-
-Reported-by: Christian Becker <c.becker@traviangames.com>
-Cc: Willy Tarreau <w@1wt.eu>
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Willy Tarreau <w@1wt.eu>
+Cc: Willy Tarreau <w@1wt.eu>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- net/ipv4/tcp.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ net/ipv4/tcp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 8720b83..a07e91c 100644
+index 5fe7a59..8720b83 100644
 --- a/net/ipv4/tcp.c
 +++ b/net/ipv4/tcp.c
-@@ -1454,12 +1454,12 @@ static void tcp_service_net_dma(struct sock *sk, bool wait)
- }
- #endif
- 
--static inline struct sk_buff *tcp_recv_skb(struct sock *sk, u32 seq, u32 *off)
-+static struct sk_buff *tcp_recv_skb(struct sock *sk, u32 seq, u32 *off)
- {
- 	struct sk_buff *skb;
- 	u32 offset;
- 
--	skb_queue_walk(&sk->sk_receive_queue, skb) {
-+	while ((skb = skb_peek(&sk->sk_receive_queue)) != NULL) {
- 		offset = seq - TCP_SKB_CB(skb)->seq;
- 		if (tcp_hdr(skb)->syn)
- 			offset--;
-@@ -1467,6 +1467,11 @@ static inline struct sk_buff *tcp_recv_skb(struct sock *sk, u32 seq, u32 *off)
- 			*off = offset;
- 			return skb;
- 		}
-+		/* This looks weird, but this can happen if TCP collapsing
-+		 * splitted a fat GRO packet, while we released socket lock
-+		 * in skb_splice_bits()
-+		 */
-+		sk_eat_skb(sk, skb, false);
- 	}
- 	return NULL;
- }
-@@ -1546,8 +1551,10 @@ int tcp_read_sock(struct sock *sk, read_descriptor_t *desc,
- 	tcp_rcv_space_adjust(sk);
- 
- 	/* Clean up data we have read: This will do ACK frames. */
--	if (copied > 0)
-+	if (copied > 0) {
-+		tcp_recv_skb(sk, seq, &offset);
- 		tcp_cleanup_rbuf(sk, copied);
-+	}
- 	return copied;
- }
- EXPORT_SYMBOL(tcp_read_sock);
+@@ -1508,7 +1508,7 @@ int tcp_read_sock(struct sock *sk, read_descriptor_t *desc,
+ 					break;
+ 			}
+ 			used = recv_actor(desc, skb, offset, len);
+-			if (used < 0) {
++			if (used <= 0) {
+ 				if (!copied)
+ 					copied = used;
+ 				break;
 -- 
 1.7.10.4
 
