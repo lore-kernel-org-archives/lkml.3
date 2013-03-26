@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab3CZUx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 16:53:27 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:33284 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab3CZUx0 (ORCPT
+	id S1755317Ab3CZUzH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 16:55:07 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59120 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751789Ab3CZUzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 16:53:26 -0400
-Date: Tue, 26 Mar 2013 22:53:19 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Eric Piel <eric.piel@tremplin-utc.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>
-Subject: Re: Driver lis3lv02d_i2c not working on Nokia RX-51
-Message-ID: <20130326205319.GK14155@blackmetal.musicnaut.iki.fi>
-References: <201302170046.26569@pali>
- <201303242345.00176@pali>
- <20130324230435.GE18316@opensource.wolfsonmicro.com>
- <201303261602.40219@pali>
+	Tue, 26 Mar 2013 16:55:03 -0400
+Date: Tue, 26 Mar 2013 21:54:59 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+cc: Gerlando Falauto <gerlando.falauto@keymile.com>,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Simon Guinot <sguinot@lacie.com>, stable@vger.kernel.org
+Subject: Re: [PATCH v3b 0/9] refactoring for mask_cache
+In-Reply-To: <20130326204725.GA4521@kroah.com>
+Message-ID: <alpine.LFD.2.02.1303262153220.22263@ionos>
+References: <1363885931-20571-1-git-send-email-gerlando.falauto@keymile.com> <20130321215709.GA27612@kroah.com> <alpine.LFD.2.02.1303262136350.22263@ionos> <20130326204725.GA4521@kroah.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201303261602.40219@pali>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 26 Mar 2013, Greg KH wrote:
 
-On Tue, Mar 26, 2013 at 04:02:39PM +0100, Pali Rohár wrote:
-> CCing Aaro and Tony. Look at this thread on: 
-> https://lkml.org/lkml/2013/2/16/152
+> On Tue, Mar 26, 2013 at 09:37:53PM +0100, Thomas Gleixner wrote:
+> > On Thu, 21 Mar 2013, Greg KH wrote:
+> > 
+> > > On Thu, Mar 21, 2013 at 06:12:02PM +0100, Gerlando Falauto wrote:
+> > > > This patchset addresses a regression found with the Orion GPIO controller
+> > > > when both Edge- and Level- based interrupts are requested within the same
+> > > > GPIO chip. The regression was introduced by e59347a
+> > > > "arm: orion: Use generic irq chip"
+> > > > 
+> > > > thereby affecting all kernel releases since 3.0.x.
+> > > 
+> > > <formletter>
+> > > 
+> > > This is not the correct way to submit patches for inclusion in the
+> > > stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+> > > for how to do this properly.
+> > > 
+> > > </formletter>
+> > 
+> > Aside of that it would be less intrusive for the stable series to
+> > revert the offending commit(s), if that is possible.
 > 
-> What do you think how to fix this problem? I do not know about any 
-> HW regulator for n900 accelerometer and possible solutions could 
-> be revert that commit or adding fake regulator to board code...
+> If it is reverted in Linus's tree, yes, I can do that.  But if so,
+> please just tag that revert with the Cc: stable marking and then I can
+> pick it up properly.
+> 
+> Otherwise, no, I can't revert something that isn't already fixed in
+> upstream first.
 
-I think the following should work:
+I know. The proper thing would be:
 
-...
+patch 1/n   revert (cc'ed to stable)
+patch 2-m/n fix infrastructure
+patch n/n   redo the commit with the proper change
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-Date: Tue, 26 Mar 2013 21:34:22 +0200
-Subject: [PATCH] OMAP: RX-51: add missing regulator supply definitions for lis3lv02d
+Though I don't know if it's possible.
 
-Add missing regulator definitions for lis3lv02d accelerometer. Fixes
-the following probe issue:
+Thanks,
 
-[   57.737518] lis3lv02d_i2c 3-001d: Failed to get supply 'Vdd': -517
-[   57.747100] i2c 3-001d: Driver lis3lv02d_i2c requests probe deferral
-
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
----
- arch/arm/mach-omap2/board-rx51-peripherals.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
-index 3a077df..1a88467 100644
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@ -547,12 +547,16 @@ static struct regulator_consumer_supply rx51_vio_supplies[] = {
- 	REGULATOR_SUPPLY("DVDD", "2-0019"),
- 	/* Si4713 IO supply */
- 	REGULATOR_SUPPLY("vio", "2-0063"),
-+	/* lis3lv02d */
-+	REGULATOR_SUPPLY("Vdd_IO", "3-001d"),
- };
+	tglx
  
- static struct regulator_consumer_supply rx51_vaux1_consumers[] = {
- 	REGULATOR_SUPPLY("vdds_sdi", "omapdss"),
- 	/* Si4713 supply */
- 	REGULATOR_SUPPLY("vdd", "2-0063"),
-+	/* lis3lv02d */
-+	REGULATOR_SUPPLY("Vdd", "3-001d"),
- };
- 
- static struct regulator_init_data rx51_vaux1 = {
--- 
-1.7.10.4
-
-A.
