@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407Ab3CZWwx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:52:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53125 "EHLO
+	id S1756482Ab3CZW5L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:57:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53148 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756334Ab3CZWwv (ORCPT
+	with ESMTP id S1756413Ab3CZWwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:51 -0400
+	Tue, 26 Mar 2013 18:52:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>, Jan Kara <jack@suse.cz>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 67/72] udf: avoid info leak on export
-Date: Tue, 26 Mar 2013 15:51:50 -0700
-Message-Id: <20130326224926.564849559@linuxfoundation.org>
+        CQ Tang <cq.tang@intel.com>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 56/72] x86-64: Fix the failure case in copy_user_handle_tail()
+Date: Tue, 26 Mar 2013 15:51:39 -0700
+Message-Id: <20130326224925.472420401@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -27,31 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: CQ Tang <cq.tang@intel.com>
 
-commit 0143fc5e9f6f5aad4764801015bc8d4b4a278200 upstream.
+commit 66db3feb486c01349f767b98ebb10b0c3d2d021b upstream.
 
-For type 0x51 the udf.parent_partref member in struct fid gets copied
-uninitialized to userland. Fix this by initializing it to 0.
+The increment of "to" in copy_user_handle_tail() will have incremented
+before a failure has been noted.  This causes us to skip a byte in the
+failure case.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Only do the increment when assured there is no failure.
+
+Signed-off-by: CQ Tang <cq.tang@intel.com>
+Link: http://lkml.kernel.org/r/20130318150221.8439.993.stgit@phlsvslse11.ph.intel.com
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/udf/namei.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/lib/usercopy_64.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/udf/namei.c
-+++ b/fs/udf/namei.c
-@@ -1280,6 +1280,7 @@ static int udf_encode_fh(struct dentry *
- 	*lenp = 3;
- 	fid->udf.block = location.logicalBlockNum;
- 	fid->udf.partref = location.partitionReferenceNum;
-+	fid->udf.parent_partref = 0;
- 	fid->udf.generation = inode->i_generation;
+--- a/arch/x86/lib/usercopy_64.c
++++ b/arch/x86/lib/usercopy_64.c
+@@ -120,10 +120,10 @@ copy_user_handle_tail(char *to, char *fr
+ 	char c;
+ 	unsigned zero_len;
  
- 	if (connectable && !S_ISDIR(inode->i_mode)) {
+-	for (; len; --len) {
++	for (; len; --len, to++) {
+ 		if (__get_user_nocheck(c, from++, sizeof(char)))
+ 			break;
+-		if (__put_user_nocheck(c, to++, sizeof(char)))
++		if (__put_user_nocheck(c, to, sizeof(char)))
+ 			break;
+ 	}
+ 
 
 
