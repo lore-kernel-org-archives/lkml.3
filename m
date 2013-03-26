@@ -1,64 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934382Ab3CZJf1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 05:35:27 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:47018 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759783Ab3CZJfY (ORCPT
+	id S1759182Ab3CZJh6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 05:37:58 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9372 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753147Ab3CZJh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 05:35:24 -0400
-From: Fabio Porcedda <fabio.porcedda@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [PATCH 1/3] driver core: warn that platform_driver_probe can not use deferred probing
-Date: Tue, 26 Mar 2013 10:35:15 +0100
-Message-Id: <1364290517-8094-2-git-send-email-fabio.porcedda@gmail.com>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <1364290517-8094-1-git-send-email-fabio.porcedda@gmail.com>
-References: <1364290517-8094-1-git-send-email-fabio.porcedda@gmail.com>
+	Tue, 26 Mar 2013 05:37:57 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 26 Mar 2013 02:37:31 -0700
+Message-ID: <51516BC3.7030707@nvidia.com>
+Date: Tue, 26 Mar 2013 15:04:59 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Graeme Gregory <gg@slimlogic.co.uk>
+CC: Kishon Vijay Abraham I <kishon@ti.com>, "balbi@ti.com" <balbi@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "s-guiriec@ti.com" <s-guiriec@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v3] USB: PHY: Palmas USB Transceiver Driver
+References: <1362662506-14823-4-git-send-email-kishon@ti.com> <1364203926-24488-1-git-send-email-kishon@ti.com> <51501CFB.4020905@nvidia.com> <51513A40.7080905@ti.com> <515163F6.3010400@slimlogic.co.uk> <51516695.8020808@nvidia.com> <51516A10.40704@slimlogic.co.uk>
+In-Reply-To: <51516A10.40704@slimlogic.co.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add documentation that platform_driver_probe() is incompatible with
-deferred probing.
+On Tuesday 26 March 2013 02:57 PM, Graeme Gregory wrote:
+> On 26/03/13 09:12, Laxman Dewangan wrote:
+>> On Tuesday 26 March 2013 02:31 PM, Graeme Gregory wrote:
+>>
+>> But still you are using the PALMAS macro here and indirectly it is
+>> tied up. It is not completely independent.
+>> If need to be independent then regmap pointer with address need to be
+>> passed as independt header and no where on code whould refer the PALMA.
+>> I think as per current code, it is not possible although it is your
+>> big plan what I understand from some time back in one of patch
+>> discussion.
+>>
+> It is actually almost possible, but it is something I gave up looking
+> at. You can get the regmap of your parent i2c device without having
+> knowledge of the type of parent.
 
-Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/base/platform.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+There is multiple regmap of parent and hence getting correct regmap is 
+really issue.  May be RTC require regmap[0] and gpio require regmap[1].
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index c0b8df3..ef2afb1 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -555,7 +555,8 @@ EXPORT_SYMBOL_GPL(platform_driver_unregister);
- /**
-  * platform_driver_probe - register driver for non-hotpluggable device
-  * @drv: platform driver structure
-- * @probe: the driver probe routine, probably from an __init section
-+ * @probe: the driver probe routine, probably from an __init section,
-+ *         must not return -EPROBE_DEFER.
-  *
-  * Use this instead of platform_driver_register() when you know the device
-  * is not hotpluggable and has already been registered, and you want to
-@@ -566,6 +567,9 @@ EXPORT_SYMBOL_GPL(platform_driver_unregister);
-  * into system-on-chip processors, where the controller devices have been
-  * configured as part of board setup.
-  *
-+ * This is incompatible with deferred probing so probe() must not
-+ * return -EPROBE_DEFER.
-+ *
-  * Returns zero if the driver registered and bound to a device, else returns
-  * a negative error code and with the driver not registered.
-  */
--- 
-1.8.2
+
+>
+>>>>>> +       palmas_usb->dev         = &pdev->dev;
+>>>>>> +
+>>>>>> +       palmas_usb->irq1 = regmap_irq_get_virq(palmas->irq_data,
+>>>>>> +                                               PALMAS_ID_OTG_IRQ);
+>>>>>> +       palmas_usb->irq2 = regmap_irq_get_virq(palmas->irq_data,
+>>>>>> +                                               PALMAS_ID_IRQ);
+>>>>>> +       palmas_usb->irq3 = regmap_irq_get_virq(palmas->irq_data,
+>>>>>> +                                               PALMAS_VBUS_OTG_IRQ);
+>>>>>> +       palmas_usb->irq4 = regmap_irq_get_virq(palmas->irq_data,
+>>>>>> +                                               PALMAS_VBUS_IRQ);
+>>>>> Should be come from platform_get_irq() through platform driver.
+>>>> No. It can be obtained from regmap too.
+>> Kishon,
+>> I think it is very much possible. You can pass the interrupt throough
+>> IRQ_RESOURCE and populate it from DT. If you provide proper interrupt
+>> parent and irq number then irq framework take care of every thing.
+>> already tested this with RTC interrupt of plama and it worked very well.
+>>
+> If we are tightly coupling as above then using platform_irq is an extra
+> inefficiency. You both have to populate this then parse it afterwards.
+> Why not just use the regmap helper? Ill admit this code is like this as
+> there was a period where platform irqs in DT just was not working right!
+>
+> We should really agree now if we are going for loose or tight coupling
+> now rather than keep switching?
+
+Here we are hardcoding for PALMAS_ID_OTG_IRQ and so on. If we take data 
+from platform then it need not and it will be completely independent of 
+palma atleast on this front.
+We need to populate just as:
+palmas: palmas {
+:::::::
+     palams_usb_phy {
+         compatile = ...
+         interrupt-parent = <& palmas>;
+         interrupt = < 10, 0,
+                                 21, 0,
+                             22, 0,
+                             23, 0>;
+}
+
+
+and in code, we just need to do
+irq1 = platform_get_irq(pdev, 0);
+irq2 = platform_get_irq(pdev, 1);
+etc..
+
+
+So here, actually we do not need to use palmas one and it is completely 
+independent.
+
+Also the way you define the DT od palmas, the above one looks more 
+appropriate.
 
