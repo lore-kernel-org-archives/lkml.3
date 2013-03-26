@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757158Ab3CZXqB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:46:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52422 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208Ab3CZWnp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754395Ab3CZWnp (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 26 Mar 2013 18:43:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52355 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754208Ab3CZWne (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 18:43:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 28/98] sfc: Only use TX push if a single descriptor is to be written
-Date: Tue, 26 Mar 2013 15:42:17 -0700
-Message-Id: <20130326224245.358613221@linuxfoundation.org>
+        "Denis V. Lunev" <den@openvz.org>, Tingwei Liu <tingw.liu@gmail.com>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 11/98] ipv4: fix definition of FIB_TABLE_HASHSZ
+Date: Tue, 26 Mar 2013 15:42:00 -0700
+Message-Id: <20130326224243.635129189@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -27,36 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: "Denis V. Lunev" <den@openvz.org>
 
-[ Upstream commit fae8563b25f73dc584a07bcda7a82750ff4f7672 ]
+[ Upstream commit 5b9e12dbf92b441b37136ea71dac59f05f2673a9 ]
 
-Using TX push when notifying the NIC of multiple new descriptors in
-the ring will very occasionally cause the TX DMA engine to re-use an
-old descriptor.  This can result in a duplicated or partly duplicated
-packet (new headers with old data), or an IOMMU page fault.  This does
-not happen when the pushed descriptor is the only one written.
+a long time ago by the commit
 
-TX push also provides little latency benefit when a packet requires
-more than one descriptor.
+  commit 93456b6d7753def8760b423ac6b986eb9d5a4a95
+  Author: Denis V. Lunev <den@openvz.org>
+  Date:   Thu Jan 10 03:23:38 2008 -0800
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+    [IPV4]: Unify access to the routing tables.
+
+the defenition of FIB_HASH_TABLE size has obtained wrong dependency:
+it should depend upon CONFIG_IP_MULTIPLE_TABLES (as was in the original
+code) but it was depended from CONFIG_IP_ROUTE_MULTIPATH
+
+This patch returns the situation to the original state.
+
+The problem was spotted by Tingwei Liu.
+
+Signed-off-by: Denis V. Lunev <den@openvz.org>
+CC: Tingwei Liu <tingw.liu@gmail.com>
+CC: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/sfc/nic.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/net/ip_fib.h |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
---- a/drivers/net/ethernet/sfc/nic.c
-+++ b/drivers/net/ethernet/sfc/nic.c
-@@ -376,7 +376,8 @@ efx_may_push_tx_desc(struct efx_tx_queue
- 		return false;
+--- a/include/net/ip_fib.h
++++ b/include/net/ip_fib.h
+@@ -152,18 +152,16 @@ struct fib_result_nl {
+ };
  
- 	tx_queue->empty_read_count = 0;
--	return ((empty_read_count ^ write_count) & ~EFX_EMPTY_COUNT_VALID) == 0;
-+	return ((empty_read_count ^ write_count) & ~EFX_EMPTY_COUNT_VALID) == 0
-+		&& tx_queue->write_count - write_count == 1;
- }
+ #ifdef CONFIG_IP_ROUTE_MULTIPATH
+-
+ #define FIB_RES_NH(res)		((res).fi->fib_nh[(res).nh_sel])
+-
+-#define FIB_TABLE_HASHSZ 2
+-
+ #else /* CONFIG_IP_ROUTE_MULTIPATH */
+-
+ #define FIB_RES_NH(res)		((res).fi->fib_nh[0])
++#endif /* CONFIG_IP_ROUTE_MULTIPATH */
  
- /* For each entry inserted into the software descriptor ring, create a
++#ifdef CONFIG_IP_MULTIPLE_TABLES
+ #define FIB_TABLE_HASHSZ 256
+-
+-#endif /* CONFIG_IP_ROUTE_MULTIPATH */
++#else
++#define FIB_TABLE_HASHSZ 2
++#endif
+ 
+ extern __be32 fib_info_update_nh_saddr(struct net *net, struct fib_nh *nh);
+ 
 
 
