@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612Ab3CZUhp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 16:37:45 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:56657 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754883Ab3CZUhn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 16:37:43 -0400
-Date: Tue, 26 Mar 2013 13:37:41 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Roland Stigge <stigge@antcom.de>
-Cc: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: Fix compile error by selecting USB_OTG_UTILS
-Message-ID: <20130326203741.GA4227@kroah.com>
-References: <1364319361-28265-1-git-send-email-stigge@antcom.de>
- <20130326180334.GL20785@arwen.pp.htv.fi>
- <5151F48C.9060308@gnu.org>
- <20130326192453.GA21915@arwen.pp.htv.fi>
- <5152043F.4010307@antcom.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755910Ab3CZUiF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 16:38:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7570 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754922Ab3CZUiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 16:38:01 -0400
+Date: Tue, 26 Mar 2013 16:37:44 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org
+Message-ID: <1364330264-4oj9uxvi-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130326100221.GN2295@dhcp22.suse.cz>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1363983835-20184-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130325133644.GY2154@dhcp22.suse.cz>
+ <1364281578-4bs50rjv-mutt-n-horiguchi@ah.jp.nec.com>
+ <20130326100221.GN2295@dhcp22.suse.cz>
+Subject: Re: [PATCH 06/10] migrate: add hugepage migration code to
+ move_pages()
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <5152043F.4010307@antcom.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-References: <20130326100221.GN2295@dhcp22.suse.cz>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 09:25:35PM +0100, Roland Stigge wrote:
-> On 03/26/2013 08:24 PM, Felipe Balbi wrote:
-> > commit ?
+On Tue, Mar 26, 2013 at 11:02:21AM +0100, Michal Hocko wrote:
+> On Tue 26-03-13 03:06:18, Naoya Horiguchi wrote:
+> > On Mon, Mar 25, 2013 at 02:36:44PM +0100, Michal Hocko wrote:
+> > > On Fri 22-03-13 16:23:51, Naoya Horiguchi wrote:
+> > > > @@ -1164,6 +1175,12 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
+> > > [...]
+> > > >  				!migrate_all)
+> > > >  			goto put_and_set;
+> > > >  
+> > > > +		if (PageHuge(page)) {
+> > > > +			get_page(page);
+> > > > +			list_move_tail(&page->lru, &pagelist);
+> > > > +			goto put_and_set;
+> > > > +		}
+> > > 
+> > > Why do you take an additional reference here? You have one from
+> > > follow_page already.
+> > 
+> > For normal pages, follow_page(FOLL_GET) takes a refcount and
+> > isolate_lru_page() takes another one, so I think the same should
+> > be done for hugepages. Refcounting of this function looks tricky,
+> > and I'm not sure why existing code does like that.
 > 
-> 1c2088812f095df77f4b3224b65db79d7111a300
+> Ohh, I see. But the whole reference is taken just to release it in goto
+> put_and_set because isolate_lru_page elevates reference count because
+> other users require that. I think you do not have to mimic this behavior
+> here and you can drop get_page and use goto set_status.
 
-Showed up in 3.9-rc3.
-
-Felipe, I can take this directly if you don't have any other USB patches
-for me at the moment.
-
-greg k-h
+OK, thanks.
+Naoya
