@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab3CZSTB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:19:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42980 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751718Ab3CZSS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 14:18:59 -0400
-Subject: [PATCH 0/2] vfio-pci: Enable devices using unassigned config space
-To: alex.williamson@redhat.com, shangw@linux.vnet.ibm.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Date: Tue, 26 Mar 2013 12:16:56 -0600
-Message-ID: <20130326180454.27467.7011.stgit@bling.home>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1756543Ab3CZSUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:20:32 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:54127 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab3CZSUb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 14:20:31 -0400
+X-IronPort-AV: E=Sophos;i="4.84,913,1355126400"; 
+   d="scan'208";a="32874140"
+From: David Brown <davidb@codeaurora.org>
+To: Greg KH <greg@kroah.com>
+Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCH] mfd: pm8921: Disable driver until it gets fixed
+Date: Tue, 26 Mar 2013 11:20:17 -0700
+Message-Id: <1364322017-21490-1-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20130326151811.de958e38f0116334a62e1c8b@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gavin Shan reported that be2net devices don't work under vfio-pci
-because they attempt to make use of device registers hidden among the
-gaps in PCI config space.  I imagine this is a violation of the PCI
-specification, but if we want to allow such devices to work we need
-to enable access.  In reality, config space registers are no different
-from MMIO or I/O port registers, which are already unregulated.
+The pm8921 driver has been broken for a while now, but was prevented
+from compiling because the SSBI bus driver was missing.  Now that SSBI
+is present, pm8921 causes compile fails.
 
-The trouble is that we map config space regions using a byte per dword
-because everything in config space is dword aligned... everything
-except the length.  This leads to a latent bug where capabilities that
-do not end at a dword boundary get rounded down, preventing access to
-those last few bytes.  Therefore, we first need to enable byte
-granularity of config space, then add an accessor for unassigned
-regions.
+Until the pm8921 driver is fixed, mark it as BROKEN to prevent
+compiles from failing.
 
-Gavin, I'd appreciate if you're able to test this against the be2net
-to verify that it resolves the problem.  Thanks,
-
-Alex
-
+Cc: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: David Brown <davidb@codeaurora.org>
 ---
+Someone is working on the pm8921 driver, but we need to disable it
+until those patches are posted.
 
-Alex Williamson (2):
-      vfio-pci: Use byte granularity in config map
-      vfio-pci: Enable raw access to unassigned config space
+ drivers/mfd/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 5bfa7bb..b9723a8 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -990,7 +990,7 @@ config MFD_PM8XXX
+ 
+ config MFD_PM8921_CORE
+ 	tristate "Qualcomm PM8921 PMIC chip"
+-	depends on SSBI
++	depends on SSBI && BROKEN
+ 	select MFD_CORE
+ 	select MFD_PM8XXX
+ 	help
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
- drivers/vfio/pci/vfio_pci_config.c |  166 ++++++++++++++++++++----------------
- 1 file changed, 93 insertions(+), 73 deletions(-)
