@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab3CZXRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:17:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53049 "EHLO
+	id S1756275Ab3CZXSP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:18:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53046 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756176Ab3CZWwi (ORCPT
+	with ESMTP id S1756165Ab3CZWwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:38 -0400
+	Tue, 26 Mar 2013 18:52:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zheng Liu <gnehzuil.liu@gmail.com>, Jan Kara <jack@suse.cz>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 50/72] jbd2: fix use after free in jbd2_journal_dirty_metadata()
-Date: Tue, 26 Mar 2013 15:51:33 -0700
-Message-Id: <20130326224924.828296939@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 25/72] sfc: Correctly initialise reset_method in siena_test_chip()
+Date: Tue, 26 Mar 2013 15:51:08 -0700
+Message-Id: <20130326224922.308357333@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -27,76 +26,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
 
-commit ad56edad089b56300fd13bb9eeb7d0424d978239 upstream.
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-jbd2_journal_dirty_metadata() didn't get a reference to journal_head it
-was working with. This is OK in most of the cases since the journal head
-should be attached to a transaction but in rare occasions when we are
-journalling data, __ext4_journalled_writepage() can race with
-jbd2_journal_invalidatepage() stripping buffers from a page and thus
-journal head can be freed under hands of jbd2_journal_dirty_metadata().
+[ Upstream commit ef492f11efed9a6a1686bf914fb74468df59385c ]
 
-Fix the problem by getting own journal head reference in
-jbd2_journal_dirty_metadata() (and also in jbd2_journal_set_triggers()
-which can possibly have the same issue).
-
-Reported-by: Zheng Liu <gnehzuil.liu@gmail.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/jbd2/transaction.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/sfc/siena.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/jbd2/transaction.c
-+++ b/fs/jbd2/transaction.c
-@@ -1047,9 +1047,12 @@ out:
- void jbd2_journal_set_triggers(struct buffer_head *bh,
- 			       struct jbd2_buffer_trigger_type *type)
+--- a/drivers/net/ethernet/sfc/siena.c
++++ b/drivers/net/ethernet/sfc/siena.c
+@@ -170,7 +170,7 @@ static const struct efx_nic_register_tes
+ 
+ static int siena_test_chip(struct efx_nic *efx, struct efx_self_tests *tests)
  {
--	struct journal_head *jh = bh2jh(bh);
-+	struct journal_head *jh = jbd2_journal_grab_journal_head(bh);
+-	enum reset_type reset_method = reset_method;
++	enum reset_type reset_method = RESET_TYPE_ALL;
+ 	int rc, rc2;
  
-+	if (WARN_ON(!jh))
-+		return;
- 	jh->b_triggers = type;
-+	jbd2_journal_put_journal_head(jh);
- }
- 
- void jbd2_buffer_frozen_trigger(struct journal_head *jh, void *mapped_data,
-@@ -1101,17 +1104,18 @@ int jbd2_journal_dirty_metadata(handle_t
- {
- 	transaction_t *transaction = handle->h_transaction;
- 	journal_t *journal = transaction->t_journal;
--	struct journal_head *jh = bh2jh(bh);
-+	struct journal_head *jh;
- 	int ret = 0;
- 
--	jbd_debug(5, "journal_head %p\n", jh);
--	JBUFFER_TRACE(jh, "entry");
- 	if (is_handle_aborted(handle))
- 		goto out;
--	if (!buffer_jbd(bh)) {
-+	jh = jbd2_journal_grab_journal_head(bh);
-+	if (!jh) {
- 		ret = -EUCLEAN;
- 		goto out;
- 	}
-+	jbd_debug(5, "journal_head %p\n", jh);
-+	JBUFFER_TRACE(jh, "entry");
- 
- 	jbd_lock_bh_state(bh);
- 
-@@ -1202,6 +1206,7 @@ int jbd2_journal_dirty_metadata(handle_t
- 	spin_unlock(&journal->j_list_lock);
- out_unlock_bh:
- 	jbd_unlock_bh_state(bh);
-+	jbd2_journal_put_journal_head(jh);
- out:
- 	JBUFFER_TRACE(jh, "exit");
- 	WARN_ON(ret);	/* All errors are bugs, so dump the stack */
+ 	efx_reset_down(efx, reset_method);
 
 
