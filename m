@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680Ab3CZXXh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:23:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52974 "EHLO
+	id S1756483Ab3CZXXf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:23:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52979 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072Ab3CZWwP (ORCPT
+	with ESMTP id S1756011Ab3CZWwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 18:52:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jesper Dangaard Brouer <jbrouer@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 14/72] inet: limit length of fragment queue hash table bucket lists
-Date: Tue, 26 Mar 2013 15:50:57 -0700
-Message-Id: <20130326224921.206950724@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 15/72] sfc: Do not attempt to flush queues if DMA is disabled
+Date: Tue, 26 Mar 2013 15:50:58 -0700
+Message-Id: <20130326224921.306382136@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -31,181 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Stuart Hodgson <smhodgson@solarflare.com>
 
-[ Upstream commit 5a3da1fe9561828d0ca7eca664b16ec2b9bf0055 ]
+[ Upstream commit 3dca9d2dc285faf1910d405b65df845cab061356 ]
 
-This patch introduces a constant limit of the fragment queue hash
-table bucket list lengths. Currently the limit 128 is choosen somewhat
-arbitrary and just ensures that we can fill up the fragment cache with
-empty packets up to the default ip_frag_high_thresh limits. It should
-just protect from list iteration eating considerable amounts of cpu.
+efx_nic_fatal_interrupt() disables DMA before scheduling a reset.
+After this, we need not and *cannot* flush queues.
 
-If we reach the maximum length in one hash bucket a warning is printed.
-This is implemented on the caller side of inet_frag_find to distinguish
-between the different users of inet_fragment.c.
-
-I dropped the out of memory warning in the ipv4 fragment lookup path,
-because we already get a warning by the slab allocator.
-
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jesper Dangaard Brouer <jbrouer@redhat.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/inet_frag.h                 |    9 +++++++++
- net/ipv4/inet_fragment.c                |   20 +++++++++++++++++++-
- net/ipv4/ip_fragment.c                  |   11 ++++-------
- net/ipv6/netfilter/nf_conntrack_reasm.c |   11 ++++++-----
- net/ipv6/reassembly.c                   |    8 ++++++--
- 5 files changed, 44 insertions(+), 15 deletions(-)
+ drivers/net/ethernet/sfc/efx.c |   33 +++++++++++++++++++--------------
+ 1 file changed, 19 insertions(+), 14 deletions(-)
 
---- a/include/net/inet_frag.h
-+++ b/include/net/inet_frag.h
-@@ -33,6 +33,13 @@ struct inet_frag_queue {
+--- a/drivers/net/ethernet/sfc/efx.c
++++ b/drivers/net/ethernet/sfc/efx.c
+@@ -656,25 +656,30 @@ static void efx_stop_datapath(struct efx
+ 	struct efx_channel *channel;
+ 	struct efx_tx_queue *tx_queue;
+ 	struct efx_rx_queue *rx_queue;
++	struct pci_dev *dev = efx->pci_dev;
+ 	int rc;
  
- #define INETFRAGS_HASHSZ		64
+ 	EFX_ASSERT_RESET_SERIALISED(efx);
+ 	BUG_ON(efx->port_enabled);
  
-+/* averaged:
-+ * max_depth = default ipfrag_high_thresh / INETFRAGS_HASHSZ /
-+ *	       rounded up (SKB_TRUELEN(0) + sizeof(struct ipq or
-+ *	       struct frag_queue))
-+ */
-+#define INETFRAGS_MAXDEPTH		128
+-	rc = efx_nic_flush_queues(efx);
+-	if (rc && EFX_WORKAROUND_7803(efx)) {
+-		/* Schedule a reset to recover from the flush failure. The
+-		 * descriptor caches reference memory we're about to free,
+-		 * but falcon_reconfigure_mac_wrapper() won't reconnect
+-		 * the MACs because of the pending reset. */
+-		netif_err(efx, drv, efx->net_dev,
+-			  "Resetting to recover from flush failure\n");
+-		efx_schedule_reset(efx, RESET_TYPE_ALL);
+-	} else if (rc) {
+-		netif_err(efx, drv, efx->net_dev, "failed to flush queues\n");
+-	} else {
+-		netif_dbg(efx, drv, efx->net_dev,
+-			  "successfully flushed all queues\n");
++	/* Only perform flush if dma is enabled */
++	if (dev->is_busmaster) {
++		rc = efx_nic_flush_queues(efx);
 +
- struct inet_frags {
- 	struct hlist_head	hash[INETFRAGS_HASHSZ];
- 	rwlock_t		lock;
-@@ -64,6 +71,8 @@ int inet_frag_evictor(struct netns_frags
- struct inet_frag_queue *inet_frag_find(struct netns_frags *nf,
- 		struct inet_frags *f, void *key, unsigned int hash)
- 	__releases(&f->lock);
-+void inet_frag_maybe_warn_overflow(struct inet_frag_queue *q,
-+				   const char *prefix);
- 
- static inline void inet_frag_put(struct inet_frag_queue *q, struct inet_frags *f)
- {
---- a/net/ipv4/inet_fragment.c
-+++ b/net/ipv4/inet_fragment.c
-@@ -21,6 +21,7 @@
- #include <linux/rtnetlink.h>
- #include <linux/slab.h>
- 
-+#include <net/sock.h>
- #include <net/inet_frag.h>
- 
- static void inet_frag_secret_rebuild(unsigned long dummy)
-@@ -271,6 +272,7 @@ struct inet_frag_queue *inet_frag_find(s
- {
- 	struct inet_frag_queue *q;
- 	struct hlist_node *n;
-+	int depth = 0;
- 
- 	hlist_for_each_entry(q, n, &f->hash[hash], list) {
- 		if (q->net == nf && f->match(q, key)) {
-@@ -278,9 +280,25 @@ struct inet_frag_queue *inet_frag_find(s
- 			read_unlock(&f->lock);
- 			return q;
- 		}
-+		depth++;
++		if (rc && EFX_WORKAROUND_7803(efx)) {
++			/* Schedule a reset to recover from the flush failure. The
++			 * descriptor caches reference memory we're about to free,
++			 * but falcon_reconfigure_mac_wrapper() won't reconnect
++			 * the MACs because of the pending reset. */
++			netif_err(efx, drv, efx->net_dev,
++				  "Resetting to recover from flush failure\n");
++			efx_schedule_reset(efx, RESET_TYPE_ALL);
++		} else if (rc) {
++			netif_err(efx, drv, efx->net_dev, "failed to flush queues\n");
++		} else {
++			netif_dbg(efx, drv, efx->net_dev,
++				  "successfully flushed all queues\n");
++		}
  	}
- 	read_unlock(&f->lock);
  
--	return inet_frag_create(nf, f, key);
-+	if (depth <= INETFRAGS_MAXDEPTH)
-+		return inet_frag_create(nf, f, key);
-+	else
-+		return ERR_PTR(-ENOBUFS);
- }
- EXPORT_SYMBOL(inet_frag_find);
-+
-+void inet_frag_maybe_warn_overflow(struct inet_frag_queue *q,
-+				   const char *prefix)
-+{
-+	static const char msg[] = "inet_frag_find: Fragment hash bucket"
-+		" list length grew over limit " __stringify(INETFRAGS_MAXDEPTH)
-+		". Dropping fragment.\n";
-+
-+	if (PTR_ERR(q) == -ENOBUFS)
-+		LIMIT_NETDEBUG(KERN_WARNING "%s%s", prefix, msg);
-+}
-+EXPORT_SYMBOL(inet_frag_maybe_warn_overflow);
---- a/net/ipv4/ip_fragment.c
-+++ b/net/ipv4/ip_fragment.c
-@@ -295,14 +295,11 @@ static inline struct ipq *ip_find(struct
- 	hash = ipqhashfn(iph->id, iph->saddr, iph->daddr, iph->protocol);
- 
- 	q = inet_frag_find(&net->ipv4.frags, &ip4_frags, &arg, hash);
--	if (q == NULL)
--		goto out_nomem;
--
-+	if (IS_ERR_OR_NULL(q)) {
-+		inet_frag_maybe_warn_overflow(q, pr_fmt());
-+		return NULL;
-+	}
- 	return container_of(q, struct ipq, q);
--
--out_nomem:
--	LIMIT_NETDEBUG(KERN_ERR pr_fmt("ip_frag_create: no memory left !\n"));
--	return NULL;
- }
- 
- /* Is the fragment too far ahead to be part of ipq? */
---- a/net/ipv6/netfilter/nf_conntrack_reasm.c
-+++ b/net/ipv6/netfilter/nf_conntrack_reasm.c
-@@ -14,6 +14,8 @@
-  * 2 of the License, or (at your option) any later version.
-  */
- 
-+#define pr_fmt(fmt) "IPv6-nf: " fmt
-+
- #include <linux/errno.h>
- #include <linux/types.h>
- #include <linux/string.h>
-@@ -176,13 +178,12 @@ fq_find(__be32 id, u32 user, struct in6_
- 
- 	q = inet_frag_find(&nf_init_frags, &nf_frags, &arg, hash);
- 	local_bh_enable();
--	if (q == NULL)
--		goto oom;
-+	if (IS_ERR_OR_NULL(q)) {
-+		inet_frag_maybe_warn_overflow(q, pr_fmt());
-+		return NULL;
-+	}
- 
- 	return container_of(q, struct nf_ct_frag6_queue, q);
--
--oom:
--	return NULL;
- }
- 
- 
---- a/net/ipv6/reassembly.c
-+++ b/net/ipv6/reassembly.c
-@@ -26,6 +26,9 @@
-  *	YOSHIFUJI,H. @USAGI	Always remove fragment header to
-  *				calculate ICV correctly.
-  */
-+
-+#define pr_fmt(fmt) "IPv6: " fmt
-+
- #include <linux/errno.h>
- #include <linux/types.h>
- #include <linux/string.h>
-@@ -240,9 +243,10 @@ fq_find(struct net *net, __be32 id, cons
- 	hash = inet6_hash_frag(id, src, dst, ip6_frags.rnd);
- 
- 	q = inet_frag_find(&net->ipv6.frags, &ip6_frags, &arg, hash);
--	if (q == NULL)
-+	if (IS_ERR_OR_NULL(q)) {
-+		inet_frag_maybe_warn_overflow(q, pr_fmt());
- 		return NULL;
--
-+	}
- 	return container_of(q, struct frag_queue, q);
- }
- 
+ 	efx_for_each_channel(channel, efx) {
 
 
