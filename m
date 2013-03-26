@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab3CZVd2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 17:33:28 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:36999 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab3CZVdZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 17:33:25 -0400
-Message-ID: <51521421.9020906@gmail.com>
-Date: Tue, 26 Mar 2013 16:33:21 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1752061Ab3CZVfe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 17:35:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45993 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751172Ab3CZVfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 17:35:33 -0400
+Date: Tue, 26 Mar 2013 22:35:32 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] scripts/tags.sh: Add magic for OFFSET and DEFINE
+Message-ID: <20130326213532.GB22359@pobox.suse.cz>
+References: <1810321364036300@web2f.yandex.ru>
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        linux-samsung-soc@vger.kernel.org,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        "'Andrew Murray'" <andrew.murray@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/6] pci: Add PCIe driver for Samsung Exynos
-References: <00c001ce277b$92b26ab0$b8174010$%han@samsung.com> <00c301ce277b$f2790080$d76b0180$%han@samsung.com>
-In-Reply-To: <00c301ce277b$f2790080$d76b0180$%han@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1810321364036300@web2f.yandex.ru>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2013 11:07 PM, Jingoo Han wrote:
-> Exynos5440 has a PCIe controller which can be used as Root Complex.
-> This driver supports a PCIe controller as Root Complex mode.
+On Sat, Mar 23, 2013 at 02:58:20PM +0400, Kirill Tkhai wrote:
+> Add rules for definitions which is generally used in asm-offsets files.
 > 
-> Signed-off-by: Surendranath Gurivireddy Balla <suren.reddy@samsung.com>
-> Signed-off-by: Siva Reddy Kallam <siva.kallam@samsung.com>
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
+> CC: Michal Marek <mmarek@suse.cz>
+> CC: Andrew Morton <akpm@linux-foundation.org>
 > ---
->  .../devicetree/bindings/pci/exynos-pcie.txt        |   56 +
->  drivers/pci/host/Kconfig                           |    5 +
->  drivers/pci/host/Makefile                          |    1 +
->  drivers/pci/host/pci-exynos.c                      | 1139 ++++++++++++++++++++
->  4 files changed, 1201 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/pci/exynos-pcie.txt
->  create mode 100644 drivers/pci/host/Makefile
->  create mode 100644 drivers/pci/host/pci-exynos.c
+>  scripts/tags.sh |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> diff --git a/scripts/tags.sh b/scripts/tags.sh
+> index 26a87e6..74f02e4 100755
+> --- a/scripts/tags.sh
+> +++ b/scripts/tags.sh
+> @@ -199,7 +199,9 @@ exuberant()
+>  	--regex-c='/DEFINE_PER_CPU_SHARED_ALIGNED\(([^,]*,\s*)(\w*).*\)/\2/v/' \
+>  	--regex-c='/DECLARE_WAIT_QUEUE_HEAD\((\w*)/\1/v/'		\
+>  	--regex-c='/DECLARE_(TASKLET|WORK|DELAYED_WORK)\((\w*)/\2/v/'	\
+> -	--regex-c='/DEFINE_PCI_DEVICE_TABLE\((\w*)/\1/v/'
+> +	--regex-c='/DEFINE_PCI_DEVICE_TABLE\((\w*)/\1/v/'		\
+> +	--regex-c='/(^\s)OFFSET\((\w*)/\2/v/'				\
+> +	--regex-c='/(^\s)DEFINE\((\w*)/\2/v/'
 
-[...]
+The macro definitions in the asm-offsets.h file are ammended with a
+comment explaining what the value actually means. So you see both the
+value and the semantic of the macro:
 
-> +
-> +/* synopsis specific PCIE configuration registers*/
+#define TI_flags 16 /* offsetof(struct thread_info, flags)      # */
 
-If this is a standard IP block, then the driver naming should reflect
-that. I suspect there are several others with the same IP block.
 
-Rob
+By jumping to the asm-offset.c file instead, you would get only a subset
+of that information.
+
+OFFSET(TI_flags, thread_info, flags);
+
+Unless I'm missing something, I don't think that this patch improves
+much.
+
+Michal
