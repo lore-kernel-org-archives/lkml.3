@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387Ab3CZXYz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:24:55 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:34773 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755981Ab3CZXYx (ORCPT
+	id S1755953Ab3CZWwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:52:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52895 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939Ab3CZWwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:24:53 -0400
-Date: Tue, 26 Mar 2013 16:24:50 -0700
+	Tue, 26 Mar 2013 18:52:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: devel@driverdev.osuosl.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: zsmalloc: Fix link error on ARM
-Message-ID: <20130326232450.GA30799@kroah.com>
-References: <1364337232-3513-1-git-send-email-joro@8bytes.org>
- <20130326224536.GA29952@kroah.com>
- <20130326230359.GD30540@8bytes.org>
- <20130326230910.GA31021@kroah.com>
- <20130326231941.GE30540@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130326231941.GE30540@8bytes.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Stephen Thirlwall <sdt@dr.com>
+Subject: [ 01/72] Revert "USB: EHCI: dont check DMA values in QH overlays"
+Date: Tue, 26 Mar 2013 15:50:44 -0700
+Message-Id: <20130326224919.825569008@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
+References: <20130326224919.675227837@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 12:19:41AM +0100, Joerg Roedel wrote:
-> On Tue, Mar 26, 2013 at 04:09:10PM -0700, Greg Kroah-Hartman wrote:
-> > On Wed, Mar 27, 2013 at 12:03:59AM +0100, Joerg Roedel wrote:
-> 
-> > Then should I just mark the driver as broken on ARM?
-> 
-> Well, at least ARM on SMP, for !SMP the missing function is defined and
-> will be inlined.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Then some Kconfig dependancies could be tweaked to try to make this work
-properly, not building the driver where it will be broken.
+------------------
 
-> > Any reason for not including the driver authors on the Cc: for this
-> > patch?
-> 
-> I wasn't sure who the driver author is in the long list of persons from
-> the get_maintainer script. So it was more or less lazyness :)
-> 
-> Should I try to get that patch through the driver authors instead of
-> you?
+This reverts commit 0319f9909ce68a7516dfc8d53400e07168d281a8, which is commit
+feca7746d5d9e84b105a613b7f3b6ad00d327372 upstream.
 
-At least cc: them to have them weigh in on the issue, I know they are
-trying to do something in this area, but I didn't think it was the same
-as your patch.
+It shouldn't have gone into this stable release.
 
-thanks,
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: Stephen Thirlwall <sdt@dr.com>
 
-greg k-h
+---
+ drivers/usb/host/ehci-q.c |   18 +++++-------------
+ 1 file changed, 5 insertions(+), 13 deletions(-)
+
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -135,7 +135,7 @@ qh_refresh (struct ehci_hcd *ehci, struc
+ 		 * qtd is updated in qh_completions(). Update the QH
+ 		 * overlay here.
+ 		 */
+-		if (qh->hw->hw_token & ACTIVE_BIT(ehci)) {
++		if (cpu_to_hc32(ehci, qtd->qtd_dma) == qh->hw->hw_current) {
+ 			qh->hw->hw_qtd_next = qtd->hw_next;
+ 			qtd = NULL;
+ 		}
+@@ -459,19 +459,11 @@ qh_completions (struct ehci_hcd *ehci, s
+ 			else if (last_status == -EINPROGRESS && !urb->unlinked)
+ 				continue;
+ 
+-			/*
+-			 * If this was the active qtd when the qh was unlinked
+-			 * and the overlay's token is active, then the overlay
+-			 * hasn't been written back to the qtd yet so use its
+-			 * token instead of the qtd's.  After the qtd is
+-			 * processed and removed, the overlay won't be valid
+-			 * any more.
+-			 */
+-			if (state == QH_STATE_IDLE &&
+-					qh->qtd_list.next == &qtd->qtd_list &&
+-					(hw->hw_token & ACTIVE_BIT(ehci))) {
++			/* qh unlinked; token in overlay may be most current */
++			if (state == QH_STATE_IDLE
++					&& cpu_to_hc32(ehci, qtd->qtd_dma)
++						== hw->hw_current) {
+ 				token = hc32_to_cpu(ehci, hw->hw_token);
+-				hw->hw_token &= ~ACTIVE_BIT(ehci);
+ 
+ 				/* An unlink may leave an incomplete
+ 				 * async transaction in the TT buffer.
+
+
