@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756432Ab3CZX3N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:29:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52658 "EHLO
+	id S1756555Ab3CZX3f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:29:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52646 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754230Ab3CZWo0 (ORCPT
+	with ESMTP id S1755117Ab3CZWoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:26 -0400
+	Tue, 26 Mar 2013 18:44:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 87/98] usb: gadget: ffs: fix enable multiple instances
-Date: Tue, 26 Mar 2013 15:43:16 -0700
-Message-Id: <20130326224251.495059596@linuxfoundation.org>
+        Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 61/98] drm/radeon: add support for Richland APUs
+Date: Tue, 26 Mar 2013 15:42:50 -0700
+Message-Id: <20130326224248.847750922@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -28,47 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 3416905ba058e43112ad7b1b4859797f027f5a07 upstream.
+commit e4d170633fde379f39a90f8a5e7eb619b5d1144d upstream.
 
-This patch fixes an "off-by-one" bug found in
-581791f (FunctionFS: enable multiple functions).
+Richland APUs are a new version of the Trinity APUs
+with performance and power management improvements.
 
-During gfs_bind/gfs_unbind the functionfs_bind/functionfs_unbind should be
-called for every functionfs instance. With the "i" pre-decremented they
-were not called for the zeroth instance.
-
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-[ balbi@ti.com : added offending commit's subject ]
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Reviewed-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/g_ffs.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/ni.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/gadget/g_ffs.c
-+++ b/drivers/usb/gadget/g_ffs.c
-@@ -357,7 +357,7 @@ static int gfs_bind(struct usb_composite
- 		goto error;
- 	gfs_dev_desc.iProduct = gfs_strings[USB_GADGET_PRODUCT_IDX].id;
- 
--	for (i = func_num; --i; ) {
-+	for (i = func_num; i--; ) {
- 		ret = functionfs_bind(ffs_tab[i].ffs_data, cdev);
- 		if (unlikely(ret < 0)) {
- 			while (++i < func_num)
-@@ -413,7 +413,7 @@ static int gfs_unbind(struct usb_composi
- 		gether_cleanup();
- 	gfs_ether_setup = false;
- 
--	for (i = func_num; --i; )
-+	for (i = func_num; i--; )
- 		if (ffs_tab[i].ffs_data)
- 			functionfs_unbind(ffs_tab[i].ffs_data);
- 
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -466,13 +466,19 @@ static void cayman_gpu_init(struct radeo
+ 		    (rdev->pdev->device == 0x9907) ||
+ 		    (rdev->pdev->device == 0x9908) ||
+ 		    (rdev->pdev->device == 0x9909) ||
++		    (rdev->pdev->device == 0x990B) ||
++		    (rdev->pdev->device == 0x990C) ||
++		    (rdev->pdev->device == 0x990F) ||
+ 		    (rdev->pdev->device == 0x9910) ||
+-		    (rdev->pdev->device == 0x9917)) {
++		    (rdev->pdev->device == 0x9917) ||
++		    (rdev->pdev->device == 0x9999)) {
+ 			rdev->config.cayman.max_simds_per_se = 6;
+ 			rdev->config.cayman.max_backends_per_se = 2;
+ 		} else if ((rdev->pdev->device == 0x9903) ||
+ 			   (rdev->pdev->device == 0x9904) ||
+ 			   (rdev->pdev->device == 0x990A) ||
++			   (rdev->pdev->device == 0x990D) ||
++			   (rdev->pdev->device == 0x990E) ||
+ 			   (rdev->pdev->device == 0x9913) ||
+ 			   (rdev->pdev->device == 0x9918)) {
+ 			rdev->config.cayman.max_simds_per_se = 4;
+@@ -481,6 +487,9 @@ static void cayman_gpu_init(struct radeo
+ 			   (rdev->pdev->device == 0x9990) ||
+ 			   (rdev->pdev->device == 0x9991) ||
+ 			   (rdev->pdev->device == 0x9994) ||
++			   (rdev->pdev->device == 0x9995) ||
++			   (rdev->pdev->device == 0x9996) ||
++			   (rdev->pdev->device == 0x999A) ||
+ 			   (rdev->pdev->device == 0x99A0)) {
+ 			rdev->config.cayman.max_simds_per_se = 3;
+ 			rdev->config.cayman.max_backends_per_se = 1;
 
 
