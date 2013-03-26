@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964952Ab3CZPWT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:22:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53653 "EHLO
+	id S964947Ab3CZQME (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:12:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53668 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964913Ab3CZPWL (ORCPT
+	with ESMTP id S964929Ab3CZPWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:11 -0400
+	Tue, 26 Mar 2013 11:22:15 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Neal Cardwell <ncardwell@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Paul Moore <pmoore@redhat.com>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 040/150] tcp: fix double-counted receiver RTT when leaving receiver fast path
-Date: Tue, 26 Mar 2013 15:18:59 +0000
-Message-Id: <1364311249-14454-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 043/150] netlabel: correctly list all the static label mappings
+Date: Tue, 26 Mar 2013 15:19:02 +0000
+Message-Id: <1364311249-14454-44-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -28,46 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Paul Moore <pmoore@redhat.com>
 
-commit aab2b4bf224ef8358d262f95b568b8ad0cecf0a0 upstream.
+commit 0c1233aba1e948c37f6dc7620cb7c253fcd71ce9 upstream.
 
-We should not update ts_recent and call tcp_rcv_rtt_measure_ts() both
-before and after going to step5. That wastes CPU and double-counts the
-receiver-side RTT sample.
+When we have a large number of static label mappings that spill across
+the netlink message boundary we fail to properly save our state in the
+netlink_callback struct which causes us to repeat the same listings.
+This patch fixes this problem by saving the state correctly between
+calls to the NetLabel static label netlink "dumpit" routines.
 
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/tcp_input.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/netlabel/netlabel_unlabeled.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 3b14d81..410b7c4 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -5683,6 +5683,9 @@ int tcp_rcv_established(struct sock *sk, struct sk_buff *skb,
- 				if (tcp_checksum_complete_user(sk, skb))
- 					goto csum_error;
+diff --git a/net/netlabel/netlabel_unlabeled.c b/net/netlabel/netlabel_unlabeled.c
+index e7ff694..8a0df47 100644
+--- a/net/netlabel/netlabel_unlabeled.c
++++ b/net/netlabel/netlabel_unlabeled.c
+@@ -1250,10 +1250,10 @@ static int netlbl_unlabel_staticlist(struct sk_buff *skb,
  
-+				if ((int)skb->truesize > sk->sk_forward_alloc)
-+					goto step5;
-+
- 				/* Predicted packet is in window by definition.
- 				 * seq == rcv_nxt and rcv_wup <= rcv_nxt.
- 				 * Hence, check seq<=rcv_wup reduces to:
-@@ -5694,9 +5697,6 @@ int tcp_rcv_established(struct sock *sk, struct sk_buff *skb,
+ unlabel_staticlist_return:
+ 	rcu_read_unlock();
+-	cb->args[0] = skip_bkt;
+-	cb->args[1] = skip_chain;
+-	cb->args[2] = skip_addr4;
+-	cb->args[3] = skip_addr6;
++	cb->args[0] = iter_bkt;
++	cb->args[1] = iter_chain;
++	cb->args[2] = iter_addr4;
++	cb->args[3] = iter_addr6;
+ 	return skb->len;
+ }
  
- 				tcp_rcv_rtt_measure_ts(sk, skb);
+@@ -1320,8 +1320,8 @@ static int netlbl_unlabel_staticlistdef(struct sk_buff *skb,
  
--				if ((int)skb->truesize > sk->sk_forward_alloc)
--					goto step5;
--
- 				NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPHPHITS);
+ unlabel_staticlistdef_return:
+ 	rcu_read_unlock();
+-	cb->args[0] = skip_addr4;
+-	cb->args[1] = skip_addr6;
++	cb->args[0] = iter_addr4;
++	cb->args[1] = iter_addr6;
+ 	return skb->len;
+ }
  
- 				/* Bulk data transfer: receiver */
 -- 
 1.8.1.2
 
