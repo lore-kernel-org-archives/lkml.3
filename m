@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965202Ab3CZPqw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:46:52 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63134 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965146Ab3CZPXB (ORCPT
+	id S965218Ab3CZPrG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:47:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53899 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965141Ab3CZPXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:01 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 26 Mar 2013 08:23:10 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Hongbo Zhang <hongbo.zhang@linaro.org>
-Cc: khali@linux-fr.org, lm-sensors@lm-sensors.org, cbou@mail.ru,
-        dwmw2@infradead.org, linaro-kernel@lists.linaro.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@linaro.org,
-        lee.jones@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 5/5] hwmon: add ST-Ericsson ABX500 hwmon driver
-Message-ID: <20130326152310.GA9153@roeck-us.net>
-References: <1364281619-13208-1-git-send-email-hongbo.zhang@linaro.org>
- <1364281619-13208-6-git-send-email-hongbo.zhang@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364281619-13208-6-git-send-email-hongbo.zhang@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 26 Mar 2013 11:23:00 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Andy Grover <agrover@redhat.com>, Nicholas Bellinger <nab@linux-iscsi.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 082/150] target/iscsi: Fix mutual CHAP auth on big-endian arches
+Date: Tue, 26 Mar 2013 15:19:41 +0000
+Message-Id: <1364311249-14454-83-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 03:06:59PM +0800, Hongbo Zhang wrote:
-> Each of ST-Ericsson X500 chip set series consists of both ABX500 and DBX500
-> chips. This is ABX500 hwmon driver, where the abx500.c is a common layer for
-> all ABX500s, and the ab8500.c is specific for AB8500 chip. Under this designed
-> structure, other chip specific files can be added simply using the same common
-> layer abx500.c.
-> 
-> Signed-off-by: Hongbo Zhang <hongbo.zhang@linaro.org>
+3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
 
-Looks good except ...
+------------------
 
-> diff --git a/drivers/power/ab8500_bmdata.c b/drivers/power/ab8500_bmdata.c
-> index d9f1f25..05a1077 100644
-> --- a/drivers/power/ab8500_bmdata.c
-> +++ b/drivers/power/ab8500_bmdata.c
-> @@ -28,8 +28,10 @@ const struct abx500_res_to_temp ab8500_temp_tbl_a_thermistor[] = {
->  	{60, 13437},
->  	{65, 12500},
->  };
-> +EXPORT_SYMBOL(ab8500_temp_tbl_a_thermistor);
->  
-Those exports should be in the previous patch where you start exporting the symbols,
-not in this patch.
+From: Andy Grover <agrover@redhat.com>
 
-Thanks,
-Guenter
+commit 7ac9ad11b2a5cf77a92b58ee6b672ad2fa155eb1 upstream.
+
+See https://bugzilla.redhat.com/show_bug.cgi?id=916290
+
+Used a temp var since we take its address in sg_init_one.
+
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/target/iscsi/iscsi_target_auth.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/target/iscsi/iscsi_target_auth.c b/drivers/target/iscsi/iscsi_target_auth.c
+index db0cf7c..a0fc7b9 100644
+--- a/drivers/target/iscsi/iscsi_target_auth.c
++++ b/drivers/target/iscsi/iscsi_target_auth.c
+@@ -166,6 +166,7 @@ static int chap_server_compute_md5(
+ {
+ 	char *endptr;
+ 	unsigned long id;
++	unsigned char id_as_uchar;
+ 	unsigned char digest[MD5_SIGNATURE_SIZE];
+ 	unsigned char type, response[MD5_SIGNATURE_SIZE * 2 + 2];
+ 	unsigned char identifier[10], *challenge = NULL;
+@@ -355,7 +356,9 @@ static int chap_server_compute_md5(
+ 		goto out;
+ 	}
+ 
+-	sg_init_one(&sg, &id, 1);
++	/* To handle both endiannesses */
++	id_as_uchar = id;
++	sg_init_one(&sg, &id_as_uchar, 1);
+ 	ret = crypto_hash_update(&desc, &sg, 1);
+ 	if (ret < 0) {
+ 		pr_err("crypto_hash_update() failed for id\n");
+-- 
+1.8.1.2
+
