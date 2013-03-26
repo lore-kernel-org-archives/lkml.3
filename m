@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934115Ab3CZQNI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:13:08 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41248 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933979Ab3CZQND (ORCPT
+	id S934993Ab3CZQMX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:12:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53691 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964861Ab3CZPWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:13:03 -0400
-X-Sasl-enc: BsFyBRKFw4tR2K6bhmOo9hraS02o/GFVlbUAO7x7NmOZ 1364314380
-Message-ID: <5151C90A.5010108@ladisch.de>
-Date: Tue, 26 Mar 2013 17:12:58 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] firewire: Enable physical DMA above 4GB
-References: <1364307734-27709-1-git-send-email-peter@hurleysoftware.com>
-In-Reply-To: <1364307734-27709-1-git-send-email-peter@hurleysoftware.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Mar 2013 11:22:19 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mathias Krause <minipli@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 047/150] rtnl: fix info leak on RTM_GETLINK request for VF devices
+Date: Tue, 26 Mar 2013 15:19:06 +0000
+Message-Id: <1364311249-14454-48-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Hurley wrote:
-> Quadlet reads to memory above 4GB is painfully slow when serviced
-> by the AR DMA context. In addition, the CPU(s) may be locked-up,
-> preventing any transfer at all.
+3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
 
-Using physical DMA prevents the use of that address space for software
-address handlers, so you have adjust the low_memory_region start in
-core-transaction.c.
+------------------
 
-> Write the PhyUpperBound register with the end-of-memory value. If
-> end-of-memory is beyond the OHCI limit of 0x0000ffff00000000,
-> clamp to that value.
+From: Mathias Krause <minipli@googlemail.com>
 
-You will have to lower this limit; there are protcols that assume that
-addresses like 0xecc000000000 are available for software.
+commit 84d73cd3fb142bf1298a8c13fd4ca50fd2432372 upstream.
 
+Initialize the mac address buffer with 0 as the driver specific function
+will probably not fill the whole buffer. In fact, all in-kernel drivers
+fill only ETH_ALEN of the MAX_ADDR_LEN bytes, i.e. 6 of the 32 possible
+bytes. Therefore we currently leak 26 bytes of stack memory to userland
+via the netlink interface.
 
-Regards,
-Clemens
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/core/rtnetlink.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 6c50ac0..8f37bec 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -981,6 +981,7 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
+ 			 * report anything.
+ 			 */
+ 			ivi.spoofchk = -1;
++			memset(ivi.mac, 0, sizeof(ivi.mac));
+ 			if (dev->netdev_ops->ndo_get_vf_config(dev, i, &ivi))
+ 				break;
+ 			vf_mac.vf =
+-- 
+1.8.1.2
+
