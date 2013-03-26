@@ -1,64 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933586Ab3CZIPe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 04:15:34 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:44761 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147Ab3CZIPc (ORCPT
+	id S933944Ab3CZIRN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 04:17:13 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:33931 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758719Ab3CZIRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 04:15:32 -0400
-Date: Tue, 26 Mar 2013 09:15:27 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] nohz: Full dynticks base interface
-Message-ID: <20130326081527.GA27128@gmail.com>
-References: <1363879460-21595-1-git-send-email-fweisbec@gmail.com>
- <20130324081701.GA13328@gmail.com>
- <CAFTL4hx4FLaRR6i9ap9UrCZY4ikhVtLfUqWSsjTpsO3dvShUjQ@mail.gmail.com>
+	Tue, 26 Mar 2013 04:17:10 -0400
+Date: Tue, 26 Mar 2013 08:17:04 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: devicetree-discuss@lists.ozlabs.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com
+Subject: Re: [PATCH 2/3] mfd: db8500-prcmu: Fetch the PRCMU TCDM base address
+ from Device Tree
+Message-ID: <20130326081704.GB11734@gmail.com>
+References: <1364223758-17621-1-git-send-email-lee.jones@linaro.org>
+ <1364223758-17621-2-git-send-email-lee.jones@linaro.org>
+ <201303251540.51104.arnd@arndb.de>
+ <20130325164600.GA11734@gmail.com>
+ <CACRpkdbn4WARSp7_MUpCZTghTrsPYvsa9GEUC31T7nP_=9oZag@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAFTL4hx4FLaRR6i9ap9UrCZY4ikhVtLfUqWSsjTpsO3dvShUjQ@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdbn4WARSp7_MUpCZTghTrsPYvsa9GEUC31T7nP_=9oZag@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 25 Mar 2013, Linus Walleij wrote:
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> > That way I will be able to test it automatically via randconfig and 
-> > such.
+> On Mon, Mar 25, 2013 at 5:46 PM, Lee Jones <lee.jones@linaro.org> wrote:
 > 
-> Sure, I'm adding such an option.
+> >> >         res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+> >> >                                            "prcmu-tcpm");
+> >> >         if (!res) {
+> >> > -               dev_err(&pdev->dev,
+> >> > -                       "Error: no prcmu tcpm memory region provided\n");
+> >> > -               return;
+> >> > -       }
+> >> > -       tcpm_base = ioremap(res->start, resource_size(res));
+> >> > +               if (np) {
+> >> > +                       tcpm_np = of_find_node_by_name(np->parent,
+> >> > +                                                      "prcmu-tcpm-per4");
+> >> > +                       if (!tcpm_np) {
+> >> > +                               dev_err(&pdev->dev,
+> >> > +                                       "no prcmu tcpm mem region provided\n");
+> >> > +                               return;
+> >> > +                       }
+> >> > +                       tcpm_base = of_iomap(tcpm_np, 0);
+> >> > +               }
+> >> > +       } else
+> >> > +               tcpm_base = ioremap(res->start, resource_size(res));
+> >> > +
+> >>
+> >> Why don't you just add these extra registers to the prcmu node itself like
+> >>
+> >> diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
+> >> index 9de9309..6ee6c31 100644
+> >> --- a/arch/arm/boot/dts/dbx5x0.dtsi
+> >> +++ b/arch/arm/boot/dts/dbx5x0.dtsi
+> >> @@ -191,8 +191,8 @@
+> >>
+> >>               prcmu: prcmu@80157000 {
+> >>                       compatible = "stericsson,db8500-prcmu";
+> >> -                     reg = <0x80157000 0x1000>;
+> >> -                     reg-names = "prcmu";
+> >> +                     reg = <0x80157000 0x1000>, <0x801b0000 0x1000>, <0x801b8000 0x1000>;
+> >> +                     reg-names = "prcmu", "prcmu-tcpm", "prcmu-tcdm-per4";
+> >>                       interrupts = <0 47 0x4>;
+> >>                       #address-cells = <1>;
+> >>                       #size-cells = <1>;
+> >>
+> >>
+> >> and document those in the prcmu binding?
+> >>
+> >> That would keep the code simpler and the same for both cases.
+> >
+> > I'm not sure you can. These addresses differ from platform to
+> > platform, so I'd need to provide the base PRCMU address in
+> > dbx5x0.dtsi, then the other two in the dts files. Can you do that?
 > 
-> > My next question/request after that would be: could we make sure that 
-> > enabling this option does not break any applications or kernel 
-> > functionality, ASAP? Once that is offered, it becomes pushable to 
-> > v3.10 I think.
+> Better ask on devicetree-discuss.
 > 
-> So that's already the case. I'm careful that, as we iterate, the changes 
-> aren't supposed to break something in the middle. the final code that 
-> eventually shuts the tick down should be the last one in the series: 
-> once we know it is safe to do so.
+> What it reflects are differences between SoC:s, so I think the
+> right solution is to split it in a three-layer cake:
+> 
+> dbx5x0.dtsi -> included by
+> db8500.dtsi -> included by
+> snowball/hrefv60plus.dts
+> 
+> dbx5x0.dtsi -> included by
+> dbx540.dtsi -> included by
+> ccu9540/ccu8540.dts
+> 
+> Here you may insert the reg property into the node at the
+> db8500.dtsi or dbx540.dtsi layer.
 
-I mean, with the .config (or boot) option enabled, with tip:timers/nohz 
-as-is, will everything work? We cannot push a feature to Linus that 
-doesn't work reliably when enabled ...
+It's easy done, if that's the right way.
 
-Thanks,
+> If you prefer I can cook a patch...
 
-	Ingo
+... and I'm fine to do it.
+
+[5 mins later]
+
+Hmm... it appears that in STE's kernel, the same address is used for
+all SoCs: 
+
+  #define U8500_PRCMU_TCDM_BASE    (U8500_PER4_BASE + 0x68000)
+
+However, in Mainline there is another definition:
+
+  #define U9540_PRCMU_TCDM_BASE    (U8500_PER4_BASE + 0x6A000)
+
+... which doesn't seem to be in use anywhere - even for the u9540.
+
+What's the deal big-man?
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
