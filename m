@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756993Ab3CZXDZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:03:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53493 "EHLO
+	id S1756909Ab3CZXCV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:02:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53435 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754953Ab3CZXCW (ORCPT
+	with ESMTP id S1754953Ab3CZXCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:02:22 -0400
+	Tue, 26 Mar 2013 19:02:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 48/49] rt2x00: error in configurations with mesh support disabled
-Date: Tue, 26 Mar 2013 16:01:45 -0700
-Message-Id: <20130326225844.569281506@linuxfoundation.org>
+        Mark Rutland <mark.rutland@arm.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [ 35/49] clockevents: Dont allow dummy broadcast timers
+Date: Tue, 26 Mar 2013 16:01:32 -0700
+Message-Id: <20130326225843.197731051@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -29,39 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Mark Rutland <mark.rutland@arm.com>
 
-commit 6ef9e2f6d12ce9e2120916804d2ddd46b954a70b upstream.
+commit a7dc19b8652c862d5b7c4d2339bd3c428bd29c4a upstream.
 
-If CONFIG_MAC80211_MESH is not set, cfg80211 will now allow advertising
-interface combinations with NL80211_IFTYPE_MESH_POINT present.
-Add appropriate ifdefs to avoid running into errors.
+Currently tick_check_broadcast_device doesn't reject clock_event_devices
+with CLOCK_EVT_FEAT_DUMMY, and may select them in preference to real
+hardware if they have a higher rating value. In this situation, the
+dummy timer is responsible for broadcasting to itself, and the core
+clockevents code may attempt to call non-existent callbacks for
+programming the dummy, eventually leading to a panic.
 
-[Backported for 3.8-stable. Removed code of simultaneous AP and mesh
-mode added in 4a5fc6d 3.9-rc1.]
+This patch makes tick_check_broadcast_device always reject dummy timers,
+preventing this problem.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
-Reviewed-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00dev.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/time/tick-broadcast.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -1113,7 +1113,9 @@ int rt2x00lib_probe_dev(struct rt2x00_de
- 		rt2x00dev->hw->wiphy->interface_modes |=
- 		    BIT(NL80211_IFTYPE_ADHOC) |
- 		    BIT(NL80211_IFTYPE_AP) |
-+#ifdef CONFIG_MAC80211_MESH
- 		    BIT(NL80211_IFTYPE_MESH_POINT) |
-+#endif
- 		    BIT(NL80211_IFTYPE_WDS);
- 
- 	/*
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -66,7 +66,8 @@ static void tick_broadcast_start_periodi
+  */
+ int tick_check_broadcast_device(struct clock_event_device *dev)
+ {
+-	if ((tick_broadcast_device.evtdev &&
++	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
++	    (tick_broadcast_device.evtdev &&
+ 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
+ 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
+ 		return 0;
 
 
