@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab3CZXGP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:06:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53462 "EHLO
+	id S1756559Ab3CZXGf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:06:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53453 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756871Ab3CZXCR (ORCPT
+	with ESMTP id S1756869Ab3CZXCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:02:17 -0400
+	Tue, 26 Mar 2013 19:02:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mathias Krause <minipli@googlemail.com>, Jan Kara <jack@suse.cz>,
         Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 45/49] udf: avoid info leak on export
-Date: Tue, 26 Mar 2013 16:01:42 -0700
-Message-Id: <20130326225844.248741017@linuxfoundation.org>
+Subject: [ 44/49] isofs: avoid info leak on export
+Date: Tue, 26 Mar 2013 16:01:41 -0700
+Message-Id: <20130326225844.135399972@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -29,9 +29,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-commit 0143fc5e9f6f5aad4764801015bc8d4b4a278200 upstream.
+commit fe685aabf7c8c9f138e5ea900954d295bf229175 upstream.
 
-For type 0x51 the udf.parent_partref member in struct fid gets copied
+For type 1 the parent_offset member in struct isofs_fid gets copied
 uninitialized to userland. Fix this by initializing it to 0.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
@@ -40,18 +40,18 @@ Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/udf/namei.c |    1 +
+ fs/isofs/export.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/fs/udf/namei.c
-+++ b/fs/udf/namei.c
-@@ -1297,6 +1297,7 @@ static int udf_encode_fh(struct dentry *
- 	*lenp = 3;
- 	fid->udf.block = location.logicalBlockNum;
- 	fid->udf.partref = location.partitionReferenceNum;
-+	fid->udf.parent_partref = 0;
- 	fid->udf.generation = inode->i_generation;
- 
+--- a/fs/isofs/export.c
++++ b/fs/isofs/export.c
+@@ -135,6 +135,7 @@ isofs_export_encode_fh(struct dentry *de
+ 	len = 3;
+ 	fh32[0] = ei->i_iget5_block;
+  	fh16[2] = (__u16)ei->i_iget5_offset;  /* fh16 [sic] */
++	fh16[3] = 0;  /* avoid leaking uninitialized data */
+ 	fh32[2] = inode->i_generation;
  	if (connectable && !S_ISDIR(inode->i_mode)) {
+ 		struct inode *parent;
 
 
