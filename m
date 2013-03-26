@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000Ab3CZWoU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:44:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52586 "EHLO
+	id S1755258Ab3CZWoa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:44:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52631 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab3CZWoN (ORCPT
+	with ESMTP id S1755033Ab3CZWoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:13 -0400
+	Tue, 26 Mar 2013 18:44:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Viljami Ilola <azmulx@netikka.fi>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 55/98] target/file: Bump FD_MAX_SECTORS to 2048 to handle 1M sized I/Os
-Date: Tue, 26 Mar 2013 15:42:44 -0700
-Message-Id: <20130326224248.252396386@linuxfoundation.org>
+        Jason Burgess <jason@jacknife2.dns2go.com>,
+        Yan Li <elliot.li.tech@gmail.com>, Jeff Layton <jlayton@redhat.com>,
+        Steve French <sfrench@us.ibm.com>
+Subject: [ 66/98] cifs: ignore everything in SPNEGO blob after mechTypes
+Date: Tue, 26 Mar 2013 15:42:55 -0700
+Message-Id: <20130326224249.365766065@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -27,41 +28,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit f002a24388cc460c8a9be7d446a9871f7c9d52b6 upstream.
+commit f853c616883a8de966873a1dab283f1369e275a1 upstream.
 
-This patch bumps the default FILEIO backend FD_MAX_SECTORS value from
-1024 -> 2048 in order to allow block_size=512 to handle 1M sized I/Os.
+We've had several reports of people attempting to mount Windows 8 shares
+and getting failures with a return code of -EINVAL. The default sec=
+mode changed recently to sec=ntlmssp. With that, we expect and parse a
+SPNEGO blob from the server in the NEGOTIATE reply.
 
-The current default rejects I/Os larger than 512K in sbc_parse_cdb():
+The current decode_negTokenInit function first parses all of the
+mechTypes and then tries to parse the rest of the negTokenInit reply.
+The parser however currently expects a mechListMIC or nothing to follow the
+mechTypes, but Windows 8 puts a mechToken field there instead to carry
+some info for the new NegoEx stuff.
 
-[12015.915146] SCSI OP 2ah with too big sectors 1347 exceeds backend
-hw_max_sectors: 1024
-[12015.977744] SCSI OP 2ah with too big sectors 2048 exceeds backend
-hw_max_sectors: 1024
+In practice, we don't do anything with the fields after the mechTypes
+anyway so I don't see any real benefit in continuing to parse them.
+This patch just has the kernel ignore the fields after the mechTypes.
+We'll probably need to reinstate some of this if we ever want to support
+NegoEx.
 
-This issue is present in >= v3.5 based kernels, introduced after the
-removal of se_task logic.
-
-Reported-by: Viljami Ilola <azmulx@netikka.fi>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Jason Burgess <jason@jacknife2.dns2go.com>
+Reported-by: Yan Li <elliot.li.tech@gmail.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_file.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/asn1.c |   53 +++++------------------------------------------------
+ 1 file changed, 5 insertions(+), 48 deletions(-)
 
---- a/drivers/target/target_core_file.h
-+++ b/drivers/target/target_core_file.h
-@@ -7,7 +7,7 @@
- #define FD_DEVICE_QUEUE_DEPTH	32
- #define FD_MAX_DEVICE_QUEUE_DEPTH 128
- #define FD_BLOCKSIZE		512
--#define FD_MAX_SECTORS		1024
-+#define FD_MAX_SECTORS		2048
+--- a/fs/cifs/asn1.c
++++ b/fs/cifs/asn1.c
+@@ -614,53 +614,10 @@ decode_negTokenInit(unsigned char *secur
+ 		}
+ 	}
  
- #define RRF_EMULATE_CDB		0x01
- #define RRF_GOT_LBA		0x02
+-	/* mechlistMIC */
+-	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
+-		/* Check if we have reached the end of the blob, but with
+-		   no mechListMic (e.g. NTLMSSP instead of KRB5) */
+-		if (ctx.error == ASN1_ERR_DEC_EMPTY)
+-			goto decode_negtoken_exit;
+-		cFYI(1, "Error decoding last part negTokenInit exit3");
+-		return 0;
+-	} else if ((cls != ASN1_CTX) || (con != ASN1_CON)) {
+-		/* tag = 3 indicating mechListMIC */
+-		cFYI(1, "Exit 4 cls = %d con = %d tag = %d end = %p (%d)",
+-			cls, con, tag, end, *end);
+-		return 0;
+-	}
+-
+-	/* sequence */
+-	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
+-		cFYI(1, "Error decoding last part negTokenInit exit5");
+-		return 0;
+-	} else if ((cls != ASN1_UNI) || (con != ASN1_CON)
+-		   || (tag != ASN1_SEQ)) {
+-		cFYI(1, "cls = %d con = %d tag = %d end = %p (%d)",
+-			cls, con, tag, end, *end);
+-	}
+-
+-	/* sequence of */
+-	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
+-		cFYI(1, "Error decoding last part negTokenInit exit 7");
+-		return 0;
+-	} else if ((cls != ASN1_CTX) || (con != ASN1_CON)) {
+-		cFYI(1, "Exit 8 cls = %d con = %d tag = %d end = %p (%d)",
+-			cls, con, tag, end, *end);
+-		return 0;
+-	}
+-
+-	/* general string */
+-	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
+-		cFYI(1, "Error decoding last part negTokenInit exit9");
+-		return 0;
+-	} else if ((cls != ASN1_UNI) || (con != ASN1_PRI)
+-		   || (tag != ASN1_GENSTR)) {
+-		cFYI(1, "Exit10 cls = %d con = %d tag = %d end = %p (%d)",
+-			cls, con, tag, end, *end);
+-		return 0;
+-	}
+-	cFYI(1, "Need to call asn1_octets_decode() function for %s",
+-		ctx.pointer);	/* is this UTF-8 or ASCII? */
+-decode_negtoken_exit:
++	/*
++	 * We currently ignore anything at the end of the SPNEGO blob after
++	 * the mechTypes have been parsed, since none of that info is
++	 * used at the moment.
++	 */
+ 	return 1;
+ }
 
 
