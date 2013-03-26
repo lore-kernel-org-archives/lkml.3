@@ -1,48 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759127Ab3CZAY2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 20:24:28 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59160 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758834Ab3CZAY0 (ORCPT
+	id S933621Ab3CZA21 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 20:28:27 -0400
+Received: from mail-da0-f42.google.com ([209.85.210.42]:40415 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758819Ab3CZA20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 20:24:26 -0400
-Message-ID: <5150EAAC.8020304@ti.com>
-Date: Mon, 25 Mar 2013 20:24:12 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Mon, 25 Mar 2013 20:28:26 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        Mats Liljegren <mats.liljegren@enea.com>
+Subject: Re: [PATCH 1/4] ARM: context tracking: add exception support
+References: <1363824121-26169-1-git-send-email-khilman@linaro.org>
+	<1363824121-26169-2-git-send-email-khilman@linaro.org>
+	<20130321214908.GU4977@n2100.arm.linux.org.uk>
+Date: Mon, 25 Mar 2013 17:28:21 -0700
+In-Reply-To: <20130321214908.GU4977@n2100.arm.linux.org.uk> (Russell King's
+	message of "Thu, 21 Mar 2013 21:49:08 +0000")
+Message-ID: <871ub39f8a.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <devel@driverdev.osuosl.org>, Nishanth Menon <nm@ti.com>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCHv2 09/12] staging: ti-soc-thermal: fix several kernel-doc
- warnings and error
-References: <1363704868-11843-1-git-send-email-eduardo.valentin@ti.com> <1363704868-11843-10-git-send-email-eduardo.valentin@ti.com> <20130325182226.GA15717@kroah.com>
-In-Reply-To: <20130325182226.GA15717@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25-03-2013 14:22, Greg KH wrote:
-> On Tue, Mar 19, 2013 at 10:54:25AM -0400, Eduardo Valentin wrote:
->> This patch updates the documentation to remove
->> all warnings and errors reported by scripts/kernel-doc.
->> Most are missing arguments due to wrong format.
->>
->> Cc: Nishanth Menon <nm@ti.com>
->>
->> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->
-> In the future, don't put empty lines between the Cc: and signed-off-by:
-> lines please, I had to hand-edit all of these to fix that...
+Hi Russell,
 
-Ok. Sure.. My bad..
+Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
 
->
-> greg k-h
->
->
+> On Wed, Mar 20, 2013 at 05:01:58PM -0700, Kevin Hilman wrote:
+>> Add ARM support for the context tracking subsystem by instrumenting
+>> exception entry/exit points.
+>> 
+>> Special thanks to Mats Liljegren for testing, collaboration and adding
+>> support for exceptions/faults that were missing in early test versions.
 
+[...]
+
+>> @@ -405,7 +406,9 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
+>>  	unsigned int instr;
+>>  	siginfo_t info;
+>>  	void __user *pc;
+>> +	enum ctx_state prev_state;
+>>  
+>> +	prev_state = exception_enter();
+>>  	pc = (void __user *)instruction_pointer(regs);
+>>  
+>>  	if (processor_mode(regs) == SVC_MODE) {
+>> @@ -433,8 +436,10 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
+>>  		goto die_sig;
+>>  	}
+>>  
+>> -	if (call_undef_hook(regs, instr) == 0)
+>> +	if (call_undef_hook(regs, instr) == 0) {
+>> +		exception_exit(prev_state);
+>>  		return;
+>> +	}
+>>  
+>>  die_sig:
+>>  #ifdef CONFIG_DEBUG_USER
+>> @@ -451,12 +456,17 @@ die_sig:
+>>  	info.si_addr  = pc;
+>>  
+>>  	arm_notify_die("Oops - undefined instruction", regs, &info, 0, 6);
+>> +	exception_exit(prev_state);
+>
+> So, FP emulation and VFP support happens via a separate path.  Does this
+> also need to be instrumented?
+
+Looking a little closer at how FP/VFP support are handled along with the
+rest of the exceptions, I wondered if it might be simpler to do
+something like the patch below.  It instruments the assembly directly
+using the existing usr_entry macro, and the ret_to_user path.
+
+Doing that would replace instrumenting the various handlers
+(do_DataAbort/do_PrefetchAbort), and would handle the FP emulation VFP
+support as well.
+
+If this looks OK, I can probably rework the syscall support as well.
+This approach covers the slow syscall return path already.  Instead of
+forcing the slowpath on all syscalls, I would just need to instrument
+the syscall entry and fast syscall return.
+
+Kevin
+
+
+diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+index 0f82098..050472c 100644
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -396,6 +396,9 @@ ENDPROC(__pabt_svc)
+ #ifdef CONFIG_IRQSOFF_TRACER
+ 	bl	trace_hardirqs_off
+ #endif
++#ifdef CONFIG_CONTEXT_TRACKING
++	bl	user_exit
++#endif	
+ 	.endm
+ 
+ 	.macro	kuser_cmpxchg_check
+diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+index 3248cde..3bef99b 100644
+--- a/arch/arm/kernel/entry-common.S
++++ b/arch/arm/kernel/entry-common.S
+@@ -74,6 +74,9 @@ no_work_pending:
+ #if defined(CONFIG_IRQSOFF_TRACER)
+ 	asm_trace_hardirqs_on
+ #endif
++#if defined(CONFIG_CONTEXT_TRACKING)
++	bl user_enter
++#endif	
+ 	/* perform architecture specific actions before user return */
+ 	arch_ret_to_user r1, lr
