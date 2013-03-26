@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934325Ab3CZNkM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 09:40:12 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:35808 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933859Ab3CZNkL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 09:40:11 -0400
+	id S934238Ab3CZNmr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 09:42:47 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:43154 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933069Ab3CZNmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 09:42:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, lenb@kernel.org,
+        robert.moore@intel.com, lv.zheng@intel.com, ming.m.lin@intel.com,
+        mpm@selenic.com, herbert@gondor.hengli.com.au, rob@landley.net,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [RESEND PATCH 1/6] acpi: Remove the leading space of "unlock" label in acpi_memory_device_notify().
+Date: Tue, 26 Mar 2013 14:50:08 +0100
+Message-ID: <1616020.P78CkUi8YT@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CACQ1gAia2YsbzV+zT8gTiYvB7JVft3aL1iwC0DBuyCoZ+8wAuQ@mail.gmail.com>
+References: <1362558611-32255-1-git-send-email-tangchen@cn.fujitsu.com> <1843378.VZBEQ0WNNo@vostro.rjw.lan> <CACQ1gAia2YsbzV+zT8gTiYvB7JVft3aL1iwC0DBuyCoZ+8wAuQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1364303965.5053.29.camel@laptop>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	<5150B1C2.8090607@oracle.com>
-	<20130325163844.042a45ba@annuminas.surriel.com>
-	<CANN689FdtXs0-VKxwWHQKgnnSvcvu5hHDMmGOe0H+bdHA4BhXg@mail.gmail.com>
-	<1364303965.5053.29.camel@laptop>
-Date: Tue, 26 Mar 2013 06:40:09 -0700
-Message-ID: <CANN689HCbuVOc73BpVubYy2AjA2mcz_iyTg6Fo2Zz-NGnQ93TA@mail.gmail.com>
-Subject: Re: [PATCH -mm -next] ipc,sem: fix lockdep false positive
-From: Michel Lespinasse <walken@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Rik van Riel <riel@surriel.com>, Sasha Levin <sasha.levin@oracle.com>,
-        torvalds@linux-foundation.org, davidlohr.bueso@hp.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        hhuang@redhat.com, jason.low2@hp.com, lwoodman@redhat.com,
-        chegu_vinod@hp.com, Dave Jones <davej@redhat.com>, benisty.e@gmail.com,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 6:19 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2013-03-25 at 14:42 -0700, Michel Lespinasse wrote:
->> depth nesting here...
->> Adding Peter & Ingo for advice about how to proceed
->
->> > +++ b/ipc/sem.c
->> > @@ -357,7 +357,7 @@ static inline int sem_lock(struct sem_array
->> *sma, struct sembuf *sops,
->> >                 spin_lock(&sma->sem_perm.lock);
->> >                 for (i = 0; i < sma->sem_nsems; i++) {
->> >                         struct sem *sem = sma->sem_base + i;
->> > -                       spin_lock(&sem->lock);
->> > +                       spin_lock_nested(&sem->lock,
->> SINGLE_DEPTH_NESTING);
->> >                 }
->> >                 locknum = -1;
->> >         }
->
-> Right, so as walken said, this isn't going to work right.
->
-> I need a little more information as I've not really paid much attention
-> to this stuff. Firstly, is there a limit to sem_nsems or is this a
-> random user specified number? Secondly do we care about lock order at
-> all, or is array order the only order that counts?
+On Tuesday, March 26, 2013 02:23:49 PM Richard Genoud wrote:
+> 2013/3/26 Rafael J. Wysocki <rjw@sisk.pl>:
+> > On Wednesday, March 06, 2013 04:30:06 PM Tang Chen wrote:
+> >> There is a leading space in front of "unlock" label in acpi_memory_device_notify(). Remove it.
+> >>
+> >> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> >> ---
+> >>  drivers/acpi/acpi_memhotplug.c |    2 +-
+> >>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> >> index da1f82b..8a10c23 100644
+> >> --- a/drivers/acpi/acpi_memhotplug.c
+> >> +++ b/drivers/acpi/acpi_memhotplug.c
+> >> @@ -369,7 +369,7 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+> >>                       kfree(ej_event);
+> >>               }
+> >>
+> >> - unlock:
+> >> +unlock:
+> >>               acpi_scan_lock_release();
+> >>               if (ACPI_SUCCESS(status))
+> >>                       return;
+> >
+> > The leading space is actually in agreement with the kernel coding style
+> > (and there's a reason why it's there).
+> 
+> Well, I'm curious. What's the reason ?
+> I didn't see anything in Documentation/CodingStyle about that.
 
-sem_nsems is user provided as the array size in some semget system
-call. It's the size of an ipc semaphore array.
+Some tools had problems with labels starting right at the start of the line.
+patch or diff or something similar IIRC.  That's not the case any more, but
+there's a leading space before many labels in the kernel and that is part of
+the coding style, actually, even if it is not documented.
 
-complex semop operations take the array's lock plus every semaphore
-locks; simple semop operations (operating on a single semaphore) only
-take that one semaphore's lock.
+Certainly, it's not something to fix.
 
-AFAIK no operations take more than one semaphore lock except for the
-case where they are all taken (in which case the array's lock is also
-taken). Ideally it'd be best to have lockdep verify that this usage
-pattern is respected, though.
+Thanks,
+Rafael
+
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
