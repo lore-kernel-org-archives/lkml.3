@@ -1,47 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab3CZXet (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:34:49 -0400
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:37113 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202Ab3CZXeq (ORCPT
+	id S1756811Ab3CZXdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:33:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52593 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754927Ab3CZWoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:34:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo4nAN7wFaRebw5fM3gQVppaQoSSh3PdFumgCS1SGhcxcw@mail.gmail.com>
-References: <1361182193-31894-1-git-send-email-hare@suse.de>
-	<CAE9FiQWP1F5mLUoHoTHXy-wQoGxVK66QuuHYydaq3YfysS5Etg@mail.gmail.com>
-	<5124820D.2080900@suse.de>
-	<CAE9FiQXHteymDNzu0GqWtVSVhu3g2hCT+K9e5tB1mR-OBX1ffA@mail.gmail.com>
-	<5125C45A.5020208@suse.de>
-	<CAErSpo5j3Qge5Q2S+hyMGOcmoN77V0T=1+6OJdNJfJdnvT8wgg@mail.gmail.com>
-	<51305B99.6080806@suse.de>
-	<20130305224150.GE8339@xanatos>
-	<CAErSpo4nAN7wFaRebw5fM3gQVppaQoSSh3PdFumgCS1SGhcxcw@mail.gmail.com>
-Date: Tue, 26 Mar 2013 16:34:45 -0700
-X-Google-Sender-Auth: E3wen_oAli4NKSrHacrDWW6IG9w
-Message-ID: <CAE9FiQUUyqY_FHCRZQ0aHu+2V-yqqdD1YVRp5rHnULBMY7BUfA@mail.gmail.com>
-Subject: Re: [PATCH] pci: do not try to assign irq 255
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Hannes Reinecke <hare@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Frederik Himpe <fhimpe@vub.ac.be>, Oliver Neukum <oneukum@suse.de>,
-        David Haerdeman <david@hardeman.nu>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Andy Grover <agrover@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 26 Mar 2013 18:44:15 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Theodore Tso" <tytso@mit.edu>, Jan Kara <jack@suse.cz>
+Subject: [ 72/98] ext4: fix data=journal fast mount/umount hang
+Date: Tue, 26 Mar 2013 15:43:01 -0700
+Message-Id: <20130326224249.962795102@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
+References: <20130326224242.449070940@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 2:54 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-> Where are we at with this?  I don't see Sarah's patch in the tree, and
-> I haven't applied any changes, so my guess is this is still broken.
+------------------
 
-Yes, the fix is in the linus tree.
+From: Theodore Ts'o <tytso@mit.edu>
 
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=00eed9c814cb8f281be6f0f5d8f45025dc0a97eb
+commit 2b405bfa84063bfa35621d2d6879f52693c614b0 upstream.
+
+In data=journal mode, if we unmount the file system before a
+transaction has a chance to complete, when the journal inode is being
+evicted, we can end up calling into jbd2_log_wait_commit() for the
+last transaction, after the journalling machinery has been shut down.
+
+Arguably we should adjust ext4_should_journal_data() to return FALSE
+for the journal inode, but the only place it matters is
+ext4_evict_inode(), and so to save a bit of CPU time, and to make the
+patch much more obviously correct by inspection(tm), we'll fix it by
+explicitly not trying to waiting for a journal commit when we are
+evicting the journal inode, since it's guaranteed to never succeed in
+this case.
+
+This can be easily replicated via:
+
+     mount -t ext4 -o data=journal /dev/vdb /vdb ; umount /vdb
+
+------------[ cut here ]------------
+WARNING: at /usr/projects/linux/ext4/fs/jbd2/journal.c:542 __jbd2_log_start_commit+0xba/0xcd()
+Hardware name: Bochs
+JBD2: bad log_start_commit: 3005630206 3005630206 0 0
+Modules linked in:
+Pid: 2909, comm: umount Not tainted 3.8.0-rc3 #1020
+Call Trace:
+ [<c015c0ef>] warn_slowpath_common+0x68/0x7d
+ [<c02b7e7d>] ? __jbd2_log_start_commit+0xba/0xcd
+ [<c015c177>] warn_slowpath_fmt+0x2b/0x2f
+ [<c02b7e7d>] __jbd2_log_start_commit+0xba/0xcd
+ [<c02b8075>] jbd2_log_start_commit+0x24/0x34
+ [<c0279ed5>] ext4_evict_inode+0x71/0x2e3
+ [<c021f0ec>] evict+0x94/0x135
+ [<c021f9aa>] iput+0x10a/0x110
+ [<c02b7836>] jbd2_journal_destroy+0x190/0x1ce
+ [<c0175284>] ? bit_waitqueue+0x50/0x50
+ [<c028d23f>] ext4_put_super+0x52/0x294
+ [<c020efe3>] generic_shutdown_super+0x48/0xb4
+ [<c020f071>] kill_block_super+0x22/0x60
+ [<c020f3e0>] deactivate_locked_super+0x22/0x49
+ [<c020f5d6>] deactivate_super+0x30/0x33
+ [<c0222795>] mntput_no_expire+0x107/0x10c
+ [<c02233a7>] sys_umount+0x2cf/0x2e0
+ [<c02233ca>] sys_oldumount+0x12/0x14
+ [<c08096b8>] syscall_call+0x7/0xb
+---[ end trace 6a954cc790501c1f ]---
+jbd2_log_wait_commit: error: j_commit_request=-1289337090, tid=0
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ext4/inode.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -211,7 +211,8 @@ void ext4_evict_inode(struct inode *inod
+ 		 * don't use page cache.
+ 		 */
+ 		if (ext4_should_journal_data(inode) &&
+-		    (S_ISLNK(inode->i_mode) || S_ISREG(inode->i_mode))) {
++		    (S_ISLNK(inode->i_mode) || S_ISREG(inode->i_mode)) &&
++		    inode->i_ino != EXT4_JOURNAL_INO) {
+ 			journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
+ 			tid_t commit_tid = EXT4_I(inode)->i_datasync_tid;
+ 
+
+
