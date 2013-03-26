@@ -1,20 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965099Ab3CZPvr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:51:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53802 "EHLO
+	id S965118Ab3CZPwB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:52:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53795 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964919Ab3CZPWl (ORCPT
+	with ESMTP id S965032Ab3CZPWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:41 -0400
+	Tue, 26 Mar 2013 11:22:40 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Minchan Kim <minchan@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Yinghai Lu <yinghai@kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Keping Chen <chenkeping@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 066/150] ext4: use atomic64_t for the per-flexbg free_clusters count
-Date: Tue, 26 Mar 2013 15:19:25 +0000
-Message-Id: <1364311249-14454-67-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 023/150] mm/hotplug: correctly add new zone to all other nodes' zone lists
+Date: Tue, 26 Mar 2013 15:18:42 +0000
+Message-Id: <1364311249-14454-24-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,140 +37,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Jiang Liu <jiang.liu@huawei.com>
 
-commit 90ba983f6889e65a3b506b30dc606aa9d1d46cd2 upstream.
+commit 08dff7b7d629807dbb1f398c68dd9cd58dd657a1 upstream.
 
-A user who was using a 8TB+ file system and with a very large flexbg
-size (> 65536) could cause the atomic_t used in the struct flex_groups
-to overflow.  This was detected by PaX security patchset:
+When online_pages() is called to add new memory to an empty zone, it
+rebuilds all zone lists by calling build_all_zonelists().  But there's a
+bug which prevents the new zone to be added to other nodes' zone lists.
 
-http://forums.grsecurity.net/viewtopic.php?f=3&t=3289&p=12551#p12551
+online_pages() {
+	build_all_zonelists()
+	.....
+	node_set_state(zone_to_nid(zone), N_HIGH_MEMORY)
+}
 
-This bug was introduced in commit 9f24e4208f7e, so it's been around
-since 2.6.30.  :-(
+Here the node of the zone is put into N_HIGH_MEMORY state after calling
+build_all_zonelists(), but build_all_zonelists() only adds zones from
+nodes in N_HIGH_MEMORY state to the fallback zone lists.
+build_all_zonelists()
 
-Fix this by using an atomic64_t for struct orlav_stats's
-free_clusters.
+    ->__build_all_zonelists()
+	->build_zonelists()
+	    ->find_next_best_node()
+		->for_each_node_state(n, N_HIGH_MEMORY)
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+So memory in the new zone will never be used by other nodes, and it may
+cause strange behavor when system is under memory pressure.  So put node
+into N_HIGH_MEMORY state before calling build_all_zonelists().
+
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Keping Chen <chenkeping@huawei.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: backported to 3.5 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/ext4.h    |  6 +++---
- fs/ext4/ialloc.c  |  4 ++--
- fs/ext4/mballoc.c | 12 ++++++------
- fs/ext4/resize.c  |  4 ++--
- fs/ext4/super.c   |  4 ++--
- 5 files changed, 15 insertions(+), 15 deletions(-)
+ mm/memory_hotplug.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index a14c45e..d929a80 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -329,9 +329,9 @@ struct ext4_group_desc
-  */
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 0086ac9..17651cd 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -516,19 +516,20 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
  
- struct flex_groups {
--	atomic_t free_inodes;
--	atomic_t free_clusters;
--	atomic_t used_dirs;
-+	atomic64_t	free_clusters;
-+	atomic_t	free_inodes;
-+	atomic_t	used_dirs;
- };
+ 	zone->present_pages += onlined_pages;
+ 	zone->zone_pgdat->node_present_pages += onlined_pages;
+-	if (need_zonelists_rebuild)
+-		build_all_zonelists(zone);
+-	else
+-		zone_pcp_update(zone);
++	if (onlined_pages) {
++		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
++		if (need_zonelists_rebuild)
++			build_all_zonelists(zone);
++		else
++			zone_pcp_update(zone);
++	}
  
- #define EXT4_BG_INODE_UNINIT	0x0001 /* Inode table/bitmap not in use */
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 536ac65..b1919af 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -325,8 +325,8 @@ error_return:
- }
+ 	mutex_unlock(&zonelists_mutex);
  
- struct orlov_stats {
-+	__u64 free_clusters;
- 	__u32 free_inodes;
--	__u32 free_clusters;
- 	__u32 used_dirs;
- };
+ 	init_per_zone_wmark_min();
  
-@@ -343,7 +343,7 @@ static void get_orlov_stats(struct super_block *sb, ext4_group_t g,
+-	if (onlined_pages) {
++	if (onlined_pages)
+ 		kswapd_run(zone_to_nid(zone));
+-		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
+-	}
  
- 	if (flex_size > 1) {
- 		stats->free_inodes = atomic_read(&flex_group[g].free_inodes);
--		stats->free_clusters = atomic_read(&flex_group[g].free_clusters);
-+		stats->free_clusters = atomic64_read(&flex_group[g].free_clusters);
- 		stats->used_dirs = atomic_read(&flex_group[g].used_dirs);
- 		return;
- 	}
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 3631fbf..18571ac 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2814,8 +2814,8 @@ ext4_mb_mark_diskspace_used(struct ext4_allocation_context *ac,
- 	if (sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group = ext4_flex_group(sbi,
- 							  ac->ac_b_ex.fe_group);
--		atomic_sub(ac->ac_b_ex.fe_len,
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_sub(ac->ac_b_ex.fe_len,
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 	}
+ 	vm_total_pages = nr_free_pagecache_pages();
  
- 	err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
-@@ -4665,8 +4665,8 @@ do_more:
- 
- 	if (sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
--		atomic_add(count_clusters,
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_add(count_clusters,
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 	}
- 
- 	ext4_mb_unload_buddy(&e4b);
-@@ -4811,8 +4811,8 @@ int ext4_group_add_blocks(handle_t *handle, struct super_block *sb,
- 
- 	if (sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
--		atomic_add(EXT4_NUM_B2C(sbi, blocks_freed),
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_add(EXT4_NUM_B2C(sbi, blocks_freed),
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 	}
- 
- 	ext4_mb_unload_buddy(&e4b);
-diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-index 86261ca..a2289bf 100644
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1272,8 +1272,8 @@ static void ext4_update_super(struct super_block *sb,
- 	    sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group;
- 		flex_group = ext4_flex_group(sbi, group_data[0].group);
--		atomic_add(EXT4_NUM_B2C(sbi, free_blocks),
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_add(EXT4_NUM_B2C(sbi, free_blocks),
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 		atomic_add(EXT4_INODES_PER_GROUP(sb) * flex_gd->count,
- 			   &sbi->s_flex_groups[flex_group].free_inodes);
- 	}
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 5be2105..79881a6 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1966,8 +1966,8 @@ static int ext4_fill_flex_info(struct super_block *sb)
- 		flex_group = ext4_flex_group(sbi, i);
- 		atomic_add(ext4_free_inodes_count(sb, gdp),
- 			   &sbi->s_flex_groups[flex_group].free_inodes);
--		atomic_add(ext4_free_group_clusters(sb, gdp),
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_add(ext4_free_group_clusters(sb, gdp),
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 		atomic_add(ext4_used_dirs_count(sb, gdp),
- 			   &sbi->s_flex_groups[flex_group].used_dirs);
- 	}
 -- 
 1.8.1.2
 
