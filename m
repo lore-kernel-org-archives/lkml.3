@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656Ab3CZWtd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:49:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52697 "EHLO
+	id S1755766Ab3CZWtr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:49:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52694 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755162Ab3CZWoc (ORCPT
+	with ESMTP id S1755059Ab3CZWob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:32 -0400
+	Tue, 26 Mar 2013 18:44:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [ 80/98] clockevents: Dont allow dummy broadcast timers
-Date: Tue, 26 Mar 2013 15:43:09 -0700
-Message-Id: <20130326224250.791482868@linuxfoundation.org>
+        Kent Overstreet <koverstreet@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Zach Brown <zab@redhat.com>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 79/98] nfsd: fix bad offset use
+Date: Tue, 26 Mar 2013 15:43:08 -0700
+Message-Id: <20130326224250.682583251@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -29,41 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Rutland <mark.rutland@arm.com>
+From: Kent Overstreet <koverstreet@google.com>
 
-commit a7dc19b8652c862d5b7c4d2339bd3c428bd29c4a upstream.
+commit e49dbbf3e770aa590a8a464ac4978a09027060b9 upstream.
 
-Currently tick_check_broadcast_device doesn't reject clock_event_devices
-with CLOCK_EVT_FEAT_DUMMY, and may select them in preference to real
-hardware if they have a higher rating value. In this situation, the
-dummy timer is responsible for broadcasting to itself, and the core
-clockevents code may attempt to call non-existent callbacks for
-programming the dummy, eventually leading to a panic.
+vfs_writev() updates the offset argument - but the code then passes the
+offset to vfs_fsync_range(). Since offset now points to the offset after
+what was just written, this is probably not what was intended
 
-This patch makes tick_check_broadcast_device always reject dummy timers,
-preventing this problem.
+Introduced by face15025ffdf664de95e86ae831544154d26c9c "nfsd: use
+vfs_fsync_range(), not O_SYNC, for stable writes".
 
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Reviewed-by: Zach Brown <zab@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/tick-broadcast.c |    3 ++-
+ fs/nfsd/vfs.c |    3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -66,7 +66,8 @@ static void tick_broadcast_start_periodi
-  */
- int tick_check_broadcast_device(struct clock_event_device *dev)
- {
--	if ((tick_broadcast_device.evtdev &&
-+	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
-+	    (tick_broadcast_device.evtdev &&
- 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
- 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
- 		return 0;
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -1013,6 +1013,7 @@ nfsd_vfs_write(struct svc_rqst *rqstp, s
+ 	int			host_err;
+ 	int			stable = *stablep;
+ 	int			use_wgather;
++	loff_t			pos = offset;
+ 
+ 	dentry = file->f_path.dentry;
+ 	inode = dentry->d_inode;
+@@ -1025,7 +1026,7 @@ nfsd_vfs_write(struct svc_rqst *rqstp, s
+ 
+ 	/* Write the data. */
+ 	oldfs = get_fs(); set_fs(KERNEL_DS);
+-	host_err = vfs_writev(file, (struct iovec __user *)vec, vlen, &offset);
++	host_err = vfs_writev(file, (struct iovec __user *)vec, vlen, &pos);
+ 	set_fs(oldfs);
+ 	if (host_err < 0)
+ 		goto out_nfserr;
 
 
