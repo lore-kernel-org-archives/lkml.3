@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699Ab3CZXBz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:01:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53305 "EHLO
+	id S1756318Ab3CZXOn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:14:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53325 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756244Ab3CZXBu (ORCPT
+	with ESMTP id S1756628Ab3CZXBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:01:50 -0400
+	Tue, 26 Mar 2013 19:01:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
-Subject: [ 02/49] sunsu: Fix panic in case of nonexistent port at "console=ttySY" cmdline option
-Date: Tue, 26 Mar 2013 16:00:59 -0700
-Message-Id: <20130326225839.805395627@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 14/49] sfc: lock TX queues when calling netif_device_detach()
+Date: Tue, 26 Mar 2013 16:01:11 -0700
+Message-Id: <20130326225841.056447000@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -27,118 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Tkhai Kirill <tkhai@yandex.ru>
+From: Daniel Pieczko <dpieczko@solarflare.com>
 
-[ Upstream commit cb29529ea0030e60ef1bbbf8399a43d397a51526 ]
+[ Upstream commit c2f3b8e3a44b6fe9e36704e30157ebe1a88c08b1 ]
 
-If a machine has X (X < 4) sunsu ports and cmdline
-option "console=ttySY" is passed, where X < Y <= 4,
-than the following panic happens:
+The assertion of netif_device_present() at the top of
+efx_hard_start_xmit() may fail if we don't do this.
 
-Unable to handle kernel NULL pointer dereference
-TPC: <sunsu_console_setup+0x78/0xe0>
-RPC: <sunsu_console_setup+0x74/0xe0>
-I7: <register_console+0x378/0x3e0>
-Call Trace:
- [0000000000453a38] register_console+0x378/0x3e0
- [0000000000576fa0] uart_add_one_port+0x2e0/0x340
- [000000000057af40] su_probe+0x160/0x2e0
- [00000000005b8a4c] platform_drv_probe+0xc/0x20
- [00000000005b6c2c] driver_probe_device+0x12c/0x220
- [00000000005b6da8] __driver_attach+0x88/0xa0
- [00000000005b4df4] bus_for_each_dev+0x54/0xa0
- [00000000005b5a54] bus_add_driver+0x154/0x260
- [00000000005b7190] driver_register+0x50/0x180
- [00000000006d250c] sunsu_init+0x18c/0x1e0
- [00000000006c2668] do_one_initcall+0xe8/0x160
- [00000000006c282c] kernel_init_freeable+0x12c/0x1e0
- [0000000000603764] kernel_init+0x4/0x100
- [0000000000405f64] ret_from_syscall+0x1c/0x2c
- [0000000000000000]           (null)
-
-1)Fix the panic;
-2)Increment registered port number every successful
-probe.
-
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: David Miller <davem@davemloft.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+[bwh: Backported to 3.0: adjust context]
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/tty/serial/sunsu.c |   21 +++++++++------------
- 1 file changed, 9 insertions(+), 12 deletions(-)
+ drivers/net/sfc/efx.c      |    4 ++--
+ drivers/net/sfc/efx.h      |   13 +++++++++++++
+ drivers/net/sfc/selftest.c |    2 +-
+ 3 files changed, 16 insertions(+), 3 deletions(-)
 
---- a/drivers/tty/serial/sunsu.c
-+++ b/drivers/tty/serial/sunsu.c
-@@ -968,6 +968,7 @@ static struct uart_ops sunsu_pops = {
- #define UART_NR	4
+--- a/drivers/net/sfc/efx.c
++++ b/drivers/net/sfc/efx.c
+@@ -2106,7 +2106,7 @@ int efx_reset(struct efx_nic *efx, enum
+ 	netif_info(efx, drv, efx->net_dev, "resetting (%s)\n",
+ 		   RESET_TYPE(method));
  
- static struct uart_sunsu_port sunsu_ports[UART_NR];
-+static int nr_inst; /* Number of already registered ports */
+-	netif_device_detach(efx->net_dev);
++	efx_device_detach_sync(efx);
+ 	efx_reset_down(efx, method);
  
- #ifdef CONFIG_SERIO
+ 	rc = efx->type->reset(efx, method);
+@@ -2565,7 +2565,7 @@ static int efx_pm_freeze(struct device *
  
-@@ -1337,13 +1338,8 @@ static int __init sunsu_console_setup(st
- 	printk("Console: ttyS%d (SU)\n",
- 	       (sunsu_reg.minor - 64) + co->index);
+ 	efx->state = STATE_FINI;
  
--	/*
--	 * Check whether an invalid uart number has been specified, and
--	 * if so, search for the first available port that does have
--	 * console support.
--	 */
--	if (co->index >= UART_NR)
--		co->index = 0;
-+	if (co->index > nr_inst)
-+		return -ENODEV;
- 	port = &sunsu_ports[co->index].port;
+-	netif_device_detach(efx->net_dev);
++	efx_device_detach_sync(efx);
  
- 	/*
-@@ -1408,7 +1404,6 @@ static enum su_type __devinit su_get_typ
+ 	efx_stop_all(efx);
+ 	efx_fini_channels(efx);
+--- a/drivers/net/sfc/efx.h
++++ b/drivers/net/sfc/efx.h
+@@ -150,4 +150,17 @@ extern void efx_link_status_changed(stru
+ extern void efx_link_set_advertising(struct efx_nic *efx, u32);
+ extern void efx_link_set_wanted_fc(struct efx_nic *efx, u8);
  
- static int __devinit su_probe(struct platform_device *op)
- {
--	static int inst;
- 	struct device_node *dp = op->dev.of_node;
- 	struct uart_sunsu_port *up;
- 	struct resource *rp;
-@@ -1418,16 +1413,16 @@ static int __devinit su_probe(struct pla
- 
- 	type = su_get_type(dp);
- 	if (type == SU_PORT_PORT) {
--		if (inst >= UART_NR)
-+		if (nr_inst >= UART_NR)
- 			return -EINVAL;
--		up = &sunsu_ports[inst];
-+		up = &sunsu_ports[nr_inst];
- 	} else {
- 		up = kzalloc(sizeof(*up), GFP_KERNEL);
- 		if (!up)
- 			return -ENOMEM;
- 	}
- 
--	up->port.line = inst;
-+	up->port.line = nr_inst;
- 
- 	spin_lock_init(&up->port.lock);
- 
-@@ -1461,6 +1456,8 @@ static int __devinit su_probe(struct pla
- 		}
- 		dev_set_drvdata(&op->dev, up);
- 
-+		nr_inst++;
++static inline void efx_device_detach_sync(struct efx_nic *efx)
++{
++	struct net_device *dev = efx->net_dev;
 +
- 		return 0;
- 	}
++	/* Lock/freeze all TX queues so that we can be sure the
++	 * TX scheduler is stopped when we're done and before
++	 * netif_device_present() becomes false.
++	 */
++	netif_tx_lock(dev);
++	netif_device_detach(dev);
++	netif_tx_unlock(dev);
++}
++
+ #endif /* EFX_EFX_H */
+--- a/drivers/net/sfc/selftest.c
++++ b/drivers/net/sfc/selftest.c
+@@ -698,7 +698,7 @@ int efx_selftest(struct efx_nic *efx, st
+ 	/* Detach the device so the kernel doesn't transmit during the
+ 	 * loopback test and the watchdog timeout doesn't fire.
+ 	 */
+-	netif_device_detach(efx->net_dev);
++	efx_device_detach_sync(efx);
  
-@@ -1488,7 +1485,7 @@ static int __devinit su_probe(struct pla
- 
- 	dev_set_drvdata(&op->dev, up);
- 
--	inst++;
-+	nr_inst++;
- 
- 	return 0;
- 
+ 	mutex_lock(&efx->mac_lock);
+ 	if (efx->loopback_modes) {
 
 
