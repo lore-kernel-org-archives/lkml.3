@@ -1,136 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759556Ab3CZGuy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 02:50:54 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:53744 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759405Ab3CZGux (ORCPT
+	id S1759568Ab3CZGvh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 02:51:37 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:56544 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756868Ab3CZGvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 02:50:53 -0400
-Message-ID: <1364280647.16881.1.camel@phoenix>
-Subject: [PATCH RFC/RFT] regulator: ab8500: Remove is_enabled from struct
- ab8500_regulator_info
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Tue, 26 Mar 2013 14:50:47 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Mar 2013 02:51:36 -0400
+X-AuditID: cbfee691-b7f5f6d000002fda-d8-515145774597
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] mg_disk: add CONFIG_PM_SLEEP to suspend/resume functions
+Date: Tue, 26 Mar 2013 15:51:35 +0900
+Message-id: <000e01ce29ee$5b8c9c20$12a5d460$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4p7ltpKcAnWemdQhKkcqAtTuZu3Q==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsVy+t8zA91y18BAg0WzDS3mrF/DZnF54SVW
+	i8u75rA5MHucmPGbxaNvyypGj8+b5AKYo7hsUlJzMstSi/TtErgyWn5PYCz4w1FxauUe5gbG
+	fexdjJwcEgImEn0v9zBD2GISF+6tZ+ti5OIQEljGKHHj61amLkYOsKItv1Qg4osYJT5/uMUE
+	4fxilOh/s5gNpJtNQE3iy5fD7CANIgL6Em0tGiAms4CLxNFpIiAVwgKeEqcWHwTbyyKgKvGs
+	/SALiM0rYCsx9cdHZghbUOLH5HtgcWYBLYn1O48zQdjyEpvXvGWGOEdd4tFfXZCwiICexLc/
+	h9ggSkQk9r14xwhymYTAMnaJpv2fmSF2CUh8m3yIBaJXVmLTAah3JSUOrrjBMoFRbBaSzbOQ
+	bJ6FZPMsJCsWMLKsYhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAiJpok7GO8fsD7EmAy0fiKz
+	lGhyPjAa80riDY3NjCxMTUyNjcwtzUgTVhLnVW+xDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTB
+	KdXAyP8gd57JxXfX8is6wyVfCuiKx/vFTolcfitw5aQfFr8Cb6qaLbu8lWn9ZY+ZzvZ3D02f
+	8KTuVlpf+6PTvIH3WsUcA1zdj2qEWPz99mGKWUxYwYSAmIdv3A2NLz8zmjllvb8mZ/k5jab7
+	/49X+aY2ivc8quvnqfCb0ujUGdEgOO26+/6Ko+urlFiKMxINtZiLihMBoJ/ztbwCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjleLIzCtJLcpLzFFi42I5/e+xgG65a2Cgwa/1uhZz1q9hs7i88BKr
+	xeVdc9gcmD1OzPjN4tG3ZRWjx+dNcgHMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaG
+	uoaWFuZKCnmJuam2Si4+AbpumTlAm5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUY
+	GaCBhHWMGS2/JzAW/OGoOLVyD3MD4z72LkYODgkBE4ktv1S6GDmBTDGJC/fWs3UxcnEICSxi
+	lPj84RYThPOLUaL/zWI2kCo2ATWJL18OgzWLCOhLtLVogJjMAi4SR6eJgFQIC3hKnFp8kB3E
+	ZhFQlXjWfpAFxOYVsJWY+uMjM4QtKPFj8j2wOLOAlsT6nceZIGx5ic1r3jJDnKYu8eivLkhY
+	REBP4tufQ2wQJSIS+168Y5zAKDALyaRZSCbNQjJpFpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL
+	89L1kvNzNzGCY/WZ1A7GlQ0WhxgFOBiVeHg3BAcECrEmlhVX5h5ilOBgVhLh/eMYGCjEm5JY
+	WZValB9fVJqTWnyIMRno0YnMUqLJ+cA0klcSb2hsYmZkaWRmYWRibk6asJI474FW60AhgfTE
+	ktTs1NSC1CKYLUwcnFLAeOOYPrsu99akUoFD6dHB/jGta155pj7i5zzNflXfaDN3hmnKRvVV
+	hnMdeyZp6SmVbKk5OWXBwi+yFw62+21u+XykuP7nj9acufUfU1dmR6WxJzmrbzl0+K0R4/Wn
+	8/eVh+7p+ltryb3dM3neuqmzVJ6esfkXOcuUxcxiwvOcsgULpzIXTa3JVGIpzkg01GIuKk4E
+	AHBSgvMZAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The is_enabled flag looks not necessary at all, it also introduces some issues
-because current code updates info->is_enabled flag in error paths of
-ab8500_regulator_enable() and ab8500_regulator_disable().
-Thus this patch removes is_enabled from struct ab8500_regulator_info.
+Add CONFIG_PM_SLEEP to suspend/resume functions to fix the following
+build warning when CONFIG_PM_SLEEP is not selected. This is because
+sleep PM callbacks defined by SIMPLE_DEV_PM_OPS are only used when
+the CONFIG_PM_SLEEP is enabled.
 
-This patch also removes info->is_enabled checking in ab8500_regulator_set_mode(),
-so it allows setting mode even the regulator is disabled.
+drivers/block/mg_disk.c:783:12: warning: 'mg_suspend' defined but not used [-Wunused-function]
+drivers/block/mg_disk.c:807:12: warning: 'mg_resume' defined but not used [-Wunused-function]
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
-Hi,
-This patch also removes info->is_enabled checking in ab8500_regulator_set_mode().
-I'm not very clear if we should avoid setting mode when the regulator is disabled.
-It looks to me if we don't want to allow setting mode when regulator is disabled,
-this checking should be done in regulator-core.
-Seems current code in other regulator drivers does not check if regulator is
-enabled or not in set_mode callback implementation.
-Axel
- drivers/regulator/ab8500.c |   36 ++++++++++--------------------------
- 1 file changed, 10 insertions(+), 26 deletions(-)
+ drivers/block/mg_disk.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 12e2740..8a84b6d 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -30,7 +30,6 @@
-  * @dev: device pointer
-  * @desc: regulator description
-  * @regulator_dev: regulator device
-- * @is_enabled: status of regulator (on/off)
-  * @load_lp_uA: maximum load in idle (low power) mode
-  * @update_bank: bank to control on/off
-  * @update_reg: register to control on/off
-@@ -48,7 +47,6 @@ struct ab8500_regulator_info {
- 	struct device		*dev;
- 	struct regulator_desc	desc;
- 	struct regulator_dev	*regulator;
--	bool is_enabled;
- 	int load_lp_uA;
- 	u8 update_bank;
- 	u8 update_reg;
-@@ -121,8 +119,6 @@ static int ab8500_regulator_enable(struct regulator_dev *rdev)
- 		dev_err(rdev_get_dev(rdev),
- 			"couldn't set enable bits for regulator\n");
+diff --git a/drivers/block/mg_disk.c b/drivers/block/mg_disk.c
+index 1788f491..532bb89 100644
+--- a/drivers/block/mg_disk.c
++++ b/drivers/block/mg_disk.c
+@@ -780,6 +780,7 @@ static const struct block_device_operations mg_disk_ops = {
+ 	.getgeo = mg_getgeo
+ };
  
--	info->is_enabled = true;
--
- 	dev_vdbg(rdev_get_dev(rdev),
- 		"%s-enable (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
- 		info->desc.name, info->update_bank, info->update_reg,
-@@ -148,8 +144,6 @@ static int ab8500_regulator_disable(struct regulator_dev *rdev)
- 		dev_err(rdev_get_dev(rdev),
- 			"couldn't set disable bits for regulator\n");
++#ifdef CONFIG_PM_SLEEP
+ static int mg_suspend(struct device *dev)
+ {
+ 	struct mg_drv_data *prv_data = dev->platform_data;
+@@ -824,6 +825,7 @@ static int mg_resume(struct device *dev)
  
--	info->is_enabled = false;
--
- 	dev_vdbg(rdev_get_dev(rdev),
- 		"%s-disable (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
- 		info->desc.name, info->update_bank, info->update_reg,
-@@ -202,20 +196,15 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
- 		return -EINVAL;
- 	}
- 
--	if (info->is_enabled) {
--		ret = abx500_mask_and_set_register_interruptible(info->dev,
--			info->update_bank, info->update_reg,
--			info->update_mask, info->update_val);
--		if (ret < 0)
--			dev_err(rdev_get_dev(rdev),
--				"couldn't set regulator mode\n");
--
--		dev_vdbg(rdev_get_dev(rdev),
--			"%s-set_mode (bank, reg, mask, value): "
--			"0x%x, 0x%x, 0x%x, 0x%x\n",
--			info->desc.name, info->update_bank, info->update_reg,
--			info->update_mask, info->update_val);
--	}
-+	ret = abx500_mask_and_set_register_interruptible(info->dev,
-+		info->update_bank, info->update_reg,
-+		info->update_mask, info->update_val);
-+	if (ret < 0)
-+		dev_err(rdev_get_dev(rdev), "couldn't set regulator mode\n");
-+
-+	dev_vdbg(rdev_get_dev(rdev), "%s-set_mode (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
-+		info->desc.name, info->update_bank, info->update_reg,
-+		info->update_mask, info->update_val);
- 
- 	return ret;
+ 	return 0;
  }
-@@ -265,12 +254,7 @@ static int ab8500_regulator_is_enabled(struct regulator_dev *rdev)
- 		info->desc.name, info->update_bank, info->update_reg,
- 		info->update_mask, regval);
++#endif
  
--	if (regval & info->update_mask)
--		info->is_enabled = true;
--	else
--		info->is_enabled = false;
--
--	return info->is_enabled;
-+	return regval & info->update_mask;
- }
+ static SIMPLE_DEV_PM_OPS(mg_pm, mg_suspend, mg_resume);
  
- static int ab8500_regulator_get_voltage_sel(struct regulator_dev *rdev)
 -- 
-1.7.10.4
-
+1.7.2.5
 
 
