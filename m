@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275Ab3CZXBh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:01:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53074 "EHLO
+	id S1756799Ab3CZXCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:02:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53370 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756228Ab3CZWwm (ORCPT
+	with ESMTP id S1756668Ab3CZXCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:42 -0400
+	Tue, 26 Mar 2013 19:02:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Torsten Duwe <duwe@lst.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 42/72] KMS: fix EDID detailed timing vsync parsing
-Date: Tue, 26 Mar 2013 15:51:25 -0700
-Message-Id: <20130326224924.049621163@linuxfoundation.org>
+        Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 27/49] mwifiex: fix potential out-of-boundary access to ibss rate table
+Date: Tue, 26 Mar 2013 16:01:24 -0700
+Message-Id: <20130326225842.345990024@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
-References: <20130326224919.675227837@linuxfoundation.org>
+In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
+References: <20130326225839.554028294@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Torsten Duwe <torsten@lst.de>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit 16dad1d743d31a104a849c8944e6b9eb479f6cd7 upstream.
+commit 5f0fabf84d7b52f979dcbafa3d3c530c60d9a92c upstream.
 
-EDID spreads some values across multiple bytes; bit-fiddling is needed
-to retrieve these.  The current code to parse "detailed timings" has a
-cut&paste error that results in a vsync offset of at most 15 lines
-instead of 63.
+smatch found this error:
 
-See
+CHECK   drivers/net/wireless/mwifiex/join.c
+  drivers/net/wireless/mwifiex/join.c:1121
+  mwifiex_cmd_802_11_ad_hoc_join()
+  error: testing array offset 'i' after use.
 
-   http://en.wikipedia.org/wiki/EDID
-
-and in the "EDID Detailed Timing Descriptor" see bytes 10+11 show why
-that needs to be a left shift.
-
-Signed-off-by: Torsten Duwe <duwe@lst.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_edid.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/mwifiex/join.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -836,7 +836,7 @@ static struct drm_display_mode *drm_mode
- 	unsigned vblank = (pt->vactive_vblank_hi & 0xf) << 8 | pt->vblank_lo;
- 	unsigned hsync_offset = (pt->hsync_vsync_offset_pulse_width_hi & 0xc0) << 2 | pt->hsync_offset_lo;
- 	unsigned hsync_pulse_width = (pt->hsync_vsync_offset_pulse_width_hi & 0x30) << 4 | pt->hsync_pulse_width_lo;
--	unsigned vsync_offset = (pt->hsync_vsync_offset_pulse_width_hi & 0xc) >> 2 | pt->vsync_offset_pulse_width_lo >> 4;
-+	unsigned vsync_offset = (pt->hsync_vsync_offset_pulse_width_hi & 0xc) << 2 | pt->vsync_offset_pulse_width_lo >> 4;
- 	unsigned vsync_pulse_width = (pt->hsync_vsync_offset_pulse_width_hi & 0x3) << 4 | (pt->vsync_offset_pulse_width_lo & 0xf);
+--- a/drivers/net/wireless/mwifiex/join.c
++++ b/drivers/net/wireless/mwifiex/join.c
+@@ -1102,10 +1102,9 @@ mwifiex_cmd_802_11_ad_hoc_join(struct mw
+ 				adhoc_join->bss_descriptor.bssid,
+ 				adhoc_join->bss_descriptor.ssid);
  
- 	/* ignore tiny modes */
+-	for (i = 0; bss_desc->supported_rates[i] &&
+-			i < MWIFIEX_SUPPORTED_RATES;
+-			i++)
+-			;
++	for (i = 0; i < MWIFIEX_SUPPORTED_RATES &&
++		    bss_desc->supported_rates[i]; i++)
++		;
+ 	rates_size = i;
+ 
+ 	/* Copy Data Rates from the Rates recorded in scan response */
 
 
