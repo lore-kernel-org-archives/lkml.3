@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759204Ab3CZBW3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 21:22:29 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60805
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759024Ab3CZBW2 (ORCPT
+	id S932842Ab3CZBX3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 21:23:29 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:35263 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932228Ab3CZBX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 21:22:28 -0400
-Date: Mon, 25 Mar 2013 19:22:24 -0600
-From: Jens Axboe <axboe@kernel.dk>
-To: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, klebers@linux.vnet.ibm.com
-Subject: Re: [PATCH] block: removes dynamic allocation on stack
-Message-ID: <20130326012224.GO19488@kernel.dk>
-References: <20130325221046.GB7136@oc6784271780.ibm.com>
+	Mon, 25 Mar 2013 21:23:28 -0400
+X-Spam-Score: -100.8
+Message-ID: <5150F871.5050306@asianux.com>
+Date: Tue, 26 Mar 2013 09:22:57 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130325221046.GB7136@oc6784271780.ibm.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "nico@linaro.org" <nico@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] include/linux/platform_data: beautify code, 'inline'
+ is better in front of 'void'
+References: <514FB826.9020302@asianux.com> <20130325233213.GA29245@kroah.com>
+In-Reply-To: <20130325233213.GA29245@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25 2013, Philip J. Kelleher wrote:
-> From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+On 2013年03月26日 07:32, Greg KH wrote:
+> On Mon, Mar 25, 2013 at 10:36:22AM +0800, Chen Gang wrote:
+>>
+>>   better to let 'inline' in front of 'void'
 > 
-> This patch removes dynamic allocation on the stack error.
-> 
-> Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
-> -------------------------------------------------------------------------------
+> Why?  What does this fix?
 > 
 > 
-> diff -uprN -X linux-block/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/dma.c linux-block/drivers/block/rsxx/dma.c
-> --- linux-block-vanilla/drivers/block/rsxx/dma.c	2013-03-25 14:44:40.898978713 -0500
-> +++ linux-block/drivers/block/rsxx/dma.c	2013-03-25 14:50:48.054969658 -0500
-> @@ -986,7 +986,10 @@ void rsxx_eeh_save_issued_dmas(struct rs
->  	int j;
->  	int cnt;
->  	struct rsxx_dma *dma;
-> -	struct list_head issued_dmas[card->n_targets];
-> +	struct list_head *issued_dmas;
+> 
 
-Ahem - thanks, applied :-)
+  when I am compiling with "EXTRA_FLAGS=-W", I get a warning:
+    make V=1 EXTRA_CFLAGS=-W ARCH=arm randconfig
+    make V=1 EXTRA_CFLAGS=-W ARCH=arm menuconfig
+      choose arm-linux-gnu- for cross chain prefix.
+      choose S5pv210 for processor type
+    make V=1 EXTRA_CFLAGS=-W ARCH=arm
+
+  the warning is:
+    include/linux/platform_data/usb-ohci-s3c2410.h:34:1: warning: ‘inline’ is not at beginning of declaration [-Wold-style-declaration]
+
+
+  it is only for beautify code, not fix a bug.
+
+
+
+  :-)
+
 
 -- 
-Jens Axboe
+Chen Gang
 
+Asianux Corporation
