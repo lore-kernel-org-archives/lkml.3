@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756451Ab3CZWwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:52:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53142 "EHLO
+	id S1756641Ab3CZW4v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:56:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53152 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756399Ab3CZWwx (ORCPT
+	with ESMTP id S1756419Ab3CZWwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:53 -0400
+	Tue, 26 Mar 2013 18:52:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, halfdog <me@halfdog.net>,
-        P J P <ppandit@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 70/72] exec: use -ELOOP for max recursion depth
-Date: Tue, 26 Mar 2013 15:51:53 -0700
-Message-Id: <20130326224926.865560953@linuxfoundation.org>
+        Dmitry Torokhov <dtor@vmware.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 57/72] USB: xhci - fix bit definitions for IMAN register
+Date: Tue, 26 Mar 2013 15:51:40 -0700
+Message-Id: <20130326224925.572331511@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -30,139 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Dmitry Torokhov <dtor@vmware.com>
 
-commit d740269867021faf4ce38a449353d2b986c34a67 upstream.
+commit f8264340e694604863255cc0276491d17c402390 upstream.
 
-To avoid an explosion of request_module calls on a chain of abusive
-scripts, fail maximum recursion with -ELOOP instead of -ENOEXEC. As soon
-as maximum recursion depth is hit, the error will fail all the way back
-up the chain, aborting immediately.
+According to XHCI specification (5.5.2.1) the IP is bit 0 and IE is bit 1
+of IMAN register. Previously their definitions were reversed.
 
-This also has the side-effect of stopping the user's shell from attempting
-to reexecute the top-level file as a shell script. As seen in the
-dash source:
+Even though there are no ill effects being observed from the swapped
+definitions (because IMAN_IP is RW1C and in legacy PCI case we come in
+with it already set to 1 so it was clearing itself even though we were
+setting IMAN_IE instead of IMAN_IP), we should still correct the values.
 
-        if (cmd != path_bshell && errno == ENOEXEC) {
-                *argv-- = cmd;
-                *argv = cmd = path_bshell;
-                goto repeat;
-        }
+This patch should be backported to kernels as old as 2.6.36, that
+contain the commit 4e833c0b87a30798e67f06120cecebef6ee9644c "xhci: don't
+re-enable IE constantly".
 
-The above logic was designed for running scripts automatically that lacked
-the "#!" header, not to re-try failed recursion. On a legitimate -ENOEXEC,
-things continue to behave as the shell expects.
-
-Additionally, when tracking recursion, the binfmt handlers should not be
-involved. The recursion being tracked is the depth of calls through
-search_binary_handler(), so that function should be exclusively responsible
-for tracking the depth.
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: halfdog <me@halfdog.net>
-Cc: P J P <ppandit@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/binfmt_em86.c        |    1 -
- fs/binfmt_misc.c        |    6 ------
- fs/binfmt_script.c      |    4 +---
- fs/exec.c               |   10 +++++-----
- include/linux/binfmts.h |    2 --
- 5 files changed, 6 insertions(+), 17 deletions(-)
+ drivers/usb/host/xhci.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/binfmt_em86.c
-+++ b/fs/binfmt_em86.c
-@@ -42,7 +42,6 @@ static int load_em86(struct linux_binprm
- 			return -ENOEXEC;
- 	}
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -206,8 +206,8 @@ struct xhci_op_regs {
+ /* bits 12:31 are reserved (and should be preserved on writes). */
  
--	bprm->recursion_depth++; /* Well, the bang-shell is implicit... */
- 	allow_write_access(bprm->file);
- 	fput(bprm->file);
- 	bprm->file = NULL;
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -117,10 +117,6 @@ static int load_misc_binary(struct linux
- 	if (!enabled)
- 		goto _ret;
+ /* IMAN - Interrupt Management Register */
+-#define IMAN_IP		(1 << 1)
+-#define IMAN_IE		(1 << 0)
++#define IMAN_IE		(1 << 1)
++#define IMAN_IP		(1 << 0)
  
--	retval = -ENOEXEC;
--	if (bprm->recursion_depth > BINPRM_MAX_RECURSION)
--		goto _ret;
--
- 	/* to keep locking time low, we copy the interpreter string */
- 	read_lock(&entries_lock);
- 	fmt = check_file(bprm);
-@@ -200,8 +196,6 @@ static int load_misc_binary(struct linux
- 	if (retval < 0)
- 		goto _error;
- 
--	bprm->recursion_depth++;
--
- 	retval = search_binary_handler (bprm, regs);
- 	if (retval < 0)
- 		goto _error;
---- a/fs/binfmt_script.c
-+++ b/fs/binfmt_script.c
-@@ -22,15 +22,13 @@ static int load_script(struct linux_binp
- 	char interp[BINPRM_BUF_SIZE];
- 	int retval;
- 
--	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!') ||
--	    (bprm->recursion_depth > BINPRM_MAX_RECURSION))
-+	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!'))
- 		return -ENOEXEC;
- 	/*
- 	 * This section does the #! interpretation.
- 	 * Sorta complicated, but hopefully it will work.  -TYT
- 	 */
- 
--	bprm->recursion_depth++;
- 	allow_write_access(bprm->file);
- 	fput(bprm->file);
- 	bprm->file = NULL;
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1389,6 +1389,10 @@ int search_binary_handler(struct linux_b
- 	struct linux_binfmt *fmt;
- 	pid_t old_pid, old_vpid;
- 
-+	/* This allows 4 levels of binfmt rewrites before failing hard. */
-+	if (depth > 5)
-+		return -ELOOP;
-+
- 	retval = security_bprm_check(bprm);
- 	if (retval)
- 		return retval;
-@@ -1413,12 +1417,8 @@ int search_binary_handler(struct linux_b
- 			if (!try_module_get(fmt->module))
- 				continue;
- 			read_unlock(&binfmt_lock);
-+			bprm->recursion_depth = depth + 1;
- 			retval = fn(bprm, regs);
--			/*
--			 * Restore the depth counter to its starting value
--			 * in this call, so we don't have to rely on every
--			 * load_binary function to restore it on return.
--			 */
- 			bprm->recursion_depth = depth;
- 			if (retval >= 0) {
- 				if (depth == 0) {
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -68,8 +68,6 @@ struct linux_binprm {
- #define BINPRM_FLAGS_EXECFD_BIT 1
- #define BINPRM_FLAGS_EXECFD (1 << BINPRM_FLAGS_EXECFD_BIT)
- 
--#define BINPRM_MAX_RECURSION 4
--
- /* Function parameter for binfmt->coredump */
- struct coredump_params {
- 	long signr;
+ /* USBSTS - USB status - status bitmasks */
+ /* HC not running - set to 1 when run/stop bit is cleared. */
 
 
