@@ -1,150 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934414Ab3CZJs7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 05:48:59 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:60154 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932795Ab3CZJsz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 05:48:55 -0400
-Date: Tue, 26 Mar 2013 09:48:48 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: devicetree-discuss@lists.ozlabs.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com
-Subject: Re: [PATCH 2/3] mfd: db8500-prcmu: Fetch the PRCMU TCDM base address
- from Device Tree
-Message-ID: <20130326094848.GA14151@gmail.com>
-References: <1364223758-17621-1-git-send-email-lee.jones@linaro.org>
- <1364223758-17621-2-git-send-email-lee.jones@linaro.org>
- <201303251540.51104.arnd@arndb.de>
- <20130325164600.GA11734@gmail.com>
- <CACRpkdbn4WARSp7_MUpCZTghTrsPYvsa9GEUC31T7nP_=9oZag@mail.gmail.com>
- <20130326081704.GB11734@gmail.com>
- <CACRpkdZxU197moM_00UQr-tHdip4b50c+CfYkR5OK+MbwsE-aw@mail.gmail.com>
+	id S1759448Ab3CZJtx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 05:49:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36776 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932795Ab3CZJtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 05:49:52 -0400
+Date: Tue, 26 Mar 2013 10:49:50 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/10] soft-offline: use migrate_pages() instead of
+ migrate_huge_page()
+Message-ID: <20130326094950.GM2295@dhcp22.suse.cz>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1363983835-20184-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130325123128.GU2154@dhcp22.suse.cz>
+ <1364272480-bmzkqzs6-mutt-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdZxU197moM_00UQr-tHdip4b50c+CfYkR5OK+MbwsE-aw@mail.gmail.com>
+In-Reply-To: <1364272480-bmzkqzs6-mutt-n-horiguchi@ah.jp.nec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Mar 2013, Linus Walleij wrote:
-
-> On Tue, Mar 26, 2013 at 9:17 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> > On Mon, 25 Mar 2013, Linus Walleij wrote:
-> >> On Mon, Mar 25, 2013 at 5:46 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> >>
-> >> >> >         res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
-> >> >> >                                            "prcmu-tcpm");
-> >> >> >         if (!res) {
-> >> >> > -               dev_err(&pdev->dev,
-> >> >> > -                       "Error: no prcmu tcpm memory region provided\n");
-> >> >> > -               return;
-> >> >> > -       }
-> >> >> > -       tcpm_base = ioremap(res->start, resource_size(res));
-> >> >> > +               if (np) {
-> >> >> > +                       tcpm_np = of_find_node_by_name(np->parent,
-> >> >> > +                                                      "prcmu-tcpm-per4");
-> >> >> > +                       if (!tcpm_np) {
-> >> >> > +                               dev_err(&pdev->dev,
-> >> >> > +                                       "no prcmu tcpm mem region provided\n");
-> >> >> > +                               return;
-> >> >> > +                       }
-> >> >> > +                       tcpm_base = of_iomap(tcpm_np, 0);
-> >> >> > +               }
-> >> >> > +       } else
-> >> >> > +               tcpm_base = ioremap(res->start, resource_size(res));
-> >> >> > +
-> >> >>
-> >> >> Why don't you just add these extra registers to the prcmu node itself like
-> >> >>
-> >> >> diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-> >> >> index 9de9309..6ee6c31 100644
-> >> >> --- a/arch/arm/boot/dts/dbx5x0.dtsi
-> >> >> +++ b/arch/arm/boot/dts/dbx5x0.dtsi
-> >> >> @@ -191,8 +191,8 @@
-> >> >>
-> >> >>               prcmu: prcmu@80157000 {
-> >> >>                       compatible = "stericsson,db8500-prcmu";
-> >> >> -                     reg = <0x80157000 0x1000>;
-> >> >> -                     reg-names = "prcmu";
-> >> >> +                     reg = <0x80157000 0x1000>, <0x801b0000 0x1000>, <0x801b8000 0x1000>;
-> >> >> +                     reg-names = "prcmu", "prcmu-tcpm", "prcmu-tcdm-per4";
-> >> >>                       interrupts = <0 47 0x4>;
-> >> >>                       #address-cells = <1>;
-> >> >>                       #size-cells = <1>;
-> >> >>
-> >> >>
-> >> >> and document those in the prcmu binding?
-> >> >>
-> >> >> That would keep the code simpler and the same for both cases.
-> >> >
-> >> > I'm not sure you can. These addresses differ from platform to
-> >> > platform, so I'd need to provide the base PRCMU address in
-> >> > dbx5x0.dtsi, then the other two in the dts files. Can you do that?
-> >>
-> >> Better ask on devicetree-discuss.
-> >>
-> >> What it reflects are differences between SoC:s, so I think the
-> >> right solution is to split it in a three-layer cake:
-> >>
-> >> dbx5x0.dtsi -> included by
-> >> db8500.dtsi -> included by
-> >> snowball/hrefv60plus.dts
-> >>
-> >> dbx5x0.dtsi -> included by
-> >> dbx540.dtsi -> included by
-> >> ccu9540/ccu8540.dts
-> >>
-> >> Here you may insert the reg property into the node at the
-> >> db8500.dtsi or dbx540.dtsi layer.
-> >
-> > It's easy done, if that's the right way.
-> >
-> >> If you prefer I can cook a patch...
-> >
-> > ... and I'm fine to do it.
-> >
-> > [5 mins later]
-> >
-> > Hmm... it appears that in STE's kernel, the same address is used for
-> > all SoCs:
-> >
-> >   #define U8500_PRCMU_TCDM_BASE    (U8500_PER4_BASE + 0x68000)
+On Tue 26-03-13 00:34:40, Naoya Horiguchi wrote:
+> On Mon, Mar 25, 2013 at 01:31:28PM +0100, Michal Hocko wrote:
+> > On Fri 22-03-13 16:23:48, Naoya Horiguchi wrote:
+[...]
+> > > @@ -1482,12 +1483,20 @@ static int soft_offline_huge_page(struct page *page, int flags)
+> > >  	unlock_page(hpage);
+> > >  
+> > >  	/* Keep page count to indicate a given hugepage is isolated. */
+> > > -	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL,
+> > > -				MIGRATE_SYNC);
+> > > -	put_page(hpage);
+> > > +	list_move(&hpage->lru, &pagelist);
+> > > +	ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
+> > > +				MIGRATE_SYNC, MR_MEMORY_FAILURE);
+> > >  	if (ret) {
+> > >  		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+> > >  			pfn, ret, page->flags);
+> > > +		/*
+> > > +		 * We know that soft_offline_huge_page() tries to migrate
+> > > +		 * only one hugepage pointed to by hpage, so we need not
+> > > +		 * run through the pagelist here.
+> > > +		 */
+> > > +		putback_active_hugepage(hpage);
+> > 
+> > Maybe I am missing something but why we didn't need to call this before
+> > when using migrate_huge_page?
 > 
-> Yes that's correct...
-> 
-> > However, in Mainline there is another definition:
-> >
-> >   #define U9540_PRCMU_TCDM_BASE    (U8500_PER4_BASE + 0x6A000)
-> >
-> > ... which doesn't seem to be in use anywhere - even for the u9540.
-> >
-> > What's the deal big-man?
-> 
-> Probably there was another address at some point in some FPGA or
-> early silicon and it now needs fixing.
-> 
-> So you should be able to use the same thing on all ASICs, put one
-> single value in the dbx5x0.dtsi *and* fix this bug at the same time,
-> good!
+> migrate_huge_page() does not need list handling before/after the call,
+> because it's defined to migrate only one hugepage, and it has a page as
+> an argument, not list_head.
 
-Bit for information for you. 
+I do not understand this reasoning. migrate_huge_page calls
+unmap_and_move_huge_page and migrate_pages does the same + accounting.
+So what is the difference here? I suspect that putback_active_hugepage
+was simply missing in this code path.
 
-I have confirmed that the address locations are the same for
-all SoCs are the same. However, the size of the TCDM changes from 4k
-on the db8500 to 12k on the db8540.
+> > > +		if (ret > 0)
+> > > +			ret = -EIO;
+> > >  	} else {
+> > >  		set_page_hwpoison_huge_page(hpage);
+> > >  		dequeue_hwpoisoned_huge_page(hpage);
+> > > diff --git v3.9-rc3.orig/mm/migrate.c v3.9-rc3/mm/migrate.c
+> > > index f69f354..66030b6 100644
+> > > --- v3.9-rc3.orig/mm/migrate.c
+> > > +++ v3.9-rc3/mm/migrate.c
+> > > @@ -981,6 +981,8 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+> > >  
+> > >  	unlock_page(hpage);
+> > >  out:
+> > > +	if (rc != -EAGAIN)
+> > > +		putback_active_hugepage(hpage);
+> > 
+> > And why do you put it here? If it is called from migrate_pages then the
+> > caller already does the clean-up (putback_lru_pages).
+> 
+> What the caller of migrate_pages() cleans up is the (huge)pages which failed
+> to be migrated. And what the above code cleans up is the source hugepage
+> after the migration succeeds.
 
-Is there a way we can increase the size for the db8540 without
-creating an entire new DTS file? Seems overkill.
+Why should you want to add successfully migrated page? /me confused.
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Michal Hocko
+SUSE Labs
