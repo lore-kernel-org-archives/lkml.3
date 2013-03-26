@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab3CZRrZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:47:25 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:34008 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754205Ab3CZRrW (ORCPT
+	id S1756175Ab3CZRre (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:47:34 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:40330 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755990Ab3CZRrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:47:22 -0400
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3/3] powerpc/mm/numa: use setup_nr_node_ids() instead of opencoding.
-Date: Tue, 26 Mar 2013 10:46:02 -0700
-Message-Id: <1364319962-30967-4-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <1364319962-30967-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1364319962-30967-1-git-send-email-cody@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032617-7282-0000-0000-00001587C6BB
+	Tue, 26 Mar 2013 13:47:32 -0400
+X-Greylist: delayed 669 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Mar 2013 13:47:32 EDT
+From: Roland Stigge <stigge@antcom.de>
+To: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH] usb: Fix compile error by selecting USB_OTG_UTILS
+Date: Tue, 26 Mar 2013 18:36:01 +0100
+Message-Id: <1364319361-28265-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+The current lpc32xx_defconfig breaks like this, caused by recent phy
+restructuring:
+
+  LD      init/built-in.o
+drivers/built-in.o: In function `usb_hcd_nxp_probe':
+drivers/usb/host/ohci-nxp.c:224: undefined reference to `isp1301_get_client'
+drivers/built-in.o: In function `lpc32xx_udc_probe':
+drivers/usb/gadget/lpc32xx_udc.c:3104: undefined reference to
+`isp1301_get_client' distcc[27867] ERROR: compile (null) on localhost failed
+make: *** [vmlinux] Error 1
+
+This patch fixes this by selecting USB_OTG_UTILS in Kconfig which
+causes the phy driver to be built again.
+
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+
+--
+Applies to v3.9-rc4
+
 ---
- arch/powerpc/mm/numa.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/usb/gadget/Kconfig |    1 +
+ drivers/usb/phy/Kconfig    |    1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
-index bba87ca..7574ae3 100644
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -62,14 +62,11 @@ static int distance_lookup_table[MAX_NUMNODES][MAX_DISTANCE_REF_POINTS];
-  */
- static void __init setup_node_to_cpumask_map(void)
- {
--	unsigned int node, num = 0;
-+	unsigned int node;
+--- linux-2.6.orig/drivers/usb/gadget/Kconfig
++++ linux-2.6/drivers/usb/gadget/Kconfig
+@@ -145,6 +145,7 @@ config USB_LPC32XX
+ 	tristate "LPC32XX USB Peripheral Controller"
+ 	depends on ARCH_LPC32XX
+ 	select USB_ISP1301
++	select USB_OTG_UTILS
+ 	help
+ 	   This option selects the USB device controller in the LPC32xx SoC.
  
- 	/* setup nr_node_ids if not done yet */
--	if (nr_node_ids == MAX_NUMNODES) {
--		for_each_node_mask(node, node_possible_map)
--			num = node;
--		nr_node_ids = num + 1;
--	}
-+	if (nr_node_ids == MAX_NUMNODES)
-+		setup_nr_node_ids()
- 
- 	/* allocate the map */
- 	for (node = 0; node < nr_node_ids; node++)
--- 
-1.8.2
-
+--- linux-2.6.orig/drivers/usb/phy/Kconfig
++++ linux-2.6/drivers/usb/phy/Kconfig
+@@ -38,6 +38,7 @@ config USB_ISP1301
+ 	tristate "NXP ISP1301 USB transceiver support"
+ 	depends on USB || USB_GADGET
+ 	depends on I2C
++	select USB_OTG_UTILS
+ 	help
+ 	  Say Y here to add support for the NXP ISP1301 USB transceiver driver.
+ 	  This chip is typically used as USB transceiver for USB host, gadget
