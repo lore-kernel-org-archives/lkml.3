@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964905Ab3CZQTP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:19:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53549 "EHLO
+	id S934744Ab3CZPVp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:21:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53519 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934751Ab3CZPVs (ORCPT
+	with ESMTP id S934671Ab3CZPVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:21:48 -0400
+	Tue, 26 Mar 2013 11:21:42 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Emese Revfy <re.emese@gmail.com>,
-        PaX Team <pageexec@freemail.hu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Julien Tinnes <jln@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Marcin Jurkowski <marcin1j@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 016/150] signal: always clear sa_restorer on execve
-Date: Tue, 26 Mar 2013 15:18:35 +0000
-Message-Id: <1364311249-14454-17-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 014/150] w1: fix oops when w1_search is called from netlink connector
+Date: Tue, 26 Mar 2013 15:18:33 +0000
+Message-Id: <1364311249-14454-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -34,71 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Marcin Jurkowski <marcin1j@gmail.com>
 
-commit 2ca39528c01a933f6689cd6505ce65bd6d68a530 upstream.
+commit 9d1817cab2f030f6af360e961cc69bb1da8ad765 upstream.
 
-When the new signal handlers are set up, the location of sa_restorer is
-not cleared, leaking a parent process's address space location to
-children.  This allows for a potential bypass of the parent's ASLR by
-examining the sa_restorer value returned when calling sigaction().
+On Sat, Mar 02, 2013 at 10:45:10AM +0100, Sven Geggus wrote:
+> This is the bad commit I found doing git bisect:
+> 04f482faf50535229a5a5c8d629cf963899f857c is the first bad commit
+> commit 04f482faf50535229a5a5c8d629cf963899f857c
+> Author: Patrick McHardy <kaber@trash.net>
+> Date:   Mon Mar 28 08:39:36 2011 +0000
 
-Based on what should be considered "secret" about addresses, it only
-matters across the exec not the fork (since the VMAs haven't changed
-until the exec).  But since exec sets SIG_DFL and keeps sa_restorer,
-this is where it should be fixed.
+Good job. I was too lazy to bisect for bad commit;)
 
-Given the few uses of sa_restorer, a "set" function was not written
-since this would be the only use.  Instead, we use
-__ARCH_HAS_SA_RESTORER, as already done in other places.
+Reading the code I found problematic kthread_should_stop call from netlink
+connector which causes the oops. After applying a patch, I've been testing
+owfs+w1 setup for nearly two days and it seems to work very reliable (no
+hangs, no memleaks etc).
+More detailed description and possible fix is given below:
 
-Example of the leak before applying this patch:
+Function w1_search can be called from either kthread or netlink callback.
+While the former works fine, the latter causes oops due to kthread_should_stop
+invocation.
 
-  $ cat /proc/$$/maps
-  ...
-  7fb9f3083000-7fb9f3238000 r-xp 00000000 fd:01 404469 .../libc-2.15.so
-  ...
-  $ ./leak
-  ...
-  7f278bc74000-7f278be29000 r-xp 00000000 fd:01 404469 .../libc-2.15.so
-  ...
-  1 0 (nil) 0x7fb9f30b94a0
-  2 4000000 (nil) 0x7f278bcaa4a0
-  3 4000000 (nil) 0x7f278bcaa4a0
-  4 0 (nil) 0x7fb9f30b94a0
-  ...
+This patch adds a check if w1_search is serving netlink command, skipping
+kthread_should_stop invocation if so.
 
-[akpm@linux-foundation.org: use SA_RESTORER for backportability]
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: Emese Revfy <re.emese@gmail.com>
-Cc: Emese Revfy <re.emese@gmail.com>
-Cc: PaX Team <pageexec@freemail.hu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Julien Tinnes <jln@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Marcin Jurkowski <marcin1j@gmail.com>
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Josh Boyer <jwboyer@gmail.com>
+Tested-by: Sven Geggus <lists@fuchsschwanzdomain.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/signal.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/w1/w1.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 97116c9..f2d6a4f 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -483,6 +483,9 @@ flush_signal_handlers(struct task_struct *t, int force_default)
- 		if (force_default || ka->sa.sa_handler != SIG_IGN)
- 			ka->sa.sa_handler = SIG_DFL;
- 		ka->sa.sa_flags = 0;
-+#ifdef SA_RESTORER
-+		ka->sa.sa_restorer = NULL;
-+#endif
- 		sigemptyset(&ka->sa.sa_mask);
- 		ka++;
- 	}
+diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+index 2f2e894..2b48bd2 100644
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -928,7 +928,8 @@ void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb
+ 			tmp64 = (triplet_ret >> 2);
+ 			rn |= (tmp64 << i);
+ 
+-			if (kthread_should_stop()) {
++			/* ensure we're called from kthread and not by netlink callback */
++			if (!dev->priv && kthread_should_stop()) {
+ 				dev_dbg(&dev->dev, "Abort w1_search\n");
+ 				return;
+ 			}
 -- 
 1.8.1.2
 
