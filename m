@@ -1,41 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933035Ab3CZEMI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 00:12:08 -0400
-Received: from ozlabs.org ([203.10.76.45]:59920 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932815Ab3CZEMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 00:12:06 -0400
-Date: Tue, 26 Mar 2013 15:12:01 +1100
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] powerpc: remove two lines of dead code
-Message-ID: <20130326041201.GB22382@concordia>
-References: <1364207531.1390.271.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364207531.1390.271.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933402Ab3CZESW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 00:18:22 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60257 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755029Ab3CZESU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 00:18:20 -0400
+Date: Tue, 26 Mar 2013 15:18:11 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kenneth Heitke <kheitke@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>
+Subject: linux-next: build failure after merge of the char-misc tree
+Message-Id: <20130326151811.de958e38f0116334a62e1c8b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__26_Mar_2013_15_18_11_+1100_OmeuWvNHFMq+aBNc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 11:32:11AM +0100, Paul Bolle wrote:
-> Commit c1fb6816fb1b78dd94b673b0fdaa9a7a16e97bd1 ("powerpc: Add
-> relocation on exception vector handlers") added two lines of code that
-> depend on the macro CONFIG_HVC_SCOM. That macro doesn't exist. Perhaps
-> it was intended to use CONFIG_PPC_SCOM here. But since
-> "maintence_interrupt" is a typo and there's nothing in arch/powerpc that
-> looks like maintenance_interrupt it seems best to just delete these
-> lines.
+--Signature=_Tue__26_Mar_2013_15_18_11_+1100_OmeuWvNHFMq+aBNc
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's cruft from our internal tree that snuck into the patch. I was
-meaning to remove it but you beat me to it.
+Hi all,
 
-Acked-by: Michael Ellerman <michael@ellerman.id.au>
+After merging the char-misc tree, today's linux-next build
+(x86_64_allmodconfig) failed like this:
 
-cheers
+drivers/input/keyboard/pmic8xxx-keypad.c:24:35: fatal error: linux/mfd/pm8x=
+xx/gpio.h: No such file or directory
+
+Caused by commit e44b0ceee4cc ("add single-wire serial bus interface
+(SSBI) driver") which added the Kconfig symbol MSM_SSBI (later changed to
+just SSBI) which did not exist in the tree before.  However,
+MFD_PM8921_CORE depended on it and that selects MFD_PM8XXX which allows
+the above file to build (and fail).
+
+I have used the char-misc tree from next-20130325 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__26_Mar_2013_15_18_11_+1100_OmeuWvNHFMq+aBNc
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRUSGDAAoJEECxmPOUX5FEwQ4P/3ZVicnBCxhBFi1Z+CvlTF6G
+AGSk7LqjopKQrel/+SV0u/H/71B0dfz8Ydko4OMjhUaWaMtcZoTljCPL9nUpLBaF
+taOsu5SnFrU+7PKWtcr3T9SVqalyoljKGBoqGhM4UnR9MZGDga7PGzC+ps6MZJY4
+l//lHKpVQhvpsIZGDIl881E6eSwHCWWS/KJ0qDNiHYLW+DsPWWTWgDSt4fKD5YzZ
+kNiyNcw2HFCbnwBqF4lGnZC61KxT06LRgTgkZ9FEsfE6YRU/Sqrxmr2rPVIbMbSY
+CoGuNGllcRBI4hEkoHUYZ+uYh2WBcFkQDZwBBfZByKbqfT2e22dWHKbVvU4aG1Tt
+PsvCEB/zhFffrTCXAbNxiVwTRYOIT/mRRfzL86VHYu3MK6KyigHLWystmQ+LItJm
+qBx7dlQVC0/hts1UXlKCVhCYdxNvOOOVb3g9SiUBDNcGRJrlAhDFwU721qeG/Fjk
+FiOgpa0lTAixE4ObYSrcl936cOBMCoxjG8PnUT5htHJ+oQwaTduBQuTBU5PMsczO
+M8plHcelBvrMnNo3dIXoQ8L8qTk1gxdiuW0ggrQY++aFxWYvfaUHXIfOtJGY1IIM
+so96Z6V+HREnbxrPmRup+elOuayyszXguGpWmWWhoAH/uuBuWm5mPLRaRQfRkoDB
+gWlfpPJ407vCvh/R2Ax9
+=y7zr
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__26_Mar_2013_15_18_11_+1100_OmeuWvNHFMq+aBNc--
