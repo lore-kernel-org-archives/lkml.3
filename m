@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab3CZXin (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:38:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52536 "EHLO
+	id S1755300Ab3CZXim (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:38:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52541 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754768Ab3CZWoH (ORCPT
+	with ESMTP id S1754665Ab3CZWoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 18:44:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Taysom <taysom@chromium.org>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 58/98] dm verity: avoid deadlock
-Date: Tue, 26 Mar 2013 15:42:47 -0700
-Message-Id: <20130326224248.543636650@linuxfoundation.org>
+        Julia Lemire <jlemire@matrox.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 59/98] drm/mgag200: Bug fix: Modified pll algorithm for EH project
+Date: Tue, 26 Mar 2013 15:42:48 -0700
+Message-Id: <20130326224248.651684753@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -28,130 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Julia Lemire <jlemire@matrox.com>
 
-commit 3b6b7813b198b578aa7e04e4047ddb8225c37b7f upstream.
+commit 260b3f1291a75a580d22ce8bfb1499c617272716 upstream.
 
-A deadlock was found in the prefetch code in the dm verity map
-function.  This patch fixes this by transferring the prefetch
-to a worker thread and skipping it completely if kmalloc fails.
+While testing the mgag200 kms driver on the HP ProLiant Gen8, a
+bug was seen.  Once the bootloader would load the selected kernel,
+the screen would go black.  At first it was assumed that the
+mgag200 kms driver was hanging.  But after setting up the grub
+serial output, it was seen that the driver was being loaded
+properly.  After trying serval monitors, one finaly displayed
+the message "Frequency Out of Range".  By comparing the kms pll
+algorithm with the previous mgag200 xorg driver pll algorithm,
+discrepencies were found.  Once the kms pll algorithm was
+modified, the expected pll values were produced.  This fix was
+tested on several monitors of varying native resolutions.
 
-If generic_make_request is called recursively, it queues the I/O
-request on the current->bio_list without making the I/O request
-and returns. The routine making the recursive call cannot wait
-for the I/O to complete.
-
-The deadlock occurs when one thread grabs the bufio_client
-mutex and waits for an I/O to complete but the I/O is queued
-on another thread's current->bio_list and is waiting to get
-the mutex held by the first thread.
-
-The fix recognises that prefetching is not essential.  If memory
-can be allocated, it queues the prefetch request to the worker thread,
-but if not, it does nothing.
-
-Signed-off-by: Paul Taysom <taysom@chromium.org>
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Julia Lemire <jlemire@matrox.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-bufio.c  |    2 ++
- drivers/md/dm-verity.c |   39 ++++++++++++++++++++++++++++++++++-----
- 2 files changed, 36 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/mgag200/mgag200_mode.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -1026,6 +1026,8 @@ void dm_bufio_prefetch(struct dm_bufio_c
- {
- 	struct blk_plug plug;
+--- a/drivers/gpu/drm/mgag200/mgag200_mode.c
++++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
+@@ -382,19 +382,19 @@ static int mga_g200eh_set_plls(struct mg
+ 	m = n = p = 0;
+ 	vcomax = 800000;
+ 	vcomin = 400000;
+-	pllreffreq = 3333;
++	pllreffreq = 33333;
  
-+	BUG_ON(dm_bufio_in_request());
-+
- 	blk_start_plug(&plug);
- 	dm_bufio_lock(c);
+ 	delta = 0xffffffff;
+ 	permitteddelta = clock * 5 / 1000;
  
---- a/drivers/md/dm-verity.c
-+++ b/drivers/md/dm-verity.c
-@@ -93,6 +93,13 @@ struct dm_verity_io {
- 	 */
- };
+-	for (testp = 16; testp > 0; testp--) {
++	for (testp = 16; testp > 0; testp >>= 1) {
+ 		if (clock * testp > vcomax)
+ 			continue;
+ 		if (clock * testp < vcomin)
+ 			continue;
  
-+struct dm_verity_prefetch_work {
-+	struct work_struct work;
-+	struct dm_verity *v;
-+	sector_t block;
-+	unsigned n_blocks;
-+};
-+
- static struct shash_desc *io_hash_desc(struct dm_verity *v, struct dm_verity_io *io)
- {
- 	return (struct shash_desc *)(io + 1);
-@@ -424,15 +431,18 @@ static void verity_end_io(struct bio *bi
-  * The root buffer is not prefetched, it is assumed that it will be cached
-  * all the time.
-  */
--static void verity_prefetch_io(struct dm_verity *v, struct dm_verity_io *io)
-+static void verity_prefetch_io(struct work_struct *work)
- {
-+	struct dm_verity_prefetch_work *pw =
-+		container_of(work, struct dm_verity_prefetch_work, work);
-+	struct dm_verity *v = pw->v;
- 	int i;
- 
- 	for (i = v->levels - 2; i >= 0; i--) {
- 		sector_t hash_block_start;
- 		sector_t hash_block_end;
--		verity_hash_at_level(v, io->block, i, &hash_block_start, NULL);
--		verity_hash_at_level(v, io->block + io->n_blocks - 1, i, &hash_block_end, NULL);
-+		verity_hash_at_level(v, pw->block, i, &hash_block_start, NULL);
-+		verity_hash_at_level(v, pw->block + pw->n_blocks - 1, i, &hash_block_end, NULL);
- 		if (!i) {
- 			unsigned cluster = ACCESS_ONCE(dm_verity_prefetch_cluster);
- 
-@@ -452,6 +462,25 @@ no_prefetch_cluster:
- 		dm_bufio_prefetch(v->bufio, hash_block_start,
- 				  hash_block_end - hash_block_start + 1);
+ 		for (testm = 1; testm < 33; testm++) {
+-			for (testn = 1; testn < 257; testn++) {
++			for (testn = 17; testn < 257; testn++) {
+ 				computed = (pllreffreq * testn) /
+ 					(testm * testp);
+ 				if (computed > clock)
+@@ -404,11 +404,11 @@ static int mga_g200eh_set_plls(struct mg
+ 				if (tmpdelta < delta) {
+ 					delta = tmpdelta;
+ 					n = testn - 1;
+-					m = (testm - 1) | ((n >> 1) & 0x80);
++					m = (testm - 1);
+ 					p = testp - 1;
+ 				}
+ 				if ((clock * testp) >= 600000)
+-					p |= 80;
++					p |= 0x80;
+ 			}
+ 		}
  	}
-+
-+	kfree(pw);
-+}
-+
-+static void verity_submit_prefetch(struct dm_verity *v, struct dm_verity_io *io)
-+{
-+	struct dm_verity_prefetch_work *pw;
-+
-+	pw = kmalloc(sizeof(struct dm_verity_prefetch_work),
-+		GFP_NOIO | __GFP_NORETRY | __GFP_NOMEMALLOC | __GFP_NOWARN);
-+
-+	if (!pw)
-+		return;
-+
-+	INIT_WORK(&pw->work, verity_prefetch_io);
-+	pw->v = v;
-+	pw->block = io->block;
-+	pw->n_blocks = io->n_blocks;
-+	queue_work(v->verify_wq, &pw->work);
- }
- 
- /*
-@@ -498,7 +527,7 @@ static int verity_map(struct dm_target *
- 	memcpy(io->io_vec, bio_iovec(bio),
- 	       io->io_vec_size * sizeof(struct bio_vec));
- 
--	verity_prefetch_io(v, io);
-+	verity_submit_prefetch(v, io);
- 
- 	generic_make_request(bio);
- 
-@@ -858,7 +887,7 @@ bad:
- 
- static struct target_type verity_target = {
- 	.name		= "verity",
--	.version	= {1, 1, 1},
-+	.version	= {1, 2, 0},
- 	.module		= THIS_MODULE,
- 	.ctr		= verity_ctr,
- 	.dtr		= verity_dtr,
 
 
