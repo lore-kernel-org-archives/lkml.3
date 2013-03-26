@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab3CZWWv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:22:51 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54063 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849Ab3CZWWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:22:50 -0400
-Message-ID: <51521FA8.6030806@ti.com>
-Date: Tue, 26 Mar 2013 18:22:32 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1753268Ab3CZWXz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:23:55 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:40121 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753014Ab3CZWXx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 18:23:53 -0400
 MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>
-CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <amit.daniel@samsung.com>, <durgadoss.r@intel.com>, <andi@lisas.de>
-Subject: Re: [RFC, 2/5] Thermal: thermal framework registration failure case
- cleanup
-References: <1364315169-15427-3-git-send-email-rui.zhang@intel.com>
-In-Reply-To: <1364315169-15427-3-git-send-email-rui.zhang@intel.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130326215944.GB30540@8bytes.org>
+References: <1362009978.2808.33.camel@lorien2> <CAErSpo6DjjSKCFL6CjmqkOAyc1iU1TG1=n=K=AXPcU_r6ZdPGA@mail.gmail.com>
+ <20130326215944.GB30540@8bytes.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 26 Mar 2013 16:23:32 -0600
+Message-ID: <CAErSpo6QWxya9PBKngvfgjjZZ2bA=BtMHRBsCpj8rMMC5itiRQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/4] pci: Add PCI_BUS() and PCI_DEVID() interfaces to
+ return bus number and device id
+To: Joerg Roedel <joro@8bytes.org>
+Cc: shuah.khan@hp.com, Jiang Liu <jiang.liu@huawei.com>,
+        "shemminger@vyatta.com" <shemminger@vyatta.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linas Vepstas <linasvepstas@gmail.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        iommu@lists.linux-foundation.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>,
+        LKML <linux-kernel@vger.kernel.org>, Shuah Khan <shuahkhan@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26-03-2013 12:26, Zhang Rui wrote:
-> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+On Tue, Mar 26, 2013 at 3:59 PM, Joerg Roedel <joro@8bytes.org> wrote:
+> Hi Bjorn,
 >
+> On Tue, Mar 26, 2013 at 03:41:07PM -0600, Bjorn Helgaas wrote:
+>> Since some of these touch drivers/iommu, it'd be good if you acked
+>> them again, Joerg.  I know you acked them before, but there have been
+>> minor changes since then, so I didn't add your ack to these.  But if
+>> you're still OK with them, I'll refresh the branch to add it now.
+>
+> Looks still good to me. You can add my
+>
+> Acked-by: Joerg Roedel <joro@8bytes.org>
+>
+> if you want.
 
-Could you please describe why these resource releases are not required 
-anymore? Even on thermal_exit.
-
-> ---
-> drivers/thermal/thermal_core.c |   12 ++----------
->   1 file changed, 2 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-> index 5b7863a..845ed6e 100644
-> --- a/drivers/thermal/thermal_core.c
-> +++ b/drivers/thermal/thermal_core.c
-> @@ -1863,13 +1863,9 @@ static int __init thermal_init(void)
->   	int result = 0;
->
->   	result = class_register(&thermal_class);
-> -	if (result) {
-> -		idr_destroy(&thermal_tz_idr);
-> -		idr_destroy(&thermal_cdev_idr);
-> -		mutex_destroy(&thermal_idr_lock);
-> -		mutex_destroy(&thermal_list_lock);
-> +	if (result)
->   		return result;
-> -	}
-> +
->   	result = genetlink_init();
->   	return result;
->   }
-> @@ -1877,10 +1873,6 @@ static int __init thermal_init(void)
->   static void __exit thermal_exit(void)
->   {
->   	class_unregister(&thermal_class);
-> -	idr_destroy(&thermal_tz_idr);
-> -	idr_destroy(&thermal_cdev_idr);
-> -	mutex_destroy(&thermal_idr_lock);
-> -	mutex_destroy(&thermal_list_lock);
->   	genetlink_exit();
->   }
->
->
-
+Added and branch updated, thanks!
