@@ -1,89 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332Ab3CZXVO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:21:14 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:43195 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755406Ab3CZXVL (ORCPT
+	id S1756059Ab3CZWwT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:52:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52960 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755989Ab3CZWwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:21:11 -0400
-Date: Tue, 26 Mar 2013 16:21:08 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Tomas Winkler <tomas.winkler@intel.com>, arnd@arndb.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next 01/11 V4] mei: bus: Initial MEI Client bus type
- implementation
-Message-ID: <20130326232108.GA30620@kroah.com>
-References: <1363819469-696-1-git-send-email-tomas.winkler@intel.com>
- <1363819469-696-2-git-send-email-tomas.winkler@intel.com>
- <20130325202855.GA21494@kroah.com>
- <20130326133326.GA19511@zurbaran>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130326133326.GA19511@zurbaran>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 26 Mar 2013 18:52:12 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 21/72] sfc: lock TX queues when calling netif_device_detach()
+Date: Tue, 26 Mar 2013 15:51:04 -0700
+Message-Id: <20130326224921.902473798@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
+References: <20130326224919.675227837@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 02:33:26PM +0100, Samuel Ortiz wrote:
-> > > +/**
-> > > + * struct mei_cl_device - MEI device handle
-> > > + * An mei_cl_device pointer is returned from mei_add_device()
-> > > + * and links MEI bus clients to their actual ME host client pointer.
-> > > + * Drivers for MEI devices will get an mei_cl_device pointer
-> > > + * when being probed and shall use it for doing ME bus I/O.
-> > > + *
-> > > + * @dev: linux driver model device pointer
-> > > + * @uuid: me client uuid
-> > > + * @cl: mei client
-> > > + * @priv_data: client private data
-> > > + */
-> > > +struct mei_cl_device {
-> > > +	struct device dev;
-> > > +
-> > > +	uuid_le uuid;
-> > > +	struct mei_cl *cl;
-> > > +
-> > > +	void *priv_data;
-> > > +};
-> > 
-> > Why is priv_data needed?  What's wrong with the pointer provided to you
-> > in struct device?
-> mei_cl_device->dev->p->driver_data is used by mei drivers to carry their
-> private data around, we define mei_cl_get_clientdata/mei_cl_set_clientdata for
-> that and keep the mei_cl_device structure opaque to them.
-> mei_cl_device->priv_data is used internally by the drivers/misc/mei/ bus
-> related code to carry technology specific pointers. drivers/misc/mei/nfc.c
-> uses it to fetch its private data when it gets a mei_cl_device pointer.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Ugh, that looks like a mess, but ok, if you say it is needed, I'll trust
-you.
+------------------
 
-> > > +struct mei_cl_driver {
-> > > +	struct device_driver driver;
-> > > +	const char *name;
-> > 
-> > What's wrong with the driver.name field?
-> >From your initial comments on patchset v1:
-> 
-> "
-> 	> +static struct mei_bus_driver contact_driver = {
-> 	> +     .driver = {
-> 	> +                .name = CONTAC_DRIVER_NAME,
-> 	> +               },
-> 
-> 	Can't you put a name field in your mei_bus_driver structure and then
-> 	copy it to the version in the driver model?  That's what other bus
-> 	drivers do and it makes more sense.
-> "
-> 
-> And you were right, that is indeed what other bus drivers do. Did I
-> misunderstand you here ?
 
-No, you are right, sorry for giving conflicting information, it's fine
-as-is.
+From: Daniel Pieczko <dpieczko@solarflare.com>
 
-greg k-h
+[ Upstream commit c2f3b8e3a44b6fe9e36704e30157ebe1a88c08b1 ]
+
+The assertion of netif_device_present() at the top of
+efx_hard_start_xmit() may fail if we don't do this.
+
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+[bwh: Backported to 3.4: adjust context]
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/ethernet/sfc/efx.c      |    4 ++--
+ drivers/net/ethernet/sfc/efx.h      |   13 +++++++++++++
+ drivers/net/ethernet/sfc/selftest.c |    2 +-
+ 3 files changed, 16 insertions(+), 3 deletions(-)
+
+--- a/drivers/net/ethernet/sfc/efx.c
++++ b/drivers/net/ethernet/sfc/efx.c
+@@ -2224,7 +2224,7 @@ int efx_reset(struct efx_nic *efx, enum
+ 	netif_info(efx, drv, efx->net_dev, "resetting (%s)\n",
+ 		   RESET_TYPE(method));
+ 
+-	netif_device_detach(efx->net_dev);
++	efx_device_detach_sync(efx);
+ 	efx_reset_down(efx, method);
+ 
+ 	rc = efx->type->reset(efx, method);
+@@ -2718,7 +2718,7 @@ static int efx_pm_freeze(struct device *
+ 
+ 	efx->state = STATE_FINI;
+ 
+-	netif_device_detach(efx->net_dev);
++	efx_device_detach_sync(efx);
+ 
+ 	efx_stop_all(efx);
+ 	efx_stop_interrupts(efx, false);
+--- a/drivers/net/ethernet/sfc/efx.h
++++ b/drivers/net/ethernet/sfc/efx.h
+@@ -162,4 +162,17 @@ extern void efx_link_status_changed(stru
+ extern void efx_link_set_advertising(struct efx_nic *efx, u32);
+ extern void efx_link_set_wanted_fc(struct efx_nic *efx, u8);
+ 
++static inline void efx_device_detach_sync(struct efx_nic *efx)
++{
++	struct net_device *dev = efx->net_dev;
++
++	/* Lock/freeze all TX queues so that we can be sure the
++	 * TX scheduler is stopped when we're done and before
++	 * netif_device_present() becomes false.
++	 */
++	netif_tx_lock(dev);
++	netif_device_detach(dev);
++	netif_tx_unlock(dev);
++}
++
+ #endif /* EFX_EFX_H */
+--- a/drivers/net/ethernet/sfc/selftest.c
++++ b/drivers/net/ethernet/sfc/selftest.c
+@@ -735,7 +735,7 @@ int efx_selftest(struct efx_nic *efx, st
+ 	/* Detach the device so the kernel doesn't transmit during the
+ 	 * loopback test and the watchdog timeout doesn't fire.
+ 	 */
+-	netif_device_detach(efx->net_dev);
++	efx_device_detach_sync(efx);
+ 
+ 	mutex_lock(&efx->mac_lock);
+ 	if (efx->loopback_modes) {
+
+
