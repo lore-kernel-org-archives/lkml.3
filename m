@@ -1,115 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935000Ab3CZQOz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:14:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54571 "EHLO
+	id S964923Ab3CZQPk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:15:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53637 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933855Ab3CZQOG (ORCPT
+	with ESMTP id S964901Ab3CZPWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:14:06 -0400
-Message-ID: <5151C94B.7000407@canonical.com>
-Date: Tue, 26 Mar 2013 17:14:03 +0100
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH] lockdep/selftest: Add tests for the mixed read-write case.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Mar 2013 11:22:08 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Guillaume Nault <g.nault@alphalink.fr>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 037/150] l2tp: Restore socket refcount when sendmsg succeeds
+Date: Tue, 26 Mar 2013 15:18:56 +0000
+Message-Id: <1364311249-14454-38-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rlock_AA5 will pass unexpectedly, marking the test as FAILED and breaking lockdep for everyone.
+3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
 
-The following test should make lockdep complain, but currently doesn't:
+------------------
 
-lock(a); readlock(x);
+From: Guillaume Nault <g.nault@alphalink.fr>
 
-writelock(x); lock(a);
+commit 8b82547e33e85fc24d4d172a93c796de1fefa81a upstream.
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+The sendmsg() syscall handler for PPPoL2TP doesn't decrease the socket
+reference counter after successful transmissions. Any successful
+sendmsg() call from userspace will then increase the reference counter
+forever, thus preventing the kernel's session and tunnel data from
+being freed later on.
+
+The problem only happens when writing directly on L2TP sockets.
+PPP sockets attached to L2TP are unaffected as the PPP subsystem
+uses pppol2tp_xmit() which symmetrically increase/decrease reference
+counters.
+
+This patch adds the missing call to sock_put() before returning from
+pppol2tp_sendmsg().
+
+Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
+ net/l2tp/l2tp_ppp.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
-index 8a1a230..d0d2540 100644
---- a/lib/locking-selftest.c
-+++ b/lib/locking-selftest.c
-@@ -301,6 +301,51 @@ static void rsem_AA3(void)
- 	RSL(X2); // this one should fail
- }
+diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
+index 8ef6b94..46c7cc7 100644
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -355,6 +355,7 @@ static int pppol2tp_sendmsg(struct kiocb *iocb, struct socket *sock, struct msgh
+ 	l2tp_xmit_skb(session, skb, session->hdr_len);
  
-+static void rlock_AA4(void)
-+{
-+	ML(A);
-+	RL(X1);
-+	RU(X1);
-+	MU(A);
-+
-+	RL(X1);
-+	ML(A);
-+}
-+
-+static void rsem_AA4(void)
-+{
-+	ML(A);
-+	RSL(X1);
-+	RSU(X1);
-+	MU(A);
-+
-+	RSL(X1);
-+	ML(A);
-+}
-+
-+static void rlock_AA5(void)
-+{
-+	ML(A);
-+	RL(X1);
-+	RU(X1);
-+	MU(A);
-+
-+	WL(X1);
-+	ML(A);
-+}
-+
-+static void rsem_AA5(void)
-+{
-+	ML(A);
-+	RSL(X1);
-+	RSU(X1);
-+	MU(A);
-+
-+	WSL(X1);
-+	ML(A);
-+}
-+
-+
- /*
-  * ABBA deadlock:
-  */
-@@ -1661,6 +1706,21 @@ void locking_selftest(void)
- 	dotest(rsem_AA3, FAILURE, LOCKTYPE_RWSEM);
- 	printk("\n");
+ 	sock_put(ps->tunnel_sock);
++	sock_put(sk);
  
-+	print_testname("mixed normal-read-lock");
-+	printk("             |");
-+	dotest(rlock_AA4, SUCCESS, LOCKTYPE_RWLOCK);
-+	printk("             |");
-+	dotest(rsem_AA4, FAILURE, LOCKTYPE_RWSEM);
-+	printk("\n");
-+
-+	print_testname("mixed normal-r/w-lock");
-+	printk("             |");
-+	dotest(rlock_AA5, FAILURE, LOCKTYPE_RWLOCK);
-+	printk("             |");
-+	dotest(rsem_AA5, FAILURE, LOCKTYPE_RWSEM);
-+	printk("\n");
-+
-+
- 	printk("  --------------------------------------------------------------------------\n");
+ 	return error;
  
- 	/*
+-- 
+1.8.1.2
 
