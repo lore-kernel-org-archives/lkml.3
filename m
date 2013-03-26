@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934743Ab3CZQd6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:33:58 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:53771 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934635Ab3CZQd4 (ORCPT
+	id S965695Ab3CZQf0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:35:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54715 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965531Ab3CZQfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:33:56 -0400
-Date: Tue, 26 Mar 2013 09:33:51 -0700
-From: Tejun Heo <tj@kernel.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Jeff Layton <jlayton@redhat.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
-        skinsbursky@parallels.com, ebiederm@xmission.com, jmorris@namei.org,
-        axboe@kernel.dk
-Subject: Re: [PATCHSET] idr: implement idr_alloc() and convert existing users
-Message-ID: <20130326163351.GB3061@htj.dyndns.org>
-References: <1359854463-2538-1-git-send-email-tj@kernel.org>
- <20130203170241.GA24778@fieldses.org>
- <20130204001557.GB24778@fieldses.org>
- <20130204171031.GK27963@mtj.dyndns.org>
- <20130204171128.GL27963@mtj.dyndns.org>
- <20130321140618.GD27838@fieldses.org>
- <20130321183513.GC20500@htj.dyndns.org>
- <20130326111936.550110bf@tlielax.poochiereds.net>
- <20130326152653.GA3061@htj.dyndns.org>
- <20130326163011.GC3353@fieldses.org>
+	Tue, 26 Mar 2013 12:35:24 -0400
+Date: Tue, 26 Mar 2013 16:35:18 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        Sebastian Gottschall <s.gottschall@dd-wrt.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "# 3.4.x" <stable@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Build breakage in 3.8.4 [was: Linux 3.8.4]
+Message-ID: <20130326163518.GC3542@hercules>
+References: <20130320201554.GA18281@kroah.com>
+ <kidd01$2o6$1@ger.gmane.org>
+ <514F5480.6040501@suse.cz>
+ <CAGXu5jJdbDabBjNoaZUeqCT6a6yHqHcQNnqXNM6T1S=bwig8Fw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130326163011.GC3353@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGXu5jJdbDabBjNoaZUeqCT6a6yHqHcQNnqXNM6T1S=bwig8Fw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Tue, Mar 26, 2013 at 12:30:11PM -0400, J. Bruce Fields wrote:
-> The only requirements are that at a given moment in time id's should be
-> unique, and that we should make some effort to avoid reusing them
-> immediately.
+On Tue, Mar 26, 2013 at 08:56:20AM -0700, Kees Cook wrote:
+> On Sun, Mar 24, 2013 at 12:31 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+> > On 03/20/2013 11:25 PM, Sebastian Gottschall wrote:
+> >
+> >> Am 20.03.2013 21:15, schrieb Greg KH:
+> >>> I'm announcing the release of the 3.8.4 kernel.
+> > ...
+> >>>        signal: always clear sa_restorer on execve
+> >> consider that this kernel is not compileable on mips targets due the
+> >> patch in kernel/signal.c
+> >>
+> >> SA_RESTORER is defined in mips, but sa_restorer does not exist on that
+> >> platform
+> >
+> > The same for ia64...
+> >
+> > kernel/signal.c: In function 'flush_signal_handlers':
+> > kernel/signal.c:441: error: 'struct sigaction' has no member named
+> > 'sa_restorer'
+> >
+> > Do we need this in 3.0, 3.4, 3.8 too?
+> > commit 522cff142d7d2f9230839c9e1f21a4d8bcc22a4a
+> > Author: Andrew Morton <akpm@linux-foundation.org>
+> > Date:   Wed Mar 13 14:59:34 2013 -0700
+> >
+> >     kernel/signal.c: use __ARCH_HAS_SA_RESTORER instead of SA_RESTORER
+> >
+> >     __ARCH_HAS_SA_RESTORER is the preferred conditional for use in 3.9 and
+> >     later kernels, per Kees.
 > 
-> I don't know what other "cyclic" idr users need.
+> Hrm, if so, we'll need to also backport the changes that aded
+> __ARCH_HAS_SA_RESTORER...
 
-We already have other users and idr would at least behave better
-(ie. fail faster) under extreme conditions, so sticking with idr might
-not be too bad.  The optimal would be bitmap + hashtable, I suppose.
+Isn't the solution provided by Ben [1] enough to solve this?
 
-Thanks.
+[1] https://lkml.org/lkml/2013/3/26/12
 
--- 
-tejun
+Cheers,
+--
+Luis
+
+> 
+> -Kees
+> 
+> >
+> > thanks,
+> > --
+> > js
+> > suse labs
+> 
+> 
+> 
+> --
+> Kees Cook
+> Chrome OS Security
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
