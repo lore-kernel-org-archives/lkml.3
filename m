@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965001Ab3CZPXJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:23:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53880 "EHLO
+	id S965554Ab3CZPnx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:43:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53944 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965134Ab3CZPWz (ORCPT
+	with ESMTP id S965192Ab3CZPXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:55 -0400
+	Tue, 26 Mar 2013 11:23:11 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Julia Lemire <jlemire@matrox.com>, Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 079/150] ALSA: hda/cirrus - Fix the digital beep registration
-Date: Tue, 26 Mar 2013 15:19:38 +0000
-Message-Id: <1364311249-14454-80-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 092/150] drm/mgag200: Bug fix: Modified pll algorithm for EH project
+Date: Tue, 26 Mar 2013 15:19:51 +0000
+Message-Id: <1364311249-14454-93-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,60 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Julia Lemire <jlemire@matrox.com>
 
-commit a86b1a2cd2f81f74e815e07f756edd7bc5b6f034 upstream.
+commit 260b3f1291a75a580d22ce8bfb1499c617272716 upstream.
 
-The argument passed to snd_hda_attach_beep_device() is a widget NID
-while spec->beep_amp holds the composed value for amp controls.
+While testing the mgag200 kms driver on the HP ProLiant Gen8, a
+bug was seen.  Once the bootloader would load the selected kernel,
+the screen would go black.  At first it was assumed that the
+mgag200 kms driver was hanging.  But after setting up the grub
+serial output, it was seen that the driver was being loaded
+properly.  After trying serval monitors, one finaly displayed
+the message "Frequency Out of Range".  By comparing the kms pll
+algorithm with the previous mgag200 xorg driver pll algorithm,
+discrepencies were found.  Once the kms pll algorithm was
+modified, the expected pll values were produced.  This fix was
+tested on several monitors of varying native resolutions.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[ luis: adjust context ]
+Signed-off-by: Julia Lemire <jlemire@matrox.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_conexant.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/mgag200/mgag200_mode.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
-index 2682b3d..5fb90c6 100644
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -1170,7 +1170,7 @@ static int patch_cxt5045(struct hda_codec *codec)
+diff --git a/drivers/gpu/drm/mgag200/mgag200_mode.c b/drivers/gpu/drm/mgag200/mgag200_mode.c
+index 0201d1d..505a917 100644
+--- a/drivers/gpu/drm/mgag200/mgag200_mode.c
++++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
+@@ -383,19 +383,19 @@ static int mga_g200eh_set_plls(struct mga_device *mdev, long clock)
+ 	m = n = p = 0;
+ 	vcomax = 800000;
+ 	vcomin = 400000;
+-	pllreffreq = 3333;
++	pllreffreq = 33333;
+ 
+ 	delta = 0xffffffff;
+ 	permitteddelta = clock * 5 / 1000;
+ 
+-	for (testp = 16; testp > 0; testp--) {
++	for (testp = 16; testp > 0; testp >>= 1) {
+ 		if (clock * testp > vcomax)
+ 			continue;
+ 		if (clock * testp < vcomin)
+ 			continue;
+ 
+ 		for (testm = 1; testm < 33; testm++) {
+-			for (testn = 1; testn < 257; testn++) {
++			for (testn = 17; testn < 257; testn++) {
+ 				computed = (pllreffreq * testn) /
+ 					(testm * testp);
+ 				if (computed > clock)
+@@ -405,11 +405,11 @@ static int mga_g200eh_set_plls(struct mga_device *mdev, long clock)
+ 				if (tmpdelta < delta) {
+ 					delta = tmpdelta;
+ 					n = testn - 1;
+-					m = (testm - 1) | ((n >> 1) & 0x80);
++					m = (testm - 1);
+ 					p = testp - 1;
+ 				}
+ 				if ((clock * testp) >= 600000)
+-					p |= 80;
++					p |= 0x80;
+ 			}
+ 		}
  	}
- 
- 	if (spec->beep_amp)
--		snd_hda_attach_beep_device(codec, spec->beep_amp);
-+		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
- 
- 	return 0;
- }
-@@ -1949,7 +1949,7 @@ static int patch_cxt5051(struct hda_codec *codec)
- 	}
- 
- 	if (spec->beep_amp)
--		snd_hda_attach_beep_device(codec, spec->beep_amp);
-+		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
- 
- 	return 0;
- }
-@@ -3136,7 +3136,7 @@ static int patch_cxt5066(struct hda_codec *codec)
- 	}
- 
- 	if (spec->beep_amp)
--		snd_hda_attach_beep_device(codec, spec->beep_amp);
-+		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
- 
- 	return 0;
- }
-@@ -4528,7 +4528,7 @@ static int patch_conexant_auto(struct hda_codec *codec)
- 	spec->capture_stream = &cx_auto_pcm_analog_capture;
- 	codec->patch_ops = cx_auto_patch_ops;
- 	if (spec->beep_amp)
--		snd_hda_attach_beep_device(codec, spec->beep_amp);
-+		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
- 
- 	/* Some laptops with Conexant chips show stalls in S3 resume,
- 	 * which falls into the single-cmd mode.
 -- 
 1.8.1.2
 
