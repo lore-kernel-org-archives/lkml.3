@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab3CZVte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 17:49:34 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59397 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab3CZVtd convert rfc822-to-8bit (ORCPT
+	id S1752941Ab3CZVzR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 17:55:17 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:44338 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597Ab3CZVzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 17:49:33 -0400
-Date: Tue, 26 Mar 2013 22:49:32 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>
-Subject: Re: Fixup for 3.4.34 merge conflict
-Message-ID: <20130326214932.GD14220@linutronix.de>
-References: <1363711834.5938.39.camel@gandalf.local.home>
+	Tue, 26 Mar 2013 17:55:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1363711834.5938.39.camel@gandalf.local.home>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130305224150.GE8339@xanatos>
+References: <1361182193-31894-1-git-send-email-hare@suse.de>
+ <CAE9FiQWP1F5mLUoHoTHXy-wQoGxVK66QuuHYydaq3YfysS5Etg@mail.gmail.com>
+ <5124820D.2080900@suse.de> <CAE9FiQXHteymDNzu0GqWtVSVhu3g2hCT+K9e5tB1mR-OBX1ffA@mail.gmail.com>
+ <5125C45A.5020208@suse.de> <CAErSpo5j3Qge5Q2S+hyMGOcmoN77V0T=1+6OJdNJfJdnvT8wgg@mail.gmail.com>
+ <51305B99.6080806@suse.de> <20130305224150.GE8339@xanatos>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 26 Mar 2013 15:54:52 -0600
+Message-ID: <CAErSpo4nAN7wFaRebw5fM3gQVppaQoSSh3PdFumgCS1SGhcxcw@mail.gmail.com>
+Subject: Re: [PATCH] pci: do not try to assign irq 255
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Hannes Reinecke <hare@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Frederik Himpe <fhimpe@vub.ac.be>, Oliver Neukum <oneukum@suse.de>,
+        David Haerdeman <david@hardeman.nu>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Andy Grover <agrover@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt | 2013-03-19 12:50:34 [-0400]:
+On Tue, Mar 5, 2013 at 3:41 PM, Sarah Sharp
+<sarah.a.sharp@linux.intel.com> wrote:
+> On Fri, Mar 01, 2013 at 08:41:13AM +0100, Hannes Reinecke wrote:
+>> On 02/27/2013 10:13 PM, Bjorn Helgaas wrote:
+>> >[+cc Andy]
+>> >
+>> >3) I don't understand why the xhci init fails in the first place.  It
+>> >looks like the "request interrupt 255 failed" message is from
+>> >xhci_try_enable_msi(), but that function tries to enable MSI-X, then
+>> >MSI, then falls back to legacy interrupts, where we get the error.
+>> >But the device supports MSI, so I don't know why we even fall back to
+>> >trying legacy interrupts.  Hannes, do you have any insight into that?
+>> >Obviously I'm missing something here.
+>> >
+>> Hehe. Due to overly clever design.
+>> xhci actually sets up interrupts _twice_, once per request_irq() in
+>> the generic code and a second time during xhci_run.
+>> But as the first call fails it'll never ever run the second part.
+>>
+>> I'll be sending a patch.
+>
+> Something like this?
+>
+> http://marc.info/?l=linux-usb&m=132972894117916&w=2
+>
+> (Apparently we had this issue around the same time last year, but we
+> thought the BIOS bug had been resolved.)
+>
+> Sarah Sharp
 
->@@ -1054,19 +1032,39 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
-> 	 *
-> 	 * XXX send_remote_softirq() ?
-> 	 */
->-	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)) {
->-		ret = hrtimer_enqueue_reprogram(timer, new_base, wakeup);
->-		if (ret) {
->+	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)
->+		&& hrtimer_enqueue_reprogram(timer, new_base)) {
->+
->+		if (wakeup
->+#ifdef CONFIG_PREEMPT_RT_BASE
->+		    /*
->+		     * Move softirq based timers away from the rbtree in
->+		     * case it expired already. Otherwise we would have a
->+		     * stale base->first entry until the softirq runs.
->+		     */
->+		    && hrtimer_rt_defer(timer)
->+#endif
->+			) {
-> 			/*
->-			 * In case we failed to reprogram the timer (mostly
->-			 * because out current timer is already elapsed),
->-			 * remove it again and report a failure. This avoids
->-			 * stale base->first entries.
->+			 * We need to drop cpu_base->lock to avoid a
->+			 * lock ordering issue vs. rq->lock.
-> 			 */
->-			debug_deactivate(timer);
->-			__remove_hrtimer(timer, new_base,
->-					timer->state & HRTIMER_STATE_CALLBACK, 0);
->+			raw_spin_unlock(&new_base->cpu_base->lock);
->+			raise_softirq_irqoff(HRTIMER_SOFTIRQ);
->+			local_irq_restore(flags);
->+			return ret;
+Where are we at with this?  I don't see Sarah's patch in the tree, and
+I haven't applied any changes, so my guess is this is still broken.
 
-Hmmm. Your ret here might be 0 or 1. RT did return here always zero
-unless it returned -ETIME. This is what I did for v3.8 but I don't claim
-to be correct here. Need to re-check this later…
-
-Sebastian
+Bjorn
