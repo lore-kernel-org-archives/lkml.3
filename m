@@ -1,118 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246Ab3CZSlF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:41:05 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:53128 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754339Ab3CZSlC (ORCPT
+	id S1760155Ab3CZSo6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:44:58 -0400
+Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:1909
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760142Ab3CZSo5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 14:41:02 -0400
-Date: Tue, 26 Mar 2013 11:40:58 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jon Loeliger <jdl@jdl.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
-        Alan Tull <atull@altera.com>, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
-        Joel A Fernandes <agnel.joel@gmail.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Matt Ranostay <mranostay@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [PATCH 1/5] capemgr: Beaglebone DT overlay based cape manager
-Message-ID: <20130326184058.GA4194@kroah.com>
-References: <1357584666-17374-1-git-send-email-panto@antoniou-consulting.com>
- <93BF5C62-ADE8-4EFC-9175-C2D7E43300E3@antoniou-consulting.com>
- <20130107210551.GL14149@atomide.com>
- <201301072135.05166.arnd@arndb.de>
- <89A7A8FD-935E-4225-8C7B-EA1DBA0C2780@antoniou-consulting.com>
- <20130108100042.GD21994@gmail.com>
- <21E7B891-269B-422D-9038-381FAA15B59B@antoniou-consulting.com>
- <20130326161610.804983E2499@localhost>
+	Tue, 26 Mar 2013 14:44:57 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: 4
+X-BigFish: PS4(zz9371I542I1432I78fbmzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dh8275bhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB061;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/2] tools: hv: use FIFREEZE/FITHAW in hv_vss_daemon
+Thread-Topic: [PATCH 1/2] tools: hv: use FIFREEZE/FITHAW in hv_vss_daemon
+Thread-Index: AQHOKkG2Va+xn/5100m9cn3fzM394Zi4Ta2w
+Date: Tue, 26 Mar 2013 18:43:15 +0000
+Message-ID: <d5b20c7b60cd48a6a78e541f42493b87@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1364316430-29655-1-git-send-email-olaf@aepfle.de>
+In-Reply-To: <1364316430-29655-1-git-send-email-olaf@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.163]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130326161610.804983E2499@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OrganizationHeadersPreserved: SN2PR03MB061.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(189002)(199002)(377454001)(51704002)(13464002)(5343655001)(80022001)(44976002)(23726001)(5343635001)(6806001)(51856001)(79102001)(31966008)(74662001)(46102001)(46406002)(54356001)(47446002)(74502001)(56816002)(53806001)(66066001)(4396001)(33646001)(16676001)(65816001)(69226001)(50466001)(63696002)(47776003)(47976001)(77982001)(76482001)(47736001)(54316002)(50986001)(56776001)(59766001)(49866001)(20776003)(309714001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2FFO11HUB022;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 079756C6B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 04:16:10PM +0000, Grant Likely wrote:
-> On Tue, 8 Jan 2013 12:10:20 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
-> > Hi Lee,
-> > 
-> > On Jan 8, 2013, at 12:00 PM, Lee Jones wrote:
-> > 
-> > >>>>> At the end of the line, some kind of hardware glue is going to be needed.
-> > >>>>> 
-> > >>>>> I just feel that drawing from a sample size of 1 (maybe 2 if I get to throw
-> > >>>>> in the beagleboard), it is a bit premature to think about making it overly
-> > >>>>> general, besides the part that are obviously part of the infrastructure 
-> > >>>>> (like the DT overlay stuff).
-> > >>>>> 
-> > >>>>> What I'm getting at, is that we need some user experience about this, before
-> > >>>>> going away and creating structure out of possible misconception about the uses. 
-> > >>>> 
-> > >>>> IMHO stuff like this will be needed by many SoCs. Some examples of similar
-> > >>>> things for omaps that have eventually become generic frameworks have been
-> > >>>> the clock framework, USB OTG support, runtime PM, pinmux framework and
-> > >>>> so on.
-> > >>>> 
-> > >>>> So I suggest a minimal generic API from the start as that will make things
-> > >>>> a lot easier in the long run.
-> > >>> 
-> > >>> I agree. The ux500 platform already has the concept of "user interface boards",
-> > >>> which currently is not well integrated into devicetree. I believe Sascha
-> > >>> mentioned that Pengutronix had been shipping some other systems with add-on
-> > >>> boards and generating device tree binaries from source for each combination.
-> > >>> 
-> > >>> Ideally, both of the above should be able to use the same DT overlay logic
-> > >>> as BeagleBone, and I'm sure there are more of those.
-> > >> 
-> > >> Hmm, I see. 
-> > >> 
-> > >> I will need some more information about the interface of the 'user interface boards'.
-> > >> I.e. how is the board identified, what is typically present on those boards, etc.
-> > > 
-> > > User Interface Boards are mearly removable PCBs which are interchangeable
-> > > amongst various hardware platforms. They are connected via numerous
-> > > connectors which carry all sorts of different data links; i2c, spi, rs232,
-> > > etc. The UIB I'm looking at right now has a touchscreen, speakers, a key
-> > > pad, leds, jumpers, switches and a bunch of sensors.
-> > > 
-> > > You can find a small example of how we interface to these by viewing
-> > > 'arch/arm/boot/dts/stuib.dtsi'. To add a UIB to a particular build, we
-> > > currently include it as a *.dtsi from a platform's dts file.
-> > 
-> > I see. What I'm asking about is whether there's a method where you can read
-> > an EEPROM, or some GPIO code combination where I can find out what kind of board
-> > is plugged each time.
-> > 
-> > If there is not, there is no way to automatically load the overlays; you can always
-> > use the kernel command line, or have the a user space application to request the loading
-> > of a specific board's overlay.
-> > 
+
+
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Tuesday, March 26, 2013 12:47 PM
+> To: KY Srinivasan; gregkh@linuxfoundation.org
+> Cc: linux-kernel@vger.kernel.org; Olaf Hering
+> Subject: [PATCH 1/2] tools: hv: use FIFREEZE/FITHAW in hv_vss_daemon
 > 
-> In this case the best thing to do is announce the availability of the
-> expansion via a request_firmware() call and let udev handle supplying
-> the correct overlay file.
+> As suggested by Paolo Bonzini, use ioctl instead of calling fsfreeze.
+> 
+> Signed-off-by: Olaf Hering <olaf@aepfle.de>
 
-The code to load firmware files was recently removed from udev, now that
-the kernel handles this automatically itself :)
+Thanks Olaf for taking care of this.
 
-But yes, the same call still applies, request_firmware() should work
-fine here.
+Acked by: K. Y. Srinivasan <kys@microsoft.com>
 
-thanks,
+> ---
+> 
+> NOT runtime tested!!
+> 
+>  tools/hv/hv_vss_daemon.c | 31 ++++++++++++++++++++++---------
+>  1 file changed, 22 insertions(+), 9 deletions(-)
+> 
+> diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c
+> index e37d86c..830d606 100644
+> --- a/tools/hv/hv_vss_daemon.c
+> +++ b/tools/hv/hv_vss_daemon.c
+> @@ -21,7 +21,9 @@
+>  #include <sys/types.h>
+>  #include <sys/socket.h>
+>  #include <sys/poll.h>
+> +#include <sys/ioctl.h>
+>  #include <linux/types.h>
+> +#include <fcntl.h>
+>  #include <stdio.h>
+>  #include <mntent.h>
+>  #include <stdlib.h>
+> @@ -30,6 +32,7 @@
+>  #include <ctype.h>
+>  #include <errno.h>
+>  #include <arpa/inet.h>
+> +#include <linux/fs.h>
+>  #include <linux/connector.h>
+>  #include <linux/hyperv.h>
+>  #include <linux/netlink.h>
+> @@ -44,21 +47,35 @@ static struct sockaddr_nl addr;
+>  #endif
+> 
+> 
+> +static int vss_do_freeze(char *dir, unsigned int cmd, char *fs_op)
+> +{
+> +	int ret, fd = open(dir, O_RDONLY);
+> +
+> +	if (fd < 0)
+> +		return 1;
+> +	ret = ioctl(fd, cmd, 0);
+> +	syslog(LOG_INFO, "VSS: %s of %s: %s\n", fs_op, dir, strerror(errno));
+> +	close(fd);
+> +	return !!ret;
+> +}
+> +
+>  static int vss_operate(int operation)
+>  {
+>  	char *fs_op;
+> -	char cmd[512];
+>  	char match[] = "/dev/";
+>  	FILE *mounts;
+>  	struct mntent *ent;
+> +	unsigned int cmd;
+>  	int error = 0, root_seen = 0;
+> 
+>  	switch (operation) {
+>  	case VSS_OP_FREEZE:
+> -		fs_op = "-f ";
+> +		cmd = FIFREEZE;
+> +		fs_op = "freeze";
+>  		break;
+>  	case VSS_OP_THAW:
+> -		fs_op = "-u ";
+> +		cmd = FITHAW;
+> +		fs_op = "thaw";
+>  		break;
+>  	default:
+>  		return -1;
+> @@ -75,16 +92,12 @@ static int vss_operate(int operation)
+>  			root_seen = 1;
+>  			continue;
+>  		}
+> -		snprintf(cmd, sizeof(cmd), "fsfreeze %s '%s'", fs_op, ent-
+> >mnt_dir);
+> -		syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
+> -		error |= system(cmd);
+> +		error |= vss_do_freeze(ent->mnt_dir, cmd, fs_op);
+>  	}
+>  	endmntent(mounts);
+> 
+>  	if (root_seen) {
+> -		sprintf(cmd, "fsfreeze %s /", fs_op);
+> -		syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
+> -		error |= system(cmd);
+> +		error |= vss_do_freeze("/", cmd, fs_op);
+>  	}
+> 
+>  	return error;
+> 
 
-greg k-h
+
