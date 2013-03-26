@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759905Ab3CZT1p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 15:27:45 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:59957 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab3CZT1n (ORCPT
+	id S1760183Ab3CZT2M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 15:28:12 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:37426 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754236Ab3CZT2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 15:27:43 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: "Lars-Peter Clausen" <lars@metafoo.de>
-Subject: Re: [PATCH] power: bq27x00_battery: Export all battery registers via sysfs
-Date: Tue, 26 Mar 2013 20:27:39 +0100
-User-Agent: KMail/1.13.7 (Linux/3.5.0-27-generic; KDE/4.10.1; x86_64; ; )
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-References: <1358604104-7667-1-git-send-email-pali.rohar@gmail.com> <50FBBE7D.7040102@metafoo.de>
-In-Reply-To: <50FBBE7D.7040102@metafoo.de>
+	Tue, 26 Mar 2013 15:28:10 -0400
+Date: Tue, 26 Mar 2013 20:27:13 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dgilbert@interlog.com
+Subject: Re: [PATCH] rtc: rtc-at91rm9200: use a variable for storing IMR
+Message-ID: <20130326192713.GA31628@localhost>
+References: <1363369032-12639-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1383669.5qPOGqsyJq";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303262027.39772@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363369032-12639-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1383669.5qPOGqsyJq
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Fri, Mar 15, 2013 at 06:37:12PM +0100, Nicolas Ferre wrote:
+> On some revisions of AT91 SoCs, the RTC IMR register is not working.
+> Instead of elaborating a workaround for that specific SoC or IP version,
+> we simply use a software variable to store the Interrupt Mask Register and
+> modify it for each enabling/disabling of an interrupt. The overhead of this
+> is negligible anyway.
 
-On Sunday 20 January 2013 10:53:01 Lars-Peter Clausen wrote:
-> On 01/19/2013 03:01 PM, Pali Roh=C3=A1r wrote:
-> > bq27xxx batteries have a lot of properties, more than
-> > power_supply interface. Some of them can be usefull for
-> > userspace applications (like CI bit) but does not make
-> > sense to add bq specified property to power_supply
-> > interface. When bq27x00_battery is not loaded userspace
-> > application (like i2cget) can use /dev/i2c-* interface for
-> > raw access. But when kernel module is attached to i2c
-> > device, userspace applications cannot access it via
-> > /dev/i2c-*.
->=20
-> You can still access it if you use the I2C_SLAVE_FORCE flag.
-> This is a bit ugly, but I'd rather see an ugly hack in
-> userspace than in kernel space.
->=20
+The patch does not add any memory barriers or register read-backs when
+manipulating the interrupt-mask variable. This could possibly lead to
+spurious interrupts both when enabling and disabling the various
+RTC-interrupts due to write reordering and bus latencies.
 
-What is I2C_SLAVE_FORCE flag doing? Isnt there some potential=20
-hardware damage problems (like simultaneous access to i2c bus)?
+Has this been considered? And is this reason enough for a more targeted
+work-around so that the SOCs with functional RTC_IMR are not affected?
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+> Reported-by: Douglas Gilbert <dgilbert@interlog.com>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>  drivers/rtc/rtc-at91rm9200.c | 50 +++++++++++++++++++++++++++-----------------
+>  drivers/rtc/rtc-at91rm9200.h |  1 -
+>  2 files changed, 31 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
+> index 79233d0..29b92e4 100644
+> --- a/drivers/rtc/rtc-at91rm9200.c
+> +++ b/drivers/rtc/rtc-at91rm9200.c
+> @@ -46,6 +46,7 @@ static DECLARE_COMPLETION(at91_rtc_updated);
+>  static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
+>  static void __iomem *at91_rtc_regs;
+>  static int irq;
+> +static u32 at91_rtc_imr;
+>  
+>  /*
+>
+> * Decode time/date into rtc_time structure
 
---nextPart1383669.5qPOGqsyJq
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+[...]
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> @@ -198,9 +203,12 @@ static int at91_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+>  
+>  	if (enabled) {
+>  		at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_ALARM);
+> +		at91_rtc_imr |= AT91_RTC_ALARM;
 
-iEYEABECAAYFAlFR9qsACgkQi/DJPQPkQ1KyWgCguQu7ym7uGgVnSP2e3H8fkM9W
-1dQAoJQYCza1Ib7Xv+aRGTpzEYk5rehk
-=kWkP
------END PGP SIGNATURE-----
+wmb() needed before enabling interrupt as at91_rtc_write() uses
+__raw_writel() which does not add any barriers?
 
---nextPart1383669.5qPOGqsyJq--
+>  		at91_rtc_write(AT91_RTC_IER, AT91_RTC_ALARM);
+> -	} else
+> +	} else {
+>  		at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ALARM);
+
+wmb() and register read-back needed before updating interrupt mask?
+
+> +		at91_rtc_imr &= ~AT91_RTC_ALARM;
+> +	}
+>  
+>  	return 0;
+> }
+
+[...]
+
+> @@ -229,7 +235,7 @@ static irqreturn_t at91_rtc_interrupt(int irq, void *dev_id)
+>  	unsigned int rtsr;
+>  	unsigned long events = 0;
+>  
+> -	rtsr = at91_rtc_read(AT91_RTC_SR) & at91_rtc_read(AT91_RTC_IMR);
+> +	rtsr = at91_rtc_read(AT91_RTC_SR) & at91_rtc_imr;
+
+Does at91_rtc_imr necessarily match the hardware state here?
+
+>  	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
+>  		if (rtsr & AT91_RTC_ALARM)
+>  			events |= (RTC_AF | RTC_IRQF);
+
+Johan
