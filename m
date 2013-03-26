@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759686Ab3CZMML (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 08:12:11 -0400
+	id S932577Ab3CZMMf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 08:12:35 -0400
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43180 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759612Ab3CZMMJ (ORCPT
+	with ESMTP id S1757947Ab3CZMMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 08:12:09 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-51-51519095596a
+	Tue, 26 Mar 2013 08:12:08 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-50-5151909575f1
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] perf report: Fix alignment of symbol column when -v is given
-Date: Tue, 26 Mar 2013 21:11:58 +0900
-Message-Id: <1364299918-31175-3-git-send-email-namhyung@kernel.org>
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 2/3] perf sort: Add 'addr_to/from' sort key
+Date: Tue, 26 Mar 2013 21:11:57 +0900
+Message-Id: <1364299918-31175-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1364299918-31175-1-git-send-email-namhyung@kernel.org>
 References: <1364299918-31175-1-git-send-email-namhyung@kernel.org>
@@ -26,88 +27,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-When -v option is given, the symbol sort key prints its address also
-but it wasn't properly aligned since hists__calc_col_len() misses the
-additional part.  Also it missed 2 spaces for 0x prefix when printing.
+New addr_{to,from} sort keys provide a way to sort the entries by the
+source/target symbol addresses.
 
-  $ perf report --stdio -v -s sym
-  # Samples: 133  of event 'cycles'
-  # Event count (approx.): 50536717
-  #
-  # Overhead                          Symbol
-  # ........  ..............................
-  #
-      12.20%  0xffffffff81384c50 v [k] intel_idle
-       7.62%  0xffffffff8170976a v [k] ftrace_caller
-       7.02%  0x2d986d         B [.] 0x00000000002d986d
-
+Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c | 20 +++++++++++++++++---
- tools/perf/util/sort.c |  2 +-
- 2 files changed, 18 insertions(+), 4 deletions(-)
+ tools/perf/util/hist.c |  2 ++
+ tools/perf/util/hist.h |  2 ++
+ tools/perf/util/sort.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/sort.h |  2 ++
+ 4 files changed, 56 insertions(+)
 
 diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index b951f4101d7e..7d4bb1f515d1 100644
+index 82b7542db904..b951f4101d7e 100644
 --- a/tools/perf/util/hist.c
 +++ b/tools/perf/util/hist.c
-@@ -73,8 +73,17 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
- 	const unsigned int unresolved_col_width = BITS_PER_LONG / 4;
- 	u16 len;
+@@ -54,6 +54,8 @@ void hists__reset_col_len(struct hists *hists)
+ 		hists__set_col_len(hists, col, 0);
  
--	if (h->ms.sym)
--		hists__new_col_len(hists, HISTC_SYMBOL, h->ms.sym->namelen + 4);
-+	if (h->ms.sym) {
-+		/*
-+		 * +4 accounts for '[x] ' priv level info
-+		 * +2 accounts for 0x prefix on raw addresses
-+		 * +3 accounts for ' y ' symtab origin info
-+		 */
-+		len = h->ms.sym->namelen + 4;
-+		if (verbose)
-+			len += BITS_PER_LONG / 4 + 2 + 3;
-+		hists__new_col_len(hists, HISTC_SYMBOL, len);
-+	}
- 	else
- 		hists__set_unres_dso_col_len(hists, HISTC_DSO);
+ 	hists__set_col_len(hists, HISTC_ADDR, BITS_PER_LONG / 4 + 2);
++	hists__set_col_len(hists, HISTC_ADDR_FROM, BITS_PER_LONG / 4 + 2);
++	hists__set_col_len(hists, HISTC_ADDR_TO, BITS_PER_LONG / 4 + 2);
+ }
  
-@@ -94,10 +103,13 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
- 		int symlen;
- 		/*
- 		 * +4 accounts for '[x] ' priv level info
--		 * +2 account of 0x prefix on raw addresses
-+		 * +2 accounts for 0x prefix on raw addresses
-+		 * +3 accounts for ' y ' symtab origin info
- 		 */
- 		if (h->branch_info->from.sym) {
- 			symlen = (int)h->branch_info->from.sym->namelen + 4;
-+			if (verbose)
-+				symlen += BITS_PER_LONG / 4 + 2 + 3;
- 			hists__new_col_len(hists, HISTC_SYMBOL_FROM, symlen);
+ static void hists__set_unres_dso_col_len(struct hists *hists, int dso)
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 72c75bef0c68..ad1462c87918 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -50,6 +50,8 @@ enum hist_column {
+ 	HISTC_DSO_TO,
+ 	HISTC_SRCLINE,
+ 	HISTC_ADDR,
++	HISTC_ADDR_FROM,
++	HISTC_ADDR_TO,
+ 	HISTC_NR_COLS, /* Last entry */
+ };
  
- 			symlen = dso__name_len(h->branch_info->from.map->dso);
-@@ -110,6 +122,8 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
- 
- 		if (h->branch_info->to.sym) {
- 			symlen = (int)h->branch_info->to.sym->namelen + 4;
-+			if (verbose)
-+				symlen += BITS_PER_LONG / 4 + 2 + 3;
- 			hists__new_col_len(hists, HISTC_SYMBOL_TO, symlen);
- 
- 			symlen = dso__name_len(h->branch_info->to.map->dso);
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 988d7ea3ecc2..5df020f3f59b 100644
+index 27e55562cbbb..988d7ea3ecc2 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -194,7 +194,7 @@ static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
- 	if (verbose) {
- 		char o = map ? dso__symtab_origin(map->dso) : '!';
- 		ret += repsep_snprintf(bf, size, "%-#*llx %c ",
--				       BITS_PER_LONG / 4, ip, o);
-+				       BITS_PER_LONG / 4 + 2, ip, o);
- 	}
+@@ -428,6 +428,40 @@ static int hist_entry__sym_to_snprintf(struct hist_entry *self, char *bf,
  
- 	ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", level);
+ }
+ 
++static int64_t
++sort__addr_from_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	struct addr_map_symbol *from_l = &left->branch_info->from;
++	struct addr_map_symbol *from_r = &right->branch_info->from;
++
++	return from_r->addr - from_l->addr;
++}
++
++static int hist_entry__addr_from_snprintf(struct hist_entry *self, char *bf,
++					  size_t size, unsigned int width)
++{
++	struct addr_map_symbol *from = &self->branch_info->from;
++	return repsep_snprintf(bf, size, "%#*"PRIx64, width,
++					(uint64_t)from->addr);
++}
++
++static int64_t
++sort__addr_to_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	struct addr_map_symbol *to_l = &left->branch_info->to;
++	struct addr_map_symbol *to_r = &right->branch_info->to;
++
++	return to_r->addr - to_l->addr;
++}
++
++static int hist_entry__addr_to_snprintf(struct hist_entry *self, char *bf,
++					size_t size, unsigned int width)
++{
++	struct addr_map_symbol *to = &self->branch_info->to;
++	return repsep_snprintf(bf, size, "%#*"PRIx64, width,
++					(uint64_t)to->addr);
++}
++
+ struct sort_entry sort_dso_from = {
+ 	.se_header	= "Source Shared Object",
+ 	.se_cmp		= sort__dso_from_cmp,
+@@ -456,6 +490,20 @@ struct sort_entry sort_sym_to = {
+ 	.se_width_idx	= HISTC_SYMBOL_TO,
+ };
+ 
++struct sort_entry sort_addr_from = {
++	.se_header	= "Source Address",
++	.se_cmp		= sort__addr_from_cmp,
++	.se_snprintf	= hist_entry__addr_from_snprintf,
++	.se_width_idx	= HISTC_ADDR_FROM,
++};
++
++struct sort_entry sort_addr_to = {
++	.se_header	= "Target Address",
++	.se_cmp		= sort__addr_to_cmp,
++	.se_snprintf	= hist_entry__addr_to_snprintf,
++	.se_width_idx	= HISTC_ADDR_TO,
++};
++
+ static int64_t
+ sort__mispredict_cmp(struct hist_entry *left, struct hist_entry *right)
+ {
+@@ -514,6 +562,8 @@ static struct sort_dimension bstack_sort_dimensions[] = {
+ 	DIM(SORT_DSO_TO, "dso_to", sort_dso_to),
+ 	DIM(SORT_SYM_FROM, "symbol_from", sort_sym_from),
+ 	DIM(SORT_SYM_TO, "symbol_to", sort_sym_to),
++	DIM(SORT_ADDR_FROM, "addr_from", sort_addr_from),
++	DIM(SORT_ADDR_TO, "addr_to", sort_addr_to),
+ 	DIM(SORT_MISPREDICT, "mispredict", sort_mispredict),
+ };
+ 
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index a24dba16cc8f..1c049cf58f34 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -138,6 +138,8 @@ enum sort_type {
+ 	SORT_DSO_TO,
+ 	SORT_SYM_FROM,
+ 	SORT_SYM_TO,
++	SORT_ADDR_FROM,
++	SORT_ADDR_TO,
+ 	SORT_MISPREDICT,
+ };
+ 
 -- 
 1.7.11.7
 
