@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab3CZXIq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:08:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53404 "EHLO
+	id S1756294Ab3CZXJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:09:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53408 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756815Ab3CZXCI (ORCPT
+	with ESMTP id S1756668Ab3CZXCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 19:02:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 22/49] ALSA: snd-usb: mixer: propagate errors up the call chain
-Date: Tue, 26 Mar 2013 16:01:19 -0700
-Message-Id: <20130326225841.844558533@linuxfoundation.org>
+        Martin Weishart <martin.weishart@telosalliance.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 21/49] ALSA: hda - Fix typo in checking IEC958 emphasis bit
+Date: Tue, 26 Mar 2013 16:01:18 -0700
+Message-Id: <20130326225841.742352550@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -26,47 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 4d7b86c98e445b075c2c4c3757eb6d3d6efbe72e upstream.
+commit a686fd141e20244ad75f80ad54706da07d7bb90a upstream.
 
-In check_input_term() and parse_audio_feature_unit(), propagate the
-error value that has been returned by a failing function instead of
--EINVAL. That helps cleaning up the error pathes in the mixer.
+There is a typo in convert_to_spdif_status() about checking the
+emphasis IEC958 status bit.  It should check the given value instead
+of the resultant value.
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
+Reported-by: Martin Weishart <martin.weishart@telosalliance.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/mixer.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ sound/pci/hda/hda_codec.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -711,8 +711,9 @@ static int check_input_term(struct mixer
- 		case UAC2_CLOCK_SELECTOR: {
- 			struct uac_selector_unit_descriptor *d = p1;
- 			/* call recursively to retrieve the channel info */
--			if (check_input_term(state, d->baSourceID[0], term) < 0)
--				return -ENODEV;
-+			err = check_input_term(state, d->baSourceID[0], term);
-+			if (err < 0)
-+				return err;
- 			term->type = d->bDescriptorSubtype << 16; /* virtual type */
- 			term->id = id;
- 			term->name = uac_selector_unit_iSelector(d);
-@@ -1262,8 +1263,9 @@ static int parse_audio_feature_unit(stru
- 		return err;
- 
- 	/* determine the input source type and name */
--	if (check_input_term(state, hdr->bSourceID, &iterm) < 0)
--		return -EINVAL;
-+	err = check_input_term(state, hdr->bSourceID, &iterm);
-+	if (err < 0)
-+		return err;
- 
- 	master_bits = snd_usb_combine_bytes(bmaControls, csize);
- 	/* master configuration quirks */
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -2625,7 +2625,7 @@ static unsigned int convert_to_spdif_sta
+ 	if (val & AC_DIG1_PROFESSIONAL)
+ 		sbits |= IEC958_AES0_PROFESSIONAL;
+ 	if (sbits & IEC958_AES0_PROFESSIONAL) {
+-		if (sbits & AC_DIG1_EMPHASIS)
++		if (val & AC_DIG1_EMPHASIS)
+ 			sbits |= IEC958_AES0_PRO_EMPHASIS_5015;
+ 	} else {
+ 		if (val & AC_DIG1_EMPHASIS)
 
 
