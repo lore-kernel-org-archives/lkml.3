@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492Ab3CZWw6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:52:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53165 "EHLO
+	id S1756499Ab3CZWzs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:55:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53179 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756399Ab3CZWw4 (ORCPT
+	with ESMTP id S1756481Ab3CZWw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:56 -0400
+	Tue, 26 Mar 2013 18:52:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>, Johan Hovold <jhovold@gmail.com>
-Subject: [ 59/72] USB: cdc-acm: fix device unregistration
-Date: Tue, 26 Mar 2013 15:51:42 -0700
-Message-Id: <20130326224925.778059073@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Jim Trigg <jtrigg@spamcop.net>
+Subject: [ 62/72] udf: Fix bitmap overflow on large filesystems with small block size
+Date: Tue, 26 Mar 2013 15:51:45 -0700
+Message-Id: <20130326224926.076092773@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -26,52 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Jan Kara <jack@suse.cz>
 
-commit cb25505fc604292c70fc02143fc102f54c8595f0 upstream.
+commit 89b1f39eb4189de745fae554b0d614d87c8d5c63 upstream.
 
-Unregister tty device in disconnect as is required by the USB stack.
+For large UDF filesystems with 512-byte blocks the number of necessary
+bitmap blocks is larger than 2^16 so s_nr_groups in udf_bitmap overflows
+(the number will overflow for filesystems larger than 128 GB with
+512-byte blocks). That results in ENOSPC errors despite the filesystem
+has plenty of free space.
 
-By deferring unregistration to when the last tty reference is dropped,
-the parent interface device can get unregistered before the child
-resulting in broken hotplug events being generated when the tty is
-finally closed:
+Fix the problem by changing s_nr_groups' type to 'int'. That is enough
+even for filesystems 2^32 blocks (UDF maximum) and 512-byte blocksize.
 
-KERNEL[2290.798128] remove   /devices/pci0000:00/0000:00:1d.7/usb2/2-1/2-1:3.1 (usb)
-KERNEL[2290.804589] remove   /devices/pci0000:00/0000:00:1d.7/usb2/2-1 (usb)
-KERNEL[2294.554799] remove   /2-1:3.1/tty/ttyACM0 (tty)
-
-The driver must deal with tty callbacks after disconnect by checking the
-disconnected flag. Specifically, further opens must be prevented and
-this is already implemented.
-
-Acked-by: Oliver Neukum <oneukum@suse.de>
-Cc: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Reported-and-tested-by: v10lator@myway.de
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Jim Trigg <jtrigg@spamcop.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/udf/udf_sb.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -601,7 +601,6 @@ static void acm_port_destruct(struct tty
+--- a/fs/udf/udf_sb.h
++++ b/fs/udf/udf_sb.h
+@@ -82,7 +82,7 @@ struct udf_virtual_data {
+ struct udf_bitmap {
+ 	__u32			s_extLength;
+ 	__u32			s_extPosition;
+-	__u16			s_nr_groups;
++	int			s_nr_groups;
+ 	struct buffer_head 	**s_block_bitmap;
+ };
  
- 	dev_dbg(&acm->control->dev, "%s\n", __func__);
- 
--	tty_unregister_device(acm_tty_driver, acm->minor);
- 	acm_release_minor(acm);
- 	usb_put_intf(acm->control);
- 	kfree(acm->country_codes);
-@@ -1418,6 +1417,8 @@ static void acm_disconnect(struct usb_in
- 
- 	stop_data_traffic(acm);
- 
-+	tty_unregister_device(acm_tty_driver, acm->minor);
-+
- 	usb_free_urb(acm->ctrlurb);
- 	for (i = 0; i < ACM_NW; i++)
- 		usb_free_urb(acm->wb[i].urb);
 
 
