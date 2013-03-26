@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab3CZSDO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:03:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19020 "EHLO
+	id S1759932Ab3CZSDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:03:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31047 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753864Ab3CZRgE (ORCPT
+	with ESMTP id S1753876Ab3CZRgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 13:36:04 -0400
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=5ZE14NXf7Z8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=YtEFkIHGzRcA:10 a=pGLkceISAAAA:8 a=1XWaLZrsAAAA:8 a=J1Y8HTJGAAAA:8 a=AqJ00D3vZjHJZuhkqGEA:9 a=MSl-tDqOz04A:10 a=UTB_XpHje0EA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=mTWxCXrlA9gA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=E6vUlD_fdxYA:10 a=yPCof4ZbAAAA:8 a=J1Y8HTJGAAAA:8 a=GZK3lcuhIWR5GrNAc6YA:9 a=7DSvI1NPTFQA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130326173600.516165568@goodmis.org>
+Message-Id: <20130326173602.220885843@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 26 Mar 2013 13:21:03 -0400
+Date: Tue, 26 Mar 2013 13:21:14 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Stefan Hasko <hasko.stevo@gmail.com>, Eric Dumazet <edumazet@google.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Tilman Schmidt <tilman@imap.cc>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 04/86] net: sched: integer overflow fix
+Subject: [PATCH 15/86] isdn/gigaset: fix zero size border case in debug dump
 References: <20130326172059.136127374@goodmis.org>
-Content-Disposition: inline; filename=0004-net-sched-integer-overflow-fix.patch
+Content-Disposition: inline; filename=0015-isdn-gigaset-fix-zero-size-border-case-in-debug-dump.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,32 +30,33 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stefan Hasko <hasko.stevo@gmail.com>
+From: Tilman Schmidt <tilman@imap.cc>
 
-[ Upstream commit d2fe85da52e89b8012ffad010ef352a964725d5f ]
+[ Upstream commit d721a1752ba544df8d7d36959038b26bc92bdf80 ]
 
-Fixed integer overflow in function htb_dequeue
+If subtracting 12 from l leaves zero we'd do a zero size allocation,
+leading to an oops later when we try to set the NUL terminator.
 
-Signed-off-by: Stefan Hasko <hasko.stevo@gmail.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- net/sched/sch_htb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/isdn/gigaset/capi.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/sched/sch_htb.c b/net/sched/sch_htb.c
-index 9d75b77..e9ea2f3 100644
---- a/net/sched/sch_htb.c
-+++ b/net/sched/sch_htb.c
-@@ -874,7 +874,7 @@ ok:
- 	q->now = psched_get_time();
- 	start_at = jiffies;
- 
--	next_event = q->now + 5 * PSCHED_TICKS_PER_SEC;
-+	next_event = q->now + 5LLU * PSCHED_TICKS_PER_SEC;
- 
- 	for (level = 0; level < TC_HTB_MAXDEPTH; level++) {
- 		/* common case optimization - skip event handler quickly */
+diff --git a/drivers/isdn/gigaset/capi.c b/drivers/isdn/gigaset/capi.c
+index 68452b7..03a0a01 100644
+--- a/drivers/isdn/gigaset/capi.c
++++ b/drivers/isdn/gigaset/capi.c
+@@ -248,6 +248,8 @@ static inline void dump_rawmsg(enum debuglevel level, const char *tag,
+ 		CAPIMSG_APPID(data), CAPIMSG_MSGID(data), l,
+ 		CAPIMSG_CONTROL(data));
+ 	l -= 12;
++	if (l <= 0)
++		return;
+ 	dbgline = kmalloc(3 * l, GFP_ATOMIC);
+ 	if (!dbgline)
+ 		return;
 -- 
 1.7.10.4
 
