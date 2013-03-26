@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab3CZXCR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:02:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53429 "EHLO
+	id S1756510Ab3CZXGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:06:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53462 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754465Ab3CZXCM (ORCPT
+	with ESMTP id S1756871Ab3CZXCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:02:12 -0400
+	Tue, 26 Mar 2013 19:02:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Artamonow <mad_soft@inbox.ru>
-Subject: [ 33/49] usb-storage: add unusual_devs entry for Samsung YP-Z3 mp3 player
-Date: Tue, 26 Mar 2013 16:01:30 -0700
-Message-Id: <20130326225842.996801912@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>, Jan Kara <jack@suse.cz>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 45/49] udf: avoid info leak on export
+Date: Tue, 26 Mar 2013 16:01:42 -0700
+Message-Id: <20130326225844.248741017@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -26,37 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Artamonow <mad_soft@inbox.ru>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 29f86e66428ee083aec106cca1748dc63d98ce23 upstream.
+commit 0143fc5e9f6f5aad4764801015bc8d4b4a278200 upstream.
 
-Device stucks on filesystem writes, unless following quirk is passed:
-  echo 04e8:5136:m > /sys/module/usb_storage/parameters/quirks
+For type 0x51 the udf.parent_partref member in struct fid gets copied
+uninitialized to userland. Fix this by initializing it to 0.
 
-Add corresponding entry to unusual_devs.h
-
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/udf/namei.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -488,6 +488,13 @@ UNUSUAL_DEV(  0x04e8, 0x5122, 0x0000, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_MAX_SECTORS_64 | US_FL_BULK_IGNORE_TAG),
+--- a/fs/udf/namei.c
++++ b/fs/udf/namei.c
+@@ -1297,6 +1297,7 @@ static int udf_encode_fh(struct dentry *
+ 	*lenp = 3;
+ 	fid->udf.block = location.logicalBlockNum;
+ 	fid->udf.partref = location.partitionReferenceNum;
++	fid->udf.parent_partref = 0;
+ 	fid->udf.generation = inode->i_generation;
  
-+/* Added by Dmitry Artamonow <mad_soft@inbox.ru> */
-+UNUSUAL_DEV(  0x04e8, 0x5136, 0x0000, 0x9999,
-+		"Samsung",
-+		"YP-Z3",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64),
-+
- /* Entry and supporting patch by Theodore Kilgore <kilgota@auburn.edu>.
-  * Device uses standards-violating 32-byte Bulk Command Block Wrappers and
-  * reports itself as "Proprietary SCSI Bulk." Cf. device entry 0x084d:0x0011.
+ 	if (connectable && !S_ISDIR(inode->i_mode)) {
 
 
