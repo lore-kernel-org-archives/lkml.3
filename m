@@ -1,61 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799Ab3CZUiE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 16:38:04 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59002 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab3CZUiA (ORCPT
+	id S1752138Ab3CZUpU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 16:45:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56394 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab3CZUpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 16:38:00 -0400
-Date: Tue, 26 Mar 2013 21:37:53 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-cc: Gerlando Falauto <gerlando.falauto@keymile.com>,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Simon Guinot <sguinot@lacie.com>, stable@vger.kernel.org
-Subject: Re: [PATCH v3b 0/9] refactoring for mask_cache
-In-Reply-To: <20130321215709.GA27612@kroah.com>
-Message-ID: <alpine.LFD.2.02.1303262136350.22263@ionos>
-References: <1363885931-20571-1-git-send-email-gerlando.falauto@keymile.com> <20130321215709.GA27612@kroah.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 26 Mar 2013 16:45:18 -0400
+Date: Tue, 26 Mar 2013 13:44:07 -0700
+From: tip-bot for Michael Bohan <tipbot@zytor.com>
+Message-ID: <tip-84cc8fd2fe65866e49d70b38b3fdf7219dd92fe0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        mbohan@codeaurora.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        mbohan@codeaurora.org, tglx@linutronix.de
+In-Reply-To: <1363745965-23475-1-git-send-email-mbohan@codeaurora.org>
+References: <1363745965-23475-1-git-send-email-mbohan@codeaurora.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] hrtimer: Don'
+ t reinitialize a cpu_base lock on CPU_UP
+Git-Commit-ID: 84cc8fd2fe65866e49d70b38b3fdf7219dd92fe0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 26 Mar 2013 13:44:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Mar 2013, Greg KH wrote:
+Commit-ID:  84cc8fd2fe65866e49d70b38b3fdf7219dd92fe0
+Gitweb:     http://git.kernel.org/tip/84cc8fd2fe65866e49d70b38b3fdf7219dd92fe0
+Author:     Michael Bohan <mbohan@codeaurora.org>
+AuthorDate: Tue, 19 Mar 2013 19:19:25 -0700
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 26 Mar 2013 21:34:57 +0100
 
-> On Thu, Mar 21, 2013 at 06:12:02PM +0100, Gerlando Falauto wrote:
-> > This patchset addresses a regression found with the Orion GPIO controller
-> > when both Edge- and Level- based interrupts are requested within the same
-> > GPIO chip. The regression was introduced by e59347a
-> > "arm: orion: Use generic irq chip"
-> > 
-> > thereby affecting all kernel releases since 3.0.x.
-> 
-> <formletter>
-> 
-> This is not the correct way to submit patches for inclusion in the
-> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-> for how to do this properly.
-> 
-> </formletter>
+hrtimer: Don't reinitialize a cpu_base lock on CPU_UP
 
-Aside of that it would be less intrusive for the stable series to
-revert the offending commit(s), if that is possible.
+The current code makes the assumption that a cpu_base lock won't be
+held if the CPU corresponding to that cpu_base is offline, which isn't
+always true.
 
-Thanks,
+If a hrtimer is not queued, then it will not be migrated by
+migrate_hrtimers() when a CPU is offlined. Therefore, the hrtimer's
+cpu_base may still point to a CPU which has subsequently gone offline
+if the timer wasn't enqueued at the time the CPU went down.
 
-	tglx
+Normally this wouldn't be a problem, but a cpu_base's lock is blindly
+reinitialized each time a CPU is brought up. If a CPU is brought
+online during the period that another thread is performing a hrtimer
+operation on a stale hrtimer, then the lock will be reinitialized
+under its feet, and a SPIN_BUG() like the following will be observed:
 
+<0>[   28.082085] BUG: spinlock already unlocked on CPU#0, swapper/0/0
+<0>[   28.087078]  lock: 0xc4780b40, value 0x0 .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
+<4>[   42.451150] [<c0014398>] (unwind_backtrace+0x0/0x120) from [<c0269220>] (do_raw_spin_unlock+0x44/0xdc)
+<4>[   42.460430] [<c0269220>] (do_raw_spin_unlock+0x44/0xdc) from [<c071b5bc>] (_raw_spin_unlock+0x8/0x30)
+<4>[   42.469632] [<c071b5bc>] (_raw_spin_unlock+0x8/0x30) from [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8)
+<4>[   42.479521] [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8) from [<c00aa014>] (hrtimer_start+0x20/0x28)
+<4>[   42.489247] [<c00aa014>] (hrtimer_start+0x20/0x28) from [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320)
+<4>[   42.498709] [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320) from [<c00e6440>] (rcu_idle_enter+0xa0/0xb8)
+<4>[   42.508259] [<c00e6440>] (rcu_idle_enter+0xa0/0xb8) from [<c000f268>] (cpu_idle+0x24/0xf0)
+<4>[   42.516503] [<c000f268>] (cpu_idle+0x24/0xf0) from [<c06ed3c0>] (rest_init+0x88/0xa0)
+<4>[   42.524319] [<c06ed3c0>] (rest_init+0x88/0xa0) from [<c0c00978>] (start_kernel+0x3d0/0x434)
 
+As an example, this particular crash occurred when hrtimer_start() was
+executed on CPU #0. The code locked the hrtimer's current cpu_base
+corresponding to CPU #1. CPU #0 then tried to switch the hrtimer's
+cpu_base to an optimal CPU which was online. In this case, it selected
+the cpu_base corresponding to CPU #3.
 
+Before it could proceed, CPU #1 came online and reinitialized the
+spinlock corresponding to its cpu_base. Thus now CPU #0 held a lock
+which was reinitialized. When CPU #0 finally ended up unlocking the
+old cpu_base corresponding to CPU #1 so that it could switch to CPU
+#3, we hit this SPIN_BUG() above while in switch_hrtimer_base().
+
+CPU #0                            CPU #1
+----                              ----
+...                               <offline>
+hrtimer_start()
+lock_hrtimer_base(base #1)
+...                               init_hrtimers_cpu()
+switch_hrtimer_base()             ...
+...                               raw_spin_lock_init(&cpu_base->lock)
+raw_spin_unlock(&cpu_base->lock)  ...
+<spin_bug>
+
+Solve this by statically initializing the lock.
+
+Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
+Link: http://lkml.kernel.org/r/1363745965-23475-1-git-send-email-mbohan@codeaurora.org
+Cc: stable@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/hrtimer.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index cc47812..14be27f 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -63,6 +63,7 @@
+ DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
+ {
+ 
++	.lock = __RAW_SPIN_LOCK_UNLOCKED(hrtimer_bases.lock),
+ 	.clock_base =
+ 	{
+ 		{
+@@ -1642,8 +1643,6 @@ static void __cpuinit init_hrtimers_cpu(int cpu)
+ 	struct hrtimer_cpu_base *cpu_base = &per_cpu(hrtimer_bases, cpu);
+ 	int i;
+ 
+-	raw_spin_lock_init(&cpu_base->lock);
+-
+ 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+ 		cpu_base->clock_base[i].cpu_base = cpu_base;
+ 		timerqueue_init_head(&cpu_base->clock_base[i].active);
