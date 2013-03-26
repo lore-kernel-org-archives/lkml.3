@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933824Ab3CZHFi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 03:05:38 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:29365 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932136Ab3CZHFh (ORCPT
+	id S933917Ab3CZHGB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 03:06:01 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:44377 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932136Ab3CZHF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 03:05:37 -0400
-X-AuditID: cbfee690-b7f656d0000007e3-b3-515148c09728
+	Tue, 26 Mar 2013 03:05:59 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-87-515148d6130e
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
 Cc: "'Arnd Bergmann'" <arnd@arndb.de>, linux-kernel@vger.kernel.org,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <001e01ce29f0$3eb62f60$bc228e20$%han@samsung.com>
 In-reply-to: <001e01ce29f0$3eb62f60$bc228e20$%han@samsung.com>
-Subject: [PATCH 2/3] misc: bh1770glc: add CONFIG_PM_SLEEP to suspend/resume
+Subject: [PATCH 3/3] misc: apds990x: add CONFIG_PM_SLEEP to suspend/resume
  functions
-Date: Tue, 26 Mar 2013 16:05:36 +0900
-Message-id: <001f01ce29f0$5097d260$f1c77720$%han@samsung.com>
+Date: Tue, 26 Mar 2013 16:05:58 +0900
+Message-id: <002001ce29f0$5db8b900$192a2b00$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4p8D6brC4ZHCKLQ+WHsWIzuH0C8gAAAWMg
+Thread-index: Ac4p8D6brC4ZHCKLQ+WHsWIzuH0C8gAABKJA
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zI90DHoGBBjuPS1r8nXSM3aJ58Xo2
-	i8sLL7FaXN41h82BxeP3r0mMHvvnrmH36NuyitHj8ya5AJYoLpuU1JzMstQifbsErowfc84w
-	FvznrJi8ZDlTA+NGji5GDg4JAROJ9smyXYycQKaYxIV769m6GLk4hASWMUps+f2bCSJhIrG8
-	cz+YLSSwiFHi5kEmiKJfjBK/F+5mBEmwCahJfPlymB3EFhEwldj4fgpYnFkgXeLO0U6oZluJ
-	Xw9nM4Is5hSwk/jUEA9iCguESzzqLACpYBFQldjc0MQMYvMCVc+ZdZAdwhaU+DH5HgvERC2J
-	9TuPM0HY8hKb17xlhnhFXeLRX12IA4wkjuzaBVUuIrHvxTtGkIslBI6xS/xcvpcZYpeAxLfJ
-	h1ggemUlNh1ghvhWUuLgihssExglZiHZPAvJ5llINs9CsmIBI8sqRtHUguSC4qT0IhO94sTc
-	4tK8dL3k/NxNjJB4nLCD8d4B60OMyUDrJzJLiSbnA+M5ryTe0NjMyMLUxNTYyNzSjDRhJXFe
-	9RbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2M0+ZsWPhHQU627zUf91aRmmUZakUq9zX/
-	LuP54vDi9lKdyXUcc9UOLtlwRMLKoVb1a6NoI3P3JFZdM4kX8RFJKznfNX1X8hOeGikYrX7c
-	Q/heB5uC+Ou0v1Zr+yq99SO03q1Q6V+bpxz+JkQk9f97Y90XS94vNftjkHPXZr3lrpSHRpa5
-	X8WVWIozEg21mIuKEwHwF9R23QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jAd0DHoGBBhOuiFr8nXSM3aJ58Xo2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zQ91rHoGBBgffaFj8nXSM3aJ58Xo2
+	i8sLL7FaXN41h82BxeP3r0mMHvvnrmH36NuyitHj8ya5AJYoLpuU1JzMstQifbsEroyJnzey
+	FzRzVcyZXdbAuJWji5GTQ0LARKL58hx2CFtM4sK99WwgtpDAMkaJPTOVYGqWt+wCquECii9i
+	lGiZ/RPK+cUo0bP9J1g3m4CaxJcvh8FsEQFTiY3vpzCC2MwC6RJ3jnYyQUy1lfj1cDZQnIOD
+	U8BO4lNDPEhYWCBM4kxLDyuIzSKgKrG0/S0LiM0LVP792RsoW1Dix+R7LBAjtSTW7zzOBGHL
+	S2xe85YZZKSEgLrEo7+6EBcYSVz9u5IdokREYt+Ld4wgJ0sInGKXOLt4N9QuAYlvkw+xQPTK
+	Smw6wAzxr6TEwRU3WCYwSsxCsnkWks2zkGyehWTFAkaWVYyiqQXJBcVJ6UVGesWJucWleel6
+	yfm5mxghEdm3g/HmAetDjMlA6ycyS4km5wMjOq8k3tDYzMjC1MTU2Mjc0ow0YSVxXrUW60Ah
+	gfTEktTs1NSC1KL4otKc1OJDjEwcnFINjHOYZdek/a6efDP1ifApiTtW4ru2nM3Rmz7d3WDD
+	/QLGnal+OxKt+PLbHrRX3318pvG3+aIrih9ZrKIL78Vm1oeZW/p6NHDnvRc7z8G1nMOjNk9q
+	/7Ut5RM0o7S0TiivqC89OHeLI5dej9x98X1MnHyvUn4xhM49/vJUqUtivMySGEceA55nSizF
+	GYmGWsxFxYkA1wIyC94CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jAd1rHoGBBgt+q1j8nXSM3aJ58Xo2
 	i8sLL7FaXN41h82BxeP3r0mMHvvnrmH36NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
 	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
-	LWAaI3R9Q4LgeowM0EDCOsaMH3POMBb856yYvGQ5UwPjRo4uRk4OCQETieWd+5kgbDGJC/fW
-	s4HYQgKLGCVuHgSKcwHZvxglfi/czQiSYBNQk/jy5TA7iC0iYCqx8f0UsDizQLrEnaOdTBDN
-	thK/Hs4GinNwcArYSXxqiAcxhQXCJR51FoBUsAioSmxuaGIGsXmBqufMOsgOYQtK/Jh8jwVi
-	opbE+p3HmSBseYnNa94yg4yREFCXePRXF+IAI4kju3ZBlYtI7HvxjnECo9AsJJNmIZk0C8mk
-	WUhaFjCyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjvdnUjsYVzZYHGIU4GBU4uHdEBwQ
-	KMSaWFZcmXuIUYKDWUmE949jYKAQb0piZVVqUX58UWlOavEhxmSgRycyS4km5wNTUV5JvKGx
-	iZmRpZGZhZGJuTlpwkrivAdarQOFBNITS1KzU1MLUotgtjBxcEo1MF6wirtxvakgMajokNDN
-	peseTkx96s0fZ5p22nCfe/HjrWYMlSfiZJ8mb0k6ynpERnPinU3nPbfomU5In1nwsS7S2O5h
-	+XS/i0XXu5vnP2f6W1L+VinsxltTx+cpoW2PqqbdNTwR+LM8wKamnfUWV77eNcbf3IyaqTHT
-	+67xq/31fCbNOSfbUYmlOCPRUIu5qDgRAAXyL4I7AwAA
+	LWAaI3R9Q4LgeowM0EDCOsaMiZ83shc0c1XMmV3WwLiVo4uRk0NCwERiecsudghbTOLCvfVs
+	XYxcHEICixglWmb/ZIdwfjFK9Gz/CVbFJqAm8eXLYTBbRMBUYuP7KYwgNrNAusSdo51MILaQ
+	gK3Er4ezgeIcHJwCdhKfGuJBwsICYRJnWnpYQWwWAVWJpe1vWUBsXqDy78/eQNmCEj8m32OB
+	GKklsX7ncSYIW15i85q3zCAjJQTUJR791YW4wEji6t+V7BAlIhL7XrxjnMAoNAvJpFlIJs1C
+	MmkWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYIj/pn0DsZVDRaHGAU4GJV4eDnC
+	AgKFWBPLiitzDzFKcDArifD+cQwMFOJNSaysSi3Kjy8qzUktPsSYDPToRGYp0eR8YDLKK4k3
+	NDYxM7I0MrMwMjE3J01YSZz3YKt1oJBAemJJanZqakFqEcwWJg5OqQbGWWsFIpwT18xLvzjH
+	a3Z4Tm67b9d/X5lEfaUnnkIyB5mncdZxPdK81XnxSmzQNcujAjPWPVc6ylWZbBug4pamsa/7
+	wff3J2JYF374JSA4wXyTxqoH6x5mPHHXW782Pvv3TpYNakazTx34k8yrNPdb4NKd0RlWe5eX
+	HOEznDQ71SZ2ZlFGde1SJZbijERDLeai4kQApSyeGDwDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,36 +61,35 @@ build warning when CONFIG_PM_SLEEP is not selected. This is because
 sleep PM callbacks defined by SET_SYSTEM_SLEEP_PM_OPS are only used
 when the CONFIG_PM_SLEEP is enabled.
 
-drivers/misc/bh1770glc.c:1314:12: warning: 'bh1770_suspend' defined but not used [-Wunused-function]
-drivers/misc/bh1770glc.c:1324:12: warning: 'bh1770_resume' defined but not used [-Wunused-function]
+drivers/misc/apds990x.c:1205:12: warning: 'apds990x_suspend' defined but not used [-Wunused-function]
+drivers/misc/apds990x.c:1214:12: warning: 'apds990x_resume' defined but not used [-Wunused-function]
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/misc/bh1770glc.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+ drivers/misc/apds990x.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/misc/bh1770glc.c b/drivers/misc/bh1770glc.c
-index 2ed8fc3..f4975f7 100644
---- a/drivers/misc/bh1770glc.c
-+++ b/drivers/misc/bh1770glc.c
-@@ -1310,7 +1310,7 @@ static int bh1770_remove(struct i2c_client *client)
+diff --git a/drivers/misc/apds990x.c b/drivers/misc/apds990x.c
+index 1efb6a4..98f9bb2 100644
+--- a/drivers/misc/apds990x.c
++++ b/drivers/misc/apds990x.c
+@@ -1201,7 +1201,7 @@ static int apds990x_remove(struct i2c_client *client)
  	return 0;
  }
  
 -#ifdef CONFIG_PM
 +#ifdef CONFIG_PM_SLEEP
- static int bh1770_suspend(struct device *dev)
+ static int apds990x_suspend(struct device *dev)
  {
  	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
-@@ -1346,11 +1346,6 @@ static int bh1770_resume(struct device *dev)
- 	}
- 	return ret;
+@@ -1224,10 +1224,6 @@ static int apds990x_resume(struct device *dev)
+ 
+ 	return 0;
  }
--
 -#else
--#define bh1770_suspend	NULL
--#define bh1770_shutdown NULL
--#define bh1770_resume	NULL
+-#define apds990x_suspend  NULL
+-#define apds990x_resume	  NULL
+-#define apds990x_shutdown NULL
  #endif
  
  #ifdef CONFIG_PM_RUNTIME
