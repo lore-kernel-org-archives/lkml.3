@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964964Ab3CZQQT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:16:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53628 "EHLO
+	id S934988Ab3CZQQh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:16:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53623 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934672Ab3CZPWG (ORCPT
+	with ESMTP id S934557Ab3CZPWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:06 -0400
+	Tue, 26 Mar 2013 11:22:05 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Rientjes <rientjes@google.com>,
+Cc: Stephane Eranian <eranian@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 035/150] perf,x86: fix link failure for non-Intel configs
-Date: Tue, 26 Mar 2013 15:18:54 +0000
-Message-Id: <1364311249-14454-36-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 034/150] perf,x86: fix kernel crash with PEBS/BTS after suspend/resume
+Date: Tue, 26 Mar 2013 15:18:53 +0000
+Message-Id: <1364311249-14454-35-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -28,50 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Stephane Eranian <eranian@google.com>
 
-commit 6c4d3bc99b3341067775efd4d9d13cc8e655fd7c upstream.
+commit 1d9d8639c063caf6efc2447f5f26aa637f844ff6 upstream.
 
-Commit 1d9d8639c063 ("perf,x86: fix kernel crash with PEBS/BTS after
-suspend/resume") introduces a link failure since
-perf_restore_debug_store() is only defined for CONFIG_CPU_SUP_INTEL:
+This patch fixes a kernel crash when using precise sampling (PEBS)
+after a suspend/resume. Turns out the CPU notifier code is not invoked
+on CPU0 (BP). Therefore, the DS_AREA (used by PEBS) is not restored properly
+by the kernel and keeps it power-on/resume value of 0 causing any PEBS
+measurement to crash when running on CPU0.
 
-	arch/x86/power/built-in.o: In function `restore_processor_state':
-	(.text+0x45c): undefined reference to `perf_restore_debug_store'
+The workaround is to add a hook in the actual resume code to restore
+the DS Area MSR value. It is invoked for all CPUS. So for all but CPU0,
+the DS_AREA will be restored twice but this is harmless.
 
-Fix it by defining the dummy function appropriately.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/perf_event.h | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 8 ++++++++
+ arch/x86/power/cpu.c                      | 2 ++
+ include/linux/perf_event.h                | 2 ++
+ 3 files changed, 12 insertions(+)
 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 35e2192..9a9be1e 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -714,3 +714,11 @@ void intel_ds_init(void)
+ 		}
+ 	}
+ }
++
++void perf_restore_debug_store(void)
++{
++	if (!x86_pmu.bts && !x86_pmu.pebs)
++		return;
++
++	init_debug_store_on_cpu(smp_processor_id());
++}
+diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+index 218cdb1..fcbaac60 100644
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -11,6 +11,7 @@
+ #include <linux/suspend.h>
+ #include <linux/export.h>
+ #include <linux/smp.h>
++#include <linux/perf_event.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/proto.h>
+@@ -227,6 +228,7 @@ static void __restore_processor_state(struct saved_context *ctxt)
+ 	do_fpu_end();
+ 	x86_platform.restore_sched_clock_state();
+ 	mtrr_bp_restore();
++	perf_restore_debug_store();
+ }
+ 
+ /* Needed by apm.c */
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 1d56bf6..c145c45 100644
+index c3c98a6..1d56bf6 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -1295,7 +1295,6 @@ extern void perf_swevent_put_recursion_context(int rctx);
+@@ -1295,6 +1295,7 @@ extern void perf_swevent_put_recursion_context(int rctx);
  extern void perf_event_enable(struct perf_event *event);
  extern void perf_event_disable(struct perf_event *event);
  extern void perf_event_task_tick(void);
--extern void perf_restore_debug_store(void);
++extern void perf_restore_debug_store(void);
  #else
  static inline void
  perf_event_task_sched_in(struct task_struct *prev,
-@@ -1334,6 +1333,11 @@ static inline void perf_swevent_put_recursion_context(int rctx)		{ }
+@@ -1333,6 +1334,7 @@ static inline void perf_swevent_put_recursion_context(int rctx)		{ }
  static inline void perf_event_enable(struct perf_event *event)		{ }
  static inline void perf_event_disable(struct perf_event *event)		{ }
  static inline void perf_event_task_tick(void)				{ }
-+#endif
-+
-+#if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_CPU_SUP_INTEL)
-+extern void perf_restore_debug_store(void);
-+#else
- static inline void perf_restore_debug_store(void)			{ }
++static inline void perf_restore_debug_store(void)			{ }
  #endif
  
+ #define perf_output_put(handle, x) perf_output_copy((handle), &(x), sizeof(x))
 -- 
 1.8.1.2
 
