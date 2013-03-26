@@ -1,130 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab3CZXb4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:31:56 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:43929 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753461Ab3CZXby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:31:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH v2] ACPI: Add sysfs links from memory device to memblocks
-Date: Wed, 27 Mar 2013 00:39:19 +0100
-Message-ID: <7718937.tEXDldppSg@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1364338776.15745.27.camel@misato.fc.hp.com>
-References: <1361826130-31062-1-git-send-email-toshi.kani@hp.com> <3205964.WeZJN7sRdd@vostro.rjw.lan> <1364338776.15745.27.camel@misato.fc.hp.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755120Ab3CZXcZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:32:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52613 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754958Ab3CZWoT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 18:44:19 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        majianpeng <majianpeng@gmail.com>, NeilBrown <neilb@suse.de>
+Subject: [ 76/98] md/raid5: schedule_construction should abort if nothing to do.
+Date: Tue, 26 Mar 2013 15:43:05 -0700
+Message-Id: <20130326224250.363298029@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
+References: <20130326224242.449070940@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 26, 2013 04:59:36 PM Toshi Kani wrote:
-> On Tue, 2013-03-26 at 23:39 +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, March 26, 2013 09:42:06 AM Toshi Kani wrote:
-> > > On Tue, 2013-03-26 at 14:04 +0100, Rafael J. Wysocki wrote:
-> > > > On Monday, February 25, 2013 02:02:10 PM Toshi Kani wrote:
-> > > > > In order to eject a memory device object represented as "PNP0C80:%d"
-> > > > > in sysfs, its associated memblocks (system/memory/memory%d) need to
-> > > > > be off-lined.  However, there is no user friendly way to correlate
-> > > > > between a memory device object and its memblocks in sysfs.
-> > > > > 
-> > > > > This patch creates sysfs links to memblocks under a memory device
-> > > > > object so that a user can easily checks and manipulates its memblocks
-> > > > > in sysfs.
-> > > > > 
-> > > > > For example, when PNP0C80:05 is associated with memory8 and memory9,
-> > > > > the following two links are created under PNP0C80:05.  This allows
-> > > > > a user to access memory8/9 directly from PNP0C80:05.
-> > > > > 
-> > > > >   # ll /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C80:05
-> > > > >   lrwxrwxrwx. memory8 -> ../../../system/memory/memory8
-> > > > >   lrwxrwxrwx. memory9 -> ../../../system/memory/memory9
-> > > > > 
-> > > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > > > 
-> > > > Here I have some doubts.
-> > > > 
-> > > > This adds a very specific interface for user space that we're going to need to
-> > > > maintain going forward if the user space starts to use it.  However, it kind of
-> > > > duplicates the existing "physical_node" interface that we have for "regular"
-> > > > devices.
-> > > > 
-> > > > So, if possible, I'd like the memory subsystem to utilize the existing
-> > > > interface instead of creating an entirely new one.  Namely, why don't we create
-> > > > a struct device-based object for each memory block and associated those new
-> > > > "devices" with the PNP0C80 ACPI object through the functions in glue.c?
-> > > > Then, we could add an "offline/online" interface to those "devices" too.
-> > > 
-> > > This patch simply adds symbolic links to system/memory/memoryN, which
-> > > the memory subsystem already provides for the online/offline interface
-> > > of memory blocks.  So, it does not introduce a new interface, but guides
-> > > users (and user tools) to know which memory blocks need to be off-lined
-> > > in order to hot-delete any particular memory device PNP0C80:X.  A cpu
-> > > device LNXCPU:X also has a similar symbolic link "sysdev" that links to
-> > > system/cpu/cpuN.  I could not use the same "sysdev" for PNP0C80:X since
-> > > it typically associates with multiple memory blocks.
-> > > 
-> > > I thought about using glue.c to create symbolic links between memoryN
-> > > and PNP0C80:X.  However, it has an ordering issue.  During boot-time,
-> > > memoryN gets created before PNP0C80:X.  But during hot-add, PNP0C80:X
-> > > gets created before memoryN.
-> > 
-> > Quite frankly, this sounds like a bug to me.  Namely, what is memoryN really
-> > good for without PNP0C80:X?  If it is not good for anything in that case,
-> > it should never be created befor PNP0C80:X.
-> 
-> memoryN works without PNP0C80:X and does not depend on ACPI.  A memoryN
-> represents a memblk, each of which is merely a 128MB (in case of x86) of
-> memory chunk sliced from the entire memory ranges.
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-Ah.  Why is it exported this way?
+------------------
 
-> This is why it is
-> hard to associate between memoryN and PNP0C80:X without these symbolic
-> links (otherwise, you will have to calculate from memory address.)
+From: NeilBrown <neilb@suse.de>
 
-Sure.
+commit ce7d363aaf1e28be8406a2976220944ca487e8ca upstream.
 
-> The memory subsystem also obtains the memory ranges from EFI or e820
-> during boot, and ACPI is not necessary to construct memoryN at boot.
-> Since EFI / e820 only provides the boot-time configuration, ACPI is used
-> to update the memory ranges during hot-add/delete.
-> 
-> > > This patch calls
-> > > acpi_setup_mem_blk_links() in a point that solves this ordering issue
-> > > since this point guarantees that both memoryN and PNP0C80X are created
-> > > for both boot-time and hot-add.
-> > 
-> > I would prefer the ordering of creation to be the same in both cases.
-> > Otherwise it really looks like we need to work around a problem that we're
-> > creating for ourselves.
-> > 
-> > How exactly are memoryN created during boot?
-> 
-> memoryN is created in memory_dev_init().  This is even before
-> do_initcalls().  I'd also prefer the same ordering, but I felt that
-> changing this ordering would be rather challenging.
-> 
-> do_basic_setup()
->   driver_init()
->     memory_dev_init()
+Since commit 1ed850f356a0a422013846b5291acff08815008b
+    md/raid5: make sure to_read and to_write never go negative.
 
-What about having a "physical memory module" device that will be associated
-with those memory blocks (and will have links to them from its directory in
-sysfs) and that will be pointed to by the "physical_node" pointer from
-under PNP0C80:X?  Then, it may have a driver that will do the online/offline
-(and export the interface for that to user space through sysfs) and will
-interact with the ACPI interface provided by PNP0C80:X.
+It has been possible for handle_stripe_dirtying to be called
+when there isn't actually any work to do.
+It then calls schedule_reconstruction() which will set R5_LOCKED
+on the parity block(s) even when nothing else is happening.
+This then causes problems in do_release_stripe().
 
-Thanks,
-Rafael
+So add checks to schedule_reconstruction() so that if it doesn't
+find anything to do, it just aborts.
+
+This bug was introduced in v3.7, so the patch is suitable
+for -stable kernels since then.
+
+Reported-by: majianpeng <majianpeng@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/md/raid5.c |   38 ++++++++++++++++++++++----------------
+ 1 file changed, 22 insertions(+), 16 deletions(-)
+
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -2319,17 +2319,6 @@ schedule_reconstruction(struct stripe_he
+ 	int level = conf->level;
+ 
+ 	if (rcw) {
+-		/* if we are not expanding this is a proper write request, and
+-		 * there will be bios with new data to be drained into the
+-		 * stripe cache
+-		 */
+-		if (!expand) {
+-			sh->reconstruct_state = reconstruct_state_drain_run;
+-			set_bit(STRIPE_OP_BIODRAIN, &s->ops_request);
+-		} else
+-			sh->reconstruct_state = reconstruct_state_run;
+-
+-		set_bit(STRIPE_OP_RECONSTRUCT, &s->ops_request);
+ 
+ 		for (i = disks; i--; ) {
+ 			struct r5dev *dev = &sh->dev[i];
+@@ -2342,6 +2331,21 @@ schedule_reconstruction(struct stripe_he
+ 				s->locked++;
+ 			}
+ 		}
++		/* if we are not expanding this is a proper write request, and
++		 * there will be bios with new data to be drained into the
++		 * stripe cache
++		 */
++		if (!expand) {
++			if (!s->locked)
++				/* False alarm, nothing to do */
++				return;
++			sh->reconstruct_state = reconstruct_state_drain_run;
++			set_bit(STRIPE_OP_BIODRAIN, &s->ops_request);
++		} else
++			sh->reconstruct_state = reconstruct_state_run;
++
++		set_bit(STRIPE_OP_RECONSTRUCT, &s->ops_request);
++
+ 		if (s->locked + conf->max_degraded == disks)
+ 			if (!test_and_set_bit(STRIPE_FULL_WRITE, &sh->state))
+ 				atomic_inc(&conf->pending_full_writes);
+@@ -2350,11 +2354,6 @@ schedule_reconstruction(struct stripe_he
+ 		BUG_ON(!(test_bit(R5_UPTODATE, &sh->dev[pd_idx].flags) ||
+ 			test_bit(R5_Wantcompute, &sh->dev[pd_idx].flags)));
+ 
+-		sh->reconstruct_state = reconstruct_state_prexor_drain_run;
+-		set_bit(STRIPE_OP_PREXOR, &s->ops_request);
+-		set_bit(STRIPE_OP_BIODRAIN, &s->ops_request);
+-		set_bit(STRIPE_OP_RECONSTRUCT, &s->ops_request);
+-
+ 		for (i = disks; i--; ) {
+ 			struct r5dev *dev = &sh->dev[i];
+ 			if (i == pd_idx)
+@@ -2369,6 +2368,13 @@ schedule_reconstruction(struct stripe_he
+ 				s->locked++;
+ 			}
+ 		}
++		if (!s->locked)
++			/* False alarm - nothing to do */
++			return;
++		sh->reconstruct_state = reconstruct_state_prexor_drain_run;
++		set_bit(STRIPE_OP_PREXOR, &s->ops_request);
++		set_bit(STRIPE_OP_BIODRAIN, &s->ops_request);
++		set_bit(STRIPE_OP_RECONSTRUCT, &s->ops_request);
+ 	}
+ 
+ 	/* keep the parity disk(s) locked while asynchronous operations
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
