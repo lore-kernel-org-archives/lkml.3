@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab3CZRfv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:35:51 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:56329 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab3CZRfu (ORCPT
+	id S1753948Ab3CZRgF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:36:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17054 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811Ab3CZRgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:35:50 -0400
-X-IronPort-AV: E=Sophos;i="4.84,913,1355126400"; 
-   d="scan'208";a="32858068"
-Message-ID: <5151DC75.7030606@codeaurora.org>
-Date: Tue, 26 Mar 2013 10:35:49 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: sched_clock: Add more notrace to prevent recursion
-References: <1363306086-23501-1-git-send-email-sboyd@codeaurora.org> <514B483F.7000304@codeaurora.org>
-In-Reply-To: <514B483F.7000304@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Mar 2013 13:36:01 -0400
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=KS9gGq_1zt0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=D7MGxd08RkkA:10 a=yPCof4ZbAAAA:8 a=J1Y8HTJGAAAA:8 a=VwQbUJbxAAAA:8 a=GZK3lcuhIWR5GrNAc6YA:9 a=7DSvI1NPTFQA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130326173600.053205698@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 26 Mar 2013 13:21:00 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>
+Subject: [PATCH 01/86] sparc: huge_ptep_set_* functions need to call set_huge_pte_at()
+References: <20130326172059.136127374@goodmis.org>
+Content-Disposition: inline; filename=0001-sparc-huge_ptep_set_-functions-need-to-call-set_huge.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/13 10:49, Stephen Boyd wrote:
-> On 03/14/13 17:08, Stephen Boyd wrote:
->> cyc_to_sched_clock() is called by sched_clock() and cyc_to_ns()
->> is called by cyc_to_sched_clock(). I suspect that some compilers
->> inline both of these functions into sched_clock() and so we've
->> been getting away without having a notrace marking. It seems that
->> my compiler isn't inlining cyc_to_sched_clock() though, so I'm
->> hitting a recursion bug when I enable the function graph tracer,
->> causing my system to crash. Marking these functions notrace fixes
->> it. Technically cyc_to_ns() doesn't need the notrace because it's
->> already marked inline, but let's just add it so that if we ever
->> remove inline from that function it doesn't blow up.
-> Anyone else seeing this problem?
+3.6.11.1 stable review patch.
+If anyone has any objections, please let me know.
 
-Russell, should I put this into the patch tracker?
+------------------
 
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> ---
->>  arch/arm/kernel/sched_clock.c | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
->> index bd6f56b..59d2adb 100644
->> --- a/arch/arm/kernel/sched_clock.c
->> +++ b/arch/arm/kernel/sched_clock.c
->> @@ -45,12 +45,12 @@ static u32 notrace jiffy_sched_clock_read(void)
->>  
->>  static u32 __read_mostly (*read_sched_clock)(void) = jiffy_sched_clock_read;
->>  
->> -static inline u64 cyc_to_ns(u64 cyc, u32 mult, u32 shift)
->> +static inline u64 notrace cyc_to_ns(u64 cyc, u32 mult, u32 shift)
->>  {
->>  	return (cyc * mult) >> shift;
->>  }
->>  
->> -static unsigned long long cyc_to_sched_clock(u32 cyc, u32 mask)
->> +static unsigned long long notrace cyc_to_sched_clock(u32 cyc, u32 mask)
->>  {
->>  	u64 epoch_ns;
->>  	u32 epoch_cyc;
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
+[ Upstream commit 6cb9c3697585c47977c42c5cc1b9fc49247ac530 ]
 
+Modifying the huge pte's requires that all the underlying pte's be
+modified.
+
+Version 2: added missing flush_tlb_page()
+
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ arch/sparc/include/asm/hugetlb.h |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/arch/sparc/include/asm/hugetlb.h b/arch/sparc/include/asm/hugetlb.h
+index 1770610..f368cef 100644
+--- a/arch/sparc/include/asm/hugetlb.h
++++ b/arch/sparc/include/asm/hugetlb.h
+@@ -58,14 +58,20 @@ static inline pte_t huge_pte_wrprotect(pte_t pte)
+ static inline void huge_ptep_set_wrprotect(struct mm_struct *mm,
+ 					   unsigned long addr, pte_t *ptep)
+ {
+-	ptep_set_wrprotect(mm, addr, ptep);
++	pte_t old_pte = *ptep;
++	set_huge_pte_at(mm, addr, ptep, pte_wrprotect(old_pte));
+ }
+ 
+ static inline int huge_ptep_set_access_flags(struct vm_area_struct *vma,
+ 					     unsigned long addr, pte_t *ptep,
+ 					     pte_t pte, int dirty)
+ {
+-	return ptep_set_access_flags(vma, addr, ptep, pte, dirty);
++	int changed = !pte_same(*ptep, pte);
++	if (changed) {
++		set_huge_pte_at(vma->vm_mm, addr, ptep, pte);
++		flush_tlb_page(vma, addr);
++	}
++	return changed;
+ }
+ 
+ static inline pte_t huge_ptep_get(pte_t *ptep)
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.10.4
+
 
