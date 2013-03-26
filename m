@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265Ab3CZSCi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:02:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15135 "EHLO
+	id S1759953Ab3CZSDQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:03:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9615 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895Ab3CZRgE (ORCPT
+	with ESMTP id S1753854Ab3CZRgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 13:36:04 -0400
-X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=PzjLC5KngAMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=W1IfmlWVB78A:10 a=LX4ocfrYAAAA:8 a=7ZN4cI0QAAAA:8 a=J1Y8HTJGAAAA:8 a=A6JhlzONrO9bIP6th7sA:9 a=kn0Bwszx2mEA:10 a=Vn2gH7L4UmAA:10 a=4N9Db7Z2_RYA:10 a=fKtNf-Ps0EyWsQm9:21 a=ji_1UgaFNwukY5pl:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Wjw9aU-4INEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=_34Hw5B3_qIA:10 a=zhf81SHlAAAA:8 a=J1Y8HTJGAAAA:8 a=yAcoP-ATsIItWhWqB8UA:9 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130326173601.595507584@goodmis.org>
+Message-Id: <20130326173602.671906380@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 26 Mar 2013 13:21:10 -0400
+Date: Tue, 26 Mar 2013 13:21:16 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Romain Kuntz <r.kuntz@ipflavors.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+Cc: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>,
+        Francois Romieu <romieu@fr.zoreil.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 11/86] ipv6: fix header length calculation in ip6_append_data()
+Subject: [PATCH 17/86] r8169: remove the obsolete and incorrect AMD workaround
 References: <20130326172059.136127374@goodmis.org>
-Content-Disposition: inline; filename=0011-ipv6-fix-header-length-calculation-in-ip6_append_dat.patch
+Content-Disposition: inline; filename=0017-r8169-remove-the-obsolete-and-incorrect-AMD-workarou.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,48 +31,59 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Romain KUNTZ <r.kuntz@ipflavors.com>
+From: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>
 
-[ Upstream commit 7efdba5bd9a2f3e2059beeb45c9fa55eefe1bced ]
+[ Upstream commit 5d0feaff230c0abfe4a112e6f09f096ed99e0b2d ]
 
-Commit 299b0767 (ipv6: Fix IPsec slowpath fragmentation problem)
-has introduced a error in the header length calculation that
-provokes corrupted packets when non-fragmentable extensions
-headers (Destination Option or Routing Header Type 2) are used.
+This was introduced in commit 6dccd16 "r8169: merge with version
+6.001.00 of Realtek's r8169 driver". I did not find the version
+6.001.00 online, but in 6.002.00 or any later r8169 from Realtek
+this hunk is no longer present.
 
-rt->rt6i_nfheader_len is the length of the non-fragmentable
-extension header, and it should be substracted to
-rt->dst.header_len, and not to exthdrlen, as it was done before
-commit 299b0767.
+Also commit 05af214 "r8169: fix Ethernet Hangup for RTL8110SC
+rev d" claims to have fixed this issue otherwise.
 
-This patch reverts to the original and correct behavior. It has
-been successfully tested with and without IPsec on packets
-that include non-fragmentable extensions headers.
+The magic compare mask of 0xfffe000 is dubious as it masks
+parts of the Reserved part, and parts of the VLAN tag. But this
+does not make much sense as the VLAN tag parts are perfectly
+valid there. In matter of fact this seems to be triggered with
+any VLAN tagged packet as RxVlanTag bit is matched. I would
+suspect 0xfffe0000 was intended to test reserved part only.
 
-Signed-off-by: Romain Kuntz <r.kuntz@ipflavors.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Finally, this hunk is evil as it can cause more packets to be
+handled than what was NAPI quota causing net/core/dev.c:
+net_rx_action(): WARN_ON_ONCE(work > weight) to trigger, and
+mess up the NAPI state causing device to hang.
+
+As result, any system using VLANs and having high receive
+traffic (so that NAPI poll budget limits rtl_rx) would result
+in device hang.
+
+Signed-off-by: Timo Teräs <timo.teras@iki.fi>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- net/ipv6/ip6_output.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 5b2d63e..3d485ec 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1287,10 +1287,10 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 		cork->length = 0;
- 		sk->sk_sndmsg_page = NULL;
- 		sk->sk_sndmsg_off = 0;
--		exthdrlen = (opt ? opt->opt_flen : 0) - rt->rt6i_nfheader_len;
-+		exthdrlen = (opt ? opt->opt_flen : 0);
- 		length += exthdrlen;
- 		transhdrlen += exthdrlen;
--		dst_exthdrlen = rt->dst.header_len;
-+		dst_exthdrlen = rt->dst.header_len - rt->rt6i_nfheader_len;
- 	} else {
- 		rt = (struct rt6_info *)cork->dst;
- 		fl6 = &inet->cork.fl.u.ip6;
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index df7bbba..6c1c396 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -6088,13 +6088,6 @@ process_pkt:
+ 			tp->rx_stats.bytes += pkt_size;
+ 			u64_stats_update_end(&tp->rx_stats.syncp);
+ 		}
+-
+-		/* Work around for AMD plateform. */
+-		if ((desc->opts2 & cpu_to_le32(0xfffe000)) &&
+-		    (tp->mac_version == RTL_GIGA_MAC_VER_05)) {
+-			desc->opts2 = 0;
+-			cur_rx++;
+-		}
+ 	}
+ 
+ 	count = cur_rx - tp->cur_rx;
 -- 
 1.7.10.4
 
