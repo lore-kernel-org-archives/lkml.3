@@ -1,65 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933898Ab3CZKAp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 06:00:45 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:65198 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932225Ab3CZKAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 06:00:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 2/3] mfd: db8500-prcmu: Fetch the PRCMU TCDM base address from Device Tree
-Date: Tue, 26 Mar 2013 10:00:33 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com
-References: <1364223758-17621-1-git-send-email-lee.jones@linaro.org> <CACRpkdZxU197moM_00UQr-tHdip4b50c+CfYkR5OK+MbwsE-aw@mail.gmail.com> <20130326094848.GA14151@gmail.com>
-In-Reply-To: <20130326094848.GA14151@gmail.com>
+	id S1759543Ab3CZKCZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 06:02:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37289 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756973Ab3CZKCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 06:02:24 -0400
+Date: Tue, 26 Mar 2013 11:02:21 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/10] migrate: add hugepage migration code to
+ move_pages()
+Message-ID: <20130326100221.GN2295@dhcp22.suse.cz>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1363983835-20184-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130325133644.GY2154@dhcp22.suse.cz>
+ <1364281578-4bs50rjv-mutt-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303261000.33615.arnd@arndb.de>
-X-Provags-ID: V02:K0:2XvhT5tJ6/wn/tH7Th4brUb5skaXGLVrAEKm33HuaHW
- DCOia6lvAreov0rmxWd+95V/JubOpQ1Lc59jOUaFitm8UFHA8f
- EfEDSqvPqb2J/pFrPOcxggyGu6/3O/BuaQeVsUoY1INgBPMXqM
- Rwx1lzQ8MK1NotgRHnD1N5jsDUwzI0sfgUki20UOovF5ryqxiD
- J45ozrah40TliThK5iFeMadct0fNz0Icz7MxUIkZmphHa7aCKJ
- s6MoqUhX3KN+A0J+76YN2IAicZIrsKH+JPgL0T4WYOtdwXFeFU
- A6pjc52YZnZ3cuFFFuuoEmWKWLIeo2WhdofuJ7NIyQgw564Zwr
- IaAwkuN29O5f9HdxRy+U=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364281578-4bs50rjv-mutt-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 26 March 2013, Lee Jones wrote:
-> Bit for information for you. 
+On Tue 26-03-13 03:06:18, Naoya Horiguchi wrote:
+> On Mon, Mar 25, 2013 at 02:36:44PM +0100, Michal Hocko wrote:
+> > On Fri 22-03-13 16:23:51, Naoya Horiguchi wrote:
+[...]
+> > > @@ -1514,8 +1515,9 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
+> > >  	if (pmd_none(*pmd))
+> > >  		goto no_page_table;
+> > >  	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB) {
+> > > -		BUG_ON(flags & FOLL_GET);
+> > >  		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
+> > > +		if (flags & FOLL_GET && PageHead(page))
+> > > +			get_page_foll(page);
+> > 
+> > Hmm, so the caller gets a non-null page without elevated ref counted
+> > even when he asked for it. This means that all callers have to check
+> > PageTail && hugetlb and put_page according to that. That is _really_
+> > fragile.
 > 
-> I have confirmed that the address locations are the same for
-> all SoCs are the same. However, the size of the TCDM changes from 4k
-> on the db8500 to 12k on the db8540.
+> I agree. And refcounting of tail pages are already very fragile,
+> because get_page_foll() does something very tricky on tail pages,
+> where we use page->_mapcount for refcount.
+> This seems to be to handle some thp splitting problem,
+> and is never intended to be used for hugepage.
+
+yes this is THP thingy.
+
+> So I just avoid calling it for tail pages of hugepage in caller's side.
 > 
-> Is there a way we can increase the size for the db8540 without
-> creating an entire new DTS file? Seems overkill.
+> > I think that returning NULL would make more sense in this case.
+> 
+> Sounds nice. I'll do this with some comment.
+> 
+> > >  		goto out;
+> > >  	}
+> > >  	if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
+> > > @@ -1164,6 +1175,12 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
+> > [...]
+> > >  				!migrate_all)
+> > >  			goto put_and_set;
+> > >  
+> > > +		if (PageHuge(page)) {
+> > > +			get_page(page);
+> > > +			list_move_tail(&page->lru, &pagelist);
+> > > +			goto put_and_set;
+> > > +		}
+> > 
+> > Why do you take an additional reference here? You have one from
+> > follow_page already.
+> 
+> For normal pages, follow_page(FOLL_GET) takes a refcount and
+> isolate_lru_page() takes another one, so I think the same should
+> be done for hugepages. Refcounting of this function looks tricky,
+> and I'm not sure why existing code does like that.
 
-You can always override a property by setting it again, like
+Ohh, I see. But the whole reference is taken just to release it in goto
+put_and_set because isolate_lru_page elevates reference count because
+other users require that. I think you do not have to mimic this behavior
+here and you can drop get_page and use goto set_status.
 
-	soc {
-		prcmu: db8500-prcmu@abcd0000 {
-			reg = <0xabcd0000 0x1000>;
-		};
-	};
-
-...
-
-
-	&prcmu {
-		reg = <0xabcd0000 0x3000>;
-	}
-
-
-
-	Arnd
+-- 
+Michal Hocko
+SUSE Labs
