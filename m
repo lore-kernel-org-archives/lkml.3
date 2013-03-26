@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934993Ab3CZQMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:12:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53691 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964861Ab3CZPWT (ORCPT
+	id S934972Ab3CZQO2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:14:28 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46404 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934090Ab3CZQOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:19 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 047/150] rtnl: fix info leak on RTM_GETLINK request for VF devices
-Date: Tue, 26 Mar 2013 15:19:06 +0000
-Message-Id: <1364311249-14454-48-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 26 Mar 2013 12:14:24 -0400
+Message-ID: <5151C95A.6080508@wwwdotorg.org>
+Date: Tue, 26 Mar 2013 10:14:18 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "balbi@ti.com" <balbi@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "s-guiriec@ti.com" <s-guiriec@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v3] USB: PHY: Palmas USB Transceiver Driver
+References: <1362662506-14823-4-git-send-email-kishon@ti.com> <1364203926-24488-1-git-send-email-kishon@ti.com> <51501CFB.4020905@nvidia.com> <51513A40.7080905@ti.com> <515163F6.3010400@slimlogic.co.uk> <20130326102100.GD11244@arwen.pp.htv.fi> <51517859.2020407@nvidia.com>
+In-Reply-To: <51517859.2020407@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
+On 03/26/2013 04:28 AM, Laxman Dewangan wrote:
+> On Tuesday 26 March 2013 03:51 PM, Felipe Balbi wrote:
+>> On Tue, Mar 26, 2013 at 09:01:42AM +0000, Graeme Gregory wrote:
+...
+>>>>> +       return regmap_read(palmas->regmap[slave], addr, dest);
+>>>>>
+>>>>>
+>>>>> Please use the generic api for palmas_read()/palmas_write(0 as it will
+>>>>> be ease on debugging on register access.
+>>>>> Direct regmap_read() does not help much on this.
+>>>>
+>>>> Any reason why you dint use palmas_read()/palmas_write here?
+>>>> Btw palmas_read()/palmas_write() internally uses regmap APIs.
+>>>
+>>> Because I was not a fan of tightly coupling the child devices to the
+>>> parent MFD. palmas_read/write were added by Laxman.
+>>
+>> I guess regmap would also help abstracting SPI versus I2C connection.
+>> IMHO, palmas_read/write should be removed.
+>>
+>> Laxman's complaint that it doesn't help with debugging is utter
+>> nonsense.
+>
+> palams read/write api uses the regmap only and hence not break anything
+> on abstraction.
+> in place of doing the following three statement in whole word, it
+> provides wrapper of palmas_read()
+> which actually does the same.
+> 
+> slave = PALMAS_BASE_TO_SLAVE(PALMAS_USB_OTG_BASE);
+> addr = PALMAS_BASE_TO_REG(PALMAS_USB_OTG_BASE, reg);
+> regmap_read(palmas->regmap[slave], addr, dest);
 
-------------------
+Why would you ever do that? Surely each module's probe should create or
+obtain a regmap object somehow, and then all other code in that driver
+should simply use regmap_read()/regmap_write() without having to perform
+any kind of calculations at all.
 
-From: Mathias Krause <minipli@googlemail.com>
+If the MFD components truly are pluggable mix/match IP blocks, then all
+the register offset #defines must all be relative to the base of the IP
+block, so there would be no need for any calculations there.
 
-commit 84d73cd3fb142bf1298a8c13fd4ca50fd2432372 upstream.
+The I2C address and base register address for the regmap object should
+come from DT or platform data, and be used one time in probe() to create
+the regmap object.
 
-Initialize the mac address buffer with 0 as the driver specific function
-will probably not fill the whole buffer. In fact, all in-kernel drivers
-fill only ETH_ALEN of the MAX_ADDR_LEN bytes, i.e. 6 of the 32 possible
-bytes. Therefore we currently leak 26 bytes of stack memory to userland
-via the netlink interface.
+Then, there would be no need for palmas_read()/palmas_write().
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/core/rtnetlink.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 6c50ac0..8f37bec 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -981,6 +981,7 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
- 			 * report anything.
- 			 */
- 			ivi.spoofchk = -1;
-+			memset(ivi.mac, 0, sizeof(ivi.mac));
- 			if (dev->netdev_ops->ndo_get_vf_config(dev, i, &ivi))
- 				break;
- 			vf_mac.vf =
--- 
-1.8.1.2
-
+> Above 3 lines in all the places for resgister access or make single call:
+> palmas_read(palmas, PALMAS_USB_OTG_BASE, PALMAS_USB_OTG_BASE, dest).
+> 
+> This function implement the above 3 lines.
