@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965393Ab3CZPid (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:38:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54031 "EHLO
+	id S965369Ab3CZPi5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:38:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54016 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965269Ab3CZPX3 (ORCPT
+	with ESMTP id S965259Ab3CZPX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:29 -0400
+	Tue, 26 Mar 2013 11:23:26 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 109/150] USB: oti6858: fix use-after-free in TIOCMIWAIT
-Date: Tue, 26 Mar 2013 15:20:08 +0000
-Message-Id: <1364311249-14454-110-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 106/150] USB: mct_u232: fix use-after-free in TIOCMIWAIT
+Date: Tue, 26 Mar 2013 15:20:05 +0000
+Message-Id: <1364311249-14454-107-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -30,7 +30,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 8edfdab37157d2683e51b8be5d3d5697f66a9f7b upstream.
+commit cf1d24443677a0758cfa88ca40f24858b89261c0 upstream.
 
 Use the port wait queue and make sure to check the serial disconnected
 flag before accessing private port data after waking up.
@@ -40,58 +40,69 @@ itself) can be gone when waking up after a disconnect.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5; adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/oti6858.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/usb/serial/mct_u232.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/usb/serial/oti6858.c b/drivers/usb/serial/oti6858.c
-index 5976b65..d9c40b1 100644
---- a/drivers/usb/serial/oti6858.c
-+++ b/drivers/usb/serial/oti6858.c
-@@ -191,7 +191,6 @@ struct oti6858_private {
- 	u8 setup_done;
- 	struct delayed_work delayed_setup_work;
- 
--	wait_queue_head_t intr_wait;
- 	struct usb_serial_port *port;   /* USB port with which associated */
+diff --git a/drivers/usb/serial/mct_u232.c b/drivers/usb/serial/mct_u232.c
+index 66b91d5..5f005cc 100644
+--- a/drivers/usb/serial/mct_u232.c
++++ b/drivers/usb/serial/mct_u232.c
+@@ -118,8 +118,6 @@ struct mct_u232_private {
+ 	unsigned char	     last_msr;      /* Modem Status Register */
+ 	unsigned int	     rx_flags;      /* Throttling flags */
+ 	struct async_icount  icount;
+-	wait_queue_head_t    msr_wait;	/* for handling sleeping while waiting
+-						for msr change to happen */
  };
  
-@@ -345,7 +344,6 @@ static int oti6858_startup(struct usb_serial *serial)
- 			break;
+ #define THROTTLED		0x01
+@@ -399,7 +397,6 @@ static int mct_u232_startup(struct usb_serial *serial)
+ 	if (!priv)
+ 		return -ENOMEM;
+ 	spin_lock_init(&priv->lock);
+-	init_waitqueue_head(&priv->msr_wait);
+ 	usb_set_serial_port_data(serial->port[0], priv);
  
- 		spin_lock_init(&priv->lock);
--		init_waitqueue_head(&priv->intr_wait);
- /*		INIT_WORK(&priv->setup_work, setup_line, serial->port[i]); */
- /*		INIT_WORK(&priv->write_work, send_data, serial->port[i]); */
- 		priv->port = port;
-@@ -672,11 +670,15 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
+ 	init_waitqueue_head(&serial->port[0]->write_wait);
+@@ -416,7 +413,6 @@ static int mct_u232_startup(struct usb_serial *serial)
+ 	return 0;
+ } /* mct_u232_startup */
+ 
+-
+ static void mct_u232_release(struct usb_serial *serial)
+ {
+ 	struct mct_u232_private *priv;
+@@ -616,7 +612,7 @@ static void mct_u232_read_int_callback(struct urb *urb)
+ 		tty_kref_put(tty);
+ 	}
+ #endif
+-	wake_up_interruptible(&priv->msr_wait);
++	wake_up_interruptible(&port->delta_msr_wait);
  	spin_unlock_irqrestore(&priv->lock, flags);
- 
- 	while (1) {
--		wait_event_interruptible(priv->intr_wait,
-+		wait_event_interruptible(port->delta_msr_wait,
-+					port->serial->disconnected ||
- 					priv->status.pin_state != prev);
- 		if (signal_pending(current))
- 			return -ERESTARTSYS;
- 
-+		if (port->serial->disconnected)
-+			return -EIO;
+ exit:
+ 	retval = usb_submit_urb(urb, GFP_ATOMIC);
+@@ -827,13 +823,17 @@ static int  mct_u232_ioctl(struct tty_struct *tty,
+ 		cprev = mct_u232_port->icount;
+ 		spin_unlock_irqrestore(&mct_u232_port->lock, flags);
+ 		for ( ; ; ) {
+-			prepare_to_wait(&mct_u232_port->msr_wait,
++			prepare_to_wait(&port->delta_msr_wait,
+ 					&wait, TASK_INTERRUPTIBLE);
+ 			schedule();
+-			finish_wait(&mct_u232_port->msr_wait, &wait);
++			finish_wait(&port->delta_msr_wait, &wait);
+ 			/* see if a signal did it */
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
 +
- 		spin_lock_irqsave(&priv->lock, flags);
- 		status = priv->status.pin_state & PIN_MASK;
- 		spin_unlock_irqrestore(&priv->lock, flags);
-@@ -783,7 +785,7 @@ static void oti6858_read_int_callback(struct urb *urb)
- 
- 		if (!priv->transient) {
- 			if (xs->pin_state != priv->status.pin_state)
--				wake_up_interruptible(&priv->intr_wait);
-+				wake_up_interruptible(&port->delta_msr_wait);
- 			memcpy(&priv->status, xs, OTI6858_CTRL_PKT_SIZE);
- 		}
- 
++			if (port->serial->disconnected)
++				return -EIO;
++
+ 			spin_lock_irqsave(&mct_u232_port->lock, flags);
+ 			cnow = mct_u232_port->icount;
+ 			spin_unlock_irqrestore(&mct_u232_port->lock, flags);
 -- 
 1.8.1.2
 
