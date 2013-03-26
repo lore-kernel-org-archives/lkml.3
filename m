@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760157Ab3CZTav (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 15:30:51 -0400
-Received: from antcom.de ([188.40.178.216]:42315 "EHLO chuck.antcom.de"
+	id S1760201Ab3CZTbG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 15:31:06 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46770 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753505Ab3CZTau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 15:30:50 -0400
-X-Greylist: delayed 537 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Mar 2013 15:30:50 EDT
-Message-ID: <5151F48C.9060308@gnu.org>
-Date: Tue, 26 Mar 2013 20:18:36 +0100
-From: Roland Stigge <stigge@gnu.org>
-Organization: GNU Project
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
+	id S1757271Ab3CZTbE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 15:31:04 -0400
+From: "Anna, Suman" <s-anna@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, "Arnd Bergmann" <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Loic Pallardy <loic.pallardy@st.com>
+Subject: RE: [PATCHv3 02/14] ARM: OMAP2+: mbox: remove dependencies with
+ soc.h
+Thread-Topic: [PATCHv3 02/14] ARM: OMAP2+: mbox: remove dependencies with
+ soc.h
+Thread-Index: AQHOH5riWnqv9W8ld0GOuM12zVjHn5i4uVsA//+22CA=
+Date: Tue, 26 Mar 2013 19:30:41 +0000
+Message-ID: <37C860A02101E749A747FA2D3C1E3C5049F528@DLEE11.ent.ti.com>
+References: <1363145036-14407-1-git-send-email-s-anna@ti.com>
+ <alpine.DEB.2.00.1303261845390.23957@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.00.1303261845390.23957@utopia.booyaka.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: Fix compile error by selecting USB_OTG_UTILS
-References: <1364319361-28265-1-git-send-email-stigge@antcom.de> <20130326180334.GL20785@arwen.pp.htv.fi>
-In-Reply-To: <20130326180334.GL20785@arwen.pp.htv.fi>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: RIPEMD160
+Paul,
 
-On 03/26/2013 07:03 PM, Felipe Balbi wrote:
-> On Tue, Mar 26, 2013 at 06:36:01PM +0100, Roland Stigge wrote:
->> The current lpc32xx_defconfig breaks like this, caused by recent
->> phy restructuring:
+> > The OMAP mailbox platform driver code has been cleaned up to remove
+> > the dependencies with soc.h in preparation for moving the mailbox code
+> > to drivers folder.
+> >
+> > The code relied on cpu_is_xxx/soc_is_xxx macros previously to pick the
+> > the right set of mailbox devices and register with the mailbox driver.
+> > This data is now represented in a concise format and moved to the
+> > respective omap_hwmod data files and published to the driver through
+> > the platform data.
+> >
+> > Signed-off-by: Suman Anna <s-anna@ti.com>
 > 
-> which commit actually caused this ? I need to know to make sure if
-> this should be sent to stable or not.
+> The hwmod/dev_attr parts look fine to me, but please start thinking about how
+> to convert the driver to get this data from DT instead.
 
-The issue definitely surfaced after v3.8, so no need for patching
-stable, I guess.
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+Yes, that is the plan. I will have the DT conversion when I add the support for
+OMAP5.
 
-iD8DBQFRUfSMcaH/YBv43g8RA70DAKCigz7Qy4f01S9P5dNLH6jxlERF6gCg3H3q
-qMlT8LpXfybr588cZFJUjcc=
-=45cd
------END PGP SIGNATURE-----
+Regards
+Suman
+
