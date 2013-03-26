@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab3CZXme (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:42:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52437 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571Ab3CZWnz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754575Ab3CZWnz (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 26 Mar 2013 18:43:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52433 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754443Ab3CZWnr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 18:43:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 42/98] rtlwifi: rtl8192cu: Fix schedule while atomic bug splat
-Date: Tue, 26 Mar 2013 15:42:31 -0700
-Message-Id: <20130326224246.868949424@linuxfoundation.org>
+        Torstein Hegge <hegge@resisty.net>, Daniel Mack <zonque@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 31/98] ALSA: usb: Parse UAC2 extension unit like for UAC1
+Date: Tue, 26 Mar 2013 15:42:20 -0700
+Message-Id: <20130326224245.670801736@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -28,60 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Torstein Hegge <hegge@resisty.net>
 
-commit 664899786cb49cb52f620e06ac19c0be524a7cfa upstream.
+commit 61ac51301e6c6d4ed977d7674ce2b8e713619a9b upstream.
 
-When run at debug 3 or higher, rtl8192cu reports a BUG as follows:
+UAC2_EXTENSION_UNIT_V2 differs from UAC1_EXTENSION_UNIT, but can be handled in
+the same way when parsing the unit. Otherwise parse_audio_unit() fails when it
+sees an extension unit on a UAC2 device.
 
-BUG: scheduling while atomic: kworker/u:0/5281/0x00000002
-INFO: lockdep is turned off.
-Modules linked in: rtl8192cu rtl8192c_common rtlwifi fuse af_packet bnep bluetooth b43 mac80211 cfg80211 ipv6 snd_hda_codec_conexant kvm_amd k
-vm snd_hda_intel snd_hda_codec bcma rng_core snd_pcm ssb mmc_core snd_seq snd_timer snd_seq_device snd i2c_nforce2 sr_mod pcmcia forcedeth i2c_core soundcore
- cdrom sg serio_raw k8temp hwmon joydev ac battery pcmcia_core snd_page_alloc video button wmi autofs4 ext4 mbcache jbd2 crc16 thermal processor scsi_dh_alua
- scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc scsi_dh ata_generic pata_acpi pata_amd [last unloaded: rtlwifi]
-Pid: 5281, comm: kworker/u:0 Tainted: G        W    3.8.0-wl+ #119
-Call Trace:
- [<ffffffff814531e7>] __schedule_bug+0x62/0x70
- [<ffffffff81459af0>] __schedule+0x730/0xa30
- [<ffffffff81326e49>] ? usb_hcd_link_urb_to_ep+0x19/0xa0
- [<ffffffff8145a0d4>] schedule+0x24/0x70
- [<ffffffff814575ec>] schedule_timeout+0x18c/0x2f0
- [<ffffffff81459ec0>] ? wait_for_common+0x40/0x180
- [<ffffffff8133f461>] ? ehci_urb_enqueue+0xf1/0xee0
- [<ffffffff810a579d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff81459f65>] wait_for_common+0xe5/0x180
- [<ffffffff8107d1c0>] ? try_to_wake_up+0x2d0/0x2d0
- [<ffffffff8145a08e>] wait_for_completion_timeout+0xe/0x10
- [<ffffffff8132ab1c>] usb_start_wait_urb+0x8c/0x100
- [<ffffffff8132adf9>] usb_control_msg+0xd9/0x130
- [<ffffffffa057dd8d>] _usb_read_sync+0xcd/0x140 [rtlwifi]
- [<ffffffffa057de0e>] _usb_read32_sync+0xe/0x10 [rtlwifi]
- [<ffffffffa04b0555>] rtl92cu_update_hal_rate_table+0x1a5/0x1f0 [rtl8192cu]
+UAC2_EXTENSION_UNIT_V2 is outside the range allocated by UAC1.
 
-The cause is a synchronous read from routine rtl92cu_update_hal_rate_table().
-The resulting output is not critical, thus the debug statement is
-deleted.
-
-Reported-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Torstein Hegge <hegge@resisty.net>
+Acked-by: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c |    2 --
- 1 file changed, 2 deletions(-)
+ sound/usb/mixer.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-@@ -2058,8 +2058,6 @@ void rtl92cu_update_hal_rate_table(struc
- 			       (shortgi_rate << 4) | (shortgi_rate);
- 	}
- 	rtl_write_dword(rtlpriv, REG_ARFR0 + ratr_index * 4, ratr_value);
--	RT_TRACE(rtlpriv, COMP_RATR, DBG_DMESG, "%x\n",
--		 rtl_read_dword(rtlpriv, REG_ARFR0));
- }
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -725,7 +725,8 @@ static int check_input_term(struct mixer
+ 		case UAC1_PROCESSING_UNIT:
+ 		case UAC1_EXTENSION_UNIT:
+ 		/* UAC2_PROCESSING_UNIT_V2 */
+-		/* UAC2_EFFECT_UNIT */ {
++		/* UAC2_EFFECT_UNIT */
++		case UAC2_EXTENSION_UNIT_V2: {
+ 			struct uac_processing_unit_descriptor *d = p1;
  
- void rtl92cu_update_hal_rate_mask(struct ieee80211_hw *hw, u8 rssi_level)
+ 			if (state->mixer->protocol == UAC_VERSION_2 &&
+@@ -2051,6 +2052,8 @@ static int parse_audio_unit(struct mixer
+ 			return parse_audio_extension_unit(state, unitid, p1);
+ 		else /* UAC_VERSION_2 */
+ 			return parse_audio_processing_unit(state, unitid, p1);
++	case UAC2_EXTENSION_UNIT_V2:
++		return parse_audio_extension_unit(state, unitid, p1);
+ 	default:
+ 		snd_printk(KERN_ERR "usbaudio: unit %u: unexpected type 0x%02x\n", unitid, p1[2]);
+ 		return -EINVAL;
 
 
