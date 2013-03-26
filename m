@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab3CZXLn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:11:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53386 "EHLO
+	id S1756763Ab3CZXCB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:02:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53328 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756260Ab3CZXCE (ORCPT
+	with ESMTP id S1756668Ab3CZXBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:02:04 -0400
+	Tue, 26 Mar 2013 19:01:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Hillf Danton <dhillf@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 30/49] mm/hugetlb: fix total hugetlbfs pages count when using memory overcommit accouting
-Date: Tue, 26 Mar 2013 16:01:27 -0700
-Message-Id: <20130326225842.674373551@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 15/49] sfc: Fix timekeeping in efx_mcdi_poll()
+Date: Tue, 26 Mar 2013 16:01:12 -0700
+Message-Id: <20130326225841.153969782@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -31,65 +26,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-commit d00285884c0892bb1310df96bce6056e9ce9b9d9 upstream.
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-hugetlb_total_pages is used for overcommit calculations but the current
-implementation considers only the default hugetlb page size (which is
-either the first defined hugepage size or the one specified by
-default_hugepagesz kernel boot parameter).
+[ Upstream commit ebf98e797b4e26ad52ace1511a0b503ee60a6cd4 ]
 
-If the system is configured for more than one hugepage size, which is
-possible since commit a137e1cc6d6e ("hugetlbfs: per mount huge page
-sizes") then the overcommit estimation done by __vm_enough_memory()
-(resp.  shown by meminfo_proc_show) is not precise - there is an
-impression of more available/allowed memory.  This can lead to an
-unexpected ENOMEM/EFAULT resp.  SIGSEGV when memory is accounted.
+efx_mcdi_poll() uses get_seconds() to read the current time and to
+implement a polling timeout.  The use of this function was chosen
+partly because it could easily be replaced in a co-sim environment
+with a macro that read the simulated time.
 
-Testcase:
-  boot: hugepagesz=1G hugepages=1
-  the default overcommit ratio is 50
-  before patch:
+Unfortunately the real get_seconds() returns the system time (real
+time) which is subject to adjustment by e.g. ntpd.  If the system time
+is adjusted forward during a polled MCDI operation, the effective
+timeout can be shorter than the intended 10 seconds, resulting in a
+spurious failure.  It is also possible for a backward adjustment to
+delay detection of a areal failure.
 
-    egrep 'CommitLimit' /proc/meminfo
-    CommitLimit:     55434168 kB
+Use jiffies instead, and change MCDI_RPC_TIMEOUT to be denominated in
+jiffies.  Also correct rounding of the timeout: check time > finish
+(or rather time_after(time, finish)) and not time >= finish.
 
-  after patch:
-
-    egrep 'CommitLimit' /proc/meminfo
-    CommitLimit:     54909880 kB
-
-[akpm@linux-foundation.org: coding-style tweak]
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Hillf Danton <dhillf@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+[bwh: Backported to 3.0: adjust context]
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- mm/hugetlb.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/net/sfc/mcdi.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2006,8 +2006,12 @@ int hugetlb_report_node_meminfo(int nid,
- /* Return the number pages of memory we physically have, in PAGE_SIZE units. */
- unsigned long hugetlb_total_pages(void)
- {
--	struct hstate *h = &default_hstate;
--	return h->nr_huge_pages * pages_per_huge_page(h);
-+	struct hstate *h;
-+	unsigned long nr_total_pages = 0;
-+
-+	for_each_hstate(h)
-+		nr_total_pages += h->nr_huge_pages * pages_per_huge_page(h);
-+	return nr_total_pages;
- }
+--- a/drivers/net/sfc/mcdi.c
++++ b/drivers/net/sfc/mcdi.c
+@@ -30,7 +30,7 @@
+ #define REBOOT_FLAG_PORT0 0x3f8
+ #define REBOOT_FLAG_PORT1 0x3fc
  
- static int hugetlb_acct_memory(struct hstate *h, long delta)
+-#define MCDI_RPC_TIMEOUT       10 /*seconds */
++#define MCDI_RPC_TIMEOUT       (10 * HZ)
+ 
+ #define MCDI_PDU(efx)							\
+ 	(efx_port_num(efx) ? CMD_PDU_PORT1 : CMD_PDU_PORT0)
+@@ -120,7 +120,7 @@ static void efx_mcdi_copyout(struct efx_
+ static int efx_mcdi_poll(struct efx_nic *efx)
+ {
+ 	struct efx_mcdi_iface *mcdi = efx_mcdi(efx);
+-	unsigned int time, finish;
++	unsigned long time, finish;
+ 	unsigned int respseq, respcmd, error;
+ 	unsigned int pdu = FR_CZ_MC_TREG_SMEM + MCDI_PDU(efx);
+ 	unsigned int rc, spins;
+@@ -136,7 +136,7 @@ static int efx_mcdi_poll(struct efx_nic
+ 	 * and poll once a jiffy (approximately)
+ 	 */
+ 	spins = TICK_USEC;
+-	finish = get_seconds() + MCDI_RPC_TIMEOUT;
++	finish = jiffies + MCDI_RPC_TIMEOUT;
+ 
+ 	while (1) {
+ 		if (spins != 0) {
+@@ -146,7 +146,7 @@ static int efx_mcdi_poll(struct efx_nic
+ 			schedule_timeout_uninterruptible(1);
+ 		}
+ 
+-		time = get_seconds();
++		time = jiffies;
+ 
+ 		rmb();
+ 		efx_readd(efx, &reg, pdu);
+@@ -158,7 +158,7 @@ static int efx_mcdi_poll(struct efx_nic
+ 		    EFX_DWORD_FIELD(reg, MCDI_HEADER_RESPONSE))
+ 			break;
+ 
+-		if (time >= finish)
++		if (time_after(time, finish))
+ 			return -ETIMEDOUT;
+ 	}
+ 
+@@ -250,7 +250,7 @@ static int efx_mcdi_await_completion(str
+ 	if (wait_event_timeout(
+ 		    mcdi->wq,
+ 		    atomic_read(&mcdi->state) == MCDI_STATE_COMPLETED,
+-		    msecs_to_jiffies(MCDI_RPC_TIMEOUT * 1000)) == 0)
++		    MCDI_RPC_TIMEOUT) == 0)
+ 		return -ETIMEDOUT;
+ 
+ 	/* Check if efx_mcdi_set_mode() switched us back to polled completions.
 
 
