@@ -1,71 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755890Ab3C2HWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 03:22:19 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:44877 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab3C2HWR (ORCPT
+	id S1755945Ab3C2HWZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 03:22:25 -0400
+Received: from fallback6.mail.ru ([94.100.176.134]:36563 "EHLO
+	fallback6.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754379Ab3C2HWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 03:22:17 -0400
-Message-ID: <5155413E.6090002@oracle.com>
-Date: Fri, 29 Mar 2013 15:22:38 +0800
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Feng Jin <joe.jin@oracle.com>, Tamon Shiose <tamon.shiose@oracle.com>
-Subject: [PATCH] xen: Don't call arch_trigger_all_cpu_backtrace in dom0(pvm)
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 29 Mar 2013 03:22:22 -0400
+From: Kirill Kapranov <kapranoff@inbox.ru>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, bhutchings@solarflare.com, peppe.cavallaro@st.com,
+        joe@perches.com, bruce.w.allan@intel.com, linux-kernel@vger.kernel.org,
+        Kirill Kapranov <kapranoff@inbox.ru>
+Subject: [PATCH] phy: Elimination the forced speed reduction algorithm.
+Date: Tue, 26 Mar 2013 17:34:32 +0400
+Message-Id: <1364304872-6408-1-git-send-email-kapranoff@inbox.ru>
+X-Mailer: git-send-email 1.7.2.5
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nmi isn't supported in dom0, fallback to general all cpu backtrace code.
+In case of fixed speed set up for a NIC (e.g. ethtool -s eth0 autoneg off speed
+100 duplex full) with an ethernet cable plugged off, the mentioned algorithm
+slows down a NIC speed, so further cable hook-up leads to nonoperable link state.
 
-Without fix, on xapic system, sysrq+l, no backtrace is showed.
-On x2apic enabled system, got NULL pointer dereference as below.
-
-    SysRq : Show backtrace of all active CPUs
-    BUG: unable to handle kernel NULL pointer dereference at           (null)
-    IP: [<ffffffff8125e3cb>] memcpy+0xb/0x120
-    Call Trace:
-     [<ffffffff81039633>] ? __x2apic_send_IPI_mask+0x73/0x160
-     [<ffffffff8103973e>] x2apic_send_IPI_all+0x1e/0x20
-     [<ffffffff8103498c>] arch_trigger_all_cpu_backtrace+0x6c/0xb0
-     [<ffffffff81501be4>] ? _raw_spin_lock_irqsave+0x34/0x50
-     [<ffffffff8131654e>] sysrq_handle_showallcpus+0xe/0x10
-     [<ffffffff8131616d>] __handle_sysrq+0x7d/0x140
-     [<ffffffff81316230>] ? __handle_sysrq+0x140/0x140
-     [<ffffffff81316287>] write_sysrq_trigger+0x57/0x60
-     [<ffffffff811ca996>] proc_reg_write+0x86/0xc0
-     [<ffffffff8116dd8e>] vfs_write+0xce/0x190
-     [<ffffffff8116e3e5>] sys_write+0x55/0x90
-     [<ffffffff8150a242>] system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Tested-by: Tamon Shiose <tamon.shiose@oracle.com>
+Signed-off-by: Kirill Kapranov <kapranoff@inbox.ru>
 ---
- include/linux/nmi.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/net/phy/phy.c |   50 +------------------------------------------------
+ 1 files changed, 1 insertions(+), 49 deletions(-)
 
-diff --git a/include/linux/nmi.h b/include/linux/nmi.h
-index db50840..b845757 100644
---- a/include/linux/nmi.h
-+++ b/include/linux/nmi.h
-@@ -32,6 +32,8 @@ static inline void touch_nmi_watchdog(void)
- #ifdef arch_trigger_all_cpu_backtrace
- static inline bool trigger_all_cpu_backtrace(void)
- {
-+	if (xen_domain())
-+		return false;
- 	arch_trigger_all_cpu_backtrace();
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index ef9ea92..fc2dd94 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -463,33 +463,6 @@ void phy_stop_machine(struct phy_device *phydev)
+ }
  
- 	return true;
+ /**
+- * phy_force_reduction - reduce PHY speed/duplex settings by one step
+- * @phydev: target phy_device struct
+- *
+- * Description: Reduces the speed/duplex settings by one notch,
+- *   in this order--
+- *   1000/FULL, 1000/HALF, 100/FULL, 100/HALF, 10/FULL, 10/HALF.
+- *   The function bottoms out at 10/HALF.
+- */
+-static void phy_force_reduction(struct phy_device *phydev)
+-{
+-	int idx;
+-
+-	idx = phy_find_setting(phydev->speed, phydev->duplex);
+-	
+-	idx++;
+-
+-	idx = phy_find_valid(idx, phydev->supported);
+-
+-	phydev->speed = settings[idx].speed;
+-	phydev->duplex = settings[idx].duplex;
+-
+-	pr_info("Trying %d/%s\n",
+-		phydev->speed, DUPLEX_FULL == phydev->duplex ? "FULL" : "HALF");
+-}
+-
+-
+-/**
+  * phy_error - enter HALTED state for this PHY device
+  * @phydev: target phy_device struct
+  *
+@@ -818,30 +791,11 @@ void phy_state_machine(struct work_struct *work)
+ 				phydev->adjust_link(phydev->attached_dev);
+ 
+ 			} else if (0 == phydev->link_timeout--) {
+-				int idx;
+-
+ 				needs_aneg = 1;
+ 				/* If we have the magic_aneg bit,
+ 				 * we try again */
+ 				if (phydev->drv->flags & PHY_HAS_MAGICANEG)
+ 					break;
+-
+-				/* The timer expired, and we still
+-				 * don't have a setting, so we try
+-				 * forcing it until we find one that
+-				 * works, starting from the fastest speed,
+-				 * and working our way down */
+-				idx = phy_find_valid(0, phydev->supported);
+-
+-				phydev->speed = settings[idx].speed;
+-				phydev->duplex = settings[idx].duplex;
+-
+-				phydev->autoneg = AUTONEG_DISABLE;
+-
+-				pr_info("Trying %d/%s\n",
+-					phydev->speed,
+-					DUPLEX_FULL == phydev->duplex ?
+-					"FULL" : "HALF");
+ 			}
+ 			break;
+ 		case PHY_NOLINK:
+@@ -866,10 +820,8 @@ void phy_state_machine(struct work_struct *work)
+ 				phydev->state = PHY_RUNNING;
+ 				netif_carrier_on(phydev->attached_dev);
+ 			} else {
+-				if (0 == phydev->link_timeout--) {
+-					phy_force_reduction(phydev);
++				if (0 == phydev->link_timeout--) 
+ 					needs_aneg = 1;
+-				}
+ 			}
+ 
+ 			phydev->adjust_link(phydev->attached_dev);
 -- 
-1.7.3
+1.7.2.5
 
