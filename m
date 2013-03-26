@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab3CZXCJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:02:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53378 "EHLO
+	id S1755838Ab3CZXIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:08:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53404 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754953Ab3CZXCD (ORCPT
+	with ESMTP id S1756815Ab3CZXCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:02:03 -0400
+	Tue, 26 Mar 2013 19:02:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Torsten Duwe <duwe@lst.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 29/49] KMS: fix EDID detailed timing vsync parsing
-Date: Tue, 26 Mar 2013 16:01:26 -0700
-Message-Id: <20130326225842.557485778@linuxfoundation.org>
+        Daniel Mack <zonque@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 22/49] ALSA: snd-usb: mixer: propagate errors up the call chain
+Date: Tue, 26 Mar 2013 16:01:19 -0700
+Message-Id: <20130326225841.844558533@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -27,40 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Torsten Duwe <torsten@lst.de>
+From: Daniel Mack <zonque@gmail.com>
 
-commit 16dad1d743d31a104a849c8944e6b9eb479f6cd7 upstream.
+commit 4d7b86c98e445b075c2c4c3757eb6d3d6efbe72e upstream.
 
-EDID spreads some values across multiple bytes; bit-fiddling is needed
-to retrieve these.  The current code to parse "detailed timings" has a
-cut&paste error that results in a vsync offset of at most 15 lines
-instead of 63.
+In check_input_term() and parse_audio_feature_unit(), propagate the
+error value that has been returned by a failing function instead of
+-EINVAL. That helps cleaning up the error pathes in the mixer.
 
-See
-
-   http://en.wikipedia.org/wiki/EDID
-
-and in the "EDID Detailed Timing Descriptor" see bytes 10+11 show why
-that needs to be a left shift.
-
-Signed-off-by: Torsten Duwe <duwe@lst.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_edid.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/usb/mixer.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -841,7 +841,7 @@ static struct drm_display_mode *drm_mode
- 	unsigned vblank = (pt->vactive_vblank_hi & 0xf) << 8 | pt->vblank_lo;
- 	unsigned hsync_offset = (pt->hsync_vsync_offset_pulse_width_hi & 0xc0) << 2 | pt->hsync_offset_lo;
- 	unsigned hsync_pulse_width = (pt->hsync_vsync_offset_pulse_width_hi & 0x30) << 4 | pt->hsync_pulse_width_lo;
--	unsigned vsync_offset = (pt->hsync_vsync_offset_pulse_width_hi & 0xc) >> 2 | pt->vsync_offset_pulse_width_lo >> 4;
-+	unsigned vsync_offset = (pt->hsync_vsync_offset_pulse_width_hi & 0xc) << 2 | pt->vsync_offset_pulse_width_lo >> 4;
- 	unsigned vsync_pulse_width = (pt->hsync_vsync_offset_pulse_width_hi & 0x3) << 4 | (pt->vsync_offset_pulse_width_lo & 0xf);
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -711,8 +711,9 @@ static int check_input_term(struct mixer
+ 		case UAC2_CLOCK_SELECTOR: {
+ 			struct uac_selector_unit_descriptor *d = p1;
+ 			/* call recursively to retrieve the channel info */
+-			if (check_input_term(state, d->baSourceID[0], term) < 0)
+-				return -ENODEV;
++			err = check_input_term(state, d->baSourceID[0], term);
++			if (err < 0)
++				return err;
+ 			term->type = d->bDescriptorSubtype << 16; /* virtual type */
+ 			term->id = id;
+ 			term->name = uac_selector_unit_iSelector(d);
+@@ -1262,8 +1263,9 @@ static int parse_audio_feature_unit(stru
+ 		return err;
  
- 	/* ignore tiny modes */
+ 	/* determine the input source type and name */
+-	if (check_input_term(state, hdr->bSourceID, &iterm) < 0)
+-		return -EINVAL;
++	err = check_input_term(state, hdr->bSourceID, &iterm);
++	if (err < 0)
++		return err;
+ 
+ 	master_bits = snd_usb_combine_bytes(bmaControls, csize);
+ 	/* master configuration quirks */
 
 
