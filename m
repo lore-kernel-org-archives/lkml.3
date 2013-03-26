@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab3CZXac (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:30:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52646 "EHLO
+	id S1756723Ab3CZXaw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:30:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52642 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755093Ab3CZWoY (ORCPT
+	with ESMTP id S1755007Ab3CZWoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:24 -0400
+	Tue, 26 Mar 2013 18:44:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Artamonow <mad_soft@inbox.ru>
-Subject: [ 69/98] usb-storage: add unusual_devs entry for Samsung YP-Z3 mp3 player
-Date: Tue, 26 Mar 2013 15:42:58 -0700
-Message-Id: <20130326224249.672765307@linuxfoundation.org>
+        Zheng Liu <wenqing.lz@taobao.com>, "Theodore Tso" <tytso@mit.edu>,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [ 68/98] ext4: fix the wrong number of the allocated blocks in ext4_split_extent()
+Date: Tue, 26 Mar 2013 15:42:57 -0700
+Message-Id: <20130326224249.572815643@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -26,37 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Artamonow <mad_soft@inbox.ru>
+From: Zheng Liu <wenqing.lz@taobao.com>
 
-commit 29f86e66428ee083aec106cca1748dc63d98ce23 upstream.
+commit 3a2256702e47f68f921dfad41b1764d05c572329 upstream.
 
-Device stucks on filesystem writes, unless following quirk is passed:
-  echo 04e8:5136:m > /sys/module/usb_storage/parameters/quirks
+This commit fixes a wrong return value of the number of the allocated
+blocks in ext4_split_extent.  When the length of blocks we want to
+allocate is greater than the length of the current extent, we return a
+wrong number.  Let's see what happens in the following case when we
+call ext4_split_extent().
 
-Add corresponding entry to unusual_devs.h
+  map: [48, 72]
+  ex:  [32, 64, u]
 
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+'ex' will be split into two parts:
+  ex1: [32, 47, u]
+  ex2: [48, 64, w]
+
+'map->m_len' is returned from this function, and the value is 24.  But
+the real length is 16.  So it should be fixed.
+
+Meanwhile in this commit we use right length of the allocated blocks
+when get_reserved_cluster_alloc in ext4_ext_handle_uninitialized_extents
+is called.
+
+Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Dmitry Monakhov <dmonakhov@openvz.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/ext4/extents.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -488,6 +488,13 @@ UNUSUAL_DEV(  0x04e8, 0x5122, 0x0000, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_MAX_SECTORS_64 | US_FL_BULK_IGNORE_TAG),
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -3089,6 +3089,7 @@ static int ext4_split_extent(handle_t *h
+ 	int err = 0;
+ 	int uninitialized;
+ 	int split_flag1, flags1;
++	int allocated = map->m_len;
  
-+/* Added by Dmitry Artamonow <mad_soft@inbox.ru> */
-+UNUSUAL_DEV(  0x04e8, 0x5136, 0x0000, 0x9999,
-+		"Samsung",
-+		"YP-Z3",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64),
-+
- /* Entry and supporting patch by Theodore Kilgore <kilgota@auburn.edu>.
-  * Device uses standards-violating 32-byte Bulk Command Block Wrappers and
-  * reports itself as "Proprietary SCSI Bulk." Cf. device entry 0x084d:0x0011.
+ 	depth = ext_depth(inode);
+ 	ex = path[depth].p_ext;
+@@ -3108,6 +3109,8 @@ static int ext4_split_extent(handle_t *h
+ 				map->m_lblk + map->m_len, split_flag1, flags1);
+ 		if (err)
+ 			goto out;
++	} else {
++		allocated = ee_len - (map->m_lblk - ee_block);
+ 	}
+ 
+ 	ext4_ext_drop_refs(path);
+@@ -3130,7 +3133,7 @@ static int ext4_split_extent(handle_t *h
+ 
+ 	ext4_ext_show_leaf(inode, path);
+ out:
+-	return err ? err : map->m_len;
++	return err ? err : allocated;
+ }
+ 
+ /*
+@@ -3720,6 +3723,7 @@ out:
+ 					allocated - map->m_len);
+ 		allocated = map->m_len;
+ 	}
++	map->m_len = allocated;
+ 
+ 	/*
+ 	 * If we have done fallocate with the offset that is already
 
 
