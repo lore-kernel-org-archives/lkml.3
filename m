@@ -1,90 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933970Ab3CZAI7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 20:08:59 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:60669 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759148Ab3CZAHr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 20:07:47 -0400
-From: Tejun Heo <tj@kernel.org>
-To: laijs@cn.fujitsu.com
-Cc: linux-kernel@vger.kernel.org, js1304@gmail.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/6] workqueue: protect wq->nr_drainers and ->flags with wq->mutex
-Date: Mon, 25 Mar 2013 17:07:26 -0700
-Message-Id: <1364256449-11401-4-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1364256449-11401-1-git-send-email-tj@kernel.org>
-References: <1364256449-11401-1-git-send-email-tj@kernel.org>
+	id S933997Ab3CZAJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 20:09:17 -0400
+Received: from tundra.namei.org ([65.99.196.166]:37633 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933977Ab3CZAJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 20:09:14 -0400
+Date: Tue, 26 Mar 2013 11:09:54 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Nicolas Schichan <nschichan@freebox.fr>
+cc: Will Drewry <wad@chromium.org>, James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] seccomp: allow BPF_XOR based ALU instructions.
+In-Reply-To: <1363366923-6269-1-git-send-email-nschichan@freebox.fr>
+Message-ID: <alpine.LRH.2.02.1303261109290.24539@tundra.namei.org>
+References: <1363366923-6269-1-git-send-email-nschichan@freebox.fr>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+On Fri, 15 Mar 2013, Nicolas Schichan wrote:
 
-We're expanding wq->mutex to cover all fields specific to each
-workqueue with the end goal of replacing pwq_lock which will make
-locking simpler and easier to understand.
+> 
+> Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
+> ---
+>  kernel/seccomp.c |    2 ++
+>  1 file changed, 2 insertions(+)
 
-wq->nr_drainers and ->flags are specific to each workqueue.  Protect
-->nr_drainers and ->flags with wq->mutex instead of pool_mutex.
+Applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next
 
-tj: Rebased on top of the current dev branch.  Updated description.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/workqueue.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index d448eda..3ac2c4d 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -226,7 +226,7 @@ struct wq_device;
-  * the appropriate worker_pool through its pool_workqueues.
-  */
- struct workqueue_struct {
--	unsigned int		flags;		/* PL: WQ_* flags */
-+	unsigned int		flags;		/* WQ: WQ_* flags */
- 	struct pool_workqueue __percpu *cpu_pwqs; /* I: per-cpu pwq's */
- 	struct list_head	pwqs;		/* WR: all pwqs of this wq */
- 	struct list_head	list;		/* PL: list of all workqueues */
-@@ -242,7 +242,7 @@ struct workqueue_struct {
- 	struct list_head	maydays;	/* MD: pwqs requesting rescue */
- 	struct worker		*rescuer;	/* I: rescue worker */
- 
--	int			nr_drainers;	/* PL: drain in progress */
-+	int			nr_drainers;	/* WQ: drain in progress */
- 	int			saved_max_active; /* PW: saved pwq max_active */
- 
- #ifdef CONFIG_SYSFS
-@@ -2684,10 +2684,10 @@ void drain_workqueue(struct workqueue_struct *wq)
- 	 * hotter than drain_workqueue() and already looks at @wq->flags.
- 	 * Use __WQ_DRAINING so that queue doesn't have to check nr_drainers.
- 	 */
--	mutex_lock(&wq_pool_mutex);
-+	mutex_lock(&wq->mutex);
- 	if (!wq->nr_drainers++)
- 		wq->flags |= __WQ_DRAINING;
--	mutex_unlock(&wq_pool_mutex);
-+	mutex_unlock(&wq->mutex);
- reflush:
- 	flush_workqueue(wq);
- 
-@@ -2714,10 +2714,10 @@ reflush:
- 
- 	local_irq_enable();
- 
--	mutex_lock(&wq_pool_mutex);
-+	mutex_lock(&wq->mutex);
- 	if (!--wq->nr_drainers)
- 		wq->flags &= ~__WQ_DRAINING;
--	mutex_unlock(&wq_pool_mutex);
-+	mutex_unlock(&wq->mutex);
- }
- EXPORT_SYMBOL_GPL(drain_workqueue);
- 
 -- 
-1.8.1.4
-
+James Morris
+<jmorris@namei.org>
