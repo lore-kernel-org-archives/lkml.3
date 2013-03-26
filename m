@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934837Ab3CZPoz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:44:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49113 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934758Ab3CZPox (ORCPT
+	id S934855Ab3CZPpq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:45:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53918 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964913Ab3CZPXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:44:53 -0400
-Date: Tue, 26 Mar 2013 15:44:43 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Eric Piel <eric.piel@tremplin-utc.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: Driver lis3lv02d_i2c not working on Nokia RX-51
-Message-ID: <20130326154442.GE18316@opensource.wolfsonmicro.com>
-References: <201302170046.26569@pali>
- <201303242345.00176@pali>
- <20130324230435.GE18316@opensource.wolfsonmicro.com>
- <201303261602.40219@pali>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Vx/N56bIaYnO6ICL"
-Content-Disposition: inline
-In-Reply-To: <201303261602.40219@pali>
-X-Cookie: Your aim is high and to the right.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 26 Mar 2013 11:23:04 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Takashi Iwai <tiwai@suse.de>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 087/150] ALSA: hda - Fix typo in checking IEC958 emphasis bit
+Date: Tue, 26 Mar 2013 15:19:46 +0000
+Message-Id: <1364311249-14454-88-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
 
---Vx/N56bIaYnO6ICL
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Tue, Mar 26, 2013 at 04:02:39PM +0100, Pali Roh=E1r wrote:
+From: Takashi Iwai <tiwai@suse.de>
 
-> What do you think how to fix this problem? I do not know about any=20
-> HW regulator for n900 accelerometer and possible solutions could=20
-> be revert that commit or adding fake regulator to board code...
+commit a686fd141e20244ad75f80ad54706da07d7bb90a upstream.
 
-Reverting the fix is not an option, this is a clear bug in the platform.
+There is a typo in convert_to_spdif_status() about checking the
+emphasis IEC958 status bit.  It should check the given value instead
+of the resultant value.
 
-There will be a regulator here, the device needs power.
+Reported-by: Martin Weishart <martin.weishart@telosalliance.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ sound/pci/hda/hda_codec.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---Vx/N56bIaYnO6ICL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
+index b1b6238..2c6a785 100644
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -2961,7 +2961,7 @@ static unsigned int convert_to_spdif_status(unsigned short val)
+ 	if (val & AC_DIG1_PROFESSIONAL)
+ 		sbits |= IEC958_AES0_PROFESSIONAL;
+ 	if (sbits & IEC958_AES0_PROFESSIONAL) {
+-		if (sbits & AC_DIG1_EMPHASIS)
++		if (val & AC_DIG1_EMPHASIS)
+ 			sbits |= IEC958_AES0_PRO_EMPHASIS_5015;
+ 	} else {
+ 		if (val & AC_DIG1_EMPHASIS)
+-- 
+1.8.1.2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRUcIcAAoJELSic+t+oim9Gm0P/i/pBWkZ8kMnolB6H4TQFHK+
-CQI6XwGmg5fX6dlYR5BNcwDtOcfy7H9Tj4R5dzz6xjGqcaFe99MoBQ6TgW4RI3mz
-LsoFtqWDcvJrmREju6GPOS385d4PPEsafrF/MDcpmskuVgB+9jFsGtglNZD2m1Bi
-oxVurNCLcp2PBNfqyDb6kbv3ie+Ni92DaYfRWAAKWr0MxfTScky5PmyLjna6A2mL
-NGM+VkIcehIg56BO2p3tb0cBtwcGCkRAqTbncI248kx7QH4qaT5grVcxjGBCtuis
-2n2CWOxL8xw6ICNus8sxfZ1S9eomnEpuhfPOee59h7dWHR8HP+ZftDO6UbR1pVWV
-L8Xe1gt+gmusRDIwccToe+AiBxxCcql57ZUuXs3I54I2hEi16bXuieSOE7YajyhT
-MUgE1U5ypmw8ObLH0/K6gl2qViZ2WcFdln5l3oKHBBJAARjBnkowMMC3B8Tdi2bc
-yIYb0aSuZyhcq5wOcfUA3FsHqd+SjaFRMPT/JEaBIT6m80E0oA9IvFttq3DF7+NF
-uNbTKhmTq8/T5XA5LGifIpiU2b8pyrb8A8UsWUlsikNVva+xZ9dqL7mnHmxjGQbr
-FENydaf37igicUeoHpK4MrB6D+f8Vcp8yLysnznF2Qvy+JBI3cDYqsxYneaBm051
-8cnWRXav+86Cig4qBjRM
-=pswm
------END PGP SIGNATURE-----
-
---Vx/N56bIaYnO6ICL--
