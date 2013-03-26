@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab3CZXFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:05:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53463 "EHLO
+	id S1756449Ab3CZXFp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:05:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53470 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754465Ab3CZXCS (ORCPT
+	with ESMTP id S1755280Ab3CZXCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 19:02:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Wu <lekensteyn@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 46/49] i915: initialize CADL in opregion
-Date: Tue, 26 Mar 2013 16:01:43 -0700
-Message-Id: <20130326225844.355621181@linuxfoundation.org>
+        CQ Tang <cq.tang@intel.com>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 36/49] x86-64: Fix the failure case in copy_user_handle_tail()
+Date: Tue, 26 Mar 2013 16:01:33 -0700
+Message-Id: <20130326225843.306647599@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -29,70 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lekensteyn <lekensteyn@gmail.com>
+From: CQ Tang <cq.tang@intel.com>
 
-commit d627b62ff8d4d36761adbcd90ff143d79c94ab22 upstream.
+commit 66db3feb486c01349f767b98ebb10b0c3d2d021b upstream.
 
-This is rather a hack to fix brightness hotkeys on a Clevo laptop. CADL is not
-used anywhere in the driver code at the moment, but it could be used in BIOS as
-is the case with the Clevo laptop.
+The increment of "to" in copy_user_handle_tail() will have incremented
+before a failure has been noted.  This causes us to skip a byte in the
+failure case.
 
-The Clevo B7130 requires the CADL field to contain at least the ID of
-the LCD device. If this field is empty, the ACPI methods that are called
-on pressing brightness / display switching hotkeys will not trigger a
-notification. As a result, it appears as no hotkey has been pressed.
+Only do the increment when assured there is no failure.
 
-Reference: https://bugs.freedesktop.org/show_bug.cgi?id=45452
-Tested-by: Peter Wu <lekensteyn@gmail.com>
-Signed-off-by: Peter Wu <lekensteyn@gmail.com>
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: CQ Tang <cq.tang@intel.com>
+Link: http://lkml.kernel.org/r/20130318150221.8439.993.stgit@phlsvslse11.ph.intel.com
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_opregion.c |   23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+ arch/x86/lib/usercopy_64.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_opregion.c
-+++ b/drivers/gpu/drm/i915/intel_opregion.c
-@@ -413,6 +413,25 @@ blind_set:
- 	goto end;
- }
+--- a/arch/x86/lib/usercopy_64.c
++++ b/arch/x86/lib/usercopy_64.c
+@@ -169,10 +169,10 @@ copy_user_handle_tail(char *to, char *fr
+ 	char c;
+ 	unsigned zero_len;
  
-+static void intel_setup_cadls(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	struct intel_opregion *opregion = &dev_priv->opregion;
-+	int i = 0;
-+	u32 disp_id;
-+
-+	/* Initialize the CADL field by duplicating the DIDL values.
-+	 * Technically, this is not always correct as display outputs may exist,
-+	 * but not active. This initialization is necessary for some Clevo
-+	 * laptops that check this field before processing the brightness and
-+	 * display switching hotkeys. Just like DIDL, CADL is NULL-terminated if
-+	 * there are less than eight devices. */
-+	do {
-+		disp_id = ioread32(&opregion->acpi->didl[i]);
-+		iowrite32(disp_id, &opregion->acpi->cadl[i]);
-+	} while (++i < 8 && disp_id != 0);
-+}
-+
- void intel_opregion_init(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-@@ -422,8 +441,10 @@ void intel_opregion_init(struct drm_devi
- 		return;
+-	for (; len; --len) {
++	for (; len; --len, to++) {
+ 		if (__get_user_nocheck(c, from++, sizeof(char)))
+ 			break;
+-		if (__put_user_nocheck(c, to++, sizeof(char)))
++		if (__put_user_nocheck(c, to, sizeof(char)))
+ 			break;
+ 	}
  
- 	if (opregion->acpi) {
--		if (drm_core_check_feature(dev, DRIVER_MODESET))
-+		if (drm_core_check_feature(dev, DRIVER_MODESET)) {
- 			intel_didl_outputs(dev);
-+			intel_setup_cadls(dev);
-+		}
- 
- 		/* Notify BIOS we are ready to handle ACPI video ext notifs.
- 		 * Right now, all the events are handled by the ACPI video module.
 
 
