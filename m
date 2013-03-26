@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934988Ab3CZQQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:16:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53623 "EHLO
+	id S964926Ab3CZQQv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:16:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53618 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934557Ab3CZPWF (ORCPT
+	with ESMTP id S964888Ab3CZPWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:05 -0400
+	Tue, 26 Mar 2013 11:22:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephane Eranian <eranian@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 034/150] perf,x86: fix kernel crash with PEBS/BTS after suspend/resume
-Date: Tue, 26 Mar 2013 15:18:53 +0000
-Message-Id: <1364311249-14454-35-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 033/150] selinux: use GFP_ATOMIC under spin_lock
+Date: Tue, 26 Mar 2013 15:18:52 +0000
+Message-Id: <1364311249-14454-34-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -28,86 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephane Eranian <eranian@google.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 1d9d8639c063caf6efc2447f5f26aa637f844ff6 upstream.
+commit 4502403dcf8f5c76abd4dbab8726c8e4ecb5cd34 upstream.
 
-This patch fixes a kernel crash when using precise sampling (PEBS)
-after a suspend/resume. Turns out the CPU notifier code is not invoked
-on CPU0 (BP). Therefore, the DS_AREA (used by PEBS) is not restored properly
-by the kernel and keeps it power-on/resume value of 0 causing any PEBS
-measurement to crash when running on CPU0.
+The call tree here is:
 
-The workaround is to add a hook in the actual resume code to restore
-the DS Area MSR value. It is invoked for all CPUS. So for all but CPU0,
-the DS_AREA will be restored twice but this is harmless.
+sk_clone_lock()              <- takes bh_lock_sock(newsk);
+xfrm_sk_clone_policy()
+__xfrm_sk_clone_policy()
+clone_policy()               <- uses GFP_ATOMIC for allocations
+security_xfrm_policy_clone()
+security_ops->xfrm_policy_clone_security()
+selinux_xfrm_policy_clone()
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 8 ++++++++
- arch/x86/power/cpu.c                      | 2 ++
- include/linux/perf_event.h                | 2 ++
- 3 files changed, 12 insertions(+)
+ security/selinux/xfrm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 35e2192..9a9be1e 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -714,3 +714,11 @@ void intel_ds_init(void)
- 		}
- 	}
- }
-+
-+void perf_restore_debug_store(void)
-+{
-+	if (!x86_pmu.bts && !x86_pmu.pebs)
-+		return;
-+
-+	init_debug_store_on_cpu(smp_processor_id());
-+}
-diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-index 218cdb1..fcbaac60 100644
---- a/arch/x86/power/cpu.c
-+++ b/arch/x86/power/cpu.c
-@@ -11,6 +11,7 @@
- #include <linux/suspend.h>
- #include <linux/export.h>
- #include <linux/smp.h>
-+#include <linux/perf_event.h>
+diff --git a/security/selinux/xfrm.c b/security/selinux/xfrm.c
+index 48665ec..8ab2951 100644
+--- a/security/selinux/xfrm.c
++++ b/security/selinux/xfrm.c
+@@ -310,7 +310,7 @@ int selinux_xfrm_policy_clone(struct xfrm_sec_ctx *old_ctx,
  
- #include <asm/pgtable.h>
- #include <asm/proto.h>
-@@ -227,6 +228,7 @@ static void __restore_processor_state(struct saved_context *ctxt)
- 	do_fpu_end();
- 	x86_platform.restore_sched_clock_state();
- 	mtrr_bp_restore();
-+	perf_restore_debug_store();
- }
+ 	if (old_ctx) {
+ 		new_ctx = kmalloc(sizeof(*old_ctx) + old_ctx->ctx_len,
+-				  GFP_KERNEL);
++				  GFP_ATOMIC);
+ 		if (!new_ctx)
+ 			return -ENOMEM;
  
- /* Needed by apm.c */
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index c3c98a6..1d56bf6 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1295,6 +1295,7 @@ extern void perf_swevent_put_recursion_context(int rctx);
- extern void perf_event_enable(struct perf_event *event);
- extern void perf_event_disable(struct perf_event *event);
- extern void perf_event_task_tick(void);
-+extern void perf_restore_debug_store(void);
- #else
- static inline void
- perf_event_task_sched_in(struct task_struct *prev,
-@@ -1333,6 +1334,7 @@ static inline void perf_swevent_put_recursion_context(int rctx)		{ }
- static inline void perf_event_enable(struct perf_event *event)		{ }
- static inline void perf_event_disable(struct perf_event *event)		{ }
- static inline void perf_event_task_tick(void)				{ }
-+static inline void perf_restore_debug_store(void)			{ }
- #endif
- 
- #define perf_output_put(handle, x) perf_output_copy((handle), &(x), sizeof(x))
 -- 
 1.8.1.2
 
