@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757154Ab3CZLII (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 07:08:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:49728 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab3CZLIH (ORCPT
+	id S1755804Ab3CZLOd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 07:14:33 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55045 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754080Ab3CZLOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 07:08:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [GIT PULL] at91: fixes for 3.9-rc #2
-Date: Tue, 26 Mar 2013 11:05:21 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-References: <51517592.5010300@atmel.com> <201303261022.39882.arnd@arndb.de> <51517EEB.7030709@atmel.com>
-In-Reply-To: <51517EEB.7030709@atmel.com>
+	Tue, 26 Mar 2013 07:14:32 -0400
+Date: Tue, 26 Mar 2013 12:14:29 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] irq: get_irq_disable_depth.
+In-Reply-To: <1364251295-26358-1-git-send-email-andreas.fenkart@streamunlimited.com>
+Message-ID: <alpine.LFD.2.02.1303261210230.22263@ionos>
+References: <1364251295-26358-1-git-send-email-andreas.fenkart@streamunlimited.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303261105.22173.arnd@arndb.de>
-X-Provags-ID: V02:K0:BHhbyiHUuh8vmf/WTtqnTFRwJupb3KAK16dYnWoaHEp
- 0Xchtf1saFqrej+K1pyse51TC26NpolZ2KU6RnLSqUylyw/pTe
- xsqDbItzF15C1UBLNAAMFTPW+zWsBwFvszWIqORteJqYJUo4Q7
- 1dGOYGYxFoZ7eDaeconkCv1E5Xmw9MsmxlETzK2RPPLophoM7T
- hjjCWC9PBENFfAF3ITC01TnP5L0jrtWGGElho915hyVblOW+ft
- x4eTGuTyP0KlIb9dzr8X7ntkCPmf8D5izotbfCs9dg3fFY40jE
- yyfBakUUHG0nVPpOa2PD3BsI6dgqeccD5FLoWzGlTEuTPC0DLf
- /VygwimyMasKTAdVN9pc=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 26 March 2013, Nicolas Ferre wrote:
-> Indeed, at first sight its looks like a nice solution. But I wonder if
-> we add several nodes in this kind of .dtsi files, we may end up with
-> mess between APB peripherals and board specific ones like leds, NAND, etc.
-> Moreover, the plain and full naming of the node makes it identifiable
-> without doubts, even someone not completely familiar with DT.
+On Mon, 25 Mar 2013, Andreas Fenkart wrote:
+> Used to verify invariant in omap_hsmmc, were a gpio is used to detect
+> sdio irqs during suspend phase. The ref count from irq_enable/irq_disable
+> is used to control when the irq should be effectively enabled.
 > 
-> I slightly prefer to keep it like this, but I can still change my mind ;-)
+>                  irq en     irq dis
+>             ------------------------
+>   pm suspend  |    0     |   1
+>   pm default  |    1     |   2
+> 
+>               irq disable depth
+> 
+> When the sdio irq is enabled AND the module is in runtime suspend,
+> the ref must be zero so the irq is effectively enabled.
+> 
+> This function helps to verify, that the disable depth has the
+> right value at different driver states.
 
-If you don't want to use the labels, it's probably better to drop from
-the dtsi files. I think you can also write 
+I'm really not getting it. The SDIO driver knows whether it has
+interrupts enabled or not, so what needs to be verified?
 
-ahb/apb/ethernet@802c000 {
-	phy-mode = "rmii";
-        status = "okay";
-};
+If you need this just to debug your driver, then please keep it in
+your private tree. I really can't see a general value for this.
 
-although I think most people prefer the labels, and I have not tried
-the above.
+Thanks,
 
-Back to the bug fix, I think we can have a simpler version for 3.9
-if you just mark the ethernet node as "disabled" in the 
-at91sam9g15.dtsi file, and then do the patch to change the default
-in an add-on patch for 3.10.
-
-	Arnd
+	tglx
