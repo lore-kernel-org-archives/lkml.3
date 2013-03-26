@@ -1,109 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932880Ab3CZCkj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 22:40:39 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:52126 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758879Ab3CZCki (ORCPT
+	id S933799Ab3CZCoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 22:44:16 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:1471 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755337Ab3CZCoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 22:40:38 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhUZAHsJUVF5LG6s/2dsb2JhbABDhW64foUSAQMBgQcXdIIfAQEFOhwjEAgDDgoJJQ8FJQMhE4gTsiKQCRWNaCAeXQeDQAOWZoluhxeDHig
-Date: Tue, 26 Mar 2013 13:40:32 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vfs: dcache: cond_resched in shrink_dentry_list
-Message-ID: <20130326024032.GJ6369@dastard>
-References: <1364232151-23242-1-git-send-email-gthelen@google.com>
- <20130325235614.GI6369@dastard>
- <xr93fvzjgfke.fsf@gthelen.mtv.corp.google.com>
+	Mon, 25 Mar 2013 22:44:15 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: Tony Luck <tony.luck@intel.com>
+CC: <linux-kernel@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH v5 0/5] Fix aer_inject tool bug 
+Date: Tue, 26 Mar 2013 10:43:34 +0800
+Message-ID: <1364265819-6732-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <xr93fvzjgfke.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 05:39:13PM -0700, Greg Thelen wrote:
-> On Mon, Mar 25 2013, Dave Chinner wrote:
-> > On Mon, Mar 25, 2013 at 10:22:31AM -0700, Greg Thelen wrote:
-> >> Call cond_resched() from shrink_dentry_list() to preserve
-> >> shrink_dcache_parent() interactivity.
-> >> 
-> >> void shrink_dcache_parent(struct dentry * parent)
-> >> {
-> >> 	while ((found = select_parent(parent, &dispose)) != 0)
-> >> 		shrink_dentry_list(&dispose);
-> >> }
-> >> 
-> >> select_parent() populates the dispose list with dentries which
-> >> shrink_dentry_list() then deletes.  select_parent() carefully uses
-> >> need_resched() to avoid doing too much work at once.  But neither
-> >> shrink_dcache_parent() nor its called functions call cond_resched().
-> >> So once need_resched() is set select_parent() will return single
-> >> dentry dispose list which is then deleted by shrink_dentry_list().
-> >> This is inefficient when there are a lot of dentry to process.  This
-> >> can cause softlockup and hurts interactivity on non preemptable
-> >> kernels.
-> >
-> > Hi Greg,
-> >
-> > I can see how this coul dcause problems, but isn't the problem then
-> > that shrink_dcache_parent()/select_parent() itself is mishandling
-> > the need for rescheduling rather than being a problem with
-> > the shrink_dentry_list() implementation?  i.e. select_parent() is
-> > aborting batching based on a need for rescheduling, but then not
-> > doing that itself and assuming that someone else will do the
-> > reschedule for it?
-> >
-> > Perhaps this is a better approach:
-> >
-> > -	while ((found = select_parent(parent, &dispose)) != 0)
-> > +	while ((found = select_parent(parent, &dispose)) != 0) {
-> >                 shrink_dentry_list(&dispose);
-> > +		cond_resched();
-> > +	}
-> >
-> > With this, select_parent() stops batching when a resched is needed,
-> > we dispose of the list as a single batch and only then resched if it
-> > was needed before we go and grab the next batch. That should fix the
-> > "small batch" problem without the potential for changing the
-> > shrink_dentry_list() behaviour adversely for other users....
-> 
-> I considered only modifying shrink_dcache_parent() as you show above.
-> Either approach fixes the problem I've seen.  My initial approach adds
-> cond_resched() deeper into shrink_dentry_list() because I thought that
-> there might a secondary benefit: shrink_dentry_list() would be willing
-> to give up the processor when working on a huge number of dentry.  This
-> could improve interactivity during shrinker and umount.  I don't feel
-> strongly on this and would be willing to test and post the
-> add-cond_resched-to-shrink_dcache_parent approach.
+Hi Tony,
+   Can you pick up these bug fix patches into your ras tree? I sent them to PCI subsystem maillist, but Bjorn does not seem 
+very interested in these aer_inject tool bug fix patches. Huang Ying <ying.huang@intel.com> is the author of aer_inject tool.
+And I had a long discussion with Huang Ying about these patches, and got his reviewed-by. I do not know what people are really 
+interested in these patches, So I try to send them to you. Thank you very much!
 
-The shrinker has interactivity problems because of the global
-dcache_lru_lock, not because of ithe size of the list passed to
-shrink_dentry_list(). The amount of work that shrink_dentry_list()
-does here is already bound by the shrinker batch size. Hence in the
-absence of the RT folk complaining about significant holdoffs I
-don't think there is an interactivity problem through the shrinker
-path.
+This series of patch mainly to fix the aer_inject bug described as below:
 
-As for the unmount path - shrink_dcache_for_umount_subtree() - that
-doesn't use shrink_dentry_list() and so would need it's own internal
-calls to cond_resched().  Perhaps it's shrink_dcache_sb() that you
-are concerned about?  Either way, And there are lots more similar
-issues in the unmount path such as evict_inodes(), so unless you are
-going to give every possible path through unmount/remount/bdev
-invalidation the same treatment then changing shrink_dentry_list()
-won't significantly improve the interactivity of the system
-situation in these paths...
+-+-[0000:40]-+-00.0-[0000:41]--
+ |           +-01.0-[0000:42]--+-00.0  Intel Corporation 82576 Gigabit Network Connection
+ |           |                 \-00.1  Intel Corporation 82576 Gigabit Network Connection
+ |           +-03.0-[0000:43]----00.0  LSI Logic / Symbios Logic SAS1064ET PCI-Express Fusion-MPT SAS
+ |           +-04.0-[0000:44]--
+ |           +-05.0-[0000:45]--
+ |           +-07.0-[0000:46-49]----00.0-[0000:47-49]--+-02.0-[0000:48]--+-00.0  Intel Corporation 82576 Gigabit Network Connection
+ |           |                                         |                 \-00.1  Intel Corporation 82576 Gigabit Network Connection
+ |           |                                         \-04.0-[0000:49]--+-00.0  Intel Corporation 82576 Gigabit Network Connection
+ |           |                                                           \-00.1  Intel Corporation 82576 Gigabit Network Connection
 
-Cheers,
+my steps:
+1)modprobe aer_inject
+2)inject aer errors to pcie device 0000:48:00.0
+3)modprobe pciehp
+4)hot remove Network Card in slot(port 0000:40:07.0)
+5)hot add Network Card in slot(port 0000:40:07.0)
+6)system panic
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+in step 2) the pci_ops of bus 0000:48 and bus 0000:40 will be assigned to pci_ops_aer
+in step 5) the pci_ops of the newly created bus 0000:46 will be assigned to pci_ops_aer(inherited by parent pci_ops),
+but this pci_ops(0000:46) is not tracked in pci_bus_ops_list in aer_inject module. So every access to pci_config space
+by pci_ops of 0000:46 will cause system panic, Since pci_ops_aer cannot find its original pci_ops, thus , a NULL pci_ops return;
+
+The first patch fix this bug by finding parent pci_ops(tracked in pci_ops_list) instead of returning NULL in step 5);
+The second patch fix a small race condition window in aer_inject_exit;
+The Third patch to find and clean all untracked pci_ops_aer in system when aer_inject module exit
+The rest two patch mainly about to clean bus_ops;
+
+Yijing Wang (5):
+  PCI/AER: Fix pci_ops return NULL in pci_read/write_aer
+  PCI/AER: use list_for_each_entry to avoid a small race condition
+    window
+  PCI/AER: clean all untracked pci_ops_aer when rmmod aer_inject
+  PCI/AER: clean pci_bus_ops when related pci bus was removed
+  PCI/AER: free pci_bus_ops_list and remove pci_bus_ops_pop
+
+ drivers/pci/pcie/aer/aer_inject.c |  123 +++++++++++++++++++++++++++++++------
+ 1 files changed, 103 insertions(+), 20 deletions(-)
+
+
