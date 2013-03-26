@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab3CZXB7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:01:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53333 "EHLO
+	id S1756543Ab3CZXMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:12:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53361 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756703Ab3CZXBz (ORCPT
+	with ESMTP id S1756734Ab3CZXB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:01:55 -0400
+	Tue, 26 Mar 2013 19:01:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Veaceslav Falico <vfalico@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 04/49] netconsole: dont call __netpoll_cleanup() while atomic
-Date: Tue, 26 Mar 2013 16:01:01 -0700
-Message-Id: <20130326225840.029010040@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 09/49] sfc: Fix loop condition for efx_filter_search() when !for_insert
+Date: Tue, 26 Mar 2013 16:01:06 -0700
+Message-Id: <20130326225840.544786691@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -29,62 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Veaceslav Falico <vfalico@redhat.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-[ Upstream commit 3f315bef23075ea8a98a6fe4221a83b83456d970 ]
+[ Upstream commit 4017dbdc14af1903dc9fcba4d08b89c02325069d ]
 
-__netpoll_cleanup() is called in netconsole_netdev_event() while holding a
-spinlock. Release/acquire the spinlock before/after it and restart the
-loop. Also, disable the netconsole completely, because we won't have chance
-after the restart of the loop, and might end up in a situation where
-nt->enabled == 1 and nt->np.dev == NULL.
+efx_filter_remove_filter() fails to remove inserted filters in some cases.
 
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+For example:
+
+  1. Two filters A and B have specifications that result in an initial
+     hash collision.
+  2. A is inserted first, followed by B.
+  3. An attempt to remove B first succeeds, but if A is removed first
+     a subsequent attempt to remove B fails.
+
+When searching for an existing filter (!for_insert),
+efx_filter_search() must always continue to the maximum search depth
+for the given type rather than stopping at the first unused entry.
+
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/netconsole.c |   20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+ drivers/net/sfc/filter.c |   39 +++++++++++++++++++++++----------------
+ 1 file changed, 23 insertions(+), 16 deletions(-)
 
---- a/drivers/net/netconsole.c
-+++ b/drivers/net/netconsole.c
-@@ -630,6 +630,7 @@ static int netconsole_netdev_event(struc
- 		goto done;
+--- a/drivers/net/sfc/filter.c
++++ b/drivers/net/sfc/filter.c
+@@ -335,28 +335,35 @@ static int efx_filter_search(struct efx_
+ 			     bool for_insert, int *depth_required)
+ {
+ 	unsigned hash, incr, filter_idx, depth, depth_max;
+-	struct efx_filter_spec *cmp;
  
- 	spin_lock_irqsave(&target_list_lock, flags);
-+restart:
- 	list_for_each_entry(nt, &target_list, list) {
- 		netconsole_target_get(nt);
- 		if (nt->np.dev == dev) {
-@@ -642,20 +643,17 @@ static int netconsole_netdev_event(struc
- 			case NETDEV_UNREGISTER:
- 				/*
- 				 * rtnl_lock already held
-+				 * we might sleep in __netpoll_cleanup()
- 				 */
--				if (nt->np.dev) {
--					spin_unlock_irqrestore(
--							      &target_list_lock,
--							      flags);
--					__netpoll_cleanup(&nt->np);
--					spin_lock_irqsave(&target_list_lock,
--							  flags);
--					dev_put(nt->np.dev);
--					nt->np.dev = NULL;
--				}
-+				spin_unlock_irqrestore(&target_list_lock, flags);
-+				__netpoll_cleanup(&nt->np);
-+				spin_lock_irqsave(&target_list_lock, flags);
-+				dev_put(nt->np.dev);
-+				nt->np.dev = NULL;
- 				nt->enabled = 0;
- 				stopped = true;
--				break;
-+				netconsole_target_put(nt);
-+				goto restart;
- 			}
- 		}
- 		netconsole_target_put(nt);
+ 	hash = efx_filter_hash(key);
+ 	incr = efx_filter_increment(key);
+-	depth_max = (spec->priority <= EFX_FILTER_PRI_HINT ?
+-		     FILTER_CTL_SRCH_HINT_MAX : FILTER_CTL_SRCH_MAX);
+ 
+-	for (depth = 1, filter_idx = hash & (table->size - 1);
+-	     depth <= depth_max && test_bit(filter_idx, table->used_bitmap);
+-	     ++depth) {
+-		cmp = &table->spec[filter_idx];
+-		if (efx_filter_equal(spec, cmp))
+-			goto found;
++	filter_idx = hash & (table->size - 1);
++	depth = 1;
++	depth_max = (for_insert ?
++		     (spec->priority <= EFX_FILTER_PRI_HINT ?
++		      FILTER_CTL_SRCH_HINT_MAX : FILTER_CTL_SRCH_MAX) :
++		     table->search_depth[spec->type]);
++
++	for (;;) {
++		/* Return success if entry is used and matches this spec
++		 * or entry is unused and we are trying to insert.
++		 */
++		if (test_bit(filter_idx, table->used_bitmap) ?
++		    efx_filter_equal(spec, &table->spec[filter_idx]) :
++		    for_insert) {
++			*depth_required = depth;
++			return filter_idx;
++		}
++
++		/* Return failure if we reached the maximum search depth */
++		if (depth == depth_max)
++			return for_insert ? -EBUSY : -ENOENT;
++
+ 		filter_idx = (filter_idx + incr) & (table->size - 1);
++		++depth;
+ 	}
+-	if (!for_insert)
+-		return -ENOENT;
+-	if (depth > depth_max)
+-		return -EBUSY;
+-found:
+-	*depth_required = depth;
+-	return filter_idx;
+ }
+ 
+ /* Construct/deconstruct external filter IDs */
 
 
