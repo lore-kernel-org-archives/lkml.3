@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565Ab3CZWxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:53:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53182 "EHLO
+	id S1756547Ab3CZWxD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:53:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53168 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756497Ab3CZWw7 (ORCPT
+	with ESMTP id S1756171Ab3CZWw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:59 -0400
+	Tue, 26 Mar 2013 18:52:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 63/72] USB: garmin_gps: fix memory leak on disconnect
-Date: Tue, 26 Mar 2013 15:51:46 -0700
-Message-Id: <20130326224926.166520716@linuxfoundation.org>
+Subject: [ 60/72] USB: serial: fix interface refcounting
+Date: Tue, 26 Mar 2013 15:51:43 -0700
+Message-Id: <20130326224925.873580220@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -28,43 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 618aa1068df29c37a58045fe940f9106664153fd upstream.
+commit d7971051e4df825e0bc11b995e87bfe86355b8e5 upstream.
 
-Remove bogus disconnect test introduced by 95bef012e ("USB: more serial
-drivers writing after disconnect") which prevented queued data from
-being freed on disconnect.
+Make sure the interface is not released before our serial device.
 
-The possible IO it was supposed to prevent is long gone.
+Note that drivers are still not allowed to access the interface in
+any way that may interfere with another driver that may have gotten
+bound to the same interface after disconnect returns.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/garmin_gps.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/usb/serial/usb-serial.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/garmin_gps.c
-+++ b/drivers/usb/serial/garmin_gps.c
-@@ -971,10 +971,7 @@ static void garmin_close(struct usb_seri
- 	if (!serial)
- 		return;
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -168,6 +168,7 @@ static void destroy_serial(struct kref *
+ 		}
+ 	}
  
--	mutex_lock(&port->serial->disc_mutex);
--
--	if (!port->serial->disconnected)
--		garmin_clear(garmin_data_p);
-+	garmin_clear(garmin_data_p);
- 
- 	/* shutdown our urbs */
- 	usb_kill_urb(port->read_urb);
-@@ -983,8 +980,6 @@ static void garmin_close(struct usb_seri
- 	/* keep reset state so we know that we must start a new session */
- 	if (garmin_data_p->state != STATE_RESET)
- 		garmin_data_p->state = STATE_DISCONNECTED;
--
--	mutex_unlock(&port->serial->disc_mutex);
++	usb_put_intf(serial->interface);
+ 	usb_put_dev(serial->dev);
+ 	kfree(serial);
  }
- 
- 
+@@ -625,7 +626,7 @@ static struct usb_serial *create_serial(
+ 	}
+ 	serial->dev = usb_get_dev(dev);
+ 	serial->type = driver;
+-	serial->interface = interface;
++	serial->interface = usb_get_intf(interface);
+ 	kref_init(&serial->kref);
+ 	mutex_init(&serial->disc_mutex);
+ 	serial->minor = SERIAL_TTY_NO_MINOR;
 
 
