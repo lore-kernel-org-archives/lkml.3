@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab3CZXL5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:11:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53366 "EHLO
+	id S1756769Ab3CZXMW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:12:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53364 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756757Ab3CZXCB (ORCPT
+	with ESMTP id S1756703Ab3CZXCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:02:01 -0400
+	Tue, 26 Mar 2013 19:02:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: [ 26/49] tracing: Fix free of probe entry by calling call_rcu_sched()
-Date: Tue, 26 Mar 2013 16:01:23 -0700
-Message-Id: <20130326225842.237368255@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 10/49] sfc: Fix Siena mac statistics on big endian platforms
+Date: Tue, 26 Mar 2013 16:01:07 -0700
+Message-Id: <20130326225840.646314145@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -27,41 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 740466bc89ad8bd5afcc8de220f715f62b21e365 upstream.
+From: Steve Hodgson <shodgson@solarflare.com>
 
-Because function tracing is very invasive, and can even trace
-calls to rcu_read_lock(), RCU access in function tracing is done
-with preempt_disable_notrace(). This requires a synchronize_sched()
-for updates and not a synchronize_rcu().
+[ Upstream commit a659b2a94d87add999229ecd9f2f56817d5d737b ]
 
-Function probes (traceon, traceoff, etc) must be freed after
-a synchronize_sched() after its entry has been removed from the
-hash. But call_rcu() is used. Fix this by using call_rcu_sched().
-
-Also fix the usage to use hlist_del_rcu() instead of hlist_del().
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+[bwh: Use __force in the one place it's needed]
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/trace/ftrace.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/sfc/siena.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2709,8 +2709,8 @@ __unregister_ftrace_function_probe(char
- 					continue;
- 			}
+--- a/drivers/net/sfc/siena.c
++++ b/drivers/net/sfc/siena.c
+@@ -372,14 +372,13 @@ static void siena_remove_nic(struct efx_
+ 	efx->nic_data = NULL;
+ }
  
--			hlist_del(&entry->node);
--			call_rcu(&entry->rcu, ftrace_free_entry_rcu);
-+			hlist_del_rcu(&entry->node);
-+			call_rcu_sched(&entry->rcu, ftrace_free_entry_rcu);
- 		}
- 	}
- 	__disable_ftrace_function_probe();
+-#define STATS_GENERATION_INVALID ((u64)(-1))
++#define STATS_GENERATION_INVALID ((__force __le64)(-1))
+ 
+ static int siena_try_update_nic_stats(struct efx_nic *efx)
+ {
+-	u64 *dma_stats;
++	__le64 *dma_stats;
+ 	struct efx_mac_stats *mac_stats;
+-	u64 generation_start;
+-	u64 generation_end;
++	__le64 generation_start, generation_end;
+ 
+ 	mac_stats = &efx->mac_stats;
+ 	dma_stats = (u64 *)efx->stats_buffer.addr;
+@@ -390,7 +389,7 @@ static int siena_try_update_nic_stats(st
+ 	rmb();
+ 
+ #define MAC_STAT(M, D) \
+-	mac_stats->M = dma_stats[MC_CMD_MAC_ ## D]
++	mac_stats->M = le64_to_cpu(dma_stats[MC_CMD_MAC_ ## D])
+ 
+ 	MAC_STAT(tx_bytes, TX_BYTES);
+ 	MAC_STAT(tx_bad_bytes, TX_BAD_BYTES);
+@@ -460,7 +459,8 @@ static int siena_try_update_nic_stats(st
+ 	MAC_STAT(rx_internal_error, RX_INTERNAL_ERROR_PKTS);
+ 	mac_stats->rx_good_lt64 = 0;
+ 
+-	efx->n_rx_nodesc_drop_cnt = dma_stats[MC_CMD_MAC_RX_NODESC_DROPS];
++	efx->n_rx_nodesc_drop_cnt =
++		le64_to_cpu(dma_stats[MC_CMD_MAC_RX_NODESC_DROPS]);
+ 
+ #undef MAC_STAT
+ 
+@@ -489,7 +489,7 @@ static void siena_update_nic_stats(struc
+ 
+ static void siena_start_nic_stats(struct efx_nic *efx)
+ {
+-	u64 *dma_stats = (u64 *)efx->stats_buffer.addr;
++	__le64 *dma_stats = efx->stats_buffer.addr;
+ 
+ 	dma_stats[MC_CMD_MAC_GENERATION_END] = STATS_GENERATION_INVALID;
+ 
 
 
