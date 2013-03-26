@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab3CZRat (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:30:49 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:60413 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab3CZRan (ORCPT
+	id S1753469Ab3CZRbg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:31:36 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:51218 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753131Ab3CZRbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:30:43 -0400
-X-IronPort-AV: E=Sophos;i="4.84,913,1355097600"; 
-   d="scan'208";a="2932634"
-Message-ID: <5151DB41.6070506@citrix.com>
-Date: Tue, 26 Mar 2013 18:30:41 +0100
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Tue, 26 Mar 2013 13:31:35 -0400
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: Re: [PATCH RFC 08/12] xen-blkback: use balloon pages for all mappings
-References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com> <1362047335-26402-9-git-send-email-roger.pau@citrix.com> <20130304202248.GK15386@phenom.dumpdata.com>
-In-Reply-To: <20130304202248.GK15386@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1364318953-5219-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <CAKohponTj8iHTZqs2pS9m1mOqgbGX5WUDa7B2-xcDP_0sN7ZsQ@mail.gmail.com>
+	<1364318953-5219-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Tue, 26 Mar 2013 23:01:34 +0530
+Message-ID: <CAKohpomxgQy0f51nYePaKs03Us4zfxQy+-_C6J9kYqNK8_iJoQ@mail.gmail.com>
+Subject: Re: [PATCH v2.2] dw_dmac: remove unnecessary ENODEV check
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/13 21:22, Konrad Rzeszutek Wilk wrote:
-[...]
->> @@ -535,13 +604,17 @@ purge_gnt_list:
->>                               msecs_to_jiffies(xen_blkif_lru_interval);
->>               }
->>
->> +             remove_free_pages(blkif, xen_blkif_max_buffer_pages);
->> +
->>               if (log_stats && time_after(jiffies, blkif->st_print))
->>                       print_stats(blkif);
->>       }
->>
->> +     remove_free_pages(blkif, 0);
-> 
-> What purpose does that have?
+On 26 March 2013 22:59, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> If CONFIG_OF is not set the of_node of the device will always be NULL.
+>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  drivers/dma/dw_dmac.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> index 274fd7d..736cffa 100644
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
+> @@ -1846,7 +1846,7 @@ static int dw_probe(struct platform_device *pdev)
+>         if (pdev->dev.of_node) {
+>                 err = of_dma_controller_register(pdev->dev.of_node,
+>                                                  dw_dma_of_xlate, dw);
+> -               if (err && err != -ENODEV)
+> +               if (err)
+>                         dev_err(&pdev->dev,
+>                                 "could not register of_dma_controller\n");
 
-This removes all the pages from the pool before closing down.
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
