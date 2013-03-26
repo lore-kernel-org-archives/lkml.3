@@ -1,95 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071Ab3CZXs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:48:27 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:44454 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757325Ab3CZXsW (ORCPT
+	id S1757128Ab3CZXsk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:48:40 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:57138 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757328Ab3CZXsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:48:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130325171844.GA3637@linux.vnet.ibm.com>
-References: <1363879460-21595-1-git-send-email-fweisbec@gmail.com>
-	<20130324081701.GA13328@gmail.com>
-	<CAFTL4hx4FLaRR6i9ap9UrCZY4ikhVtLfUqWSsjTpsO3dvShUjQ@mail.gmail.com>
-	<20130325170257.GA24554@linux.vnet.ibm.com>
-	<CAFTL4hwRoMGpS823ZD51sw=+AX7_GfroPqz=EspNAtkA86YZ_g@mail.gmail.com>
-	<20130325171844.GA3637@linux.vnet.ibm.com>
-Date: Wed, 27 Mar 2013 00:48:20 +0100
-Message-ID: <CAFTL4hxobFT_X_HMVOwB5WDHNR-YVkBjj0c2DMECPKy9goB3LQ@mail.gmail.com>
-Subject: Re: [GIT PULL] nohz: Full dynticks base interface
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 26 Mar 2013 19:48:25 -0400
+Message-ID: <1364341667.3512.11.camel@thor.lan>
+Subject: Re: [PATCH v5 26/44] tty: Add read-recursive, writer-prioritized rw
+ semaphore
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ilya Zykov <linux@izyk.ru>, Jiri Slaby <jslaby@suse.cz>,
+        Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Date: Tue, 26 Mar 2013 19:47:47 -0400
+In-Reply-To: <20130319015936.GA21241@kroah.com>
+References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+	 <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
+	 <1363034704-28036-27-git-send-email-peter@hurleysoftware.com>
+	 <20130318235815.GA5320@kroah.com> <1363654879.4568.42.camel@thor.lan>
+	 <20130319015936.GA21241@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/25 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> On Mon, Mar 25, 2013 at 06:12:12PM +0100, Frederic Weisbecker wrote:
->> 2013/3/25 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
->> > On Sun, Mar 24, 2013 at 03:46:40PM +0100, Frederic Weisbecker wrote:
->> >> 2013/3/24 Ingo Molnar <mingo@kernel.org>:
->> >> >
->> >> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> >> >
->> >> >> Hi Ingo,
->> >> >>
->> >> >> This settles the initial ground to start a special full dynticks tree in -tip
->> >> >> that we can iterate incrementally to accelerate the development.
->> >> >> It is based on tip:sched/core.
->> >> >>
->> >> >> I tried to rearrange a bit the naming. We are probably not yet done with
->> >> >> that but I guess we can fix it along with the rest.
->> >> >>
->> >> >> Please pull from:
->> >> >>
->> >> >> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
->> >> >>       full-dynticks-for-mingo
->> >> >>
->> >> >> Changes on these commits since they were part of 3.9-rc1-nohz1:
->> >> >>
->> >> >> * Force a timekeeping CPU over the full dynticks range
->> >> >> * Rename CONFIG_NO_HZ_FULL to CONFIG_NO_HZ_EXTENDED
->> >> >> * Following *_nohz_extended_* APIs renames
->> >> >> * Handle CPU hotplug for timekeeping
->> >> >> * Rename full_nohz= kernel parameter to nohz_extended=
->> >> >
->> >> > Note that boot parameters suck for pretty much any purpose but quirks -
->> >> > please also add a (default off!) Kconfig option to easily enable
->> >> > nohz_extended for all CPUs.
->> >> >
->> >> > That way I will be able to test it automatically via randconfig and such.
->> >>
->> >> Sure, I'm adding such an option.
->> >
->> > Hmmm...  This would be an option to make all but one CPU an adaptive-ticks
->> > CPU, right?  If so, this leads to the question of whether I should add a
->> > matching no-CBs Kconfig option.  My guess is "no", because the existing
->> > CONFIG_RCU_NOCB_CPU_ALL should work just fine -- there would be a CPU that
->> > was not an adaptive-ticks CPU, but does have its RCU callbacks offloaded.
->> >
->> > Or am I missing something here?
->>
->> No that looks right. Now I wonder if I should select
->> CONFIG_RCU_NOCB_CPU_ALL at the same time. Probably.
->
-> Sounds like a good initial position to me.  If it somehow causes problems,
-> we can always change it later.
+On Mon, 2013-03-18 at 18:59 -0700, Greg Kroah-Hartman wrote:
+> > If you'd like, I can send you 6 or so short user test programs that
+> > hang, crash, or deadlock inside 60 seconds on mainline and next, but not
+> > with this patchset.
+> 
+> That would be interesting to have, please send them.
+> 
+> And I hope that they only lock up when run as root, but I'm afraid to
+> ask that question...
 
-Ah "rcu: Provide compile-time control for no-CBs CPUs" is not yet in
--tip so I can't do that yet. Ok for now I'm going to add
-CONFIG_NO_HZ_EXTENDED_ALL and will select the matching RCU config once
-it's visible upstream.
+Sorry Greg, I meant to get to this sooner.
+
+This one is pretty straightforward. Does not require suid.
+I would still recommend only running this in a disposable vm -- that's
+what I do. The vm should have 6 cores to do real business.
+
+It helps to hook up netconsole or whatever so you can see what kind of
+progress it's making but don't use a slow framebuffer console because
+that invariably locks up :). If it pauses for 5 secs., that's actually
+correct behavior.
+
+--- >% ---
+
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ pts_test3.c | 151 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 151 insertions(+)
+ create mode 100644 pts_test3.c
+
+diff --git a/pts_test3.c b/pts_test3.c
+new file mode 100644
+index 0000000..b673f17
+--- /dev/null
++++ b/pts_test3.c
+@@ -0,0 +1,151 @@
++/*
++ *  pts_test3.c
++ *
++ *  Created on: Dec, 2012
++ *  Copyright (C) 2012  Ilya Zykov
++ *
++ *  This program is free software: you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation, either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ *  Modified-by: Peter Hurley <peter@hurleysoftware.com>
++ */
++
++#include <stdio.h>
++#include <fcntl.h>
++#include <sys/ioctl.h>
++#include <termios.h>
++#include <stdlib.h>
++#include <pthread.h>
++#include <signal.h>
++
++#define BUF_SIZE 2
++#define ERROR_EXIT_CODE 1
++#define parent child_id
++
++static int
++mfd=-1, sfd=-1, parent=1;
++
++static pthread_t
++pth_id;
++
++static char
++pty_name[24], buf[]={ '1', '\n' };
++
++
++static void
++pty_exit(int ret, char * exit_message){
++        if (sfd >= 0) close(sfd);
++        if (mfd >= 0) close(mfd);
++        printf("%s %s %s exit. \n",exit_message?exit_message:"",
++                ret?"Error":"Normal", parent?"parent":"child");
++        exit(ret);
++}
++
++static void
++pty_init(void){
++        int ptn;
++        if( (mfd=open("/dev/ptmx", O_RDWR )) < 0 )
++                pty_exit(ERROR_EXIT_CODE,"Couldn't open /dev/ptmx. \n");
++        if (ioctl(mfd, TIOCGPTN, &ptn) < 0 )
++                pty_exit(ERROR_EXIT_CODE,"Couldn't get pty number. \n");
++        snprintf(pty_name, sizeof(pty_name), "/dev/pts/%d", ptn);
++        //printf("Slave pty name = %s.\n",pty_name);
++        ptn=0;
++        if (ioctl(mfd, TIOCSPTLCK, &ptn) < 0 )
++                pty_exit(ERROR_EXIT_CODE,"Couldn't unlock pty slave. \n");
++        if ( (sfd=open(pty_name, O_RDWR )) < 0 )
++                pty_exit(ERROR_EXIT_CODE, "Couldn't open pty slave. \n");
++}
++
++static void *
++pty_thread_open(void * arg) {
++        static const char ret[]="Thread open has been created.\n";
++        printf(ret);
++        do {
++                close(open(pty_name, O_RDWR ));
++        } while(1);
++        return ret;
++}
++
++static void *
++pty_thread_read(void * arg) {
++        static const char ret[]="Thread read has been created.\n";
++        printf(ret);
++        do {
++                read(sfd, buf, BUF_SIZE);
++        } while(1);
++        return ret;
++}
++
++static void *
++pty_thread_write(void * arg) {
++        static char ret[]="Thread write has been created.\n";
++        printf(ret);
++        do {
++                write(mfd, buf, BUF_SIZE);
++        } while(1);
++        return ret;
++}
++
++#define N_PPS 18
++
++static void *
++pty_thread_msetd(void * arg) {
++        static const char ret[]="Thread msetd has been created.\n";
++	static int ldisc;
++        printf(ret);
++        do {
++		ldisc = N_PPS;
++                ioctl(mfd, TIOCSETD, &ldisc);
++		ldisc = N_TTY;
++		ioctl(mfd, TIOCSETD, &ldisc);
++        } while(1);
++        return ret;
++}
++
++static void *
++pty_thread_ssetd(void * arg) {
++        static char ret[]="Thread ssetd has been created.\n";
++	static int ldisc;
++        printf(ret);
++        do {
++		ldisc = N_PPS;
++                ioctl(sfd, TIOCSETD, &ldisc);
++		ldisc = N_TTY;
++		ioctl(sfd, TIOCSETD, &ldisc);
++        } while(1);
++        return ret;
++}
++
++int main(int argc,char *argv[]) {
++        pty_init();
++        child_id=fork();
++        if(parent) {
++                sleep(100);
++                kill(child_id, SIGINT);
++                pty_exit(0,"Parent normal exit\n");
++        }
++        pthread_create(&pth_id, NULL, &pty_thread_open, 0);
++	/* For WARNINGS. */
++        pthread_create(&pth_id, NULL, &pty_thread_write, 0);
++        pthread_create(&pth_id, NULL, &pty_thread_read, 0);
++
++	pthread_create(&pth_id, NULL, &pty_thread_msetd, 0);
++	pthread_create(&pth_id, NULL, &pty_thread_ssetd, 0);
++        do {
++                close(sfd);
++                close(mfd);
++                pty_init();
++        } while(1);
++        return 0;
++}
+-- 
+1.8.1.2
+
+
+
+
