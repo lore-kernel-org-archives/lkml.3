@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab3CZWoA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:44:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52497 "EHLO
+	id S1755674Ab3CZXk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:40:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52505 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754447Ab3CZWn6 (ORCPT
+	with ESMTP id S1754643Ab3CZWn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:43:58 -0400
+	Tue, 26 Mar 2013 18:43:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 46/98] Revert "drm/i915: write backlight harder"
-Date: Tue, 26 Mar 2013 15:42:35 -0700
-Message-Id: <20130326224247.314504985@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>
+Subject: [ 34/98] saner proc_get_inode() calling conventions
+Date: Tue, 26 Mar 2013 15:42:23 -0700
+Message-Id: <20130326224245.964137277@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -27,72 +28,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit b1289371fcd580b4c412e6d05c4cb8ac8d277239 upstream.
+commit d3d009cb965eae7e002ea5badf603ea8f4c34915 upstream.
 
-This reverts commit cf0a6584aa6d382f802f2c3cacac23ccbccde0cd.
+Make it drop the pde in *all* cases when no new reference to it is
+put into an inode - both when an inode had already been set up
+(as we were already doing) and when inode allocation has failed.
+Makes for simpler logics in callers...
 
-Turns out that cargo-culting breaks systems. Note that we can't revert
-further, since
-
-commit 770c12312ad617172b1a65b911d3e6564fc5aca8
-Author: Takashi Iwai <tiwai@suse.de>
-Date:   Sat Aug 11 08:56:42 2012 +0200
-
-    drm/i915: Fix blank panel at reopening lid
-
-fixed a regression in 3.6-rc kernels for which we've never figured out
-the exact root cause. But some further inspection of the backlight
-code reveals that it's seriously lacking locking. And especially the
-asle backlight update is know to get fired (through some smm magic)
-when writing specific backlight control registers. So the possibility
-of suffering from races is rather real.
-
-Until those races are fixed I don't think it makes sense to try
-further hacks. Which sucks a bit, but sometimes that's how it is :(
-
-References: http://www.mail-archive.com/intel-gfx@lists.freedesktop.org/msg18788.html
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=47941
-Tested-by: Takashi Iwai <tiwai@suse.de>
-Cc: Jani Nikula <jani.nikula@intel.com>
-Cc: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_panel.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ fs/proc/generic.c |   21 +++++++--------------
+ fs/proc/inode.c   |   10 +++-------
+ 2 files changed, 10 insertions(+), 21 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -321,9 +321,6 @@ void intel_panel_enable_backlight(struct
- 	if (dev_priv->backlight_level == 0)
- 		dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
+--- a/fs/proc/generic.c
++++ b/fs/proc/generic.c
+@@ -412,8 +412,7 @@ static const struct dentry_operations pr
+ struct dentry *proc_lookup_de(struct proc_dir_entry *de, struct inode *dir,
+ 		struct dentry *dentry)
+ {
+-	struct inode *inode = NULL;
+-	int error = -ENOENT;
++	struct inode *inode;
  
--	dev_priv->backlight_enabled = true;
--	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
--
- 	if (INTEL_INFO(dev)->gen >= 4) {
- 		uint32_t reg, tmp;
- 
-@@ -359,12 +356,12 @@ void intel_panel_enable_backlight(struct
+ 	spin_lock(&proc_subdir_lock);
+ 	for (de = de->subdir; de ; de = de->next) {
+@@ -422,22 +421,16 @@ struct dentry *proc_lookup_de(struct pro
+ 		if (!memcmp(dentry->d_name.name, de->name, de->namelen)) {
+ 			pde_get(de);
+ 			spin_unlock(&proc_subdir_lock);
+-			error = -ENOMEM;
+ 			inode = proc_get_inode(dir->i_sb, de);
+-			goto out_unlock;
++			if (!inode)
++				return ERR_PTR(-ENOMEM);
++			d_set_d_op(dentry, &proc_dentry_operations);
++			d_add(dentry, inode);
++			return NULL;
+ 		}
  	}
- 
- set_level:
--	/* Check the current backlight level and try to set again if it's zero.
--	 * On some machines, BLC_PWM_CPU_CTL is cleared to zero automatically
--	 * when BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1 are written.
-+	/* Call below after setting BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1.
-+	 * BLC_PWM_CPU_CTL may be cleared to zero automatically when these
-+	 * registers are set.
- 	 */
--	if (!intel_panel_get_backlight(dev))
--		intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
-+	dev_priv->backlight_enabled = true;
-+	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
+ 	spin_unlock(&proc_subdir_lock);
+-out_unlock:
+-
+-	if (inode) {
+-		d_set_d_op(dentry, &proc_dentry_operations);
+-		d_add(dentry, inode);
+-		return NULL;
+-	}
+-	if (de)
+-		pde_put(de);
+-	return ERR_PTR(error);
++	return ERR_PTR(-ENOENT);
  }
  
- static void intel_panel_init_backlight(struct drm_device *dev)
+ struct dentry *proc_lookup(struct inode *dir, struct dentry *dentry,
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -445,12 +445,9 @@ static const struct file_operations proc
+ 
+ struct inode *proc_get_inode(struct super_block *sb, struct proc_dir_entry *de)
+ {
+-	struct inode * inode;
++	struct inode *inode = iget_locked(sb, de->low_ino);
+ 
+-	inode = iget_locked(sb, de->low_ino);
+-	if (!inode)
+-		return NULL;
+-	if (inode->i_state & I_NEW) {
++	if (inode && (inode->i_state & I_NEW)) {
+ 		inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
+ 		PROC_I(inode)->pde = de;
+ 
+@@ -482,7 +479,7 @@ struct inode *proc_get_inode(struct supe
+ 	} else
+ 	       pde_put(de);
+ 	return inode;
+-}			
++}
+ 
+ int proc_fill_super(struct super_block *s)
+ {
+@@ -499,6 +496,5 @@ int proc_fill_super(struct super_block *
+ 		return 0;
+ 
+ 	printk("proc_read_super: get root inode failed\n");
+-	pde_put(&proc_root);
+ 	return -ENOMEM;
+ }
 
 
