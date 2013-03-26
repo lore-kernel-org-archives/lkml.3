@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757078Ab3CZXE0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:04:26 -0400
-Received: from 8bytes.org ([85.214.48.195]:46454 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757069Ab3CZXEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:04:22 -0400
-Date: Wed, 27 Mar 2013 00:03:59 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: zsmalloc: Fix link error on ARM
-Message-ID: <20130326230359.GD30540@8bytes.org>
-References: <1364337232-3513-1-git-send-email-joro@8bytes.org>
- <20130326224536.GA29952@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130326224536.GA29952@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Mar 27 00:04:00 2013
-X-DSPAM-Confidence: 0.9990
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5152296023671496467140
+	id S1757028Ab3CZXD6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:03:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53480 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756898Ab3CZXCU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 19:02:20 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, Jim Trigg <jtrigg@spamcop.net>
+Subject: [ 39/49] udf: Fix bitmap overflow on large filesystems with small block size
+Date: Tue, 26 Mar 2013 16:01:36 -0700
+Message-Id: <20130326225843.631536053@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
+References: <20130326225839.554028294@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 03:45:36PM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Mar 26, 2013 at 11:33:52PM +0100, Joerg Roedel wrote:
-> > Testing the arm chromebook config against the upstream
-> > kernel produces a linker error for the zsmalloc module from
-> > staging. The symbol flush_tlb_kernel_range is not available
-> > there. Fix this by removing the reimplementation of
-> > unmap_kernel_range in the zsmalloc module and using the
-> > function directly.
-> > 
-> > Signed-off-by: Joerg Roedel <joro@8bytes.org>
-> 
-> Why is this not an error for any other architecture?  Why is arm
-> special?
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-The version of the function __zs_unmap_object() which uses
-flush_tlb_kernel_range() in the zsmalloc driver is only compiled in when
-USE_PGTABLE_MAPPING is defined. And USE_PGTABLE_MAPPING is defined in
-the same file only when CONFIG_ARM is defined. So this happens only on
-ARM.
+------------------
 
-Regards,
+From: Jan Kara <jack@suse.cz>
 
-	Joerg
+commit 89b1f39eb4189de745fae554b0d614d87c8d5c63 upstream.
+
+For large UDF filesystems with 512-byte blocks the number of necessary
+bitmap blocks is larger than 2^16 so s_nr_groups in udf_bitmap overflows
+(the number will overflow for filesystems larger than 128 GB with
+512-byte blocks). That results in ENOSPC errors despite the filesystem
+has plenty of free space.
+
+Fix the problem by changing s_nr_groups' type to 'int'. That is enough
+even for filesystems 2^32 blocks (UDF maximum) and 512-byte blocksize.
+
+Reported-and-tested-by: v10lator@myway.de
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Jim Trigg <jtrigg@spamcop.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/udf/udf_sb.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/fs/udf/udf_sb.h
++++ b/fs/udf/udf_sb.h
+@@ -79,7 +79,7 @@ struct udf_virtual_data {
+ struct udf_bitmap {
+ 	__u32			s_extLength;
+ 	__u32			s_extPosition;
+-	__u16			s_nr_groups;
++	int			s_nr_groups;
+ 	struct buffer_head 	**s_block_bitmap;
+ };
+ 
 
 
