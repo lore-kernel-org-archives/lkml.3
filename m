@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965296Ab3CZPnf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:43:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53952 "EHLO
+	id S965001Ab3CZPXJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:23:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53880 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965205Ab3CZPXN (ORCPT
+	with ESMTP id S965134Ab3CZPWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:13 -0400
+	Tue, 26 Mar 2013 11:22:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 093/150] cifs: ignore everything in SPNEGO blob after mechTypes
-Date: Tue, 26 Mar 2013 15:19:52 +0000
-Message-Id: <1364311249-14454-94-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 079/150] ALSA: hda/cirrus - Fix the digital beep registration
+Date: Tue, 26 Mar 2013 15:19:38 +0000
+Message-Id: <1364311249-14454-80-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,99 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f853c616883a8de966873a1dab283f1369e275a1 upstream.
+commit a86b1a2cd2f81f74e815e07f756edd7bc5b6f034 upstream.
 
-We've had several reports of people attempting to mount Windows 8 shares
-and getting failures with a return code of -EINVAL. The default sec=
-mode changed recently to sec=ntlmssp. With that, we expect and parse a
-SPNEGO blob from the server in the NEGOTIATE reply.
+The argument passed to snd_hda_attach_beep_device() is a widget NID
+while spec->beep_amp holds the composed value for amp controls.
 
-The current decode_negTokenInit function first parses all of the
-mechTypes and then tries to parse the rest of the negTokenInit reply.
-The parser however currently expects a mechListMIC or nothing to follow the
-mechTypes, but Windows 8 puts a mechToken field there instead to carry
-some info for the new NegoEx stuff.
-
-In practice, we don't do anything with the fields after the mechTypes
-anyway so I don't see any real benefit in continuing to parse them.
-This patch just has the kernel ignore the fields after the mechTypes.
-We'll probably need to reinstate some of this if we ever want to support
-NegoEx.
-
-Reported-by: Jason Burgess <jason@jacknife2.dns2go.com>
-Reported-by: Yan Li <elliot.li.tech@gmail.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/cifs/asn1.c | 53 +++++------------------------------------------------
- 1 file changed, 5 insertions(+), 48 deletions(-)
+ sound/pci/hda/patch_conexant.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/cifs/asn1.c b/fs/cifs/asn1.c
-index cfd1ce3..1d36db1 100644
---- a/fs/cifs/asn1.c
-+++ b/fs/cifs/asn1.c
-@@ -614,53 +614,10 @@ decode_negTokenInit(unsigned char *security_blob, int length,
- 		}
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index 2682b3d..5fb90c6 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -1170,7 +1170,7 @@ static int patch_cxt5045(struct hda_codec *codec)
  	}
  
--	/* mechlistMIC */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		/* Check if we have reached the end of the blob, but with
--		   no mechListMic (e.g. NTLMSSP instead of KRB5) */
--		if (ctx.error == ASN1_ERR_DEC_EMPTY)
--			goto decode_negtoken_exit;
--		cFYI(1, "Error decoding last part negTokenInit exit3");
--		return 0;
--	} else if ((cls != ASN1_CTX) || (con != ASN1_CON)) {
--		/* tag = 3 indicating mechListMIC */
--		cFYI(1, "Exit 4 cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--		return 0;
--	}
--
--	/* sequence */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		cFYI(1, "Error decoding last part negTokenInit exit5");
--		return 0;
--	} else if ((cls != ASN1_UNI) || (con != ASN1_CON)
--		   || (tag != ASN1_SEQ)) {
--		cFYI(1, "cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--	}
--
--	/* sequence of */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		cFYI(1, "Error decoding last part negTokenInit exit 7");
--		return 0;
--	} else if ((cls != ASN1_CTX) || (con != ASN1_CON)) {
--		cFYI(1, "Exit 8 cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--		return 0;
--	}
--
--	/* general string */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		cFYI(1, "Error decoding last part negTokenInit exit9");
--		return 0;
--	} else if ((cls != ASN1_UNI) || (con != ASN1_PRI)
--		   || (tag != ASN1_GENSTR)) {
--		cFYI(1, "Exit10 cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--		return 0;
--	}
--	cFYI(1, "Need to call asn1_octets_decode() function for %s",
--		ctx.pointer);	/* is this UTF-8 or ASCII? */
--decode_negtoken_exit:
-+	/*
-+	 * We currently ignore anything at the end of the SPNEGO blob after
-+	 * the mechTypes have been parsed, since none of that info is
-+	 * used at the moment.
-+	 */
- 	return 1;
+ 	if (spec->beep_amp)
+-		snd_hda_attach_beep_device(codec, spec->beep_amp);
++		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
+ 
+ 	return 0;
  }
+@@ -1949,7 +1949,7 @@ static int patch_cxt5051(struct hda_codec *codec)
+ 	}
+ 
+ 	if (spec->beep_amp)
+-		snd_hda_attach_beep_device(codec, spec->beep_amp);
++		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
+ 
+ 	return 0;
+ }
+@@ -3136,7 +3136,7 @@ static int patch_cxt5066(struct hda_codec *codec)
+ 	}
+ 
+ 	if (spec->beep_amp)
+-		snd_hda_attach_beep_device(codec, spec->beep_amp);
++		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
+ 
+ 	return 0;
+ }
+@@ -4528,7 +4528,7 @@ static int patch_conexant_auto(struct hda_codec *codec)
+ 	spec->capture_stream = &cx_auto_pcm_analog_capture;
+ 	codec->patch_ops = cx_auto_patch_ops;
+ 	if (spec->beep_amp)
+-		snd_hda_attach_beep_device(codec, spec->beep_amp);
++		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
+ 
+ 	/* Some laptops with Conexant chips show stalls in S3 resume,
+ 	 * which falls into the single-cmd mode.
 -- 
 1.8.1.2
 
