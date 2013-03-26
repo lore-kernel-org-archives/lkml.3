@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab3CZRt0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:49:26 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:58787 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755355Ab3CZRtX (ORCPT
+	id S1756107Ab3CZRtn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:49:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13109 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755364Ab3CZRqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:49:23 -0400
-Date: Tue, 26 Mar 2013 18:49:19 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Mike Keehan <mike@keehan.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Git bisect problem
-Message-ID: <20130326174919.GA504@x4>
-References: <20130326162228.288994ef@laptop3>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130326162228.288994ef@laptop3>
+	Tue, 26 Mar 2013 13:46:44 -0400
+X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=NoHpnOsBL2AA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=eh-HOFuVqBAA:10 a=OPCt-TqV7mQf_cS4l80A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1364320003.6345.193.camel@gandalf.local.home>
+Subject: Re: [PATCH 00/86] [ANNOUNCE] The new 3.6.11.x short-term extended
+ stable series (stable review)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org
+Date: Tue, 26 Mar 2013 13:46:43 -0400
+In-Reply-To: <20130326172059.136127374@goodmis.org>
+References: <20130326172059.136127374@goodmis.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013.03.26 at 16:22 +0000, Mike Keehan wrote:
-> I'm trying to find out which update causes my 5G Wifi
-> connection to time out when authenticating.
-> 
-> Following the instructions in git help bisect, I
-> git cloned the kernel, then git bisect start, and
-> git bisect bad v3.9.0-rc2.
-> 
-> This errors with :-
->   fatal: Needed a single revision
->   Bad rev input: v3.9.0-rc2
-> 
-> and git bisect good v3.9.0-rc1 gives same error.
-> 
-> How are you supposed to specify the revision?
+On Tue, 2013-03-26 at 13:20 -0400, Steven Rostedt wrote:
 
-Try without the ".o", e.g.: git bisect bad v3.9-rc2 
+> Responses should be made by Fri Mar 29 2013.
+> Anything received after that time might be too late.
 
--- 
-Markus
+I just realized that I wont be working Friday, so make that Thursday ;-)
+
+-- Steve
+
+
