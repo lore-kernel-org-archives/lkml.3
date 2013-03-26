@@ -1,135 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab3CZTSv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 15:18:51 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38282 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047Ab3CZTSu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 15:18:50 -0400
-Date: Tue, 26 Mar 2013 19:18:48 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v6] fs: imgdafs: Add IMG DAFS filesystem for metag
-Message-ID: <20130326191848.GW21522@ZenIV.linux.org.uk>
-References: <1364311169-3413-1-git-send-email-james.hogan@imgtec.com>
+	id S1759995Ab3CZTZN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 15:25:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28416 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753968Ab3CZTZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 15:25:11 -0400
+Subject: [PATCH 2/2] vfio-pci: Enable raw access to unassigned config space
+To: alex.williamson@redhat.com, shangw@linux.vnet.ibm.com
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Date: Tue, 26 Mar 2013 12:17:10 -0600
+Message-ID: <20130326181709.27467.1721.stgit@bling.home>
+In-Reply-To: <20130326180454.27467.7011.stgit@bling.home>
+References: <20130326180454.27467.7011.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364311169-3413-1-git-send-email-james.hogan@imgtec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 03:19:29PM +0000, James Hogan wrote:
+Devices like be2net hide registers between the gaps in capabilities
+and architected regions of PCI config space.  Our choices to support
+such devices is to either build an ever growing and unmanageable white
+list or rely on hardware isolation to protect us.  These registers are
+really no different than MMIO or I/O port space registers, which we
+don't attempt to regulate, so treat PCI config space in the same way.
 
-> +struct da_stat {
-> +	short st_dev;
-> +	unsigned short st_ino;
-> +	unsigned st_mode;
-> +	unsigned short st_nlink;
-> +	unsigned short st_uid;
-> +	unsigned short st_gid;
-> +	short st_rdev;
-> +	int st_size;
-> +	int st_atime;
-> +	int st_spare1;
-> +	int st_mtime;
-> +	int st_spare2;
-> +	int st_ctime;
-> +	int st_spare3;
-> +	int st_blksize;
-> +	int st_blocks;
-> +	int st_spare4[2];
-> +};
+Reported-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+ drivers/vfio/pci/vfio_pci_config.c |   78 +++++++++++++++++++++---------------
+ 1 file changed, 46 insertions(+), 32 deletions(-)
 
-Please, use explicitly-sized types.
+diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
+index 5d5fc75..072fdac 100644
+--- a/drivers/vfio/pci/vfio_pci_config.c
++++ b/drivers/vfio/pci/vfio_pci_config.c
+@@ -273,9 +273,10 @@ static int vfio_direct_config_read(struct vfio_pci_device *vdev, int pos,
+ 	return count;
+ }
+ 
+-static int vfio_direct_config_write(struct vfio_pci_device *vdev, int pos,
+-				    int count, struct perm_bits *perm,
+-				    int offset, __le32 val)
++/* Raw access skips any kind of virtualization */
++static int vfio_raw_config_write(struct vfio_pci_device *vdev, int pos,
++				 int count, struct perm_bits *perm,
++				 int offset, __le32 val)
+ {
+ 	int ret;
+ 
+@@ -286,13 +287,36 @@ static int vfio_direct_config_write(struct vfio_pci_device *vdev, int pos,
+ 	return count;
+ }
+ 
+-/* Default all regions to read-only, no-virtualization */
++static int vfio_raw_config_read(struct vfio_pci_device *vdev, int pos,
++				int count, struct perm_bits *perm,
++				int offset, __le32 *val)
++{
++	int ret;
++
++	ret = vfio_user_config_read(vdev->pdev, pos, val, count);
++	if (ret)
++		return pcibios_err_to_errno(ret);
++
++	return count;
++}
++
++/* Default capability regions to read-only, no-virtualization */
+ static struct perm_bits cap_perms[PCI_CAP_ID_MAX + 1] = {
+ 	[0 ... PCI_CAP_ID_MAX] = { .readfn = vfio_direct_config_read }
+ };
+ static struct perm_bits ecap_perms[PCI_EXT_CAP_ID_MAX + 1] = {
+ 	[0 ... PCI_EXT_CAP_ID_MAX] = { .readfn = vfio_direct_config_read }
+ };
++/*
++ * Default unassigned regions to raw read-write access.  Some devices
++ * require this to function as they hide registers between the gaps in
++ * config space (be2net).  Like MMIO and I/O port registers, we have
++ * to trust the hardware isolation.
++ */
++static struct perm_bits unassigned_perms = {
++	.readfn = vfio_raw_config_read,
++	.writefn = vfio_raw_config_write
++};
+ 
+ static void free_perm_bits(struct perm_bits *perm)
+ {
+@@ -778,16 +802,16 @@ int __init vfio_pci_init_perm_bits(void)
+ 
+ 	/* Capabilities */
+ 	ret |= init_pci_cap_pm_perm(&cap_perms[PCI_CAP_ID_PM]);
+-	cap_perms[PCI_CAP_ID_VPD].writefn = vfio_direct_config_write;
++	cap_perms[PCI_CAP_ID_VPD].writefn = vfio_raw_config_write;
+ 	ret |= init_pci_cap_pcix_perm(&cap_perms[PCI_CAP_ID_PCIX]);
+-	cap_perms[PCI_CAP_ID_VNDR].writefn = vfio_direct_config_write;
++	cap_perms[PCI_CAP_ID_VNDR].writefn = vfio_raw_config_write;
+ 	ret |= init_pci_cap_exp_perm(&cap_perms[PCI_CAP_ID_EXP]);
+ 	ret |= init_pci_cap_af_perm(&cap_perms[PCI_CAP_ID_AF]);
+ 
+ 	/* Extended capabilities */
+ 	ret |= init_pci_ext_cap_err_perm(&ecap_perms[PCI_EXT_CAP_ID_ERR]);
+ 	ret |= init_pci_ext_cap_pwr_perm(&ecap_perms[PCI_EXT_CAP_ID_PWR]);
+-	ecap_perms[PCI_EXT_CAP_ID_VNDR].writefn = vfio_direct_config_write;
++	ecap_perms[PCI_EXT_CAP_ID_VNDR].writefn = vfio_raw_config_write;
+ 
+ 	if (ret)
+ 		vfio_pci_uninit_perm_bits();
+@@ -1495,35 +1519,25 @@ static ssize_t vfio_config_do_rw(struct vfio_pci_device *vdev, char __user *buf,
+ 	cap_id = vdev->pci_config_map[*ppos];
+ 
+ 	if (cap_id == PCI_CAP_ID_INVALID) {
+-		if (iswrite)
+-			return ret; /* drop */
+-
+-		/*
+-		 * Per PCI spec 3.0, section 6.1, reads from reserved and
+-		 * unimplemented registers return 0
+-		 */
+-		if (copy_to_user(buf, &val, count))
+-			return -EFAULT;
+-
+-		return ret;
+-	}
+-
+-	if (*ppos >= PCI_CFG_SPACE_SIZE) {
+-		WARN_ON(cap_id > PCI_EXT_CAP_ID_MAX);
+-
+-		perm = &ecap_perms[cap_id];
+-		cap_start = vfio_find_cap_start(vdev, *ppos);
+-
++		perm = &unassigned_perms;
++		cap_start = *ppos;
+ 	} else {
+-		WARN_ON(cap_id > PCI_CAP_ID_MAX);
++		if (*ppos >= PCI_CFG_SPACE_SIZE) {
++			WARN_ON(cap_id > PCI_EXT_CAP_ID_MAX);
++
++			perm = &ecap_perms[cap_id];
++			cap_start = vfio_find_cap_start(vdev, *ppos);
++		} else {
++			WARN_ON(cap_id > PCI_CAP_ID_MAX);
+ 
+-		perm = &cap_perms[cap_id];
++			perm = &cap_perms[cap_id];
+ 
+-		if (cap_id == PCI_CAP_ID_MSI)
+-			perm = vdev->msi_perm;
++			if (cap_id == PCI_CAP_ID_MSI)
++				perm = vdev->msi_perm;
+ 
+-		if (cap_id > PCI_CAP_ID_BASIC)
+-			cap_start = vfio_find_cap_start(vdev, *ppos);
++			if (cap_id > PCI_CAP_ID_BASIC)
++				cap_start = vfio_find_cap_start(vdev, *ppos);
++		}
+ 	}
+ 
+ 	WARN_ON(!cap_start && cap_id != PCI_CAP_ID_BASIC);
 
-> +struct da_finddata {
-> +	unsigned long size;
-> +	unsigned long attrib;
-> +	char name[260];
-> +};
-
-... especially for this - unlike int and short, long really is arch-dependent.
-And yes, I realize that this thing is arch-specific, but...
-
-> +struct dafs_inode_info {
-> +	int fd;
-> +	int mode;
-
-umm... int or fmode_t?
-
-> +	struct inode vfs_inode;
-> +};
-
-> +#define DAFS_SUPER_MAGIC 0xdadadaf5
-
--> linux/magic.h
-
-> +static char *dentry_name(struct dentry *dentry)
-> +{
-> +	char *name = __getname();
-> +	if (!name)
-> +		return NULL;
-> +
-> +	return __dentry_name(dentry, name); /* will unlock */
-
-will unlock what?
-
-> +	hi = kzalloc(sizeof(*hi), GFP_KERNEL);
-> +	if (hi == NULL)
-> +		return NULL;
-> +
-> +	hi->fd = -1;
-> +	inode_init_once(&hi->vfs_inode);
-> +	return &hi->vfs_inode;
-
-Umm...  kzalloc() looks odd, seeing that you proceed to initialize two
-fields out of 3 (including the really big one) explicitly...
-
-> +static int open_dir(char *path, struct da_finddata *finddata, int *fserrno)
-> +{
-> +	int len = strlen(path);
-> +	char buf[len + 3];
-
-Bad idea, considering that strlen(path) is user-controlled and can
-theoretically go up to 4Kb...
-
-> +static int dafs_readdir(struct file *file, void *ent, filldir_t filldir)
-> +{
-> +	struct inode *inode = file->f_path.dentry->d_inode;
-
-minor nit, but... that's file_inode(file)
-
-> +	name = dentry_name(file->f_path.dentry);
-> +	if (name == NULL)
-> +		return -ENOMEM;
-> +	handle = open_dir(name, &finddata, &fserrno);
-
-... and what if the sucker's parent gets renamed between dentry_name() and
-open_dir()?  The same goes for the rest of dentry_name() users, actually.
-
-> +static int dafs_rename(struct inode *from_ino, struct dentry *from,
-> +		  struct inode *to_ino, struct dentry *to)
-> +{
-> +	char *from_name, *to_name;
-> +	int err;
-> +
-> +	from_name = dentry_name(from);
-> +	if (from_name == NULL)
-> +		return -ENOMEM;
-> +	to_name = dentry_name(to);
-> +	if (to_name == NULL) {
-> +		__putname(from_name);
-> +		return -ENOMEM;
-> +	}
-> +	err = -EINVAL;
-> +	__putname(from_name);
-> +	__putname(to_name);
-> +	return err;
-> +}
-
-Aha.  No rename(2), IOW.  Is one planned?
