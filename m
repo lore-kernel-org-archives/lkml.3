@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab3CZXgJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:36:09 -0400
+	id S1755716Ab3CZXgn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:36:43 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:52560 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754895Ab3CZWoL (ORCPT
+	with ESMTP id S1754886Ab3CZWoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:11 -0400
+	Tue, 26 Mar 2013 18:44:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Doug Ledford <dledford@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 53/98] mqueue: sys_mq_open: do not call mnt_drop_write() if read-only
-Date: Tue, 26 Mar 2013 15:42:42 -0700
-Message-Id: <20130326224248.053323864@linuxfoundation.org>
+Subject: [ 51/98] mm/hugetlb: fix total hugetlbfs pages count when using memory overcommit accouting
+Date: Tue, 26 Mar 2013 15:42:40 -0700
+Message-Id: <20130326224247.866926924@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -32,50 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vladimir Davydov <vdavydov@parallels.com>
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-commit 38d78e587d4960d0db94add518d27ee74bad2301 upstream.
+commit d00285884c0892bb1310df96bce6056e9ce9b9d9 upstream.
 
-mnt_drop_write() must be called only if mnt_want_write() succeeded,
-otherwise the mnt_writers counter will diverge.
+hugetlb_total_pages is used for overcommit calculations but the current
+implementation considers only the default hugetlb page size (which is
+either the first defined hugepage size or the one specified by
+default_hugepagesz kernel boot parameter).
 
-mnt_writers counters are used to check if remounting FS as read-only is
-OK, so after an extra mnt_drop_write() call, it would be impossible to
-remount mqueue FS as read-only.  Besides, on umount a warning would be
-printed like this one:
+If the system is configured for more than one hugepage size, which is
+possible since commit a137e1cc6d6e ("hugetlbfs: per mount huge page
+sizes") then the overcommit estimation done by __vm_enough_memory()
+(resp.  shown by meminfo_proc_show) is not precise - there is an
+impression of more available/allowed memory.  This can lead to an
+unexpected ENOMEM/EFAULT resp.  SIGSEGV when memory is accounted.
 
-  =====================================
-  [ BUG: bad unlock balance detected! ]
-  3.9.0-rc3 #5 Not tainted
-  -------------------------------------
-  a.out/12486 is trying to release lock (sb_writers) at:
-  mnt_drop_write+0x1f/0x30
-  but there are no more locks to release!
+Testcase:
+  boot: hugepagesz=1G hugepages=1
+  the default overcommit ratio is 50
+  before patch:
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Doug Ledford <dledford@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+    egrep 'CommitLimit' /proc/meminfo
+    CommitLimit:     55434168 kB
+
+  after patch:
+
+    egrep 'CommitLimit' /proc/meminfo
+    CommitLimit:     54909880 kB
+
+[akpm@linux-foundation.org: coding-style tweak]
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/mqueue.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/hugetlb.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -840,7 +840,8 @@ out_putfd:
- 		fd = error;
- 	}
- 	mutex_unlock(&root->d_inode->i_mutex);
--	mnt_drop_write(mnt);
-+	if (!ro)
-+		mnt_drop_write(mnt);
- out_putname:
- 	putname(name);
- 	return fd;
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2127,8 +2127,12 @@ int hugetlb_report_node_meminfo(int nid,
+ /* Return the number pages of memory we physically have, in PAGE_SIZE units. */
+ unsigned long hugetlb_total_pages(void)
+ {
+-	struct hstate *h = &default_hstate;
+-	return h->nr_huge_pages * pages_per_huge_page(h);
++	struct hstate *h;
++	unsigned long nr_total_pages = 0;
++
++	for_each_hstate(h)
++		nr_total_pages += h->nr_huge_pages * pages_per_huge_page(h);
++	return nr_total_pages;
+ }
+ 
+ static int hugetlb_acct_memory(struct hstate *h, long delta)
 
 
