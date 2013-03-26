@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab3CZX2W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:28:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52675 "EHLO
+	id S1755164Ab3CZWo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:44:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52621 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015Ab3CZWo2 (ORCPT
+	with ESMTP id S1755015Ab3CZWoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:28 -0400
+	Tue, 26 Mar 2013 18:44:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Tony Luck <tony.luck@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [ 90/98] efivars: Add module parameter to disable use as a pstore backend
-Date: Tue, 26 Mar 2013 15:43:19 -0700
-Message-Id: <20130326224251.790934458@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 63/98] drm/radeon: fix backend map setup on 1 RB trinity boards
+Date: Tue, 26 Mar 2013 15:42:52 -0700
+Message-Id: <20130326224249.049963945@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -29,76 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit ec0971ba5372a4dfa753f232449d23a8fd98490e upstream.
+commit 8f612b23a17dce86fef75407e698de6243cc99a1 upstream.
 
-We know that with some firmware implementations writing too much data to
-UEFI variables can lead to bricking machines. Recent changes attempt to
-address this issue, but for some it may still be prudent to avoid
-writing large amounts of data until the solution has been proven on a
-wide variety of hardware.
+Need to adjust the backend map depending on which RB is
+enabled.  This is the trinity equivalent of:
+f7eb97300832f4fe5fe916c5d84cd2e25169330e
 
-Crash dumps or other data from pstore can potentially be a large data
-source. Add a pstore_module parameter to efivars to allow disabling its
-use as a backend for pstore. Also add a config option,
-CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE, to allow setting the default
-value of this paramter to true (i.e. disabled by default).
+May fix:
+https://bugs.freedesktop.org/show_bug.cgi?id=57919
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/Kconfig   |    9 +++++++++
- drivers/firmware/efivars.c |    8 +++++++-
- 2 files changed, 16 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/ni.c |   21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
---- a/drivers/firmware/Kconfig
-+++ b/drivers/firmware/Kconfig
-@@ -62,6 +62,15 @@ config EFI_VARS_PSTORE
- 	  will allow writing console messages, crash dumps, or anything
- 	  else supported by pstore to EFI variables.
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -623,11 +623,22 @@ static void cayman_gpu_init(struct radeo
+ 	WREG32(DMA_TILING_CONFIG + DMA0_REGISTER_OFFSET, gb_addr_config);
+ 	WREG32(DMA_TILING_CONFIG + DMA1_REGISTER_OFFSET, gb_addr_config);
  
-+config EFI_VARS_PSTORE_DEFAULT_DISABLE
-+	bool "Disable using efivars as a pstore backend by default"
-+	depends on EFI_VARS_PSTORE
-+	default n
-+	help
-+	  Saying Y here will disable the use of efivars as a storage
-+	  backend for pstore by default. This setting can be overridden
-+	  using the efivars module's pstore_disable parameter.
-+
- config EFI_PCDP
- 	bool "Console device selection via EFI PCDP or HCDP table"
- 	depends on ACPI && EFI && IA64
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -103,6 +103,11 @@ MODULE_VERSION(EFIVARS_VERSION);
-  */
- #define GUID_LEN 36
+-	tmp = gb_addr_config & NUM_PIPES_MASK;
+-	tmp = r6xx_remap_render_backend(rdev, tmp,
+-					rdev->config.cayman.max_backends_per_se *
+-					rdev->config.cayman.max_shader_engines,
+-					CAYMAN_MAX_BACKENDS, disabled_rb_mask);
++	if ((rdev->config.cayman.max_backends_per_se == 1) &&
++	    (rdev->flags & RADEON_IS_IGP)) {
++		if ((disabled_rb_mask & 3) == 1) {
++			/* RB0 disabled, RB1 enabled */
++			tmp = 0x11111111;
++		} else {
++			/* RB1 disabled, RB0 enabled */
++			tmp = 0x00000000;
++		}
++	} else {
++		tmp = gb_addr_config & NUM_PIPES_MASK;
++		tmp = r6xx_remap_render_backend(rdev, tmp,
++						rdev->config.cayman.max_backends_per_se *
++						rdev->config.cayman.max_shader_engines,
++						CAYMAN_MAX_BACKENDS, disabled_rb_mask);
++	}
+ 	WREG32(GB_BACKEND_MAP, tmp);
  
-+static bool efivars_pstore_disable =
-+	IS_ENABLED(EFI_VARS_PSTORE_DEFAULT_DISABLE);
-+
-+module_param_named(pstore_disable, efivars_pstore_disable, bool, 0644);
-+
- /*
-  * The maximum size of VariableName + Data = 1024
-  * Therefore, it's reasonable to save that much
-@@ -1926,7 +1931,8 @@ int register_efivars(struct efivars *efi
- 	if (error)
- 		unregister_efivars(efivars);
- 
--	efivar_pstore_register(efivars);
-+	if (!efivars_pstore_disable)
-+		efivar_pstore_register(efivars);
- 
- 	register_filesystem(&efivarfs_type);
- 
+ 	cgts_tcc_disable = 0xffff0000;
 
 
