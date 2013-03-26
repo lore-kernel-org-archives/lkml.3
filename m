@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759481Ab3CZMhi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 08:37:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44230 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758077Ab3CZMhh (ORCPT
+	id S1759515Ab3CZMjL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 08:39:11 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:64079 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758077Ab3CZMjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 08:37:37 -0400
-Message-ID: <1364301443.5053.9.camel@laptop>
-Subject: Re: [RFC PATCH v3 3/6] sched: pack small tasks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, mingo@kernel.org,
-        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
-        morten.rasmussen@arm.com, chander.kashyap@linaro.org,
-        cmetcalf@tilera.com, tony.luck@intel.com, alex.shi@intel.com,
-        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
-        amit.kucheria@linaro.org, corbet@lwn.net
-Date: Tue, 26 Mar 2013 13:37:23 +0100
-In-Reply-To: <1363955155-18382-4-git-send-email-vincent.guittot@linaro.org>
-References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
-	 <1363955155-18382-4-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Mar 2013 08:39:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130326081527.GA27128@gmail.com>
+References: <1363879460-21595-1-git-send-email-fweisbec@gmail.com>
+	<20130324081701.GA13328@gmail.com>
+	<CAFTL4hx4FLaRR6i9ap9UrCZY4ikhVtLfUqWSsjTpsO3dvShUjQ@mail.gmail.com>
+	<20130326081527.GA27128@gmail.com>
+Date: Tue, 26 Mar 2013 13:39:08 +0100
+Message-ID: <CAFTL4hwc_Wy6T5f52sdwvjdS=FVJr5Ra9jM5fwYCmyANRYZt-g@mail.gmail.com>
+Subject: Re: [GIT PULL] nohz: Full dynticks base interface
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-22 at 13:25 +0100, Vincent Guittot wrote:
-> +static bool is_light_task(struct task_struct *p)
-> +{
-> +       /* A light task runs less than 20% in average */
-> +       return ((p->se.avg.runnable_avg_sum  * 5) <
-> +                       (p->se.avg.runnable_avg_period));
-> +}
+2013/3/26 Ingo Molnar <mingo@kernel.org>:
+>
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>
+>> > That way I will be able to test it automatically via randconfig and
+>> > such.
+>>
+>> Sure, I'm adding such an option.
+>>
+>> > My next question/request after that would be: could we make sure that
+>> > enabling this option does not break any applications or kernel
+>> > functionality, ASAP? Once that is offered, it becomes pushable to
+>> > v3.10 I think.
+>>
+>> So that's already the case. I'm careful that, as we iterate, the changes
+>> aren't supposed to break something in the middle. the final code that
+>> eventually shuts the tick down should be the last one in the series:
+>> once we know it is safe to do so.
+>
+> I mean, with the .config (or boot) option enabled, with tip:timers/nohz
+> as-is, will everything work? We cannot push a feature to Linus that
+> doesn't work reliably when enabled ...
 
-OK, so we have a 'problem' here, we initialize runnable_avg_* to 0, but
-we want to 'assume' a fresh task is fully 'loaded'. IIRC Alex ran into
-this as well.
+Right. So indeed the feature is not implemented yet in
+tip:timers/nohz, ie: the tick won't be stopped. But the current
+halfway state is not supposed to break existing things.
 
-PJT, do you have any sane solution for this, I forgot what the result
-of the last discussion was -- was there any?
-
+But I agree.
