@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab3CZWoM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:44:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52530 "EHLO
+	id S1755000Ab3CZWoU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:44:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52586 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab3CZWoF (ORCPT
+	with ESMTP id S1752033Ab3CZWoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:05 -0400
+	Tue, 26 Mar 2013 18:44:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 32/98] ALSA: snd-usb: mixer: propagate errors up the call chain
-Date: Tue, 26 Mar 2013 15:42:21 -0700
-Message-Id: <20130326224245.764844262@linuxfoundation.org>
+        Viljami Ilola <azmulx@netikka.fi>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 55/98] target/file: Bump FD_MAX_SECTORS to 2048 to handle 1M sized I/Os
+Date: Tue, 26 Mar 2013 15:42:44 -0700
+Message-Id: <20130326224248.252396386@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -26,47 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 4d7b86c98e445b075c2c4c3757eb6d3d6efbe72e upstream.
+commit f002a24388cc460c8a9be7d446a9871f7c9d52b6 upstream.
 
-In check_input_term() and parse_audio_feature_unit(), propagate the
-error value that has been returned by a failing function instead of
--EINVAL. That helps cleaning up the error pathes in the mixer.
+This patch bumps the default FILEIO backend FD_MAX_SECTORS value from
+1024 -> 2048 in order to allow block_size=512 to handle 1M sized I/Os.
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The current default rejects I/Os larger than 512K in sbc_parse_cdb():
+
+[12015.915146] SCSI OP 2ah with too big sectors 1347 exceeds backend
+hw_max_sectors: 1024
+[12015.977744] SCSI OP 2ah with too big sectors 2048 exceeds backend
+hw_max_sectors: 1024
+
+This issue is present in >= v3.5 based kernels, introduced after the
+removal of se_task logic.
+
+Reported-by: Viljami Ilola <azmulx@netikka.fi>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/mixer.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/target/target_core_file.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -715,8 +715,9 @@ static int check_input_term(struct mixer
- 		case UAC2_CLOCK_SELECTOR: {
- 			struct uac_selector_unit_descriptor *d = p1;
- 			/* call recursively to retrieve the channel info */
--			if (check_input_term(state, d->baSourceID[0], term) < 0)
--				return -ENODEV;
-+			err = check_input_term(state, d->baSourceID[0], term);
-+			if (err < 0)
-+				return err;
- 			term->type = d->bDescriptorSubtype << 16; /* virtual type */
- 			term->id = id;
- 			term->name = uac_selector_unit_iSelector(d);
-@@ -1356,8 +1357,9 @@ static int parse_audio_feature_unit(stru
- 		return err;
+--- a/drivers/target/target_core_file.h
++++ b/drivers/target/target_core_file.h
+@@ -7,7 +7,7 @@
+ #define FD_DEVICE_QUEUE_DEPTH	32
+ #define FD_MAX_DEVICE_QUEUE_DEPTH 128
+ #define FD_BLOCKSIZE		512
+-#define FD_MAX_SECTORS		1024
++#define FD_MAX_SECTORS		2048
  
- 	/* determine the input source type and name */
--	if (check_input_term(state, hdr->bSourceID, &iterm) < 0)
--		return -EINVAL;
-+	err = check_input_term(state, hdr->bSourceID, &iterm);
-+	if (err < 0)
-+		return err;
- 
- 	master_bits = snd_usb_combine_bytes(bmaControls, csize);
- 	/* master configuration quirks */
+ #define RRF_EMULATE_CDB		0x01
+ #define RRF_GOT_LBA		0x02
 
 
