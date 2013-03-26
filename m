@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965127Ab3CZPwk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:52:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53788 "EHLO
+	id S965113Ab3CZPxJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:53:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53784 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965043Ab3CZPWh (ORCPT
+	with ESMTP id S965040Ab3CZPWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 11:22:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Guo Chao <yan@linux.vnet.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "M. Hindess" <hindessm@uk.ibm.com>,
+        Nikanth Karthikesan <knikanth@suse.de>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 057/150] rtlwifi: rtl8192cu: Fix schedule while atomic bug splat
-Date: Tue, 26 Mar 2013 15:19:16 +0000
-Message-Id: <1364311249-14454-58-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 025/150] loopdev: fix a deadlock
+Date: Tue, 26 Mar 2013 15:18:44 +0000
+Message-Id: <1364311249-14454-26-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -28,62 +31,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Guo Chao <yan@linux.vnet.ibm.com>
 
-commit 664899786cb49cb52f620e06ac19c0be524a7cfa upstream.
+commit 5370019dc2d2c2ff90e95d181468071362934f3a upstream.
 
-When run at debug 3 or higher, rtl8192cu reports a BUG as follows:
+bd_mutex and lo_ctl_mutex can be held in different order.
 
-BUG: scheduling while atomic: kworker/u:0/5281/0x00000002
-INFO: lockdep is turned off.
-Modules linked in: rtl8192cu rtl8192c_common rtlwifi fuse af_packet bnep bluetooth b43 mac80211 cfg80211 ipv6 snd_hda_codec_conexant kvm_amd k
-vm snd_hda_intel snd_hda_codec bcma rng_core snd_pcm ssb mmc_core snd_seq snd_timer snd_seq_device snd i2c_nforce2 sr_mod pcmcia forcedeth i2c_core soundcore
- cdrom sg serio_raw k8temp hwmon joydev ac battery pcmcia_core snd_page_alloc video button wmi autofs4 ext4 mbcache jbd2 crc16 thermal processor scsi_dh_alua
- scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc scsi_dh ata_generic pata_acpi pata_amd [last unloaded: rtlwifi]
-Pid: 5281, comm: kworker/u:0 Tainted: G        W    3.8.0-wl+ #119
-Call Trace:
- [<ffffffff814531e7>] __schedule_bug+0x62/0x70
- [<ffffffff81459af0>] __schedule+0x730/0xa30
- [<ffffffff81326e49>] ? usb_hcd_link_urb_to_ep+0x19/0xa0
- [<ffffffff8145a0d4>] schedule+0x24/0x70
- [<ffffffff814575ec>] schedule_timeout+0x18c/0x2f0
- [<ffffffff81459ec0>] ? wait_for_common+0x40/0x180
- [<ffffffff8133f461>] ? ehci_urb_enqueue+0xf1/0xee0
- [<ffffffff810a579d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff81459f65>] wait_for_common+0xe5/0x180
- [<ffffffff8107d1c0>] ? try_to_wake_up+0x2d0/0x2d0
- [<ffffffff8145a08e>] wait_for_completion_timeout+0xe/0x10
- [<ffffffff8132ab1c>] usb_start_wait_urb+0x8c/0x100
- [<ffffffff8132adf9>] usb_control_msg+0xd9/0x130
- [<ffffffffa057dd8d>] _usb_read_sync+0xcd/0x140 [rtlwifi]
- [<ffffffffa057de0e>] _usb_read32_sync+0xe/0x10 [rtlwifi]
- [<ffffffffa04b0555>] rtl92cu_update_hal_rate_table+0x1a5/0x1f0 [rtl8192cu]
+Path #1:
 
-The cause is a synchronous read from routine rtl92cu_update_hal_rate_table().
-The resulting output is not critical, thus the debug statement is
-deleted.
+blkdev_open
+ blkdev_get
+  __blkdev_get (hold bd_mutex)
+   lo_open (hold lo_ctl_mutex)
 
-Reported-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Path #2:
+
+blkdev_ioctl
+ lo_ioctl (hold lo_ctl_mutex)
+  lo_set_capacity (hold bd_mutex)
+
+Lockdep does not report it, because path #2 actually holds a subclass of
+lo_ctl_mutex.  This subclass seems creep into the code by mistake.  The
+patch author actually just mentioned it in the changelog, see commit
+f028f3b2 ("loop: fix circular locking in loop_clr_fd()"), also see:
+
+	http://marc.info/?l=linux-kernel&m=123806169129727&w=2
+
+Path #2 hold bd_mutex to call bd_set_size(), I've protected it
+with i_mutex in a previous patch, so drop bd_mutex at this site.
+
+Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: M. Hindess <hindessm@uk.ibm.com>
+Cc: Nikanth Karthikesan <knikanth@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c | 2 --
+ drivers/block/loop.c | 2 --
  1 file changed, 2 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-index 0c74d4f..1539eb8 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-@@ -2059,8 +2059,6 @@ void rtl92cu_update_hal_rate_table(struct ieee80211_hw *hw,
- 			       (shortgi_rate << 4) | (shortgi_rate);
- 	}
- 	rtl_write_dword(rtlpriv, REG_ARFR0 + ratr_index * 4, ratr_value);
--	RT_TRACE(rtlpriv, COMP_RATR, DBG_DMESG, "%x\n",
--		 rtl_read_dword(rtlpriv, REG_ARFR0));
- }
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 3bba655..11e702c 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1263,11 +1263,9 @@ static int loop_set_capacity(struct loop_device *lo, struct block_device *bdev)
+ 	/* the width of sector_t may be narrow for bit-shift */
+ 	sz = sec;
+ 	sz <<= 9;
+-	mutex_lock(&bdev->bd_mutex);
+ 	bd_set_size(bdev, sz);
+ 	/* let user-space know about the new size */
+ 	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
+-	mutex_unlock(&bdev->bd_mutex);
  
- void rtl92cu_update_hal_rate_mask(struct ieee80211_hw *hw, u8 rssi_level)
+  out:
+ 	return err;
 -- 
 1.8.1.2
 
