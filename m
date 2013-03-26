@@ -1,105 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965309Ab3CZPhz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:37:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54036 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965273Ab3CZPXb (ORCPT
+	id S965373Ab3CZPiQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:38:16 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57279 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965273Ab3CZPiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:31 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 110/150] USB: pl2303: fix use-after-free in TIOCMIWAIT
-Date: Tue, 26 Mar 2013 15:20:09 +0000
-Message-Id: <1364311249-14454-111-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 26 Mar 2013 11:38:11 -0400
+Date: Tue, 26 Mar 2013 15:37:30 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "nico@linaro.org" <nico@linaro.org>
+Subject: Re: [PATCH v2 6/6] [RFC] arm: use PSCI if available
+Message-ID: <20130326153730.GA22368@mudshark.cambridge.arm.com>
+References: <alpine.DEB.2.02.1303261423530.4430@kaball.uk.xensource.com>
+ <1364308875-26484-6-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20130326150444.GI20252@mudshark.cambridge.arm.com>
+ <alpine.DEB.2.02.1303261509080.4430@kaball.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1303261509080.4430@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Mar 26, 2013 at 03:25:55PM +0000, Stefano Stabellini wrote:
+> On Tue, 26 Mar 2013, Will Deacon wrote:
+> > On Tue, Mar 26, 2013 at 02:41:15PM +0000, Stefano Stabellini wrote:
+> > > +struct smp_operations __initdata psci_smp_ops = {
+> > > +	.smp_init_cpus		= psci_smp_init_cpus,
+> > > +	.smp_prepare_cpus	= psci_smp_prepare_cpus,
+> > > +	.smp_secondary_init	= psci_secondary_init,
+> > > +	.smp_boot_secondary	= psci_boot_secondary,
+> > > +};
+> > 
+> > Whilst I like the idea of this, I don't think things will pan out this
+> > nicely in practice. There will almost always be a level of indirection
+> > required between the internal Linux SMP operations and the expectations of
+> > the PSCI firmware, whether this is in CPU numbering or other,
+> > platform-specific fields in various parameters.
+> > 
+> > Tying these two things together like this confuses the layering in my
+> > opinion and will likely lead to potentially subtle breakages if platforms
+> > start trying to adopt this.
+> 
+> What you are saying is that psci could either be used directly, like we
+> are doing, or it could just be the base of some higher level platform
+> specific smp_ops.
+> 
+> Honestly I think that psci is already high level enough that I would
+> worry if somebody started to wrap it around something else.
 
-------------------
+I don't agree. PSCI is a low-level firmware interface, which will naturally
+have implementation-specific parts to it. For example, many of the CPU power
+functions have platform-specific state ID parameters which we can't just
+ignore. Furthermore, the method by which a CPU is identified needn't match
+the value in our logical map. The purpose of the PSCI code in Linux is to
+provide a basic abstraction on top of this interface, so that platforms can
+incorporate them into higher-level power management functions, which
+themselves might be plumbed into smp_operations structures.
 
-From: Johan Hovold <jhovold@gmail.com>
+> However we still support that use case just fine:  they can just avoid
+> having a psci node on device tree and just keep using their machine
+> specific smp_ops. It's up to them really.
 
-commit 40509ca982c00c4b70fc00be887509feca0bff15 upstream.
+Why get rid of the node? That's there to initialise the PSCI backend
+accordingly and shouldn't have anything to do with SMP.
 
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
+> They can even base the implementation of their smp_ops on the current
+> psci code, in order to facilitate that I could get rid of psci_ops
+> (which initialization is based on device tree) and export the psci_cpu_*
+> functions instead, so that they can be called directly by other smp_ops.
 
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
+Again, I think this destroys the layering. The whole point is that the PSCI
+functions are called from within something that understands precisely how to
+talk to the firmware and what it is capable of.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5; adjust context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/serial/pl2303.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+> > If this can indeed work for the virtual platforms (Xen and KVM), then I
+> > think it would be better expressed using `virt' smp_ops, which map directly
+> > to PSCI, rather than putting them here. Even then, it's tying KVM and Xen
+> > together on the firmware side of things...
+> 
+> Keep in mind that dom0 on Xen boots as a native machine (versatile
+> express or exynos5 for example) with a Xen hypervisor node on it.  We
+> would need to find a way to override the default machine smp_ops with
+> a set of xen_smp_ops early at boot.
+> I don't like this option very much, I think is fragile.
 
-diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-index 13b8dd6..6fe8d0e 100644
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -137,7 +137,6 @@ enum pl2303_type {
- 
- struct pl2303_private {
- 	spinlock_t lock;
--	wait_queue_head_t delta_msr_wait;
- 	u8 line_control;
- 	u8 line_status;
- 	enum pl2303_type type;
-@@ -193,7 +192,6 @@ static int pl2303_startup(struct usb_serial *serial)
- 		if (!priv)
- 			goto cleanup;
- 		spin_lock_init(&priv->lock);
--		init_waitqueue_head(&priv->delta_msr_wait);
- 		priv->type = type;
- 		usb_set_serial_port_data(serial->port[i], priv);
- 	}
-@@ -582,11 +580,14 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 
- 	while (1) {
--		interruptible_sleep_on(&priv->delta_msr_wait);
-+		interruptible_sleep_on(&port->delta_msr_wait);
- 		/* see if a signal did it */
- 		if (signal_pending(current))
- 			return -ERESTARTSYS;
- 
-+		if (port->serial->disconnected)
-+			return -EIO;
-+
- 		spin_lock_irqsave(&priv->lock, flags);
- 		status = priv->line_status;
- 		spin_unlock_irqrestore(&priv->lock, flags);
-@@ -705,7 +706,7 @@ static void pl2303_update_line_status(struct usb_serial_port *port,
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 	if (priv->line_status & UART_BREAK_ERROR)
- 		usb_serial_handle_break(port);
--	wake_up_interruptible(&priv->delta_msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
- 
- 	tty = tty_port_tty_get(&port->port);
- 	if (!tty)
-@@ -770,7 +771,7 @@ static void pl2303_process_read_urb(struct urb *urb)
- 	line_status = priv->line_status;
- 	priv->line_status &= ~UART_STATE_TRANSIENT_MASK;
- 	spin_unlock_irqrestore(&priv->lock, flags);
--	wake_up_interruptible(&priv->delta_msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
- 
- 	if (!urb->actual_length)
- 		return;
--- 
-1.8.1.2
+Why can't dom0 use whatever smp ops the native machine would use?
 
+Will
