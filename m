@@ -1,63 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934098Ab3CZGhO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 02:37:14 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:65322 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933990Ab3CZGhM (ORCPT
+	id S934102Ab3CZGhZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 02:37:25 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:20573 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859Ab3CZGhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 02:37:12 -0400
-Message-ID: <1364279856.25738.4.camel@gitbox>
-Subject: Re: Submitting fbdev tree patches
-From: Tony Prisk <linux@prisktech.co.nz>
-To: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Cc: jg1.han@samsung.com, "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arm Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        tomi.valkeinen@ti.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Date: Tue, 26 Mar 2013 19:37:36 +1300
-In-Reply-To: <25978865.106801364189231752.JavaMail.weblogic@epv6ml06>
-References: <25978865.106801364189231752.JavaMail.weblogic@epv6ml06>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 26 Mar 2013 02:37:20 -0400
+X-Spam-Score: -100.8
+Message-ID: <51514202.2030504@asianux.com>
+Date: Tue, 26 Mar 2013 14:36:50 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: tglx@linutronix.de, Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [Suggestion] kernel: 'now' may be used uninitialized in posix_cpu_timer_schedule
+ function
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-25 at 05:27 +0000, Jingoo Han wrote:
-> On Monday, March 25, 2013 2:11 PM, Tony Prisk wrote:
-> > 
-> > Is anyone taking patches for fbdev at the moment?
-> > 
-> > I sent in some patches for 3.9 but didn't hear back - checking the lists
-> > it doesn't appear Florian has posted much since the end of Oct 2012.
-> 
-> CC'ed Tomi Valkeinen, Andrew Morton
-> 
-> 
-> Hi Tony Prisk,
-> 
-> Tomy Valkeien will take care of fbdev fixes for 3.9.
-> (http://www.spinics.net/lists/linux-fbdev/msg10243.html)
-> 
-> How about sending a pull request to Tomy?
-> 
-> Best regards,
-> Jingoo Han
-> 
-> > 
-> > Regards
-> > Tony Prisk
-> > 
+Hello Maintainers:
 
-These are not fixes but new features/changes for 3.10 - I don't want to
-create too much work for someone. Any idea when Florian will be back on
-board?
+  compiling with EXTRA_CFLAGS=-W:
+    make V=1 EXTRA_CFLAGS=-W ARCH=arm s3c2410_defconfig
+    make V=1 EXTRA_CFLAGS=-W ARCH=arm menuconfig
+      set 'arm-linux-gnu-' for cross chain prefix
+    make V=1 EXTRA_CFLAGS=-W ARCH=arm
 
-Regards
-Ton
+  it will report:
+    kernel/posix-cpu-timers.c:1065:19: warning: ‘now’ may be used uninitialized in this function [-Wuninitialized]
+
+  it seems it is really a bug.
+    can any member help to fix it ?
+    or provide additional suggestion ?
+      (it seems only "unsigned long long now = 0" is not enough).
+
+  :-)
+
+
+
+in kernel/posix-cpu-timers.c:
+  for variable 'now' is defined without initialization (line 1029)
+  it may be used without initialization (line 1066)
+
+
+1026 void posix_cpu_timer_schedule(struct k_itimer *timer)
+1027 {
+1028         struct task_struct *p = timer->it.cpu.task;
+1029         unsigned long long now;
+1030 
+1031         if (unlikely(p == NULL))
+1032                 /*
+1033                  * The task was cleaned up already, no future firings.
+1034                  */
+1035                 goto out;
+1036 
+1037         /*
+1038          * Fetch the current sample and update the timer's expiry time.
+1039          */
+1040         if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
+1041                 cpu_clock_sample(timer->it_clock, p, &now);
+1042                 bump_cpu_timer(timer, now);
+1043                 if (unlikely(p->exit_state)) {
+1044                         clear_dead_task(timer, now);
+1045                         goto out;
+1046                 }
+1047                 read_lock(&tasklist_lock); /* arm_timer needs it.  */
+1048                 spin_lock(&p->sighand->siglock);
+1049         } else {
+1050                 read_lock(&tasklist_lock);
+1051                 if (unlikely(p->sighand == NULL)) {
+1052                         /*
+1053                          * The process has been reaped.
+1054                          * We can't even collect a sample any more.
+1055                          */
+1056                         put_task_struct(p);
+1057                         timer->it.cpu.task = p = NULL;
+1058                         timer->it.cpu.expires = 0;
+1059                         goto out_unlock;
+1060                 } else if (unlikely(p->exit_state) && thread_group_empty(p)) {
+1061                         /*
+1062                          * We've noticed that the thread is dead, but
+1063                          * not yet reaped.  Take this opportunity to
+1064                          * drop our task ref.
+1065                          */
+1066                         clear_dead_task(timer, now);
+1067                         goto out_unlock;
+1068                 }
+1069                 spin_lock(&p->sighand->siglock);
+1070                 cpu_timer_sample_group(timer->it_clock, p, &now);
+1071                 bump_cpu_timer(timer, now);
+1072                 /* Leave the tasklist_lock locked for the call below.  */
+1073         }
+1074 
+1075         /*
+1076          * Now re-arm for the new expiry time.
+1077          */
+1078         BUG_ON(!irqs_disabled());
+1079         arm_timer(timer);
+1080         spin_unlock(&p->sighand->siglock);
+1081 
+1082 out_unlock:
+1083         read_unlock(&tasklist_lock);
+1084 
+1085 out:
+1086         timer->it_overrun_last = timer->it_overrun;
+1087         timer->it_overrun = -1;
+1088         ++timer->it_requeue_pending;
+1089 }
 
