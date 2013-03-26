@@ -1,54 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389Ab3CZXTp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:19:45 -0400
-Received: from 8bytes.org ([85.214.48.195]:46529 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755311Ab3CZXTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:19:43 -0400
-Date: Wed, 27 Mar 2013 00:19:41 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: zsmalloc: Fix link error on ARM
-Message-ID: <20130326231941.GE30540@8bytes.org>
-References: <1364337232-3513-1-git-send-email-joro@8bytes.org>
- <20130326224536.GA29952@kroah.com>
- <20130326230359.GD30540@8bytes.org>
- <20130326230910.GA31021@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130326230910.GA31021@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Mar 27 00:19:42 2013
-X-DSPAM-Confidence: 0.9990
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51522d0e23671643012000
+	id S1756223Ab3CZXUI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:20:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53017 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756107Ab3CZWwb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 18:52:31 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 26/72] sfc: Properly sync RX DMA buffer when it is not the last in the page
+Date: Tue, 26 Mar 2013 15:51:09 -0700
+Message-Id: <20130326224922.398874103@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
+References: <20130326224919.675227837@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 04:09:10PM -0700, Greg Kroah-Hartman wrote:
-> On Wed, Mar 27, 2013 at 12:03:59AM +0100, Joerg Roedel wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> Then should I just mark the driver as broken on ARM?
-
-Well, at least ARM on SMP, for !SMP the missing function is defined and
-will be inlined.
-
-> Any reason for not including the driver authors on the Cc: for this
-> patch?
-
-I wasn't sure who the driver author is in the long list of persons from
-the get_maintainer script. So it was more or less lazyness :)
-
-Should I try to get that patch through the driver authors instead of
-you?
+------------------
 
 
-	Joerg
+From: Ben Hutchings <bhutchings@solarflare.com>
+
+[ Upstream commit 3a68f19d7afb80f548d016effbc6ed52643a8085 ]
+
+We may currently allocate two RX DMA buffers to a page, and only unmap
+the page when the second is completed.  We do not sync the first RX
+buffer to be completed; this can result in packet loss or corruption
+if the last RX buffer completed in a NAPI poll is the first in a page
+and is not DMA-coherent.  (In the middle of a NAPI poll, we will
+handle the following RX completion and unmap the page *before* looking
+at the content of the first buffer.)
+
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+[bwh: Backported to 3.4: adjust context]
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/ethernet/sfc/rx.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+--- a/drivers/net/ethernet/sfc/rx.c
++++ b/drivers/net/ethernet/sfc/rx.c
+@@ -245,7 +245,8 @@ static int efx_init_rx_buffers_page(stru
+ }
+ 
+ static void efx_unmap_rx_buffer(struct efx_nic *efx,
+-				struct efx_rx_buffer *rx_buf)
++				struct efx_rx_buffer *rx_buf,
++				unsigned int used_len)
+ {
+ 	if ((rx_buf->flags & EFX_RX_BUF_PAGE) && rx_buf->u.page) {
+ 		struct efx_rx_page_state *state;
+@@ -256,6 +257,10 @@ static void efx_unmap_rx_buffer(struct e
+ 				       state->dma_addr,
+ 				       efx_rx_buf_size(efx),
+ 				       PCI_DMA_FROMDEVICE);
++		} else if (used_len) {
++			dma_sync_single_for_cpu(&efx->pci_dev->dev,
++						rx_buf->dma_addr, used_len,
++						DMA_FROM_DEVICE);
+ 		}
+ 	} else if (!(rx_buf->flags & EFX_RX_BUF_PAGE) && rx_buf->u.skb) {
+ 		pci_unmap_single(efx->pci_dev, rx_buf->dma_addr,
+@@ -278,7 +283,7 @@ static void efx_free_rx_buffer(struct ef
+ static void efx_fini_rx_buffer(struct efx_rx_queue *rx_queue,
+ 			       struct efx_rx_buffer *rx_buf)
+ {
+-	efx_unmap_rx_buffer(rx_queue->efx, rx_buf);
++	efx_unmap_rx_buffer(rx_queue->efx, rx_buf, 0);
+ 	efx_free_rx_buffer(rx_queue->efx, rx_buf);
+ }
+ 
+@@ -544,10 +549,10 @@ void efx_rx_packet(struct efx_rx_queue *
+ 		goto out;
+ 	}
+ 
+-	/* Release card resources - assumes all RX buffers consumed in-order
+-	 * per RX queue
++	/* Release and/or sync DMA mapping - assumes all RX buffers
++	 * consumed in-order per RX queue
+ 	 */
+-	efx_unmap_rx_buffer(efx, rx_buf);
++	efx_unmap_rx_buffer(efx, rx_buf, len);
+ 
+ 	/* Prefetch nice and early so data will (hopefully) be in cache by
+ 	 * the time we look at it.
 
 
