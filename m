@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964798Ab3CZPB6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:01:58 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63288 "EHLO
+	id S964841Ab3CZPCS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:02:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:52946 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758311Ab3CZPB5 (ORCPT
+	with ESMTP id S964796Ab3CZPCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:01:57 -0400
+	Tue, 26 Mar 2013 11:02:17 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: Re: [PATCH v2 1/4] dw_dmac: fix style of the comments
-Date: Tue, 26 Mar 2013 15:01:54 +0000
+Subject: Re: [PATCH v2 2/4] dw_dmac: rename DT related methods to reflect their belonging
+Date: Tue, 26 Mar 2013 15:02:09 +0000
 User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
 Cc: Vinod Koul <vinod.koul@intel.com>, Viresh Kumar <viresh.kumar@linaro.org>,
         linux-kernel@vger.kernel.org, "spear-devel" <spear-devel@list.st.com>
-References: <1364309637-25860-1-git-send-email-andriy.shevchenko@linux.intel.com> <1364309637-25860-2-git-send-email-andriy.shevchenko@linux.intel.com>
-In-Reply-To: <1364309637-25860-2-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1364309637-25860-1-git-send-email-andriy.shevchenko@linux.intel.com> <1364309637-25860-3-git-send-email-andriy.shevchenko@linux.intel.com>
+In-Reply-To: <1364309637-25860-3-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303261501.54439.arnd@arndb.de>
-X-Provags-ID: V02:K0:cqJ5upFWleOBZ4C9Jr/44QTUzzRC/HqyBSHyXOjydUz
- d/WSBx0sQ8cWgRin0B4kQn7Ss7EtTNljgx+mPVvx58EjIlfIgB
- I0JFPRLWGojdf7pBIHiOge9bIe/fgx/wjZbEZDpzt28tCUrvCe
- FXlyZjXUQgzJ93FvNobBtwZS0J0BzRqdFclvrV78OPq6E6gSC1
- F4Z+nOGu5xzM6FbH1zcQMP4+9FGjMaV4lm89EUdSp+YEBNmekH
- DkUZHBjdnRgDqWEYLVit1HsUdOZFnKjQLmnwwRa0Lb/dCLol9w
- y5y0wlvliqpNSsjLhrKc2E7tbV97HQ1OAWb+92HR+EfyO5vya3
- 9GP8LSivdRxM56dKQ1vc=
+Message-Id: <201303261502.09594.arnd@arndb.de>
+X-Provags-ID: V02:K0:xc+wPBuyIjdsz3AiYWV7PRXsCxeG0FSQUJcO6s6hr1N
+ SgI+Uy6+xLn4CokGozAKAltgUIXM++/wExC1Kf1RWItawJHyC1
+ DxDoDiZabk5Dvlg1jT35BnXE+2d8UdVT+Unlj+MD9MIpdP8wg5
+ wX7TKk9JzeV1qzVSc7cTAtwTrbmotRFmBdGDV1QGm1erIH3X/x
+ stqDlFeFoUu3w1m9rIy7uT1nG0C3Qv+ia5eo19h5ZWXzrvP3RM
+ 72uuW8t2j72LznBP+gBMEEh3zCgmIscRzaA+rH0EREhyVXfPZy
+ Kc2Y12DL8pEhihdIVYmQv6dxcIbECLXAyOKzy+cw5772IXtPS7
+ Ysfd6ualKyYAu/ErLp5E=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tuesday 26 March 2013, Andy Shevchenko wrote:
-> Let's use capital letter as a first one in the comments.
-> There is no functional changes.
+> Since we will have not only DT cases in future let's rename DT related methods
+> to reflect their belonging.
+> 
+> The rename was done as follows:
+> 	struct dw_dma_filter_args	-> struct dw_dma_of_filter_args
+> 	dw_dma_generic_filter()		-> dw_dma_of_filter()
+> 	dw_dma_xlate()			-> dw_dma_of_xlate()
+> 	dw_dma_id_table			-> dw_dma_of_id_table
+> 
+> There is no functional change.
 > 
 > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 > Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
