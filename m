@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab3CZVzR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 17:55:17 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:44338 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597Ab3CZVzO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 17:55:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130305224150.GE8339@xanatos>
-References: <1361182193-31894-1-git-send-email-hare@suse.de>
- <CAE9FiQWP1F5mLUoHoTHXy-wQoGxVK66QuuHYydaq3YfysS5Etg@mail.gmail.com>
- <5124820D.2080900@suse.de> <CAE9FiQXHteymDNzu0GqWtVSVhu3g2hCT+K9e5tB1mR-OBX1ffA@mail.gmail.com>
- <5125C45A.5020208@suse.de> <CAErSpo5j3Qge5Q2S+hyMGOcmoN77V0T=1+6OJdNJfJdnvT8wgg@mail.gmail.com>
- <51305B99.6080806@suse.de> <20130305224150.GE8339@xanatos>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 26 Mar 2013 15:54:52 -0600
-Message-ID: <CAErSpo4nAN7wFaRebw5fM3gQVppaQoSSh3PdFumgCS1SGhcxcw@mail.gmail.com>
-Subject: Re: [PATCH] pci: do not try to assign irq 255
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Hannes Reinecke <hare@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Frederik Himpe <fhimpe@vub.ac.be>, Oliver Neukum <oneukum@suse.de>,
-        David Haerdeman <david@hardeman.nu>,
-        USB list <linux-usb@vger.kernel.org>,
+	id S1752172Ab3CZV7v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 17:59:51 -0400
+Received: from 8bytes.org ([85.214.48.195]:46298 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751849Ab3CZV7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 17:59:49 -0400
+Date: Tue, 26 Mar 2013 22:59:44 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: shuah.khan@hp.com, Jiang Liu <jiang.liu@huawei.com>,
+        "shemminger@vyatta.com" <shemminger@vyatta.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linas Vepstas <linasvepstas@gmail.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        iommu@lists.linux-foundation.org,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Andy Grover <agrover@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Yijing Wang <wangyijing@huawei.com>,
+        LKML <linux-kernel@vger.kernel.org>, Shuah Khan <shuahkhan@gmail.com>
+Subject: Re: [PATCH v2 0/4] pci: Add PCI_BUS() and PCI_DEVID() interfaces to
+ return bus number and device id
+Message-ID: <20130326215944.GB30540@8bytes.org>
+References: <1362009978.2808.33.camel@lorien2>
+ <CAErSpo6DjjSKCFL6CjmqkOAyc1iU1TG1=n=K=AXPcU_r6ZdPGA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo6DjjSKCFL6CjmqkOAyc1iU1TG1=n=K=AXPcU_r6ZdPGA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Mar 26 22:59:47 2013
+X-DSPAM-Confidence: 0.9994
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51521a5323678279013541
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 5, 2013 at 3:41 PM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
-> On Fri, Mar 01, 2013 at 08:41:13AM +0100, Hannes Reinecke wrote:
->> On 02/27/2013 10:13 PM, Bjorn Helgaas wrote:
->> >[+cc Andy]
->> >
->> >3) I don't understand why the xhci init fails in the first place.  It
->> >looks like the "request interrupt 255 failed" message is from
->> >xhci_try_enable_msi(), but that function tries to enable MSI-X, then
->> >MSI, then falls back to legacy interrupts, where we get the error.
->> >But the device supports MSI, so I don't know why we even fall back to
->> >trying legacy interrupts.  Hannes, do you have any insight into that?
->> >Obviously I'm missing something here.
->> >
->> Hehe. Due to overly clever design.
->> xhci actually sets up interrupts _twice_, once per request_irq() in
->> the generic code and a second time during xhci_run.
->> But as the first call fails it'll never ever run the second part.
->>
->> I'll be sending a patch.
->
-> Something like this?
->
-> http://marc.info/?l=linux-usb&m=132972894117916&w=2
->
-> (Apparently we had this issue around the same time last year, but we
-> thought the BIOS bug had been resolved.)
->
-> Sarah Sharp
+Hi Bjorn,
 
-Where are we at with this?  I don't see Sarah's patch in the tree, and
-I haven't applied any changes, so my guess is this is still broken.
+On Tue, Mar 26, 2013 at 03:41:07PM -0600, Bjorn Helgaas wrote:
+> Since some of these touch drivers/iommu, it'd be good if you acked
+> them again, Joerg.  I know you acked them before, but there have been
+> minor changes since then, so I didn't add your ack to these.  But if
+> you're still OK with them, I'll refresh the branch to add it now.
 
-Bjorn
+Looks still good to me. You can add my
+
+Acked-by: Joerg Roedel <joro@8bytes.org>
+
+if you want.
+
+
+	Joerg
+
+
