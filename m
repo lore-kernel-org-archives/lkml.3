@@ -1,59 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934689Ab3CZQYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:24:33 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:44457 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934656Ab3CZQYa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:24:30 -0400
-Date: Tue, 26 Mar 2013 09:24:12 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: dipankar@in.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: don't allocate bootmem from rcu_init
-Message-ID: <20130326162412.GK4379@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1364312116-11641-1-git-send-email-sasha.levin@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364312116-11641-1-git-send-email-sasha.levin@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032616-3620-0000-0000-000001C6E0D2
+	id S934680Ab3CZQ0S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:26:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:57346 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933031Ab3CZQ0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 12:26:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,913,1355126400"; 
+   d="scan'208";a="276202518"
+From: Zhang Rui <rui.zhang@intel.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: amit.daniel@samsung.com, durgadoss.r@intel.com, andi@lisas.de,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: [RFC PATCH 0/5] Thermal: build all thermal framework code into thermal_sys module
+Date: Wed, 27 Mar 2013 00:26:04 +0800
+Message-Id: <1364315169-15427-1-git-send-email-rui.zhang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 11:35:16AM -0400, Sasha Levin wrote:
-> When rcu_init is called we already have slab working, allocating bootmem
-> at that point results in warnings and an allocation from slab.
+A regression introduced by thermal governor feature
+is reported in http://marc.info/?l=linux-kernel&m=136085598604095&w=2
 
-Good catch, queued for 3.11, thank you!
+And the root cause is that all the thermal governors can not be registered
+successfully when the thermal framework is built as a module.
 
-							Thanx, Paul
+Thus I made this patch set to build all the thermal framework component,
+including governors and cpu_cooling feature into one module so that all the
+thermal features are loaded/unloaded altogether.
 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  kernel/rcutree_plugin.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index d084ae3..73bac82 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -87,7 +87,7 @@ static void __init rcu_bootup_announce_oddness(void)
->  #ifdef CONFIG_RCU_NOCB_CPU
->  #ifndef CONFIG_RCU_NOCB_CPU_NONE
->  	if (!have_rcu_nocb_mask) {
-> -		alloc_bootmem_cpumask_var(&rcu_nocb_mask);
-> +		alloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL);
->  		have_rcu_nocb_mask = true;
->  	}
->  #ifdef CONFIG_RCU_NOCB_CPU_ZERO
-> -- 
-> 1.8.1.5
-> 
+any comments?
 
+thanks,
+rui
