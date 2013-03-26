@@ -1,170 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759983Ab3CZS12 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:27:28 -0400
-Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:16164
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753356Ab3CZS11 convert rfc822-to-8bit (ORCPT
+	id S1760087Ab3CZSdp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:33:45 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:46038 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754251Ab3CZSdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 14:27:27 -0400
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: 1
-X-BigFish: PS1(zz9371I542I1432I1521Ic8kzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB061;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        Evgeniy Polyakov <zbr@ioremap.net>
-Subject: RE: [PATCH V2 1/1] Drivers: hv: Add a new driver to support host
- initiated backup
-Thread-Topic: [PATCH V2 1/1] Drivers: hv: Add a new driver to support host
- initiated backup
-Thread-Index: AQHOIa9jd5OqsHAaYE6mIfFRqEann5i3veYAgAB+cFA=
-Date: Tue, 26 Mar 2013 18:25:35 +0000
-Message-ID: <87df2da43513408f96da2185be680cd3@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1363375806-19979-1-git-send-email-kys@microsoft.com>
- <51516422.8000804@redhat.com>
-In-Reply-To: <51516422.8000804@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [98.110.61.163]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB061.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%IOREMAP.NET$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC107.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC107.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(54094002)(51704002)(13464002)(377454001)(199002)(189002)(56776001)(5343635001)(74662001)(47776003)(53806001)(63696002)(4396001)(23726001)(47736001)(46406002)(50986001)(65816001)(31966008)(6806001)(77982001)(59766001)(16676001)(80022001)(50466001)(76482001)(56816002)(66066001)(33646001)(54356001)(46102001)(54316002)(49866001)(69226001)(79102001)(47446002)(74502001)(51856001)(47976001)(20776003)(2004001)(24736002)(550254004);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB005;H:TK5EX14HUBC107.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 079756C6B9
+	Tue, 26 Mar 2013 14:33:42 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/5] capemgr: Add beaglebone's cape driver bindings
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jon Loeliger <jdl@jdl.com>, Tony Lindgren <tony@atomide.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
+        Alan Tull <atull@altera.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Joel A Fernandes <agnel.joel@gmail.com>,
+        Rob Clark <robdclark@gmail.com>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Matt Ranostay <mranostay@gmail.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <1357584666-17374-3-git-send-email-panto@antoniou-consulting.com>
+References: <1357584666-17374-1-git-send-email-panto@antoniou-consulting.com> <1357584666-17374-3-git-send-email-panto@antoniou-consulting.com>
+Date: Tue, 26 Mar 2013 17:36:19 +0000
+Message-Id: <20130326173619.E6F483E2585@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Paolo Bonzini [mailto:paolo.bonzini@gmail.com] On Behalf Of Paolo
-> Bonzini
-> Sent: Tuesday, March 26, 2013 5:02 AM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> jasowang@redhat.com; Evgeniy Polyakov
-> Subject: Re: [PATCH V2 1/1] Drivers: hv: Add a new driver to support host
-> initiated backup
+On Mon,  7 Jan 2013 20:51:03 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
+> Document the beaglebone's cape driver bindings.
 > 
-> > diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c
-> > new file mode 100644
-> > index 0000000..9526995
-> > --- /dev/null
-> > +++ b/tools/hv/hv_vss_daemon.c
-> > @@ -0,0 +1,220 @@
-> > +/*
-> > + * An implementation of the host initiated guest snapshot for Hyper-V.
-> > + *
-> > + *
-> > + * Copyright (C) 2013, Microsoft, Inc.
-> > + * Author : K. Y. Srinivasan <kys@microsoft.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify it
-> > + * under the terms of the GNU General Public License version 2 as published
-> > + * by the Free Software Foundation.
-> > + *
-> > + * This program is distributed in the hope that it will be useful, but
-> > + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE
-> or
-> > + * NON INFRINGEMENT.  See the GNU General Public License for more
-> > + * details.
-> > + *
-> > + */
-> > +
-> > +
-> > +#include <sys/types.h>
-> > +#include <sys/socket.h>
-> > +#include <sys/poll.h>
-> > +#include <linux/types.h>
-> > +#include <stdio.h>
-> > +#include <stdlib.h>
-> > +#include <unistd.h>
-> > +#include <string.h>
-> > +#include <ctype.h>
-> > +#include <errno.h>
-> > +#include <arpa/inet.h>
-> > +#include <linux/connector.h>
-> > +#include <linux/hyperv.h>
-> > +#include <linux/netlink.h>
-> > +#include <syslog.h>
-> > +
-> > +static char vss_recv_buffer[4096];
-> > +static char vss_send_buffer[4096];
-> > +static struct sockaddr_nl addr;
-> > +
-> > +#ifndef SOL_NETLINK
-> > +#define SOL_NETLINK 270
-> > +#endif
-> > +
-> > +
-> > +static int vss_operate(int operation)
-> > +{
-> > +	char *fs_op;
-> > +	char cmd[512];
-> > +	char buf[512];
-> > +	FILE *file;
-> > +	char *p;
-> > +	char *x;
-> > +	int error;
-> > +
-> > +	switch (operation) {
-> > +	case VSS_OP_FREEZE:
-> > +		fs_op = "-f ";
-> > +		break;
-> > +	case VSS_OP_THAW:
-> > +		fs_op = "-u ";
-> > +		break;
-> > +	}
-> > +
-> > +	file = popen("mount | awk '/^\/dev\// { print $3}'", "r");
-> > +	if (file == NULL)
-> > +		return;
-> > +
-> > +	while ((p = fgets(buf, sizeof(buf), file)) != NULL) {
-> > +		x = strchr(p, '\n');
-> > +		*x = '\0';
-> > +		if (!strncmp(p, "/", sizeof("/")))
-> > +			continue;
-> > +
-> > +		sprintf(cmd, "%s %s %s", "fsfreeze ", fs_op, p);
+> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+
+Hi Pantelis,
+
+I'll go back and review the driver in a minute, but I'll start here
+since this is the data model that we'll be using for a long time.
+Overall this looks pretty sane. It's pretty well contained too which I
+like. Long term I do want to try and create some common patterns for
+overlay connections, but it's really hard to do that when this is the
+first serious attempt at implementing one.  :-) This is nicely contained
+to only the beaglebone use case which makes it easy to try out without
+forcing this exact data model on all users. If it works in other places,
+then fantastic! we've got our generic model. If not, then we can refine
+the interface for new boards without breaking beaglebone.
+
+Comments below...
+
+> ---
+>  .../devicetree/bindings/misc/capes-beaglebone.txt  | 110 +++++++++++++++++++++
+>  1 file changed, 110 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/misc/capes-beaglebone.txt
 > 
-> Please use getmntent and FIFREEZE/FITHAW.
+> diff --git a/Documentation/devicetree/bindings/misc/capes-beaglebone.txt b/Documentation/devicetree/bindings/misc/capes-beaglebone.txt
+> new file mode 100644
+> index 0000000..f73cab5
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/misc/capes-beaglebone.txt
+> @@ -0,0 +1,110 @@
+> +* TI Beaglebone DT Overlay Cape Driver
+> +
+> +Required properties:
+> +
+> +- compatible: "ti,bone-capemgr"
 
-I think Olaf has already addressed this in the recent patches he has sent.
+"capemgr" sounds like a software construct. Can you rename this to
+something that sounds more like describing concrete hardware? From that
+perspective, "ti,bone-capebus" would be appropriate here, regardless of
+where the driver actually lives in the kernel tree.
 
+It would be better to be more specific here with the compatible
+property also. Put the actual board name into the compatible string.
+Following the lead of the board level compatible property, call it
+'ti,am335x-bone-capebus". Newer boards can claim compatibilty with the
+older where appropriate.
+
+> +
+> +- eeprom: Contains the phandle beaglebone's baseboard i2c eeprom.
+> +
+> +- baseboardmaps - node containing a list of supported
+> +	beaglebone revisions; each node in should have the
+> +	following properties:
+> +	- board-name: The board name stored in the baseboard
+> +		eeprom.
+
+If it is stored in the baseboard eeprom, then why does it need to appear
+in the .dtb?
+
+> +	- compatible-name: The name which will be used for
+> +		matching compatible capes.
+
+What is the matching logic for this compatible capes? How does it get
+used?
+
+> +
+> +- slots: node containing a list of slot nodes (which in the beaglebone
+> +	case correspond to I2C addresses for dynamically probed capes,
+> +	or an override slot definition for hardcoded capes.
+> +	- eeprom: Contains the phandle beaglebone's cape i2c eeprom.
+> +
+> +	It is possible to define override slots that will be activated
+> +	when the baseboard matches, and/or if supplied on the kernel command
+> +	line and/or when dynamically requested on runtime.
+> +	In that case the slot is marked with
+> +	- ti,cape-override: Marks a slot override.
+> +	- compatible: any of the "runtime", "kernel", or any compatible-name
+> +	  on a matching baseboardmap node.
+> +	- Any of the eeprom-format-revision, board-name, version, manufacturer,
+> +	  part-number, number-of-pins, serial-number, pin-usage, vdd-3v3exp,
+> +	  vdd-5v, sys-5v, dc-supplied properties which fill in the simulated
+> +	  cape's EEPROM fields. The part-number field is required, the rest
+> +	  are optional taking into default values.
+
+I could use some help understanding the use-case for the override slots.
+It isn't clear to me how the override is intended to work. Can you
+describe exactly what happens when an override slot is defined? Do
+override slots replace detected slots, or are they separate?
+
+> +
+> +- capemaps: node contains list of cape mappings, which allow converting
+> +	from a part-number & version tuple to the filename of the dtbo file.
+> +	- part-number: part number contained in the EEPROM
+> +	- version node containing a
+> +		- version: specific version to map to
+> +		- dtbo: name of the dtbo file 
+
+I think you'd be better off here defining a direct 1:1 mapping from
+board name + revision to dtb filename. Maintaining a list of mappings in
+the dtb file means it needs to be updated when new capes are created. It
+would be nicer to drop the new overlay in the root filesystem (or initrd
+if that is more convenient) and have the kernel know when to pick it up.
+
+> +
+> +Example:
+> +bone_capemgr {
+> +	compatible = "ti,bone-capemgr";
+> +	status = "okay";
+> +
+> +	eeprom = <&baseboard_eeprom>;
+> +
+> +	baseboardmaps {
+> +		baseboard_beaglebone: board@0 {
+> +			board-name = "A335BONE";
+> +			compatible-name = "ti,beaglebone";
+> +		};
+> +	};
+> +
+> +	slots {
+> +		slot@0 {
+> +			eeprom = <&cape_eeprom0>;
+> +		};
+> +
+> +		slot@1 {
+> +			eeprom = <&cape_eeprom1>;
+> +		};
+> +
+> +		slot@2 {
+> +			eeprom = <&cape_eeprom2>;
+> +		};
+> +
+> +		slot@3 {
+> +			eeprom = <&cape_eeprom3>;
+> +		};
+> +	};
+> +
+> +	/* mapping between board names and dtb objects */
+> +	capemaps {
+> +		/* Weather cape */
+> +		cape@0 {
+> +			part-number = "BB-BONE-WTHR-01";
+> +			version@00A0 {
+> +				version = "00A0";
+> +				dtbo = "cape-bone-weather-00A0.dtbo";
+> +			};
+> +		};
+> +	};
+> +};
+> +
+> +Example of the override syntax when used on a bone compatible foo board.
+> +
+> +{
+> +	...
+> +
+> +	baseboardmaps {
+> +		...
+> +		baseboard_beaglebone: board@0 {
+> +			board-name = "A335FOO";
+> +			compatible-name = "ti,foo";
+> +		};
+> +
+> +		slot@6 {
+> +			ti,cape-override;
+> +			compatible = "ti,foo";
+> +			board-name = "FOO-hardcoded";
+> +			version = "00A0";
+> +			manufacturer = "Texas Instruments";
+> +			part-number = "BB-BONE-FOO-01";
+> +		};
+> +	};
+> +
+> +};
+> +	
+> -- 
+> 1.7.12
 > 
-> However, I wonder if a dedicated daemon is really the best mechanism.
-> Perhaps you can use uevents instead, and trigger the freeze/thaw with
-> udev rules?
 
-I need to be able to return errors back from the freeze/thaw operations.
-
-Regards,
-
-K. Y
-
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
