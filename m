@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934903Ab3CZPum (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:50:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53833 "EHLO
+	id S965072Ab3CZPWn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:22:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53783 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965082Ab3CZPWq (ORCPT
+	with ESMTP id S965039Ab3CZPWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:46 -0400
+	Tue, 26 Mar 2013 11:22:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Guo Chao <yan@linux.vnet.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "M. Hindess" <hindessm@uk.ibm.com>,
+        Nikanth Karthikesan <knikanth@suse.de>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 070/150] drm/i915: bounds check execbuffer relocation count
-Date: Tue, 26 Mar 2013 15:19:29 +0000
-Message-Id: <1364311249-14454-71-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 026/150] loopdev: remove an user triggerable oops
+Date: Tue, 26 Mar 2013 15:18:45 +0000
+Message-Id: <1364311249-14454-27-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,56 +31,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Guo Chao <yan@linux.vnet.ibm.com>
 
-commit 3118a4f652c7b12c752f3222af0447008f9b2368 upstream.
+commit b1a6650406875b9097a032eed89af50682fe1160 upstream.
 
-It is possible to wrap the counter used to allocate the buffer for
-relocation copies. This could lead to heap writing overflows.
+When loopdev is built as module and we pass an invalid parameter,
+loop_init() will return directly without deregister misc device, which
+will cause an oops when insert loop module next time because we left some
+garbage in the misc device list.
 
-CVE-2013-0913
+Test case:
+sudo modprobe loop max_part=1024
+(failed due to invalid parameter)
+sudo modprobe loop
+(oops)
 
-v3: collapse test, improve comment
-v2: move check into validate_exec_list
+Clean up nicely to avoid such oops.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: Pinkie Pie
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ luis: adjust context ]
+Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: M. Hindess <hindessm@uk.ibm.com>
+Cc: Nikanth Karthikesan <knikanth@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_gem_execbuffer.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/block/loop.c | 22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-index fadd6d6..0f27a1f 100644
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -941,15 +941,20 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
- 		   int count)
- {
- 	int i;
-+	int relocs_total = 0;
-+	int relocs_max = INT_MAX / sizeof(struct drm_i915_gem_relocation_entry);
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 11e702c..a77d9a5 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1833,11 +1833,15 @@ static int __init loop_init(void)
+ 		max_part = (1UL << part_shift) - 1;
+ 	}
  
- 	for (i = 0; i < count; i++) {
- 		char __user *ptr = (char __user *)(uintptr_t)exec[i].relocs_ptr;
- 		int length; /* limited by fault_in_pages_readable() */
+-	if ((1UL << part_shift) > DISK_MAX_PARTS)
+-		return -EINVAL;
++	if ((1UL << part_shift) > DISK_MAX_PARTS) {
++		err = -EINVAL;
++		goto misc_out;
++	}
  
--		/* First check for malicious input causing overflow */
--		if (exec[i].relocation_count >
--		    INT_MAX / sizeof(struct drm_i915_gem_relocation_entry))
-+		/* First check for malicious input causing overflow in
-+		 * the worst case where we need to allocate the entire
-+		 * relocation tree as a single array.
-+		 */
-+		if (exec[i].relocation_count > relocs_max - relocs_total)
- 			return -EINVAL;
-+		relocs_total += exec[i].relocation_count;
+-	if (max_loop > 1UL << (MINORBITS - part_shift))
+-		return -EINVAL;
++	if (max_loop > 1UL << (MINORBITS - part_shift)) {
++		err = -EINVAL;
++		goto misc_out;
++	}
  
- 		length = exec[i].relocation_count *
- 			sizeof(struct drm_i915_gem_relocation_entry);
+ 	/*
+ 	 * If max_loop is specified, create that many devices upfront.
+@@ -1855,8 +1859,10 @@ static int __init loop_init(void)
+ 		range = 1UL << MINORBITS;
+ 	}
+ 
+-	if (register_blkdev(LOOP_MAJOR, "loop"))
+-		return -EIO;
++	if (register_blkdev(LOOP_MAJOR, "loop")) {
++		err = -EIO;
++		goto misc_out;
++	}
+ 
+ 	blk_register_region(MKDEV(LOOP_MAJOR, 0), range,
+ 				  THIS_MODULE, loop_probe, NULL, NULL);
+@@ -1869,6 +1875,10 @@ static int __init loop_init(void)
+ 
+ 	printk(KERN_INFO "loop: module loaded\n");
+ 	return 0;
++
++misc_out:
++	misc_deregister(&loop_misc);
++	return err;
+ }
+ 
+ static int loop_exit_cb(int id, void *ptr, void *data)
 -- 
 1.8.1.2
 
