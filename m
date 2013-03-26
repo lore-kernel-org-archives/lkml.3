@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704Ab3CZQyB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:54:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16580 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751336Ab3CZQx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:53:59 -0400
-Date: Tue, 26 Mar 2013 17:54:33 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, rostedt@goodmis.org,
-        akpm@linux-foundation.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [tip:sched/core] sched: Lower chances of cputime scaling overflow
-Message-ID: <20130326165433.GC2029@redhat.com>
-References: <tip-d9a3c9823a2e6a543eb7807fb3d15d8233817ec5@git.kernel.org>
- <20130326140147.GB2029@redhat.com>
- <CAFTL4hyJxwh056=bTsSFcpZ7QLRsvsGbni=ueUHE6c1n8dmQ7Q@mail.gmail.com>
+	id S1751473Ab3CZQyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:54:55 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:44832 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245Ab3CZQyx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 12:54:53 -0400
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Cc: Pavel Machek <pavel@ucw.cz>, Alan Cox <alan@linux.intel.com>,
+        linux-input@vger.kernel.org, jkosina@suse.cz,
+        George Spelvin <linux@horizon.com>, chris@the-brannons.com,
+        gregkh@linuxfoundation.org, jslaby@suse.cz,
+        linux-kernel@vger.kernel.org
+Subject: Re: Caps lock XOR on multiple keyboards?
+References: <20121203211911.20156.qmail@science.horizon.com>
+	<20121203235848.04228689@bob.linux.org.uk>
+	<20130324103018.GA4156@amd.pavel.ucw.cz>
+	<20130324223924.GI6234@type.youpi.perso.aquilenet.fr>
+Date: Tue, 26 Mar 2013 17:54:47 +0100
+In-Reply-To: <20130324223924.GI6234@type.youpi.perso.aquilenet.fr> (Samuel
+	Thibault's message of "Sun, 24 Mar 2013 23:39:24 +0100")
+Message-ID: <87ip4e85k8.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hyJxwh056=bTsSFcpZ7QLRsvsGbni=ueUHE6c1n8dmQ7Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 03:19:25PM +0100, Frederic Weisbecker wrote:
-> I starred at that code for quite some time already and I can't come up
-> with a better solution.
-> 
-> Of course 128 bits ops are very expensive, so to help you evaluating
-> the situation, this is going to happen on every call to
-> task_cputime_adjusted() and thread_group_adjusted(), namely:
-> 
-> * Some proc files read
-> * sys_times()
-> * thread group exit
+>>>>> "Samuel" == Samuel Thibault <samuel.thibault@ens-lyon.org> writes:
 
-I need to think if we can get rid of thread_group_cputime_adjusted()
-at exit(), perhaps this is possible without causing problems.
+ Samuel> Pavel Machek, le Sun 24 Mar 2013 11:30:18 +0100, a écrit :
+ >> There is patch to drive keyboard LEDs through LED subsystem, perhaps
+ >> that would be good idea?
 
-Div128 is optimized if higher 64-bits are zeros. 128 bit multiplication
-can be avoided if we are sure that 64bit mul will not overflow, for
-example:
+ Samuel> My patch won't fix the issue for Xorg, but it'd still be a good
+ Samuel> thing to at last apply it :)
 
-if (ffs(stime) + ffs(rtime) < 64)
-	scale_64()
-else
-	scale_128()
+Agreed.
 
-Basically 99.9% of processes will go scale_64() path. Fix is only
-needed for processes that utilize lot of CPU time for long period,
-hence have big stime and rtime values, what is not common.
-
-I'm thinking also about remove cputime scaling. Obviously this would
-be the best regarding performance. I think we could avoid multiplication
-in kernel, this can be done in user-space if we export rtime to it.
-So top could be modified to do cputime scaling by itself. In that way
-we will avoid this top hiding "exploit", but also precision of times(2)
-syscall values will get worse (I think there are lot of programs that
-use this call and they might expect stime/utime are precise).
-
-Stanislaw
-
+-- 
+Bye, Peter Korsgaard
