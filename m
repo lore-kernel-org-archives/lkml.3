@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab3CZXLZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:11:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53391 "EHLO
+	id S1756777Ab3CZXLn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:11:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53386 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756777Ab3CZXCE (ORCPT
+	with ESMTP id S1756260Ab3CZXCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 19:02:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Burgess <jason@jacknife2.dns2go.com>,
-        Yan Li <elliot.li.tech@gmail.com>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [ 31/49] cifs: ignore everything in SPNEGO blob after mechTypes
-Date: Tue, 26 Mar 2013 16:01:28 -0700
-Message-Id: <20130326225842.786215137@linuxfoundation.org>
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 30/49] mm/hugetlb: fix total hugetlbfs pages count when using memory overcommit accouting
+Date: Tue, 26 Mar 2013 16:01:27 -0700
+Message-Id: <20130326225842.674373551@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -28,97 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-commit f853c616883a8de966873a1dab283f1369e275a1 upstream.
+commit d00285884c0892bb1310df96bce6056e9ce9b9d9 upstream.
 
-We've had several reports of people attempting to mount Windows 8 shares
-and getting failures with a return code of -EINVAL. The default sec=
-mode changed recently to sec=ntlmssp. With that, we expect and parse a
-SPNEGO blob from the server in the NEGOTIATE reply.
+hugetlb_total_pages is used for overcommit calculations but the current
+implementation considers only the default hugetlb page size (which is
+either the first defined hugepage size or the one specified by
+default_hugepagesz kernel boot parameter).
 
-The current decode_negTokenInit function first parses all of the
-mechTypes and then tries to parse the rest of the negTokenInit reply.
-The parser however currently expects a mechListMIC or nothing to follow the
-mechTypes, but Windows 8 puts a mechToken field there instead to carry
-some info for the new NegoEx stuff.
+If the system is configured for more than one hugepage size, which is
+possible since commit a137e1cc6d6e ("hugetlbfs: per mount huge page
+sizes") then the overcommit estimation done by __vm_enough_memory()
+(resp.  shown by meminfo_proc_show) is not precise - there is an
+impression of more available/allowed memory.  This can lead to an
+unexpected ENOMEM/EFAULT resp.  SIGSEGV when memory is accounted.
 
-In practice, we don't do anything with the fields after the mechTypes
-anyway so I don't see any real benefit in continuing to parse them.
-This patch just has the kernel ignore the fields after the mechTypes.
-We'll probably need to reinstate some of this if we ever want to support
-NegoEx.
+Testcase:
+  boot: hugepagesz=1G hugepages=1
+  the default overcommit ratio is 50
+  before patch:
 
-Reported-by: Jason Burgess <jason@jacknife2.dns2go.com>
-Reported-by: Yan Li <elliot.li.tech@gmail.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+    egrep 'CommitLimit' /proc/meminfo
+    CommitLimit:     55434168 kB
+
+  after patch:
+
+    egrep 'CommitLimit' /proc/meminfo
+    CommitLimit:     54909880 kB
+
+[akpm@linux-foundation.org: coding-style tweak]
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/asn1.c |   53 +++++------------------------------------------------
- 1 file changed, 5 insertions(+), 48 deletions(-)
+ mm/hugetlb.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/asn1.c
-+++ b/fs/cifs/asn1.c
-@@ -614,53 +614,10 @@ decode_negTokenInit(unsigned char *secur
- 		}
- 	}
- 
--	/* mechlistMIC */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		/* Check if we have reached the end of the blob, but with
--		   no mechListMic (e.g. NTLMSSP instead of KRB5) */
--		if (ctx.error == ASN1_ERR_DEC_EMPTY)
--			goto decode_negtoken_exit;
--		cFYI(1, "Error decoding last part negTokenInit exit3");
--		return 0;
--	} else if ((cls != ASN1_CTX) || (con != ASN1_CON)) {
--		/* tag = 3 indicating mechListMIC */
--		cFYI(1, "Exit 4 cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--		return 0;
--	}
--
--	/* sequence */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		cFYI(1, "Error decoding last part negTokenInit exit5");
--		return 0;
--	} else if ((cls != ASN1_UNI) || (con != ASN1_CON)
--		   || (tag != ASN1_SEQ)) {
--		cFYI(1, "cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--	}
--
--	/* sequence of */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		cFYI(1, "Error decoding last part negTokenInit exit 7");
--		return 0;
--	} else if ((cls != ASN1_CTX) || (con != ASN1_CON)) {
--		cFYI(1, "Exit 8 cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--		return 0;
--	}
--
--	/* general string */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		cFYI(1, "Error decoding last part negTokenInit exit9");
--		return 0;
--	} else if ((cls != ASN1_UNI) || (con != ASN1_PRI)
--		   || (tag != ASN1_GENSTR)) {
--		cFYI(1, "Exit10 cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--		return 0;
--	}
--	cFYI(1, "Need to call asn1_octets_decode() function for %s",
--		ctx.pointer);	/* is this UTF-8 or ASCII? */
--decode_negtoken_exit:
-+	/*
-+	 * We currently ignore anything at the end of the SPNEGO blob after
-+	 * the mechTypes have been parsed, since none of that info is
-+	 * used at the moment.
-+	 */
- 	return 1;
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2006,8 +2006,12 @@ int hugetlb_report_node_meminfo(int nid,
+ /* Return the number pages of memory we physically have, in PAGE_SIZE units. */
+ unsigned long hugetlb_total_pages(void)
+ {
+-	struct hstate *h = &default_hstate;
+-	return h->nr_huge_pages * pages_per_huge_page(h);
++	struct hstate *h;
++	unsigned long nr_total_pages = 0;
++
++	for_each_hstate(h)
++		nr_total_pages += h->nr_huge_pages * pages_per_huge_page(h);
++	return nr_total_pages;
  }
+ 
+ static int hugetlb_acct_memory(struct hstate *h, long delta)
 
 
