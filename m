@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934858Ab3CZPrx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:47:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53876 "EHLO
+	id S934881Ab3CZPsa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:48:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53869 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965131Ab3CZPWy (ORCPT
+	with ESMTP id S965125Ab3CZPWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:54 -0400
+	Tue, 26 Mar 2013 11:22:53 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Oliver Neukum <oneukum@suse.de>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Frederik Himpe <fhimpe@vub.ac.be>, David Haerdeman <david@hardeman.nu>,
-        Alan Stern <stern@rowland.harvard.edu>, Hannes Reinecke <hare@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 073/150] USB: xhci: correctly enable interrupts
-Date: Tue, 26 Mar 2013 15:19:32 +0000
-Message-Id: <1364311249-14454-74-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 077/150] drm/radeon: add support for Richland APUs
+Date: Tue, 26 Mar 2013 15:19:36 +0000
+Message-Id: <1364311249-14454-78-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -31,104 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Reinecke <hare@suse.de>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 00eed9c814cb8f281be6f0f5d8f45025dc0a97eb upstream.
+commit e4d170633fde379f39a90f8a5e7eb619b5d1144d upstream.
 
-xhci has its own interrupt enabling routine, which will try to
-use MSI-X/MSI if present. So the usb core shouldn't try to enable
-legacy interrupts; on some machines the xhci legacy IRQ setting
-is invalid.
+Richland APUs are a new version of the Trinity APUs
+with performance and power management improvements.
 
-v3: Be careful to not break XHCI_BROKEN_MSI workaround (by trenn)
-
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Oliver Neukum <oneukum@suse.de>
-Cc: Thomas Renninger <trenn@suse.de>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Frederik Himpe <fhimpe@vub.ac.be>
-Cc: David Haerdeman <david@hardeman.nu>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reviewed-by: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reviewed-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/core/hcd-pci.c | 23 ++++++++++++++---------
- drivers/usb/host/xhci.c    |  3 ++-
- 2 files changed, 16 insertions(+), 10 deletions(-)
+ drivers/gpu/drm/radeon/ni.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
-index 622b4a4..2b487d4 100644
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -173,6 +173,7 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	struct hc_driver	*driver;
- 	struct usb_hcd		*hcd;
- 	int			retval;
-+	int			hcd_irq = 0;
- 
- 	if (usb_disabled())
- 		return -ENODEV;
-@@ -187,15 +188,19 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 		return -ENODEV;
- 	dev->current_state = PCI_D0;
- 
--	/* The xHCI driver supports MSI and MSI-X,
--	 * so don't fail if the BIOS doesn't provide a legacy IRQ.
-+	/*
-+	 * The xHCI driver has its own irq management
-+	 * make sure irq setup is not touched for xhci in generic hcd code
- 	 */
--	if (!dev->irq && (driver->flags & HCD_MASK) != HCD_USB3) {
--		dev_err(&dev->dev,
--			"Found HC with no IRQ.  Check BIOS/PCI %s setup!\n",
--			pci_name(dev));
--		retval = -ENODEV;
--		goto disable_pci;
-+	if ((driver->flags & HCD_MASK) != HCD_USB3) {
-+		if (!dev->irq) {
-+			dev_err(&dev->dev,
-+			"Found HC with no IRQ. Check BIOS/PCI %s setup!\n",
-+				pci_name(dev));
-+			retval = -ENODEV;
-+			goto disable_pci;
-+		}
-+		hcd_irq = dev->irq;
- 	}
- 
- 	hcd = usb_create_hcd(driver, &dev->dev, pci_name(dev));
-@@ -245,7 +250,7 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 
- 	pci_set_master(dev);
- 
--	retval = usb_add_hcd(hcd, dev->irq, IRQF_SHARED);
-+	retval = usb_add_hcd(hcd, hcd_irq, IRQF_SHARED);
- 	if (retval != 0)
- 		goto unmap_registers;
- 	set_hs_companion(dev, hcd);
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 7002b67..23a0091 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -350,7 +350,7 @@ static int xhci_try_enable_msi(struct usb_hcd *hcd)
- 	 * generate interrupts.  Don't even try to enable MSI.
- 	 */
- 	if (xhci->quirks & XHCI_BROKEN_MSI)
--		return 0;
-+		goto legacy_irq;
- 
- 	/* unregister the legacy interrupt */
- 	if (hcd->irq)
-@@ -371,6 +371,7 @@ static int xhci_try_enable_msi(struct usb_hcd *hcd)
- 		return -EINVAL;
- 	}
- 
-+ legacy_irq:
- 	/* fall back to legacy interrupt*/
- 	ret = request_irq(pdev->irq, &usb_hcd_irq, IRQF_SHARED,
- 			hcd->irq_descr, hcd);
+diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
+index c3abd25..0aa705e 100644
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -466,13 +466,19 @@ static void cayman_gpu_init(struct radeon_device *rdev)
+ 		    (rdev->pdev->device == 0x9907) ||
+ 		    (rdev->pdev->device == 0x9908) ||
+ 		    (rdev->pdev->device == 0x9909) ||
++		    (rdev->pdev->device == 0x990B) ||
++		    (rdev->pdev->device == 0x990C) ||
++		    (rdev->pdev->device == 0x990F) ||
+ 		    (rdev->pdev->device == 0x9910) ||
+-		    (rdev->pdev->device == 0x9917)) {
++		    (rdev->pdev->device == 0x9917) ||
++		    (rdev->pdev->device == 0x9999)) {
+ 			rdev->config.cayman.max_simds_per_se = 6;
+ 			rdev->config.cayman.max_backends_per_se = 2;
+ 		} else if ((rdev->pdev->device == 0x9903) ||
+ 			   (rdev->pdev->device == 0x9904) ||
+ 			   (rdev->pdev->device == 0x990A) ||
++			   (rdev->pdev->device == 0x990D) ||
++			   (rdev->pdev->device == 0x990E) ||
+ 			   (rdev->pdev->device == 0x9913) ||
+ 			   (rdev->pdev->device == 0x9918)) {
+ 			rdev->config.cayman.max_simds_per_se = 4;
+@@ -481,6 +487,9 @@ static void cayman_gpu_init(struct radeon_device *rdev)
+ 			   (rdev->pdev->device == 0x9990) ||
+ 			   (rdev->pdev->device == 0x9991) ||
+ 			   (rdev->pdev->device == 0x9994) ||
++			   (rdev->pdev->device == 0x9995) ||
++			   (rdev->pdev->device == 0x9996) ||
++			   (rdev->pdev->device == 0x999A) ||
+ 			   (rdev->pdev->device == 0x99A0)) {
+ 			rdev->config.cayman.max_simds_per_se = 3;
+ 			rdev->config.cayman.max_backends_per_se = 1;
 -- 
 1.8.1.2
 
