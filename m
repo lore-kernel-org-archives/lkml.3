@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759578Ab3CZIsf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 04:48:35 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:53285 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759426Ab3CZIsd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 04:48:33 -0400
-Message-ID: <515160D3.5020908@stericsson.com>
-Date: Tue, 26 Mar 2013 09:48:19 +0100
-From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1759595Ab3CZIt5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 04:49:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34475 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755029Ab3CZItz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 04:49:55 -0400
+Date: Tue, 26 Mar 2013 09:49:52 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/10] migrate: make core migration code aware of hugepage
+Message-ID: <20130326084952.GK2295@dhcp22.suse.cz>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1363983835-20184-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130325105701.GS2154@dhcp22.suse.cz>
+ <1364272415-zvaphow7-mutt-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] regulator: ab8500: Don't update is_enabled flag in
- error paths
-References: <1364285594.27005.2.camel@phoenix>
-In-Reply-To: <1364285594.27005.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364272415-zvaphow7-mutt-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2013 09:13 AM, Axel Lin wrote:
-> This avoid setting is_enabled flag to wrong status if enable/disable fails.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Looks good to me, thanks.
+On Tue 26-03-13 00:33:35, Naoya Horiguchi wrote:
+> On Mon, Mar 25, 2013 at 11:57:01AM +0100, Michal Hocko wrote:
+> > On Fri 22-03-13 16:23:47, Naoya Horiguchi wrote:
+[...]
+> > > +int migrate_movable_pages(struct list_head *from, new_page_t get_new_page,
+> > > +			unsigned long private,
+> > > +			enum migrate_mode mode, int reason)
+> > > +{
+> > > +	int err = 0;
+> > > +
+> > > +	if (!list_empty(from)) {
+> > > +		err = migrate_pages(from, get_new_page, private, mode, reason);
+> > > +		if (err)
+> > > +			putback_movable_pages(from);
+> > > +	}
+> > > +	return err;
+> > > +}
+> > > +
+> >
+> > There doesn't seem to be any caller for this function. Please move it to
+> > the patch which uses it.
+> 
+> I would do like that if there's only one user of this function, but I thought
+> that it's better to separate this part as changes of common code
+> because this function is commonly used by multiple users which are added by
+> multiple patches later in this series.
 
-Acked-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-> ---
-> v2: Just make the coding style consist with rest of the code.
->
->   drivers/regulator/ab8500.c |    8 ++++++--
->   1 file changed, 6 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-> index 12e2740..4a70323 100644
-> --- a/drivers/regulator/ab8500.c
-> +++ b/drivers/regulator/ab8500.c
-> @@ -117,9 +117,11 @@ static int ab8500_regulator_enable(struct regulator_dev *rdev)
->   	ret = abx500_mask_and_set_register_interruptible(info->dev,
->   		info->update_bank, info->update_reg,
->   		info->update_mask, info->update_val);
-> -	if (ret < 0)
-> +	if (ret < 0) {
->   		dev_err(rdev_get_dev(rdev),
->   			"couldn't set enable bits for regulator\n");
-> +		return ret;
-> +	}
->   
->   	info->is_enabled = true;
->   
-> @@ -144,9 +146,11 @@ static int ab8500_regulator_disable(struct regulator_dev *rdev)
->   	ret = abx500_mask_and_set_register_interruptible(info->dev,
->   		info->update_bank, info->update_reg,
->   		info->update_mask, 0x0);
-> -	if (ret < 0)
-> +	if (ret < 0) {
->   		dev_err(rdev_get_dev(rdev),
->   			"couldn't set disable bits for regulator\n");
-> +		return ret;
-> +	}
->   
->   	info->is_enabled = false;
->   
+Sure there is no hard rule for this. I just find it much easier to
+review if there is a caller of introduced functionality. In this
+particular case I found out only later that many migrate_pages callers
+were changed to use mograte_movable_pages and made the
+putback_movable_pages cleanup inconsistent between the two.
 
+It would help to mention what is the planned future usage of the
+introduced function if you prefer to introduce it without users.
+
+> I mean doing like
+> 
+>   Patch 1: core change
+>   Patch 2: user A (depend on patch 1)
+>   Patch 3: user B (depend on patch 1)
+>   Patch 4: user C (depend on patch 1)
+> 
+> is a bit cleaner and easier in bisecting than doing like
+> 
+>   Patch 1: core change + user A
+>   Patch 2: user B (depend on patch 1)
+>   Patch 3: user C (depend on patch 1)
+> 
+> . I'm not sure which is standard or well-accepted way.
+
+Whatever makes the review easy ;)
+-- 
+Michal Hocko
+SUSE Labs
