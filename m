@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965404Ab3CZPX7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:23:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54120 "EHLO
+	id S934798Ab3CZPbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:31:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54144 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965314Ab3CZPXu (ORCPT
+	with ESMTP id S965398Ab3CZPX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:50 -0400
+	Tue, 26 Mar 2013 11:23:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Ben Hutchings <bhutchings@solarflare.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 127/150] sfc: Fix MCDI structure field lookup
-Date: Tue, 26 Mar 2013 15:20:26 +0000
-Message-Id: <1364311249-14454-128-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 133/150] sfc: Properly sync RX DMA buffer when it is not the last in the page
+Date: Tue, 26 Mar 2013 15:20:32 +0000
+Message-Id: <1364311249-14454-134-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -29,39 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit 0a6e5008a9df678b48f8d4e57601aa4270df6c14 upstream.
+commit 3a68f19d7afb80f548d016effbc6ed52643a8085 upstream.
 
-The least significant bit number (LBN) of a field within an MCDI
-structure is counted from the start of the structure, not the
-containing dword.  In MCDI_ARRAY_FIELD() we need to mask it rather
-than using the usual EFX_DWORD_FIELD() macro.
+We may currently allocate two RX DMA buffers to a page, and only unmap
+the page when the second is completed.  We do not sync the first RX
+buffer to be completed; this can result in packet loss or corruption
+if the last RX buffer completed in a NAPI poll is the first in a page
+and is not DMA-coherent.  (In the middle of a NAPI poll, we will
+handle the following RX completion and unmap the page *before* looking
+at the content of the first buffer.)
 
 Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/sfc/mcdi.h | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/sfc/rx.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/ethernet/sfc/mcdi.h b/drivers/net/ethernet/sfc/mcdi.h
-index 0bdf3e3..96f43d2 100644
---- a/drivers/net/ethernet/sfc/mcdi.h
-+++ b/drivers/net/ethernet/sfc/mcdi.h
-@@ -107,11 +107,13 @@ extern void efx_mcdi_sensor_event(struct efx_nic *efx, efx_qword_t *ev);
- #define MCDI_EVENT_FIELD(_ev, _field)			\
- 	EFX_QWORD_FIELD(_ev, MCDI_EVENT_ ## _field)
- #define MCDI_ARRAY_FIELD(_buf, _field1, _type, _index, _field2)		\
--	EFX_DWORD_FIELD(						\
-+	EFX_EXTRACT_DWORD(						\
- 		*((efx_dword_t *)					\
- 		  (MCDI_ARRAY_PTR(_buf, _field1, _type, _index) +	\
- 		   (MC_CMD_ ## _type ## _TYPEDEF_ ## _field2 ## _OFST & ~3))), \
--		MC_CMD_ ## _type ## _TYPEDEF_ ## _field2)
-+		MC_CMD_ ## _type ## _TYPEDEF_ ## _field2 ## _LBN & 0x1f, \
-+		(MC_CMD_ ## _type ## _TYPEDEF_ ## _field2 ## _LBN & 0x1f) + \
-+		MC_CMD_ ## _type ## _TYPEDEF_ ## _field2 ## _WIDTH - 1)
+diff --git a/drivers/net/ethernet/sfc/rx.c b/drivers/net/ethernet/sfc/rx.c
+index 243e91f..622b0d7 100644
+--- a/drivers/net/ethernet/sfc/rx.c
++++ b/drivers/net/ethernet/sfc/rx.c
+@@ -240,7 +240,8 @@ static int efx_init_rx_buffers_page(struct efx_rx_queue *rx_queue)
+ }
  
- extern void efx_mcdi_print_fwver(struct efx_nic *efx, char *buf, size_t len);
- extern int efx_mcdi_drv_attach(struct efx_nic *efx, bool driver_operating,
+ static void efx_unmap_rx_buffer(struct efx_nic *efx,
+-				struct efx_rx_buffer *rx_buf)
++				struct efx_rx_buffer *rx_buf,
++				unsigned int used_len)
+ {
+ 	if ((rx_buf->flags & EFX_RX_BUF_PAGE) && rx_buf->u.page) {
+ 		struct efx_rx_page_state *state;
+@@ -251,6 +252,10 @@ static void efx_unmap_rx_buffer(struct efx_nic *efx,
+ 				       state->dma_addr,
+ 				       efx_rx_buf_size(efx),
+ 				       PCI_DMA_FROMDEVICE);
++		} else if (used_len) {
++			dma_sync_single_for_cpu(&efx->pci_dev->dev,
++						rx_buf->dma_addr, used_len,
++						DMA_FROM_DEVICE);
+ 		}
+ 	} else if (!(rx_buf->flags & EFX_RX_BUF_PAGE) && rx_buf->u.skb) {
+ 		pci_unmap_single(efx->pci_dev, rx_buf->dma_addr,
+@@ -273,7 +278,7 @@ static void efx_free_rx_buffer(struct efx_nic *efx,
+ static void efx_fini_rx_buffer(struct efx_rx_queue *rx_queue,
+ 			       struct efx_rx_buffer *rx_buf)
+ {
+-	efx_unmap_rx_buffer(rx_queue->efx, rx_buf);
++	efx_unmap_rx_buffer(rx_queue->efx, rx_buf, 0);
+ 	efx_free_rx_buffer(rx_queue->efx, rx_buf);
+ }
+ 
+@@ -538,10 +543,10 @@ void efx_rx_packet(struct efx_rx_queue *rx_queue, unsigned int index,
+ 		goto out;
+ 	}
+ 
+-	/* Release card resources - assumes all RX buffers consumed in-order
+-	 * per RX queue
++	/* Release and/or sync DMA mapping - assumes all RX buffers
++	 * consumed in-order per RX queue
+ 	 */
+-	efx_unmap_rx_buffer(efx, rx_buf);
++	efx_unmap_rx_buffer(efx, rx_buf, len);
+ 
+ 	/* Prefetch nice and early so data will (hopefully) be in cache by
+ 	 * the time we look at it.
 -- 
 1.8.1.2
 
