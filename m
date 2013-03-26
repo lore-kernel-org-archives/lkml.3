@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759212Ab3CZCMM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 22:12:12 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38187 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408Ab3CZCML (ORCPT
+	id S1759234Ab3CZCO4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 22:14:56 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:37547 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758811Ab3CZCOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 22:12:11 -0400
-Date: Tue, 26 Mar 2013 13:11:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stuart Yoder <stuart.yoder@freescale.com>,
-        Chen Gang <gang.chen@asianux.com>, Michael Neuling <mikey@neuling.org>
-Subject: [git pull] Please pull some powerpc build fixes
-Message-Id: <20130326131158.51bab1d55b2cda10ebc4ea4f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__26_Mar_2013_13_11_58_+1100_C=79Lg3SB5UZW33g"
+	Mon, 25 Mar 2013 22:14:54 -0400
+X-IronPort-AV: E=Sophos;i="4.84,909,1355126400"; 
+   d="scan'208";a="32421165"
+Message-ID: <5151049D.5040400@codeaurora.org>
+Date: Mon, 25 Mar 2013 19:14:53 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCHv3 01/10] clocksource: add generic dummy timer driver
+References: <1363198676-30417-1-git-send-email-sboyd@codeaurora.org> <1363198676-30417-2-git-send-email-sboyd@codeaurora.org> <20130321180922.GB10716@e106331-lin.cambridge.arm.com> <514B4DBD.4060403@codeaurora.org> <20130322180305.GB1436@e106331-lin.cambridge.arm.com> <5150800E.2000905@codeaurora.org> <20130325180007.GA4065@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130325180007.GA4065@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__26_Mar_2013_13_11_58_+1100_C=79Lg3SB5UZW33g
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 03/25/13 11:00, Mark Rutland wrote:
+>
+>>> I've spent the last few hours trying to get the dummy_timer driver working on
+>>> tc2 with the sp804 as the broadcast source (with architected timer support
+>>> disabled). It turns out that having dummy timer's rating so low means that it
+>>> won't be selected as the tick device on cpu0 in preference to the sp804, and
+>>> thus won't push the sp804 out of that spot (allowing it to become the broadcast
+>>> source). This leads to boot stalling.
+>> I'm not following here. Why would we want to remove sp804 from the tick
+>> duty?
+> To run an SMP system without local timers, we need the sp804 to be the
+> broadcast timer. Unfortunately the tick device and broadcast timer are mutually
+> exclusive positions, so we need to have a dummy timer knock the sp804 out of
+> tick device duty to enable broadcast.
+>
+> When the dummy timer's rating was 400 (against the sp804's 350), this worked.
+> The sp804 would be registered, and would become cpu0's tick device. Later the
+> dummy would get registered, knocking the sp804 out (whereupon it would get
+> cycled back through tick_check_new_device and become the broadcast timer).
+>
+> With the dummy timer's rating lower, the sp804 stays as cpu0's tick device, all
+> other cpus get dummy timers, but there's no broadcast source, so the system
+> locks up waiting for secondary cpus.
 
-The following changes since commit 3912a677f68f6084e0a7b6a1a29310ac1b083713:
+Ok. Thanks for clearing up my confusion.
 
-  Merge tag 'pinctrl-fixes-for-v3.9' of git://git.kernel.org/pub/scm/linux/=
-kernel/git/linusw/linux-pinctrl (2013-03-24 10:11:29 -0700)
+Like you say, increasing the dummy timer rating seems like a hack. But
+it also sounds like you want to keep the dummy timer driver fully self
+contained. I'm not opposed to calling dummy_timer_register() at the
+bottom of tick_init() if we have to, but it sounds like you don't like that.
 
-are available in the git repository at:
+An alternative would be to push the dummy timer logic into the core
+clockevents layer under the ifdef for arch has broadcast. This is
+probably the correct approach because most devices don't want to have a
+dummy timer sitting around unused. I might be able to take a look at
+this tomorrow.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sfr/next-fixes.git tags/for=
--linus
+One final question, if you remove all other CPUs besides the CPU that is
+servicing the sp804 interrupt do we end up in a situation where the
+sp804 is broadcasting to the dummy tick device? I haven't read through
+all the code yet for that one. I would think tick_switch_to_oneshot()
+would complain on your device?
 
-for you to fetch changes up to f9294e989fa6f2990da155242db03cea1550cac8:
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-  powerpc: define the conditions where the ePAPR idle hcall can be supporte=
-d (2013-03-26 08:47:27 +1100)
-
-----------------------------------------------------------------
-Just a couple of build fixes for powerpc all{mod,yes}config.
-
-Submitted by me since BenH is on vacation.
-
-----------------------------------------------------------------
-Chen Gang (1):
-      powerpc: make additional room in exception vector area
-
-Stuart Yoder (1):
-      powerpc: define the conditions where the ePAPR idle hcall can be supp=
-orted
-
- arch/powerpc/kernel/epapr_paravirt.c |   6 ++
- arch/powerpc/kernel/exceptions-64s.S | 144 +++++++++++++++++--------------=
-----
- 2 files changed, 78 insertions(+), 72 deletions(-)
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__26_Mar_2013_13_11_58_+1100_C=79Lg3SB5UZW33g
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRUQPuAAoJEECxmPOUX5FEA1AP/jvf8f6TA17rjGzV/R8YWVSR
-das8OhXqzp537gsxi2ognn7HQT9cd4YBn49IQP6aDxTNP6xxsnR8AfdXfAWxrUhd
-DWYDk4HssuNKNhyAK+UIqQkvGlc0AP0PBMBfah3YkfxVhbd0AnJ/DJ7CT0ALeE8g
-sFJxqGk8LqzNy3w3XCGQR6+8eYVX1AhR++swQ6SbPu86BcSemoJaihl61HbMrEmj
-/vxYDdcgs1eakH7C3j+3r8UG2eFGq5tvF/OmUuqxQ6zrKo3QMWp+ToKMoILkbTj2
-5JCa0KuAXL8AePal+om2Gnomajcgf+Lmlt/9NEl9OHFPzwKl8bJ9vp0NWKfZUSl0
-7QmYdOCbaetCzzmsX78jJZ1JHc3FjD9NbqbY1jEBgSigqg0mYLvxZTkJhyPLBvzW
-5dHNvV78oR5hOsUPnNFBFYkDnK2ke9hZCqBckggS/Wrjfl5bU4+gazANEiXMqt+q
-q8t5DGYsKYuHnffJ0tsYGrCH+wzSzAb62CsQ5pNxULJ/ICF1Xdxb62DOlum+8yG2
-HaXYT8A196JIqNZp/rcLkFW2dD2nCa6SXx4QGHbFlBPs+a9ltfKozMFTy52A6NfE
-POLgPTnr7FDZMY6CK5iXszFllc9YVxq9/2x6w2X19jo7NaFfBHVAuaFwAtozc6dO
-QtKD8XB+7rt+1y2Nh8KR
-=tWbN
------END PGP SIGNATURE-----
-
---Signature=_Tue__26_Mar_2013_13_11_58_+1100_C=79Lg3SB5UZW33g--
