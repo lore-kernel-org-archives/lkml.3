@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934798Ab3CZPbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:31:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54144 "EHLO
+	id S965429Ab3CZPbz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:31:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54132 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965398Ab3CZPX6 (ORCPT
+	with ESMTP id S965385Ab3CZPXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:58 -0400
+	Tue, 26 Mar 2013 11:23:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Ben Hutchings <bhutchings@solarflare.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 133/150] sfc: Properly sync RX DMA buffer when it is not the last in the page
-Date: Tue, 26 Mar 2013 15:20:32 +0000
-Message-Id: <1364311249-14454-134-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 130/150] sfc: lock TX queues when calling netif_device_detach()
+Date: Tue, 26 Mar 2013 15:20:29 +0000
+Message-Id: <1364311249-14454-131-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,72 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Daniel Pieczko <dpieczko@solarflare.com>
 
-commit 3a68f19d7afb80f548d016effbc6ed52643a8085 upstream.
+commit c2f3b8e3a44b6fe9e36704e30157ebe1a88c08b1 upstream.
 
-We may currently allocate two RX DMA buffers to a page, and only unmap
-the page when the second is completed.  We do not sync the first RX
-buffer to be completed; this can result in packet loss or corruption
-if the last RX buffer completed in a NAPI poll is the first in a page
-and is not DMA-coherent.  (In the middle of a NAPI poll, we will
-handle the following RX completion and unmap the page *before* looking
-at the content of the first buffer.)
+The assertion of netif_device_present() at the top of
+efx_hard_start_xmit() may fail if we don't do this.
 
 Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/sfc/rx.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/sfc/efx.c      |  5 ++---
+ drivers/net/ethernet/sfc/efx.h      | 13 +++++++++++++
+ drivers/net/ethernet/sfc/selftest.c |  2 +-
+ 3 files changed, 16 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/sfc/rx.c b/drivers/net/ethernet/sfc/rx.c
-index 243e91f..622b0d7 100644
---- a/drivers/net/ethernet/sfc/rx.c
-+++ b/drivers/net/ethernet/sfc/rx.c
-@@ -240,7 +240,8 @@ static int efx_init_rx_buffers_page(struct efx_rx_queue *rx_queue)
- }
+diff --git a/drivers/net/ethernet/sfc/efx.c b/drivers/net/ethernet/sfc/efx.c
+index 16c4634..3d49f44 100644
+--- a/drivers/net/ethernet/sfc/efx.c
++++ b/drivers/net/ethernet/sfc/efx.c
+@@ -2224,7 +2224,7 @@ int efx_reset(struct efx_nic *efx, enum reset_type method)
+ 	netif_info(efx, drv, efx->net_dev, "resetting (%s)\n",
+ 		   RESET_TYPE(method));
  
- static void efx_unmap_rx_buffer(struct efx_nic *efx,
--				struct efx_rx_buffer *rx_buf)
-+				struct efx_rx_buffer *rx_buf,
-+				unsigned int used_len)
- {
- 	if ((rx_buf->flags & EFX_RX_BUF_PAGE) && rx_buf->u.page) {
- 		struct efx_rx_page_state *state;
-@@ -251,6 +252,10 @@ static void efx_unmap_rx_buffer(struct efx_nic *efx,
- 				       state->dma_addr,
- 				       efx_rx_buf_size(efx),
- 				       PCI_DMA_FROMDEVICE);
-+		} else if (used_len) {
-+			dma_sync_single_for_cpu(&efx->pci_dev->dev,
-+						rx_buf->dma_addr, used_len,
-+						DMA_FROM_DEVICE);
- 		}
- 	} else if (!(rx_buf->flags & EFX_RX_BUF_PAGE) && rx_buf->u.skb) {
- 		pci_unmap_single(efx->pci_dev, rx_buf->dma_addr,
-@@ -273,7 +278,7 @@ static void efx_free_rx_buffer(struct efx_nic *efx,
- static void efx_fini_rx_buffer(struct efx_rx_queue *rx_queue,
- 			       struct efx_rx_buffer *rx_buf)
- {
--	efx_unmap_rx_buffer(rx_queue->efx, rx_buf);
-+	efx_unmap_rx_buffer(rx_queue->efx, rx_buf, 0);
- 	efx_free_rx_buffer(rx_queue->efx, rx_buf);
- }
+-	netif_device_detach(efx->net_dev);
++	efx_device_detach_sync(efx);
+ 	efx_reset_down(efx, method);
  
-@@ -538,10 +543,10 @@ void efx_rx_packet(struct efx_rx_queue *rx_queue, unsigned int index,
- 		goto out;
- 	}
+ 	rc = efx->type->reset(efx, method);
+@@ -2718,8 +2718,7 @@ static int efx_pm_freeze(struct device *dev)
+ 	struct efx_nic *efx = pci_get_drvdata(to_pci_dev(dev));
  
--	/* Release card resources - assumes all RX buffers consumed in-order
--	 * per RX queue
-+	/* Release and/or sync DMA mapping - assumes all RX buffers
-+	 * consumed in-order per RX queue
+ 	efx->state = STATE_FINI;
+-
+-	netif_device_detach(efx->net_dev);
++	efx_device_detach_sync(efx);
+ 
+ 	efx_stop_all(efx);
+ 	efx_stop_interrupts(efx, false);
+diff --git a/drivers/net/ethernet/sfc/efx.h b/drivers/net/ethernet/sfc/efx.h
+index 70755c9..320cf7b 100644
+--- a/drivers/net/ethernet/sfc/efx.h
++++ b/drivers/net/ethernet/sfc/efx.h
+@@ -162,4 +162,17 @@ extern void efx_link_status_changed(struct efx_nic *efx);
+ extern void efx_link_set_advertising(struct efx_nic *efx, u32);
+ extern void efx_link_set_wanted_fc(struct efx_nic *efx, u8);
+ 
++static inline void efx_device_detach_sync(struct efx_nic *efx)
++{
++	struct net_device *dev = efx->net_dev;
++
++	/* Lock/freeze all TX queues so that we can be sure the
++	 * TX scheduler is stopped when we're done and before
++	 * netif_device_present() becomes false.
++	 */
++	netif_tx_lock(dev);
++	netif_device_detach(dev);
++	netif_tx_unlock(dev);
++}
++
+ #endif /* EFX_EFX_H */
+diff --git a/drivers/net/ethernet/sfc/selftest.c b/drivers/net/ethernet/sfc/selftest.c
+index 5f5b160..4a51ea3 100644
+--- a/drivers/net/ethernet/sfc/selftest.c
++++ b/drivers/net/ethernet/sfc/selftest.c
+@@ -721,7 +721,7 @@ int efx_selftest(struct efx_nic *efx, struct efx_self_tests *tests,
+ 	/* Detach the device so the kernel doesn't transmit during the
+ 	 * loopback test and the watchdog timeout doesn't fire.
  	 */
--	efx_unmap_rx_buffer(efx, rx_buf);
-+	efx_unmap_rx_buffer(efx, rx_buf, len);
+-	netif_device_detach(efx->net_dev);
++	efx_device_detach_sync(efx);
  
- 	/* Prefetch nice and early so data will (hopefully) be in cache by
- 	 * the time we look at it.
+ 	if (efx->type->test_chip) {
+ 		rc_reset = efx->type->test_chip(efx, tests);
 -- 
 1.8.1.2
 
