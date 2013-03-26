@@ -1,111 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807Ab3CZWuI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:50:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52683 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755240Ab3CZWoa (ORCPT
+	id S1755845Ab3CZWuP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:50:15 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:62997 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755815Ab3CZWuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:30 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: [ 92/98] ACPI: Rework acpi_get_child() to be more efficient
-Date: Tue, 26 Mar 2013 15:43:21 -0700
-Message-Id: <20130326224252.009272374@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
-References: <20130326224242.449070940@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 26 Mar 2013 18:50:10 -0400
+From: Grant Grundler <grundler@chromium.org>
+To: Chris Ball <cjb@laptop.org>
+Cc: Doug Anderson <dianders@chromium.org>, Will Newton <will.newton@gmail.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>, Bing Zhao <bzhao@marvell.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Ashok Nagarajan <asnagarajan@chromium.org>,
+        Olof Johansson <olof@lixom.net>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Grant Grundler <grundler@chromium.org>
+Subject: [PATCH] mmc: dw_mmc: rewrite CLKDIV computation
+Date: Tue, 26 Mar 2013 15:50:02 -0700
+Message-Id: <1364338202-10311-1-git-send-email-grundler@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+Last year Seungwon Jeon (Samsung) fixed a bug in CLKDIV computation.
+But when debugging a related issue (http://crbug.com/221828) I found
+the code unreadable.  This rewrite simplifies the computation and
+explains each step.
 
-------------------
-
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-
-commit 33f767d767e9a684e9cd60704d4c049a2014c8d5 upstream.
-
-Observe that acpi_get_child() doesn't need to use the helper
-struct acpi_find_child structure and change it to work without it.
-Also, using acpi_get_object_info() to get the output of _ADR for the
-given device is overkill, because that function does much more than
-just evaluating _ADR (let alone the additional memory allocation
-done by it).
-
-Moreover, acpi_get_child() doesn't need to loop any more once it has
-found a matching handle, so make it stop in that case.  To prevent
-the results from changing, make it use do_acpi_find_child() as
-a post-order callback.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
+Signed-off-by: Grant Grundler <grundler@chromium.org>
 ---
- drivers/acpi/glue.c |   33 ++++++++++++---------------------
- 1 file changed, 12 insertions(+), 21 deletions(-)
+Tested on Samsung Series 3 Chromebook (exynos 5250 chipset) using
+ChromeOS 3.4 kernel (not 3.9-rc3 which this patch is based against).
 
---- a/drivers/acpi/glue.c
-+++ b/drivers/acpi/glue.c
-@@ -95,40 +95,31 @@ static int acpi_find_bridge_device(struc
- 	return ret;
- }
+I've written a test program to confirm this patch generates the
+same correct values and will share that separately.
+
+ drivers/mmc/host/dw_mmc.c | 22 +++++++++++++++-------
+ 1 file changed, 15 insertions(+), 7 deletions(-)
+
+
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 9834221..6fdf55b 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -631,14 +631,22 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
  
--/* Get device's handler per its address under its parent */
--struct acpi_find_child {
--	acpi_handle handle;
--	u64 address;
--};
+ 	if (slot->clock != host->current_speed || force_clkinit) {
+ 		div = host->bus_hz / slot->clock;
+-		if (host->bus_hz % slot->clock && host->bus_hz > slot->clock)
+-			/*
+-			 * move the + 1 after the divide to prevent
+-			 * over-clocking the card.
++		if (host->bus_hz > slot->clock) {
++			/* don't overclock due to integer math losses */
++			if ((div * slot->clock) < host->bus_hz)
++				div++;
++
++			/* don't overclock due to resolution of HW */
++			if (div & 1)
++				div++;
++
++			/* See 6.2.3 CLKDIV in "Mobile Storage Host Databook"
++			 * Look for dwc_mobile_storage_db.pdf from Synopsys.
++			 * CLKDIV value 0 means divisor 1, val 1 -> 2, ...
+ 			 */
+-			div += 1;
 -
--static acpi_status
--do_acpi_find_child(acpi_handle handle, u32 lvl, void *context, void **rv)
-+static acpi_status do_acpi_find_child(acpi_handle handle, u32 lvl_not_used,
-+				      void *addr_p, void **ret_p)
- {
-+	unsigned long long addr;
- 	acpi_status status;
--	struct acpi_device_info *info;
--	struct acpi_find_child *find = context;
+-		div = (host->bus_hz != slot->clock) ? DIV_ROUND_UP(div, 2) : 0;
++			div /= 2;
++		} else
++			div = 0;        /* use bus_hz */
  
--	status = acpi_get_object_info(handle, &info);
--	if (ACPI_SUCCESS(status)) {
--		if ((info->address == find->address)
--			&& (info->valid & ACPI_VALID_ADR))
--			find->handle = handle;
--		kfree(info);
-+	status = acpi_evaluate_integer(handle, METHOD_NAME__ADR, NULL, &addr);
-+	if (ACPI_SUCCESS(status) && addr == *((u64 *)addr_p)) {
-+		*ret_p = handle;
-+		return AE_CTRL_TERMINATE;
- 	}
- 	return AE_OK;
- }
- 
- acpi_handle acpi_get_child(acpi_handle parent, u64 address)
- {
--	struct acpi_find_child find = { NULL, address };
-+	void *ret = NULL;
- 
- 	if (!parent)
- 		return NULL;
--	acpi_walk_namespace(ACPI_TYPE_DEVICE, parent,
--			    1, do_acpi_find_child, NULL, &find, NULL);
--	return find.handle;
--}
- 
-+	acpi_walk_namespace(ACPI_TYPE_DEVICE, parent, 1, NULL,
-+			    do_acpi_find_child, &address, &ret);
-+	return (acpi_handle)ret;
-+}
- EXPORT_SYMBOL(acpi_get_child);
- 
- static int acpi_bind_one(struct device *dev, acpi_handle handle)
-
+ 		dev_info(&slot->mmc->class_dev,
+ 			 "Bus speed (slot %d) = %dHz (slot req %dHz, actual %dHZ"
+-- 
+1.8.1.3
 
