@@ -1,104 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965792Ab3CZQEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:04:45 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:38439 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965279Ab3CZQED (ORCPT
+	id S965752Ab3CZQGt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:06:49 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:33633 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965685Ab3CZQGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:04:03 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-xtensa@linux-xtensa.org
-Subject: [PATCH v3, part4 37/39] mm/xtensa: prepare for removing num_physpages and simplify mem_init()
-Date: Tue, 26 Mar 2013 23:54:56 +0800
-Message-Id: <1364313298-17336-38-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
-References: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
+	Tue, 26 Mar 2013 12:06:45 -0400
+Date: Tue, 26 Mar 2013 11:06:35 -0500
+From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, klebers@linux.vnet.ibm.com
+Subject: [PATCH 02/02] block: removes unused variable.
+Message-ID: <20130326160635.GE7136@oc6784271780.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032616-3620-0000-0000-000001C6C6D7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for removing num_physpages and simplify mem_init().
+From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Chris Zankel <chris@zankel.net>
-Cc: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-xtensa@linux-xtensa.org
-Cc: linux-kernel@vger.kernel.org
----
-Hi all,
-	Sorry for my mistake that my previous patch series has been screwed up.
-So I regenerate a third version and also set up a git tree at:
-	git://github.com/jiangliu/linux.git mem_init
-	Any help to review and test are welcomed!
+Removed unused variable.
 
-	Regards!
-	Gerry
----
- arch/xtensa/mm/init.c |   27 ++-------------------------
- 1 file changed, 2 insertions(+), 25 deletions(-)
+Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+-------------------------------------------------------------------------------
+This patch may have been already submitted but I haven't seen it be applied yet.
+So I am going to go ahead and send the fix so that I am sure there has been a patch
+sent out.
 
-diff --git a/arch/xtensa/mm/init.c b/arch/xtensa/mm/init.c
-index dc6e009..267428e 100644
---- a/arch/xtensa/mm/init.c
-+++ b/arch/xtensa/mm/init.c
-@@ -173,12 +173,8 @@ void __init zones_init(void)
- 
- void __init mem_init(void)
+
+
+diff -uprN -X linux-block/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/dma.c linux-block/drivers/block/rsxx/dma.c
+--- linux-block-vanilla/drivers/block/rsxx/dma.c	2013-03-26 10:02:29.942964930 -0500
++++ linux-block/drivers/block/rsxx/dma.c	2013-03-26 10:02:56.839969991 -0500
+@@ -1056,7 +1056,6 @@ void rsxx_eeh_cancel_dmas(struct rsxx_ca
+ int rsxx_eeh_remap_dmas(struct rsxx_cardinfo *card)
  {
--	unsigned long codesize, reservedpages, datasize, initsize;
--	unsigned long highmemsize, tmp, ram;
--
--	max_mapnr = num_physpages = max_low_pfn - ARCH_PFN_OFFSET;
-+	max_mapnr = max_low_pfn - ARCH_PFN_OFFSET;
- 	high_memory = (void *) __va(max_low_pfn << PAGE_SHIFT);
--	highmemsize = 0;
+ 	struct rsxx_dma *dma;
+-	struct rsxx_dma *tmp;
+ 	int i;
  
- #ifdef CONFIG_HIGHMEM
- #error HIGHGMEM not implemented in init.c
-@@ -186,26 +182,7 @@ void __init mem_init(void)
- 
- 	free_all_bootmem();
- 
--	reservedpages = ram = 0;
--	for (tmp = 0; tmp < max_mapnr; tmp++) {
--		ram++;
--		if (PageReserved(mem_map+tmp))
--			reservedpages++;
--	}
--
--	codesize =  (unsigned long) _etext - (unsigned long) _stext;
--	datasize =  (unsigned long) _edata - (unsigned long) _sdata;
--	initsize =  (unsigned long) __init_end - (unsigned long) __init_begin;
--
--	printk("Memory: %luk/%luk available (%ldk kernel code, %ldk reserved, "
--	       "%ldk data, %ldk init %ldk highmem)\n",
--	       nr_free_pages() << (PAGE_SHIFT-10),
--	       ram << (PAGE_SHIFT-10),
--	       codesize >> 10,
--	       reservedpages << (PAGE_SHIFT-10),
--	       datasize >> 10,
--	       initsize >> 10,
--	       highmemsize >> 10);
-+	mem_init_print_info(NULL);
- }
- 
- #ifdef CONFIG_BLK_DEV_INITRD
--- 
-1.7.9.5
+ 	for (i = 0; i < card->n_targets; i++) {
 
