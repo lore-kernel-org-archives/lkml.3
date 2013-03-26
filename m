@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab3CZWnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:43:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52355 "EHLO
+	id S1757200Ab3CZXqX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:46:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52407 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208Ab3CZWne (ORCPT
+	with ESMTP id S1754387Ab3CZWnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:43:34 -0400
+	Tue, 26 Mar 2013 18:43:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Denis V. Lunev" <den@openvz.org>, Tingwei Liu <tingw.liu@gmail.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 11/98] ipv4: fix definition of FIB_TABLE_HASHSZ
-Date: Tue, 26 Mar 2013 15:42:00 -0700
-Message-Id: <20130326224243.635129189@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 27/98] sfc: Disable soft interrupt handling during efx_device_detach_sync()
+Date: Tue, 26 Mar 2013 15:42:16 -0700
+Message-Id: <20130326224245.262560870@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -29,60 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "Denis V. Lunev" <den@openvz.org>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-[ Upstream commit 5b9e12dbf92b441b37136ea71dac59f05f2673a9 ]
+[ Upstream commit 35205b211c8d17a8a0b5e8926cb7c73e9a7ef1ad ]
 
-a long time ago by the commit
+efx_device_detach_sync() locks all TX queues before marking the device
+detached and thus disabling further TX scheduling.  But it can still
+be interrupted by TX completions which then result in TX scheduling in
+soft interrupt context.  This will deadlock when it tries to acquire
+a TX queue lock that efx_device_detach_sync() already acquired.
 
-  commit 93456b6d7753def8760b423ac6b986eb9d5a4a95
-  Author: Denis V. Lunev <den@openvz.org>
-  Date:   Thu Jan 10 03:23:38 2008 -0800
+To avoid deadlock, we must use netif_tx_{,un}lock_bh().
 
-    [IPV4]: Unify access to the routing tables.
-
-the defenition of FIB_HASH_TABLE size has obtained wrong dependency:
-it should depend upon CONFIG_IP_MULTIPLE_TABLES (as was in the original
-code) but it was depended from CONFIG_IP_ROUTE_MULTIPATH
-
-This patch returns the situation to the original state.
-
-The problem was spotted by Tingwei Liu.
-
-Signed-off-by: Denis V. Lunev <den@openvz.org>
-CC: Tingwei Liu <tingw.liu@gmail.com>
-CC: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/ip_fib.h |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/sfc/efx.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/net/ip_fib.h
-+++ b/include/net/ip_fib.h
-@@ -152,18 +152,16 @@ struct fib_result_nl {
- };
+--- a/drivers/net/ethernet/sfc/efx.h
++++ b/drivers/net/ethernet/sfc/efx.h
+@@ -171,9 +171,9 @@ static inline void efx_device_detach_syn
+ 	 * TX scheduler is stopped when we're done and before
+ 	 * netif_device_present() becomes false.
+ 	 */
+-	netif_tx_lock(dev);
++	netif_tx_lock_bh(dev);
+ 	netif_device_detach(dev);
+-	netif_tx_unlock(dev);
++	netif_tx_unlock_bh(dev);
+ }
  
- #ifdef CONFIG_IP_ROUTE_MULTIPATH
--
- #define FIB_RES_NH(res)		((res).fi->fib_nh[(res).nh_sel])
--
--#define FIB_TABLE_HASHSZ 2
--
- #else /* CONFIG_IP_ROUTE_MULTIPATH */
--
- #define FIB_RES_NH(res)		((res).fi->fib_nh[0])
-+#endif /* CONFIG_IP_ROUTE_MULTIPATH */
- 
-+#ifdef CONFIG_IP_MULTIPLE_TABLES
- #define FIB_TABLE_HASHSZ 256
--
--#endif /* CONFIG_IP_ROUTE_MULTIPATH */
-+#else
-+#define FIB_TABLE_HASHSZ 2
-+#endif
- 
- extern __be32 fib_info_update_nh_saddr(struct net *net, struct fib_nh *nh);
- 
+ #endif /* EFX_EFX_H */
 
 
