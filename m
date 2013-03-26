@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab3CZWwV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:52:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52969 "EHLO
+	id S1756565Ab3CZWxE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:53:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53182 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755859Ab3CZWwO (ORCPT
+	with ESMTP id S1756497Ab3CZWw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:14 -0400
+	Tue, 26 Mar 2013 18:52:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 24/72] sfc: Avoid generating over-length MC_CMD_FLUSH_RX_QUEUES request
-Date: Tue, 26 Mar 2013 15:51:07 -0700
-Message-Id: <20130326224922.189659140@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 63/72] USB: garmin_gps: fix memory leak on disconnect
+Date: Tue, 26 Mar 2013 15:51:46 -0700
+Message-Id: <20130326224926.166520716@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -26,69 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Johan Hovold <jhovold@gmail.com>
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+commit 618aa1068df29c37a58045fe940f9106664153fd upstream.
 
-[ Upstream commit 450783747f42dfa3883920acfad4acdd93ce69af ]
+Remove bogus disconnect test introduced by 95bef012e ("USB: more serial
+drivers writing after disconnect") which prevented queued data from
+being freed on disconnect.
 
-MCDI supports requests up to 252 bytes long, which is only enough to
-pass 63 RX queue IDs to MC_CMD_FLUSH_RX_QUEUES.  However a VF may have
-up to 64 RX queues, and if we try to flush them all we will generate
-an over-length request and BUG() in efx_mcdi_copyin().  Currently
-all VF drivers limit themselves to 32 RX queues, so reducing the
-limit to 63 does no harm.
+The possible IO it was supposed to prevent is long gone.
 
-Also add a BUILD_BUG_ON in efx_mcdi_flush_rxqs() so we remember to
-deal with the same problem there if EFX_MAX_CHANNELS is increased.
-
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/sfc/mcdi.c        |    3 +++
- drivers/net/ethernet/sfc/siena_sriov.c |    7 +++++++
- 2 files changed, 10 insertions(+)
 
---- a/drivers/net/ethernet/sfc/mcdi.c
-+++ b/drivers/net/ethernet/sfc/mcdi.c
-@@ -1168,6 +1168,9 @@ int efx_mcdi_flush_rxqs(struct efx_nic *
- 	__le32 *qid;
- 	int rc, count;
+---
+ drivers/usb/serial/garmin_gps.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+--- a/drivers/usb/serial/garmin_gps.c
++++ b/drivers/usb/serial/garmin_gps.c
+@@ -971,10 +971,7 @@ static void garmin_close(struct usb_seri
+ 	if (!serial)
+ 		return;
  
-+	BUILD_BUG_ON(EFX_MAX_CHANNELS >
-+		     MC_CMD_FLUSH_RX_QUEUES_IN_QID_OFST_MAXNUM);
-+
- 	qid = kmalloc(EFX_MAX_CHANNELS * sizeof(*qid), GFP_KERNEL);
- 	if (qid == NULL)
- 		return -ENOMEM;
---- a/drivers/net/ethernet/sfc/siena_sriov.c
-+++ b/drivers/net/ethernet/sfc/siena_sriov.c
-@@ -21,6 +21,9 @@
- /* Number of longs required to track all the VIs in a VF */
- #define VI_MASK_LENGTH BITS_TO_LONGS(1 << EFX_VI_SCALE_MAX)
+-	mutex_lock(&port->serial->disc_mutex);
+-
+-	if (!port->serial->disconnected)
+-		garmin_clear(garmin_data_p);
++	garmin_clear(garmin_data_p);
  
-+/* Maximum number of RX queues supported */
-+#define VF_MAX_RX_QUEUES 63
-+
- /**
-  * enum efx_vf_tx_filter_mode - TX MAC filtering behaviour
-  * @VF_TX_FILTER_OFF: Disabled
-@@ -578,6 +581,7 @@ static int efx_vfdi_init_rxq(struct efx_
- 	efx_oword_t reg;
+ 	/* shutdown our urbs */
+ 	usb_kill_urb(port->read_urb);
+@@ -983,8 +980,6 @@ static void garmin_close(struct usb_seri
+ 	/* keep reset state so we know that we must start a new session */
+ 	if (garmin_data_p->state != STATE_RESET)
+ 		garmin_data_p->state = STATE_DISCONNECTED;
+-
+-	mutex_unlock(&port->serial->disc_mutex);
+ }
  
- 	if (bad_vf_index(efx, vf_evq) || bad_vf_index(efx, vf_rxq) ||
-+	    vf_rxq >= VF_MAX_RX_QUEUES ||
- 	    bad_buf_count(buf_count, EFX_MAX_DMAQ_SIZE)) {
- 		if (net_ratelimit())
- 			netif_err(efx, hw, efx->net_dev,
-@@ -683,6 +687,9 @@ static int efx_vfdi_fini_all_queues(stru
- 	__le32 *rxqs;
- 	int rc;
  
-+	BUILD_BUG_ON(VF_MAX_RX_QUEUES >
-+		     MC_CMD_FLUSH_RX_QUEUES_IN_QID_OFST_MAXNUM);
-+
- 	rxqs = kmalloc(count * sizeof(*rxqs), GFP_KERNEL);
- 	if (rxqs == NULL)
- 		return VFDI_RC_ENOMEM;
 
 
