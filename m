@@ -1,222 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759384Ab3CZEgT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 00:36:19 -0400
-Received: from mail-qe0-f74.google.com ([209.85.128.74]:51607 "EHLO
-	mail-qe0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752330Ab3CZEgQ (ORCPT
+	id S933185Ab3CZEp1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 00:45:27 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:46928 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754649Ab3CZEpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 00:36:16 -0400
-From: Greg Thelen <gthelen@google.com>
-To: Dave Chinner <david@fromorbit.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] vfs: dcache: cond_resched in shrink_dentry_list
-References: <1364232151-23242-1-git-send-email-gthelen@google.com>
-	<20130325235614.GI6369@dastard>
-	<xr93fvzjgfke.fsf@gthelen.mtv.corp.google.com>
-	<20130326024032.GJ6369@dastard>
-cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 25 Mar 2013 21:36:14 -0700
-Message-ID: <xr934nfyg4ld.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 26 Mar 2013 00:45:25 -0400
+Subject: Re: [PATCH v2] X.509: Support parse long form of length octets in
+ Authority Key Identifier
+From: joeyli <jlee@suse.com>
+To: rusty@rustcorp.com.au, dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, Josh Boyer <jwboyer@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+In-Reply-To: <1363246469-31787-1-git-send-email-jlee@suse.com>
+References: <1363246469-31787-1-git-send-email-jlee@suse.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Mar 2013 12:44:48 +0800
+Message-ID: <1364273088.6899.269.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25 2013, Dave Chinner wrote:
+Hi experts, 
 
-> On Mon, Mar 25, 2013 at 05:39:13PM -0700, Greg Thelen wrote:
->> On Mon, Mar 25 2013, Dave Chinner wrote:
->> > On Mon, Mar 25, 2013 at 10:22:31AM -0700, Greg Thelen wrote:
->> >> Call cond_resched() from shrink_dentry_list() to preserve
->> >> shrink_dcache_parent() interactivity.
->> >> 
->> >> void shrink_dcache_parent(struct dentry * parent)
->> >> {
->> >> 	while ((found = select_parent(parent, &dispose)) != 0)
->> >> 		shrink_dentry_list(&dispose);
->> >> }
->> >> 
->> >> select_parent() populates the dispose list with dentries which
->> >> shrink_dentry_list() then deletes.  select_parent() carefully uses
->> >> need_resched() to avoid doing too much work at once.  But neither
->> >> shrink_dcache_parent() nor its called functions call cond_resched().
->> >> So once need_resched() is set select_parent() will return single
->> >> dentry dispose list which is then deleted by shrink_dentry_list().
->> >> This is inefficient when there are a lot of dentry to process.  This
->> >> can cause softlockup and hurts interactivity on non preemptable
->> >> kernels.
->> >
->> > Hi Greg,
->> >
->> > I can see how this coul dcause problems, but isn't the problem then
->> > that shrink_dcache_parent()/select_parent() itself is mishandling
->> > the need for rescheduling rather than being a problem with
->> > the shrink_dentry_list() implementation?  i.e. select_parent() is
->> > aborting batching based on a need for rescheduling, but then not
->> > doing that itself and assuming that someone else will do the
->> > reschedule for it?
->> >
->> > Perhaps this is a better approach:
->> >
->> > -	while ((found = select_parent(parent, &dispose)) != 0)
->> > +	while ((found = select_parent(parent, &dispose)) != 0) {
->> >                 shrink_dentry_list(&dispose);
->> > +		cond_resched();
->> > +	}
->> >
->> > With this, select_parent() stops batching when a resched is needed,
->> > we dispose of the list as a single batch and only then resched if it
->> > was needed before we go and grab the next batch. That should fix the
->> > "small batch" problem without the potential for changing the
->> > shrink_dentry_list() behaviour adversely for other users....
->> 
->> I considered only modifying shrink_dcache_parent() as you show above.
->> Either approach fixes the problem I've seen.  My initial approach adds
->> cond_resched() deeper into shrink_dentry_list() because I thought that
->> there might a secondary benefit: shrink_dentry_list() would be willing
->> to give up the processor when working on a huge number of dentry.  This
->> could improve interactivity during shrinker and umount.  I don't feel
->> strongly on this and would be willing to test and post the
->> add-cond_resched-to-shrink_dcache_parent approach.
->
-> The shrinker has interactivity problems because of the global
-> dcache_lru_lock, not because of ithe size of the list passed to
-> shrink_dentry_list(). The amount of work that shrink_dentry_list()
-> does here is already bound by the shrinker batch size. Hence in the
-> absence of the RT folk complaining about significant holdoffs I
-> don't think there is an interactivity problem through the shrinker
-> path.
+I didn't this patch merged to any git tree or maybe I missed.
+Where is the right place for send X.509 patch?
 
-No arguments from me.
 
-> As for the unmount path - shrink_dcache_for_umount_subtree() - that
-> doesn't use shrink_dentry_list() and so would need it's own internal
-> calls to cond_resched().  Perhaps it's shrink_dcache_sb() that you
-> are concerned about?  Either way, And there are lots more similar
-> issues in the unmount path such as evict_inodes(), so unless you are
-> going to give every possible path through unmount/remount/bdev
-> invalidation the same treatment then changing shrink_dentry_list()
-> won't significantly improve the interactivity of the system
-> situation in these paths...
+Thanks a lot!
+Joey Lee
 
-Ok.  As stated, I wasn't sure if the cond_resched() in
-shrink_dentry_list() had any appeal.  Apparently it doesn't.  I'll drop
-this approach in favor of the following:
-
---->8---
-
-From: Greg Thelen <gthelen@google.com>
-Date: Sat, 23 Mar 2013 18:25:02 -0700
-Subject: [PATCH] vfs: dcache: cond_resched in shrink_dcache_parent
-
-Call cond_resched() in shrink_dcache_parent() to maintain
-interactivity.
-
-Before this patch:
-
-void shrink_dcache_parent(struct dentry * parent)
-{
-	while ((found = select_parent(parent, &dispose)) != 0)
-		shrink_dentry_list(&dispose);
-}
-
-select_parent() populates the dispose list with dentries which
-shrink_dentry_list() then deletes.  select_parent() carefully uses
-need_resched() to avoid doing too much work at once.  But neither
-shrink_dcache_parent() nor its called functions call cond_resched().
-So once need_resched() is set select_parent() will return single
-dentry dispose list which is then deleted by shrink_dentry_list().
-This is inefficient when there are a lot of dentry to process.  This
-can cause softlockup and hurts interactivity on non preemptable
-kernels.
-
-This change adds cond_resched() in shrink_dcache_parent().  The
-benefit of this is that need_resched() is quickly cleared so that
-future calls to select_parent() are able to efficiently return a big
-batch of dentry.
-
-These additional cond_resched() do not seem to impact performance, at
-least for the workload below.
-
-Here is a program which can cause soft lockup on a if other system
-activity sets need_resched().
-
-	int main()
-	{
-	        struct rlimit rlim;
-	        int i;
-	        int f[100000];
-	        char buf[20];
-	        struct timeval t1, t2;
-	        double diff;
-
-	        /* cleanup past run */
-	        system("rm -rf x");
-
-	        /* boost nfile rlimit */
-	        rlim.rlim_cur = 200000;
-	        rlim.rlim_max = 200000;
-	        if (setrlimit(RLIMIT_NOFILE, &rlim))
-	                err(1, "setrlimit");
-
-	        /* make directory for files */
-	        if (mkdir("x", 0700))
-	                err(1, "mkdir");
-
-	        if (gettimeofday(&t1, NULL))
-	                err(1, "gettimeofday");
-
-	        /* populate directory with open files */
-	        for (i = 0; i < 100000; i++) {
-	                snprintf(buf, sizeof(buf), "x/%d", i);
-	                f[i] = open(buf, O_CREAT);
-	                if (f[i] == -1)
-	                        err(1, "open");
-	        }
-
-	        /* close some of the files */
-	        for (i = 0; i < 85000; i++)
-	                close(f[i]);
-
-	        /* unlink all files, even open ones */
-	        system("rm -rf x");
-
-	        if (gettimeofday(&t2, NULL))
-	                err(1, "gettimeofday");
-
-	        diff = (((double)t2.tv_sec * 1000000 + t2.tv_usec) -
-	                ((double)t1.tv_sec * 1000000 + t1.tv_usec));
-
-	        printf("done: %g elapsed\n", diff/1e6);
-	        return 0;
-	}
-
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
----
- fs/dcache.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/fs/dcache.c b/fs/dcache.c
-index fbfae008..e52c07e 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1230,8 +1230,10 @@ void shrink_dcache_parent(struct dentry * parent)
- 	LIST_HEAD(dispose);
- 	int found;
- 
--	while ((found = select_parent(parent, &dispose)) != 0)
-+	while ((found = select_parent(parent, &dispose)) != 0) {
- 		shrink_dentry_list(&dispose);
-+		cond_resched();
-+	}
- }
- EXPORT_SYMBOL(shrink_dcache_parent);
- 
--- 
-1.8.1.3
+於 四，2013-03-14 於 15:34 +0800，Lee, Chun-Yi 提到：
+> From: Chun-Yi Lee <jlee@suse.com>
+> 
+> Per X.509 spec in 4.2.1.1 section, the structure of Authority Key
+> Identifier Extension is:
+> 
+>    AuthorityKeyIdentifier ::= SEQUENCE {
+>       keyIdentifier             [0] KeyIdentifier           OPTIONAL,
+>       authorityCertIssuer       [1] GeneralNames            OPTIONAL,
+>       authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL  }
+> 
+>    KeyIdentifier ::= OCTET STRING
+> 
+> When a certificate also provides
+> authorityCertIssuer and authorityCertSerialNumber then the length of
+> AuthorityKeyIdentifier SEQUENCE is likely to long form format.
+> e.g.
+>    The example certificate demos/tunala/A-server.pem in openssl source:
+> 
+> X509v3 Authority Key Identifier:
+>     keyid:49:FB:45:72:12:C4:CC:E1:45:A1:D3:08:9E:95:C4:2C:6D:55:3F:17
+>     DirName:/C=NZ/L=Wellington/O=Really Irresponsible Authorisation Authority (RIAA)/OU=Cert-stamping/CN=Jackov al-Trades/emailAddress=none@fake.domain
+>     serial:00
+> 
+> Current parsing rule of OID_authorityKeyIdentifier only take care the
+> short form format, it causes load certificate to modsign_keyring fail:
+> 
+> [   12.061147] X.509: Extension: 47
+> [   12.075121] MODSIGN: Problem loading in-kernel X.509 certificate (-74)
+> 
+> So, this patch add the parsing rule for support long form format against
+> Authority Key Identifier.
+> 
+> v2:
+>  - Removed comma from author's name.
+>  - Moved 'Short Form length' comment inside the if-body.
+>  - Changed the type of sub to size_t.
+>  - Use ASN1_INDEFINITE_LENGTH rather than writing 0x80 and 127.
+>  - Moved the key_len's value assignment before alter v.
+>  - Fixed the typo of octets.
+>  - Add 2 to v before entering the loop for calculate the length.
+>  - Removed the comment of check vlen.
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Josh Boyer <jwboyer@redhat.com>
+> Cc: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Acked-by: David Howells <dhowells@redhat.com>
+> Signed-off-by: Chun-Yi Lee <jlee@suse.com>
+> ---
+>  crypto/asymmetric_keys/x509_cert_parser.c |   55 ++++++++++++++++++++++++----
+>  1 files changed, 47 insertions(+), 8 deletions(-)
+> 
+> diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+> index 7fabc4c..59ab6d2 100644
+> --- a/crypto/asymmetric_keys/x509_cert_parser.c
+> +++ b/crypto/asymmetric_keys/x509_cert_parser.c
+> @@ -373,6 +373,9 @@ int rsa_extract_mpi(void *context, size_t hdrlen,
+>  	return 0;
+>  }
+>  
+> +/* The keyIdentifier in AuthorityKeyIdentifier SEQUENCE is tag(CONT,PRIM,0) */
+> +#define SEQ_TAG_KEYID (ASN1_CONT << 6)
+> +
+>  /*
+>   * Process certificate extensions that are used to qualify the certificate.
+>   */
+> @@ -407,21 +410,57 @@ int x509_process_extension(void *context, size_t hdrlen,
+>  	}
+>  
+>  	if (ctx->last_oid == OID_authorityKeyIdentifier) {
+> +		size_t key_len;
+> +
+>  		/* Get hold of the CA key fingerprint */
+>  		if (vlen < 5)
+>  			return -EBADMSG;
+> -		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)) ||
+> -		    v[1] != vlen - 2 ||
+> -		    v[2] != (ASN1_CONT << 6) ||
+> -		    v[3] != vlen - 4)
+> +
+> +		/* Authority Key Identifier must be a Constructed SEQUENCE */
+> +		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)))
+>  			return -EBADMSG;
+> -		v += 4;
+> -		vlen -= 4;
+>  
+> -		f = kmalloc(vlen * 2 + 1, GFP_KERNEL);
+> +		/* Authority Key Identifier is not indefinite length */
+> +		if (unlikely(vlen == ASN1_INDEFINITE_LENGTH))
+> +			return -EBADMSG;
+> +
+> +		if (vlen < ASN1_INDEFINITE_LENGTH) {
+> +			/* Short Form length */
+> +			if (v[1] != vlen - 2 ||
+> +			    v[2] != SEQ_TAG_KEYID ||
+> +			    v[3] != vlen - 4)
+> +				return -EBADMSG;
+> +
+> +			key_len = v[3];
+> +			v += 4;
+> +		} else {
+> +			/* Long Form length */
+> +			size_t seq_len = 0;
+> +			size_t sub = v[1] - ASN1_INDEFINITE_LENGTH;
+> +
+> +			if (sub > 2)
+> +				return -EBADMSG;
+> +
+> +			/* calculate the length from subsequent octets */
+> +			v += 2;
+> +			for (i = 0; i < sub; i++) {
+> +				seq_len <<= 8;
+> +				seq_len |= v[i];
+> +			}
+> +
+> +			if (seq_len != vlen - 2 - sub ||
+> +			    v[sub] != SEQ_TAG_KEYID ||
+> +			    v[sub + 1] > vlen - 4 - sub)
+> +				return -EBADMSG;
+> +
+> +			key_len = v[sub + 1];
+> +			v += (sub + 2);
+> +		}
+> +
+> +		f = kmalloc(key_len * 2 + 1, GFP_KERNEL);
+>  		if (!f)
+>  			return -ENOMEM;
+> -		for (i = 0; i < vlen; i++)
+> +		for (i = 0; i < key_len; i++)
+>  			sprintf(f + i * 2, "%02x", v[i]);
+>  		pr_debug("authority   %s\n", f);
+>  		ctx->cert->authority = f;
 
 
