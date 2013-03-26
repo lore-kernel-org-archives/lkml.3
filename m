@@ -1,166 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759995Ab3CZTZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 15:25:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28416 "EHLO mx1.redhat.com"
+	id S932087Ab3CZTZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 15:25:27 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37646 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968Ab3CZTZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 15:25:11 -0400
-Subject: [PATCH 2/2] vfio-pci: Enable raw access to unassigned config space
-To: alex.williamson@redhat.com, shangw@linux.vnet.ibm.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Date: Tue, 26 Mar 2013 12:17:10 -0600
-Message-ID: <20130326181709.27467.1721.stgit@bling.home>
-In-Reply-To: <20130326180454.27467.7011.stgit@bling.home>
-References: <20130326180454.27467.7011.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1754103Ab3CZTZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 15:25:24 -0400
+Date: Tue, 26 Mar 2013 21:24:53 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Roland Stigge <stigge@gnu.org>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: Fix compile error by selecting USB_OTG_UTILS
+Message-ID: <20130326192453.GA21915@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1364319361-28265-1-git-send-email-stigge@antcom.de>
+ <20130326180334.GL20785@arwen.pp.htv.fi>
+ <5151F48C.9060308@gnu.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zYM0uCDKw75PZbzx"
+Content-Disposition: inline
+In-Reply-To: <5151F48C.9060308@gnu.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devices like be2net hide registers between the gaps in capabilities
-and architected regions of PCI config space.  Our choices to support
-such devices is to either build an ever growing and unmanageable white
-list or rely on hardware isolation to protect us.  These registers are
-really no different than MMIO or I/O port space registers, which we
-don't attempt to regulate, so treat PCI config space in the same way.
+--zYM0uCDKw75PZbzx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reported-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/vfio/pci/vfio_pci_config.c |   78 +++++++++++++++++++++---------------
- 1 file changed, 46 insertions(+), 32 deletions(-)
+Hi,
 
-diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
-index 5d5fc75..072fdac 100644
---- a/drivers/vfio/pci/vfio_pci_config.c
-+++ b/drivers/vfio/pci/vfio_pci_config.c
-@@ -273,9 +273,10 @@ static int vfio_direct_config_read(struct vfio_pci_device *vdev, int pos,
- 	return count;
- }
- 
--static int vfio_direct_config_write(struct vfio_pci_device *vdev, int pos,
--				    int count, struct perm_bits *perm,
--				    int offset, __le32 val)
-+/* Raw access skips any kind of virtualization */
-+static int vfio_raw_config_write(struct vfio_pci_device *vdev, int pos,
-+				 int count, struct perm_bits *perm,
-+				 int offset, __le32 val)
- {
- 	int ret;
- 
-@@ -286,13 +287,36 @@ static int vfio_direct_config_write(struct vfio_pci_device *vdev, int pos,
- 	return count;
- }
- 
--/* Default all regions to read-only, no-virtualization */
-+static int vfio_raw_config_read(struct vfio_pci_device *vdev, int pos,
-+				int count, struct perm_bits *perm,
-+				int offset, __le32 *val)
-+{
-+	int ret;
-+
-+	ret = vfio_user_config_read(vdev->pdev, pos, val, count);
-+	if (ret)
-+		return pcibios_err_to_errno(ret);
-+
-+	return count;
-+}
-+
-+/* Default capability regions to read-only, no-virtualization */
- static struct perm_bits cap_perms[PCI_CAP_ID_MAX + 1] = {
- 	[0 ... PCI_CAP_ID_MAX] = { .readfn = vfio_direct_config_read }
- };
- static struct perm_bits ecap_perms[PCI_EXT_CAP_ID_MAX + 1] = {
- 	[0 ... PCI_EXT_CAP_ID_MAX] = { .readfn = vfio_direct_config_read }
- };
-+/*
-+ * Default unassigned regions to raw read-write access.  Some devices
-+ * require this to function as they hide registers between the gaps in
-+ * config space (be2net).  Like MMIO and I/O port registers, we have
-+ * to trust the hardware isolation.
-+ */
-+static struct perm_bits unassigned_perms = {
-+	.readfn = vfio_raw_config_read,
-+	.writefn = vfio_raw_config_write
-+};
- 
- static void free_perm_bits(struct perm_bits *perm)
- {
-@@ -778,16 +802,16 @@ int __init vfio_pci_init_perm_bits(void)
- 
- 	/* Capabilities */
- 	ret |= init_pci_cap_pm_perm(&cap_perms[PCI_CAP_ID_PM]);
--	cap_perms[PCI_CAP_ID_VPD].writefn = vfio_direct_config_write;
-+	cap_perms[PCI_CAP_ID_VPD].writefn = vfio_raw_config_write;
- 	ret |= init_pci_cap_pcix_perm(&cap_perms[PCI_CAP_ID_PCIX]);
--	cap_perms[PCI_CAP_ID_VNDR].writefn = vfio_direct_config_write;
-+	cap_perms[PCI_CAP_ID_VNDR].writefn = vfio_raw_config_write;
- 	ret |= init_pci_cap_exp_perm(&cap_perms[PCI_CAP_ID_EXP]);
- 	ret |= init_pci_cap_af_perm(&cap_perms[PCI_CAP_ID_AF]);
- 
- 	/* Extended capabilities */
- 	ret |= init_pci_ext_cap_err_perm(&ecap_perms[PCI_EXT_CAP_ID_ERR]);
- 	ret |= init_pci_ext_cap_pwr_perm(&ecap_perms[PCI_EXT_CAP_ID_PWR]);
--	ecap_perms[PCI_EXT_CAP_ID_VNDR].writefn = vfio_direct_config_write;
-+	ecap_perms[PCI_EXT_CAP_ID_VNDR].writefn = vfio_raw_config_write;
- 
- 	if (ret)
- 		vfio_pci_uninit_perm_bits();
-@@ -1495,35 +1519,25 @@ static ssize_t vfio_config_do_rw(struct vfio_pci_device *vdev, char __user *buf,
- 	cap_id = vdev->pci_config_map[*ppos];
- 
- 	if (cap_id == PCI_CAP_ID_INVALID) {
--		if (iswrite)
--			return ret; /* drop */
--
--		/*
--		 * Per PCI spec 3.0, section 6.1, reads from reserved and
--		 * unimplemented registers return 0
--		 */
--		if (copy_to_user(buf, &val, count))
--			return -EFAULT;
--
--		return ret;
--	}
--
--	if (*ppos >= PCI_CFG_SPACE_SIZE) {
--		WARN_ON(cap_id > PCI_EXT_CAP_ID_MAX);
--
--		perm = &ecap_perms[cap_id];
--		cap_start = vfio_find_cap_start(vdev, *ppos);
--
-+		perm = &unassigned_perms;
-+		cap_start = *ppos;
- 	} else {
--		WARN_ON(cap_id > PCI_CAP_ID_MAX);
-+		if (*ppos >= PCI_CFG_SPACE_SIZE) {
-+			WARN_ON(cap_id > PCI_EXT_CAP_ID_MAX);
-+
-+			perm = &ecap_perms[cap_id];
-+			cap_start = vfio_find_cap_start(vdev, *ppos);
-+		} else {
-+			WARN_ON(cap_id > PCI_CAP_ID_MAX);
- 
--		perm = &cap_perms[cap_id];
-+			perm = &cap_perms[cap_id];
- 
--		if (cap_id == PCI_CAP_ID_MSI)
--			perm = vdev->msi_perm;
-+			if (cap_id == PCI_CAP_ID_MSI)
-+				perm = vdev->msi_perm;
- 
--		if (cap_id > PCI_CAP_ID_BASIC)
--			cap_start = vfio_find_cap_start(vdev, *ppos);
-+			if (cap_id > PCI_CAP_ID_BASIC)
-+				cap_start = vfio_find_cap_start(vdev, *ppos);
-+		}
- 	}
- 
- 	WARN_ON(!cap_start && cap_id != PCI_CAP_ID_BASIC);
+On Tue, Mar 26, 2013 at 08:18:36PM +0100, Roland Stigge wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: RIPEMD160
+>=20
+> On 03/26/2013 07:03 PM, Felipe Balbi wrote:
+> > On Tue, Mar 26, 2013 at 06:36:01PM +0100, Roland Stigge wrote:
+> >> The current lpc32xx_defconfig breaks like this, caused by recent
+> >> phy restructuring:
+> >=20
+> > which commit actually caused this ? I need to know to make sure if
+> > this should be sent to stable or not.
+>=20
+> The issue definitely surfaced after v3.8, so no need for patching
+> stable, I guess.
 
+are you sure ? I don't see any commits under drivers/usb/gadget/Kconfig
+which could've caused what you described. Can you blame a commit ?
+
+--=20
+balbi
+
+--zYM0uCDKw75PZbzx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRUfYFAAoJEIaOsuA1yqRE16cQAJ+Gwy32/H9ljRHCqJ7z2abU
+9jYkw5UhutMYE6fB++PggiwrhjfKrICu5h/swtt+A7ar4XlvCosPZyPfQxbicm7n
+Mnb8gpV0p92HfyvTPFKo8VX4eKgxez8pnKWPduylnaq+oKG9aGVJozzs08qdKtoz
+y2BcxufTdXicAsasoUSjDRpXekmiYOJ8C52e0j1yhEuMWC9Q09sW5ST2+34+tn+d
+3sOF6GXXdpv0uJ44V4IsqHmFwU/fezY0Kq1UULDkv+E3fixpKUC6/ImjVTRN0BzQ
+H73gzyc3p8UmbtRaMAnWbcfmnK81GxFMH6uodd2Mh7zig9+iMCRq3hl7f3R3wQmA
+OeIV8yknBjM5YvruL1PotTI4VQRfR6KpTxBSKVs4KESOctNr1FZBtM7WlCLEJp15
+DSRPG8kQB8QvcZVBvXjrO0BcbGojNubPAjJ1urgEgzUWohsph4yfKrbJwcctvk4h
+Vhmkmo8eVnbf/yPTkoz5NvHDnNX9HBegofPc/Qk31bfJqfc1dGCefKFoO8rTI5cD
+bqdQtUGZf900KFnNoqkaxOFb3vE82Jx1tzCygQc9qYCgpQ7ElB9d4meTlQNV0DfX
+VwG70BBR2Mjd37zMm5micbRCtf1uNE7rkeNvWtMDFz/lsjmbvyPB6p5pdRoxEduC
+ugg4dBhpA8rVKu0KxdVl
+=J3sJ
+-----END PGP SIGNATURE-----
+
+--zYM0uCDKw75PZbzx--
