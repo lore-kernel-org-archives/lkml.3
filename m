@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760215Ab3CZTz2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 15:55:28 -0400
-Received: from mail-da0-f45.google.com ([209.85.210.45]:59862 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759943Ab3CZTz0 (ORCPT
+	id S1760254Ab3CZTzl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 15:55:41 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29697 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760230Ab3CZTzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 15:55:26 -0400
-Date: Tue, 26 Mar 2013 12:55:23 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the final tree (akpm
- and block tree related)
-Message-ID: <20130326195523.GB24935@google.com>
-References: <20130326170554.f9f113fa24a1e5ec6d5d1ee6@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130326170554.f9f113fa24a1e5ec6d5d1ee6@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 26 Mar 2013 15:55:40 -0400
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=gPDFDwPFkwsA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=T1ZKc6cXkYkA:10 a=cr9bPvsT3_gPWFB4skIA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1364327738.6345.198.camel@gandalf.local.home>
+Subject: Re: [PATCH] ftrace: Consistently restore trace function on sysctl
+ enabling
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Date: Tue, 26 Mar 2013 15:55:38 -0400
+In-Reply-To: <1364325014.6345.195.camel@gandalf.local.home>
+References: <5151D26F.1070702@siemens.com>
+	 <1364325014.6345.195.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 05:05:54PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build
-> produced this warning:
-> 
-> fs/bio.c: In function 'submit_bio_wait':
-> fs/bio.c:786:17: warning: assignment from incompatible pointer type [enabled by default]
-> 
-> This is due to an interaction between commit 9e882242c ("block: Add
-> submit_bio_wait(), remove from md") from the block tree and commit
-> "block: prep work for batch completion" from the akpm tree.
+On Tue, 2013-03-26 at 15:10 -0400, Steven Rostedt wrote:
 
-In hindsight maybe it would've been better if the batch completion stuff
-had gone in via Jens' tree, though I'm sure there would've still been
-some conflicts.
+> I remember there was a reason why I didn't update this, but I can't
+> remember why. Looking at it now, it doesn't look like there is a reason.
 
-What's the procedure for me to fix these? I can send you a fixup patch
-but if you've pushed this version of linux-next somewhere public I'm not
-sure where to look.
+I remember now. I didn't add it because the update_ftrace_function was
+too much at the time. It was still doing the basic updates, but it was
+also doing a bit more too. But this was before I added the extra checks.
+I didn't call it because it seemed to be an overkill. But that doesn't
+apply today.
+
 
 > 
-> In fact we are getting several more warnings due to that patch in the
-> akpm tree:
-> 
-> drivers/md/bcache/writeback.c: In function 'write_dirty':
-> drivers/md/bcache/writeback.c:276:20: warning: assignment from incompatible pointer type [enabled by default]
-> drivers/md/bcache/writeback.c: In function 'read_dirty':
-> drivers/md/bcache/writeback.c:350:21: warning: assignment from incompatible pointer type [enabled by default]
-> drivers/md/bcache/movinggc.c: In function 'read_moving':
-> drivers/md/bcache/movinggc.c:160:18: warning: assignment from incompatible pointer type [enabled by default]
-> drivers/md/bcache/request.c: In function 'bch_insert_data_loop':
-> drivers/md/bcache/request.c:518:16: warning: assignment from incompatible pointer type [enabled by default]
-> drivers/md/bcache/request.c: In function 'do_bio_hook':
-> drivers/md/bcache/request.c:684:18: warning: assignment from incompatible pointer type [enabled by default]
-> drivers/md/bcache/request.c: In function 'cached_dev_cache_miss':
-> drivers/md/bcache/request.c:926:19: warning: assignment from incompatible pointer type [enabled by default]
-> drivers/md/bcache/request.c:957:29: warning: assignment from incompatible pointer type [enabled by default]
-> drivers/md/bcache/debug.c: In function 'bch_data_verify':
-> drivers/md/bcache/debug.c:208:19: warning: assignment from incompatible pointer type [enabled by default]
-> drivers/md/bcache/super.c: In function 'bch_write_bdev_super':
-> drivers/md/bcache/super.c:257:17: warning: assignment from incompatible pointer type [enabled by default]
-> drivers/md/bcache/super.c: In function 'bcache_write_super':
-> drivers/md/bcache/super.c:295:18: warning: assignment from incompatible pointer type [enabled by default]
-> drivers/md/bcache/super.c: In function 'uuid_io':
-> drivers/md/bcache/super.c:333:18: warning: assignment from incompatible pointer type [enabled by default]
-> drivers/md/bcache/super.c: In function 'prio_io':
-> drivers/md/bcache/super.c:492:17: warning: assignment from incompatible pointer type [enabled by default]
-> 
-> There are probably more ...
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+> I'll have to think about this one more. Another score for not
+> commenting :-p
+
+OK, I'll add it and it looks like it needs to go immediately, as well as
+way back to 3.0 stable.
+
+Thanks!
+
+-- Steve
 
 
