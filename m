@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372Ab3CZXKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:10:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53386 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756789Ab3CZXCF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756787Ab3CZXCF (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 26 Mar 2013 19:02:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53373 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235Ab3CZXCC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 19:02:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 17/49] sfc: Fix efx_rx_buf_offset() in the presence of swiotlb
-Date: Tue, 26 Mar 2013 16:01:14 -0700
-Message-Id: <20130326225841.360007758@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 28/49] drm/i915: bounds check execbuffer relocation count
+Date: Tue, 26 Mar 2013 16:01:25 -0700
+Message-Id: <20130326225842.441413946@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -26,93 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Kees Cook <keescook@chromium.org>
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+commit 3118a4f652c7b12c752f3222af0447008f9b2368 upstream.
 
-[ Upstream commits 06e63c57acbb1df7c35ebe846ae416a8b88dfafa,
-  b590ace09d51cd39744e0f7662c5e4a0d1b5d952 and
-  c73e787a8db9117d59b5180baf83203a42ecadca ]
+It is possible to wrap the counter used to allocate the buffer for
+relocation copies. This could lead to heap writing overflows.
 
-We assume that the mapping between DMA and virtual addresses is done
-on whole pages, so we can find the page offset of an RX buffer using
-the lower bits of the DMA address.  However, swiotlb maps in units of
-2K, breaking this assumption.
+CVE-2013-0913
 
-Add an explicit page_offset field to struct efx_rx_buffer.
+v3: collapse test, improve comment
+v2: move check into validate_exec_list
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-[bwh: Backported to 3.0: adjust context]
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Pinkie Pie
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/sfc/net_driver.h |    4 +++-
- drivers/net/sfc/rx.c         |   10 +++++-----
- 2 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/net/sfc/net_driver.h
-+++ b/drivers/net/sfc/net_driver.h
-@@ -214,6 +214,7 @@ struct efx_tx_queue {
-  *	If both this and page are %NULL, the buffer slot is currently free.
-  * @page: The associated page buffer, if any.
-  *	If both this and skb are %NULL, the buffer slot is currently free.
-+ * @page_offset: Offset within page. Valid iff @flags & %EFX_RX_BUF_PAGE.
-  * @len: Buffer length, in bytes.
-  * @is_page: Indicates if @page is valid. If false, @skb is valid.
-  */
-@@ -223,7 +224,8 @@ struct efx_rx_buffer {
- 		struct sk_buff *skb;
- 		struct page *page;
- 	} u;
--	unsigned int len;
-+	u16 page_offset;
-+	u16 len;
- 	bool is_page;
- };
- 
---- a/drivers/net/sfc/rx.c
-+++ b/drivers/net/sfc/rx.c
-@@ -94,11 +94,7 @@ static unsigned int rx_refill_limit = 95
- static inline unsigned int efx_rx_buf_offset(struct efx_nic *efx,
- 					     struct efx_rx_buffer *buf)
+---
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -888,15 +888,20 @@ validate_exec_list(struct drm_i915_gem_e
+ 		   int count)
  {
--	/* Offset is always within one page, so we don't need to consider
--	 * the page order.
--	 */
--	return (((__force unsigned long) buf->dma_addr & (PAGE_SIZE - 1)) +
--		efx->type->rx_buffer_hash_size);
-+	return buf->page_offset + efx->type->rx_buffer_hash_size;
- }
- static inline unsigned int efx_rx_buf_size(struct efx_nic *efx)
- {
-@@ -193,6 +189,7 @@ static int efx_init_rx_buffers_page(stru
- 	struct efx_rx_buffer *rx_buf;
- 	struct page *page;
- 	void *page_addr;
-+	unsigned int page_offset;
- 	struct efx_rx_page_state *state;
- 	dma_addr_t dma_addr;
- 	unsigned index, count;
-@@ -219,12 +216,14 @@ static int efx_init_rx_buffers_page(stru
+ 	int i;
++	int relocs_total = 0;
++	int relocs_max = INT_MAX / sizeof(struct drm_i915_gem_relocation_entry);
  
- 		page_addr += sizeof(struct efx_rx_page_state);
- 		dma_addr += sizeof(struct efx_rx_page_state);
-+		page_offset = sizeof(struct efx_rx_page_state);
+ 	for (i = 0; i < count; i++) {
+ 		char __user *ptr = (char __user *)(uintptr_t)exec[i].relocs_ptr;
+ 		int length; /* limited by fault_in_pages_readable() */
  
- 	split:
- 		index = rx_queue->added_count & rx_queue->ptr_mask;
- 		rx_buf = efx_rx_buffer(rx_queue, index);
- 		rx_buf->dma_addr = dma_addr + EFX_PAGE_IP_ALIGN;
- 		rx_buf->u.page = page;
-+		rx_buf->page_offset = page_offset + EFX_PAGE_IP_ALIGN;
- 		rx_buf->len = efx->rx_buffer_len - EFX_PAGE_IP_ALIGN;
- 		rx_buf->is_page = true;
- 		++rx_queue->added_count;
-@@ -236,6 +235,7 @@ static int efx_init_rx_buffers_page(stru
- 			get_page(page);
- 			dma_addr += (PAGE_SIZE >> 1);
- 			page_addr += (PAGE_SIZE >> 1);
-+			page_offset += (PAGE_SIZE >> 1);
- 			++count;
- 			goto split;
- 		}
+-		/* First check for malicious input causing overflow */
+-		if (exec[i].relocation_count >
+-		    INT_MAX / sizeof(struct drm_i915_gem_relocation_entry))
++		/* First check for malicious input causing overflow in
++		 * the worst case where we need to allocate the entire
++		 * relocation tree as a single array.
++		 */
++		if (exec[i].relocation_count > relocs_max - relocs_total)
+ 			return -EINVAL;
++		relocs_total += exec[i].relocation_count;
+ 
+ 		length = exec[i].relocation_count *
+ 			sizeof(struct drm_i915_gem_relocation_entry);
 
 
