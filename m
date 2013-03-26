@@ -1,140 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759730Ab3CZJPo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 05:15:44 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:50971 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755514Ab3CZJN0 (ORCPT
+	id S934250Ab3CZJPw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 05:15:52 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7589 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759734Ab3CZJPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 05:13:26 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: kevin@allwinnertech.com, sunny@allwinnertech.com, shuge@allwinnertech.com,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 02/10] clocksource: sunxi: Cleanup the timer code
-Date: Tue, 26 Mar 2013 10:13:09 +0100
-Message-Id: <1364289198-11589-3-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1364289198-11589-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1364289198-11589-1-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 26 Mar 2013 05:15:48 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 26 Mar 2013 02:15:22 -0700
+Message-ID: <51516695.8020808@nvidia.com>
+Date: Tue, 26 Mar 2013 14:42:53 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Graeme Gregory <gg@slimlogic.co.uk>
+CC: Kishon Vijay Abraham I <kishon@ti.com>, "balbi@ti.com" <balbi@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "s-guiriec@ti.com" <s-guiriec@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v3] USB: PHY: Palmas USB Transceiver Driver
+References: <1362662506-14823-4-git-send-email-kishon@ti.com> <1364203926-24488-1-git-send-email-kishon@ti.com> <51501CFB.4020905@nvidia.com> <51513A40.7080905@ti.com> <515163F6.3010400@slimlogic.co.uk>
+In-Reply-To: <515163F6.3010400@slimlogic.co.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The timer code was not exact to some aspects, since most of this code
-was written wihout any datasheet. Make the needed corrections to match
-the datasheet.
+On Tuesday 26 March 2013 02:31 PM, Graeme Gregory wrote:
+> On 26/03/13 06:03, Kishon Vijay Abraham I wrote:
+>>> +static int palmas_usb_read(struct palmas *palmas, unsigned int reg,
+>>> +               unsigned int *dest)
+>>> +{
+>>> +       unsigned int addr;
+>>> +       int slave;
+>>> +
+>>> +       slave = PALMAS_BASE_TO_SLAVE(PALMAS_USB_OTG_BASE);
+>>> +       addr = PALMAS_BASE_TO_REG(PALMAS_USB_OTG_BASE, reg);
+>>> +
+>>> +       return regmap_read(palmas->regmap[slave], addr, dest);
+>>>
+>>>
+>>> Please use the generic api for palmas_read()/palmas_write(0 as it will
+>>> be ease on debugging on register access.
+>>> Direct regmap_read() does not help much on this.
+>> Graeme,
+>> Any reason why you dint use palmas_read()/palmas_write here?
+>> Btw palmas_read()/palmas_write() internally uses regmap APIs.
+> Because I was not a fan of tightly coupling the child devices to the
+> parent MFD. palmas_read/write were added by Laxman.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/clocksource/sunxi_timer.c |   48 ++++++++++++++++++-------------------
- 1 file changed, 24 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/clocksource/sunxi_timer.c b/drivers/clocksource/sunxi_timer.c
-index 0ce85e2..7a3ea23 100644
---- a/drivers/clocksource/sunxi_timer.c
-+++ b/drivers/clocksource/sunxi_timer.c
-@@ -25,15 +25,15 @@
- #include <linux/sunxi_timer.h>
- #include <linux/clk/sunxi.h>
- 
--#define TIMER_CTL_REG		0x00
--#define TIMER_CTL_ENABLE		(1 << 0)
-+#define TIMER_IRQ_EN_REG	0x00
-+#define TIMER_IRQ_EN(val)		(1 << val)
- #define TIMER_IRQ_ST_REG	0x04
--#define TIMER0_CTL_REG		0x10
--#define TIMER0_CTL_ENABLE		(1 << 0)
--#define TIMER0_CTL_AUTORELOAD		(1 << 1)
--#define TIMER0_CTL_ONESHOT		(1 << 7)
--#define TIMER0_INTVAL_REG	0x14
--#define TIMER0_CNTVAL_REG	0x18
-+#define TIMER_CTL_REG(val)	(0x10 * val + 0x10)
-+#define TIMER_CTL_ENABLE		(1 << 0)
-+#define TIMER_CTL_AUTORELOAD		(1 << 1)
-+#define TIMER_CTL_ONESHOT		(1 << 7)
-+#define TIMER_INTVAL_REG(val)	(0x10 * val + 0x14)
-+#define TIMER_CNTVAL_REG(val)	(0x10 * val + 0x18)
- 
- #define TIMER_SCAL		16
- 
-@@ -42,21 +42,21 @@ static void __iomem *timer_base;
- static void sunxi_clkevt_mode(enum clock_event_mode mode,
- 			      struct clock_event_device *clk)
- {
--	u32 u = readl(timer_base + TIMER0_CTL_REG);
-+	u32 u = readl(timer_base + TIMER_CTL_REG(0));
- 
- 	switch (mode) {
- 	case CLOCK_EVT_MODE_PERIODIC:
--		u &= ~(TIMER0_CTL_ONESHOT);
--		writel(u | TIMER0_CTL_ENABLE, timer_base + TIMER0_CTL_REG);
-+		u &= ~(TIMER_CTL_ONESHOT);
-+		writel(u | TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(0));
- 		break;
- 
- 	case CLOCK_EVT_MODE_ONESHOT:
--		writel(u | TIMER0_CTL_ONESHOT, timer_base + TIMER0_CTL_REG);
-+		writel(u | TIMER_CTL_ONESHOT, timer_base + TIMER_CTL_REG(0));
- 		break;
- 	case CLOCK_EVT_MODE_UNUSED:
- 	case CLOCK_EVT_MODE_SHUTDOWN:
- 	default:
--		writel(u & ~(TIMER0_CTL_ENABLE), timer_base + TIMER0_CTL_REG);
-+		writel(u & ~(TIMER_CTL_ENABLE), timer_base + TIMER_CTL_REG(0));
- 		break;
- 	}
- }
-@@ -64,10 +64,10 @@ static void sunxi_clkevt_mode(enum clock_event_mode mode,
- static int sunxi_clkevt_next_event(unsigned long evt,
- 				   struct clock_event_device *unused)
- {
--	u32 u = readl(timer_base + TIMER0_CTL_REG);
--	writel(evt, timer_base + TIMER0_CNTVAL_REG);
--	writel(u | TIMER0_CTL_ENABLE | TIMER0_CTL_AUTORELOAD,
--	       timer_base + TIMER0_CTL_REG);
-+	u32 u = readl(timer_base + TIMER_CTL_REG(0));
-+	writel(evt, timer_base + TIMER_CNTVAL_REG(0));
-+	writel(u | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
-+	       timer_base + TIMER_CTL_REG(0));
- 
- 	return 0;
- }
-@@ -132,26 +132,26 @@ void __init sunxi_timer_init(void)
- 	rate = clk_get_rate(clk);
- 
- 	writel(rate / (TIMER_SCAL * HZ),
--	       timer_base + TIMER0_INTVAL_REG);
-+	       timer_base + TIMER_INTVAL_REG(0));
- 
- 	/* set clock source to HOSC, 16 pre-division */
--	val = readl(timer_base + TIMER0_CTL_REG);
-+	val = readl(timer_base + TIMER_CTL_REG(0));
- 	val &= ~(0x07 << 4);
- 	val &= ~(0x03 << 2);
- 	val |= (4 << 4) | (1 << 2);
--	writel(val, timer_base + TIMER0_CTL_REG);
-+	writel(val, timer_base + TIMER_CTL_REG(0));
- 
- 	/* set mode to auto reload */
--	val = readl(timer_base + TIMER0_CTL_REG);
--	writel(val | TIMER0_CTL_AUTORELOAD, timer_base + TIMER0_CTL_REG);
-+	val = readl(timer_base + TIMER_CTL_REG(0));
-+	writel(val | TIMER_CTL_AUTORELOAD, timer_base + TIMER_CTL_REG(0));
- 
- 	ret = setup_irq(irq, &sunxi_timer_irq);
- 	if (ret)
- 		pr_warn("failed to setup irq %d\n", irq);
- 
- 	/* Enable timer0 interrupt */
--	val = readl(timer_base + TIMER_CTL_REG);
--	writel(val | TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG);
-+	val = readl(timer_base + TIMER_IRQ_EN_REG);
-+	writel(val | TIMER_IRQ_EN(0), timer_base + TIMER_IRQ_EN_REG);
- 
- 	sunxi_clockevent.cpumask = cpumask_of(0);
- 
--- 
-1.7.10.4
+But still you are using the PALMAS macro here and indirectly it is tied 
+up. It is not completely independent.
+If need to be independent then regmap pointer with address need to be 
+passed as independt header and no where on code whould refer the PALMA.
+I think as per current code, it is not possible although it is your big 
+plan what I understand from some time back in one of patch discussion.
+
+
+>>>> +       palmas_usb->dev         = &pdev->dev;
+>>>> +
+>>>> +       palmas_usb->irq1 = regmap_irq_get_virq(palmas->irq_data,
+>>>> +                                               PALMAS_ID_OTG_IRQ);
+>>>> +       palmas_usb->irq2 = regmap_irq_get_virq(palmas->irq_data,
+>>>> +                                               PALMAS_ID_IRQ);
+>>>> +       palmas_usb->irq3 = regmap_irq_get_virq(palmas->irq_data,
+>>>> +                                               PALMAS_VBUS_OTG_IRQ);
+>>>> +       palmas_usb->irq4 = regmap_irq_get_virq(palmas->irq_data,
+>>>> +                                               PALMAS_VBUS_IRQ);
+>>> Should be come from platform_get_irq() through platform driver.
+>> No. It can be obtained from regmap too.
+Kishon,
+I think it is very much possible. You can pass the interrupt throough 
+IRQ_RESOURCE and populate it from DT. If you provide proper interrupt 
+parent and irq number then irq framework take care of every thing.  
+already tested this with RTC interrupt of plama and it worked very well.
 
