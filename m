@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830Ab3CZWu6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:50:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52642 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755023Ab3CZWo3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:29 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [ 91/98] efivars: Fix check for CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE
-Date: Tue, 26 Mar 2013 15:43:20 -0700
-Message-Id: <20130326224251.898362209@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
-References: <20130326224242.449070940@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1755864Ab3CZWvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:51:05 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25961 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755162Ab3CZWvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 18:51:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,915,1355126400"; 
+   d="scan'208";a="307830269"
+Date: Tue, 26 Mar 2013 22:50:57 +0000
+From: Damien Lespiau <damien.lespiau@intel.com>
+To: Imre Deak <imre.deak@intel.com>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Intel-gfx] [PATCH 0/2] lib/scatterlist: sg_page_iter: support
+ for memory w/o backing pages
+Message-ID: <20130326225057.GA14347@strange.amr.corp.intel.com>
+References: <1364303659-1951-1-git-send-email-imre.deak@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364303659-1951-1-git-send-email-imre.deak@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Mar 26, 2013 at 03:14:17PM +0200, Imre Deak wrote:
+> When adding sg_page_iter I haven't thought properly through the use case
+> for sg lists w/o backing pages - which is specific to the i915 driver -
+> so this patchset adds support for this.
+> 
+> It applies on the i915 tree [1], where the iterator is in use already.
+> 
+> [1] git://people.freedesktop.org/~danvet/drm-intel [nightly branch]
+> 
+> Imre Deak (2):
+>   lib/scatterlist: sg_page_iter: support sg lists w/o backing pages
+>   Revert "drm/i915: set dummy page for stolen objects"
 
-------------------
+Both patches are Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
 
-From: Ben Hutchings <ben@decadent.org.uk>
-
-commit ca0ba26fbbd2d81c43085df49ce0abfe34535a90 upstream.
-
-The 'CONFIG_' prefix is not implicit in IS_ENABLED().
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Seth Forshee <seth.forshee@canonical.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/firmware/efivars.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -104,7 +104,7 @@ MODULE_VERSION(EFIVARS_VERSION);
- #define GUID_LEN 36
- 
- static bool efivars_pstore_disable =
--	IS_ENABLED(EFI_VARS_PSTORE_DEFAULT_DISABLE);
-+	IS_ENABLED(CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE);
- 
- module_param_named(pstore_disable, efivars_pstore_disable, bool, 0644);
- 
-
-
+-- 
+Damien
