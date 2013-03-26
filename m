@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965372Ab3CZP5H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:57:07 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:44791 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965280Ab3CZP5D (ORCPT
+	id S965454Ab3CZP5V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:57:21 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:64049 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965392Ab3CZP5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:57:03 -0400
+	Tue, 26 Mar 2013 11:57:16 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -19,11 +19,10 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Subject: [PATCH v3, part4 02/39] avr32: normalize global variables exported by vmlinux.lds
-Date: Tue, 26 Mar 2013 23:54:21 +0800
-Message-Id: <1364313298-17336-3-git-send-email-jiang.liu@huawei.com>
+        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org
+Subject: [PATCH v3, part4 03/39] c6x: normalize global variables exported by vmlinux.lds
+Date: Tue, 26 Mar 2013 23:54:22 +0800
+Message-Id: <1364313298-17336-4-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
 References: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
@@ -37,9 +36,14 @@ guidelines from include/asm-generic/sections.h.
 Use _text to mark the start of the kernel image including the head text,
 and _stext to mark the start of the .text section.
 
+This patch also fixes possible bugs due to current address layout that
+[__init_begin, __init_end] is a sub-range of [_stext, _etext] and pages
+within range [__init_begin, __init_end] will be freed by free_initmem().
+
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Mark Salter <msalter@redhat.com>
+Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
+Cc: linux-c6x-dev@linux-c6x.org
 Cc: linux-kernel@vger.kernel.org
 ---
 Hi all,
@@ -51,45 +55,39 @@ So I regenerate a third version and also set up a git tree at:
 	Regards!
 	Gerry
 ---
- arch/avr32/kernel/setup.c       |    2 +-
- arch/avr32/kernel/vmlinux.lds.S |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/c6x/kernel/vmlinux.lds.S |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/avr32/kernel/setup.c b/arch/avr32/kernel/setup.c
-index b4247f4..209ae5a 100644
---- a/arch/avr32/kernel/setup.c
-+++ b/arch/avr32/kernel/setup.c
-@@ -555,7 +555,7 @@ void __init setup_arch (char **cmdline_p)
- {
- 	struct clk *cpu_clk;
+diff --git a/arch/c6x/kernel/vmlinux.lds.S b/arch/c6x/kernel/vmlinux.lds.S
+index 1d81c4c..279d807 100644
+--- a/arch/c6x/kernel/vmlinux.lds.S
++++ b/arch/c6x/kernel/vmlinux.lds.S
+@@ -54,16 +54,15 @@ SECTIONS
+ 	}
  
--	init_mm.start_code = (unsigned long)_text;
-+	init_mm.start_code = (unsigned long)_stext;
- 	init_mm.end_code = (unsigned long)_etext;
- 	init_mm.end_data = (unsigned long)_edata;
- 	init_mm.brk = (unsigned long)_end;
-diff --git a/arch/avr32/kernel/vmlinux.lds.S b/arch/avr32/kernel/vmlinux.lds.S
-index 9cd2bd9..a458917 100644
---- a/arch/avr32/kernel/vmlinux.lds.S
-+++ b/arch/avr32/kernel/vmlinux.lds.S
-@@ -23,7 +23,7 @@ SECTIONS
- {
- 	. = CONFIG_ENTRY_ADDRESS;
- 	.init		: AT(ADDR(.init) - LOAD_OFFSET) {
+ 	. = ALIGN(PAGE_SIZE);
++	__init_begin = .;
+ 	.init :
+ 	{
 -		_stext = .;
-+		_text = .;
- 		__init_begin = .;
- 			_sinittext = .;
- 			*(.text.reset)
-@@ -46,7 +46,7 @@ SECTIONS
+ 		_sinittext = .;
+ 		HEAD_TEXT
+ 		INIT_TEXT
+ 		_einittext = .;
+ 	}
  
- 	.text		: AT(ADDR(.text) - LOAD_OFFSET) {
- 		_evba = .;
--		_text = .;
+-	__init_begin = _stext;
+ 	INIT_DATA_SECTION(16)
+ 
+ 	PERCPU_SECTION(128)
+@@ -74,6 +73,7 @@ SECTIONS
+ 	.text :
+ 	{
+ 		_text = .;
 +		_stext = .;
- 		*(.ex.text)
- 		*(.irq.text)
- 		KPROBES_TEXT
+ 		TEXT_TEXT
+ 		SCHED_TEXT
+ 		LOCK_TEXT
 -- 
 1.7.9.5
 
