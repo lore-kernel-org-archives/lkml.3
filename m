@@ -1,39 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933950Ab3CZAtb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 20:49:31 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:41062 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933924Ab3CZAt0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 20:49:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <1364168414-12815-3-git-send-email-jaegeuk.kim@samsung.com>
-References: <1364168414-12815-1-git-send-email-jaegeuk.kim@samsung.com>
-	<1364168414-12815-3-git-send-email-jaegeuk.kim@samsung.com>
-Date: Tue, 26 Mar 2013 09:49:26 +0900
-Message-ID: <CAKYAXd8CBoG7=FL8yuJ3gfp9Les5i1nGmG1AqeaF0wnzOKJOoA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] f2fs: remain nat cache entries for further free nid allocation
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
+	id S1759162Ab3CZAvY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 20:51:24 -0400
+Received: from ozlabs.org ([203.10.76.45]:39288 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755307Ab3CZAvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Mar 2013 20:51:22 -0400
+Date: Tue, 26 Mar 2013 11:51:20 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: linux-next: manual merge of the net-next tree with the wireless
+ tree
+Message-Id: <20130326115120.054f909e36cdc63b5607a8a8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__26_Mar_2013_11_51_20_+1100_0ajwKeG+fm0T/OIm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/25, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> In the checkpoint flow, the f2fs investigates the total nat cache entries.
-> Previously, if an entry has NULL_ADDR, f2fs drops the entry and adds the
-> obsolete nid to the free nid list.
-> However, this free nid will be reused sooner, resulting in its nat entry
-> miss.
-> In order to avoid this, we don't need to drop the nat cache entry at this
-> moment.
->
-> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Looks good to me.
-Reviewed-by: Namjae Jeon <namjae.jeon@samsung.com>
+--Signature=_Tue__26_Mar_2013_11_51_20_+1100_0ajwKeG+fm0T/OIm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks~
+Hi all,
+
+Today's linux-next merge of the net-next tree got a conflict in
+net/wireless/core.h between commit f9f475292dbb ("cfg80211: always check
+for scan end on P2P device") from the wireless tree and commit
+812569699119 ("cfg80211/mac80211: disconnect on suspend") from the
+net-next tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Stephen Rothwell <sfr@canb.auug.org.au>
+
+diff --cc net/wireless/core.h
+index 5845c2b,d5d06fd..0000000
+--- a/net/wireless/core.h
++++ b/net/wireless/core.h
+@@@ -503,9 -500,9 +500,12 @@@ int cfg80211_validate_beacon_int(struc
+  void cfg80211_update_iface_num(struct cfg80211_registered_device *rdev,
+  			       enum nl80211_iftype iftype, int num);
+ =20
+ +void cfg80211_stop_p2p_device(struct cfg80211_registered_device *rdev,
+ +			      struct wireless_dev *wdev);
+ +
++ void cfg80211_leave(struct cfg80211_registered_device *rdev,
++ 		    struct wireless_dev *wdev);
++=20
+  #define CFG80211_MAX_NUM_DIFFERENT_CHANNELS 10
+ =20
+  #ifdef CONFIG_CFG80211_DEVELOPER_WARNINGS
+
+--Signature=_Tue__26_Mar_2013_11_51_20_+1100_0ajwKeG+fm0T/OIm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRUPEIAAoJEECxmPOUX5FEKM4P/2m6YToka03lwMpadGhuswXP
+E83mewAQ2hU1gq3wEBA8mlSbwYE93axxJK8gK0t/INwVIdJR1/5FtzyGrIPOXOaq
+F1+1jQ7+a7D7SsDZ7HkKmj7ZcFdHp0OySEjlF25w2Yym2M1VyTQZnOkKzz1fmODx
+FEwiGP+CrzNLHKrR9qf1HRlD/4l7T+GbEJnjKUF0swj3fr0M9kP6g62QJ+zMudJj
+CwFf8e30Cn1bpBh+Q+zx9B1LwUAX4B3Z1/MMVX1lpQS76od/+Kcpil5N2Lqnvhd/
+AHxTiFMAhRlDAbztwHoXKGn2jUoy/lyILOjO4ne2o1FHq04idOruk8KIBWTIRywK
+f2F9xQTiD/vbbGM9MC20rjlbM26cHdyc8ql5Gz8D7dUpYWszrwQjIuKG3IB3c0vT
+XJVio8gkbOXw0bIKzfvtqtNjyLVo5U4YDclJnbTohsZ8WWT/8/6EmK/sRyuSLDOK
+uU0Em6/vupTB5mb+aWTlEAGFiuQEhTCUdiInsWK3TnDRmR3slTUND2pMBBri7V1l
+5MzMZrvgYP1WOwOBTTT2rcDVmkTnhmg/3bSTaer7AX4CxeAaj0YVdcIwJoJdSrMH
+BQRYSmDpsuvk2xFwxkyZzq+SreItIg264qxREo3D589Zza9GjCUkdLgAK/o/a+gl
+KUceOF/dbjGuRoBJd35a
+=+5kA
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__26_Mar_2013_11_51_20_+1100_0ajwKeG+fm0T/OIm--
