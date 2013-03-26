@@ -1,41 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab3CZVrw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 17:47:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46488 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751174Ab3CZVrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 17:47:51 -0400
-Message-ID: <51521769.7010707@suse.cz>
-Date: Tue, 26 Mar 2013 22:47:21 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	id S1752793Ab3CZVte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 17:49:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59397 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595Ab3CZVtd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 17:49:33 -0400
+Date: Tue, 26 Mar 2013 22:49:32 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>
+Subject: Re: Fixup for 3.4.34 merge conflict
+Message-ID: <20130326214932.GD14220@linutronix.de>
+References: <1363711834.5938.39.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, torvalds@linux-foundation.org,
-        arnd@arndb.de, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] UAPI: Remove empty Kbuild files
-References: <20130326140520.3100447ee78322d52e6be7af@linux-foundation.org> <20130326131828.209aff73e38d3273d078bb2e@linux-foundation.org> <20130326174853.10144.36253.stgit@warthog.procyon.org.uk> <29647.1364331583@warthog.procyon.org.uk> <30061.1364333234@warthog.procyon.org.uk>
-In-Reply-To: <30061.1364333234@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1363711834.5938.39.camel@gandalf.local.home>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.3.2013 22:27, David Howells wrote:
-> Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
->> Obviously, I thought you were referring to build-time operations.
-> 
-> I want to know whether I should extend my patch to remove include/Kbuild and
-> any refs to it.
+* Steven Rostedt | 2013-03-19 12:50:34 [-0400]:
 
-make headers_install starts at include/uapi, so include/Kbuild is not
-needed. And new exported headers end up in inclde/uapi, so there will
-probably not be need for include/Kbuild in the future either. IMO, just
-remove it.
+>@@ -1054,19 +1032,39 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+> 	 *
+> 	 * XXX send_remote_softirq() ?
+> 	 */
+>-	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)) {
+>-		ret = hrtimer_enqueue_reprogram(timer, new_base, wakeup);
+>-		if (ret) {
+>+	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)
+>+		&& hrtimer_enqueue_reprogram(timer, new_base)) {
+>+
+>+		if (wakeup
+>+#ifdef CONFIG_PREEMPT_RT_BASE
+>+		    /*
+>+		     * Move softirq based timers away from the rbtree in
+>+		     * case it expired already. Otherwise we would have a
+>+		     * stale base->first entry until the softirq runs.
+>+		     */
+>+		    && hrtimer_rt_defer(timer)
+>+#endif
+>+			) {
+> 			/*
+>-			 * In case we failed to reprogram the timer (mostly
+>-			 * because out current timer is already elapsed),
+>-			 * remove it again and report a failure. This avoids
+>-			 * stale base->first entries.
+>+			 * We need to drop cpu_base->lock to avoid a
+>+			 * lock ordering issue vs. rq->lock.
+> 			 */
+>-			debug_deactivate(timer);
+>-			__remove_hrtimer(timer, new_base,
+>-					timer->state & HRTIMER_STATE_CALLBACK, 0);
+>+			raw_spin_unlock(&new_base->cpu_base->lock);
+>+			raise_softirq_irqoff(HRTIMER_SOFTIRQ);
+>+			local_irq_restore(flags);
+>+			return ret;
 
-Michal
+Hmmm. Your ret here might be 0 or 1. RT did return here always zero
+unless it returned -ETIME. This is what I did for v3.8 but I don't claim
+to be correct here. Need to re-check this later…
 
+Sebastian
