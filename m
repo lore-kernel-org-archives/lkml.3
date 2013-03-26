@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759538Ab3CZIKL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 04:10:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33081 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753969Ab3CZIKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 04:10:08 -0400
-Date: Tue, 26 Mar 2013 09:10:04 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
-Message-ID: <20130326081004.GH2295@dhcp22.suse.cz>
-References: <20130321090849.GF6094@dhcp22.suse.cz>
- <20130321102257.GH6094@dhcp22.suse.cz>
- <514BB23E.70908@huawei.com>
- <20130322080749.GB31457@dhcp22.suse.cz>
- <514C1388.6090909@huawei.com>
- <514C14BF.3050009@parallels.com>
- <20130322093141.GE31457@dhcp22.suse.cz>
- <514EAC41.5050700@huawei.com>
- <20130325090629.GN2154@dhcp22.suse.cz>
- <515153C0.5070908@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515153C0.5070908@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759558Ab3CZINX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 04:13:23 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:38352 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756199Ab3CZINU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 04:13:20 -0400
+Message-ID: <1364285594.27005.2.camel@phoenix>
+Subject: [PATCH v2] regulator: ab8500: Don't update is_enabled flag in error
+ paths
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Tue, 26 Mar 2013 16:13:14 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 26-03-13 15:52:32, Li Zefan wrote:
-[...]
-> ...
-> >  static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
-> >  					 struct kmem_cache *s)
-> >  {
-> > -	char *name;
-> >  	struct kmem_cache *new;
-> > +	static char *tmp_name = NULL;
-> 
-> (minor nitpick) why not preserve the name "name"
+This avoid setting is_enabled flag to wrong status if enable/disable fails.
 
-I wanted to make it clear that the name is just temporal
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+v2: Just make the coding style consist with rest of the code.
 
+ drivers/regulator/ab8500.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index 12e2740..4a70323 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -117,9 +117,11 @@ static int ab8500_regulator_enable(struct regulator_dev *rdev)
+ 	ret = abx500_mask_and_set_register_interruptible(info->dev,
+ 		info->update_bank, info->update_reg,
+ 		info->update_mask, info->update_val);
+-	if (ret < 0)
++	if (ret < 0) {
+ 		dev_err(rdev_get_dev(rdev),
+ 			"couldn't set enable bits for regulator\n");
++		return ret;
++	}
+ 
+ 	info->is_enabled = true;
+ 
+@@ -144,9 +146,11 @@ static int ab8500_regulator_disable(struct regulator_dev *rdev)
+ 	ret = abx500_mask_and_set_register_interruptible(info->dev,
+ 		info->update_bank, info->update_reg,
+ 		info->update_mask, 0x0);
+-	if (ret < 0)
++	if (ret < 0) {
+ 		dev_err(rdev_get_dev(rdev),
+ 			"couldn't set disable bits for regulator\n");
++		return ret;
++	}
+ 
+ 	info->is_enabled = false;
+ 
 -- 
-Michal Hocko
-SUSE Labs
+1.7.10.4
+
+
+
