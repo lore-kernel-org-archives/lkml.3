@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab3CZWwH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:52:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52899 "EHLO
+	id S1756363Ab3CZX0r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:26:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52908 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215Ab3CZWwD (ORCPT
+	with ESMTP id S1755922Ab3CZWwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:03 -0400
+	Tue, 26 Mar 2013 18:52:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
-Subject: [ 02/72] sunsu: Fix panic in case of nonexistent port at "console=ttySY" cmdline option
-Date: Tue, 26 Mar 2013 15:50:45 -0700
-Message-Id: <20130326224919.933089686@linuxfoundation.org>
+        Marcin Miotk <marcinmiotk81@gmail.com>,
+        Benjamin Li <benli@broadcom.com>,
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 06/72] tg3: 5715 does not link up when autoneg off
+Date: Tue, 26 Mar 2013 15:50:49 -0700
+Message-Id: <20130326224920.362879900@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -27,118 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Tkhai Kirill <tkhai@yandex.ru>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-[ Upstream commit cb29529ea0030e60ef1bbbf8399a43d397a51526 ]
+[ Upstream commit 7c6cdead7cc9a99650d15497aae47d7472217eb1 ]
 
-If a machine has X (X < 4) sunsu ports and cmdline
-option "console=ttySY" is passed, where X < Y <= 4,
-than the following panic happens:
+Commit d13ba512cbba7de5d55d7a3b2aae7d83c8921457 ("tg3: Remove
+SPEED_UNKNOWN checks") cleaned up the autoneg advertisement by
+removing some dead code. One effect of this change was that the
+advertisement register would not be updated if autoneg is turned off.
 
-Unable to handle kernel NULL pointer dereference
-TPC: <sunsu_console_setup+0x78/0xe0>
-RPC: <sunsu_console_setup+0x74/0xe0>
-I7: <register_console+0x378/0x3e0>
-Call Trace:
- [0000000000453a38] register_console+0x378/0x3e0
- [0000000000576fa0] uart_add_one_port+0x2e0/0x340
- [000000000057af40] su_probe+0x160/0x2e0
- [00000000005b8a4c] platform_drv_probe+0xc/0x20
- [00000000005b6c2c] driver_probe_device+0x12c/0x220
- [00000000005b6da8] __driver_attach+0x88/0xa0
- [00000000005b4df4] bus_for_each_dev+0x54/0xa0
- [00000000005b5a54] bus_add_driver+0x154/0x260
- [00000000005b7190] driver_register+0x50/0x180
- [00000000006d250c] sunsu_init+0x18c/0x1e0
- [00000000006c2668] do_one_initcall+0xe8/0x160
- [00000000006c282c] kernel_init_freeable+0x12c/0x1e0
- [0000000000603764] kernel_init+0x4/0x100
- [0000000000405f64] ret_from_syscall+0x1c/0x2c
- [0000000000000000]           (null)
+This exposed a bug on the 5715 device w.r.t linking. The 5715 defaults
+to advertise only 10Mb Full duplex. But with autoneg disabled, it needs
+the configured speed enabled in the advertisement register to link up.
 
-1)Fix the panic;
-2)Increment registered port number every successful
-probe.
+This patch adds the work around to advertise all speeds on the 5715 when
+autoneg is disabled.
 
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: David Miller <davem@davemloft.net>
+Reported-by: Marcin Miotk <marcinmiotk81@gmail.com>
+Reviewed-by: Benjamin Li <benli@broadcom.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/tty/serial/sunsu.c |   21 +++++++++------------
- 1 file changed, 9 insertions(+), 12 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/tty/serial/sunsu.c
-+++ b/drivers/tty/serial/sunsu.c
-@@ -968,6 +968,7 @@ static struct uart_ops sunsu_pops = {
- #define UART_NR	4
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -3946,6 +3946,14 @@ static void tg3_phy_copper_begin(struct
+ 		tp->link_config.active_speed = tp->link_config.speed;
+ 		tp->link_config.active_duplex = tp->link_config.duplex;
  
- static struct uart_sunsu_port sunsu_ports[UART_NR];
-+static int nr_inst; /* Number of already registered ports */
- 
- #ifdef CONFIG_SERIO
- 
-@@ -1337,13 +1338,8 @@ static int __init sunsu_console_setup(st
- 	printk("Console: ttyS%d (SU)\n",
- 	       (sunsu_reg.minor - 64) + co->index);
- 
--	/*
--	 * Check whether an invalid uart number has been specified, and
--	 * if so, search for the first available port that does have
--	 * console support.
--	 */
--	if (co->index >= UART_NR)
--		co->index = 0;
-+	if (co->index > nr_inst)
-+		return -ENODEV;
- 	port = &sunsu_ports[co->index].port;
- 
- 	/*
-@@ -1408,7 +1404,6 @@ static enum su_type __devinit su_get_typ
- 
- static int __devinit su_probe(struct platform_device *op)
- {
--	static int inst;
- 	struct device_node *dp = op->dev.of_node;
- 	struct uart_sunsu_port *up;
- 	struct resource *rp;
-@@ -1418,16 +1413,16 @@ static int __devinit su_probe(struct pla
- 
- 	type = su_get_type(dp);
- 	if (type == SU_PORT_PORT) {
--		if (inst >= UART_NR)
-+		if (nr_inst >= UART_NR)
- 			return -EINVAL;
--		up = &sunsu_ports[inst];
-+		up = &sunsu_ports[nr_inst];
- 	} else {
- 		up = kzalloc(sizeof(*up), GFP_KERNEL);
- 		if (!up)
- 			return -ENOMEM;
- 	}
- 
--	up->port.line = inst;
-+	up->port.line = nr_inst;
- 
- 	spin_lock_init(&up->port.lock);
- 
-@@ -1461,6 +1456,8 @@ static int __devinit su_probe(struct pla
- 		}
- 		dev_set_drvdata(&op->dev, up);
- 
-+		nr_inst++;
++		if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5714) {
++			/* With autoneg disabled, 5715 only links up when the
++			 * advertisement register has the configured speed
++			 * enabled.
++			 */
++			tg3_writephy(tp, MII_ADVERTISE, ADVERTISE_ALL);
++		}
 +
- 		return 0;
- 	}
- 
-@@ -1488,7 +1485,7 @@ static int __devinit su_probe(struct pla
- 
- 	dev_set_drvdata(&op->dev, up);
- 
--	inst++;
-+	nr_inst++;
- 
- 	return 0;
- 
+ 		bmcr = 0;
+ 		switch (tp->link_config.speed) {
+ 		default:
 
 
