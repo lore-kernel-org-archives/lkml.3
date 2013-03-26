@@ -1,38 +1,382 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759339Ab3CZCiw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 22:38:52 -0400
-Received: from eo-dell-r410d.ku.de ([141.78.7.147]:42400 "EHLO
-	eo-dell-r410d.ku-eichstaett.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759319Ab3CZCio (ORCPT
+	id S1759354Ab3CZCjE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 22:39:04 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:39710 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759326Ab3CZCi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 22:38:44 -0400
-X-Greylist: delayed 716 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Mar 2013 22:38:43 EDT
-Message-ID: <64e7ed71c24f0f901abea1ae914a6637.squirrel@imap.ku.de>
-Date: Tue, 26 Mar 2013 03:26:41 +0100
-Subject: Re:
-From: "Mrs Akilah Saeedi" <info3@mail.com>
-To: info@safadi-saeedi.com
-Reply-To: info@safadi-saeedi.com
-User-Agent: SquirrelMail/1.4.22
+	Mon, 25 Mar 2013 22:38:58 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Mike Travis <travis@sgi.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Tim Bird <tim.bird@am.sony.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Cong Wang <amwang@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+References: <20130325185007.321022858@gulag1.americas.sgi.com>
+	<20130325185008.059875584@gulag1.americas.sgi.com>
+Date: Mon, 25 Mar 2013 19:38:40 -0700
+In-Reply-To: <20130325185008.059875584@gulag1.americas.sgi.com> (Mike Travis's
+	message of "Mon, 25 Mar 2013 13:50:12 -0500")
+Message-ID: <87ehf2j367.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-PMX-Version: 6.0.0.2142326, Antispam-Engine: 2.7.2.2107409, Antispam-Data: 2013.3.26.20923
-X-PMX-Spam: Gauge=XI, Probability=11%, Report='
- PRIORITY_NO_NAME 0.716, REPLYTO_FROM_DIFF_ADDY 0.1, HTML_00_01 0.05, HTML_00_10 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_100_199 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, FROM_NAME_PHRASE 0, NO_URI_FOUND 0, SMALL_BODY 0, WEBMAIL_SOURCE 0, WEBMAIL_USER_AGENT 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FRAUD_MONEY 0, __FRAUD_MONEY_VALUE 0, __FRAUD_WEBMAIL 0, __FRAUD_WEBMAIL_FROM 0, __HAS_FROM 0, __HAS_MSGID 0, __HAS_REPLYTO 0, __HAS_X_PRIORITY 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_SPEAR_HTTP_RECEIVED 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __TO_NO_NAME 0, __USER_AGENT 0'
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX195pes2aNRbtF7HvCM/+rB+GqRO59nU/uU=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_XMDrugObfuBody_14 obfuscated drug references
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Mike Travis <travis@sgi.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 05/15] KDB: add more exports for supporting KDB modules v2
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mike Travis <travis@sgi.com> writes:
 
+> This patch adds some significant KDB functions to be usable by
+> externally built and loadable KDB modules.   All added functions
+> have been marked EXPORT_SYMBOL_GPL as that seems to be the norm.
+> No 'EXPORT_SYMBOL's were changed from previous instances to avoid
+> breaking existing modules.
 
+I don't have any real objections.  Although the export of kallsyms
+probably is enough to raise an eyebrow or two.
 
--- 
-I am Akilah Saeedi, i have 7.100,000.00 USD for you contact me on my provide
-email for more details.
+Are there plans for these external modules to be merged?
 
------ Vidarebefordrat
+In general the policy is to not export things unless there are in tree
+users.  Otherwise maitenance can be a challenge if you can't update your
+users when you update their helper functions.  Certainly a symbol being
+exported is not a guarantee that the exported function won't be changed.
 
+Eric
+
+> Cc: Tim Bird <tim.bird@am.sony.com>
+> Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
+> Cc: Sasha Levin <sasha.levin@oracle.com>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Cong Wang <amwang@redhat.com>
+> Cc: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
+> Signed-off-by: Mike Travis <travis@sgi.com>
+> ---
+> v2: change in handling of EXPORT_SYMBOLS.
+> ---
+>  kernel/debug/kdb/kdb_io.c      |    3 +++
+>  kernel/debug/kdb/kdb_main.c    |   14 ++++++++++++++
+>  kernel/debug/kdb/kdb_support.c |   17 +++++++++++++++++
+>  kernel/kallsyms.c              |    1 +
+>  4 files changed, 35 insertions(+)
+>
+> --- linux.orig/kernel/debug/kdb/kdb_io.c
+> +++ linux/kernel/debug/kdb/kdb_io.c
+> @@ -30,6 +30,7 @@
+>  char kdb_prompt_str[CMD_BUFLEN];
+>  
+>  int kdb_trap_printk;
+> +EXPORT_SYMBOL_GPL(kdb_trap_printk);
+>  
+>  static int kgdb_transition_check(char *buffer)
+>  {
+> @@ -447,6 +448,7 @@ char *kdb_getstr(char *buffer, size_t bu
+>  	kdb_nextline = 1;	/* Prompt and input resets line number */
+>  	return kdb_read(buffer, bufsize);
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_getstr);
+>  
+>  /*
+>   * kdb_input_flush
+> @@ -839,6 +841,7 @@ kdb_print_out:
+>  	preempt_enable();
+>  	return retlen;
+>  }
+> +EXPORT_SYMBOL_GPL(vkdb_printf);
+>  
+>  int kdb_printf(const char *fmt, ...)
+>  {
+> --- linux.orig/kernel/debug/kdb/kdb_main.c
+> +++ linux/kernel/debug/kdb/kdb_main.c
+> @@ -53,6 +53,7 @@ int kdb_grep_trailing;
+>   * Kernel debugger state flags
+>   */
+>  int kdb_flags;
+> +EXPORT_SYMBOL_GPL(kdb_flags);
+>  atomic_t kdb_event;
+>  
+>  /*
+> @@ -60,12 +61,14 @@ atomic_t kdb_event;
+>   * single thread processors through the kernel debugger.
+>   */
+>  int kdb_initial_cpu = -1;	/* cpu number that owns kdb */
+> +EXPORT_SYMBOL_GPL(kdb_initial_cpu);
+>  int kdb_nextline = 1;
+>  int kdb_state;			/* General KDB state */
+>  
+>  struct task_struct *kdb_current_task;
+>  EXPORT_SYMBOL(kdb_current_task);
+>  struct pt_regs *kdb_current_regs;
+> +EXPORT_SYMBOL_GPL(kdb_current_regs);
+>  
+>  const char *kdb_diemsg;
+>  static int kdb_go_count;
+> @@ -186,6 +189,7 @@ struct task_struct *kdb_curr_task(int cp
+>  #endif
+>  	return p;
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_curr_task);
+>  
+>  /*
+>   * kdbgetenv - This function will return the character string value of
+> @@ -217,6 +221,7 @@ char *kdbgetenv(const char *match)
+>  	}
+>  	return NULL;
+>  }
+> +EXPORT_SYMBOL_GPL(kdbgetenv);
+>  
+>  /*
+>   * kdballocenv - This function is used to allocate bytes for
+> @@ -293,6 +298,7 @@ int kdbgetintenv(const char *match, int
+>  		*value = (int) val;
+>  	return diag;
+>  }
+> +EXPORT_SYMBOL_GPL(kdbgetintenv);
+>  
+>  /*
+>   * kdbgetularg - This function will convert a numeric string into an
+> @@ -325,6 +331,7 @@ int kdbgetularg(const char *arg, unsigne
+>  
+>  	return 0;
+>  }
+> +EXPORT_SYMBOL_GPL(kdbgetularg);
+>  
+>  int kdbgetu64arg(const char *arg, u64 *value)
+>  {
+> @@ -344,6 +351,7 @@ int kdbgetu64arg(const char *arg, u64 *v
+>  
+>  	return 0;
+>  }
+> +EXPORT_SYMBOL_GPL(kdbgetu64arg);
+>  
+>  /*
+>   * kdb_set - This function implements the 'set' command.  Alter an
+> @@ -425,6 +433,7 @@ int kdb_set(int argc, const char **argv)
+>  
+>  	return KDB_ENVFULL;
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_set);
+>  
+>  static int kdb_check_regs(void)
+>  {
+> @@ -585,6 +594,7 @@ int kdbgetaddrarg(int argc, const char *
+>  
+>  	return 0;
+>  }
+> +EXPORT_SYMBOL_GPL(kdbgetaddrarg);
+>  
+>  static void kdb_cmderror(int diag)
+>  {
+> @@ -1049,6 +1059,7 @@ int kdb_parse(const char *cmdstr)
+>  		return 0;
+>  	}
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_parse);
+>  
+>  
+>  static int handle_ctrl_cmd(char *cmd)
+> @@ -1109,6 +1120,7 @@ void kdb_set_current_task(struct task_st
+>  	}
+>  	kdb_current_regs = NULL;
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_set_current_task);
+>  
+>  /*
+>   * kdb_local - The main code for kdb.  This routine is invoked on a
+> @@ -2249,6 +2261,7 @@ void kdb_ps_suppressed(void)
+>  		kdb_printf(" suppressed,\nuse 'ps A' to see all.\n");
+>  	}
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_ps_suppressed);
+>  
+>  /*
+>   * kdb_ps - This function implements the 'ps' command which shows a
+> @@ -2281,6 +2294,7 @@ void kdb_ps1(const struct task_struct *p
+>  		}
+>  	}
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_ps1);
+>  
+>  static int kdb_ps(int argc, const char **argv)
+>  {
+> --- linux.orig/kernel/debug/kdb/kdb_support.c
+> +++ linux/kernel/debug/kdb/kdb_support.c
+> @@ -157,6 +157,7 @@ out:
+>  	debug_kfree(knt1);
+>  	return ret;
+>  }
+> +EXPORT_SYMBOL_GPL(kdbnearsym);
+>  
+>  void kdbnearsym_cleanup(void)
+>  {
+> @@ -168,6 +169,7 @@ void kdbnearsym_cleanup(void)
+>  		}
+>  	}
+>  }
+> +EXPORT_SYMBOL_GPL(kdbnearsym_cleanup);
+>  
+>  static char ks_namebuf[KSYM_NAME_LEN+1], ks_namebuf_prev[KSYM_NAME_LEN+1];
+>  
+> @@ -214,6 +216,7 @@ int kallsyms_symbol_complete(char *prefi
+>  		memcpy(prefix_name, ks_namebuf_prev, prev_len+1);
+>  	return number;
+>  }
+> +EXPORT_SYMBOL_GPL(kallsyms_symbol_complete);
+>  
+>  /*
+>   * kallsyms_symbol_next
+> @@ -242,6 +245,7 @@ int kallsyms_symbol_next(char *prefix_na
+>  	}
+>  	return 0;
+>  }
+> +EXPORT_SYMBOL_GPL(kallsyms_symbol_next);
+>  
+>  /*
+>   * kdb_symbol_print - Standard method for printing a symbol name and offset.
+> @@ -292,6 +296,7 @@ void kdb_symbol_print(unsigned long addr
+>  	if (punc & KDB_SP_NEWLINE)
+>  		kdb_printf("\n");
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_symbol_print);
+>  
+>  /*
+>   * kdb_strdup - kdb equivalent of strdup, for disasm code.
+> @@ -312,6 +317,7 @@ char *kdb_strdup(const char *str, gfp_t
+>  		return NULL;
+>  	return strcpy(s, str);
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_strdup);
+>  
+>  /*
+>   * kdb_getarea_size - Read an area of data.  The kdb equivalent of
+> @@ -337,6 +343,7 @@ int kdb_getarea_size(void *res, unsigned
+>  	}
+>  	return ret;
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_getarea_size);
+>  
+>  /*
+>   * kdb_putarea_size - Write an area of data.  The kdb equivalent of
+> @@ -362,6 +369,7 @@ int kdb_putarea_size(unsigned long addr,
+>  	}
+>  	return ret;
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_putarea_size);
+>  
+>  /*
+>   * kdb_getphys - Read data from a physical address. Validate the
+> @@ -439,6 +447,7 @@ int kdb_getphysword(unsigned long *word,
+>  	}
+>  	return diag;
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_getphysword);
+>  
+>  /*
+>   * kdb_getword - Read a binary value.  Unlike kdb_getarea, this treats
+> @@ -488,6 +497,7 @@ int kdb_getword(unsigned long *word, uns
+>  	}
+>  	return diag;
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_getword);
+>  
+>  /*
+>   * kdb_putword - Write a binary value.  Unlike kdb_putarea, this
+> @@ -532,6 +542,7 @@ int kdb_putword(unsigned long addr, unsi
+>  	}
+>  	return diag;
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_putword);
+>  
+>  /*
+>   * kdb_task_state_string - Convert a string containing any of the
+> @@ -681,6 +692,7 @@ void kdb_print_nameval(const char *name,
+>  	else
+>  		kdb_printf("0x%lx\n", val);
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_print_nameval);
+>  
+>  /* Last ditch allocator for debugging, so we can still debug even when
+>   * the GFP_ATOMIC pool has been exhausted.  The algorithms are tuned
+> @@ -799,6 +811,7 @@ out:
+>  	spin_unlock(&dap_lock);
+>  	return p;
+>  }
+> +EXPORT_SYMBOL_GPL(debug_kmalloc);
+>  
+>  void debug_kfree(void *p)
+>  {
+> @@ -858,6 +871,7 @@ void debug_kfree(void *p)
+>  	}
+>  	spin_unlock(&dap_lock);
+>  }
+> +EXPORT_SYMBOL_GPL(debug_kfree);
+>  
+>  void debug_kusage(void)
+>  {
+> @@ -907,6 +921,7 @@ void debug_kusage(void)
+>  out:
+>  	spin_unlock(&dap_lock);
+>  }
+> +EXPORT_SYMBOL_GPL(debug_kusage);
+>  
+>  /* Maintain a small stack of kdb_flags to allow recursion without disturbing
+>   * the global kdb state.
+> @@ -919,9 +934,11 @@ void kdb_save_flags(void)
+>  	BUG_ON(kdb_flags_index >= ARRAY_SIZE(kdb_flags_stack));
+>  	kdb_flags_stack[kdb_flags_index++] = kdb_flags;
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_save_flags);
+>  
+>  void kdb_restore_flags(void)
+>  {
+>  	BUG_ON(kdb_flags_index <= 0);
+>  	kdb_flags = kdb_flags_stack[--kdb_flags_index];
+>  }
+> +EXPORT_SYMBOL_GPL(kdb_restore_flags);
+> --- linux.orig/kernel/kallsyms.c
+> +++ linux/kernel/kallsyms.c
+> @@ -588,6 +588,7 @@ const char *kdb_walk_kallsyms(loff_t *po
+>  	}
+>  }
+>  #endif	/* CONFIG_KGDB_KDB */
+> +EXPORT_SYMBOL_GPL(kdb_walk_kallsyms);
+>  
+>  static const struct file_operations kallsyms_operations = {
+>  	.open = kallsyms_open,
