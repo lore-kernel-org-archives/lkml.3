@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756390Ab3CZW7h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:59:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53101 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756319Ab3CZWwr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756318Ab3CZWwr (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 26 Mar 2013 18:52:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53094 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755224Ab3CZWwp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 18:52:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 48/72] drm/radeon/benchmark: make sure bo blit copy exists before using it
-Date: Tue, 26 Mar 2013 15:51:31 -0700
-Message-Id: <20130326224924.640523750@linuxfoundation.org>
+Subject: [ 46/72] drm/radeon: add Richland pci ids
+Date: Tue, 26 Mar 2013 15:51:29 -0700
+Message-Id: <20130326224924.424097200@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,45 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit fa8d387dc3f62062a6b4afbbb2a3438094fd8584 upstream.
+commit b75bbaa038ffc426e88ea3df6c4ae11834fc3e4f upstream.
 
-Fixes a segfault on asics without a blit callback.
-
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=62239
-
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Reviewed-by: Jerome Glisse <jglisse@redhat.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_benchmark.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ include/drm/drm_pciids.h |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_benchmark.c
-+++ b/drivers/gpu/drm/radeon/radeon_benchmark.c
-@@ -141,13 +141,15 @@ static void radeon_benchmark_move(struct
- 						     sdomain, ddomain, "dma");
- 	}
- 
--	time = radeon_benchmark_do_move(rdev, size, saddr, daddr,
--					RADEON_BENCHMARK_COPY_BLIT, n);
--	if (time < 0)
--		goto out_cleanup;
--	if (time > 0)
--		radeon_benchmark_log_results(n, size, time,
--					     sdomain, ddomain, "blit");
-+	if (rdev->asic->copy.blit) {
-+		time = radeon_benchmark_do_move(rdev, size, saddr, daddr,
-+						RADEON_BENCHMARK_COPY_BLIT, n);
-+		if (time < 0)
-+			goto out_cleanup;
-+		if (time > 0)
-+			radeon_benchmark_log_results(n, size, time,
-+						     sdomain, ddomain, "blit");
-+	}
- 
- out_cleanup:
- 	if (sobj) {
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -572,7 +572,11 @@
+ 	{0x1002, 0x9908, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x9909, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x990A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+-	{0x1002, 0x990F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x990B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x990C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x990D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x990E, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x990F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x9910, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x9913, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x9917, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+@@ -583,6 +587,13 @@
+ 	{0x1002, 0x9992, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x9993, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x9994, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x9995, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x9996, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x9997, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x9998, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x9999, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x999A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x999B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x99A0, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x99A2, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x99A4, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
 
 
