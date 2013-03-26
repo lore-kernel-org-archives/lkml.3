@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab3CZXVF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:21:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53007 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755023Ab3CZWw3 (ORCPT
+	id S1756332Ab3CZXVO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:21:14 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:43195 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755406Ab3CZXVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:29 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 38/72] rtlwifi: rtl8192cu: Fix schedule while atomic bug splat
-Date: Tue, 26 Mar 2013 15:51:21 -0700
-Message-Id: <20130326224923.618487600@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
-References: <20130326224919.675227837@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 26 Mar 2013 19:21:11 -0400
+Date: Tue, 26 Mar 2013 16:21:08 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Tomas Winkler <tomas.winkler@intel.com>, arnd@arndb.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [char-misc-next 01/11 V4] mei: bus: Initial MEI Client bus type
+ implementation
+Message-ID: <20130326232108.GA30620@kroah.com>
+References: <1363819469-696-1-git-send-email-tomas.winkler@intel.com>
+ <1363819469-696-2-git-send-email-tomas.winkler@intel.com>
+ <20130325202855.GA21494@kroah.com>
+ <20130326133326.GA19511@zurbaran>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130326133326.GA19511@zurbaran>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Mar 26, 2013 at 02:33:26PM +0100, Samuel Ortiz wrote:
+> > > +/**
+> > > + * struct mei_cl_device - MEI device handle
+> > > + * An mei_cl_device pointer is returned from mei_add_device()
+> > > + * and links MEI bus clients to their actual ME host client pointer.
+> > > + * Drivers for MEI devices will get an mei_cl_device pointer
+> > > + * when being probed and shall use it for doing ME bus I/O.
+> > > + *
+> > > + * @dev: linux driver model device pointer
+> > > + * @uuid: me client uuid
+> > > + * @cl: mei client
+> > > + * @priv_data: client private data
+> > > + */
+> > > +struct mei_cl_device {
+> > > +	struct device dev;
+> > > +
+> > > +	uuid_le uuid;
+> > > +	struct mei_cl *cl;
+> > > +
+> > > +	void *priv_data;
+> > > +};
+> > 
+> > Why is priv_data needed?  What's wrong with the pointer provided to you
+> > in struct device?
+> mei_cl_device->dev->p->driver_data is used by mei drivers to carry their
+> private data around, we define mei_cl_get_clientdata/mei_cl_set_clientdata for
+> that and keep the mei_cl_device structure opaque to them.
+> mei_cl_device->priv_data is used internally by the drivers/misc/mei/ bus
+> related code to carry technology specific pointers. drivers/misc/mei/nfc.c
+> uses it to fetch its private data when it gets a mei_cl_device pointer.
 
-------------------
+Ugh, that looks like a mess, but ok, if you say it is needed, I'll trust
+you.
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+> > > +struct mei_cl_driver {
+> > > +	struct device_driver driver;
+> > > +	const char *name;
+> > 
+> > What's wrong with the driver.name field?
+> >From your initial comments on patchset v1:
+> 
+> "
+> 	> +static struct mei_bus_driver contact_driver = {
+> 	> +     .driver = {
+> 	> +                .name = CONTAC_DRIVER_NAME,
+> 	> +               },
+> 
+> 	Can't you put a name field in your mei_bus_driver structure and then
+> 	copy it to the version in the driver model?  That's what other bus
+> 	drivers do and it makes more sense.
+> "
+> 
+> And you were right, that is indeed what other bus drivers do. Did I
+> misunderstand you here ?
 
-commit 664899786cb49cb52f620e06ac19c0be524a7cfa upstream.
+No, you are right, sorry for giving conflicting information, it's fine
+as-is.
 
-When run at debug 3 or higher, rtl8192cu reports a BUG as follows:
-
-BUG: scheduling while atomic: kworker/u:0/5281/0x00000002
-INFO: lockdep is turned off.
-Modules linked in: rtl8192cu rtl8192c_common rtlwifi fuse af_packet bnep bluetooth b43 mac80211 cfg80211 ipv6 snd_hda_codec_conexant kvm_amd k
-vm snd_hda_intel snd_hda_codec bcma rng_core snd_pcm ssb mmc_core snd_seq snd_timer snd_seq_device snd i2c_nforce2 sr_mod pcmcia forcedeth i2c_core soundcore
- cdrom sg serio_raw k8temp hwmon joydev ac battery pcmcia_core snd_page_alloc video button wmi autofs4 ext4 mbcache jbd2 crc16 thermal processor scsi_dh_alua
- scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc scsi_dh ata_generic pata_acpi pata_amd [last unloaded: rtlwifi]
-Pid: 5281, comm: kworker/u:0 Tainted: G        W    3.8.0-wl+ #119
-Call Trace:
- [<ffffffff814531e7>] __schedule_bug+0x62/0x70
- [<ffffffff81459af0>] __schedule+0x730/0xa30
- [<ffffffff81326e49>] ? usb_hcd_link_urb_to_ep+0x19/0xa0
- [<ffffffff8145a0d4>] schedule+0x24/0x70
- [<ffffffff814575ec>] schedule_timeout+0x18c/0x2f0
- [<ffffffff81459ec0>] ? wait_for_common+0x40/0x180
- [<ffffffff8133f461>] ? ehci_urb_enqueue+0xf1/0xee0
- [<ffffffff810a579d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff81459f65>] wait_for_common+0xe5/0x180
- [<ffffffff8107d1c0>] ? try_to_wake_up+0x2d0/0x2d0
- [<ffffffff8145a08e>] wait_for_completion_timeout+0xe/0x10
- [<ffffffff8132ab1c>] usb_start_wait_urb+0x8c/0x100
- [<ffffffff8132adf9>] usb_control_msg+0xd9/0x130
- [<ffffffffa057dd8d>] _usb_read_sync+0xcd/0x140 [rtlwifi]
- [<ffffffffa057de0e>] _usb_read32_sync+0xe/0x10 [rtlwifi]
- [<ffffffffa04b0555>] rtl92cu_update_hal_rate_table+0x1a5/0x1f0 [rtl8192cu]
-
-The cause is a synchronous read from routine rtl92cu_update_hal_rate_table().
-The resulting output is not critical, thus the debug statement is
-deleted.
-
-Reported-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c |    2 --
- 1 file changed, 2 deletions(-)
-
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-@@ -2059,8 +2059,6 @@ void rtl92cu_update_hal_rate_table(struc
- 			       (shortgi_rate << 4) | (shortgi_rate);
- 	}
- 	rtl_write_dword(rtlpriv, REG_ARFR0 + ratr_index * 4, ratr_value);
--	RT_TRACE(rtlpriv, COMP_RATR, DBG_DMESG, "%x\n",
--		 rtl_read_dword(rtlpriv, REG_ARFR0));
- }
- 
- void rtl92cu_update_hal_rate_mask(struct ieee80211_hw *hw, u8 rssi_level)
-
-
+greg k-h
