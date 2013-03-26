@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab3CZRjY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:39:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31047 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754347Ab3CZRge (ORCPT
+	id S1754985Ab3CZRkU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:40:20 -0400
+Received: from claranet-outbound-smtp01.uk.clara.net ([195.8.89.34]:42905 "EHLO
+	claranet-outbound-smtp01.uk.clara.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754951Ab3CZRkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:36:34 -0400
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=lUpsUe8tFxsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=y6LpG6CRC4AA:10 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=J1Y8HTJGAAAA:8 a=GZK3lcuhIWR5GrNAc6YA:9 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130326173609.642256748@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 26 Mar 2013 13:22:00 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Vlad Yasevich <vyasevich@gmail.com>, Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 61/86] sctp: jsctp_sf_eat_sack: fix jprobes function signature mismatch
-References: <20130326172059.136127374@goodmis.org>
-Content-Disposition: inline; filename=0061-sctp-jsctp_sf_eat_sack-fix-jprobes-function-signatur.patch
+	Tue, 26 Mar 2013 13:40:14 -0400
+X-Greylist: delayed 4654 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Mar 2013 13:40:14 EDT
+Date: Tue, 26 Mar 2013 16:22:28 +0000
+From: Mike Keehan <mike@keehan.net>
+To: linux-kernel@vger.kernel.org
+Subject: Git bisect problem
+Message-ID: <20130326162228.288994ef@laptop3>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.1 stable review patch.
-If anyone has any objections, please let me know.
+Hi,
 
-------------------
+I'm trying to find out which update causes my 5G Wifi
+connection to time out when authenticating.
 
-From: Daniel Borkmann <dborkman@redhat.com>
+Following the instructions in git help bisect, I
+git cloned the kernel, then git bisect start, and
+git bisect bad v3.9.0-rc2.
 
-[ Upstream commit c5b1825fa547eb475ca8936f6f346c18b1ece298 ]
+This errors with :-
+  fatal: Needed a single revision
+  Bad rev input: v3.9.0-rc2
 
-Commit 24cb81a6a (sctp: Push struct net down into all of the
-state machine functions) introduced the net structure into all
-state machine functions, but jsctp_sf_eat_sack was not updated,
-hence when SCTP association probing is enabled in the kernel,
-any simple SCTP client/server program from userspace will panic
-the kernel.
+and git bisect good v3.9.0-rc1 gives same error.
 
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/sctp/probe.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+How are you supposed to specify the revision?
 
-diff --git a/net/sctp/probe.c b/net/sctp/probe.c
-index bc6cd75..5f7518d 100644
---- a/net/sctp/probe.c
-+++ b/net/sctp/probe.c
-@@ -122,7 +122,8 @@ static const struct file_operations sctpprobe_fops = {
- 	.llseek = noop_llseek,
- };
- 
--sctp_disposition_t jsctp_sf_eat_sack(const struct sctp_endpoint *ep,
-+sctp_disposition_t jsctp_sf_eat_sack(struct net *net,
-+				     const struct sctp_endpoint *ep,
- 				     const struct sctp_association *asoc,
- 				     const sctp_subtype_t type,
- 				     void *arg,
--- 
-1.7.10.4
+Regards,
 
-
+  Mike.
