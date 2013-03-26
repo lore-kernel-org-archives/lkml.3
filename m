@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934126Ab3CZIzA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 04:55:00 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35967 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175Ab3CZIy6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 04:54:58 -0400
-Date: Tue, 26 Mar 2013 09:54:54 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Christian Gmeiner <christian.gmeiner@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        linux-i2c@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/3] x86: Add basic support for the Congatec CGEB BIOS
- interface
-Message-ID: <20130326085454.GK1906@pengutronix.de>
-References: <1360663374-30951-1-git-send-email-s.hauer@pengutronix.de>
- <1360663374-30951-2-git-send-email-s.hauer@pengutronix.de>
- <CAH9NwWdOCo642KqUXk1y5hbwdtW5RYgQnQfZFUEe4FOJzSiByQ@mail.gmail.com>
+	id S1759651Ab3CZIzj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 04:55:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34752 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757400Ab3CZIzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 04:55:37 -0400
+Date: Tue, 26 Mar 2013 09:55:35 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/10] migrate: add hugepage migration code to
+ migrate_pages()
+Message-ID: <20130326085535.GL2295@dhcp22.suse.cz>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1363983835-20184-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130325130416.GV2154@dhcp22.suse.cz>
+ <1364274790-z44rtlpy-mutt-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAH9NwWdOCo642KqUXk1y5hbwdtW5RYgQnQfZFUEe4FOJzSiByQ@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:49:41 up 276 days, 1 min, 58 users,  load average: 8.98, 12.61,
- 13.81
+In-Reply-To: <1364274790-z44rtlpy-mutt-n-horiguchi@ah.jp.nec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 09:31:35AM +0100, Christian Gmeiner wrote:
-> Hi Sascha
+On Tue 26-03-13 01:13:10, Naoya Horiguchi wrote:
+> On Mon, Mar 25, 2013 at 02:04:16PM +0100, Michal Hocko wrote:
+> > On Fri 22-03-13 16:23:50, Naoya Horiguchi wrote:
+[...]
+> > > @@ -1012,14 +1040,8 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
+> > >  	check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
+> > >  			flags | MPOL_MF_DISCONTIG_OK, &pagelist);
+> > >  
+> > > -	if (!list_empty(&pagelist)) {
+> > > -		err = migrate_pages(&pagelist, new_node_page, dest,
+> > > +	return migrate_movable_pages(&pagelist, new_node_page, dest,
+> > >  					MIGRATE_SYNC, MR_SYSCALL);
+> > > -		if (err)
+> > > -			putback_lru_pages(&pagelist);
+> > > -	}
+> > > -
+> > > -	return err;
+> > 
+> > This is really confusing. Why migrate_pages doesn't do putback cleanup
+> > on its own but migrate_movable_pages does?
 > 
+> I consider migrate_movable_pages() as a wrapper of migrate_pages(),
+> not the variant of migrate_pages().
+
+The naming suggests that this is the same functionality for a "different"
+type of pages.
+
+> We can find the same pattern in the callers like
 > 
-> > +struct cgeb_pdata {
-> > +       struct cgeb_board_data          *board;
-> > +       int unit;
-> > +};
-> > +
-> > +#endif /* __CONGATEC_CGEB_H */
-> > diff --git a/arch/x86/platform/Makefile b/arch/x86/platform/Makefile
-> > index 8d87439..9de1789 100644
-> > --- a/arch/x86/platform/Makefile
-> > +++ b/arch/x86/platform/Makefile
-> > @@ -1,5 +1,6 @@
-> >  # Platform specific code goes here
-> >  obj-y  += ce4100/
-> > +obj-y  += congatec/
-> >  obj-y  += efi/
-> >  obj-y  += geode/
-> >  obj-y  += iris/
+>   if (!list_empty(&pagelist)) {
+>         err = migrate_pages(...);
+>         if (err)
+>                 putback_lru_pages(&pagelist);
+>   }
 > 
-> 
-> Fails to build
+> , so it can be simplified by migrate_movable_pages().
 
-Ups, sorry. It seems I forgot to git add
-arch/x86/platform/congatec/Makefile. It should look like this:
-
-obj-$(CONFIG_CONGATEC_CGEB) += congatec-cgeb.o
-
-I will include this next time.
-
-
-Any other comments to this series? Is the base cgeb support ok to
-include?
-
-Sascha
+I would rather see the same pattern for both. It could be error prone if
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Michal Hocko
+SUSE Labs
