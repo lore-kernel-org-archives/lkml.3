@@ -1,63 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759311Ab3CZC3O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 22:29:14 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:7343 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756064Ab3CZC3O (ORCPT
+	id S1759339Ab3CZCiw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 22:38:52 -0400
+Received: from eo-dell-r410d.ku.de ([141.78.7.147]:42400 "EHLO
+	eo-dell-r410d.ku-eichstaett.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759319Ab3CZCio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 22:29:14 -0400
-X-Spam-Score: -100.8
-Message-ID: <515107DB.4060508@asianux.com>
-Date: Tue, 26 Mar 2013 10:28:43 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 25 Mar 2013 22:38:44 -0400
+X-Greylist: delayed 716 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Mar 2013 22:38:43 EDT
+Message-ID: <64e7ed71c24f0f901abea1ae914a6637.squirrel@imap.ku.de>
+Date: Tue, 26 Mar 2013 03:26:41 +0100
+Subject: Re:
+From: "Mrs Akilah Saeedi" <info3@mail.com>
+To: info@safadi-saeedi.com
+Reply-To: info@safadi-saeedi.com
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "nico@linaro.org" <nico@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] include/linux/platform_data: beautify code, 'inline'
- is better in front of 'void'
-References: <514FB826.9020302@asianux.com> <20130325233213.GA29245@kroah.com> <5150F871.5050306@asianux.com> <20130326014830.GB6496@kroah.com>
-In-Reply-To: <20130326014830.GB6496@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-PMX-Version: 6.0.0.2142326, Antispam-Engine: 2.7.2.2107409, Antispam-Data: 2013.3.26.20923
+X-PMX-Spam: Gauge=XI, Probability=11%, Report='
+ PRIORITY_NO_NAME 0.716, REPLYTO_FROM_DIFF_ADDY 0.1, HTML_00_01 0.05, HTML_00_10 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_100_199 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, FROM_NAME_PHRASE 0, NO_URI_FOUND 0, SMALL_BODY 0, WEBMAIL_SOURCE 0, WEBMAIL_USER_AGENT 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FRAUD_MONEY 0, __FRAUD_MONEY_VALUE 0, __FRAUD_WEBMAIL 0, __FRAUD_WEBMAIL_FROM 0, __HAS_FROM 0, __HAS_MSGID 0, __HAS_REPLYTO 0, __HAS_X_PRIORITY 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_SPEAR_HTTP_RECEIVED 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __TO_NO_NAME 0, __USER_AGENT 0'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年03月26日 09:48, Greg KH wrote:
-> On Tue, Mar 26, 2013 at 09:22:57AM +0800, Chen Gang wrote:
->> On 2013年03月26日 07:32, Greg KH wrote:
->>> On Mon, Mar 25, 2013 at 10:36:22AM +0800, Chen Gang wrote:
->>>>
->>>>   better to let 'inline' in front of 'void'
->>>
->>> Why?  What does this fix?
->>>
->>>
->>>
->>
->>   when I am compiling with "EXTRA_FLAGS=-W", I get a warning:
-> 
-> That's not anything I really care about, sorry.  No one sane builds the
-> kernel like that :)
 
-  a hacker may find something "valuable" with the aid of compiler   ;-)
-
-  maybe, it is a patch which is too minor to apply. I can understand :-)
-
-  thanks.
-
-> 
-> greg k-h
-> 
-> 
 
 
 -- 
-Chen Gang
+I am Akilah Saeedi, i have 7.100,000.00 USD for you contact me on my provide
+email for more details.
 
-Asianux Corporation
+----- Vidarebefordrat
+
