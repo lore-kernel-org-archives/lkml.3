@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965290Ab3CZQUB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:20:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53524 "EHLO
+	id S965610Ab3CZQVD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:21:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53510 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934729Ab3CZPVn (ORCPT
+	with ESMTP id S934713Ab3CZPVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:21:43 -0400
+	Tue, 26 Mar 2013 11:21:40 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oliver Neukum <oliver@neukum.org>,
+Cc: Paul Bolle <pebolle@tiscali.nl>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 015/150] USB: cdc-wdm: fix buffer overflow
-Date: Tue, 26 Mar 2013 15:18:34 +0000
-Message-Id: <1364311249-14454-16-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 012/150] tty: serial: fix typo "ARCH_S5P6450"
+Date: Tue, 26 Mar 2013 15:18:31 +0000
+Message-Id: <1364311249-14454-13-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -28,90 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit c0f5ecee4e741667b2493c742b60b6218d40b3aa upstream.
+commit 827aa0d36d486f359808c8fb931cf7a71011a09d upstream.
 
-The buffer for responses must not overflow.
-If this would happen, set a flag, drop the data and return
-an error after user space has read all remaining data.
+This could have been either ARCH_S5P64X0 or CPU_S5P6450. Looking at
+commit 2555e663b367b8d555e76023f4de3f6338c28d6c ("ARM: S5P64X0: Add UART
+serial support for S5P6450") - which added this typo - makes clear this
+should be CPU_S5P6450.
 
-Signed-off-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/class/cdc-wdm.c | 23 ++++++++++++++++++++---
- 1 file changed, 20 insertions(+), 3 deletions(-)
+ drivers/tty/serial/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/class/cdc-wdm.c b/drivers/usb/class/cdc-wdm.c
-index 3cc771e..97c1d8e 100644
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -81,6 +81,7 @@ MODULE_DEVICE_TABLE (usb, wdm_ids);
- #define WDM_RESPONDING		7
- #define WDM_SUSPENDING		8
- #define WDM_RESETTING		9
-+#define WDM_OVERFLOW		10
- 
- #define WDM_MAX			16
- 
-@@ -180,6 +181,7 @@ static void wdm_in_callback(struct urb *urb)
- {
- 	struct wdm_device *desc = urb->context;
- 	int status = urb->status;
-+	int length = urb->actual_length;
- 
- 	spin_lock(&desc->iuspin);
- 	clear_bit(WDM_RESPONDING, &desc->flags);
-@@ -210,9 +212,17 @@ static void wdm_in_callback(struct urb *urb)
- 	}
- 
- 	desc->rerr = status;
--	desc->reslength = urb->actual_length;
--	memmove(desc->ubuf + desc->length, desc->inbuf, desc->reslength);
--	desc->length += desc->reslength;
-+	if (length + desc->length > desc->wMaxCommand) {
-+		/* The buffer would overflow */
-+		set_bit(WDM_OVERFLOW, &desc->flags);
-+	} else {
-+		/* we may already be in overflow */
-+		if (!test_bit(WDM_OVERFLOW, &desc->flags)) {
-+			memmove(desc->ubuf + desc->length, desc->inbuf, length);
-+			desc->length += length;
-+			desc->reslength = length;
-+		}
-+	}
- skip_error:
- 	wake_up(&desc->wait);
- 
-@@ -460,6 +470,11 @@ retry:
- 			rv = -ENODEV;
- 			goto err;
- 		}
-+		if (test_bit(WDM_OVERFLOW, &desc->flags)) {
-+			clear_bit(WDM_OVERFLOW, &desc->flags);
-+			rv = -ENOBUFS;
-+			goto err;
-+		}
- 		i++;
- 		if (file->f_flags & O_NONBLOCK) {
- 			if (!test_bit(WDM_READ, &desc->flags)) {
-@@ -503,6 +518,7 @@ retry:
- 			spin_unlock_irq(&desc->iuspin);
- 			goto retry;
- 		}
-+
- 		if (!desc->reslength) { /* zero length read */
- 			dev_dbg(&desc->intf->dev, "%s: zero length - clearing WDM_READ\n", __func__);
- 			clear_bit(WDM_READ, &desc->flags);
-@@ -1029,6 +1045,7 @@ static int wdm_post_reset(struct usb_interface *intf)
- 	struct wdm_device *desc = wdm_find_device(intf);
- 	int rv;
- 
-+	clear_bit(WDM_OVERFLOW, &desc->flags);
- 	clear_bit(WDM_RESETTING, &desc->flags);
- 	rv = recover_from_urb_loss(desc);
- 	mutex_unlock(&desc->wlock);
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 070b442..3b2eaad 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -197,7 +197,7 @@ config SERIAL_SAMSUNG_UARTS_4
+ config SERIAL_SAMSUNG_UARTS
+ 	int
+ 	depends on ARM && PLAT_SAMSUNG
+-	default 6 if ARCH_S5P6450
++	default 6 if CPU_S5P6450
+ 	default 4 if SERIAL_SAMSUNG_UARTS_4 || CPU_S3C2416
+ 	default 3
+ 	help
 -- 
 1.8.1.2
 
