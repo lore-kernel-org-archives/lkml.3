@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab3CZUiF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 16:38:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7570 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754922Ab3CZUiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 16:38:01 -0400
-Date: Tue, 26 Mar 2013 16:37:44 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <1364330264-4oj9uxvi-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130326100221.GN2295@dhcp22.suse.cz>
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1363983835-20184-7-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130325133644.GY2154@dhcp22.suse.cz>
- <1364281578-4bs50rjv-mutt-n-horiguchi@ah.jp.nec.com>
- <20130326100221.GN2295@dhcp22.suse.cz>
-Subject: Re: [PATCH 06/10] migrate: add hugepage migration code to
- move_pages()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <20130326100221.GN2295@dhcp22.suse.cz>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1755799Ab3CZUiE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 16:38:04 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59002 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771Ab3CZUiA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 16:38:00 -0400
+Date: Tue, 26 Mar 2013 21:37:53 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+cc: Gerlando Falauto <gerlando.falauto@keymile.com>,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Simon Guinot <sguinot@lacie.com>, stable@vger.kernel.org
+Subject: Re: [PATCH v3b 0/9] refactoring for mask_cache
+In-Reply-To: <20130321215709.GA27612@kroah.com>
+Message-ID: <alpine.LFD.2.02.1303262136350.22263@ionos>
+References: <1363885931-20571-1-git-send-email-gerlando.falauto@keymile.com> <20130321215709.GA27612@kroah.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 11:02:21AM +0100, Michal Hocko wrote:
-> On Tue 26-03-13 03:06:18, Naoya Horiguchi wrote:
-> > On Mon, Mar 25, 2013 at 02:36:44PM +0100, Michal Hocko wrote:
-> > > On Fri 22-03-13 16:23:51, Naoya Horiguchi wrote:
-> > > > @@ -1164,6 +1175,12 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
-> > > [...]
-> > > >  				!migrate_all)
-> > > >  			goto put_and_set;
-> > > >  
-> > > > +		if (PageHuge(page)) {
-> > > > +			get_page(page);
-> > > > +			list_move_tail(&page->lru, &pagelist);
-> > > > +			goto put_and_set;
-> > > > +		}
-> > > 
-> > > Why do you take an additional reference here? You have one from
-> > > follow_page already.
-> > 
-> > For normal pages, follow_page(FOLL_GET) takes a refcount and
-> > isolate_lru_page() takes another one, so I think the same should
-> > be done for hugepages. Refcounting of this function looks tricky,
-> > and I'm not sure why existing code does like that.
-> 
-> Ohh, I see. But the whole reference is taken just to release it in goto
-> put_and_set because isolate_lru_page elevates reference count because
-> other users require that. I think you do not have to mimic this behavior
-> here and you can drop get_page and use goto set_status.
+On Thu, 21 Mar 2013, Greg KH wrote:
 
-OK, thanks.
-Naoya
+> On Thu, Mar 21, 2013 at 06:12:02PM +0100, Gerlando Falauto wrote:
+> > This patchset addresses a regression found with the Orion GPIO controller
+> > when both Edge- and Level- based interrupts are requested within the same
+> > GPIO chip. The regression was introduced by e59347a
+> > "arm: orion: Use generic irq chip"
+> > 
+> > thereby affecting all kernel releases since 3.0.x.
+> 
+> <formletter>
+> 
+> This is not the correct way to submit patches for inclusion in the
+> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+> for how to do this properly.
+> 
+> </formletter>
+
+Aside of that it would be less intrusive for the stable series to
+revert the offending commit(s), if that is possible.
+
+Thanks,
+
+	tglx
+
+
+
