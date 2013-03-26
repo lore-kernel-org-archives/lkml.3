@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934920Ab3CZPu6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:50:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53818 "EHLO
+	id S934925Ab3CZPvR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:51:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53812 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965069Ab3CZPWn (ORCPT
+	with ESMTP id S965065Ab3CZPWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:43 -0400
+	Tue, 26 Mar 2013 11:22:42 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 058/150] rtlwifi: rtl8192cu: Fix problem that prevents reassociation
-Date: Tue, 26 Mar 2013 15:19:17 +0000
-Message-Id: <1364311249-14454-59-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 067/150] tracing: Fix race in snapshot swapping
+Date: Tue, 26 Mar 2013 15:19:26 +0000
+Message-Id: <1364311249-14454-68-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -28,143 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 9437a248e7cac427c898bdb11bd1ac6844a1ead4 upstream.
+commit 2721e72dd10f71a3ba90f59781becf02638aa0d9 upstream.
 
-The driver was failing to clear the BSSID when a disconnect happened. That
-prevented a reconnection. This problem is reported at
-https://bugzilla.redhat.com/show_bug.cgi?id=789605,
-https://bugzilla.redhat.com/show_bug.cgi?id=866786,
-https://bugzilla.redhat.com/show_bug.cgi?id=906734, and
-https://bugzilla.kernel.org/show_bug.cgi?id=46171.
+Although the swap is wrapped with a spin_lock, the assignment
+of the temp buffer used to swap is not within that lock.
+It needs to be moved into that lock, otherwise two swaps
+happening on two different CPUs, can end up using the wrong
+temp buffer to assign in the swap.
 
-Thanks to Jussi Kivilinna for making the critical observation
-that led to the solution.
+Luckily, all current callers of the swap function appear to have
+their own locks. But in case something is added that allows two
+different callers to call the swap, then there's a chance that
+this race can trigger and corrupt the buffers.
 
-Reported-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Tested-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Tested-by: Alessandro Lannocca <alessandro.lannocca@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+New code is coming soon that will allow for this race to trigger.
+
+I've Cc'd stable, so this bug will not show up if someone backports
+one of the changes that can trigger this bug.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c | 87 ++++++++++++-----------------
- 1 file changed, 35 insertions(+), 52 deletions(-)
+ kernel/trace/trace.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-index 1539eb8..91d2e28 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-@@ -1377,74 +1377,57 @@ void rtl92cu_card_disable(struct ieee80211_hw *hw)
- 
- void rtl92cu_set_check_bssid(struct ieee80211_hw *hw, bool check_bssid)
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index a7fa070..bd1df78 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -693,7 +693,7 @@ __update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
+ void
+ update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
  {
--	/* dummy routine needed for callback from rtl_op_configure_filter() */
--}
--
--/*========================================================================== */
--
--static void _rtl92cu_set_check_bssid(struct ieee80211_hw *hw,
--			      enum nl80211_iftype type)
--{
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
--	u32 reg_rcr = rtl_read_dword(rtlpriv, REG_RCR);
- 	struct rtl_hal *rtlhal = rtl_hal(rtlpriv);
--	struct rtl_phy *rtlphy = &(rtlpriv->phy);
--	u8 filterout_non_associated_bssid = false;
-+	u32 reg_rcr = rtl_read_dword(rtlpriv, REG_RCR);
+-	struct ring_buffer *buf = tr->buffer;
++	struct ring_buffer *buf;
  
--	switch (type) {
--	case NL80211_IFTYPE_ADHOC:
--	case NL80211_IFTYPE_STATION:
--		filterout_non_associated_bssid = true;
--		break;
--	case NL80211_IFTYPE_UNSPECIFIED:
--	case NL80211_IFTYPE_AP:
--	default:
--		break;
--	}
--	if (filterout_non_associated_bssid) {
-+	if (rtlpriv->psc.rfpwr_state != ERFON)
-+		return;
-+
-+	if (check_bssid) {
-+		u8 tmp;
- 		if (IS_NORMAL_CHIP(rtlhal->version)) {
--			switch (rtlphy->current_io_type) {
--			case IO_CMD_RESUME_DM_BY_SCAN:
--				reg_rcr |= (RCR_CBSSID_DATA | RCR_CBSSID_BCN);
--				rtlpriv->cfg->ops->set_hw_reg(hw,
--						 HW_VAR_RCR, (u8 *)(&reg_rcr));
--				/* enable update TSF */
--				_rtl92cu_set_bcn_ctrl_reg(hw, 0, BIT(4));
--				break;
--			case IO_CMD_PAUSE_DM_BY_SCAN:
--				reg_rcr &= ~(RCR_CBSSID_DATA | RCR_CBSSID_BCN);
--				rtlpriv->cfg->ops->set_hw_reg(hw,
--						 HW_VAR_RCR, (u8 *)(&reg_rcr));
--				/* disable update TSF */
--				_rtl92cu_set_bcn_ctrl_reg(hw, BIT(4), 0);
--				break;
--			}
-+			reg_rcr |= (RCR_CBSSID_DATA | RCR_CBSSID_BCN);
-+			tmp = BIT(4);
- 		} else {
--			reg_rcr |= (RCR_CBSSID);
--			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
--						      (u8 *)(&reg_rcr));
--			_rtl92cu_set_bcn_ctrl_reg(hw, 0, (BIT(4)|BIT(5)));
-+			reg_rcr |= RCR_CBSSID;
-+			tmp = BIT(4) | BIT(5);
- 		}
--	} else if (filterout_non_associated_bssid == false) {
-+		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
-+					      (u8 *) (&reg_rcr));
-+		_rtl92cu_set_bcn_ctrl_reg(hw, 0, tmp);
-+	} else {
-+		u8 tmp;
- 		if (IS_NORMAL_CHIP(rtlhal->version)) {
--			reg_rcr &= (~(RCR_CBSSID_DATA | RCR_CBSSID_BCN));
--			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
--						      (u8 *)(&reg_rcr));
--			_rtl92cu_set_bcn_ctrl_reg(hw, BIT(4), 0);
-+			reg_rcr &= ~(RCR_CBSSID_DATA | RCR_CBSSID_BCN);
-+			tmp = BIT(4);
- 		} else {
--			reg_rcr &= (~RCR_CBSSID);
--			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
--						      (u8 *)(&reg_rcr));
--			_rtl92cu_set_bcn_ctrl_reg(hw, (BIT(4)|BIT(5)), 0);
-+			reg_rcr &= ~RCR_CBSSID;
-+			tmp = BIT(4) | BIT(5);
- 		}
-+		reg_rcr &= (~(RCR_CBSSID_DATA | RCR_CBSSID_BCN));
-+		rtlpriv->cfg->ops->set_hw_reg(hw,
-+					      HW_VAR_RCR, (u8 *) (&reg_rcr));
-+		_rtl92cu_set_bcn_ctrl_reg(hw, tmp, 0);
+ 	if (trace_stop_count)
+ 		return;
+@@ -705,6 +705,7 @@ update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
  	}
- }
+ 	arch_spin_lock(&ftrace_max_lock);
  
-+/*========================================================================== */
-+
- int rtl92cu_set_network_type(struct ieee80211_hw *hw, enum nl80211_iftype type)
- {
-+	struct rtl_priv *rtlpriv = rtl_priv(hw);
-+
- 	if (_rtl92cu_set_media_status(hw, type))
- 		return -EOPNOTSUPP;
--	_rtl92cu_set_check_bssid(hw, type);
-+
-+	if (rtlpriv->mac80211.link_state == MAC80211_LINKED) {
-+		if (type != NL80211_IFTYPE_AP)
-+			rtl92cu_set_check_bssid(hw, true);
-+	} else {
-+		rtl92cu_set_check_bssid(hw, false);
-+	}
-+
- 	return 0;
- }
++	buf = tr->buffer;
+ 	tr->buffer = max_tr.buffer;
+ 	max_tr.buffer = buf;
  
 -- 
 1.8.1.2
