@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab3CZX0L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:26:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52932 "EHLO
+	id S1756147Ab3CZX0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:26:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52925 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755936Ab3CZWwI (ORCPT
+	with ESMTP id S1755215Ab3CZWwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:08 -0400
+	Tue, 26 Mar 2013 18:52:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Denis V. Lunev" <den@openvz.org>, Tingwei Liu <tingw.liu@gmail.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Xufeng Zhang <xufeng.zhang@windriver.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 09/72] ipv4: fix definition of FIB_TABLE_HASHSZ
-Date: Tue, 26 Mar 2013 15:50:52 -0700
-Message-Id: <20130326224920.651666090@linuxfoundation.org>
+Subject: [ 08/72] sctp: dont break the loop while meeting the active_path so as to find the matched transport
+Date: Tue, 26 Mar 2013 15:50:51 -0700
+Message-Id: <20130326224920.556291981@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -29,60 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "Denis V. Lunev" <den@openvz.org>
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-[ Upstream commit 5b9e12dbf92b441b37136ea71dac59f05f2673a9 ]
+[ Upstream commit 2317f449af30073cfa6ec8352e4a65a89e357bdd ]
 
-a long time ago by the commit
+sctp_assoc_lookup_tsn() function searchs which transport a certain TSN
+was sent on, if not found in the active_path transport, then go search
+all the other transports in the peer's transport_addr_list, however, we
+should continue to the next entry rather than break the loop when meet
+the active_path transport.
 
-  commit 93456b6d7753def8760b423ac6b986eb9d5a4a95
-  Author: Denis V. Lunev <den@openvz.org>
-  Date:   Thu Jan 10 03:23:38 2008 -0800
-
-    [IPV4]: Unify access to the routing tables.
-
-the defenition of FIB_HASH_TABLE size has obtained wrong dependency:
-it should depend upon CONFIG_IP_MULTIPLE_TABLES (as was in the original
-code) but it was depended from CONFIG_IP_ROUTE_MULTIPATH
-
-This patch returns the situation to the original state.
-
-The problem was spotted by Tingwei Liu.
-
-Signed-off-by: Denis V. Lunev <den@openvz.org>
-CC: Tingwei Liu <tingw.liu@gmail.com>
-CC: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/ip_fib.h |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ net/sctp/associola.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/net/ip_fib.h
-+++ b/include/net/ip_fib.h
-@@ -129,18 +129,16 @@ struct fib_result_nl {
- };
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -1050,7 +1050,7 @@ struct sctp_transport *sctp_assoc_lookup
+ 			transports) {
  
- #ifdef CONFIG_IP_ROUTE_MULTIPATH
--
- #define FIB_RES_NH(res)		((res).fi->fib_nh[(res).nh_sel])
--
--#define FIB_TABLE_HASHSZ 2
--
- #else /* CONFIG_IP_ROUTE_MULTIPATH */
--
- #define FIB_RES_NH(res)		((res).fi->fib_nh[0])
-+#endif /* CONFIG_IP_ROUTE_MULTIPATH */
- 
-+#ifdef CONFIG_IP_MULTIPLE_TABLES
- #define FIB_TABLE_HASHSZ 256
--
--#endif /* CONFIG_IP_ROUTE_MULTIPATH */
-+#else
-+#define FIB_TABLE_HASHSZ 2
-+#endif
- 
- extern __be32 fib_info_update_nh_saddr(struct net *net, struct fib_nh *nh);
- 
+ 		if (transport == active)
+-			break;
++			continue;
+ 		list_for_each_entry(chunk, &transport->transmitted,
+ 				transmitted_list) {
+ 			if (key == chunk->subh.data_hdr->tsn) {
 
 
