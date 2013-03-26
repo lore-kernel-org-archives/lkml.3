@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759932Ab3CZSDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:03:11 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31047 "EHLO
+	id S1759959Ab3CZSEA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:04:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12218 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753876Ab3CZRgE (ORCPT
+	with ESMTP id S1753850Ab3CZRgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:36:04 -0400
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=mTWxCXrlA9gA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=E6vUlD_fdxYA:10 a=yPCof4ZbAAAA:8 a=J1Y8HTJGAAAA:8 a=GZK3lcuhIWR5GrNAc6YA:9 a=7DSvI1NPTFQA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Tue, 26 Mar 2013 13:36:03 -0400
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=mKjyBuRDuoEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=9QNw7ezHX68A:10 a=pGLkceISAAAA:8 a=J1Y8HTJGAAAA:8 a=1XWaLZrsAAAA:8 a=GZK3lcuhIWR5GrNAc6YA:9 a=MSl-tDqOz04A:10 a=4N9Db7Z2_RYA:10 a=UTB_XpHje0EA:10 a=F_LzExPamZkqyrRJ:21 a=bcjW1IVmddlFHSXU:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130326173602.220885843@goodmis.org>
+Message-Id: <20130326173601.140156860@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 26 Mar 2013 13:21:14 -0400
+Date: Tue, 26 Mar 2013 13:21:07 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Tilman Schmidt <tilman@imap.cc>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 15/86] isdn/gigaset: fix zero size border case in debug dump
+Cc: nitin padalia <padalia.nitin@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: [PATCH 08/86] net: prevent setting ttl=0 via IP_TTL
 References: <20130326172059.136127374@goodmis.org>
-Content-Disposition: inline; filename=0015-isdn-gigaset-fix-zero-size-border-case-in-debug-dump.patch
+Content-Disposition: inline; filename=0008-net-prevent-setting-ttl-0-via-IP_TTL.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,33 +33,51 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Cong Wang <xiyou.wangcong@gmail.com>
 
-[ Upstream commit d721a1752ba544df8d7d36959038b26bc92bdf80 ]
+[ Upstream commit c9be4a5c49cf51cc70a993f004c5bb30067a65ce ]
 
-If subtracting 12 from l leaves zero we'd do a zero size allocation,
-leading to an oops later when we try to set the NUL terminator.
+A regression is introduced by the following commit:
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+	commit 4d52cfbef6266092d535237ba5a4b981458ab171
+	Author: Eric Dumazet <eric.dumazet@gmail.com>
+	Date:   Tue Jun 2 00:42:16 2009 -0700
+
+	    net: ipv4/ip_sockglue.c cleanups
+
+	    Pure cleanups
+
+but it is not a pure cleanup...
+
+	-               if (val != -1 && (val < 1 || val>255))
+	+               if (val != -1 && (val < 0 || val > 255))
+
+Since there is no reason provided to allow ttl=0, change it back.
+
+Reported-by: nitin padalia <padalia.nitin@gmail.com>
+Cc: nitin padalia <padalia.nitin@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- drivers/isdn/gigaset/capi.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/ip_sockglue.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/isdn/gigaset/capi.c b/drivers/isdn/gigaset/capi.c
-index 68452b7..03a0a01 100644
---- a/drivers/isdn/gigaset/capi.c
-+++ b/drivers/isdn/gigaset/capi.c
-@@ -248,6 +248,8 @@ static inline void dump_rawmsg(enum debuglevel level, const char *tag,
- 		CAPIMSG_APPID(data), CAPIMSG_MSGID(data), l,
- 		CAPIMSG_CONTROL(data));
- 	l -= 12;
-+	if (l <= 0)
-+		return;
- 	dbgline = kmalloc(3 * l, GFP_ATOMIC);
- 	if (!dbgline)
- 		return;
+diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
+index 14bbfcf..e95d72b 100644
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -590,7 +590,7 @@ static int do_ip_setsockopt(struct sock *sk, int level,
+ 	case IP_TTL:
+ 		if (optlen < 1)
+ 			goto e_inval;
+-		if (val != -1 && (val < 0 || val > 255))
++		if (val != -1 && (val < 1 || val > 255))
+ 			goto e_inval;
+ 		inet->uc_ttl = val;
+ 		break;
 -- 
 1.7.10.4
 
