@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965805Ab3CZQDd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:03:33 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:60442 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759835Ab3CZQDT (ORCPT
+	id S965826Ab3CZQDs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:03:48 -0400
+Received: from mail-da0-f43.google.com ([209.85.210.43]:44615 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759842Ab3CZQDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:03:19 -0400
+	Tue, 26 Mar 2013 12:03:32 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -19,11 +19,10 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: [PATCH v3, part4 34/39] mm/um: prepare for removing num_physpages and simplify mem_init()
-Date: Tue, 26 Mar 2013 23:54:53 +0800
-Message-Id: <1364313298-17336-35-git-send-email-jiang.liu@huawei.com>
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: [PATCH v3, part4 35/39] mm/unicore32: prepare for removing num_physpages and simplify mem_init()
+Date: Tue, 26 Mar 2013 23:54:54 +0800
+Message-Id: <1364313298-17336-36-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
 References: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
@@ -34,9 +33,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Prepare for removing num_physpages and simplify mem_init().
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jeff Dike <jdike@addtoit.com>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: user-mode-linux-devel@lists.sourceforge.net
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>
 Cc: linux-kernel@vger.kernel.org
 ---
 Hi all,
@@ -48,25 +47,83 @@ So I regenerate a third version and also set up a git tree at:
 	Regards!
 	Gerry
 ---
- arch/um/kernel/mem.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ arch/unicore32/mm/init.c |   49 ++--------------------------------------------
+ 1 file changed, 2 insertions(+), 47 deletions(-)
 
-diff --git a/arch/um/kernel/mem.c b/arch/um/kernel/mem.c
-index a7dc6c1..819008f 100644
---- a/arch/um/kernel/mem.c
-+++ b/arch/um/kernel/mem.c
-@@ -70,10 +70,8 @@ void __init mem_init(void)
- #ifdef CONFIG_HIGHMEM
- 	setup_highmem(end_iomem, highmem);
- #endif
--	num_physpages = totalram_pages;
- 	max_pfn = totalram_pages;
--	printk(KERN_INFO "Memory: %luk available\n",
--	       nr_free_pages() << (PAGE_SHIFT-10));
-+	mem_init_print_info(NULL);
- 	kmalloc_ok = 1;
- }
+diff --git a/arch/unicore32/mm/init.c b/arch/unicore32/mm/init.c
+index 119b9e8..39a967a 100644
+--- a/arch/unicore32/mm/init.c
++++ b/arch/unicore32/mm/init.c
+@@ -383,10 +383,6 @@ static void __init free_unused_memmap(struct meminfo *mi)
+  */
+ void __init mem_init(void)
+ {
+-	unsigned long reserved_pages, free_pages;
+-	struct memblock_region *reg;
+-	int i;
+-
+ 	max_mapnr   = pfn_to_page(max_pfn + PHYS_PFN_OFFSET) - mem_map;
  
+ 	free_unused_memmap(&meminfo);
+@@ -394,48 +390,7 @@ void __init mem_init(void)
+ 	/* this will put all unused low memory onto the freelists */
+ 	free_all_bootmem();
+ 
+-	reserved_pages = free_pages = 0;
+-
+-	for_each_bank(i, &meminfo) {
+-		struct membank *bank = &meminfo.bank[i];
+-		unsigned int pfn1, pfn2;
+-		struct page *page, *end;
+-
+-		pfn1 = bank_pfn_start(bank);
+-		pfn2 = bank_pfn_end(bank);
+-
+-		page = pfn_to_page(pfn1);
+-		end  = pfn_to_page(pfn2 - 1) + 1;
+-
+-		do {
+-			if (PageReserved(page))
+-				reserved_pages++;
+-			else if (!page_count(page))
+-				free_pages++;
+-			page++;
+-		} while (page < end);
+-	}
+-
+-	/*
+-	 * Since our memory may not be contiguous, calculate the
+-	 * real number of pages we have in this system
+-	 */
+-	printk(KERN_INFO "Memory:");
+-	num_physpages = 0;
+-	for_each_memblock(memory, reg) {
+-		unsigned long pages = memblock_region_memory_end_pfn(reg) -
+-			memblock_region_memory_base_pfn(reg);
+-		num_physpages += pages;
+-		printk(" %ldMB", pages >> (20 - PAGE_SHIFT));
+-	}
+-	printk(" = %luMB total\n", num_physpages >> (20 - PAGE_SHIFT));
+-
+-	printk(KERN_NOTICE "Memory: %luk/%luk available, %luk reserved, %luK highmem\n",
+-		nr_free_pages() << (PAGE_SHIFT-10),
+-		free_pages << (PAGE_SHIFT-10),
+-		reserved_pages << (PAGE_SHIFT-10),
+-		totalhigh_pages << (PAGE_SHIFT-10));
+-
++	mem_init_print_info(NULL);
+ 	printk(KERN_NOTICE "Virtual kernel memory layout:\n"
+ 		"    vector  : 0x%08lx - 0x%08lx   (%4ld kB)\n"
+ 		"    vmalloc : 0x%08lx - 0x%08lx   (%4ld MB)\n"
+@@ -464,7 +419,7 @@ void __init mem_init(void)
+ 	BUILD_BUG_ON(TASK_SIZE				> MODULES_VADDR);
+ 	BUG_ON(TASK_SIZE				> MODULES_VADDR);
+ 
+-	if (PAGE_SIZE >= 16384 && num_physpages <= 128) {
++	if (PAGE_SIZE >= 16384 && get_num_physpages() <= 128) {
+ 		/*
+ 		 * On a machine this small we won't get
+ 		 * anywhere without overcommit, so turn
 -- 
 1.7.9.5
 
