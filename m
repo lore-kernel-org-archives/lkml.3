@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934047Ab3CZQOI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:14:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53662 "EHLO
+	id S964928Ab3CZQO4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:14:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53647 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964841Ab3CZPWN (ORCPT
+	with ESMTP id S964884Ab3CZPWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:13 -0400
+	Tue, 26 Mar 2013 11:22:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: Dave Jones <davej@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
+        Cong Wang <amwang@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 042/150] macvlan: Set IFF_UNICAST_FLT flag to prevent unnecessary promisc mode.
-Date: Tue, 26 Mar 2013 15:19:01 +0000
-Message-Id: <1364311249-14454-43-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 038/150] rds: limit the size allocated by rds_message_alloc()
+Date: Tue, 26 Mar 2013 15:18:57 +0000
+Message-Id: <1364311249-14454-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Cong Wang <amwang@redhat.com>
 
-commit 87ab7f6f2874f1115817e394a7ed2dea1c72549e upstream.
+commit ece6b0a2b25652d684a7ced4ae680a863af041e0 upstream.
 
-Macvlan already supports hw address filters.  Set the IFF_UNICAST_FLT
-so that it doesn't needlesly enter PROMISC mode when macvlans are
-stacked.
+Dave Jones reported the following bug:
 
-Signed-of-by: Vlad Yasevich <vyasevic@redhat.com>
+"When fed mangled socket data, rds will trust what userspace gives it,
+and tries to allocate enormous amounts of memory larger than what
+kmalloc can satisfy."
 
+WARNING: at mm/page_alloc.c:2393 __alloc_pages_nodemask+0xa0d/0xbe0()
+Hardware name: GA-MA78GM-S2H
+Modules linked in: vmw_vsock_vmci_transport vmw_vmci vsock fuse bnep dlci bridge 8021q garp stp mrp binfmt_misc l2tp_ppp l2tp_core rfcomm s
+Pid: 24652, comm: trinity-child2 Not tainted 3.8.0+ #65
+Call Trace:
+ [<ffffffff81044155>] warn_slowpath_common+0x75/0xa0
+ [<ffffffff8104419a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff811444ad>] __alloc_pages_nodemask+0xa0d/0xbe0
+ [<ffffffff8100a196>] ? native_sched_clock+0x26/0x90
+ [<ffffffff810b2128>] ? trace_hardirqs_off_caller+0x28/0xc0
+ [<ffffffff810b21cd>] ? trace_hardirqs_off+0xd/0x10
+ [<ffffffff811861f8>] alloc_pages_current+0xb8/0x180
+ [<ffffffff8113eaaa>] __get_free_pages+0x2a/0x80
+ [<ffffffff811934fe>] kmalloc_order_trace+0x3e/0x1a0
+ [<ffffffff81193955>] __kmalloc+0x2f5/0x3a0
+ [<ffffffff8104df0c>] ? local_bh_enable_ip+0x7c/0xf0
+ [<ffffffffa0401ab3>] rds_message_alloc+0x23/0xb0 [rds]
+ [<ffffffffa04043a1>] rds_sendmsg+0x2b1/0x990 [rds]
+ [<ffffffff810b21cd>] ? trace_hardirqs_off+0xd/0x10
+ [<ffffffff81564620>] sock_sendmsg+0xb0/0xe0
+ [<ffffffff810b2052>] ? get_lock_stats+0x22/0x70
+ [<ffffffff810b24be>] ? put_lock_stats.isra.23+0xe/0x40
+ [<ffffffff81567f30>] sys_sendto+0x130/0x180
+ [<ffffffff810b872d>] ? trace_hardirqs_on+0xd/0x10
+ [<ffffffff816c547b>] ? _raw_spin_unlock_irq+0x3b/0x60
+ [<ffffffff816cd767>] ? sysret_check+0x1b/0x56
+ [<ffffffff810b8695>] ? trace_hardirqs_on_caller+0x115/0x1a0
+ [<ffffffff81341d8e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff816cd742>] system_call_fastpath+0x16/0x1b
+---[ end trace eed6ae990d018c8b ]---
+
+Reported-by: Dave Jones <davej@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+Signed-off-by: Cong Wang <amwang@redhat.com>
+Acked-by: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/macvlan.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/rds/message.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index 62ce7b8..666fc20 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -628,6 +628,7 @@ void macvlan_common_setup(struct net_device *dev)
- 	ether_setup(dev);
+diff --git a/net/rds/message.c b/net/rds/message.c
+index f0a4658..aff589c 100644
+--- a/net/rds/message.c
++++ b/net/rds/message.c
+@@ -197,6 +197,9 @@ struct rds_message *rds_message_alloc(unsigned int extra_len, gfp_t gfp)
+ {
+ 	struct rds_message *rm;
  
- 	dev->priv_flags	       &= ~(IFF_XMIT_DST_RELEASE | IFF_TX_SKB_SHARING);
-+	dev->priv_flags	       |= IFF_UNICAST_FLT;
- 	dev->netdev_ops		= &macvlan_netdev_ops;
- 	dev->destructor		= free_netdev;
- 	dev->header_ops		= &macvlan_hard_header_ops,
++	if (extra_len > KMALLOC_MAX_SIZE - sizeof(struct rds_message))
++		return NULL;
++
+ 	rm = kzalloc(sizeof(struct rds_message) + extra_len, gfp);
+ 	if (!rm)
+ 		goto out;
 -- 
 1.8.1.2
 
