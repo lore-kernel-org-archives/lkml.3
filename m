@@ -1,60 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681Ab3CZWmk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:42:40 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:43785 "EHLO hydra.sisk.pl"
+	id S1753883Ab3CZWmy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:42:54 -0400
+Received: from mga03.intel.com ([143.182.124.21]:27514 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751984Ab3CZWmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:42:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: shawn.guo@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        arvind.chauhan@arm.com, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, rob.herring@calxeda.com
-Subject: Re: [PATCH] cpufreq: cpu0: Fix mistake in Documentation example
-Date: Tue, 26 Mar 2013 23:50:03 +0100
-Message-ID: <1473108.YvH7sY4Gsu@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <225d20676ec96aa81683f23485f0339e32a22917.1364308732.git.viresh.kumar@linaro.org>
-References: <225d20676ec96aa81683f23485f0339e32a22917.1364308732.git.viresh.kumar@linaro.org>
+	id S1752033Ab3CZWmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 18:42:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,915,1355126400"; 
+   d="scan'208";a="219198650"
+Subject: [PATCH 03/10] ioatdma: channel reset scheme fixup on Intel Atom
+ S1200 platforms
+To: djbw@fb.com
+From: Dave Jiang <dave.jiang@intel.com>
+Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org
+Date: Tue, 26 Mar 2013 15:42:47 -0700
+Message-ID: <20130326224247.15072.99079.stgit@djiang5-linux2.ch.intel.com>
+In-Reply-To: <20130326223953.15072.26605.stgit@djiang5-linux2.ch.intel.com>
+References: <20130326223953.15072.26605.stgit@djiang5-linux2.ch.intel.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 26, 2013 08:10:46 PM Viresh Kumar wrote:
-> "clock-latency" is incorrectly written as "transition-latency" in an example
-> present in Documentation of cpufreq-cpu0. Fix it.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+The Intel Atom S1200 family ioatdma changed the channel reset behavior.
+It does a reset similar to PCI FLR by resetting all the MSIX
+registers. We have to re-init msix interrupts because of this. This
+workaround is only specific to this platform and is not expected to carry
+over to the later generations.
 
-Am I supposed to take this?
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+---
+ drivers/dma/ioat/dma.c    |    8 +-
+ drivers/dma/ioat/dma.h    |   10 ++
+ drivers/dma/ioat/dma_v3.c |  236 +++++++++++++++++++++++++++++----------------
+ 3 files changed, 171 insertions(+), 83 deletions(-)
 
-Rafael
+diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
+index 1879a59..17a2393 100644
+--- a/drivers/dma/ioat/dma.c
++++ b/drivers/dma/ioat/dma.c
+@@ -892,7 +892,7 @@ MODULE_PARM_DESC(ioat_interrupt_style,
+  * ioat_dma_setup_interrupts - setup interrupt handler
+  * @device: ioat device
+  */
+-static int ioat_dma_setup_interrupts(struct ioatdma_device *device)
++int ioat_dma_setup_interrupts(struct ioatdma_device *device)
+ {
+ 	struct ioat_chan_common *chan;
+ 	struct pci_dev *pdev = device->pdev;
+@@ -941,6 +941,7 @@ msix:
+ 		}
+ 	}
+ 	intrctrl |= IOAT_INTRCTRL_MSIX_VECTOR_CONTROL;
++	device->irq_mode = IOAT_MSIX;
+ 	goto done;
+ 
+ msix_single_vector:
+@@ -956,6 +957,7 @@ msix_single_vector:
+ 		pci_disable_msix(pdev);
+ 		goto msi;
+ 	}
++	device->irq_mode = IOAT_MSIX_SINGLE;
+ 	goto done;
+ 
+ msi:
+@@ -969,6 +971,7 @@ msi:
+ 		pci_disable_msi(pdev);
+ 		goto intx;
+ 	}
++	device->irq_mode = IOAT_MSIX;
+ 	goto done;
+ 
+ intx:
+@@ -977,6 +980,7 @@ intx:
+ 	if (err)
+ 		goto err_no_irq;
+ 
++	device->irq_mode = IOAT_INTX;
+ done:
+ 	if (device->intr_quirk)
+ 		device->intr_quirk(device);
+@@ -987,9 +991,11 @@ done:
+ err_no_irq:
+ 	/* Disable all interrupt generation */
+ 	writeb(0, device->reg_base + IOAT_INTRCTRL_OFFSET);
++	device->irq_mode = IOAT_NOIRQ;
+ 	dev_err(dev, "no usable interrupts\n");
+ 	return err;
+ }
++EXPORT_SYMBOL(ioat_dma_setup_interrupts);
+ 
+ static void ioat_disable_interrupts(struct ioatdma_device *device)
+ {
+diff --git a/drivers/dma/ioat/dma.h b/drivers/dma/ioat/dma.h
+index 9285caa..b16902c 100644
+--- a/drivers/dma/ioat/dma.h
++++ b/drivers/dma/ioat/dma.h
+@@ -48,6 +48,14 @@
+  */
+ #define NULL_DESC_BUFFER_SIZE 1
+ 
++enum ioat_irq_mode {
++	IOAT_NOIRQ = 0,
++	IOAT_MSIX,
++	IOAT_MSIX_SINGLE,
++	IOAT_MSI,
++	IOAT_INTX
++};
++
+ /**
+  * struct ioatdma_device - internal representation of a IOAT device
+  * @pdev: PCI-Express device
+@@ -77,6 +85,7 @@ struct ioatdma_device {
+ 	struct msix_entry msix_entries[4];
+ 	struct ioat_chan_common *idx[4];
+ 	struct dca_provider *dca;
++	enum ioat_irq_mode irq_mode;
+ 	void (*intr_quirk)(struct ioatdma_device *device);
+ 	int (*enumerate_channels)(struct ioatdma_device *device);
+ 	int (*reset_hw)(struct ioat_chan_common *chan);
+@@ -341,6 +350,7 @@ bool ioat_cleanup_preamble(struct ioat_chan_common *chan,
+ 			   dma_addr_t *phys_complete);
+ void ioat_kobject_add(struct ioatdma_device *device, struct kobj_type *type);
+ void ioat_kobject_del(struct ioatdma_device *device);
++int ioat_dma_setup_interrupts(struct ioatdma_device *device);
+ extern const struct sysfs_ops ioat_sysfs_ops;
+ extern struct ioat_sysfs_entry ioat_version_attr;
+ extern struct ioat_sysfs_entry ioat_cap_attr;
+diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+index ab5655e..65b912a 100644
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -111,6 +111,103 @@ static void pq_set_src(struct ioat_raw_descriptor *descs[2],
+ 	pq->coef[idx] = coef;
+ }
+ 
++static bool is_jf_ioat(struct pci_dev *pdev)
++{
++	switch (pdev->device) {
++	case PCI_DEVICE_ID_INTEL_IOAT_JSF0:
++	case PCI_DEVICE_ID_INTEL_IOAT_JSF1:
++	case PCI_DEVICE_ID_INTEL_IOAT_JSF2:
++	case PCI_DEVICE_ID_INTEL_IOAT_JSF3:
++	case PCI_DEVICE_ID_INTEL_IOAT_JSF4:
++	case PCI_DEVICE_ID_INTEL_IOAT_JSF5:
++	case PCI_DEVICE_ID_INTEL_IOAT_JSF6:
++	case PCI_DEVICE_ID_INTEL_IOAT_JSF7:
++	case PCI_DEVICE_ID_INTEL_IOAT_JSF8:
++	case PCI_DEVICE_ID_INTEL_IOAT_JSF9:
++		return true;
++	default:
++		return false;
++	}
++}
++
++static bool is_snb_ioat(struct pci_dev *pdev)
++{
++	switch (pdev->device) {
++	case PCI_DEVICE_ID_INTEL_IOAT_SNB0:
++	case PCI_DEVICE_ID_INTEL_IOAT_SNB1:
++	case PCI_DEVICE_ID_INTEL_IOAT_SNB2:
++	case PCI_DEVICE_ID_INTEL_IOAT_SNB3:
++	case PCI_DEVICE_ID_INTEL_IOAT_SNB4:
++	case PCI_DEVICE_ID_INTEL_IOAT_SNB5:
++	case PCI_DEVICE_ID_INTEL_IOAT_SNB6:
++	case PCI_DEVICE_ID_INTEL_IOAT_SNB7:
++	case PCI_DEVICE_ID_INTEL_IOAT_SNB8:
++	case PCI_DEVICE_ID_INTEL_IOAT_SNB9:
++		return true;
++	default:
++		return false;
++	}
++}
++
++static bool is_ivb_ioat(struct pci_dev *pdev)
++{
++	switch (pdev->device) {
++	case PCI_DEVICE_ID_INTEL_IOAT_IVB0:
++	case PCI_DEVICE_ID_INTEL_IOAT_IVB1:
++	case PCI_DEVICE_ID_INTEL_IOAT_IVB2:
++	case PCI_DEVICE_ID_INTEL_IOAT_IVB3:
++	case PCI_DEVICE_ID_INTEL_IOAT_IVB4:
++	case PCI_DEVICE_ID_INTEL_IOAT_IVB5:
++	case PCI_DEVICE_ID_INTEL_IOAT_IVB6:
++	case PCI_DEVICE_ID_INTEL_IOAT_IVB7:
++	case PCI_DEVICE_ID_INTEL_IOAT_IVB8:
++	case PCI_DEVICE_ID_INTEL_IOAT_IVB9:
++		return true;
++	default:
++		return false;
++	}
++
++}
++
++static bool is_hsw_ioat(struct pci_dev *pdev)
++{
++	switch (pdev->device) {
++	case PCI_DEVICE_ID_INTEL_IOAT_HSW0:
++	case PCI_DEVICE_ID_INTEL_IOAT_HSW1:
++	case PCI_DEVICE_ID_INTEL_IOAT_HSW2:
++	case PCI_DEVICE_ID_INTEL_IOAT_HSW3:
++	case PCI_DEVICE_ID_INTEL_IOAT_HSW4:
++	case PCI_DEVICE_ID_INTEL_IOAT_HSW5:
++	case PCI_DEVICE_ID_INTEL_IOAT_HSW6:
++	case PCI_DEVICE_ID_INTEL_IOAT_HSW7:
++	case PCI_DEVICE_ID_INTEL_IOAT_HSW8:
++	case PCI_DEVICE_ID_INTEL_IOAT_HSW9:
++		return true;
++	default:
++		return false;
++	}
++
++}
++
++static bool is_xeon_cb32(struct pci_dev *pdev)
++{
++	return is_jf_ioat(pdev) || is_snb_ioat(pdev) || is_ivb_ioat(pdev) ||
++		is_hsw_ioat(pdev);
++}
++
++static bool is_bwd_ioat(struct pci_dev *pdev)
++{
++	switch (pdev->device) {
++	case PCI_DEVICE_ID_INTEL_IOAT_BWD0:
++	case PCI_DEVICE_ID_INTEL_IOAT_BWD1:
++	case PCI_DEVICE_ID_INTEL_IOAT_BWD2:
++	case PCI_DEVICE_ID_INTEL_IOAT_BWD3:
++		return true;
++	default:
++		return false;
++	}
++}
++
+ static void ioat3_dma_unmap(struct ioat2_dma_chan *ioat,
+ 			    struct ioat_ring_ent *desc, int idx)
+ {
+@@ -1168,6 +1265,56 @@ static int ioat3_dma_self_test(struct ioatdma_device *device)
+ 	return 0;
+ }
+ 
++static int ioat3_irq_reinit(struct ioatdma_device *device)
++{
++	int msixcnt = device->common.chancnt;
++	struct pci_dev *pdev = device->pdev;
++	int i;
++	struct msix_entry *msix;
++	struct ioat_chan_common *chan;
++	int err = 0;
++
++	switch (device->irq_mode) {
++	case IOAT_MSIX:
++
++		for (i = 0; i < msixcnt; i++) {
++			msix = &device->msix_entries[i];
++			chan = ioat_chan_by_index(device, i);
++			devm_free_irq(&pdev->dev, msix->vector, chan);
++		}
++
++		pci_disable_msix(pdev);
++		break;
++
++	case IOAT_MSIX_SINGLE:
++		msix = &device->msix_entries[0];
++		chan = ioat_chan_by_index(device, 0);
++		devm_free_irq(&pdev->dev, msix->vector, chan);
++		pci_disable_msix(pdev);
++		break;
++
++	case IOAT_MSI:
++		chan = ioat_chan_by_index(device, 0);
++		devm_free_irq(&pdev->dev, pdev->irq, chan);
++		pci_disable_msi(pdev);
++		break;
++
++	case IOAT_INTX:
++		chan = ioat_chan_by_index(device, 0);
++		devm_free_irq(&pdev->dev, pdev->irq, chan);
++		break;
++
++	default:
++		return 0;
++	}
++
++	device->irq_mode = IOAT_NOIRQ;
++
++	err = ioat_dma_setup_interrupts(device);
++
++	return err;
++}
++
+ static int ioat3_reset_hw(struct ioat_chan_common *chan)
+ {
+ 	/* throw away whatever the channel was doing and get it
+@@ -1199,91 +1346,16 @@ static int ioat3_reset_hw(struct ioat_chan_common *chan)
+ 	if (dev_id == PCI_DEVICE_ID_INTEL_IOAT_TBG0)
+ 		pci_write_config_dword(pdev, IOAT_PCI_DMAUNCERRSTS_OFFSET, 0x10);
+ 
+-	return ioat2_reset_sync(chan, msecs_to_jiffies(200));
+-}
+-
+-static bool is_jf_ioat(struct pci_dev *pdev)
+-{
+-	switch (pdev->device) {
+-	case PCI_DEVICE_ID_INTEL_IOAT_JSF0:
+-	case PCI_DEVICE_ID_INTEL_IOAT_JSF1:
+-	case PCI_DEVICE_ID_INTEL_IOAT_JSF2:
+-	case PCI_DEVICE_ID_INTEL_IOAT_JSF3:
+-	case PCI_DEVICE_ID_INTEL_IOAT_JSF4:
+-	case PCI_DEVICE_ID_INTEL_IOAT_JSF5:
+-	case PCI_DEVICE_ID_INTEL_IOAT_JSF6:
+-	case PCI_DEVICE_ID_INTEL_IOAT_JSF7:
+-	case PCI_DEVICE_ID_INTEL_IOAT_JSF8:
+-	case PCI_DEVICE_ID_INTEL_IOAT_JSF9:
+-		return true;
+-	default:
+-		return false;
+-	}
+-}
+-
+-static bool is_snb_ioat(struct pci_dev *pdev)
+-{
+-	switch (pdev->device) {
+-	case PCI_DEVICE_ID_INTEL_IOAT_SNB0:
+-	case PCI_DEVICE_ID_INTEL_IOAT_SNB1:
+-	case PCI_DEVICE_ID_INTEL_IOAT_SNB2:
+-	case PCI_DEVICE_ID_INTEL_IOAT_SNB3:
+-	case PCI_DEVICE_ID_INTEL_IOAT_SNB4:
+-	case PCI_DEVICE_ID_INTEL_IOAT_SNB5:
+-	case PCI_DEVICE_ID_INTEL_IOAT_SNB6:
+-	case PCI_DEVICE_ID_INTEL_IOAT_SNB7:
+-	case PCI_DEVICE_ID_INTEL_IOAT_SNB8:
+-	case PCI_DEVICE_ID_INTEL_IOAT_SNB9:
+-		return true;
+-	default:
+-		return false;
+-	}
+-}
+-
+-static bool is_ivb_ioat(struct pci_dev *pdev)
+-{
+-	switch (pdev->device) {
+-	case PCI_DEVICE_ID_INTEL_IOAT_IVB0:
+-	case PCI_DEVICE_ID_INTEL_IOAT_IVB1:
+-	case PCI_DEVICE_ID_INTEL_IOAT_IVB2:
+-	case PCI_DEVICE_ID_INTEL_IOAT_IVB3:
+-	case PCI_DEVICE_ID_INTEL_IOAT_IVB4:
+-	case PCI_DEVICE_ID_INTEL_IOAT_IVB5:
+-	case PCI_DEVICE_ID_INTEL_IOAT_IVB6:
+-	case PCI_DEVICE_ID_INTEL_IOAT_IVB7:
+-	case PCI_DEVICE_ID_INTEL_IOAT_IVB8:
+-	case PCI_DEVICE_ID_INTEL_IOAT_IVB9:
+-		return true;
+-	default:
+-		return false;
+-	}
+-
+-}
+-
+-static bool is_hsw_ioat(struct pci_dev *pdev)
+-{
+-	switch (pdev->device) {
+-	case PCI_DEVICE_ID_INTEL_IOAT_HSW0:
+-	case PCI_DEVICE_ID_INTEL_IOAT_HSW1:
+-	case PCI_DEVICE_ID_INTEL_IOAT_HSW2:
+-	case PCI_DEVICE_ID_INTEL_IOAT_HSW3:
+-	case PCI_DEVICE_ID_INTEL_IOAT_HSW4:
+-	case PCI_DEVICE_ID_INTEL_IOAT_HSW5:
+-	case PCI_DEVICE_ID_INTEL_IOAT_HSW6:
+-	case PCI_DEVICE_ID_INTEL_IOAT_HSW7:
+-	case PCI_DEVICE_ID_INTEL_IOAT_HSW8:
+-	case PCI_DEVICE_ID_INTEL_IOAT_HSW9:
+-		return true;
+-	default:
+-		return false;
++	err = ioat2_reset_sync(chan, msecs_to_jiffies(200));
++	if (err) {
++		dev_err(&pdev->dev, "Failed to reset!\n");
++		return err;
+ 	}
+ 
+-}
++	if (device->irq_mode != IOAT_NOIRQ && is_bwd_ioat(pdev))
++		err = ioat3_irq_reinit(device);
+ 
+-static bool is_xeon_cb32(struct pci_dev *pdev)
+-{
+-	return is_jf_ioat(pdev) || is_snb_ioat(pdev) || is_ivb_ioat(pdev) ||
+-		is_hsw_ioat(pdev);
++	return err;
+ }
+ 
+ int ioat3_dma_probe(struct ioatdma_device *device, int dca)
 
-
-> ---
->  Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-> index 4416ccc..051f764 100644
-> --- a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-> +++ b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-> @@ -32,7 +32,7 @@ cpus {
->  			396000  950000
->  			198000  850000
->  		>;
-> -		transition-latency = <61036>; /* two CLK32 periods */
-> +		clock-latency = <61036>; /* two CLK32 periods */
->  	};
->  
->  	cpu@1 {
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
