@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab3CZXMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:12:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53361 "EHLO
+	id S1755406Ab3CZXM7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:12:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53356 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756734Ab3CZXB7 (ORCPT
+	with ESMTP id S1755116Ab3CZXB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 19:01:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 09/49] sfc: Fix loop condition for efx_filter_search() when !for_insert
-Date: Tue, 26 Mar 2013 16:01:06 -0700
-Message-Id: <20130326225840.544786691@linuxfoundation.org>
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jesper Dangaard Brouer <jbrouer@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 08/49] inet: limit length of fragment queue hash table bucket lists
+Date: Tue, 26 Mar 2013 16:01:05 -0700
+Message-Id: <20130326225840.444503831@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -27,83 +31,191 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 4017dbdc14af1903dc9fcba4d08b89c02325069d ]
+[ Upstream commit 5a3da1fe9561828d0ca7eca664b16ec2b9bf0055 ]
 
-efx_filter_remove_filter() fails to remove inserted filters in some cases.
+This patch introduces a constant limit of the fragment queue hash
+table bucket list lengths. Currently the limit 128 is choosen somewhat
+arbitrary and just ensures that we can fill up the fragment cache with
+empty packets up to the default ip_frag_high_thresh limits. It should
+just protect from list iteration eating considerable amounts of cpu.
 
-For example:
+If we reach the maximum length in one hash bucket a warning is printed.
+This is implemented on the caller side of inet_frag_find to distinguish
+between the different users of inet_fragment.c.
 
-  1. Two filters A and B have specifications that result in an initial
-     hash collision.
-  2. A is inserted first, followed by B.
-  3. An attempt to remove B first succeeds, but if A is removed first
-     a subsequent attempt to remove B fails.
+I dropped the out of memory warning in the ipv4 fragment lookup path,
+because we already get a warning by the slab allocator.
 
-When searching for an existing filter (!for_insert),
-efx_filter_search() must always continue to the maximum search depth
-for the given type rather than stopping at the first unused entry.
-
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jesper Dangaard Brouer <jbrouer@redhat.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/sfc/filter.c |   39 +++++++++++++++++++++++----------------
- 1 file changed, 23 insertions(+), 16 deletions(-)
+ include/net/inet_frag.h                 |    9 +++++++++
+ net/ipv4/inet_fragment.c                |   20 +++++++++++++++++++-
+ net/ipv4/ip_fragment.c                  |   12 ++++++------
+ net/ipv6/netfilter/nf_conntrack_reasm.c |   12 ++++++------
+ net/ipv6/reassembly.c                   |    8 ++++++--
+ 5 files changed, 46 insertions(+), 15 deletions(-)
 
---- a/drivers/net/sfc/filter.c
-+++ b/drivers/net/sfc/filter.c
-@@ -335,28 +335,35 @@ static int efx_filter_search(struct efx_
- 			     bool for_insert, int *depth_required)
+--- a/include/net/inet_frag.h
++++ b/include/net/inet_frag.h
+@@ -33,6 +33,13 @@ struct inet_frag_queue {
+ 
+ #define INETFRAGS_HASHSZ		64
+ 
++/* averaged:
++ * max_depth = default ipfrag_high_thresh / INETFRAGS_HASHSZ /
++ *	       rounded up (SKB_TRUELEN(0) + sizeof(struct ipq or
++ *	       struct frag_queue))
++ */
++#define INETFRAGS_MAXDEPTH		128
++
+ struct inet_frags {
+ 	struct hlist_head	hash[INETFRAGS_HASHSZ];
+ 	rwlock_t		lock;
+@@ -64,6 +71,8 @@ int inet_frag_evictor(struct netns_frags
+ struct inet_frag_queue *inet_frag_find(struct netns_frags *nf,
+ 		struct inet_frags *f, void *key, unsigned int hash)
+ 	__releases(&f->lock);
++void inet_frag_maybe_warn_overflow(struct inet_frag_queue *q,
++				   const char *prefix);
+ 
+ static inline void inet_frag_put(struct inet_frag_queue *q, struct inet_frags *f)
  {
- 	unsigned hash, incr, filter_idx, depth, depth_max;
--	struct efx_filter_spec *cmp;
+--- a/net/ipv4/inet_fragment.c
++++ b/net/ipv4/inet_fragment.c
+@@ -21,6 +21,7 @@
+ #include <linux/rtnetlink.h>
+ #include <linux/slab.h>
  
- 	hash = efx_filter_hash(key);
- 	incr = efx_filter_increment(key);
--	depth_max = (spec->priority <= EFX_FILTER_PRI_HINT ?
--		     FILTER_CTL_SRCH_HINT_MAX : FILTER_CTL_SRCH_MAX);
++#include <net/sock.h>
+ #include <net/inet_frag.h>
  
--	for (depth = 1, filter_idx = hash & (table->size - 1);
--	     depth <= depth_max && test_bit(filter_idx, table->used_bitmap);
--	     ++depth) {
--		cmp = &table->spec[filter_idx];
--		if (efx_filter_equal(spec, cmp))
--			goto found;
-+	filter_idx = hash & (table->size - 1);
-+	depth = 1;
-+	depth_max = (for_insert ?
-+		     (spec->priority <= EFX_FILTER_PRI_HINT ?
-+		      FILTER_CTL_SRCH_HINT_MAX : FILTER_CTL_SRCH_MAX) :
-+		     table->search_depth[spec->type]);
-+
-+	for (;;) {
-+		/* Return success if entry is used and matches this spec
-+		 * or entry is unused and we are trying to insert.
-+		 */
-+		if (test_bit(filter_idx, table->used_bitmap) ?
-+		    efx_filter_equal(spec, &table->spec[filter_idx]) :
-+		    for_insert) {
-+			*depth_required = depth;
-+			return filter_idx;
-+		}
-+
-+		/* Return failure if we reached the maximum search depth */
-+		if (depth == depth_max)
-+			return for_insert ? -EBUSY : -ENOENT;
-+
- 		filter_idx = (filter_idx + incr) & (table->size - 1);
-+		++depth;
+ static void inet_frag_secret_rebuild(unsigned long dummy)
+@@ -271,6 +272,7 @@ struct inet_frag_queue *inet_frag_find(s
+ {
+ 	struct inet_frag_queue *q;
+ 	struct hlist_node *n;
++	int depth = 0;
+ 
+ 	hlist_for_each_entry(q, n, &f->hash[hash], list) {
+ 		if (q->net == nf && f->match(q, key)) {
+@@ -278,9 +280,25 @@ struct inet_frag_queue *inet_frag_find(s
+ 			read_unlock(&f->lock);
+ 			return q;
+ 		}
++		depth++;
  	}
--	if (!for_insert)
--		return -ENOENT;
--	if (depth > depth_max)
--		return -EBUSY;
--found:
--	*depth_required = depth;
--	return filter_idx;
+ 	read_unlock(&f->lock);
+ 
+-	return inet_frag_create(nf, f, key);
++	if (depth <= INETFRAGS_MAXDEPTH)
++		return inet_frag_create(nf, f, key);
++	else
++		return ERR_PTR(-ENOBUFS);
+ }
+ EXPORT_SYMBOL(inet_frag_find);
++
++void inet_frag_maybe_warn_overflow(struct inet_frag_queue *q,
++				   const char *prefix)
++{
++	static const char msg[] = "inet_frag_find: Fragment hash bucket"
++		" list length grew over limit " __stringify(INETFRAGS_MAXDEPTH)
++		". Dropping fragment.\n";
++
++	if (PTR_ERR(q) == -ENOBUFS)
++		LIMIT_NETDEBUG(KERN_WARNING "%s%s", prefix, msg);
++}
++EXPORT_SYMBOL(inet_frag_maybe_warn_overflow);
+--- a/net/ipv4/ip_fragment.c
++++ b/net/ipv4/ip_fragment.c
+@@ -20,6 +20,8 @@
+  *		Patrick McHardy :	LRU queue of frag heads for evictor.
+  */
+ 
++#define pr_fmt(fmt) "IPv4: " fmt
++
+ #include <linux/compiler.h>
+ #include <linux/module.h>
+ #include <linux/types.h>
+@@ -292,14 +294,12 @@ static inline struct ipq *ip_find(struct
+ 	hash = ipqhashfn(iph->id, iph->saddr, iph->daddr, iph->protocol);
+ 
+ 	q = inet_frag_find(&net->ipv4.frags, &ip4_frags, &arg, hash);
+-	if (q == NULL)
+-		goto out_nomem;
++	if (IS_ERR_OR_NULL(q)) {
++		inet_frag_maybe_warn_overflow(q, pr_fmt());
++		return NULL;
++	}
+ 
+ 	return container_of(q, struct ipq, q);
+-
+-out_nomem:
+-	LIMIT_NETDEBUG(KERN_ERR "ip_frag_create: no memory left !\n");
+-	return NULL;
  }
  
- /* Construct/deconstruct external filter IDs */
+ /* Is the fragment too far ahead to be part of ipq? */
+--- a/net/ipv6/netfilter/nf_conntrack_reasm.c
++++ b/net/ipv6/netfilter/nf_conntrack_reasm.c
+@@ -14,6 +14,8 @@
+  * 2 of the License, or (at your option) any later version.
+  */
+ 
++#define pr_fmt(fmt) "IPv6-nf: " fmt
++
+ #include <linux/errno.h>
+ #include <linux/types.h>
+ #include <linux/string.h>
+@@ -176,14 +178,12 @@ fq_find(__be32 id, u32 user, struct in6_
+ 
+ 	q = inet_frag_find(&nf_init_frags, &nf_frags, &arg, hash);
+ 	local_bh_enable();
+-	if (q == NULL)
+-		goto oom;
++	if (IS_ERR_OR_NULL(q)) {
++		inet_frag_maybe_warn_overflow(q, pr_fmt());
++		return NULL;
++	}
+ 
+ 	return container_of(q, struct nf_ct_frag6_queue, q);
+-
+-oom:
+-	pr_debug("Can't alloc new queue\n");
+-	return NULL;
+ }
+ 
+ 
+--- a/net/ipv6/reassembly.c
++++ b/net/ipv6/reassembly.c
+@@ -26,6 +26,9 @@
+  *	YOSHIFUJI,H. @USAGI	Always remove fragment header to
+  *				calculate ICV correctly.
+  */
++
++#define pr_fmt(fmt) "IPv6: " fmt
++
+ #include <linux/errno.h>
+ #include <linux/types.h>
+ #include <linux/string.h>
+@@ -239,9 +242,10 @@ fq_find(struct net *net, __be32 id, cons
+ 	hash = inet6_hash_frag(id, src, dst, ip6_frags.rnd);
+ 
+ 	q = inet_frag_find(&net->ipv6.frags, &ip6_frags, &arg, hash);
+-	if (q == NULL)
++	if (IS_ERR_OR_NULL(q)) {
++		inet_frag_maybe_warn_overflow(q, pr_fmt());
+ 		return NULL;
+-
++	}
+ 	return container_of(q, struct frag_queue, q);
+ }
+ 
 
 
