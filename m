@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934628Ab3CZPH2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:07:28 -0400
-Received: from mail-da0-f48.google.com ([209.85.210.48]:43306 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934567Ab3CZPH0 (ORCPT
+	id S934588Ab3CZPJH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:09:07 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:50577 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757506Ab3CZPJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:07:26 -0400
-Message-ID: <1364310442.1716.17.camel@edumazet-glaptop>
-Subject: Re: [net-next 2/5] tuntap: set transport header before passing it
- to kernel
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, Eric Dumazet <edumazet@google.com>
-Date: Tue, 26 Mar 2013 08:07:22 -0700
-In-Reply-To: <1364278799-37285-3-git-send-email-jasowang@redhat.com>
-References: <1364278799-37285-1-git-send-email-jasowang@redhat.com>
-	 <1364278799-37285-3-git-send-email-jasowang@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 26 Mar 2013 11:09:05 -0400
+X-IronPort-AV: E=Sophos;i="4.84,911,1355097600"; 
+   d="scan'208";a="14904334"
+Date: Tue, 26 Mar 2013 15:09:02 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "nico@linaro.org" <nico@linaro.org>
+Subject: Re: [PATCH v2 6/6] [RFC] arm: use PSCI if available
+In-Reply-To: <201303261458.55183.arnd@arndb.de>
+Message-ID: <alpine.DEB.2.02.1303261508370.4430@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1303261423530.4430@kaball.uk.xensource.com> <1364308875-26484-6-git-send-email-stefano.stabellini@eu.citrix.com> <201303261458.55183.arnd@arndb.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-26 at 14:19 +0800, Jason Wang wrote:
-> Currently, for the packets receives from tuntap, before doing header check,
-> kernel just reset the transport header in netif_receive_skb() which pretends no
-> l4 header. This is suboptimal for precise packet length estimation (introduced
-> in 1def9238) which needs correct l4 header for gso packets.
+On Tue, 26 Mar 2013, Arnd Bergmann wrote:
+> On Tuesday 26 March 2013, Stefano Stabellini wrote:
+> > Check for the presence of PSCI before setting smp_ops, use PSCI if it is
+> > available.
+> > 
+> > This is useful because at least when running on Xen it's possible to have a
+> > PSCI node for example on a Versatile Express or an Exynos5 machine. In these
+> > cases the PSCI SMP calls should be the ones to be called.
+> > 
+> > Remove virt_smp_ops and platsmp.c from mach-virt because they aren't needed
+> > anymore.
 > 
-> So this patch set the transport header to csum_start for partial checksum
-> packets, otherwise it first try skb_flow_dissect(), if it fails, just reset the
-> transport header.
+> Very nice, I had a similar idea but had not gotten around to write a patch.
+> This fits in nicely with my plans to make all fields of machine_desc optional.
 > 
-> Cc: Eric Dumazet <edumazet@google.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/net/tun.c |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
+> >  void __init smp_set_ops(struct smp_operations *ops)
+> >  {
+> > -       if (ops)
+> > +       int rc = -ENODEV;
+> > +#ifdef CONFIG_ARM_PSCI
+> > +       rc = psci_init(&smp_ops);
+> > +#endif
+> > +       if (rc && ops)
+> >                smp_ops = *ops;
+> >  };
 > 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index 95837c1..48cd73a 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -70,6 +70,7 @@
->  #include <net/sock.h>
->  
->  #include <asm/uaccess.h>
-> +#include <net/flow_keys.h>
->  
->  /* Uncomment to enable debugging */
->  /* #define TUN_DEBUG 1 */
-> @@ -1049,6 +1050,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
->  	bool zerocopy = false;
->  	int err;
->  	u32 rxhash;
-> +	struct flow_keys keys;
->  
->  	if (!(tun->flags & TUN_NO_PI)) {
->  		if ((len -= sizeof(pi)) > total_len)
-> @@ -1203,6 +1205,14 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
->  	}
->  
->  	skb_reset_network_header(skb);
-> +
-> +	if (skb->ip_summed == CHECKSUM_PARTIAL)
-> +		skb_set_transport_header(skb, skb_checksum_start_offset(skb));
-> +	else if (skb_flow_dissect(skb, &keys))
-> +		skb_set_transport_header(skb, keys.thoff);
-> +	else
-> +		skb_reset_transport_header(skb);
-> +
->  	rxhash = skb_get_rxhash(skb);
->  	netif_rx_ni(skb);
->  
+> Could you move this into the caller, i.e. setup_arch() so we call smp_set_ops
+> either for psci_smp_ops or for machine_desc->smp?
 
-Another call for a common helper.
-
-
+Sure, I can do that.
