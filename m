@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934191Ab3CZNRv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 09:17:51 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:43010 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933294Ab3CZNRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 09:17:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andrei Epure <epure.andrei@gmail.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acpi: replaced kmalloc+memcpy with kmemdup
-Date: Tue, 26 Mar 2013 14:25:15 +0100
-Message-ID: <3996362.Dl8iZzsvl7@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1362990016-21249-1-git-send-email-epure.andrei@gmail.com>
-References: <1362990016-21249-1-git-send-email-epure.andrei@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S934045Ab3CZNTj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 09:19:39 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:35101
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933294Ab3CZNTj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 09:19:39 -0400
+Message-ID: <1364303965.5053.29.camel@laptop>
+Subject: Re: [PATCH -mm -next] ipc,sem: fix lockdep false positive
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: Rik van Riel <riel@surriel.com>, Sasha Levin <sasha.levin@oracle.com>,
+        torvalds@linux-foundation.org, davidlohr.bueso@hp.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        hhuang@redhat.com, jason.low2@hp.com, lwoodman@redhat.com,
+        chegu_vinod@hp.com, Dave Jones <davej@redhat.com>, benisty.e@gmail.com,
+        Ingo Molnar <mingo@redhat.com>
+Date: Tue, 26 Mar 2013 14:19:25 +0100
+In-Reply-To: <CANN689FdtXs0-VKxwWHQKgnnSvcvu5hHDMmGOe0H+bdHA4BhXg@mail.gmail.com>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+	 <5150B1C2.8090607@oracle.com>
+	 <20130325163844.042a45ba@annuminas.surriel.com>
+	 <CANN689FdtXs0-VKxwWHQKgnnSvcvu5hHDMmGOe0H+bdHA4BhXg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 11, 2013 10:20:16 AM Andrei Epure wrote:
-> Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
+On Mon, 2013-03-25 at 14:42 -0700, Michel Lespinasse wrote:
+> depth nesting here...
+> Adding Peter & Ingo for advice about how to proceed
 
-Added a changelog and applied to linux-pm.git/linux-next.
+> > +++ b/ipc/sem.c
+> > @@ -357,7 +357,7 @@ static inline int sem_lock(struct sem_array
+> *sma, struct sembuf *sops,
+> >                 spin_lock(&sma->sem_perm.lock);
+> >                 for (i = 0; i < sma->sem_nsems; i++) {
+> >                         struct sem *sem = sma->sem_base + i;
+> > -                       spin_lock(&sem->lock);
+> > +                       spin_lock_nested(&sem->lock,
+> SINGLE_DEPTH_NESTING);
+> >                 }
+> >                 locknum = -1;
+> >         }
 
-Thanks,
-Rafael
+Right, so as walken said, this isn't going to work right.
+
+I need a little more information as I've not really paid much attention
+to this stuff. Firstly, is there a limit to sem_nsems or is this a
+random user specified number? Secondly do we care about lock order at
+all, or is array order the only order that counts?
 
 
-> ---
->  drivers/acpi/bus.c |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-> index 01708a1..292de3c 100644
-> --- a/drivers/acpi/bus.c
-> +++ b/drivers/acpi/bus.c
-> @@ -288,13 +288,12 @@ acpi_status acpi_run_osc(acpi_handle handle, struct acpi_osc_context *context)
->  	}
->  out_success:
->  	context->ret.length = out_obj->buffer.length;
-> -	context->ret.pointer = kmalloc(context->ret.length, GFP_KERNEL);
-> +	context->ret.pointer = kmemdup(out_obj->buffer.pointer,
-> +				       context->ret.length, GFP_KERNEL);
->  	if (!context->ret.pointer) {
->  		status =  AE_NO_MEMORY;
->  		goto out_kfree;
->  	}
-> -	memcpy(context->ret.pointer, out_obj->buffer.pointer,
-> -		context->ret.length);
->  	status =  AE_OK;
->  
->  out_kfree:
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
