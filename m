@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab3CZUZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 16:25:10 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:39953 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769Ab3CZUZH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 16:25:07 -0400
-Date: Tue, 26 Mar 2013 13:25:04 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Kees Cook <keescook@chromium.org>,
-        halfdog <me@halfdog.net>, P J P <ppandit@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: Re: [PATCH 42/88] exec: use -ELOOP for max recursion depth
-Message-ID: <20130326202504.GE21624@kroah.com>
-References: <1363257381-15900-1-git-send-email-luis.henriques@canonical.com>
- <1363257381-15900-43-git-send-email-luis.henriques@canonical.com>
- <1363661587.3937.360.camel@deadeye.wl.decadent.org.uk>
+	id S1754982Ab3CZU27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 16:28:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59515 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751155Ab3CZU25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 16:28:57 -0400
+Date: Tue, 26 Mar 2013 16:28:38 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Milan Broz <gmazyland@gmail.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, dm-devel@redhat.com,
+        Andi Kleen <andi@firstfloor.org>, dm-crypt@saout.de,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        Christian Schmidt <schmidt@digadd.de>, tj@kernel.org
+Subject: Re: dm-crypt performance
+Message-ID: <20130326202837.GA5599@redhat.com>
+References: <Pine.LNX.4.64.1303252051520.9745@file.rdu.redhat.com>
+ <20130326122713.GC27610@agk-dp.fab.redhat.com>
+ <5151FF82.6090405@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363661587.3937.360.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <5151FF82.6090405@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 02:53:07AM +0000, Ben Hutchings wrote:
-> On Thu, 2013-03-14 at 10:35 +0000, Luis Henriques wrote:
-> > 3.5.7.8 -stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Kees Cook <keescook@chromium.org>
-> > 
-> > commit d740269867021faf4ce38a449353d2b986c34a67 upstream.
-> > 
-> > To avoid an explosion of request_module calls on a chain of abusive
-> > scripts, fail maximum recursion with -ELOOP instead of -ENOEXEC. As soon
-> > as maximum recursion depth is hit, the error will fail all the way back
-> > up the chain, aborting immediately.
-> > 
-> > This also has the side-effect of stopping the user's shell from attempting
-> > to reexecute the top-level file as a shell script. As seen in the
-> > dash source:
-> > 
-> >         if (cmd != path_bshell && errno == ENOEXEC) {
-> >                 *argv-- = cmd;
-> >                 *argv = cmd = path_bshell;
-> >                 goto repeat;
-> >         }
-> > 
-> > The above logic was designed for running scripts automatically that lacked
-> > the "#!" header, not to re-try failed recursion. On a legitimate -ENOEXEC,
-> > things continue to behave as the shell expects.
-> > 
-> > Additionally, when tracking recursion, the binfmt handlers should not be
-> > involved. The recursion being tracked is the depth of calls through
-> > search_binary_handler(), so that function should be exclusively responsible
-> > for tracking the depth.
-> > 
-> > Signed-off-by: Kees Cook <keescook@chromium.org>
-> > Cc: halfdog <me@halfdog.net>
-> > Cc: P J P <ppandit@redhat.com>
-> > Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> > [ luis: backport to 3.5 ]
-> > Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-> [...]
+On Tue, Mar 26 2013 at  4:05pm -0400,
+Milan Broz <gmazyland@gmail.com> wrote:
+
+> >On Mon, Mar 25, 2013 at 11:47:22PM -0400, Mikulas Patocka wrote:
+> >
+> >>For best performance we could use the unbound workqueue implementation
+> >>with request sorting, if people don't object to the request sorting being
+> >>done in dm-crypt.
 > 
-> Greg, I also included this in 3.2.y (commit 511d07b) but it is missing
-> from 3.0.y and 3.4.y.  I hope one or other of these backports will be
-> suitable for them (it was just a context fix for 3.2.y).
+> So again:
+> 
+> - why IO scheduler is not working properly here? Do it need some extensions?
+> If fixed, it can help even is some other non-dmcrypt IO patterns.
+> (I mean dmcrypt can set some special parameter for underlying device queue
+> automagically to fine-tune sorting parameters.)
 
-Applied, thanks.
+Not sure, but IO scheduler changes are fairly slow to materialize given
+the potential for adverse side-effects.  Are you so surprised that a
+shotgun blast of IOs might make the IO schduler less optimal than if
+some basic sorting were done at the layer above?
 
-greg k-h
+> - can we have some cpu-bound workqueue which automatically switch to unbound
+> (relocates work to another cpu) if it detects some saturation watermark etc?
+> (Again, this can be used in other code.
+> http://www.redhat.com/archives/dm-devel/2012-August/msg00288.html
+> (Yes, I see skepticism there :-)
+
+Question for Tejun? (now cc'd).
+
+> >On Tue, Mar 26, 2013 at 02:52:29AM -0400, Christoph Hellwig wrote:
+> >>FYI, XFS also does it's own request ordering for the metadata buffers,
+> >>because it knows the needed ordering and has a bigger view than than
+> >>than especially CFQ.  You at least have precedence in a widely used
+> >>subsystem for this code.
+> 
+> Nice. But XFS is much more complex system.
+> Isn't it enough that multipath uses own IO queue (so we have one IO scheduler
+> on top of another, and now we have metadata io sorting in XFS on top of it
+> and planning one more in dmcrypt? Is it really good approach?)
+
+Multipath's request_queue is the only one with an active IO scheduler;
+the requests are dispatched directly to the underlying devices' queues
+without any IO scheduling.
+
+As for dm-crypt; as you know it is bio-based so it is already dealing
+with out of order IOs (no benefit of upper level IO scheduler).  Seems
+relatively clear, from Mikulas' results, that maybe you're hoping for a
+bit too much magic from the IO scheduler gnomes that lurk on LKML.  BTW,
+pretty sure btrfs takes care to maintain some IO dispatch ordering too.
+
+Mike
