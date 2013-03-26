@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab3CZW4v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:56:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53152 "EHLO
+	id S1756407Ab3CZWwx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:52:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53125 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756419Ab3CZWwy (ORCPT
+	with ESMTP id S1756334Ab3CZWwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:54 -0400
+	Tue, 26 Mar 2013 18:52:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Torokhov <dtor@vmware.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 57/72] USB: xhci - fix bit definitions for IMAN register
-Date: Tue, 26 Mar 2013 15:51:40 -0700
-Message-Id: <20130326224925.572331511@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>, Jan Kara <jack@suse.cz>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 67/72] udf: avoid info leak on export
+Date: Tue, 26 Mar 2013 15:51:50 -0700
+Message-Id: <20130326224926.564849559@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -27,42 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dtor@vmware.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit f8264340e694604863255cc0276491d17c402390 upstream.
+commit 0143fc5e9f6f5aad4764801015bc8d4b4a278200 upstream.
 
-According to XHCI specification (5.5.2.1) the IP is bit 0 and IE is bit 1
-of IMAN register. Previously their definitions were reversed.
+For type 0x51 the udf.parent_partref member in struct fid gets copied
+uninitialized to userland. Fix this by initializing it to 0.
 
-Even though there are no ill effects being observed from the swapped
-definitions (because IMAN_IP is RW1C and in legacy PCI case we come in
-with it already set to 1 so it was clearing itself even though we were
-setting IMAN_IE instead of IMAN_IP), we should still correct the values.
-
-This patch should be backported to kernels as old as 2.6.36, that
-contain the commit 4e833c0b87a30798e67f06120cecebef6ee9644c "xhci: don't
-re-enable IE constantly".
-
-Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/udf/namei.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -206,8 +206,8 @@ struct xhci_op_regs {
- /* bits 12:31 are reserved (and should be preserved on writes). */
+--- a/fs/udf/namei.c
++++ b/fs/udf/namei.c
+@@ -1280,6 +1280,7 @@ static int udf_encode_fh(struct dentry *
+ 	*lenp = 3;
+ 	fid->udf.block = location.logicalBlockNum;
+ 	fid->udf.partref = location.partitionReferenceNum;
++	fid->udf.parent_partref = 0;
+ 	fid->udf.generation = inode->i_generation;
  
- /* IMAN - Interrupt Management Register */
--#define IMAN_IP		(1 << 1)
--#define IMAN_IE		(1 << 0)
-+#define IMAN_IE		(1 << 1)
-+#define IMAN_IP		(1 << 0)
- 
- /* USBSTS - USB status - status bitmasks */
- /* HC not running - set to 1 when run/stop bit is cleared. */
+ 	if (connectable && !S_ISDIR(inode->i_mode)) {
 
 
