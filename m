@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368Ab3CZM0c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 08:26:32 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34867
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757148Ab3CZM0b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 08:26:31 -0400
-Message-ID: <1364300782.5053.6.camel@laptop>
-Subject: Re: [RFC PATCH v3 3/6] sched: pack small tasks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, mingo@kernel.org,
-        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
-        morten.rasmussen@arm.com, chander.kashyap@linaro.org,
-        cmetcalf@tilera.com, tony.luck@intel.com, alex.shi@intel.com,
-        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
-        amit.kucheria@linaro.org, corbet@lwn.net
-Date: Tue, 26 Mar 2013 13:26:22 +0100
-In-Reply-To: <1363955155-18382-4-git-send-email-vincent.guittot@linaro.org>
-References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
-	 <1363955155-18382-4-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759699Ab3CZM0s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 08:26:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23719 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759370Ab3CZM0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 08:26:47 -0400
+Date: Tue, 26 Mar 2013 13:26:01 +0100
+From: Anton Arapov <anton@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
+        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
+Subject: Re: [PATCH 4/7] uretprobes: return probe entry, prepare_uretprobe()
+Message-ID: <20130326122601.GA1935@bandura.brq.redhat.com>
+References: <1363957745-6657-1-git-send-email-anton@redhat.com>
+ <1363957745-6657-5-git-send-email-anton@redhat.com>
+ <20130322150252.GA17934@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130322150252.GA17934@redhat.com>
+X-PGP-Key: http://people.redhat.com/aarapov/gpg
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-22 at 13:25 +0100, Vincent Guittot wrote:
-> +static bool is_buddy_busy(int cpu)
-> +{
-> +       struct rq *rq = cpu_rq(cpu);
-> +
-> +       /*
-> +        * A busy buddy is a CPU with a high load or a small load with
-> a lot of
-> +        * running tasks.
-> +        */
-> +       return (rq->avg.runnable_avg_sum >
-> +                       (rq->avg.runnable_avg_period / (rq->nr_running
-> + 2)));
-> +}
+On Fri, Mar 22, 2013 at 04:02:52PM +0100, Oleg Nesterov wrote:
+> I'll try to read this series later. Just one note...
+> 
+> On 03/22, Anton Arapov wrote:
+> >
+> >    IOW, we must ensure that uprobe_pre_sstep_notifier() can't return 0.
+> 
+> Yes, but I do not see this change?
+> 
+> > +static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
+> > +{
+> > +	struct return_instance *ri;
+> > +	struct uprobe_task *utask;
+> > +	struct xol_area *area;
+> > +	unsigned long trampoline_vaddr;
+> > +	unsigned long prev_ret_vaddr, ret_vaddr;
+> > +
+> > +	area = get_xol_area();
+> > +	if (!area)
+> > +		return;
+> > +
+> > +	utask = get_utask();
+> > +	if (!utask)
+> > +		return;
+> > +
+> > +	prev_ret_vaddr = -1;
+> > +	if (utask->return_instances)
+> > +		prev_ret_vaddr = utask->return_instances->orig_ret_vaddr;
+> > +
+> > +	ri = kzalloc(sizeof(struct return_instance), GFP_KERNEL);
+> > +	if (!ri)
+> > +		return;
+> > +
+> > +	ri->dirty = false;
+> > +	trampoline_vaddr = get_trampoline_vaddr(area);
+> > +	ret_vaddr = arch_uretprobe_hijack_return_addr(trampoline_vaddr, regs);
+> 
+> OK, but you need to ensure that this code can be compiled on poweprc.
 
-Why does the comment talk about load but we don't see it in the
-equation. Also, why does nr_running matter at all? I thought we'd
-simply bother with utilization, if fully utilized we're done etc..
+It does compile, unlike the obvious arch_uretprobe_hijack_return_addr() where
+I'll look for the Ananth's help, perhaps. 
 
+Anton. 
