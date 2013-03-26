@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab3CZXhC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:37:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52555 "EHLO
+	id S1755073Ab3CZXhg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:37:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52550 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863Ab3CZWoK (ORCPT
+	with ESMTP id S1753676Ab3CZWoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:10 -0400
+	Tue, 26 Mar 2013 18:44:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Torsten Duwe <duwe@lst.de>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 50/98] drivers/rtc/rtc-at91rm9200.c: use a variable for storing IMR
-Date: Tue, 26 Mar 2013 15:42:39 -0700
-Message-Id: <20130326224247.755646571@linuxfoundation.org>
+Subject: [ 49/98] KMS: fix EDID detailed timing frame rate
+Date: Tue, 26 Mar 2013 15:42:38 -0700
+Message-Id: <20130326224247.657013298@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -31,203 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+From: Torsten Duwe <torsten@lst.de>
 
-commit 0ef1594c017521ea89278e80fe3f80dafb17abde upstream.
+commit c19b3b0f6eed552952845e4ad908dba2113d67b4 upstream.
 
-On some revisions of AT91 SoCs, the RTC IMR register is not working.
-Instead of elaborating a workaround for that specific SoC or IP version,
-we simply use a software variable to store the Interrupt Mask Register
-and modify it for each enabling/disabling of an interrupt.  The overhead
-of this is negligible anyway.
+When KMS has parsed an EDID "detailed timing", it leaves the frame rate
+zeroed.  Consecutive (debug-) output of that mode thus yields 0 for
+vsync.  This simple fix also speeds up future invocations of
+drm_mode_vrefresh().
 
-The interrupt mask register (IMR) for the RTC is broken on the AT91SAM9x5
-sub-family of SoCs (good overview of the members here:
-http://www.eewiki.net/display/linuxonarm/AT91SAM9x5 ).  The "user visible
-effect" is the RTC doesn't work.
+While it is debatable whether this qualifies as a -stable fix I'd apply
+it for consistency's sake; drm_helper_probe_single_connector_modes()
+does the same thing already for all probed modes.
 
-That sub-family is less than two years old and only has devicetree (DT)
-support and came online circa lk 3.7 .  The dust is yet to settle on the
-DT stuff at least for AT91 SoCs (translation: lots of stuff is still
-broken, so much that it is hard to know where to start).
-
-The fix in the patch is pretty simple: just shadow the silicon IMR
-register with a variable in the driver.  Some older SoCs (pre-DT) use the
-the rtc-at91rm9200 driver (e.g.  obviously the AT91RM9200) and they should
-not be impacted by the change.  There shouldn't be a large volume of
-interrupts associated with a RTC.
-
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Reported-by: Douglas Gilbert <dgilbert@interlog.com>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Ludovic Desroches <ludovic.desroches@atmel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Torsten Duwe <duwe@lst.de>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-at91rm9200.c |   50 ++++++++++++++++++++++++++-----------------
- drivers/rtc/rtc-at91rm9200.h |    1 
- 2 files changed, 31 insertions(+), 20 deletions(-)
+ drivers/gpu/drm/drm_edid.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/rtc/rtc-at91rm9200.c
-+++ b/drivers/rtc/rtc-at91rm9200.c
-@@ -44,6 +44,7 @@ static DECLARE_COMPLETION(at91_rtc_updat
- static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
- static void __iomem *at91_rtc_regs;
- static int irq;
-+static u32 at91_rtc_imr;
- 
- /*
-  * Decode time/date into rtc_time structure
-@@ -108,9 +109,11 @@ static int at91_rtc_settime(struct devic
- 	cr = at91_rtc_read(AT91_RTC_CR);
- 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
- 
-+	at91_rtc_imr |= AT91_RTC_ACKUPD;
- 	at91_rtc_write(AT91_RTC_IER, AT91_RTC_ACKUPD);
- 	wait_for_completion(&at91_rtc_updated);	/* wait for ACKUPD interrupt */
- 	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ACKUPD);
-+	at91_rtc_imr &= ~AT91_RTC_ACKUPD;
- 
- 	at91_rtc_write(AT91_RTC_TIMR,
- 			  bin2bcd(tm->tm_sec) << 0
-@@ -142,7 +145,7 @@ static int at91_rtc_readalarm(struct dev
- 	tm->tm_yday = rtc_year_days(tm->tm_mday, tm->tm_mon, tm->tm_year);
- 	tm->tm_year = at91_alarm_year - 1900;
- 
--	alrm->enabled = (at91_rtc_read(AT91_RTC_IMR) & AT91_RTC_ALARM)
-+	alrm->enabled = (at91_rtc_imr & AT91_RTC_ALARM)
- 			? 1 : 0;
- 
- 	pr_debug("%s(): %4d-%02d-%02d %02d:%02d:%02d\n", __func__,
-@@ -168,6 +171,7 @@ static int at91_rtc_setalarm(struct devi
- 	tm.tm_sec = alrm->time.tm_sec;
- 
- 	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ALARM);
-+	at91_rtc_imr &= ~AT91_RTC_ALARM;
- 	at91_rtc_write(AT91_RTC_TIMALR,
- 		  bin2bcd(tm.tm_sec) << 0
- 		| bin2bcd(tm.tm_min) << 8
-@@ -180,6 +184,7 @@ static int at91_rtc_setalarm(struct devi
- 
- 	if (alrm->enabled) {
- 		at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_ALARM);
-+		at91_rtc_imr |= AT91_RTC_ALARM;
- 		at91_rtc_write(AT91_RTC_IER, AT91_RTC_ALARM);
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -975,6 +975,7 @@ set_size:
  	}
  
-@@ -196,9 +201,12 @@ static int at91_rtc_alarm_irq_enable(str
+ 	mode->type = DRM_MODE_TYPE_DRIVER;
++	mode->vrefresh = drm_mode_vrefresh(mode);
+ 	drm_mode_set_name(mode);
  
- 	if (enabled) {
- 		at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_ALARM);
-+		at91_rtc_imr |= AT91_RTC_ALARM;
- 		at91_rtc_write(AT91_RTC_IER, AT91_RTC_ALARM);
--	} else
-+	} else {
- 		at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ALARM);
-+		at91_rtc_imr &= ~AT91_RTC_ALARM;
-+	}
- 
- 	return 0;
- }
-@@ -207,12 +215,10 @@ static int at91_rtc_alarm_irq_enable(str
-  */
- static int at91_rtc_proc(struct device *dev, struct seq_file *seq)
- {
--	unsigned long imr = at91_rtc_read(AT91_RTC_IMR);
--
- 	seq_printf(seq, "update_IRQ\t: %s\n",
--			(imr & AT91_RTC_ACKUPD) ? "yes" : "no");
-+			(at91_rtc_imr & AT91_RTC_ACKUPD) ? "yes" : "no");
- 	seq_printf(seq, "periodic_IRQ\t: %s\n",
--			(imr & AT91_RTC_SECEV) ? "yes" : "no");
-+			(at91_rtc_imr & AT91_RTC_SECEV) ? "yes" : "no");
- 
- 	return 0;
- }
-@@ -227,7 +233,7 @@ static irqreturn_t at91_rtc_interrupt(in
- 	unsigned int rtsr;
- 	unsigned long events = 0;
- 
--	rtsr = at91_rtc_read(AT91_RTC_SR) & at91_rtc_read(AT91_RTC_IMR);
-+	rtsr = at91_rtc_read(AT91_RTC_SR) & at91_rtc_imr;
- 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
- 		if (rtsr & AT91_RTC_ALARM)
- 			events |= (RTC_AF | RTC_IRQF);
-@@ -291,6 +297,7 @@ static int __init at91_rtc_probe(struct
- 	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ACKUPD | AT91_RTC_ALARM |
- 					AT91_RTC_SECEV | AT91_RTC_TIMEV |
- 					AT91_RTC_CALEV);
-+	at91_rtc_imr = 0;
- 
- 	ret = request_irq(irq, at91_rtc_interrupt,
- 				IRQF_SHARED,
-@@ -330,6 +337,7 @@ static int __exit at91_rtc_remove(struct
- 	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ACKUPD | AT91_RTC_ALARM |
- 					AT91_RTC_SECEV | AT91_RTC_TIMEV |
- 					AT91_RTC_CALEV);
-+	at91_rtc_imr = 0;
- 	free_irq(irq, pdev);
- 
- 	rtc_device_unregister(rtc);
-@@ -342,31 +350,35 @@ static int __exit at91_rtc_remove(struct
- 
- /* AT91RM9200 RTC Power management control */
- 
--static u32 at91_rtc_imr;
-+static u32 at91_rtc_bkpimr;
-+
- 
- static int at91_rtc_suspend(struct device *dev)
- {
- 	/* this IRQ is shared with DBGU and other hardware which isn't
- 	 * necessarily doing PM like we are...
- 	 */
--	at91_rtc_imr = at91_rtc_read(AT91_RTC_IMR)
--			& (AT91_RTC_ALARM|AT91_RTC_SECEV);
--	if (at91_rtc_imr) {
--		if (device_may_wakeup(dev))
-+	at91_rtc_bkpimr = at91_rtc_imr & (AT91_RTC_ALARM|AT91_RTC_SECEV);
-+	if (at91_rtc_bkpimr) {
-+		if (device_may_wakeup(dev)) {
- 			enable_irq_wake(irq);
--		else
--			at91_rtc_write(AT91_RTC_IDR, at91_rtc_imr);
--	}
-+		} else {
-+			at91_rtc_write(AT91_RTC_IDR, at91_rtc_bkpimr);
-+			at91_rtc_imr &= ~at91_rtc_bkpimr;
-+		}
-+}
- 	return 0;
- }
- 
- static int at91_rtc_resume(struct device *dev)
- {
--	if (at91_rtc_imr) {
--		if (device_may_wakeup(dev))
-+	if (at91_rtc_bkpimr) {
-+		if (device_may_wakeup(dev)) {
- 			disable_irq_wake(irq);
--		else
--			at91_rtc_write(AT91_RTC_IER, at91_rtc_imr);
-+		} else {
-+			at91_rtc_imr |= at91_rtc_bkpimr;
-+			at91_rtc_write(AT91_RTC_IER, at91_rtc_bkpimr);
-+		}
- 	}
- 	return 0;
- }
---- a/drivers/rtc/rtc-at91rm9200.h
-+++ b/drivers/rtc/rtc-at91rm9200.h
-@@ -64,7 +64,6 @@
- #define	AT91_RTC_SCCR		0x1c			/* Status Clear Command Register */
- #define	AT91_RTC_IER		0x20			/* Interrupt Enable Register */
- #define	AT91_RTC_IDR		0x24			/* Interrupt Disable Register */
--#define	AT91_RTC_IMR		0x28			/* Interrupt Mask Register */
- 
- #define	AT91_RTC_VER		0x2c			/* Valid Entry Register */
- #define		AT91_RTC_NVTIM		(1 <<  0)		/* Non valid Time */
+ 	return mode;
 
 
