@@ -1,50 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965752Ab3CZQGt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:06:49 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:33633 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965685Ab3CZQGp (ORCPT
+	id S965675Ab3CZQHp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:07:45 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:57297 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933665Ab3CZP7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:06:45 -0400
-Date: Tue, 26 Mar 2013 11:06:35 -0500
-From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, klebers@linux.vnet.ibm.com
-Subject: [PATCH 02/02] block: removes unused variable.
-Message-ID: <20130326160635.GE7136@oc6784271780.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032616-3620-0000-0000-000001C6C6D7
+	Tue, 26 Mar 2013 11:59:20 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>, Bob Liu <lliubbo@gmail.com>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Subject: [PATCH v3, part4 14/39] mm/blackfin: prepare for removing num_physpages and simplify mem_init()
+Date: Tue, 26 Mar 2013 23:54:33 +0800
+Message-Id: <1364313298-17336-15-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
+References: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+Prepare for removing num_physpages and simplify mem_init().
 
-Removed unused variable.
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: Bob Liu <lliubbo@gmail.com>
+Cc: uclinux-dist-devel@blackfin.uclinux.org
+Cc: linux-kernel@vger.kernel.org
+---
+Hi all,
+	Sorry for my mistake that my previous patch series has been screwed up.
+So I regenerate a third version and also set up a git tree at:
+	git://github.com/jiangliu/linux.git mem_init
+	Any help to review and test are welcomed!
 
-Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
--------------------------------------------------------------------------------
-This patch may have been already submitted but I haven't seen it be applied yet.
-So I am going to go ahead and send the fix so that I am sure there has been a patch
-sent out.
+	Regards!
+	Gerry
+---
+ arch/blackfin/mm/init.c |   38 ++++++--------------------------------
+ 1 file changed, 6 insertions(+), 32 deletions(-)
 
-
-
-diff -uprN -X linux-block/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/dma.c linux-block/drivers/block/rsxx/dma.c
---- linux-block-vanilla/drivers/block/rsxx/dma.c	2013-03-26 10:02:29.942964930 -0500
-+++ linux-block/drivers/block/rsxx/dma.c	2013-03-26 10:02:56.839969991 -0500
-@@ -1056,7 +1056,6 @@ void rsxx_eeh_cancel_dmas(struct rsxx_ca
- int rsxx_eeh_remap_dmas(struct rsxx_cardinfo *card)
- {
- 	struct rsxx_dma *dma;
--	struct rsxx_dma *tmp;
- 	int i;
+diff --git a/arch/blackfin/mm/init.c b/arch/blackfin/mm/init.c
+index 1cc8607..e4b6e11 100644
+--- a/arch/blackfin/mm/init.c
++++ b/arch/blackfin/mm/init.c
+@@ -90,43 +90,17 @@ asmlinkage void __init init_pda(void)
  
- 	for (i = 0; i < card->n_targets; i++) {
+ void __init mem_init(void)
+ {
+-	unsigned int codek = 0, datak = 0, initk = 0;
+-	unsigned int reservedpages = 0, freepages = 0;
+-	unsigned long tmp;
+-	unsigned long start_mem = memory_start;
+-	unsigned long end_mem = memory_end;
++	char buf[64];
+ 
+-	end_mem &= PAGE_MASK;
+-	high_memory = (void *)end_mem;
+-
+-	start_mem = PAGE_ALIGN(start_mem);
+-	max_mapnr = num_physpages = MAP_NR(high_memory);
+-	printk(KERN_DEBUG "Kernel managed physical pages: %lu\n", num_physpages);
++	high_memory = (void *)(memory_end & PAGE_MASK);
++	max_mapnr = MAP_NR(high_memory);
++	printk(KERN_DEBUG "Kernel managed physical pages: %lu\n", max_mapnr);
+ 
+ 	/* This will put all low memory onto the freelists. */
+ 	free_all_bootmem();
+ 
+-	reservedpages = 0;
+-	for (tmp = ARCH_PFN_OFFSET; tmp < max_mapnr; tmp++)
+-		if (PageReserved(pfn_to_page(tmp)))
+-			reservedpages++;
+-	freepages =  max_mapnr - ARCH_PFN_OFFSET - reservedpages;
+-
+-	/* do not count in kernel image between _rambase and _ramstart */
+-	reservedpages -= (_ramstart - _rambase) >> PAGE_SHIFT;
+-#if (defined(CONFIG_BFIN_EXTMEM_ICACHEABLE) && ANOMALY_05000263)
+-	reservedpages += (_ramend - memory_end - DMA_UNCACHED_REGION) >> PAGE_SHIFT;
+-#endif
+-
+-	codek = (_etext - _stext) >> 10;
+-	initk = (__init_end - __init_begin) >> 10;
+-	datak = ((_ramstart - _rambase) >> 10) - codek - initk;
+-
+-	printk(KERN_INFO
+-	     "Memory available: %luk/%luk RAM, "
+-		"(%uk init code, %uk kernel code, %uk data, %uk dma, %uk reserved)\n",
+-		(unsigned long) freepages << (PAGE_SHIFT-10), (_ramend - CONFIG_PHY_RAM_BASE_ADDRESS) >> 10,
+-		initk, codek, datak, DMA_UNCACHED_REGION >> 10, (reservedpages << (PAGE_SHIFT-10)));
++	snprintf(buf, sizeof(buf) - 1, "%uK DMA", DMA_UNCACHED_REGION >> 10);
++	mem_init_print_info(buf);
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+-- 
+1.7.9.5
 
