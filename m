@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759698Ab3CZJNe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 05:13:34 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:50995 "EHLO
+	id S1759725Ab3CZJNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 05:13:40 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:51013 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759544Ab3CZJNb (ORCPT
+	with ESMTP id S1759544Ab3CZJNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 05:13:31 -0400
+	Tue, 26 Mar 2013 05:13:35 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: kevin@allwinnertech.com, sunny@allwinnertech.com, shuge@allwinnertech.com,
         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 05/10] ARM: sunxi: dt: Update timer compatible string
-Date: Tue, 26 Mar 2013 10:13:12 +0100
-Message-Id: <1364289198-11589-6-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 08/10] ARM: sunxi: dt: Update interrupt controller compatible string
+Date: Tue, 26 Mar 2013 10:13:15 +0100
+Message-Id: <1364289198-11589-9-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1364289198-11589-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1364289198-11589-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -28,31 +28,31 @@ Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
  2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
-index 5c0920b..be71782 100644
+index be71782..805d704 100644
 --- a/arch/arm/boot/dts/sun4i-a10.dtsi
 +++ b/arch/arm/boot/dts/sun4i-a10.dtsi
-@@ -158,7 +158,7 @@
- 		};
+@@ -121,7 +121,7 @@
+ 		ranges;
  
- 		timer@01c20c00 {
--			compatible = "allwinner,sunxi-timer";
-+			compatible = "allwinner,sun4i-timer";
- 			reg = <0x01c20c00 0x90>;
- 			interrupts = <22>;
- 			clocks = <&osc24M>;
+ 		intc: interrupt-controller@01c20400 {
+-			compatible = "allwinner,sunxi-ic";
++			compatible = "allwinner,sun4i-ic";
+ 			reg = <0x01c20400 0x400>;
+ 			interrupt-controller;
+ 			#interrupt-cells = <1>;
 diff --git a/arch/arm/boot/dts/sun5i-a13.dtsi b/arch/arm/boot/dts/sun5i-a13.dtsi
-index fdc5346..7a81aaf 100644
+index 7a81aaf..760222c 100644
 --- a/arch/arm/boot/dts/sun5i-a13.dtsi
 +++ b/arch/arm/boot/dts/sun5i-a13.dtsi
-@@ -152,7 +152,7 @@
- 		};
+@@ -122,7 +122,7 @@
+ 		ranges;
  
- 		timer@01c20c00 {
--			compatible = "allwinner,sunxi-timer";
-+			compatible = "allwinner,sun4i-timer";
- 			reg = <0x01c20c00 0x90>;
- 			interrupts = <22>;
- 			clocks = <&osc24M>;
+ 		intc: interrupt-controller@01c20400 {
+-			compatible = "allwinner,sunxi-ic";
++			compatible = "allwinner,sun4i-ic";
+ 			reg = <0x01c20400 0x400>;
+ 			interrupt-controller;
+ 			#interrupt-cells = <1>;
 -- 
 1.7.10.4
 
