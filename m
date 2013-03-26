@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965106Ab3CZPWu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:22:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53828 "EHLO
+	id S934884Ab3CZPtt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:49:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53842 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965075Ab3CZPWp (ORCPT
+	with ESMTP id S965092Ab3CZPWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:45 -0400
+	Tue, 26 Mar 2013 11:22:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 069/150] drm/i915: restrict kernel address leak in debugfs
-Date: Tue, 26 Mar 2013 15:19:28 +0000
-Message-Id: <1364311249-14454-70-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 071/150] tracing: Fix free of probe entry by calling call_rcu_sched()
+Date: Tue, 26 Mar 2013 15:19:30 +0000
+Message-Id: <1364311249-14454-72-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,35 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 2563a4524febe8f4a98e717e02436d1aaf672aa2 upstream.
+commit 740466bc89ad8bd5afcc8de220f715f62b21e365 upstream.
 
-Masks kernel address info-leak in object dumps with the %pK suffix,
-so they cannot be used to target kernel memory corruption attacks if
-the kptr_restrict sysctl is set.
+Because function tracing is very invasive, and can even trace
+calls to rcu_read_lock(), RCU access in function tracing is done
+with preempt_disable_notrace(). This requires a synchronize_sched()
+for updates and not a synchronize_rcu().
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ luis: adjust format string ]
+Function probes (traceon, traceoff, etc) must be freed after
+a synchronize_sched() after its entry has been removed from the
+hash. But call_rcu() is used. Fix this by using call_rcu_sched().
+
+Also fix the usage to use hlist_del_rcu() instead of hlist_del().
+
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_debugfs.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/ftrace.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
-index 5ec5222..e6fd143 100644
---- a/drivers/gpu/drm/i915/i915_debugfs.c
-+++ b/drivers/gpu/drm/i915/i915_debugfs.c
-@@ -122,7 +122,7 @@ static const char *cache_level_str(int type)
- static void
- describe_obj(struct seq_file *m, struct drm_i915_gem_object *obj)
- {
--	seq_printf(m, "%p: %s%s %8zdKiB %04x %04x %d %d%s%s%s",
-+	seq_printf(m, "%pK: %s%s %8zdKiB %04x %04x %d %d%s%s%s",
- 		   &obj->base,
- 		   get_pin_flag(obj),
- 		   get_tiling_flag(obj),
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index e5a77ba..1b6ec54 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3002,8 +3002,8 @@ __unregister_ftrace_function_probe(char *glob, struct ftrace_probe_ops *ops,
+ 					continue;
+ 			}
+ 
+-			hlist_del(&entry->node);
+-			call_rcu(&entry->rcu, ftrace_free_entry_rcu);
++			hlist_del_rcu(&entry->node);
++			call_rcu_sched(&entry->rcu, ftrace_free_entry_rcu);
+ 		}
+ 	}
+ 	__disable_ftrace_function_probe();
 -- 
 1.8.1.2
 
