@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab3CZXCX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:02:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53442 "EHLO
+	id S1757010Ab3CZXC6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:02:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53499 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307Ab3CZXCO (ORCPT
+	with ESMTP id S1756924Ab3CZXCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:02:14 -0400
+	Tue, 26 Mar 2013 19:02:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zheng Liu <wenqing.lz@taobao.com>, "Theodore Tso" <tytso@mit.edu>,
-        Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: [ 32/49] ext4: fix the wrong number of the allocated blocks in ext4_split_extent()
-Date: Tue, 26 Mar 2013 16:01:29 -0700
-Message-Id: <20130326225842.890119631@linuxfoundation.org>
+        ryan <draziw+deb@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [ 49/49] asus-laptop: Do not call HWRS on init
+Date: Tue, 26 Mar 2013 16:01:46 -0700
+Message-Id: <20130326225844.668736805@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -27,74 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zheng Liu <wenqing.lz@taobao.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 3a2256702e47f68f921dfad41b1764d05c572329 upstream.
+commit cb7da022450cdaaebd33078b6b32fb7dd2aaf6db upstream.
 
-This commit fixes a wrong return value of the number of the allocated
-blocks in ext4_split_extent.  When the length of blocks we want to
-allocate is greater than the length of the current extent, we return a
-wrong number.  Let's see what happens in the following case when we
-call ext4_split_extent().
+Since commit 8871e99f89b7 ('asus-laptop: HRWS/HWRS typo'), module
+initialisation is very slow on the Asus UL30A.  The HWRS method takes
+about 12 seconds to run, and subsequent initialisation also seems to
+be delayed.  Since we don't really need the result, don't bother
+calling it on init.  Those who are curious can still get the result
+through the 'infos' device attribute.
 
-  map: [48, 72]
-  ex:  [32, 64, u]
+Update the comment about HWRS in show_infos().
 
-'ex' will be split into two parts:
-  ex1: [32, 47, u]
-  ex2: [48, 64, w]
-
-'map->m_len' is returned from this function, and the value is 24.  But
-the real length is 16.  So it should be fixed.
-
-Meanwhile in this commit we use right length of the allocated blocks
-when get_reserved_cluster_alloc in ext4_ext_handle_uninitialized_extents
-is called.
-
-Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Dmitry Monakhov <dmonakhov@openvz.org>
+Reported-by: ryan <draziw+deb@gmail.com>
+References: http://bugs.debian.org/692436
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/extents.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/platform/x86/asus-laptop.c |   17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2901,6 +2901,7 @@ static int ext4_split_extent(handle_t *h
- 	int err = 0;
- 	int uninitialized;
- 	int split_flag1, flags1;
-+	int allocated = map->m_len;
- 
- 	depth = ext_depth(inode);
- 	ex = path[depth].p_ext;
-@@ -2919,6 +2920,8 @@ static int ext4_split_extent(handle_t *h
- 				map->m_lblk + map->m_len, split_flag1, flags1);
- 		if (err)
- 			goto out;
-+	} else {
-+		allocated = ee_len - (map->m_lblk - ee_block);
- 	}
- 
- 	ext4_ext_drop_refs(path);
-@@ -2941,7 +2944,7 @@ static int ext4_split_extent(handle_t *h
- 
- 	ext4_ext_show_leaf(inode, path);
- out:
--	return err ? err : map->m_len;
-+	return err ? err : allocated;
- }
- 
- #define EXT4_EXT_ZERO_LEN 7
-@@ -3309,6 +3312,7 @@ out:
- 					allocated - map->m_len);
- 		allocated = map->m_len;
- 	}
-+	map->m_len = allocated;
- 
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -643,8 +643,10 @@ static ssize_t show_infos(struct device
  	/*
- 	 * If we have done fallocate with the offset that is already
+ 	 * The HWRS method return informations about the hardware.
+ 	 * 0x80 bit is for WLAN, 0x100 for Bluetooth.
++	 * 0x40 for WWAN, 0x10 for WIMAX.
+ 	 * The significance of others is yet to be found.
+-	 * If we don't find the method, we assume the device are present.
++	 * We don't currently use this for device detection, and it
++	 * takes several seconds to run on some systems.
+ 	 */
+ 	rv = acpi_evaluate_integer(asus->handle, "HWRS", NULL, &temp);
+ 	if (!ACPI_FAILURE(rv))
+@@ -1271,7 +1273,7 @@ static int asus_laptop_get_info(struct a
+ {
+ 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+ 	union acpi_object *model = NULL;
+-	unsigned long long bsts_result, hwrs_result;
++	unsigned long long bsts_result;
+ 	char *string = NULL;
+ 	acpi_status status;
+ 
+@@ -1333,17 +1335,6 @@ static int asus_laptop_get_info(struct a
+ 	if (*string)
+ 		pr_notice("  %s model detected\n", string);
+ 
+-	/*
+-	 * The HWRS method return informations about the hardware.
+-	 * 0x80 bit is for WLAN, 0x100 for Bluetooth,
+-	 * 0x40 for WWAN, 0x10 for WIMAX.
+-	 * The significance of others is yet to be found.
+-	 */
+-	status =
+-	    acpi_evaluate_integer(asus->handle, "HWRS", NULL, &hwrs_result);
+-	if (!ACPI_FAILURE(status))
+-		pr_notice("  HWRS returned %x", (int)hwrs_result);
+-
+ 	if (!acpi_check_handle(asus->handle, METHOD_WL_STATUS, NULL))
+ 		asus->have_rsts = true;
+ 
 
 
