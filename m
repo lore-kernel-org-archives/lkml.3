@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756943Ab3CZXmz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:42:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52407 "EHLO
+	id S1756894Ab3CZXmx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:42:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52433 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753946Ab3CZWny (ORCPT
+	with ESMTP id S1754549Ab3CZWny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 18:43:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 25/98] sfc: Fix efx_rx_buf_offset() in the presence of swiotlb
-Date: Tue, 26 Mar 2013 15:42:14 -0700
-Message-Id: <20130326224245.068130200@linuxfoundation.org>
+        Vlad Yasevich <vyasevic@redhat.com>, Thomas Graf <tgraf@suug.ch>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 16/98] rtnetlink: Mask the rta_type when range checking
+Date: Tue, 26 Mar 2013 15:42:05 -0700
+Message-Id: <20130326224244.153923989@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -27,90 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commits b590ace09d51cd39744e0f7662c5e4a0d1b5d952 and
-  c73e787a8db9117d59b5180baf83203a42ecadca ]
+[ Upstream commit a5b8db91442fce9c9713fcd656c3698f1adde1d6 ]
 
-We assume that the mapping between DMA and virtual addresses is done
-on whole pages, so we can find the page offset of an RX buffer using
-the lower bits of the DMA address.  However, swiotlb maps in units of
-2K, breaking this assumption.
+Range/validity checks on rta_type in rtnetlink_rcv_msg() do
+not account for flags that may be set.  This causes the function
+to return -EINVAL when flags are set on the type (for example
+NLA_F_NESTED).
 
-Add an explicit page_offset field to struct efx_rx_buffer.
-
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/sfc/net_driver.h |    4 +++-
- drivers/net/ethernet/sfc/rx.c         |   10 +++++-----
- 2 files changed, 8 insertions(+), 6 deletions(-)
+ net/core/rtnetlink.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/sfc/net_driver.h
-+++ b/drivers/net/ethernet/sfc/net_driver.h
-@@ -210,6 +210,7 @@ struct efx_tx_queue {
-  *	Will be %NULL if the buffer slot is currently free.
-  * @page: The associated page buffer. Valif iff @flags & %EFX_RX_BUF_PAGE.
-  *	Will be %NULL if the buffer slot is currently free.
-+ * @page_offset: Offset within page. Valid iff @flags & %EFX_RX_BUF_PAGE.
-  * @len: Buffer length, in bytes.
-  * @flags: Flags for buffer and packet state.
-  */
-@@ -219,7 +220,8 @@ struct efx_rx_buffer {
- 		struct sk_buff *skb;
- 		struct page *page;
- 	} u;
--	unsigned int len;
-+	u16 page_offset;
-+	u16 len;
- 	u16 flags;
- };
- #define EFX_RX_BUF_PAGE		0x0001
---- a/drivers/net/ethernet/sfc/rx.c
-+++ b/drivers/net/ethernet/sfc/rx.c
-@@ -90,11 +90,7 @@ static unsigned int rx_refill_threshold;
- static inline unsigned int efx_rx_buf_offset(struct efx_nic *efx,
- 					     struct efx_rx_buffer *buf)
- {
--	/* Offset is always within one page, so we don't need to consider
--	 * the page order.
--	 */
--	return ((unsigned int) buf->dma_addr & (PAGE_SIZE - 1)) +
--		efx->type->rx_buffer_hash_size;
-+	return buf->page_offset + efx->type->rx_buffer_hash_size;
- }
- static inline unsigned int efx_rx_buf_size(struct efx_nic *efx)
- {
-@@ -187,6 +183,7 @@ static int efx_init_rx_buffers_page(stru
- 	struct efx_nic *efx = rx_queue->efx;
- 	struct efx_rx_buffer *rx_buf;
- 	struct page *page;
-+	unsigned int page_offset;
- 	struct efx_rx_page_state *state;
- 	dma_addr_t dma_addr;
- 	unsigned index, count;
-@@ -211,12 +208,14 @@ static int efx_init_rx_buffers_page(stru
- 		state->dma_addr = dma_addr;
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -2539,7 +2539,7 @@ static int rtnetlink_rcv_msg(struct sk_b
+ 		struct rtattr *attr = (void *)nlh + NLMSG_ALIGN(min_len);
  
- 		dma_addr += sizeof(struct efx_rx_page_state);
-+		page_offset = sizeof(struct efx_rx_page_state);
- 
- 	split:
- 		index = rx_queue->added_count & rx_queue->ptr_mask;
- 		rx_buf = efx_rx_buffer(rx_queue, index);
- 		rx_buf->dma_addr = dma_addr + EFX_PAGE_IP_ALIGN;
- 		rx_buf->u.page = page;
-+		rx_buf->page_offset = page_offset + EFX_PAGE_IP_ALIGN;
- 		rx_buf->len = efx->rx_buffer_len - EFX_PAGE_IP_ALIGN;
- 		rx_buf->flags = EFX_RX_BUF_PAGE;
- 		++rx_queue->added_count;
-@@ -227,6 +226,7 @@ static int efx_init_rx_buffers_page(stru
- 			/* Use the second half of the page */
- 			get_page(page);
- 			dma_addr += (PAGE_SIZE >> 1);
-+			page_offset += (PAGE_SIZE >> 1);
- 			++count;
- 			goto split;
- 		}
+ 		while (RTA_OK(attr, attrlen)) {
+-			unsigned int flavor = attr->rta_type;
++			unsigned int flavor = attr->rta_type & NLA_TYPE_MASK;
+ 			if (flavor) {
+ 				if (flavor > rta_max[sz_idx])
+ 					return -EINVAL;
 
 
