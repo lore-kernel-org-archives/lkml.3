@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506Ab3CZW4Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:56:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53173 "EHLO
+	id S1756451Ab3CZWwz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:52:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53142 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756472Ab3CZWw5 (ORCPT
+	with ESMTP id S1756399Ab3CZWwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:57 -0400
+	Tue, 26 Mar 2013 18:52:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 61/72] nohz: Make tick_nohz_irq_exit() irq safe
-Date: Tue, 26 Mar 2013 15:51:44 -0700
-Message-Id: <20130326224925.972873650@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, halfdog <me@halfdog.net>,
+        P J P <ppandit@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 70/72] exec: use -ELOOP for max recursion depth
+Date: Tue, 26 Mar 2013 15:51:53 -0700
+Message-Id: <20130326224926.865560953@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -30,68 +30,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit e5ab012c3271990e8457055c25cafddc1ae8aa6b upstream.
+commit d740269867021faf4ce38a449353d2b986c34a67 upstream.
 
-As it stands, irq_exit() may or may not be called with
-irqs disabled, depending on __ARCH_IRQ_EXIT_IRQS_DISABLED
-that the arch can define.
+To avoid an explosion of request_module calls on a chain of abusive
+scripts, fail maximum recursion with -ELOOP instead of -ENOEXEC. As soon
+as maximum recursion depth is hit, the error will fail all the way back
+up the chain, aborting immediately.
 
-It makes tick_nohz_irq_exit() unsafe. For example two
-interrupts can race in tick_nohz_stop_sched_tick(): the inner
-most one computes the expiring time on top of the timer list,
-then it's interrupted right before reprogramming the
-clock. The new interrupt enqueues a new timer list timer,
-it reprogram the clock to take it into account and it exits.
-The CPUs resumes the inner most interrupt and performs the clock
-reprogramming without considering the new timer list timer.
+This also has the side-effect of stopping the user's shell from attempting
+to reexecute the top-level file as a shell script. As seen in the
+dash source:
 
-This regression has been introduced by:
-     280f06774afedf849f0b34248ed6aff57d0f6908
-     ("nohz: Separate out irq exit and idle loop dyntick logic")
+        if (cmd != path_bshell && errno == ENOEXEC) {
+                *argv-- = cmd;
+                *argv = cmd = path_bshell;
+                goto repeat;
+        }
 
-Let's fix it right now with the appropriate protections.
+The above logic was designed for running scripts automatically that lacked
+the "#!" header, not to re-try failed recursion. On a legitimate -ENOEXEC,
+things continue to behave as the shell expects.
 
-A saner long term solution will be to remove
-__ARCH_IRQ_EXIT_IRQS_DISABLED and mandate that irq_exit() is called
-with interrupts disabled.
+Additionally, when tracking recursion, the binfmt handlers should not be
+involved. The recursion being tracked is the depth of calls through
+search_binary_handler(), so that function should be exclusively responsible
+for tracking the depth.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linuxfoundation.org>
-Link: http://lkml.kernel.org/r/1361373336-11337-1-git-send-email-fweisbec@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
-Reviewed-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: halfdog <me@halfdog.net>
+Cc: P J P <ppandit@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/tick-sched.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ fs/binfmt_em86.c        |    1 -
+ fs/binfmt_misc.c        |    6 ------
+ fs/binfmt_script.c      |    4 +---
+ fs/exec.c               |   10 +++++-----
+ include/linux/binfmts.h |    2 --
+ 5 files changed, 6 insertions(+), 17 deletions(-)
 
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -496,12 +496,17 @@ void tick_nohz_idle_enter(void)
-  */
- void tick_nohz_irq_exit(void)
- {
-+	unsigned long flags;
- 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
+--- a/fs/binfmt_em86.c
++++ b/fs/binfmt_em86.c
+@@ -42,7 +42,6 @@ static int load_em86(struct linux_binprm
+ 			return -ENOEXEC;
+ 	}
  
- 	if (!ts->inidle)
- 		return;
+-	bprm->recursion_depth++; /* Well, the bang-shell is implicit... */
+ 	allow_write_access(bprm->file);
+ 	fput(bprm->file);
+ 	bprm->file = NULL;
+--- a/fs/binfmt_misc.c
++++ b/fs/binfmt_misc.c
+@@ -117,10 +117,6 @@ static int load_misc_binary(struct linux
+ 	if (!enabled)
+ 		goto _ret;
  
-+	local_irq_save(flags);
+-	retval = -ENOEXEC;
+-	if (bprm->recursion_depth > BINPRM_MAX_RECURSION)
+-		goto _ret;
+-
+ 	/* to keep locking time low, we copy the interpreter string */
+ 	read_lock(&entries_lock);
+ 	fmt = check_file(bprm);
+@@ -200,8 +196,6 @@ static int load_misc_binary(struct linux
+ 	if (retval < 0)
+ 		goto _error;
+ 
+-	bprm->recursion_depth++;
+-
+ 	retval = search_binary_handler (bprm, regs);
+ 	if (retval < 0)
+ 		goto _error;
+--- a/fs/binfmt_script.c
++++ b/fs/binfmt_script.c
+@@ -22,15 +22,13 @@ static int load_script(struct linux_binp
+ 	char interp[BINPRM_BUF_SIZE];
+ 	int retval;
+ 
+-	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!') ||
+-	    (bprm->recursion_depth > BINPRM_MAX_RECURSION))
++	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!'))
+ 		return -ENOEXEC;
+ 	/*
+ 	 * This section does the #! interpretation.
+ 	 * Sorta complicated, but hopefully it will work.  -TYT
+ 	 */
+ 
+-	bprm->recursion_depth++;
+ 	allow_write_access(bprm->file);
+ 	fput(bprm->file);
+ 	bprm->file = NULL;
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1389,6 +1389,10 @@ int search_binary_handler(struct linux_b
+ 	struct linux_binfmt *fmt;
+ 	pid_t old_pid, old_vpid;
+ 
++	/* This allows 4 levels of binfmt rewrites before failing hard. */
++	if (depth > 5)
++		return -ELOOP;
 +
- 	tick_nohz_stop_sched_tick(ts);
-+
-+	local_irq_restore(flags);
- }
+ 	retval = security_bprm_check(bprm);
+ 	if (retval)
+ 		return retval;
+@@ -1413,12 +1417,8 @@ int search_binary_handler(struct linux_b
+ 			if (!try_module_get(fmt->module))
+ 				continue;
+ 			read_unlock(&binfmt_lock);
++			bprm->recursion_depth = depth + 1;
+ 			retval = fn(bprm, regs);
+-			/*
+-			 * Restore the depth counter to its starting value
+-			 * in this call, so we don't have to rely on every
+-			 * load_binary function to restore it on return.
+-			 */
+ 			bprm->recursion_depth = depth;
+ 			if (retval >= 0) {
+ 				if (depth == 0) {
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -68,8 +68,6 @@ struct linux_binprm {
+ #define BINPRM_FLAGS_EXECFD_BIT 1
+ #define BINPRM_FLAGS_EXECFD (1 << BINPRM_FLAGS_EXECFD_BIT)
  
- /**
+-#define BINPRM_MAX_RECURSION 4
+-
+ /* Function parameter for binfmt->coredump */
+ struct coredump_params {
+ 	long signr;
 
 
