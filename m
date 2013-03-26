@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759714Ab3CZMZy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 08:25:54 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:52832 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759570Ab3CZMZx (ORCPT
+	id S932368Ab3CZM0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 08:26:32 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34867
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757148Ab3CZM0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 08:25:53 -0400
-MIME-Version: 1.0
-X-Originating-IP: [93.172.123.88]
-In-Reply-To: <87wqsvdc1j.fsf@rustcorp.com.au>
-References: <CAPgLHd_GCM6HPsbFmj1YfBbQ2VMTzdsNJuoDvDmyaZ2DCnWNXw@mail.gmail.com>
- <87wqsvdc1j.fsf@rustcorp.com.au>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 26 Mar 2013 14:25:31 +0200
-Message-ID: <CAK=WgbaSO6WHVsaqLhYNciz1t626V59dWBtj_8amwb3J0RcFVA@mail.gmail.com>
-Subject: Re: [PATCH -next] rpmsg: fix error return code in rpmsg_probe()
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Wei Yongjun <weiyj.lk@gmail.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 26 Mar 2013 08:26:31 -0400
+Message-ID: <1364300782.5053.6.camel@laptop>
+Subject: Re: [RFC PATCH v3 3/6] sched: pack small tasks
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, mingo@kernel.org,
+        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
+        morten.rasmussen@arm.com, chander.kashyap@linaro.org,
+        cmetcalf@tilera.com, tony.luck@intel.com, alex.shi@intel.com,
+        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
+        amit.kucheria@linaro.org, corbet@lwn.net
+Date: Tue, 26 Mar 2013 13:26:22 +0100
+In-Reply-To: <1363955155-18382-4-git-send-email-vincent.guittot@linaro.org>
+References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
+	 <1363955155-18382-4-git-send-email-vincent.guittot@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 12:11 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Wei Yongjun <weiyj.lk@gmail.com> writes:
->> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->>
->> Fix to return a negative error code from the error handling
->> case instead of 0, as returned elsewhere in this function.
->>
->> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> Thanks, I've taken this for the moment in my pending queue.
+On Fri, 2013-03-22 at 13:25 +0100, Vincent Guittot wrote:
+> +static bool is_buddy_busy(int cpu)
+> +{
+> +       struct rq *rq = cpu_rq(cpu);
+> +
+> +       /*
+> +        * A busy buddy is a CPU with a high load or a small load with
+> a lot of
+> +        * running tasks.
+> +        */
+> +       return (rq->avg.runnable_avg_sum >
+> +                       (rq->avg.runnable_avg_period / (rq->nr_running
+> + 2)));
+> +}
 
-Please note that akpm already picked this up via the -mm tree very
-promptly after Wei submitted this.
+Why does the comment talk about load but we don't see it in the
+equation. Also, why does nr_running matter at all? I thought we'd
+simply bother with utilization, if fully utilized we're done etc..
 
-> Which brings the questionL Ohad, did you want to keep pushing your own
-> tree or want to send rpmsg stuff via my virtio-next tree?
-
-I'm thinking I'll keep pushing my tree for now but I'm taking this as an
-open offer from you :)
-
-Thanks,
-Ohad.
