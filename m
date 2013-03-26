@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab3CZPoR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:44:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53933 "EHLO
+	id S965171Ab3CZPXG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:23:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53890 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965181Ab3CZPXI (ORCPT
+	with ESMTP id S965028Ab3CZPW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:08 -0400
+	Tue, 26 Mar 2013 11:22:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>,
+Cc: CQ Tang <cq.tang@intel.com>, Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 089/150] usb: gadget: ffs: fix enable multiple instances
-Date: Tue, 26 Mar 2013 15:19:48 +0000
-Message-Id: <1364311249-14454-90-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 081/150] x86-64: Fix the failure case in copy_user_handle_tail()
+Date: Tue, 26 Mar 2013 15:19:40 +0000
+Message-Id: <1364311249-14454-82-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -28,51 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+From: CQ Tang <cq.tang@intel.com>
 
-commit 3416905ba058e43112ad7b1b4859797f027f5a07 upstream.
+commit 66db3feb486c01349f767b98ebb10b0c3d2d021b upstream.
 
-This patch fixes an "off-by-one" bug found in
-581791f (FunctionFS: enable multiple functions).
+The increment of "to" in copy_user_handle_tail() will have incremented
+before a failure has been noted.  This causes us to skip a byte in the
+failure case.
 
-During gfs_bind/gfs_unbind the functionfs_bind/functionfs_unbind should be
-called for every functionfs instance. With the "i" pre-decremented they
-were not called for the zeroth instance.
+Only do the increment when assured there is no failure.
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-
-[ balbi@ti.com : added offending commit's subject ]
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[ luis: adjust context ]
+Signed-off-by: CQ Tang <cq.tang@intel.com>
+Link: http://lkml.kernel.org/r/20130318150221.8439.993.stgit@phlsvslse11.ph.intel.com
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/gadget/g_ffs.c | 4 ++--
+ arch/x86/lib/usercopy_64.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
-index d3ace90..919177b 100644
---- a/drivers/usb/gadget/g_ffs.c
-+++ b/drivers/usb/gadget/g_ffs.c
-@@ -358,7 +358,7 @@ static int gfs_bind(struct usb_composite_dev *cdev)
- 	if (unlikely(ret < 0))
- 		goto error;
+diff --git a/arch/x86/lib/usercopy_64.c b/arch/x86/lib/usercopy_64.c
+index e5b130b..cc9de31 100644
+--- a/arch/x86/lib/usercopy_64.c
++++ b/arch/x86/lib/usercopy_64.c
+@@ -72,10 +72,10 @@ copy_user_handle_tail(char *to, char *from, unsigned len, unsigned zerorest)
+ 	char c;
+ 	unsigned zero_len;
  
--	for (i = func_num; --i; ) {
-+	for (i = func_num; i--; ) {
- 		ret = functionfs_bind(ffs_tab[i].ffs_data, cdev);
- 		if (unlikely(ret < 0)) {
- 			while (++i < func_num)
-@@ -413,7 +413,7 @@ static int gfs_unbind(struct usb_composite_dev *cdev)
- 		gether_cleanup();
- 	gfs_ether_setup = false;
- 
--	for (i = func_num; --i; )
-+	for (i = func_num; i--; )
- 		if (ffs_tab[i].ffs_data)
- 			functionfs_unbind(ffs_tab[i].ffs_data);
+-	for (; len; --len) {
++	for (; len; --len, to++) {
+ 		if (__get_user_nocheck(c, from++, sizeof(char)))
+ 			break;
+-		if (__put_user_nocheck(c, to++, sizeof(char)))
++		if (__put_user_nocheck(c, to, sizeof(char)))
+ 			break;
+ 	}
  
 -- 
 1.8.1.2
