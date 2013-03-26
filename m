@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753Ab3CZRKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:10:33 -0400
-Received: from cora.hrz.tu-chemnitz.de ([134.109.228.40]:44117 "EHLO
-	cora.hrz.tu-chemnitz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab3CZRKc (ORCPT
+	id S1751923Ab3CZRMY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:12:24 -0400
+Received: from mga14.intel.com ([143.182.124.37]:29478 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751513Ab3CZRMX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:10:32 -0400
-Message-ID: <5151D686.9070701@web.de>
-Date: Tue, 26 Mar 2013 18:10:30 +0100
-From: Danny Baumann <dannybaumann@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] drm/i915: Allow specifying a minimum brightness level
- for sysfs control.
-References: <1364298525-4337-1-git-send-email-dannybaumann@web.de> <20130326170203.GA23549@srcf.ucam.org>
-In-Reply-To: <20130326170203.GA23549@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-purgate: clean
-X-purgate-type: clean
-X-purgate-ID: 154106::1364317831-000004E7-68D43C5F/0-0/0-0
-X-Scan-AV: cora.hrz.tu-chemnitz.de;2013-03-26 18:10:31;625c6725f6a0d3fb489f562c43620cf5
-X-Scan-SA: cora.hrz.tu-chemnitz.de;2013-03-26 18:10:31;3f6e9083a0b266867468114d93140f74
-X-Spam-Score: -1.0 (-)
-X-Spam-Report: --- Textanalyse SpamAssassin 3.3.1 (-1.0 Punkte)
- Fragen an/questions to:  Postmaster TU Chemnitz <postmaster@tu-chemnitz.de>
- * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
- *  0.0 FREEMAIL_FROM Sender email is commonly abused enduser mail provider
- *      (dannybaumann[at]web.de)
- --- Ende Textanalyse
+	Tue, 26 Mar 2013 13:12:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,913,1355126400"; 
+   d="scan'208";a="276224704"
+Message-ID: <1364317922.6652.34.camel@smile>
+Subject: Re: [PATCH v2.1] dw_dmac: make wrapper on
+ of_dma_controller_register()
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Date: Tue, 26 Mar 2013 19:12:02 +0200
+In-Reply-To: <CAKohpoksxVo3fFdaqOBucOzJs_aU3XGiTcM3b6GzW=m=ooFzQQ@mail.gmail.com>
+References: <5151B91B.7060404@metafoo.de>
+	 <1364317484-30005-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <CAKohpoksxVo3fFdaqOBucOzJs_aU3XGiTcM3b6GzW=m=ooFzQQ@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2013-03-26 at 22:37 +0530, Viresh Kumar wrote: 
+> On 26 March 2013 22:34, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+> > This patch introduces new method dw_dma_of_controller_register(). The wrapper
+> > is called only when of_node is present.
+> >
+> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > ---
+> >  drivers/dma/dw_dmac.c | 19 ++++++++++++-------
+> >  1 file changed, 12 insertions(+), 7 deletions(-)
+> >
+> > diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> > index 274fd7d..12657d7 100644
+> > --- a/drivers/dma/dw_dmac.c
+> > +++ b/drivers/dma/dw_dmac.c
+> > @@ -1303,6 +1303,16 @@ static struct dma_chan *dw_dma_of_xlate(struct of_phandle_args *dma_spec,
+> >         return dma_request_channel(cap, dw_dma_of_filter, &fargs);
+> >  }
+> >
+> > +static void dw_dma_of_controller_register(struct dw_dma *dw)
+> > +{
+> > +       struct device *dev = dw->dma.dev;
+> > +       int err;
+> > +
+> > +       err = of_dma_controller_register(dev->of_node, dw_dma_of_xlate, dw);
+> > +       if (err)
+> > +               dev_err(dev, "could not register of_dma_controller\n");
+> > +}
+> > +
+> >  /* --------------------- Cyclic DMA API extensions -------------------- */
+> >
+> >  /**
+> > @@ -1843,13 +1853,8 @@ static int dw_probe(struct platform_device *pdev)
+> >
+> >         dma_async_device_register(&dw->dma);
+> >
+> > -       if (pdev->dev.of_node) {
+> > -               err = of_dma_controller_register(pdev->dev.of_node,
+> > -                                                dw_dma_of_xlate, dw);
+> > -               if (err && err != -ENODEV)
+> > -                       dev_err(&pdev->dev,
+> > -                               "could not register of_dma_controller\n");
+> > -       }
+> > +       if (pdev->dev.of_node)
+> > +               dw_dma_of_controller_register(dw);
+> 
+> I forgot where we started from, but what's the need of this patch?
 
-Am 26.03.2013 18:02, schrieb Matthew Garrett:
-> On Tue, Mar 26, 2013 at 12:48:44PM +0100, Danny Baumann wrote:
->> This patch makes the behaviour of the intel_backlight backlight device
->> consistent to e.g. acpi_videoX: When writing the value 0, the set brightness
->> makes the panel content barely readable instead of turning the backlight off.
->> This matches the expectations of user space (e.g. kde-workspace or the Intel
->> X11 driver), which expects that it can use intel_backlight as a drop-in
->> replacement for acpi_videoX.
->
-> I'm not quite clear what you mean here. The behaviour of "0" isn't well
-> defined for the ACPI backlight driver - it's perfectly reasonable for it
-> to turn the backlight off entirely. Anything assuming that "0" is still
-> visible is broken.
+Nowadays, besides removal of the -ENODEV checking, it makes probe
+function looks tidier.
 
-Well, the ACPI spec says this (section B.5.2):
+Think about upcoming stuff (e.g. ACPI), if we put everything inside
+probe it will look overloaded.
 
-"
-The OEM may define the number 0 as "Zero brightness" that can mean to 
-turn off the lighting (e.g. LCD panel backlight) in the device. This may 
-be useful in the case of an output device that can still be viewed using 
-only ambient light, for example, a transflective LCD.
-"
 
-My interpretation of this is that the value 0 is supposed to still be 
-visible. I'm pretty sure I saw a statement that 0 is supposed to mean 
-"barely visible" somewhere, but can't find it at the moment. I'll search 
-for the source of it.
-
-Regards,
-
-Danny
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
