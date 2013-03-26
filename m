@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965361Ab3CZPe1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:34:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54096 "EHLO
+	id S965332Ab3CZPXn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:23:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54051 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965297Ab3CZPXo (ORCPT
+	with ESMTP id S965297Ab3CZPXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:44 -0400
+	Tue, 26 Mar 2013 11:23:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 121/150] tg3: 5715 does not link up when autoneg off
-Date: Tue, 26 Mar 2013 15:20:20 +0000
-Message-Id: <1364311249-14454-122-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 113/150] USB: ssu100: fix use-after-free in TIOCMIWAIT
+Date: Tue, 26 Mar 2013 15:20:12 +0000
+Message-Id: <1364311249-14454-114-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -29,52 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nithin Sujir <nsujir@broadcom.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 7c6cdead7cc9a99650d15497aae47d7472217eb1 upstream.
+commit 43a66b4c417ad15f6d2f632ce67ad195bdf999e8 upstream.
 
-Commit d13ba512cbba7de5d55d7a3b2aae7d83c8921457 ("tg3: Remove
-SPEED_UNKNOWN checks") cleaned up the autoneg advertisement by
-removing some dead code. One effect of this change was that the
-advertisement register would not be updated if autoneg is turned off.
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
 
-This exposed a bug on the 5715 device w.r.t linking. The 5715 defaults
-to advertise only 10Mb Full duplex. But with autoneg disabled, it needs
-the configured speed enabled in the advertisement register to link up.
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
 
-This patch adds the work around to advertise all speeds on the 5715 when
-autoneg is disabled.
-
-Reported-by: Marcin Miotk <marcinmiotk81@gmail.com>
-Reviewed-by: Benjamin Li <benli@broadcom.com>
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported by Nithin Sujir ]
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.5; adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/serial/ssu100.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 4da6a86..ca3be73 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -3946,6 +3946,14 @@ static void tg3_phy_copper_begin(struct tg3 *tp)
- 		tp->link_config.active_speed = tp->link_config.speed;
- 		tp->link_config.active_duplex = tp->link_config.duplex;
+diff --git a/drivers/usb/serial/ssu100.c b/drivers/usb/serial/ssu100.c
+index c4409b1..3ad10b5 100644
+--- a/drivers/usb/serial/ssu100.c
++++ b/drivers/usb/serial/ssu100.c
+@@ -65,7 +65,6 @@ struct ssu100_port_private {
+ 	spinlock_t status_lock;
+ 	u8 shadowLSR;
+ 	u8 shadowMSR;
+-	wait_queue_head_t delta_msr_wait; /* Used for TIOCMIWAIT */
+ 	struct async_icount icount;
+ };
  
-+		if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5714) {
-+			/* With autoneg disabled, 5715 only links up when the
-+			 * advertisement register has the configured speed
-+			 * enabled.
-+			 */
-+			tg3_writephy(tp, MII_ADVERTISE, ADVERTISE_ALL);
-+		}
+@@ -366,8 +365,9 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
+ 	spin_unlock_irqrestore(&priv->status_lock, flags);
+ 
+ 	while (1) {
+-		wait_event_interruptible(priv->delta_msr_wait,
+-					 ((priv->icount.rng != prev.rng) ||
++		wait_event_interruptible(port->delta_msr_wait,
++					 (port->serial->disconnected ||
++					  (priv->icount.rng != prev.rng) ||
+ 					  (priv->icount.dsr != prev.dsr) ||
+ 					  (priv->icount.dcd != prev.dcd) ||
+ 					  (priv->icount.cts != prev.cts)));
+@@ -375,6 +375,9 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
+ 
++		if (port->serial->disconnected)
++			return -EIO;
 +
- 		bmcr = 0;
- 		switch (tp->link_config.speed) {
- 		default:
+ 		spin_lock_irqsave(&priv->status_lock, flags);
+ 		cur = priv->icount;
+ 		spin_unlock_irqrestore(&priv->status_lock, flags);
+@@ -455,7 +458,6 @@ static int ssu100_attach(struct usb_serial *serial)
+ 	}
+ 
+ 	spin_lock_init(&priv->status_lock);
+-	init_waitqueue_head(&priv->delta_msr_wait);
+ 	usb_set_serial_port_data(port, priv);
+ 
+ 	return ssu100_initdevice(serial->dev);
+@@ -536,7 +538,7 @@ static void ssu100_update_msr(struct usb_serial_port *port, u8 msr)
+ 			priv->icount.dcd++;
+ 		if (msr & UART_MSR_TERI)
+ 			priv->icount.rng++;
+-		wake_up_interruptible(&priv->delta_msr_wait);
++		wake_up_interruptible(&port->delta_msr_wait);
+ 	}
+ }
+ 
 -- 
 1.8.1.2
 
