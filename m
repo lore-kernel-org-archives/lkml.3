@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab3CZXJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:09:16 -0400
-Received: from mail-da0-f53.google.com ([209.85.210.53]:37785 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755351Ab3CZXJM (ORCPT
+	id S1756482Ab3CZXJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:09:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53402 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756801Ab3CZXCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:09:12 -0400
-Date: Tue, 26 Mar 2013 16:09:10 -0700
+	Tue, 26 Mar 2013 19:02:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: devel@driverdev.osuosl.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: zsmalloc: Fix link error on ARM
-Message-ID: <20130326230910.GA31021@kroah.com>
-References: <1364337232-3513-1-git-send-email-joro@8bytes.org>
- <20130326224536.GA29952@kroah.com>
- <20130326230359.GD30540@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130326230359.GD30540@8bytes.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 19/49] sfc: Disable soft interrupt handling during efx_device_detach_sync()
+Date: Tue, 26 Mar 2013 16:01:16 -0700
+Message-Id: <20130326225841.550346993@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
+References: <20130326225839.554028294@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 12:03:59AM +0100, Joerg Roedel wrote:
-> On Tue, Mar 26, 2013 at 03:45:36PM -0700, Greg Kroah-Hartman wrote:
-> > On Tue, Mar 26, 2013 at 11:33:52PM +0100, Joerg Roedel wrote:
-> > > Testing the arm chromebook config against the upstream
-> > > kernel produces a linker error for the zsmalloc module from
-> > > staging. The symbol flush_tlb_kernel_range is not available
-> > > there. Fix this by removing the reimplementation of
-> > > unmap_kernel_range in the zsmalloc module and using the
-> > > function directly.
-> > > 
-> > > Signed-off-by: Joerg Roedel <joro@8bytes.org>
-> > 
-> > Why is this not an error for any other architecture?  Why is arm
-> > special?
-> 
-> The version of the function __zs_unmap_object() which uses
-> flush_tlb_kernel_range() in the zsmalloc driver is only compiled in when
-> USE_PGTABLE_MAPPING is defined. And USE_PGTABLE_MAPPING is defined in
-> the same file only when CONFIG_ARM is defined. So this happens only on
-> ARM.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Then should I just mark the driver as broken on ARM?
+------------------
 
-Any reason for not including the driver authors on the Cc: for this
-patch?
 
-greg k-h
+From: Ben Hutchings <bhutchings@solarflare.com>
+
+[ Upstream commit 35205b211c8d17a8a0b5e8926cb7c73e9a7ef1ad ]
+
+efx_device_detach_sync() locks all TX queues before marking the device
+detached and thus disabling further TX scheduling.  But it can still
+be interrupted by TX completions which then result in TX scheduling in
+soft interrupt context.  This will deadlock when it tries to acquire
+a TX queue lock that efx_device_detach_sync() already acquired.
+
+To avoid deadlock, we must use netif_tx_{,un}lock_bh().
+
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/sfc/efx.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/sfc/efx.h
++++ b/drivers/net/sfc/efx.h
+@@ -158,9 +158,9 @@ static inline void efx_device_detach_syn
+ 	 * TX scheduler is stopped when we're done and before
+ 	 * netif_device_present() becomes false.
+ 	 */
+-	netif_tx_lock(dev);
++	netif_tx_lock_bh(dev);
+ 	netif_device_detach(dev);
+-	netif_tx_unlock(dev);
++	netif_tx_unlock_bh(dev);
+ }
+ 
+ #endif /* EFX_EFX_H */
+
+
