@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756482Ab3CZXJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:09:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53402 "EHLO
+	id S1755577Ab3CZXKY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:10:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53399 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756801Ab3CZXCG (ORCPT
+	with ESMTP id S1756792Ab3CZXCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 19:02:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 19/49] sfc: Disable soft interrupt handling during efx_device_detach_sync()
-Date: Tue, 26 Mar 2013 16:01:16 -0700
-Message-Id: <20130326225841.550346993@linuxfoundation.org>
+Subject: [ 18/49] sfc: Detach net device when stopping queues for reconfiguration
+Date: Tue, 26 Mar 2013 16:01:15 -0700
+Message-Id: <20130326225841.458328390@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -29,35 +29,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Hutchings <bhutchings@solarflare.com>
 
-[ Upstream commit 35205b211c8d17a8a0b5e8926cb7c73e9a7ef1ad ]
+[ Upstream commit 29c69a4882641285a854d6d03ca5adbba68c0034 ]
 
-efx_device_detach_sync() locks all TX queues before marking the device
-detached and thus disabling further TX scheduling.  But it can still
-be interrupted by TX completions which then result in TX scheduling in
-soft interrupt context.  This will deadlock when it tries to acquire
-a TX queue lock that efx_device_detach_sync() already acquired.
+We must only ever stop TX queues when they are full or the net device
+is not 'ready' so far as the net core, and specifically the watchdog,
+is concerned.  Otherwise, the watchdog may fire *immediately* if no
+packets have been added to the queue in the last 5 seconds.
 
-To avoid deadlock, we must use netif_tx_{,un}lock_bh().
+The device is ready if all the following are true:
+
+(a) It has a qdisc
+(b) It is marked present
+(c) It is running
+(d) The link is reported up
+
+(a) and (c) are normally true, and must not be changed by a driver.
+(d) is under our control, but fake link changes may disturb userland.
+This leaves (b).  We already mark the device absent during reset
+and self-test, but we need to do the same during MTU changes and ring
+reallocation.  We don't need to do this when the device is brought
+down because then (c) is already false.
 
 Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+[bwh: Backported to 3.0: adjust context]
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/sfc/efx.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/sfc/efx.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
---- a/drivers/net/sfc/efx.h
-+++ b/drivers/net/sfc/efx.h
-@@ -158,9 +158,9 @@ static inline void efx_device_detach_syn
- 	 * TX scheduler is stopped when we're done and before
- 	 * netif_device_present() becomes false.
- 	 */
--	netif_tx_lock(dev);
-+	netif_tx_lock_bh(dev);
- 	netif_device_detach(dev);
--	netif_tx_unlock(dev);
-+	netif_tx_unlock_bh(dev);
+--- a/drivers/net/sfc/efx.c
++++ b/drivers/net/sfc/efx.c
+@@ -720,6 +720,7 @@ efx_realloc_channels(struct efx_nic *efx
+ 	unsigned i;
+ 	int rc;
+ 
++	efx_device_detach_sync(efx);
+ 	efx_stop_all(efx);
+ 	efx_fini_channels(efx);
+ 
+@@ -763,6 +764,7 @@ out:
+ 
+ 	efx_init_channels(efx);
+ 	efx_start_all(efx);
++	netif_device_attach(efx->net_dev);
+ 	return rc;
+ 
+ rollback:
+@@ -1530,8 +1532,12 @@ static void efx_stop_all(struct efx_nic
+ 	/* Flush efx_mac_work(), refill_workqueue, monitor_work */
+ 	efx_flush_all(efx);
+ 
+-	/* Stop the kernel transmit interface late, so the watchdog
+-	 * timer isn't ticking over the flush */
++	/* Stop the kernel transmit interface.  This is only valid if
++	 * the device is stopped or detached; otherwise the watchdog
++	 * may fire immediately.
++	 */
++	WARN_ON(netif_running(efx->net_dev) &&
++		netif_device_present(efx->net_dev));
+ 	if (efx_dev_registered(efx)) {
+ 		netif_tx_stop_all_queues(efx->net_dev);
+ 		netif_tx_lock_bh(efx->net_dev);
+@@ -1801,10 +1807,11 @@ static int efx_change_mtu(struct net_dev
+ 	if (new_mtu > EFX_MAX_MTU)
+ 		return -EINVAL;
+ 
+-	efx_stop_all(efx);
+-
+ 	netif_dbg(efx, drv, efx->net_dev, "changing MTU to %d\n", new_mtu);
+ 
++	efx_device_detach_sync(efx);
++	efx_stop_all(efx);
++
+ 	efx_fini_channels(efx);
+ 
+ 	mutex_lock(&efx->mac_lock);
+@@ -1817,6 +1824,7 @@ static int efx_change_mtu(struct net_dev
+ 	efx_init_channels(efx);
+ 
+ 	efx_start_all(efx);
++	netif_device_attach(efx->net_dev);
+ 	return rc;
  }
  
- #endif /* EFX_EFX_H */
 
 
