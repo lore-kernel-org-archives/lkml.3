@@ -1,75 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965539Ab3CZPZJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:25:09 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60753 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964830Ab3CZPZF (ORCPT
+	id S934778Ab3CZPZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:25:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54218 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965438Ab3CZPYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:25:05 -0400
-Date: Tue, 26 Mar 2013 16:24:58 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Philip Avinash <avinashphilip@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] pwm: tiehrpwm: Staticize non-exported symbols
-Message-ID: <20130326152458.GC28997@avionic-0098.mockup.avionic-design.de>
-References: <1364309698.4090.1.camel@phoenix>
- <1364309757.4090.2.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ctP54qlpMx3WjD+/"
-Content-Disposition: inline
-In-Reply-To: <1364309757.4090.2.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:bPTexJkPiMEsyMihcMW09Z2kaSuabuUm7clekx+Uhvy
- OSZ2Quy0Hj06BKO7uvU4gR7Z13T1ZN+DABpJY3J98XhCOd95TC
- /IoUgxNaMAw9KZ3NjYcAFpag0VHR6wdT/ZfTvdPOM32YBzDX1K
- Pznckv2xHE+4ITjryocf9ojr2NpZWzzR4gkfMPq98EbMuejGeP
- DFd6N3pPgREV1BzYtyJ/5T2uAAcSckAEYsq+itdGJeF5Nw4geo
- o7kdIJKd7ySBHHT44Lfylkw9xf0qVMptG5G4cnYxLfoJgZPObA
- ptefZ1yhhjVCPZJgC/Mhq97m22/p90elI0uUs/PyEzi/cZKm5q
- +AkJ9Mxem3ZkWG0gsXXuR8tjID8git3/+wCp4I4LIKlD0nWK/L
- hMf2gDt0gQMJ2HZ1k1iVtKF+svEKYD7Do4=
+	Tue, 26 Mar 2013 11:24:15 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Jesper Dangaard Brouer <jbrouer@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 147/150] inet: limit length of fragment queue hash table bucket lists
+Date: Tue, 26 Mar 2013 15:20:46 +0000
+Message-Id: <1364311249-14454-148-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
 
---ctP54qlpMx3WjD+/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Tue, Mar 26, 2013 at 10:55:57PM +0800, Axel Lin wrote:
-> Both ehrpwm_pwm_save_context() and ehrpwm_pwm_restore_context() are only =
-used in
-> this file, make them static.
->=20
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-Applied, thanks.
+commit 5a3da1fe9561828d0ca7eca664b16ec2b9bf0055 upstream.
 
-Thierry
+This patch introduces a constant limit of the fragment queue hash
+table bucket list lengths. Currently the limit 128 is choosen somewhat
+arbitrary and just ensures that we can fill up the fragment cache with
+empty packets up to the default ip_frag_high_thresh limits. It should
+just protect from list iteration eating considerable amounts of cpu.
 
---ctP54qlpMx3WjD+/
-Content-Type: application/pgp-signature
+If we reach the maximum length in one hash bucket a warning is printed.
+This is implemented on the caller side of inet_frag_find to distinguish
+between the different users of inet_fragment.c.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+I dropped the out of memory warning in the ipv4 fragment lookup path,
+because we already get a warning by the slab allocator.
 
-iQIcBAEBAgAGBQJRUb3KAAoJEN0jrNd/PrOh2JYP/1J4Qx8XyVCY/5bXn7CHxiMj
-vh9uR/TQjiSSaVsUOiCdj7zYMFaeDR9tC2KzNmTZ2UMRFyg2zkJ7k9DPBwIe8KDF
-zcStQIHRmfFPcLui6PDyYx/PeHb2CqU/AR3zM2P46hhxmuV8MNuzkWQTHEOhrw1F
-YICMWbPKmexPxIoH9+zZSnnc/IA1MHaoETtytQssoCf0hhFD4x0tcKViEOAIC965
-shuhvRs4NeBiL1dzmX5EzwhGBb8V39X9W0nbcrkU/0xZDZtFJtiEInyXsZjkDtYV
-MXKZUsqwmUJYnNW7AAg3f8EQQu1ysdzZGp9UmkRV+rQ1vu5ko3d+ozJH42skjYTm
-BQ8iiPm+zjRP7vX91nGLWS3sy9fDp5tqS9OrZbaA3IuZDkYxHcm82MUPMzU7s48K
-/wpLhvEKopokQCaoWtgXVAFZTyqeSHg0WClyVF8Q57vLMIL7Q01IWgdx3YAdwqGC
-LwAPWLHme/anMADuhkS3O4Bj+7CA+h/lNPQ4DI4o0CcbmqZ+o1PwgbtLgaNn0xwj
-XPpEsk6BFI7Zpi3dXHC18lSOfKJKBhnOTt+QX38wRHM0TPzVSNAmu1rb2pnANSMI
-wSaZDxdBdPZNMQKlCSjPO4OWuXziN5z+ccUJP400unuYT37pOSmiac78TloOlW1f
-LAnkZ2csJCTh4MckfjLZ
-=+/px
------END PGP SIGNATURE-----
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jesper Dangaard Brouer <jbrouer@redhat.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ include/net/inet_frag.h                 |  9 +++++++++
+ net/ipv4/inet_fragment.c                | 20 +++++++++++++++++++-
+ net/ipv4/ip_fragment.c                  | 11 ++++-------
+ net/ipv6/netfilter/nf_conntrack_reasm.c | 11 ++++++-----
+ net/ipv6/reassembly.c                   |  8 ++++++--
+ 5 files changed, 44 insertions(+), 15 deletions(-)
 
---ctP54qlpMx3WjD+/--
+diff --git a/include/net/inet_frag.h b/include/net/inet_frag.h
+index 2431cf8..92e211e 100644
+--- a/include/net/inet_frag.h
++++ b/include/net/inet_frag.h
+@@ -33,6 +33,13 @@ struct inet_frag_queue {
+ 
+ #define INETFRAGS_HASHSZ		64
+ 
++/* averaged:
++ * max_depth = default ipfrag_high_thresh / INETFRAGS_HASHSZ /
++ *	       rounded up (SKB_TRUELEN(0) + sizeof(struct ipq or
++ *	       struct frag_queue))
++ */
++#define INETFRAGS_MAXDEPTH		128
++
+ struct inet_frags {
+ 	struct hlist_head	hash[INETFRAGS_HASHSZ];
+ 	rwlock_t		lock;
+@@ -63,6 +70,8 @@ int inet_frag_evictor(struct netns_frags *nf, struct inet_frags *f);
+ struct inet_frag_queue *inet_frag_find(struct netns_frags *nf,
+ 		struct inet_frags *f, void *key, unsigned int hash)
+ 	__releases(&f->lock);
++void inet_frag_maybe_warn_overflow(struct inet_frag_queue *q,
++				   const char *prefix);
+ 
+ static inline void inet_frag_put(struct inet_frag_queue *q, struct inet_frags *f)
+ {
+diff --git a/net/ipv4/inet_fragment.c b/net/ipv4/inet_fragment.c
+index 5ff2a51..210b710 100644
+--- a/net/ipv4/inet_fragment.c
++++ b/net/ipv4/inet_fragment.c
+@@ -21,6 +21,7 @@
+ #include <linux/rtnetlink.h>
+ #include <linux/slab.h>
+ 
++#include <net/sock.h>
+ #include <net/inet_frag.h>
+ 
+ static void inet_frag_secret_rebuild(unsigned long dummy)
+@@ -271,6 +272,7 @@ struct inet_frag_queue *inet_frag_find(struct netns_frags *nf,
+ {
+ 	struct inet_frag_queue *q;
+ 	struct hlist_node *n;
++	int depth = 0;
+ 
+ 	hlist_for_each_entry(q, n, &f->hash[hash], list) {
+ 		if (q->net == nf && f->match(q, key)) {
+@@ -278,9 +280,25 @@ struct inet_frag_queue *inet_frag_find(struct netns_frags *nf,
+ 			read_unlock(&f->lock);
+ 			return q;
+ 		}
++		depth++;
+ 	}
+ 	read_unlock(&f->lock);
+ 
+-	return inet_frag_create(nf, f, key);
++	if (depth <= INETFRAGS_MAXDEPTH)
++		return inet_frag_create(nf, f, key);
++	else
++		return ERR_PTR(-ENOBUFS);
+ }
+ EXPORT_SYMBOL(inet_frag_find);
++
++void inet_frag_maybe_warn_overflow(struct inet_frag_queue *q,
++				   const char *prefix)
++{
++	static const char msg[] = "inet_frag_find: Fragment hash bucket"
++		" list length grew over limit " __stringify(INETFRAGS_MAXDEPTH)
++		". Dropping fragment.\n";
++
++	if (PTR_ERR(q) == -ENOBUFS)
++		LIMIT_NETDEBUG(KERN_WARNING "%s%s", prefix, msg);
++}
++EXPORT_SYMBOL(inet_frag_maybe_warn_overflow);
+diff --git a/net/ipv4/ip_fragment.c b/net/ipv4/ip_fragment.c
+index 3fdcdb8..d513c62 100644
+--- a/net/ipv4/ip_fragment.c
++++ b/net/ipv4/ip_fragment.c
+@@ -295,14 +295,11 @@ static inline struct ipq *ip_find(struct net *net, struct iphdr *iph, u32 user)
+ 	hash = ipqhashfn(iph->id, iph->saddr, iph->daddr, iph->protocol);
+ 
+ 	q = inet_frag_find(&net->ipv4.frags, &ip4_frags, &arg, hash);
+-	if (q == NULL)
+-		goto out_nomem;
+-
++	if (IS_ERR_OR_NULL(q)) {
++		inet_frag_maybe_warn_overflow(q, pr_fmt());
++		return NULL;
++	}
+ 	return container_of(q, struct ipq, q);
+-
+-out_nomem:
+-	LIMIT_NETDEBUG(KERN_ERR pr_fmt("ip_frag_create: no memory left !\n"));
+-	return NULL;
+ }
+ 
+ /* Is the fragment too far ahead to be part of ipq? */
+diff --git a/net/ipv6/netfilter/nf_conntrack_reasm.c b/net/ipv6/netfilter/nf_conntrack_reasm.c
+index c9c78c2..7373dcd 100644
+--- a/net/ipv6/netfilter/nf_conntrack_reasm.c
++++ b/net/ipv6/netfilter/nf_conntrack_reasm.c
+@@ -14,6 +14,8 @@
+  * 2 of the License, or (at your option) any later version.
+  */
+ 
++#define pr_fmt(fmt) "IPv6-nf: " fmt
++
+ #include <linux/errno.h>
+ #include <linux/types.h>
+ #include <linux/string.h>
+@@ -176,13 +178,12 @@ fq_find(__be32 id, u32 user, struct in6_addr *src, struct in6_addr *dst)
+ 
+ 	q = inet_frag_find(&nf_init_frags, &nf_frags, &arg, hash);
+ 	local_bh_enable();
+-	if (q == NULL)
+-		goto oom;
++	if (IS_ERR_OR_NULL(q)) {
++		inet_frag_maybe_warn_overflow(q, pr_fmt());
++		return NULL;
++	}
+ 
+ 	return container_of(q, struct nf_ct_frag6_queue, q);
+-
+-oom:
+-	return NULL;
+ }
+ 
+ 
+diff --git a/net/ipv6/reassembly.c b/net/ipv6/reassembly.c
+index 4ff9af6..66d2096 100644
+--- a/net/ipv6/reassembly.c
++++ b/net/ipv6/reassembly.c
+@@ -26,6 +26,9 @@
+  *	YOSHIFUJI,H. @USAGI	Always remove fragment header to
+  *				calculate ICV correctly.
+  */
++
++#define pr_fmt(fmt) "IPv6: " fmt
++
+ #include <linux/errno.h>
+ #include <linux/types.h>
+ #include <linux/string.h>
+@@ -241,9 +244,10 @@ fq_find(struct net *net, __be32 id, const struct in6_addr *src, const struct in6
+ 	hash = inet6_hash_frag(id, src, dst, ip6_frags.rnd);
+ 
+ 	q = inet_frag_find(&net->ipv6.frags, &ip6_frags, &arg, hash);
+-	if (q == NULL)
++	if (IS_ERR_OR_NULL(q)) {
++		inet_frag_maybe_warn_overflow(q, pr_fmt());
+ 		return NULL;
+-
++	}
+ 	return container_of(q, struct frag_queue, q);
+ }
+ 
+-- 
+1.8.1.2
+
