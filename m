@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759266Ab3CZCZG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 22:25:06 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11774 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756450Ab3CZCZA (ORCPT
+	id S1759297Ab3CZCZK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 22:25:10 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9384 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758160Ab3CZCZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Mar 2013 22:25:00 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 25 Mar 2013 19:24:32 -0700
+	by hqnvupgp07.nvidia.com on Mon, 25 Mar 2013 19:24:28 -0700
 From: Rhyland Klein <rklein@nvidia.com>
 To: Grant Likely <grant.likely@secretlab.ca>, Anton Vorontsov <cbou@mail.ru>
 CC: David Woodhouse <dwmw2@infradead.org>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>, Rhyland Klein <rklein@nvidia.com>
-Subject: [REPOST Patch v1 2/3] power: power_supply: Add core support for supplied_from
-Date: Mon, 25 Mar 2013 22:24:49 -0400
-Message-ID: <1364264690-2124-3-git-send-email-rklein@nvidia.com>
+Subject: [REPOST Patch v1 0/3] Add DT Binding for Power-Supply power-supplies property
+Date: Mon, 25 Mar 2013 22:24:47 -0400
+Message-ID: <1364264690-2124-1-git-send-email-rklein@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364264690-2124-1-git-send-email-rklein@nvidia.com>
-References: <1364264690-2124-1-git-send-email-rklein@nvidia.com>
 X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -27,120 +25,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for supplies to register a list of char *'s
-which represent the list of supplies which supply them. This is the
-opposite as the supplied_to list.
+This series defines a common way for devicetree initialized
+power_supplies to define their relationships between chargers and
+supplicants.
 
-This change maintains support for supplied_to until all drivers which
-make use of it already are converted.
+This series adds a supplied_from array to complement the supplied_to
+array and to allow supplies to define the list of supplies which
+supply them.
 
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
----
-v1:
- - changed from RFC v2 -> patch v1
- - removed list logic and instead added supplied_from char ** array and
-   num_supplies field
+Then once this property is supported, we can use a new property for
+devicetree to define the relationships between nodes, and read in this
+property to generate the supplied_from list.
 
-v2 (RFC):
- - changed from struct device_node * contained in suppliers to a list
-   stored in the supplies.
- - changed logic for the is_supplied_by check to handle the entire loop
-   as the array structure is difference between the 2 paths.
+With this logic in place, all drivers need to do to add support for
+this mechanism, is to store their device tree node in the power_supply
+struct. They should also handle EPROBE_DEFER properly.
 
- drivers/power/power_supply_core.c |   49 +++++++++++++++++++++++++++----------
- include/linux/power_supply.h      |    3 +++
- 2 files changed, 39 insertions(+), 13 deletions(-)
+Changes since:
+RFC v2:
+ - Changed to official Patch set rather than RFC
+ - defined supplied_from char ** array rather than complicated
+   struct device_node related array
 
-diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
-index 5deac43..dd675ae 100644
---- a/drivers/power/power_supply_core.c
-+++ b/drivers/power/power_supply_core.c
-@@ -26,17 +26,44 @@ EXPORT_SYMBOL_GPL(power_supply_class);
- 
- static struct device_type power_supply_dev_type;
- 
-+static int __power_supply_is_supplied_by(struct power_supply *supplier,
-+					 struct power_supply *supply)
-+{
-+	int i;
-+
-+	if (!supply->supplied_from && !supplier->supplied_to)
-+		return -EINVAL;
-+
-+	/* Support both supplied_to and supplied_from modes */
-+	if (supply->supplied_from) {
-+		for (i = 0; i < supply->num_supplies; i++) {
-+			if (!supplier->name)
-+				continue;
-+			if (!strcmp(supplier->name, supply->supplied_from[i]))
-+				return 0;
-+		}
-+	} else {
-+		for (i = 0; i < supplier->num_supplicants; i++) {
-+			if (!supply->name)
-+				continue;
-+			if (!strcmp(supplier->supplied_to[i], supply->name))
-+				return 0;
-+		}
-+	}
-+
-+	return -EINVAL;
-+}
-+
- static int __power_supply_changed_work(struct device *dev, void *data)
- {
- 	struct power_supply *psy = (struct power_supply *)data;
- 	struct power_supply *pst = dev_get_drvdata(dev);
--	int i;
- 
--	for (i = 0; i < psy->num_supplicants; i++)
--		if (!strcmp(psy->supplied_to[i], pst->name)) {
--			if (pst->external_power_changed)
--				pst->external_power_changed(pst);
--		}
-+	if (__power_supply_is_supplied_by(psy, pst)) {
-+		if (pst->external_power_changed)
-+			pst->external_power_changed(pst);
-+	}
-+
- 	return 0;
- }
- 
-@@ -68,17 +95,13 @@ static int __power_supply_am_i_supplied(struct device *dev, void *data)
- 	union power_supply_propval ret = {0,};
- 	struct power_supply *psy = (struct power_supply *)data;
- 	struct power_supply *epsy = dev_get_drvdata(dev);
--	int i;
- 
--	for (i = 0; i < epsy->num_supplicants; i++) {
--		if (!strcmp(epsy->supplied_to[i], psy->name)) {
--			if (epsy->get_property(epsy,
--				  POWER_SUPPLY_PROP_ONLINE, &ret))
--				continue;
-+	if (__power_supply_is_supplied_by(epsy, psy))
-+		if (!epsy->get_property(epsy, POWER_SUPPLY_PROP_ONLINE, &ret)) {
- 			if (ret.intval)
- 				return ret.intval;
- 		}
--	}
-+
- 	return 0;
- }
- 
-diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
-index 002a99f..c1cbd5e 100644
---- a/include/linux/power_supply.h
-+++ b/include/linux/power_supply.h
-@@ -171,6 +171,9 @@ struct power_supply {
- 	char **supplied_to;
- 	size_t num_supplicants;
- 
-+	char **supplied_from;
-+	size_t num_supplies;
-+
- 	int (*get_property)(struct power_supply *psy,
- 			    enum power_supply_property psp,
- 			    union power_supply_propval *val);
+RFC v1:
+ - Inverted the logic so that supplies (batteries) contain a list of
+   the supplies (chargers) which supply them.
+
+Rhyland Klein (3):
+  power_supply: Define Binding for power-supplies
+  power: power_supply: Add core support for supplied_from
+  power: power_supply_core: Add support for supplied_from
+
+ .../bindings/power_supply/power_supply.txt         |   23 +++
+ drivers/power/power_supply_core.c                  |  187 ++++++++++++++++++--
+ include/linux/power_supply.h                       |    6 +
+ 3 files changed, 203 insertions(+), 13 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power_supply/power_supply.txt
+
 -- 
 1.7.9.5
 
