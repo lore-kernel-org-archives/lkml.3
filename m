@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab3CZXuE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:50:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52383 "EHLO
+	id S1757445Ab3CZXud (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:50:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52377 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab3CZWnj (ORCPT
+	with ESMTP id S1754227Ab3CZWni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:43:39 -0400
+	Tue, 26 Mar 2013 18:43:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Veaceslav Falico <vfalico@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 05/98] netconsole: dont call __netpoll_cleanup() while atomic
-Date: Tue, 26 Mar 2013 15:41:54 -0700
-Message-Id: <20130326224242.996778945@linuxfoundation.org>
+Subject: [ 04/98] bridge: reserve space for IFLA_BRPORT_FAST_LEAVE
+Date: Tue, 26 Mar 2013 15:41:53 -0700
+Message-Id: <20130326224242.895877869@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -29,57 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Veaceslav Falico <vfalico@redhat.com>
+From: stephen hemminger <stephen@networkplumber.org>
 
-[ Upstream commit 3f315bef23075ea8a98a6fe4221a83b83456d970 ]
+[ Upstream commit 3da889b616164bde76a37350cf28e0d17a94e979 ]
 
-__netpoll_cleanup() is called in netconsole_netdev_event() while holding a
-spinlock. Release/acquire the spinlock before/after it and restart the
-loop. Also, disable the netconsole completely, because we won't have chance
-after the restart of the loop, and might end up in a situation where
-nt->enabled == 1 and nt->np.dev == NULL.
+The bridge multicast fast leave feature was added sufficient space
+was not reserved in the netlink message. This means the flag may be
+lost in netlink events and results of queries.
 
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Found by observation while looking up some netlink stuff for discussion with Vlad.
+Problem introduced by commit c2d3babfafbb9f6629cfb47139758e59a5eb0d80
+Author: David S. Miller <davem@davemloft.net>
+Date:   Wed Dec 5 16:24:45 2012 -0500
+
+    bridge: implement multicast fast leave
+
+Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/netconsole.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ net/bridge/br_netlink.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/netconsole.c
-+++ b/drivers/net/netconsole.c
-@@ -630,6 +630,7 @@ static int netconsole_netdev_event(struc
- 		goto done;
+--- a/net/bridge/br_netlink.c
++++ b/net/bridge/br_netlink.c
+@@ -28,6 +28,7 @@ static inline size_t br_port_info_size(v
+ 		+ nla_total_size(1)	/* IFLA_BRPORT_MODE */
+ 		+ nla_total_size(1)	/* IFLA_BRPORT_GUARD */
+ 		+ nla_total_size(1)	/* IFLA_BRPORT_PROTECT */
++		+ nla_total_size(1)	/* IFLA_BRPORT_FAST_LEAVE */
+ 		+ 0;
+ }
  
- 	spin_lock_irqsave(&target_list_lock, flags);
-+restart:
- 	list_for_each_entry(nt, &target_list, list) {
- 		netconsole_target_get(nt);
- 		if (nt->np.dev == dev) {
-@@ -642,15 +643,17 @@ static int netconsole_netdev_event(struc
- 			case NETDEV_UNREGISTER:
- 				/*
- 				 * rtnl_lock already held
-+				 * we might sleep in __netpoll_cleanup()
- 				 */
--				if (nt->np.dev) {
--					__netpoll_cleanup(&nt->np);
--					dev_put(nt->np.dev);
--					nt->np.dev = NULL;
--				}
-+				spin_unlock_irqrestore(&target_list_lock, flags);
-+				__netpoll_cleanup(&nt->np);
-+				spin_lock_irqsave(&target_list_lock, flags);
-+				dev_put(nt->np.dev);
-+				nt->np.dev = NULL;
- 				nt->enabled = 0;
- 				stopped = true;
--				break;
-+				netconsole_target_put(nt);
-+				goto restart;
- 			}
- 		}
- 		netconsole_target_put(nt);
 
 
