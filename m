@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab3CZWoR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:44:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52588 "EHLO
+	id S1756711Ab3CZXc6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:32:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52593 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754916Ab3CZWoO (ORCPT
+	with ESMTP id S1754945Ab3CZWoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:14 -0400
+	Tue, 26 Mar 2013 18:44:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [ 56/98] ARM: tegra: fix register address of slink controller
-Date: Tue, 26 Mar 2013 15:42:45 -0700
-Message-Id: <20130326224248.348235601@linuxfoundation.org>
+        Takahisa Tanaka <mc74hc00@gmail.com>,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: [ 74/98] watchdog: sp5100_tco: Set the AcpiMmioSel bitmask value to 1 instead of 2
+Date: Tue, 26 Mar 2013 15:43:03 -0700
+Message-Id: <20130326224250.167607022@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,44 +31,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laxman Dewangan <ldewangan@nvidia.com>
+From: Takahisa Tanaka <mc74hc00@gmail.com>
 
-commit 57471c8d3c22873f70813820e6b4d2d1fea9629d upstream.
+commit 81fc933f176cd95f757bfc8a98109ef422598b79 upstream.
 
-Fix typo on register address of slink3 controller where register
-address is wrongly set as 0x7000d480 but it is 0x7000d800.
+The AcpiMmioSel bit is bit 1 in the AcpiMmioEn register, but the current
+sp5100_tco driver is using bit 2.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+See 2.3.3 Power Management (PM) Registers page 150 of the
+AMD SB800-Series Southbridges Register Reference Guide [1].
+
+        AcpiMmioEn - RW – 8/16/32 bits - [PM_Reg: 24h]
+        Field Name        Bits  Default  Description
+        AcpiMMioDecodeEn  0     0b       Set to 1 to enable AcpiMMio space.
+        AcpiMMIoSel       1     0b       Set AcpiMMio registers to be memory-mapped or IO-mapped space.
+                                         0: Memory-mapped space
+                                         1: I/O-mapped space
+
+The sp5100_tco driver expects zero as a value of AcpiMmioSel (bit 1).
+
+Fortunately, no problems were caused by this typo, because the default
+value of the undocumented misused bit 2 seems to be zero.
+
+However, the sp5100_tco driver should use the correct bitmask value.
+
+[1] http://support.amd.com/us/Embedded_TechDocs/45482.pdf
+
+Signed-off-by: Takahisa Tanaka <mc74hc00@gmail.com>
+Signed-off-by: Paul Menzel <paulepanter@users.sourceforge.net>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/tegra20.dtsi |    2 +-
- arch/arm/boot/dts/tegra30.dtsi |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/watchdog/sp5100_tco.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/boot/dts/tegra20.dtsi
-+++ b/arch/arm/boot/dts/tegra20.dtsi
-@@ -314,7 +314,7 @@
+--- a/drivers/watchdog/sp5100_tco.h
++++ b/drivers/watchdog/sp5100_tco.h
+@@ -57,7 +57,7 @@
+ #define SB800_PM_WATCHDOG_DISABLE	(1 << 2)
+ #define SB800_PM_WATCHDOG_SECOND_RES	(3 << 0)
+ #define SB800_ACPI_MMIO_DECODE_EN	(1 << 0)
+-#define SB800_ACPI_MMIO_SEL		(1 << 2)
++#define SB800_ACPI_MMIO_SEL		(1 << 1)
  
- 	spi@7000d800 {
- 		compatible = "nvidia,tegra20-slink";
--		reg = <0x7000d480 0x200>;
-+		reg = <0x7000d800 0x200>;
- 		interrupts = <0 83 0x04>;
- 		nvidia,dma-request-selector = <&apbdma 17>;
- 		#address-cells = <1>;
---- a/arch/arm/boot/dts/tegra30.dtsi
-+++ b/arch/arm/boot/dts/tegra30.dtsi
-@@ -309,7 +309,7 @@
  
- 	spi@7000d800 {
- 		compatible = "nvidia,tegra30-slink", "nvidia,tegra20-slink";
--		reg = <0x7000d480 0x200>;
-+		reg = <0x7000d800 0x200>;
- 		interrupts = <0 83 0x04>;
- 		nvidia,dma-request-selector = <&apbdma 17>;
- 		#address-cells = <1>;
+ #define SB800_PM_WDT_MMIO_OFFSET	0xB00
 
 
