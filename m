@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab3CZWwo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:52:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53061 "EHLO
+	id S1756322Ab3CZXAg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:00:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53084 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755224Ab3CZWwk (ORCPT
+	with ESMTP id S1756256Ab3CZWwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:40 -0400
+	Tue, 26 Mar 2013 18:52:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>, Jan Kara <jack@suse.cz>
-Subject: [ 53/72] ext4: fix data=journal fast mount/umount hang
-Date: Tue, 26 Mar 2013 15:51:36 -0700
-Message-Id: <20130326224925.145611246@linuxfoundation.org>
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 44/72] mm/hugetlb: fix total hugetlbfs pages count when using memory overcommit accouting
+Date: Tue, 26 Mar 2013 15:51:27 -0700
+Message-Id: <20130326224924.230728301@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -26,75 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-commit 2b405bfa84063bfa35621d2d6879f52693c614b0 upstream.
+commit d00285884c0892bb1310df96bce6056e9ce9b9d9 upstream.
 
-In data=journal mode, if we unmount the file system before a
-transaction has a chance to complete, when the journal inode is being
-evicted, we can end up calling into jbd2_log_wait_commit() for the
-last transaction, after the journalling machinery has been shut down.
+hugetlb_total_pages is used for overcommit calculations but the current
+implementation considers only the default hugetlb page size (which is
+either the first defined hugepage size or the one specified by
+default_hugepagesz kernel boot parameter).
 
-Arguably we should adjust ext4_should_journal_data() to return FALSE
-for the journal inode, but the only place it matters is
-ext4_evict_inode(), and so to save a bit of CPU time, and to make the
-patch much more obviously correct by inspection(tm), we'll fix it by
-explicitly not trying to waiting for a journal commit when we are
-evicting the journal inode, since it's guaranteed to never succeed in
-this case.
+If the system is configured for more than one hugepage size, which is
+possible since commit a137e1cc6d6e ("hugetlbfs: per mount huge page
+sizes") then the overcommit estimation done by __vm_enough_memory()
+(resp.  shown by meminfo_proc_show) is not precise - there is an
+impression of more available/allowed memory.  This can lead to an
+unexpected ENOMEM/EFAULT resp.  SIGSEGV when memory is accounted.
 
-This can be easily replicated via:
+Testcase:
+  boot: hugepagesz=1G hugepages=1
+  the default overcommit ratio is 50
+  before patch:
 
-     mount -t ext4 -o data=journal /dev/vdb /vdb ; umount /vdb
+    egrep 'CommitLimit' /proc/meminfo
+    CommitLimit:     55434168 kB
 
-------------[ cut here ]------------
-WARNING: at /usr/projects/linux/ext4/fs/jbd2/journal.c:542 __jbd2_log_start_commit+0xba/0xcd()
-Hardware name: Bochs
-JBD2: bad log_start_commit: 3005630206 3005630206 0 0
-Modules linked in:
-Pid: 2909, comm: umount Not tainted 3.8.0-rc3 #1020
-Call Trace:
- [<c015c0ef>] warn_slowpath_common+0x68/0x7d
- [<c02b7e7d>] ? __jbd2_log_start_commit+0xba/0xcd
- [<c015c177>] warn_slowpath_fmt+0x2b/0x2f
- [<c02b7e7d>] __jbd2_log_start_commit+0xba/0xcd
- [<c02b8075>] jbd2_log_start_commit+0x24/0x34
- [<c0279ed5>] ext4_evict_inode+0x71/0x2e3
- [<c021f0ec>] evict+0x94/0x135
- [<c021f9aa>] iput+0x10a/0x110
- [<c02b7836>] jbd2_journal_destroy+0x190/0x1ce
- [<c0175284>] ? bit_waitqueue+0x50/0x50
- [<c028d23f>] ext4_put_super+0x52/0x294
- [<c020efe3>] generic_shutdown_super+0x48/0xb4
- [<c020f071>] kill_block_super+0x22/0x60
- [<c020f3e0>] deactivate_locked_super+0x22/0x49
- [<c020f5d6>] deactivate_super+0x30/0x33
- [<c0222795>] mntput_no_expire+0x107/0x10c
- [<c02233a7>] sys_umount+0x2cf/0x2e0
- [<c02233ca>] sys_oldumount+0x12/0x14
- [<c08096b8>] syscall_call+0x7/0xb
----[ end trace 6a954cc790501c1f ]---
-jbd2_log_wait_commit: error: j_commit_request=-1289337090, tid=0
+  after patch:
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
+    egrep 'CommitLimit' /proc/meminfo
+    CommitLimit:     54909880 kB
+
+[akpm@linux-foundation.org: coding-style tweak]
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/hugetlb.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -144,7 +144,8 @@ void ext4_evict_inode(struct inode *inod
- 		 * don't use page cache.
- 		 */
- 		if (ext4_should_journal_data(inode) &&
--		    (S_ISLNK(inode->i_mode) || S_ISREG(inode->i_mode))) {
-+		    (S_ISLNK(inode->i_mode) || S_ISREG(inode->i_mode)) &&
-+		    inode->i_ino != EXT4_JOURNAL_INO) {
- 			journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
- 			tid_t commit_tid = EXT4_I(inode)->i_datasync_tid;
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2096,8 +2096,12 @@ int hugetlb_report_node_meminfo(int nid,
+ /* Return the number pages of memory we physically have, in PAGE_SIZE units. */
+ unsigned long hugetlb_total_pages(void)
+ {
+-	struct hstate *h = &default_hstate;
+-	return h->nr_huge_pages * pages_per_huge_page(h);
++	struct hstate *h;
++	unsigned long nr_total_pages = 0;
++
++	for_each_hstate(h)
++		nr_total_pages += h->nr_huge_pages * pages_per_huge_page(h);
++	return nr_total_pages;
+ }
  
+ static int hugetlb_acct_memory(struct hstate *h, long delta)
 
 
