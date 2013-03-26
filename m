@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab3CZXbc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:31:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52626 "EHLO
+	id S1756760Ab3CZXbt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:31:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52618 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021Ab3CZWoV (ORCPT
+	with ESMTP id S1754984Ab3CZWoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:21 -0400
+	Tue, 26 Mar 2013 18:44:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mateusz Guzik <mguzik@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [ 65/98] cifs: delay super block destruction until all cifsFileInfo objects are gone
-Date: Tue, 26 Mar 2013 15:42:54 -0700
-Message-Id: <20130326224249.247566808@linuxfoundation.org>
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        Dmitry Cherkasov <Dmitrii.Cherkasov@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 62/98] drm/radeon: fix S/R on VM systems (cayman/TN/SI)
+Date: Tue, 26 Mar 2013 15:42:51 -0700
+Message-Id: <20130326224248.949574787@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,121 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mateusz Guzik <mguzik@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 24261fc23db950951760d00c188ba63cc756b932 upstream.
+commit fa3daf9aa74a3ac1c87d8188a43d283d06720032 upstream.
 
-cifsFileInfo objects hold references to dentries and it is possible that
-these will still be around in workqueues when VFS decides to kill super
-block during unmount.
+We weren't properly tearing down the VM sub-alloctor
+on suspend leading to bogus VM PTs on resume.
 
-This results in panics like this one:
-BUG: Dentry ffff88001f5e76c0{i=66b4a,n=1M-2} still in use (1) [unmount of cifs cifs]
-------------[ cut here ]------------
-kernel BUG at fs/dcache.c:943!
-[..]
-Process umount (pid: 1781, threadinfo ffff88003d6e8000, task ffff880035eeaec0)
-[..]
-Call Trace:
- [<ffffffff811b44f3>] shrink_dcache_for_umount+0x33/0x60
- [<ffffffff8119f7fc>] generic_shutdown_super+0x2c/0xe0
- [<ffffffff8119f946>] kill_anon_super+0x16/0x30
- [<ffffffffa036623a>] cifs_kill_sb+0x1a/0x30 [cifs]
- [<ffffffff8119fcc7>] deactivate_locked_super+0x57/0x80
- [<ffffffff811a085e>] deactivate_super+0x4e/0x70
- [<ffffffff811bb417>] mntput_no_expire+0xd7/0x130
- [<ffffffff811bc30c>] sys_umount+0x9c/0x3c0
- [<ffffffff81657c19>] system_call_fastpath+0x16/0x1b
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=60439
 
-Fix this by making each cifsFileInfo object hold a reference to cifs
-super block, which implicitly keeps VFS super block around as well.
-
-Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Reported-and-Tested-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Reviewed-by: Christian König <christian.koenig@amd.com>
+Tested-by: Dmitry Cherkasov <Dmitrii.Cherkasov@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifsfs.c |   24 ++++++++++++++++++++++++
- fs/cifs/cifsfs.h |    4 ++++
- fs/cifs/file.c   |    6 +++++-
- 3 files changed, 33 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/ni.c |    1 +
+ drivers/gpu/drm/radeon/si.c |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/fs/cifs/cifsfs.c
-+++ b/fs/cifs/cifsfs.c
-@@ -91,6 +91,30 @@ struct workqueue_struct	*cifsiod_wq;
- __u8 cifs_client_guid[SMB2_CLIENT_GUID_SIZE];
- #endif
- 
-+/*
-+ * Bumps refcount for cifs super block.
-+ * Note that it should be only called if a referece to VFS super block is
-+ * already held, e.g. in open-type syscalls context. Otherwise it can race with
-+ * atomic_dec_and_test in deactivate_locked_super.
-+ */
-+void
-+cifs_sb_active(struct super_block *sb)
-+{
-+	struct cifs_sb_info *server = CIFS_SB(sb);
-+
-+	if (atomic_inc_return(&server->active) == 1)
-+		atomic_inc(&sb->s_active);
-+}
-+
-+void
-+cifs_sb_deactive(struct super_block *sb)
-+{
-+	struct cifs_sb_info *server = CIFS_SB(sb);
-+
-+	if (atomic_dec_and_test(&server->active))
-+		deactivate_super(sb);
-+}
-+
- static int
- cifs_read_super(struct super_block *sb)
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -1671,6 +1671,7 @@ int cayman_resume(struct radeon_device *
+ int cayman_suspend(struct radeon_device *rdev)
  {
---- a/fs/cifs/cifsfs.h
-+++ b/fs/cifs/cifsfs.h
-@@ -41,6 +41,10 @@ extern struct file_system_type cifs_fs_t
- extern const struct address_space_operations cifs_addr_ops;
- extern const struct address_space_operations cifs_addr_ops_smallbuf;
+ 	r600_audio_fini(rdev);
++	radeon_vm_manager_fini(rdev);
+ 	cayman_cp_enable(rdev, false);
+ 	cayman_dma_stop(rdev);
+ 	evergreen_irq_suspend(rdev);
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -4232,6 +4232,7 @@ int si_resume(struct radeon_device *rdev
  
-+/* Functions related to super block operations */
-+extern void cifs_sb_active(struct super_block *sb);
-+extern void cifs_sb_deactive(struct super_block *sb);
-+
- /* Functions related to inodes */
- extern const struct inode_operations cifs_dir_inode_ops;
- extern struct inode *cifs_root_iget(struct super_block *);
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -294,6 +294,8 @@ cifs_new_fileinfo(struct cifs_fid *fid,
- 	INIT_WORK(&cfile->oplock_break, cifs_oplock_break);
- 	mutex_init(&cfile->fh_mutex);
- 
-+	cifs_sb_active(inode->i_sb);
-+
- 	/*
- 	 * If the server returned a read oplock and we have mandatory brlocks,
- 	 * set oplock level to None.
-@@ -343,7 +345,8 @@ void cifsFileInfo_put(struct cifsFileInf
- 	struct cifs_tcon *tcon = tlink_tcon(cifs_file->tlink);
- 	struct TCP_Server_Info *server = tcon->ses->server;
- 	struct cifsInodeInfo *cifsi = CIFS_I(inode);
--	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
-+	struct super_block *sb = inode->i_sb;
-+	struct cifs_sb_info *cifs_sb = CIFS_SB(sb);
- 	struct cifsLockInfo *li, *tmp;
- 	struct cifs_fid fid;
- 	struct cifs_pending_open open;
-@@ -408,6 +411,7 @@ void cifsFileInfo_put(struct cifsFileInf
- 
- 	cifs_put_tlink(cifs_file->tlink);
- 	dput(cifs_file->dentry);
-+	cifs_sb_deactive(sb);
- 	kfree(cifs_file);
- }
- 
+ int si_suspend(struct radeon_device *rdev)
+ {
++	radeon_vm_manager_fini(rdev);
+ 	si_cp_enable(rdev, false);
+ 	cayman_dma_stop(rdev);
+ 	si_irq_suspend(rdev);
 
 
