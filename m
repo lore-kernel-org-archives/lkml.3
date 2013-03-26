@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322Ab3CZXAg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:00:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53084 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756256Ab3CZWwo (ORCPT
+	id S1756469Ab3CZXAy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:00:54 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:45692 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756336Ab3CZXAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:44 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Hillf Danton <dhillf@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 44/72] mm/hugetlb: fix total hugetlbfs pages count when using memory overcommit accouting
-Date: Tue, 26 Mar 2013 15:51:27 -0700
-Message-Id: <20130326224924.230728301@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
-References: <20130326224919.675227837@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 26 Mar 2013 19:00:53 -0400
+Date: Tue, 26 Mar 2013 16:00:50 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [char-misc-next 2/2] mei: drop RECOVERING_FROM_RESET device state
+Message-ID: <20130326230050.GA25071@kroah.com>
+References: <1363513281-12606-1-git-send-email-tomas.winkler@intel.com>
+ <1363513281-12606-2-git-send-email-tomas.winkler@intel.com>
+ <20130325202146.GA14900@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B01EF3427@HASMSX106.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B01EF3427@HASMSX106.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Mar 26, 2013 at 10:47:31PM +0000, Winkler, Tomas wrote:
+> > 
+> > On Sun, Mar 17, 2013 at 11:41:21AM +0200, Tomas Winkler wrote:
+> > > ECOVERING_FROM_RESET device state is never set we can remove it
+> > 
+> > Really?  I now get the following build error with this patch applied:
+> > 
+> > drivers/misc/mei/pci-me.c: In function ‘mei_pci_suspend’:
+> > drivers/misc/mei/pci-me.c:323:24: error:
+> > ‘MEI_DEV_RECOVERING_FROM_RESET’ undeclared (first use in this
+> > function)
+> > drivers/misc/mei/pci-me.c:323:24: note: each undeclared identifier is
+> > reported only once for each function it appears in
+> > 
+> > Please be more careful.
+> 
+> This patch has to be applied above patch  https://lkml.org/lkml/2013/3/10/101 that is queued for 3.9. 
+> Somehow I've assumed it will go into 3.9-rc4.  
 
-------------------
+Yes, I hope to get it there.
 
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Anyhow we need to wait with this and everything else I have queued till it is merged back to char-misc-next.
+> Maybe you have some suggestions how to handle such conflicts in the future.
 
-commit d00285884c0892bb1310df96bce6056e9ce9b9d9 upstream.
+Let me know about such conflicts so I don't blame you for them :)
 
-hugetlb_total_pages is used for overcommit calculations but the current
-implementation considers only the default hugetlb page size (which is
-either the first defined hugepage size or the one specified by
-default_hugepagesz kernel boot parameter).
+I'll pull in the char-misc.linus branch into my .next branch now, so
+that should solve this problem, right?  If so, please resend this patch
+so I can apply it.
 
-If the system is configured for more than one hugepage size, which is
-possible since commit a137e1cc6d6e ("hugetlbfs: per mount huge page
-sizes") then the overcommit estimation done by __vm_enough_memory()
-(resp.  shown by meminfo_proc_show) is not precise - there is an
-impression of more available/allowed memory.  This can lead to an
-unexpected ENOMEM/EFAULT resp.  SIGSEGV when memory is accounted.
+thanks,
 
-Testcase:
-  boot: hugepagesz=1G hugepages=1
-  the default overcommit ratio is 50
-  before patch:
-
-    egrep 'CommitLimit' /proc/meminfo
-    CommitLimit:     55434168 kB
-
-  after patch:
-
-    egrep 'CommitLimit' /proc/meminfo
-    CommitLimit:     54909880 kB
-
-[akpm@linux-foundation.org: coding-style tweak]
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Hillf Danton <dhillf@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/hugetlb.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2096,8 +2096,12 @@ int hugetlb_report_node_meminfo(int nid,
- /* Return the number pages of memory we physically have, in PAGE_SIZE units. */
- unsigned long hugetlb_total_pages(void)
- {
--	struct hstate *h = &default_hstate;
--	return h->nr_huge_pages * pages_per_huge_page(h);
-+	struct hstate *h;
-+	unsigned long nr_total_pages = 0;
-+
-+	for_each_hstate(h)
-+		nr_total_pages += h->nr_huge_pages * pages_per_huge_page(h);
-+	return nr_total_pages;
- }
- 
- static int hugetlb_acct_memory(struct hstate *h, long delta)
-
-
+greg k-h
