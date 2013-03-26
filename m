@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965366Ab3CZPXt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:23:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54065 "EHLO
+	id S965386Ab3CZPXy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:23:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54116 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965314Ab3CZPXh (ORCPT
+	with ESMTP id S965363Ab3CZPXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:37 -0400
+	Tue, 26 Mar 2013 11:23:49 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 116/150] vfs,proc: guarantee unique inodes in /proc
-Date: Tue, 26 Mar 2013 15:20:15 +0000
-Message-Id: <1364311249-14454-117-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 126/150] sfc: Add parentheses around use of bitfield macro arguments
+Date: Tue, 26 Mar 2013 15:20:25 +0000
+Message-Id: <1364311249-14454-127-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,71 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit 51f0885e5415b4cc6535e9cdcc5145bfbc134353 upstream.
+commit 9724a8504c875145f5a513bb8eca50671cee23b4 upstream.
 
-Dave Jones found another /proc issue with his Trinity tool: thanks to
-the namespace model, we can have multiple /proc dentries that point to
-the same inode, aliasing directories in /proc/<pid>/net/ for example.
-
-This ends up being a total disaster, because it acts like hardlinked
-directories, and causes locking problems.  We rely on the topological
-sort of the inodes pointed to by dentries, and if we have aliased
-directories, that odering becomes unreliable.
-
-In short: don't do this.  Multiple dentries with the same (directory)
-inode is just a bad idea, and the namespace code should never have
-exposed things this way.  But we're kind of stuck with it.
-
-This solves things by just always allocating a new inode during /proc
-dentry lookup, instead of using "iget_locked()" to look up existing
-inodes by superblock and number.  That actually simplies the code a bit,
-at the cost of potentially doing more inode [de]allocations.
-
-That said, the inode lookup wasn't free either (and did a lot of locking
-of inodes), so it is probably not that noticeable.  We could easily keep
-the old lookup model for non-directory entries, but rather than try to
-be excessively clever this just implements the minimal and simplest
-workaround for the problem.
-
-Reported-and-tested-by: Dave Jones <davej@redhat.com>
-Analyzed-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.5; adjust context ]
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/proc/inode.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/sfc/bitfield.h | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index 7ac817b..b02ddd0 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -443,12 +443,10 @@ static const struct file_operations proc_reg_file_ops_no_compat = {
+diff --git a/drivers/net/ethernet/sfc/bitfield.h b/drivers/net/ethernet/sfc/bitfield.h
+index b26a954..5400a33 100644
+--- a/drivers/net/ethernet/sfc/bitfield.h
++++ b/drivers/net/ethernet/sfc/bitfield.h
+@@ -120,10 +120,10 @@ typedef union efx_oword {
+  * [0,high-low), with garbage in bits [high-low+1,...).
+  */
+ #define EFX_EXTRACT_NATIVE(native_element, min, max, low, high)		\
+-	(((low > max) || (high < min)) ? 0 :				\
+-	 ((low > min) ?							\
+-	  ((native_element) >> (low - min)) :				\
+-	  ((native_element) << (min - low))))
++	((low) > (max) || (high) < (min) ? 0 :				\
++	 (low) > (min) ?						\
++	 (native_element) >> ((low) - (min)) :				\
++	 (native_element) << ((min) - (low)))
  
- struct inode *proc_get_inode(struct super_block *sb, struct proc_dir_entry *de)
- {
--	struct inode * inode;
-+	struct inode *inode = new_inode_pseudo(sb);
+ /*
+  * Extract bit field portion [low,high) from the 64-bit little-endian
+@@ -142,27 +142,27 @@ typedef union efx_oword {
+ #define EFX_EXTRACT_OWORD64(oword, low, high)				\
+ 	((EFX_EXTRACT64((oword).u64[0], 0, 63, low, high) |		\
+ 	  EFX_EXTRACT64((oword).u64[1], 64, 127, low, high)) &		\
+-	 EFX_MASK64(high + 1 - low))
++	 EFX_MASK64((high) + 1 - (low)))
  
--	inode = iget_locked(sb, de->low_ino);
--	if (!inode)
--		return NULL;
--	if (inode->i_state & I_NEW) {
-+	if (inode) {
-+		inode->i_ino = de->low_ino;
- 		inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
- 		PROC_I(inode)->fd = 0;
- 		PROC_I(inode)->pde = de;
-@@ -477,7 +475,6 @@ struct inode *proc_get_inode(struct super_block *sb, struct proc_dir_entry *de)
- 				inode->i_fop = de->proc_fops;
- 			}
- 		}
--		unlock_new_inode(inode);
- 	} else
- 	       pde_put(de);
- 	return inode;
+ #define EFX_EXTRACT_QWORD64(qword, low, high)				\
+ 	(EFX_EXTRACT64((qword).u64[0], 0, 63, low, high) &		\
+-	 EFX_MASK64(high + 1 - low))
++	 EFX_MASK64((high) + 1 - (low)))
+ 
+ #define EFX_EXTRACT_OWORD32(oword, low, high)				\
+ 	((EFX_EXTRACT32((oword).u32[0], 0, 31, low, high) |		\
+ 	  EFX_EXTRACT32((oword).u32[1], 32, 63, low, high) |		\
+ 	  EFX_EXTRACT32((oword).u32[2], 64, 95, low, high) |		\
+ 	  EFX_EXTRACT32((oword).u32[3], 96, 127, low, high)) &		\
+-	 EFX_MASK32(high + 1 - low))
++	 EFX_MASK32((high) + 1 - (low)))
+ 
+ #define EFX_EXTRACT_QWORD32(qword, low, high)				\
+ 	((EFX_EXTRACT32((qword).u32[0], 0, 31, low, high) |		\
+ 	  EFX_EXTRACT32((qword).u32[1], 32, 63, low, high)) &		\
+-	 EFX_MASK32(high + 1 - low))
++	 EFX_MASK32((high) + 1 - (low)))
+ 
+ #define EFX_EXTRACT_DWORD(dword, low, high)			\
+ 	(EFX_EXTRACT32((dword).u32[0], 0, 31, low, high) &	\
+-	 EFX_MASK32(high + 1 - low))
++	 EFX_MASK32((high) + 1 - (low)))
+ 
+ #define EFX_OWORD_FIELD64(oword, field)				\
+ 	EFX_EXTRACT_OWORD64(oword, EFX_LOW_BIT(field),		\
+@@ -442,10 +442,10 @@ typedef union efx_oword {
+ 	cpu_to_le32(EFX_INSERT_NATIVE(min, max, low, high, value))
+ 
+ #define EFX_INPLACE_MASK64(min, max, low, high)				\
+-	EFX_INSERT64(min, max, low, high, EFX_MASK64(high + 1 - low))
++	EFX_INSERT64(min, max, low, high, EFX_MASK64((high) + 1 - (low)))
+ 
+ #define EFX_INPLACE_MASK32(min, max, low, high)				\
+-	EFX_INSERT32(min, max, low, high, EFX_MASK32(high + 1 - low))
++	EFX_INSERT32(min, max, low, high, EFX_MASK32((high) + 1 - (low)))
+ 
+ #define EFX_SET_OWORD64(oword, low, high, value) do {			\
+ 	(oword).u64[0] = (((oword).u64[0]				\
 -- 
 1.8.1.2
 
