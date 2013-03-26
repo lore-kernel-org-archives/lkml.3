@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596Ab3CZTnN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 15:43:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51021 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932374Ab3CZTnM (ORCPT
+	id S1760191Ab3CZTrb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 15:47:31 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54575 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754023Ab3CZTra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 15:43:12 -0400
-Date: Tue, 26 Mar 2013 12:43:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Rik van Riel <riel@surriel.com>, torvalds@linux-foundation.org,
-        davidlohr.bueso@hp.com, linux-kernel@vger.kernel.org,
-        hhuang@redhat.com, jason.low2@hp.com, walken@google.com,
-        lwoodman@redhat.com, chegu_vinod@hp.com,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: Re: ipc,sem: sysv semaphore scalability
-Message-Id: <20130326124309.077e21a9f59aaa3f3355e09b@linux-foundation.org>
-In-Reply-To: <20130326192852.GA25899@redhat.com>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	<20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org>
-	<20130326192852.GA25899@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Mar 2013 15:47:30 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 26 Mar 2013 12:47:37 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Lubomir Rintel <lkundrak@v3.sk>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-rpi-kernel@lists.infradead.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v2] watchdog: Add Broadcom BCM2835 watchdog timer driver
+Message-ID: <20130326194737.GA26646@roeck-us.net>
+References: <1363956907-5644-1-git-send-email-lkundrak@v3.sk>
+ <1364134973-26592-1-git-send-email-lkundrak@v3.sk>
+ <20130324161241.GB15620@roeck-us.net>
+ <1364320075.18728.26.camel@hobbes.kokotovo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364320075.18728.26.camel@hobbes.kokotovo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Mar 2013 15:28:52 -0400 Dave Jones <davej@redhat.com> wrote:
-
-> On Thu, Mar 21, 2013 at 02:10:58PM -0700, Andrew Morton wrote:
+On Tue, Mar 26, 2013 at 06:47:55PM +0100, Lubomir Rintel wrote:
+> On Sun, 2013-03-24 at 09:12 -0700, Guenter Roeck wrote:
+> > On Sun, Mar 24, 2013 at 03:22:53PM +0100, Lubomir Rintel wrote:
+> > > This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
+> > > used in Raspberry Pi and Roku 2 devices.
+> > > 
+> > > Interface to the Broadcom BCM2835 watchdog timer hardware is based on
+> > > "bcm2708_wdog" driver written by Luke Diamand that was obtained from branch
+> > > "rpi-3.6.y" of git://github.com/raspberrypi/linux.git
+> > > 
+> > I would suggest to put that into the coments at the top of the driver.
+> > Also, if the original code has a copyright statement, you might want
+> > to copy that.
 > 
->  > Whichever way we go, we should get a wiggle on - this has been hanging
->  > around for too long.  Dave, do you have time to determine whether
->  > reverting 88b9e456b1649722673ff ("ipc: don't allocate a copy larger
->  > than max") fixes things up?
+> Okay.
 > 
-> Ok, with that reverted it's been grinding away for a few hours without incident.
-> Normally I see the oops within a minute or so.
+> > > +#include <linux/miscdevice.h>
+> > 
+> > Just noticed - you should not need that include.
 > 
+> Well, I think the bottommost line of the driver uses that and it's a
+> good practice to provide a device number alias. Is that one completely
+> useless?
+> 
+>   MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
+> 
+Ah, I didn't realize this is still used. The documentation suggests that it can be
+kept when converting drivers to the watchdog core, so I guess there must be a reason.
 
-OK, thanks, I queued a revert:
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: revert "ipc: don't allocate a copy larger than max"
-
-Revert 88b9e456b164.  Dave has confirmed that this was causing oopses
-during trinity testing.
-
-Cc: Peter Hurley <peter@hurleysoftware.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Reported-by: Dave Jones <davej@redhat.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- ipc/msg.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
-diff -puN ipc/msg.c~revert-ipc-dont-allocate-a-copy-larger-than-max ipc/msg.c
---- a/ipc/msg.c~revert-ipc-dont-allocate-a-copy-larger-than-max
-+++ a/ipc/msg.c
-@@ -820,17 +820,15 @@ long do_msgrcv(int msqid, void __user *b
- 	struct msg_msg *copy = NULL;
- 	unsigned long copy_number = 0;
- 
--	ns = current->nsproxy->ipc_ns;
--
- 	if (msqid < 0 || (long) bufsz < 0)
- 		return -EINVAL;
- 	if (msgflg & MSG_COPY) {
--		copy = prepare_copy(buf, min_t(size_t, bufsz, ns->msg_ctlmax),
--				    msgflg, &msgtyp, &copy_number);
-+		copy = prepare_copy(buf, bufsz, msgflg, &msgtyp, &copy_number);
- 		if (IS_ERR(copy))
- 			return PTR_ERR(copy);
- 	}
- 	mode = convert_mode(&msgtyp, msgflg);
-+	ns = current->nsproxy->ipc_ns;
- 
- 	msq = msg_lock_check(ns, msqid);
- 	if (IS_ERR(msq)) {
-_
-
+Thanks,
+Guenter
