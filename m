@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab3CZSUc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:20:32 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:54127 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab3CZSUb (ORCPT
+	id S1757525Ab3CZSY2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:24:28 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57644 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751718Ab3CZSY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 14:20:31 -0400
-X-IronPort-AV: E=Sophos;i="4.84,913,1355126400"; 
-   d="scan'208";a="32874140"
-From: David Brown <davidb@codeaurora.org>
-To: Greg KH <greg@kroah.com>
-Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH] mfd: pm8921: Disable driver until it gets fixed
-Date: Tue, 26 Mar 2013 11:20:17 -0700
-Message-Id: <1364322017-21490-1-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <20130326151811.de958e38f0116334a62e1c8b@canb.auug.org.au>
+	Tue, 26 Mar 2013 14:24:27 -0400
+X-Sasl-enc: MWv6k3gAEt+ZPO3JiL6393AtXLKMJkaZCQOz6m1+wzCY 1364322258
+Message-ID: <5151E77F.3050201@ladisch.de>
+Date: Tue, 26 Mar 2013 19:22:55 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firewire: Enable physical DMA above 4GB
+References: <1364307734-27709-1-git-send-email-peter@hurleysoftware.com>	 <5151C90A.5010108@ladisch.de> <1364317476.3866.4.camel@thor.lan>
+In-Reply-To: <1364317476.3866.4.camel@thor.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pm8921 driver has been broken for a while now, but was prevented
-from compiling because the SSBI bus driver was missing.  Now that SSBI
-is present, pm8921 causes compile fails.
+Peter Hurley wrote:
+> On Tue, 2013-03-26 at 17:12 +0100, Clemens Ladisch wrote:
+>> Peter Hurley wrote:
+>>> Write the PhyUpperBound register with the end-of-memory value. If
+>>> end-of-memory is beyond the OHCI limit of 0x0000ffff00000000,
+>>> clamp to that value.
+>>
+>> You will have to lower this limit; there are protcols that assume that
+>> addresses like 0xecc000000000 are available for software.
+>
+> Maybe 0x0000e80000000000 is a better maximum upper bound?
 
-Until the pm8921 driver is fixed, mark it as BROKEN to prevent
-compiles from failing.
+Why the space of 0x04c000000000?  ;-)
 
-Cc: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: David Brown <davidb@codeaurora.org>
----
-Someone is working on the pm8921 driver, but we need to disable it
-until those patches are posted.
+There's also 0xc007dedadada (although this address isn't used on the PC
+side).  Maybe we should just round down to 0x800000000000 and revisit
+the question when there are 256 TB memory machines.  (Directly accessing
+the full 256 TB will not be possible in any case.)
 
- drivers/mfd/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 5bfa7bb..b9723a8 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -990,7 +990,7 @@ config MFD_PM8XXX
- 
- config MFD_PM8921_CORE
- 	tristate "Qualcomm PM8921 PMIC chip"
--	depends on SSBI
-+	depends on SSBI && BROKEN
- 	select MFD_CORE
- 	select MFD_PM8XXX
- 	help
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Regards,
+Clemens
