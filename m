@@ -1,67 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175Ab3CZRre (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:47:34 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:40330 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755990Ab3CZRrc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:47:32 -0400
-X-Greylist: delayed 669 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Mar 2013 13:47:32 EDT
-From: Roland Stigge <stigge@antcom.de>
-To: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH] usb: Fix compile error by selecting USB_OTG_UTILS
-Date: Tue, 26 Mar 2013 18:36:01 +0100
-Message-Id: <1364319361-28265-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S1755060Ab3CZRsD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:48:03 -0400
+Received: from norkia.v3.sk ([91.210.183.14]:34025 "EHLO norkia.v3.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755389Ab3CZRsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 13:48:00 -0400
+Subject: Re: [PATCH v2] watchdog: Add Broadcom BCM2835 watchdog timer driver
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-rpi-kernel@lists.infradead.org,
+        linux-watchdog@vger.kernel.org
+In-Reply-To: <20130324161241.GB15620@roeck-us.net>
+References: <1363956907-5644-1-git-send-email-lkundrak@v3.sk>
+	 <1364134973-26592-1-git-send-email-lkundrak@v3.sk>
+	 <20130324161241.GB15620@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Mar 2013 18:47:55 +0100
+Message-ID: <1364320075.18728.26.camel@hobbes.kokotovo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current lpc32xx_defconfig breaks like this, caused by recent phy
-restructuring:
+On Sun, 2013-03-24 at 09:12 -0700, Guenter Roeck wrote:
+> On Sun, Mar 24, 2013 at 03:22:53PM +0100, Lubomir Rintel wrote:
+> > This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
+> > used in Raspberry Pi and Roku 2 devices.
+> > 
+> > Interface to the Broadcom BCM2835 watchdog timer hardware is based on
+> > "bcm2708_wdog" driver written by Luke Diamand that was obtained from branch
+> > "rpi-3.6.y" of git://github.com/raspberrypi/linux.git
+> > 
+> I would suggest to put that into the coments at the top of the driver.
+> Also, if the original code has a copyright statement, you might want
+> to copy that.
 
-  LD      init/built-in.o
-drivers/built-in.o: In function `usb_hcd_nxp_probe':
-drivers/usb/host/ohci-nxp.c:224: undefined reference to `isp1301_get_client'
-drivers/built-in.o: In function `lpc32xx_udc_probe':
-drivers/usb/gadget/lpc32xx_udc.c:3104: undefined reference to
-`isp1301_get_client' distcc[27867] ERROR: compile (null) on localhost failed
-make: *** [vmlinux] Error 1
+Okay.
 
-This patch fixes this by selecting USB_OTG_UTILS in Kconfig which
-causes the phy driver to be built again.
+> > +#include <linux/miscdevice.h>
+> 
+> Just noticed - you should not need that include.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+Well, I think the bottommost line of the driver uses that and it's a
+good practice to provide a device number alias. Is that one completely
+useless?
 
---
-Applies to v3.9-rc4
+  MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
 
----
- drivers/usb/gadget/Kconfig |    1 +
- drivers/usb/phy/Kconfig    |    1 +
- 2 files changed, 2 insertions(+)
+> > +#define PM_RSTS				0x20
+> 
+> Not used
 
---- linux-2.6.orig/drivers/usb/gadget/Kconfig
-+++ linux-2.6/drivers/usb/gadget/Kconfig
-@@ -145,6 +145,7 @@ config USB_LPC32XX
- 	tristate "LPC32XX USB Peripheral Controller"
- 	depends on ARCH_LPC32XX
- 	select USB_ISP1301
-+	select USB_OTG_UTILS
- 	help
- 	   This option selects the USB device controller in the LPC32xx SoC.
- 
---- linux-2.6.orig/drivers/usb/phy/Kconfig
-+++ linux-2.6/drivers/usb/phy/Kconfig
-@@ -38,6 +38,7 @@ config USB_ISP1301
- 	tristate "NXP ISP1301 USB transceiver support"
- 	depends on USB || USB_GADGET
- 	depends on I2C
-+	select USB_OTG_UTILS
- 	help
- 	  Say Y here to add support for the NXP ISP1301 USB transceiver driver.
- 	  This chip is typically used as USB transceiver for USB host, gadget
+Dropped.
+
+> > +#define PM_RSTC_WRCFG_MASK		0x00000030
+> 
+> Not used
+
+Dropped.
+
+> > +#define PM_RSTS_HADWRH_SET		0x00000040
+> 
+> Not used
+
+Dropped.
+
+> > +#define PM_RSTC_WRCFG_SET		0x00000030
+> 
+> Not used 
+
+Dropped.
+
+> > +#define PM_RSTC_WRCFG_FULL_RESET	0x00000020
+> 
+> Defined twice
+
+Extra occurrence dropped.
+
+> 
+> > +#define PM_RSTC_RESET			0x00000102
+> > +
+> > +#define SECS_TO_WDOG_TICKS(x) ((x) << 16)
+> > +#define WDOG_TICKS_TO_SECS(x) ((x) >> 16)
+> > +
+> > +struct bcm2835_wdt {
+> > +	void __iomem		*base;
+> > +	spinlock_t		lock;
+> > +};
+> > +
+> > +static int heartbeat = -1;
+> 
+> The parameter passed to watchdog_init_timeout is an unsigned int, so you should
+> really use an unsigned int here. Depending on -1 being converted to maxuint is a
+> bit of side effect programming. Easier to just set it to 0, which the watchdog
+> core interprets as invalid as well.
+
+Done.
+
+> > +	dev_info(dev, "Broadcom BCM2835 watchdog timer");
+> > +
+> I think this should come later, after you are sure that there will be
+> no failure.
+
+Moved.
+
+> > +	platform_set_drvdata(pdev, NULL);
+> 
+> It is unnecessary to set this to NULL (the infrastructure does it for you).
+
+Okay.
+
+I've seen this being done on way too many places. I've really should
+have checked that though.
+
+Thank you for your response, I'll submit an updated revision shortly.
+-- 
+Lubomir Rintel <lkundrak@v3.sk>
+
