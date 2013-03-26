@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338Ab3CZHuu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 03:50:50 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:34112 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759362Ab3CZHus convert rfc822-to-8bit (ORCPT
+	id S1759508Ab3CZHxA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 03:53:00 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:4801 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759443Ab3CZHw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 03:50:48 -0400
+	Tue, 26 Mar 2013 03:52:59 -0400
+Message-ID: <515153C0.5070908@huawei.com>
+Date: Tue, 26 Mar 2013 15:52:32 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-X-Originating-IP: [218.173.168.234]
-In-Reply-To: <515151A5.3090306@stericsson.com>
-References: <1364280647.16881.1.camel@phoenix>
-	<515151A5.3090306@stericsson.com>
-Date: Tue, 26 Mar 2013 15:50:48 +0800
-Message-ID: <CAFRkauCsS1NZdWHnL21CrEuXMnKD1+2FY+bPftwR-UuhyL8vnQ@mail.gmail.com>
-Subject: Re: [PATCH RFC/RFT] regulator: ab8500: Remove is_enabled from struct ab8500_regulator_info
-From: Axel Lin <axel.lin@ingics.com>
-To: =?ISO-8859-1?Q?Bengt_J=F6nsson?= <bengt.g.jonsson@stericsson.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Michal Hocko <mhocko@suse.cz>
+CC: Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
+References: <514A60CD.60208@huawei.com> <20130321090849.GF6094@dhcp22.suse.cz> <20130321102257.GH6094@dhcp22.suse.cz> <514BB23E.70908@huawei.com> <20130322080749.GB31457@dhcp22.suse.cz> <514C1388.6090909@huawei.com> <514C14BF.3050009@parallels.com> <20130322093141.GE31457@dhcp22.suse.cz> <514EAC41.5050700@huawei.com> <20130325090629.GN2154@dhcp22.suse.cz>
+In-Reply-To: <20130325090629.GN2154@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/26 Bengt Jönsson <bengt.g.jonsson@stericsson.com>:
-> On 03/26/2013 07:50 AM, Axel Lin wrote:
+>>> >From 7ed7f53bb597e8cb40d9ac91ce16142fb60f1e93 Mon Sep 17 00:00:00 2001
+>>> From: Michal Hocko <mhocko@suse.cz>
+>>> Date: Fri, 22 Mar 2013 10:22:54 +0100
+>>> Subject: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
+>>>
+>>> As cgroup supports rename, it's unsafe to dereference dentry->d_name
+>>> without proper vfs locks. Fix this by using cgroup_name() rather than
+>>> dentry directly.
+>>>
+>>> Also open code memcg_cache_name because it is called only from
+>>> kmem_cache_dup which frees the returned name right after
+>>> kmem_cache_create_memcg makes a copy of it. Such a short-lived
+>>> allocation doesn't make too much sense. So replace it by a static
+>>> buffer as kmem_cache_dup is called with memcg_cache_mutex.
+>>>
 >>
->> The is_enabled flag looks not necessary at all, it also introduces some
->> issues
->> because current code updates info->is_enabled flag in error paths of
->> ab8500_regulator_enable() and ab8500_regulator_disable().
->> Thus this patch removes is_enabled from struct ab8500_regulator_info.
->>
->> This patch also removes info->is_enabled checking in
->> ab8500_regulator_set_mode(),
->> so it allows setting mode even the regulator is disabled.
->
-> This patch will change the behaviour of set_mode as the ab8500 regulators
-> share mode and enable in the same register bits:
-> - off = 0b00
-> - low power mode= 0b11
-> - full powermode = 0b01
-> - (HW control mode = 0b10)
->
-> To keep regulator_enable/disable apart from regulator_set_mode I think this
-> patch should not go in.
+>> I doubt it's a win to add 4K to kernel text size instead of adding
+>> a few extra lines of code... but it's up to you.
+> 
+> I will leave the decision to Glauber. The updated version which uses
+> kmalloc for the static buffer is bellow.
+> 
 
-Thanks for the review.
-I'll send a patch to avoid update is_enabled flag in error paths.
+I don't have strong preference. Glauber, what's your opinion?
 
-Axel
+...
+>  static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+>  					 struct kmem_cache *s)
+>  {
+> -	char *name;
+>  	struct kmem_cache *new;
+> +	static char *tmp_name = NULL;
+
+(minor nitpick) why not preserve the name "name"
+
