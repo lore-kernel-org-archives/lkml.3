@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758364Ab3CZFAv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 01:00:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45618 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857Ab3CZFAu (ORCPT
+	id S1757374Ab3CZFL0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 01:11:26 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44640 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754297Ab3CZFLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 01:00:50 -0400
-Date: Mon, 25 Mar 2013 22:01:50 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Alexandru Gheorghiu <gheorghiuandru@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH] drivers: virtio: Use PTR_RET function
-Message-Id: <20130325220150.af9795a7.akpm@linux-foundation.org>
-In-Reply-To: <87fvzidenm.fsf@rustcorp.com.au>
-References: <1364217936-6284-1-git-send-email-gheorghiuandru@gmail.com>
-	<87fvzidenm.fsf@rustcorp.com.au>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Tue, 26 Mar 2013 01:11:25 -0400
+Date: Tue, 26 Mar 2013 16:11:06 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Kent Overstreet <koverstreet@google.com>, Jens Axboe <axboe@kernel.dk>
+Subject: linux-next: manual merge of the akpm tree with the block tree
+Message-Id: <20130326161106.a482807476e631ed5422bed8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__26_Mar_2013_16_11_06_+1100_37_Wgr6wg3NPYe5r"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Mar 2013 13:57:09 +1030 Rusty Russell <rusty@rustcorp.com.au> wrote:
+--Signature=_Tue__26_Mar_2013_16_11_06_+1100_37_Wgr6wg3NPYe5r
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Alexandru Gheorghiu <gheorghiuandru@gmail.com> writes:
-> 
-> > Used PTR_RET function instead of IS_ERR and PTR_ERR.
-> > Patch found using coccinelle.
-> 
-> WTF is PTR_RET?  PTR_RET doesn't return anything.  Why is it called
-> that?  It doesn't even make sense.
-> 
-> ZERO_OR_PTR_ERR() maybe.
-> 
-> But what problem are we solving?  Insufficient churn in the tree?  Code
-> being too readable?  This isn't some hard-to-get right corner case, or a
-> missed optimization.
-> 
-> Andrew, what am I missing here?
+Hi Andrew,
 
-It seemed like a good idea at the time.  Merged it two years ago and
-have since been keenly awaiting an opportunity to use it.
+Today's linux-next merge of the akpm tree got a conflict in
+include/linux/blk_types.h between commit a38352e0ac02 ("block: Add an
+explicit bio flag for bios that own their bvec") from the block tree and
+commit "mm: make snapshotting pages for stable writes a per-bio
+operation" from the akpm tree.
 
-It seems that people _have_ been using it, but mainly netfilter people
-and we know they're all crazy ;)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/linux/blk_types.h
+index e8de670,22990cf..0000000
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@@ -116,8 -117,7 +117,8 @@@ struct bio=20
+   * Flags starting here get preserved by bio_reset() - this includes
+   * BIO_POOL_IDX()
+   */
+- #define BIO_RESET_BITS	12
+- #define BIO_OWNS_VEC	12	/* bio_free() should free bvec */
++ #define BIO_RESET_BITS	13
+++#define BIO_OWNS_VEC	13	/* bio_free() should free bvec */
+ =20
+  #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+ =20
+
+--Signature=_Tue__26_Mar_2013_16_11_06_+1100_37_Wgr6wg3NPYe5r
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRUS3rAAoJEECxmPOUX5FECQUP/jLwGkEqO70I6nmLSJAXUT+W
+hQAnJJVKJqN1NB3Ow3HG6BaErOluNsuXgaS3NynwDth0NU7Iz15jMNk435ADUXB6
+NxVkLlXI7Lc/0aP0AXBD8TkSZlpYfepKiYEzqPUtRyoF2LyqVJ0uMPgOm1vcvkDZ
+MjRtEI8RB+24sCeog1JpNWI3K2kb82+GnCaNKQXS8KVlNqYcO8yR0akx0jNY5Sbk
+1JsWtDjQet4+1CRe+46oWqfC5SmTJYA4UTwz66ramMfB/IqFn2WDs/cw4M9HyZJs
+akKKfRH1fA4RMm7Flh2kQ3VAM17Cz1uLXGvoVLRiqwp9kajci7AEJwvoGyppazEk
+48Ff5ZPZFysxJyxLmWm6mO4Zy+fKsic7APAo85oFPuj1VsTfY3HCINHwdBixO/Z2
+Rg9UKP7Ac58Uf9mv8kh3xGN93KC6WkE0GdxUBSA7Nr4M81zfz3SR33uM6/zHgnur
+2psaYaCLPGP4B6pY3j7+L7iCcKAKX6UnLKjp3Aeez4rrYKRG1tdegHWZH2UdCTbt
+l4Xn62cx1laS2lbuJrcTOK21Fgy/aFPh3i3wdQzt5bH2x2qihbTeHWz2MhV5zTVj
++ctF2uZXaDmpi6+pitR0SdfxTYB4TDtMKETkJ9uduj4LtYzaqSKvlfbTgwvH5TDA
+zHvkZKr62/bMtUSoaKDm
+=9XFX
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__26_Mar_2013_16_11_06_+1100_37_Wgr6wg3NPYe5r--
