@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965592Ab3CZQ07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:26:59 -0400
+	id S934737Ab3CZQ20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:28:26 -0400
 Received: from mga03.intel.com ([143.182.124.21]:62041 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934700Ab3CZQ00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 12:26:26 -0400
+	id S933755Ab3CZQ0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 12:26:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,913,1355126400"; 
-   d="scan'208";a="276202603"
+   d="scan'208";a="276202584"
 From: Zhang Rui <rui.zhang@intel.com>
 To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: amit.daniel@samsung.com, durgadoss.r@intel.com, andi@lisas.de,
         Zhang Rui <rui.zhang@intel.com>
-Subject: [RFC PATCH 5/5] Thermal: build cpu_cooling code into thermal_sys module
-Date: Wed, 27 Mar 2013 00:26:09 +0800
-Message-Id: <1364315169-15427-6-git-send-email-rui.zhang@intel.com>
+Subject: [RFC PATCH 4/5] Thermal: governor API cleanup
+Date: Wed, 27 Mar 2013 00:26:08 +0800
+Message-Id: <1364315169-15427-5-git-send-email-rui.zhang@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1364315169-15427-1-git-send-email-rui.zhang@intel.com>
 References: <1364315169-15427-1-git-send-email-rui.zhang@intel.com>
@@ -25,50 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 ---
- drivers/thermal/Kconfig     |    2 +-
- drivers/thermal/Makefile    |    2 +-
- include/linux/cpu_cooling.h |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/thermal/thermal_core.c |    2 --
+ drivers/thermal/thermal_core.h |    2 ++
+ include/linux/thermal.h        |    3 ---
+ 3 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index a764f16..10014de 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -67,7 +67,7 @@ config THERMAL_GOV_USER_SPACE
- 	  Enable this to let the user space manage the platform thermals.
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index eac9745..f645757 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -99,7 +99,6 @@ int thermal_register_governor(struct thermal_governor *governor)
  
- config CPU_THERMAL
--	tristate "generic cpu cooling support"
-+	bool "generic cpu cooling support"
- 	depends on CPU_FREQ
- 	select CPU_FREQ_TABLE
- 	help
-diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-index b7fffc7..cae124f 100644
---- a/drivers/thermal/Makefile
-+++ b/drivers/thermal/Makefile
-@@ -11,7 +11,7 @@ thermal_sys-$(CONFIG_THERMAL_GOV_STEP_WISE)	+= step_wise.o
- thermal_sys-$(CONFIG_THERMAL_GOV_USER_SPACE)	+= user_space.o
+ 	return err;
+ }
+-EXPORT_SYMBOL_GPL(thermal_register_governor);
  
- # cpufreq cooling
--obj-$(CONFIG_CPU_THERMAL)	+= cpu_cooling.o
-+thermal_sys-$(CONFIG_CPU_THERMAL)	+= cpu_cooling.o
+ void thermal_unregister_governor(struct thermal_governor *governor)
+ {
+@@ -127,7 +126,6 @@ void thermal_unregister_governor(struct thermal_governor *governor)
+ 	mutex_unlock(&thermal_governor_lock);
+ 	return;
+ }
+-EXPORT_SYMBOL_GPL(thermal_unregister_governor);
  
- # platform thermal drivers
- obj-$(CONFIG_SPEAR_THERMAL)	+= spear_thermal.o
-diff --git a/include/linux/cpu_cooling.h b/include/linux/cpu_cooling.h
-index 40b4ef5..b30cc79c 100644
---- a/include/linux/cpu_cooling.h
-+++ b/include/linux/cpu_cooling.h
-@@ -29,7 +29,7 @@
- #define CPUFREQ_COOLING_START		0
- #define CPUFREQ_COOLING_STOP		1
+ static int get_idr(struct idr *idr, struct mutex *lock, int *id)
+ {
+diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_core.h
+index f84ea0f..a1f8278 100644
+--- a/drivers/thermal/thermal_core.h
++++ b/drivers/thermal/thermal_core.h
+@@ -50,6 +50,8 @@ struct thermal_instance {
+ 	struct list_head cdev_node; /* node in cdev->thermal_instances */
+ };
  
--#if defined(CONFIG_CPU_THERMAL) || defined(CONFIG_CPU_THERMAL_MODULE)
-+#ifdef CONFIG_CPU_THERMAL
- /**
-  * cpufreq_cooling_register - function to create cpufreq cooling device.
-  * @clip_cpus: cpumask of cpus where the frequency constraints will happen
++extern int thermal_register_governor(struct thermal_governor *);
++extern void thermal_unregister_governor(struct thermal_governor *);
+ 
+ #ifdef CONFIG_THERMAL_GOV_STEP_WISE
+ extern int thermal_gov_step_wise_register(void);
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index 2eeec01..af03ea6 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -243,9 +243,6 @@ struct thermal_instance *get_thermal_instance(struct thermal_zone_device *,
+ void thermal_cdev_update(struct thermal_cooling_device *);
+ void notify_thermal_framework(struct thermal_zone_device *, int);
+ 
+-int thermal_register_governor(struct thermal_governor *);
+-void thermal_unregister_governor(struct thermal_governor *);
+-
+ #ifdef CONFIG_NET
+ extern int thermal_generate_netlink_event(struct thermal_zone_device *tz,
+ 						enum events event);
 -- 
 1.7.9.5
 
