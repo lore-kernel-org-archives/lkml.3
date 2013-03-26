@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab3CZU7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 16:59:38 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64316 "EHLO mga09.intel.com"
+	id S1755561Ab3CZU7r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 16:59:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17434 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765Ab3CZU7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 16:59:35 -0400
+	id S1752573Ab3CZU7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 16:59:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,913,1355126400"; 
-   d="scan'208";a="284913809"
-Subject: [PATCH v2 07/10] Optimized SHA512 x86_64 assembly routine using
- Supplemental SSE3 instructions.
+   d="scan'208";a="284913843"
+Subject: [PATCH v2 08/10] Optimized SHA512 x86_64 assembly routine using
+ AVX instructions.
 From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Herbert Xu <herbert@gondor.hengli.com.au>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -25,8 +25,8 @@ Cc: Jussi Kivilinna <jussi.kivilinna@iki.fi>,
 In-Reply-To: <cover.1364303479.git.tim.c.chen@linux.intel.com>
 References: <cover.1364303479.git.tim.c.chen@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Mar 2013 13:59:37 -0700
-Message-ID: <1364331577.27102.17.camel@schen9-DESK>
+Date: Tue, 26 Mar 2013 13:59:46 -0700
+Message-ID: <1364331586.27102.18.camel@schen9-DESK>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -34,23 +34,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provides SHA512 x86_64 assembly routine optimized with SSSE3 instructions.
-Speedup of 40% or more has been measured over the generic implementation.
+Provides SHA512 x86_64 assembly routine optimized with SSE and AVX instructions.
+Speedup of 60% or more has been measured over the generic implementation.
 
 Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 ---
- arch/x86/crypto/sha512-ssse3-asm.S | 421 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 421 insertions(+)
- create mode 100644 arch/x86/crypto/sha512-ssse3-asm.S
+ arch/x86/crypto/sha512-avx-asm.S | 423 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 423 insertions(+)
+ create mode 100644 arch/x86/crypto/sha512-avx-asm.S
 
-diff --git a/arch/x86/crypto/sha512-ssse3-asm.S b/arch/x86/crypto/sha512-ssse3-asm.S
+diff --git a/arch/x86/crypto/sha512-avx-asm.S b/arch/x86/crypto/sha512-avx-asm.S
 new file mode 100644
-index 0000000..fb56855
+index 0000000..974dde9
 --- /dev/null
-+++ b/arch/x86/crypto/sha512-ssse3-asm.S
-@@ -0,0 +1,421 @@
++++ b/arch/x86/crypto/sha512-avx-asm.S
+@@ -0,0 +1,423 @@
 +########################################################################
-+# Implement fast SHA-512 with SSSE3 instructions. (x86_64)
++# Implement fast SHA-512 with AVX instructions. (x86_64)
 +#
 +# Copyright (C) 2013 Intel Corporation.
 +#
@@ -98,32 +98,35 @@ index 0000000..fb56855
 +#
 +########################################################################
 +
++#ifdef CONFIG_AS_AVX
 +#include <linux/linkage.h>
 +
 +.text
 +
 +# Virtual Registers
 +# ARG1
-+msg =		%rdi
++msg	= %rdi
 +# ARG2
-+digest =	%rsi
++digest	= %rsi
 +# ARG3
-+msglen =	%rdx
-+T1 =		%rcx
-+T2 =		%r8
-+a_64 =		%r9
-+b_64 =		%r10
-+c_64 =		%r11
-+d_64 =		%r12
-+e_64 =		%r13
-+f_64 =		%r14
-+g_64 =		%r15
-+h_64 =		%rbx
-+tmp0 =		%rax
++msglen	= %rdx
++T1	= %rcx
++T2	= %r8
++a_64	= %r9
++b_64	= %r10
++c_64	= %r11
++d_64	= %r12
++e_64	= %r13
++f_64	= %r14
++g_64	= %r15
++h_64	= %rbx
++tmp0	= %rax
 +
 +# Local variables (stack frame)
 +
++# Message Schedule
 +W_SIZE = 80*8
++# W[t] + K[t] | W[t+1] + K[t+1]
 +WK_SIZE = 2*8
 +RSPSAVE_SIZE = 1*8
 +GPRSAVE_SIZE = 5*8
@@ -166,195 +169,193 @@ index 0000000..fb56855
 +	a_64  = TMP
 +.endm
 +
-+.macro SHA512_Round rnd
++.macro RORQ p1 p2
++	# shld is faster than ror on Sandybridge
++	shld	$(64-\p2), \p1, \p1
++.endm
 +
++.macro SHA512_Round rnd
 +	# Compute Round %%t
-+	mov	f_64, T1          # T1 = f
-+	mov	e_64, tmp0        # tmp = e
-+	xor	g_64, T1          # T1 = f ^ g
-+	ror	$23, tmp0 # 41    # tmp = e ror 23
-+	and	e_64, T1          # T1 = (f ^ g) & e
-+	xor	e_64, tmp0        # tmp = (e ror 23) ^ e
-+	xor	g_64, T1          # T1 = ((f ^ g) & e) ^ g = CH(e,f,g)
++	mov     f_64, T1          # T1 = f
++	mov     e_64, tmp0        # tmp = e
++	xor     g_64, T1          # T1 = f ^ g
++	RORQ    tmp0, 23   # 41    # tmp = e ror 23
++	and     e_64, T1          # T1 = (f ^ g) & e
++	xor     e_64, tmp0        # tmp = (e ror 23) ^ e
++	xor     g_64, T1          # T1 = ((f ^ g) & e) ^ g = CH(e,f,g)
 +	idx = \rnd
-+	add	WK_2(idx), T1     # W[t] + K[t] from message scheduler
-+	ror	$4, tmp0  # 18    # tmp = ((e ror 23) ^ e) ror 4
-+	xor	e_64, tmp0        # tmp = (((e ror 23) ^ e) ror 4) ^ e
-+	mov	a_64, T2          # T2 = a
-+	add	h_64, T1          # T1 = CH(e,f,g) + W[t] + K[t] + h
-+	ror	$14, tmp0 # 14    # tmp = ((((e ror23)^e)ror4)^e)ror14 = S1(e)
-+	add	tmp0, T1          # T1 = CH(e,f,g) + W[t] + K[t] + S1(e)
-+	mov	a_64, tmp0        # tmp = a
-+	xor	c_64, T2          # T2 = a ^ c
-+	and	c_64, tmp0        # tmp = a & c
-+	and	b_64, T2          # T2 = (a ^ c) & b
-+	xor	tmp0, T2          # T2 = ((a ^ c) & b) ^ (a & c) = Maj(a,b,c)
-+	mov	a_64, tmp0        # tmp = a
-+	ror	$5, tmp0 # 39     # tmp = a ror 5
-+	xor	a_64, tmp0        # tmp = (a ror 5) ^ a
-+	add	T1, d_64          # e(next_state) = d + T1
-+	ror	$6, tmp0 # 34     # tmp = ((a ror 5) ^ a) ror 6
-+	xor	a_64, tmp0        # tmp = (((a ror 5) ^ a) ror 6) ^ a
-+	lea	(T1, T2), h_64    # a(next_state) = T1 + Maj(a,b,c)
-+	ror	$28, tmp0 # 28    # tmp = ((((a ror5)^a)ror6)^a)ror28 = S0(a)
-+	add	tmp0, h_64        # a(next_state) = T1 + Maj(a,b,c) S0(a)
++	add     WK_2(idx), T1     # W[t] + K[t] from message scheduler
++	RORQ    tmp0, 4   # 18    # tmp = ((e ror 23) ^ e) ror 4
++	xor     e_64, tmp0        # tmp = (((e ror 23) ^ e) ror 4) ^ e
++	mov     a_64, T2          # T2 = a
++	add     h_64, T1          # T1 = CH(e,f,g) + W[t] + K[t] + h
++	RORQ    tmp0, 14  # 14    # tmp = ((((e ror23)^e)ror4)^e)ror14 = S1(e)
++	add     tmp0, T1          # T1 = CH(e,f,g) + W[t] + K[t] + S1(e)
++	mov     a_64, tmp0        # tmp = a
++	xor     c_64, T2          # T2 = a ^ c
++	and     c_64, tmp0        # tmp = a & c
++	and     b_64, T2          # T2 = (a ^ c) & b
++	xor     tmp0, T2          # T2 = ((a ^ c) & b) ^ (a & c) = Maj(a,b,c)
++	mov     a_64, tmp0        # tmp = a
++	RORQ    tmp0, 5  # 39     # tmp = a ror 5
++	xor     a_64, tmp0        # tmp = (a ror 5) ^ a
++	add     T1, d_64          # e(next_state) = d + T1
++	RORQ    tmp0, 6  # 34     # tmp = ((a ror 5) ^ a) ror 6
++	xor     a_64, tmp0        # tmp = (((a ror 5) ^ a) ror 6) ^ a
++	lea     (T1, T2), h_64    # a(next_state) = T1 + Maj(a,b,c)
++	RORQ    tmp0, 28  # 28    # tmp = ((((a ror5)^a)ror6)^a)ror28 = S0(a)
++	add     tmp0, h_64        # a(next_state) = T1 + Maj(a,b,c) S0(a)
 +	RotateState
 +.endm
 +
-+.macro SHA512_2Sched_2Round_sse rnd
-+
++.macro SHA512_2Sched_2Round_avx rnd
 +	# Compute rounds t-2 and t-1
 +	# Compute message schedule QWORDS t and t+1
 +
 +	#   Two rounds are computed based on the values for K[t-2]+W[t-2] and
 +	# K[t-1]+W[t-1] which were previously stored at WK_2 by the message
 +	# scheduler.
-+	#   The two new schedule QWORDS are stored at [W_t(%%t)] and [W_t(%%t+1)].
++	#   The two new schedule QWORDS are stored at [W_t(t)] and [W_t(t+1)].
 +	# They are then added to their respective SHA512 constants at
-+	# [K_t(%%t)] and [K_t(%%t+1)] and stored at dqword [WK_2(%%t)]
++	# [K_t(t)] and [K_t(t+1)] and stored at dqword [WK_2(t)]
 +	#   For brievity, the comments following vectored instructions only refer to
 +	# the first of a pair of QWORDS.
-+	# Eg. XMM2=W[t-2] really means XMM2={W[t-2]|W[t-1]}
++	# Eg. XMM4=W[t-2] really means XMM4={W[t-2]|W[t-1]}
 +	#   The computation of the message schedule and the rounds are tightly
 +	# stitched to take advantage of instruction-level parallelism.
-+	# For clarity, integer instructions (for the rounds calculation) are indented
-+	# by one tab. Vectored instructions (for the message scheduler) are indented
-+	# by two tabs.
 +
++	idx = \rnd - 2
++	vmovdqa	W_t(idx), %xmm4		# XMM4 = W[t-2]
++	idx = \rnd - 15
++	vmovdqu	W_t(idx), %xmm5		# XMM5 = W[t-15]
 +	mov	f_64, T1
-+	idx = \rnd -2
-+	movdqa	W_t(idx), %xmm2		    # XMM2 = W[t-2]
++	vpsrlq	$61, %xmm4, %xmm0	# XMM0 = W[t-2]>>61
++	mov	e_64, tmp0
++	vpsrlq	$1, %xmm5, %xmm6	# XMM6 = W[t-15]>>1
 +	xor	g_64, T1
++	RORQ	tmp0, 23 # 41
++	vpsrlq	$19, %xmm4, %xmm1	# XMM1 = W[t-2]>>19
 +	and	e_64, T1
-+	movdqa	%xmm2, %xmm0	            # XMM0 = W[t-2]
++	xor	e_64, tmp0
++	vpxor	%xmm1, %xmm0, %xmm0	# XMM0 = W[t-2]>>61 ^ W[t-2]>>19
 +	xor	g_64, T1
 +	idx = \rnd
-+	add	WK_2(idx), T1
-+	idx = \rnd - 15
-+	movdqu	W_t(idx), %xmm5		    # XMM5 = W[t-15]
-+	mov	e_64, tmp0
-+	ror	$23, tmp0 # 41
-+	movdqa	%xmm5, %xmm3	            # XMM3 = W[t-15]
++	add	WK_2(idx), T1#
++	vpsrlq	$8, %xmm5, %xmm7	# XMM7 = W[t-15]>>8
++	RORQ	tmp0, 4 # 18
++	vpsrlq	$6, %xmm4, %xmm2	# XMM2 = W[t-2]>>6
 +	xor	e_64, tmp0
-+	ror	$4, tmp0 # 18
-+	psrlq	$61-19, %xmm0		    # XMM0 = W[t-2] >> 42
-+	xor	e_64, tmp0
-+	ror	$14, tmp0 # 14
-+	psrlq	$(8-7), %xmm3		    # XMM3 = W[t-15] >> 1
-+	add	tmp0, T1
-+	add	h_64, T1
-+	pxor	%xmm2, %xmm0                # XMM0 = (W[t-2] >> 42) ^ W[t-2]
 +	mov	a_64, T2
++	add	h_64, T1
++	vpxor	%xmm7, %xmm6, %xmm6	# XMM6 = W[t-15]>>1 ^ W[t-15]>>8
++	RORQ	tmp0, 14 # 14
++	add	tmp0, T1
++	vpsrlq	$7, %xmm5, %xmm8	# XMM8 = W[t-15]>>7
++	mov	a_64, tmp0
 +	xor	c_64, T2
-+	pxor	%xmm5, %xmm3                # XMM3 = (W[t-15] >> 1) ^ W[t-15]
-+	and	b_64, T2
-+	mov	a_64, tmp0
-+	psrlq	$(19-6), %xmm0		    # XMM0 = ((W[t-2]>>42)^W[t-2])>>13
++	vpsllq	$(64-61), %xmm4, %xmm3  # XMM3 = W[t-2]<<3
 +	and	c_64, tmp0
++	and	b_64, T2
++	vpxor	%xmm3, %xmm2, %xmm2	# XMM2 = W[t-2]>>6 ^ W[t-2]<<3
 +	xor	tmp0, T2
-+	psrlq	$(7-1), %xmm3		    # XMM3 = ((W[t-15]>>1)^W[t-15])>>6
 +	mov	a_64, tmp0
-+	ror	$5, tmp0 # 39
-+	pxor	%xmm2, %xmm0	            # XMM0 = (((W[t-2]>>42)^W[t-2])>>13)^W[t-2]
++	vpsllq	$(64-1), %xmm5, %xmm9	# XMM9 = W[t-15]<<63
++	RORQ	tmp0, 5 # 39
++	vpxor	%xmm9, %xmm8, %xmm8	# XMM8 = W[t-15]>>7 ^ W[t-15]<<63
 +	xor	a_64, tmp0
-+	ror	$6, tmp0 # 34
-+	pxor	%xmm5, %xmm3                # XMM3 = (((W[t-15]>>1)^W[t-15])>>6)^W[t-15]
-+	xor	a_64, tmp0
-+	ror	$28, tmp0 # 28
-+	psrlq	$6, %xmm0                   # XMM0 = ((((W[t-2]>>42)^W[t-2])>>13)^W[t-2])>>6
-+	add	tmp0, T2
 +	add	T1, d_64
-+	psrlq	$1, %xmm3                   # XMM3 = (((W[t-15]>>1)^W[t-15])>>6)^W[t-15]>>1
++	RORQ	tmp0, 6 # 34
++	xor	a_64, tmp0
++	vpxor	%xmm8, %xmm6, %xmm6	# XMM6 = W[t-15]>>1 ^ W[t-15]>>8 ^
++					#  W[t-15]>>7 ^ W[t-15]<<63
 +	lea	(T1, T2), h_64
++	RORQ	tmp0, 28 # 28
++	vpsllq	$(64-19), %xmm4, %xmm4  # XMM4 = W[t-2]<<25
++	add	tmp0, h_64
 +	RotateState
-+	movdqa	%xmm2, %xmm1	            # XMM1 = W[t-2]
++	vpxor	%xmm4, %xmm0, %xmm0     # XMM0 = W[t-2]>>61 ^ W[t-2]>>19 ^
++					#        W[t-2]<<25
 +	mov	f_64, T1
++	vpxor	%xmm2, %xmm0, %xmm0     # XMM0 = s1(W[t-2])
++	mov	e_64, tmp0
 +	xor	g_64, T1
-+	movdqa	%xmm5, %xmm4		    # XMM4 = W[t-15]
++	idx = \rnd - 16
++	vpaddq	W_t(idx), %xmm0, %xmm0  # XMM0 = s1(W[t-2]) + W[t-16]
++	idx = \rnd - 7
++	vmovdqu	W_t(idx), %xmm1		# XMM1 = W[t-7]
++	RORQ	tmp0, 23 # 41
 +	and	e_64, T1
++	xor	e_64, tmp0
 +	xor	g_64, T1
-+	psllq	$(64-19)-(64-61) , %xmm1    # XMM1 = W[t-2] << 42
++	vpsllq	$(64-8), %xmm5, %xmm5   # XMM5 = W[t-15]<<56
 +	idx = \rnd + 1
 +	add	WK_2(idx), T1
-+	mov	e_64, tmp0
-+	psllq	$(64-1)-(64-8), %xmm4	    # XMM4 = W[t-15] << 7
-+	ror	$23, tmp0 # 41
++	vpxor	%xmm5, %xmm6, %xmm6     # XMM6 = s0(W[t-15])
++	RORQ	tmp0, 4 # 18
++	vpaddq	%xmm6, %xmm0, %xmm0     # XMM0 = s1(W[t-2]) + W[t-16] + s0(W[t-15])
 +	xor	e_64, tmp0
-+	pxor	%xmm2, %xmm1		    # XMM1 = (W[t-2] << 42)^W[t-2]
-+	ror	$4, tmp0 # 18
-+	xor	e_64, tmp0
-+	pxor	%xmm5, %xmm4		    # XMM4 = (W[t-15]<<7)^W[t-15]
-+	ror	$14, tmp0 # 14
-+	add	tmp0, T1
-+	psllq	$(64-61), %xmm1		    # XMM1 = ((W[t-2] << 42)^W[t-2])<<3
-+	add	h_64, T1
++	vpaddq	%xmm1, %xmm0, %xmm0     # XMM0 = W[t] = s1(W[t-2]) + W[t-7] +
++					#               s0(W[t-15]) + W[t-16]
 +	mov	a_64, T2
-+	psllq	$(64-8), %xmm4		    # XMM4 = ((W[t-15]<<7)^W[t-15])<<56
-+	xor	c_64, T2
-+	and	b_64, T2
-+	pxor	%xmm1, %xmm0		    # XMM0 = s1(W[t-2])
-+	mov	a_64, tmp0
-+	and	c_64, tmp0
-+	idx = \rnd - 7
-+	movdqu	W_t(idx), %xmm1		    # XMM1 = W[t-7]
-+	xor	tmp0, T2
-+	pxor	%xmm4, %xmm3                # XMM3 = s0(W[t-15])
-+	mov	a_64, tmp0
-+	paddq	%xmm3, %xmm0		    # XMM0 = s1(W[t-2]) + s0(W[t-15])
-+	ror	$5, tmp0 # 39
-+	idx =\rnd-16
-+	paddq	W_t(idx), %xmm0		    # XMM0 = s1(W[t-2]) + s0(W[t-15]) + W[t-16]
-+	xor	a_64, tmp0
-+	paddq	%xmm1, %xmm0	            # XMM0 = s1(W[t-2]) + W[t-7] + s0(W[t-15]) + W[t-16]
-+	ror	$6, tmp0 # 34
-+	movdqa	%xmm0, W_t(\rnd)	    # Store scheduled qwords
-+	xor	a_64, tmp0
-+	paddq	K_t(\rnd), %xmm0	    # Compute W[t]+K[t]
-+	ror	$28, tmp0 # 28
++	add	h_64, T1
++	RORQ	tmp0, 14 # 14
++	add	tmp0, T1
 +	idx = \rnd
-+	movdqa	%xmm0, WK_2(idx)	    # Store W[t]+K[t] for next rounds
-+	add	tmp0, T2
++	vmovdqa	%xmm0, W_t(idx)		# Store W[t]
++	vpaddq	K_t(idx), %xmm0, %xmm0  # Compute W[t]+K[t]
++	vmovdqa	%xmm0, WK_2(idx)	# Store W[t]+K[t] for next rounds
++	mov	a_64, tmp0
++	xor	c_64, T2
++	and	c_64, tmp0
++	and	b_64, T2
++	xor	tmp0, T2
++	mov	a_64, tmp0
++	RORQ	tmp0, 5 # 39
++	xor	a_64, tmp0
 +	add	T1, d_64
++	RORQ	tmp0, 6 # 34
++	xor	a_64, tmp0
 +	lea	(T1, T2), h_64
++	RORQ	tmp0, 28 # 28
++	add	tmp0, h_64
 +	RotateState
 +.endm
 +
 +########################################################################
-+# void sha512_transform_ssse3(const void* M, void* D, u64 L)#
++# void sha512_transform_avx(const void* M, void* D, u64 L)
 +# Purpose: Updates the SHA512 digest stored at D with the message stored in M.
 +# The size of the message pointed to by M must be an integer multiple of SHA512
-+#   message blocks.
-+# L is the message length in SHA512 blocks.
++# message blocks.
++# L is the message length in SHA512 blocks
 +########################################################################
-+ENTRY(sha512_transform_ssse3)
-+
++ENTRY(sha512_transform_avx)
 +	cmp $0, msglen
 +	je nowork
 +
 +	# Allocate Stack Space
 +	mov	%rsp, %rax
-+	sub	$frame_size, %rsp
++	sub     $frame_size, %rsp
 +	and	$~(0x20 - 1), %rsp
 +	mov	%rax, frame_RSPSAVE(%rsp)
 +
 +	# Save GPRs
-+	mov	%rbx, frame_GPRSAVE(%rsp)
-+	mov	%r12, frame_GPRSAVE +8*1(%rsp)
-+	mov	%r13, frame_GPRSAVE +8*2(%rsp)
-+	mov	%r14, frame_GPRSAVE +8*3(%rsp)
-+	mov	%r15, frame_GPRSAVE +8*4(%rsp)
++	mov     %rbx, frame_GPRSAVE(%rsp)
++	mov     %r12, frame_GPRSAVE +8*1(%rsp)
++	mov     %r13, frame_GPRSAVE +8*2(%rsp)
++	mov     %r14, frame_GPRSAVE +8*3(%rsp)
++	mov     %r15, frame_GPRSAVE +8*4(%rsp)
 +
 +updateblock:
 +
-+# Load state variables
-+	mov	DIGEST(0), a_64
-+	mov	DIGEST(1), b_64
-+	mov	DIGEST(2), c_64
-+	mov	DIGEST(3), d_64
-+	mov	DIGEST(4), e_64
-+	mov	DIGEST(5), f_64
-+	mov	DIGEST(6), g_64
-+	mov	DIGEST(7), h_64
++	# Load state variables
++	mov     DIGEST(0), a_64
++	mov     DIGEST(1), b_64
++	mov     DIGEST(2), c_64
++	mov     DIGEST(3), d_64
++	mov     DIGEST(4), e_64
++	mov     DIGEST(5), f_64
++	mov     DIGEST(6), g_64
++	mov     DIGEST(7), h_64
 +
 +	t = 0
 +	.rept 80/2 + 1
@@ -362,24 +363,24 @@ index 0000000..fb56855
 +	# +1 iteration because the scheduler leads hashing by 1 iteration
 +		.if t < 2
 +			# BSWAP 2 QWORDS
-+			movdqa	XMM_QWORD_BSWAP(%rip), %xmm1
-+			movdqu	MSG(t), %xmm0
-+			pshufb	%xmm1, %xmm0	# BSWAP
-+			movdqa	%xmm0, W_t(t)	# Store Scheduled Pair
-+			paddq	K_t(t), %xmm0	# Compute W[t]+K[t]
-+			movdqa	%xmm0, WK_2(t)	# Store into WK for rounds
++			vmovdqa  XMM_QWORD_BSWAP(%rip), %xmm1
++			vmovdqu  MSG(t), %xmm0
++			vpshufb  %xmm1, %xmm0, %xmm0    # BSWAP
++			vmovdqa  %xmm0, W_t(t) # Store Scheduled Pair
++			vpaddq   K_t(t), %xmm0, %xmm0 # Compute W[t]+K[t]
++			vmovdqa  %xmm0, WK_2(t) # Store into WK for rounds
 +		.elseif t < 16
 +			# BSWAP 2 QWORDS# Compute 2 Rounds
-+			movdqu	MSG(t), %xmm0
-+			pshufb	%xmm1, %xmm0	# BSWAP
-+			SHA512_Round t-2	# Round t-2
-+			movdqa	%xmm0, W_t(t)	# Store Scheduled Pair
-+			paddq	K_t(t), %xmm0	# Compute W[t]+K[t]
-+			SHA512_Round t-1	# Round t-1
-+			movdqa	%xmm0, WK_2(t)	# Store W[t]+K[t] into WK
++			vmovdqu  MSG(t), %xmm0
++			vpshufb  %xmm1, %xmm0, %xmm0    # BSWAP
++			SHA512_Round t-2    # Round t-2
++			vmovdqa  %xmm0, W_t(t) # Store Scheduled Pair
++			vpaddq   K_t(t), %xmm0, %xmm0 # Compute W[t]+K[t]
++			SHA512_Round t-1    # Round t-1
++			vmovdqa  %xmm0, WK_2(t)# Store W[t]+K[t] into WK
 +		.elseif t < 79
 +			# Schedule 2 QWORDS# Compute 2 Rounds
-+			SHA512_2Sched_2Round_sse t
++			SHA512_2Sched_2Round_avx t
 +		.else
 +			# Compute 2 Rounds
 +			SHA512_Round t-2
@@ -389,33 +390,33 @@ index 0000000..fb56855
 +	.endr
 +
 +	# Update digest
-+	add	a_64, DIGEST(0)
-+	add	b_64, DIGEST(1)
-+	add	c_64, DIGEST(2)
-+	add	d_64, DIGEST(3)
-+	add	e_64, DIGEST(4)
-+	add	f_64, DIGEST(5)
-+	add	g_64, DIGEST(6)
-+	add	h_64, DIGEST(7)
++	add     a_64, DIGEST(0)
++	add     b_64, DIGEST(1)
++	add     c_64, DIGEST(2)
++	add     d_64, DIGEST(3)
++	add     e_64, DIGEST(4)
++	add     f_64, DIGEST(5)
++	add     g_64, DIGEST(6)
++	add     h_64, DIGEST(7)
 +
 +	# Advance to next message block
-+	add	$16*8, msg
-+	dec	msglen
-+	jnz	updateblock
++	add     $16*8, msg
++	dec     msglen
++	jnz     updateblock
 +
 +	# Restore GPRs
-+	mov	frame_GPRSAVE(%rsp),      %rbx
-+	mov	frame_GPRSAVE +8*1(%rsp), %r12
-+	mov	frame_GPRSAVE +8*2(%rsp), %r13
-+	mov	frame_GPRSAVE +8*3(%rsp), %r14
-+	mov	frame_GPRSAVE +8*4(%rsp), %r15
++	mov     frame_GPRSAVE(%rsp),      %rbx
++	mov     frame_GPRSAVE +8*1(%rsp), %r12
++	mov     frame_GPRSAVE +8*2(%rsp), %r13
++	mov     frame_GPRSAVE +8*3(%rsp), %r14
++	mov     frame_GPRSAVE +8*4(%rsp), %r15
 +
 +	# Restore Stack Pointer
 +	mov	frame_RSPSAVE(%rsp), %rsp
 +
 +nowork:
 +	ret
-+ENDPROC(sha512_transform_ssse3)
++ENDPROC(sha512_transform_avx)
 +
 +########################################################################
 +### Binary Data
@@ -470,6 +471,7 @@ index 0000000..fb56855
 +	.quad 0x3c9ebe0a15c9bebc,0x431d67c49c100d4c
 +	.quad 0x4cc5d4becb3e42b6,0x597f299cfc657e2a
 +	.quad 0x5fcb6fab3ad6faec,0x6c44198c4a475817
++#endif
 -- 
 1.7.11.7
 
