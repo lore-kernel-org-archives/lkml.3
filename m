@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab3CZXCT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:02:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53426 "EHLO
+	id S1756765Ab3CZXFL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:05:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53474 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172Ab3CZXCM (ORCPT
+	with ESMTP id S1756884Ab3CZXCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:02:12 -0400
+	Tue, 26 Mar 2013 19:02:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dean Luick <dean.luick@intel.com>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 34/49] IPoIB: Fix send lockup due to missed TX completion
-Date: Tue, 26 Mar 2013 16:01:31 -0700
-Message-Id: <20130326225843.099781572@linuxfoundation.org>
+        Dmitry Torokhov <dtor@vmware.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 37/49] USB: xhci - fix bit definitions for IMAN register
+Date: Tue, 26 Mar 2013 16:01:34 -0700
+Message-Id: <20130326225843.417183557@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -28,51 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Dmitry Torokhov <dtor@vmware.com>
 
-commit 1ee9e2aa7b31427303466776f455d43e5e3c9275 upstream.
+commit f8264340e694604863255cc0276491d17c402390 upstream.
 
-Commit f0dc117abdfa ("IPoIB: Fix TX queue lockup with mixed UD/CM
-traffic") attempts to solve an issue where unprocessed UD send
-completions can deadlock the netdev.
+According to XHCI specification (5.5.2.1) the IP is bit 0 and IE is bit 1
+of IMAN register. Previously their definitions were reversed.
 
-The patch doesn't fully resolve the issue because if more than half
-the tx_outstanding's were UD and all of the destinations are RC
-reachable, arming the CQ doesn't solve the issue.
+Even though there are no ill effects being observed from the swapped
+definitions (because IMAN_IP is RW1C and in legacy PCI case we come in
+with it already set to 1 so it was clearing itself even though we were
+setting IMAN_IE instead of IMAN_IP), we should still correct the values.
 
-This patch uses the IB_CQ_REPORT_MISSED_EVENTS on the
-ib_req_notify_cq().  If the rc is above 0, the UD send cq completion
-callback is called directly to re-arm the send completion timer.
+This patch should be backported to kernels as old as 2.6.36, that
+contain the commit 4e833c0b87a30798e67f06120cecebef6ee9644c "xhci: don't
+re-enable IE constantly".
 
-This issue is seen in very large parallel filesystem deployments
-and the patch has been shown to correct the issue.
-
-Reviewed-by: Dean Luick <dean.luick@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/ipoib/ipoib_cm.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-@@ -753,9 +753,13 @@ void ipoib_cm_send(struct net_device *de
- 		if (++priv->tx_outstanding == ipoib_sendq_size) {
- 			ipoib_dbg(priv, "TX ring 0x%x full, stopping kernel net queue\n",
- 				  tx->qp->qp_num);
--			if (ib_req_notify_cq(priv->send_cq, IB_CQ_NEXT_COMP))
--				ipoib_warn(priv, "request notify on send CQ failed\n");
- 			netif_stop_queue(dev);
-+			rc = ib_req_notify_cq(priv->send_cq,
-+				IB_CQ_NEXT_COMP | IB_CQ_REPORT_MISSED_EVENTS);
-+			if (rc < 0)
-+				ipoib_warn(priv, "request notify on send CQ failed\n");
-+			else if (rc)
-+				ipoib_send_comp_handler(priv->send_cq, dev);
- 		}
- 	}
- }
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -206,8 +206,8 @@ struct xhci_op_regs {
+ /* bits 12:31 are reserved (and should be preserved on writes). */
+ 
+ /* IMAN - Interrupt Management Register */
+-#define IMAN_IP		(1 << 1)
+-#define IMAN_IE		(1 << 0)
++#define IMAN_IE		(1 << 1)
++#define IMAN_IP		(1 << 0)
+ 
+ /* USBSTS - USB status - status bitmasks */
+ /* HC not running - set to 1 when run/stop bit is cleared. */
 
 
