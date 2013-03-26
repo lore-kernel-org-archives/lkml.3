@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965072Ab3CZPWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:22:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53783 "EHLO
+	id S934920Ab3CZPu6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:50:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53818 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965039Ab3CZPWh (ORCPT
+	with ESMTP id S965069Ab3CZPWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:37 -0400
+	Tue, 26 Mar 2013 11:22:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Guo Chao <yan@linux.vnet.ibm.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "M. Hindess" <hindessm@uk.ibm.com>,
-        Nikanth Karthikesan <knikanth@suse.de>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 026/150] loopdev: remove an user triggerable oops
-Date: Tue, 26 Mar 2013 15:18:45 +0000
-Message-Id: <1364311249-14454-27-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 058/150] rtlwifi: rtl8192cu: Fix problem that prevents reassociation
+Date: Tue, 26 Mar 2013 15:19:17 +0000
+Message-Id: <1364311249-14454-59-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -31,84 +28,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guo Chao <yan@linux.vnet.ibm.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit b1a6650406875b9097a032eed89af50682fe1160 upstream.
+commit 9437a248e7cac427c898bdb11bd1ac6844a1ead4 upstream.
 
-When loopdev is built as module and we pass an invalid parameter,
-loop_init() will return directly without deregister misc device, which
-will cause an oops when insert loop module next time because we left some
-garbage in the misc device list.
+The driver was failing to clear the BSSID when a disconnect happened. That
+prevented a reconnection. This problem is reported at
+https://bugzilla.redhat.com/show_bug.cgi?id=789605,
+https://bugzilla.redhat.com/show_bug.cgi?id=866786,
+https://bugzilla.redhat.com/show_bug.cgi?id=906734, and
+https://bugzilla.kernel.org/show_bug.cgi?id=46171.
 
-Test case:
-sudo modprobe loop max_part=1024
-(failed due to invalid parameter)
-sudo modprobe loop
-(oops)
+Thanks to Jussi Kivilinna for making the critical observation
+that led to the solution.
 
-Clean up nicely to avoid such oops.
-
-Signed-off-by: Guo Chao <yan@linux.vnet.ibm.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Guo Chao <yan@linux.vnet.ibm.com>
-Cc: M. Hindess <hindessm@uk.ibm.com>
-Cc: Nikanth Karthikesan <knikanth@suse.de>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Reported-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+Tested-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+Tested-by: Alessandro Lannocca <alessandro.lannocca@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/loop.c | 22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c | 87 ++++++++++++-----------------
+ 1 file changed, 35 insertions(+), 52 deletions(-)
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index 11e702c..a77d9a5 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1833,11 +1833,15 @@ static int __init loop_init(void)
- 		max_part = (1UL << part_shift) - 1;
- 	}
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+index 1539eb8..91d2e28 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+@@ -1377,74 +1377,57 @@ void rtl92cu_card_disable(struct ieee80211_hw *hw)
  
--	if ((1UL << part_shift) > DISK_MAX_PARTS)
--		return -EINVAL;
-+	if ((1UL << part_shift) > DISK_MAX_PARTS) {
-+		err = -EINVAL;
-+		goto misc_out;
-+	}
+ void rtl92cu_set_check_bssid(struct ieee80211_hw *hw, bool check_bssid)
+ {
+-	/* dummy routine needed for callback from rtl_op_configure_filter() */
+-}
+-
+-/*========================================================================== */
+-
+-static void _rtl92cu_set_check_bssid(struct ieee80211_hw *hw,
+-			      enum nl80211_iftype type)
+-{
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+-	u32 reg_rcr = rtl_read_dword(rtlpriv, REG_RCR);
+ 	struct rtl_hal *rtlhal = rtl_hal(rtlpriv);
+-	struct rtl_phy *rtlphy = &(rtlpriv->phy);
+-	u8 filterout_non_associated_bssid = false;
++	u32 reg_rcr = rtl_read_dword(rtlpriv, REG_RCR);
  
--	if (max_loop > 1UL << (MINORBITS - part_shift))
--		return -EINVAL;
-+	if (max_loop > 1UL << (MINORBITS - part_shift)) {
-+		err = -EINVAL;
-+		goto misc_out;
-+	}
- 
- 	/*
- 	 * If max_loop is specified, create that many devices upfront.
-@@ -1855,8 +1859,10 @@ static int __init loop_init(void)
- 		range = 1UL << MINORBITS;
- 	}
- 
--	if (register_blkdev(LOOP_MAJOR, "loop"))
--		return -EIO;
-+	if (register_blkdev(LOOP_MAJOR, "loop")) {
-+		err = -EIO;
-+		goto misc_out;
-+	}
- 
- 	blk_register_region(MKDEV(LOOP_MAJOR, 0), range,
- 				  THIS_MODULE, loop_probe, NULL, NULL);
-@@ -1869,6 +1875,10 @@ static int __init loop_init(void)
- 
- 	printk(KERN_INFO "loop: module loaded\n");
- 	return 0;
+-	switch (type) {
+-	case NL80211_IFTYPE_ADHOC:
+-	case NL80211_IFTYPE_STATION:
+-		filterout_non_associated_bssid = true;
+-		break;
+-	case NL80211_IFTYPE_UNSPECIFIED:
+-	case NL80211_IFTYPE_AP:
+-	default:
+-		break;
+-	}
+-	if (filterout_non_associated_bssid) {
++	if (rtlpriv->psc.rfpwr_state != ERFON)
++		return;
 +
-+misc_out:
-+	misc_deregister(&loop_misc);
-+	return err;
++	if (check_bssid) {
++		u8 tmp;
+ 		if (IS_NORMAL_CHIP(rtlhal->version)) {
+-			switch (rtlphy->current_io_type) {
+-			case IO_CMD_RESUME_DM_BY_SCAN:
+-				reg_rcr |= (RCR_CBSSID_DATA | RCR_CBSSID_BCN);
+-				rtlpriv->cfg->ops->set_hw_reg(hw,
+-						 HW_VAR_RCR, (u8 *)(&reg_rcr));
+-				/* enable update TSF */
+-				_rtl92cu_set_bcn_ctrl_reg(hw, 0, BIT(4));
+-				break;
+-			case IO_CMD_PAUSE_DM_BY_SCAN:
+-				reg_rcr &= ~(RCR_CBSSID_DATA | RCR_CBSSID_BCN);
+-				rtlpriv->cfg->ops->set_hw_reg(hw,
+-						 HW_VAR_RCR, (u8 *)(&reg_rcr));
+-				/* disable update TSF */
+-				_rtl92cu_set_bcn_ctrl_reg(hw, BIT(4), 0);
+-				break;
+-			}
++			reg_rcr |= (RCR_CBSSID_DATA | RCR_CBSSID_BCN);
++			tmp = BIT(4);
+ 		} else {
+-			reg_rcr |= (RCR_CBSSID);
+-			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
+-						      (u8 *)(&reg_rcr));
+-			_rtl92cu_set_bcn_ctrl_reg(hw, 0, (BIT(4)|BIT(5)));
++			reg_rcr |= RCR_CBSSID;
++			tmp = BIT(4) | BIT(5);
+ 		}
+-	} else if (filterout_non_associated_bssid == false) {
++		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
++					      (u8 *) (&reg_rcr));
++		_rtl92cu_set_bcn_ctrl_reg(hw, 0, tmp);
++	} else {
++		u8 tmp;
+ 		if (IS_NORMAL_CHIP(rtlhal->version)) {
+-			reg_rcr &= (~(RCR_CBSSID_DATA | RCR_CBSSID_BCN));
+-			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
+-						      (u8 *)(&reg_rcr));
+-			_rtl92cu_set_bcn_ctrl_reg(hw, BIT(4), 0);
++			reg_rcr &= ~(RCR_CBSSID_DATA | RCR_CBSSID_BCN);
++			tmp = BIT(4);
+ 		} else {
+-			reg_rcr &= (~RCR_CBSSID);
+-			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_RCR,
+-						      (u8 *)(&reg_rcr));
+-			_rtl92cu_set_bcn_ctrl_reg(hw, (BIT(4)|BIT(5)), 0);
++			reg_rcr &= ~RCR_CBSSID;
++			tmp = BIT(4) | BIT(5);
+ 		}
++		reg_rcr &= (~(RCR_CBSSID_DATA | RCR_CBSSID_BCN));
++		rtlpriv->cfg->ops->set_hw_reg(hw,
++					      HW_VAR_RCR, (u8 *) (&reg_rcr));
++		_rtl92cu_set_bcn_ctrl_reg(hw, tmp, 0);
+ 	}
  }
  
- static int loop_exit_cb(int id, void *ptr, void *data)
++/*========================================================================== */
++
+ int rtl92cu_set_network_type(struct ieee80211_hw *hw, enum nl80211_iftype type)
+ {
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++
+ 	if (_rtl92cu_set_media_status(hw, type))
+ 		return -EOPNOTSUPP;
+-	_rtl92cu_set_check_bssid(hw, type);
++
++	if (rtlpriv->mac80211.link_state == MAC80211_LINKED) {
++		if (type != NL80211_IFTYPE_AP)
++			rtl92cu_set_check_bssid(hw, true);
++	} else {
++		rtl92cu_set_check_bssid(hw, false);
++	}
++
+ 	return 0;
+ }
+ 
 -- 
 1.8.1.2
 
