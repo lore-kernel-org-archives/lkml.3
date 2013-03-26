@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756469Ab3CZXAy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:00:54 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:45692 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756336Ab3CZXAx (ORCPT
+	id S1756483Ab3CZXBL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:01:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53078 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756244Ab3CZWwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:00:53 -0400
-Date: Tue, 26 Mar 2013 16:00:50 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [char-misc-next 2/2] mei: drop RECOVERING_FROM_RESET device state
-Message-ID: <20130326230050.GA25071@kroah.com>
-References: <1363513281-12606-1-git-send-email-tomas.winkler@intel.com>
- <1363513281-12606-2-git-send-email-tomas.winkler@intel.com>
- <20130325202146.GA14900@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B01EF3427@HASMSX106.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B01EF3427@HASMSX106.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 26 Mar 2013 18:52:43 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Torsten Duwe <duwe@lst.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 43/72] KMS: fix EDID detailed timing frame rate
+Date: Tue, 26 Mar 2013 15:51:26 -0700
+Message-Id: <20130326224924.138639655@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
+References: <20130326224919.675227837@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 10:47:31PM +0000, Winkler, Tomas wrote:
-> > 
-> > On Sun, Mar 17, 2013 at 11:41:21AM +0200, Tomas Winkler wrote:
-> > > ECOVERING_FROM_RESET device state is never set we can remove it
-> > 
-> > Really?  I now get the following build error with this patch applied:
-> > 
-> > drivers/misc/mei/pci-me.c: In function ‘mei_pci_suspend’:
-> > drivers/misc/mei/pci-me.c:323:24: error:
-> > ‘MEI_DEV_RECOVERING_FROM_RESET’ undeclared (first use in this
-> > function)
-> > drivers/misc/mei/pci-me.c:323:24: note: each undeclared identifier is
-> > reported only once for each function it appears in
-> > 
-> > Please be more careful.
-> 
-> This patch has to be applied above patch  https://lkml.org/lkml/2013/3/10/101 that is queued for 3.9. 
-> Somehow I've assumed it will go into 3.9-rc4.  
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Yes, I hope to get it there.
+------------------
 
-> Anyhow we need to wait with this and everything else I have queued till it is merged back to char-misc-next.
-> Maybe you have some suggestions how to handle such conflicts in the future.
+From: Torsten Duwe <torsten@lst.de>
 
-Let me know about such conflicts so I don't blame you for them :)
+commit c19b3b0f6eed552952845e4ad908dba2113d67b4 upstream.
 
-I'll pull in the char-misc.linus branch into my .next branch now, so
-that should solve this problem, right?  If so, please resend this patch
-so I can apply it.
+When KMS has parsed an EDID "detailed timing", it leaves the frame rate
+zeroed.  Consecutive (debug-) output of that mode thus yields 0 for
+vsync.  This simple fix also speeds up future invocations of
+drm_mode_vrefresh().
 
-thanks,
+While it is debatable whether this qualifies as a -stable fix I'd apply
+it for consistency's sake; drm_helper_probe_single_connector_modes()
+does the same thing already for all probed modes.
 
-greg k-h
+Signed-off-by: Torsten Duwe <duwe@lst.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/drm_edid.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -917,6 +917,7 @@ set_size:
+ 	}
+ 
+ 	mode->type = DRM_MODE_TYPE_DRIVER;
++	mode->vrefresh = drm_mode_vrefresh(mode);
+ 	drm_mode_set_name(mode);
+ 
+ 	return mode;
+
+
