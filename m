@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab3CZXZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:25:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52912 "EHLO
+	id S1756079Ab3CZX0L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:26:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52932 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755944Ab3CZWwI (ORCPT
+	with ESMTP id S1755936Ab3CZWwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 18:52:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlad Yasevich <vyasevic@redhat.com>, Thomas Graf <tgraf@suug.ch>,
+        "Denis V. Lunev" <den@openvz.org>, Tingwei Liu <tingw.liu@gmail.com>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 11/72] rtnetlink: Mask the rta_type when range checking
-Date: Tue, 26 Mar 2013 15:50:54 -0700
-Message-Id: <20130326224920.886216281@linuxfoundation.org>
+Subject: [ 09/72] ipv4: fix definition of FIB_TABLE_HASHSZ
+Date: Tue, 26 Mar 2013 15:50:52 -0700
+Message-Id: <20130326224920.651666090@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -28,33 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: "Denis V. Lunev" <den@openvz.org>
 
-[ Upstream commit a5b8db91442fce9c9713fcd656c3698f1adde1d6 ]
+[ Upstream commit 5b9e12dbf92b441b37136ea71dac59f05f2673a9 ]
 
-Range/validity checks on rta_type in rtnetlink_rcv_msg() do
-not account for flags that may be set.  This causes the function
-to return -EINVAL when flags are set on the type (for example
-NLA_F_NESTED).
+a long time ago by the commit
 
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Thomas Graf <tgraf@suug.ch>
+  commit 93456b6d7753def8760b423ac6b986eb9d5a4a95
+  Author: Denis V. Lunev <den@openvz.org>
+  Date:   Thu Jan 10 03:23:38 2008 -0800
+
+    [IPV4]: Unify access to the routing tables.
+
+the defenition of FIB_HASH_TABLE size has obtained wrong dependency:
+it should depend upon CONFIG_IP_MULTIPLE_TABLES (as was in the original
+code) but it was depended from CONFIG_IP_ROUTE_MULTIPATH
+
+This patch returns the situation to the original state.
+
+The problem was spotted by Tingwei Liu.
+
+Signed-off-by: Denis V. Lunev <den@openvz.org>
+CC: Tingwei Liu <tingw.liu@gmail.com>
+CC: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/rtnetlink.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/net/ip_fib.h |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -2050,7 +2050,7 @@ static int rtnetlink_rcv_msg(struct sk_b
- 		struct rtattr *attr = (void *)nlh + NLMSG_ALIGN(min_len);
+--- a/include/net/ip_fib.h
++++ b/include/net/ip_fib.h
+@@ -129,18 +129,16 @@ struct fib_result_nl {
+ };
  
- 		while (RTA_OK(attr, attrlen)) {
--			unsigned flavor = attr->rta_type;
-+			unsigned int flavor = attr->rta_type & NLA_TYPE_MASK;
- 			if (flavor) {
- 				if (flavor > rta_max[sz_idx])
- 					return -EINVAL;
+ #ifdef CONFIG_IP_ROUTE_MULTIPATH
+-
+ #define FIB_RES_NH(res)		((res).fi->fib_nh[(res).nh_sel])
+-
+-#define FIB_TABLE_HASHSZ 2
+-
+ #else /* CONFIG_IP_ROUTE_MULTIPATH */
+-
+ #define FIB_RES_NH(res)		((res).fi->fib_nh[0])
++#endif /* CONFIG_IP_ROUTE_MULTIPATH */
+ 
++#ifdef CONFIG_IP_MULTIPLE_TABLES
+ #define FIB_TABLE_HASHSZ 256
+-
+-#endif /* CONFIG_IP_ROUTE_MULTIPATH */
++#else
++#define FIB_TABLE_HASHSZ 2
++#endif
+ 
+ extern __be32 fib_info_update_nh_saddr(struct net *net, struct fib_nh *nh);
+ 
 
 
