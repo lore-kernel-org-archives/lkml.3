@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965382Ab3CZPcm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:32:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54128 "EHLO
+	id S965397Ab3CZPdQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:33:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54112 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965370Ab3CZPXw (ORCPT
+	with ESMTP id S965354Ab3CZPXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:52 -0400
+	Tue, 26 Mar 2013 11:23:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Ben Hutchings <bhutchings@solarflare.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 129/150] sfc: Work-around flush timeout when flushes have completed
-Date: Tue, 26 Mar 2013 15:20:28 +0000
-Message-Id: <1364311249-14454-130-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 125/150] sfc: Convert firmware subtypes to native byte order in efx_mcdi_get_board_cfg()
+Date: Tue, 26 Mar 2013 15:20:24 +0000
+Message-Id: <1364311249-14454-126-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,130 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Pieczko <dpieczko@solarflare.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit 525d9e824018cd7cc8d8d44832ddcd363abfe6e1 upstream.
+commit bfeed902946a31692e7a24ed355b6d13ac37d014 upstream.
 
-We sometimes hit a "failed to flush" timeout on some TX queues, but the
-flushes have completed and the flush completion events seem to go missing.
-In this case, we can check the TX_DESC_PTR_TBL register and drain the
-queues if the flushes had finished.
+On big-endian systems the MTD partition names currently have mangled
+subtype numbers and are not recognised by the firmware update tool
+(sfupdate).
 
-[bwh: Minor fixes to coding style]
 Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/sfc/net_driver.h |  1 +
- drivers/net/ethernet/sfc/nic.c        | 56 ++++++++++++++++++++++++++++++++---
- 2 files changed, 53 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/sfc/mcdi.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/ethernet/sfc/net_driver.h b/drivers/net/ethernet/sfc/net_driver.h
-index cb7fd7c..8e3e0cf 100644
---- a/drivers/net/ethernet/sfc/net_driver.h
-+++ b/drivers/net/ethernet/sfc/net_driver.h
-@@ -196,6 +196,7 @@ struct efx_tx_queue {
- 	/* Members shared between paths and sometimes updated */
- 	unsigned int empty_read_count ____cacheline_aligned_in_smp;
- #define EFX_EMPTY_COUNT_VALID 0x80000000
-+	atomic_t flush_outstanding;
- };
+diff --git a/drivers/net/ethernet/sfc/mcdi.c b/drivers/net/ethernet/sfc/mcdi.c
+index 17b6463..b49012d 100644
+--- a/drivers/net/ethernet/sfc/mcdi.c
++++ b/drivers/net/ethernet/sfc/mcdi.c
+@@ -641,9 +641,8 @@ int efx_mcdi_get_board_cfg(struct efx_nic *efx, u8 *mac_address,
+ 			   u16 *fw_subtype_list, u32 *capabilities)
+ {
+ 	uint8_t outbuf[MC_CMD_GET_BOARD_CFG_OUT_LENMIN];
+-	size_t outlen;
++	size_t outlen, offset, i;
+ 	int port_num = efx_port_num(efx);
+-	int offset;
+ 	int rc;
  
- /**
-diff --git a/drivers/net/ethernet/sfc/nic.c b/drivers/net/ethernet/sfc/nic.c
-index c44a3a0..76f16b7 100644
---- a/drivers/net/ethernet/sfc/nic.c
-+++ b/drivers/net/ethernet/sfc/nic.c
-@@ -73,6 +73,8 @@
- 	_EFX_CHANNEL_MAGIC(_EFX_CHANNEL_MAGIC_TX_DRAIN,			\
- 			   (_tx_queue)->queue)
- 
-+static void efx_magic_event(struct efx_channel *channel, u32 magic);
-+
- /**************************************************************************
-  *
-  * Solarstorm hardware access
-@@ -492,6 +494,9 @@ static void efx_flush_tx_queue(struct efx_tx_queue *tx_queue)
- 	struct efx_nic *efx = tx_queue->efx;
- 	efx_oword_t tx_flush_descq;
- 
-+	WARN_ON(atomic_read(&tx_queue->flush_outstanding));
-+	atomic_set(&tx_queue->flush_outstanding, 1);
-+
- 	EFX_POPULATE_OWORD_2(tx_flush_descq,
- 			     FRF_AZ_TX_FLUSH_DESCQ_CMD, 1,
- 			     FRF_AZ_TX_FLUSH_DESCQ, tx_queue->queue);
-@@ -667,6 +672,47 @@ static bool efx_flush_wake(struct efx_nic *efx)
- 		 && atomic_read(&efx->rxq_flush_pending) > 0));
- }
- 
-+static bool efx_check_tx_flush_complete(struct efx_nic *efx)
-+{
-+	bool i = true;
-+	efx_oword_t txd_ptr_tbl;
-+	struct efx_channel *channel;
-+	struct efx_tx_queue *tx_queue;
-+
-+	efx_for_each_channel(channel, efx) {
-+		efx_for_each_channel_tx_queue(tx_queue, channel) {
-+			efx_reado_table(efx, &txd_ptr_tbl,
-+					FR_BZ_TX_DESC_PTR_TBL, tx_queue->queue);
-+			if (EFX_OWORD_FIELD(txd_ptr_tbl,
-+					    FRF_AZ_TX_DESCQ_FLUSH) ||
-+			    EFX_OWORD_FIELD(txd_ptr_tbl,
-+					    FRF_AZ_TX_DESCQ_EN)) {
-+				netif_dbg(efx, hw, efx->net_dev,
-+					  "flush did not complete on TXQ %d\n",
-+					  tx_queue->queue);
-+				i = false;
-+			} else if (atomic_cmpxchg(&tx_queue->flush_outstanding,
-+						  1, 0)) {
-+				/* The flush is complete, but we didn't
-+				 * receive a flush completion event
-+				 */
-+				netif_dbg(efx, hw, efx->net_dev,
-+					  "flush complete on TXQ %d, so drain "
-+					  "the queue\n", tx_queue->queue);
-+				/* Don't need to increment drain_pending as it
-+				 * has already been incremented for the queues
-+				 * which did not drain
-+				 */
-+				efx_magic_event(channel,
-+						EFX_CHANNEL_MAGIC_TX_DRAIN(
-+							tx_queue));
-+			}
+ 	BUILD_BUG_ON(MC_CMD_GET_BOARD_CFG_IN_LEN != 0);
+@@ -663,11 +662,16 @@ int efx_mcdi_get_board_cfg(struct efx_nic *efx, u8 *mac_address,
+ 		: MC_CMD_GET_BOARD_CFG_OUT_MAC_ADDR_BASE_PORT0_OFST;
+ 	if (mac_address)
+ 		memcpy(mac_address, outbuf + offset, ETH_ALEN);
+-	if (fw_subtype_list)
+-		memcpy(fw_subtype_list,
+-		       outbuf + MC_CMD_GET_BOARD_CFG_OUT_FW_SUBTYPE_LIST_OFST,
+-		       MC_CMD_GET_BOARD_CFG_OUT_FW_SUBTYPE_LIST_MINNUM *
+-		       sizeof(fw_subtype_list[0]));
++	if (fw_subtype_list) {
++		offset = MC_CMD_GET_BOARD_CFG_OUT_FW_SUBTYPE_LIST_OFST;
++		for (i = 0;
++		     i < MC_CMD_GET_BOARD_CFG_OUT_FW_SUBTYPE_LIST_MINNUM;
++		     i++) {
++			fw_subtype_list[i] =
++				le16_to_cpup((__le16 *)(outbuf + offset));
++			offset += 2;
 +		}
 +	}
-+
-+	return i;
-+}
-+
- /* Flush all the transmit queues, and continue flushing receive queues until
-  * they're all flushed. Wait for the DRAIN events to be recieved so that there
-  * are no more RX and TX events left on any channel. */
-@@ -727,7 +773,8 @@ int efx_nic_flush_queues(struct efx_nic *efx)
- 					     timeout);
- 	}
- 
--	if (atomic_read(&efx->drain_pending)) {
-+	if (atomic_read(&efx->drain_pending) &&
-+	    !efx_check_tx_flush_complete(efx)) {
- 		netif_err(efx, hw, efx->net_dev, "failed to flush %d queues "
- 			  "(rx %d+%d)\n", atomic_read(&efx->drain_pending),
- 			  atomic_read(&efx->rxq_flush_outstanding),
-@@ -1014,9 +1061,10 @@ efx_handle_tx_flush_done(struct efx_nic *efx, efx_qword_t *event)
- 	if (qid < EFX_TXQ_TYPES * efx->n_tx_channels) {
- 		tx_queue = efx_get_tx_queue(efx, qid / EFX_TXQ_TYPES,
- 					    qid % EFX_TXQ_TYPES);
--
--		efx_magic_event(tx_queue->channel,
--				EFX_CHANNEL_MAGIC_TX_DRAIN(tx_queue));
-+		if (atomic_cmpxchg(&tx_queue->flush_outstanding, 1, 0)) {
-+			efx_magic_event(tx_queue->channel,
-+					EFX_CHANNEL_MAGIC_TX_DRAIN(tx_queue));
-+		}
- 	}
- }
- 
+ 	if (capabilities) {
+ 		if (port_num)
+ 			*capabilities = MCDI_DWORD(outbuf,
 -- 
 1.8.1.2
 
