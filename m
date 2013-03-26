@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab3CZXPF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:15:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53320 "EHLO
+	id S1756653Ab3CZXPD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:15:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53322 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756533Ab3CZXBx (ORCPT
+	with ESMTP id S1756537Ab3CZXBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 19:01:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 12/49] sfc: Convert firmware subtypes to native byte order in efx_mcdi_get_board_cfg()
-Date: Tue, 26 Mar 2013 16:01:09 -0700
-Message-Id: <20130326225840.849940494@linuxfoundation.org>
+Subject: [ 13/49] sfc: Fix two causes of flush failure
+Date: Tue, 26 Mar 2013 16:01:10 -0700
+Message-Id: <20130326225840.947395123@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -29,52 +29,208 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Hutchings <bhutchings@solarflare.com>
 
-[ Upstream commit bfeed902946a31692e7a24ed355b6d13ac37d014 ]
+[ Upstream commits a606f4325dca6950996abbae452d33f2af095f39,
+  d5e8cc6c946e0857826dcfbb3585068858445bfe,
+  525d9e824018cd7cc8d8d44832ddcd363abfe6e1 ]
 
-On big-endian systems the MTD partition names currently have mangled
-subtype numbers and are not recognised by the firmware update tool
-(sfupdate).
+The TX DMA engine issues upstream read requests when there is room in
+the TX FIFO for the completion. However, the fetches for the rest of
+the packet might be delayed by any back pressure.  Since a flush must
+wait for an EOP, the entire flush may be delayed by back pressure.
+
+Mitigate this by disabling flow control before the flushes are
+started.  Since PF and VF flushes run in parallel introduce
+fc_disable, a reference count of the number of flushes outstanding.
+
+The same principle could be applied to Falcon, but that
+would bring with it its own testing.
+
+We sometimes hit a "failed to flush" timeout on some TX queues, but the
+flushes have completed and the flush completion events seem to go missing.
+In this case, we can check the TX_DESC_PTR_TBL register and drain the
+queues if the flushes had finished.
 
 Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-[bwh: Backported to 3.0: use old macros for length of firmware subtype array]
+[bwh: Backported to 3.0:
+ - Call efx_nic_type::finish_flush() on both success and failure paths
+ - Check the TX_DESC_PTR_TBL registers in the polling loop
+ - Declare efx_mcdi_set_mac() extern]
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/sfc/mcdi.c |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ drivers/net/sfc/falcon.c     |    2 ++
+ drivers/net/sfc/mcdi.h       |    1 +
+ drivers/net/sfc/mcdi_mac.c   |    4 +++-
+ drivers/net/sfc/net_driver.h |    6 ++++++
+ drivers/net/sfc/nic.c        |   21 ++++++++++++++++++---
+ drivers/net/sfc/nic.h        |    2 ++
+ drivers/net/sfc/siena.c      |   15 ++++++++++++++-
+ 7 files changed, 46 insertions(+), 5 deletions(-)
 
---- a/drivers/net/sfc/mcdi.c
-+++ b/drivers/net/sfc/mcdi.c
-@@ -666,9 +666,8 @@ int efx_mcdi_get_board_cfg(struct efx_ni
- 			   u16 *fw_subtype_list)
+--- a/drivers/net/sfc/falcon.c
++++ b/drivers/net/sfc/falcon.c
+@@ -1714,6 +1714,7 @@ const struct efx_nic_type falcon_a1_nic_
+ 	.remove_port = falcon_remove_port,
+ 	.handle_global_event = falcon_handle_global_event,
+ 	.prepare_flush = falcon_prepare_flush,
++	.finish_flush = efx_port_dummy_op_void,
+ 	.update_stats = falcon_update_nic_stats,
+ 	.start_stats = falcon_start_nic_stats,
+ 	.stop_stats = falcon_stop_nic_stats,
+@@ -1755,6 +1756,7 @@ const struct efx_nic_type falcon_b0_nic_
+ 	.remove_port = falcon_remove_port,
+ 	.handle_global_event = falcon_handle_global_event,
+ 	.prepare_flush = falcon_prepare_flush,
++	.finish_flush = efx_port_dummy_op_void,
+ 	.update_stats = falcon_update_nic_stats,
+ 	.start_stats = falcon_start_nic_stats,
+ 	.stop_stats = falcon_stop_nic_stats,
+--- a/drivers/net/sfc/mcdi.h
++++ b/drivers/net/sfc/mcdi.h
+@@ -126,5 +126,6 @@ extern int efx_mcdi_wol_filter_set_magic
+ extern int efx_mcdi_wol_filter_get_magic(struct efx_nic *efx, int *id_out);
+ extern int efx_mcdi_wol_filter_remove(struct efx_nic *efx, int id);
+ extern int efx_mcdi_wol_filter_reset(struct efx_nic *efx);
++extern int efx_mcdi_set_mac(struct efx_nic *efx);
+ 
+ #endif /* EFX_MCDI_H */
+--- a/drivers/net/sfc/mcdi_mac.c
++++ b/drivers/net/sfc/mcdi_mac.c
+@@ -13,7 +13,7 @@
+ #include "mcdi.h"
+ #include "mcdi_pcol.h"
+ 
+-static int efx_mcdi_set_mac(struct efx_nic *efx)
++int efx_mcdi_set_mac(struct efx_nic *efx)
  {
- 	uint8_t outbuf[MC_CMD_GET_BOARD_CFG_OUT_LEN];
--	size_t outlen;
-+	size_t outlen, offset, i;
- 	int port_num = efx_port_num(efx);
--	int offset;
- 	int rc;
+ 	u32 reject, fcntl;
+ 	u8 cmdbytes[MC_CMD_SET_MAC_IN_LEN];
+@@ -45,6 +45,8 @@ static int efx_mcdi_set_mac(struct efx_n
+ 	}
+ 	if (efx->wanted_fc & EFX_FC_AUTO)
+ 		fcntl = MC_CMD_FCNTL_AUTO;
++	if (efx->fc_disable)
++		fcntl = MC_CMD_FCNTL_OFF;
  
- 	BUILD_BUG_ON(MC_CMD_GET_BOARD_CFG_IN_LEN != 0);
-@@ -688,10 +687,16 @@ int efx_mcdi_get_board_cfg(struct efx_ni
- 		: MC_CMD_GET_BOARD_CFG_OUT_MAC_ADDR_BASE_PORT0_OFST;
- 	if (mac_address)
- 		memcpy(mac_address, outbuf + offset, ETH_ALEN);
--	if (fw_subtype_list)
--		memcpy(fw_subtype_list,
--		       outbuf + MC_CMD_GET_BOARD_CFG_OUT_FW_SUBTYPE_LIST_OFST,
--		       MC_CMD_GET_BOARD_CFG_OUT_FW_SUBTYPE_LIST_LEN);
-+	if (fw_subtype_list) {
-+		offset = MC_CMD_GET_BOARD_CFG_OUT_FW_SUBTYPE_LIST_OFST;
-+		for (i = 0;
-+		     i < MC_CMD_GET_BOARD_CFG_OUT_FW_SUBTYPE_LIST_LEN / 2;
-+		     i++) {
-+			fw_subtype_list[i] =
-+				le16_to_cpup((__le16 *)(outbuf + offset));
-+			offset += 2;
+ 	MCDI_SET_DWORD(cmdbytes, SET_MAC_IN_FCNTL, fcntl);
+ 
+--- a/drivers/net/sfc/net_driver.h
++++ b/drivers/net/sfc/net_driver.h
+@@ -690,6 +690,9 @@ struct efx_filter_state;
+  * @promiscuous: Promiscuous flag. Protected by netif_tx_lock.
+  * @multicast_hash: Multicast hash table
+  * @wanted_fc: Wanted flow control flags
++ * @fc_disable: When non-zero flow control is disabled. Typically used to
++ *	ensure that network back pressure doesn't delay dma queue flushes.
++ *	Serialised by the rtnl lock.
+  * @mac_work: Work item for changing MAC promiscuity and multicast hash
+  * @loopback_mode: Loopback status
+  * @loopback_modes: Supported loopback mode bitmask
+@@ -783,6 +786,7 @@ struct efx_nic {
+ 	bool promiscuous;
+ 	union efx_multicast_hash multicast_hash;
+ 	u8 wanted_fc;
++	unsigned fc_disable;
+ 
+ 	atomic_t rx_reset;
+ 	enum efx_loopback_mode loopback_mode;
+@@ -834,6 +838,7 @@ static inline unsigned int efx_port_num(
+  * @remove_port: Free resources allocated by probe_port()
+  * @handle_global_event: Handle a "global" event (may be %NULL)
+  * @prepare_flush: Prepare the hardware for flushing the DMA queues
++ * @finish_flush: Clean up after flushing the DMA queues
+  * @update_stats: Update statistics not provided by event handling
+  * @start_stats: Start the regular fetching of statistics
+  * @stop_stats: Stop the regular fetching of statistics
+@@ -879,6 +884,7 @@ struct efx_nic_type {
+ 	void (*remove_port)(struct efx_nic *efx);
+ 	bool (*handle_global_event)(struct efx_channel *channel, efx_qword_t *);
+ 	void (*prepare_flush)(struct efx_nic *efx);
++	void (*finish_flush)(struct efx_nic *efx);
+ 	void (*update_stats)(struct efx_nic *efx);
+ 	void (*start_stats)(struct efx_nic *efx);
+ 	void (*stop_stats)(struct efx_nic *efx);
+--- a/drivers/net/sfc/nic.c
++++ b/drivers/net/sfc/nic.c
+@@ -1260,13 +1260,27 @@ int efx_nic_flush_queues(struct efx_nic
+ 			}
+ 			efx_for_each_possible_channel_tx_queue(tx_queue, channel) {
+ 				if (tx_queue->initialised &&
+-				    tx_queue->flushed != FLUSH_DONE)
+-					++tx_pending;
++				    tx_queue->flushed != FLUSH_DONE) {
++					efx_oword_t txd_ptr_tbl;
++
++					efx_reado_table(efx, &txd_ptr_tbl,
++							FR_BZ_TX_DESC_PTR_TBL,
++							tx_queue->queue);
++					if (EFX_OWORD_FIELD(txd_ptr_tbl,
++							    FRF_AZ_TX_DESCQ_FLUSH) ||
++					    EFX_OWORD_FIELD(txd_ptr_tbl,
++							    FRF_AZ_TX_DESCQ_EN))
++						++tx_pending;
++					else
++						tx_queue->flushed = FLUSH_DONE;
++				}
+ 			}
+ 		}
+ 
+-		if (rx_pending == 0 && tx_pending == 0)
++		if (rx_pending == 0 && tx_pending == 0) {
++			efx->type->finish_flush(efx);
+ 			return 0;
 +		}
-+	}
  
- 	return 0;
+ 		msleep(EFX_FLUSH_INTERVAL);
+ 		efx_poll_flush_events(efx);
+@@ -1292,6 +1306,7 @@ int efx_nic_flush_queues(struct efx_nic
+ 		}
+ 	}
  
++	efx->type->finish_flush(efx);
+ 	return -ETIMEDOUT;
+ }
+ 
+--- a/drivers/net/sfc/nic.h
++++ b/drivers/net/sfc/nic.h
+@@ -211,6 +211,8 @@ extern void falcon_irq_ack_a1(struct efx
+ 
+ /* Global Resources */
+ extern int efx_nic_flush_queues(struct efx_nic *efx);
++extern void siena_prepare_flush(struct efx_nic *efx);
++extern void siena_finish_flush(struct efx_nic *efx);
+ extern void falcon_start_nic_stats(struct efx_nic *efx);
+ extern void falcon_stop_nic_stats(struct efx_nic *efx);
+ extern void falcon_setup_xaui(struct efx_nic *efx);
+--- a/drivers/net/sfc/siena.c
++++ b/drivers/net/sfc/siena.c
+@@ -135,6 +135,18 @@ static void siena_remove_port(struct efx
+ 	efx_nic_free_buffer(efx, &efx->stats_buffer);
+ }
+ 
++void siena_prepare_flush(struct efx_nic *efx)
++{
++	if (efx->fc_disable++ == 0)
++		efx_mcdi_set_mac(efx);
++}
++
++void siena_finish_flush(struct efx_nic *efx)
++{
++	if (--efx->fc_disable == 0)
++		efx_mcdi_set_mac(efx);
++}
++
+ static const struct efx_nic_register_test siena_register_tests[] = {
+ 	{ FR_AZ_ADR_REGION,
+ 	  EFX_OWORD32(0x0003FFFF, 0x0003FFFF, 0x0003FFFF, 0x0003FFFF) },
+@@ -590,7 +602,8 @@ const struct efx_nic_type siena_a0_nic_t
+ 	.reset = siena_reset_hw,
+ 	.probe_port = siena_probe_port,
+ 	.remove_port = siena_remove_port,
+-	.prepare_flush = efx_port_dummy_op_void,
++	.prepare_flush = siena_prepare_flush,
++	.finish_flush = siena_finish_flush,
+ 	.update_stats = siena_update_nic_stats,
+ 	.start_stats = siena_start_nic_stats,
+ 	.stop_stats = siena_stop_nic_stats,
 
 
