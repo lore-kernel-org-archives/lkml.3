@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759558Ab3CZINX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 04:13:23 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:38352 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756199Ab3CZINU (ORCPT
+	id S933586Ab3CZIPe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 04:15:34 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:44761 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753147Ab3CZIPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 04:13:20 -0400
-Message-ID: <1364285594.27005.2.camel@phoenix>
-Subject: [PATCH v2] regulator: ab8500: Don't update is_enabled flag in error
- paths
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Tue, 26 Mar 2013 16:13:14 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Mar 2013 04:15:32 -0400
+Date: Tue, 26 Mar 2013 09:15:27 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] nohz: Full dynticks base interface
+Message-ID: <20130326081527.GA27128@gmail.com>
+References: <1363879460-21595-1-git-send-email-fweisbec@gmail.com>
+ <20130324081701.GA13328@gmail.com>
+ <CAFTL4hx4FLaRR6i9ap9UrCZY4ikhVtLfUqWSsjTpsO3dvShUjQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hx4FLaRR6i9ap9UrCZY4ikhVtLfUqWSsjTpsO3dvShUjQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This avoid setting is_enabled flag to wrong status if enable/disable fails.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-v2: Just make the coding style consist with rest of the code.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
- drivers/regulator/ab8500.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+> > That way I will be able to test it automatically via randconfig and 
+> > such.
+> 
+> Sure, I'm adding such an option.
+> 
+> > My next question/request after that would be: could we make sure that 
+> > enabling this option does not break any applications or kernel 
+> > functionality, ASAP? Once that is offered, it becomes pushable to 
+> > v3.10 I think.
+> 
+> So that's already the case. I'm careful that, as we iterate, the changes 
+> aren't supposed to break something in the middle. the final code that 
+> eventually shuts the tick down should be the last one in the series: 
+> once we know it is safe to do so.
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 12e2740..4a70323 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -117,9 +117,11 @@ static int ab8500_regulator_enable(struct regulator_dev *rdev)
- 	ret = abx500_mask_and_set_register_interruptible(info->dev,
- 		info->update_bank, info->update_reg,
- 		info->update_mask, info->update_val);
--	if (ret < 0)
-+	if (ret < 0) {
- 		dev_err(rdev_get_dev(rdev),
- 			"couldn't set enable bits for regulator\n");
-+		return ret;
-+	}
- 
- 	info->is_enabled = true;
- 
-@@ -144,9 +146,11 @@ static int ab8500_regulator_disable(struct regulator_dev *rdev)
- 	ret = abx500_mask_and_set_register_interruptible(info->dev,
- 		info->update_bank, info->update_reg,
- 		info->update_mask, 0x0);
--	if (ret < 0)
-+	if (ret < 0) {
- 		dev_err(rdev_get_dev(rdev),
- 			"couldn't set disable bits for regulator\n");
-+		return ret;
-+	}
- 
- 	info->is_enabled = false;
- 
--- 
-1.7.10.4
+I mean, with the .config (or boot) option enabled, with tip:timers/nohz 
+as-is, will everything work? We cannot push a feature to Linus that 
+doesn't work reliably when enabled ...
 
+Thanks,
 
-
+	Ingo
