@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab3CZX0a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:26:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52925 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215Ab3CZWwH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755932Ab3CZWwH (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 26 Mar 2013 18:52:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52899 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755215Ab3CZWwD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 18:52:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xufeng Zhang <xufeng.zhang@windriver.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 08/72] sctp: dont break the loop while meeting the active_path so as to find the matched transport
-Date: Tue, 26 Mar 2013 15:50:51 -0700
-Message-Id: <20130326224920.556291981@linuxfoundation.org>
+        Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
+Subject: [ 02/72] sunsu: Fix panic in case of nonexistent port at "console=ttySY" cmdline option
+Date: Tue, 26 Mar 2013 15:50:45 -0700
+Message-Id: <20130326224919.933089686@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -30,35 +27,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Xufeng Zhang <xufeng.zhang@windriver.com>
+From: Tkhai Kirill <tkhai@yandex.ru>
 
-[ Upstream commit 2317f449af30073cfa6ec8352e4a65a89e357bdd ]
+[ Upstream commit cb29529ea0030e60ef1bbbf8399a43d397a51526 ]
 
-sctp_assoc_lookup_tsn() function searchs which transport a certain TSN
-was sent on, if not found in the active_path transport, then go search
-all the other transports in the peer's transport_addr_list, however, we
-should continue to the next entry rather than break the loop when meet
-the active_path transport.
+If a machine has X (X < 4) sunsu ports and cmdline
+option "console=ttySY" is passed, where X < Y <= 4,
+than the following panic happens:
 
-Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Unable to handle kernel NULL pointer dereference
+TPC: <sunsu_console_setup+0x78/0xe0>
+RPC: <sunsu_console_setup+0x74/0xe0>
+I7: <register_console+0x378/0x3e0>
+Call Trace:
+ [0000000000453a38] register_console+0x378/0x3e0
+ [0000000000576fa0] uart_add_one_port+0x2e0/0x340
+ [000000000057af40] su_probe+0x160/0x2e0
+ [00000000005b8a4c] platform_drv_probe+0xc/0x20
+ [00000000005b6c2c] driver_probe_device+0x12c/0x220
+ [00000000005b6da8] __driver_attach+0x88/0xa0
+ [00000000005b4df4] bus_for_each_dev+0x54/0xa0
+ [00000000005b5a54] bus_add_driver+0x154/0x260
+ [00000000005b7190] driver_register+0x50/0x180
+ [00000000006d250c] sunsu_init+0x18c/0x1e0
+ [00000000006c2668] do_one_initcall+0xe8/0x160
+ [00000000006c282c] kernel_init_freeable+0x12c/0x1e0
+ [0000000000603764] kernel_init+0x4/0x100
+ [0000000000405f64] ret_from_syscall+0x1c/0x2c
+ [0000000000000000]           (null)
+
+1)Fix the panic;
+2)Increment registered port number every successful
+probe.
+
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: David Miller <davem@davemloft.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/associola.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/sunsu.c |   21 +++++++++------------
+ 1 file changed, 9 insertions(+), 12 deletions(-)
 
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -1050,7 +1050,7 @@ struct sctp_transport *sctp_assoc_lookup
- 			transports) {
+--- a/drivers/tty/serial/sunsu.c
++++ b/drivers/tty/serial/sunsu.c
+@@ -968,6 +968,7 @@ static struct uart_ops sunsu_pops = {
+ #define UART_NR	4
  
- 		if (transport == active)
--			break;
-+			continue;
- 		list_for_each_entry(chunk, &transport->transmitted,
- 				transmitted_list) {
- 			if (key == chunk->subh.data_hdr->tsn) {
+ static struct uart_sunsu_port sunsu_ports[UART_NR];
++static int nr_inst; /* Number of already registered ports */
+ 
+ #ifdef CONFIG_SERIO
+ 
+@@ -1337,13 +1338,8 @@ static int __init sunsu_console_setup(st
+ 	printk("Console: ttyS%d (SU)\n",
+ 	       (sunsu_reg.minor - 64) + co->index);
+ 
+-	/*
+-	 * Check whether an invalid uart number has been specified, and
+-	 * if so, search for the first available port that does have
+-	 * console support.
+-	 */
+-	if (co->index >= UART_NR)
+-		co->index = 0;
++	if (co->index > nr_inst)
++		return -ENODEV;
+ 	port = &sunsu_ports[co->index].port;
+ 
+ 	/*
+@@ -1408,7 +1404,6 @@ static enum su_type __devinit su_get_typ
+ 
+ static int __devinit su_probe(struct platform_device *op)
+ {
+-	static int inst;
+ 	struct device_node *dp = op->dev.of_node;
+ 	struct uart_sunsu_port *up;
+ 	struct resource *rp;
+@@ -1418,16 +1413,16 @@ static int __devinit su_probe(struct pla
+ 
+ 	type = su_get_type(dp);
+ 	if (type == SU_PORT_PORT) {
+-		if (inst >= UART_NR)
++		if (nr_inst >= UART_NR)
+ 			return -EINVAL;
+-		up = &sunsu_ports[inst];
++		up = &sunsu_ports[nr_inst];
+ 	} else {
+ 		up = kzalloc(sizeof(*up), GFP_KERNEL);
+ 		if (!up)
+ 			return -ENOMEM;
+ 	}
+ 
+-	up->port.line = inst;
++	up->port.line = nr_inst;
+ 
+ 	spin_lock_init(&up->port.lock);
+ 
+@@ -1461,6 +1456,8 @@ static int __devinit su_probe(struct pla
+ 		}
+ 		dev_set_drvdata(&op->dev, up);
+ 
++		nr_inst++;
++
+ 		return 0;
+ 	}
+ 
+@@ -1488,7 +1485,7 @@ static int __devinit su_probe(struct pla
+ 
+ 	dev_set_drvdata(&op->dev, up);
+ 
+-	inst++;
++	nr_inst++;
+ 
+ 	return 0;
+ 
 
 
