@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965410Ab3CZP3R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:29:17 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:37717 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965454Ab3CZP25 (ORCPT
+	id S964936Ab3CZP3m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:29:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54164 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965419Ab3CZPYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:28:57 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5r/TwSabzUg=
-X-RZG-CLASS-ID: mo00
-From: Olaf Hering <olaf@aepfle.de>
-To: kys@microsoft.com, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Olaf Hering <olaf@aepfle.de>
-Subject: [PATCH 3/3] tools: hv: use getmntent in hv_vss_daemon
-Date: Tue, 26 Mar 2013 16:28:29 +0100
-Message-Id: <1364311709-18228-3-git-send-email-olaf@aepfle.de>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <1364311709-18228-1-git-send-email-olaf@aepfle.de>
-References: <1364311709-18228-1-git-send-email-olaf@aepfle.de>
+	Tue, 26 Mar 2013 11:24:03 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 138/150] sfc: Disable soft interrupt handling during efx_device_detach_sync()
+Date: Tue, 26 Mar 2013 15:20:37 +0000
+Message-Id: <1364311249-14454-139-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As suggested by Paolo Bonzini, use getmntent instead of parsing output
-of mount(1).
+3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
+------------------
+
+From: Ben Hutchings <bhutchings@solarflare.com>
+
+commit 35205b211c8d17a8a0b5e8926cb7c73e9a7ef1ad upstream.
+
+efx_device_detach_sync() locks all TX queues before marking the device
+detached and thus disabling further TX scheduling.  But it can still
+be interrupted by TX completions which then result in TX scheduling in
+soft interrupt context.  This will deadlock when it tries to acquire
+a TX queue lock that efx_device_detach_sync() already acquired.
+
+To avoid deadlock, we must use netif_tx_{,un}lock_bh().
+
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- tools/hv/hv_vss_daemon.c | 39 +++++++++++++++++++++------------------
- 1 file changed, 21 insertions(+), 18 deletions(-)
+ drivers/net/ethernet/sfc/efx.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c
-index dc3eb1e..e37d86c 100644
---- a/tools/hv/hv_vss_daemon.c
-+++ b/tools/hv/hv_vss_daemon.c
-@@ -23,6 +23,7 @@
- #include <sys/poll.h>
- #include <linux/types.h>
- #include <stdio.h>
-+#include <mntent.h>
- #include <stdlib.h>
- #include <unistd.h>
- #include <string.h>
-@@ -47,11 +48,10 @@ static int vss_operate(int operation)
- {
- 	char *fs_op;
- 	char cmd[512];
--	char buf[512];
--	FILE *file;
--	char *p;
--	char *x;
--	int error = 0;
-+	char match[] = "/dev/";
-+	FILE *mounts;
-+	struct mntent *ent;
-+	int error = 0, root_seen = 0;
- 
- 	switch (operation) {
- 	case VSS_OP_FREEZE:
-@@ -64,25 +64,28 @@ static int vss_operate(int operation)
- 		return -1;
- 	}
- 
--	file = popen("mount | awk '/^\\/dev\\// { print $3}'", "r");
--	if (file == NULL)
-+	mounts = setmntent("/proc/mounts", "r");
-+	if (mounts == NULL)
- 		return -1;
- 
--	while ((p = fgets(buf, sizeof(buf), file)) != NULL) {
--		x = strchr(p, '\n');
--		*x = '\0';
--		if (!strncmp(p, "/", sizeof("/")))
-+	while((ent = getmntent(mounts))) {
-+		if (strncmp(ent->mnt_fsname, match, strlen(match)))
- 			continue;
--
--		sprintf(cmd, "%s %s %s", "fsfreeze ", fs_op, p);
-+		if (strcmp(ent->mnt_dir, "/") == 0) {
-+			root_seen = 1;
-+			continue;
-+		}
-+		snprintf(cmd, sizeof(cmd), "fsfreeze %s '%s'", fs_op, ent->mnt_dir);
- 		syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
--		error = system(cmd);
-+		error |= system(cmd);
- 	}
--	pclose(file);
-+	endmntent(mounts);
- 
--	sprintf(cmd, "%s %s %s", "fsfreeze ", fs_op, "/");
--	syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
--	error = system(cmd);
-+	if (root_seen) {
-+		sprintf(cmd, "fsfreeze %s /", fs_op);
-+		syslog(LOG_INFO, "VSS cmd is %s\n", cmd);
-+		error |= system(cmd);
-+	}
- 
- 	return error;
+diff --git a/drivers/net/ethernet/sfc/efx.h b/drivers/net/ethernet/sfc/efx.h
+index 320cf7b..7db0e5b 100644
+--- a/drivers/net/ethernet/sfc/efx.h
++++ b/drivers/net/ethernet/sfc/efx.h
+@@ -170,9 +170,9 @@ static inline void efx_device_detach_sync(struct efx_nic *efx)
+ 	 * TX scheduler is stopped when we're done and before
+ 	 * netif_device_present() becomes false.
+ 	 */
+-	netif_tx_lock(dev);
++	netif_tx_lock_bh(dev);
+ 	netif_device_detach(dev);
+-	netif_tx_unlock(dev);
++	netif_tx_unlock_bh(dev);
  }
+ 
+ #endif /* EFX_EFX_H */
+-- 
+1.8.1.2
+
