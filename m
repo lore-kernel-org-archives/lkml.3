@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757471Ab3CZR5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:57:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31047 "EHLO
+	id S1756848Ab3CZR5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:57:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15455 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab3CZRgJ (ORCPT
+	with ESMTP id S1753992Ab3CZRgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:36:09 -0400
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=2d7eKx6xF1gA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=bSXWa2pxn6AA:10 a=1XWaLZrsAAAA:8 a=J1Y8HTJGAAAA:8 a=GZK3lcuhIWR5GrNAc6YA:9 a=UTB_XpHje0EA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Tue, 26 Mar 2013 13:36:10 -0400
+X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=0mr359wiF70A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=f5l90i51NqcA:10 a=tHz9FfFoAAAA:8 a=J1Y8HTJGAAAA:8 a=GZK3lcuhIWR5GrNAc6YA:9 a=6O0IECtVFhoA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130326173604.867913350@goodmis.org>
+Message-Id: <20130326173604.539883851@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 26 Mar 2013 13:21:30 -0400
+Date: Tue, 26 Mar 2013 13:21:28 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: =?UTF-8?q?Pasi=20K=C3=A4rkk=C3=A4inen?= <pasik@iki.fi>,
-        Neal Cardwell <ncardwell@google.com>,
-        Eric Dumazet <edumazet@google.com>,
-        =?UTF-8?q?Ilpo=20J=C3=A4rvinen?= <ilpo.jarvinen@helsinki.fi>,
-        Yuchung Cheng <ycheng@google.com>,
+Cc: Ian Campbell <ian.campbell@citrix.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 31/86] tcp: frto should not set snd_cwnd to 0
+Subject: [PATCH 29/86] xen/netback: free already allocated memory on failure in
+ xen_netbk_get_requests
 References: <20130326172059.136127374@goodmis.org>
-Content-Disposition: inline; filename=0031-tcp-frto-should-not-set-snd_cwnd-to-0.patch
+Content-Disposition: inline; filename=0029-xen-netback-free-already-allocated-memory-on-failure.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,44 +31,47 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Ian Campbell <Ian.Campbell@citrix.com>
 
-[ Upstream commit 2e5f421211ff76c17130b4597bc06df4eeead24f ]
+[ Upstream commit 4cc7c1cb7b11b6f3515bd9075527576a1eecc4aa ]
 
-Commit 9dc274151a548 (tcp: fix ABC in tcp_slow_start())
-uncovered a bug in FRTO code :
-tcp_process_frto() is setting snd_cwnd to 0 if the number
-of in flight packets is 0.
-
-As Neal pointed out, if no packet is in flight we lost our
-chance to disambiguate whether a loss timeout was spurious.
-
-We should assume it was a proper loss.
-
-Reported-by: Pasi Kärkkäinen <pasik@iki.fi>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
-Cc: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- net/ipv4/tcp_input.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/xen-netback/netback.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 4b3f448..97cbfa9 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -3511,7 +3511,8 @@ static bool tcp_process_frto(struct sock *sk, int flag)
- 	    ((tp->frto_counter >= 2) && (flag & FLAG_RETRANS_DATA_ACKED)))
- 		tp->undo_marker = 0;
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 68a94cf..7e18de2 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -949,7 +949,7 @@ static struct gnttab_copy *xen_netbk_get_requests(struct xen_netbk *netbk,
+ 		pending_idx = netbk->pending_ring[index];
+ 		page = xen_netbk_alloc_page(netbk, skb, pending_idx);
+ 		if (!page)
+-			return NULL;
++			goto err;
  
--	if (!before(tp->snd_una, tp->frto_highmark)) {
-+	if (!before(tp->snd_una, tp->frto_highmark) ||
-+	    !tcp_packets_in_flight(tp)) {
- 		tcp_enter_frto_loss(sk, (tp->frto_counter == 1 ? 2 : 3), flag);
- 		return true;
+ 		gop->source.u.ref = txp->gref;
+ 		gop->source.domid = vif->domid;
+@@ -971,6 +971,17 @@ static struct gnttab_copy *xen_netbk_get_requests(struct xen_netbk *netbk,
  	}
+ 
+ 	return gop;
++err:
++	/* Unwind, freeing all pages and sending error responses. */
++	while (i-- > start) {
++		xen_netbk_idx_release(netbk, frag_get_pending_idx(&frags[i]),
++				      XEN_NETIF_RSP_ERROR);
++	}
++	/* The head too, if necessary. */
++	if (start)
++		xen_netbk_idx_release(netbk, pending_idx, XEN_NETIF_RSP_ERROR);
++
++	return NULL;
+ }
+ 
+ static int xen_netbk_tx_check_gop(struct xen_netbk *netbk,
 -- 
 1.7.10.4
 
