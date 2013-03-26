@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934170Ab3CZNRj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 09:17:39 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:57092 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933294Ab3CZNRg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 09:17:36 -0400
-From: =?UTF-8?q?Nick=20=C3=98stergaard?= <oe.nick@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Nick=20=C3=98stergaard?= <oe.nick@gmail.com>
-Subject: [PATCH] staging: wlan-ng: prism2usb.c: fix printk(KERN_ERR... to dev_err(dev, ...
-Date: Tue, 26 Mar 2013 14:17:10 +0100
-Message-Id: <1364303830-13149-1-git-send-email-oe.nick@gmail.com>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <20130325191732.GA22609@kroah.com>
-References: <20130325191732.GA22609@kroah.com>
+	id S934191Ab3CZNRv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 09:17:51 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:43010 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933294Ab3CZNRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 09:17:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andrei Epure <epure.andrei@gmail.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] acpi: replaced kmalloc+memcpy with kmemdup
+Date: Tue, 26 Mar 2013 14:25:15 +0100
+Message-ID: <3996362.Dl8iZzsvl7@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1362990016-21249-1-git-send-email-epure.andrei@gmail.com>
+References: <1362990016-21249-1-git-send-email-epure.andrei@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch warning. Change printk(KERN_ERR ... to dev_err(dev ...
+On Monday, March 11, 2013 10:20:16 AM Andrei Epure wrote:
+> Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
 
-Signed-off-by: Nick Østergaard <oe.nick@gmail.com>
----
- drivers/staging/wlan-ng/prism2usb.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+Added a changelog and applied to linux-pm.git/linux-next.
 
-diff --git a/drivers/staging/wlan-ng/prism2usb.c b/drivers/staging/wlan-ng/prism2usb.c
-index b1aed1f..b401974 100644
---- a/drivers/staging/wlan-ng/prism2usb.c
-+++ b/drivers/staging/wlan-ng/prism2usb.c
-@@ -113,14 +113,14 @@ static int prism2sta_probe_usb(struct usb_interface *interface,
- 	dev = interface_to_usbdev(interface);
- 	wlandev = create_wlan();
- 	if (wlandev == NULL) {
--		printk(KERN_ERR "%s: Memory allocation failure.\n", dev_info);
-+		dev_err(&interface->dev, "Memory allocation failure.\n");
- 		result = -EIO;
- 		goto failed;
- 	}
- 	hw = wlandev->priv;
- 
- 	if (wlan_setup(wlandev, &(interface->dev)) != 0) {
--		printk(KERN_ERR "%s: wlan_setup() failed.\n", dev_info);
-+		dev_err(&interface->dev, "wlan_setup() failed.\n");
- 		result = -EIO;
- 		goto failed;
- 	}
-@@ -143,8 +143,7 @@ static int prism2sta_probe_usb(struct usb_interface *interface,
- 			unregister_wlandev(wlandev);
- 			hfa384x_destroy(hw);
- 			result = -EIO;
--			printk(KERN_ERR
--			       "%s: hfa384x_corereset() failed.\n", dev_info);
-+			dev_err(&interface->dev, "hfa384x_corereset() failed.\n");
- 			goto failed;
- 		}
- 	}
-@@ -158,7 +157,7 @@ static int prism2sta_probe_usb(struct usb_interface *interface,
- 	prism2sta_ifstate(wlandev, P80211ENUM_ifstate_enable);
- 
- 	if (register_wlandev(wlandev) != 0) {
--		printk(KERN_ERR "%s: register_wlandev() failed.\n", dev_info);
-+		dev_err(&interface->dev, "register_wlandev() failed.\n");
- 		result = -EIO;
- 		goto failed;
- 	}
-@@ -329,8 +328,7 @@ static int prism2sta_resume(struct usb_interface *interface)
- 		if (result != 0) {
- 			unregister_wlandev(wlandev);
- 			hfa384x_destroy(hw);
--			printk(KERN_ERR
--			       "%s: hfa384x_corereset() failed.\n", dev_info);
-+			dev_err(&interface->dev, "hfa384x_corereset() failed.\n");
- 			kfree(wlandev);
- 			kfree(hw);
- 			wlandev = NULL;
+Thanks,
+Rafael
+
+
+> ---
+>  drivers/acpi/bus.c |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+> index 01708a1..292de3c 100644
+> --- a/drivers/acpi/bus.c
+> +++ b/drivers/acpi/bus.c
+> @@ -288,13 +288,12 @@ acpi_status acpi_run_osc(acpi_handle handle, struct acpi_osc_context *context)
+>  	}
+>  out_success:
+>  	context->ret.length = out_obj->buffer.length;
+> -	context->ret.pointer = kmalloc(context->ret.length, GFP_KERNEL);
+> +	context->ret.pointer = kmemdup(out_obj->buffer.pointer,
+> +				       context->ret.length, GFP_KERNEL);
+>  	if (!context->ret.pointer) {
+>  		status =  AE_NO_MEMORY;
+>  		goto out_kfree;
+>  	}
+> -	memcpy(context->ret.pointer, out_obj->buffer.pointer,
+> -		context->ret.length);
+>  	status =  AE_OK;
+>  
+>  out_kfree:
+> 
 -- 
-1.8.2
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
