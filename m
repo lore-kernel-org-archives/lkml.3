@@ -1,239 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934477Ab3CZOT2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 10:19:28 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:59212 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933298Ab3CZOT1 (ORCPT
+	id S934491Ab3CZOVB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 10:21:01 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:35331 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934400Ab3CZOU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 10:19:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130326140147.GB2029@redhat.com>
-References: <tip-d9a3c9823a2e6a543eb7807fb3d15d8233817ec5@git.kernel.org>
-	<20130326140147.GB2029@redhat.com>
-Date: Tue, 26 Mar 2013 15:19:25 +0100
-Message-ID: <CAFTL4hyJxwh056=bTsSFcpZ7QLRsvsGbni=ueUHE6c1n8dmQ7Q@mail.gmail.com>
-Subject: Re: [tip:sched/core] sched: Lower chances of cputime scaling overflow
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, rostedt@goodmis.org,
-        akpm@linux-foundation.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 26 Mar 2013 10:20:59 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v2] firewire: Fix 'failed to read phy reg' on FW643 rev8
+Date: Tue, 26 Mar 2013 10:19:20 -0400
+Message-Id: <1364307560-27601-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1364306830.12229.14.camel@thor.lan>
+References: <1364306830.12229.14.camel@thor.lan>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/26 Stanislaw Gruszka <sgruszka@redhat.com>:
-> On Mon, Mar 18, 2013 at 03:49:02AM -0700, tip-bot for Frederic Weisbecker wrote:
->> Commit-ID:  d9a3c9823a2e6a543eb7807fb3d15d8233817ec5
->> Gitweb:     http://git.kernel.org/tip/d9a3c9823a2e6a543eb7807fb3d15d8233817ec5
->> Author:     Frederic Weisbecker <fweisbec@gmail.com>
->> AuthorDate: Wed, 20 Feb 2013 18:54:55 +0100
->> Committer:  Frederic Weisbecker <fweisbec@gmail.com>
->> CommitDate: Wed, 13 Mar 2013 18:18:14 +0100
->>
->> sched: Lower chances of cputime scaling overflow
->>
->> Some users have reported that after running a process with
->> hundreds of threads on intensive CPU-bound loads, the cputime
->> of the group started to freeze after a few days.
->>
->> This is due to how we scale the tick-based cputime against
->> the scheduler precise execution time value.
->>
->> We add the values of all threads in the group and we multiply
->> that against the sum of the scheduler exec runtime of the whole
->> group.
->>
->> This easily overflows after a few days/weeks of execution.
->>
->> A proposed solution to solve this was to compute that multiplication
->> on stime instead of utime:
->>    62188451f0d63add7ad0cd2a1ae269d600c1663d
->>    ("cputime: Avoid multiplication overflow on utime scaling")
->>
->> The rationale behind that was that it's easy for a thread to
->> spend most of its time in userspace under intensive CPU-bound workload
->> but it's much harder to do CPU-bound intensive long run in the kernel.
->>
->> This postulate got defeated when a user recently reported he was still
->> seeing cputime freezes after the above patch. The workload that
->> triggers this issue relates to intensive networking workloads where
->> most of the cputime is consumed in the kernel.
->>
->> To reduce much more the opportunities for multiplication overflow,
->> lets reduce the multiplication factors to the remainders of the division
->> between sched exec runtime and cputime. Assuming the difference between
->> these shouldn't ever be that large, it could work on many situations.
->>
->> This gets the same results as in the upstream scaling code except for
->> a small difference: the upstream code always rounds the results to
->> the nearest integer not greater to what would be the precise result.
->> The new code rounds to the nearest integer either greater or not
->> greater. In practice this difference probably shouldn't matter but
->> it's worth mentioning.
->>
->> If this solution appears not to be enough in the end, we'll
->> need to partly revert back to the behaviour prior to commit
->>      0cf55e1ec08bb5a22e068309e2d8ba1180ab4239
->>      ("sched, cputime: Introduce thread_group_times()")
->>
->> Back then, the scaling was done on exit() time before adding the cputime
->> of an exiting thread to the signal struct. And then we'll need to
->> scale one-by-one the live threads cputime in thread_group_cputime(). The
->> drawback may be a slightly slower code on exit time.
->
-> Sorry for questioning this patch that late, but I thought this solution
-> is ok. However before providing backport to RHEL kernel, I made some
-> analytics and test of this algorithm. I discovered that is pretty easy
-> to catch multiplication overflow, for example:
->
-> rtime: 16877346691
-> total: 12215365298
-> stime: 4886146119
->
-> will give scaled stime: 5240812402 , whereas correct value should be
-> 6750938676. As problem can be triggered at random, and we can not
-> give any guaranties that it will not happen for particular time
-> duration bigger than 50 days (on one thread application), I'm not
-> considering this patch as good fix.
->
-> Of cource reverting 0cf55e1ec08bb5a22e068309e2d8ba1180ab4239 will not
-> help either, since is possible to have overflow on one thread.
->
-> Can we remove rtime multiplication at all and just use pure utime and
-> stime values? I think no. I don't know the details, but is possible that
-> we can have top "exploit" that will eat lot of cputime but "hide" itself
-> from tick, hence it will not be showed correctly as process which utilize
-> lot of cpu. Peter told about that some time ago.
->
-> Taking that, and analyze some other possibilities, I think best (or only
-> possible good) solution for this problem is use 128 bit math for
-> calculation. I tested (on user space) below code [1] and it give good
-> results. It use 128 bit multiplication and simplified 128 bit division.
->
-> This will require adding those 128 bit math primitives
-> http://thread.gmane.org/gmane.linux.kernel/1381801
-> which were initially required for Deadline scheduler, but then removed
-> from requirement. I hope it is ok to add them or some improved version.
-> I think soon or later 128 bit math will be required in more places in
-> the kernel.
->
-> Thoughts?
->
-> Stanislaw
->
-> [1]
->
-> #include <stdio.h>
-> #include <stdlib.h>
-> #include <assert.h>
-> #include <strings.h>
->
-> typedef unsigned long long u64;
-> typedef unsigned __int128 u128;
->
-> #define clzll(x) __builtin_clzll(x)
->
-> static u64 div_u64(u64 a, u64 b)
-> {
->         return a / b;
-> }
->
-> static u128 mul_u64_u64(u64 a, u64 b)
-> {
->         u128 res = a;
->         res *= b;
->
->         return res;
-> }
->
-> static u64 div128_u64(u128 dividend, u64 divisor)
-> {
->         u64 high = dividend >> 64;
->         u64 quot;
->
->         if (high == 0) {
->                 quot = div_u64(dividend, divisor);
->         } else {
->                 int n = 64 - clzll(high);
->
->                 if ((divisor >> n) == 0) {
->                         /* Oh no */
->                         return 0;
->                 }
->
->                 quot = div_u64(dividend >> n, divisor >> n);
->
->                 if (quot != 0)
->                         quot--;
->                 if ((dividend - quot * divisor) >= divisor)
->                         quot++;
->         }
->
->         return quot;
-> }
->
-> u64 _scale_time(u64 rtime, u64 total, u64 time)
-> {
->         u128 tmp = mul_u64_u64(time, rtime);
->
->         return div128_u64(tmp, total);
-> }
->
-> u64 scale_time(u64 stime, u64 rtime, u64 total)
-> {
->         u64 time, scaled;
->         u64 utime = total - stime;
->         int use_utime;
->
->         if (utime < stime) {
->                 use_utime = 1;
->                 time = utime;
->         } else {
->                 use_utime = 0;
->                 time = stime;
->         }
->
->         scaled = _scale_time(rtime, total, time);
->
->         if (use_utime)
->                 scaled = rtime - scaled;
->
->         return scaled;
-> }
->
-> int main(int argc, char *argv[])
-> {
->         u64 rtime, total, stime, scaled;
->
->         if (argc != 4)
->                 return;
->
->         rtime = strtoll(argv[1], NULL, 10);
->         total = strtoll(argv[2], NULL, 10);
->         stime = strtoll(argv[3], NULL, 10);
->
->         assert (total >= stime);
->
->         scaled = scale_time(stime, rtime, total);
->         printf("%llu\n", scaled);
->
->         return 0;
-> }
+With the LSI FW643 rev 8 [1], the first commanded bus reset at
+the conclusion of ohci_enable() has been observed to fail with
+the following messages:
 
-I starred at that code for quite some time already and I can't come up
-with a better solution.
+[    4.884015] firewire_ohci 0000:01:00.0: failed to read phy reg
+....
+[    5.684012] firewire_ohci 0000:01:00.0: failed to read phy reg
 
-Of course 128 bits ops are very expensive, so to help you evaluating
-the situation, this is going to happen on every call to
-task_cputime_adjusted() and thread_group_adjusted(), namely:
+With drivers/firewire/ohci.c instrumented, the error condition [2]
+indicates the PHY arbitration state machine has timed out prior to
+enabling PHY LCtrl.
 
-* Some proc files read
-* sys_times()
-* thread group exit
+Furthermore, instrumenting ohci_enable() shows that LPS has been
+enabled within 1 ms.
 
-Thoughts?
+Test LPS latching every 1 ms rather than every 50ms.
+
+[1]  lspci -v
+
+01:00.0 FireWire (IEEE 1394): LSI Corporation FW643 [TrueFire] PCIe 1394b Controller (rev 08) (prog-if 10 [OHCI])
+	Subsystem: LSI Corporation FW643 [TrueFire] PCIe 1394b Controller
+	Flags: bus master, fast devsel, latency 0, IRQ 92
+	Memory at fbeff000 (64-bit, non-prefetchable) [size=4K]
+	Capabilities: [44] Power Management version 3
+	Capabilities: [4c] MSI: Enable+ Count=1/1 Maskable- 64bit+
+	Capabilities: [60] Express Endpoint, MSI 00
+	Capabilities: [100] Advanced Error Reporting
+	Capabilities: [140] Virtual Channel
+	Capabilities: [170] Device Serial Number 08-14-43-82-00-00-41-fc
+	Kernel driver in use: firewire_ohci
+	Kernel modules: firewire-ohci
+
+[2] instrumented WARNING in read_phy_reg()
+
+[    4.576010] ------------[ cut here ]------------
+[    4.576035] WARNING: at ./drivers/firewire/ohci.c:570 read_phy_reg+0x93/0xe0 [firewire_ohci]()
+[    4.576050] Hardware name: Precision WorkStation T5400
+[    4.576058] failed to read phy reg:1 (phy(5) @ config enhance:19)
+[    4.576068] Modules linked in: hid_logitech_dj hid_generic(+) usbhid <...snip...>
+[    4.576140] Pid: 61, comm: kworker/2:1 Not tainted 3.8.0-2+fwtest-xeon #2+fwtest
+[    4.576149] Call Trace:
+[    4.576160]  [<ffffffff8105468f>] warn_slowpath_common+0x7f/0xc0
+[    4.576168]  [<ffffffff81054786>] warn_slowpath_fmt+0x46/0x50
+[    4.576178]  [<ffffffffa00caca3>] read_phy_reg+0x93/0xe0 [firewire_ohci]
+[    4.576188]  [<ffffffffa00cae19>] ohci_read_phy_reg+0x39/0x60 [firewire_ohci]
+[    4.576203]  [<ffffffffa00731ff>] fw_send_phy_config+0xbf/0xe0 [firewire_core]
+[    4.576214]  [<ffffffffa006b2d6>] br_work+0x46/0xb0 [firewire_core]
+[    4.576225]  [<ffffffff81071e0c>] process_one_work+0x13c/0x500
+[    4.576238]  [<ffffffffa006b290>] ? fw_card_initialize+0x180/0x180 [firewire_core]
+[    4.576248]  [<ffffffff810737ed>] worker_thread+0x16d/0x470
+[    4.576257]  [<ffffffff81073680>] ? busy_worker_rebind_fn+0x100/0x100
+[    4.576266]  [<ffffffff8107d160>] kthread+0xc0/0xd0
+[    4.576275]  [<ffffffff816a0000>] ? pcpu_dump_alloc_info+0x1cb/0x2c4
+[    4.576284]  [<ffffffff8107d0a0>] ? kthread_create_on_node+0x130/0x130
+[    4.576297]  [<ffffffff816b2f6c>] ret_from_fork+0x7c/0xb0
+[    4.576305]  [<ffffffff8107d0a0>] ? kthread_create_on_node+0x130/0x130
+[    4.576313] ---[ end trace cbc940994b300302 ]---
+
+Reported-by: Tim Jordan <tim@insipid.org.uk>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/firewire/ohci.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
+index 45912e6..044ace3 100644
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -2268,8 +2268,8 @@ static int ohci_enable(struct fw_card *card,
+ 		  OHCI1394_HCControl_postedWriteEnable);
+ 	flush_writes(ohci);
+ 
+-	for (lps = 0, i = 0; !lps && i < 3; i++) {
+-		msleep(50);
++	for (lps = 0, i = 0; !lps && i < 150; i++) {
++		msleep(1);
+ 		lps = reg_read(ohci, OHCI1394_HCControlSet) &
+ 		      OHCI1394_HCControl_LPS;
+ 	}
+-- 
+1.8.1.2
+
