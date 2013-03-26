@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965171Ab3CZPXG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:23:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53890 "EHLO
+	id S934851Ab3CZPo4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:44:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53924 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965028Ab3CZPW6 (ORCPT
+	with ESMTP id S965128Ab3CZPXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:58 -0400
+	Tue, 26 Mar 2013 11:23:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: CQ Tang <cq.tang@intel.com>, Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 081/150] x86-64: Fix the failure case in copy_user_handle_tail()
-Date: Tue, 26 Mar 2013 15:19:40 +0000
-Message-Id: <1364311249-14454-82-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 088/150] usb: gadget: udc-core: fix a regression during gadget driver unbinding
+Date: Tue, 26 Mar 2013 15:19:47 +0000
+Message-Id: <1364311249-14454-89-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -28,42 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: CQ Tang <cq.tang@intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 66db3feb486c01349f767b98ebb10b0c3d2d021b upstream.
+commit 511f3c5326eabe1ece35202a404c24c0aeacc246 upstream.
 
-The increment of "to" in copy_user_handle_tail() will have incremented
-before a failure has been noted.  This causes us to skip a byte in the
-failure case.
+This patch (as1666) fixes a regression in the UDC core.  The core
+takes care of unbinding gadget drivers, and it does the unbinding
+before telling the UDC driver to turn off the controller hardware.
+When the call to the udc_stop callback is made, the gadget no longer
+has a driver.  The callback routine should not be invoked with a
+pointer to the old driver; doing so can cause problems (such as
+use-after-free accesses in net2280).
 
-Only do the increment when assured there is no failure.
+This patch should be applied, with appropriate context changes, to all
+the stable kernels going back to 3.1.
 
-Signed-off-by: CQ Tang <cq.tang@intel.com>
-Link: http://lkml.kernel.org/r/20130318150221.8439.993.stgit@phlsvslse11.ph.intel.com
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[ luis: backported to 3.5; adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/lib/usercopy_64.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/udc-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/lib/usercopy_64.c b/arch/x86/lib/usercopy_64.c
-index e5b130b..cc9de31 100644
---- a/arch/x86/lib/usercopy_64.c
-+++ b/arch/x86/lib/usercopy_64.c
-@@ -72,10 +72,10 @@ copy_user_handle_tail(char *to, char *from, unsigned len, unsigned zerorest)
- 	char c;
- 	unsigned zero_len;
- 
--	for (; len; --len) {
-+	for (; len; --len, to++) {
- 		if (__get_user_nocheck(c, from++, sizeof(char)))
- 			break;
--		if (__put_user_nocheck(c, to++, sizeof(char)))
-+		if (__put_user_nocheck(c, to, sizeof(char)))
- 			break;
+diff --git a/drivers/usb/gadget/udc-core.c b/drivers/usb/gadget/udc-core.c
+index e5e44f8..b0af333 100644
+--- a/drivers/usb/gadget/udc-core.c
++++ b/drivers/usb/gadget/udc-core.c
+@@ -265,7 +265,7 @@ static void usb_gadget_remove_driver(struct usb_udc *udc)
+ 		udc->driver->disconnect(udc->gadget);
+ 		usb_gadget_disconnect(udc->gadget);
+ 		udc->driver->unbind(udc->gadget);
+-		usb_gadget_udc_stop(udc->gadget, udc->driver);
++		usb_gadget_udc_stop(udc->gadget, NULL);
+ 	} else {
+ 		usb_gadget_stop(udc->gadget, udc->driver);
  	}
- 
 -- 
 1.8.1.2
 
