@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab3CZWwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:52:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52895 "EHLO
+	id S1756195Ab3CZXZY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:25:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52947 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939Ab3CZWwC (ORCPT
+	with ESMTP id S1755958Ab3CZWwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:02 -0400
+	Tue, 26 Mar 2013 18:52:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Stephen Thirlwall <sdt@dr.com>
-Subject: [ 01/72] Revert "USB: EHCI: dont check DMA values in QH overlays"
-Date: Tue, 26 Mar 2013 15:50:44 -0700
-Message-Id: <20130326224919.825569008@linuxfoundation.org>
+        =?UTF-8?q?Maciej=20=C5=BBenczykowski?= <maze@google.com>,
+        Mintz Yuval <yuvalmin@broadcom.com>,
+        Eilon Greenstein <eilong@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 13/72] bnx2x: fix occasional statistics off-by-4GB error
+Date: Tue, 26 Mar 2013 15:50:56 -0700
+Message-Id: <20130326224921.099584759@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,54 +32,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-This reverts commit 0319f9909ce68a7516dfc8d53400e07168d281a8, which is commit
-feca7746d5d9e84b105a613b7f3b6ad00d327372 upstream.
 
-It shouldn't have gone into this stable release.
+From: Maciej Żenczykowski <maze@google.com>
 
+[ Upstream commit b009aac12cd0fe34293c68af8ac48b85be3bd858 ]
+
+The UPDATE_QSTAT function introduced on February 15, 2012
+in commit 1355b704b9ba "bnx2x: consistent statistics after
+internal driver reload" incorrectly fails to handle overflow
+during addition of the lower 32-bit field of a stat.
+
+This bug is present since 3.4-rc1 and should thus be considered
+a candidate for stable 3.4+ releases.
+
+Google-Bug-Id: 8374428
+Signed-off-by: Maciej Żenczykowski <maze@google.com>
+Cc: Mintz Yuval <yuvalmin@broadcom.com>
+Acked-by: Eilon Greenstein <eilong@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: Stephen Thirlwall <sdt@dr.com>
-
 ---
- drivers/usb/host/ehci-q.c |   18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-q.c
-+++ b/drivers/usb/host/ehci-q.c
-@@ -135,7 +135,7 @@ qh_refresh (struct ehci_hcd *ehci, struc
- 		 * qtd is updated in qh_completions(). Update the QH
- 		 * overlay here.
- 		 */
--		if (qh->hw->hw_token & ACTIVE_BIT(ehci)) {
-+		if (cpu_to_hc32(ehci, qtd->qtd_dma) == qh->hw->hw_current) {
- 			qh->hw->hw_qtd_next = qtd->hw_next;
- 			qtd = NULL;
- 		}
-@@ -459,19 +459,11 @@ qh_completions (struct ehci_hcd *ehci, s
- 			else if (last_status == -EINPROGRESS && !urb->unlinked)
- 				continue;
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.h
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.h
+@@ -439,8 +439,9 @@ struct bnx2x_fw_port_stats_old {
  
--			/*
--			 * If this was the active qtd when the qh was unlinked
--			 * and the overlay's token is active, then the overlay
--			 * hasn't been written back to the qtd yet so use its
--			 * token instead of the qtd's.  After the qtd is
--			 * processed and removed, the overlay won't be valid
--			 * any more.
--			 */
--			if (state == QH_STATE_IDLE &&
--					qh->qtd_list.next == &qtd->qtd_list &&
--					(hw->hw_token & ACTIVE_BIT(ehci))) {
-+			/* qh unlinked; token in overlay may be most current */
-+			if (state == QH_STATE_IDLE
-+					&& cpu_to_hc32(ehci, qtd->qtd_dma)
-+						== hw->hw_current) {
- 				token = hc32_to_cpu(ehci, hw->hw_token);
--				hw->hw_token &= ~ACTIVE_BIT(ehci);
+ #define UPDATE_QSTAT(s, t) \
+ 	do { \
+-		qstats->t##_hi = qstats_old->t##_hi + le32_to_cpu(s.hi); \
+ 		qstats->t##_lo = qstats_old->t##_lo + le32_to_cpu(s.lo); \
++		qstats->t##_hi = qstats_old->t##_hi + le32_to_cpu(s.hi) \
++			+ ((qstats->t##_lo < qstats_old->t##_lo) ? 1 : 0); \
+ 	} while (0)
  
- 				/* An unlink may leave an incomplete
- 				 * async transaction in the TT buffer.
+ #define UPDATE_QSTAT_OLD(f) \
 
 
