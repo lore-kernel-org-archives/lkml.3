@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759528Ab3CZL5L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 07:57:11 -0400
-Received: from ns.pmeerw.net ([87.118.82.44]:43146 "EHLO pmeerw.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752900Ab3CZL5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 07:57:08 -0400
-Date: Tue, 26 Mar 2013 12:57:07 +0100 (CET)
-From: Peter Meerwald <pmeerw@pmeerw.net>
-To: Tim Niemeyer <tim.niemeyer@corscience.de>,
-        Thomas Weber <thomas.weber@corscience.de>
-cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: regarding arm: update ARM_ERRATA_430973 Kconfig
-Message-ID: <alpine.DEB.2.01.1303261247320.18121@pmeerw.net>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1759487Ab3CZMCO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 08:02:14 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:52441 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759011Ab3CZMCM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 08:02:12 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/10] memory-hotplug: enable memory hotplug to handle hugepage
+In-Reply-To: <1363983835-20184-10-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1363983835-20184-10-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Notmuch/0.15.1+22~gc34effa (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Tue, 26 Mar 2013 17:31:51 +0530
+Message-ID: <87620e9xow.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032611-9264-0000-0000-0000036858A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
 
-regarding your patch against arch/arm/Kconfig:
+> +/* Returns true for head pages of in-use hugepages, otherwise returns false. */
+> +bool is_hugepage_movable(struct page *hpage)
+> +{
+> +	struct page *page;
+> +	struct hstate *h;
+> +	bool ret = false;
+> +
+> +	VM_BUG_ON(!PageHuge(hpage));
+> +	/*
+> +	 * This function can be called for a tail page because memory hotplug
+> +	 * scans movability of pages by pfn range of a memory block.
+> +	 * Larger hugepages (1GB for x86_64) are larger than memory block, so
+> +	 * the scan can start at the tail page of larger hugepages.
+> +	 * 1GB hugepage is not movable now, so we return with false for now.
+> +	 */
+> +	if (PageTail(hpage))
+> +		return false;
+> +	h = page_hstate(hpage);
+> +	spin_lock(&hugetlb_lock);
+> +	list_for_each_entry(page, &h->hugepage_activelist, lru)
+> +		if (page == hpage) {
+> +			ret = true;
+> +			break;
+> +		}
+> +	spin_unlock(&hugetlb_lock);
+> +	return ret;
+> +}
+> +
 
-@@ -1215,7 +1215,7 @@  config ARM_ERRATA_430973
- 	depends on CPU_V7
- 	help
- 	  This option enables the workaround for the 430973 Cortex-A8
--	  (r1p0..r1p2) erratum. If a code sequence containing an ARM/Thumb
-+	  (r1p*) erratum. If a code sequence containing an ARM/Thumb
- 	  interworking branch is replaced with another code sequence at the
- 	  same virtual address, whether due to self-modifying code or virtual
- 	  to physical address re-mapping, Cortex-A8 does not recover from the
+May be is_hugepage_active() ?
 
 
-I am seeing strange segfault/illegal instructions fixed by enabling 
-ARM_ERRATA_430973 on a TI OMAP3 DM3730, r3p2 IMHO (see below) 
+-aneesh
 
-ARM_ERRATA_430973 is relevant for which processors? have you checked the 
-errata list? I had no luck obtaining it yet
-
-
-cat /proc/cpuinfo 
-Processor       : ARMv7 Processor rev 2 (v7l)
-BogoMIPS        : 313.29
-Features        : swp half thumb fastmult vfp edsp thumbee neon vfpv3 tls 
-CPU implementer : 0x41
-CPU architecture: 7
-CPU variant     : 0x3
-CPU part        : 0xc08
-CPU revision    : 2
-
-thanks, p.
-
--- 
-
-Peter Meerwald
-+43-664-2444418 (mobile)
