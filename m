@@ -1,85 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab3CZSRU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:17:20 -0400
-Received: from fieldses.org ([174.143.236.118]:47983 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751513Ab3CZSRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 14:17:17 -0400
-Date: Tue, 26 Mar 2013 14:17:17 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-Cc: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: kernel 3.8.4 : kernel BUG at fs/locks.c:2093!   part #2
-Message-ID: <20130326181717.GA8978@fieldses.org>
-References: <514F31AF.3080709@gmx.de>
- <20130325220143.GD10887@fieldses.org>
- <20130326144640.GB3353@fieldses.org>
- <5151DEF7.3060003@gmx.de>
+	id S1756675Ab3CZSR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:17:27 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:44764 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755756Ab3CZSR0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 14:17:26 -0400
+Message-ID: <5151E62E.9000703@surriel.com>
+Date: Tue, 26 Mar 2013 14:17:18 -0400
+From: Rik van Riel <riel@surriel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5151DEF7.3060003@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: Davidlohr Bueso <davidlohr.bueso@hp.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        hhuang@redhat.com, jason.low2@hp.com, walken@google.com,
+        lwoodman@redhat.com, chegu_vinod@hp.com,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: ipc,sem: sysv semaphore scalability
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>  <5151DBD3.6080201@oracle.com> <1364320297.5146.7.camel@buesod1.americas.hpqcorp.net> <5151E3D2.1070103@oracle.com>
+In-Reply-To: <5151E3D2.1070103@oracle.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 06:46:31PM +0100, Toralf Förster wrote:
-> On 03/26/2013 03:46 PM, J. Bruce Fields wrote:
-> > Can you run with test patches?
-> > 
-> > This just makes nfsd's fput calls synchronous so that we see in the
-> > backtrace who called them.
-> 
-> Well - the patched 3.8.4 host kernel now survives the stress test of the UML system.
+On 03/26/2013 02:07 PM, Sasha Levin wrote:
+> On 03/26/2013 01:51 PM, Davidlohr Bueso wrote:
+>> On Tue, 2013-03-26 at 13:33 -0400, Sasha Levin wrote:
+>>> On 03/20/2013 03:55 PM, Rik van Riel wrote:
+>>>> This series makes the sysv semaphore code more scalable,
+>>>> by reducing the time the semaphore lock is held, and making
+>>>> the locking more scalable for semaphore arrays with multiple
+>>>> semaphores.
+>>>
+>>> Hi Rik,
+>>>
+>>> Another issue that came up is:
+>>>
+>>> [   96.347341] ================================================
+>>> [   96.348085] [ BUG: lock held when returning to user space! ]
+>>> [   96.348834] 3.9.0-rc4-next-20130326-sasha-00011-gbcb2313 #318 Tainted: G        W
+>>> [   96.360300] ------------------------------------------------
+>>> [   96.361084] trinity-child9/7583 is leaving the kernel with locks still held!
+>>> [   96.362019] 1 lock held by trinity-child9/7583:
+>>> [   96.362610]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff8192eafb>] SYSC_semtimedop+0x1fb/0xec0
+>>>
+>>> It seems that we can leave semtimedop without releasing the rcu read lock.
+>>>
+>>> I'm a bit confused by what's going on in semtimedop with regards to rcu read lock, it
+>>> seems that this behaviour is actually intentional?
+>>>
+>>>          rcu_read_lock();
+>>>          sma = sem_obtain_object_check(ns, semid);
+>>>          if (IS_ERR(sma)) {
+>>>                  if (un)
+>>>                          rcu_read_unlock();
+>>>                  error = PTR_ERR(sma);
+>>>                  goto out_free;
+>>>          }
+>>>
+>>> When I've looked at that it seems that not releasing the read lock was (very)
+>>> intentional.
+>>
+>> This logic was from the original code, which I also found to be quite
+>> confusing.
+>
+> I wasn't getting this warning with the old code, so there was probably something
+> else that triggers this now.
+>
+>>>
+>>> After that, the only code path that would release the lock starts with:
+>>>
+>>>          if (un) {
+>>> 		...
+>>>
+>>> So we won't release the lock at all if un is NULL?
+>>>
+>>
+>> Not necessarily, we do release everything at the end of the function:
+>>
+>> out_unlock_free:
+>> 	sem_unlock(sma, locknum);
+>
+> Ow, there's a rcu_read_unlock() in sem_unlock()? This complicates things even
+> more I suspect. If un is non-NULL we'll be unlocking rcu lock twice?
 
-Bah, too bad.  That patch was definitely not a fix, so there may be some
-race here.
+It is uglier than you think...
 
-> What I get at the host is now :
-> 
-> 2013-03-26T18:32:17.487+01:00 n22 kernel: ------------[ cut here ]------------
-> 2013-03-26T18:32:17.487+01:00 n22 kernel: WARNING: at mm/page_alloc.c:2376 __alloc_pages_nodemask+0x262/0x7c0()
-...
-> 2013-03-26T18:32:17.487+01:00 n22 kernel: [<c110f149>] __kmalloc+0x1b9/0x1e0
-> 2013-03-26T18:32:17.487+01:00 n22 kernel: [<f85835bf>] ? cache_check+0x22f/0x340 [sunrpc]
-> 2013-03-26T18:32:17.487+01:00 n22 kernel: [<f90a0b1c>] nfs4_acl_new+0x1c/0x30 [nfsd]
-> 2013-03-26T18:32:17.488+01:00 n22 kernel: [<f9095482>] nfsd4_decode_fattr+0x302/0x6c0 [nfsd]
-...
+On success, find_alloc_undo will call rcu_read_lock, so we have the
+rcu_read_lock held twice :(
 
-A different bug, but thanks for catching it, I suspect the following is
-all we need.
+Some of the ipc code is quite ugly, but making too many large changes
+at once is just asking for trouble. I suspect we're going to have to
+untangle this one bit at a time...
 
---b.
 
-commit 814d9d4f9164c3d778dadd093a54bb55d9a0c576
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Tue Mar 26 14:11:13 2013 -0400
-
-    nfsd4: reject "negative" acl lengths
-    
-    Since we only enforce an upper bound, not a lower bound, a "negative"
-    length can get through here.
-    
-    The symptom seen was a warning when we attempt to a kmalloc with an
-    excessive size.
-    
-    Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index 0dc1158..d1dd710 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -264,7 +264,7 @@ nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
- 		iattr->ia_valid |= ATTR_SIZE;
- 	}
- 	if (bmval[0] & FATTR4_WORD0_ACL) {
--		int nace;
-+		u32 nace;
- 		struct nfs4_ace *ace;
- 
- 		READ_BUF(4); len += 4;
+-- 
+All rights reversed.
