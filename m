@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759428Ab3CZIpf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 04:45:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51184 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591Ab3CZIpc (ORCPT
+	id S934281Ab3CZIpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 04:45:44 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:62188 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934170Ab3CZIpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 04:45:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <51514EA9.8080801@huawei.com>
-References: <1363793126-11510-1-git-send-email-ming.lei@canonical.com>
-	<1363793126-11510-2-git-send-email-ming.lei@canonical.com>
-	<514A7340.5040409@huawei.com>
-	<CACVXFVN7urpLM+Q-3o9=hYQLM=544WTXh+BnSo9fBM+d07oapQ@mail.gmail.com>
-	<514A7E72.2090200@huawei.com>
-	<CACVXFVMS644BpX7voMHS-xXoRs9-G4y96=ubk_NAj6KDTy1ENQ@mail.gmail.com>
-	<514BF0BE.1070907@huawei.com>
-	<CACVXFVOAFqVoNP-igJ-WeaJ+rKF-gREcHqspHWOkz4EJ9Gn94w@mail.gmail.com>
-	<51514EA9.8080801@huawei.com>
-Date: Tue, 26 Mar 2013 16:45:29 +0800
-Message-ID: <CACVXFVPLkaoowZJZdrg3nkm7ymismJ6W=_BzgyroKJOxJYPODA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] sysfs: fix race between readdir and lseek
-From: Ming Lei <ming.lei@canonical.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 26 Mar 2013 04:45:41 -0400
+Message-ID: <1364287538.1390.315.camel@x61.thuisdomein>
+Subject: [PATCH] [TRIVIAL] Fix printk typo "CONFIG_LED_CLASS"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 26 Mar 2013 09:45:38 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 Mar 2013 08:45:38.0984 (UTC) FILETIME=[4A920A80:01CE29FE]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 3:30 PM, Li Zefan <lizefan@huawei.com> wrote:
->> Considered that vfs_read()/vfs_write on sysfs dir is almost doing nothing, the
->> above problem may only exist in theory.
->
-> The read() vs readdir() race in sysfs directory doesn't exist in theory only.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Untested again.
 
-Could you let me know if you have applied the two patches on your test?
+1) A better fix might be to not mention a Kconfig macro at all. Because
+future Kconfig reshuffles might make this warning incorrect again. And
+it can already be incorrect, as the actual configuration problem seems
+to be: "LEDS_CLASS and RADIO_SHARK do not match". But that is not my
+call.
 
-https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=e5110f411d2ee35bf8d202ccca2e89c633060dca
+ drivers/media/radio/radio-shark.c  | 2 +-
+ drivers/media/radio/radio-shark2.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=991f76f837bf22c5bb07261cfd86525a0a96650c
+diff --git a/drivers/media/radio/radio-shark.c b/drivers/media/radio/radio-shark.c
+index 8c309c7..8fa18ab 100644
+--- a/drivers/media/radio/radio-shark.c
++++ b/drivers/media/radio/radio-shark.c
+@@ -284,7 +284,7 @@ static void shark_resume_leds(struct shark_device *shark)
+ static int shark_register_leds(struct shark_device *shark, struct device *dev)
+ {
+ 	v4l2_warn(&shark->v4l2_dev,
+-		  "CONFIG_LED_CLASS not enabled, LED support disabled\n");
++		  "CONFIG_LEDS_CLASS not enabled, LED support disabled\n");
+ 	return 0;
+ }
+ static inline void shark_unregister_leds(struct shark_device *shark) { }
+diff --git a/drivers/media/radio/radio-shark2.c b/drivers/media/radio/radio-shark2.c
+index ef65ebb..9fb6697 100644
+--- a/drivers/media/radio/radio-shark2.c
++++ b/drivers/media/radio/radio-shark2.c
+@@ -250,7 +250,7 @@ static void shark_resume_leds(struct shark_device *shark)
+ static int shark_register_leds(struct shark_device *shark, struct device *dev)
+ {
+ 	v4l2_warn(&shark->v4l2_dev,
+-		  "CONFIG_LED_CLASS not enabled, LED support disabled\n");
++		  "CONFIG_LEDS_CLASS not enabled, LED support disabled\n");
+ 	return 0;
+ }
+ static inline void shark_unregister_leds(struct shark_device *shark) { }
+-- 
+1.7.11.7
 
-Also I appreciate it if you may share your test case...
-
-Thanks,
---
-Ming Lei
