@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964923Ab3CZQPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:15:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53637 "EHLO
+	id S964948Ab3CZQP7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:15:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53632 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964901Ab3CZPWI (ORCPT
+	with ESMTP id S934768Ab3CZPWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:22:08 -0400
+	Tue, 26 Mar 2013 11:22:07 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Guillaume Nault <g.nault@alphalink.fr>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 037/150] l2tp: Restore socket refcount when sendmsg succeeds
-Date: Tue, 26 Mar 2013 15:18:56 +0000
-Message-Id: <1364311249-14454-38-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 036/150] perf,x86: fix wrmsr_on_cpu() warning on suspend/resume
+Date: Tue, 26 Mar 2013 15:18:55 +0000
+Message-Id: <1364311249-14454-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -28,43 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guillaume Nault <g.nault@alphalink.fr>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 8b82547e33e85fc24d4d172a93c796de1fefa81a upstream.
+commit 2a6e06b2aed6995af401dcd4feb5e79a0c7ea554 upstream.
 
-The sendmsg() syscall handler for PPPoL2TP doesn't decrease the socket
-reference counter after successful transmissions. Any successful
-sendmsg() call from userspace will then increase the reference counter
-forever, thus preventing the kernel's session and tunnel data from
-being freed later on.
+Commit 1d9d8639c063 ("perf,x86: fix kernel crash with PEBS/BTS after
+suspend/resume") fixed a crash when doing PEBS performance profiling
+after resuming, but in using init_debug_store_on_cpu() to restore the
+DS_AREA mtrr it also resulted in a new WARN_ON() triggering.
 
-The problem only happens when writing directly on L2TP sockets.
-PPP sockets attached to L2TP are unaffected as the PPP subsystem
-uses pppol2tp_xmit() which symmetrically increase/decrease reference
-counters.
+init_debug_store_on_cpu() uses "wrmsr_on_cpu()", which in turn uses CPU
+cross-calls to do the MSR update.  Which is not really valid at the
+early resume stage, and the warning is quite reasonable.  Now, it all
+happens to _work_, for the simple reason that smp_call_function_single()
+ends up just doing the call directly on the CPU when the CPU number
+matches, but we really should just do the wrmsr() directly instead.
 
-This patch adds the missing call to sock_put() before returning from
-pppol2tp_sendmsg().
+This duplicates the wrmsr() logic, but hopefully we can just remove the
+wrmsr_on_cpu() version eventually.
 
-Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Parag Warudkar <parag.lkml@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/l2tp/l2tp_ppp.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
-index 8ef6b94..46c7cc7 100644
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -355,6 +355,7 @@ static int pppol2tp_sendmsg(struct kiocb *iocb, struct socket *sock, struct msgh
- 	l2tp_xmit_skb(session, skb, session->hdr_len);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 9a9be1e..57a2d80 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -717,8 +717,10 @@ void intel_ds_init(void)
  
- 	sock_put(ps->tunnel_sock);
-+	sock_put(sk);
+ void perf_restore_debug_store(void)
+ {
++	struct debug_store *ds = __this_cpu_read(cpu_hw_events.ds);
++
+ 	if (!x86_pmu.bts && !x86_pmu.pebs)
+ 		return;
  
- 	return error;
- 
+-	init_debug_store_on_cpu(smp_processor_id());
++	wrmsrl(MSR_IA32_DS_AREA, (unsigned long)ds);
+ }
 -- 
 1.8.1.2
 
