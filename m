@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934840Ab3CZPve (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:51:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53807 "EHLO
+	id S965099Ab3CZPvr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:51:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53802 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965062Ab3CZPWl (ORCPT
+	with ESMTP id S964919Ab3CZPWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 11:22:41 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 065/150] jbd2: fix use after free in jbd2_journal_dirty_metadata()
-Date: Tue, 26 Mar 2013 15:19:24 +0000
-Message-Id: <1364311249-14454-66-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 066/150] ext4: use atomic64_t for the per-flexbg free_clusters count
+Date: Tue, 26 Mar 2013 15:19:25 +0000
+Message-Id: <1364311249-14454-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -27,78 +27,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit ad56edad089b56300fd13bb9eeb7d0424d978239 upstream.
+commit 90ba983f6889e65a3b506b30dc606aa9d1d46cd2 upstream.
 
-jbd2_journal_dirty_metadata() didn't get a reference to journal_head it
-was working with. This is OK in most of the cases since the journal head
-should be attached to a transaction but in rare occasions when we are
-journalling data, __ext4_journalled_writepage() can race with
-jbd2_journal_invalidatepage() stripping buffers from a page and thus
-journal head can be freed under hands of jbd2_journal_dirty_metadata().
+A user who was using a 8TB+ file system and with a very large flexbg
+size (> 65536) could cause the atomic_t used in the struct flex_groups
+to overflow.  This was detected by PaX security patchset:
 
-Fix the problem by getting own journal head reference in
-jbd2_journal_dirty_metadata() (and also in jbd2_journal_set_triggers()
-which can possibly have the same issue).
+http://forums.grsecurity.net/viewtopic.php?f=3&t=3289&p=12551#p12551
 
-Reported-by: Zheng Liu <gnehzuil.liu@gmail.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+This bug was introduced in commit 9f24e4208f7e, so it's been around
+since 2.6.30.  :-(
+
+Fix this by using an atomic64_t for struct orlav_stats's
+free_clusters.
+
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/jbd2/transaction.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ fs/ext4/ext4.h    |  6 +++---
+ fs/ext4/ialloc.c  |  4 ++--
+ fs/ext4/mballoc.c | 12 ++++++------
+ fs/ext4/resize.c  |  4 ++--
+ fs/ext4/super.c   |  4 ++--
+ 5 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
-index 2fb20f5..399e4ee 100644
---- a/fs/jbd2/transaction.c
-+++ b/fs/jbd2/transaction.c
-@@ -1047,9 +1047,12 @@ out:
- void jbd2_journal_set_triggers(struct buffer_head *bh,
- 			       struct jbd2_buffer_trigger_type *type)
- {
--	struct journal_head *jh = bh2jh(bh);
-+	struct journal_head *jh = jbd2_journal_grab_journal_head(bh);
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index a14c45e..d929a80 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -329,9 +329,9 @@ struct ext4_group_desc
+  */
  
-+	if (WARN_ON(!jh))
-+		return;
- 	jh->b_triggers = type;
-+	jbd2_journal_put_journal_head(jh);
+ struct flex_groups {
+-	atomic_t free_inodes;
+-	atomic_t free_clusters;
+-	atomic_t used_dirs;
++	atomic64_t	free_clusters;
++	atomic_t	free_inodes;
++	atomic_t	used_dirs;
+ };
+ 
+ #define EXT4_BG_INODE_UNINIT	0x0001 /* Inode table/bitmap not in use */
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index 536ac65..b1919af 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -325,8 +325,8 @@ error_return:
  }
  
- void jbd2_buffer_frozen_trigger(struct journal_head *jh, void *mapped_data,
-@@ -1101,17 +1104,18 @@ int jbd2_journal_dirty_metadata(handle_t *handle, struct buffer_head *bh)
- {
- 	transaction_t *transaction = handle->h_transaction;
- 	journal_t *journal = transaction->t_journal;
--	struct journal_head *jh = bh2jh(bh);
-+	struct journal_head *jh;
- 	int ret = 0;
+ struct orlov_stats {
++	__u64 free_clusters;
+ 	__u32 free_inodes;
+-	__u32 free_clusters;
+ 	__u32 used_dirs;
+ };
  
--	jbd_debug(5, "journal_head %p\n", jh);
--	JBUFFER_TRACE(jh, "entry");
- 	if (is_handle_aborted(handle))
- 		goto out;
--	if (!buffer_jbd(bh)) {
-+	jh = jbd2_journal_grab_journal_head(bh);
-+	if (!jh) {
- 		ret = -EUCLEAN;
- 		goto out;
+@@ -343,7 +343,7 @@ static void get_orlov_stats(struct super_block *sb, ext4_group_t g,
+ 
+ 	if (flex_size > 1) {
+ 		stats->free_inodes = atomic_read(&flex_group[g].free_inodes);
+-		stats->free_clusters = atomic_read(&flex_group[g].free_clusters);
++		stats->free_clusters = atomic64_read(&flex_group[g].free_clusters);
+ 		stats->used_dirs = atomic_read(&flex_group[g].used_dirs);
+ 		return;
  	}
-+	jbd_debug(5, "journal_head %p\n", jh);
-+	JBUFFER_TRACE(jh, "entry");
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 3631fbf..18571ac 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2814,8 +2814,8 @@ ext4_mb_mark_diskspace_used(struct ext4_allocation_context *ac,
+ 	if (sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group = ext4_flex_group(sbi,
+ 							  ac->ac_b_ex.fe_group);
+-		atomic_sub(ac->ac_b_ex.fe_len,
+-			   &sbi->s_flex_groups[flex_group].free_clusters);
++		atomic64_sub(ac->ac_b_ex.fe_len,
++			     &sbi->s_flex_groups[flex_group].free_clusters);
+ 	}
  
- 	jbd_lock_bh_state(bh);
+ 	err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
+@@ -4665,8 +4665,8 @@ do_more:
  
-@@ -1202,6 +1206,7 @@ int jbd2_journal_dirty_metadata(handle_t *handle, struct buffer_head *bh)
- 	spin_unlock(&journal->j_list_lock);
- out_unlock_bh:
- 	jbd_unlock_bh_state(bh);
-+	jbd2_journal_put_journal_head(jh);
- out:
- 	JBUFFER_TRACE(jh, "exit");
- 	WARN_ON(ret);	/* All errors are bugs, so dump the stack */
+ 	if (sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
+-		atomic_add(count_clusters,
+-			   &sbi->s_flex_groups[flex_group].free_clusters);
++		atomic64_add(count_clusters,
++			     &sbi->s_flex_groups[flex_group].free_clusters);
+ 	}
+ 
+ 	ext4_mb_unload_buddy(&e4b);
+@@ -4811,8 +4811,8 @@ int ext4_group_add_blocks(handle_t *handle, struct super_block *sb,
+ 
+ 	if (sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
+-		atomic_add(EXT4_NUM_B2C(sbi, blocks_freed),
+-			   &sbi->s_flex_groups[flex_group].free_clusters);
++		atomic64_add(EXT4_NUM_B2C(sbi, blocks_freed),
++			     &sbi->s_flex_groups[flex_group].free_clusters);
+ 	}
+ 
+ 	ext4_mb_unload_buddy(&e4b);
+diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
+index 86261ca..a2289bf 100644
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -1272,8 +1272,8 @@ static void ext4_update_super(struct super_block *sb,
+ 	    sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group;
+ 		flex_group = ext4_flex_group(sbi, group_data[0].group);
+-		atomic_add(EXT4_NUM_B2C(sbi, free_blocks),
+-			   &sbi->s_flex_groups[flex_group].free_clusters);
++		atomic64_add(EXT4_NUM_B2C(sbi, free_blocks),
++			     &sbi->s_flex_groups[flex_group].free_clusters);
+ 		atomic_add(EXT4_INODES_PER_GROUP(sb) * flex_gd->count,
+ 			   &sbi->s_flex_groups[flex_group].free_inodes);
+ 	}
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 5be2105..79881a6 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1966,8 +1966,8 @@ static int ext4_fill_flex_info(struct super_block *sb)
+ 		flex_group = ext4_flex_group(sbi, i);
+ 		atomic_add(ext4_free_inodes_count(sb, gdp),
+ 			   &sbi->s_flex_groups[flex_group].free_inodes);
+-		atomic_add(ext4_free_group_clusters(sb, gdp),
+-			   &sbi->s_flex_groups[flex_group].free_clusters);
++		atomic64_add(ext4_free_group_clusters(sb, gdp),
++			     &sbi->s_flex_groups[flex_group].free_clusters);
+ 		atomic_add(ext4_used_dirs_count(sb, gdp),
+ 			   &sbi->s_flex_groups[flex_group].used_dirs);
+ 	}
 -- 
 1.8.1.2
 
