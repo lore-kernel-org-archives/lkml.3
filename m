@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab3CZRsG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 13:48:06 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:17514 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754693Ab3CZRsD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 13:48:03 -0400
-X-IronPort-AV: E=Sophos;i="4.84,913,1355097600"; 
-   d="scan'208";a="2933517"
-Message-ID: <5151DF50.1060009@citrix.com>
-Date: Tue, 26 Mar 2013 18:48:00 +0100
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: Re: [PATCH RFC 08/12] xen-blkback: use balloon pages for all mappings
-References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com> <1362047335-26402-9-git-send-email-roger.pau@citrix.com> <20130304202248.GK15386@phenom.dumpdata.com>
-In-Reply-To: <20130304202248.GK15386@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1756165Ab3CZRsT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 13:48:19 -0400
+Received: from norkia.v3.sk ([91.210.183.14]:34036 "EHLO norkia.v3.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754951Ab3CZRsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 13:48:16 -0400
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: linux-kernel@vger.kernel.org
+Cc: Lubomir Rintel <lkundrak@v3.sk>, Stephen Warren <swarren@wwwdotorg.org>,
+        linux-rpi-kernel@lists.infradead.org
+Subject: [PATCH v2] bcm2835: Add Broadcom BCM2835 RNG to the device tree
+Date: Tue, 26 Mar 2013 18:48:10 +0100
+Message-Id: <1364320090-23363-1-git-send-email-lkundrak@v3.sk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1364135137-26691-1-git-send-email-lkundrak@v3.sk>
+References: <1364135137-26691-1-git-send-email-lkundrak@v3.sk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/13 21:22, Konrad Rzeszutek Wilk wrote:
->> @@ -194,14 +260,15 @@ static void add_persistent_gnt(struct rb_root *root,
->>               else if (persistent_gnt->gnt > this->gnt)
->>                       new = &((*new)->rb_right);
->>               else {
->> -                     pr_alert(DRV_PFX " trying to add a gref that's already in the tree\n");
->> -                     BUG();
->> +                     pr_alert_ratelimited(DRV_PFX " trying to add a gref that's already in the tree\n");
->> +                     return -EINVAL;
-> 
-> That looks like a seperate bug-fix patch? Especially the pr_alert_ratelimited
-> part?
+This adds a device tree binding for random number generator present on Broadcom
+BCM2835 SoC, used in Raspberry Pi and Roku 2 devices.
 
-Not really, the way we added granted frames before this patch, it was
-never possible to add a persistent grant with the same gref twice.
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-rpi-kernel@lists.infradead.org
+---
+Changes for v2:
+    - Split out from the driver changeset
+    - Added documentation
 
-With the changes introduced in this patch we first map the grants and
-then we try to make them persistent by adding them to the tree. So it is
-possible for a frontend to craft a malicious request that has the same
-gref in all segments, and when we try to add them to the tree of
-persistent grants we would hit the BUG, that's why we need to ratelimit
-the alert (to prevent flooding), and return EINVAL instead of crashing.
+ .../devicetree/bindings/rng/brcm,bcm2835.txt       |   13 +++++++++++++
+ arch/arm/boot/dts/bcm2835.dtsi                     |    5 +++++
+ 2 files changed, 18 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/rng/brcm,bcm2835.txt
+
+diff --git a/Documentation/devicetree/bindings/rng/brcm,bcm2835.txt b/Documentation/devicetree/bindings/rng/brcm,bcm2835.txt
+new file mode 100644
+index 0000000..07ccdaa
+--- /dev/null
++++ b/Documentation/devicetree/bindings/rng/brcm,bcm2835.txt
+@@ -0,0 +1,13 @@
++BCM2835 Random number generator
++
++Required properties:
++
++- compatible : should be "brcm,bcm2835-rng"
++- reg : Specifies base physical address and size of the registers.
++
++Example:
++
++rng {
++        compatible = "brcm,bcm2835-rng";
++        reg = <0x7e104000 0x10>;
++};
+diff --git a/arch/arm/boot/dts/bcm2835.dtsi b/arch/arm/boot/dts/bcm2835.dtsi
+index 7e0481e..dc22336 100644
+--- a/arch/arm/boot/dts/bcm2835.dtsi
++++ b/arch/arm/boot/dts/bcm2835.dtsi
+@@ -34,6 +34,11 @@
+ 			reg = <0x7e100000 0x28>;
+ 		};
+ 
++		rng {
++			compatible = "brcm,bcm2835-rng";
++			reg = <0x7e104000 0x10>;
++		};
++
+ 		uart@20201000 {
+ 			compatible = "brcm,bcm2835-pl011", "arm,pl011", "arm,primecell";
+ 			reg = <0x7e201000 0x1000>;
+-- 
+1.7.1
+
