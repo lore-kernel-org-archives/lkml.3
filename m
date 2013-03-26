@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932842Ab3CZBX3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 21:23:29 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:35263 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932228Ab3CZBX2 (ORCPT
+	id S1758812Ab3CZBbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 21:31:38 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:41034 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754950Ab3CZBbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 21:23:28 -0400
-X-Spam-Score: -100.8
-Message-ID: <5150F871.5050306@asianux.com>
-Date: Tue, 26 Mar 2013 09:22:57 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "nico@linaro.org" <nico@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] include/linux/platform_data: beautify code, 'inline'
- is better in front of 'void'
-References: <514FB826.9020302@asianux.com> <20130325233213.GA29245@kroah.com>
-In-Reply-To: <20130325233213.GA29245@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 25 Mar 2013 21:31:37 -0400
+From: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+To: hjk@hansjkoch.de, gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Damian Hobson-Garcia <dhobsong@igel.co.jp>
+Subject: [PATCH] drivers: uio: Fix UIO device registration failure
+Date: Tue, 26 Mar 2013 10:31:22 +0900
+Message-Id: <1364261482-19160-1-git-send-email-dhobsong@igel.co.jp>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年03月26日 07:32, Greg KH wrote:
-> On Mon, Mar 25, 2013 at 10:36:22AM +0800, Chen Gang wrote:
->>
->>   better to let 'inline' in front of 'void'
-> 
-> Why?  What does this fix?
-> 
-> 
-> 
+Until recently uio_get_minor() returned 0 for success and
+a negative value on failure.  This became non-negative for suceess and
+negative for failure.  Restore the original return value spec so that we can
+successfully initialize UIO devices with a non-zero minor device
+number.
 
-  when I am compiling with "EXTRA_FLAGS=-W", I get a warning:
-    make V=1 EXTRA_CFLAGS=-W ARCH=arm randconfig
-    make V=1 EXTRA_CFLAGS=-W ARCH=arm menuconfig
-      choose arm-linux-gnu- for cross chain prefix.
-      choose S5pv210 for processor type
-    make V=1 EXTRA_CFLAGS=-W ARCH=arm
+Signed-off-by: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+---
+ drivers/uio/uio.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-  the warning is:
-    include/linux/platform_data/usb-ohci-s3c2410.h:34:1: warning: ‘inline’ is not at beginning of declaration [-Wold-style-declaration]
-
-
-  it is only for beautify code, not fix a bug.
-
-
-
-  :-)
-
-
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index c8b9262..b645c47 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -374,6 +374,7 @@ static int uio_get_minor(struct uio_device *idev)
+ 	retval = idr_alloc(&uio_idr, idev, 0, UIO_MAX_DEVICES, GFP_KERNEL);
+ 	if (retval >= 0) {
+ 		idev->minor = retval;
++		retval = 0;
+ 	} else if (retval == -ENOSPC) {
+ 		dev_err(idev->dev, "too many uio devices\n");
+ 		retval = -EINVAL;
 -- 
-Chen Gang
+1.7.5.4
 
-Asianux Corporation
