@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932729Ab3CZTuM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 15:50:12 -0400
-Received: from smtp-out-013.synserver.de ([212.40.185.13]:1262 "EHLO
-	smtp-out-226.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752251Ab3CZTuK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 15:50:10 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 26673
-Message-ID: <5151FC65.80409@metafoo.de>
-Date: Tue, 26 Mar 2013 20:52:05 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1755957Ab3CZTxy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 15:53:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53871 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752300Ab3CZTxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 15:53:53 -0400
+Date: Tue, 26 Mar 2013 15:53:44 -0400
+From: Dave Jones <davej@redhat.com>
+To: CAI Qian <caiqian@redhat.com>
+Cc: Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        linux-mm <linux-mm@kvack.org>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: BUG at kmem_cache_alloc
+Message-ID: <20130326195344.GA1578@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	CAI Qian <caiqian@redhat.com>, Christoph Lameter <cl@linux.com>,
+	David Rientjes <rientjes@google.com>, linux-mm <linux-mm@kvack.org>,
+	linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
+References: <0000013da2b53120-1c207286-3e36-483e-9fd9-90fc529d48aa-000000@email.amazonses.com>
+ <1122269504.6445741.1364290347815.JavaMail.root@redhat.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
-CC: Anton Vorontsov <cbouatmailru@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] power: bq27x00_battery: Export all battery registers
- via sysfs
-References: <1358604104-7667-1-git-send-email-pali.rohar@gmail.com> <50FBBE7D.7040102@metafoo.de> <201303262027.39772@pali>
-In-Reply-To: <201303262027.39772@pali>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1122269504.6445741.1364290347815.JavaMail.root@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2013 08:27 PM, Pali Rohár wrote:
-> On Sunday 20 January 2013 10:53:01 Lars-Peter Clausen wrote:
->> On 01/19/2013 03:01 PM, Pali Rohár wrote:
->>> bq27xxx batteries have a lot of properties, more than
->>> power_supply interface. Some of them can be usefull for
->>> userspace applications (like CI bit) but does not make
->>> sense to add bq specified property to power_supply
->>> interface. When bq27x00_battery is not loaded userspace
->>> application (like i2cget) can use /dev/i2c-* interface for
->>> raw access. But when kernel module is attached to i2c
->>> device, userspace applications cannot access it via
->>> /dev/i2c-*.
->>
->> You can still access it if you use the I2C_SLAVE_FORCE flag.
->> This is a bit ugly, but I'd rather see an ugly hack in
->> userspace than in kernel space.
->>
-> 
-> What is I2C_SLAVE_FORCE flag doing? Isnt there some potential 
-> hardware damage problems (like simultaneous access to i2c bus)?
-> 
+On Tue, Mar 26, 2013 at 05:32:27AM -0400, CAI Qian wrote:
 
-Well the transfers will still be serialized. I don't think this will cause
-damage to the hardware.
+ > Still running and will update ASAP. One thing I noticed was that trinity
+ > threw out this error before the kernel crash.
+ > 
+ > BUG!:       
+ > CHILD (pid:28825) GOT REPARENTED! parent pid:19380. Watchdog pid:19379 
+ >       
+ > BUG!:       
+ > Last syscalls: 
+ > [0]  pid:28515 call:settimeofday callno:10356 
+ > [1]  pid:28822 call:setgid callno:322 
+ > [2]  pid:28581 call:init_module callno:3622 
+ > [3]  pid:28825 call:readlinkat callno:403 
+ > child 28581 exiting 
+ > child 28515 exiting 
+ >  ...killed. 
 
-- lars
+When this happens, it usually means that the parent segfaulted.
+I've been trying to reproduce a few reports of this for a while
+without success.  If you get time, running trinity inside gdb should
+be enough to get a useful backtrace.
+
+(Or run with -D, and collect coredumps [there will a lot], and match the
+ core to the pid of the process we're interested in)
+
+	Dave
+
