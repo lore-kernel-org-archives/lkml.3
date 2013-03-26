@@ -1,31 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759969Ab3CZSEl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:04:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12154 "EHLO
+	id S1759906Ab3CZSEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 14:04:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17054 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823Ab3CZRgC (ORCPT
+	with ESMTP id S1753837Ab3CZRgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 13:36:02 -0400
-X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=pZQ0TaBb_PIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=wNlHInFWIKoA:10 a=1XWaLZrsAAAA:8 a=WbcJuUcRAAAA:8 a=J1Y8HTJGAAAA:8 a=oCcaPWc0AAAA:8 a=kWDgOHFhbxVf0gkMJRgA:9 a=UTB_XpHje0EA:10 a=yi5kreJwjdsA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=P7a7IbVT114A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=AR8qYki3vzwA:10 a=J1Y8HTJGAAAA:8 a=amj7f86UGWX7y1GQ2IsA:9 a=4N9Db7Z2_RYA:10 a=_itA_4iWgXN33hkn:21 a=i7VBE9Df6lw3nliD:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130326173600.827499824@goodmis.org>
+Message-Id: <20130326173600.364430110@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 26 Mar 2013 13:21:05 -0400
+Date: Tue, 26 Mar 2013 13:21:02 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Eric Dumazet <edumazet@google.com>, Neal Cardwell <ncardwell@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        Nandita Dukkipati <nanditad@google.com>,
-        "H.K. Jerry Chu" <hkchu@google.com>,
-        Romain Francoise <romain@orebokech.com>,
+Cc: Christoph Paasch <christoph.paasch@uclouvain.be>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 06/86] tcp: tcp_replace_ts_recent() should not be called from
- tcp_validate_incoming()
+Subject: [PATCH 03/86] inet: Fix kmemleak in tcp_v4/6_syn_recv_sock and
+ dccp_v4/6_request_recv_sock
 References: <20130326172059.136127374@goodmis.org>
-Content-Disposition: inline; filename=0006-tcp-tcp_replace_ts_recent-should-not-be-called-from-.patch
+Content-Disposition: inline; filename=0003-inet-Fix-kmemleak-in-tcp_v4-6_syn_recv_sock-and-dccp.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,75 +31,171 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Christoph Paasch <christoph.paasch@uclouvain.be>
 
-[ Upstream commit bd090dfc634ddd711a5fbd0cadc6e0ab4977bcaf ]
+[ Upstream commit e337e24d6624e74a558aa69071e112a65f7b5758 ]
 
-We added support for RFC 5961 in latest kernels but TCP fails
-to perform exhaustive check of ACK sequence.
+If in either of the above functions inet_csk_route_child_sock() or
+__inet_inherit_port() fails, the newsk will not be freed:
 
-We can update our view of peer tsval from a frame that is
-later discarded by tcp_ack()
+unreferenced object 0xffff88022e8a92c0 (size 1592):
+  comm "softirq", pid 0, jiffies 4294946244 (age 726.160s)
+  hex dump (first 32 bytes):
+    0a 01 01 01 0a 01 01 02 00 00 00 00 a7 cc 16 00  ................
+    02 00 03 01 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<ffffffff8153d190>] kmemleak_alloc+0x21/0x3e
+    [<ffffffff810ab3e7>] kmem_cache_alloc+0xb5/0xc5
+    [<ffffffff8149b65b>] sk_prot_alloc.isra.53+0x2b/0xcd
+    [<ffffffff8149b784>] sk_clone_lock+0x16/0x21e
+    [<ffffffff814d711a>] inet_csk_clone_lock+0x10/0x7b
+    [<ffffffff814ebbc3>] tcp_create_openreq_child+0x21/0x481
+    [<ffffffff814e8fa5>] tcp_v4_syn_recv_sock+0x3a/0x23b
+    [<ffffffff814ec5ba>] tcp_check_req+0x29f/0x416
+    [<ffffffff814e8e10>] tcp_v4_do_rcv+0x161/0x2bc
+    [<ffffffff814eb917>] tcp_v4_rcv+0x6c9/0x701
+    [<ffffffff814cea9f>] ip_local_deliver_finish+0x70/0xc4
+    [<ffffffff814cec20>] ip_local_deliver+0x4e/0x7f
+    [<ffffffff814ce9f8>] ip_rcv_finish+0x1fc/0x233
+    [<ffffffff814cee68>] ip_rcv+0x217/0x267
+    [<ffffffff814a7bbe>] __netif_receive_skb+0x49e/0x553
+    [<ffffffff814a7cc3>] netif_receive_skb+0x50/0x82
 
-This makes timestamps enabled sessions vulnerable to injection of
-a high tsval : peers start an ACK storm, since the victim
-sends a dupack each time it receives an ACK from the other peer.
+This happens, because sk_clone_lock initializes sk_refcnt to 2, and thus
+a single sock_put() is not enough to free the memory. Additionally, things
+like xfrm, memcg, cookie_values,... may have been initialized.
+We have to free them properly.
 
-As tcp_validate_incoming() is called before tcp_ack(), we should
-not peform tcp_replace_ts_recent() from it, and let callers do it
-at the right time.
+This is fixed by forcing a call to tcp_done(), ending up in
+inet_csk_destroy_sock, doing the final sock_put(). tcp_done() is necessary,
+because it ends up doing all the cleanup on xfrm, memcg, cookie_values,
+xfrm,...
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Nandita Dukkipati <nanditad@google.com>
-Cc: H.K. Jerry Chu <hkchu@google.com>
-Cc: Romain Francoise <romain@orebokech.com>
+Before calling tcp_done, we have to set the socket to SOCK_DEAD, to
+force it entering inet_csk_destroy_sock. To avoid the warning in
+inet_csk_destroy_sock, inet_num has to be set to 0.
+As inet_csk_destroy_sock does a dec on orphan_count, we first have to
+increase it.
+
+Calling tcp_done() allows us to remove the calls to
+tcp_clear_xmit_timer() and tcp_cleanup_congestion_control().
+
+A similar approach is taken for dccp by calling dccp_done().
+
+This is in the kernel since 093d282321 (tproxy: fix hash locking issue
+when using port redirection in __inet_inherit_port()), thus since
+version >= 2.6.37.
+
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- net/ipv4/tcp_input.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ include/net/inet_connection_sock.h |    1 +
+ net/dccp/ipv4.c                    |    4 ++--
+ net/dccp/ipv6.c                    |    3 ++-
+ net/ipv4/inet_connection_sock.c    |   16 ++++++++++++++++
+ net/ipv4/tcp_ipv4.c                |    6 ++----
+ net/ipv6/tcp_ipv6.c                |    3 ++-
+ 6 files changed, 25 insertions(+), 8 deletions(-)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index c92c4da..7ccf80f 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -5340,11 +5340,6 @@ static bool tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
- 		goto discard;
+diff --git a/include/net/inet_connection_sock.h b/include/net/inet_connection_sock.h
+index ba1d361..1832927 100644
+--- a/include/net/inet_connection_sock.h
++++ b/include/net/inet_connection_sock.h
+@@ -318,6 +318,7 @@ extern void inet_csk_reqsk_queue_prune(struct sock *parent,
+ 				       const unsigned long max_rto);
+ 
+ extern void inet_csk_destroy_sock(struct sock *sk);
++extern void inet_csk_prepare_forced_close(struct sock *sk);
+ 
+ /*
+  * LISTEN is a special case for poll..
+diff --git a/net/dccp/ipv4.c b/net/dccp/ipv4.c
+index 176ecdb..4f9f5eb 100644
+--- a/net/dccp/ipv4.c
++++ b/net/dccp/ipv4.c
+@@ -439,8 +439,8 @@ exit:
+ 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
+ 	return NULL;
+ put_and_exit:
+-	bh_unlock_sock(newsk);
+-	sock_put(newsk);
++	inet_csk_prepare_forced_close(newsk);
++	dccp_done(newsk);
+ 	goto exit;
+ }
+ 
+diff --git a/net/dccp/ipv6.c b/net/dccp/ipv6.c
+index 56840b2..6e05981 100644
+--- a/net/dccp/ipv6.c
++++ b/net/dccp/ipv6.c
+@@ -585,7 +585,8 @@ static struct sock *dccp_v6_request_recv_sock(struct sock *sk,
+ 	newinet->inet_rcv_saddr = LOOPBACK4_IPV6;
+ 
+ 	if (__inet_inherit_port(sk, newsk) < 0) {
+-		sock_put(newsk);
++		inet_csk_prepare_forced_close(newsk);
++		dccp_done(newsk);
+ 		goto out;
  	}
+ 	__inet6_hash(newsk, NULL);
+diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
+index 0405cc8..567c31f 100644
+--- a/net/ipv4/inet_connection_sock.c
++++ b/net/ipv4/inet_connection_sock.c
+@@ -679,6 +679,22 @@ void inet_csk_destroy_sock(struct sock *sk)
+ }
+ EXPORT_SYMBOL(inet_csk_destroy_sock);
  
--	/* ts_recent update must be made after we are sure that the packet
--	 * is in window.
--	 */
--	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
--
- 	/* step 3: check security and precedence [ignored] */
- 
- 	/* step 4: Check for a SYN
-@@ -5579,6 +5574,11 @@ step5:
- 	if (th->ack && tcp_ack(sk, skb, FLAG_SLOWPATH) < 0)
- 		goto discard;
- 
-+	/* ts_recent update must be made after we are sure that the packet
-+	 * is in window.
-+	 */
-+	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
++/* This function allows to force a closure of a socket after the call to
++ * tcp/dccp_create_openreq_child().
++ */
++void inet_csk_prepare_forced_close(struct sock *sk)
++{
++	/* sk_clone_lock locked the socket and set refcnt to 2 */
++	bh_unlock_sock(sk);
++	sock_put(sk);
 +
- 	tcp_rcv_rtt_measure_ts(sk, skb);
- 
- 	/* Process urgent data. */
-@@ -6106,6 +6106,11 @@ int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb,
- 	} else
- 		goto discard;
- 
-+	/* ts_recent update must be made after we are sure that the packet
-+	 * is in window.
-+	 */
-+	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
++	/* The below has to be done to allow calling inet_csk_destroy_sock */
++	sock_set_flag(sk, SOCK_DEAD);
++	percpu_counter_inc(sk->sk_prot->orphan_count);
++	inet_sk(sk)->inet_num = 0;
++}
++EXPORT_SYMBOL(inet_csk_prepare_forced_close);
 +
- 	/* step 6: check the URG bit */
- 	tcp_urg(sk, skb, th);
+ int inet_csk_listen_start(struct sock *sk, const int nr_table_entries)
+ {
+ 	struct inet_sock *inet = inet_sk(sk);
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index db7bfad..4705caf 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -1537,10 +1537,8 @@ exit:
+ 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
+ 	return NULL;
+ put_and_exit:
+-	tcp_clear_xmit_timers(newsk);
+-	tcp_cleanup_congestion_control(newsk);
+-	bh_unlock_sock(newsk);
+-	sock_put(newsk);
++	inet_csk_prepare_forced_close(newsk);
++	tcp_done(newsk);
+ 	goto exit;
+ }
+ EXPORT_SYMBOL(tcp_v4_syn_recv_sock);
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index 7e32d42..8b45fb4 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1371,7 +1371,8 @@ static struct sock * tcp_v6_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
+ #endif
  
+ 	if (__inet_inherit_port(sk, newsk) < 0) {
+-		sock_put(newsk);
++		inet_csk_prepare_forced_close(newsk);
++		tcp_done(newsk);
+ 		goto out;
+ 	}
+ 	__inet6_hash(newsk, NULL);
 -- 
 1.7.10.4
 
