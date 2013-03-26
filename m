@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372Ab3CZWwv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:52:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53111 "EHLO
+	id S1756650Ab3CZW6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:58:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53119 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756334Ab3CZWwt (ORCPT
+	with ESMTP id S1756354Ab3CZWwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:52:49 -0400
+	Tue, 26 Mar 2013 18:52:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 40/72] mwifiex: fix potential out-of-boundary access to ibss rate table
-Date: Tue, 26 Mar 2013 15:51:23 -0700
-Message-Id: <20130326224923.815215956@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>, Jan Kara <jack@suse.cz>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 66/72] isofs: avoid info leak on export
+Date: Tue, 26 Mar 2013 15:51:49 -0700
+Message-Id: <20130326224926.464852289@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -27,40 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 5f0fabf84d7b52f979dcbafa3d3c530c60d9a92c upstream.
+commit fe685aabf7c8c9f138e5ea900954d295bf229175 upstream.
 
-smatch found this error:
+For type 1 the parent_offset member in struct isofs_fid gets copied
+uninitialized to userland. Fix this by initializing it to 0.
 
-CHECK   drivers/net/wireless/mwifiex/join.c
-  drivers/net/wireless/mwifiex/join.c:1121
-  mwifiex_cmd_802_11_ad_hoc_join()
-  error: testing array offset 'i' after use.
-
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/join.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ fs/isofs/export.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/mwifiex/join.c
-+++ b/drivers/net/wireless/mwifiex/join.c
-@@ -1049,10 +1049,9 @@ mwifiex_cmd_802_11_ad_hoc_join(struct mw
- 		adhoc_join->bss_descriptor.bssid,
- 		adhoc_join->bss_descriptor.ssid);
- 
--	for (i = 0; bss_desc->supported_rates[i] &&
--			i < MWIFIEX_SUPPORTED_RATES;
--			i++)
--			;
-+	for (i = 0; i < MWIFIEX_SUPPORTED_RATES &&
-+		    bss_desc->supported_rates[i]; i++)
-+		;
- 	rates_size = i;
- 
- 	/* Copy Data Rates from the Rates recorded in scan response */
+--- a/fs/isofs/export.c
++++ b/fs/isofs/export.c
+@@ -135,6 +135,7 @@ isofs_export_encode_fh(struct dentry *de
+ 	len = 3;
+ 	fh32[0] = ei->i_iget5_block;
+  	fh16[2] = (__u16)ei->i_iget5_offset;  /* fh16 [sic] */
++	fh16[3] = 0;  /* avoid leaking uninitialized data */
+ 	fh32[2] = inode->i_generation;
+ 	if (connectable && !S_ISDIR(inode->i_mode)) {
+ 		struct inode *parent;
 
 
