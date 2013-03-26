@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759063Ab3CZAXb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Mar 2013 20:23:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49249 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754742Ab3CZAXa (ORCPT
+	id S1759127Ab3CZAY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Mar 2013 20:24:28 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59160 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758834Ab3CZAY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Mar 2013 20:23:30 -0400
-Message-ID: <5150DC7E.2090305@infradead.org>
-Date: Mon, 25 Mar 2013 16:23:42 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Mon, 25 Mar 2013 20:24:26 -0400
+Message-ID: <5150EAAC.8020304@ti.com>
+Date: Mon, 25 Mar 2013 20:24:12 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Thomas Meyer <thomas@m3y3r.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, x86@kernel.org
-Subject: Re: CONFIG_EARLY_PRINTK
-References: <1363194921.1218.14.camel@localhost.localdomain>   <5140D9DF.4010506@infradead.org>  <1363446518.12329.5.camel@localhost.localdomain>  <5144AE20.7030202@infradead.org> <1363961254.11400.8.camel@localhost.localdomain>
-In-Reply-To: <1363961254.11400.8.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <devel@driverdev.osuosl.org>, Nishanth Menon <nm@ti.com>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCHv2 09/12] staging: ti-soc-thermal: fix several kernel-doc
+ warnings and error
+References: <1363704868-11843-1-git-send-email-eduardo.valentin@ti.com> <1363704868-11843-10-git-send-email-eduardo.valentin@ti.com> <20130325182226.GA15717@kroah.com>
+In-Reply-To: <20130325182226.GA15717@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/13 07:07, Thomas Meyer wrote:
-> Am Samstag, den 16.03.2013, 10:38 -0700 schrieb Randy Dunlap:
->> On 03/16/13 08:08, Thomas Meyer wrote:
->>> Am Mittwoch, den 13.03.2013, 12:56 -0700 schrieb Randy Dunlap:
->>> Yes,
->>>
->>> so why not do this? As the text to EARLY_PRINTK explains?
+On 25-03-2013 14:22, Greg KH wrote:
+> On Tue, Mar 19, 2013 at 10:54:25AM -0400, Eduardo Valentin wrote:
+>> This patch updates the documentation to remove
+>> all warnings and errors reported by scripts/kernel-doc.
+>> Most are missing arguments due to wrong format.
 >>
->> Yes, the default should match the help text.
->> Acked-by: Randy Dunlap <rdunlap@infradead.org>
+>> Cc: Nishanth Menon <nm@ti.com>
 >>
->> Please resend your patch with Signed-off-by: line.
->>
->> Thanks.
-> 
-> Align EARLY_PRINTK default value with help text value.
-> 
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+>
+> In the future, don't put empty lines between the Cc: and signed-off-by:
+> lines please, I had to hand-edit all of these to fix that...
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+Ok. Sure.. My bad..
 
-Thanks.
+>
+> greg k-h
+>
+>
 
-tip??
-
-> ---
-> 
-> diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-> index b322f12..852d51c 100644
-> --- a/arch/x86/Kconfig.debug
-> +++ b/arch/x86/Kconfig.debug
-> @@ -32,7 +32,6 @@ config X86_VERBOSE_BOOTUP
->  
->  config EARLY_PRINTK
->         bool "Early printk" if EXPERT
-> -       default y
->         ---help---
->           Write kernel log output directly into the VGA buffer or to a serial
->           port.
-> 
-> 
-> --
-
-
--- 
-~Randy
