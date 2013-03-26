@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755705Ab3CZWsx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:48:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52703 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755305Ab3CZWod (ORCPT
+	id S1755660Ab3CZWtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:49:13 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:52597 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755324Ab3CZWtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:33 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        CQ Tang <cq.tang@intel.com>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 81/98] x86-64: Fix the failure case in copy_user_handle_tail()
-Date: Tue, 26 Mar 2013 15:43:10 -0700
-Message-Id: <20130326224250.885203973@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
-References: <20130326224242.449070940@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 26 Mar 2013 18:49:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <2166148.RX0m5V0khX@vostro.rjw.lan>
+References: <1673357.1IdxNNvGWX@vostro.rjw.lan> <34989330.IyIZ6Qqfxh@vostro.rjw.lan>
+ <CAE9FiQVSZd216JrdHdeLSrr1k0d5xTCmLz9FH151BHDDo8KRAQ@mail.gmail.com> <2166148.RX0m5V0khX@vostro.rjw.lan>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 26 Mar 2013 16:48:49 -0600
+Message-ID: <CAErSpo7obx9Ay+sZZtki5ZBrSpYfJ+dnxxoH0=ReqOOByVkXhA@mail.gmail.com>
+Subject: Re: [PATCH] PCI, ACPI: hold acpi_scan_lock during root bus hotplug
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Mar 26, 2013 at 4:54 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Tuesday, March 26, 2013 08:12:30 AM Yinghai Lu wrote:
+>> On Tue, Mar 26, 2013 at 6:24 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Sunday, March 10, 2013 10:05:16 PM Yinghai Lu wrote:
+>> >> During merging pci tree with pm/acpi tree, Linus noticed that
+>> >> we don't have same lock using patten about acpi pci root as
+>> >> acpiphp.
+>> >>
+>> >> Here apply same lock patten, and we need to change
+>> >> acpi_bus_hot_remove_device executing via acpi_os_hotplug_execute()
+>> >> as it also hold the lock in acpi_bus_hot_remove_device.
+>> >>
+>> >> That will make acpi_bus_hot_remove_device calling the same as other
+>> >> callers.
+>> >>
+>> >> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+>> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> >> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+>> >
+>> > Bjorn, this needs to go in before final 3.9.
+>> >
+>> > Are you going to handle it, or should I take care of it?
+>>
+>> It should be better via your pm+acpi tree, as that lock is added via your tree.
+>
+> OK, I'll take it, then, if Bjorn doesn't object.
 
-------------------
-
-From: CQ Tang <cq.tang@intel.com>
-
-commit 66db3feb486c01349f767b98ebb10b0c3d2d021b upstream.
-
-The increment of "to" in copy_user_handle_tail() will have incremented
-before a failure has been noted.  This causes us to skip a byte in the
-failure case.
-
-Only do the increment when assured there is no failure.
-
-Signed-off-by: CQ Tang <cq.tang@intel.com>
-Link: http://lkml.kernel.org/r/20130318150221.8439.993.stgit@phlsvslse11.ph.intel.com
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/lib/usercopy_64.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/arch/x86/lib/usercopy_64.c
-+++ b/arch/x86/lib/usercopy_64.c
-@@ -74,10 +74,10 @@ copy_user_handle_tail(char *to, char *fr
- 	char c;
- 	unsigned zero_len;
- 
--	for (; len; --len) {
-+	for (; len; --len, to++) {
- 		if (__get_user_nocheck(c, from++, sizeof(char)))
- 			break;
--		if (__put_user_nocheck(c, to++, sizeof(char)))
-+		if (__put_user_nocheck(c, to, sizeof(char)))
- 			break;
- 	}
- 
-
-
+Yep, that's fine with me.
