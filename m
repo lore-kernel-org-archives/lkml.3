@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab3CZXaF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:30:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52642 "EHLO
+	id S1756625Ab3CZXac (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:30:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52646 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755098Ab3CZWoY (ORCPT
+	with ESMTP id S1755093Ab3CZWoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Mar 2013 18:44:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>
-Subject: [ 70/98] ext4: use atomic64_t for the per-flexbg free_clusters count
-Date: Tue, 26 Mar 2013 15:42:59 -0700
-Message-Id: <20130326224249.768665269@linuxfoundation.org>
+        Dmitry Artamonow <mad_soft@inbox.ru>
+Subject: [ 69/98] usb-storage: add unusual_devs entry for Samsung YP-Z3 mp3 player
+Date: Tue, 26 Mar 2013 15:42:58 -0700
+Message-Id: <20130326224249.672765307@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -26,130 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Dmitry Artamonow <mad_soft@inbox.ru>
 
-commit 90ba983f6889e65a3b506b30dc606aa9d1d46cd2 upstream.
+commit 29f86e66428ee083aec106cca1748dc63d98ce23 upstream.
 
-A user who was using a 8TB+ file system and with a very large flexbg
-size (> 65536) could cause the atomic_t used in the struct flex_groups
-to overflow.  This was detected by PaX security patchset:
+Device stucks on filesystem writes, unless following quirk is passed:
+  echo 04e8:5136:m > /sys/module/usb_storage/parameters/quirks
 
-http://forums.grsecurity.net/viewtopic.php?f=3&t=3289&p=12551#p12551
+Add corresponding entry to unusual_devs.h
 
-This bug was introduced in commit 9f24e4208f7e, so it's been around
-since 2.6.30.  :-(
-
-Fix this by using an atomic64_t for struct orlav_stats's
-free_clusters.
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ext4.h    |    6 +++---
- fs/ext4/ialloc.c  |    4 ++--
- fs/ext4/mballoc.c |   12 ++++++------
- fs/ext4/resize.c  |    4 ++--
- fs/ext4/super.c   |    4 ++--
- 5 files changed, 15 insertions(+), 15 deletions(-)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -338,9 +338,9 @@ struct ext4_group_desc
-  */
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -488,6 +488,13 @@ UNUSUAL_DEV(  0x04e8, 0x5122, 0x0000, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_MAX_SECTORS_64 | US_FL_BULK_IGNORE_TAG),
  
- struct flex_groups {
--	atomic_t free_inodes;
--	atomic_t free_clusters;
--	atomic_t used_dirs;
-+	atomic64_t	free_clusters;
-+	atomic_t	free_inodes;
-+	atomic_t	used_dirs;
- };
- 
- #define EXT4_BG_INODE_UNINIT	0x0001 /* Inode table/bitmap not in use */
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -324,8 +324,8 @@ error_return:
- }
- 
- struct orlov_stats {
-+	__u64 free_clusters;
- 	__u32 free_inodes;
--	__u32 free_clusters;
- 	__u32 used_dirs;
- };
- 
-@@ -342,7 +342,7 @@ static void get_orlov_stats(struct super
- 
- 	if (flex_size > 1) {
- 		stats->free_inodes = atomic_read(&flex_group[g].free_inodes);
--		stats->free_clusters = atomic_read(&flex_group[g].free_clusters);
-+		stats->free_clusters = atomic64_read(&flex_group[g].free_clusters);
- 		stats->used_dirs = atomic_read(&flex_group[g].used_dirs);
- 		return;
- 	}
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2829,8 +2829,8 @@ ext4_mb_mark_diskspace_used(struct ext4_
- 	if (sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group = ext4_flex_group(sbi,
- 							  ac->ac_b_ex.fe_group);
--		atomic_sub(ac->ac_b_ex.fe_len,
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_sub(ac->ac_b_ex.fe_len,
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 	}
- 
- 	err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
-@@ -4691,8 +4691,8 @@ do_more:
- 
- 	if (sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
--		atomic_add(count_clusters,
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_add(count_clusters,
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 	}
- 
- 	ext4_mb_unload_buddy(&e4b);
-@@ -4836,8 +4836,8 @@ int ext4_group_add_blocks(handle_t *hand
- 
- 	if (sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
--		atomic_add(EXT4_NUM_B2C(sbi, blocks_freed),
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_add(EXT4_NUM_B2C(sbi, blocks_freed),
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 	}
- 
- 	ext4_mb_unload_buddy(&e4b);
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1360,8 +1360,8 @@ static void ext4_update_super(struct sup
- 	    sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group;
- 		flex_group = ext4_flex_group(sbi, group_data[0].group);
--		atomic_add(EXT4_NUM_B2C(sbi, free_blocks),
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_add(EXT4_NUM_B2C(sbi, free_blocks),
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 		atomic_add(EXT4_INODES_PER_GROUP(sb) * flex_gd->count,
- 			   &sbi->s_flex_groups[flex_group].free_inodes);
- 	}
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1979,8 +1979,8 @@ static int ext4_fill_flex_info(struct su
- 		flex_group = ext4_flex_group(sbi, i);
- 		atomic_add(ext4_free_inodes_count(sb, gdp),
- 			   &sbi->s_flex_groups[flex_group].free_inodes);
--		atomic_add(ext4_free_group_clusters(sb, gdp),
--			   &sbi->s_flex_groups[flex_group].free_clusters);
-+		atomic64_add(ext4_free_group_clusters(sb, gdp),
-+			     &sbi->s_flex_groups[flex_group].free_clusters);
- 		atomic_add(ext4_used_dirs_count(sb, gdp),
- 			   &sbi->s_flex_groups[flex_group].used_dirs);
- 	}
++/* Added by Dmitry Artamonow <mad_soft@inbox.ru> */
++UNUSUAL_DEV(  0x04e8, 0x5136, 0x0000, 0x9999,
++		"Samsung",
++		"YP-Z3",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64),
++
+ /* Entry and supporting patch by Theodore Kilgore <kilgota@auburn.edu>.
+  * Device uses standards-violating 32-byte Bulk Command Block Wrappers and
+  * reports itself as "Proprietary SCSI Bulk." Cf. device entry 0x084d:0x0011.
 
 
