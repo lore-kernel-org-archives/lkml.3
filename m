@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759699Ab3CZM0s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 08:26:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23719 "EHLO mx1.redhat.com"
+	id S1759625Ab3CZM1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 08:27:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8575 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759370Ab3CZM0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 08:26:47 -0400
-Date: Tue, 26 Mar 2013 13:26:01 +0100
-From: Anton Arapov <anton@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: Re: [PATCH 4/7] uretprobes: return probe entry, prepare_uretprobe()
-Message-ID: <20130326122601.GA1935@bandura.brq.redhat.com>
-References: <1363957745-6657-1-git-send-email-anton@redhat.com>
- <1363957745-6657-5-git-send-email-anton@redhat.com>
- <20130322150252.GA17934@redhat.com>
+	id S1758020Ab3CZM1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 08:27:32 -0400
+Date: Tue, 26 Mar 2013 12:27:13 +0000
+From: Alasdair G Kergon <agk@redhat.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Mike Snitzer <msnitzer@redhat.com>, dm-devel@redhat.com,
+        Andi Kleen <andi@firstfloor.org>, dm-crypt@saout.de,
+        Milan Broz <gmazyland@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Christian Schmidt <schmidt@digadd.de>
+Subject: Re: [dm-devel] dm-crypt performance
+Message-ID: <20130326122713.GC27610@agk-dp.fab.redhat.com>
+Mail-Followup-To: Mikulas Patocka <mpatocka@redhat.com>,
+	Mike Snitzer <msnitzer@redhat.com>, dm-devel@redhat.com,
+	Andi Kleen <andi@firstfloor.org>, dm-crypt@saout.de,
+	Milan Broz <gmazyland@gmail.com>, linux-kernel@vger.kernel.org,
+	Christoph Hellwig <hch@infradead.org>,
+	Christian Schmidt <schmidt@digadd.de>
+References: <Pine.LNX.4.64.1303252051520.9745@file.rdu.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130322150252.GA17934@redhat.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.64.1303252051520.9745@file.rdu.redhat.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 04:02:52PM +0100, Oleg Nesterov wrote:
-> I'll try to read this series later. Just one note...
-> 
-> On 03/22, Anton Arapov wrote:
-> >
-> >    IOW, we must ensure that uprobe_pre_sstep_notifier() can't return 0.
-> 
-> Yes, but I do not see this change?
-> 
-> > +static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
-> > +{
-> > +	struct return_instance *ri;
-> > +	struct uprobe_task *utask;
-> > +	struct xol_area *area;
-> > +	unsigned long trampoline_vaddr;
-> > +	unsigned long prev_ret_vaddr, ret_vaddr;
-> > +
-> > +	area = get_xol_area();
-> > +	if (!area)
-> > +		return;
-> > +
-> > +	utask = get_utask();
-> > +	if (!utask)
-> > +		return;
-> > +
-> > +	prev_ret_vaddr = -1;
-> > +	if (utask->return_instances)
-> > +		prev_ret_vaddr = utask->return_instances->orig_ret_vaddr;
-> > +
-> > +	ri = kzalloc(sizeof(struct return_instance), GFP_KERNEL);
-> > +	if (!ri)
-> > +		return;
-> > +
-> > +	ri->dirty = false;
-> > +	trampoline_vaddr = get_trampoline_vaddr(area);
-> > +	ret_vaddr = arch_uretprobe_hijack_return_addr(trampoline_vaddr, regs);
-> 
-> OK, but you need to ensure that this code can be compiled on poweprc.
+[Adding dm-crypt + linux-kernel]
 
-It does compile, unlike the obvious arch_uretprobe_hijack_return_addr() where
-I'll look for the Ananth's help, perhaps. 
+On Mon, Mar 25, 2013 at 11:47:22PM -0400, Mikulas Patocka wrote:
+> I performed some dm-crypt performance tests as Mike suggested.
+> 
+> It turns out that unbound workqueue performance has improved somewhere 
+> between kernel 3.2 (when I made the dm-crypt patches) and 3.8, so the 
+> patches for hand-built dispatch are no longer needed.
+> 
+> For RAID-0 composed of two disks with total throughput 260MB/s, the 
+> unbound workqueue performs as well as the hand-built dispatch (both 
+> sustain the 260MB/s transfer rate).
+> 
+> For ramdisk, unbound workqueue performs better than hand-built dispatch 
+> (620MB/s vs 400MB/s). Unbound workqueue with the patch that Mike suggested 
+> (git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git) improves 
+> performance slighlty on ramdisk compared to 3.8 (700MB/s vs. 620MB/s).
+> 
+> 
+> 
+> However, there is still the problem with request ordering. Milan found out 
+> that under some circumstances parallel dm-crypt has worse performance than 
+> the previous dm-crypt code. I found out that this is not caused by 
+> deficiencies in the code that distributes work to individual processors. 
+> Performance drop is caused by the fact that distributing write bios to 
+> multiple processors causes the encryption to finish out of order and the 
+> I/O scheduler is unable to merge these out-of-order bios.
+> 
+> The deadline and noop schedulers perform better (only 50% slowdown 
+> compared to old dm-crypt), CFQ performs very badly (8 times slowdown).
+> 
+> 
+> If I sort the requests in dm-crypt to come out in the same order as they 
+> were received, there is no longer any slowdown, the new crypt performs as 
+> well as the old crypt, but the last time I submitted the patches, people 
+> objected to sorting requests in dm-crypt, saying that the I/O scheduler 
+> should sort them. But it doesn't. This problem still persists in the 
+> current kernels.
+> 
+> 
+> For best performance we could use the unbound workqueue implementation 
+> with request sorting, if people don't object to the request sorting being 
+> done in dm-crypt.
 
-Anton. 
+
+On Tue, Mar 26, 2013 at 02:52:29AM -0400, Christoph Hellwig wrote:
+> FYI, XFS also does it's own request ordering for the metadata buffers,
+> because it knows the needed ordering and has a bigger view than than
+> than especially CFQ.  You at least have precedence in a widely used
+> subsystem for this code.
+
+
+So please post this updated version of the patches for a wider group of
+people to try out.
+
+Alasdair
+
