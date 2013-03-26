@@ -1,84 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760102Ab3CZS5J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 14:57:09 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:56925 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232Ab3CZS5H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 14:57:07 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Tue, 26 Mar 2013 19:56:53 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] firewire: Enable physical DMA above 4GB
-Message-ID: <20130326195653.470b09d6@stein>
-In-Reply-To: <1364307734-27709-1-git-send-email-peter@hurleysoftware.com>
-References: <1364307734-27709-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754900Ab3CZTCC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 15:02:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57059 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751628Ab3CZTCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 15:02:00 -0400
+Subject: [PATCH 1/2] vfio-pci: Use byte granularity in config map
+To: alex.williamson@redhat.com, shangw@linux.vnet.ibm.com
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Date: Tue, 26 Mar 2013 12:17:03 -0600
+Message-ID: <20130326181703.27467.45144.stgit@bling.home>
+In-Reply-To: <20130326180454.27467.7011.stgit@bling.home>
+References: <20130326180454.27467.7011.stgit@bling.home>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mar 26 Peter Hurley wrote:
-> Quadlet reads to memory above 4GB is painfully slow when serviced
-> by the AR DMA context. In addition, the CPU(s) may be locked-up,
-> preventing any transfer at all.
-> 
-> Write the PhyUpperBound register with the end-of-memory value. If
-> end-of-memory is beyond the OHCI limit of 0x0000ffff00000000,
-> clamp to that value.
-> 
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> ---
->  drivers/firewire/ohci.c | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
-> index 044ace3..b4135a5 100644
-> --- a/drivers/firewire/ohci.c
-> +++ b/drivers/firewire/ohci.c
-> @@ -2249,6 +2249,7 @@ static int ohci_enable(struct fw_card *card,
->  	struct pci_dev *dev = to_pci_dev(card->device);
->  	u32 lps, version, irqs;
->  	int i, ret;
-> +	u32 phys_upper;
->  
->  	if (software_reset(ohci)) {
->  		dev_err(card->device, "failed to reset ohci card\n");
-> @@ -2323,7 +2324,10 @@ static int ohci_enable(struct fw_card *card,
->  	reg_write(ohci, OHCI1394_FairnessControl, 0);
->  	card->priority_budget_implemented = ohci->pri_req_max != 0;
->  
-> -	reg_write(ohci, OHCI1394_PhyUpperBound, 0x00010000);
-> +	phys_upper = min(0xffff0000ULL,
-> +			 (dma_get_required_mask(card->device) >> 16) + 1);
-> +	reg_write(ohci, OHCI1394_PhyUpperBound, max(phys_upper, 0x00010000U));
-> +
->  	reg_write(ohci, OHCI1394_IntEventClear, ~0);
->  	reg_write(ohci, OHCI1394_IntMaskClear, ~0);
->  
+The config map previously used a byte per dword to map regions of
+config space to capabilities.  Modulo a bug where we round the length
+of capabilities down instead of up, this theoretically works well and
+saves space so long as devices don't try to hide registers in the gaps
+between capabilities.  Unfortunately they do exactly that so we need
+byte granularity on our config space map.  Increase the allocation of
+the config map and split accesses at capability region boundaries.
 
-What Clemens said.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+ drivers/vfio/pci/vfio_pci_config.c |   88 +++++++++++++++++++-----------------
+ 1 file changed, 47 insertions(+), 41 deletions(-)
 
-Also:  By far most OHCI-1394 chips do not implement PhyUpperBound,
-i.e. ignore any writes to PhyUpperBound, return 0 when PhyUpperBound is
-read, and keep the boundary between physical response and AR response at
-4 GB, as described in the spec.
+diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
+index 964ff22..5d5fc75 100644
+--- a/drivers/vfio/pci/vfio_pci_config.c
++++ b/drivers/vfio/pci/vfio_pci_config.c
+@@ -800,9 +800,6 @@ static int vfio_find_cap_start(struct vfio_pci_device *vdev, int pos)
+ 	u8 cap;
+ 	int base = (pos >= PCI_CFG_SPACE_SIZE) ? PCI_CFG_SPACE_SIZE :
+ 						 PCI_STD_HEADER_SIZEOF;
+-	base /= 4;
+-	pos /= 4;
+-
+ 	cap = vdev->pci_config_map[pos];
+ 
+ 	if (cap == PCI_CAP_ID_BASIC)
+@@ -812,7 +809,7 @@ static int vfio_find_cap_start(struct vfio_pci_device *vdev, int pos)
+ 	while (pos - 1 >= base && vdev->pci_config_map[pos - 1] == cap)
+ 		pos--;
+ 
+-	return pos * 4;
++	return pos;
+ }
+ 
+ static int vfio_msi_config_read(struct vfio_pci_device *vdev, int pos,
+@@ -1229,8 +1226,8 @@ static int vfio_cap_init(struct vfio_pci_device *vdev)
+ 		}
+ 
+ 		/* Sanity check, do we overlap other capabilities? */
+-		for (i = 0; i < len; i += 4) {
+-			if (likely(map[(pos + i) / 4] == PCI_CAP_ID_INVALID))
++		for (i = 0; i < len; i++) {
++			if (likely(map[pos + i] == PCI_CAP_ID_INVALID))
+ 				continue;
+ 
+ 			pr_warn("%s: %s pci config conflict @0x%x, was cap 0x%x now cap 0x%x\n",
+@@ -1238,7 +1235,7 @@ static int vfio_cap_init(struct vfio_pci_device *vdev)
+ 				pos + i, map[pos + i], cap);
+ 		}
+ 
+-		memset(map + (pos / 4), cap, len / 4);
++		memset(map + pos, cap, len);
+ 		ret = vfio_fill_vconfig_bytes(vdev, pos, len);
+ 		if (ret)
+ 			return ret;
+@@ -1313,8 +1310,8 @@ static int vfio_ecap_init(struct vfio_pci_device *vdev)
+ 			hidden = true;
+ 		}
+ 
+-		for (i = 0; i < len; i += 4) {
+-			if (likely(map[(epos + i) / 4] == PCI_CAP_ID_INVALID))
++		for (i = 0; i < len; i++) {
++			if (likely(map[epos + i] == PCI_CAP_ID_INVALID))
+ 				continue;
+ 
+ 			pr_warn("%s: %s pci config conflict @0x%x, was ecap 0x%x now ecap 0x%x\n",
+@@ -1329,7 +1326,7 @@ static int vfio_ecap_init(struct vfio_pci_device *vdev)
+ 		 */
+ 		BUILD_BUG_ON(PCI_EXT_CAP_ID_MAX >= PCI_CAP_ID_INVALID);
+ 
+-		memset(map + (epos / 4), ecap, len / 4);
++		memset(map + epos, ecap, len);
+ 		ret = vfio_fill_vconfig_bytes(vdev, epos, len);
+ 		if (ret)
+ 			return ret;
+@@ -1376,10 +1373,12 @@ int vfio_config_init(struct vfio_pci_device *vdev)
+ 	int ret;
+ 
+ 	/*
+-	 * Config space, caps and ecaps are all dword aligned, so we can
+-	 * use one byte per dword to record the type.
++	 * Config space, caps and ecaps are all dword aligned, so we could
++	 * use one byte per dword to record the type.  However, there are
++	 * no requiremenst on the length of a capability, so the gap between
++	 * capabilities needs byte granularity.
+ 	 */
+-	map = kmalloc(pdev->cfg_size / 4, GFP_KERNEL);
++	map = kmalloc(pdev->cfg_size, GFP_KERNEL);
+ 	if (!map)
+ 		return -ENOMEM;
+ 
+@@ -1392,9 +1391,9 @@ int vfio_config_init(struct vfio_pci_device *vdev)
+ 	vdev->pci_config_map = map;
+ 	vdev->vconfig = vconfig;
+ 
+-	memset(map, PCI_CAP_ID_BASIC, PCI_STD_HEADER_SIZEOF / 4);
+-	memset(map + (PCI_STD_HEADER_SIZEOF / 4), PCI_CAP_ID_INVALID,
+-	       (pdev->cfg_size - PCI_STD_HEADER_SIZEOF) / 4);
++	memset(map, PCI_CAP_ID_BASIC, PCI_STD_HEADER_SIZEOF);
++	memset(map + PCI_STD_HEADER_SIZEOF, PCI_CAP_ID_INVALID,
++	       pdev->cfg_size - PCI_STD_HEADER_SIZEOF);
+ 
+ 	ret = vfio_fill_vconfig_bytes(vdev, 0, PCI_STD_HEADER_SIZEOF);
+ 	if (ret)
+@@ -1449,6 +1448,22 @@ void vfio_config_free(struct vfio_pci_device *vdev)
+ 	vdev->msi_perm = NULL;
+ }
+ 
++/*
++ * Find the remaining number of bytes in a dword that match the given
++ * position.  Stop at either the end of the capability or the dword boundary.
++ */
++static size_t vfio_pci_cap_remaining_dword(struct vfio_pci_device *vdev,
++					   loff_t pos)
++{
++	u8 cap = vdev->pci_config_map[pos];
++	size_t i;
++
++	for (i = 1; (pos + i) % 4 && vdev->pci_config_map[pos + i] == cap; i++)
++		/* nop */;
++
++	return i;
++}
++
+ static ssize_t vfio_config_do_rw(struct vfio_pci_device *vdev, char __user *buf,
+ 				 size_t count, loff_t *ppos, bool iswrite)
+ {
+@@ -1457,19 +1472,27 @@ static ssize_t vfio_config_do_rw(struct vfio_pci_device *vdev, char __user *buf,
+ 	__le32 val = 0;
+ 	int cap_start = 0, offset;
+ 	u8 cap_id;
+-	ssize_t ret = count;
++	ssize_t ret;
+ 
+-	if (*ppos < 0 || *ppos + count > pdev->cfg_size)
++	if (*ppos < 0 || *ppos >= pdev->cfg_size ||
++	    *ppos + count > pdev->cfg_size)
+ 		return -EFAULT;
+ 
+ 	/*
+-	 * gcc can't seem to figure out we're a static function, only called
+-	 * with count of 1/2/4 and hits copy_from_user_overflow without this.
++	 * Chop accesses into aligned chunks containing no more than a
++	 * single capability.  Caller increments to the next chunk.
+ 	 */
+-	if (count > sizeof(val))
+-		return -EINVAL;
++	count = min(count, vfio_pci_cap_remaining_dword(vdev, *ppos));
++	if (count >= 4 && !(*ppos % 4))
++		count = 4;
++	else if (count >= 2 && !(*ppos % 2))
++		count = 2;
++	else
++		count = 1;
++
++	ret = count;
+ 
+-	cap_id = vdev->pci_config_map[*ppos / 4];
++	cap_id = vdev->pci_config_map[*ppos];
+ 
+ 	if (cap_id == PCI_CAP_ID_INVALID) {
+ 		if (iswrite)
+@@ -1485,11 +1508,6 @@ static ssize_t vfio_config_do_rw(struct vfio_pci_device *vdev, char __user *buf,
+ 		return ret;
+ 	}
+ 
+-	/*
+-	 * All capabilities are minimum 4 bytes and aligned on dword
+-	 * boundaries.  Since we don't support unaligned accesses, we're
+-	 * only ever accessing a single capability.
+-	 */
+ 	if (*ppos >= PCI_CFG_SPACE_SIZE) {
+ 		WARN_ON(cap_id > PCI_EXT_CAP_ID_MAX);
+ 
+@@ -1545,20 +1563,8 @@ ssize_t vfio_pci_config_rw(struct vfio_pci_device *vdev, char __user *buf,
+ 
+ 	pos &= VFIO_PCI_OFFSET_MASK;
+ 
+-	/*
+-	 * We want to both keep the access size the caller users as well as
+-	 * support reading large chunks of config space in a single call.
+-	 * PCI doesn't support unaligned accesses, so we can safely break
+-	 * those apart.
+-	 */
+ 	while (count) {
+-		if (count >= 4 && !(pos % 4))
+-			ret = vfio_config_do_rw(vdev, buf, 4, &pos, iswrite);
+-		else if (count >= 2 && !(pos % 2))
+-			ret = vfio_config_do_rw(vdev, buf, 2, &pos, iswrite);
+-		else
+-			ret = vfio_config_do_rw(vdev, buf, 1, &pos, iswrite);
+-
++		ret = vfio_config_do_rw(vdev, buf, count, &pos, iswrite);
+ 		if (ret < 0)
+ 			return ret;
+ 
 
-It has been a long time though since I last checked whether PhyUpperBound
-is implemented; maybe it has become more widespread than it was back then.
-
-Or maybe it hasn't:  All OHCI-1394 chips that ever came to market are 32
-bit chips anyway.  So the few rare ones that do support PhyUpperBound
-larger than 4 GB cannot in fact use it.
-
-Or am I severely behind the times about this?
--- 
-Stefan Richter
--=====-===-= --== ==-=-
-http://arcgraph.de/sr/
