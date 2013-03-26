@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab3CZXoI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:44:08 -0400
+	id S1757010Ab3CZXoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:44:44 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:52433 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491Ab3CZWnv (ORCPT
+	with ESMTP id S1754458Ab3CZWnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:43:51 -0400
+	Tue, 26 Mar 2013 18:43:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jesper Dangaard Brouer <jbrouer@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 22/98] inet: limit length of fragment queue hash table bucket lists
-Date: Tue, 26 Mar 2013 15:42:11 -0700
-Message-Id: <20130326224244.776355470@linuxfoundation.org>
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, stable@kernel.org
+Subject: [ 19/98] vhost/net: fix heads usage of ubuf_info
+Date: Tue, 26 Mar 2013 15:42:08 -0700
+Message-Id: <20130326224244.465447193@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -31,181 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-[ Upstream commit 5a3da1fe9561828d0ca7eca664b16ec2b9bf0055 ]
+[ Upstream commit 46aa92d1ba162b4b3d6b7102440e459d4e4ee255 ]
 
-This patch introduces a constant limit of the fragment queue hash
-table bucket list lengths. Currently the limit 128 is choosen somewhat
-arbitrary and just ensures that we can fill up the fragment cache with
-empty packets up to the default ip_frag_high_thresh limits. It should
-just protect from list iteration eating considerable amounts of cpu.
+ubuf info allocator uses guest controlled head as an index,
+so a malicious guest could put the same head entry in the ring twice,
+and we will get two callbacks on the same value.
+To fix use upend_idx which is guaranteed to be unique.
 
-If we reach the maximum length in one hash bucket a warning is printed.
-This is implemented on the caller side of inet_frag_find to distinguish
-between the different users of inet_fragment.c.
-
-I dropped the out of memory warning in the ipv4 fragment lookup path,
-because we already get a warning by the slab allocator.
-
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jesper Dangaard Brouer <jbrouer@redhat.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Cc: stable@kernel.org
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/inet_frag.h                 |    9 +++++++++
- net/ipv4/inet_fragment.c                |   20 +++++++++++++++++++-
- net/ipv4/ip_fragment.c                  |   11 ++++-------
- net/ipv6/netfilter/nf_conntrack_reasm.c |   12 ++++++------
- net/ipv6/reassembly.c                   |    8 ++++++--
- 5 files changed, 44 insertions(+), 16 deletions(-)
+ drivers/vhost/net.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/include/net/inet_frag.h
-+++ b/include/net/inet_frag.h
-@@ -35,6 +35,13 @@ struct inet_frag_queue {
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -339,7 +339,8 @@ static void handle_tx(struct vhost_net *
+ 				msg.msg_controllen = 0;
+ 				ubufs = NULL;
+ 			} else {
+-				struct ubuf_info *ubuf = &vq->ubuf_info[head];
++				struct ubuf_info *ubuf;
++				ubuf = vq->ubuf_info + vq->upend_idx;
  
- #define INETFRAGS_HASHSZ		64
- 
-+/* averaged:
-+ * max_depth = default ipfrag_high_thresh / INETFRAGS_HASHSZ /
-+ *	       rounded up (SKB_TRUELEN(0) + sizeof(struct ipq or
-+ *	       struct frag_queue))
-+ */
-+#define INETFRAGS_MAXDEPTH		128
-+
- struct inet_frags {
- 	struct hlist_head	hash[INETFRAGS_HASHSZ];
- 	rwlock_t		lock;
-@@ -65,6 +72,8 @@ int inet_frag_evictor(struct netns_frags
- struct inet_frag_queue *inet_frag_find(struct netns_frags *nf,
- 		struct inet_frags *f, void *key, unsigned int hash)
- 	__releases(&f->lock);
-+void inet_frag_maybe_warn_overflow(struct inet_frag_queue *q,
-+				   const char *prefix);
- 
- static inline void inet_frag_put(struct inet_frag_queue *q, struct inet_frags *f)
- {
---- a/net/ipv4/inet_fragment.c
-+++ b/net/ipv4/inet_fragment.c
-@@ -21,6 +21,7 @@
- #include <linux/rtnetlink.h>
- #include <linux/slab.h>
- 
-+#include <net/sock.h>
- #include <net/inet_frag.h>
- 
- static void inet_frag_secret_rebuild(unsigned long dummy)
-@@ -276,6 +277,7 @@ struct inet_frag_queue *inet_frag_find(s
- {
- 	struct inet_frag_queue *q;
- 	struct hlist_node *n;
-+	int depth = 0;
- 
- 	hlist_for_each_entry(q, n, &f->hash[hash], list) {
- 		if (q->net == nf && f->match(q, key)) {
-@@ -283,9 +285,25 @@ struct inet_frag_queue *inet_frag_find(s
- 			read_unlock(&f->lock);
- 			return q;
- 		}
-+		depth++;
- 	}
- 	read_unlock(&f->lock);
- 
--	return inet_frag_create(nf, f, key);
-+	if (depth <= INETFRAGS_MAXDEPTH)
-+		return inet_frag_create(nf, f, key);
-+	else
-+		return ERR_PTR(-ENOBUFS);
- }
- EXPORT_SYMBOL(inet_frag_find);
-+
-+void inet_frag_maybe_warn_overflow(struct inet_frag_queue *q,
-+				   const char *prefix)
-+{
-+	static const char msg[] = "inet_frag_find: Fragment hash bucket"
-+		" list length grew over limit " __stringify(INETFRAGS_MAXDEPTH)
-+		". Dropping fragment.\n";
-+
-+	if (PTR_ERR(q) == -ENOBUFS)
-+		LIMIT_NETDEBUG(KERN_WARNING "%s%s", prefix, msg);
-+}
-+EXPORT_SYMBOL(inet_frag_maybe_warn_overflow);
---- a/net/ipv4/ip_fragment.c
-+++ b/net/ipv4/ip_fragment.c
-@@ -299,14 +299,11 @@ static inline struct ipq *ip_find(struct
- 	hash = ipqhashfn(iph->id, iph->saddr, iph->daddr, iph->protocol);
- 
- 	q = inet_frag_find(&net->ipv4.frags, &ip4_frags, &arg, hash);
--	if (q == NULL)
--		goto out_nomem;
--
-+	if (IS_ERR_OR_NULL(q)) {
-+		inet_frag_maybe_warn_overflow(q, pr_fmt());
-+		return NULL;
-+	}
- 	return container_of(q, struct ipq, q);
--
--out_nomem:
--	LIMIT_NETDEBUG(KERN_ERR pr_fmt("ip_frag_create: no memory left !\n"));
--	return NULL;
- }
- 
- /* Is the fragment too far ahead to be part of ipq? */
---- a/net/ipv6/netfilter/nf_conntrack_reasm.c
-+++ b/net/ipv6/netfilter/nf_conntrack_reasm.c
-@@ -14,6 +14,8 @@
-  * 2 of the License, or (at your option) any later version.
-  */
- 
-+#define pr_fmt(fmt) "IPv6-nf: " fmt
-+
- #include <linux/errno.h>
- #include <linux/types.h>
- #include <linux/string.h>
-@@ -180,13 +182,11 @@ static inline struct frag_queue *fq_find
- 
- 	q = inet_frag_find(&net->nf_frag.frags, &nf_frags, &arg, hash);
- 	local_bh_enable();
--	if (q == NULL)
--		goto oom;
--
-+	if (IS_ERR_OR_NULL(q)) {
-+		inet_frag_maybe_warn_overflow(q, pr_fmt());
-+		return NULL;
-+	}
- 	return container_of(q, struct frag_queue, q);
--
--oom:
--	return NULL;
- }
- 
- 
---- a/net/ipv6/reassembly.c
-+++ b/net/ipv6/reassembly.c
-@@ -26,6 +26,9 @@
-  *	YOSHIFUJI,H. @USAGI	Always remove fragment header to
-  *				calculate ICV correctly.
-  */
-+
-+#define pr_fmt(fmt) "IPv6: " fmt
-+
- #include <linux/errno.h>
- #include <linux/types.h>
- #include <linux/string.h>
-@@ -197,9 +200,10 @@ fq_find(struct net *net, __be32 id, cons
- 	hash = inet6_hash_frag(id, src, dst, ip6_frags.rnd);
- 
- 	q = inet_frag_find(&net->ipv6.frags, &ip6_frags, &arg, hash);
--	if (q == NULL)
-+	if (IS_ERR_OR_NULL(q)) {
-+		inet_frag_maybe_warn_overflow(q, pr_fmt());
- 		return NULL;
--
-+	}
- 	return container_of(q, struct frag_queue, q);
- }
- 
+ 				vq->heads[vq->upend_idx].len =
+ 					VHOST_DMA_IN_PROGRESS;
 
 
