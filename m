@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab3CZXKY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:10:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53399 "EHLO
+	id S1756372Ab3CZXKp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:10:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53386 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756792Ab3CZXCG (ORCPT
+	with ESMTP id S1756789Ab3CZXCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 19:02:06 -0400
+	Tue, 26 Mar 2013 19:02:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 18/49] sfc: Detach net device when stopping queues for reconfiguration
-Date: Tue, 26 Mar 2013 16:01:15 -0700
-Message-Id: <20130326225841.458328390@linuxfoundation.org>
+Subject: [ 17/49] sfc: Fix efx_rx_buf_offset() in the presence of swiotlb
+Date: Tue, 26 Mar 2013 16:01:14 -0700
+Message-Id: <20130326225841.360007758@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326225839.554028294@linuxfoundation.org>
 References: <20130326225839.554028294@linuxfoundation.org>
@@ -29,88 +29,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Hutchings <bhutchings@solarflare.com>
 
-[ Upstream commit 29c69a4882641285a854d6d03ca5adbba68c0034 ]
+[ Upstream commits 06e63c57acbb1df7c35ebe846ae416a8b88dfafa,
+  b590ace09d51cd39744e0f7662c5e4a0d1b5d952 and
+  c73e787a8db9117d59b5180baf83203a42ecadca ]
 
-We must only ever stop TX queues when they are full or the net device
-is not 'ready' so far as the net core, and specifically the watchdog,
-is concerned.  Otherwise, the watchdog may fire *immediately* if no
-packets have been added to the queue in the last 5 seconds.
+We assume that the mapping between DMA and virtual addresses is done
+on whole pages, so we can find the page offset of an RX buffer using
+the lower bits of the DMA address.  However, swiotlb maps in units of
+2K, breaking this assumption.
 
-The device is ready if all the following are true:
-
-(a) It has a qdisc
-(b) It is marked present
-(c) It is running
-(d) The link is reported up
-
-(a) and (c) are normally true, and must not be changed by a driver.
-(d) is under our control, but fake link changes may disturb userland.
-This leaves (b).  We already mark the device absent during reset
-and self-test, but we need to do the same during MTU changes and ring
-reallocation.  We don't need to do this when the device is brought
-down because then (c) is already false.
+Add an explicit page_offset field to struct efx_rx_buffer.
 
 Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 [bwh: Backported to 3.0: adjust context]
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/sfc/efx.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/net/sfc/net_driver.h |    4 +++-
+ drivers/net/sfc/rx.c         |   10 +++++-----
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/net/sfc/efx.c
-+++ b/drivers/net/sfc/efx.c
-@@ -720,6 +720,7 @@ efx_realloc_channels(struct efx_nic *efx
- 	unsigned i;
- 	int rc;
+--- a/drivers/net/sfc/net_driver.h
++++ b/drivers/net/sfc/net_driver.h
+@@ -214,6 +214,7 @@ struct efx_tx_queue {
+  *	If both this and page are %NULL, the buffer slot is currently free.
+  * @page: The associated page buffer, if any.
+  *	If both this and skb are %NULL, the buffer slot is currently free.
++ * @page_offset: Offset within page. Valid iff @flags & %EFX_RX_BUF_PAGE.
+  * @len: Buffer length, in bytes.
+  * @is_page: Indicates if @page is valid. If false, @skb is valid.
+  */
+@@ -223,7 +224,8 @@ struct efx_rx_buffer {
+ 		struct sk_buff *skb;
+ 		struct page *page;
+ 	} u;
+-	unsigned int len;
++	u16 page_offset;
++	u16 len;
+ 	bool is_page;
+ };
  
-+	efx_device_detach_sync(efx);
- 	efx_stop_all(efx);
- 	efx_fini_channels(efx);
- 
-@@ -763,6 +764,7 @@ out:
- 
- 	efx_init_channels(efx);
- 	efx_start_all(efx);
-+	netif_device_attach(efx->net_dev);
- 	return rc;
- 
- rollback:
-@@ -1530,8 +1532,12 @@ static void efx_stop_all(struct efx_nic
- 	/* Flush efx_mac_work(), refill_workqueue, monitor_work */
- 	efx_flush_all(efx);
- 
--	/* Stop the kernel transmit interface late, so the watchdog
--	 * timer isn't ticking over the flush */
-+	/* Stop the kernel transmit interface.  This is only valid if
-+	 * the device is stopped or detached; otherwise the watchdog
-+	 * may fire immediately.
-+	 */
-+	WARN_ON(netif_running(efx->net_dev) &&
-+		netif_device_present(efx->net_dev));
- 	if (efx_dev_registered(efx)) {
- 		netif_tx_stop_all_queues(efx->net_dev);
- 		netif_tx_lock_bh(efx->net_dev);
-@@ -1801,10 +1807,11 @@ static int efx_change_mtu(struct net_dev
- 	if (new_mtu > EFX_MAX_MTU)
- 		return -EINVAL;
- 
--	efx_stop_all(efx);
--
- 	netif_dbg(efx, drv, efx->net_dev, "changing MTU to %d\n", new_mtu);
- 
-+	efx_device_detach_sync(efx);
-+	efx_stop_all(efx);
-+
- 	efx_fini_channels(efx);
- 
- 	mutex_lock(&efx->mac_lock);
-@@ -1817,6 +1824,7 @@ static int efx_change_mtu(struct net_dev
- 	efx_init_channels(efx);
- 
- 	efx_start_all(efx);
-+	netif_device_attach(efx->net_dev);
- 	return rc;
+--- a/drivers/net/sfc/rx.c
++++ b/drivers/net/sfc/rx.c
+@@ -94,11 +94,7 @@ static unsigned int rx_refill_limit = 95
+ static inline unsigned int efx_rx_buf_offset(struct efx_nic *efx,
+ 					     struct efx_rx_buffer *buf)
+ {
+-	/* Offset is always within one page, so we don't need to consider
+-	 * the page order.
+-	 */
+-	return (((__force unsigned long) buf->dma_addr & (PAGE_SIZE - 1)) +
+-		efx->type->rx_buffer_hash_size);
++	return buf->page_offset + efx->type->rx_buffer_hash_size;
  }
+ static inline unsigned int efx_rx_buf_size(struct efx_nic *efx)
+ {
+@@ -193,6 +189,7 @@ static int efx_init_rx_buffers_page(stru
+ 	struct efx_rx_buffer *rx_buf;
+ 	struct page *page;
+ 	void *page_addr;
++	unsigned int page_offset;
+ 	struct efx_rx_page_state *state;
+ 	dma_addr_t dma_addr;
+ 	unsigned index, count;
+@@ -219,12 +216,14 @@ static int efx_init_rx_buffers_page(stru
  
+ 		page_addr += sizeof(struct efx_rx_page_state);
+ 		dma_addr += sizeof(struct efx_rx_page_state);
++		page_offset = sizeof(struct efx_rx_page_state);
+ 
+ 	split:
+ 		index = rx_queue->added_count & rx_queue->ptr_mask;
+ 		rx_buf = efx_rx_buffer(rx_queue, index);
+ 		rx_buf->dma_addr = dma_addr + EFX_PAGE_IP_ALIGN;
+ 		rx_buf->u.page = page;
++		rx_buf->page_offset = page_offset + EFX_PAGE_IP_ALIGN;
+ 		rx_buf->len = efx->rx_buffer_len - EFX_PAGE_IP_ALIGN;
+ 		rx_buf->is_page = true;
+ 		++rx_queue->added_count;
+@@ -236,6 +235,7 @@ static int efx_init_rx_buffers_page(stru
+ 			get_page(page);
+ 			dma_addr += (PAGE_SIZE >> 1);
+ 			page_addr += (PAGE_SIZE >> 1);
++			page_offset += (PAGE_SIZE >> 1);
+ 			++count;
+ 			goto split;
+ 		}
 
 
