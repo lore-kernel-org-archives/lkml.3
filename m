@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab3CZXUI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:20:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53017 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756107Ab3CZWwb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756100Ab3CZWwb (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 26 Mar 2013 18:52:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53002 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755311Ab3CZWw3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 18:52:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 26/72] sfc: Properly sync RX DMA buffer when it is not the last in the page
-Date: Tue, 26 Mar 2013 15:51:09 -0700
-Message-Id: <20130326224922.398874103@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: [ 37/72] tracing: Fix free of probe entry by calling call_rcu_sched()
+Date: Tue, 26 Mar 2013 15:51:20 -0700
+Message-Id: <20130326224923.526284874@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
 References: <20130326224919.675227837@linuxfoundation.org>
@@ -26,71 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+commit 740466bc89ad8bd5afcc8de220f715f62b21e365 upstream.
 
-[ Upstream commit 3a68f19d7afb80f548d016effbc6ed52643a8085 ]
+Because function tracing is very invasive, and can even trace
+calls to rcu_read_lock(), RCU access in function tracing is done
+with preempt_disable_notrace(). This requires a synchronize_sched()
+for updates and not a synchronize_rcu().
 
-We may currently allocate two RX DMA buffers to a page, and only unmap
-the page when the second is completed.  We do not sync the first RX
-buffer to be completed; this can result in packet loss or corruption
-if the last RX buffer completed in a NAPI poll is the first in a page
-and is not DMA-coherent.  (In the middle of a NAPI poll, we will
-handle the following RX completion and unmap the page *before* looking
-at the content of the first buffer.)
+Function probes (traceon, traceoff, etc) must be freed after
+a synchronize_sched() after its entry has been removed from the
+hash. But call_rcu() is used. Fix this by using call_rcu_sched().
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-[bwh: Backported to 3.4: adjust context]
+Also fix the usage to use hlist_del_rcu() instead of hlist_del().
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/sfc/rx.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/net/ethernet/sfc/rx.c
-+++ b/drivers/net/ethernet/sfc/rx.c
-@@ -245,7 +245,8 @@ static int efx_init_rx_buffers_page(stru
- }
+---
+ kernel/trace/ftrace.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3034,8 +3034,8 @@ __unregister_ftrace_function_probe(char
+ 					continue;
+ 			}
  
- static void efx_unmap_rx_buffer(struct efx_nic *efx,
--				struct efx_rx_buffer *rx_buf)
-+				struct efx_rx_buffer *rx_buf,
-+				unsigned int used_len)
- {
- 	if ((rx_buf->flags & EFX_RX_BUF_PAGE) && rx_buf->u.page) {
- 		struct efx_rx_page_state *state;
-@@ -256,6 +257,10 @@ static void efx_unmap_rx_buffer(struct e
- 				       state->dma_addr,
- 				       efx_rx_buf_size(efx),
- 				       PCI_DMA_FROMDEVICE);
-+		} else if (used_len) {
-+			dma_sync_single_for_cpu(&efx->pci_dev->dev,
-+						rx_buf->dma_addr, used_len,
-+						DMA_FROM_DEVICE);
+-			hlist_del(&entry->node);
+-			call_rcu(&entry->rcu, ftrace_free_entry_rcu);
++			hlist_del_rcu(&entry->node);
++			call_rcu_sched(&entry->rcu, ftrace_free_entry_rcu);
  		}
- 	} else if (!(rx_buf->flags & EFX_RX_BUF_PAGE) && rx_buf->u.skb) {
- 		pci_unmap_single(efx->pci_dev, rx_buf->dma_addr,
-@@ -278,7 +283,7 @@ static void efx_free_rx_buffer(struct ef
- static void efx_fini_rx_buffer(struct efx_rx_queue *rx_queue,
- 			       struct efx_rx_buffer *rx_buf)
- {
--	efx_unmap_rx_buffer(rx_queue->efx, rx_buf);
-+	efx_unmap_rx_buffer(rx_queue->efx, rx_buf, 0);
- 	efx_free_rx_buffer(rx_queue->efx, rx_buf);
- }
- 
-@@ -544,10 +549,10 @@ void efx_rx_packet(struct efx_rx_queue *
- 		goto out;
  	}
- 
--	/* Release card resources - assumes all RX buffers consumed in-order
--	 * per RX queue
-+	/* Release and/or sync DMA mapping - assumes all RX buffers
-+	 * consumed in-order per RX queue
- 	 */
--	efx_unmap_rx_buffer(efx, rx_buf);
-+	efx_unmap_rx_buffer(efx, rx_buf, len);
- 
- 	/* Prefetch nice and early so data will (hopefully) be in cache by
- 	 * the time we look at it.
+ 	__disable_ftrace_function_probe();
 
 
