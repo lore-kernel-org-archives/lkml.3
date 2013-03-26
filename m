@@ -1,187 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934271Ab3CZNcp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 09:32:45 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:65376 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933914Ab3CZNco (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 09:32:44 -0400
+	id S934284Ab3CZNdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 09:33:33 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9930 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934130Ab3CZNdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 09:33:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,911,1355126400"; 
+   d="scan'208";a="276119448"
+Date: Tue, 26 Mar 2013 14:33:26 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Tomas Winkler <tomas.winkler@intel.com>, arnd@arndb.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [char-misc-next 01/11 V4] mei: bus: Initial MEI Client bus type
+ implementation
+Message-ID: <20130326133326.GA19511@zurbaran>
+References: <1363819469-696-1-git-send-email-tomas.winkler@intel.com>
+ <1363819469-696-2-git-send-email-tomas.winkler@intel.com>
+ <20130325202855.GA21494@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <51505C59.1040607@infradead.org>
-References: <1364210495-7938-1-git-send-email-prabhakar.csengg@gmail.com> <51505C59.1040607@infradead.org>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 26 Mar 2013 19:02:21 +0530
-Message-ID: <CA+V-a8u2kHoCWW4xbKkPoUQkBHaJHJA=0xdp=kbCUCO2PcY8+w@mail.gmail.com>
-Subject: Re: [PATCH] ARM: davinci: use is IS_ENABLED macro
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Sekhar Nori <nsekhar@ti.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130325202855.GA21494@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+Hi Greg,
 
-On Mon, Mar 25, 2013 at 7:46 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 03/25/13 04:21, Prabhakar lad wrote:
->> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->>
->> This patches replaces #if defined() by IS_ENABLED macro, which provides
->> better readability.
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> Cc: Sekhar Nori <nsekhar@ti.com>
->> ---
->>  Note: This patch is compile tested only for davinci_all_defconfig
->>        and da8xx_omapl_defconfig.
->
-> Source files that use IS_ENABLED() etc. should also
-> #include <linux/kconfig.h>
->
-> Is that already done in all of these source files?
->
-as mentioned in  my NOTE when I built with the above
-mentioned  *defconfig's all the files which were modified
-in this patch got built (.o files were created), which indicates
-#include <linux/kconfig.h> is included :-)
+On Mon, Mar 25, 2013 at 01:28:55PM -0700, Greg KH wrote:
+> On Thu, Mar 21, 2013 at 12:44:19AM +0200, Tomas Winkler wrote:
+> >  create mode 100644 Documentation/misc-devices/mei/mei-client-bus.txt
+> 
+> Shouldn't you also create Documentation/ABI/ entries as well?
+You mean for the bus specific stuff or for the /dev/mei entry ?
+For the bus parts, we're not adding any MEI specific sysfs entries. What
+should we document ?
 
-Regards,
---Prabhakar
+ 
+> > +#define NFC_UUID UUID_LE(0x0bb17a78, 0x2a8e, 0x4c50, 0x94, \
+> > +			       0xd4, 0x50, 0x26, 0x67, 0x23, 0x77, 0x5c)
+> > +
+> > +static struct mei_cl_id contact_mei_cl_tbl[] = {
+> > +	{ CONTACT_DRIVER_NAME, NFC_UUID },
+> > +
+> > +	/* required last entry */
+> > +	{ }
+> > +};
+> 
+> What about MODULE_DEVICE() functionality for this structure?  Don't you
+> need/want that as well?
+I was planning to do that as a separate mod_devicetable.h patch once this
+code gets merged, but I guess it makes sense to include it with this patchset.
+It reminds me that I should remove the uuid_le field from the mei_cl_id
+structure, it's useless.
 
->
->>  arch/arm/mach-davinci/board-da830-evm.c   |    2 +-
->>  arch/arm/mach-davinci/board-da850-evm.c   |    3 +--
->>  arch/arm/mach-davinci/board-dm644x-evm.c  |    9 +++------
->>  arch/arm/mach-davinci/board-dm646x-evm.c  |    3 +--
->>  arch/arm/mach-davinci/board-neuros-osd2.c |    6 ++----
->>  arch/arm/mach-davinci/devices.c           |    2 +-
->>  arch/arm/mach-davinci/usb.c               |    2 +-
->>  7 files changed, 10 insertions(+), 17 deletions(-)
->>
->> diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
->> index 6da25ee..68ade71 100644
->> --- a/arch/arm/mach-davinci/board-da830-evm.c
->> +++ b/arch/arm/mach-davinci/board-da830-evm.c
->> @@ -298,7 +298,7 @@ static const short da830_evm_emif25_pins[] = {
->>       -1
->>  };
->>
->> -#if defined(CONFIG_MMC_DAVINCI) || defined(CONFIG_MMC_DAVINCI_MODULE)
->> +#if IS_ENABLED(CONFIG_MMC_DAVINCI)
->>  #define HAS_MMC      1
->>  #else
->>  #define HAS_MMC      0
->> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
->> index c2dfe06..3475769 100644
->> --- a/arch/arm/mach-davinci/board-da850-evm.c
->> +++ b/arch/arm/mach-davinci/board-da850-evm.c
->> @@ -335,8 +335,7 @@ static const short da850_evm_nor_pins[] = {
->>       -1
->>  };
->>
->> -#if defined(CONFIG_MMC_DAVINCI) || \
->> -    defined(CONFIG_MMC_DAVINCI_MODULE)
->> +#if IS_ENABLED(CONFIG_MMC_DAVINCI)
->>  #define HAS_MMC 1
->>  #else
->>  #define HAS_MMC 0
->> diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
->> index 71735e7..d0f6365 100644
->> --- a/arch/arm/mach-davinci/board-dm644x-evm.c
->> +++ b/arch/arm/mach-davinci/board-dm644x-evm.c
->> @@ -750,22 +750,19 @@ static int davinci_phy_fixup(struct phy_device *phydev)
->>       return 0;
->>  }
->>
->> -#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
->> -    defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
->> +#if IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
->>  #define HAS_ATA 1
->>  #else
->>  #define HAS_ATA 0
->>  #endif
->>
->> -#if defined(CONFIG_MTD_PHYSMAP) || \
->> -    defined(CONFIG_MTD_PHYSMAP_MODULE)
->> +#if IS_ENABLED(CONFIG_MTD_PHYSMAP)
->>  #define HAS_NOR 1
->>  #else
->>  #define HAS_NOR 0
->>  #endif
->>
->> -#if defined(CONFIG_MTD_NAND_DAVINCI) || \
->> -    defined(CONFIG_MTD_NAND_DAVINCI_MODULE)
->> +#if IS_ENABLED(CONFIG_MTD_NAND_DAVINCI)
->>  #define HAS_NAND 1
->>  #else
->>  #define HAS_NAND 0
->> diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
->> index de7adff..c84fdd5 100644
->> --- a/arch/arm/mach-davinci/board-dm646x-evm.c
->> +++ b/arch/arm/mach-davinci/board-dm646x-evm.c
->> @@ -117,8 +117,7 @@ static struct platform_device davinci_nand_device = {
->>       },
->>  };
->>
->> -#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
->> -    defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
->> +#if IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
->>  #define HAS_ATA 1
->>  #else
->>  #define HAS_ATA 0
->> diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
->> index 1c98107..8bd0a43 100644
->> --- a/arch/arm/mach-davinci/board-neuros-osd2.c
->> +++ b/arch/arm/mach-davinci/board-neuros-osd2.c
->> @@ -168,15 +168,13 @@ static struct davinci_mmc_config davinci_ntosd2_mmc_config = {
->>  };
->>
->>
->> -#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
->> -     defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
->> +#if IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
->>  #define HAS_ATA 1
->>  #else
->>  #define HAS_ATA 0
->>  #endif
->>
->> -#if defined(CONFIG_MTD_NAND_DAVINCI) || \
->> -     defined(CONFIG_MTD_NAND_DAVINCI_MODULE)
->> +#if IS_ENABLED(CONFIG_MTD_NAND_DAVINCI)
->>  #define HAS_NAND 1
->>  #else
->>  #define HAS_NAND 0
->> diff --git a/arch/arm/mach-davinci/devices.c b/arch/arm/mach-davinci/devices.c
->> index 4c48a36..df135de 100644
->> --- a/arch/arm/mach-davinci/devices.c
->> +++ b/arch/arm/mach-davinci/devices.c
->> @@ -119,7 +119,7 @@ void __init davinci_init_ide(void)
->>       platform_device_register(&ide_device);
->>  }
->>
->> -#if  defined(CONFIG_MMC_DAVINCI) || defined(CONFIG_MMC_DAVINCI_MODULE)
->> +#if IS_ENABLED(CONFIG_MMC_DAVINCI)
->>
->>  static u64 mmcsd0_dma_mask = DMA_BIT_MASK(32);
->>
->> diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
->> index 34509ff..5764d65 100644
->> --- a/arch/arm/mach-davinci/usb.c
->> +++ b/arch/arm/mach-davinci/usb.c
->> @@ -17,7 +17,7 @@
->>  #define DA8XX_USB0_BASE      0x01e00000
->>  #define DA8XX_USB1_BASE      0x01e25000
->>
->> -#if defined(CONFIG_USB_MUSB_HDRC) || defined(CONFIG_USB_MUSB_HDRC_MODULE)
->> +#if IS_ENABLED(CONFIG_USB_MUSB_HDRC)
->>  static struct musb_hdrc_eps_bits musb_eps[] = {
->>       { "ep1_tx", 8, },
->>       { "ep1_rx", 8, },
->>
->
->
-> --
-> ~Randy
+
+> > +/**
+> > + * struct mei_cl_device - MEI device handle
+> > + * An mei_cl_device pointer is returned from mei_add_device()
+> > + * and links MEI bus clients to their actual ME host client pointer.
+> > + * Drivers for MEI devices will get an mei_cl_device pointer
+> > + * when being probed and shall use it for doing ME bus I/O.
+> > + *
+> > + * @dev: linux driver model device pointer
+> > + * @uuid: me client uuid
+> > + * @cl: mei client
+> > + * @priv_data: client private data
+> > + */
+> > +struct mei_cl_device {
+> > +	struct device dev;
+> > +
+> > +	uuid_le uuid;
+> > +	struct mei_cl *cl;
+> > +
+> > +	void *priv_data;
+> > +};
+> 
+> Why is priv_data needed?  What's wrong with the pointer provided to you
+> in struct device?
+mei_cl_device->dev->p->driver_data is used by mei drivers to carry their
+private data around, we define mei_cl_get_clientdata/mei_cl_set_clientdata for
+that and keep the mei_cl_device structure opaque to them.
+mei_cl_device->priv_data is used internally by the drivers/misc/mei/ bus
+related code to carry technology specific pointers. drivers/misc/mei/nfc.c
+uses it to fetch its private data when it gets a mei_cl_device pointer.
+
+
+
+> > + *
+> > + * Contact Information:
+> > + *	Intel Corporation.
+> > + *	linux-mei@linux.intel.com
+> > + *	http://www.intel.com
+> > + *
+> > + * BSD LICENSE
+> 
+> Wait, you are putting code that has EXPORT_SYMBOL_GPL() usage under a
+> GPL/BSD license?  I need an Intel lawyer signed-off-by: on the patch
+> before I can accept that.
+Sorry about that. We changed our EXPORT_SYMBOL to EXPORT_SYMBOL_GPL when you
+asked for it, and I missed changing this header file at the same time. I will
+actually remove the licensing terms from this file.
+
+
+> > +struct mei_cl_driver {
+> > +	struct device_driver driver;
+> > +	const char *name;
+> 
+> What's wrong with the driver.name field?
+>From your initial comments on patchset v1:
+
+"
+	> +static struct mei_bus_driver contact_driver = {
+	> +     .driver = {
+	> +                .name = CONTAC_DRIVER_NAME,
+	> +               },
+
+	Can't you put a name field in your mei_bus_driver structure and then
+	copy it to the version in the driver model?  That's what other bus
+	drivers do and it makes more sense.
+"
+
+And you were right, that is indeed what other bus drivers do. Did I
+misunderstand you here ?
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
