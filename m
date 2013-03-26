@@ -1,93 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965221Ab3CZPkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:40:33 -0400
-Received: from www.sr71.net ([198.145.64.142]:36428 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965245Ab3CZPk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:40:27 -0400
-Message-ID: <5151C167.2020206@sr71.net>
-Date: Tue, 26 Mar 2013 08:40:23 -0700
-From: Dave <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2, RFC 13/30] thp, mm: implement grab_cache_huge_page_write_begin()
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-14-git-send-email-kirill.shutemov@linux.intel.com> <514B4E2B.2010506@sr71.net> <20130326104810.C7F3AE0085@blue.fi.intel.com>
-In-Reply-To: <20130326104810.C7F3AE0085@blue.fi.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S965558Ab3CZPkk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:40:40 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49960 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965170Ab3CZPkh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 11:40:37 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/3] extcon: arizona: Factor out magic application
+Date: Tue, 26 Mar 2013 15:40:31 +0000
+Message-Id: <1364312433-589-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20130326154014.GD18316@opensource.wolfsonmicro.com>
+References: <20130326154014.GD18316@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2013 03:48 AM, Kirill A. Shutemov wrote:
-> Dave Hansen wrote:
->>> +repeat:
->>> +	page = find_lock_page(mapping, index);
->>> +	if (page) {
->>> +		if (!PageTransHuge(page)) {
->>> +			unlock_page(page);
->>> +			page_cache_release(page);
->>> +			return NULL;
->>> +		}
->>> +		goto found;
->>> +	}
->>> +
->>> +	page = alloc_pages(gfp_mask & ~gfp_notmask, HPAGE_PMD_ORDER);
->>
->> I alluded to this a second ago, but what's wrong with alloc_hugepage()?
-> 
-> It's defined only for !CONFIG_NUMA and only inside mm/huge_memory.c.
+We have a very similar sequence doing magic writes in several places
+(one of which missed an update to interlock with the CODEC driver) so
+factor it out into a function.
 
-It's a short function, but you could easily pull it out from under the
-#ifdef and export it.  I kinda like the idea of these things being
-allocated in as few code paths possible.  But, it's not a big deal.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/extcon/extcon-arizona.c |   91 ++++++++++++++++-----------------------
+ 1 file changed, 36 insertions(+), 55 deletions(-)
 
->>> +found:
->>> +	wait_on_page_writeback(page);
->>> +	return page;
->>> +}
->>> +#endif
->>
->> So, I diffed :
->>
->> -struct page *grab_cache_page_write_begin(struct address_space
->> vs.
->> +struct page *grab_cache_huge_page_write_begin(struct address_space
->>
->> They're just to similar to ignore.  Please consolidate them somehow.
-> 
-> Will do.
-> 
->>> +found:
->>> +	wait_on_page_writeback(page);
->>> +	return page;
->>> +}
->>> +#endif
->>
->> In grab_cache_page_write_begin(), this "wait" is:
->>
->>         wait_for_stable_page(page);
->>
->> Why is it different here?
-> 
-> It was wait_on_page_writeback() in grab_cache_page_write_begin() when I forked
-> it :(
-> 
-> See 1d1d1a7 mm: only enforce stable page writes if the backing device requires it
-> 
-> Consolidation will fix this.
-
-Excellent.
+diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+index dc357a4..896a923 100644
+--- a/drivers/extcon/extcon-arizona.c
++++ b/drivers/extcon/extcon-arizona.c
+@@ -100,6 +100,39 @@ static const char *arizona_cable[] = {
+ 	NULL,
+ };
+ 
++static void arizona_extcon_do_magic(struct arizona_extcon_info *info,
++				    unsigned int magic)
++{
++	struct arizona *arizona = info->arizona;
++	unsigned int val;
++	int ret;
++
++	mutex_lock(&arizona->dapm->card->dapm_mutex);
++
++	ret = regmap_read(arizona->regmap, ARIZONA_OUTPUT_ENABLES_1, &val);
++	if (ret != 0) {
++		dev_err(arizona->dev, "Failed to read output enables: %d\n",
++			ret);
++		val = 0;
++	}
++
++	if (!(val & (ARIZONA_OUT1L_ENA | ARIZONA_OUT1R_ENA))) {
++		ret = regmap_update_bits(arizona->regmap, 0x225, 0x4000,
++					 magic);
++		if (ret != 0)
++			dev_warn(arizona->dev, "Failed to do magic: %d\n",
++				 ret);
++
++		ret = regmap_update_bits(arizona->regmap, 0x226, 0x4000,
++					 magic);
++		if (ret != 0)
++			dev_warn(arizona->dev, "Failed to do magic: %d\n",
++				 ret);
++	}
++
++	mutex_unlock(&arizona->dapm->card->dapm_mutex);
++}
++
+ static void arizona_extcon_set_mode(struct arizona_extcon_info *info, int mode)
+ {
+ 	struct arizona *arizona = info->arizona;
+@@ -484,7 +517,6 @@ static irqreturn_t arizona_hpdet_irq(int irq, void *data)
+ 	struct arizona *arizona = info->arizona;
+ 	int id_gpio = arizona->pdata.hpdet_id_gpio;
+ 	int report = ARIZONA_CABLE_HEADPHONE;
+-	unsigned int val;
+ 	int ret, reading;
+ 
+ 	mutex_lock(&info->lock);
+@@ -539,28 +571,7 @@ static irqreturn_t arizona_hpdet_irq(int irq, void *data)
+ 		dev_err(arizona->dev, "Failed to report HP/line: %d\n",
+ 			ret);
+ 
+-	mutex_lock(&arizona->dapm->card->dapm_mutex);
+-
+-	ret = regmap_read(arizona->regmap, ARIZONA_OUTPUT_ENABLES_1, &val);
+-	if (ret != 0) {
+-		dev_err(arizona->dev, "Failed to read output enables: %d\n",
+-			ret);
+-		val = 0;
+-	}
+-
+-	if (!(val & (ARIZONA_OUT1L_ENA | ARIZONA_OUT1R_ENA))) {
+-		ret = regmap_update_bits(arizona->regmap, 0x225, 0x4000, 0);
+-		if (ret != 0)
+-			dev_warn(arizona->dev, "Failed to undo magic: %d\n",
+-				 ret);
+-
+-		ret = regmap_update_bits(arizona->regmap, 0x226, 0x4000, 0);
+-		if (ret != 0)
+-			dev_warn(arizona->dev, "Failed to undo magic: %d\n",
+-				 ret);
+-	}
+-
+-	mutex_unlock(&arizona->dapm->card->dapm_mutex);
++	arizona_extcon_do_magic(info, 0);
+ 
+ done:
+ 	if (id_gpio)
+@@ -606,13 +617,7 @@ static void arizona_identify_headphone(struct arizona_extcon_info *info)
+ 	if (info->mic)
+ 		arizona_stop_mic(info);
+ 
+-	ret = regmap_update_bits(arizona->regmap, 0x225, 0x4000, 0x4000);
+-	if (ret != 0)
+-		dev_warn(arizona->dev, "Failed to do magic: %d\n", ret);
+-
+-	ret = regmap_update_bits(arizona->regmap, 0x226, 0x4000, 0x4000);
+-	if (ret != 0)
+-		dev_warn(arizona->dev, "Failed to do magic: %d\n", ret);
++	arizona_extcon_do_magic(info, 0x4000);
+ 
+ 	ret = regmap_update_bits(arizona->regmap,
+ 				 ARIZONA_ACCESSORY_DETECT_MODE_1,
+@@ -653,7 +658,6 @@ err:
+ static void arizona_start_hpdet_acc_id(struct arizona_extcon_info *info)
+ {
+ 	struct arizona *arizona = info->arizona;
+-	unsigned int val;
+ 	int ret;
+ 
+ 	dev_dbg(arizona->dev, "Starting identification via HPDET\n");
+@@ -665,30 +669,7 @@ static void arizona_start_hpdet_acc_id(struct arizona_extcon_info *info)
+ 
+ 	arizona_extcon_pulse_micbias(info);
+ 
+-	mutex_lock(&arizona->dapm->card->dapm_mutex);
+-
+-	ret = regmap_read(arizona->regmap, ARIZONA_OUTPUT_ENABLES_1, &val);
+-	if (ret != 0) {
+-		dev_err(arizona->dev, "Failed to read output enables: %d\n",
+-			ret);
+-		val = 0;
+-	}
+-
+-	if (!(val & (ARIZONA_OUT1L_ENA | ARIZONA_OUT1R_ENA))) {
+-		ret = regmap_update_bits(arizona->regmap, 0x225, 0x4000,
+-					 0x4000);
+-		if (ret != 0)
+-			dev_warn(arizona->dev, "Failed to do magic: %d\n",
+-				 ret);
+-
+-		ret = regmap_update_bits(arizona->regmap, 0x226, 0x4000,
+-					 0x4000);
+-		if (ret != 0)
+-			dev_warn(arizona->dev, "Failed to do magic: %d\n",
+-				 ret);
+-	}
+-
+-	mutex_unlock(&arizona->dapm->card->dapm_mutex);
++	arizona_extcon_do_magic(info, 0x4000);
+ 
+ 	ret = regmap_update_bits(arizona->regmap,
+ 				 ARIZONA_ACCESSORY_DETECT_MODE_1,
+-- 
+1.7.10.4
 
