@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713Ab3CZWrM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:47:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52732 "EHLO
+	id S1755341Ab3CZWrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:47:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52718 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755364Ab3CZWoh (ORCPT
+	with ESMTP id S1751235Ab3CZWoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:37 -0400
+	Tue, 26 Mar 2013 18:44:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 94/98] USB: garmin_gps: fix memory leak on disconnect
-Date: Tue, 26 Mar 2013 15:43:23 -0700
-Message-Id: <20130326224252.208175338@linuxfoundation.org>
+Subject: [ 95/98] USB: io_ti: fix get_icount for two port adapters
+Date: Tue, 26 Mar 2013 15:43:24 -0700
+Message-Id: <20130326224252.305345782@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -28,43 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 618aa1068df29c37a58045fe940f9106664153fd upstream.
+commit 5492bf3d5655b4954164f69c02955a7fca267611 upstream.
 
-Remove bogus disconnect test introduced by 95bef012e ("USB: more serial
-drivers writing after disconnect") which prevented queued data from
-being freed on disconnect.
+Add missing get_icount field to two-port driver.
 
-The possible IO it was supposed to prevent is long gone.
+The two-port driver was not updated when switching to the new icount
+interface in commit 0bca1b913aff ("tty: Convert the USB drivers to the
+new icount interface").
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/garmin_gps.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/usb/serial/io_ti.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/garmin_gps.c
-+++ b/drivers/usb/serial/garmin_gps.c
-@@ -959,10 +959,7 @@ static void garmin_close(struct usb_seri
- 	if (!serial)
- 		return;
- 
--	mutex_lock(&port->serial->disc_mutex);
--
--	if (!port->serial->disconnected)
--		garmin_clear(garmin_data_p);
-+	garmin_clear(garmin_data_p);
- 
- 	/* shutdown our urbs */
- 	usb_kill_urb(port->read_urb);
-@@ -971,8 +968,6 @@ static void garmin_close(struct usb_seri
- 	/* keep reset state so we know that we must start a new session */
- 	if (garmin_data_p->state != STATE_RESET)
- 		garmin_data_p->state = STATE_DISCONNECTED;
--
--	mutex_unlock(&port->serial->disc_mutex);
- }
- 
- 
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -2702,6 +2702,7 @@ static struct usb_serial_driver edgeport
+ 	.set_termios		= edge_set_termios,
+ 	.tiocmget		= edge_tiocmget,
+ 	.tiocmset		= edge_tiocmset,
++	.get_icount		= edge_get_icount,
+ 	.write			= edge_write,
+ 	.write_room		= edge_write_room,
+ 	.chars_in_buffer	= edge_chars_in_buffer,
 
 
