@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934133Ab3CZH13 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 03:27:29 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:36766 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932513Ab3CZH12 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 03:27:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <1364230583-4043-1-git-send-email-s.nawrocki@samsung.com>
-References: <1364230583-4043-1-git-send-email-s.nawrocki@samsung.com>
-Date: Tue, 26 Mar 2013 15:27:27 +0800
-Message-ID: <CAP1dx+y5GCtx2nnmzwEq20N0J24MYz3WbJgxW80CMHOCcWrS3A@mail.gmail.com>
-Subject: Re: [PATCH] mfd: syscon: Add missing struct device_node declaration
-From: Dong Aisheng <dong.aisheng@linaro.org>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: sameo@linux.intel.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1759443Ab3CZH30 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 03:29:26 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:34885 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754544Ab3CZH3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 03:29:25 -0400
+X-IronPort-AV: E=Sophos;i="4.87,350,1363104000"; 
+   d="scan'208";a="6946242"
+From: Ren Mingxin <renmx@cn.fujitsu.com>
+To: james.smart@emulex.com
+Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ren Mingxin <renmx@cn.fujitsu.com>
+Subject: [PATCH] scsi/lpfc: add return code FAST_IO_FAIL in lpfc_abort_handler() comments
+Date: Tue, 26 Mar 2013 15:31:00 +0800
+Message-Id: <1364283060-30425-1-git-send-email-renmx@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/26 15:28:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/26 15:28:37,
+	Serialize complete at 2013/03/26 15:28:37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 March 2013 00:56, Sylwester Nawrocki <s.nawrocki@samsung.com> wrote:
-> syscon.h header uses struct device_node in functions' declarations
-> without declaring it. This causes compilation warnings like:
->
-> include/linux/mfd/syscon.h:20: warning: ‘struct device_node’
-> declared inside parameter list
-> include/linux/mfd/syscon.h:20: warning: its scope is only this
-> definition or declaration, which is probably not what you want
->
-> Fix it by adding a forward declaration of struct device_node.
->
-> Cc: Dong Aisheng <dong.aisheng@linaro.org>
-> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Ren Mingxin <renmx@cn.fujitsu.com>
+---
+ drivers/scsi/lpfc/lpfc_scsi.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+diff --git a/drivers/scsi/lpfc/lpfc_scsi.c b/drivers/scsi/lpfc/lpfc_scsi.c
+index 98af07c..cc6fc83 100644
+--- a/drivers/scsi/lpfc/lpfc_scsi.c
++++ b/drivers/scsi/lpfc/lpfc_scsi.c
+@@ -4426,6 +4426,7 @@ lpfc_queuecommand(struct Scsi_Host *shost, struct scsi_cmnd *cmnd)
+  * Return code :
+  *   0x2003 - Error
+  *   0x2002 - Success
++ *   0x2009 - fast_io_fail_tmo fired
+  **/
+ static int
+ lpfc_abort_handler(struct scsi_cmnd *cmnd)
+-- 
+1.7.1
 
-Regards
-Dong Aisheng
-
-> ---
->  include/linux/mfd/syscon.h |    2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
-> index 6aeb6b8..f7be936 100644
-> --- a/include/linux/mfd/syscon.h
-> +++ b/include/linux/mfd/syscon.h
-> @@ -15,6 +15,8 @@
->  #ifndef __LINUX_MFD_SYSCON_H__
->  #define __LINUX_MFD_SYSCON_H__
->
-> +struct device_node;
-> +
->  extern struct regmap *syscon_node_to_regmap(struct device_node *np);
->  extern struct regmap *syscon_regmap_lookup_by_compatible(const char *s);
->  extern struct regmap *syscon_regmap_lookup_by_phandle(
-> --
-> 1.7.9.5
->
