@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964914Ab3CZQSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 12:18:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53564 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964834Ab3CZPVx (ORCPT
+	id S964976Ab3CZQSV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 12:18:21 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:53313 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934922Ab3CZQSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:21:53 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jiri Slaby <jslaby@suse.cz>, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Bryan Mason <bmason@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 021/150] TTY: do not reset master's packet mode
-Date: Tue, 26 Mar 2013 15:18:40 +0000
-Message-Id: <1364311249-14454-22-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 26 Mar 2013 12:18:18 -0400
+Date: Tue, 26 Mar 2013 09:18:10 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        Sebastian Gottschall <s.gottschall@dd-wrt.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "# 3.4.x" <stable@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Build breakage in 3.8.4 [was: Linux 3.8.4]
+Message-ID: <20130326161810.GB18581@kroah.com>
+References: <20130320201554.GA18281@kroah.com>
+ <kidd01$2o6$1@ger.gmane.org>
+ <514F5480.6040501@suse.cz>
+ <CAGXu5jJdbDabBjNoaZUeqCT6a6yHqHcQNnqXNM6T1S=bwig8Fw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jJdbDabBjNoaZUeqCT6a6yHqHcQNnqXNM6T1S=bwig8Fw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Mar 26, 2013 at 08:56:20AM -0700, Kees Cook wrote:
+> On Sun, Mar 24, 2013 at 12:31 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+> > On 03/20/2013 11:25 PM, Sebastian Gottschall wrote:
+> >
+> >> Am 20.03.2013 21:15, schrieb Greg KH:
+> >>> I'm announcing the release of the 3.8.4 kernel.
+> > ...
+> >>>        signal: always clear sa_restorer on execve
+> >> consider that this kernel is not compileable on mips targets due the
+> >> patch in kernel/signal.c
+> >>
+> >> SA_RESTORER is defined in mips, but sa_restorer does not exist on that
+> >> platform
+> >
+> > The same for ia64...
+> >
+> > kernel/signal.c: In function 'flush_signal_handlers':
+> > kernel/signal.c:441: error: 'struct sigaction' has no member named
+> > 'sa_restorer'
+> >
+> > Do we need this in 3.0, 3.4, 3.8 too?
+> > commit 522cff142d7d2f9230839c9e1f21a4d8bcc22a4a
+> > Author: Andrew Morton <akpm@linux-foundation.org>
+> > Date:   Wed Mar 13 14:59:34 2013 -0700
+> >
+> >     kernel/signal.c: use __ARCH_HAS_SA_RESTORER instead of SA_RESTORER
+> >
+> >     __ARCH_HAS_SA_RESTORER is the preferred conditional for use in 3.9 and
+> >     later kernels, per Kees.
+> 
+> Hrm, if so, we'll need to also backport the changes that aded
+> __ARCH_HAS_SA_RESTORER...
 
-------------------
+Ok, well, can someone provide me the needed patches?  Otherwise I will
+have to revert the offending change from the stable releases.
 
-From: Jiri Slaby <jslaby@suse.cz>
+thanks,
 
-commit b81273a132177edd806476b953f6afeb17b786d5 upstream.
-
-Now that login from util-linux is forced to drop all references to a
-TTY which it wants to hangup (to reach reference count 1) we are
-seeing issues with telnet. When login closes its last reference to the
-slave PTY, it also resets packet mode on the *master* side. And we
-have a race here.
-
-What telnet does is fork+exec of `login'. Then there are two
-scenarios:
-* `login' closes the slave TTY and resets thus master's packet mode,
-  but even now telnet properly sets the mode, or
-* `telnetd' sets packet mode on the master, `login' closes the slave
-  TTY and resets master's packet mode.
-
-The former case is OK. However the latter happens in much more cases,
-by the order of magnitude to be precise. So when one tries to login to
-such a messed telnet setup, they see the following:
-inux login:
-            ogin incorrect
-
-Note the missing first letters -- telnet thinks it is still in the
-packet mode, so when it receives "linux login" from `login', it
-considers "l" as the type of the packet and strips it.
-
-SuS does not mention how the implementation should behave. Both BSDs I
-checked (Free and Net) do not reset the flag upon the last close.
-
-By this I am resurrecting an old bug, see References. We are hitting
-it regularly now, i.e. with updated util-linux, ergo login.
-
-Here, I am changing a behavior introduced back in 2.1 times. It would
-better have a long time testing before goes upstream.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Bryan Mason <bmason@redhat.com>
-References: https://lkml.org/lkml/2009/11/11/223
-References: https://bugzilla.redhat.com/show_bug.cgi?id=504703
-References: https://bugzilla.novell.com/show_bug.cgi?id=797042
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/tty/pty.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index 5505ffc..ce53594 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -49,7 +49,6 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
- 	tty->packet = 0;
- 	if (!tty->link)
- 		return;
--	tty->link->packet = 0;
- 	set_bit(TTY_OTHER_CLOSED, &tty->link->flags);
- 	wake_up_interruptible(&tty->link->read_wait);
- 	wake_up_interruptible(&tty->link->write_wait);
--- 
-1.8.1.2
-
+greg k-h
