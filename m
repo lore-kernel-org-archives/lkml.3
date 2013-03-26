@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab3CZWoa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:44:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52631 "EHLO
+	id S1755541Ab3CZWoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:44:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52743 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755033Ab3CZWoW (ORCPT
+	with ESMTP id S1752178Ab3CZWoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:22 -0400
+	Tue, 26 Mar 2013 18:44:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Burgess <jason@jacknife2.dns2go.com>,
-        Yan Li <elliot.li.tech@gmail.com>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [ 66/98] cifs: ignore everything in SPNEGO blob after mechTypes
-Date: Tue, 26 Mar 2013 15:42:55 -0700
-Message-Id: <20130326224249.365766065@linuxfoundation.org>
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [ 97/98] ARM: DMA-mapping: add missing GFP_DMA flag for atomic buffer allocation
+Date: Tue, 26 Mar 2013 15:43:26 -0700
+Message-Id: <20130326224252.514068917@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -28,97 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-commit f853c616883a8de966873a1dab283f1369e275a1 upstream.
+commit 9d1400cf79afb49584b4873eb22cd5130cb341db upstream.
 
-We've had several reports of people attempting to mount Windows 8 shares
-and getting failures with a return code of -EINVAL. The default sec=
-mode changed recently to sec=ntlmssp. With that, we expect and parse a
-SPNEGO blob from the server in the NEGOTIATE reply.
+Atomic pool should always be allocated from DMA zone if such zone is
+available in the system to avoid issues caused by limited dma mask of
+any of the devices used for making an atomic allocation.
 
-The current decode_negTokenInit function first parses all of the
-mechTypes and then tries to parse the rest of the negTokenInit reply.
-The parser however currently expects a mechListMIC or nothing to follow the
-mechTypes, but Windows 8 puts a mechToken field there instead to carry
-some info for the new NegoEx stuff.
-
-In practice, we don't do anything with the fields after the mechTypes
-anyway so I don't see any real benefit in continuing to parse them.
-This patch just has the kernel ignore the fields after the mechTypes.
-We'll probably need to reinstate some of this if we ever want to support
-NegoEx.
-
-Reported-by: Jason Burgess <jason@jacknife2.dns2go.com>
-Reported-by: Yan Li <elliot.li.tech@gmail.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Reported-by: Krzysztof Halasa <khc@pm.waw.pl>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/asn1.c |   53 +++++------------------------------------------------
- 1 file changed, 5 insertions(+), 48 deletions(-)
+ arch/arm/mm/dma-mapping.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/asn1.c
-+++ b/fs/cifs/asn1.c
-@@ -614,53 +614,10 @@ decode_negTokenInit(unsigned char *secur
- 		}
- 	}
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -330,6 +330,7 @@ static int __init atomic_pool_init(void)
+ {
+ 	struct dma_pool *pool = &atomic_pool;
+ 	pgprot_t prot = pgprot_dmacoherent(pgprot_kernel);
++	gfp_t gfp = GFP_KERNEL | GFP_DMA;
+ 	unsigned long nr_pages = pool->size >> PAGE_SHIFT;
+ 	unsigned long *bitmap;
+ 	struct page *page;
+@@ -348,8 +349,8 @@ static int __init atomic_pool_init(void)
+ 	if (IS_ENABLED(CONFIG_CMA))
+ 		ptr = __alloc_from_contiguous(NULL, pool->size, prot, &page);
+ 	else
+-		ptr = __alloc_remap_buffer(NULL, pool->size, GFP_KERNEL, prot,
+-					   &page, NULL);
++		ptr = __alloc_remap_buffer(NULL, pool->size, gfp, prot, &page,
++					   NULL);
+ 	if (ptr) {
+ 		int i;
  
--	/* mechlistMIC */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		/* Check if we have reached the end of the blob, but with
--		   no mechListMic (e.g. NTLMSSP instead of KRB5) */
--		if (ctx.error == ASN1_ERR_DEC_EMPTY)
--			goto decode_negtoken_exit;
--		cFYI(1, "Error decoding last part negTokenInit exit3");
--		return 0;
--	} else if ((cls != ASN1_CTX) || (con != ASN1_CON)) {
--		/* tag = 3 indicating mechListMIC */
--		cFYI(1, "Exit 4 cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--		return 0;
--	}
--
--	/* sequence */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		cFYI(1, "Error decoding last part negTokenInit exit5");
--		return 0;
--	} else if ((cls != ASN1_UNI) || (con != ASN1_CON)
--		   || (tag != ASN1_SEQ)) {
--		cFYI(1, "cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--	}
--
--	/* sequence of */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		cFYI(1, "Error decoding last part negTokenInit exit 7");
--		return 0;
--	} else if ((cls != ASN1_CTX) || (con != ASN1_CON)) {
--		cFYI(1, "Exit 8 cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--		return 0;
--	}
--
--	/* general string */
--	if (asn1_header_decode(&ctx, &end, &cls, &con, &tag) == 0) {
--		cFYI(1, "Error decoding last part negTokenInit exit9");
--		return 0;
--	} else if ((cls != ASN1_UNI) || (con != ASN1_PRI)
--		   || (tag != ASN1_GENSTR)) {
--		cFYI(1, "Exit10 cls = %d con = %d tag = %d end = %p (%d)",
--			cls, con, tag, end, *end);
--		return 0;
--	}
--	cFYI(1, "Need to call asn1_octets_decode() function for %s",
--		ctx.pointer);	/* is this UTF-8 or ASCII? */
--decode_negtoken_exit:
-+	/*
-+	 * We currently ignore anything at the end of the SPNEGO blob after
-+	 * the mechTypes have been parsed, since none of that info is
-+	 * used at the moment.
-+	 */
- 	return 1;
- }
 
 
