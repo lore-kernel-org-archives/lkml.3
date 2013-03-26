@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965322Ab3CZPXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 11:23:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54041 "EHLO
+	id S965366Ab3CZPXt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 11:23:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54065 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965283Ab3CZPXc (ORCPT
+	with ESMTP id S965314Ab3CZPXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 11:23:32 -0400
+	Tue, 26 Mar 2013 11:23:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 111/150] USB: quatech2: fix use-after-free in TIOCMIWAIT
-Date: Tue, 26 Mar 2013 15:20:10 +0000
-Message-Id: <1364311249-14454-112-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 116/150] vfs,proc: guarantee unique inodes in /proc
+Date: Tue, 26 Mar 2013 15:20:15 +0000
+Message-Id: <1364311249-14454-117-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
 References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
@@ -28,75 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 69f87f40d2b98e8b4ab82a121fd2bd584690b887 upstream.
+commit 51f0885e5415b4cc6535e9cdcc5145bfbc134353 upstream.
 
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
+Dave Jones found another /proc issue with his Trinity tool: thanks to
+the namespace model, we can have multiple /proc dentries that point to
+the same inode, aliasing directories in /proc/<pid>/net/ for example.
 
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
+This ends up being a total disaster, because it acts like hardlinked
+directories, and causes locking problems.  We rely on the topological
+sort of the inodes pointed to by dentries, and if we have aliased
+directories, that odering becomes unreliable.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+In short: don't do this.  Multiple dentries with the same (directory)
+inode is just a bad idea, and the namespace code should never have
+exposed things this way.  But we're kind of stuck with it.
+
+This solves things by just always allocating a new inode during /proc
+dentry lookup, instead of using "iget_locked()" to look up existing
+inodes by superblock and number.  That actually simplies the code a bit,
+at the cost of potentially doing more inode [de]allocations.
+
+That said, the inode lookup wasn't free either (and did a lot of locking
+of inodes), so it is probably not that noticeable.  We could easily keep
+the old lookup model for non-directory entries, but rather than try to
+be excessively clever this just implements the minimal and simplest
+workaround for the problem.
+
+Reported-and-tested-by: Dave Jones <davej@redhat.com>
+Analyzed-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 [ luis: backported to 3.5; adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/quatech2.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ fs/proc/inode.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/serial/quatech2.c b/drivers/usb/serial/quatech2.c
-index e1065f8..1c2c0ba 100644
---- a/drivers/usb/serial/quatech2.c
-+++ b/drivers/usb/serial/quatech2.c
-@@ -132,7 +132,6 @@ struct qt2_port_private {
- 	u8          shadowLSR;
- 	u8          shadowMSR;
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index 7ac817b..b02ddd0 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -443,12 +443,10 @@ static const struct file_operations proc_reg_file_ops_no_compat = {
  
--	wait_queue_head_t   delta_msr_wait; /* Used for TIOCMIWAIT */
- 	struct async_icount icount;
+ struct inode *proc_get_inode(struct super_block *sb, struct proc_dir_entry *de)
+ {
+-	struct inode * inode;
++	struct inode *inode = new_inode_pseudo(sb);
  
- 	struct usb_serial_port *port;
-@@ -528,8 +527,9 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 
- 	while (1) {
--		wait_event_interruptible(priv->delta_msr_wait,
--					 ((priv->icount.rng != prev.rng) ||
-+		wait_event_interruptible(port->delta_msr_wait,
-+					 (port->serial->disconnected ||
-+					  (priv->icount.rng != prev.rng) ||
- 					  (priv->icount.dsr != prev.dsr) ||
- 					  (priv->icount.dcd != prev.dcd) ||
- 					  (priv->icount.cts != prev.cts)));
-@@ -537,6 +537,9 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
- 		if (signal_pending(current))
- 			return -ERESTARTSYS;
- 
-+		if (port->serial->disconnected)
-+			return -EIO;
-+
- 		spin_lock_irqsave(&priv->lock, flags);
- 		cur = priv->icount;
- 		spin_unlock_irqrestore(&priv->lock, flags);
-@@ -881,7 +884,6 @@ static int qt2_attach(struct usb_serial *serial)
- 
- 		spin_lock_init(&port_priv->lock);
- 		spin_lock_init(&port_priv->urb_lock);
--		init_waitqueue_head(&port_priv->delta_msr_wait);
- 
- 		port_priv->port = serial->port[pcount];
- 
-@@ -1015,7 +1017,7 @@ static void qt2_update_msr(struct usb_serial_port *port, unsigned char *ch)
- 		if (newMSR & UART_MSR_TERI)
- 			port_priv->icount.rng++;
- 
--		wake_up_interruptible(&port_priv->delta_msr_wait);
-+		wake_up_interruptible(&port->delta_msr_wait);
- 	}
- }
- 
+-	inode = iget_locked(sb, de->low_ino);
+-	if (!inode)
+-		return NULL;
+-	if (inode->i_state & I_NEW) {
++	if (inode) {
++		inode->i_ino = de->low_ino;
+ 		inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
+ 		PROC_I(inode)->fd = 0;
+ 		PROC_I(inode)->pde = de;
+@@ -477,7 +475,6 @@ struct inode *proc_get_inode(struct super_block *sb, struct proc_dir_entry *de)
+ 				inode->i_fop = de->proc_fops;
+ 			}
+ 		}
+-		unlock_new_inode(inode);
+ 	} else
+ 	       pde_put(de);
+ 	return inode;
 -- 
 1.8.1.2
 
