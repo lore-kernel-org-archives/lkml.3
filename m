@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab3CZWnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:43:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52433 "EHLO
+	id S1756943Ab3CZXmz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 19:42:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52407 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443Ab3CZWnr (ORCPT
+	with ESMTP id S1753946Ab3CZWny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:43:47 -0400
+	Tue, 26 Mar 2013 18:43:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Torstein Hegge <hegge@resisty.net>, Daniel Mack <zonque@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 31/98] ALSA: usb: Parse UAC2 extension unit like for UAC1
-Date: Tue, 26 Mar 2013 15:42:20 -0700
-Message-Id: <20130326224245.670801736@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 25/98] sfc: Fix efx_rx_buf_offset() in the presence of swiotlb
+Date: Tue, 26 Mar 2013 15:42:14 -0700
+Message-Id: <20130326224245.068130200@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -27,45 +26,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Torstein Hegge <hegge@resisty.net>
 
-commit 61ac51301e6c6d4ed977d7674ce2b8e713619a9b upstream.
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-UAC2_EXTENSION_UNIT_V2 differs from UAC1_EXTENSION_UNIT, but can be handled in
-the same way when parsing the unit. Otherwise parse_audio_unit() fails when it
-sees an extension unit on a UAC2 device.
+[ Upstream commits b590ace09d51cd39744e0f7662c5e4a0d1b5d952 and
+  c73e787a8db9117d59b5180baf83203a42ecadca ]
 
-UAC2_EXTENSION_UNIT_V2 is outside the range allocated by UAC1.
+We assume that the mapping between DMA and virtual addresses is done
+on whole pages, so we can find the page offset of an RX buffer using
+the lower bits of the DMA address.  However, swiotlb maps in units of
+2K, breaking this assumption.
 
-Signed-off-by: Torstein Hegge <hegge@resisty.net>
-Acked-by: Daniel Mack <zonque@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Add an explicit page_offset field to struct efx_rx_buffer.
+
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/usb/mixer.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/sfc/net_driver.h |    4 +++-
+ drivers/net/ethernet/sfc/rx.c         |   10 +++++-----
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -725,7 +725,8 @@ static int check_input_term(struct mixer
- 		case UAC1_PROCESSING_UNIT:
- 		case UAC1_EXTENSION_UNIT:
- 		/* UAC2_PROCESSING_UNIT_V2 */
--		/* UAC2_EFFECT_UNIT */ {
-+		/* UAC2_EFFECT_UNIT */
-+		case UAC2_EXTENSION_UNIT_V2: {
- 			struct uac_processing_unit_descriptor *d = p1;
+--- a/drivers/net/ethernet/sfc/net_driver.h
++++ b/drivers/net/ethernet/sfc/net_driver.h
+@@ -210,6 +210,7 @@ struct efx_tx_queue {
+  *	Will be %NULL if the buffer slot is currently free.
+  * @page: The associated page buffer. Valif iff @flags & %EFX_RX_BUF_PAGE.
+  *	Will be %NULL if the buffer slot is currently free.
++ * @page_offset: Offset within page. Valid iff @flags & %EFX_RX_BUF_PAGE.
+  * @len: Buffer length, in bytes.
+  * @flags: Flags for buffer and packet state.
+  */
+@@ -219,7 +220,8 @@ struct efx_rx_buffer {
+ 		struct sk_buff *skb;
+ 		struct page *page;
+ 	} u;
+-	unsigned int len;
++	u16 page_offset;
++	u16 len;
+ 	u16 flags;
+ };
+ #define EFX_RX_BUF_PAGE		0x0001
+--- a/drivers/net/ethernet/sfc/rx.c
++++ b/drivers/net/ethernet/sfc/rx.c
+@@ -90,11 +90,7 @@ static unsigned int rx_refill_threshold;
+ static inline unsigned int efx_rx_buf_offset(struct efx_nic *efx,
+ 					     struct efx_rx_buffer *buf)
+ {
+-	/* Offset is always within one page, so we don't need to consider
+-	 * the page order.
+-	 */
+-	return ((unsigned int) buf->dma_addr & (PAGE_SIZE - 1)) +
+-		efx->type->rx_buffer_hash_size;
++	return buf->page_offset + efx->type->rx_buffer_hash_size;
+ }
+ static inline unsigned int efx_rx_buf_size(struct efx_nic *efx)
+ {
+@@ -187,6 +183,7 @@ static int efx_init_rx_buffers_page(stru
+ 	struct efx_nic *efx = rx_queue->efx;
+ 	struct efx_rx_buffer *rx_buf;
+ 	struct page *page;
++	unsigned int page_offset;
+ 	struct efx_rx_page_state *state;
+ 	dma_addr_t dma_addr;
+ 	unsigned index, count;
+@@ -211,12 +208,14 @@ static int efx_init_rx_buffers_page(stru
+ 		state->dma_addr = dma_addr;
  
- 			if (state->mixer->protocol == UAC_VERSION_2 &&
-@@ -2051,6 +2052,8 @@ static int parse_audio_unit(struct mixer
- 			return parse_audio_extension_unit(state, unitid, p1);
- 		else /* UAC_VERSION_2 */
- 			return parse_audio_processing_unit(state, unitid, p1);
-+	case UAC2_EXTENSION_UNIT_V2:
-+		return parse_audio_extension_unit(state, unitid, p1);
- 	default:
- 		snd_printk(KERN_ERR "usbaudio: unit %u: unexpected type 0x%02x\n", unitid, p1[2]);
- 		return -EINVAL;
+ 		dma_addr += sizeof(struct efx_rx_page_state);
++		page_offset = sizeof(struct efx_rx_page_state);
+ 
+ 	split:
+ 		index = rx_queue->added_count & rx_queue->ptr_mask;
+ 		rx_buf = efx_rx_buffer(rx_queue, index);
+ 		rx_buf->dma_addr = dma_addr + EFX_PAGE_IP_ALIGN;
+ 		rx_buf->u.page = page;
++		rx_buf->page_offset = page_offset + EFX_PAGE_IP_ALIGN;
+ 		rx_buf->len = efx->rx_buffer_len - EFX_PAGE_IP_ALIGN;
+ 		rx_buf->flags = EFX_RX_BUF_PAGE;
+ 		++rx_queue->added_count;
+@@ -227,6 +226,7 @@ static int efx_init_rx_buffers_page(stru
+ 			/* Use the second half of the page */
+ 			get_page(page);
+ 			dma_addr += (PAGE_SIZE >> 1);
++			page_offset += (PAGE_SIZE >> 1);
+ 			++count;
+ 			goto split;
+ 		}
 
 
