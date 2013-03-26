@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399Ab3CZXts (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:49:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52371 "EHLO
+	id S1754262Ab3CZWnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:43:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52358 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754248Ab3CZWnj (ORCPT
+	with ESMTP id S1754211Ab3CZWnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:43:39 -0400
+	Tue, 26 Mar 2013 18:43:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Lindner <lindner_marek@yahoo.de>,
-        Antonio Quartulli <ordex@autistici.org>
-Subject: [ 06/98] batman-adv: verify tt len does not exceed packet len
-Date: Tue, 26 Mar 2013 15:41:55 -0700
-Message-Id: <20130326224243.114216891@linuxfoundation.org>
+        Dan Williams <dcbw@redhat.com>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 12/98] net: qmi_wwan: set correct altsetting for Gobi 1K devices
+Date: Tue, 26 Mar 2013 15:42:01 -0700
+Message-Id: <20130326224243.734398687@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,43 +32,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Marek Lindner <lindner_marek@yahoo.de>
+From: Bjørn Mork <bjorn@mork.no>
 
-[ Upstream commit b47506d91259c29b9c75c404737eb6525556f9b4 ]
+[ Upstream commit b701f16dd490d3f346724050f17d60beda094998 ]
 
-batadv_iv_ogm_process() accesses the packet using the tt_num_changes
-attribute regardless of the real packet len (assuming the length check
-was done before). Therefore a length check is needed to avoid reading
-random memory.
+commit bd877e4 ("net: qmi_wwan: use a single bind function for
+all device types") made Gobi 1K devices fail probing.
 
-Signed-off-by: Marek Lindner <lindner_marek@yahoo.de>
-Signed-off-by: Antonio Quartulli <ordex@autistici.org>
+Using the number of endpoints in the default altsetting to decide
+whether the function use one or two interfaces is wrong.  Other
+altsettings may provide more endpoints.
+
+With Gobi 1K devices, USB interface #3's altsetting is 0 by default, but
+altsetting 0 only provides one interrupt endpoint and is not sufficent
+for QMI.  Altsetting 1 provides all 3 endpoints required for qmi_wwan
+and works with QMI. Gobi 1K layout for intf#3 is:
+
+    Interface Descriptor:  255/255/255
+      bInterfaceNumber        3
+      bAlternateSetting       0
+      Endpoint Descriptor:  Interrupt IN
+    Interface Descriptor:  255/255/255
+      bInterfaceNumber        3
+      bAlternateSetting       1
+      Endpoint Descriptor:  Interrupt IN
+      Endpoint Descriptor:  Bulk IN
+      Endpoint Descriptor:  Bulk OUT
+
+Prior to commit bd877e4, we would call usbnet_get_endpoints
+before giving up finding enough endpoints. Removing the early
+endpoint number test and the strict functional descriptor
+requirement allow qmi_wwan_bind to continue until
+usbnet_get_endpoints has made the final attempt to collect
+endpoints.  This restores the behaviour from before commit
+bd877e4 without losing the added benefit of using a single bind
+function.
+
+The driver has always required a CDC Union functional descriptor
+for two-interface functions. Using the existence of this
+descriptor to detect two-interface functions is the logically
+correct method.
+
+Reported-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Tested-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/batman-adv/bat_iv_ogm.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/usb/qmi_wwan.c |   49 ++++++++++++++-------------------------------
+ 1 file changed, 16 insertions(+), 33 deletions(-)
 
---- a/net/batman-adv/bat_iv_ogm.c
-+++ b/net/batman-adv/bat_iv_ogm.c
-@@ -1298,7 +1298,8 @@ static int batadv_iv_ogm_receive(struct
- 	batadv_ogm_packet = (struct batadv_ogm_packet *)packet_buff;
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -139,16 +139,9 @@ static int qmi_wwan_bind(struct usbnet *
  
- 	/* unpack the aggregated packets and process them one by one */
--	do {
-+	while (batadv_iv_ogm_aggr_packet(buff_pos, packet_len,
-+					 batadv_ogm_packet->tt_num_changes)) {
- 		tt_buff = packet_buff + buff_pos + BATADV_OGM_HLEN;
+ 	BUILD_BUG_ON((sizeof(((struct usbnet *)0)->data) < sizeof(struct qmi_wwan_state)));
  
- 		batadv_iv_ogm_process(ethhdr, batadv_ogm_packet, tt_buff,
-@@ -1309,8 +1310,7 @@ static int batadv_iv_ogm_receive(struct
+-	/* control and data is shared? */
+-	if (intf->cur_altsetting->desc.bNumEndpoints == 3) {
+-		info->control = intf;
+-		info->data = intf;
+-		goto shared;
+-	}
+-
+-	/* else require a single interrupt status endpoint on control intf */
+-	if (intf->cur_altsetting->desc.bNumEndpoints != 1)
+-		goto err;
++	/* set up initial state */
++	info->control = intf;
++	info->data = intf;
  
- 		packet_pos = packet_buff + buff_pos;
- 		batadv_ogm_packet = (struct batadv_ogm_packet *)packet_pos;
--	} while (batadv_iv_ogm_aggr_packet(buff_pos, packet_len,
--					   batadv_ogm_packet->tt_num_changes));
+ 	/* and a number of CDC descriptors */
+ 	while (len > 3) {
+@@ -207,25 +200,14 @@ next_desc:
+ 		buf += h->bLength;
+ 	}
+ 
+-	/* did we find all the required ones? */
+-	if (!(found & (1 << USB_CDC_HEADER_TYPE)) ||
+-	    !(found & (1 << USB_CDC_UNION_TYPE))) {
+-		dev_err(&intf->dev, "CDC functional descriptors missing\n");
+-		goto err;
+-	}
+-
+-	/* verify CDC Union */
+-	if (desc->bInterfaceNumber != cdc_union->bMasterInterface0) {
+-		dev_err(&intf->dev, "bogus CDC Union: master=%u\n", cdc_union->bMasterInterface0);
+-		goto err;
+-	}
+-
+-	/* need to save these for unbind */
+-	info->control = intf;
+-	info->data = usb_ifnum_to_if(dev->udev,	cdc_union->bSlaveInterface0);
+-	if (!info->data) {
+-		dev_err(&intf->dev, "bogus CDC Union: slave=%u\n", cdc_union->bSlaveInterface0);
+-		goto err;
++	/* Use separate control and data interfaces if we found a CDC Union */
++	if (cdc_union) {
++		info->data = usb_ifnum_to_if(dev->udev, cdc_union->bSlaveInterface0);
++		if (desc->bInterfaceNumber != cdc_union->bMasterInterface0 || !info->data) {
++			dev_err(&intf->dev, "bogus CDC Union: master=%u, slave=%u\n",
++				cdc_union->bMasterInterface0, cdc_union->bSlaveInterface0);
++			goto err;
++		}
+ 	}
+ 
+ 	/* errors aren't fatal - we can live with the dynamic address */
+@@ -235,11 +217,12 @@ next_desc:
+ 	}
+ 
+ 	/* claim data interface and set it up */
+-	status = usb_driver_claim_interface(driver, info->data, dev);
+-	if (status < 0)
+-		goto err;
++	if (info->control != info->data) {
++		status = usb_driver_claim_interface(driver, info->data, dev);
++		if (status < 0)
++			goto err;
 +	}
  
- 	kfree_skb(skb);
- 	return NET_RX_SUCCESS;
+-shared:
+ 	status = qmi_wwan_register_subdriver(dev);
+ 	if (status < 0 && info->control != info->data) {
+ 		usb_set_intfdata(info->data, NULL);
 
 
