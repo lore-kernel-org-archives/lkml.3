@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934425Ab3CZODg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 10:03:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52905 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932383Ab3CZODe (ORCPT
+	id S934466Ab3CZODp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 10:03:45 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:38743 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932383Ab3CZODn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 10:03:34 -0400
+	Tue, 26 Mar 2013 10:03:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <CACVXFVPLkaoowZJZdrg3nkm7ymismJ6W=_BzgyroKJOxJYPODA@mail.gmail.com>
-References: <1363793126-11510-1-git-send-email-ming.lei@canonical.com>
-	<1363793126-11510-2-git-send-email-ming.lei@canonical.com>
-	<514A7340.5040409@huawei.com>
-	<CACVXFVN7urpLM+Q-3o9=hYQLM=544WTXh+BnSo9fBM+d07oapQ@mail.gmail.com>
-	<514A7E72.2090200@huawei.com>
-	<CACVXFVMS644BpX7voMHS-xXoRs9-G4y96=ubk_NAj6KDTy1ENQ@mail.gmail.com>
-	<514BF0BE.1070907@huawei.com>
-	<CACVXFVOAFqVoNP-igJ-WeaJ+rKF-gREcHqspHWOkz4EJ9Gn94w@mail.gmail.com>
-	<51514EA9.8080801@huawei.com>
-	<CACVXFVPLkaoowZJZdrg3nkm7ymismJ6W=_BzgyroKJOxJYPODA@mail.gmail.com>
-Date: Tue, 26 Mar 2013 22:03:31 +0800
-Message-ID: <CACVXFVMukhkriwZUEeZN6XWcogUmGE67WkNYv7mZ7pqdRHM47Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] sysfs: fix race between readdir and lseek
-From: Ming Lei <ming.lei@canonical.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+In-Reply-To: <1364302359.5053.21.camel@laptop>
+References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
+	<1363955155-18382-6-git-send-email-vincent.guittot@linaro.org>
+	<1364302359.5053.21.camel@laptop>
+Date: Tue, 26 Mar 2013 15:03:41 +0100
+Message-ID: <CAKfTPtD=_oS5gJeynUG=ft-Y1zEdxZEMhUPH9hSXx+H2pi4xgA@mail.gmail.com>
+Subject: Re: [RFC PATCH v3 5/6] sched: pack the idle load balance
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, mingo@kernel.org,
+        linux@arm.linux.org.uk, pjt@google.com, santosh.shilimkar@ti.com,
+        morten.rasmussen@arm.com, chander.kashyap@linaro.org,
+        cmetcalf@tilera.com, tony.luck@intel.com, alex.shi@intel.com,
+        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
+        amit.kucheria@linaro.org, corbet@lwn.net
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zefan,
-
-On Tue, Mar 26, 2013 at 4:45 PM, Ming Lei <ming.lei@canonical.com> wrote:
-> On Tue, Mar 26, 2013 at 3:30 PM, Li Zefan <lizefan@huawei.com> wrote:
->>> Considered that vfs_read()/vfs_write on sysfs dir is almost doing nothing, the
->>> above problem may only exist in theory.
+On 26 March 2013 13:52, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2013-03-22 at 13:25 +0100, Vincent Guittot wrote:
+>> Look for an idle CPU close to the pack buddy CPU whenever possible.
+>> The goal is to prevent the wake up of a CPU which doesn't share the
+>> power
+>> domain of the pack buddy CPU.
 >>
->> The read() vs readdir() race in sysfs directory doesn't exist in theory only.
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> Reviewed-by: Morten Rasmussen <morten.rasmussen@arm.com>
+>> ---
+>>  kernel/sched/fair.c |   18 ++++++++++++++++++
+>>  1 file changed, 18 insertions(+)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index b636199..52a7736 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -5455,7 +5455,25 @@ static struct {
+>>
+>>  static inline int find_new_ilb(int call_cpu)
+>>  {
+>> +       struct sched_domain *sd;
+>>         int ilb = cpumask_first(nohz.idle_cpus_mask);
+>> +       int buddy = per_cpu(sd_pack_buddy, call_cpu);
+>> +
+>> +       /*
+>> +        * If we have a pack buddy CPU, we try to run load balance on
+>> a CPU
+>> +        * that is close to the buddy.
+>> +        */
+>> +       if (buddy != -1)
+>> +               for_each_domain(buddy, sd) {
+>> +                       if (sd->flags & SD_SHARE_CPUPOWER)
+>> +                               continue;
+>> +
+>> +                       ilb = cpumask_first_and(sched_domain_span(sd),
+>> +                                       nohz.idle_cpus_mask);
+>> +
+>> +                       if (ilb < nr_cpu_ids)
+>> +                               break;
+>> +               }
 >
-> Could you let me know if you have applied the two patches on your test?
->
-> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=e5110f411d2ee35bf8d202ccca2e89c633060dca
->
-> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=991f76f837bf22c5bb07261cfd86525a0a96650c
->
-> Also I appreciate it if you may share your test case...
+> /me hands you a fresh bucket of curlies, no reason to skimp on them.
 
-If you mean the test code on link[1], I can't reproduce the
-warning with the two sysfs fix patches in 4 hours's test.
+ok
 
-[1], https://patchwork.kernel.org/patch/2160771/
+>
+> But ha! here's your NO_HZ link.. but does the above DTRT and ensure
+> that the ILB is a little core when possible?
 
-Thanks,
---
-Ming Lei
+The loop looks for an idle CPU as close as possible to the buddy CPU
+and the buddy CPU is the 1st CPU has been chosen. So if your buddy is
+a little and there is an idle little, the ILB will be this idle
+little.
+
+>
+>
