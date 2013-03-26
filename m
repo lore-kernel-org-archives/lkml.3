@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904Ab3CZXjZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 19:39:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52533 "EHLO
+	id S1754720Ab3CZWoE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:44:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52512 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754743Ab3CZWoG (ORCPT
+	with ESMTP id S1752033Ab3CZWoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:06 -0400
+	Tue, 26 Mar 2013 18:44:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 57/98] dm thin: fix discard corruption
-Date: Tue, 26 Mar 2013 15:42:46 -0700
-Message-Id: <20130326224248.445263781@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 36/98] Revert "drm/i915: try to train DP even harder"
+Date: Tue, 26 Mar 2013 15:42:25 -0700
+Message-Id: <20130326224246.189369346@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
 References: <20130326224242.449070940@linuxfoundation.org>
@@ -26,192 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f046f89a99ccfd9408b94c653374ff3065c7edb3 upstream.
+commit 3b4f819d5eac94ba8fe5e8c061f6dabfe8d7b22c upstream.
 
-Fix a bug in dm_btree_remove that could leave leaf values with incorrect
-reference counts.  The effect of this was that removal of a shared block
-could result in the space maps thinking the block was no longer used.
-More concretely, if you have a thin device and a snapshot of it, sending
-a discard to a shared region of the thin could corrupt the snapshot.
+This reverts commit 0d71068835e2610576d369d6d4cbf90e0f802a71.
 
-Thinp uses a 2-level nested btree to store it's mappings.  This first
-level is indexed by thin device, and the second level by logical
-block.
+Not only that the commit introduces a bogus check (voltage_tries == 5
+will never meet at the inserted code path), it brings the i915 driver
+into an endless dp-train loop on HP Z1 desktop machine with IVY+eDP.
 
-Often when we're removing an entry in this mapping tree we need to
-rebalance nodes, which can involve shadowing them, possibly creating a
-copy if the block is shared.  If we do create a copy then children of
-that node need to have their reference counts incremented.  In this
-way reference counts percolate down the tree as shared trees diverge.
+At least reverting this commit recovers the framebuffer (but X is
+still broken by other reasons...)
 
-The rebalance functions were incrementing the children at the
-appropriate time, but they were always assuming the children were
-internal nodes.  This meant the leaf values (in our case packed
-block/flags entries) were not being incremented.
-
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c                         |    4 +-
- drivers/md/persistent-data/dm-btree-remove.c |   46 ++++++++++++++-------------
- 2 files changed, 26 insertions(+), 24 deletions(-)
+ drivers/gpu/drm/i915/intel_dp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -2479,7 +2479,7 @@ static struct target_type pool_target =
- 	.name = "thin-pool",
- 	.features = DM_TARGET_SINGLETON | DM_TARGET_ALWAYS_WRITEABLE |
- 		    DM_TARGET_IMMUTABLE,
--	.version = {1, 6, 1},
-+	.version = {1, 7, 0},
- 	.module = THIS_MODULE,
- 	.ctr = pool_ctr,
- 	.dtr = pool_dtr,
-@@ -2766,7 +2766,7 @@ static int thin_iterate_devices(struct d
- 
- static struct target_type thin_target = {
- 	.name = "thin",
--	.version = {1, 7, 1},
-+	.version = {1, 8, 0},
- 	.module	= THIS_MODULE,
- 	.ctr = thin_ctr,
- 	.dtr = thin_dtr,
---- a/drivers/md/persistent-data/dm-btree-remove.c
-+++ b/drivers/md/persistent-data/dm-btree-remove.c
-@@ -139,15 +139,8 @@ struct child {
- 	struct btree_node *n;
- };
- 
--static struct dm_btree_value_type le64_type = {
--	.context = NULL,
--	.size = sizeof(__le64),
--	.inc = NULL,
--	.dec = NULL,
--	.equal = NULL
--};
--
--static int init_child(struct dm_btree_info *info, struct btree_node *parent,
-+static int init_child(struct dm_btree_info *info, struct dm_btree_value_type *vt,
-+		      struct btree_node *parent,
- 		      unsigned index, struct child *result)
- {
- 	int r, inc;
-@@ -164,7 +157,7 @@ static int init_child(struct dm_btree_in
- 	result->n = dm_block_data(result->block);
- 
- 	if (inc)
--		inc_children(info->tm, result->n, &le64_type);
-+		inc_children(info->tm, result->n, vt);
- 
- 	*((__le64 *) value_ptr(parent, index)) =
- 		cpu_to_le64(dm_block_location(result->block));
-@@ -236,7 +229,7 @@ static void __rebalance2(struct dm_btree
- }
- 
- static int rebalance2(struct shadow_spine *s, struct dm_btree_info *info,
--		      unsigned left_index)
-+		      struct dm_btree_value_type *vt, unsigned left_index)
- {
- 	int r;
- 	struct btree_node *parent;
-@@ -244,11 +237,11 @@ static int rebalance2(struct shadow_spin
- 
- 	parent = dm_block_data(shadow_current(s));
- 
--	r = init_child(info, parent, left_index, &left);
-+	r = init_child(info, vt, parent, left_index, &left);
- 	if (r)
- 		return r;
- 
--	r = init_child(info, parent, left_index + 1, &right);
-+	r = init_child(info, vt, parent, left_index + 1, &right);
- 	if (r) {
- 		exit_child(info, &left);
- 		return r;
-@@ -368,7 +361,7 @@ static void __rebalance3(struct dm_btree
- }
- 
- static int rebalance3(struct shadow_spine *s, struct dm_btree_info *info,
--		      unsigned left_index)
-+		      struct dm_btree_value_type *vt, unsigned left_index)
- {
- 	int r;
- 	struct btree_node *parent = dm_block_data(shadow_current(s));
-@@ -377,17 +370,17 @@ static int rebalance3(struct shadow_spin
- 	/*
- 	 * FIXME: fill out an array?
- 	 */
--	r = init_child(info, parent, left_index, &left);
-+	r = init_child(info, vt, parent, left_index, &left);
- 	if (r)
- 		return r;
- 
--	r = init_child(info, parent, left_index + 1, &center);
-+	r = init_child(info, vt, parent, left_index + 1, &center);
- 	if (r) {
- 		exit_child(info, &left);
- 		return r;
- 	}
- 
--	r = init_child(info, parent, left_index + 2, &right);
-+	r = init_child(info, vt, parent, left_index + 2, &right);
- 	if (r) {
- 		exit_child(info, &left);
- 		exit_child(info, &center);
-@@ -434,7 +427,8 @@ static int get_nr_entries(struct dm_tran
- }
- 
- static int rebalance_children(struct shadow_spine *s,
--			      struct dm_btree_info *info, uint64_t key)
-+			      struct dm_btree_info *info,
-+			      struct dm_btree_value_type *vt, uint64_t key)
- {
- 	int i, r, has_left_sibling, has_right_sibling;
- 	uint32_t child_entries;
-@@ -472,13 +466,13 @@ static int rebalance_children(struct sha
- 	has_right_sibling = i < (le32_to_cpu(n->header.nr_entries) - 1);
- 
- 	if (!has_left_sibling)
--		r = rebalance2(s, info, i);
-+		r = rebalance2(s, info, vt, i);
- 
- 	else if (!has_right_sibling)
--		r = rebalance2(s, info, i - 1);
-+		r = rebalance2(s, info, vt, i - 1);
- 
- 	else
--		r = rebalance3(s, info, i - 1);
-+		r = rebalance3(s, info, vt, i - 1);
- 
- 	return r;
- }
-@@ -529,7 +523,7 @@ static int remove_raw(struct shadow_spin
- 		if (le32_to_cpu(n->header.flags) & LEAF_NODE)
- 			return do_leaf(n, key, index);
- 
--		r = rebalance_children(s, info, key);
-+		r = rebalance_children(s, info, vt, key);
- 		if (r)
- 			break;
- 
-@@ -550,6 +544,14 @@ static int remove_raw(struct shadow_spin
- 	return r;
- }
- 
-+static struct dm_btree_value_type le64_type = {
-+	.context = NULL,
-+	.size = sizeof(__le64),
-+	.inc = NULL,
-+	.dec = NULL,
-+	.equal = NULL
-+};
-+
- int dm_btree_remove(struct dm_btree_info *info, dm_block_t root,
- 		    uint64_t *keys, dm_block_t *new_root)
- {
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -1850,7 +1850,7 @@ intel_dp_start_link_train(struct intel_d
+ 		for (i = 0; i < intel_dp->lane_count; i++)
+ 			if ((intel_dp->train_set[i] & DP_TRAIN_MAX_SWING_REACHED) == 0)
+ 				break;
+-		if (i == intel_dp->lane_count && voltage_tries == 5) {
++		if (i == intel_dp->lane_count) {
+ 			++loop_tries;
+ 			if (loop_tries == 5) {
+ 				DRM_DEBUG_KMS("too many full retries, give up\n");
 
 
