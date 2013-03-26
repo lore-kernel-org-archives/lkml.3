@@ -1,128 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab3CZWoi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 18:44:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52697 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321Ab3CZWoe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 18:44:34 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Oliver Neukum <oneukum@suse.de>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Frederik Himpe <fhimpe@vub.ac.be>, David Haerdeman <david@hardeman.nu>,
-        Alan Stern <stern@rowland.harvard.edu>, Hannes Reinecke <hare@suse.de>
-Subject: [ 83/98] USB: xhci: correctly enable interrupts
-Date: Tue, 26 Mar 2013 15:43:12 -0700
-Message-Id: <20130326224251.086281897@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
-References: <20130326224242.449070940@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1755652Ab3CZWqs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 18:46:48 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:43799 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755419Ab3CZWqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 18:46:46 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PCI, ACPI: hold acpi_scan_lock during root bus hotplug
+Date: Tue, 26 Mar 2013 23:54:12 +0100
+Message-ID: <2166148.RX0m5V0khX@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQVSZd216JrdHdeLSrr1k0d5xTCmLz9FH151BHDDo8KRAQ@mail.gmail.com>
+References: <1673357.1IdxNNvGWX@vostro.rjw.lan> <34989330.IyIZ6Qqfxh@vostro.rjw.lan> <CAE9FiQVSZd216JrdHdeLSrr1k0d5xTCmLz9FH151BHDDo8KRAQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Tuesday, March 26, 2013 08:12:30 AM Yinghai Lu wrote:
+> On Tue, Mar 26, 2013 at 6:24 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Sunday, March 10, 2013 10:05:16 PM Yinghai Lu wrote:
+> >> During merging pci tree with pm/acpi tree, Linus noticed that
+> >> we don't have same lock using patten about acpi pci root as
+> >> acpiphp.
+> >>
+> >> Here apply same lock patten, and we need to change
+> >> acpi_bus_hot_remove_device executing via acpi_os_hotplug_execute()
+> >> as it also hold the lock in acpi_bus_hot_remove_device.
+> >>
+> >> That will make acpi_bus_hot_remove_device calling the same as other
+> >> callers.
+> >>
+> >> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> >> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+> >
+> > Bjorn, this needs to go in before final 3.9.
+> >
+> > Are you going to handle it, or should I take care of it?
+> 
+> It should be better via your pm+acpi tree, as that lock is added via your tree.
 
-------------------
+OK, I'll take it, then, if Bjorn doesn't object.
 
-From: Hannes Reinecke <hare@suse.de>
-
-commit 00eed9c814cb8f281be6f0f5d8f45025dc0a97eb upstream.
-
-xhci has its own interrupt enabling routine, which will try to
-use MSI-X/MSI if present. So the usb core shouldn't try to enable
-legacy interrupts; on some machines the xhci legacy IRQ setting
-is invalid.
-
-v3: Be careful to not break XHCI_BROKEN_MSI workaround (by trenn)
-
-Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Oliver Neukum <oneukum@suse.de>
-Cc: Thomas Renninger <trenn@suse.de>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Frederik Himpe <fhimpe@vub.ac.be>
-Cc: David Haerdeman <david@hardeman.nu>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Reviewed-by: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/core/hcd-pci.c |   23 ++++++++++++++---------
- drivers/usb/host/xhci.c    |    3 ++-
- 2 files changed, 16 insertions(+), 10 deletions(-)
-
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -173,6 +173,7 @@ int usb_hcd_pci_probe(struct pci_dev *de
- 	struct hc_driver	*driver;
- 	struct usb_hcd		*hcd;
- 	int			retval;
-+	int			hcd_irq = 0;
- 
- 	if (usb_disabled())
- 		return -ENODEV;
-@@ -187,15 +188,19 @@ int usb_hcd_pci_probe(struct pci_dev *de
- 		return -ENODEV;
- 	dev->current_state = PCI_D0;
- 
--	/* The xHCI driver supports MSI and MSI-X,
--	 * so don't fail if the BIOS doesn't provide a legacy IRQ.
-+	/*
-+	 * The xHCI driver has its own irq management
-+	 * make sure irq setup is not touched for xhci in generic hcd code
- 	 */
--	if (!dev->irq && (driver->flags & HCD_MASK) != HCD_USB3) {
--		dev_err(&dev->dev,
--			"Found HC with no IRQ.  Check BIOS/PCI %s setup!\n",
--			pci_name(dev));
--		retval = -ENODEV;
--		goto disable_pci;
-+	if ((driver->flags & HCD_MASK) != HCD_USB3) {
-+		if (!dev->irq) {
-+			dev_err(&dev->dev,
-+			"Found HC with no IRQ. Check BIOS/PCI %s setup!\n",
-+				pci_name(dev));
-+			retval = -ENODEV;
-+			goto disable_pci;
-+		}
-+		hcd_irq = dev->irq;
- 	}
- 
- 	hcd = usb_create_hcd(driver, &dev->dev, pci_name(dev));
-@@ -245,7 +250,7 @@ int usb_hcd_pci_probe(struct pci_dev *de
- 
- 	pci_set_master(dev);
- 
--	retval = usb_add_hcd(hcd, dev->irq, IRQF_SHARED);
-+	retval = usb_add_hcd(hcd, hcd_irq, IRQF_SHARED);
- 	if (retval != 0)
- 		goto unmap_registers;
- 	set_hs_companion(dev, hcd);
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -350,7 +350,7 @@ static int xhci_try_enable_msi(struct us
- 	 * generate interrupts.  Don't even try to enable MSI.
- 	 */
- 	if (xhci->quirks & XHCI_BROKEN_MSI)
--		return 0;
-+		goto legacy_irq;
- 
- 	/* unregister the legacy interrupt */
- 	if (hcd->irq)
-@@ -371,6 +371,7 @@ static int xhci_try_enable_msi(struct us
- 		return -EINVAL;
- 	}
- 
-+ legacy_irq:
- 	/* fall back to legacy interrupt*/
- 	ret = request_irq(pdev->irq, &usb_hcd_irq, IRQF_SHARED,
- 			hcd->irq_descr, hcd);
+Thanks,
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
