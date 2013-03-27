@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab3C0M2e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 08:28:34 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:48815 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab3C0M2c (ORCPT
+	id S1751939Ab3C0M3B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 08:29:01 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:36404 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab3C0M27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 08:28:32 -0400
+	Wed, 27 Mar 2013 08:28:59 -0400
+Date: Wed, 27 Mar 2013 21:28:57 +0900
+From: Simon Horman <horms@verge.net.au>
+To: zhouzhouyi@gmail.com
+Cc: kexec@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vgoyal@redhat.com, yizhouzhou@ict.ac.cn
+Subject: Re: [PATCH 1/1 v1] the recommended crash memory reservation is too
+ small for x86_64.
+Message-ID: <20130327122856.GK17248@verge.net.au>
+References: <1364209009-11592-1-git-send-email-zhouzhouyi@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>
-References: <1363223183-3772-1-git-send-email-ynvich@gmail.com>
-	<1363224194-7366-1-git-send-email-ynvich@gmail.com>
-	<87620jmkoe.fsf@octavius.laptop.org>
-	<CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>
-Date: Wed, 27 Mar 2013 16:28:31 +0400
-Message-ID: <CAL0eWdGjPKUUcm6mStAHgHKHLABmPw7nMwDhR8D5rbvg+DPzfQ@mail.gmail.com>
-Subject: Re: [PATCH v2] wait while adding MMC host to ensure root mounts
-From: =?UTF-8?B?0KHQtdGA0LPQtdC5INCv0L3QvtCy0LjRhw==?= <ynvich@gmail.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Chris Ball <cjb@laptop.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364209009-11592-1-git-send-email-zhouzhouyi@gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf,
+On Mon, Mar 25, 2013 at 06:56:49PM +0800, zhouzhouyi@gmail.com wrote:
+> From: root <root@zzy-Lenovo.(none)>
 
-On 27 March 2013 15:13, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> Moreover, this patch will have bad impact on booting the kernel, since
-> every host device that has scheduled a detect work from it's probe
-> function will also wait for it to finish. Even if it is the boot
-> device of not. If this is needed, I would prefer that a host cap is
-> used.
+The above line is bogus.
 
-Do you have any profiling data supporting bad impact on boot?
+>  On Documentation/kdump/kdump.txt, section Boot into  System Kernel: On x86 and x86_64, use
+>  "crashkernel=64M@16M", but some OSes like ubuntu 12.10 use ram fs larger than 64M, so in these cases the
+>  memory reserved for crashkernel should be at least 128M.
 
-It should be it in the range of dozens us, if any. Without the patch,
-approx. 30% of boots succeeded with CONFIG_PREEMT and aprox. 95%
-without CONFIG_PREEMT. mmc_rescan is just a few instructions, if there
-is no card present. On boot and with a card present, it might only
-sleep in the host implementation.
+The above lines are way to wide. Something less than 80 columns is normal.
 
-Anyway, something had to be done about mmc boot. rootdelay will not
-report error if the card is absent or its partition table is damaged.
-rootdelay is a workaround by definition, so it may occasionally fail
-if it is too small. Big rootdealy has a clear bad impact on boot time.
+> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+> ---
+>  Documentation/kdump/kdump.txt |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
+> index 13f1aa0..1e850e0 100644
+> --- a/Documentation/kdump/kdump.txt
+> +++ b/Documentation/kdump/kdump.txt
+> @@ -290,7 +290,9 @@ Boot into System Kernel
+>     "crashkernel=64M@16M" tells the system kernel to reserve 64 MB of memory
+>     starting at physical address 0x01000000 (16MB) for the dump-capture kernel.
+>  
+> -   On x86 and x86_64, use "crashkernel=64M@16M".
+> +   On x86 and x86_64, use "crashkernel=64M@16M" (some OSes use init ram fs larger
+> +than 64M, for example ubuntu-12.10, use crashkernel=128M@16M instead, or dump-capture
+> +kernel will out of memory).
+
+I believe lines of kdmump.txt should also be 80 columns wide or less.
+
+>     On ppc64, use "crashkernel=128M@32M".
+>  
+> -- 
+> 1.7.10.4
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+> 
