@@ -1,78 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab3C0Imj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 04:42:39 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43957 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777Ab3C0Imh (ORCPT
+	id S1753461Ab3C0Im5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 04:42:57 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:36310 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187Ab3C0Imz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 04:42:37 -0400
-Message-ID: <1364373750.5053.54.camel@laptop>
-Subject: Re: [PATCH -mm -next] ipc,sem: fix lockdep false positive
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@surriel.com>
-Cc: Michel Lespinasse <walken@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>, torvalds@linux-foundation.org,
-        davidlohr.bueso@hp.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
-        lwoodman@redhat.com, chegu_vinod@hp.com, Dave Jones <davej@redhat.com>,
-        benisty.e@gmail.com, Ingo Molnar <mingo@redhat.com>
-Date: Wed, 27 Mar 2013 09:42:30 +0100
-In-Reply-To: <5151BC78.3030306@surriel.com>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	  <5150B1C2.8090607@oracle.com>
-	  <20130325163844.042a45ba@annuminas.surriel.com>
-	  <CANN689FdtXs0-VKxwWHQKgnnSvcvu5hHDMmGOe0H+bdHA4BhXg@mail.gmail.com>
-	  <1364303965.5053.29.camel@laptop>
-	  <CANN689HCbuVOc73BpVubYy2AjA2mcz_iyTg6Fo2Zz-NGnQ93TA@mail.gmail.com>
-	 <1364308023.5053.40.camel@laptop> <5151BC78.3030306@surriel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Mar 2013 04:42:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAK9yfHw8df1ktZNYx=998_KmbvUt-be8vGo=kSC52DsEF5utAw@mail.gmail.com>
+References: <1363253249-3128-1-git-send-email-gheorghiuandru@gmail.com>
+	<CAK9yfHw8df1ktZNYx=998_KmbvUt-be8vGo=kSC52DsEF5utAw@mail.gmail.com>
+Date: Wed, 27 Mar 2013 09:42:55 +0100
+Message-ID: <CACRpkdY1xBTHQsJ2Grru0gw0URXUiBy1XmnFDXPPRbR5xNJtTg@mail.gmail.com>
+Subject: Re: [PATCH] drivers: gpio: Use devm_ioremap_resource function
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Alexandru Gheorghiu <gheorghiuandru@gmail.com>,
+        Tony Prisk <linux@prisktech.co.nz>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-26 at 11:19 -0400, Rik van Riel wrote:
-> > Maybe something like:
-> >
-> > void sma_lock(struct sem_array *sma) /* global */
-> > {
-> >       int i;
-> >
-> >       sma->global_locked = 1;
-> >       smp_wmb(); /* can we merge with the LOCK ? */
-> >       spin_lock(&sma->global_lock);
-> >
-> >       /* wait for all local locks to go away */
-> >       for (i = 0; i < sma->sem_nsems; i++)
-> >               spin_unlock_wait(&sem->sem_base[i]->lock);      
-> > }
-> >
-> > void sma_lock_one(struct sem_array *sma, int nr) /* local */
-> > {
-> >       smp_rmb(); /* pairs with wmb in sma_lock() */
-> >       if (unlikely(sma->global_locked)) { /* wait for global lock */
-> >               while (sma->global_locked)
-> >                       spin_unlock_wait(&sma->global_lock);
-> >       }
-> >       spin_lock(&sma->sem_base[nr]->lock);
-> > }
+On Thu, Mar 14, 2013 at 10:34 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+> On 14 March 2013 14:57, Alexandru Gheorghiu <gheorghiuandru@gmail.com> wrote:
+>> Use the newly introduced devm_ioremap_resource() instead of
+>> devm_request_and_ioremap() which provides more consistent error
+>> handling.
+>>
+>> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+>
+> Similar patch has already been submitted:
+> https://lkml.org/lkml/2013/3/4/124
 
-I since realized there's an ordering problem with ->global_locked, we
-need to use spin_is_locked() or somesuch.
+I've applied the earlier patch.
 
-Two competing sma_lock() operations will screw over the separate
-variable.
-
-> 
-> > This still has the problem of a non-preemptible section of
-> O(sem_nsems)
-> > (with the avg wait-time on the local lock). Could we make the global
-> > lock a sleeping lock?
-> 
-> Not without breaking your scheme above :)
-
-How would making sma->global_lock a mutex wreck anything?
-
+Yours,
+Linus Walleij
