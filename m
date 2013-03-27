@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab3C0Seb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 14:34:31 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:55003 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab3C0Sea convert rfc822-to-8bit (ORCPT
+	id S1753541Ab3C0Sfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 14:35:54 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:54067 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753234Ab3C0Sfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 14:34:30 -0400
+	Wed, 27 Mar 2013 14:35:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
-References: <20130326224242.449070940@linuxfoundation.org>
-Date: Wed, 27 Mar 2013 12:34:28 -0600
-Message-ID: <CAKocOOOBPaR5n14522nnYQDTFWOWrpXqc1tN+HLHguTL+b=+_g@mail.gmail.com>
-Subject: Re: [ 00/98] 3.8.5-stable review
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1363207202-10858-2-git-send-email-dianders@chromium.org>
+References: <1363129994-10438-1-git-send-email-dianders@chromium.org>
+ <1363207202-10858-1-git-send-email-dianders@chromium.org> <1363207202-10858-2-git-send-email-dianders@chromium.org>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Wed, 27 Mar 2013 11:35:32 -0700
+Message-ID: <CAHfPSqDLXD-T6__eF=d+U7Me953DqTgMXi=Jmx7LnHL+W-FLhQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] iio: adc: Document the regulator/clocks for exynos-adc
+To: Doug Anderson <dianders@chromium.org>
+Cc: Jonathan Cameron <jic23@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Guenter Roeck <linux@roeck-us.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 4:41 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> This is the start of the stable review cycle for the 3.8.5 release.
-> There are 98 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On 13 March 2013 13:39, Doug Anderson <dianders@chromium.org> wrote:
+> The exynos ADC won't work without a regulator called "vdd" and a clock
+> called "adc".  Document this fact in the device tree bindings.
 >
-> Responses should be made by Thu Mar 28 22:41:38 UTC 2013.
-> Anything received after that time might be too late.
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+Reviewed-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+
+Lars, any update on this patch set. This change is required.
+> ---
+> Changes in v2: None
 >
-> The whole patch series can be found in one patch at:
->         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.8.5-rc1.gz
-> and the diffstat can be found below.
+>  Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt | 8 ++++++++
+>  1 file changed, 8 insertions(+)
 >
-> thanks,
+> diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+> index f686378..96db940 100644
+> --- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+> +++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+> @@ -20,6 +20,9 @@ Required properties:
+>                         format is being dependent on which interrupt controller
+>                         the Samsung device uses.
+>  - #io-channel-cells = <1>; As ADC has multiple outputs
+> +- clocks               From common clock binding: handle to adc clock.
+> +- clock-names          From common clock binding: Shall be "adc".
+> +- vdd-supply           VDD input supply.
 >
-> greg k-h
+>  Note: child nodes can be added for auto probing from device tree.
 >
+> @@ -31,6 +34,11 @@ adc: adc@12D10000 {
+>         interrupts = <0 106 0>;
+>         #io-channel-cells = <1>;
+>         io-channel-ranges;
+> +
+> +       clocks = <&clock 303>;
+> +       clock-names = "adc";
+> +
+> +       vdd-supply = <&buck5_reg>;
+>  };
+>
+>
+> --
+> 1.8.1.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Patches applied cleanly to 3.0.70, 3.4.37, and 3.8.4
 
-Compiled and booted on the following systems:
 
-HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
-
-dmesgs for all releases look good. No regressions compared to the previous
-dmesgs for each of these releases.
-
-Cross-compile tests results:
-
-alpha: defconfig passed on all
-arm: defconfig passed on all
-arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.8.y
-c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, and 3.8.y.
-powerpc: wii_defconfig passed on all
-sh: defconfig passed on all
-sparc: defconfig passed on all
-tile: tilegx_defconfig passed on all
-
-Known issue since 3.0.70, 3.4.37 and 3.8.4
-
-kernel/signal.c: In function ‘flush_signal_handlers’:
-kernel/signal.c:441:9: error: ‘struct sigaction’ has no member named
-‘sa_restorer’
-make[1]: *** [kernel/signal.o] Error 1
-make: *** [kernel] Error 2
-
-mips: defconfig failed
-mipsel: defconfig failed
-
--- Shuah
+--
+Shine bright,
+(: Nav :)
