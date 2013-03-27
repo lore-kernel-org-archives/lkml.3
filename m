@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab3C0RkS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 13:40:18 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:64041 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab3C0RkP (ORCPT
+	id S1753389Ab3C0Rka (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 13:40:30 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:33801 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752804Ab3C0RkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 13:40:15 -0400
+	Wed, 27 Mar 2013 13:40:18 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, dm-devel@vger.kernel.org
-Cc: tj@kernel.org, neilb@suse.de
-Subject: Immutable biovecs
-Date: Wed, 27 Mar 2013 10:39:30 -0700
-Message-Id: <1364405992-28424-1-git-send-email-koverstreet@google.com>
+Cc: tj@kernel.org, neilb@suse.de, Kent Overstreet <koverstreet@google.com>,
+        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com
+Subject: [PATCH 02/22] dm: Use bvec_iter for dm_bio_record()
+Date: Wed, 27 Mar 2013 10:39:32 -0700
+Message-Id: <1364405992-28424-3-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1364405992-28424-1-git-send-email-koverstreet@google.com>
+References: <1364405992-28424-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series implements immutable biovecs, and converts drivers to
-the new primitives.
+CC: Alasdair Kergon <agk@redhat.com>
+CC: dm-devel@redhat.com
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+---
+ drivers/md/dm-bio-record.h | 12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
-This is done by pulling bi_sector, bi_size and bi_idx out of struct bio
-into a new iterator; to that we add bi_bvec_done which indicates the
-number of bytes done in the current bvec.
-
-This means we can create a bio that points to an arbitrary byte range in
-an existing biovec; if we have a preexisting biovec that points to 4
-whole pages, we can create a bio that points to the first 512 bytes of
-the second bvec.
-
-This enables easy and efficient splitting of arbitrary size bios; future
-patches on top of this are going to convert the existing bio_split() in
-fs/bio.c and remove the single bvec restriction.
-
-This patch series does the necessary driver conversions so that a)
-they're not modifying the biovec anymore (except whey're they've
-explicitly cloned it, as in mm/bounce.c) and b) they always respect the
-values of bi_idx and bi_bvec_done when the bio was passed to them - i.e.
-you can submit partially completed bios to generic_make_request().
-
-The intention is to then use this to make generic_make_request() accept
-arbitrary size bios, splitting them as needed by the underlying device.
-This enables a whole host of cleanups; we can get rid of merge_bvec_fn
-(that's over 1000 lines of code deleted right there), bio_add_page()
-becomes trivial (a lot of code becomes simpler if it doesn't have to
-deal with bio_add_page() failing) - and I've also got a rewrite of the
-dio code that depends on this, and shrinks direct-io.c to 650 lines,
-drastically simplifying it and making it quite a bit faster too.
+diff --git a/drivers/md/dm-bio-record.h b/drivers/md/dm-bio-record.h
+index 5ace48e..4f46e8e 100644
+--- a/drivers/md/dm-bio-record.h
++++ b/drivers/md/dm-bio-record.h
+@@ -28,11 +28,9 @@ struct dm_bio_vec_details {
+ };
+ 
+ struct dm_bio_details {
+-	sector_t bi_sector;
+ 	struct block_device *bi_bdev;
+-	unsigned int bi_size;
+-	unsigned short bi_idx;
+ 	unsigned long bi_flags;
++	struct bvec_iter bi_iter;
+ 	struct dm_bio_vec_details bi_io_vec[BIO_MAX_PAGES];
+ };
+ 
+@@ -40,11 +38,9 @@ static inline void dm_bio_record(struct dm_bio_details *bd, struct bio *bio)
+ {
+ 	unsigned i;
+ 
+-	bd->bi_sector = bio->bi_iter.bi_sector;
+ 	bd->bi_bdev = bio->bi_bdev;
+-	bd->bi_size = bio->bi_iter.bi_size;
+-	bd->bi_idx = bio->bi_iter.bi_idx;
+ 	bd->bi_flags = bio->bi_flags;
++	bd->bi_iter = bio->bi_iter;
+ 
+ 	for (i = 0; i < bio->bi_vcnt; i++) {
+ 		bd->bi_io_vec[i].bv_len = bio->bi_io_vec[i].bv_len;
+@@ -56,11 +52,9 @@ static inline void dm_bio_restore(struct dm_bio_details *bd, struct bio *bio)
+ {
+ 	unsigned i;
+ 
+-	bio->bi_iter.bi_sector = bd->bi_sector;
+ 	bio->bi_bdev = bd->bi_bdev;
+-	bio->bi_iter.bi_size = bd->bi_size;
+-	bio->bi_iter.bi_idx = bd->bi_idx;
+ 	bio->bi_flags = bd->bi_flags;
++	bio->bi_iter = bd->bi_iter;
+ 
+ 	for (i = 0; i < bio->bi_vcnt; i++) {
+ 		bio->bi_io_vec[i].bv_len = bd->bi_io_vec[i].bv_len;
+-- 
+1.8.1.3
 
