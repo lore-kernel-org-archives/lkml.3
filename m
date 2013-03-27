@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab3C0RM0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 13:12:26 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36723 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab3C0RMZ (ORCPT
+	id S1752040Ab3C0RS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 13:18:58 -0400
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:54309 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab3C0RS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 13:12:25 -0400
-Date: Wed, 27 Mar 2013 18:12:22 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Turquette <mturquette@linaro.org>
-cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4] clk: allow reentrant calls into the clk framework
-In-Reply-To: <20130327150634.4014.64797@quantum>
-Message-ID: <alpine.LFD.2.02.1303271811020.22263@ionos>
-References: <1364368183-24420-1-git-send-email-mturquette@linaro.org> <1824016.8AdaQMMrrR@avalon> <20130327150634.4014.64797@quantum>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 27 Mar 2013 13:18:56 -0400
+Date: Wed, 27 Mar 2013 13:18:53 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "chander.kashyap@linaro.org" <chander.kashyap@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "pjt@google.com" <pjt@google.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH v3 3/6] sched: pack small tasks
+In-Reply-To: <20130327163642.GA1136@localhost.cambridge.arm.com>
+Message-ID: <alpine.LFD.2.03.1303271314240.1372@syhkavp.arg>
+References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org> <1363955155-18382-4-git-send-email-vincent.guittot@linaro.org> <1364301998.5053.17.camel@laptop> <5151BEF2.9090100@linux.intel.com> <1364373980.5053.57.camel@laptop>
+ <CAKfTPtAox+h0YmpP6W==hJ5FaNzDfF8bQmadmU86MrfnJt67QQ@mail.gmail.com> <1364374820.5053.63.camel@laptop> <20130327111855.GI801@MacBook-Pro.local> <1364393634.5053.71.camel@laptop> <20130327163642.GA1136@localhost.cambridge.arm.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Mar 2013, Mike Turquette wrote:
-> Quoting Laurent Pinchart (2013-03-27 02:08:15)
-> > I wonder if it would make sense to abstract these operations in a generic 
-> > recursive mutex. Given that it would delay this patch past v3.10 I won't push 
-> > for that.
-> > 
-> 
-> Having a nice implementation of recursive mutexes would have saved me
-> some time.
+On Wed, 27 Mar 2013, Catalin Marinas wrote:
 
-If you encapsulate stuff nicely like I suggested, then switching to a
-generic version later on is a nobrainer.
- 
-Thanks,
+> So if the above works, the scheduler guys can mandate that little CPUs
+> are always first and for ARM it would be a matter of getting the right
+> CPU topology in the DT (independent of what hw vendors think of CPU
+> topology) and booting Linux on CPU 4 etc.
 
-	tglx
+Just a note about that: if the scheduler mandates little CPUs first, 
+that should _not_ have any implications on the DT content.  DT is not 
+about encoding Linux specific implementation details.  It is simple 
+enough to tweak the CPU logical map at run time when enumeratiing CPUs.
+
+
+Nicolas
