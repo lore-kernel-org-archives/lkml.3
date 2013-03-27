@@ -1,111 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab3C0Pce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 11:32:34 -0400
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:64017 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab3C0Pc3 (ORCPT
+	id S1753579Ab3C0Pcv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 11:32:51 -0400
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:55274 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752848Ab3C0Pcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 11:32:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130327145654.GA1868@tuxdriver.com>
-References: <1363603503-2378-1-git-send-email-dh.herrmann@gmail.com>
-	<51471B85.5060404@broadcom.com>
-	<CANq1E4TsM6yoSt9aELFan0ayEw3PSfYCe+PEe35YFHzZ-9rTuA@mail.gmail.com>
-	<20130325185821.GB17454@tuxdriver.com>
-	<51516AD4.8080306@broadcom.com>
-	<20130327145654.GA1868@tuxdriver.com>
-Date: Wed, 27 Mar 2013 16:32:28 +0100
-Message-ID: <CANq1E4TCyhpBS3XspW53jp1WxjU+i8iQwLpyy0OCL=DaHqQF+w@mail.gmail.com>
-Subject: Re: [PATCH regression/bisected] Revert "brcmsmac: support 4313iPA"
-From: David Herrmann <dh.herrmann@gmail.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: Piotr Haber <phaber@broadcom.com>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arend van Spriel <arend@broadcom.com>,
-        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 27 Mar 2013 11:32:48 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@linaro.org>, Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 0/4] nohz: Full dynticks fixes/improvements
+Date: Wed, 27 Mar 2013 16:32:35 +0100
+Message-Id: <1364398359-21990-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John
+Hi,
 
-On Wed, Mar 27, 2013 at 3:56 PM, John W. Linville
-<linville@tuxdriver.com> wrote:
-> On Tue, Mar 26, 2013 at 10:31:00AM +0100, Piotr Haber wrote:
->> On 03/25/13 19:58, John W. Linville wrote:
->> > On Mon, Mar 18, 2013 at 02:58:08PM +0100, David Herrmann wrote:
->> >> Hi Piotr
->> >>
->> >> On Mon, Mar 18, 2013 at 2:49 PM, Piotr Haber <phaber@broadcom.com> wrote:
->> >>> On 03/18/13 11:45, David Herrmann wrote:
->> >>>> This reverts commit b6fc28a158076ca2764edc9a6d1e1402f56e1c0c. It breaks
->> >>>> wireless AP reconnection on: (14e4:4727)
->> >>>>   Broadcom Corporation BCM4313 802.11b/g/n Wireless LAN Controller
->> >>>>
->> >>>> Any attempt to reconnect to an AP results in timeouts no matter how near to the
->> >>>> AP I am:
->> >>>>  00:10:40 $nb kernel: wlan0: authenticate with 00:18:39:0a:8e:23
->> >>>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 1/3)
->> >>>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 2/3)
->> >>>>  00:10:41 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 3/3)
->> >>>>  00:10:41 $nb kernel: wlan0: authentication with 00:18:39:0a:8e:23 timed out
->> >>>> ---
->> >>>> Hi
->> >>>>
->> >>>> I tried coming up with a fix instead of reverting this commit, but the commit is
->> >>>> way to big for me to understand what's going on. Sorry.
->> >>>>
->> >>>> With linux-3.8 connecting to an AP broke on my machine. I could connect to an AP
->> >>>> one time, but any further attempt resulted in:
->> >>>>  00:10:40 $nb kernel: wlan0: authenticate with 00:18:39:0a:8e:23
->> >>>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 1/3)
->> >>>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 2/3)
->> >>>>  00:10:41 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 3/3)
->> >>>>  00:10:41 $nb kernel: wlan0: authentication with 00:18:39:0a:8e:23 timed out
->> >>>>
->> >>>> Even sitting right next to the AP didn't help so I started bisecting and it
->> >>>> turned out to be:
->> >>>>   "brcmsmac: support 4313iPA" b6fc28a158076ca2764edc9a6d1e1402f56e1c0c
->> >>>> Please revert it.
->> >>>>
->> >>>> Thanks
->> >>>> David
->> >>>>
->> >>> Hi,
->> >>> unfortunately this is not a first report of this patch breaking 4313 for some users.
->> >>> I'm pretty confident that it is hardware revision related as we have 4313ePA and iPA boards running
->> >>> successfully in our test setup.
->> >>> Could you aid us in effort of finding the problem by supplying the contents of this debugfs file:
->> >>> <debugfs_mount>/brcmsmac/bcma0:0/hardware
->> >>
->> >> Hi
->> >>
->> >> $ cat /sys/kernel/debug/brcmsmac/bcma0\:0/hardware
->> >> board vendor: 185f
->> >> board type: 51a
->> >> board revision: 1408
->> >> board flags: 8402a01
->> >> board flags2: 880
->> >> firmware revision: 262032b
->> >>
->> >> I can also try partial reverts of that commit, but I really don't know
->> >> which parts might be important.
->> >
->> > Are we going to see a fix for this (very) soon?  Or should I just go
->> > ahead and revert this patch?
->> >
->> I cannot reproduce the issue on a set of devices we have here (3 different 4313 ePA models).
->> Some of the devices that are reported to be broken are being shipped to us.
->> So I would say we need around 2 weeks at least to resolve this (if we reproduce the problem and find
->> a fix).
->> Not sure this is soon enough.
->> If not please go ahead an revert the patch.
->
-> I am reverting the patch.
+Changes against tip:timers/nohz :
 
-Can you CC stable? Otherwise I will try to sent it to them after you applied it.
+* Fixes for timekeeping
+* Handle RCU nocb restriction
+* Improvements on info and tunables
 
-Thanks
-David
+I'll send these to Ingo for tip:timers/nohz in a few days if no
+comment arise.
+
+You can fetch from:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	timers/nohz
+
+Thanks.
+
+Frederic Weisbecker (4):
+  nohz: Force boot CPU outside full dynticks range
+  nohz: Print final full dynticks CPUs range on boot
+  nohz: Ensure full dynticks CPUs are RCU nocbs
+  nohz: New option to force all CPUs in full dynticks range
+
+ Documentation/kernel-parameters.txt |    6 ++-
+ include/linux/rcupdate.h            |    7 +++
+ include/linux/tick.h                |    2 +
+ init/main.c                         |    1 +
+ kernel/rcutree.c                    |    6 +-
+ kernel/rcutree.h                    |    1 -
+ kernel/rcutree_plugin.h             |   13 ++----
+ kernel/time/Kconfig                 |   10 +++++
+ kernel/time/tick-sched.c            |   71 ++++++++++++++++++-----------------
+ 9 files changed, 67 insertions(+), 50 deletions(-)
+
+-- 
+1.7.5.4
+
