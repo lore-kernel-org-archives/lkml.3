@@ -1,103 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab3C0Iri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 04:47:38 -0400
-Received: from mga14.intel.com ([143.182.124.37]:31664 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753585Ab3C0Ird (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 04:47:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,917,1355126400"; 
-   d="scan'208";a="276542812"
-Message-ID: <5152B215.2040808@intel.com>
-Date: Wed, 27 Mar 2013 16:47:17 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1754807Ab3C0Irh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 04:47:37 -0400
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:47650 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab3C0Ire (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 04:47:34 -0400
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        mingo@kernel.org, linux@arm.linux.org.uk, pjt@google.com,
-        santosh.shilimkar@ti.com, morten.rasmussen@arm.com,
-        chander.kashyap@linaro.org, cmetcalf@tilera.com, tony.luck@intel.com,
-        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
-        amit.kucheria@linaro.org, corbet@lwn.net
-Subject: Re: [RFC PATCH v3 5/6] sched: pack the idle load balance
-References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org> <1363955155-18382-6-git-send-email-vincent.guittot@linaro.org> <1364302359.5053.21.camel@laptop> <CAKfTPtD=_oS5gJeynUG=ft-Y1zEdxZEMhUPH9hSXx+H2pi4xgA@mail.gmail.com> <1364308932.5053.46.camel@laptop> <CAKfTPtDo3dmEZU-R62unQH9j5CxZWJj+Ws5CTBptOzTohkNJMA@mail.gmail.com> <51527C17.3070901@intel.com> <CAKfTPtDK6vSDhGa9=ReaHt_oO8Xz2agZZ4x3q5Wvv6gXjhFevg@mail.gmail.com>
-In-Reply-To: <CAKfTPtDK6vSDhGa9=ReaHt_oO8Xz2agZZ4x3q5Wvv6gXjhFevg@mail.gmail.com>
+In-Reply-To: <006301ce215d$89e9d040$9dbd70c0$%han@samsung.com>
+References: <006201ce215d$6f133d10$4d39b730$%han@samsung.com>
+	<006301ce215d$89e9d040$9dbd70c0$%han@samsung.com>
+Date: Wed, 27 Mar 2013 09:47:33 +0100
+Message-ID: <CACRpkdbXAicraon7HZX2hz-rjydXAChbh3xQqL3g6dB=CkTrTQ@mail.gmail.com>
+Subject: Re: [PATCH 2/6] gpio: max7300: use devm_kzalloc()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 15, 2013 at 10:14 AM, Jingoo Han <jg1.han@samsung.com> wrote:
 
->>>>> So supposing the current ILB is 6, we'll only check 4, not 0-3, even
->>>>> though there might be a perfectly idle cpu in there.
->>> We will check 4,5,7 at MC level in order to pack in the group of A15
->>> (because they are not sharing the same power domain). If none of them
->>> are idle, we will look at CPU level and will check CPUs 0-3.
->>
->> So you increase a fixed step here.
-> 
-> I have modified the find_new_ilb function to look for the best idle
-> CPU instead of just picking the first CPU of idle_cpus_mask.
+> Use devm_kzalloc() to make cleanup paths simpler.
+>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-That's better.
-But using a fixed buddy is still not flexible, and involve more checking
-in this time critical balancing.
-Consider the most of SMP system, cpu is equal, so any of other cpu can
-play the role of buddy in your design. That means no buddy cpu is
-better, like my version packing.
+Patch applied.
 
-> 
->>>
->>>>>
->>>>> Also, your scheme fails to pack when cpus 0,4 are filled, even when
->>>>> there's idle cores around.
->>> The primary target is to pack the tasks only when we are in a not busy
->>> system so you will have a power improvement without performance
->>> decrease. is_light_task function returns false and  is_buddy_busy
->>> function true before the buddy is fully loaded and the scheduler will
->>> fall back into the default behavior which spreads tasks and races to
->>> idle.
->>>
->>> We can extend the buddy CPU and the packing mechanism to fill one CPU
->>> before filling another buddy but it's not always the best choice for
->>> performance and/or power and thus it will imply to have a knob to
->>> select this full packing mode.
->>
->> Just one buddy to pack tasks for whole level cpus definitely has
->> scalability problem. That is not good for powersaving in most of scenarios.
->>
-> 
-> This patch doesn't want to pack all kind of tasks in all scenario but
-> only the small tasks that run less that 10ms and when the CPU is not
-> already too busy with other tasks so you don't have to cope with long
-> wake up latency and performance regression and only one CPU will be
-> powered up for these background activities. Nevertheless, I can extend
-> the packing small tasks to pack all tasks in any scenario in as few
-> CPUs as possible. This will imply to choose a new buddy CPU when the
-> previous one is full during the ILB selection as an example and to add
-> a knob to select this mode which will modify the performance of the
-> system. But the primary target is not to have a knob and not to reduce
-> performance in most of scenario.
-
-Arguing the performance/power balance does no much sense without
-detailed scenario. We just want to seek a flexible compromise way.
-But fixed buddy cpu is not flexible. and it may lose many possible
-powersaving fit scenarios on x86 system. Like if 2 SMT cpu can handle
-all tasks, we don't need to wake another core. or if 2 cores in one
-socket can handle tasks, we also don't need to wakeup another socket.
-> 
-> Regards,
-> Vincent
-> 
->>
->> --
->> Thanks Alex
-
-
--- 
-Thanks Alex
+Thanks!
+Linus Walleij
