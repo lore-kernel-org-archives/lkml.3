@@ -1,109 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab3C0Of1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 10:35:27 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:39972 "EHLO multi.imgtec.com"
+	id S1753521Ab3C0OfZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 10:35:25 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:39971 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751643Ab3C0OfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751683Ab3C0OfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Mar 2013 10:35:23 -0400
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>,
-        Paul Clothier <Paul.Clothier@imgtec.com>
-Subject: [PATCH 1/3] metag: ptrace: Implement NT_METAG_TLS
-Date: Wed, 27 Mar 2013 14:35:12 +0000
-Message-ID: <1364394914-21257-2-git-send-email-james.hogan@imgtec.com>
+CC: James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH 2/3] metag: export _metag_da_present and cpu_2_hwthread_id
+Date: Wed, 27 Mar 2013 14:35:13 +0000
+Message-ID: <1364394914-21257-3-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364394914-21257-1-git-send-email-james.hogan@imgtec.com>
 References: <1364394914-21257-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_03_27_14_35_23
+X-SEF-Processed: 7_3_0_01181__2013_03_27_14_35_24
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Clothier <Paul.Clothier@imgtec.com>
+Export the symbols _metag_da_present and cpu_2_hwthread_id to modules
+(GPL only) to allow the imgdafs file system to be built as a module.
 
-Implement functionality to get the TLS pointer for the metag
-architecture using regsets.
-
-This provides multi-threaded debug support for GDB.
-
-Signed-off-by: Paul Clothier <Paul.Clothier@imgtec.com>
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
 ---
- arch/metag/kernel/ptrace.c | 34 ++++++++++++++++++++++++++++++++++
- include/uapi/linux/elf.h   |  1 +
- 2 files changed, 35 insertions(+)
+ arch/metag/kernel/da.c    | 2 ++
+ arch/metag/kernel/setup.c | 1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/arch/metag/kernel/ptrace.c b/arch/metag/kernel/ptrace.c
-index 47a8828..7563628 100644
---- a/arch/metag/kernel/ptrace.c
-+++ b/arch/metag/kernel/ptrace.c
-@@ -288,10 +288,36 @@ static int metag_rp_state_set(struct task_struct *target,
- 	return metag_rp_state_copyin(regs, pos, count, kbuf, ubuf);
- }
+diff --git a/arch/metag/kernel/da.c b/arch/metag/kernel/da.c
+index 52aabb6..a35dbed 100644
+--- a/arch/metag/kernel/da.c
++++ b/arch/metag/kernel/da.c
+@@ -5,12 +5,14 @@
+  */
  
-+static int metag_tls_get(struct task_struct *target,
-+			const struct user_regset *regset,
-+			unsigned int pos, unsigned int count,
-+			void *kbuf, void __user *ubuf)
-+{
-+	void __user *tls = target->thread.tls_ptr;
-+	return user_regset_copyout(&pos, &count, &kbuf, &ubuf, &tls, 0, -1);
-+}
-+
-+static int metag_tls_set(struct task_struct *target,
-+			const struct user_regset *regset,
-+			unsigned int pos, unsigned int count,
-+			const void *kbuf, const void __user *ubuf)
-+{
-+	int ret;
-+	void __user *tls;
-+
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &tls, 0, -1);
-+	if (ret)
-+		return ret;
-+
-+	target->thread.tls_ptr = tls;
-+	return ret;
-+}
-+
- enum metag_regset {
- 	REGSET_GENERAL,
- 	REGSET_CBUF,
- 	REGSET_READPIPE,
-+	REGSET_TLS,
+ 
++#include <linux/export.h>
+ #include <linux/io.h>
+ #include <linux/kernel.h>
+ #include <asm/da.h>
+ #include <asm/metag_mem.h>
+ 
+ bool _metag_da_present;
++EXPORT_SYMBOL_GPL(_metag_da_present);
+ 
+ int __init metag_da_probe(void)
+ {
+diff --git a/arch/metag/kernel/setup.c b/arch/metag/kernel/setup.c
+index 8792461..4f5726f 100644
+--- a/arch/metag/kernel/setup.c
++++ b/arch/metag/kernel/setup.c
+@@ -124,6 +124,7 @@ struct machine_desc *machine_desc __initdata;
+ u8 cpu_2_hwthread_id[NR_CPUS] __read_mostly = {
+ 	[0 ... NR_CPUS-1] = BAD_HWTHREAD_ID
  };
++EXPORT_SYMBOL_GPL(cpu_2_hwthread_id);
  
- static const struct user_regset metag_regsets[] = {
-@@ -319,6 +345,14 @@ static const struct user_regset metag_regsets[] = {
- 		.get = metag_rp_state_get,
- 		.set = metag_rp_state_set,
- 	},
-+	[REGSET_TLS] = {
-+		.core_note_type = NT_METAG_TLS,
-+		.n = 1,
-+		.size = sizeof(void *),
-+		.align = sizeof(void *),
-+		.get = metag_tls_get,
-+		.set = metag_tls_set,
-+	},
- };
- 
- static const struct user_regset_view user_metag_view = {
-diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
-index 8072d35..ef6103b 100644
---- a/include/uapi/linux/elf.h
-+++ b/include/uapi/linux/elf.h
-@@ -397,6 +397,7 @@ typedef struct elf64_shdr {
- #define NT_ARM_HW_WATCH	0x403		/* ARM hardware watchpoint registers */
- #define NT_METAG_CBUF	0x500		/* Metag catch buffer registers */
- #define NT_METAG_RPIPE	0x501		/* Metag read pipeline state */
-+#define NT_METAG_TLS	0x502		/* Metag TLS pointer */
- 
- 
- /* Note header in a PT_NOTE section */
+ /*
+  * Map a hardware thread ID to a Linux CPU number
 -- 
 1.8.1.2
 
