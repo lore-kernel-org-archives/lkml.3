@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab3C0MDd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 08:03:33 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:15644 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab3C0MDc (ORCPT
+	id S1754225Ab3C0MF1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 08:05:27 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:62251 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753041Ab3C0MFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 08:03:32 -0400
-X-Spam-Score: -100.7
-Message-ID: <5152DFF1.2090000@asianux.com>
-Date: Wed, 27 Mar 2013 20:02:57 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 27 Mar 2013 08:05:25 -0400
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Will Deacon <Will.Deacon@arm.com>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "anup.patel@linaro.org" <anup.patel@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] ARM64:kernel: compiling issue for early_console.
-References: <5152DB83.8080703@asianux.com> <20130327115509.GA1603@MacBook-Pro.local>
-In-Reply-To: <20130327115509.GA1603@MacBook-Pro.local>
+In-Reply-To: <1364381223.1345.18.camel@x61.thuisdomein>
+References: <1363864206.1390.117.camel@x61.thuisdomein>
+	<20130322042159.GC26908@concordia>
+	<1364381223.1345.18.camel@x61.thuisdomein>
+Date: Wed, 27 Mar 2013 13:05:24 +0100
+X-Google-Sender-Auth: tx8jNUDDLqUO1nCosY6PUkUa7oA
+Message-ID: <CAMuHMdVs-Xxu9e=8WZbTBXE1_+iYOBKODgj9_EKmVbZA3z=8JA@mail.gmail.com>
+Subject: Re: [PATCH] powerpc: remove PReP
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Rob Landley <rob@landley.net>,
+        Adam Belay <abelay@mit.edu>, Bjorn Helgaas <bhelgaas@google.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年03月27日 19:55, Catalin Marinas wrote:
-> On Wed, Mar 27, 2013 at 11:44:03AM +0000, Chen Gang wrote:
->> >   the error message:
->> >     arch/arm64/kernel/early_printk.c: At top level:
->> >     arch/arm64/kernel/early_printk.c:98:23: error: conflicting types for ‘early_console’
->> >     In file included from arch/arm64/kernel/early_printk.c:20:0:
->> >     include/linux/console.h:145:24: note: previous declaration of ‘early_console’ was here
->> >     make[1]: *** [arch/arm64/kernel/early_printk.o] Error 1
->> >     make: *** [arch/arm64/kernel] Error 2
-> Is this in linux-next? Mainline seems fine.
+On Wed, Mar 27, 2013 at 11:47 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> 3) I removed two files in documentation that are almost entirely PReP
+> specific. The remaining lines looked uninteresting.
 
-  yes, it is in next-20130326 at least :-)
+> --- a/Documentation/powerpc/sound.txt
+> +++ /dev/null
 
-> 
-> I saw some patches from tglx on unifying the various early printk
-> implementations, though not sure whether it's those patches causing it
-> (in which case arm64 needs to be updated as well).
+> -2. IBM CHRP
+> -
+> -  I have only tested this on the 43P-150.  Build the kernel with the cs4232
+> -  set as a module and load the module with irq=9 dma=1 dma2=2 io=0x550
 
-  maybe, but we need check the details to prove it :-)
+This section is CHRP-specific. The cs4232 driver also worked on the
+CHRP LongTrail.
+But I don't remember if the parameter values above also applied to LongTrail.
+I do remember it didn't work without specifing the right parameters, so you
+probably want to keep this section.
 
+Gr{oetje,eeting}s,
 
-  thanks.
+                        Geert
 
--- 
-Chen Gang
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Asianux Corporation
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
