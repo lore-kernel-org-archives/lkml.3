@@ -1,95 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab3C0XkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 19:40:05 -0400
-Received: from mail-qe0-f74.google.com ([209.85.128.74]:37824 "EHLO
-	mail-qe0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab3C0XkD (ORCPT
+	id S1754401Ab3C0Xnj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 19:43:39 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:49319 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752803Ab3C0Xnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 19:40:03 -0400
-From: Michael Spang <spang@chromium.org>
-To: Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Spang <spang@chromium.org>
-Subject: [PATCH] serial: samsung: Use printk instead of printascii for S3C_PMDBG
-Date: Wed, 27 Mar 2013 19:39:58 -0400
-Message-Id: <1364427598-17899-1-git-send-email-spang@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
+	Wed, 27 Mar 2013 19:43:37 -0400
+From: Andrei Epure <epure.andrei@gmail.com>
+To: linux@prisktech.co.nz, FlorianSchandinat@gmx.de,
+        linux-arm-kernel@lists.infradead.org
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrei Epure <epure.andrei@gmail.com>
+Subject: [PATCH] video: fixed missing iounmap coccinelle errors
+Date: Thu, 28 Mar 2013 01:43:25 +0200
+Message-Id: <1364427805-11972-1-git-send-email-epure.andrei@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Users should use no_console_suspend if they want output during
-suspend, rather than relying on DEBUG_LL. Using DEBUG_LL has two
-disadvantages:
+Modified or added the necessary goto statements so that the ioremapped
+regions get unmapped before return.
 
-1. It doesn't respect power management. When the UART is suspended
-   the clock is stopped, and trying to use DEBUG_LL will just hang.
-
-   This means if the user selects CONFIG_SAMSUNG_PM_DEBUG but does
-   NOT disable console suspend, the system will hang during suspend.
-
-2. It skips syslog and other console devices such as pstore.
-
-Signed-off-by: Michael Spang <spang@chromium.org>
+Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
 ---
- arch/arm/plat-samsung/include/plat/pm.h | 14 --------------
- arch/arm/plat-samsung/pm.c              | 13 -------------
- 2 files changed, 27 deletions(-)
+ drivers/video/vt8500lcdfb.c |    7 ++++---
+ drivers/video/wm8505fb.c    |    7 ++++---
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/plat-samsung/include/plat/pm.h b/arch/arm/plat-samsung/include/plat/pm.h
-index f6fcade..6d6e2a8 100644
---- a/arch/arm/plat-samsung/include/plat/pm.h
-+++ b/arch/arm/plat-samsung/include/plat/pm.h
-@@ -116,21 +116,7 @@ extern int s3c_irqext_wake(struct irq_data *data, unsigned int state);
+diff --git a/drivers/video/vt8500lcdfb.c b/drivers/video/vt8500lcdfb.c
+index aa2579c..b4ccca2 100644
+--- a/drivers/video/vt8500lcdfb.c
++++ b/drivers/video/vt8500lcdfb.c
+@@ -350,7 +350,7 @@ static int vt8500lcd_probe(struct platform_device *pdev)
+ 	if (!np) {
+ 		pr_err("%s: No display description in Device Tree\n", __func__);
+ 		ret = -EINVAL;
+-		goto failed_free_res;
++		goto failed_free_io;
+ 	}
  
- /* PM debug functions */
+ 	/*
+@@ -369,7 +369,7 @@ static int vt8500lcd_probe(struct platform_device *pdev)
+ 	ret |= of_property_read_u32(np, "bpp", &bpp);
+ 	if (ret) {
+ 		pr_err("%s: Unable to read display properties\n", __func__);
+-		goto failed_free_res;
++		goto failed_free_io;
+ 	}
+ 	of_mode.vmode = FB_VMODE_NONINTERLACED;
  
--#ifdef CONFIG_SAMSUNG_PM_DEBUG
--/**
-- * s3c_pm_dbg() - low level debug function for use in suspend/resume.
-- * @msg: The message to print.
-- *
-- * This function is used mainly to debug the resume process before the system
-- * can rely on printk/console output. It uses the low-level debugging output
-- * routine printascii() to do its work.
-- */
--extern void s3c_pm_dbg(const char *msg, ...);
--
--#define S3C_PMDBG(fmt...) s3c_pm_dbg(fmt)
--#else
- #define S3C_PMDBG(fmt...) printk(KERN_DEBUG fmt)
--#endif
+@@ -379,7 +379,8 @@ static int vt8500lcd_probe(struct platform_device *pdev)
+ 				GFP_KERNEL);
+ 	if (!fb_mem_virt) {
+ 		pr_err("%s: Failed to allocate framebuffer\n", __func__);
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto failed_free_io;
+ 	};
  
- #ifdef CONFIG_S3C_PM_DEBUG_LED_SMDK
- /**
-diff --git a/arch/arm/plat-samsung/pm.c b/arch/arm/plat-samsung/pm.c
-index 002b147..7459fc6 100644
---- a/arch/arm/plat-samsung/pm.c
-+++ b/arch/arm/plat-samsung/pm.c
-@@ -43,19 +43,6 @@ unsigned long s3c_pm_flags;
- */
+ 	fbi->fb.fix.smem_start	= fb_mem_phys;
+diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
+index 4dd0580..2e8298e 100644
+--- a/drivers/video/wm8505fb.c
++++ b/drivers/video/wm8505fb.c
+@@ -332,7 +332,7 @@ static int wm8505fb_probe(struct platform_device *pdev)
+ 	if (!np) {
+ 		pr_err("%s: No display description in Device Tree\n", __func__);
+ 		ret = -EINVAL;
+-		goto failed_free_res;
++		goto failed_free_io;
+ 	}
  
- #ifdef CONFIG_SAMSUNG_PM_DEBUG
--extern void printascii(const char *);
--
--void s3c_pm_dbg(const char *fmt, ...)
--{
--	va_list va;
--	char buff[256];
--
--	va_start(va, fmt);
--	vsnprintf(buff, sizeof(buff), fmt, va);
--	va_end(va);
--
--	printascii(buff);
--}
+ 	/*
+@@ -351,7 +351,7 @@ static int wm8505fb_probe(struct platform_device *pdev)
+ 	ret |= of_property_read_u32(np, "bpp", &bpp);
+ 	if (ret) {
+ 		pr_err("%s: Unable to read display properties\n", __func__);
+-		goto failed_free_res;
++		goto failed_free_io;
+ 	}
  
- static inline void s3c_pm_debug_init(void)
- {
+ 	of_mode.vmode = FB_VMODE_NONINTERLACED;
+@@ -369,7 +369,8 @@ static int wm8505fb_probe(struct platform_device *pdev)
+ 				GFP_KERNEL);
+ 	if (!fb_mem_virt) {
+ 		pr_err("%s: Failed to allocate framebuffer\n", __func__);
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto failed_free_io;
+ 	};
+ 
+ 	fbi->fb.var.xres_virtual	= of_mode.xres;
 -- 
-1.8.1.3
+1.7.9.5
 
