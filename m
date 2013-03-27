@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab3C0TX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 15:23:59 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:59036 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753864Ab3C0TX6 (ORCPT
+	id S1754187Ab3C0T1w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 15:27:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58888 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753946Ab3C0T1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 15:23:58 -0400
-Date: Wed, 27 Mar 2013 12:22:17 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Borislav Petkov <bp@alien8.de>, Joerg Roedel <joro@8bytes.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
- asm/8267
-Message-ID: <20130327192217.GE4379@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130324115556.GA4866@pd.tnic>
- <20130324155924.GB4866@pd.tnic>
- <20130326183452.GC27518@pd.tnic>
- <20130327131532.GL30540@8bytes.org>
- <1364393852.5053.74.camel@laptop>
- <20130327143715.GY4379@linux.vnet.ibm.com>
- <20130327163427.GN30540@8bytes.org>
- <20130327163806.GC8385@pd.tnic>
- <20130327180455.GA4379@linux.vnet.ibm.com>
- <20130327190727.GD8385@pd.tnic>
+	Wed, 27 Mar 2013 15:27:51 -0400
+Message-ID: <51533A2E.2000501@infradead.org>
+Date: Wed, 27 Mar 2013 11:27:58 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130327190727.GD8385@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032719-2876-0000-0000-000006D06F8E
+To: Kent Overstreet <koverstreet@google.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: [PATCH -next 1/3] bcache: Add missing #include <linux/prefetch.h>
+References: <1364406990-20541-1-git-send-email-geert@linux-m68k.org> <20130327182150.GB25906@google.com>
+In-Reply-To: <20130327182150.GB25906@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 08:07:27PM +0100, Borislav Petkov wrote:
-> On Wed, Mar 27, 2013 at 11:04:55AM -0700, Paul E. McKenney wrote:
-> > On Wed, Mar 27, 2013 at 05:38:06PM +0100, Borislav Petkov wrote:
-> > > On Wed, Mar 27, 2013 at 05:34:27PM +0100, Joerg Roedel wrote:
-> > > > Interesting read, thanks guys. I think I should have a look into the
-> > > > tree-preempt implementation and try to understand it :)
-> > > 
-> > > Hurry, before paulmck comes and changes it unrecognizable! :-)
-> > 
-> > Better yet, review my changes for 3.10.  ;-)
+On 03/27/13 11:21, Kent Overstreet wrote:
+> On Wed, Mar 27, 2013 at 06:56:28PM +0100, Geert Uytterhoeven wrote:
+>> m68k/allmodconfig:
+>>
+>> drivers/md/bcache/bset.c: In function ‘bset_search_tree’:
+>> drivers/md/bcache/bset.c:727: error: implicit declaration of function ‘prefetch’
+>>
+>> drivers/md/bcache/btree.c: In function ‘bch_btree_node_get’:
+>> drivers/md/bcache/btree.c:933: error: implicit declaration of function ‘prefetch’
 > 
-> Oh, and if one needs to brush up on RCU while doing that, there's this
-> cool thing called perfbook (whole title is too long :)) I discovered
-> while searching for your 3.10 queue on k.org. :-)
+> Thanks, applied! The other two I already have a patch queued up for.
 
-Reviews of perfbook are also welcome.  ;-)
 
-In case you didn't find it, the 3.10 queue is at rcu/next in:
+On i386 and x86_64, I also see this build problem:
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+drivers/md/bcache/bset.c:885:4: error: implicit declaration of function '__WARN' [-Werror=implicit-function-declaration]
 
-The corresponding LKML posts may be found at:
 
-	https://lkml.org/lkml/2013/3/18/960
-	https://lkml.org/lkml/2013/3/18/570
-	https://lkml.org/lkml/2013/3/18/594
+Do you also have a patch for it?
 
-							Thanx, Paul
 
+thanks,
+-- 
+~Randy
