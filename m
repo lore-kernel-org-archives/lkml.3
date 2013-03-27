@@ -1,144 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027Ab3C0OTZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 10:19:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51325 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752716Ab3C0OTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 10:19:24 -0400
-Date: Wed, 27 Mar 2013 15:19:21 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/10] memory-hotplug: enable memory hotplug to handle
- hugepage
-Message-ID: <20130327141921.GJ16579@dhcp22.suse.cz>
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1363983835-20184-10-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130325150952.GA2154@dhcp22.suse.cz>
- <1364322204-ah777uqs-mutt-n-horiguchi@ah.jp.nec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364322204-ah777uqs-mutt-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753159Ab3C0OU2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 10:20:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44565 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337Ab3C0OU1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 10:20:27 -0400
+Message-ID: <1364394014.5053.76.camel@laptop>
+Subject: Re: [PATCH v7 11/18] perf tools: add mem access sampling core
+ support
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        namhyung.kim@lge.com
+Date: Wed, 27 Mar 2013 15:20:14 +0100
+In-Reply-To: <20130327141425.GC1092@krava.brq.redhat.com>
+References: <1359040242-8269-1-git-send-email-eranian@google.com>
+	 <1359040242-8269-12-git-send-email-eranian@google.com>
+	 <20130327141425.GC1092@krava.brq.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 26-03-13 14:23:24, Naoya Horiguchi wrote:
-> On Mon, Mar 25, 2013 at 04:09:52PM +0100, Michal Hocko wrote:
-> > On Fri 22-03-13 16:23:54, Naoya Horiguchi wrote:
-> ...
-> > > index d9d3dd7..ef79871 100644
-> > > --- v3.9-rc3.orig/mm/hugetlb.c
-> > > +++ v3.9-rc3/mm/hugetlb.c
-> > > @@ -844,6 +844,36 @@ static int free_pool_huge_page(struct hstate *h, nodemask_t *nodes_allowed,
-> > >  	return ret;
-> > >  }
-> > >  
-> > > +/* Dissolve a given free hugepage into free pages. */
-> > > +static void dissolve_free_huge_page(struct page *page)
-> > > +{
-> > > +	spin_lock(&hugetlb_lock);
-> > > +	if (PageHuge(page) && !page_count(page)) {
-> > > +		struct hstate *h = page_hstate(page);
-> > > +		int nid = page_to_nid(page);
-> > > +		list_del(&page->lru);
-> > > +		h->free_huge_pages--;
-> > > +		h->free_huge_pages_node[nid]--;
-> > > +		update_and_free_page(h, page);
-> > > +	}
-> > 
-> > What about surplus pages?
-> 
-> This function is only for free hugepage, not for surplus hugepages
-> (which are considered as in-use hugepages.)
+On Wed, 2013-03-27 at 15:14 +0100, Jiri Olsa wrote:
+> we have correct cpumode for sample->ip, but I think it's the
+> PEBS->dla (sample->addr) where we need to guess.. right?
 
-How do you want to get rid of those then? You cannot offline the node if
-there are any pages...
+kernel mode very much fakes the cpumode/segment stuff for PEBS. PEBS
+assumes you're running in a linear/flat mode.
 
-> dissolve_free_huge_pages() can be called only when all source hugepages
-> are free (all in-use hugepages are successfully migrated.)
-> 
-[...]
-> > > +/* Returns true for head pages of in-use hugepages, otherwise returns false. */
-> > > +bool is_hugepage_movable(struct page *hpage)
-> > > +{
-> > > +	struct page *page;
-> > > +	struct hstate *h;
-> > > +	bool ret = false;
-> > > +
-> > > +	VM_BUG_ON(!PageHuge(hpage));
-> > > +	/*
-> > > +	 * This function can be called for a tail page because memory hotplug
-> > > +	 * scans movability of pages by pfn range of a memory block.
-> > > +	 * Larger hugepages (1GB for x86_64) are larger than memory block, so
-> > > +	 * the scan can start at the tail page of larger hugepages.
-> > > +	 * 1GB hugepage is not movable now, so we return with false for now.
-> > > +	 */
-> > > +	if (PageTail(hpage))
-> > > +		return false;
-> > > +	h = page_hstate(hpage);
-> > > +	spin_lock(&hugetlb_lock);
-> > > +	list_for_each_entry(page, &h->hugepage_activelist, lru)
-> > > +		if (page == hpage) {
-> > > +			ret = true;
-> > > +			break;
-> > > +		}
-> > 
-> > Why are you checking that the page is active?
-> 
-> This is the counterpart to doing PageLRU check for normal pages.
-> 
-> > It doesn't make much sense
-> > to me because nothing prevents it from being freed/allocated right after
-> > you release hugetlb_lock.
-> 
-> Such a race can also happen for normal pages because scan_movable_pages()
-> just check PageLRU flags without holding any lock.
-> But the caller, __offline_pages(), repeats to call scan_movable_pages()
-> until no page in the memblock are judged as movable, and in the repeat loop
-> do_migrate_range() does nothing for free (unmovable) pages.
-> So there is no behavioral problem even if the movable page is freed just
-> after the if(PageLRU) check in scan_movable_page().
-
-yes
-
-> Note that in this loop, allocating pages in the memblock is forbidden
-> because we already do set_migratetype_isolate() for them, so we don't have
-> to worry about being allocated just after scan_movable_pages().
-
-yes
-
-> I want the same thing to be the case for hugepage. As you pointed out,
-> is_hugepage_movable() is not safe from such a race, but in "being freed
-> just after is_hugepage_movable() returns true" case we have no problem
-> for the same reason described above.
- 
-yes, this was my point, sorry for not being clear about that. I meant
-the costly test is pointless because it doesn't prevent any races and
-doesn't tell us much.
-If we made sure that all page on the hugepage_freelists have reference
-0 (which is now not the case and it is yet another source of confusion)
-then the whole loop could be replaced by page_count check.
-
-> However, in "being allocated just after is_hugepage_movable() returns false"
-> case, it seems to be possible to hot-remove an active hugepage.
-
-check_pages_isolated should catch this but it is still racy.
-
-> I think we can avoid this by adding migratetype check in
-> alloc_huge_page().
-
-I think dequeue_huge_page_vma should be sufficient, because we are going
-through page allocator otherwise and that one is aware of migrate types.
-
-[...]
--- 
-Michal Hocko
-SUSE Labs
