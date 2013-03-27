@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab3C0UDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 16:03:00 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:44565 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753274Ab3C0UC7 (ORCPT
+	id S1754429Ab3C0UEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 16:04:47 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:23990 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753633Ab3C0UEp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 16:02:59 -0400
+	Wed, 27 Mar 2013 16:04:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7iUsV4ca0vhs085_prsTXBEvuTnuw1O_NUr-CvUytYGQ@mail.gmail.com>
-References: <kg69ef$vdb$1@ger.gmane.org>
-	<CAPM=9ty0Apsk_5v+aguHQMzFhi9A9kMcWb8fXBmWus9Z=tA=JA@mail.gmail.com>
-	<5126C3E1.80801@gmail.com>
-	<513BACAC.9050800@gmail.com>
-	<CA+55aFyOypoeXgBWP0d7KmL3YezmjwEgrB=ntZaZdYjdmFkQpA@mail.gmail.com>
-	<20130319195950.GA16828@srcf.ucam.org>
-	<CA+55aFy9nbc+9VyCg0BA9E85sRwksQXvu6Wqgurf5omv2mPtZw@mail.gmail.com>
-	<5148D5C8.2000701@gmail.com>
-	<CAPM=9tyYMSsK_2eCNRTx5EsgAQtnvmHxhgPHP3GHPxKUn+wo5w@mail.gmail.com>
-	<20130325235525.GA3423@srcf.ucam.org>
-	<CAErSpo7iUsV4ca0vhs085_prsTXBEvuTnuw1O_NUr-CvUytYGQ@mail.gmail.com>
-Date: Thu, 28 Mar 2013 06:02:57 +1000
-Message-ID: <CAPM=9tzmqof4Rzec_2bVm+UxH86Zas6JhgizfzHNfnvrsvhoYA@mail.gmail.com>
-Subject: Re: Regression: Screen turns off when booting in EFI mode
-From: Dave Airlie <airlied@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Garrett <mjg@redhat.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ben Skeggs <skeggsb@gmail.com>, bugzilla@colorremedies.com
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <ef105888-1996-4c78-829a-36b84973ce65@default>
+Date: Wed, 27 Mar 2013 13:04:25 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: zsmalloc zbud hybrid design discussion?
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6668.5000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> That RedHat bugzilla is from kernel-3.9.0-0.rc4.git0.1.fc19.x86_64.
-> Does that kernel include Matthew's patch from Mar 19?  I'm wondering
-> if that report is for the same problem Mantas saw and possibly would
-> be *fixed* by the Mar 19 patch, or if it is for a problem with the Mar
-> 19 patch itself.
->
-> I would check this myself, but I don't know how to figure out what's
-> in kernel-3.9.0-0.rc4.git0.1.fc19.x86_64.
+Seth and all zproject folks --
 
-Its 3.9-rc4 + a git snapshot one day after,
+I've been giving some deep thought as to how a zpage
+allocator might be designed that would incorporate the
+best of both zsmalloc and zbud.
 
->From what I can see 3.9-rc4 contains this patch from Mar 19.
+Rather than dive into coding, it occurs to me that the
+best chance of success would be if all interested parties
+could first discuss (on-list) and converge on a design
+that we can all agree on.  If we achieve that, I don't
+care who writes the code and/or gets the credit or
+chooses the name.  If we can't achieve consensus, at
+least it will be much clearer where our differences lie.
 
-Dave.
+Any thoughts?
+
+Thanks,
+Dan
