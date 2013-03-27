@@ -1,176 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab3C0L6f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 07:58:35 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:64841 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab3C0L6d (ORCPT
+	id S1752625Ab3C0MAf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 08:00:35 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:49116
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751659Ab3C0MAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 07:58:33 -0400
+	Wed, 27 Mar 2013 08:00:34 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(z1039mz98dI1432Izz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 27 Mar 2013 20:00:18 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Javier Martin <javier.martin@vista-silicon.com>,
+        <kernel@pengutronix.de>, <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v9 RESEND 0/4] Add generic driver for on-chip SRAM
+Message-ID: <20130327120017.GA2674@S2101-09.ap.freescale.net>
+References: <1363776767-2635-1-git-send-email-p.zabel@pengutronix.de>
+ <1364373214.5442.1.camel@pizza.hi.pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <1363066655-17474-1-git-send-email-thloh@altera.com>
-References: <1363066655-17474-1-git-send-email-thloh@altera.com>
-Date: Wed, 27 Mar 2013 12:58:32 +0100
-Message-ID: <CACRpkdZY0sZUK_9ZX8rBOExVRPQL=UeoAWT=O1NZX2wTJGQLsA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] drivers/gpio: Altera soft IP GPIO driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: thloh@altera.com, Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1364373214.5442.1.camel@pizza.hi.pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 6:37 AM,  <thloh@altera.com> wrote:
+On Wed, Mar 27, 2013 at 09:33:34AM +0100, Philipp Zabel wrote:
+> Am Mittwoch, den 20.03.2013, 11:52 +0100 schrieb Philipp Zabel:
+> > Hi, last time I posted was a bit close to the merge window, so I'm
+> > reposting now. Greg, Arnd, could you take the first two patches?
+> 
+> Ping,
+> 
+> can I do anything to help move this along?
 
-> From: Tien Hock Loh <thloh@altera.com>
->
-> Adds a new driver for Altera soft GPIO IP. The driver is able to
-> do read/write and allows GPIO to be a interrupt controller.
->
-> Tested on Altera GHRD on interrupt handling and IO.
->
-> Signed-off-by: Tien Hock Loh <thloh@altera.com>
-> ---
->  .../devicetree/bindings/gpio/gpio-altera.txt       |  37 +++
+You haven't indicated how the series should be merged and by whom.  I
+think we should have the first two patches get in through either
+Andrew's tree or Greg's tree, since Andrew is handling genalloc and Greg
+is handling drivers/misc.
 
-Patches containing device tree bindings shall be CC:ed to devicetree-discuss
-(added on CC here, remember at next posting).
+Greg, can you please give your ACK on the second patch to have the first
+two go via Andrew's tree?  Otherwise, we can try to ask for Andrew's
+ACK on the first patch to have them go through yours.  Please tell.
 
-(...)
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio-altera.txt b/Documentation/devicetree/bindings/gpio/gpio-altera.txt
-> new file mode 100644
-> index 0000000..3bdb8b6
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-altera.txt
-> @@ -0,0 +1,37 @@
-> +Altera GPIO controller bindings
-> +
-> +Required properties:
-> +- compatible:
-> +  - "altr,pio-1.0"
-> +- reg: Physical base address and length of the controller's registers.
-> +- #gpio-cells : Should be two.
-> +  - first cell is the pin number
+Shawn
 
-What does that mean? The GPIO subsystem is not referring
-to pins, it's about "gpios" which are just a handler or number.
-
-It can be a local offset into the numberspace representiong
-the GPIO lines at this block, I guess that is what is meant
-here.
-
-(...)
-> +Altera GPIO specific properties:
-> +- width: Width of the GPIO bank, range from 1-32
-> +- level_trigger: Specifies whether the GPIO interrupt is level trigger.
-> +  This field is required if the Altera GPIO controller used has IRQ enabled.
-
-This is a configuration for the irc_chip portion of the driver
-I guess, isn't the usual custom that you don't set up
-things like this from the device tree, but instead use the
-kernels facilities on request_irq() such as:
-
-#define IRQF_TRIGGER_NONE       0x00000000
-#define IRQF_TRIGGER_RISING     0x00000001
-#define IRQF_TRIGGER_FALLING    0x00000002
-#define IRQF_TRIGGER_HIGH       0x00000004
-#define IRQF_TRIGGER_LOW        0x00000008
-
-?
-
-I.e. that this is something you do at runtime and not a static
-config from the device tree?
-
-Or shall this be percieved as some kind of default setting?
-
-(...)
-> +++ b/drivers/gpio/gpio-altera.c
-
-> +struct altera_gpio_chip {
-> +       struct of_mm_gpio_chip mmchip;
-> +       struct irq_domain *irq; /* GPIO controller IRQ number */
-> +       spinlock_t gpio_lock;   /* Lock used for synchronization */
-> +       int level_trigger;
-
-I doubt this member of the struct. The irq core shall keep track
-of stuff like this.
-
-> +       int hwirq;
-> +};
-
-(then follows some real nice code using irqdomain in a professional
-way, thanks for doing this!)
-
-> +static int altera_gpio_irq_set_type(struct irq_data *d,
-> +                               unsigned int type)
-> +{
-> +       if (type == IRQ_TYPE_NONE)
-> +               return 0;
-> +       return -EINVAL;
-> +}
-
-So if the chip supports setting edge vs level trigging,
-this is where you implement it, not as device tree
-properties.
-
-> +static void altera_gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
-> +{
-> +       struct altera_gpio_chip *altera_gc = irq_desc_get_handler_data(desc);
-> +       struct irq_chip *chip = irq_desc_get_chip(desc);
-> +       struct of_mm_gpio_chip *mm_gc = &altera_gc->mmchip;
-> +       unsigned long status;
-> +
-> +       int base;
-> +       chip->irq_mask(&desc->irq_data);
-> +
-> +       if (altera_gc->level_trigger)
-> +               status = readl(mm_gc->regs + ALTERA_GPIO_DATA);
-
-So on the level trigged variant you read the ALTERA_GPIO_DATA
-and discard the result? Is it some kind of latch register?
-
-
-> +       else {
-> +               status = readl(mm_gc->regs + ALTERA_GPIO_EDGE_CAP);
-> +               writel(status, mm_gc->regs + ALTERA_GPIO_EDGE_CAP);
-> +       }
-
-So you need to get the affected register depending on the type set
-in the irq descriptor instead.
-
-> +       status &= readl(mm_gc->regs + ALTERA_GPIO_IRQ_MASK);
-> +       for (base = 0; base < mm_gc->gc.ngpio; base++) {
-> +               if ((1 << base) & status) {
-> +                       generic_handle_irq(
-> +                               irq_linear_revmap(altera_gc->irq, base));
-> +               }
-> +       }
-
-When we looked at this for some IRQ controllers we realized we
-had to write the loop like so:
-
-while ((stat = readl_relaxed(vic->base + VIC_IRQ_STATUS))) {
-(...)
-}
-
-Only to avoid missing transient IRQs occuring while we were
-processing another IRQ. (Like, you handle IRQ0, then IRQ4,
-and while you're handling IRQ4, IRQ0 triggers again and
-you miss it.
-
-Make sure this does not apply to you...
-
-> +       if (of_property_read_u32(node, "level_trigger", &reg)) {
-> +               ret = -EINVAL;
-> +               pr_err("%s: level_trigger value not set in device tree\n",
-> +                       node->full_name);
-> +               goto teardown;
-> +       }
-> +       altera_gc->level_trigger = reg;
-
-So I'm suspicious about this.
-
-Yours,
-Linus Walleij
