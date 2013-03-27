@@ -1,67 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751131Ab3C0LP2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 07:15:28 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:8302 "EHLO SMTP02.CITRIX.COM"
+	id S1751391Ab3C0LQe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 07:16:34 -0400
+Received: from smtp38.i.mail.ru ([94.100.177.98]:39889 "EHLO smtp38.i.mail.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750770Ab3C0LP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 07:15:27 -0400
-X-IronPort-AV: E=Sophos;i="4.84,917,1355097600"; 
-   d="scan'208";a="15096661"
-Date: Wed, 27 Mar 2013 11:15:23 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v2 6/6] [RFC] arm: use PSCI if available
-In-Reply-To: <alpine.LFD.2.03.1303261201530.1372@syhkavp.arg>
-Message-ID: <alpine.DEB.2.02.1303271109080.4430@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1303261423530.4430@kaball.uk.xensource.com> <alpine.DEB.2.02.1303261509080.4430@kaball.uk.xensource.com> <20130326153730.GA22368@mudshark.cambridge.arm.com> <201303261546.50194.arnd@arndb.de>
- <alpine.LFD.2.03.1303261201530.1372@syhkavp.arg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1750794Ab3C0LQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 07:16:32 -0400
+X-Greylist: delayed 78085 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Mar 2013 07:16:31 EDT
+From: Kirill Kapranov <kapranoff@inbox.ru>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, bhutchings@solarflare.com, peppe.cavallaro@st.com,
+        joe@perches.com, bruce.w.allan@intel.com, linux-kernel@vger.kernel.org,
+        Kirill Kapranov <kapranoff@inbox.ru>
+Subject: [PATCH] phy: Elimination the forced speed reduction algorithm.
+Date: Wed, 27 Mar 2013 15:16:13 +0400
+Message-Id: <1364382973-5047-1-git-send-email-kapranoff@inbox.ru>
+X-Mailer: git-send-email 1.7.2.5
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Mar 2013, Nicolas Pitre wrote:
-> On Tue, 26 Mar 2013, Arnd Bergmann wrote:
-> 
-> > On Tuesday 26 March 2013, Will Deacon wrote:
-> > > > They can even base the implementation of their smp_ops on the current
-> > > > psci code, in order to facilitate that I could get rid of psci_ops
-> > > > (which initialization is based on device tree) and export the psci_cpu_*
-> > > > functions instead, so that they can be called directly by other smp_ops.
-> > > 
-> > > Again, I think this destroys the layering. The whole point is that the PSCI
-> > > functions are called from within something that understands precisely how to
-> > > talk to the firmware and what it is capable of.
-> > 
-> > Right, we probably the psci smp ops to be separate from the rest of the psci
-> > code, but I also think that Stefano is right that we should let any platform
-> > use the psci smp ops if possible, rather than having to implement their own.
-> 
-> Oh absolutely.  It is always best to use an existing standard.  But PSCI 
-> probably won't be the only firmware interface standard.  It therefore 
-> shouldn't be used as the Linux internal interface model.
+In case of fixed speed set up for a NIC (e.g. ethtool -s eth0 autoneg off speed
+100 duplex full) with an ethernet cable plugged off, the mentioned algorithm
+slows down a NIC speed, so further cable hook-up leads to nonoperable link state.
 
-I am not proposing to use PSCI as an interal Linux API.
+Signed-off-by: Kirill Kapranov <kapranoff@inbox.ru>
+---
+ drivers/net/phy/phy.c |   50 +------------------------------------------------
+ 1 files changed, 1 insertions(+), 49 deletions(-)
 
-I am proposing to use a set of PSCI based smp_ops (instead of the ones
-that come with machine_desc, if any) if a PSCI node is available on
-device tree.
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index ef9ea92..828d4e6 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -463,33 +463,6 @@ void phy_stop_machine(struct phy_device *phydev)
+ }
+ 
+ /**
+- * phy_force_reduction - reduce PHY speed/duplex settings by one step
+- * @phydev: target phy_device struct
+- *
+- * Description: Reduces the speed/duplex settings by one notch,
+- *   in this order--
+- *   1000/FULL, 1000/HALF, 100/FULL, 100/HALF, 10/FULL, 10/HALF.
+- *   The function bottoms out at 10/HALF.
+- */
+-static void phy_force_reduction(struct phy_device *phydev)
+-{
+-	int idx;
+-
+-	idx = phy_find_setting(phydev->speed, phydev->duplex);
+-	
+-	idx++;
+-
+-	idx = phy_find_valid(idx, phydev->supported);
+-
+-	phydev->speed = settings[idx].speed;
+-	phydev->duplex = settings[idx].duplex;
+-
+-	pr_info("Trying %d/%s\n",
+-		phydev->speed, DUPLEX_FULL == phydev->duplex ? "FULL" : "HALF");
+-}
+-
+-
+-/**
+  * phy_error - enter HALTED state for this PHY device
+  * @phydev: target phy_device struct
+  *
+@@ -818,30 +791,11 @@ void phy_state_machine(struct work_struct *work)
+ 				phydev->adjust_link(phydev->attached_dev);
+ 
+ 			} else if (0 == phydev->link_timeout--) {
+-				int idx;
+-
+ 				needs_aneg = 1;
+ 				/* If we have the magic_aneg bit,
+ 				 * we try again */
+ 				if (phydev->drv->flags & PHY_HAS_MAGICANEG)
+ 					break;
+-
+-				/* The timer expired, and we still
+-				 * don't have a setting, so we try
+-				 * forcing it until we find one that
+-				 * works, starting from the fastest speed,
+-				 * and working our way down */
+-				idx = phy_find_valid(0, phydev->supported);
+-
+-				phydev->speed = settings[idx].speed;
+-				phydev->duplex = settings[idx].duplex;
+-
+-				phydev->autoneg = AUTONEG_DISABLE;
+-
+-				pr_info("Trying %d/%s\n",
+-					phydev->speed,
+-					DUPLEX_FULL == phydev->duplex ?
+-					"FULL" : "HALF");
+ 			}
+ 			break;
+ 		case PHY_NOLINK:
+@@ -866,10 +820,8 @@ void phy_state_machine(struct work_struct *work)
+ 				phydev->state = PHY_RUNNING;
+ 				netif_carrier_on(phydev->attached_dev);
+ 			} else {
+-				if (0 == phydev->link_timeout--) {
+-					phy_force_reduction(phydev);
++				if (0 == phydev->link_timeout--)
+ 					needs_aneg = 1;
+-				}
+ 			}
+ 
+ 			phydev->adjust_link(phydev->attached_dev);
+-- 
+1.7.2.5
 
-smp_ops remains the internal Linux API.
-
-I am also saying that we should let people reuse the PSCI functions in
-their own machine-specific smp_ops, if they want to.
