@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681Ab3C0NGZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 09:06:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34733 "EHLO
+	id S1753628Ab3C0NGY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 09:06:24 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34734 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752948Ab3C0NGW (ORCPT
+	by vger.kernel.org with ESMTP id S1753569Ab3C0NGW (ORCPT
 	<rfc822;linux-kernel@Vger.kernel.org>);
 	Wed, 27 Mar 2013 09:06:22 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/2] regmap: core: Provide regmap_can_raw_write() operation
-Date: Wed, 27 Mar 2013 13:06:17 +0000
-Message-Id: <1364389578-8714-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2] regmap: cache: Use raw I/O to sync rbtrees if we can
+Date: Wed, 27 Mar 2013 13:06:18 +0000
+Message-Id: <1364389578-8714-2-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1364389578-8714-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1364389578-8714-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mainly useful internally but exported since this is a public API that's
-being checked for.
+This will bring no meaningful benefit by itself, it is done as a separate
+commit to aid bisection if there are problems with the following commits
+adding support for coalescing adjacent writes.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/base/regmap/regmap.c |   15 ++++++++++++---
- include/linux/regmap.h       |    1 +
- 2 files changed, 13 insertions(+), 3 deletions(-)
+ drivers/base/regmap/regcache-rbtree.c |   19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 9174c9d..9ab1e1f 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -1097,6 +1097,17 @@ int _regmap_raw_write(struct regmap *map, unsigned int reg,
- 	return ret;
+diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
+index 792a760..382a6de 100644
+--- a/drivers/base/regmap/regcache-rbtree.c
++++ b/drivers/base/regmap/regcache-rbtree.c
+@@ -55,6 +55,12 @@ static unsigned int regcache_rbtree_get_register(struct regmap *map,
+ 	return regcache_get_val(map, rbnode->block, idx);
  }
  
-+/**
-+ * regmap_can_raw_write - Test if regmap_raw_write() is supported
-+ *
-+ * @map: Map to check.
-+ */
-+bool regmap_can_raw_write(struct regmap *map)
++static const void *regcache_rbtree_get_reg_addr(struct regmap *map,
++	struct regcache_rbtree_node *rbnode, unsigned int idx)
 +{
-+	return map->bus && map->format.format_val && map->format.format_reg;
++	return regcache_get_val_addr(map, rbnode->block, idx);
 +}
-+EXPORT_SYMBOL_GPL(regmap_can_raw_write);
 +
- static int _regmap_bus_formatted_write(void *context, unsigned int reg,
- 				       unsigned int val)
- {
-@@ -1220,12 +1231,10 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
- {
+ static void regcache_rbtree_set_register(struct regmap *map,
+ 					 struct regcache_rbtree_node *rbnode,
+ 					 unsigned int idx, unsigned int val)
+@@ -442,6 +448,7 @@ static int regcache_rbtree_sync(struct regmap *map, unsigned int min,
+ 	struct regcache_rbtree_node *rbnode;
+ 	unsigned int regtmp;
+ 	unsigned int val;
++	const void *addr;
  	int ret;
+ 	int i, base, end;
  
--	if (!map->bus)
-+	if (!regmap_can_raw_write(map))
- 		return -EINVAL;
- 	if (val_len % map->format.val_bytes)
- 		return -EINVAL;
--	if (reg % map->reg_stride)
--		return -EINVAL;
+@@ -480,7 +487,17 @@ static int regcache_rbtree_sync(struct regmap *map, unsigned int min,
+ 				continue;
  
- 	map->lock(map->lock_arg);
- 
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index bf77dfd..02d84e2 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -389,6 +389,7 @@ int regmap_update_bits_check(struct regmap *map, unsigned int reg,
- 			     bool *change);
- int regmap_get_val_bytes(struct regmap *map);
- int regmap_async_complete(struct regmap *map);
-+bool regmap_can_raw_write(struct regmap *map);
- 
- int regcache_sync(struct regmap *map);
- int regcache_sync_region(struct regmap *map, unsigned int min,
+ 			map->cache_bypass = 1;
+-			ret = _regmap_write(map, regtmp, val);
++
++			if (regmap_can_raw_write(map)) {
++				addr = regcache_rbtree_get_reg_addr(map,
++								    rbnode, i);
++				ret = _regmap_raw_write(map, regtmp, addr,
++							map->format.val_bytes,
++							false);
++			} else {
++				ret = _regmap_write(map, regtmp, val);
++			}
++
+ 			map->cache_bypass = 0;
+ 			if (ret)
+ 				return ret;
 -- 
 1.7.10.4
 
