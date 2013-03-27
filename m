@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab3C0U7Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 16:59:25 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:44509 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268Ab3C0U7Y (ORCPT
+	id S1753353Ab3C0VFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 17:05:23 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:33692 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab3C0VFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 16:59:24 -0400
-Date: Wed, 27 Mar 2013 17:59:17 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] perf sort: Add 'addr' sort key
-Message-ID: <20130327205917.GA2027@ghostprotocols.net>
-References: <1364299918-31175-1-git-send-email-namhyung@kernel.org>
- <20130326144023.GA1621@gmail.com>
- <87ehf1gylp.fsf@sejong.aot.lge.com>
+	Wed, 27 Mar 2013 17:05:22 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] arm: omap: RX-51: ARM errata 430973 workaround
+Date: Wed, 27 Mar 2013 22:05:16 +0100
+User-Agent: KMail/1.13.7 (Linux/3.5.0-27-generic; KDE/4.10.1; x86_64; ; )
+Cc: Nishanth Menon <nm@ti.com>,
+        =?utf-8?q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE?=
+	 =?utf-8?q?_=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
+	<freemangordon@abv.bg>,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <517283541.62064.1362124023621.JavaMail.apache@mail81.abv.bg> <201303241526.59275@pali> <20130327205606.GN10155@atomide.com>
+In-Reply-To: <20130327205606.GN10155@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ehf1gylp.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart1649977.71GLfpN5RP";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303272205.17182@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Mar 27, 2013 at 03:12:34PM +0900, Namhyung Kim escreveu:
-> On Tue, 26 Mar 2013 15:40:23 +0100, Ingo Molnar wrote:
-> > * Namhyung Kim <namhyung@kernel.org> wrote:
-> >> New addr sort key provides a way to sort the entries by the symbol
-> >> addresses.
+--nextPart1649977.71GLfpN5RP
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-> > No objections from me - just wondering about the motivation: why would we 
-> > want to sort by symbol address?
- 
-> In fact, it came from bugzilla:
- 
->   https://bugzilla.kernel.org/show_bug.cgi?id=55561
+On Wednesday 27 March 2013 21:56:07 Tony Lindgren wrote:
+> * Pali Roh=C3=A1r <pali.rohar@gmail.com> [130324 07:31]:
+> > it is possible to upstream errata 430973 workaround for
+> > RX-51?
+>=20
+> I think we should make the SMC handling a generic function for
+> ARM.
+>=20
+> AFAIK just the SMC call numbering is different for various
+> implementations. So the handler and passing of the parameters
+> seems like it should be generic.
+>=20
 
-Will Cohen asked if this was possible while trying to figure out why
-some libxul.so samples were not being resolved to symbols, Will?
+Not only, look at freemangordon's email:=20
+https://lkml.org/lkml/2013/3/1/62
 
-Namhyung, I'm using:
+> Regards,
+>=20
+> Tony
 
-BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=55561
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Just before the: Link: entry, consider adding it when addressing some
-bugzilla entry, be it from bugzilla.kernel.org or from some other
-bugzilla where problems or feature requests were made.
+--nextPart1649977.71GLfpN5RP
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-- Arnaldo
- 
-> >
-> > Perhaps to see the overhead layout/distribution within a DSO, to better 
-> > cache-pack hot functions by placing them next to each other?
-> >
-> > Putting a short usecase into the changelog (or even better, the 
-> > documentation) would be nice.
-> 
-> Well, I didn't thought it much, but yeah, aforementioned usecase looks
-> promising.  Also it might be useful to find out which part is the
-> hotpath in a function if you have some really big functions (possibly
-> due to auto-inlining or something).
-> 
-> Arnaldo, do you have other usecase/scenario in mind?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-See above.
+iEYEABECAAYFAlFTXw0ACgkQi/DJPQPkQ1KXFgCdHy8r7dC3By2wA4IRk7wLtXjz
+GlAAoLuNpRvh0C7/hgGV+8c7WL5fvYVv
+=fch1
+-----END PGP SIGNATURE-----
+
+--nextPart1649977.71GLfpN5RP--
