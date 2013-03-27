@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab3C0Hok (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 03:44:40 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44035 "EHLO comal.ext.ti.com"
+	id S1756886Ab3C0Hv7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 03:51:59 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44986 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756050Ab3C0Hnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 03:43:51 -0400
-From: Philip Avinash <avinashphilip@ti.com>
-To: <nsekhar@ti.com>, <linux@arm.linux.org.uk>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <rob@landley.net>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH 1/3] ARM: davinci: da850: Add LCDC DT entries
-Date: Wed, 27 Mar 2013 13:13:57 +0530
-Message-ID: <1364370239-18390-2-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364370239-18390-1-git-send-email-avinashphilip@ti.com>
-References: <1364370239-18390-1-git-send-email-avinashphilip@ti.com>
+	id S1754526Ab3C0Hv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 03:51:58 -0400
+Date: Wed, 27 Mar 2013 09:51:27 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Roland Stigge <stigge@antcom.de>, <balbi@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: Fix compile error by selecting USB_OTG_UTILS
+Message-ID: <20130327075127.GB23925@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1364319361-28265-1-git-send-email-stigge@antcom.de>
+ <20130326180334.GL20785@arwen.pp.htv.fi>
+ <5151F48C.9060308@gnu.org>
+ <20130326192453.GA21915@arwen.pp.htv.fi>
+ <5152043F.4010307@antcom.de>
+ <20130326203741.GA4227@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DBIVS5p969aUjpLe"
+Content-Disposition: inline
+In-Reply-To: <20130326203741.GA4227@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add LCDC DT entries in da850 dts file.
+--DBIVS5p969aUjpLe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
----
- arch/arm/boot/dts/da850.dtsi |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+On Tue, Mar 26, 2013 at 01:37:41PM -0700, Greg KH wrote:
+> On Tue, Mar 26, 2013 at 09:25:35PM +0100, Roland Stigge wrote:
+> > On 03/26/2013 08:24 PM, Felipe Balbi wrote:
+> > > commit ?
+> >=20
+> > 1c2088812f095df77f4b3224b65db79d7111a300
+>=20
+> Showed up in 3.9-rc3.
+>=20
+> Felipe, I can take this directly if you don't have any other USB patches
+> for me at the moment.
 
-diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
-index a6cbf89..087b4ea 100644
---- a/arch/arm/boot/dts/da850.dtsi
-+++ b/arch/arm/boot/dts/da850.dtsi
-@@ -62,6 +62,21 @@
- 					0x10 0x00002200 0x0000ff00
- 				>;
- 			};
-+			lcdc_pins:pinmux_lcdc_pins {
-+				pinctrl-single,bits = <
-+					/* LCD_D[2], LCD_D[3], LCD_D[4],
-+					   LCD_D[5], LCD_D[6], LCD_D[7] */
-+					0x40 0x22222200 0xffffff00
-+					/* LCD_D[10], LCD_D[11], LCD_D[12],
-+					   LCD_D[13], LCD_D[14], LCD_D[15],
-+					   LCD_D[0], LCD_D[1] */
-+					0x44 0x22222222 0xffffffff
-+					/* LCD_PCLK, LCD_D[8], LCD_D[9] */
-+					0x48 0x02000022 0x0f0000ff
-+					/* LCD_AC_ENB_CS, LCD_VSYNC, LCD_HSYNC*/
-+					0x4c 0x02000022 0x0f0000ff
-+				>;
-+			};
- 		};
- 		serial0: serial@1c42000 {
- 			compatible = "ns16550a";
-@@ -137,6 +152,12 @@
- 			reg = <0x308000 0x80>;
- 			status = "disabled";
- 		};
-+		lcdc: lcdc@01e13000 {
-+			compatible = "ti,da830-lcdc";
-+			reg = <0x213000 0x1000>;
-+			interrupts = <52>;
-+			status = "disabled";
-+		};
- 	};
- 	nand_cs3@62000000 {
- 		compatible = "ti,davinci-nand";
--- 
-1.7.9.5
+please go ahead Greg:
 
+Acked-by: Felipe Balbi <balbi@ti.com>
+
+--=20
+balbi
+
+--DBIVS5p969aUjpLe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRUqT/AAoJEIaOsuA1yqRErCcP/iruny5FHPwBjx5+F2mIRiGi
+XLmWu3rxANyvmj2ig3V5D78r2/cRd6UuB6Iu2FbRr/U6C+pFX9mluPIq+/bj4WrR
+FsHr0cTU3r6h9P2nWT+AKNx2mwLwfQo8WwWe6XBwffHEGUjkWMLAAaX3ZPVAMFTx
+2FV/H2iBd7vzCkGEDhQ/7nVEwa8f0xTSSOPQtue28iEUbI6/z4JOqcUpUSEN3+Bz
+O1CTD/RNXo09nH6XwBdbmEJsewOVf3YnYDZsVVtB0xYiGZikJXLLf29keDgAiJ0S
+14fnVxifp99HyA3h5cgW+E4nGjRCQP+mviQtVzLVLz0vG8c4gvdIwqOCYIk13Mdf
+WXciMv3FEhoDbEB+Nu2yHRB/olB2VQAJ/9A3ISuIpnNZgodG/aFjfyIMiAg4Ty5B
+DjOR833A3x2s+i2k3CgbZRWIUn/4sn8wecNCHKOihGBV99h7AHXLf6dXhH8moqnD
+FttB0JOs7Mit+OdjgfewODAUw3y1sTaeu1wXgTqfEg0aBG4tQ9XnHz/l28aye+0T
+kGz3bBezLWtD9rUFbwLQcwJoKdC6MYSLFfa3ih7M7sC3guQtBwycgY0YQC9wgTib
+NQuvk/fnallXBnTLpQUtQfjx2uNdhz061uYC2kroCiR7UmrnrqhgglsK3lsrJzFW
+uXo5EoscjJ9EX+HyuXUN
+=EvpQ
+-----END PGP SIGNATURE-----
+
+--DBIVS5p969aUjpLe--
