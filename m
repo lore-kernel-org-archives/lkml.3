@@ -1,171 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab3C0CWS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 22:22:18 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56198 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837Ab3C0CWR (ORCPT
+	id S1754280Ab3C0CfQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 22:35:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51572 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754150Ab3C0CfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 22:22:17 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-eb-515257d64d34
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>
-Subject: [RFC] mm: remove swapcache page early
-Date: Wed, 27 Mar 2013 11:22:12 +0900
-Message-Id: <1364350932-12853-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.8.2
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 26 Mar 2013 22:35:14 -0400
+Message-ID: <1364351701.3520.18.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 084/104] USB: serial: add modem-status-change wait queue
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Wed, 27 Mar 2013 02:35:01 +0000
+In-Reply-To: <CAMgPeKXMgdQ1CUBtXCgmFse7uQaeEM0aNB5n09ubASVfobQ_BA@mail.gmail.com>
+References: <20130325010524.240972766@decadent.org.uk>
+	 <20130325010532.611847650@decadent.org.uk>
+	 <CAMgPeKXMgdQ1CUBtXCgmFse7uQaeEM0aNB5n09ubASVfobQ_BA@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-0ovYAbFgk+B+zPyQzkik"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:e40a:77e1:ece1:499b
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Swap subsystem does lazy swap slot free with expecting the page
-would be swapped out again so we can't avoid unnecessary write.
 
-But the problem in in-memory swap is that it consumes memory space
-until vm_swap_full(ie, used half of all of swap device) condition
-meet. It could be bad if we use multiple swap device, small in-memory swap
-and big storage swap or in-memory swap alone.
+--=-0ovYAbFgk+B+zPyQzkik
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This patch changes vm_swap_full logic slightly so it could free
-swap slot early if the backed device is really fast.
-For it, I used SWP_SOLIDSTATE but It might be controversial.
-So let's add Ccing Shaohua and Hugh.
-If it's a problem for SSD, I'd like to create new type SWP_INMEMORY
-or something for z* family.
+On Tue, 2013-03-26 at 16:36 +0100, Johan Hovold wrote:
+> On Mon, Mar 25, 2013 at 2:06 AM, Ben Hutchings <ben@decadent.org.uk> wrot=
+e:
+> > 3.2-stable review patch.  If anyone has any objections, please let me k=
+now.
+>=20
+> This patch is incorrect as the wait-queue initialisation is missing. A
+> fix has been posted to linux-usb:
+>=20
+>         http://marc.info/?l=3Dlinux-usb&m=3D136428758202815&w=3D2
+>=20
+> and should show up in 3.9-rc5. This patch and the following
+> use-after-free patches should not be applied without that fix.
+[...]
 
-Other problem is zram is block device so that it can set SWP_INMEMORY
-or SWP_SOLIDSTATE easily(ie, actually, zram is already done) but
-I have no idea to use it for frontswap.
+OK, I've dropped these for now.
 
-Any idea?
+Ben.
 
-Other optimize point is we remove it unconditionally when we
-found it's exclusive when swap in happen.
-It could help frontswap family, too.
-What do you think about it?
+--=20
+Ben Hutchings
+I'm not a reverse psychological virus.  Please don't copy me into your sig.
 
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: Shaohua Li <shli@kernel.org>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- include/linux/swap.h | 11 ++++++++---
- mm/memory.c          |  3 ++-
- mm/swapfile.c        | 11 +++++++----
- mm/vmscan.c          |  2 +-
- 4 files changed, 18 insertions(+), 9 deletions(-)
+--=-0ovYAbFgk+B+zPyQzkik
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 2818a12..1f4df66 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -359,9 +359,14 @@ extern struct page *swapin_readahead(swp_entry_t, gfp_t,
- extern atomic_long_t nr_swap_pages;
- extern long total_swap_pages;
- 
--/* Swap 50% full? Release swapcache more aggressively.. */
--static inline bool vm_swap_full(void)
-+/*
-+ * Swap 50% full or fast backed device?
-+ * Release swapcache more aggressively.
-+ */
-+static inline bool vm_swap_full(struct swap_info_struct *si)
- {
-+	if (si->flags & SWP_SOLIDSTATE)
-+		return true;
- 	return atomic_long_read(&nr_swap_pages) * 2 < total_swap_pages;
- }
- 
-@@ -405,7 +410,7 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
- #define get_nr_swap_pages()			0L
- #define total_swap_pages			0L
- #define total_swapcache_pages()			0UL
--#define vm_swap_full()				0
-+#define vm_swap_full(si)			0
- 
- #define si_swapinfo(val) \
- 	do { (val)->freeswap = (val)->totalswap = 0; } while (0)
-diff --git a/mm/memory.c b/mm/memory.c
-index 705473a..1ca21a9 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3084,7 +3084,8 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	mem_cgroup_commit_charge_swapin(page, ptr);
- 
- 	swap_free(entry);
--	if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
-+	if (likely(PageSwapCache(page)) && (vm_swap_full(page_swap_info(page))
-+			|| (vma->vm_flags & VM_LOCKED) || PageMlocked(page)))
- 		try_to_free_swap(page);
- 	unlock_page(page);
- 	if (page != swapcache) {
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 1bee6fa..f9cc701 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -293,7 +293,7 @@ checks:
- 		scan_base = offset = si->lowest_bit;
- 
- 	/* reuse swap entry of cache-only swap if not busy. */
--	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
-+	if (vm_swap_full(si) && si->swap_map[offset] == SWAP_HAS_CACHE) {
- 		int swap_was_freed;
- 		spin_unlock(&si->lock);
- 		swap_was_freed = __try_to_reclaim_swap(si, offset);
-@@ -382,7 +382,8 @@ scan:
- 			spin_lock(&si->lock);
- 			goto checks;
- 		}
--		if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
-+		if (vm_swap_full(si) &&
-+			si->swap_map[offset] == SWAP_HAS_CACHE) {
- 			spin_lock(&si->lock);
- 			goto checks;
- 		}
-@@ -397,7 +398,8 @@ scan:
- 			spin_lock(&si->lock);
- 			goto checks;
- 		}
--		if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
-+		if (vm_swap_full(si) &&
-+			si->swap_map[offset] == SWAP_HAS_CACHE) {
- 			spin_lock(&si->lock);
- 			goto checks;
- 		}
-@@ -763,7 +765,8 @@ int free_swap_and_cache(swp_entry_t entry)
- 		 * Also recheck PageSwapCache now page is locked (above).
- 		 */
- 		if (PageSwapCache(page) && !PageWriteback(page) &&
--				(!page_mapped(page) || vm_swap_full())) {
-+				(!page_mapped(page) ||
-+				  vm_swap_full(page_swap_info(page)))) {
- 			delete_from_swap_cache(page);
- 			SetPageDirty(page);
- 		}
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index df78d17..145c59c 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -933,7 +933,7 @@ cull_mlocked:
- 
- activate_locked:
- 		/* Not a candidate for swapping, so reclaim swap space. */
--		if (PageSwapCache(page) && vm_swap_full())
-+		if (PageSwapCache(page) && vm_swap_full(page_swap_info(page)))
- 			try_to_free_swap(page);
- 		VM_BUG_ON(PageActive(page));
- 		SetPageActive(page);
--- 
-1.8.2
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIVAwUAUVJa1ee/yOyVhhEJAQrCMQ/+LzY4UTCoVFI1nHZVLhVoF+KG/NFaEhco
+BGG0C4Ufn5dFNf2WXBgLqpyYvW+m3+rKrIpZPbPz8qpHrgNBx2Qdub278QnXFiZh
+ToZMwHeOjKWiUj+DF6IY8eCntgQtur1PiUeyX7zKtl9Q0N+9MMs/mDkyGV4GDyHk
+EMtrS0vM170bAD1nG82JKLzVsYAABfutQB6s6GYfw1X5xVvpEH2z1k1wwC4uMvny
+plG7geThs8BIOX8IW34KruEpFNCtVl51Vpac/0S2KyjLmlgWnivdZ+SPO4icBN8N
+BmzGLHkQD8UFyQ/AfAbP5bGpF/+kru0sW3TXouXTvnJL4VR9xYKv4wGL5G2mMXpg
+IgVBlNQk/dTZDd0+2TrMqU1AsEINjcd1STT+SSTs8QpF41BnnfpHtm51XAVL5Lsg
+M8Ay7mjcn1PO5AvSIU8YwRMyi4668u/eQYxeiu+eAFTBzyKLD/VYy5iQVOzAuhAk
+vgnzr/i5GAkO4O1wA9tk7LzAOywnaQHWkODWnOAn9uVsxPiB3x1TlHhJMPZjK6AJ
+7kCFBDx+zqJuqvfGSdISCIleSxCFjfsKwOIjH94OFzpyobjC5cU79GXI7lHcm3Pb
+j/ZRIS+Cp/u4zqEfjGYpy6I255LsPkT/nMAXAJYfcmajyMF8H1Da0bTMQcjrwaaN
+deOUM/Ae4+g=
+=b94b
+-----END PGP SIGNATURE-----
+
+--=-0ovYAbFgk+B+zPyQzkik--
