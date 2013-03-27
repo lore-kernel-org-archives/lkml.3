@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766Ab3C0Ssz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 14:48:55 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:37318 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753428Ab3C0Ssv (ORCPT
+	id S1753823Ab3C0TCM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 15:02:12 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56199 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753689Ab3C0TCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 14:48:51 -0400
+	Wed, 27 Mar 2013 15:02:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [GIT PULL] at91: soc for 3.10 #2
+Date: Wed, 27 Mar 2013 19:01:59 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+References: <5152B357.3020500@atmel.com>
+In-Reply-To: <5152B357.3020500@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <20130326224309.15072.83839.stgit@djiang5-linux2.ch.intel.com>
-References: <20130326223953.15072.26605.stgit@djiang5-linux2.ch.intel.com>
-	<20130326224309.15072.83839.stgit@djiang5-linux2.ch.intel.com>
-Date: Wed, 27 Mar 2013 11:48:50 -0700
-X-Google-Sender-Auth: 9fn3lGzZnjXsRQcbS1uf45lNrtI
-Message-ID: <CAA9_cmcAwp0g+ybe14Poxdi-7V=USbO8OCJJ++V1Dn0PUHKRKg@mail.gmail.com>
-Subject: Re: [PATCH 06/10] ioatdma: Removing PQ val disable for cb3.3
-From: Dan Williams <djbw@fb.com>
-To: Dave Jiang <dave.jiang@intel.com>
-Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303271902.00068.arnd@arndb.de>
+X-Provags-ID: V02:K0:rk792K/swKdDwX1SMTVFDxkFgxPW2qvjXlDFoVeLokC
+ IzQ96pBXJ6Ng45JYrvVoxdbCJMNteZZPD9SNYeH5n0ZKH9yZLY
+ TtS1cqhjhIAz5TE/bZeXnisF1YO2BI3bMs0fSc0yM0b5XGk6VE
+ bP4C774wIZMr1fU5oiUl/VaUjaeX3OT2prQ992byzpvr9Uo03/
+ Dg2KyxMKZUNAdn8Be1s74VrDhH/GSe1bGjnXwlZ7Q9GJSpvFKa
+ ZgL8EWom0gG+vLSaYONXenQUdvUWl8RXUNB61c1wDpka2f2MlV
+ 52CBA0UMPD14+k2XsKLjzo33VbMRNaTW2RbYk4MUAN5hxc3FMx
+ +AjoTSi3RW4O3ee4w58c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 3:43 PM, Dave Jiang <dave.jiang@intel.com> wrote:
-> The PQ Val ops work on the newer hardware so we should actually provide support
-> for it and remove the disabling bits.
->
-> Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-> ---
->  drivers/dma/Kconfig          |    2 -
->  drivers/dma/ioat/dma.h       |    1
->  drivers/dma/ioat/dma_v3.c    |  134 ++++++++++++++++++++++++++++++++++++++----
->  drivers/dma/ioat/registers.h |    2 +
->  4 files changed, 125 insertions(+), 14 deletions(-)
->
-> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-> index 80b6997..dec088d 100644
-> --- a/drivers/dma/Kconfig
-> +++ b/drivers/dma/Kconfig
-> @@ -63,8 +63,6 @@ config INTEL_IOATDMA
->         depends on PCI && X86
->         select DMA_ENGINE
->         select DCA
-> -       select ASYNC_TX_DISABLE_PQ_VAL_DMA
-> -       select ASYNC_TX_DISABLE_XOR_VAL_DMA
->         help
->           Enable support for the Intel(R) I/OAT DMA engine present
->           in recent Intel Xeon chipsets.
-[..]
-> @@ -1469,15 +1581,13 @@ int ioat3_dma_probe(struct ioatdma_device *device, int dca)
->         device->cleanup_fn = ioat3_cleanup_event;
->         device->timer_fn = ioat3_timer_event;
->
-> -       #ifdef CONFIG_ASYNC_TX_DISABLE_PQ_VAL_DMA
-> -       dma_cap_clear(DMA_PQ_VAL, dma->cap_mask);
-> -       dma->device_prep_dma_pq_val = NULL;
-> -       #endif
-> +       if (is_xeon_cb32(pdev)) {
-> +               dma_cap_clear(DMA_XOR_VAL, dma->cap_mask);
-> +               dma->device_prep_dma_xor_val = NULL;
->
-> -       #ifdef CONFIG_ASYNC_TX_DISABLE_XOR_VAL_DMA
-> -       dma_cap_clear(DMA_XOR_VAL, dma->cap_mask);
-> -       dma->device_prep_dma_xor_val = NULL;
-> -       #endif
-> +               dma_cap_clear(DMA_PQ_VAL, dma->cap_mask);
-> +               dma->device_prep_dma_pq_val = NULL;
-> +       }
+On Wednesday 27 March 2013, Nicolas Ferre wrote:
 
-Note that this effectively disables raid offload for is_xeon_cb32()
-platforms since DMA_ASYNC_TX will not be set.
+> ----------------------------------------------------------------
+> Introduction of new Atmel Cortex-A5: SAMA5D3 family.
+> - Modify AT91 Kconfig to plit ARMv4/5 and ARMv7 arch
+> - Modify PMC driver (clocks)
+> - Core SAMA5 support
+> - Board file, DT files and defconfig
+
+Looks really good. Olof said he'd take over merging tomorrow,
+so I'll leave it for him.
+
+> ----------------------------------------------------------------
+> Ludovic Desroches (6):
+>       ARM: at91: change name template in AT91_SOC_START macro
+>       ARM: at91: add AT91_SAM9_TIME entry to select at91sam926x_time.c compilation
+>       ARM: at91: introduce the core type choice to split ARMv4/5 and ARMv7 arch
+>       ARM: at91: introduce SAMA5 support
+>       ARM: at91: dt: add device tree files for SAMA5D3 family
+>       ARM: at91: add defconfig for SAMA5
+
+There is one obvious change that would be nice to include here,
+can you add this on top (either Nicolas or Olof)?
+
+8<---------
+Subject: ARM: at91: make ATAGS support conditional on CONFIG_ATAGS
+
+We have the global CONFIG_ATAGS symbol that is used to determine
+whether ATAGS based boot is possible or not. Since we are
+splitting out the legacy boards from the main Kconfig on at91,
+we can use that symbol to easily hide the old options.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index 0280238..119a0a4 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -137,8 +137,9 @@ config SOC_AT91SAM9N12
+ 	  Select this if you are using Atmel's AT91SAM9N12 SoC.
+ 
+ # ----------------------------------------------------------
+-
++if ATAGS
+ source arch/arm/mach-at91/Kconfig.non_dt
++endif
+ endif # SOC_SAM_V4_V5
+ 
+ comment "Generic Board Type"
