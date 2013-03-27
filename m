@@ -1,54 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab3C0PlF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 11:41:05 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:43737 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751756Ab3C0PlD (ORCPT
+	id S1752625Ab3C0PnX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 11:43:23 -0400
+Received: from sapphire.tuxdriver.com ([70.61.120.61]:60952 "EHLO
+	Linville-X1.hq.tuxdriver.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750968Ab3C0PnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 11:41:03 -0400
+	Wed, 27 Mar 2013 11:43:22 -0400
+Date: Wed, 27 Mar 2013 11:43:13 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Piotr Haber <phaber@broadcom.com>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arend van Spriel <arend@broadcom.com>,
+        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>
+Subject: Re: [PATCH regression/bisected] Revert "brcmsmac: support 4313iPA"
+Message-ID: <20130327154312.GE2146@tuxdriver.com>
+References: <1363603503-2378-1-git-send-email-dh.herrmann@gmail.com>
+ <51471B85.5060404@broadcom.com>
+ <CANq1E4TsM6yoSt9aELFan0ayEw3PSfYCe+PEe35YFHzZ-9rTuA@mail.gmail.com>
+ <20130325185821.GB17454@tuxdriver.com>
+ <51516AD4.8080306@broadcom.com>
+ <20130327145654.GA1868@tuxdriver.com>
+ <CANq1E4TCyhpBS3XspW53jp1WxjU+i8iQwLpyy0OCL=DaHqQF+w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130327143447.GB1771@quack.suse.cz>
-References: <514EC323.7050002@gmail.com>
-	<20130326211520.GF2082@quack.suse.cz>
-	<CANGUGtD9BNQO9pvO+yeKHc0qojk61fKYDgKm8kfWzu8pCk=YJw@mail.gmail.com>
-	<20130327143447.GB1771@quack.suse.cz>
-Date: Wed, 27 Mar 2013 16:41:02 +0100
-Message-ID: <CANGUGtDdhbS-7GJ4HDRTN3H-bHvNLGg6tdNsqgZbMGBCxmjjcw@mail.gmail.com>
-Subject: Re: [RFC] fsfreeze: moving from uniterruptible to killable
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANq1E4TCyhpBS3XspW53jp1WxjU+i8iQwLpyy0OCL=DaHqQF+w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/27 Jan Kara <jack@suse.cz>:
-> On Wed 27-03-13 12:39:10, Marco Stornelli wrote:
->> 2013/3/26 Jan Kara <jack@suse.cz>:
->> > On Sun 24-03-13 10:10:59, Marco Stornelli wrote:
->> >> When a fs is frozen, a process can hang because we wait in
->> >> uniterruptible state. We give the user the possibility to kill the process.
->> >   Yes, but it needs slightly more work as you probably know... (bailing out
->> > properly when the signal arrives).
->> >
->> >                                                                 Honza
->> >
->>
->> Of course, indeed, it was only an RFC to start a discussion, not a
->> patch :) The point was: is this kind of change a behaviour that can
->> break user-space in some way? IMHO no, but I'd like to have a
->> discussion about that before to start coding. What do you think?
->   Killable wait is almost always safe WRT to userspace breakage. In this
-> case I cannot see how it could matter. That's why I agree it's a good thing
-> to do.
->
->                                                                 Honza
+On Wed, Mar 27, 2013 at 04:32:28PM +0100, David Herrmann wrote:
+> Hi John
+> 
+> On Wed, Mar 27, 2013 at 3:56 PM, John W. Linville
+> <linville@tuxdriver.com> wrote:
+> > On Tue, Mar 26, 2013 at 10:31:00AM +0100, Piotr Haber wrote:
+> >> On 03/25/13 19:58, John W. Linville wrote:
+> >> > On Mon, Mar 18, 2013 at 02:58:08PM +0100, David Herrmann wrote:
+> >> >> Hi Piotr
+> >> >>
+> >> >> On Mon, Mar 18, 2013 at 2:49 PM, Piotr Haber <phaber@broadcom.com> wrote:
+> >> >>> On 03/18/13 11:45, David Herrmann wrote:
+> >> >>>> This reverts commit b6fc28a158076ca2764edc9a6d1e1402f56e1c0c. It breaks
+> >> >>>> wireless AP reconnection on: (14e4:4727)
+> >> >>>>   Broadcom Corporation BCM4313 802.11b/g/n Wireless LAN Controller
+> >> >>>>
+> >> >>>> Any attempt to reconnect to an AP results in timeouts no matter how near to the
+> >> >>>> AP I am:
+> >> >>>>  00:10:40 $nb kernel: wlan0: authenticate with 00:18:39:0a:8e:23
+> >> >>>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 1/3)
+> >> >>>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 2/3)
+> >> >>>>  00:10:41 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 3/3)
+> >> >>>>  00:10:41 $nb kernel: wlan0: authentication with 00:18:39:0a:8e:23 timed out
+> >> >>>> ---
+> >> >>>> Hi
+> >> >>>>
+> >> >>>> I tried coming up with a fix instead of reverting this commit, but the commit is
+> >> >>>> way to big for me to understand what's going on. Sorry.
+> >> >>>>
+> >> >>>> With linux-3.8 connecting to an AP broke on my machine. I could connect to an AP
+> >> >>>> one time, but any further attempt resulted in:
+> >> >>>>  00:10:40 $nb kernel: wlan0: authenticate with 00:18:39:0a:8e:23
+> >> >>>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 1/3)
+> >> >>>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 2/3)
+> >> >>>>  00:10:41 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 3/3)
+> >> >>>>  00:10:41 $nb kernel: wlan0: authentication with 00:18:39:0a:8e:23 timed out
+> >> >>>>
+> >> >>>> Even sitting right next to the AP didn't help so I started bisecting and it
+> >> >>>> turned out to be:
+> >> >>>>   "brcmsmac: support 4313iPA" b6fc28a158076ca2764edc9a6d1e1402f56e1c0c
+> >> >>>> Please revert it.
+> >> >>>>
+> >> >>>> Thanks
+> >> >>>> David
+> >> >>>>
+> >> >>> Hi,
+> >> >>> unfortunately this is not a first report of this patch breaking 4313 for some users.
+> >> >>> I'm pretty confident that it is hardware revision related as we have 4313ePA and iPA boards running
+> >> >>> successfully in our test setup.
+> >> >>> Could you aid us in effort of finding the problem by supplying the contents of this debugfs file:
+> >> >>> <debugfs_mount>/brcmsmac/bcma0:0/hardware
+> >> >>
+> >> >> Hi
+> >> >>
+> >> >> $ cat /sys/kernel/debug/brcmsmac/bcma0\:0/hardware
+> >> >> board vendor: 185f
+> >> >> board type: 51a
+> >> >> board revision: 1408
+> >> >> board flags: 8402a01
+> >> >> board flags2: 880
+> >> >> firmware revision: 262032b
+> >> >>
+> >> >> I can also try partial reverts of that commit, but I really don't know
+> >> >> which parts might be important.
+> >> >
+> >> > Are we going to see a fix for this (very) soon?  Or should I just go
+> >> > ahead and revert this patch?
+> >> >
+> >> I cannot reproduce the issue on a set of devices we have here (3 different 4313 ePA models).
+> >> Some of the devices that are reported to be broken are being shipped to us.
+> >> So I would say we need around 2 weeks at least to resolve this (if we reproduce the problem and find
+> >> a fix).
+> >> Not sure this is soon enough.
+> >> If not please go ahead an revert the patch.
+> >
+> > I am reverting the patch.
+> 
+> Can you CC stable? Otherwise I will try to sent it to them after you applied it.
 
-Yes, I quite agree. I'll try to look at it in a deeply way.
+Sorry, I already pushed it out to kernel.org.  I would prefer not to modify my repository now.
 
-Regards,
-
-Marco
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
