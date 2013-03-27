@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab3C0KXd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 06:23:33 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:49279 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168Ab3C0KXc (ORCPT
+	id S1754426Ab3C0KZI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 06:25:08 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50601 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750695Ab3C0KZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 06:23:32 -0400
-Message-ID: <5152C83F.6060509@linux.vnet.ibm.com>
-Date: Wed, 27 Mar 2013 15:51:51 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Wed, 27 Mar 2013 06:25:07 -0400
+Date: Wed, 27 Mar 2013 10:24:57 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warnings after merge of the regmap tree
+Message-ID: <20130327102456.GR18316@opensource.wolfsonmicro.com>
+References: <20130327154737.bdcc835ec2ea56409fa0c7e8@canb.auug.org.au>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Vincent Guittot <vincent.guittot@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        mingo@kernel.org, linux@arm.linux.org.uk, pjt@google.com,
-        santosh.shilimkar@ti.com, morten.rasmussen@arm.com,
-        chander.kashyap@linaro.org, cmetcalf@tilera.com, tony.luck@intel.com,
-        alex.shi@intel.com, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        len.brown@intel.com, arjan@linux.intel.com, amit.kucheria@linaro.org,
-        corbet@lwn.net
-Subject: Re: [RFC PATCH v3 3/6] sched: pack small tasks
-References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org> <1363955155-18382-4-git-send-email-vincent.guittot@linaro.org> <1364300782.5053.6.camel@laptop>
-In-Reply-To: <1364300782.5053.6.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032710-5490-0000-0000-0000032F7301
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YZHBoLCvxQT2MhEB"
+Content-Disposition: inline
+In-Reply-To: <20130327154737.bdcc835ec2ea56409fa0c7e8@canb.auug.org.au>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 03/26/2013 05:56 PM, Peter Zijlstra wrote:
-> On Fri, 2013-03-22 at 13:25 +0100, Vincent Guittot wrote:
->> +static bool is_buddy_busy(int cpu)
->> +{
->> +       struct rq *rq = cpu_rq(cpu);
->> +
->> +       /*
->> +        * A busy buddy is a CPU with a high load or a small load with
->> a lot of
->> +        * running tasks.
->> +        */
->> +       return (rq->avg.runnable_avg_sum >
->> +                       (rq->avg.runnable_avg_period / (rq->nr_running
->> + 2)));
->> +}
-> 
-> Why does the comment talk about load but we don't see it in the
-> equation. Also, why does nr_running matter at all? I thought we'd
-> simply bother with utilization, if fully utilized we're done etc..
-> 
+--YZHBoLCvxQT2MhEB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Peter, lets say the run-queue has 50% utilization and is running 2
-tasks. And we wish to find out if it is busy. We would compare this
-metric with the cpu power, which lets say is 100.
+On Wed, Mar 27, 2013 at 03:47:37PM +1100, Stephen Rothwell wrote:
 
-rq->util * 100 < cpu_of(rq)->power.
+> Introduced by commit 45c6a3e449ea ("regmap: cache: Provide a get address
+> of value operation").
 
-In the above scenario would we declare the cpu _not_busy? Or would we do
-the following:
+Don't know when you grabbed the tree but that's not what's there now.
 
-(rq->util * 100) * #nr_running <  cpu_of(rq)->power and conclude that it
-is just enough _busy_ to not take on more processes?
+--YZHBoLCvxQT2MhEB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-@Vincent: Yes the comment above needs to be fixed. A busy buddy is a CPU
-with *high rq utilization*, as far as the equation goes.
+iQIcBAEBAgAGBQJRUsjRAAoJELSic+t+oim9piIP/jcHwWkgTOzlUeevSTuhEaiM
+Uda233DArU4NkMq+rxFMtmjkvRTw0j4/eztwnd98BY//ip12fGme8NfLsDIFgoUZ
+SmpBY8j1x6RqXNdfWyWl29l7E74PMsgk1kMNuvmJ/7oGHSk9AoL1PdqYDz4yVoOZ
+ZkGhhP+YXB0aTZB2zHoWMHLWRykohEW5xXCoaYiBObmmWQ3AdJL2E7yZ2gW3uu63
+6Kl1OZ/rvFNhObQrgA9pPkpiBGBycgiKlqhZT4BPqpq8Swrt18cMg8nM1DtEaDq5
+DQUzeheX0oFf8Nf50VHOGCaHfvViG/KrLCnr4lIqvYE5xHIC1tem3xzI+NYKnmov
+U+bI+RtkcQHGfw3ejT0ll/PMv88+VGla7+d0nwjgYlb80s1LNPLihHxzzcQY6rKE
+ux8l8qu6aifGxB9ShMOPp9jlLZ+aFzRQBfoWyVGHGoC7bI8mISgoQelXpIN5Dg4i
+ORawP5QMW4pzt2O7m8f8r8ndfNsRhktDlyURR7f8qX2PrCJkRwQCJcO82vthaLsC
+4N58AQ8RayBbIZdj0eA9+st1T4CpNaggNyejPlBP3cJxJLT98VKAgIU+IrRlVksW
+ucefuxm3kz0/qj1WZvttOE8Pl2+0SwFgx5A5nBoRk4Nbn7VRABcludSrzDYcp3+C
+0WD2LlIS/tlcte1zHWht
+=MXJz
+-----END PGP SIGNATURE-----
 
-Regards
-Preeti U Murthy
-
+--YZHBoLCvxQT2MhEB--
