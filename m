@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab3C0LjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 07:39:13 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:36623 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534Ab3C0LjL (ORCPT
+	id S1752423Ab3C0LmJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 07:42:09 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:44469 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659Ab3C0LmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 07:39:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130326211520.GF2082@quack.suse.cz>
-References: <514EC323.7050002@gmail.com>
-	<20130326211520.GF2082@quack.suse.cz>
-Date: Wed, 27 Mar 2013 12:39:10 +0100
-Message-ID: <CANGUGtD9BNQO9pvO+yeKHc0qojk61fKYDgKm8kfWzu8pCk=YJw@mail.gmail.com>
-Subject: Re: [RFC] fsfreeze: moving from uniterruptible to killable
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 27 Mar 2013 07:42:07 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: cw00.choi@samsung.com, myungjoo.ham@samsung.com, sachin.kamat@linaro.org,
+        patches@linaro.org
+Subject: [PATCH 1/2] extcon: max77693: Fix return value
+Date: Wed, 27 Mar 2013 16:53:29 +0530
+Message-Id: <1364383410-15093-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/26 Jan Kara <jack@suse.cz>:
-> On Sun 24-03-13 10:10:59, Marco Stornelli wrote:
->> When a fs is frozen, a process can hang because we wait in
->> uniterruptible state. We give the user the possibility to kill the process.
->   Yes, but it needs slightly more work as you probably know... (bailing out
-> properly when the signal arrives).
->
->                                                                 Honza
->
+Return the value obtained from the function instead of hardcoding.
+Silences the following warning:
+drivers/extcon/extcon-max77693.c:297 max77693_muic_set_path()
+info: why not propagate 'ret' from max77693_update_reg() instead of (-11)?
+drivers/extcon/extcon-max77693.c:310 max77693_muic_set_path()
+info: why not propagate 'ret' from max77693_update_reg() instead of (-11)?
 
-Of course, indeed, it was only an RFC to start a discussion, not a
-patch :) The point was: is this kind of change a behaviour that can
-break user-space in some way? IMHO no, but I'd like to have a
-discussion about that before to start coding. What do you think?
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ drivers/extcon/extcon-max77693.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Marco
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index 8f3c947..894e20e 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -294,7 +294,7 @@ static int max77693_muic_set_path(struct max77693_muic_info *info,
+ 			MAX77693_MUIC_REG_CTRL1, ctrl1, COMP_SW_MASK);
+ 	if (ret < 0) {
+ 		dev_err(info->dev, "failed to update MUIC register\n");
+-		return -EAGAIN;
++		return ret;
+ 	}
+ 
+ 	if (attached)
+@@ -307,7 +307,7 @@ static int max77693_muic_set_path(struct max77693_muic_info *info,
+ 			CONTROL2_LOWPWR_MASK | CONTROL2_CPEN_MASK);
+ 	if (ret < 0) {
+ 		dev_err(info->dev, "failed to update MUIC register\n");
+-		return -EAGAIN;
++		return ret;
+ 	}
+ 
+ 	dev_info(info->dev,
+-- 
+1.7.4.1
+
