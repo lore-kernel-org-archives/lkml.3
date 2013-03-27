@@ -1,75 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab3C0E5M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 00:57:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:6908 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754359Ab3C0E5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 00:57:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,915,1355126400"; 
-   d="scan'208";a="276466459"
-Message-ID: <51527C17.3070901@intel.com>
-Date: Wed, 27 Mar 2013 12:56:55 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1756745Ab3C0FDM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 01:03:12 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48451 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692Ab3C0FDL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 01:03:11 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <51527D74.9080209@jp.fujitsu.com>
+Date: Wed, 27 Mar 2013 14:02:44 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        mingo@kernel.org, linux@arm.linux.org.uk, pjt@google.com,
-        santosh.shilimkar@ti.com, morten.rasmussen@arm.com,
-        chander.kashyap@linaro.org, cmetcalf@tilera.com, tony.luck@intel.com,
-        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
-        amit.kucheria@linaro.org, corbet@lwn.net
-Subject: Re: [RFC PATCH v3 5/6] sched: pack the idle load balance
-References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org> <1363955155-18382-6-git-send-email-vincent.guittot@linaro.org> <1364302359.5053.21.camel@laptop> <CAKfTPtD=_oS5gJeynUG=ft-Y1zEdxZEMhUPH9hSXx+H2pi4xgA@mail.gmail.com> <1364308932.5053.46.camel@laptop> <CAKfTPtDo3dmEZU-R62unQH9j5CxZWJj+Ws5CTBptOzTohkNJMA@mail.gmail.com>
-In-Reply-To: <CAKfTPtDo3dmEZU-R62unQH9j5CxZWJj+Ws5CTBptOzTohkNJMA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: joro@8bytes.org
+CC: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        dwmw2@infradead.org, kexec@lists.infradead.org
+Subject: Re: [PATCH] intel-iommu: Synchronize gcmd value with global command
+ register
+References: <1363829556-2128-1-git-send-email-indou.takao@jp.fujitsu.com> <20130326144629.GB2727@8bytes.org>
+In-Reply-To: <20130326144629.GB2727@8bytes.org>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2013 11:55 PM, Vincent Guittot wrote:
->> > So extrapolating that to a 4+4 big-little you'd get something like:
->> >
->> >       |   little  A9  ||   big A15     |
->> >       | 0 | 1 | 2 | 3 || 4 | 5 | 6 | 7 |
->> > ------+---+---+---+---++---+---+---+---+
->> > buddy | 0 | 0 | 0 | 0 || 0 | 4 | 4 | 4 |
->> >
->> > Right?
-> yes
+(2013/03/26 23:46), Joerg Roedel wrote:
+> On Thu, Mar 21, 2013 at 10:32:36AM +0900, Takao Indoh wrote:
+>> In this function, clearing IRE bit in iommu->gcmd and writing it to
+>> global command register. But initial value of iommu->gcmd is zero, so
+>> this writel means clearing all bits in global command register.
 > 
->> >
->> > So supposing the current ILB is 6, we'll only check 4, not 0-3, even
->> > though there might be a perfectly idle cpu in there.
-> We will check 4,5,7 at MC level in order to pack in the group of A15
-> (because they are not sharing the same power domain). If none of them
-> are idle, we will look at CPU level and will check CPUs 0-3.
-
-So you increase a fixed step here.
+> Seems weird. Why is the value of gcmd zero in your case? The usage of
+> this register is well encapsulated by the different parts of the VT-d
+> driver. There are other places which enable/disable translation and qpi
+> the same way it is done with interrupt remapping. So it looks to me that
+> it is unlikely that gcmd is really zero in your case.
 > 
->> >
->> > Also, your scheme fails to pack when cpus 0,4 are filled, even when
->> > there's idle cores around.
-> The primary target is to pack the tasks only when we are in a not busy
-> system so you will have a power improvement without performance
-> decrease. is_light_task function returns false and  is_buddy_busy
-> function true before the buddy is fully loaded and the scheduler will
-> fall back into the default behavior which spreads tasks and races to
-> idle.
-> 
-> We can extend the buddy CPU and the packing mechanism to fill one CPU
-> before filling another buddy but it's not always the best choice for
-> performance and/or power and thus it will imply to have a knob to
-> select this full packing mode.
+> Can you explain that more and also describe what the actual misbehavior
+> is you are trying to fix here?
 
-Just one buddy to pack tasks for whole level cpus definitely has
-scalability problem. That is not good for powersaving in most of scenarios.
+Sure.
+At first, please see the debug patch below.
+
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index af8904d..3ffb029 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -484,12 +484,15 @@ static void iommu_disable_irq_remapping(struct intel_iommu *iommu)
+ 	if (!(sts & DMA_GSTS_IRES))
+ 		goto end;
+ 
++	printk("DEBUG1: %08x\n", sts);
++
+ 	iommu->gcmd &= ~DMA_GCMD_IRE;
+ 	writel(iommu->gcmd, iommu->reg + DMAR_GCMD_REG);
+ 
+ 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
+ 		      readl, !(sts & DMA_GSTS_IRES), sts);
+ 
++	printk("DEBUG2: %08x\n", sts);
+ end:
+ 	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
+ }
 
 
--- 
-Thanks Alex
+This is the result in *kdump* kernel(second kernel).
+
+DEBUG1: c7000000
+DEBUG2: 41000000
+
+After writel, TES/QIES/IRES is disabled. I think only IRES should be
+disabled here because this function is "iommu_disable_irq_remapping".
+TES and QIES should be disabled by iommu_disable_translation() and
+dmar_disable_qi() respectively.
+
+This is what I found and what I am trying to fix. Next, let's see what
+happened at boot time. Again, I'm talking about *kdump* kernel boot
+time.
+
+1. dmar_table_init() is called, and intel_iommu structure is allocated in
+   alloc_iommu().
+
+int alloc_iommu(struct dmar_drhd_unit *drhd)
+{
+        struct intel_iommu *iommu;
+(snip)
+        iommu = kzalloc(sizeof(*iommu), GFP_KERNEL);
+
+iommu->gcmd is zero here.
+
+
+2. intel_enable_irq_remapping() is called, and interrupt remapping is
+   initialized.
+
+static int __init intel_enable_irq_remapping(void)
+{
+(snip)
+        for_each_drhd_unit(drhd) {
+                struct intel_iommu *iommu = drhd->iommu;
+(snip)
+                iommu_disable_irq_remapping(iommu);
+
+
+iommu_disable_irq_remapping is called here. Note that iommu->gcmd is
+still zero because anyone doesn't touch it yet.
+
+
+static void iommu_disable_irq_remapping(struct intel_iommu *iommu)
+{
+(snip)
+        sts = dmar_readq(iommu->reg + DMAR_GSTS_REG);
+        if (!(sts & DMA_GSTS_IRES))
+                goto end;
+
+        iommu->gcmd &= ~DMA_GCMD_IRE;
+        writel(iommu->gcmd, iommu->reg + DMAR_GCMD_REG);
+
+The purpose of this code is clearing IRE bit of global command
+register to disable interrupt remapping, right?
+
+But as I wrote above, iommu->gcmd is always zero here at boot time. So
+this code means claring *all* bit of global command register. As the
+result of this, both of TE and QIE are also disabled.
+
+The root cause of this problem is mismatch between iommu->gcmd and
+global command register in the case of kdump. At boot time, initial
+value of iommu->gcmd is zero as I wrote above, but actual global command
+register is *not* zero because some bits like IRE/TE/QIE are already set
+in *first* kernel. Therefore this patch synchronize them to fix this
+problem.
+
+Did I answer your question?
+
+Thanks,
+Takao Indoh
+
