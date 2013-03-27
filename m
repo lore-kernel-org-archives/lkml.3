@@ -1,118 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab3C0PnX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 11:43:23 -0400
-Received: from sapphire.tuxdriver.com ([70.61.120.61]:60952 "EHLO
-	Linville-X1.hq.tuxdriver.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750968Ab3C0PnW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 11:43:22 -0400
-Date: Wed, 27 Mar 2013 11:43:13 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Piotr Haber <phaber@broadcom.com>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arend van Spriel <arend@broadcom.com>,
-        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>
-Subject: Re: [PATCH regression/bisected] Revert "brcmsmac: support 4313iPA"
-Message-ID: <20130327154312.GE2146@tuxdriver.com>
-References: <1363603503-2378-1-git-send-email-dh.herrmann@gmail.com>
- <51471B85.5060404@broadcom.com>
- <CANq1E4TsM6yoSt9aELFan0ayEw3PSfYCe+PEe35YFHzZ-9rTuA@mail.gmail.com>
- <20130325185821.GB17454@tuxdriver.com>
- <51516AD4.8080306@broadcom.com>
- <20130327145654.GA1868@tuxdriver.com>
- <CANq1E4TCyhpBS3XspW53jp1WxjU+i8iQwLpyy0OCL=DaHqQF+w@mail.gmail.com>
+	id S1752740Ab3C0Po7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 11:44:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62697 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751392Ab3C0Po6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 11:44:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,920,1355126400"; 
+   d="scan'208";a="309237930"
+Date: Wed, 27 Mar 2013 23:44:53 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: sparclinux@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+Message-ID: <20130327154453.GA27576@localhost>
+References: <5152d3ed.vW9X0QzDTVkW7Gck%fengguang.wu@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANq1E4TCyhpBS3XspW53jp1WxjU+i8iQwLpyy0OCL=DaHqQF+w@mail.gmail.com>
+In-Reply-To: <5152d3ed.vW9X0QzDTVkW7Gck%fengguang.wu@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 04:32:28PM +0100, David Herrmann wrote:
-> Hi John
-> 
-> On Wed, Mar 27, 2013 at 3:56 PM, John W. Linville
-> <linville@tuxdriver.com> wrote:
-> > On Tue, Mar 26, 2013 at 10:31:00AM +0100, Piotr Haber wrote:
-> >> On 03/25/13 19:58, John W. Linville wrote:
-> >> > On Mon, Mar 18, 2013 at 02:58:08PM +0100, David Herrmann wrote:
-> >> >> Hi Piotr
-> >> >>
-> >> >> On Mon, Mar 18, 2013 at 2:49 PM, Piotr Haber <phaber@broadcom.com> wrote:
-> >> >>> On 03/18/13 11:45, David Herrmann wrote:
-> >> >>>> This reverts commit b6fc28a158076ca2764edc9a6d1e1402f56e1c0c. It breaks
-> >> >>>> wireless AP reconnection on: (14e4:4727)
-> >> >>>>   Broadcom Corporation BCM4313 802.11b/g/n Wireless LAN Controller
-> >> >>>>
-> >> >>>> Any attempt to reconnect to an AP results in timeouts no matter how near to the
-> >> >>>> AP I am:
-> >> >>>>  00:10:40 $nb kernel: wlan0: authenticate with 00:18:39:0a:8e:23
-> >> >>>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 1/3)
-> >> >>>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 2/3)
-> >> >>>>  00:10:41 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 3/3)
-> >> >>>>  00:10:41 $nb kernel: wlan0: authentication with 00:18:39:0a:8e:23 timed out
-> >> >>>> ---
-> >> >>>> Hi
-> >> >>>>
-> >> >>>> I tried coming up with a fix instead of reverting this commit, but the commit is
-> >> >>>> way to big for me to understand what's going on. Sorry.
-> >> >>>>
-> >> >>>> With linux-3.8 connecting to an AP broke on my machine. I could connect to an AP
-> >> >>>> one time, but any further attempt resulted in:
-> >> >>>>  00:10:40 $nb kernel: wlan0: authenticate with 00:18:39:0a:8e:23
-> >> >>>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 1/3)
-> >> >>>>  00:10:40 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 2/3)
-> >> >>>>  00:10:41 $nb kernel: wlan0: direct probe to 00:18:39:0a:8e:23 (try 3/3)
-> >> >>>>  00:10:41 $nb kernel: wlan0: authentication with 00:18:39:0a:8e:23 timed out
-> >> >>>>
-> >> >>>> Even sitting right next to the AP didn't help so I started bisecting and it
-> >> >>>> turned out to be:
-> >> >>>>   "brcmsmac: support 4313iPA" b6fc28a158076ca2764edc9a6d1e1402f56e1c0c
-> >> >>>> Please revert it.
-> >> >>>>
-> >> >>>> Thanks
-> >> >>>> David
-> >> >>>>
-> >> >>> Hi,
-> >> >>> unfortunately this is not a first report of this patch breaking 4313 for some users.
-> >> >>> I'm pretty confident that it is hardware revision related as we have 4313ePA and iPA boards running
-> >> >>> successfully in our test setup.
-> >> >>> Could you aid us in effort of finding the problem by supplying the contents of this debugfs file:
-> >> >>> <debugfs_mount>/brcmsmac/bcma0:0/hardware
-> >> >>
-> >> >> Hi
-> >> >>
-> >> >> $ cat /sys/kernel/debug/brcmsmac/bcma0\:0/hardware
-> >> >> board vendor: 185f
-> >> >> board type: 51a
-> >> >> board revision: 1408
-> >> >> board flags: 8402a01
-> >> >> board flags2: 880
-> >> >> firmware revision: 262032b
-> >> >>
-> >> >> I can also try partial reverts of that commit, but I really don't know
-> >> >> which parts might be important.
-> >> >
-> >> > Are we going to see a fix for this (very) soon?  Or should I just go
-> >> > ahead and revert this patch?
-> >> >
-> >> I cannot reproduce the issue on a set of devices we have here (3 different 4313 ePA models).
-> >> Some of the devices that are reported to be broken are being shipped to us.
-> >> So I would say we need around 2 weeks at least to resolve this (if we reproduce the problem and find
-> >> a fix).
-> >> Not sure this is soon enough.
-> >> If not please go ahead an revert the patch.
-> >
-> > I am reverting the patch.
-> 
-> Can you CC stable? Otherwise I will try to sent it to them after you applied it.
+Greetings,
 
-Sorry, I already pushed it out to kernel.org.  I would prefer not to modify my repository now.
+The below errors show up in both upstream and linux-next.
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+   make ARCH=sparc allyesconfig
+   make ARCH=sparc
+
+   In file included from usr/include/linux/genetlink.h:4:0,
+                    from Documentation/accounting/getdelays.c:27:
+>> usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:28:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:29:1: error: unknown type name '__u32'
+>> usr/include/linux/types.h:30:1: error: unknown type name '__u32'
+>> usr/include/linux/types.h:31:1: error: unknown type name '__u64'
+>> usr/include/linux/types.h:32:1: error: unknown type name '__u64'
+>> usr/include/linux/types.h:34:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:35:1: error: unknown type name '__u32'
+   In file included from usr/include/linux/genetlink.h:5:0,
+                    from Documentation/accounting/getdelays.c:27:
+>> usr/include/linux/netlink.h:37:2: error: unknown type name '__u32'
+>> usr/include/linux/netlink.h:38:9: error: unknown type name '__u32'
+>> usr/include/linux/netlink.h:42:2: error: unknown type name '__u32'
+>> usr/include/linux/netlink.h:43:2: error: unknown type name '__u16'
+>> usr/include/linux/netlink.h:44:2: error: unknown type name '__u16'
+>> usr/include/linux/netlink.h:45:2: error: unknown type name '__u32'
+>> usr/include/linux/netlink.h:46:2: error: unknown type name '__u32'
+>> usr/include/linux/netlink.h:110:2: error: unknown type name '__u32'
+>> usr/include/linux/netlink.h:130:2: error: unknown type name '__u16'
+>> usr/include/linux/netlink.h:131:2: error: unknown type name '__u16'
+   In file included from Documentation/accounting/getdelays.c:27:0:
+>> usr/include/linux/genetlink.h:13:2: error: unknown type name '__u8'
+>> usr/include/linux/genetlink.h:14:2: error: unknown type name '__u8'
+--
+   In file included from usr/include/linux/netlink.h:5:0,
+                    from Documentation/connector/ucon.c:28:
+>> usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:28:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:29:1: error: unknown type name '__u32'
+>> usr/include/linux/types.h:30:1: error: unknown type name '__u32'
+>> usr/include/linux/types.h:31:1: error: unknown type name '__u64'
+>> usr/include/linux/types.h:32:1: error: unknown type name '__u64'
+>> usr/include/linux/types.h:34:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:35:1: error: unknown type name '__u32'
+   In file included from Documentation/connector/ucon.c:28:0:
+>> usr/include/linux/netlink.h:37:2: error: unknown type name '__u32'
+>> usr/include/linux/netlink.h:38:9: error: unknown type name '__u32'
+>> usr/include/linux/netlink.h:42:2: error: unknown type name '__u32'
+>> usr/include/linux/netlink.h:43:2: error: unknown type name '__u16'
+>> usr/include/linux/netlink.h:44:2: error: unknown type name '__u16'
+>> usr/include/linux/netlink.h:45:2: error: unknown type name '__u32'
+>> usr/include/linux/netlink.h:46:2: error: unknown type name '__u32'
+>> usr/include/linux/netlink.h:110:2: error: unknown type name '__u32'
+>> usr/include/linux/netlink.h:130:2: error: unknown type name '__u16'
+>> usr/include/linux/netlink.h:131:2: error: unknown type name '__u16'
+   In file included from usr/include/linux/rtnetlink.h:6:0,
+                    from Documentation/connector/ucon.c:29:
+>> usr/include/linux/if_link.h:9:2: error: unknown type name '__u32'
+>> usr/include/linux/if_link.h:10:2: error: unknown type name '__u32'
+--
+   In file included from usr/include/linux/uuid.h:24:0,
+                    from usr/include/linux/mei.h:70,
+                    from Documentation/misc-devices/mei/mei-amt-version.c:77:
+>> usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:28:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:29:1: error: unknown type name '__u32'
+>> usr/include/linux/types.h:30:1: error: unknown type name '__u32'
+>> usr/include/linux/types.h:31:1: error: unknown type name '__u64'
+>> usr/include/linux/types.h:32:1: error: unknown type name '__u64'
+>> usr/include/linux/types.h:34:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:35:1: error: unknown type name '__u32'
+   In file included from usr/include/linux/mei.h:70:0,
+                    from Documentation/misc-devices/mei/mei-amt-version.c:77:
+>> usr/include/linux/uuid.h:28:2: error: unknown type name '__u8'
+>> usr/include/linux/uuid.h:32:2: error: unknown type name '__u8'
+   In file included from Documentation/misc-devices/mei/mei-amt-version.c:77:0:
+>> usr/include/linux/mei.h:95:2: error: unknown type name '__u32'
+>> usr/include/linux/mei.h:96:2: error: unknown type name '__u8'
+>> usr/include/linux/mei.h:97:2: error: unknown type name '__u8'
+--
+   In file included from usr/include/linux/if.h:22:0,
+                    from Documentation/networking/ifenslave.c:161:
+>> usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:28:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:29:1: error: unknown type name '__u32'
+>> usr/include/linux/types.h:30:1: error: unknown type name '__u32'
+>> usr/include/linux/types.h:31:1: error: unknown type name '__u64'
+>> usr/include/linux/types.h:32:1: error: unknown type name '__u64'
+>> usr/include/linux/types.h:34:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:35:1: error: unknown type name '__u32'
+   In file included from Documentation/networking/ifenslave.c:164:0:
+>> usr/include/linux/if_bonding.h:96:2: error: unknown type name '__s32'
+>> usr/include/linux/if_bonding.h:97:2: error: unknown type name '__s32'
+>> usr/include/linux/if_bonding.h:98:2: error: unknown type name '__s32'
+>> usr/include/linux/if_bonding.h:102:2: error: unknown type name '__s32'
+>> usr/include/linux/if_bonding.h:104:2: error: unknown type name '__s8'
+>> usr/include/linux/if_bonding.h:105:2: error: unknown type name '__s8'
+>> usr/include/linux/if_bonding.h:106:2: error: unknown type name '__u32'
+>> usr/include/linux/if_bonding.h:110:2: error: unknown type name '__u16'
+>> usr/include/linux/if_bonding.h:111:2: error: unknown type name '__u16'
+>> usr/include/linux/if_bonding.h:112:2: error: unknown type name '__u16'
+>> usr/include/linux/if_bonding.h:113:2: error: unknown type name '__u16'
+>> usr/include/linux/if_bonding.h:114:2: error: unknown type name '__u8'
+   In file included from Documentation/networking/ifenslave.c:171:0:
+--
+   In file included from Documentation/spi/spidev_test.c:21:0:
+>> usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:28:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:29:1: error: unknown type name '__u32'
+>> usr/include/linux/types.h:30:1: error: unknown type name '__u32'
+>> usr/include/linux/types.h:31:1: error: unknown type name '__u64'
+>> usr/include/linux/types.h:32:1: error: unknown type name '__u64'
+>> usr/include/linux/types.h:34:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:35:1: error: unknown type name '__u32'
+   In file included from Documentation/spi/spidev_test.c:22:0:
+>> usr/include/linux/spi/spidev.h:86:2: error: unknown type name '__u64'
+>> usr/include/linux/spi/spidev.h:87:2: error: unknown type name '__u64'
+>> usr/include/linux/spi/spidev.h:89:2: error: unknown type name '__u32'
+>> usr/include/linux/spi/spidev.h:90:2: error: unknown type name '__u32'
+>> usr/include/linux/spi/spidev.h:92:2: error: unknown type name '__u16'
+>> usr/include/linux/spi/spidev.h:93:2: error: unknown type name '__u8'
+>> usr/include/linux/spi/spidev.h:94:2: error: unknown type name '__u8'
+>> usr/include/linux/spi/spidev.h:95:2: error: unknown type name '__u32'
+   Documentation/spi/spidev_test.c: In function 'main':
+>> Documentation/spi/spidev_test.c:171:18: error: '__u8' undeclared (first use in this function)
+   Documentation/spi/spidev_test.c:171:18: note: each undeclared identifier is reported only once for each function it appears in
+>> Documentation/spi/spidev_test.c:193:18: error: '__u32' undeclared (first use in this function)
+--
+   In file included from Documentation/spi/spidev_fdx.c:11:0:
+>> usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:28:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:29:1: error: unknown type name '__u32'
+>> usr/include/linux/types.h:30:1: error: unknown type name '__u32'
+>> usr/include/linux/types.h:31:1: error: unknown type name '__u64'
+>> usr/include/linux/types.h:32:1: error: unknown type name '__u64'
+>> usr/include/linux/types.h:34:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:35:1: error: unknown type name '__u32'
+   In file included from Documentation/spi/spidev_fdx.c:12:0:
+>> usr/include/linux/spi/spidev.h:86:2: error: unknown type name '__u64'
+>> usr/include/linux/spi/spidev.h:87:2: error: unknown type name '__u64'
+>> usr/include/linux/spi/spidev.h:89:2: error: unknown type name '__u32'
+>> usr/include/linux/spi/spidev.h:90:2: error: unknown type name '__u32'
+>> usr/include/linux/spi/spidev.h:92:2: error: unknown type name '__u16'
+>> usr/include/linux/spi/spidev.h:93:2: error: unknown type name '__u8'
+>> usr/include/linux/spi/spidev.h:94:2: error: unknown type name '__u8'
+>> usr/include/linux/spi/spidev.h:95:2: error: unknown type name '__u32'
+   Documentation/spi/spidev_fdx.c: In function 'dumpstat':
+>> Documentation/spi/spidev_fdx.c:81:2: error: unknown type name '__u8'
+>> Documentation/spi/spidev_fdx.c:82:2: error: unknown type name '__u32'
+>> Documentation/spi/spidev_fdx.c:84:16: error: '__u8' undeclared (first use in this function)
+   Documentation/spi/spidev_fdx.c:84:16: note: each undeclared identifier is reported only once for each function it appears in
+>> Documentation/spi/spidev_fdx.c:96:16: error: '__u32' undeclared (first use in this function)
+--
+   In file included from usr/include/linux/errqueue.h:4:0,
+                    from Documentation/networking/timestamping/timestamping.c:46:
+>> usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:28:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:29:1: error: unknown type name '__u32'
+>> usr/include/linux/types.h:30:1: error: unknown type name '__u32'
+>> usr/include/linux/types.h:31:1: error: unknown type name '__u64'
+>> usr/include/linux/types.h:32:1: error: unknown type name '__u64'
+>> usr/include/linux/types.h:34:1: error: unknown type name '__u16'
+>> usr/include/linux/types.h:35:1: error: unknown type name '__u32'
+   In file included from Documentation/networking/timestamping/timestamping.c:46:0:
+>> usr/include/linux/errqueue.h:7:2: error: unknown type name '__u32'
+>> usr/include/linux/errqueue.h:8:2: error: unknown type name '__u8'
+>> usr/include/linux/errqueue.h:9:2: error: unknown type name '__u8'
+>> usr/include/linux/errqueue.h:10:2: error: unknown type name '__u8'
+>> usr/include/linux/errqueue.h:11:2: error: unknown type name '__u8'
+>> usr/include/linux/errqueue.h:12:2: error: unknown type name '__u32'
+>> usr/include/linux/errqueue.h:13:2: error: unknown type name '__u32'
+
+It's bisected down to upstream commit b87fc3e6e2e ("Merge tag 'staging-3.8-rc3' of
+git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging). However
+it's possibly a wrong bisect because there are other build errors in
+the parent commits and they may hide these errors.
+
+Thanks,
+Fengguang
+---
+0-DAY kernel build testing backend              Open Source Technology Center
+http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
