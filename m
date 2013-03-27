@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab3C0QsN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 12:48:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63314 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752261Ab3C0QsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 12:48:12 -0400
-Date: Wed, 27 Mar 2013 12:48:04 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 1/6] idr: introduce idr_alloc_cyclic
-Message-ID: <20130327124804.3ceef49a@tlielax.poochiereds.net>
-In-Reply-To: <20130327162553.GB7395@htj.dyndns.org>
-References: <1364390288-30968-1-git-send-email-jlayton@redhat.com>
-	<1364390288-30968-2-git-send-email-jlayton@redhat.com>
-	<20130327162553.GB7395@htj.dyndns.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752702Ab3C0QtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 12:49:20 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:43393 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab3C0QtS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 12:49:18 -0400
+From: Hong Zhiguo <honkiko@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, linux-security-module@vger.kernel.org,
+        davem@davemloft.net, tgraf@suug.ch
+Subject: [PATCH 2/6] audit: replace obsolete NLMSG_* with type safe nlmsg_*
+Date: Thu, 28 Mar 2013 00:49:06 +0800
+Message-Id: <1364402946-32715-1-git-send-email-honkiko@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Mar 2013 09:25:53 -0700
-Tejun Heo <tj@kernel.org> wrote:
+Signed-off-by: Hong Zhiguo <honkiko@gmail.com>
+---
+ kernel/audit.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-> Hello, Jeff.
-> 
-> On Wed, Mar 27, 2013 at 09:18:03AM -0400, Jeff Layton wrote:
-> > + * Note that people using cyclic allocation to avoid premature reuse of an
-> > + * already-used ID may be in for a nasty surprise after idr->cur wraps. The
-> > + * IDR code is designed to avoid unnecessary allocations. If there is space
-> > + * in an existing layer that holds high IDs then it will return one of those
-> > + * instead of allocating a new layer at the bottom of the range.
-> 
-> Ooh, does it?  Where?
-> 
-
-That's what I gathered from looking at idr_get_empty_slot. I could be
-wrong here, so please correct me if I am. The IDR internals are really
-hard to follow...
-
-In any case, it looks like it only tries to allocate a new layer if:
-
-idr->top is empty
-
-...or...
-
-while (id > idr_max(layers)) {
-...
-}
-
-After the wrap, idr->top won't be empty if we have at least one layer
-still in use. We start with id = starting_id, which after wrap will be
-much lower than idr_max() at that point (right?).
-
-So we'll skip the while loop and fall right into sub_alloc and will
-quite possibly end up allocating a slot out of the current layer, which
-is almost certainly not near the bottom of the range.
-
-Again, I'm far from sure of my understanding of the internals here, so
-please do correct me if that's not right...
-
-> > +int idr_alloc_cyclic(struct idr *idr, void *ptr, int start, int end,
-> > +			gfp_t gfp_mask)
-> > +{
-> > +	int id;
-> > +	int cur = idr->cur;
-> > +
-> > +	if (unlikely(start > cur))
-> > +		cur = start;
-> > +
-> > +	id = idr_alloc(idr, ptr, cur, end, gfp_mask);
-> 
-> Would max(id->cur, start) be easier to follow?
-> 
-
-Sure. I also noticed that the kerneldoc has an extra parm in it, so I
-need to fix that too.
-
-> > +	if (id == -ENOSPC)
-> > +		id = idr_alloc(idr, ptr, start, end, gfp_mask);
-> > +
-> > +	if (likely(id >= 0))
-> > +		idr->cur = id + 1;
-> 
-> If @id is INT_MAX, idr->cur will be -1 which is okay as start > cur
-> test above will correct it on the next iteration but maybe we can do
-> idr->cur = max(id + 1, 0); for clarity?
-> 
-
-We could, but that means we'll have to evaluate that max() on every
-call into here. I think it's more efficient overall to just do the
-retry when we hit INT_MAX since that should be pretty rare.
-
+diff --git a/kernel/audit.c b/kernel/audit.c
+index d596e53..4dbb047 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -58,7 +58,7 @@
+ #ifdef CONFIG_SECURITY
+ #include <linux/security.h>
+ #endif
+-#include <linux/netlink.h>
++#include <net/netlink.h>
+ #include <linux/freezer.h>
+ #include <linux/tty.h>
+ #include <linux/pid_namespace.h>
+@@ -910,7 +910,7 @@ static void audit_receive_skb(struct sk_buff *skb)
+ {
+ 	struct nlmsghdr *nlh;
+ 	/*
+-	 * len MUST be signed for NLMSG_NEXT to be able to dec it below 0
++	 * len MUST be signed for nlmsg_next to be able to dec it below 0
+ 	 * if the nlmsg_len was not aligned
+ 	 */
+ 	int len;
+@@ -919,13 +919,13 @@ static void audit_receive_skb(struct sk_buff *skb)
+ 	nlh = nlmsg_hdr(skb);
+ 	len = skb->len;
+ 
+-	while (NLMSG_OK(nlh, len)) {
++	while (nlmsg_ok(nlh, len)) {
+ 		err = audit_receive_msg(skb, nlh);
+ 		/* if err or if this message says it wants a response */
+ 		if (err || (nlh->nlmsg_flags & NLM_F_ACK))
+ 			netlink_ack(skb, nlh, err);
+ 
+-		nlh = NLMSG_NEXT(nlh, len);
++		nlh = nlmsg_next(nlh, len);
+ 	}
+ }
+ 
+@@ -1483,7 +1483,7 @@ void audit_log_end(struct audit_buffer *ab)
+ 		audit_log_lost("rate limit exceeded");
+ 	} else {
+ 		struct nlmsghdr *nlh = nlmsg_hdr(ab->skb);
+-		nlh->nlmsg_len = ab->skb->len - NLMSG_SPACE(0);
++		nlh->nlmsg_len = ab->skb->len - NLMSG_HDRLEN;
+ 
+ 		if (audit_pid) {
+ 			skb_queue_tail(&audit_skb_queue, ab->skb);
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.7.10.4
+
