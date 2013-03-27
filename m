@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab3C0Itn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 04:49:43 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:39721
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754953Ab3C0Itl (ORCPT
+	id S1755207Ab3C0Iuh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 04:50:37 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:56500 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754407Ab3C0Iqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 04:49:41 -0400
-Message-ID: <1364374174.5053.59.camel@laptop>
-Subject: Re: [RFC PATCH v3 5/6] sched: pack the idle load balance
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        mingo@kernel.org, linux@arm.linux.org.uk, pjt@google.com,
-        santosh.shilimkar@ti.com, morten.rasmussen@arm.com,
-        chander.kashyap@linaro.org, cmetcalf@tilera.com, tony.luck@intel.com,
-        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, len.brown@intel.com, arjan@linux.intel.com,
-        amit.kucheria@linaro.org, corbet@lwn.net,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Wed, 27 Mar 2013 09:49:34 +0100
-In-Reply-To: <51527C17.3070901@intel.com>
-References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org>
-	 <1363955155-18382-6-git-send-email-vincent.guittot@linaro.org>
-	 <1364302359.5053.21.camel@laptop>
-	 <CAKfTPtD=_oS5gJeynUG=ft-Y1zEdxZEMhUPH9hSXx+H2pi4xgA@mail.gmail.com>
-	 <1364308932.5053.46.camel@laptop>
-	 <CAKfTPtDo3dmEZU-R62unQH9j5CxZWJj+Ws5CTBptOzTohkNJMA@mail.gmail.com>
-	 <51527C17.3070901@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Mar 2013 04:46:47 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-fbdev@vger.kernel.org, florianschandinat@gmx.de,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH 5/6] video: vt8500: Adjust contrast in wm8505 framebuffer driver.
+Date: Wed, 27 Mar 2013 21:47:00 +1300
+Message-Id: <1364374021-10844-6-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1364374021-10844-1-git-send-email-linux@prisktech.co.nz>
+References: <1364374021-10844-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-27 at 12:56 +0800, Alex Shi wrote:
+The contrast value was typo'd on the original commit (0x80 instead of
+0x08). Following feedback from an enduser, a value of 0x10 seems more
+suitable due to the default backlight being <100%.
 
-> Just one buddy to pack tasks for whole level cpus definitely has
-> scalability problem.
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+---
+ drivers/video/wm8505fb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Right, but note we already have this scalability problem in the form of
-the ILB. Some people were working on sorting that but then someone
-changed jobs and I think it fell in some deep and dark crack.
-
-Venki, Suresh?
+diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
+index b94ebc9..5057457 100644
+--- a/drivers/video/wm8505fb.c
++++ b/drivers/video/wm8505fb.c
+@@ -373,7 +373,7 @@ static int wm8505fb_probe(struct platform_device *pdev)
+ 	fbi->fb.screen_base		= fb_mem_virt;
+ 	fbi->fb.screen_size		= fb_mem_len;
+ 
+-	fbi->contrast = 0x80;
++	fbi->contrast = 0x10;
+ 	ret = wm8505fb_set_par(&fbi->fb);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Failed to set parameters\n");
+-- 
+1.7.9.5
 
