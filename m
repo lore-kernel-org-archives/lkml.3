@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab3C0AeX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 20:34:23 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:10988 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108Ab3C0AeW (ORCPT
+	id S1754635Ab3C0Agq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 20:36:46 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39254 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477Ab3C0Agp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 20:34:22 -0400
-Message-ID: <1364344455.2922.4.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH 138/150] sfc: Disable soft interrupt handling during
- efx_device_detach_sync()
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Luis Henriques <luis.henriques@canonical.com>
-CC: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        <kernel-team@lists.ubuntu.com>
-Date: Wed, 27 Mar 2013 00:34:15 +0000
-In-Reply-To: <1364311249-14454-139-git-send-email-luis.henriques@canonical.com>
-References: <1364311249-14454-1-git-send-email-luis.henriques@canonical.com>
-	 <1364311249-14454-139-git-send-email-luis.henriques@canonical.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Mar 2013 20:36:45 -0400
+Date: Wed, 27 Mar 2013 00:36:43 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] vfs fixes
+Message-ID: <20130327003643.GX21522@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19748.005
-X-TM-AS-Result: No--17.841100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-26 at 15:20 +0000, Luis Henriques wrote:
-> 3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
-[...]
+-stable fodder; assorted deadlock fixes.  Please, pull from
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
 
-I applied all 16 of the sfc patches on top of 3.5.7.8 and the result
-passed our standard 'overnight' test suite for in-tree drivers.
+Shortlog:
+Al Viro (3):
+      Don't bother with redoing rw_verify_area() from default_file_splice_from()
+      Nest rename_lock inside vfsmount_lock
+      vt: synchronize_rcu() under spinlock is not nice...
 
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Diffstat:
+ drivers/tty/vt/vc_screen.c |    6 ++++--
+ fs/dcache.c                |   16 +++++++++++-----
+ fs/internal.h              |    5 +++++
+ fs/read_write.c            |   25 +++++++++++++++++++++++++
+ fs/splice.c                |    4 +++-
+ 5 files changed, 48 insertions(+), 8 deletions(-)
 
