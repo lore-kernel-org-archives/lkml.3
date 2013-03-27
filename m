@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab3C0TOZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 15:14:25 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:54527 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907Ab3C0TOW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 15:14:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
-Date: Wed, 27 Mar 2013 19:14:13 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "nico@linaro.org" <nico@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <201303271750.52015.arnd@arndb.de> <20130327181206.GD20990@mudshark.cambridge.arm.com>
-In-Reply-To: <20130327181206.GD20990@mudshark.cambridge.arm.com>
+	id S1754126Ab3C0TU0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 15:20:26 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47105 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753696Ab3C0TUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 15:20:24 -0400
+Date: Wed, 27 Mar 2013 20:20:15 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
+ asm/8267
+Message-ID: <20130327192015.GE8385@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Joerg Roedel <joro@8bytes.org>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Ingo Molnar <mingo@kernel.org>,
+	Arnaldo Carvalho de Melo <acme@infradead.org>,
+	lkml <linux-kernel@vger.kernel.org>,
+	Stephane Eranian <eranian@google.com>,
+	Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>
+References: <20130324115556.GA4866@pd.tnic>
+ <20130324155924.GB4866@pd.tnic>
+ <20130326183452.GC27518@pd.tnic>
+ <20130327131532.GL30540@8bytes.org>
+ <1364393852.5053.74.camel@laptop>
+ <20130327143715.GY4379@linux.vnet.ibm.com>
+ <20130327163427.GN30540@8bytes.org>
+ <20130327163806.GC8385@pd.tnic>
+ <20130327180455.GA4379@linux.vnet.ibm.com>
+ <20130327190727.GD8385@pd.tnic>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303271914.13544.arnd@arndb.de>
-X-Provags-ID: V02:K0:S5il1G/MNzF9dqgbqCzxKuytbF4T40MP/YmhRCJXTRn
- JuBf4aZliau6A7jRklnbuFkMU4AxcKI5EkmrGbvWtbWnMSb2V2
- fKvpfdp9XqXA05ieelVTQLmZERqZqrvpU+6BulvF5m8TdENKJ6
- Ld8L3jD2i5tEmYozfJRzfRU7FUqsMlCwAHV9fJuKXXV0Tb+Gvh
- RHMeM5Id0K+OtrYETd7uNS5xD3teWVPPUsZrhDlMCv6TqKrfFp
- h/YYNoMjSj3/vWHPFB0muixWtaRFDMOORto0AqDbgauSBHkvLw
- RIyqbxPNYmOf1J24bfYn9fsVVCEkA8b0Bhk0GQw/Xp7yaYx3/Q
- ijVRC8VHEW7qKFYcUCR4=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130327190727.GD8385@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 March 2013, Will Deacon wrote:
-> The interface is standard. The functions have well-defined headers and can
-> be called in the same way between implementations. The difference is in the
-> semantics of the parameters. For example:
-> 
->   int cpu_off(u32 power_state);
+On Wed, Mar 27, 2013 at 08:07:27PM +0100, Borislav Petkov wrote:
+> Oh, and if one needs to brush up on RCU while doing that, there's this
+> cool thing called perfbook (whole title is too long :)) I discovered
+> while searching for your 3.10 queue on k.org. :-)
 
-I think that is the opposite of well-defined :(
+And here's me contributing :-):
 
-> If you look at the power_state parameter, it's actually a struct (see struct
-> psci_power_state) with a u16 id field. The current specification describes
-> that field as `This is platform specific, the number is understood by the
-> firmware, and used to program the power controller.'.
-> 
-> So unless we get everybody to agree on the definition of that field, we
-> can't blindly plug the interfaces together. Furthermore, there are other
-> parameters like this and, as new functions are specified, I would expect
-> them to grow.
+---
+From: Borislav Petkov <bp@suse.de>
+Date: Wed, 27 Mar 2013 20:18:03 +0100
+Subject: [PATCH] Deferred Processing: Fix a typo
 
-I think it's expected that there will be vendor specific extensions,
-but any interface that is part of the standard has to be completely
-specified there, anything else is pure madness.
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ defer/defer.tex | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Perhaps we could extend the device tree binding to add the missing bits,
-and pass the values that you are supposed to pass there as properties
-of the node, but it would be much more logical to require the interface
-to be well-behaved in the first place.
+diff --git a/defer/defer.tex b/defer/defer.tex
+index cedc86e13e5c..9895b6b5fce9 100644
+--- a/defer/defer.tex
++++ b/defer/defer.tex
+@@ -4,7 +4,7 @@
+ 
+ The strategy of deferring work goes back before the dawn of recorded
+ history, and has generally been derided as procrastination or
+-even shear laziness.
++even sheer laziness.
+ However, in the last few decades have workers recognized this strategy's value
+ in simplifying and streamlining parallel algorithms~\cite{Kung80,HMassalinPhD}.
+ Believe it or not, in parallel programming, laziness often performs and
+-- 
+1.8.2.135.g7b592fa
 
-	Arnd
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
