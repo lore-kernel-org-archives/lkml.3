@@ -1,91 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab3C0GCO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 02:02:14 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50414 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab3C0GCN (ORCPT
+	id S1751477Ab3C0GFV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 02:05:21 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:62767 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750695Ab3C0GFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 02:02:13 -0400
-X-AuditID: 9c93016f-b7cecae000004cf8-bd-51528b63a394
-From: Namhyung Kim <namhyung@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code: asm/8267
-References: <20130324115556.GA4866@pd.tnic> <20130324155924.GB4866@pd.tnic>
-	<20130326183452.GC27518@pd.tnic>
-Date: Wed, 27 Mar 2013 15:02:10 +0900
-In-Reply-To: <20130326183452.GC27518@pd.tnic> (Borislav Petkov's message of
-	"Tue, 26 Mar 2013 19:34:52 +0100")
-Message-ID: <87ip4dgz31.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 27 Mar 2013 02:05:19 -0400
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: grant.likely@secretlab.ca, Magnus Damm <magnus.damm@gmail.com>,
+        horms@verge.net.au, linus.walleij@linaro.org, linux-sh@vger.kernel.org
+Date: Wed, 27 Mar 2013 15:11:14 +0900
+Message-Id: <20130327061114.3356.57465.sendpatchset@w520>
+Subject: [PATCH] gpio: em: Make use of devm functions
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav,
+From: Magnus Damm <damm@opensource.se>
 
-On Tue, 26 Mar 2013 19:34:52 +0100, Borislav Petkov wrote:
-> On Sun, Mar 24, 2013 at 04:59:24PM +0100, Borislav Petkov wrote:
->> On Sun, Mar 24, 2013 at 12:55:56PM +0100, Borislav Petkov wrote:
->> > Hi,
->> > 
->> > so I was tracing a small .c program like so:
->> > 
->> > $ ./perf record ~/test/asm
->> > 
->> > and here's what got spewed in dmesg. Kernel is plain -rc4. Any pending
->> > fixes in tip I should try?
->> > 
->> > [ 3700.194208] BUG: using smp_processor_id() in preemptible [00000000] code: asm/8333
->> > [ 3700.194226] caller is perf_event_task_ctx+0x55/0x140
->> 
->> Ok, here's the call stack I was able to reconstruct:
->> 
->> perf_event_exit_task()
->> |->perf_event_exit_task_context()
->>    |-> perf_event_task()
->>        |-> perf_event_task_event()
->> 	   |-> perf_event_task_ctx()
->> 	       |-> perf_event_task_match()
->> 		   |-> event_filter_match()
->> 		       |-> smp_processor_id() -> debug_smp_processor_id()
->
-> Ok, jolsa just rootcaused it: It is caused by
-> d610d98b5de6860feb21539726e9af7c9094151c calling perf_event_task_ctx()
-> outside of the preempt-safe protection.
+Update the Emma Mobile GPIO driver to make use of devm
+functions. This simplifies the error handling and makes
+the code more compact.
 
-Oops, my bad.  Forgot to enable CONFIG_DEBUG_PREEMPT when testing. :(
+Signed-off-by: Magnus Damm <damm@opensource.se>
+---
 
->
-> There's a straightforward fix below, what to people think?
+ Applies to linux-next tag next-20130327, written on top of:
+ [PATCH] gpio: em: Add Device Tree support
 
-Looks okay to me.  Thanks for fixing this!
-Namhyung
+ drivers/gpio/gpio-em.c |   53 +++++++++++++++++-------------------------------
+ 1 file changed, 19 insertions(+), 34 deletions(-)
 
->
-> --
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 7b4a55d41efc..f3bb3384a106 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -4455,8 +4455,11 @@ static void perf_event_task_event(struct perf_task_event *task_event)
->  next:
->  		put_cpu_ptr(pmu->pmu_cpu_context);
->  	}
-> +
-> +	preempt_disable();
->  	if (task_event->task_ctx)
->  		perf_event_task_ctx(task_event->task_ctx, task_event);
-> +	preempt_enable();
->  
->  	rcu_read_unlock();
->  }
+--- 0002/drivers/gpio/gpio-em.c
++++ work/drivers/gpio/gpio-em.c	2013-03-13 18:52:14.000000000 +0900
+@@ -245,7 +245,7 @@ static int em_gio_probe(struct platform_
+ 	const char *name = dev_name(&pdev->dev);
+ 	int ret;
+ 
+-	p = kzalloc(sizeof(*p), GFP_KERNEL);
++	p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
+ 	if (!p) {
+ 		dev_err(&pdev->dev, "failed to allocate driver data\n");
+ 		ret = -ENOMEM;
+@@ -264,21 +264,23 @@ static int em_gio_probe(struct platform_
+ 	if (!io[0] || !io[1] || !irq[0] || !irq[1]) {
+ 		dev_err(&pdev->dev, "missing IRQ or IOMEM\n");
+ 		ret = -EINVAL;
+-		goto err1;
++		goto err0;
+ 	}
+ 
+-	p->base0 = ioremap_nocache(io[0]->start, resource_size(io[0]));
++	p->base0 = devm_ioremap_nocache(&pdev->dev, io[0]->start,
++					resource_size(io[0]));
+ 	if (!p->base0) {
+ 		dev_err(&pdev->dev, "failed to remap low I/O memory\n");
+ 		ret = -ENXIO;
+-		goto err1;
++		goto err0;
+ 	}
+ 
+-	p->base1 = ioremap_nocache(io[1]->start, resource_size(io[1]));
++	p->base1 = devm_ioremap_nocache(&pdev->dev, io[1]->start,
++				   resource_size(io[1]));
+ 	if (!p->base1) {
+ 		dev_err(&pdev->dev, "failed to remap high I/O memory\n");
+ 		ret = -ENXIO;
+-		goto err2;
++		goto err0;
+ 	}
+ 
+ 	if (!pdata) {
+@@ -289,13 +291,13 @@ static int em_gio_probe(struct platform_
+ 					 &pdata->number_of_pins)) {
+ 			dev_err(&pdev->dev, "Missing ngpios OF property\n");
+ 			ret = -EINVAL;
+-			goto err3;
++			goto err0;
+ 		}
+ 
+ 		ret = of_alias_get_id(pdev->dev.of_node, "gpio");
+ 		if (ret < 0) {
+ 			dev_err(&pdev->dev, "Couldn't get OF id\n");
+-			goto err3;
++			goto err0;
+ 		}
+ 		pdata->gpio_base = ret * 32; /* 32 GPIOs per instance */
+ 	}
+@@ -327,40 +329,32 @@ static int em_gio_probe(struct platform_
+ 	if (!p->irq_domain) {
+ 		ret = -ENXIO;
+ 		dev_err(&pdev->dev, "cannot initialize irq domain\n");
+-		goto err3;
++		goto err0;
+ 	}
+ 
+-	if (request_irq(irq[0]->start, em_gio_irq_handler, 0, name, p)) {
++	if (devm_request_irq(&pdev->dev, irq[0]->start,
++			     em_gio_irq_handler, 0, name, p)) {
+ 		dev_err(&pdev->dev, "failed to request low IRQ\n");
+ 		ret = -ENOENT;
+-		goto err4;
++		goto err1;
+ 	}
+ 
+-	if (request_irq(irq[1]->start, em_gio_irq_handler, 0, name, p)) {
++	if (devm_request_irq(&pdev->dev, irq[1]->start,
++			     em_gio_irq_handler, 0, name, p)) {
+ 		dev_err(&pdev->dev, "failed to request high IRQ\n");
+ 		ret = -ENOENT;
+-		goto err5;
++		goto err1;
+ 	}
+ 
+ 	ret = gpiochip_add(gpio_chip);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to add GPIO controller\n");
+-		goto err6;
++		goto err1;
+ 	}
+ 	return 0;
+ 
+-err6:
+-	free_irq(irq[1]->start, pdev);
+-err5:
+-	free_irq(irq[0]->start, pdev);
+-err4:
+-	irq_domain_remove(p->irq_domain);
+-err3:
+-	iounmap(p->base1);
+-err2:
+-	iounmap(p->base0);
+ err1:
+-	kfree(p);
++	irq_domain_remove(p->irq_domain);
+ err0:
+ 	return ret;
+ }
+@@ -368,22 +362,13 @@ err0:
+ static int em_gio_remove(struct platform_device *pdev)
+ {
+ 	struct em_gio_priv *p = platform_get_drvdata(pdev);
+-	struct resource *irq[2];
+ 	int ret;
+ 
+ 	ret = gpiochip_remove(&p->gpio_chip);
+ 	if (ret)
+ 		return ret;
+ 
+-	irq[0] = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+-	irq[1] = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
+-
+-	free_irq(irq[1]->start, pdev);
+-	free_irq(irq[0]->start, pdev);
+ 	irq_domain_remove(p->irq_domain);
+-	iounmap(p->base1);
+-	iounmap(p->base0);
+-	kfree(p);
+ 	return 0;
+ }
+ 
