@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab3C0IlO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 04:41:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42425 "EHLO
+	id S1753022Ab3C0Imj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 04:42:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43957 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3C0IlL (ORCPT
+	with ESMTP id S1751777Ab3C0Imh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 04:41:11 -0400
-Message-ID: <1364373658.5053.52.camel@laptop>
+	Wed, 27 Mar 2013 04:42:37 -0400
+Message-ID: <1364373750.5053.54.camel@laptop>
 Subject: Re: [PATCH -mm -next] ipc,sem: fix lockdep false positive
 From: Peter Zijlstra <peterz@infradead.org>
 To: Rik van Riel <riel@surriel.com>
@@ -17,7 +17,7 @@ Cc: Michel Lespinasse <walken@google.com>,
         akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
         lwoodman@redhat.com, chegu_vinod@hp.com, Dave Jones <davej@redhat.com>,
         benisty.e@gmail.com, Ingo Molnar <mingo@redhat.com>
-Date: Wed, 27 Mar 2013 09:40:58 +0100
+Date: Wed, 27 Mar 2013 09:42:30 +0100
 In-Reply-To: <5151BC78.3030306@surriel.com>
 References: <1363809337-29718-1-git-send-email-riel@surriel.com>
 	  <5150B1C2.8090607@oracle.com>
@@ -35,28 +35,44 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 2013-03-26 at 11:19 -0400, Rik van Riel wrote:
-> That makes me wonder, how did mm_take_all_locks used to work before
-> we turned the anon_vma lock into a mutex?
+> > Maybe something like:
+> >
+> > void sma_lock(struct sem_array *sma) /* global */
+> > {
+> >       int i;
+> >
+> >       sma->global_locked = 1;
+> >       smp_wmb(); /* can we merge with the LOCK ? */
+> >       spin_lock(&sma->global_lock);
+> >
+> >       /* wait for all local locks to go away */
+> >       for (i = 0; i < sma->sem_nsems; i++)
+> >               spin_unlock_wait(&sem->sem_base[i]->lock);      
+> > }
+> >
+> > void sma_lock_one(struct sem_array *sma, int nr) /* local */
+> > {
+> >       smp_rmb(); /* pairs with wmb in sma_lock() */
+> >       if (unlikely(sma->global_locked)) { /* wait for global lock */
+> >               while (sma->global_locked)
+> >                       spin_unlock_wait(&sma->global_lock);
+> >       }
+> >       spin_lock(&sma->sem_base[nr]->lock);
+> > }
+
+I since realized there's an ordering problem with ->global_locked, we
+need to use spin_is_locked() or somesuch.
+
+Two competing sma_lock() operations will screw over the separate
+variable.
+
 > 
-> The code used to use spin_lock_nest_lock, but still has the potential
-> to overflow the preempt counter. How did that ever work right?
+> > This still has the problem of a non-preemptible section of
+> O(sem_nsems)
+> > (with the avg wait-time on the local lock). Could we make the global
+> > lock a sleeping lock?
+> 
+> Not without breaking your scheme above :)
 
-It did trigger a bunch of warnings, but early on it was understood that
-KVM would have 'few' vmas when starting and registering the
-mmu_notifier thing.. then KVM bloated into insanity.
-
-But aside from the warnings, if you overflow the regular preempt_count
-bits, nothing really bad happens because you start poking at softirq
-nesting, then hardirq etc.. all of those also disable preemption. 
-
-You'll get a few 'unexpected' side-effects for things like
-serving_softirq()/in_irq() or whatever those functions are called, but
-other than that things mostly work.
-
-I don't particularly like overflowing preempt count, but its mostly
-harmless (up to a point). The much worse offender in my book is the
-duration of the preempt_disable section thus created.
-
-Esp with everything in user control, you can basically create an
-arbitrary long non-preempt section with the semops.
+How would making sma->global_lock a mutex wreck anything?
 
