@@ -1,114 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab3C0HQL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 03:16:11 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:44110 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab3C0HQK (ORCPT
+	id S1756340Ab3C0HQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 03:16:27 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:45464 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755860Ab3C0HQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 03:16:10 -0400
+	Wed, 27 Mar 2013 03:16:26 -0400
 From: Hongbo Zhang <hongbo.zhang@linaro.org>
 To: linux@roeck-us.net, khali@linux-fr.org, lm-sensors@lm-sensors.org,
         cbou@mail.ru, dwmw2@infradead.org
 Cc: linaro-kernel@lists.linaro.org, STEricsson_nomadik_linux@list.st.com,
         linus.walleij@linaro.org, lee.jones@linaro.org,
         linux-kernel@vger.kernel.org, Hongbo Zhang <hongbo.zhang@linaro.org>
-Subject: [PATCH v7 0/5] Add ST-Ericsson AB8500 HWMON driver
-Date: Wed, 27 Mar 2013 15:13:27 +0800
-Message-Id: <1364368412-12810-1-git-send-email-hongbo.zhang@linaro.org>
+Subject: [PATCH v7 1/5] ab8500_btemp: make ab8500_btemp_get* interfaces public
+Date: Wed, 27 Mar 2013 15:13:28 +0800
+Message-Id: <1364368412-12810-2-git-send-email-hongbo.zhang@linaro.org>
 X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1364368412-12810-1-git-send-email-hongbo.zhang@linaro.org>
+References: <1364368412-12810-1-git-send-email-hongbo.zhang@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guenter and Anton,
-Only one minor update as Guenter mentioned for v6, thank you.
+Make ab8500_btemp_get_temp interface public, export it and also export the
+ab8500_btemp_get, ab8500_btemp_get_batctrl_temp interfaces, so that the ab8500
+hwmon driver can use them.
 
-v6 -> v7 changes:
-- move exporting symbols from [5/5] to [4/5], which was a mistake.
+Signed-off-by: Hongbo Zhang <hongbo.zhang@linaro.org>
+Acked-by: Anton Vorontsov <anton@enomsg.org>
+---
+ drivers/power/ab8500_btemp.c         | 5 ++++-
+ include/linux/mfd/abx500/ab8500-bm.h | 5 +++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
-v5 -> v6 changes:
-- add depend on AB8500_BM in Kconfig
-- fix wrong usage of clamp_val()
-- export symbols for module compiling
-
-v4 -> v5 changes:
-- split the old [2/3]-ab8500-re-arrange-ab8500-power-and-temperature-data into
-  new three [2/5], [3/5] and [4/5] patches.
-- hwmon driver minor coding style clean ups:
-  - {} usage in if-else statement in ab8500_read_sensor function
-  - index error fix in gpadc_monitor function
-  - fix issue of clamp_val() usage
-  - remove unnecessary else in function abx500_attrs_visible
-  - remove redundant print message about irq set up
-  - return the calling function return value directly in probe function
-
-v3 -> v4 changes:
-for patch [3/3]
-- define delays in HZ
-- update ab8500_read_sensor function, returning temp by parameter
-- remove ab8500_is_visible function
-- use clamp_val in set_min and set_max callback
-- remove unnecessary locks in remove and suspend functions
-- let abx500 and ab8500 use its own data structure
-for patch [2/3]
-- move the data tables from driver/power/ab8500_bmdata.c to
-  include/linux/power/ab8500.h
-- rename driver/power/ab8500_bmdata.c to driver/power/ab8500_bm.c
-- rename these variable names to eliminate CamelCase warnings
-- add const attribute to these data
-
-v2 -> v3 changes:
-- Add interface for converting voltage to temperature
-- Remove temp5 sensor since we cannot offer temperature read interface of it
-- Update hyst to use absolute temperature instead of a difference
-- Add the 3/3 patch
-
-v1 -> v2 changes:
-- Add Documentation/hwmon/abx500 and Documentation/hwmon/abx500
-- Make devices which cannot report milli-Celsius invisible
-- Add temp5_crit interface
-- Re-work the old find_active_thresholds() to threshold_updated()
-- Reset updated_min_alarm and updated_max_alarm at the end of each loop
-- Update the hyst mechamisn to make it works as real hyst
-- Remove non-stand attributes
-- Re-order the operations sequence inside probe and remove functions
-- Update all the lock usages to eliminate race conditions
-- Make attibutes index starts from 0
-also changes:
-- Since the old [1/2] "ARM: ux500: rename ab8500 to abx500 for hwmon driver"
-  has been merged by Samuel, so won't send it again.
-- Add another new patch "ab8500_btemp: export two symblols" as [2/2] of this
-  patch set.
-
-Hongbo Zhang (5):
-  ab8500_btemp: make ab8500_btemp_get* interfaces public
-  ab8500: power: eliminate CamelCase warning of some variables
-  ab8500: power: add const attributes to some data arrays
-  ab8500: power: export abx500_res_to_temp tables for hwmon
-  hwmon: add ST-Ericsson ABX500 hwmon driver
-
- Documentation/hwmon/ab8500           |  22 ++
- Documentation/hwmon/abx500           |  28 ++
- drivers/hwmon/Kconfig                |  13 +
- drivers/hwmon/Makefile               |   1 +
- drivers/hwmon/ab8500.c               | 206 +++++++++++++++
- drivers/hwmon/abx500.c               | 491 +++++++++++++++++++++++++++++++++++
- drivers/hwmon/abx500.h               |  69 +++++
- drivers/power/ab8500_bmdata.c        |  42 +--
- drivers/power/ab8500_btemp.c         |   5 +-
- drivers/power/ab8500_fg.c            |   4 +-
- include/linux/mfd/abx500.h           |   6 +-
- include/linux/mfd/abx500/ab8500-bm.h |   5 +
- include/linux/power/ab8500.h         |  16 ++
- 13 files changed, 885 insertions(+), 23 deletions(-)
- create mode 100644 Documentation/hwmon/ab8500
- create mode 100644 Documentation/hwmon/abx500
- create mode 100644 drivers/hwmon/ab8500.c
- create mode 100644 drivers/hwmon/abx500.c
- create mode 100644 drivers/hwmon/abx500.h
- create mode 100644 include/linux/power/ab8500.h
-
+diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
+index 20e2a7d..3359075 100644
+--- a/drivers/power/ab8500_btemp.c
++++ b/drivers/power/ab8500_btemp.c
+@@ -123,6 +123,7 @@ struct ab8500_btemp *ab8500_btemp_get(void)
+ 
+ 	return btemp;
+ }
++EXPORT_SYMBOL(ab8500_btemp_get);
+ 
+ /**
+  * ab8500_btemp_batctrl_volt_to_res() - convert batctrl voltage to resistance
+@@ -727,7 +728,7 @@ static void ab8500_btemp_periodic(struct ab8500_btemp *di,
+  *
+  * Returns battery temperature
+  */
+-static int ab8500_btemp_get_temp(struct ab8500_btemp *di)
++int ab8500_btemp_get_temp(struct ab8500_btemp *di)
+ {
+ 	int temp = 0;
+ 
+@@ -763,6 +764,7 @@ static int ab8500_btemp_get_temp(struct ab8500_btemp *di)
+ 	}
+ 	return temp;
+ }
++EXPORT_SYMBOL(ab8500_btemp_get_temp);
+ 
+ /**
+  * ab8500_btemp_get_batctrl_temp() - get the temperature
+@@ -774,6 +776,7 @@ int ab8500_btemp_get_batctrl_temp(struct ab8500_btemp *btemp)
+ {
+ 	return btemp->bat_temp * 1000;
+ }
++EXPORT_SYMBOL(ab8500_btemp_get_batctrl_temp);
+ 
+ /**
+  * ab8500_btemp_get_property() - get the btemp properties
+diff --git a/include/linux/mfd/abx500/ab8500-bm.h b/include/linux/mfd/abx500/ab8500-bm.h
+index 44310c9..4dd79f6 100644
+--- a/include/linux/mfd/abx500/ab8500-bm.h
++++ b/include/linux/mfd/abx500/ab8500-bm.h
+@@ -427,6 +427,7 @@ void ab8500_fg_reinit(void);
+ void ab8500_charger_usb_state_changed(u8 bm_usb_state, u16 mA);
+ struct ab8500_btemp *ab8500_btemp_get(void);
+ int ab8500_btemp_get_batctrl_temp(struct ab8500_btemp *btemp);
++int ab8500_btemp_get_temp(struct ab8500_btemp *btemp);
+ struct ab8500_fg *ab8500_fg_get(void);
+ int ab8500_fg_inst_curr_blocking(struct ab8500_fg *dev);
+ int ab8500_fg_inst_curr_start(struct ab8500_fg *di);
+@@ -451,6 +452,10 @@ static int ab8500_btemp_get_batctrl_temp(struct ab8500_btemp *btemp)
+ {
+ 	return 0;
+ }
++static int ab8500_btemp_get_temp(struct ab8500_btemp *btemp)
++{
++	return 0;
++}
+ struct ab8500_fg *ab8500_fg_get(void)
+ {
+ 	return NULL;
 -- 
 1.8.0
 
