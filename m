@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357Ab3C0VUb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 17:20:31 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:58799 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023Ab3C0VUa (ORCPT
+	id S1754672Ab3C0VUr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 17:20:47 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:27835 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754643Ab3C0VUq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 17:20:30 -0400
+	Wed, 27 Mar 2013 17:20:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAD6h2NSnnET95sQKhDRcQ064nwJtzWnWXb0j2guQ57ys0+sX4Q@mail.gmail.com>
-References: <1363163037-23995-1-git-send-email-haojian.zhuang@linaro.org>
-	<CACRpkdasacB-jVtzgKimEWhf0Xhm8u5jAQgN6EqNLkEE_htUrg@mail.gmail.com>
-	<CAD6h2NSnnET95sQKhDRcQ064nwJtzWnWXb0j2guQ57ys0+sX4Q@mail.gmail.com>
-Date: Wed, 27 Mar 2013 22:20:30 +0100
-Message-ID: <CACRpkdY-cpoEG95D9+kkuRBOp4We0_y=YkB=bLkCi0QJoPxA_Q@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: remove pxa pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Haojian Zhuang <haojian.zhuang@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Patch Tracking <patches@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <2912c0c3-e95f-4b2b-8aeb-2a2ba2df54dd@default>
+Date: Wed, 27 Mar 2013 14:20:11 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>
+Subject: RE: [RFC] mm: remove swapcache page early
+References: <<1364350932-12853-1-git-send-email-minchan@kernel.org>>
+In-Reply-To: <<1364350932-12853-1-git-send-email-minchan@kernel.org>>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6668.5000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 2:21 AM, Haojian Zhuang
-<haojian.zhuang@linaro.org> wrote:
-> On 14 March 2013 03:03, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Wed, Mar 13, 2013 at 9:23 AM, Haojian Zhuang
->> <haojian.zhuang@linaro.org> wrote:
->>
->>> pinctrl-pxa driver doesn't support well on DT mode. Now pinctrl-single
->>> could support DT mode & pin configuration. Use pinctrl-single driver to
->>> support MMP/PXA silicons instead.
->>>
->>> Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
->>
->> Is the switch to pinctrl-single already done for these platforms,
->> i.e. the device trees are updated to contain pinctrl-single data?
->>
->> And is ATAG code path removed, so noone needs the old driver?
->>
->> And is the defconfig or Kconfig for PXA/MMP altered to select
->> the single driver instead?
->>
->> Else I cannot merge it...
->>
->> Yours,
->> Linus Walleij
->
-> pinctrl-pxa driver is used for PXA/MMP silicons. But the old MFP driver
-> also exists and be using. PXA/MMP didn't really switch to pinctrl-pxa
-> driver. So it doesn't matter to remove pinctrl-pxa.
->
-> In the Kconfig, PXA/MMP already selected to pinctrl-single driver instead.
+> From: Minchan Kim [mailto:minchan@kernel.org]
+> Subject: [RFC] mm: remove swapcache page early
+> 
+> Swap subsystem does lazy swap slot free with expecting the page
+> would be swapped out again so we can't avoid unnecessary write.
+> 
+> But the problem in in-memory swap is that it consumes memory space
+> until vm_swap_full(ie, used half of all of swap device) condition
+> meet. It could be bad if we use multiple swap device, small in-memory swap
+> and big storage swap or in-memory swap alone.
+> 
+> This patch changes vm_swap_full logic slightly so it could free
+> swap slot early if the backed device is really fast.
+> For it, I used SWP_SOLIDSTATE but It might be controversial.
+> So let's add Ccing Shaohua and Hugh.
+> If it's a problem for SSD, I'd like to create new type SWP_INMEMORY
+> or something for z* family.
+> 
+> Other problem is zram is block device so that it can set SWP_INMEMORY
+> or SWP_SOLIDSTATE easily(ie, actually, zram is already done) but
+> I have no idea to use it for frontswap.
+> 
+> Any idea?
+> 
+> Other optimize point is we remove it unconditionally when we
+> found it's exclusive when swap in happen.
+> It could help frontswap family, too.
 
-OK then, patch applied!
+By passing a struct page * to vm_swap_full() you can then call
+frontswap_test()... if it returns true, then vm_swap_full
+can return true.  Note that this precisely checks whether
+the page is in zcache/zswap or not, so Seth's concern that
+some pages may be in-memory and some may be in rotating
+storage is no longer an issue.
 
-Sorry for slowness on getting back on this.
+> What do you think about it?
 
-Yours,
-Linus Walleij
+By removing the page from swapcache, you are now increasing
+the risk that pages will "thrash" between uncompressed state
+(in swapcache) and compressed state (in z*).  I think this is
+a better tradeoff though than keeping a copy of both the
+compressed page AND the uncompressed page in memory.
+
+You should probably rename vm_swap_full() because you are
+now overloading it with other meanings.  Maybe
+vm_swap_reclaimable()?
+
+Do you have any measurements?  I think you are correct
+that it may help a LOT.
+
+Thanks,
+Dan
