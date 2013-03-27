@@ -1,107 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab3C0QXe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 12:23:34 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:10313 "EHLO SMTP.CITRIX.COM"
+	id S1753666Ab3C0QZN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 12:25:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49971 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753669Ab3C0QXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 12:23:32 -0400
-X-IronPort-AV: E=Sophos;i="4.84,920,1355097600"; 
-   d="scan'208";a="15926184"
-Date: Wed, 27 Mar 2013 16:23:15 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Will Deacon <will.deacon@arm.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "nico@linaro.org" <nico@linaro.org>
-Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
-In-Reply-To: <20130327133811.GE18429@mudshark.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.02.1303271610430.4430@kaball.uk.xensource.com>
-References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130327133811.GE18429@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751811Ab3C0QZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 12:25:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,920,1355126400"; 
+   d="scan'208";a="309260915"
+Date: Thu, 28 Mar 2013 00:25:06 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        sparclinux@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Alan Ott <alan@signal11.us>, David Howells <dhowells@redhat.com>
+Subject: Re: usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+Message-ID: <20130327162506.GA10127@localhost>
+References: <5152d3ed.vW9X0QzDTVkW7Gck%fengguang.wu@intel.com>
+ <20130327154453.GA27576@localhost>
+ <20130327155134.GA24155@kroah.com>
+ <20130327161505.GA5045@localhost>
+ <alpine.LNX.2.00.1303271718550.23442@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LNX.2.00.1303271718550.23442@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Mar 2013, Will Deacon wrote:
-> Hi Stefano,
+On Wed, Mar 27, 2013 at 05:19:42PM +0100, Jiri Kosina wrote:
+> On Thu, 28 Mar 2013, Fengguang Wu wrote:
 > 
-> On Wed, Mar 27, 2013 at 12:50:39PM +0000, Stefano Stabellini wrote:
-> > Check for the presence of PSCI before setting smp_ops, use PSCI if it is
-> > available.
+> > > As you are getting errors when building Documentation files, I don't
+> > > think this is a staging tree specific issue, as I haven't changed
+> > > anything in that directory that I can see.
+> > > 
+> > > So it's probably something else.
 > > 
-> > This is useful because at least when running on Xen it's possible to have a
-> > PSCI node for example on a Versatile Express or an Exynos5 machine. In these
-> > cases the PSCI SMP calls should be the ones to be called.
+> > It's not a Documentation build, even though many of the errors are
+> > related to Documentation/*.
 > > 
-> > Remove virt_smp_ops and platsmp.c from mach-virt because they aren't needed
-> > anymore.
+> > Here is another build. This time the errors are triggered from
+> > samples/hidraw/hid-example.c.
+> > 
+> > Add CC to hidraw authors and David who is very good at the header stuffs.
 > 
-> [...]
-> 
-> > +struct psci_operations psci_ops = {
-> > +	.cpu_suspend = psci_cpu_suspend,
-> > +	.cpu_off     = psci_cpu_off,
-> > +	.cpu_on      = psci_cpu_on,
-> > +	.migrate     = psci_migrate,
-> > +};
-> > +
-> > +#ifdef CONFIG_SMP
-> > +static void __init psci_smp_init_cpus(void)
-> > +{
-> > +}
-> > +
-> > +static void __init psci_smp_prepare_cpus(unsigned int max_cpus)
-> > +{
-> > +}
-> > +
-> > +static int __cpuinit psci_boot_secondary(unsigned int cpu,
-> > +					 struct task_struct *idle)
-> > +{
-> > +	return psci_cpu_on(cpu_logical_map(cpu), __pa(secondary_startup));
-> > +}
-> > +
-> > +static void __cpuinit psci_secondary_init(unsigned int cpu)
-> > +{
-> > +	gic_secondary_init(0);
-> > +}
-> > +
-> > +struct smp_operations __initdata psci_smp_ops = {
-> > +	.smp_init_cpus		= psci_smp_init_cpus,
-> > +	.smp_prepare_cpus	= psci_smp_prepare_cpus,
-> > +	.smp_secondary_init	= psci_secondary_init,
-> > +	.smp_boot_secondary	= psci_boot_secondary,
-> > +};
-> > +#endif
-> 
-> As I said before, I don't agree with bolting these two interfaces together
-> like this and, as it stands, I'm afraid I have to NAK this patch.
-> 
-> A potential alternative is to have a set of virt_smp_ops, which have
-> wrappers around the psci functions, but that requires agreement from Xen and
-> KVM to implement the same PSCI interface, which feels unfair to me.
-> 
-> I see what you're trying to do, but I can't go along with it. Sorry.
- 
-OK, let's see if I can make this acceptable to you.
+> What tree is that?
 
+It's linux-next.
 
-Would you agree on a patch that moves virt_smp_ops out of mach-virt and
-renames them to psci_smp_ops (maybe to arch/arm/kernel/psci_smp_ops.c)?
+> It builds fine for me here on current Linus' tree:
 
-Would you agree on initializing psci from setup_arch, right after the
-call to arm_dt_init_cpu_maps()?
+Yeah, however it fails in ARCH=sparc allyesconfig builds.
 
-Finally the most controversial point: would you agree on using
-psci_smp_ops by default if they are available?
-If not, would you at least agree on letting Xen overwrite the default
-machine smp_ops?
-We need one or the other for dom0 support.
+It's not a problem specific to samples/hidraw/. It does serve as a
+good example. :)
+
+Thanks,
+Fengguang
+
+> 	$ make samples/hidraw/
+> 	make[1]: Nothing to be done for `all'.
+> 	make[1]: Nothing to be done for `relocs'.
+> 	  CHK     include/generated/uapi/linux/version.h
+> 	  CHK     include/generated/utsrelease.h
+> 	  CALL    scripts/checksyscalls.sh
+> 	  CC      scripts/mod/devicetable-offsets.s
+> 	  GEN     scripts/mod/devicetable-offsets.h
+> 	  HOSTCC  scripts/mod/file2alias.o
+> 	  HOSTLD  scripts/mod/modpost
+> 	  HOSTCC  samples/hidraw/hid-example
+> 	$
+> > 
+> > Thanks,
+> > Fengguang
+> > ---
+> > 
+> > /usr/bin/make -C source O=/home/wfg/sound/obj-compiletest ARCH=sparc CROSS_COMPILE=/usr/local/gcc-4.6.3-nolibc/sparc-linux/bin/sparc-linux- -j32
+> > make: Entering directory `/c/wfg/sound'
+> >   GEN     /cc/wfg/sound-compiletest/Makefile
+> >   CHK     include/generated/uapi/linux/version.h
+> >   CC      scripts/mod/devicetable-offsets.s
+> >   GEN     scripts/mod/devicetable-offsets.h
+> >   HOSTCC  scripts/mod/file2alias.o
+> >   HOSTLD  scripts/mod/modpost
+> >   Using /c/wfg/sound as source for kernel
+> >   CHK     include/generated/utsrelease.h
+> >   CALL    /c/wfg/sound/scripts/checksyscalls.sh
+> >   CHK     include/generated/compile.h
+> >   CHK     kernel/config_data.h
+> >   CHK     include/generated/uapi/linux/version.h
+> >   HOSTCC  samples/hidraw/hid-example
+> > In file included from /c/wfg/sound/samples/hidraw/hid-example.c:13:0:
+> > /cc/wfg/sound-compiletest/usr/include/linux/types.h:27:1: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/types.h:28:1: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/types.h:29:1: error: unknown type name ‘__u32’
+> > /cc/wfg/sound-compiletest/usr/include/linux/types.h:30:1: error: unknown type name ‘__u32’
+> > /cc/wfg/sound-compiletest/usr/include/linux/types.h:31:1: error: unknown type name ‘__u64’
+> > /cc/wfg/sound-compiletest/usr/include/linux/types.h:32:1: error: unknown type name ‘__u64’
+> > /cc/wfg/sound-compiletest/usr/include/linux/types.h:34:1: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/types.h:35:1: error: unknown type name ‘__u32’
+> > In file included from /c/wfg/sound/samples/hidraw/hid-example.c:14:0:
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:24:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:25:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:26:2: error: unknown type name ‘__s32’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:40:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:41:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:42:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:43:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:66:2: error: unknown type name ‘__s32’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:67:2: error: unknown type name ‘__s32’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:68:2: error: unknown type name ‘__s32’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:69:2: error: unknown type name ‘__s32’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:70:2: error: unknown type name ‘__s32’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:71:2: error: unknown type name ‘__s32’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:91:2: error: unknown type name ‘__u8’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:92:2: error: unknown type name ‘__u8’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:93:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:94:2: error: unknown type name ‘__u32’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:95:2: error: unknown type name ‘__u8’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:958:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:959:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:968:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:969:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:985:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:986:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:987:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:988:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:997:2: error: unknown type name ‘__s16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1008:2: error: unknown type name ‘__s16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1009:2: error: unknown type name ‘__s16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1024:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1025:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1027:2: error: unknown type name ‘__s16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1028:2: error: unknown type name ‘__s16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1030:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1031:2: error: unknown type name ‘__s16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1053:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1054:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1055:2: error: unknown type name ‘__s16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1056:2: error: unknown type name ‘__s16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1057:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1061:2: error: unknown type name ‘__u32’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1062:2: error: unknown type name ‘__s16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1074:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1075:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1102:2: error: unknown type name ‘__u16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1103:2: error: unknown type name ‘__s16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/input.h:1104:2: error: unknown type name ‘__u16’
+> > In file included from /c/wfg/sound/samples/hidraw/hid-example.c:15:0:
+> > /cc/wfg/sound-compiletest/usr/include/linux/hidraw.h:22:2: error: unknown type name ‘__u32’
+> > /cc/wfg/sound-compiletest/usr/include/linux/hidraw.h:23:2: error: unknown type name ‘__u8’
+> > /cc/wfg/sound-compiletest/usr/include/linux/hidraw.h:27:2: error: unknown type name ‘__u32’
+> > /cc/wfg/sound-compiletest/usr/include/linux/hidraw.h:28:2: error: unknown type name ‘__s16’
+> > /cc/wfg/sound-compiletest/usr/include/linux/hidraw.h:29:2: error: unknown type name ‘__s16’
+> > make[3]: *** [samples/hidraw/hid-example] Error 1
+> > make[2]: *** [samples/hidraw] Error 2
+> > make[1]: *** [vmlinux] Error 2
+> > make: *** [sub-make] Error 2
+> > make: Leaving directory `/c/wfg/sound'
+> > 
+> 
+> -- 
+> Jiri Kosina
+> SUSE Labs
