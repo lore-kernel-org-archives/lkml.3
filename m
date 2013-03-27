@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab3C0Jto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 05:49:44 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:45193 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753792Ab3C0Jtf (ORCPT
+	id S1753792Ab3C0Jtx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 05:49:53 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:64396 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754199Ab3C0Jtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 05:49:35 -0400
+	Wed, 27 Mar 2013 05:49:43 -0400
 From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
 CC: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Subject: [PATCH 06/14] tracing: export syscall metadata
-Date: Wed, 27 Mar 2013 17:48:48 +0800
-Message-ID: <1364377737-10540-8-git-send-email-jovi.zhangwei@huawei.com>
+Subject: [PATCH 12/14] tracing: guard tracing_selftest_disabled by CONFIG_FTRACE_STARTUP_TEST
+Date: Wed, 27 Mar 2013 17:48:54 +0800
+Message-ID: <1364377737-10540-14-git-send-email-jovi.zhangwei@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 In-Reply-To: <1364377737-10540-1-git-send-email-jovi.zhangwei@huawei.com>
 References: <1364377737-10540-1-git-send-email-jovi.zhangwei@huawei.com>
@@ -28,105 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-Currently syscall metadata is important for kernel
-syscall tracing, even mandatory, external modules may need this
-metadata when perform syscall tracing(like ktap tool), so export it.
+Variable tracing_selftest_disabled have not any sense when
+CONFIG_FTRACE_STARTUP_TEST is disabled.
 
-Instead of export variable syscalls_metadata, export function
-syscall_nr_to_meta is more safe.
-
-This patch also rename syscall_nr_to_meta to trace_syscall_nr_to_metadata.
+This patch also remove __read_mostly attribute, since variable
+tracing_selftest_disabled really not read mostly.
 
 Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 ---
- include/trace/syscall.h       |    1 +
- kernel/trace/trace_syscalls.c |   15 ++++++++-------
- 2 files changed, 9 insertions(+), 7 deletions(-)
+ kernel/trace/trace.c        |    6 ++++--
+ kernel/trace/trace.h        |    2 +-
+ kernel/trace/trace_events.c |    2 ++
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-index 84bc419..428634e 100644
---- a/include/trace/syscall.h
-+++ b/include/trace/syscall.h
-@@ -31,4 +31,5 @@ struct syscall_metadata {
- 	struct ftrace_event_call *exit_event;
- };
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index ee4e110..09a3aa8 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -58,10 +58,12 @@ bool ring_buffer_expanded;
+  */
+ static bool __read_mostly tracing_selftest_running;
  
-+struct syscall_metadata *trace_syscall_nr_to_meta(int nr);
- #endif /* _TRACE_SYSCALL_H */
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 72675b1..d739471 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -98,13 +98,14 @@ find_syscall_meta(unsigned long syscall)
- 	return NULL;
- }
++#ifdef CONFIG_FTRACE_STARTUP_TEST
+ /*
+  * If a tracer is running, we do not want to run SELFTEST.
+  */
+-bool __read_mostly tracing_selftest_disabled;
++bool tracing_selftest_disabled;
++#endif
  
--static struct syscall_metadata *syscall_nr_to_meta(int nr)
-+struct syscall_metadata *trace_syscall_nr_to_meta(int nr)
+ /* For tracers that don't implement custom flags */
+ static struct tracer_opt dummy_tracer_opt[] = {
+@@ -1069,8 +1071,8 @@ int register_tracer(struct tracer *type)
+ 	tracing_set_tracer(type->name);
+ 	default_bootup_tracer = NULL;
+ 	/* disable other selftests, since this will break it. */
+-	tracing_selftest_disabled = true;
+ #ifdef CONFIG_FTRACE_STARTUP_TEST
++	tracing_selftest_disabled = true;
+ 	printk(KERN_INFO "Disabling FTRACE selftests due to running tracer '%s'\n",
+ 	       type->name);
+ #endif
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 19e3da2..573c1dc 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -546,10 +546,10 @@ extern int DYN_FTRACE_TEST_NAME(void);
+ extern int DYN_FTRACE_TEST_NAME2(void);
+ 
+ extern bool ring_buffer_expanded;
+-extern bool tracing_selftest_disabled;
+ DECLARE_PER_CPU(int, ftrace_cpu_disabled);
+ 
+ #ifdef CONFIG_FTRACE_STARTUP_TEST
++extern bool tracing_selftest_disabled;
+ extern int trace_selftest_startup_function(struct tracer *trace,
+ 					   struct trace_array *tr);
+ extern int trace_selftest_startup_function_graph(struct tracer *trace,
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 23f4cfc..d5ca0c1 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -2251,7 +2251,9 @@ static __init int setup_trace_event(char *str)
  {
- 	if (!syscalls_metadata || nr >= NR_syscalls || nr < 0)
- 		return NULL;
+ 	strlcpy(bootup_event_buf, str, COMMAND_LINE_SIZE);
+ 	ring_buffer_expanded = true;
++#ifdef CONFIG_FTRACE_STARTUP_TEST
+ 	tracing_selftest_disabled = true;
++#endif
  
- 	return syscalls_metadata[nr];
+ 	return 1;
  }
-+EXPORT_SYMBOL_GPL(trace_syscall_nr_to_meta);
- 
- static enum print_line_t
- print_syscall_enter(struct trace_iterator *iter, int flags,
-@@ -118,7 +119,7 @@ print_syscall_enter(struct trace_iterator *iter, int flags,
- 
- 	trace = (typeof(trace))ent;
- 	syscall = trace->nr;
--	entry = syscall_nr_to_meta(syscall);
-+	entry = trace_syscall_nr_to_meta(syscall);
- 
- 	if (!entry)
- 		goto end;
-@@ -172,7 +173,7 @@ print_syscall_exit(struct trace_iterator *iter, int flags,
- 
- 	trace = (typeof(trace))ent;
- 	syscall = trace->nr;
--	entry = syscall_nr_to_meta(syscall);
-+	entry = trace_syscall_nr_to_meta(syscall);
- 
- 	if (!entry) {
- 		trace_seq_printf(s, "\n");
-@@ -315,7 +316,7 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
- 	if (!test_bit(syscall_nr, tr->enabled_enter_syscalls))
- 		return;
- 
--	sys_data = syscall_nr_to_meta(syscall_nr);
-+	sys_data = trace_syscall_nr_to_meta(syscall_nr);
- 	if (!sys_data)
- 		return;
- 
-@@ -349,7 +350,7 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
- 	if (!test_bit(syscall_nr, tr->enabled_exit_syscalls))
- 		return;
- 
--	sys_data = syscall_nr_to_meta(syscall_nr);
-+	sys_data = trace_syscall_nr_to_meta(syscall_nr);
- 	if (!sys_data)
- 		return;
- 
-@@ -545,7 +546,7 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
- 	if (!test_bit(syscall_nr, enabled_perf_enter_syscalls))
- 		return;
- 
--	sys_data = syscall_nr_to_meta(syscall_nr);
-+	sys_data = trace_syscall_nr_to_meta(syscall_nr);
- 	if (!sys_data)
- 		return;
- 
-@@ -621,7 +622,7 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
- 	if (!test_bit(syscall_nr, enabled_perf_exit_syscalls))
- 		return;
- 
--	sys_data = syscall_nr_to_meta(syscall_nr);
-+	sys_data = trace_syscall_nr_to_meta(syscall_nr);
- 	if (!sys_data)
- 		return;
- 
 -- 
 1.7.9.7
 
