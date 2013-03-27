@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab3C0QaZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 12:30:25 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45498 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab3C0QaY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 12:30:24 -0400
-Message-ID: <51531E92.9070805@wwwdotorg.org>
-Date: Wed, 27 Mar 2013 10:30:10 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1751140Ab3C0QcE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 12:32:04 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42163 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750718Ab3C0QcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 12:32:01 -0400
+Date: Wed, 27 Mar 2013 17:31:56 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
+ asm/8267
+Message-ID: <20130327163156.GB8385@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+	Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+	Arnaldo Carvalho de Melo <acme@infradead.org>,
+	lkml <linux-kernel@vger.kernel.org>,
+	Stephane Eranian <eranian@google.com>,
+	Namhyung Kim <namhyung.kim@lge.com>
+References: <20130324115556.GA4866@pd.tnic>
+ <20130324155924.GB4866@pd.tnic>
+ <20130326183452.GC27518@pd.tnic>
+ <87ip4dgz31.fsf@sejong.aot.lge.com>
+ <20130327094932.GA8385@pd.tnic>
+ <1364393372.5053.68.camel@laptop>
 MIME-Version: 1.0
-To: Rhyland Klein <rklein@nvidia.com>
-CC: Grant Likely <grant.likely@secretlab.ca>, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [REPOST Patch v1 2/3] power: power_supply: Add core support for
- supplied_from
-References: <1364264690-2124-1-git-send-email-rklein@nvidia.com> <1364264690-2124-3-git-send-email-rklein@nvidia.com>
-In-Reply-To: <1364264690-2124-3-git-send-email-rklein@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1364393372.5053.68.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2013 08:24 PM, Rhyland Klein wrote:
-> This patch adds support for supplies to register a list of char *'s
-> which represent the list of supplies which supply them. This is the
-> opposite as the supplied_to list.
+On Wed, Mar 27, 2013 at 03:09:32PM +0100, Peter Zijlstra wrote:
+> On Wed, 2013-03-27 at 10:49 +0100, Borislav Petkov wrote:
+> > Ok, just for my own understanding: how do the events on the
+> > ->task_ctx->event_list relate to the current cpu in this path? I mean,
+> > we're on the task exit path here so is it possible to be rescheduled
+> > somewhere else and the check in event_filter_match to become
+> > meaningless?
 > 
-> This change maintains support for supplied_to until all drivers which
-> make use of it already are converted.
+> Events can be per-cpu, so what could happen is that we'd send the exit
+> notification to a cpu we're not actually running on (anymore).
 
-> diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+Right, but we still have a window of preemption enabled:
 
-> +static int __power_supply_is_supplied_by(struct power_supply *supplier,
-> +					 struct power_supply *supply)
+		put_cpu_ptr(pmu->pmu_cpu_context);	<---|
+     	}						    |
+	if (task_event->task_ctx) {			    |
+		preempt_disable_notrace();		<---|
 
-Shouldn't this function return a Boolean since it's "is" something? At
-least, 1 for yes 0 for no would be more comprehensible than 0 for yes
-and error for no?
+between the two arrows above.
 
-> +{
-> +	int i;
-> +
-> +	if (!supply->supplied_from && !supplier->supplied_to)
-> +		return -EINVAL;
-> +
-> +	/* Support both supplied_to and supplied_from modes */
-> +	if (supply->supplied_from) {
-> +		for (i = 0; i < supply->num_supplies; i++) {
-> +			if (!supplier->name)
-> +				continue;
+I don't know the code all that well to know whether a reschedule in that
+window would make us, when looking at the current cpu when matching the
+events, look stupid or not...
 
-That test is loop invariant. Why put it inside the loop?
+OTOH, I can understand jolsa's approach of declaring the events on
+->task_ctx->event_list for belonging to this task only and that then we
+just don't want to compare event->cpu to the current cpu we're running
+on.
 
-Why wouldn't a supply have a name? The loop in
-__power_supply_changed_work() that this function replaces doesn't test
-for NULL names.
+But in the end of the day, I'd like you guys to decide what is the right
+thing to do here.
 
-> +			if (!strcmp(supplier->name, supply->supplied_from[i]))
-> +				return 0;
+Btw, jolsa, as a simplification to your solution, you could simply do:
 
-Don't you want to return something true here, so that the if block
-inside __power_supply_changed_work() is executed in this case?
+	if (task_event->task_ctx)
+		list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
+			perf_event_task_output(event, task_event);
 
-Similar comment for the else block.
+and avoid adding a 'match' argument.
 
->  static int __power_supply_changed_work(struct device *dev, void *data)
+Thanks.
 
-> -	for (i = 0; i < psy->num_supplicants; i++)
-> -		if (!strcmp(psy->supplied_to[i], pst->name)) {
-> -			if (pst->external_power_changed)
-> -				pst->external_power_changed(pst);
-> -		}
-> +	if (__power_supply_is_supplied_by(psy, pst)) {
-> +		if (pst->external_power_changed)
-> +			pst->external_power_changed(pst);
-> +	}
-> +
->  	return 0;
->  }
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
