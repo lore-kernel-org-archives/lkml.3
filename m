@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab3C0SDw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 14:03:52 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54894 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347Ab3C0SDv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 14:03:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
-Date: Wed, 27 Mar 2013 18:03:45 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1303271642340.4430@kaball.uk.xensource.com> <51533037.5060004@gmail.com>
-In-Reply-To: <51533037.5060004@gmail.com>
+	id S1753023Ab3C0SGU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 14:06:20 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:45049 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752609Ab3C0SGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 14:06:18 -0400
+Date: Wed, 27 Mar 2013 11:04:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Borislav Petkov <bp@alien8.de>, Joerg Roedel <joro@8bytes.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
+ asm/8267
+Message-ID: <20130327180455.GA4379@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130324115556.GA4866@pd.tnic>
+ <20130324155924.GB4866@pd.tnic>
+ <20130326183452.GC27518@pd.tnic>
+ <20130327131532.GL30540@8bytes.org>
+ <1364393852.5053.74.camel@laptop>
+ <20130327143715.GY4379@linux.vnet.ibm.com>
+ <20130327163427.GN30540@8bytes.org>
+ <20130327163806.GC8385@pd.tnic>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303271803.45420.arnd@arndb.de>
-X-Provags-ID: V02:K0:0v1A/Qk6OiaupqAgjVkA+PGxJXNrpAZFpaNJo63Hooe
- NbmvfXdk1MNnjPaUMN06pPrnI45Tz0cf3xBIlhkmdxujfb8VBZ
- L852FFZHbl8TIgI7gfhtI6rhNbQw3IV3q9zS3VWLE7gJcjDuHO
- K5iyREYQlrlJTi4NnCqDrHZrqQI1ftUEoVvLs4Z1EnKGNg6XKA
- yqDy05acOC+Ccp4QH8A7KMyHnMKoKH5XDCCKPgKnZ730ORyznP
- feNrhSG/CRBsUvj+E9QsFP0lVApVmjlxccelz/I8IZ/sRvCOlb
- vx7CfIG/VD5g/a3k20gcgvRPGvMTocfluPFiDE3yg8bV9BturR
- C9sh621uM9aX/8I3PewY=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130327163806.GC8385@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032718-7182-0000-0000-000005FA42A3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 March 2013, Rob Herring wrote:
-> No, I was thinking in the case of Xen and mach-virt, you would not set
-> mdesc->smp. So you would have something like this:
+On Wed, Mar 27, 2013 at 05:38:06PM +0100, Borislav Petkov wrote:
+> On Wed, Mar 27, 2013 at 05:34:27PM +0100, Joerg Roedel wrote:
+> > Interesting read, thanks guys. I think I should have a look into the
+> > tree-preempt implementation and try to understand it :)
 > 
-> if (mdesc->smp)
->         smp_set_ops(mdesc->smp);
-> else
->         smp_set_ops(&psci_smp_ops);
+> Hurry, before paulmck comes and changes it unrecognizable! :-)
 
-The case that Stefano is interested in if obviously other platforms
-that can either run as Dom0 under Xen with psci_smp_ops or natively
-with their own smp_ops. A similar case would be a platform that
-may implement psci using smc when run in secure mode but provide
-its own smp_ops when run natively.
+Better yet, review my changes for 3.10.  ;-)
 
-In both cases, it would be simpler to use psci if available but
-fall back to mdesc->smp otherwise.
+							Thanx, Paul
 
-	Arnd
