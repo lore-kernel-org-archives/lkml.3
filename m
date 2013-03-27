@@ -1,86 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab3C0LJW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 07:09:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34419 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3C0LJU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 07:09:20 -0400
-Date: Wed, 27 Mar 2013 12:09:17 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4] clk: allow reentrant calls into the clk framework
-In-Reply-To: <CAPDyKFoHQK576H+zsW9ykzJT-gjc6=qeiRVi26THa_4dhNVRVw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1303271141470.22263@ionos>
-References: <1364368183-24420-1-git-send-email-mturquette@linaro.org> <alpine.LFD.2.02.1303270941320.22263@ionos> <CAKohpomWZ_9a_RceQ419QAAXOR17yrtrRP0Gf4xoS3B=yzbRXg@mail.gmail.com> <CAPDyKFoHQK576H+zsW9ykzJT-gjc6=qeiRVi26THa_4dhNVRVw@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1752915Ab3C0LKi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 07:10:38 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55748 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751728Ab3C0LKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 07:10:36 -0400
+Message-ID: <5152D39F.1090104@ti.com>
+Date: Wed, 27 Mar 2013 13:10:23 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Tony Prisk <linux@prisktech.co.nz>
+CC: <linux-fbdev@vger.kernel.org>, <florianschandinat@gmx.de>,
+        <vt8500-wm8505-linux-kernel@googlegroups.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] video: fb: vt8500: Convert framebuffer drivers to
+ standardized binding
+References: <1364374021-10844-1-git-send-email-linux@prisktech.co.nz> <1364374021-10844-7-git-send-email-linux@prisktech.co.nz>
+In-Reply-To: <1364374021-10844-7-git-send-email-linux@prisktech.co.nz>
+X-Enigmail-Version: 1.4.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="------------enig376836BFAA8AAA23B8CFC0F7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Mar 2013, Ulf Hansson wrote:
-> On 27 March 2013 10:55, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> > On 27 March 2013 15:10, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >> On Wed, 27 Mar 2013, Mike Turquette wrote:
-> >>
-> >>> Reentrancy into the clock framework from the clk.h api is necessary
-> >>> for clocks that are prepared and unprepared via i2c_transfer (which
-> >>> includes many PMICs and discrete audio chips) as well as for several
-> >>> other use cases.
-> >>
-> >> That explanation sucks.
-> >>
-> >> Why does an i2c clock need reentrancy? Just because it's i2c or what?
-> >
-> > I am noway connected to this development but was just going through
-> > your mail and i think i might know the answer why is this required.
-> >
-> > Consider an example where an external chip has clock controller and has
-> > bits which can be programmed to enable/disable clock. And this chip is
-> > connected via spi/i2c to SoC.
-> >
-> > clk_prepare(peripheral on external chip)
-> >   -> i2c_xfer(to write to external chips register)
-> >       -> clk_enable(i2c controller)
-> >           ->controller-xfer-routine.. and finally we enable clk here...
+--------------enig376836BFAA8AAA23B8CFC0F7
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Which does not explain the whole issue:
+Hi,
 
-    clk_prepare() takes the mutex
-    clk_enable() takes the spinlock
+On 2013-03-27 10:47, Tony Prisk wrote:
+> Now that a display timing binding is available, convert our almost iden=
+tical
+> binding to use the standard binding.
+>=20
+> This patch converts the vt8500 and wm8505 framebuffer drivers and
+> associated dts/dtsi files to use the standard binding as defined in
+> bindings/video/display-timing.txt.
+>=20
+> There are two side-effects of making this conversion:
+>=20
+> 1) The fb node should now be in the board file, rather than the soc fil=
+e as
+> the display-timing node is a child of the fb node.
+>=20
+> 2) We still require a bits per pixel property to initialize the framebu=
+ffer
+> for the different lcd panels. Rather than including this as part of the=
 
-That works today.
+> display timing, it is moved into the framebuffer node.
+>=20
+> I have also taken the opportunity to alphabetise the includes of each
+> driver to avoid double-ups.
 
-The issue arises, if you need to call clk_prepare(i2c) in the xfer
-routine.
+I don't think this is correct. I don't have that much experience with
+DT, but I think you should have, for example:
 
-> >
-> > Sorry if i am on the wrong side :)
+wm8850.dtsi:
 
-Only slightly :)
+	fb: fb@d8051700 {
+		compatible =3D "wm,wm8505-fb";
+		reg =3D <0xd8051700 0x200>;
+	};
 
-> I agree with you Viresh. I guess Mike should update the commit message.
-> 
-> I would also like add another reason to why this is needed. For some
-> clks you would like to do pinctrl operations from a clk hw. But since
-> a pinctrl driver likely requires a clk to be prepared|enabled, we run
-> into a clk reentrant issue.
+wm8850-w70v2.dts:
 
-Fair enough. This all wants to go into the changelog, so we can
-understand why we have this business.
+&fb {
+	bits-per-pixel =3D <16>;
 
-Thanks,
+	display-timings {
+		native-mode =3D <&timing0>;
+		timing0: 800x480 {
+			clock-frequency =3D <0>;
+			...
+		};
+	};
+};
 
-	tglx
+So, the core fb part should be in the SoC's file, as it's part of the
+SoC. And the stuff that tells what kind of display is attached is in the
+board dts file.
+
+Also, just a word of warning, I think the videomode series I've sent for
+review will cause some breakage with this series if the videomode series
+is accepted. Nothing difficult to fix, though, but we'll need some extra
+management to avoid compilation failures.
+
+ Tomi
+
+
+
+--------------enig376836BFAA8AAA23B8CFC0F7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJRUtOfAAoJEPo9qoy8lh71/EYP/0JKVD/rqgcE71MywBTPZdYk
+XEV4tY8ALrfutQy0AXKTxSbG3PzJRZbR4QcIlU6J/5OdTn0diuXDeBG5GbFyFyAe
+K1BqiRxJGRWVKn7Tl1zSOHw52nenRI9iB09drZYRpxGIkXud89/cxGbuH0W2YoAe
+Dv11ZRP3tfbWBKCl95GvjPqa6HMONqWOsE3xXYWKbBmkPiolKjcanPBwLhLU2kmA
+iRwdB3WN1LDsd+plVlLngM0KodZUlpa0ZVRVzdvtmQ8zMs7BlrfXYmfY3p3opPGu
+8BxPxbfGkC+Sb1CxfSjSXqx3r/637K00tCn8sw2u+fkiXKFv8jzZmpxl73mUj9PT
+KRgBatqkJBKneRHoAFKWFcwQUEonxkOVd86bO+GDLUeJbfrfCr2Cmfn20CmTrlRV
+UBkPzQiIGjuIssaCMqvUBjdYmj1PbVmMlYxgJkR9yp7sjpR2OdmYDMFKQ6Lpsi6C
+ZynxAmPb5OrLuRmHDgep4PkDcEDa+K0OjVtAHnm4bhDIIKO9zKW1wVHu6qJaamuC
+12nwKueViOSLmsWyKwT5ZL7E9+XyRhPgSQm/ULsLiUKBCGaOCmnSK2zK2nmENEUp
+/E/BzPBarTVTa+FPOtGsEq98RZe1vt6XWrktaqLfi3OXZzL5XxceiMW5lgQVmRyD
+oI59oVcFoeU1xBiSuTh8
+=bulL
+-----END PGP SIGNATURE-----
+
+--------------enig376836BFAA8AAA23B8CFC0F7--
