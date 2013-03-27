@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756230Ab3C0D3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 23:29:45 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10598 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab3C0D3o (ORCPT
+	id S1756388Ab3C0Dah (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 23:30:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5525 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab3C0Daf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 23:29:44 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 26 Mar 2013 20:29:19 -0700
-Message-ID: <1364355211.22943.8.camel@bilhuang-vm1>
-Subject: Re: [PATCH 1/5] clk: allow reentrant calls into the clk framework
-From: Bill Huang <bilhuang@nvidia.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Rajagopal Venkat <rajagopal.venkat@linaro.org>,
-        David Brown <davidb@codeaurora.org>
-Date: Tue, 26 Mar 2013 20:33:31 -0700
-In-Reply-To: <1362026969-11457-2-git-send-email-mturquette@linaro.org>
-References: <1362026969-11457-1-git-send-email-mturquette@linaro.org>
-	 <1362026969-11457-2-git-send-email-mturquette@linaro.org>
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-9"
+	Tue, 26 Mar 2013 23:30:35 -0400
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ZzSxI7jMevMA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=mVTtbqeYs4EA:10 a=oHGkYV5a6l2hHoJyKb8A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1364355032.6345.200.camel@gandalf.local.home>
+Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
+ unfreeze_partials() code.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <clark@redhat.com>
+Date: Tue, 26 Mar 2013 23:30:32 -0400
+In-Reply-To: <20130327025957.GA17125@lge.com>
+References: <1363906545.6345.81.camel@gandalf.local.home>
+	 <0000013d92c37ff3-5fb85400-bec1-4eda-8ba1-332566884c59-000000@email.amazonses.com>
+	 <1364010673.6345.156.camel@gandalf.local.home>
+	 <0000013da1f93be3-c3d42ae8-ff34-4c63-8094-77a83291ea19-000000@email.amazonses.com>
+	 <1364227073.6345.182.camel@gandalf.local.home>
+	 <1364228039.6345.183.camel@gandalf.local.home>
+	 <0000013da2ace21a-9e87fe8a-75c2-4b7c-b5e1-37ad196ce012-000000@email.amazonses.com>
+	 <1364234613.6345.184.camel@gandalf.local.home>
+	 <0000013da2ce20f8-0e3a64ef-67ed-4ab4-9f20-b77980c876c3-000000@email.amazonses.com>
+	 <1364236355.6345.185.camel@gandalf.local.home>
+	 <20130327025957.GA17125@lge.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-28 at 12:49 +0800, Mike Turquette wrote:
-> Reentrancy into the clock framework from the clk.h api is highly
-> desirable.  This feature is necessary for clocks that are prepared and
-> unprepared via i2c_transfer (which includes many PMICs and discrete
-> audio chips) and it is also necessary for performing dynamic voltage &
-> frequency scaling via clock rate-change notifiers.
-> 
-> This patch implements reentrancy by adding a global atomic_t which
-> tracks the context of the current caller.  Context in this case is the
-> return value from get_current().  The clk.h api implementations are
-> modified to first see if the relevant global lock is already held and if
-> so compare the global context (set by whoever is holding the lock)
-> against their own context (via a call to get_current()).  If the two
-> match then this function is a nested call from the one already holding
-> the lock and we procede.  If the context does not match then procede to
-> call mutex_lock and busy-wait for the existing task to complete.
-> 
-> Thus this patch set does not increase concurrency for unrelated calls
-> into the clock framework.  Instead it simply allows reentrancy by the
-> single task which is currently holding the global clock framework lock.
-> 
-> Thanks to Rajagoapl Venkat for the original idea to use get_current()
-> and to David Brown for the suggestion to replace my previous rwlock
-> scheme with atomic operations during code review at ELC 2013.
-> 
-> Signed-off-by: Mike Turquette <mturquette@linaro.org>
-> Cc: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-> Cc: David Brown <davidb@codeaurora.org>
-> ---
-Hi Mike,
+On Wed, 2013-03-27 at 11:59 +0900, Joonsoo Kim wrote:
 
-Will this single patch be accepted? I guess you might not merge the
-whole series but I think this one is useful, is it possible that you can
-send out this single patch (or just merge this one) as an improvement of
-CCF? Or you think otherwise?
+> How about using spin_try_lock() in unfreeze_partials() and
+> using spin_lock_contented() in get_partial_node() to reduce latency?
+> IMHO, this doesn't make code more deterministic, but can maintain
+> a benefit of cpu partial page with tolerable latency.
 
-Thanks,
-Bill
+And what do you do when you fail the try lock? Try again, or just break
+out?
+
+We can run benchmarks, but I don't like playing games in -rt. It either
+is deterministic, or it isn't.
+
+-- Steve
 
 
