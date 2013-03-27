@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab3C0Sde (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 14:33:34 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:57776 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab3C0Sdc convert rfc822-to-8bit (ORCPT
+	id S1753477Ab3C0Seb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 14:34:31 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:55003 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651Ab3C0Sea convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 14:33:32 -0400
+	Wed, 27 Mar 2013 14:34:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130326224919.675227837@linuxfoundation.org>
-References: <20130326224919.675227837@linuxfoundation.org>
-Date: Wed, 27 Mar 2013 12:33:30 -0600
-Message-ID: <CAKocOON1nS1cqJk6myPU7YtHwjogz4X276MirqM_jypJeqjscQ@mail.gmail.com>
-Subject: Re: [ 00/72] 3.4.38-stable review
+In-Reply-To: <20130326224242.449070940@linuxfoundation.org>
+References: <20130326224242.449070940@linuxfoundation.org>
+Date: Wed, 27 Mar 2013 12:34:28 -0600
+Message-ID: <CAKocOOOBPaR5n14522nnYQDTFWOWrpXqc1tN+HLHguTL+b=+_g@mail.gmail.com>
+Subject: Re: [ 00/98] 3.8.5-stable review
 From: Shuah Khan <shuahkhan@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
@@ -23,18 +23,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 4:50 PM, Greg Kroah-Hartman
+On Tue, Mar 26, 2013 at 4:41 PM, Greg Kroah-Hartman
 <gregkh@linuxfoundation.org> wrote:
-> This is the start of the stable review cycle for the 3.4.38 release.
-> There are 72 patches in this series, all will be posted as a response
+> This is the start of the stable review cycle for the 3.8.5 release.
+> There are 98 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 >
-> Responses should be made by Thu Mar 28 22:48:44 UTC 2013.
+> Responses should be made by Thu Mar 28 22:41:38 UTC 2013.
 > Anything received after that time might be too late.
 >
 > The whole patch series can be found in one patch at:
->         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.38-rc1.gz
+>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.8.5-rc1.gz
 > and the diffstat can be found below.
 >
 > thanks,
