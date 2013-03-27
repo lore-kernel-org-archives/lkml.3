@@ -1,99 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab3C0RZx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 13:25:53 -0400
-Received: from mout.gmx.net ([212.227.15.15]:52077 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751881Ab3C0RZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 13:25:51 -0400
-X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Mar 2013 13:25:51 EDT
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1+vaaBmpe+v8W8x+iRqsBYnlX/V9ON+y+9101qWwg
-	eqwphMhbGhimij
-Message-ID: <51532A6A.4040307@gmx.de>
-Date: Wed, 27 Mar 2013 18:20:42 +0100
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130309 Thunderbird/17.0.4
+	id S1753332Ab3C0R2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 13:28:04 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:59064 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651Ab3C0R2B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 13:28:01 -0400
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: kernel 3.8.4 : kernel BUG at fs/locks.c:2093!   part #2
-References: <514F31AF.3080709@gmx.de> <20130325220143.GD10887@fieldses.org> <20130326144640.GB3353@fieldses.org> <5151DEF7.3060003@gmx.de> <20130326181717.GA8978@fieldses.org>
-In-Reply-To: <20130326181717.GA8978@fieldses.org>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+In-Reply-To: <1363665251-14377-1-git-send-email-linfeng@cn.fujitsu.com>
+References: <CAE9FiQUrt11A0YAOLgvv3uTAWtTvVg3Mho9eD53orbxW6Jd8Vg@mail.gmail.com>
+ <1363665251-14377-1-git-send-email-linfeng@cn.fujitsu.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 27 Mar 2013 11:27:41 -0600
+Message-ID: <CAErSpo6DWfHii8d8rGPJ1dLj5TVzsgU7QGDoAvBM5Fb_N5=mtw@mail.gmail.com>
+Subject: Re: [PATCH] kernel/range.c: subtract_range: fix the broken phrase
+ issued by printk
+To: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2013 07:17 PM, J. Bruce Fields wrote:
-> 
-> Bah, too bad.  That patch was definitely not a fix, so there may be some
-> race here.
-> 
->> What I get at the host is now :
->>
->> 2013-03-26T18:32:17.487+01:00 n22 kernel: ------------[ cut here ]------------
->> 2013-03-26T18:32:17.487+01:00 n22 kernel: WARNING: at mm/page_alloc.c:2376 __alloc_pages_nodemask+0x262/0x7c0()
-> ...
->> 2013-03-26T18:32:17.487+01:00 n22 kernel: [<c110f149>] __kmalloc+0x1b9/0x1e0
->> 2013-03-26T18:32:17.487+01:00 n22 kernel: [<f85835bf>] ? cache_check+0x22f/0x340 [sunrpc]
->> 2013-03-26T18:32:17.487+01:00 n22 kernel: [<f90a0b1c>] nfs4_acl_new+0x1c/0x30 [nfsd]
->> 2013-03-26T18:32:17.488+01:00 n22 kernel: [<f9095482>] nfsd4_decode_fattr+0x302/0x6c0 [nfsd]
-> ...
-> 
-> A different bug, but thanks for catching it, I suspect the following is
-> all we need.
-> 
-> --b.
-> 
-> commit 814d9d4f9164c3d778dadd093a54bb55d9a0c576
-> Author: J. Bruce Fields <bfields@redhat.com>
-> Date:   Tue Mar 26 14:11:13 2013 -0400
-> 
->     nfsd4: reject "negative" acl lengths
->     
->     Since we only enforce an upper bound, not a lower bound, a "negative"
->     length can get through here.
->     
->     The symptom seen was a warning when we attempt to a kmalloc with an
->     excessive size.
->     
->     Reported-by: Toralf Förster <toralf.foerster@gmx.de>
->     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> 
-> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-> index 0dc1158..d1dd710 100644
-> --- a/fs/nfsd/nfs4xdr.c
-> +++ b/fs/nfsd/nfs4xdr.c
-> @@ -264,7 +264,7 @@ nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
->  		iattr->ia_valid |= ATTR_SIZE;
->  	}
->  	if (bmval[0] & FATTR4_WORD0_ACL) {
-> -		int nace;
-> +		u32 nace;
->  		struct nfs4_ace *ace;
->  
->  		READ_BUF(4); len += 4;
-> 
+On Mon, Mar 18, 2013 at 9:54 PM, Lin Feng <linfeng@cn.fujitsu.com> wrote:
+> Also replace deprecated printk(KERN_ERR...) with pr_err() as suggested
+> by Yinghai, attaching the function name to provide plenty info.
+>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+> ---
+>  kernel/range.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/kernel/range.c b/kernel/range.c
+> index 9b8ae2d..071b0ab 100644
+> --- a/kernel/range.c
+> +++ b/kernel/range.c
+> @@ -97,7 +97,8 @@ void subtract_range(struct range *range, int az, u64 start, u64 end)
+>                                 range[i].end = range[j].end;
+>                                 range[i].start = end;
+>                         } else {
+> -                               printk(KERN_ERR "run of slot in ranges\n");
+> +                               pr_err("%s: run out of slot in ranges\n",
+> +                                       __func__);
+>                         }
+>                         range[j].end = start;
+>                         continue;
 
-I applied that patach on top of 3.8.4 and wonders now, whether the
-following is the consequence :
+So now the user might see:
 
-$ df -m /tmp/forT/victims/
-Filesystem     1M-blocks  Used Available Use% Mounted on
-/dev/sdb3         183851 34907    139599  21% /
+    subtract_range: run out of slot in ranges
 
-$ sudo ls -lh --color /tmp/forT/victims/f062
----xr-S--T 2 tfoerste users 985G Mar 27 18:15 /tmp/forT/victims/f062
+What is the user supposed to do when he sees that?  If he happens to
+mention it on LKML, what are we going to do about it?  If he attaches
+the complete dmesg log, is there enough information to do something?
 
-ls shows a 1 TB file within a partition where just 34 MB are used at all
-(its only one partition in that system and a separate small /boot too).
-
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+IMHO, that message is still totally useless.
