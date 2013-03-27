@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab3C0T3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 15:29:54 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:33699 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287Ab3C0T3t (ORCPT
+	id S1754369Ab3C0T3w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 15:29:52 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:48771 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754283Ab3C0T3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 15:29:49 -0400
+	Wed, 27 Mar 2013 15:29:48 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, tj@kernel.org,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>
-Subject: [PATCH v2 5/6] inotify: convert inotify_add_to_idr to use idr_alloc_cyclic
-Date: Wed, 27 Mar 2013 15:29:37 -0400
-Message-Id: <1364412578-7462-6-git-send-email-jlayton@redhat.com>
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org
+Subject: [PATCH v2 4/6] nfsd: convert nfs4_alloc_stid to use idr_alloc_cyclic
+Date: Wed, 27 Mar 2013 15:29:36 -0400
+Message-Id: <1364412578-7462-5-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1364412578-7462-1-git-send-email-jlayton@redhat.com>
 References: <1364412578-7462-1-git-send-email-jlayton@redhat.com>
@@ -23,69 +22,44 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Cc: John McCutchan <john@johnmccutchan.com>
-Cc: Robert Love <rlove@rlove.org>
-Cc: Eric Paris <eparis@parisplace.org>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-nfs@vger.kernel.org
 ---
- fs/notify/inotify/inotify_user.c | 8 ++------
- include/linux/fsnotify_backend.h | 1 -
- 2 files changed, 2 insertions(+), 7 deletions(-)
+ fs/nfsd/nfs4state.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
-index e0f7c12..8562bd3 100644
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -359,7 +359,6 @@ static int inotify_find_inode(const char __user *dirname, struct path *path, uns
- }
- 
- static int inotify_add_to_idr(struct idr *idr, spinlock_t *idr_lock,
--			      int *last_wd,
- 			      struct inotify_inode_mark *i_mark)
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 2e27430..417c848 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -234,7 +234,6 @@ static struct nfs4_stid *nfs4_alloc_stid(struct nfs4_client *cl, struct
+ kmem_cache *slab)
  {
- 	int ret;
-@@ -367,11 +366,10 @@ static int inotify_add_to_idr(struct idr *idr, spinlock_t *idr_lock,
- 	idr_preload(GFP_KERNEL);
- 	spin_lock(idr_lock);
+ 	struct idr *stateids = &cl->cl_stateids;
+-	static int min_stateid = 0;
+ 	struct nfs4_stid *stid;
+ 	int new_id;
  
--	ret = idr_alloc(idr, i_mark, *last_wd + 1, 0, GFP_NOWAIT);
-+	ret = idr_alloc_cyclic(idr, i_mark, 1, 0, GFP_NOWAIT);
- 	if (ret >= 0) {
- 		/* we added the mark to the idr, take a reference */
- 		i_mark->wd = ret;
--		*last_wd = i_mark->wd;
- 		fsnotify_get_mark(&i_mark->fsn_mark);
- 	}
+@@ -242,7 +241,7 @@ kmem_cache *slab)
+ 	if (!stid)
+ 		return NULL;
  
-@@ -638,8 +636,7 @@ static int inotify_new_watch(struct fsnotify_group *group,
- 	if (atomic_read(&group->inotify_data.user->inotify_watches) >= inotify_max_user_watches)
- 		goto out_err;
- 
--	ret = inotify_add_to_idr(idr, idr_lock, &group->inotify_data.last_wd,
--				 tmp_i_mark);
-+	ret = inotify_add_to_idr(idr, idr_lock, tmp_i_mark);
- 	if (ret)
- 		goto out_err;
- 
-@@ -697,7 +694,6 @@ static struct fsnotify_group *inotify_new_group(unsigned int max_events)
- 
- 	spin_lock_init(&group->inotify_data.idr_lock);
- 	idr_init(&group->inotify_data.idr);
--	group->inotify_data.last_wd = 0;
- 	group->inotify_data.user = get_current_user();
- 
- 	if (atomic_inc_return(&group->inotify_data.user->inotify_devs) >
-diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
-index d5b0910..4b2ee8d 100644
---- a/include/linux/fsnotify_backend.h
-+++ b/include/linux/fsnotify_backend.h
-@@ -157,7 +157,6 @@ struct fsnotify_group {
- 		struct inotify_group_private_data {
- 			spinlock_t	idr_lock;
- 			struct idr      idr;
--			u32             last_wd;
- 			struct user_struct      *user;
- 		} inotify_data;
- #endif
+-	new_id = idr_alloc(stateids, stid, min_stateid, 0, GFP_KERNEL);
++	new_id = idr_alloc_cyclic(stateids, stid, 0, 0, GFP_KERNEL);
+ 	if (new_id < 0)
+ 		goto out_free;
+ 	stid->sc_client = cl;
+@@ -261,10 +260,6 @@ kmem_cache *slab)
+ 	 * amount of time until an id is reused, by ensuring they always
+ 	 * "increase" (mod INT_MAX):
+ 	 */
+-
+-	min_stateid = new_id+1;
+-	if (min_stateid == INT_MAX)
+-		min_stateid = 0;
+ 	return stid;
+ out_free:
+ 	kfree(stid);
 -- 
 1.7.11.7
 
