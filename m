@@ -1,42 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab3C0NUV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 09:20:21 -0400
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:45399 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3C0NUR (ORCPT
+	id S1751473Ab3C0NZJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 09:25:09 -0400
+Received: from smtp2.ispfabriek.nl ([188.142.0.19]:50013 "EHLO
+	smtp2.ispfabriek.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab3C0NZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 09:20:17 -0400
+	Wed, 27 Mar 2013 09:25:07 -0400
+Message-ID: <5152F321.7020604@xmsnet.nl>
+Date: Wed, 27 Mar 2013 14:24:49 +0100
+From: Hans de Bruin <jmdebruin@xmsnet.nl>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121030 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1363966065-2478-4-git-send-email-lee.jones@linaro.org>
-References: <1363966065-2478-1-git-send-email-lee.jones@linaro.org>
-	<1363966065-2478-4-git-send-email-lee.jones@linaro.org>
-Date: Wed, 27 Mar 2013 14:20:17 +0100
-Message-ID: <CACRpkdZovM_uqV3Bb-jxirJfda3PThST805X=htFhzN0pKEJNQ@mail.gmail.com>
-Subject: Re: [PATCH 4/5] ARM: ux500: Supply a DTS file for the u8540 platform
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alexander van Heukelum <heukelum@fastmail.fm>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: regression: grass turns red
+References: <514F6DF9.1070602@xmsnet.nl> <1364332526.8559.140661209554365.0203B0A4@webmail.messagingengine.com>
+In-Reply-To: <1364332526.8559.140661209554365.0203B0A4@webmail.messagingengine.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 4:27 PM, Lee Jones <lee.jones@linaro.org> wrote:
-
-> This is a skeleton DTS file which only enables serial. Just using
-> this simple file yields a terminal when booting u8540.
+On 03/26/2013 10:15 PM, Alexander van Heukelum wrote:
+> Hi Hans,
 >
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Could you check if the attached patch solves your problem?
+>
 
-There is a file for ccu9540.dts so please rename this
-to ccu8540.dts for consistence.
+Yep, the grass is green again.
 
-(Apart from that it looks all right, a bit messy to see
-which files belong to the ST-Ericsson platforms actually,
-but I heard the dts folks are working on per-vendor subdirs
-so lets wait for that.)
+-- 
+Hans
 
-Yours,
-Linus Wallei
