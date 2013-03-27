@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab3C0OhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 10:37:19 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:48439 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab3C0OhR (ORCPT
+	id S1753571Ab3C0Ohh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 10:37:37 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:59783 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753477Ab3C0Ohg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 10:37:17 -0400
+	Wed, 27 Mar 2013 10:37:36 -0400
+Date: Wed, 27 Mar 2013 07:37:15 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Joerg Roedel <joro@8bytes.org>, Borislav Petkov <bp@alien8.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
+ asm/8267
+Message-ID: <20130327143715.GY4379@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130324115556.GA4866@pd.tnic>
+ <20130324155924.GB4866@pd.tnic>
+ <20130326183452.GC27518@pd.tnic>
+ <20130327131532.GL30540@8bytes.org>
+ <1364393852.5053.74.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <CAKohpok6PsvmixDUEoWMTCOWxOPH9vfeJwee0VcQJ-=JGib7VA@mail.gmail.com>
-References: <cover.1362381470.git.viresh.kumar@linaro.org>
-	<0823a96fea2d8284b7d83cee390dd5973fdaaa94.1362381470.git.viresh.kumar@linaro.org>
-	<CAKohponTZ29BX6CrUvFMy9RXV==0wRFu4C-W1xd6t1RmLASTvQ@mail.gmail.com>
-	<2565053.YP0dCLmaW9@vostro.rjw.lan>
-	<20130326152059.GA1698@jshin-Toonie>
-	<CAKohpons4Tr8F2RuRGCxbOFmJaK9YbAafV-3v6=cijRupe2hUA@mail.gmail.com>
-	<20130326194832.GB24945@jshin-Toonie>
-	<CAKohpomaTLPZjxcTGKo2mmcqgPvqQVsj1778X1u2rbb3wV+phA@mail.gmail.com>
-	<CAKohpo=A4BBecmepsYSqHYrJg5n9WE-QB3ssvb_dOBZYXuB-eg@mail.gmail.com>
-	<CAKohpok6PsvmixDUEoWMTCOWxOPH9vfeJwee0VcQJ-=JGib7VA@mail.gmail.com>
-Date: Wed, 27 Mar 2013 20:07:15 +0530
-Message-ID: <CAKohponLA=LJbUmrrw2oLPKTm9ekrkGGWsZgC+4ik9nBW3pAWw@mail.gmail.com>
-Subject: Re: [PATCH V3 2/4] cpufreq: governor: Implement per policy instances
- of governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, Arvind Chauhan <Arvind.Chauhan@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364393852.5053.74.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032714-3620-0000-0000-000001CAFEF5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 March 2013 17:05, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 27 March 2013 15:34, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> I am still stuck at a issue, which i am not able to fix.
->> - cat of */cpufreq/ondemand/** isn't showing anything on console, but all
->>   pointers are correctly set and i can see the right values with printk()
->
-> The culprit is the part where i changed prototypes of all show/store functions.
-> I am still trying to understand how that part works, and will fix it soon.
+On Wed, Mar 27, 2013 at 03:17:32PM +0100, Peter Zijlstra wrote:
+> On Wed, 2013-03-27 at 14:15 +0100, Joerg Roedel wrote:
+> > What makes me wonder here is that the code is preemptible in an
+> > rcu_read_locked section. As far as I know preemption needs to be
+> > disabled while holding the rcu_read_lock().
+> 
+> Nah, a long long time ago some -rt people complained to paulmck that
+> keeping preemption disabled over all this RCU stuff was killing
+> latencies. Paul liked the challenge and came up with some mind twisting
+> stuff to make it work.
 
-It seems i have broken some other stuff too with this patch:
+What can I say?  I was young and foolish.  And I still am pretty
+foolish.  ;-)
 
-commit 63173d01761a442ac5a7c73de996acbe9b0b3da7
-Author: Viresh Kumar <viresh.kumar@linaro.org>
-Date:   Wed Feb 6 15:37:37 2013 +0530
+But yes, you are not required to disable preemption across
+rcu_read_lock(), and rcu_read_lock() is not guaranteed to disable
+preemption.  So if you need preemption to be disabled, do it explicitly
+with preempt_disable(), local_irq_save(), rcu_read_lock_sched(),
+or whatever, because rcu_read_lock() isn't always going to disable
+preemption.
 
-    cpufreq: Get rid of "struct global_attr"
+> If you're into that kind of pain, look at CONFIG_*_PREEMPT_RCU :-)
 
-    We don't need to keep two structures for file attributes, global_attr and
-    freq_attr. Lets use freq_attr only for cpufreq core and drivers.
+Or just set CONFIG_PREEMPT=y, which will set CONFIG_TREE_PREEMPT_RCU=y
+on CONFIG_SMP=y builds and will set CONFIG_TINY_PREEMPT_RCU=y otherwise.
+(But please note that CONFIG_TINY_PREEMPT_RCU is going away, after which
+CONFIG_PREEMPT=y will always set CONFIG_TREE_PREEMPT_RCU=y.)
 
-    Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-    Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/cpufreq/acpi-cpufreq.c |  9 ++++-----
- drivers/cpufreq/intel_pstate.c | 20 ++++++++++----------
- include/linux/cpufreq.h        | 16 ----------------
+							Thanx, Paul
 
-Atleast both acpi-cpufreq and intel_pstate (including cpufreq as a whole). :(
+> But yeah, you need to have that stuff enabled before you can hit this
+> particular snag.
+> 
 
-And i don't want to post any more fixups now.. they are huge and will create
-more confusion..
-
-Rather i will send next version of my patchset and ask Rafael to drop earlier
-patches.
-
-Will cc you, please try them at your end.
-
---
-viresh
