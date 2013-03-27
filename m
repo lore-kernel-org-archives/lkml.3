@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab3C0PIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 11:08:50 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56448 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab3C0PIt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 11:08:49 -0400
-From: Mugunthan V N <mugunthanvnm@ti.com>
-To: <joe@perches.com>
-CC: <apw@canonical.com>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, Mugunthan V N <mugunthanvnm@ti.com>
-Subject: [PATCH 1/1] checkpatch: adding Suggested-by as standard signature
-Date: Wed, 27 Mar 2013 20:38:22 +0530
-Message-ID: <1364396902-16749-1-git-send-email-mugunthanvnm@ti.com>
-X-Mailer: git-send-email 1.8.1
+	id S1753183Ab3C0PJn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 11:09:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54230 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751552Ab3C0PJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 11:09:41 -0400
+Date: Wed, 27 Mar 2013 16:09:38 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Cc: daniel.leung@linux.intel.com, srinivas.pandruvada@intel.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: hid-sensor-hub: do not process feature reports in
+ raw_event
+In-Reply-To: <51507136.4020308@linux.intel.com>
+Message-ID: <alpine.LNX.2.00.1303271608500.23442@pobox.suse.cz>
+References: <1363886546-6517-1-git-send-email-daniel.leung@linux.intel.com> <51507136.4020308@linux.intel.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As people started using Suggested-by as standard signature, adding
-"Suggested-by" to the standard signature so that checkpatch won't
-generate warning when Suggested-by is used in patch signature
+On Mon, 25 Mar 2013, Srinivas Pandruvada wrote:
 
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
----
- scripts/checkpatch.pl |    1 +
- 1 file changed, 1 insertion(+)
+> Daniel,
+> 
+> I am looking at 3.9.rc1.
+> The only place I see the raw_event callback is called from
+> hid/hid_input_report(). hid_input_report is called with type HID_INPUT_REPORT
+> in all cases, except hid_ctrl(), where it can be different depending on
+> xx.report->type. But here, the return value is not checked.
+> 
+> Do you know the call chain for HID_FETURE_REPORT, where this is creating
+> problem?
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index b28cc38..6be4d27 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -281,6 +281,7 @@ our $signature_tags = qr{(?xi:
- 	Tested-by:|
- 	Reviewed-by:|
- 	Reported-by:|
-+	Suggested-by:|
- 	To:|
- 	Cc:
- )};
+This was exactly what I was wondering about when I have seen the initial 
+patch a few weeks ago.
+
+Daniel, could you please elaborate? Is there a out-of-tree driver for Acer 
+Iconia W700?
+
+Thanks,
+
 -- 
-1.7.9.5
-
+Jiri Kosina
+SUSE Labs
