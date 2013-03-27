@@ -1,158 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729Ab3C0CTK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 22:19:10 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:55690 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625Ab3C0CTH convert rfc822-to-8bit (ORCPT
+	id S1754037Ab3C0CWS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 22:22:18 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56198 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753837Ab3C0CWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 22:19:07 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: =?utf-8?q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <b810d127-dad8-447c-bf88-8ac715debbff@CO9EHSMHS026.ehs.local>
-Cc: Josh Cartwright <josh.cartwright@ni.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <pcrost@xilinx.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <git@xilinx.com>,
-        =?utf-8?q?Jan_L=C3=BCbbe?= <jlu@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-References: <27dae808-1d3a-4001-8eb2-b0a6e2a34b8f@AM1EHSMHS013.ehs.local>
- <515093B4.2090701@wwwdotorg.org>
- <8fd7278d-37c5-48ff-8d06-edc64d532a96@VA3EHSMHS037.ehs.local>
- <5150DEB6.7070208@wwwdotorg.org>
- <b810d127-dad8-447c-bf88-8ac715debbff@CO9EHSMHS026.ehs.local>
-Message-ID: <20130327021844.4014.43809@quantum>
-User-Agent: alot/0.3.3+
-Subject: Re: RFC v2: Zynq Clock Controller
-Date: Tue, 26 Mar 2013 19:18:44 -0700
+	Tue, 26 Mar 2013 22:22:17 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-eb-515257d64d34
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>
+Subject: [RFC] mm: remove swapcache page early
+Date: Wed, 27 Mar 2013 11:22:12 +0900
+Message-Id: <1364350932-12853-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.8.2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Sören Brinkmann (2013-03-25 17:03:24)
-> On Mon, Mar 25, 2013 at 05:33:10PM -0600, Stephen Warren wrote:
-> > On 03/25/2013 12:27 PM, Sören Brinkmann wrote:
-> > > Hi Stephen,
-> > > 
-> > > On Mon, Mar 25, 2013 at 12:13:08PM -0600, Stephen Warren wrote:
-> > >> On 03/20/2013 05:56 PM, Sören Brinkmann wrote:
-> > >>> Hi,
-> > >>>
-> > >>> I spent some time working on this and incorporating feedback. Here's an updated proposal for a clock controller for Zynq:
-> > >>>
-> > >>> Required properties:
-> > >>>  - #clock-cells : Must be 1
-> > >>>  - compatible : "xlnx,ps7-clkc"  (this may become 'xlnx,zynq-clkc' terminology differs a bit between Xilinx internal and mainline)
-> > >>>  - ps-clk-frequency : Frequency of the oscillator providing ps_clk in HZ
-> > >>>                      (usually 33 MHz oscillators are used for Zynq platforms)
-> > >>
-> > >> This may have been mentioned before, but shouldn't the input clock be
-> > >> represented as an actual clock in DT, and hence as an entry in this
-> > >> node's clocks property? The crystal/... itself can be represented in DT
-> > >> as a fixed-clock.
-> > > Lars-Peter brought that up, too. Please refer to my answer to him.
-> > > 
-> > >>
-> > >>>  - clock-output-names : List of strings used to name the clock outputs. Shall be a list of the outputs given below.
-> > >>
-> > >> That shouldn't be required.
-> > >
-> > > When I want to support of_clk_get_parent_name() for my clocks, I think
-> > > it is. And I'm inclined to not brake this functionality.
-> > 
-> > The solution here is to make clock parent names irrelevant.
-> > 
-> > Also note that device tree is supposed to describe HW. As such, this
-> > kind of internal implementation detail of the Linux clock driver should
-> > have basically zero effect on the DT binding definition.
-> > 
-> > >>> Optional properties:
-> > >>>  - clocks : as described in the clock bindings
-> > >>>  - clock-names : as described in the clock bindings
-> > >>
-> > >> I think clocks should be required, with at least the main crystal clock
-> > >> input always present, but perhaps having some optional entries for the
-> > >> (E)MIO feature you mention.
-> > >
-> > > This is why I have the xtal separate. This way these props are purely
-> > > optional and the xtal frequency is obtained separately. It also makes it
-> > > a little easier internally, because I don't have to cope with a variable
-> > > name for the xtal this way.
-> > > 
-> > > Describing the xtal as fixed clock in DT means a mandatory entry for
-> > > 'clocks' and 'clock-names' and a variable name for the xtal clock. I
-> > > wanted to avoid this.
-> > 
-> > I don't see any benefit with some properties being purely optional.
-> > Having optional entries in a property seems just fine to me.
-> > 
-> > The name of the crystal clock should be irrelevant; that issue simply
-> > needs to be fixed. It's driving too much of this discussion, and it will
-> > be irrelevant once it's fixed.
-> > 
-> > >>> Example:
-> > >>>         clkc: clkc {
-> > >>>                 #clock-cells = <1>;
-> > >>>                 compatible = "xlnx,ps7-clkc";
-> > >>>                 ps-clk-frequency = <33333333>;
-> > >>>                 clock-output-names = "armpll", "ddrpll", "iopll", "cpu_6or4x", "cpu_3or2x", "cpu_2x", "cpu_1x", "ddr2x", "ddr3x", "dci", "lqspi", "smc", "pcap", "gem0", "gem1", "fclk0", "fclk1", "fclk2", "fclk3", "can0", "can1", "sdio0", "sdio1", "uart0", "uart1", "spi0", "spi1", "dma", "usb0_aper", "usb1_aper", "gem0_aper", "gem1_aper", "sdio0_aper", "sdio1_aper", "spi0_aper", "spi1_aper", "can0_aper", "can1_aper", "i2c0_aper", "i2c1_aper", "uart0_aper", "uart1_aper", "gpio_aper", "lqspi_aper", "smc_aper", "swdt", "dbg_trc", "dbg_apb";  /* long list... explanation below */
-> > >>>                 /* optional props */
-> > >>>                 clocks = <&clkc 16>, <&clk_foo>;
-> > >>>                 clock-names = "gem1_emio_clk", "can_mio_clk_23";
-> > >>>         };
-> > >>>
-> > >>> The downside of supporting this is, that I don't see a way around explicitly listing the clock output names in the DT.
-> > >>
-> > >> (Please wrap your emails to ~74 characters or so)
-> > > I changed my settings.
-> > > 
-> > >>
-> > >> As Mike mentioned off-list, one can create a new clk registration API
-> > >> that takes a struct clk* as parent rather than a char *clk_name.
-> > >
-> > > Then we also have to make sure clocks are probed in a specific order. To
-> > > obtain a 'struct clk *' through clk_get() the requested clock has to be
-> > > already been probed. Currently clock probing relies purely on data present
-> > > in DT. This makes this proposal not that trivial, IMHO.
-> > 
-> > Simply use deferred probe.
-> This would require major changes to the whole clock probing mechanism.
+Swap subsystem does lazy swap slot free with expecting the page
+would be swapped out again so we can't avoid unnecessary write.
 
-Which mechanism are you referring to?
+But the problem in in-memory swap is that it consumes memory space
+until vm_swap_full(ie, used half of all of swap device) condition
+meet. It could be bad if we use multiple swap device, small in-memory swap
+and big storage swap or in-memory swap alone.
 
-> Currently, clocks can not defer probing. And in case of circular
-> dependencies in the clock tree, it would rather require a multiple steps
-> probe. Simply deferring won't be enough.
+This patch changes vm_swap_full logic slightly so it could free
+swap slot early if the backed device is really fast.
+For it, I used SWP_SOLIDSTATE but It might be controversial.
+So let's add Ccing Shaohua and Hugh.
+If it's a problem for SSD, I'd like to create new type SWP_INMEMORY
+or something for z* family.
 
-Circular dependencies in the clock tree?
+Other problem is zram is block device so that it can set SWP_INMEMORY
+or SWP_SOLIDSTATE easily(ie, actually, zram is already done) but
+I have no idea to use it for frontswap.
 
-Anyways the clock core maintains an orphan list that was originally
-designed for this problem: registering a clock before that clock's
-parent is registered.  Just for kicks I have actually registered all of
-OMAP4's clocks in exactly the opposite order and everything still works.
-Of course this makes the clock registration parent-discovery code
-O(n^2), but that is the same worst case for deferred probe.
+Any idea?
 
-As long as a key exists to link two clocks together then registration
-order shouldn't matter.  Originally this key was an immutable clk name
-string.
+Other optimize point is we remove it unconditionally when we
+found it's exclusive when swap in happen.
+It could help frontswap family, too.
+What do you think about it?
 
-If clock parents are specified in DT then that should also suffice, in
-place of doing string comparisons.
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Nitin Gupta <ngupta@vflare.org>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
+Cc: Shaohua Li <shli@kernel.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ include/linux/swap.h | 11 ++++++++---
+ mm/memory.c          |  3 ++-
+ mm/swapfile.c        | 11 +++++++----
+ mm/vmscan.c          |  2 +-
+ 4 files changed, 18 insertions(+), 9 deletions(-)
 
-If no key to pair up clocks exists then yes we will have to rely purely
-on the struct clk *opaque_cookie and register clocks in order.
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 2818a12..1f4df66 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -359,9 +359,14 @@ extern struct page *swapin_readahead(swp_entry_t, gfp_t,
+ extern atomic_long_t nr_swap_pages;
+ extern long total_swap_pages;
+ 
+-/* Swap 50% full? Release swapcache more aggressively.. */
+-static inline bool vm_swap_full(void)
++/*
++ * Swap 50% full or fast backed device?
++ * Release swapcache more aggressively.
++ */
++static inline bool vm_swap_full(struct swap_info_struct *si)
+ {
++	if (si->flags & SWP_SOLIDSTATE)
++		return true;
+ 	return atomic_long_read(&nr_swap_pages) * 2 < total_swap_pages;
+ }
+ 
+@@ -405,7 +410,7 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
+ #define get_nr_swap_pages()			0L
+ #define total_swap_pages			0L
+ #define total_swapcache_pages()			0UL
+-#define vm_swap_full()				0
++#define vm_swap_full(si)			0
+ 
+ #define si_swapinfo(val) \
+ 	do { (val)->freeswap = (val)->totalswap = 0; } while (0)
+diff --git a/mm/memory.c b/mm/memory.c
+index 705473a..1ca21a9 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3084,7 +3084,8 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	mem_cgroup_commit_charge_swapin(page, ptr);
+ 
+ 	swap_free(entry);
+-	if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
++	if (likely(PageSwapCache(page)) && (vm_swap_full(page_swap_info(page))
++			|| (vma->vm_flags & VM_LOCKED) || PageMlocked(page)))
+ 		try_to_free_swap(page);
+ 	unlock_page(page);
+ 	if (page != swapcache) {
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 1bee6fa..f9cc701 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -293,7 +293,7 @@ checks:
+ 		scan_base = offset = si->lowest_bit;
+ 
+ 	/* reuse swap entry of cache-only swap if not busy. */
+-	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
++	if (vm_swap_full(si) && si->swap_map[offset] == SWAP_HAS_CACHE) {
+ 		int swap_was_freed;
+ 		spin_unlock(&si->lock);
+ 		swap_was_freed = __try_to_reclaim_swap(si, offset);
+@@ -382,7 +382,8 @@ scan:
+ 			spin_lock(&si->lock);
+ 			goto checks;
+ 		}
+-		if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
++		if (vm_swap_full(si) &&
++			si->swap_map[offset] == SWAP_HAS_CACHE) {
+ 			spin_lock(&si->lock);
+ 			goto checks;
+ 		}
+@@ -397,7 +398,8 @@ scan:
+ 			spin_lock(&si->lock);
+ 			goto checks;
+ 		}
+-		if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
++		if (vm_swap_full(si) &&
++			si->swap_map[offset] == SWAP_HAS_CACHE) {
+ 			spin_lock(&si->lock);
+ 			goto checks;
+ 		}
+@@ -763,7 +765,8 @@ int free_swap_and_cache(swp_entry_t entry)
+ 		 * Also recheck PageSwapCache now page is locked (above).
+ 		 */
+ 		if (PageSwapCache(page) && !PageWriteback(page) &&
+-				(!page_mapped(page) || vm_swap_full())) {
++				(!page_mapped(page) ||
++				  vm_swap_full(page_swap_info(page)))) {
+ 			delete_from_swap_cache(page);
+ 			SetPageDirty(page);
+ 		}
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index df78d17..145c59c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -933,7 +933,7 @@ cull_mlocked:
+ 
+ activate_locked:
+ 		/* Not a candidate for swapping, so reclaim swap space. */
+-		if (PageSwapCache(page) && vm_swap_full())
++		if (PageSwapCache(page) && vm_swap_full(page_swap_info(page)))
+ 			try_to_free_swap(page);
+ 		VM_BUG_ON(PageActive(page));
+ 		SetPageActive(page);
+-- 
+1.8.2
 
-Regards,
-Mike
-
-> 
->         Sören
