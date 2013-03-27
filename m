@@ -1,76 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab3C0VfZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 17:35:25 -0400
-Received: from mout.gmx.net ([212.227.17.20]:53514 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752518Ab3C0VfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 17:35:16 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1+6bIdYmYq6PNFnNurcroy+hc9u1Viby4heZajCO3
-	oyT0M4euDSskQp
-Message-ID: <51536610.7010809@gmx.de>
-Date: Wed, 27 Mar 2013 22:35:12 +0100
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130309 Thunderbird/17.0.4
+	id S1753183Ab3C0Vla (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 17:41:30 -0400
+Received: from mail-da0-f43.google.com ([209.85.210.43]:39993 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804Ab3C0Vl3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 17:41:29 -0400
+Date: Wed, 27 Mar 2013 14:41:07 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Minchan Kim <minchan@kernel.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC] mm: remove swapcache page early
+In-Reply-To: <1364350932-12853-1-git-send-email-minchan@kernel.org>
+Message-ID: <alpine.LNX.2.00.1303271230210.29687@eggly.anvils>
+References: <1364350932-12853-1-git-send-email-minchan@kernel.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: kernel 3.8.4 : kernel BUG at fs/locks.c:2093!   part #2
-References: <514F31AF.3080709@gmx.de> <20130325220143.GD10887@fieldses.org> <20130326144640.GB3353@fieldses.org>
-In-Reply-To: <20130326144640.GB3353@fieldses.org>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2013 03:46 PM, J. Bruce Fields wrote:
-> Can you run with test patches?
+On Wed, 27 Mar 2013, Minchan Kim wrote:
 
-applied - today I got a warning instead a bug at the host kernel (3.8.4):
+> Swap subsystem does lazy swap slot free with expecting the page
+> would be swapped out again so we can't avoid unnecessary write.
+                             so we can avoid unnecessary write.
+> 
+> But the problem in in-memory swap is that it consumes memory space
+> until vm_swap_full(ie, used half of all of swap device) condition
+> meet. It could be bad if we use multiple swap device, small in-memory swap
+> and big storage swap or in-memory swap alone.
 
+That is a very good realization: it's surprising that none of us
+thought of it before - no disrespect to you, well done, thank you.
 
-2013-03-27T22:28:43.480+01:00 n22 kernel: ------------[ cut here ]------------
-2013-03-27T22:28:43.480+01:00 n22 kernel: WARNING: at fs/locks.c:2093 locks_remove_flock+0xe5/0x110()
-2013-03-27T22:28:43.480+01:00 n22 kernel: Hardware name: 4180F65
-2013-03-27T22:28:43.480+01:00 n22 kernel: Modules linked in: loop md5 nfsd auth_rpcgss ipt_MASQUERADE xt_owner xt_multiport ipt_REJECT xt_tcpudp xt_recent xt_conntrack nf_conntrack_ftp xt_limit xt_LOG iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_filter ip_tables x_tables af_packet pppoe pppox ppp_generic slhc bridge stp llc tun msr i915 cfbfillrect cfbimgblt i2c_algo_bit cfbcopyarea intel_agp intel_gtt sdhci_pci fbcon bitblit softcursor font drm_kms_helper sdhci usblp drm arc4 mmc_core iwldvm mac80211 uvcvideo videobuf2_vmalloc snd_hda_codec_conexant videobuf2_memops videobuf2_core coretemp videodev acpi_cpufreq iwlwifi mperf cfg80211 snd_hda_intel agpgart fb fbdev i2c_i801 thinkpad_acpi processor video thermal ac snd_hda_codec snd_pcm snd_page_alloc 8250_pci i2c_core kvm_intel snd_timer nvram snd soundcore 8250_core e1000e serial_core button tpm_tis tpm kvm rfkill tpm_bios psmouse thermal_sys battery wmi evdev hwmon aesni_intel ablk_helper cryp
-td lrw aes_i586 xts gf128mul cbc sha256_generic fuse nfs lockd sunrpc dm_crypt dm_mod hid_monterey hid_microsoft hid_logitech hid_ezkey hid_cypress hid_chicony hid_cherry hid_belkin hid_apple hid_a4tech hid_generic usbhid hid sr_mod cdrom sg [last unloaded: microcode]
-2013-03-27T22:28:43.480+01:00 n22 kernel: Pid: 7442, comm: nfsd Not tainted 3.8.4 #13
-2013-03-27T22:28:43.480+01:00 n22 kernel: Call Trace:
-2013-03-27T22:28:43.480+01:00 n22 kernel: [<c1033ba2>] warn_slowpath_common+0x72/0xa0
-2013-03-27T22:28:43.480+01:00 n22 kernel: [<c1160885>] ? locks_remove_flock+0xe5/0x110
-2013-03-27T22:28:43.480+01:00 n22 kernel: [<c1160885>] ? locks_remove_flock+0xe5/0x110
-2013-03-27T22:28:43.480+01:00 n22 kernel: [<c1033bf2>] warn_slowpath_null+0x22/0x30
-2013-03-27T22:28:43.480+01:00 n22 kernel: [<c1160885>] locks_remove_flock+0xe5/0x110
-2013-03-27T22:28:43.480+01:00 n22 kernel: [<c110eb53>] ? kmem_cache_alloc+0x73/0x140
-2013-03-27T22:28:43.480+01:00 n22 kernel: [<c111e719>] __fput+0x79/0x1f0
-2013-03-27T22:28:43.480+01:00 n22 kernel: [<c111ed1b>] __fput_sync+0x4b/0x60
-2013-03-27T22:28:43.480+01:00 n22 kernel: [<f8bb8b17>] __nfs4_file_put_access+0x57/0x80 [nfsd]
-2013-03-27T22:28:43.480+01:00 n22 kernel: [<f8bb8b73>] nfs4_file_put_access+0x33/0x40 [nfsd]
-2013-03-27T22:28:43.480+01:00 n22 kernel: [<f8bbd4f6>] nfsd4_open_downgrade+0x1b6/0x210 [nfsd]
-2013-03-27T22:28:43.480+01:00 n22 kernel: [<f8bbd340>] ? nfsd4_open_confirm+0x130/0x130 [nfsd]
-2013-03-27T22:28:43.480+01:00 n22 kernel: [<f8baf94b>] nfsd4_proc_compound+0x41b/0x530 [nfsd]
-2013-03-27T22:28:43.480+01:00 n22 kernel: [<f8bbf180>] ? nfsd4_set_lockstateid+0x50/0x50 [nfsd]
-2013-03-27T22:28:43.481+01:00 n22 kernel: [<f8ba1ba0>] nfsd_dispatch+0xa0/0x1b0 [nfsd]
-2013-03-27T22:28:43.481+01:00 n22 kernel: [<f857b8a8>] svc_process+0x3f8/0x6d0 [sunrpc]
-2013-03-27T22:28:43.481+01:00 n22 kernel: [<f8586d5e>] ? svc_xprt_received+0x3e/0x80 [sunrpc]
-2013-03-27T22:28:43.481+01:00 n22 kernel: [<f85879e1>] ? svc_recv+0x2d1/0x3c0 [sunrpc]
-2013-03-27T22:28:43.481+01:00 n22 kernel: [<f8ba165d>] nfsd+0xad/0x110 [nfsd]
-2013-03-27T22:28:43.481+01:00 n22 kernel: [<f8ba15b0>] ? nfsd_destroy+0x70/0x70 [nfsd]
-2013-03-27T22:28:43.481+01:00 n22 kernel: [<c1053b94>] kthread+0x94/0xa0
-2013-03-27T22:28:43.481+01:00 n22 kernel: [<c13d0f77>] ret_from_kernel_thread+0x1b/0x28
-2013-03-27T22:28:43.481+01:00 n22 kernel: [<c1053b00>] ? flush_kthread_work+0xd0/0xd0
-2013-03-27T22:28:43.481+01:00 n22 kernel: ---[ end trace 66f6fe36b0d13e8f ]---
+And I guess swap readahead is utterly unhelpful in this case too.
 
+> 
+> This patch changes vm_swap_full logic slightly so it could free
+> swap slot early if the backed device is really fast.
+> For it, I used SWP_SOLIDSTATE but It might be controversial.
 
-The UML kernel was 3.9.0-rc4-00144-ga8c4528, and the trinity command just :
-$> trinity --children 2 --victims /mnt/nfs/n22/victims -x mremap
+But I strongly disagree with almost everything in your patch :)
+I disagree with addressing it in vm_swap_full(), I disagree that
+it can be addressed by device, I disagree that it has anything to
+do with SWP_SOLIDSTATE.
 
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+This is not a problem with swapping to /dev/ram0 or to /dev/zram0,
+is it?  In those cases, a fixed amount of memory has been set aside
+for swap, and it works out just like with disk block devices.  The
+memory set aside may be wasted, but that is accepted upfront.
+
+Similarly, this is not a problem with swapping to SSD.  There might
+or might not be other reasons for adjusting the vm_swap_full() logic
+for SSD or generally, but those have nothing to do with this issue.
+
+The problem here is peculiar to frontswap, and the variably sized
+memory behind it, isn't it?  We are accustomed to using swap to free
+up memory by transferring its data to some other, cheaper but slower
+resource.
+
+But in the case of frontswap and zmem (I'll say that to avoid thinking
+through which backends are actually involved), it is not a cheaper and
+slower resource, but the very same memory we are trying to save: swap
+is stolen from the memory under reclaim, so any duplication becomes
+counter-productive (if we ignore cpu compression/decompression costs:
+I have no idea how fair it is to do so, but anyone who chooses zmem
+is prepared to pay some cpu price for that).
+
+And because it's a frontswap thing, we cannot decide this by device:
+frontswap may or may not stand in front of each device.  There is no
+problem with swapcache duplicated on disk (until that area approaches
+being full or fragmented), but at the higher level we cannot see what
+is in zmem and what is on disk: we only want to free up the zmem dup.
+
+I believe the answer is for frontswap/zmem to invalidate the frontswap
+copy of the page (to free up the compressed memory when possible) and
+SetPageDirty on the PageUptodate PageSwapCache page when swapping in
+(setting page dirty so nothing will later go to read it from the
+unfreed location on backing swap disk, which was never written).
+
+We cannot rely on freeing the swap itself, because in general there
+may be multiple references to the swap, and we only satisfy the one
+which has faulted.  It may or may not be a good idea to use rmap to
+locate the other places to insert pte in place of swap entry, to
+resolve them all at once; but we have chosen not to do so in the
+past, and there's no need for that, if the zmem gets invalidated
+and the swapcache page set dirty.
+
+Hugh
+
+> So let's add Ccing Shaohua and Hugh.
+> If it's a problem for SSD, I'd like to create new type SWP_INMEMORY
+> or something for z* family.
+> 
+> Other problem is zram is block device so that it can set SWP_INMEMORY
+> or SWP_SOLIDSTATE easily(ie, actually, zram is already done) but
+> I have no idea to use it for frontswap.
+> 
+> Any idea?
+> 
+> Other optimize point is we remove it unconditionally when we
+> found it's exclusive when swap in happen.
+> It could help frontswap family, too.
+> What do you think about it?
+> 
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
+> Cc: Shaohua Li <shli@kernel.org>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  include/linux/swap.h | 11 ++++++++---
+>  mm/memory.c          |  3 ++-
+>  mm/swapfile.c        | 11 +++++++----
+>  mm/vmscan.c          |  2 +-
+>  4 files changed, 18 insertions(+), 9 deletions(-)
+> 
+> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> index 2818a12..1f4df66 100644
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -359,9 +359,14 @@ extern struct page *swapin_readahead(swp_entry_t, gfp_t,
+>  extern atomic_long_t nr_swap_pages;
+>  extern long total_swap_pages;
+>  
+> -/* Swap 50% full? Release swapcache more aggressively.. */
+> -static inline bool vm_swap_full(void)
+> +/*
+> + * Swap 50% full or fast backed device?
+> + * Release swapcache more aggressively.
+> + */
+> +static inline bool vm_swap_full(struct swap_info_struct *si)
+>  {
+> +	if (si->flags & SWP_SOLIDSTATE)
+> +		return true;
+>  	return atomic_long_read(&nr_swap_pages) * 2 < total_swap_pages;
+>  }
+>  
+> @@ -405,7 +410,7 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
+>  #define get_nr_swap_pages()			0L
+>  #define total_swap_pages			0L
+>  #define total_swapcache_pages()			0UL
+> -#define vm_swap_full()				0
+> +#define vm_swap_full(si)			0
+>  
+>  #define si_swapinfo(val) \
+>  	do { (val)->freeswap = (val)->totalswap = 0; } while (0)
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 705473a..1ca21a9 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3084,7 +3084,8 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	mem_cgroup_commit_charge_swapin(page, ptr);
+>  
+>  	swap_free(entry);
+> -	if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
+> +	if (likely(PageSwapCache(page)) && (vm_swap_full(page_swap_info(page))
+> +			|| (vma->vm_flags & VM_LOCKED) || PageMlocked(page)))
+>  		try_to_free_swap(page);
+>  	unlock_page(page);
+>  	if (page != swapcache) {
+> diff --git a/mm/swapfile.c b/mm/swapfile.c
+> index 1bee6fa..f9cc701 100644
+> --- a/mm/swapfile.c
+> +++ b/mm/swapfile.c
+> @@ -293,7 +293,7 @@ checks:
+>  		scan_base = offset = si->lowest_bit;
+>  
+>  	/* reuse swap entry of cache-only swap if not busy. */
+> -	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
+> +	if (vm_swap_full(si) && si->swap_map[offset] == SWAP_HAS_CACHE) {
+>  		int swap_was_freed;
+>  		spin_unlock(&si->lock);
+>  		swap_was_freed = __try_to_reclaim_swap(si, offset);
+> @@ -382,7 +382,8 @@ scan:
+>  			spin_lock(&si->lock);
+>  			goto checks;
+>  		}
+> -		if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
+> +		if (vm_swap_full(si) &&
+> +			si->swap_map[offset] == SWAP_HAS_CACHE) {
+>  			spin_lock(&si->lock);
+>  			goto checks;
+>  		}
+> @@ -397,7 +398,8 @@ scan:
+>  			spin_lock(&si->lock);
+>  			goto checks;
+>  		}
+> -		if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
+> +		if (vm_swap_full(si) &&
+> +			si->swap_map[offset] == SWAP_HAS_CACHE) {
+>  			spin_lock(&si->lock);
+>  			goto checks;
+>  		}
+> @@ -763,7 +765,8 @@ int free_swap_and_cache(swp_entry_t entry)
+>  		 * Also recheck PageSwapCache now page is locked (above).
+>  		 */
+>  		if (PageSwapCache(page) && !PageWriteback(page) &&
+> -				(!page_mapped(page) || vm_swap_full())) {
+> +				(!page_mapped(page) ||
+> +				  vm_swap_full(page_swap_info(page)))) {
+>  			delete_from_swap_cache(page);
+>  			SetPageDirty(page);
+>  		}
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index df78d17..145c59c 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -933,7 +933,7 @@ cull_mlocked:
+>  
+>  activate_locked:
+>  		/* Not a candidate for swapping, so reclaim swap space. */
+> -		if (PageSwapCache(page) && vm_swap_full())
+> +		if (PageSwapCache(page) && vm_swap_full(page_swap_info(page)))
+>  			try_to_free_swap(page);
+>  		VM_BUG_ON(PageActive(page));
+>  		SetPageActive(page);
+> -- 
+> 1.8.2
