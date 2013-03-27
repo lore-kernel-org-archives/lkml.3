@@ -1,94 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab3C0HSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 03:18:25 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:51088 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab3C0HSY (ORCPT
+	id S1756752Ab3C0HXb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 03:23:31 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46731 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755221Ab3C0HXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 03:18:24 -0400
-X-AuditID: 9c93016f-b7cecae000004cf8-c3-51529d3ed20b
-Date: Wed, 27 Mar 2013 16:18:22 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Arun Sharma <asharma@fb.com>,
-        John Stultz <john.stultz@linaro.org>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Neil Brown <neilb@suse.de>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jason Evans <je@fb.com>, sanjay@google.com,
-        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC v7 00/11] Support vrange for anonymous page
-Message-ID: <20130327071822.GD13897@blaptop>
-References: <1363073915-25000-1-git-send-email-minchan@kernel.org>
- <201303251816.16715.b.zolnierkie@samsung.com>
+	Wed, 27 Mar 2013 03:23:30 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-c9-51529e6f34ad
+From: Namhyung Kim <namhyung@kernel.org>
+To: Roberto Vitillo <ravitillo@lbl.gov>
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com, acme@ghostprotocols.net
+Subject: Re: [PATCH v2] perf: add callgrind conversion tool
+References: <CA+BNSkWCX2TVYU26A7qHFqr6F5Pw44wy76BSfnS5MnVDKGCh9w@mail.gmail.com>
+Date: Wed, 27 Mar 2013 16:23:27 +0900
+In-Reply-To: <CA+BNSkWCX2TVYU26A7qHFqr6F5Pw44wy76BSfnS5MnVDKGCh9w@mail.gmail.com>
+	(Roberto Vitillo's message of "Tue, 26 Mar 2013 12:14:49 -0700")
+Message-ID: <87a9ppgvbk.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201303251816.16715.b.zolnierkie@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bart,
+Hi Roberto,
 
-On Mon, Mar 25, 2013 at 06:16:16PM +0100, Bartlomiej Zolnierkiewicz wrote:
-> 
-> Hi,
-> 
-> On Tuesday 12 March 2013 08:38:24 Minchan Kim wrote:
-> > First of all, let's define the term.
-> > From now on, I'd like to call it as vrange(a.k.a volatile range)
-> > for anonymous page. If you have a better name in mind, please suggest.
-> > 
-> > This version is still *RFC* because it's just quick prototype so
-> > it doesn't support THP/HugeTLB/KSM and even couldn't build on !x86.
-> > Before further sorting out issues, I'd like to post current direction
-> > and discuss it. Of course, I'd like to extend this discussion in
-> > comming LSF/MM.
-> > 
-> > In this version, I changed lots of thing, expecially removed vma-based
-> > approach because it needs write-side lock for mmap_sem, which will drop
-> > performance in mutli-threaded big SMP system, KOSAKI pointed out.
-> > And vma-based approach is hard to meet requirement of new system call by
-> > John Stultz's suggested semantic for consistent purged handling.
-> > (http://linux-kernel.2935.n7.nabble.com/RFC-v5-0-8-Support-volatile-for-anonymous-range-tt575773.html#none)
-> > 
-> > I tested this patchset with modified jemalloc allocator which was
-> > leaded by Jason Evans(jemalloc author) who was interest in this feature
-> > and was happy to port his allocator to use new system call.
-> > Super Thanks Jason!
-> > 
-> > The benchmark for test is ebizzy. It have been used for testing the
-> > allocator performance so it's good for me. Again, thanks for recommending
-> > the benchmark, Jason.
-> > (http://people.freebsd.org/~kris/scaling/ebizzy.html)
-> > 
-> > The result is good on my machine (12 CPU, 1.2GHz, DRAM 2G)
-> > 
-> > 	ebizzy -S 20
-> > 
-> > jemalloc-vanilla: 52389 records/sec
-> > jemalloc-vrange: 203414 records/sec
-> > 
-> > 	ebizzy -S 20 with background memory pressure
-> > 
-> > jemalloc-vanilla: 40746 records/sec
-> > jemalloc-vrange: 174910 records/sec
-> 
-> Could you please make the modified jemalloc/ebizzy available somewhere so
-> there is a easy way to test your patchset?
+On Tue, 26 Mar 2013 12:14:49 -0700, Roberto Vitillo wrote:
+> The proposed patch adds the convert tool to perf which allows to convert a
+> perf.data file to a set of callgrind data files which can subsequently be
+> displayed with kcachegrind.
+>
+> Note that the code may trigger the following bug in libbfd:
+> http://sourceware.org/bugzilla/show_bug.cgi?id=15106
 
-I will try it in next spin.
-Thanks for your interest!
+Does it now support call graph too?  Great if so!
 
-- 
-Kind regards,
-Minchan Kim
+Anyway, I suggest that splitting patch to two - one for addr2line and
+another for actual 'convert' tool.  I think we *can* use the tool
+without libbfd (but with external addr2line binary or even with no line
+number information).
+
+And it seems there's some linewraps.
+
+Thanks,
+Namhyung
