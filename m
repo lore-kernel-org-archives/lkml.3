@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab3C0UKV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 16:10:21 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60289 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754224Ab3C0UKT (ORCPT
+	id S1754554Ab3C0UMj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 16:12:39 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:39012 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754459Ab3C0UMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 16:10:19 -0400
-Date: Wed, 27 Mar 2013 16:10:15 -0400 (EDT)
-Message-Id: <20130327.161015.2272912627472653661.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: geert@linux-m68k.org, pshelar@nicira.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: [PATCH -next] GRE: Use strlcat() for size checking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1364414776.2922.19.camel@bwh-desktop.uk.solarflarecom.com>
-References: <1364410111-29418-1-git-send-email-geert@linux-m68k.org>
-	<1364414776.2922.19.camel@bwh-desktop.uk.solarflarecom.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 27 Mar 2013 13:10:19 -0700 (PDT)
+	Wed, 27 Mar 2013 16:12:38 -0400
+From: Andrei Epure <epure.andrei@gmail.com>
+To: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andrei Epure <epure.andrei@gmail.com>
+Subject: [PATCH] drivers: video: matrox: changed kmalloc+memset with kzalloc
+Date: Wed, 27 Mar 2013 22:12:19 +0200
+Message-Id: <1364415139-22303-1-git-send-email-epure.andrei@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Wed, 27 Mar 2013 20:06:16 +0000
+Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
+---
+ drivers/video/matrox/matroxfb_base.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> On Wed, 2013-03-27 at 19:48 +0100, Geert Uytterhoeven wrote:
->> On m68k, gcc tries to be smart and turns
->> 
->>     strncat(name, "%d", 2);
->> 
->> into a call to strlen() and a 16-bit store, causing a link failure,
->> as arch/m68k/include/asm/string.h provides strlen() using a macro:
->> 
->>     ERROR: "strlen" [net/ipv4/ip_tunnel.ko] undefined!
-> 
-> Perhaps you should fix the string library for m68k, then!
+diff --git a/drivers/video/matrox/matroxfb_base.c b/drivers/video/matrox/matroxfb_base.c
+index 401a56e..2456529 100644
+--- a/drivers/video/matrox/matroxfb_base.c
++++ b/drivers/video/matrox/matroxfb_base.c
+@@ -2029,10 +2029,9 @@ static int matroxfb_probe(struct pci_dev* pdev, const struct pci_device_id* dumm
+ 		return -1;
+ 	}
+ 
+-	minfo = kmalloc(sizeof(*minfo), GFP_KERNEL);
++	minfo = kzalloc(sizeof(*minfo), GFP_KERNEL);
+ 	if (!minfo)
+ 		return -1;
+-	memset(minfo, 0, sizeof(*minfo));
+ 
+ 	minfo->pcidev = pdev;
+ 	minfo->dead = 0;
+-- 
+1.7.9.5
 
-Right, this symbol really must be provided.
-
-You cannot merely provide inlines.
-
-The off-by-one error is seperate, but that should be fixed
-differently.
