@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab3C0QyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 12:54:12 -0400
-Received: from mail-vb0-f41.google.com ([209.85.212.41]:64888 "EHLO
-	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536Ab3C0QyK (ORCPT
+	id S1752734Ab3C0QzL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 12:55:11 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:35859 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265Ab3C0QzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 12:54:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFx=BPQ2empEahqCs2hQ=sRaw3OjJotrS6OMT3e6tUVMLQ@mail.gmail.com>
-References: <CA+55aFzwOnRnp2B09fKjt8hd9tOCv44H482z1QpCnYc2mywnpA@mail.gmail.com>
- <20130310221047.GA21522@ZenIV.linux.org.uk> <20130311003530.GE21522@ZenIV.linux.org.uk>
- <CA+55aFx+TAg+z9eWVm3EeAHQga3ai6YRFEb7rVQ++iNTn4NhGQ@mail.gmail.com>
- <20130311180543.GF21522@ZenIV.linux.org.uk> <20130312130614.GA32237@ZenIV.linux.org.uk>
- <CA+55aFyPUYiFoiLrMCzeHpbAgAignCe_awU7SbvPh+T6eHeqng@mail.gmail.com>
- <20130312194353.GI21522@ZenIV.linux.org.uk> <CA+55aFx-8TrSSJZM-WTDN4Hc3pESLXBsGC9x3xVaxuwxnGKqpA@mail.gmail.com>
- <20130327135127.GB1738@redhat.com> <20130327152030.GY21522@ZenIV.linux.org.uk>
- <CA+55aFx=BPQ2empEahqCs2hQ=sRaw3OjJotrS6OMT3e6tUVMLQ@mail.gmail.com>
-From: Raymond Jennings <shentino@gmail.com>
-Date: Wed, 27 Mar 2013 09:53:29 -0700
-Message-ID: <CAGDaZ_o41yX8i1+dGHzpTB4uDuKRtx-7jQNk_vhi_6E9cc47OQ@mail.gmail.com>
-Subject: Re: Yet another pipe related oops.
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 27 Mar 2013 12:55:09 -0400
+From: Hong Zhiguo <honkiko@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: zbr@ioremap.net, netdev@vger.kernel.org, davem@davemloft.net,
+        tgraf@suug.ch
+Subject: [PATCH 6/6] connector: replace obsolete NLMSG_* with type safe nlmsg_*
+Date: Thu, 28 Mar 2013 00:54:56 +0800
+Message-Id: <1364403296-32880-1-git-send-email-honkiko@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 9:33 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Mar 27, 2013 at 8:20 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->>
->> Actually, that's my fault - check lost in patch reordering.  My apologies ;-/
->> Eventually, we want that in fs/splice.c side of things (no point repeating it
->> for every buffer, after all), but for now this is the obvious minimal fix.
->
-> Applied.
->
-> Do we actually have files with NULL f_ops pointers? Should we? What
-> could we possibly do with a file descriptor that doesn't have any
-> fops?
+Signed-off-by: Hong Zhiguo <honkiko@gmail.com>
+---
+ drivers/connector/connector.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-For the sake of the curious including myself:
+diff --git a/drivers/connector/connector.c b/drivers/connector/connector.c
+index f1b7e24..6ecfa75 100644
+--- a/drivers/connector/connector.c
++++ b/drivers/connector/connector.c
+@@ -23,7 +23,7 @@
+ #include <linux/module.h>
+ #include <linux/list.h>
+ #include <linux/skbuff.h>
+-#include <linux/netlink.h>
++#include <net/netlink.h>
+ #include <linux/moduleparam.h>
+ #include <linux/connector.h>
+ #include <linux/slab.h>
+@@ -95,13 +95,13 @@ int cn_netlink_send(struct cn_msg *msg, u32 __group, gfp_t gfp_mask)
+ 	if (!netlink_has_listeners(dev->nls, group))
+ 		return -ESRCH;
+ 
+-	size = NLMSG_SPACE(sizeof(*msg) + msg->len);
++	size = sizeof(*msg) + msg->len;
+ 
+-	skb = alloc_skb(size, gfp_mask);
++	skb = nlmsg_new(size, gfp_mask);
+ 	if (!skb)
+ 		return -ENOMEM;
+ 
+-	nlh = nlmsg_put(skb, 0, msg->seq, NLMSG_DONE, size - sizeof(*nlh), 0);
++	nlh = nlmsg_put(skb, 0, msg->seq, NLMSG_DONE, size, 0);
+ 	if (!nlh) {
+ 		kfree_skb(skb);
+ 		return -EMSGSIZE;
+@@ -124,7 +124,7 @@ static int cn_call_callback(struct sk_buff *skb)
+ {
+ 	struct cn_callback_entry *i, *cbq = NULL;
+ 	struct cn_dev *dev = &cdev;
+-	struct cn_msg *msg = NLMSG_DATA(nlmsg_hdr(skb));
++	struct cn_msg *msg = nlmsg_data(nlmsg_hdr(skb));
+ 	struct netlink_skb_parms *nsp = &NETLINK_CB(skb);
+ 	int err = -ENODEV;
+ 
+@@ -162,7 +162,7 @@ static void cn_rx_skb(struct sk_buff *__skb)
+ 
+ 	skb = skb_get(__skb);
+ 
+-	if (skb->len >= NLMSG_SPACE(0)) {
++	if (skb->len >= NLMSG_HDRLEN) {
+ 		nlh = nlmsg_hdr(skb);
+ 
+ 		if (nlh->nlmsg_len < sizeof(struct cn_msg) ||
+-- 
+1.7.10.4
 
-How would such a NULL f_ops file get created in the first place?
-
-> Also, perhaps we should do something more akin to what we do for
-> dentry functions where we validate them on registration, and we could
-> fix up or validate read/write pointers, with semantics something like
->
->     if (!fop->write)
->         fop->write = fop->aio_write ? do_sync_write : EINVAL_write;
->     if (!fop->read)
->         fop->read = fop->aio_read ? do_sync_read : EINVAL_read;
->
-> kind of things?
->
-> Not a big deal, perhaps.
->
->               Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
