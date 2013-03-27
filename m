@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753617Ab3C0PhV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 11:37:21 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:50426 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023Ab3C0PhP (ORCPT
+	id S1752276Ab3C0PlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 11:41:05 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:43737 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756Ab3C0PlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 11:37:15 -0400
+	Wed, 27 Mar 2013 11:41:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdY=UXZrRwuWp1JTePG71C=pAPc26kWWRqPZv_qZHc-_bg@mail.gmail.com>
-References: <20130327061114.3356.57465.sendpatchset@w520>
-	<CACRpkdY=UXZrRwuWp1JTePG71C=pAPc26kWWRqPZv_qZHc-_bg@mail.gmail.com>
-Date: Thu, 28 Mar 2013 00:37:13 +0900
-Message-ID: <CANqRtoShQMCS3Cx+r9i1k7fWp6=TgqCX8h3d10qozr4Mt_5wQA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: em: Make use of devm functions
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        horms@verge.net.au, linux-sh@vger.kernel.org
+In-Reply-To: <20130327143447.GB1771@quack.suse.cz>
+References: <514EC323.7050002@gmail.com>
+	<20130326211520.GF2082@quack.suse.cz>
+	<CANGUGtD9BNQO9pvO+yeKHc0qojk61fKYDgKm8kfWzu8pCk=YJw@mail.gmail.com>
+	<20130327143447.GB1771@quack.suse.cz>
+Date: Wed, 27 Mar 2013 16:41:02 +0100
+Message-ID: <CANGUGtDdhbS-7GJ4HDRTN3H-bHvNLGg6tdNsqgZbMGBCxmjjcw@mail.gmail.com>
+Subject: Re: [RFC] fsfreeze: moving from uniterruptible to killable
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 12:01 AM, Linus Walleij
-<linus.walleij@linaro.org> wrote:
-> On Wed, Mar 27, 2013 at 7:11 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
->
->> From: Magnus Damm <damm@opensource.se>
+2013/3/27 Jan Kara <jack@suse.cz>:
+> On Wed 27-03-13 12:39:10, Marco Stornelli wrote:
+>> 2013/3/26 Jan Kara <jack@suse.cz>:
+>> > On Sun 24-03-13 10:10:59, Marco Stornelli wrote:
+>> >> When a fs is frozen, a process can hang because we wait in
+>> >> uniterruptible state. We give the user the possibility to kill the process.
+>> >   Yes, but it needs slightly more work as you probably know... (bailing out
+>> > properly when the signal arrives).
+>> >
+>> >                                                                 Honza
+>> >
 >>
->> Update the Emma Mobile GPIO driver to make use of devm
->> functions. This simplifies the error handling and makes
->> the code more compact.
->>
->> Signed-off-by: Magnus Damm <damm@opensource.se>
+>> Of course, indeed, it was only an RFC to start a discussion, not a
+>> patch :) The point was: is this kind of change a behaviour that can
+>> break user-space in some way? IMHO no, but I'd like to have a
+>> discussion about that before to start coding. What do you think?
+>   Killable wait is almost always safe WRT to userspace breakage. In this
+> case I cannot see how it could matter. That's why I agree it's a good thing
+> to do.
 >
-> I guess this is a resend. IIRC I just applied it some hours ago...
+>                                                                 Honza
 
-Yep, correct. Thanks for your help!
+Yes, I quite agree. I'll try to look at it in a deeply way.
 
-Now if I only could find time to marry the gpio-em.c driver with sh-pfc.c..
+Regards,
 
-/ magnus
+Marco
