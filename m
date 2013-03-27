@@ -1,35 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734Ab3C0Rh0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 13:37:26 -0400
-Received: from pindarots.xs4all.nl ([80.101.128.228]:57591 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab3C0RhZ (ORCPT
+	id S1752692Ab3C0RkS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 13:40:18 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:64041 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417Ab3C0RkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 13:37:25 -0400
-Message-ID: <51532E51.6050201@xs4all.nl>
-Date: Wed, 27 Mar 2013 18:37:21 +0100
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: 3.8.4: ohci question
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Mar 2013 13:40:15 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, dm-devel@vger.kernel.org
+Cc: tj@kernel.org, neilb@suse.de
+Subject: Immutable biovecs
+Date: Wed, 27 Mar 2013 10:39:30 -0700
+Message-Id: <1364405992-28424-1-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch series implements immutable biovecs, and converts drivers to
+the new primitives.
 
-When my dmesg gives me a growing number of lines like the one below,
-what is going on?
+This is done by pulling bi_sector, bi_size and bi_idx out of struct bio
+into a new iterator; to that we add bi_bvec_done which indicates the
+number of bytes done in the current bvec.
 
- ohci_hcd 0000:00:12.0: urb ffff88023025c500 path 2 ep1in 6c160000 cc 6
---> status -71
+This means we can create a bio that points to an arbitrary byte range in
+an existing biovec; if we have a preexisting biovec that points to 4
+whole pages, we can create a bio that points to the first 512 bytes of
+the second bvec.
 
-Please let me know!
+This enables easy and efficient splitting of arbitrary size bios; future
+patches on top of this are going to convert the existing bio_split() in
+fs/bio.c and remove the single bvec restriction.
 
-Kind regards,
-Udo
+This patch series does the necessary driver conversions so that a)
+they're not modifying the biovec anymore (except whey're they've
+explicitly cloned it, as in mm/bounce.c) and b) they always respect the
+values of bi_idx and bi_bvec_done when the bio was passed to them - i.e.
+you can submit partially completed bios to generic_make_request().
+
+The intention is to then use this to make generic_make_request() accept
+arbitrary size bios, splitting them as needed by the underlying device.
+This enables a whole host of cleanups; we can get rid of merge_bvec_fn
+(that's over 1000 lines of code deleted right there), bio_add_page()
+becomes trivial (a lot of code becomes simpler if it doesn't have to
+deal with bio_add_page() failing) - and I've also got a rewrite of the
+dio code that depends on this, and shrinks direct-io.c to 650 lines,
+drastically simplifying it and making it quite a bit faster too.
+
