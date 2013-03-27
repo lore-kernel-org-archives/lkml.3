@@ -1,71 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab3C0Lm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 07:42:57 -0400
-Received: from mga11.intel.com ([192.55.52.93]:23085 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750770Ab3C0Lm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 07:42:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,919,1355126400"; 
-   d="scan'208";a="312589341"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 2/2 V2] mei: drop RECOVERING_FROM_RESET device state
-Date: Wed, 27 Mar 2013 13:42:15 +0200
-Message-Id: <1364384535-31943-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1753299Ab3C0Lop (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 07:44:45 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:54266 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab3C0Lon (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 07:44:43 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Min Zhang <mzhang@mvista.com>, Ilya Zykov <linux@izyk.ru>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v2 04/18] n_tty: Factor canonical mode copy from n_tty_read()
+Date: Wed, 27 Mar 2013 07:43:54 -0400
+Message-Id: <1364384648-6636-5-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1364384648-6636-1-git-send-email-peter@hurleysoftware.com>
+References: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>
+ <1364384648-6636-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ECOVERING_FROM_RESET device state is never set
-we can remove it
+Simplify n_tty_read(); extract complex copy algorithm
+into separate function, canon_copy_to_user().
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
-v2: rebased over char-misc-next: 8c876be81a1f2f0ab33ffb2b00871e65c7a658b3
+ drivers/tty/n_tty.c | 95 ++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 57 insertions(+), 38 deletions(-)
 
- drivers/misc/mei/init.c    | 4 ----
- drivers/misc/mei/mei_dev.h | 1 -
- 2 files changed, 5 deletions(-)
-
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index 1ab1fb1..09a9980 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -34,7 +34,6 @@ const char *mei_dev_state_str(int state)
- 	MEI_DEV_STATE(ENABLED);
- 	MEI_DEV_STATE(RESETING);
- 	MEI_DEV_STATE(DISABLED);
--	MEI_DEV_STATE(RECOVERING_FROM_RESET);
- 	MEI_DEV_STATE(POWER_DOWN);
- 	MEI_DEV_STATE(POWER_UP);
- 	default:
-@@ -139,9 +138,6 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
- {
- 	bool unexpected;
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index a185aff..9888972 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1745,6 +1745,62 @@ static int copy_from_read_buf(struct tty_struct *tty,
+ 	return retval;
+ }
  
--	if (dev->dev_state == MEI_DEV_RECOVERING_FROM_RESET)
--		return;
++/**
++ *	canon_copy_to_user	-	copy read data in canonical mode
++ *	@tty: terminal device
++ *	@b: user data
++ *	@nr: size of data
++ *
++ *	Helper function for n_tty_read.  It is only called when ICANON is on;
++ *	it copies characters one at a time from the read buffer to the user
++ *	space buffer.
++ *
++ *	Called under the atomic_read_lock mutex
++ */
++
++static int canon_copy_to_user(struct tty_struct *tty,
++			      unsigned char __user **b,
++			      size_t *nr)
++{
++	struct n_tty_data *ldata = tty->disc_data;
++	unsigned long flags;
++	int eol, c;
++
++	/* N.B. avoid overrun if nr == 0 */
++	raw_spin_lock_irqsave(&ldata->read_lock, flags);
++	while (*nr && ldata->read_cnt) {
++
++		eol = test_and_clear_bit(ldata->read_tail, ldata->read_flags);
++		c = ldata->read_buf[ldata->read_tail];
++		ldata->read_tail = (ldata->read_tail+1) & (N_TTY_BUF_SIZE-1);
++		ldata->read_cnt--;
++		if (eol) {
++			/* this test should be redundant:
++			 * we shouldn't be reading data if
++			 * canon_data is 0
++			 */
++			if (--ldata->canon_data < 0)
++				ldata->canon_data = 0;
++		}
++		raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
++
++		if (!eol || (c != __DISABLED_CHAR)) {
++			if (tty_put_user(tty, c, *b))
++				return -EFAULT;
++			*b += 1;
++			*nr -= 1;
++		}
++		if (eol) {
++			tty_audit_push(tty);
++			return 0;
++		}
++		raw_spin_lock_irqsave(&ldata->read_lock, flags);
++	}
++	raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
++
++	return 0;
++}
++
+ extern ssize_t redirected_tty_write(struct file *, const char __user *,
+ 							size_t, loff_t *);
+ 
+@@ -1914,44 +1970,7 @@ do_it_again:
+ 		}
+ 
+ 		if (ldata->icanon && !L_EXTPROC(tty)) {
+-			/* N.B. avoid overrun if nr == 0 */
+-			raw_spin_lock_irqsave(&ldata->read_lock, flags);
+-			while (nr && ldata->read_cnt) {
+-				int eol;
 -
- 	unexpected = (dev->dev_state != MEI_DEV_INITIALIZING &&
- 			dev->dev_state != MEI_DEV_DISABLED &&
- 			dev->dev_state != MEI_DEV_POWER_DOWN &&
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index d6fd3d6..091f50af 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -97,7 +97,6 @@ enum mei_dev_state {
- 	MEI_DEV_ENABLED,
- 	MEI_DEV_RESETING,
- 	MEI_DEV_DISABLED,
--	MEI_DEV_RECOVERING_FROM_RESET,
- 	MEI_DEV_POWER_DOWN,
- 	MEI_DEV_POWER_UP
- };
+-				eol = test_and_clear_bit(ldata->read_tail,
+-						ldata->read_flags);
+-				c = ldata->read_buf[ldata->read_tail];
+-				ldata->read_tail = ((ldata->read_tail+1) &
+-						  (N_TTY_BUF_SIZE-1));
+-				ldata->read_cnt--;
+-				if (eol) {
+-					/* this test should be redundant:
+-					 * we shouldn't be reading data if
+-					 * canon_data is 0
+-					 */
+-					if (--ldata->canon_data < 0)
+-						ldata->canon_data = 0;
+-				}
+-				raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
+-
+-				if (!eol || (c != __DISABLED_CHAR)) {
+-					if (tty_put_user(tty, c, b++)) {
+-						retval = -EFAULT;
+-						b--;
+-						raw_spin_lock_irqsave(&ldata->read_lock, flags);
+-						break;
+-					}
+-					nr--;
+-				}
+-				if (eol) {
+-					tty_audit_push(tty);
+-					raw_spin_lock_irqsave(&ldata->read_lock, flags);
+-					break;
+-				}
+-				raw_spin_lock_irqsave(&ldata->read_lock, flags);
+-			}
+-			raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
++			retval = canon_copy_to_user(tty, &b, &nr);
+ 			if (retval)
+ 				break;
+ 		} else {
 -- 
-1.7.11.7
+1.8.1.2
 
