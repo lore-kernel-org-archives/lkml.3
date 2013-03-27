@@ -1,57 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab3C0CNJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 22:13:09 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:33584 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575Ab3C0CNH (ORCPT
+	id S1753729Ab3C0CTK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 22:19:10 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:55690 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab3C0CTH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 22:13:07 -0400
+	Tue, 26 Mar 2013 22:19:07 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <20130326152310.GA9153@roeck-us.net>
-References: <1364281619-13208-1-git-send-email-hongbo.zhang@linaro.org>
-	<1364281619-13208-6-git-send-email-hongbo.zhang@linaro.org>
-	<20130326152310.GA9153@roeck-us.net>
-Date: Wed, 27 Mar 2013 10:13:05 +0800
-Message-ID: <CAJLyvQyghAvh4jw-DHmAsJ0EMHG0eZh8mtfXZTkzYjqpessPZw@mail.gmail.com>
-Subject: Re: [PATCH v6 5/5] hwmon: add ST-Ericsson ABX500 hwmon driver
-From: Hongbo Zhang <hongbo.zhang@linaro.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: khali@linux-fr.org, lm-sensors@lm-sensors.org, cbou@mail.ru,
-        dwmw2@infradead.org, linaro-kernel@lists.linaro.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@linaro.org,
-        lee.jones@linaro.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+To: =?utf-8?q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <b810d127-dad8-447c-bf88-8ac715debbff@CO9EHSMHS026.ehs.local>
+Cc: Josh Cartwright <josh.cartwright@ni.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Peter Crosthwaite <pcrost@xilinx.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <git@xilinx.com>,
+        =?utf-8?q?Jan_L=C3=BCbbe?= <jlu@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+References: <27dae808-1d3a-4001-8eb2-b0a6e2a34b8f@AM1EHSMHS013.ehs.local>
+ <515093B4.2090701@wwwdotorg.org>
+ <8fd7278d-37c5-48ff-8d06-edc64d532a96@VA3EHSMHS037.ehs.local>
+ <5150DEB6.7070208@wwwdotorg.org>
+ <b810d127-dad8-447c-bf88-8ac715debbff@CO9EHSMHS026.ehs.local>
+Message-ID: <20130327021844.4014.43809@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: RFC v2: Zynq Clock Controller
+Date: Tue, 26 Mar 2013 19:18:44 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 March 2013 23:23, Guenter Roeck <linux@roeck-us.net> wrote:
-> On Tue, Mar 26, 2013 at 03:06:59PM +0800, Hongbo Zhang wrote:
->> Each of ST-Ericsson X500 chip set series consists of both ABX500 and DBX500
->> chips. This is ABX500 hwmon driver, where the abx500.c is a common layer for
->> all ABX500s, and the ab8500.c is specific for AB8500 chip. Under this designed
->> structure, other chip specific files can be added simply using the same common
->> layer abx500.c.
->>
->> Signed-off-by: Hongbo Zhang <hongbo.zhang@linaro.org>
->
-> Looks good except ...
->
->> diff --git a/drivers/power/ab8500_bmdata.c b/drivers/power/ab8500_bmdata.c
->> index d9f1f25..05a1077 100644
->> --- a/drivers/power/ab8500_bmdata.c
->> +++ b/drivers/power/ab8500_bmdata.c
->> @@ -28,8 +28,10 @@ const struct abx500_res_to_temp ab8500_temp_tbl_a_thermistor[] = {
->>       {60, 13437},
->>       {65, 12500},
->>  };
->> +EXPORT_SYMBOL(ab8500_temp_tbl_a_thermistor);
->>
-> Those exports should be in the previous patch where you start exporting the symbols,
-> not in this patch.
->
-Sorry, This was really my carelessness, will update it.
+Quoting Sören Brinkmann (2013-03-25 17:03:24)
+> On Mon, Mar 25, 2013 at 05:33:10PM -0600, Stephen Warren wrote:
+> > On 03/25/2013 12:27 PM, Sören Brinkmann wrote:
+> > > Hi Stephen,
+> > > 
+> > > On Mon, Mar 25, 2013 at 12:13:08PM -0600, Stephen Warren wrote:
+> > >> On 03/20/2013 05:56 PM, Sören Brinkmann wrote:
+> > >>> Hi,
+> > >>>
+> > >>> I spent some time working on this and incorporating feedback. Here's an updated proposal for a clock controller for Zynq:
+> > >>>
+> > >>> Required properties:
+> > >>>  - #clock-cells : Must be 1
+> > >>>  - compatible : "xlnx,ps7-clkc"  (this may become 'xlnx,zynq-clkc' terminology differs a bit between Xilinx internal and mainline)
+> > >>>  - ps-clk-frequency : Frequency of the oscillator providing ps_clk in HZ
+> > >>>                      (usually 33 MHz oscillators are used for Zynq platforms)
+> > >>
+> > >> This may have been mentioned before, but shouldn't the input clock be
+> > >> represented as an actual clock in DT, and hence as an entry in this
+> > >> node's clocks property? The crystal/... itself can be represented in DT
+> > >> as a fixed-clock.
+> > > Lars-Peter brought that up, too. Please refer to my answer to him.
+> > > 
+> > >>
+> > >>>  - clock-output-names : List of strings used to name the clock outputs. Shall be a list of the outputs given below.
+> > >>
+> > >> That shouldn't be required.
+> > >
+> > > When I want to support of_clk_get_parent_name() for my clocks, I think
+> > > it is. And I'm inclined to not brake this functionality.
+> > 
+> > The solution here is to make clock parent names irrelevant.
+> > 
+> > Also note that device tree is supposed to describe HW. As such, this
+> > kind of internal implementation detail of the Linux clock driver should
+> > have basically zero effect on the DT binding definition.
+> > 
+> > >>> Optional properties:
+> > >>>  - clocks : as described in the clock bindings
+> > >>>  - clock-names : as described in the clock bindings
+> > >>
+> > >> I think clocks should be required, with at least the main crystal clock
+> > >> input always present, but perhaps having some optional entries for the
+> > >> (E)MIO feature you mention.
+> > >
+> > > This is why I have the xtal separate. This way these props are purely
+> > > optional and the xtal frequency is obtained separately. It also makes it
+> > > a little easier internally, because I don't have to cope with a variable
+> > > name for the xtal this way.
+> > > 
+> > > Describing the xtal as fixed clock in DT means a mandatory entry for
+> > > 'clocks' and 'clock-names' and a variable name for the xtal clock. I
+> > > wanted to avoid this.
+> > 
+> > I don't see any benefit with some properties being purely optional.
+> > Having optional entries in a property seems just fine to me.
+> > 
+> > The name of the crystal clock should be irrelevant; that issue simply
+> > needs to be fixed. It's driving too much of this discussion, and it will
+> > be irrelevant once it's fixed.
+> > 
+> > >>> Example:
+> > >>>         clkc: clkc {
+> > >>>                 #clock-cells = <1>;
+> > >>>                 compatible = "xlnx,ps7-clkc";
+> > >>>                 ps-clk-frequency = <33333333>;
+> > >>>                 clock-output-names = "armpll", "ddrpll", "iopll", "cpu_6or4x", "cpu_3or2x", "cpu_2x", "cpu_1x", "ddr2x", "ddr3x", "dci", "lqspi", "smc", "pcap", "gem0", "gem1", "fclk0", "fclk1", "fclk2", "fclk3", "can0", "can1", "sdio0", "sdio1", "uart0", "uart1", "spi0", "spi1", "dma", "usb0_aper", "usb1_aper", "gem0_aper", "gem1_aper", "sdio0_aper", "sdio1_aper", "spi0_aper", "spi1_aper", "can0_aper", "can1_aper", "i2c0_aper", "i2c1_aper", "uart0_aper", "uart1_aper", "gpio_aper", "lqspi_aper", "smc_aper", "swdt", "dbg_trc", "dbg_apb";  /* long list... explanation below */
+> > >>>                 /* optional props */
+> > >>>                 clocks = <&clkc 16>, <&clk_foo>;
+> > >>>                 clock-names = "gem1_emio_clk", "can_mio_clk_23";
+> > >>>         };
+> > >>>
+> > >>> The downside of supporting this is, that I don't see a way around explicitly listing the clock output names in the DT.
+> > >>
+> > >> (Please wrap your emails to ~74 characters or so)
+> > > I changed my settings.
+> > > 
+> > >>
+> > >> As Mike mentioned off-list, one can create a new clk registration API
+> > >> that takes a struct clk* as parent rather than a char *clk_name.
+> > >
+> > > Then we also have to make sure clocks are probed in a specific order. To
+> > > obtain a 'struct clk *' through clk_get() the requested clock has to be
+> > > already been probed. Currently clock probing relies purely on data present
+> > > in DT. This makes this proposal not that trivial, IMHO.
+> > 
+> > Simply use deferred probe.
+> This would require major changes to the whole clock probing mechanism.
 
-> Thanks,
-> Guenter
+Which mechanism are you referring to?
+
+> Currently, clocks can not defer probing. And in case of circular
+> dependencies in the clock tree, it would rather require a multiple steps
+> probe. Simply deferring won't be enough.
+
+Circular dependencies in the clock tree?
+
+Anyways the clock core maintains an orphan list that was originally
+designed for this problem: registering a clock before that clock's
+parent is registered.  Just for kicks I have actually registered all of
+OMAP4's clocks in exactly the opposite order and everything still works.
+Of course this makes the clock registration parent-discovery code
+O(n^2), but that is the same worst case for deferred probe.
+
+As long as a key exists to link two clocks together then registration
+order shouldn't matter.  Originally this key was an immutable clk name
+string.
+
+If clock parents are specified in DT then that should also suffice, in
+place of doing string comparisons.
+
+If no key to pair up clocks exists then yes we will have to rely purely
+on the struct clk *opaque_cookie and register clocks in order.
+
+Regards,
+Mike
+
+> 
+>         Sören
