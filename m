@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849Ab3C0PTZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 11:19:25 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:42927 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab3C0PTX (ORCPT
+	id S1752015Ab3C0PUe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 11:20:34 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42283 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643Ab3C0PUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 11:19:23 -0400
-Message-ID: <51530E1E.3010100@parallels.com>
-Date: Wed, 27 Mar 2013 19:19:58 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Wed, 27 Mar 2013 11:20:33 -0400
+Date: Wed, 27 Mar 2013 15:20:30 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Yet another pipe related oops.
+Message-ID: <20130327152030.GY21522@ZenIV.linux.org.uk>
+References: <CA+55aFzwOnRnp2B09fKjt8hd9tOCv44H482z1QpCnYc2mywnpA@mail.gmail.com>
+ <20130310221047.GA21522@ZenIV.linux.org.uk>
+ <20130311003530.GE21522@ZenIV.linux.org.uk>
+ <CA+55aFx+TAg+z9eWVm3EeAHQga3ai6YRFEb7rVQ++iNTn4NhGQ@mail.gmail.com>
+ <20130311180543.GF21522@ZenIV.linux.org.uk>
+ <20130312130614.GA32237@ZenIV.linux.org.uk>
+ <CA+55aFyPUYiFoiLrMCzeHpbAgAignCe_awU7SbvPh+T6eHeqng@mail.gmail.com>
+ <20130312194353.GI21522@ZenIV.linux.org.uk>
+ <CA+55aFx-8TrSSJZM-WTDN4Hc3pESLXBsGC9x3xVaxuwxnGKqpA@mail.gmail.com>
+ <20130327135127.GB1738@redhat.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
-References: <1364373399-17397-1-git-send-email-mhocko@suse.cz> <20130327145727.GD29052@cmpxchg.org> <20130327151104.GK16579@dhcp22.suse.cz>
-In-Reply-To: <20130327151104.GK16579@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130327135127.GB1738@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/2013 07:11 PM, Michal Hocko wrote:
-> On Wed 27-03-13 10:58:25, Johannes Weiner wrote:
->> On Wed, Mar 27, 2013 at 09:36:39AM +0100, Michal Hocko wrote:
-> [...]
->>> +	/*
->>> +	 * kmem_cache_create_memcg duplicates the given name and
->>> +	 * cgroup_name for this name requires RCU context.
->>> +	 * This static temporary buffer is used to prevent from
->>> +	 * pointless shortliving allocation.
->>> +	 */
->>> +	if (!tmp_name) {
->>> +		tmp_name = kmalloc(PAGE_SIZE, GFP_KERNEL);
->>> +		WARN_ON_ONCE(!tmp_name);
->>
->> Just use the page allocator directly and get a free allocation failure
->> warning. 
-> 
-> WARN_ON_ONCE is probably pointless.
-> 
->> Then again, order-0 pages are considered cheap enough that they never
->> even fail in our current implementation.
->>
->> Which brings me to my other point: why not just a simple single-page
->> allocation?
-> 
-> No objection from me. I was previously thinking about the "proper"
-> size for something that is a file name. So I originally wanted to use
-> PATH_MAX instead but ended up with PAGE_SIZE for reasons I do not
-> remember now.
+On Wed, Mar 27, 2013 at 09:51:27AM -0400, Dave Jones wrote:
 
-theoretically, this is PATH_MAX + max cache name.
+> Could be that Al's patches refactored this bug away, or it could just be
+> that I've been lucky the last few weeks, and just haven't had the right
+> entropy to get the sequence of events right..
+> 
+> thoughts ?
 
+Actually, that's my fault - check lost in patch reordering.  My apologies ;-/
+Eventually, we want that in fs/splice.c side of things (no point repeating it
+for every buffer, after all), but for now this is the obvious minimal fix.
 
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+diff --git a/fs/read_write.c b/fs/read_write.c
+index f7b5a23..e6ddc8d 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -424,6 +424,9 @@ ssize_t __kernel_write(struct file *file, const char *buf, size_t count, loff_t
+ 	const char __user *p;
+ 	ssize_t ret;
+ 
++	if (!file->f_op || (!file->f_op->write && !file->f_op->aio_write))
++		return -EINVAL;
++
+ 	old_fs = get_fs();
+ 	set_fs(get_ds());
+ 	p = (__force const char __user *)buf;
