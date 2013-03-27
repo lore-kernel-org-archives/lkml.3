@@ -1,85 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab3C0BhL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 21:37:11 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:61519 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab3C0BhJ convert rfc822-to-8bit (ORCPT
+	id S1755129Ab3C0BkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 21:40:07 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:59760 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026Ab3C0BkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 21:37:09 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 26 Mar 2013 21:40:04 -0400
+Date: Tue, 26 Mar 2013 18:40:00 -0700
+From: Michel Lespinasse <walken@google.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH] Revert "mm: introduce VM_POPULATE flag to better deal with
+ racy userspace programs"
+Message-ID: <20130327014000.GA9876@google.com>
+References: <alpine.LNX.2.00.1303261646070.23041@eggly.anvils>
+ <CANN689HuK7773-B3NOxLN9xRRXY=5i1j5Sv_CT8WKChMRw5_Aw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: =?utf-8?q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        =?utf-8?q?Uwe_Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <cffdea50-cadf-4662-a4fb-c61ab853fc4c@VA3EHSMHS014.ehs.local>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-References: <20130320001609.8663.21043@quantum>
- <f3ff0545-52cd-4b7b-967e-f81324ba0152@CH1EHSMHS040.ehs.local>
- <20130320185051.GA28349@pengutronix.de>
- <20130321091531.GN20530@pengutronix.de>
- <cffdea50-cadf-4662-a4fb-c61ab853fc4c@VA3EHSMHS014.ehs.local>
-Message-ID: <20130327013703.4014.45615@quantum>
-User-Agent: alot/0.3.3+
-Subject: Re: [PATCH] clk: divider: Use DIV_ROUND_CLOSEST
-Date: Tue, 26 Mar 2013 18:37:03 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANN689HuK7773-B3NOxLN9xRRXY=5i1j5Sv_CT8WKChMRw5_Aw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Sören Brinkmann (2013-03-26 15:45:22)
-> On Thu, Mar 21, 2013 at 10:15:31AM +0100, Uwe Kleine-König wrote:
-> > Hello,
-> > 
-> > On Wed, Mar 20, 2013 at 07:50:51PM +0100, Sascha Hauer wrote:
-> > > On Wed, Mar 20, 2013 at 09:32:51AM -0700, Sören Brinkmann wrote:
-> > > > If the caller
-> > > > doesn't like the returned frequency he can request a different one.
-> > > > And he's eventually happy with the return value he calls
-> > > > clk_set_rate() requesting the frequency clk_round_rate() returned.
-> > > > Always rounding down seems a bit odd to me.
-> > > > 
-> > > > Another issue with the current implmentation:
-> > > > clk_divider_round_rate() calls clk_divider_bestdiv(), which uses the ROUND_UP macro, returning a rather low frequency.
-> > > 
-> > > And that is correct. clk_divider_bestdiv is used to calculate the
-> > > maximum parent frequency for which a given divider value does not
-> > > exceed the desired rate.
-> > The reason for that is that the (more?) usual constraint is like: This
-> > mmc card can handle up to 100 MHz. Or this i2c device can handle up to
-> > this and that frequency. Of course there are different constraints, e.g.
-> > for a UART if the target baud speed is 38400 you better run at 38402
-> > than at 19201.
-> > 
-> > I wonder if it depends on the clock if you want "best approximation <=
-> > requested value" or "best approximation" or on the caller. In the former
-> > case a flag for the clock would be the right thing (as suggested in this
-> > thread). If however it's the caller of round_rate who knows better which
-> > rounding is preferred than better extend the clk API.
-> > 
-> > Extending the API could just be a convenience function that doesn't
-> > affect the implementations of the clk API. E.g.:
-> > 
-> >       long clk_round_rate_nearest(struct clk *clk, unsigned long rate)
-> >       {
-> >               long lower_limit = clk_round_rate(clk, rate);
-> >               long upper_limit = clk_round_rate(clk, rate + (rate - lower_limit));
-> > 
-> >               if (rate - lower_limit < upper_limit - rate)
-> >                       return lower_limit;
-> >               else
-> >                       return upper_limit;
-> >       }
-> > 
-> I guess both approaches may work. Anybody has a preference?
-> 
+This reverts commit 1869305009857cdeaabe6283bcdc2359c5784543.
 
-A dedicated function like the one Uwe defined is better than adding
-subtlety to the existing clk_round_rate via a flag in a clock driver.
+VM_POPULATE only has any effect when userspace plays racy games with
+vmas by trying to unmap and remap memory regions that mmap or mlock
+are operating on.
 
-Regards,
-Mike
+Also, the only effect of VM_POPULATE when userspace plays such games
+is that it avoids populating new memory regions that get remapped into
+the address range that was being operated on by the original mmap or
+mlock calls.
 
->         Sören
+Let's remove VM_POPULATE as there isn't any strong argument to mandate
+a new vm_flag.
+
+Proposed-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Michel Lespinasse <walken@google.com>
+
+---
+ include/linux/mm.h   |  1 -
+ include/linux/mman.h |  4 +---
+ mm/fremap.c          | 12 ++----------
+ mm/mlock.c           | 11 +++++------
+ mm/mmap.c            |  4 +++-
+ 5 files changed, 11 insertions(+), 21 deletions(-)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 7acc9dc73c9f..e19ff30ad0a2 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -87,7 +87,6 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_PFNMAP	0x00000400	/* Page-ranges managed without "struct page", just pure PFN */
+ #define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
+ 
+-#define VM_POPULATE     0x00001000
+ #define VM_LOCKED	0x00002000
+ #define VM_IO           0x00004000	/* Memory mapped I/O or similar */
+ 
+diff --git a/include/linux/mman.h b/include/linux/mman.h
+index 61c7a87e5d2b..9aa863da287f 100644
+--- a/include/linux/mman.h
++++ b/include/linux/mman.h
+@@ -79,8 +79,6 @@ calc_vm_flag_bits(unsigned long flags)
+ {
+ 	return _calc_vm_trans(flags, MAP_GROWSDOWN,  VM_GROWSDOWN ) |
+ 	       _calc_vm_trans(flags, MAP_DENYWRITE,  VM_DENYWRITE ) |
+-	       ((flags & MAP_LOCKED) ? (VM_LOCKED | VM_POPULATE) : 0) |
+-	       (((flags & (MAP_POPULATE | MAP_NONBLOCK)) == MAP_POPULATE) ?
+-							VM_POPULATE : 0);
++	       _calc_vm_trans(flags, MAP_LOCKED,     VM_LOCKED    );
+ }
+ #endif /* _LINUX_MMAN_H */
+diff --git a/mm/fremap.c b/mm/fremap.c
+index 4723ac8d2fc2..87da3590c61e 100644
+--- a/mm/fremap.c
++++ b/mm/fremap.c
+@@ -204,10 +204,8 @@ get_write_lock:
+ 			unsigned long addr;
+ 			struct file *file = get_file(vma->vm_file);
+ 
+-			vm_flags = vma->vm_flags;
+-			if (!(flags & MAP_NONBLOCK))
+-				vm_flags |= VM_POPULATE;
+-			addr = mmap_region(file, start, size, vm_flags, pgoff);
++			addr = mmap_region(file, start, size,
++					vma->vm_flags, pgoff);
+ 			fput(file);
+ 			if (IS_ERR_VALUE(addr)) {
+ 				err = addr;
+@@ -226,12 +224,6 @@ get_write_lock:
+ 		mutex_unlock(&mapping->i_mmap_mutex);
+ 	}
+ 
+-	if (!(flags & MAP_NONBLOCK) && !(vma->vm_flags & VM_POPULATE)) {
+-		if (!has_write_lock)
+-			goto get_write_lock;
+-		vma->vm_flags |= VM_POPULATE;
+-	}
+-
+ 	if (vma->vm_flags & VM_LOCKED) {
+ 		/*
+ 		 * drop PG_Mlocked flag for over-mapped range
+diff --git a/mm/mlock.c b/mm/mlock.c
+index 1c5e33fce639..79b7cf7d1bca 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -358,7 +358,7 @@ static int do_mlock(unsigned long start, size_t len, int on)
+ 
+ 		newflags = vma->vm_flags & ~VM_LOCKED;
+ 		if (on)
+-			newflags |= VM_LOCKED | VM_POPULATE;
++			newflags |= VM_LOCKED;
+ 
+ 		tmp = vma->vm_end;
+ 		if (tmp > end)
+@@ -418,8 +418,7 @@ int __mm_populate(unsigned long start, unsigned long len, int ignore_errors)
+ 		 * range with the first VMA. Also, skip undesirable VMA types.
+ 		 */
+ 		nend = min(end, vma->vm_end);
+-		if ((vma->vm_flags & (VM_IO | VM_PFNMAP | VM_POPULATE)) !=
+-		    VM_POPULATE)
++		if (vma->vm_flags & (VM_IO | VM_PFNMAP))
+ 			continue;
+ 		if (nstart < vma->vm_start)
+ 			nstart = vma->vm_start;
+@@ -492,9 +491,9 @@ static int do_mlockall(int flags)
+ 	struct vm_area_struct * vma, * prev = NULL;
+ 
+ 	if (flags & MCL_FUTURE)
+-		current->mm->def_flags |= VM_LOCKED | VM_POPULATE;
++		current->mm->def_flags |= VM_LOCKED;
+ 	else
+-		current->mm->def_flags &= ~(VM_LOCKED | VM_POPULATE);
++		current->mm->def_flags &= ~VM_LOCKED;
+ 	if (flags == MCL_FUTURE)
+ 		goto out;
+ 
+@@ -503,7 +502,7 @@ static int do_mlockall(int flags)
+ 
+ 		newflags = vma->vm_flags & ~VM_LOCKED;
+ 		if (flags & MCL_CURRENT)
+-			newflags |= VM_LOCKED | VM_POPULATE;
++			newflags |= VM_LOCKED;
+ 
+ 		/* Ignore errors */
+ 		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 2664a47cec93..6466699b16cb 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1306,7 +1306,9 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
+ 	}
+ 
+ 	addr = mmap_region(file, addr, len, vm_flags, pgoff);
+-	if (!IS_ERR_VALUE(addr) && (vm_flags & VM_POPULATE))
++	if (!IS_ERR_VALUE(addr) &&
++	    ((vm_flags & VM_LOCKED) ||
++	     (flags & (MAP_POPULATE | MAP_NONBLOCK)) == MAP_POPULATE))
+ 		*populate = len;
+ 	return addr;
+ }
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
