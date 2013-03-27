@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268Ab3C0Lf1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 07:35:27 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:57785 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab3C0LfX (ORCPT
+	id S1752301Ab3C0LjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 07:39:13 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:36623 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab3C0LjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 07:35:23 -0400
+	Wed, 27 Mar 2013 07:39:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKohpo=A4BBecmepsYSqHYrJg5n9WE-QB3ssvb_dOBZYXuB-eg@mail.gmail.com>
-References: <cover.1362381470.git.viresh.kumar@linaro.org>
-	<0823a96fea2d8284b7d83cee390dd5973fdaaa94.1362381470.git.viresh.kumar@linaro.org>
-	<CAKohponTZ29BX6CrUvFMy9RXV==0wRFu4C-W1xd6t1RmLASTvQ@mail.gmail.com>
-	<2565053.YP0dCLmaW9@vostro.rjw.lan>
-	<20130326152059.GA1698@jshin-Toonie>
-	<CAKohpons4Tr8F2RuRGCxbOFmJaK9YbAafV-3v6=cijRupe2hUA@mail.gmail.com>
-	<20130326194832.GB24945@jshin-Toonie>
-	<CAKohpomaTLPZjxcTGKo2mmcqgPvqQVsj1778X1u2rbb3wV+phA@mail.gmail.com>
-	<CAKohpo=A4BBecmepsYSqHYrJg5n9WE-QB3ssvb_dOBZYXuB-eg@mail.gmail.com>
-Date: Wed, 27 Mar 2013 17:05:22 +0530
-Message-ID: <CAKohpok6PsvmixDUEoWMTCOWxOPH9vfeJwee0VcQJ-=JGib7VA@mail.gmail.com>
-Subject: Re: [PATCH V3 2/4] cpufreq: governor: Implement per policy instances
- of governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, Arvind Chauhan <Arvind.Chauhan@arm.com>
+In-Reply-To: <20130326211520.GF2082@quack.suse.cz>
+References: <514EC323.7050002@gmail.com>
+	<20130326211520.GF2082@quack.suse.cz>
+Date: Wed, 27 Mar 2013 12:39:10 +0100
+Message-ID: <CANGUGtD9BNQO9pvO+yeKHc0qojk61fKYDgKm8kfWzu8pCk=YJw@mail.gmail.com>
+Subject: Re: [RFC] fsfreeze: moving from uniterruptible to killable
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 March 2013 15:34, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> I am still stuck at a issue, which i am not able to fix.
-> - cat of */cpufreq/ondemand/** isn't showing anything on console, but all
->   pointers are correctly set and i can see the right values with printk()
+2013/3/26 Jan Kara <jack@suse.cz>:
+> On Sun 24-03-13 10:10:59, Marco Stornelli wrote:
+>> When a fs is frozen, a process can hang because we wait in
+>> uniterruptible state. We give the user the possibility to kill the process.
+>   Yes, but it needs slightly more work as you probably know... (bailing out
+> properly when the signal arrives).
+>
+>                                                                 Honza
+>
 
-The culprit is the part where i changed prototypes of all show/store functions.
-I am still trying to understand how that part works, and will fix it soon.
+Of course, indeed, it was only an RFC to start a discussion, not a
+patch :) The point was: is this kind of change a behaviour that can
+break user-space in some way? IMHO no, but I'd like to have a
+discussion about that before to start coding. What do you think?
 
---
-viresh
+Marco
