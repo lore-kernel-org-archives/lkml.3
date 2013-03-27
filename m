@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab3C0PhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 11:37:09 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:39894 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab3C0PhH (ORCPT
+	id S1753617Ab3C0PhV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 11:37:21 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:50426 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab3C0PhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 11:37:07 -0400
-Date: Wed, 27 Mar 2013 11:37:03 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-cc: Peter Zijlstra <peterz@infradead.org>, alex.shi@intel.com,
-        linaro-kernel@lists.linaro.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, len.brown@intel.com,
-        pjt@google.com, corbet@lwn.net, linux-kernel@vger.kernel.org,
-        cmetcalf@tilera.com, morten.rasmussen@arm.com, tony.luck@intel.com,
-        preeti@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        chander.kashyap@linaro.org, Arjan van de Ven <arjan@linux.intel.com>,
-        mingo@kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH v3 3/6] sched: pack small tasks
-In-Reply-To: <CAKfTPtAox+h0YmpP6W==hJ5FaNzDfF8bQmadmU86MrfnJt67QQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.03.1303271134280.1372@syhkavp.arg>
-References: <1363955155-18382-1-git-send-email-vincent.guittot@linaro.org> <1363955155-18382-4-git-send-email-vincent.guittot@linaro.org> <1364301998.5053.17.camel@laptop> <5151BEF2.9090100@linux.intel.com> <1364373980.5053.57.camel@laptop>
- <CAKfTPtAox+h0YmpP6W==hJ5FaNzDfF8bQmadmU86MrfnJt67QQ@mail.gmail.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Wed, 27 Mar 2013 11:37:15 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CACRpkdY=UXZrRwuWp1JTePG71C=pAPc26kWWRqPZv_qZHc-_bg@mail.gmail.com>
+References: <20130327061114.3356.57465.sendpatchset@w520>
+	<CACRpkdY=UXZrRwuWp1JTePG71C=pAPc26kWWRqPZv_qZHc-_bg@mail.gmail.com>
+Date: Thu, 28 Mar 2013 00:37:13 +0900
+Message-ID: <CANqRtoShQMCS3Cx+r9i1k7fWp6=TgqCX8h3d10qozr4Mt_5wQA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: em: Make use of devm functions
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        horms@verge.net.au, linux-sh@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Mar 2013, Vincent Guittot wrote:
+On Thu, Mar 28, 2013 at 12:01 AM, Linus Walleij
+<linus.walleij@linaro.org> wrote:
+> On Wed, Mar 27, 2013 at 7:11 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+>
+>> From: Magnus Damm <damm@opensource.se>
+>>
+>> Update the Emma Mobile GPIO driver to make use of devm
+>> functions. This simplifies the error handling and makes
+>> the code more compact.
+>>
+>> Signed-off-by: Magnus Damm <damm@opensource.se>
+>
+> I guess this is a resend. IIRC I just applied it some hours ago...
 
-> On 27 March 2013 09:46, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Tue, 2013-03-26 at 08:29 -0700, Arjan van de Ven wrote:
-> >> > Isn't this basically related to picking the NO_HZ cpu; if the system
-> >> > isn't fully symmetric with its power gates you want the NO_HZ cpu to be
-> >> > the 'special' cpu. If it is symmetric we really don't care which core
-> >> > is left 'running' and we can even select a new pack cpu from the idle
-> >> > cores once the old one is fully utilized.
-> >>
-> >> you don't really care much sure, but there's some advantages for sorting "all the way left",
-> >> e.g. to linux cpu 0.
-> >> Some tasks only run there, and interrupts tend to be favored to that cpu as well on x86.
-> >
-> > Right, and I suspect all the big-little nonsense will have the little
-> > cores on low numbers as well (is this architected or can a creative
-> > licensee screw us over?)
-> 
-> It's not mandatory to have little cores on low numbers even if it's advised
+Yep, correct. Thanks for your help!
 
-We can trivially move things around in the logical CPU mapping if that 
-simplifies things.  However  the boot CPU might not be CPU0 in that 
-case which might be less trivial.
+Now if I only could find time to marry the gpio-em.c driver with sh-pfc.c..
 
-
-Nicolas
+/ magnus
