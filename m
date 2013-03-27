@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120Ab3C0RHs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 13:07:48 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:57971 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752971Ab3C0RHq (ORCPT
+	id S1753417Ab3C0RJU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 13:09:20 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36683 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab3C0RJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 13:07:46 -0400
-Date: Wed, 27 Mar 2013 13:07:43 -0400 (EDT)
-Message-Id: <20130327.130743.2174768360702998855.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: jasowang@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, edumazet@google.com
-Subject: Re: [PATCH net-next 2/3] net: core: introduce
- skb_probe_transport_header()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1364395550.15753.6.camel@edumazet-glaptop>
-References: <1364375482-7439-1-git-send-email-jasowang@redhat.com>
-	<1364375482-7439-2-git-send-email-jasowang@redhat.com>
-	<1364395550.15753.6.camel@edumazet-glaptop>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 27 Mar 2013 10:07:45 -0700 (PDT)
+	Wed, 27 Mar 2013 13:09:19 -0400
+Date: Wed, 27 Mar 2013 18:09:16 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mike Turquette <mturquette@linaro.org>
+cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4] clk: allow reentrant calls into the clk framework
+In-Reply-To: <20130327164716.4014.97638@quantum>
+Message-ID: <alpine.LFD.2.02.1303271807040.22263@ionos>
+References: <1364368183-24420-1-git-send-email-mturquette@linaro.org> <alpine.LFD.2.02.1303271209490.22263@ionos> <20130327164716.4014.97638@quantum>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Wed, 27 Mar 2013 07:45:50 -0700
+On Wed, 27 Mar 2013, Mike Turquette wrote:
+> Thanks for the review Thomas.  I will steal your code and call it my own
+> in the next version.
 
-> On Wed, 2013-03-27 at 17:11 +0800, Jason Wang wrote:
->> Sometimes, we need probe and set the transport header for packets (e.g from
->> untrusted source). This patch introduces a new helper
->> skb_probe_transport_header() which tries to probe and set the l4 header through
->> skb_flow_dissect(), if not just set the transport header to the hint passed by
->> caller.
->> 
->> Cc: Eric Dumazet <edumazet@google.com>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->>  include/linux/skbuff.h |   14 ++++++++++++++
->>  1 files changed, 14 insertions(+), 0 deletions(-)
-> 
-> Acked-by: Eric Dumazet <edumazet@google.com>
+Sure.
 
-Applied.
+> In particular getting rid of the atomics makes things much nicer.
+
+I'd say using the helper functions and not having all these
+conditionals makes it really nice :)
+
+Thanks,
+
+	tglx
