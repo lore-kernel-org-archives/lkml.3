@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab3C0Rkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 13:40:40 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:64205 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312Ab3C0Rka (ORCPT
+	id S1754291Ab3C0Rne (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 13:43:34 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:45670 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753468Ab3C0Rke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 13:40:30 -0400
+	Wed, 27 Mar 2013 13:40:34 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, dm-devel@vger.kernel.org
 Cc: tj@kernel.org, neilb@suse.de, Kent Overstreet <koverstreet@google.com>,
-        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com
-Subject: [PATCH 10/22] dm-crypt: Convert to bvec_iter
-Date: Wed, 27 Mar 2013 10:39:40 -0700
-Message-Id: <1364405992-28424-11-git-send-email-koverstreet@google.com>
+        Sage Weil <sage@inktank.com>, ceph-devel@vger.kernel.org
+Subject: [PATCH 13/22] ceph: Convert to bvec_iter
+Date: Wed, 27 Mar 2013 10:39:43 -0700
+Message-Id: <1364405992-28424-14-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1364405992-28424-1-git-send-email-koverstreet@google.com>
 References: <1364405992-28424-1-git-send-email-koverstreet@google.com>
@@ -22,131 +22,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new primitives which respect the current value of bi_idx and
-bi_bvec_done.
+Use new primitives which respect bi_bvec_done.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Cc: Alasdair Kergon <agk@redhat.com>
-Cc: dm-devel@redhat.com
+Cc: Sage Weil <sage@inktank.com>
+Cc: ceph-devel@vger.kernel.org
 ---
- drivers/md/dm-crypt.c | 52 +++++++++++++++++++++------------------------------
- 1 file changed, 21 insertions(+), 31 deletions(-)
+ include/linux/ceph/messenger.h |  3 ++-
+ net/ceph/messenger.c           | 53 ++++++++++++++++++++++--------------------
+ 2 files changed, 30 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
-index fca3bba..d97d824 100644
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -38,10 +38,8 @@ struct convert_context {
- 	struct completion restart;
- 	struct bio *bio_in;
- 	struct bio *bio_out;
--	unsigned int offset_in;
--	unsigned int offset_out;
--	unsigned int idx_in;
--	unsigned int idx_out;
-+	struct bvec_iter iter_in;
-+	struct bvec_iter iter_out;
- 	sector_t cc_sector;
- 	atomic_t cc_pending;
- };
-@@ -650,10 +648,12 @@ static void crypt_convert_init(struct crypt_config *cc,
- {
- 	ctx->bio_in = bio_in;
- 	ctx->bio_out = bio_out;
--	ctx->offset_in = 0;
--	ctx->offset_out = 0;
--	ctx->idx_in = bio_in ? bio_in->bi_iter.bi_idx : 0;
--	ctx->idx_out = bio_out ? bio_out->bi_iter.bi_idx : 0;
-+
-+	if (bio_in)
-+		ctx->iter_in = bio_in->bi_iter;
-+	if (bio_out)
-+		ctx->iter_out = bio_out->bi_iter;
-+
- 	ctx->cc_sector = sector + cc->iv_offset;
- 	init_completion(&ctx->restart);
+diff --git a/include/linux/ceph/messenger.h b/include/linux/ceph/messenger.h
+index 60903e0..dccf497 100644
+--- a/include/linux/ceph/messenger.h
++++ b/include/linux/ceph/messenger.h
+@@ -1,6 +1,7 @@
+ #ifndef __FS_CEPH_MESSENGER_H
+ #define __FS_CEPH_MESSENGER_H
+ 
++#include <linux/blk_types.h>
+ #include <linux/kref.h>
+ #include <linux/mutex.h>
+ #include <linux/net.h>
+@@ -86,7 +87,7 @@ struct ceph_msg {
+ #ifdef CONFIG_BLOCK
+ 	struct bio  *bio;		/* instead of pages/pagelist */
+ 	struct bio  *bio_iter;		/* bio iterator */
+-	int bio_seg;			/* current bio segment */
++	struct bvec_iter bvec_iter;	/* current bio segment */
+ #endif /* CONFIG_BLOCK */
+ 	struct ceph_pagelist *trail;	/* the trailing part of the data */
+ 	bool front_is_vmalloc;
+diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
+index 0c102ec..ee88ae4 100644
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -697,27 +697,30 @@ static void con_out_kvec_add(struct ceph_connection *con,
  }
-@@ -681,8 +681,8 @@ static int crypt_convert_block(struct crypt_config *cc,
- 			       struct convert_context *ctx,
- 			       struct ablkcipher_request *req)
+ 
+ #ifdef CONFIG_BLOCK
+-static void init_bio_iter(struct bio *bio, struct bio **iter, int *seg)
++static void init_bio_iter(struct bio *bio, struct bio **iter,
++			  struct bvec_iter *bvec_iter)
  {
--	struct bio_vec *bv_in = bio_iovec_idx(ctx->bio_in, ctx->idx_in);
--	struct bio_vec *bv_out = bio_iovec_idx(ctx->bio_out, ctx->idx_out);
-+	struct bio_vec bv_in = bio_iovec_iter(ctx->bio_in, ctx->iter_in);
-+	struct bio_vec bv_out = bio_iovec_iter(ctx->bio_out, ctx->iter_out);
- 	struct dm_crypt_request *dmreq;
- 	u8 *iv;
- 	int r;
-@@ -693,24 +693,15 @@ static int crypt_convert_block(struct crypt_config *cc,
- 	dmreq->iv_sector = ctx->cc_sector;
- 	dmreq->ctx = ctx;
- 	sg_init_table(&dmreq->sg_in, 1);
--	sg_set_page(&dmreq->sg_in, bv_in->bv_page, 1 << SECTOR_SHIFT,
--		    bv_in->bv_offset + ctx->offset_in);
-+	sg_set_page(&dmreq->sg_in, bv_in.bv_page, 1 << SECTOR_SHIFT,
-+		    bv_in.bv_offset);
+ 	if (!bio) {
+ 		*iter = NULL;
+-		*seg = 0;
+ 		return;
+ 	}
+ 	*iter = bio;
+-	*seg = bio->bi_iter.bi_idx;
++	*bvec_iter = bio->bi_iter;
+ }
  
- 	sg_init_table(&dmreq->sg_out, 1);
--	sg_set_page(&dmreq->sg_out, bv_out->bv_page, 1 << SECTOR_SHIFT,
--		    bv_out->bv_offset + ctx->offset_out);
-+	sg_set_page(&dmreq->sg_out, bv_out.bv_page, 1 << SECTOR_SHIFT,
-+		    bv_out.bv_offset);
+-static void iter_bio_next(struct bio **bio_iter, int *seg)
++static void iter_bio_next(struct bio **bio_iter, struct bvec_iter *bvec_iter)
+ {
++	struct bio_vec bv;
++
+ 	if (*bio_iter == NULL)
+ 		return;
  
--	ctx->offset_in += 1 << SECTOR_SHIFT;
--	if (ctx->offset_in >= bv_in->bv_len) {
--		ctx->offset_in = 0;
--		ctx->idx_in++;
--	}
--
--	ctx->offset_out += 1 << SECTOR_SHIFT;
--	if (ctx->offset_out >= bv_out->bv_len) {
--		ctx->offset_out = 0;
--		ctx->idx_out++;
--	}
-+	bio_advance_iter(ctx->bio_in, &ctx->iter_in, 1 << SECTOR_SHIFT);
-+	bio_advance_iter(ctx->bio_out, &ctx->iter_out, 1 << SECTOR_SHIFT);
+-	BUG_ON(*seg >= (*bio_iter)->bi_vcnt);
++	BUG_ON(!bvec_iter->bi_size);
++	bv = bio_iovec_iter(*bio_iter, *bvec_iter);
  
- 	if (cc->iv_gen_ops) {
- 		r = cc->iv_gen_ops->generator(cc, iv, dmreq);
-@@ -761,8 +752,8 @@ static int crypt_convert(struct crypt_config *cc,
+-	(*seg)++;
+-	if (*seg == (*bio_iter)->bi_vcnt)
+-		init_bio_iter((*bio_iter)->bi_next, bio_iter, seg);
++	bio_advance_iter(*bio_iter, bvec_iter, bv.bv_len);
++	if (!bvec_iter->bi_size)
++		init_bio_iter((*bio_iter)->bi_next, bio_iter, bvec_iter);
+ }
+ #endif
  
- 	atomic_set(&ctx->cc_pending, 1);
+@@ -736,7 +739,7 @@ static void prepare_write_message_data(struct ceph_connection *con)
+ 		con->out_msg_pos.page_pos = 0;
+ #ifdef CONFIG_BLOCK
+ 	if (msg->bio)
+-		init_bio_iter(msg->bio, &msg->bio_iter, &msg->bio_seg);
++		init_bio_iter(msg->bio, &msg->bio_iter, &msg->bvec_iter);
+ #endif
+ 	con->out_msg_pos.data_pos = 0;
+ 	con->out_msg_pos.did_page_crc = false;
+@@ -1047,7 +1050,7 @@ static void out_msg_pos_next(struct ceph_connection *con, struct page *page,
+ 			       &msg->pagelist->head);
+ #ifdef CONFIG_BLOCK
+ 	else if (msg->bio)
+-		iter_bio_next(&msg->bio_iter, &msg->bio_seg);
++		iter_bio_next(&msg->bio_iter, &msg->bvec_iter);
+ #endif
+ }
  
--	while(ctx->idx_in < ctx->bio_in->bi_vcnt &&
--	      ctx->idx_out < ctx->bio_out->bi_vcnt) {
-+	while (ctx->iter_in.bi_size &&
-+	       ctx->iter_out.bi_size) {
+@@ -1103,12 +1106,12 @@ static int write_partial_msg_pages(struct ceph_connection *con)
+ 						struct page, lru);
+ #ifdef CONFIG_BLOCK
+ 		} else if (msg->bio) {
+-			struct bio_vec *bv;
++			struct bio_vec bv;
  
- 		crypt_alloc_req(cc, ctx);
+-			bv = bio_iovec_idx(msg->bio_iter, msg->bio_seg);
+-			page = bv->bv_page;
+-			bio_offset = bv->bv_offset;
+-			max_write = bv->bv_len;
++			bv = bio_iovec_iter(msg->bio_iter, msg->bvec_iter);
++			page = bv.bv_page;
++			bio_offset = bv.bv_offset;
++			max_write = bv.bv_len;
+ #endif
+ 		} else {
+ 			page = zero_page;
+@@ -1818,17 +1821,18 @@ static int read_partial_message_pages(struct ceph_connection *con,
  
-@@ -1031,7 +1022,7 @@ static void kcryptd_crypt_write_io_submit(struct dm_crypt_io *io, int async)
+ #ifdef CONFIG_BLOCK
+ static int read_partial_message_bio(struct ceph_connection *con,
+-				    struct bio **bio_iter, int *bio_seg,
++				    struct bio **bio_iter,
++				    struct bvec_iter *bvec_iter,
+ 				    unsigned int data_len, bool do_datacrc)
+ {
+-	struct bio_vec *bv = bio_iovec_idx(*bio_iter, *bio_seg);
++	struct bio_vec bv = bio_iovec_iter(*bio_iter, *bvec_iter);
+ 	void *p;
+ 	int ret, left;
+ 
+ 	left = min((int)(data_len - con->in_msg_pos.data_pos),
+-		   (int)(bv->bv_len - con->in_msg_pos.page_pos));
++		   (int)(bv.bv_len - con->in_msg_pos.page_pos));
+ 
+-	p = kmap(bv->bv_page) + bv->bv_offset;
++	p = kmap(bv.bv_page) + bv.bv_offset;
+ 
+ 	ret = ceph_tcp_recvmsg(con->sock, p + con->in_msg_pos.page_pos,
+ 			       left);
+@@ -1836,14 +1840,14 @@ static int read_partial_message_bio(struct ceph_connection *con,
+ 		con->in_data_crc =
+ 			crc32c(con->in_data_crc,
+ 				  p + con->in_msg_pos.page_pos, ret);
+-	kunmap(bv->bv_page);
++	kunmap(bv.bv_page);
+ 	if (ret <= 0)
+ 		return ret;
+ 	con->in_msg_pos.data_pos += ret;
+ 	con->in_msg_pos.page_pos += ret;
+-	if (con->in_msg_pos.page_pos == bv->bv_len) {
++	if (con->in_msg_pos.page_pos == bv.bv_len) {
+ 		con->in_msg_pos.page_pos = 0;
+-		iter_bio_next(bio_iter, bio_seg);
++		iter_bio_next(bio_iter, bvec_iter);
  	}
  
- 	/* crypt_convert should have filled the clone bio */
--	BUG_ON(io->ctx.idx_out < clone->bi_vcnt);
-+	BUG_ON(io->ctx.iter_out.bi_size);
+ 	return ret;
+@@ -1945,7 +1949,7 @@ static int read_partial_message(struct ceph_connection *con)
  
- 	clone->bi_iter.bi_sector = cc->start + io->sector;
+ #ifdef CONFIG_BLOCK
+ 		if (m->bio)
+-			init_bio_iter(m->bio, &m->bio_iter, &m->bio_seg);
++			init_bio_iter(m->bio, &m->bio_iter, &m->bvec_iter);
+ #endif
+ 	}
  
-@@ -1070,7 +1061,7 @@ static void kcryptd_crypt_write_convert(struct dm_crypt_io *io)
- 		}
+@@ -1975,7 +1979,7 @@ static int read_partial_message(struct ceph_connection *con)
+ 		} else if (m->bio) {
+ 			BUG_ON(!m->bio_iter);
+ 			ret = read_partial_message_bio(con,
+-						 &m->bio_iter, &m->bio_seg,
++						 &m->bio_iter, &m->bvec_iter,
+ 						 data_len, do_datacrc);
+ 			if (ret <= 0)
+ 				return ret;
+@@ -2720,7 +2724,6 @@ struct ceph_msg *ceph_msg_new(int type, int front_len, gfp_t flags,
+ #ifdef	CONFIG_BLOCK
+ 	m->bio = NULL;
+ 	m->bio_iter = NULL;
+-	m->bio_seg = 0;
+ #endif	/* CONFIG_BLOCK */
+ 	m->trail = NULL;
  
- 		io->ctx.bio_out = clone;
--		io->ctx.idx_out = 0;
-+		io->ctx.iter_out = clone->bi_iter;
- 
- 		remaining -= clone->bi_iter.bi_size;
- 		sector += bio_sectors(clone);
-@@ -1114,8 +1105,7 @@ static void kcryptd_crypt_write_convert(struct dm_crypt_io *io)
- 			crypt_inc_pending(new_io);
- 			crypt_convert_init(cc, &new_io->ctx, NULL,
- 					   io->base_bio, sector);
--			new_io->ctx.idx_in = io->ctx.idx_in;
--			new_io->ctx.offset_in = io->ctx.offset_in;
-+			new_io->ctx.iter_in = io->ctx.iter_in;
- 
- 			/*
- 			 * Fragments after the first use the base_io
 -- 
 1.8.1.3
 
