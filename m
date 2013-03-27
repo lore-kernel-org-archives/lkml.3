@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab3C0Tai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 15:30:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58898 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385Ab3C0Taf (ORCPT
+	id S1754579Ab3C0TbJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 15:31:09 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:58918 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754340Ab3C0T3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 15:30:35 -0400
-Message-ID: <51533AD3.9040809@infradead.org>
-Date: Wed, 27 Mar 2013 11:30:43 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Xiong Zhou <jencce.kernel@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [patch v2] sound/soc/codecs : fix build failure for next-20130325
-References: <alpine.DEB.2.02.1303272127400.26487@M2420> <20130327133915.GU18316@opensource.wolfsonmicro.com>
-In-Reply-To: <20130327133915.GU18316@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Mar 2013 15:29:51 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, tj@kernel.org,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Sridhar Samudrala <sri@us.ibm.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH v2 6/6] sctp: convert sctp_assoc_set_id to use idr_alloc_cyclic
+Date: Wed, 27 Mar 2013 15:29:38 -0400
+Message-Id: <1364412578-7462-7-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1364412578-7462-1-git-send-email-jlayton@redhat.com>
+References: <1364412578-7462-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/13 06:39, Mark Brown wrote:
-> On Wed, Mar 27, 2013 at 09:31:33PM +0800, Xiong Zhou wrote:
-> 
->> diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
->> index 18fea10..f38af70 100644
->> --- a/sound/soc/codecs/Kconfig
->> +++ b/sound/soc/codecs/Kconfig
->> @@ -79,7 +79,6 @@ config SND_SOC_ALL_CODECS
->>  	select SND_SOC_WM0010 if SPI_MASTER
->>  	select SND_SOC_WM1250_EV1 if I2C
->>  	select SND_SOC_WM2000 if I2C
->> -	select SND_SOC_WM2200 if I2C
->>  	select SND_SOC_WM5100 if I2C
->>  	select SND_SOC_WM5102 if MFD_WM5102
->>  	select SND_SOC_WM5110 if MFD_WM5110
->> @@ -370,6 +369,7 @@ config SND_SOC_WM2000
->>  	tristate
->>  
->>  config SND_SOC_WM2200
->> +	depends on SND_SOC_ARIZONA && I2C
->>  	tristate
-> 
-> I really don't understand this at all, removing something from
-> ALL_CODECS is not a good idea.  This isn't a Kconfig issue.
-> 
+(Note: compile-tested only)
 
-Hi Mark,
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: linux-sctp@vger.kernel.org
+Cc: netdev@vger.kernel.org
+---
+ net/sctp/associola.c | 16 ++--------------
+ 1 file changed, 2 insertions(+), 14 deletions(-)
 
-Do you have a suggestion for a kernel config where SND_SOC_ARIZONA
-is not enabled but SND_SOC_WM_ADSP is enabled, which causes a build
-error in linux-next?
-
-thanks,
+diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+index d2709e2..fa261a3 100644
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -66,13 +66,6 @@ static void sctp_assoc_bh_rcv(struct work_struct *work);
+ static void sctp_assoc_free_asconf_acks(struct sctp_association *asoc);
+ static void sctp_assoc_free_asconf_queue(struct sctp_association *asoc);
+ 
+-/* Keep track of the new idr low so that we don't re-use association id
+- * numbers too fast.  It is protected by they idr spin lock is in the
+- * range of 1 - INT_MAX.
+- */
+-static u32 idr_low = 1;
+-
+-
+ /* 1st Level Abstractions. */
+ 
+ /* Initialize a new association from provided memory. */
+@@ -1601,13 +1594,8 @@ int sctp_assoc_set_id(struct sctp_association *asoc, gfp_t gfp)
+ 	if (preload)
+ 		idr_preload(gfp);
+ 	spin_lock_bh(&sctp_assocs_id_lock);
+-	/* 0 is not a valid id, idr_low is always >= 1 */
+-	ret = idr_alloc(&sctp_assocs_id, asoc, idr_low, 0, GFP_NOWAIT);
+-	if (ret >= 0) {
+-		idr_low = ret + 1;
+-		if (idr_low == INT_MAX)
+-			idr_low = 1;
+-	}
++	/* 0 is not a valid assoc_id, must be >= 1 */
++	ret = idr_alloc_cyclic(&sctp_assocs_id, asoc, 1, 0, GFP_NOWAIT);
+ 	spin_unlock_bh(&sctp_assocs_id_lock);
+ 	if (preload)
+ 		idr_preload_end();
 -- 
-~Randy
+1.7.11.7
+
