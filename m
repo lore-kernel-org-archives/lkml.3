@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751140Ab3C0QcE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 12:32:04 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42163 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750718Ab3C0QcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 12:32:01 -0400
-Date: Wed, 27 Mar 2013 17:31:56 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
- asm/8267
-Message-ID: <20130327163156.GB8385@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-	Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-	Arnaldo Carvalho de Melo <acme@infradead.org>,
-	lkml <linux-kernel@vger.kernel.org>,
-	Stephane Eranian <eranian@google.com>,
-	Namhyung Kim <namhyung.kim@lge.com>
-References: <20130324115556.GA4866@pd.tnic>
- <20130324155924.GB4866@pd.tnic>
- <20130326183452.GC27518@pd.tnic>
- <87ip4dgz31.fsf@sejong.aot.lge.com>
- <20130327094932.GA8385@pd.tnic>
- <1364393372.5053.68.camel@laptop>
+	id S1751715Ab3C0Qdh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 12:33:37 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:59630 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab3C0Qdg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 12:33:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1364393372.5053.68.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130327152030.GY21522@ZenIV.linux.org.uk>
+References: <CA+55aFzwOnRnp2B09fKjt8hd9tOCv44H482z1QpCnYc2mywnpA@mail.gmail.com>
+	<20130310221047.GA21522@ZenIV.linux.org.uk>
+	<20130311003530.GE21522@ZenIV.linux.org.uk>
+	<CA+55aFx+TAg+z9eWVm3EeAHQga3ai6YRFEb7rVQ++iNTn4NhGQ@mail.gmail.com>
+	<20130311180543.GF21522@ZenIV.linux.org.uk>
+	<20130312130614.GA32237@ZenIV.linux.org.uk>
+	<CA+55aFyPUYiFoiLrMCzeHpbAgAignCe_awU7SbvPh+T6eHeqng@mail.gmail.com>
+	<20130312194353.GI21522@ZenIV.linux.org.uk>
+	<CA+55aFx-8TrSSJZM-WTDN4Hc3pESLXBsGC9x3xVaxuwxnGKqpA@mail.gmail.com>
+	<20130327135127.GB1738@redhat.com>
+	<20130327152030.GY21522@ZenIV.linux.org.uk>
+Date: Wed, 27 Mar 2013 09:33:35 -0700
+X-Google-Sender-Auth: PvPa5GgXqIeFfPXR22K5jse-bwI
+Message-ID: <CA+55aFx=BPQ2empEahqCs2hQ=sRaw3OjJotrS6OMT3e6tUVMLQ@mail.gmail.com>
+Subject: Re: Yet another pipe related oops.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 03:09:32PM +0100, Peter Zijlstra wrote:
-> On Wed, 2013-03-27 at 10:49 +0100, Borislav Petkov wrote:
-> > Ok, just for my own understanding: how do the events on the
-> > ->task_ctx->event_list relate to the current cpu in this path? I mean,
-> > we're on the task exit path here so is it possible to be rescheduled
-> > somewhere else and the check in event_filter_match to become
-> > meaningless?
-> 
-> Events can be per-cpu, so what could happen is that we'd send the exit
-> notification to a cpu we're not actually running on (anymore).
+On Wed, Mar 27, 2013 at 8:20 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Actually, that's my fault - check lost in patch reordering.  My apologies ;-/
+> Eventually, we want that in fs/splice.c side of things (no point repeating it
+> for every buffer, after all), but for now this is the obvious minimal fix.
 
-Right, but we still have a window of preemption enabled:
+Applied.
 
-		put_cpu_ptr(pmu->pmu_cpu_context);	<---|
-     	}						    |
-	if (task_event->task_ctx) {			    |
-		preempt_disable_notrace();		<---|
+Do we actually have files with NULL f_ops pointers? Should we? What
+could we possibly do with a file descriptor that doesn't have any
+fops?
 
-between the two arrows above.
+Also, perhaps we should do something more akin to what we do for
+dentry functions where we validate them on registration, and we could
+fix up or validate read/write pointers, with semantics something like
 
-I don't know the code all that well to know whether a reschedule in that
-window would make us, when looking at the current cpu when matching the
-events, look stupid or not...
+    if (!fop->write)
+        fop->write = fop->aio_write ? do_sync_write : EINVAL_write;
+    if (!fop->read)
+        fop->read = fop->aio_read ? do_sync_read : EINVAL_read;
 
-OTOH, I can understand jolsa's approach of declaring the events on
-->task_ctx->event_list for belonging to this task only and that then we
-just don't want to compare event->cpu to the current cpu we're running
-on.
+kind of things?
 
-But in the end of the day, I'd like you guys to decide what is the right
-thing to do here.
+Not a big deal, perhaps.
 
-Btw, jolsa, as a simplification to your solution, you could simply do:
-
-	if (task_event->task_ctx)
-		list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
-			perf_event_task_output(event, task_event);
-
-and avoid adding a 'match' argument.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+              Linus
