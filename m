@@ -1,75 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab3C0PrF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 11:47:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56775 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751684Ab3C0PrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 11:47:03 -0400
-Date: Wed, 27 Mar 2013 16:47:00 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
-        Li Zefan <lizefan@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
-Message-ID: <20130327154700.GM16579@dhcp22.suse.cz>
-References: <1364373399-17397-1-git-send-email-mhocko@suse.cz>
- <20130327145727.GD29052@cmpxchg.org>
- <20130327151104.GK16579@dhcp22.suse.cz>
- <20130327153226.GF29052@cmpxchg.org>
+	id S1752529Ab3C0Pvi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 11:51:38 -0400
+Received: from mail-da0-f48.google.com ([209.85.210.48]:34356 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788Ab3C0Pvh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 11:51:37 -0400
+Date: Wed, 27 Mar 2013 08:51:34 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: sparclinux@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+Message-ID: <20130327155134.GA24155@kroah.com>
+References: <5152d3ed.vW9X0QzDTVkW7Gck%fengguang.wu@intel.com>
+ <20130327154453.GA27576@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130327153226.GF29052@cmpxchg.org>
+In-Reply-To: <20130327154453.GA27576@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 27-03-13 11:32:26, Johannes Weiner wrote:
-> On Wed, Mar 27, 2013 at 04:11:04PM +0100, Michal Hocko wrote:
-> > On Wed 27-03-13 10:58:25, Johannes Weiner wrote:
-> > > On Wed, Mar 27, 2013 at 09:36:39AM +0100, Michal Hocko wrote:
-> > [...]
-> > > > +	/*
-> > > > +	 * kmem_cache_create_memcg duplicates the given name and
-> > > > +	 * cgroup_name for this name requires RCU context.
-> > > > +	 * This static temporary buffer is used to prevent from
-> > > > +	 * pointless shortliving allocation.
-> > > > +	 */
-> > > > +	if (!tmp_name) {
-> > > > +		tmp_name = kmalloc(PAGE_SIZE, GFP_KERNEL);
-> > > > +		WARN_ON_ONCE(!tmp_name);
-> > > 
-> > > Just use the page allocator directly and get a free allocation failure
-> > > warning. 
-> > 
-> > WARN_ON_ONCE is probably pointless.
-> > 
-> > > Then again, order-0 pages are considered cheap enough that they never
-> > > even fail in our current implementation.
-> > > 
-> > > Which brings me to my other point: why not just a simple single-page
-> > > allocation?
-> > 
-> > No objection from me. I was previously thinking about the "proper"
-> > size for something that is a file name. So I originally wanted to use
-> > PATH_MAX instead but ended up with PAGE_SIZE for reasons I do not
-> > remember now.  Maybe we can use NAME_MAX instead. I just do not like to
-> > use page allocator directly when allocatating something like strings
-> > etc...
+On Wed, Mar 27, 2013 at 11:44:53PM +0800, Fengguang Wu wrote:
+> Greetings,
 > 
-> Don't grep for GFP_TEMPORARY then, we do it in a couple places :-)
+> The below errors show up in both upstream and linux-next.
+> 
+>    make ARCH=sparc allyesconfig
+>    make ARCH=sparc
+> 
+>    In file included from usr/include/linux/genetlink.h:4:0,
+>                     from Documentation/accounting/getdelays.c:27:
+> >> usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:28:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:29:1: error: unknown type name '__u32'
+> >> usr/include/linux/types.h:30:1: error: unknown type name '__u32'
+> >> usr/include/linux/types.h:31:1: error: unknown type name '__u64'
+> >> usr/include/linux/types.h:32:1: error: unknown type name '__u64'
+> >> usr/include/linux/types.h:34:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:35:1: error: unknown type name '__u32'
+>    In file included from usr/include/linux/genetlink.h:5:0,
+>                     from Documentation/accounting/getdelays.c:27:
+> >> usr/include/linux/netlink.h:37:2: error: unknown type name '__u32'
+> >> usr/include/linux/netlink.h:38:9: error: unknown type name '__u32'
+> >> usr/include/linux/netlink.h:42:2: error: unknown type name '__u32'
+> >> usr/include/linux/netlink.h:43:2: error: unknown type name '__u16'
+> >> usr/include/linux/netlink.h:44:2: error: unknown type name '__u16'
+> >> usr/include/linux/netlink.h:45:2: error: unknown type name '__u32'
+> >> usr/include/linux/netlink.h:46:2: error: unknown type name '__u32'
+> >> usr/include/linux/netlink.h:110:2: error: unknown type name '__u32'
+> >> usr/include/linux/netlink.h:130:2: error: unknown type name '__u16'
+> >> usr/include/linux/netlink.h:131:2: error: unknown type name '__u16'
+>    In file included from Documentation/accounting/getdelays.c:27:0:
+> >> usr/include/linux/genetlink.h:13:2: error: unknown type name '__u8'
+> >> usr/include/linux/genetlink.h:14:2: error: unknown type name '__u8'
+> --
+>    In file included from usr/include/linux/netlink.h:5:0,
+>                     from Documentation/connector/ucon.c:28:
+> >> usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:28:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:29:1: error: unknown type name '__u32'
+> >> usr/include/linux/types.h:30:1: error: unknown type name '__u32'
+> >> usr/include/linux/types.h:31:1: error: unknown type name '__u64'
+> >> usr/include/linux/types.h:32:1: error: unknown type name '__u64'
+> >> usr/include/linux/types.h:34:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:35:1: error: unknown type name '__u32'
+>    In file included from Documentation/connector/ucon.c:28:0:
+> >> usr/include/linux/netlink.h:37:2: error: unknown type name '__u32'
+> >> usr/include/linux/netlink.h:38:9: error: unknown type name '__u32'
+> >> usr/include/linux/netlink.h:42:2: error: unknown type name '__u32'
+> >> usr/include/linux/netlink.h:43:2: error: unknown type name '__u16'
+> >> usr/include/linux/netlink.h:44:2: error: unknown type name '__u16'
+> >> usr/include/linux/netlink.h:45:2: error: unknown type name '__u32'
+> >> usr/include/linux/netlink.h:46:2: error: unknown type name '__u32'
+> >> usr/include/linux/netlink.h:110:2: error: unknown type name '__u32'
+> >> usr/include/linux/netlink.h:130:2: error: unknown type name '__u16'
+> >> usr/include/linux/netlink.h:131:2: error: unknown type name '__u16'
+>    In file included from usr/include/linux/rtnetlink.h:6:0,
+>                     from Documentation/connector/ucon.c:29:
+> >> usr/include/linux/if_link.h:9:2: error: unknown type name '__u32'
+> >> usr/include/linux/if_link.h:10:2: error: unknown type name '__u32'
+> --
+>    In file included from usr/include/linux/uuid.h:24:0,
+>                     from usr/include/linux/mei.h:70,
+>                     from Documentation/misc-devices/mei/mei-amt-version.c:77:
+> >> usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:28:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:29:1: error: unknown type name '__u32'
+> >> usr/include/linux/types.h:30:1: error: unknown type name '__u32'
+> >> usr/include/linux/types.h:31:1: error: unknown type name '__u64'
+> >> usr/include/linux/types.h:32:1: error: unknown type name '__u64'
+> >> usr/include/linux/types.h:34:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:35:1: error: unknown type name '__u32'
+>    In file included from usr/include/linux/mei.h:70:0,
+>                     from Documentation/misc-devices/mei/mei-amt-version.c:77:
+> >> usr/include/linux/uuid.h:28:2: error: unknown type name '__u8'
+> >> usr/include/linux/uuid.h:32:2: error: unknown type name '__u8'
+>    In file included from Documentation/misc-devices/mei/mei-amt-version.c:77:0:
+> >> usr/include/linux/mei.h:95:2: error: unknown type name '__u32'
+> >> usr/include/linux/mei.h:96:2: error: unknown type name '__u8'
+> >> usr/include/linux/mei.h:97:2: error: unknown type name '__u8'
+> --
+>    In file included from usr/include/linux/if.h:22:0,
+>                     from Documentation/networking/ifenslave.c:161:
+> >> usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:28:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:29:1: error: unknown type name '__u32'
+> >> usr/include/linux/types.h:30:1: error: unknown type name '__u32'
+> >> usr/include/linux/types.h:31:1: error: unknown type name '__u64'
+> >> usr/include/linux/types.h:32:1: error: unknown type name '__u64'
+> >> usr/include/linux/types.h:34:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:35:1: error: unknown type name '__u32'
+>    In file included from Documentation/networking/ifenslave.c:164:0:
+> >> usr/include/linux/if_bonding.h:96:2: error: unknown type name '__s32'
+> >> usr/include/linux/if_bonding.h:97:2: error: unknown type name '__s32'
+> >> usr/include/linux/if_bonding.h:98:2: error: unknown type name '__s32'
+> >> usr/include/linux/if_bonding.h:102:2: error: unknown type name '__s32'
+> >> usr/include/linux/if_bonding.h:104:2: error: unknown type name '__s8'
+> >> usr/include/linux/if_bonding.h:105:2: error: unknown type name '__s8'
+> >> usr/include/linux/if_bonding.h:106:2: error: unknown type name '__u32'
+> >> usr/include/linux/if_bonding.h:110:2: error: unknown type name '__u16'
+> >> usr/include/linux/if_bonding.h:111:2: error: unknown type name '__u16'
+> >> usr/include/linux/if_bonding.h:112:2: error: unknown type name '__u16'
+> >> usr/include/linux/if_bonding.h:113:2: error: unknown type name '__u16'
+> >> usr/include/linux/if_bonding.h:114:2: error: unknown type name '__u8'
+>    In file included from Documentation/networking/ifenslave.c:171:0:
+> --
+>    In file included from Documentation/spi/spidev_test.c:21:0:
+> >> usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:28:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:29:1: error: unknown type name '__u32'
+> >> usr/include/linux/types.h:30:1: error: unknown type name '__u32'
+> >> usr/include/linux/types.h:31:1: error: unknown type name '__u64'
+> >> usr/include/linux/types.h:32:1: error: unknown type name '__u64'
+> >> usr/include/linux/types.h:34:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:35:1: error: unknown type name '__u32'
+>    In file included from Documentation/spi/spidev_test.c:22:0:
+> >> usr/include/linux/spi/spidev.h:86:2: error: unknown type name '__u64'
+> >> usr/include/linux/spi/spidev.h:87:2: error: unknown type name '__u64'
+> >> usr/include/linux/spi/spidev.h:89:2: error: unknown type name '__u32'
+> >> usr/include/linux/spi/spidev.h:90:2: error: unknown type name '__u32'
+> >> usr/include/linux/spi/spidev.h:92:2: error: unknown type name '__u16'
+> >> usr/include/linux/spi/spidev.h:93:2: error: unknown type name '__u8'
+> >> usr/include/linux/spi/spidev.h:94:2: error: unknown type name '__u8'
+> >> usr/include/linux/spi/spidev.h:95:2: error: unknown type name '__u32'
+>    Documentation/spi/spidev_test.c: In function 'main':
+> >> Documentation/spi/spidev_test.c:171:18: error: '__u8' undeclared (first use in this function)
+>    Documentation/spi/spidev_test.c:171:18: note: each undeclared identifier is reported only once for each function it appears in
+> >> Documentation/spi/spidev_test.c:193:18: error: '__u32' undeclared (first use in this function)
+> --
+>    In file included from Documentation/spi/spidev_fdx.c:11:0:
+> >> usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:28:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:29:1: error: unknown type name '__u32'
+> >> usr/include/linux/types.h:30:1: error: unknown type name '__u32'
+> >> usr/include/linux/types.h:31:1: error: unknown type name '__u64'
+> >> usr/include/linux/types.h:32:1: error: unknown type name '__u64'
+> >> usr/include/linux/types.h:34:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:35:1: error: unknown type name '__u32'
+>    In file included from Documentation/spi/spidev_fdx.c:12:0:
+> >> usr/include/linux/spi/spidev.h:86:2: error: unknown type name '__u64'
+> >> usr/include/linux/spi/spidev.h:87:2: error: unknown type name '__u64'
+> >> usr/include/linux/spi/spidev.h:89:2: error: unknown type name '__u32'
+> >> usr/include/linux/spi/spidev.h:90:2: error: unknown type name '__u32'
+> >> usr/include/linux/spi/spidev.h:92:2: error: unknown type name '__u16'
+> >> usr/include/linux/spi/spidev.h:93:2: error: unknown type name '__u8'
+> >> usr/include/linux/spi/spidev.h:94:2: error: unknown type name '__u8'
+> >> usr/include/linux/spi/spidev.h:95:2: error: unknown type name '__u32'
+>    Documentation/spi/spidev_fdx.c: In function 'dumpstat':
+> >> Documentation/spi/spidev_fdx.c:81:2: error: unknown type name '__u8'
+> >> Documentation/spi/spidev_fdx.c:82:2: error: unknown type name '__u32'
+> >> Documentation/spi/spidev_fdx.c:84:16: error: '__u8' undeclared (first use in this function)
+>    Documentation/spi/spidev_fdx.c:84:16: note: each undeclared identifier is reported only once for each function it appears in
+> >> Documentation/spi/spidev_fdx.c:96:16: error: '__u32' undeclared (first use in this function)
+> --
+>    In file included from usr/include/linux/errqueue.h:4:0,
+>                     from Documentation/networking/timestamping/timestamping.c:46:
+> >> usr/include/linux/types.h:27:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:28:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:29:1: error: unknown type name '__u32'
+> >> usr/include/linux/types.h:30:1: error: unknown type name '__u32'
+> >> usr/include/linux/types.h:31:1: error: unknown type name '__u64'
+> >> usr/include/linux/types.h:32:1: error: unknown type name '__u64'
+> >> usr/include/linux/types.h:34:1: error: unknown type name '__u16'
+> >> usr/include/linux/types.h:35:1: error: unknown type name '__u32'
+>    In file included from Documentation/networking/timestamping/timestamping.c:46:0:
+> >> usr/include/linux/errqueue.h:7:2: error: unknown type name '__u32'
+> >> usr/include/linux/errqueue.h:8:2: error: unknown type name '__u8'
+> >> usr/include/linux/errqueue.h:9:2: error: unknown type name '__u8'
+> >> usr/include/linux/errqueue.h:10:2: error: unknown type name '__u8'
+> >> usr/include/linux/errqueue.h:11:2: error: unknown type name '__u8'
+> >> usr/include/linux/errqueue.h:12:2: error: unknown type name '__u32'
+> >> usr/include/linux/errqueue.h:13:2: error: unknown type name '__u32'
+> 
+> It's bisected down to upstream commit b87fc3e6e2e ("Merge tag 'staging-3.8-rc3' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging). However
+> it's possibly a wrong bisect because there are other build errors in
+> the parent commits and they may hide these errors.
 
-This is what Li suggested in the beginning and right, I didn't like it.
+As you are getting errors when building Documentation files, I don't
+think this is a staging tree specific issue, as I haven't changed
+anything in that directory that I can see.
 
-> NAME_MAX is just for single dentry names, not path names, no?  Might
-> be a little short.
+So it's probably something else.
 
-Yes, Glauber confirmed that MAX_PATH is needed.
-
--- 
-Michal Hocko
-SUSE Labs
+greg k-h
