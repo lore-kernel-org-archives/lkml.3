@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687Ab3C0AR4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 20:17:56 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:61583 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696Ab3C0ARz (ORCPT
+	id S1753905Ab3C0AS3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 20:18:29 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:55357 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab3C0AS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 20:17:55 -0400
-Date: Wed, 27 Mar 2013 01:20:43 +0100
+	Tue, 26 Mar 2013 20:18:28 -0400
+Date: Wed, 27 Mar 2013 01:21:16 +0100
 From: Daniel Vetter <daniel@ffwll.ch>
-To: Damien Lespiau <damien.lespiau@intel.com>
-Cc: Imre Deak <imre.deak@intel.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Intel-gfx] [PATCH 0/2] lib/scatterlist: sg_page_iter: support
- for memory w/o backing pages
-Message-ID: <20130327002043.GI9021@phenom.ffwll.local>
-Mail-Followup-To: Damien Lespiau <damien.lespiau@intel.com>,
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Imre Deak <imre.deak@intel.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: Re: [PATCH 0/2] lib/scatterlist: sg_page_iter: support for memory
+ w/o backing pages
+Message-ID: <20130327002116.GJ9021@phenom.ffwll.local>
+Mail-Followup-To: Andrew Morton <akpm@linux-foundation.org>,
 	Imre Deak <imre.deak@intel.com>, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>
+	linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
 References: <1364303659-1951-1-git-send-email-imre.deak@intel.com>
- <20130326225057.GA14347@strange.amr.corp.intel.com>
+ <20130326145020.GT9021@phenom.ffwll.local>
+ <20130326125742.1aa431a9d406bc53159f27dc@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130326225057.GA14347@strange.amr.corp.intel.com>
+In-Reply-To: <20130326125742.1aa431a9d406bc53159f27dc@linux-foundation.org>
 X-Operating-System: Linux phenom 3.7.0-rc4+
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 10:50:57PM +0000, Damien Lespiau wrote:
-> On Tue, Mar 26, 2013 at 03:14:17PM +0200, Imre Deak wrote:
-> > When adding sg_page_iter I haven't thought properly through the use case
-> > for sg lists w/o backing pages - which is specific to the i915 driver -
-> > so this patchset adds support for this.
-> > 
-> > It applies on the i915 tree [1], where the iterator is in use already.
-> > 
-> > [1] git://people.freedesktop.org/~danvet/drm-intel [nightly branch]
-> > 
-> > Imre Deak (2):
-> >   lib/scatterlist: sg_page_iter: support sg lists w/o backing pages
-> >   Revert "drm/i915: set dummy page for stolen objects"
+On Tue, Mar 26, 2013 at 12:57:42PM -0700, Andrew Morton wrote:
+> On Tue, 26 Mar 2013 15:50:20 +0100 Daniel Vetter <daniel@ffwll.ch> wrote:
 > 
-> Both patches are Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
+> > On Tue, Mar 26, 2013 at 03:14:17PM +0200, Imre Deak wrote:
+> > > When adding sg_page_iter I haven't thought properly through the use case
+> > > for sg lists w/o backing pages - which is specific to the i915 driver -
+> > > so this patchset adds support for this.
+> > > 
+> > > It applies on the i915 tree [1], where the iterator is in use already.
+> > > 
+> > > [1] git://people.freedesktop.org/~danvet/drm-intel [nightly branch]
+> > 
+> > i915 patches are already included in linux-next, so should apply on top of
+> > that, too. So can this go in through -mm for 3.10 or should I slurp it in
+> > through drm-intel trees (once it passes review)? I'd like to ditch the
+> > dummy page hack we're currently using (i.e. patch 2).
+> 
+> Please slurp it - there's little benefit in spreading it across two trees.
 
-Both patches merged, with Imre's missing sob line rectified on the 2nd
-one.
+Done, patches should show up in linux-next soon.
 -Daniel
 -- 
 Daniel Vetter
