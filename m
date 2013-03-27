@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab3C0NSW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 09:18:22 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:61877 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab3C0NSU (ORCPT
+	id S1752543Ab3C0NS5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 09:18:57 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:61842 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752258Ab3C0NSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 09:18:20 -0400
+	Wed, 27 Mar 2013 09:18:24 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, tj@kernel.org,
-        Steve Wise <swise@opengridcomputing.com>,
-        Tom Tucker <tom@opengridcomputing.com>, linux-rdma@vger.kernel.org
-Subject: [PATCH v1 2/6] amso1100: convert to using idr_alloc_cyclic
-Date: Wed, 27 Mar 2013 09:18:04 -0400
-Message-Id: <1364390288-30968-3-git-send-email-jlayton@redhat.com>
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>
+Subject: [PATCH v1 5/6] inotify: convert inotify_add_to_idr to use idr_alloc_cyclic
+Date: Wed, 27 Mar 2013 09:18:07 -0400
+Message-Id: <1364390288-30968-6-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1364390288-30968-1-git-send-email-jlayton@redhat.com>
 References: <1364390288-30968-1-git-send-email-jlayton@redhat.com>
@@ -22,53 +22,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Note: compile-tested only)
-
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Steve Wise <swise@opengridcomputing.com>
-Cc: Tom Tucker <tom@opengridcomputing.com>
-Cc: linux-rdma@vger.kernel.org
+Cc: John McCutchan <john@johnmccutchan.com>
+Cc: Robert Love <rlove@rlove.org>
+Cc: Eric Paris <eparis@parisplace.org>
 ---
- drivers/infiniband/hw/amso1100/c2.h    | 1 -
- drivers/infiniband/hw/amso1100/c2_qp.c | 5 ++---
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ fs/notify/inotify/inotify_user.c | 10 +++-------
+ include/linux/fsnotify_backend.h |  1 -
+ 2 files changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/infiniband/hw/amso1100/c2.h b/drivers/infiniband/hw/amso1100/c2.h
-index ba7a1208..d619d73 100644
---- a/drivers/infiniband/hw/amso1100/c2.h
-+++ b/drivers/infiniband/hw/amso1100/c2.h
-@@ -265,7 +265,6 @@ struct c2_pd_table {
- struct c2_qp_table {
- 	struct idr idr;
- 	spinlock_t lock;
--	int last;
- };
- 
- struct c2_element {
-diff --git a/drivers/infiniband/hw/amso1100/c2_qp.c b/drivers/infiniband/hw/amso1100/c2_qp.c
-index 0ab826b..703b33f 100644
---- a/drivers/infiniband/hw/amso1100/c2_qp.c
-+++ b/drivers/infiniband/hw/amso1100/c2_qp.c
-@@ -385,8 +385,7 @@ static int c2_alloc_qpn(struct c2_dev *c2dev, struct c2_qp *qp)
- 	idr_preload(GFP_KERNEL);
- 	spin_lock_irq(&c2dev->qp_table.lock);
- 
--	ret = idr_alloc(&c2dev->qp_table.idr, qp, c2dev->qp_table.last++, 0,
--			GFP_NOWAIT);
-+	ret = idr_alloc_cyclic(&c2dev->qp_table.idr, qp, 0, 0, GFP_NOWAIT);
- 	if (ret >= 0)
- 		qp->qpn = ret;
- 
-@@ -1016,7 +1015,7 @@ out:
- void c2_init_qp_table(struct c2_dev *c2dev)
- {
- 	spin_lock_init(&c2dev->qp_table.lock);
--	idr_init(&c2dev->qp_table.idr);
-+	idr_init_cyclic(&c2dev->qp_table.idr, 0);
+diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
+index e0f7c12..6940434 100644
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -359,7 +359,6 @@ static int inotify_find_inode(const char __user *dirname, struct path *path, uns
  }
  
- void c2_cleanup_qp_table(struct c2_dev *c2dev)
+ static int inotify_add_to_idr(struct idr *idr, spinlock_t *idr_lock,
+-			      int *last_wd,
+ 			      struct inotify_inode_mark *i_mark)
+ {
+ 	int ret;
+@@ -367,11 +366,10 @@ static int inotify_add_to_idr(struct idr *idr, spinlock_t *idr_lock,
+ 	idr_preload(GFP_KERNEL);
+ 	spin_lock(idr_lock);
+ 
+-	ret = idr_alloc(idr, i_mark, *last_wd + 1, 0, GFP_NOWAIT);
++	ret = idr_alloc_cyclic(idr, i_mark, 0, 0, GFP_NOWAIT);
+ 	if (ret >= 0) {
+ 		/* we added the mark to the idr, take a reference */
+ 		i_mark->wd = ret;
+-		*last_wd = i_mark->wd;
+ 		fsnotify_get_mark(&i_mark->fsn_mark);
+ 	}
+ 
+@@ -638,8 +636,7 @@ static int inotify_new_watch(struct fsnotify_group *group,
+ 	if (atomic_read(&group->inotify_data.user->inotify_watches) >= inotify_max_user_watches)
+ 		goto out_err;
+ 
+-	ret = inotify_add_to_idr(idr, idr_lock, &group->inotify_data.last_wd,
+-				 tmp_i_mark);
++	ret = inotify_add_to_idr(idr, idr_lock, tmp_i_mark);
+ 	if (ret)
+ 		goto out_err;
+ 
+@@ -696,8 +693,7 @@ static struct fsnotify_group *inotify_new_group(unsigned int max_events)
+ 	group->max_events = max_events;
+ 
+ 	spin_lock_init(&group->inotify_data.idr_lock);
+-	idr_init(&group->inotify_data.idr);
+-	group->inotify_data.last_wd = 0;
++	idr_init_cyclic(&group->inotify_data.idr, 0);
+ 	group->inotify_data.user = get_current_user();
+ 
+ 	if (atomic_inc_return(&group->inotify_data.user->inotify_devs) >
+diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
+index d5b0910..4b2ee8d 100644
+--- a/include/linux/fsnotify_backend.h
++++ b/include/linux/fsnotify_backend.h
+@@ -157,7 +157,6 @@ struct fsnotify_group {
+ 		struct inotify_group_private_data {
+ 			spinlock_t	idr_lock;
+ 			struct idr      idr;
+-			u32             last_wd;
+ 			struct user_struct      *user;
+ 		} inotify_data;
+ #endif
 -- 
 1.7.11.7
 
