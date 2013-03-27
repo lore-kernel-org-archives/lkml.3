@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab3C0OAC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 10:00:02 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:64379 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab3C0OAA (ORCPT
+	id S1752061Ab3C0OBK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 10:01:10 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:42630 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab3C0OBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 10:00:00 -0400
-X-Greylist: delayed 392 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Mar 2013 10:00:00 EDT
-From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-To: myungjoo.ham@samsung.com, rjw@sisk.pl, Kevin Hilman <khilman@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rajagopal Venkat <rajagopal.venkat@linaro.org>
-Subject: [PATCH v2 0/2] Add devfreq runtime pm support
-Date: Wed, 27 Mar 2013 19:22:52 +0530
-Message-Id: <1364392374-12236-1-git-send-email-rajagopal.venkat@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 27 Mar 2013 10:01:08 -0400
+MIME-Version: 1.0
+Date: Wed, 27 Mar 2013 22:01:07 +0800
+Message-ID: <CAPgLHd_JduxWJtpcvFsYJD+39neJf5xQOZfNO0qS+zAX4GTzug@mail.gmail.com>
+Subject: [PATCH -next] ocfs2: fix error return code in ocfs2_info_handle_freefrag()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: mfasheh@suse.com, jlbec@evilplan.org
+Cc: yongjun_wei@trendmicro.com.cn, ocfs2-devel@oss.oracle.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch to bind devfreq to runtime pm framework. Instead of explicitly
-using devfreq_suspend_device() and devfreq_resume_device() apis for
-devfreq core suspend/resume, let runtime-pm core handle it automatically.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Suspend device devfreq core load monitoring with pm_runtime_suspend() and
-resume back on pm_runtime_resume().
+Fix to return a negative error code from the error handling
+case instead of 0, as returned elsewhere in this function.
 
-Discussed at http://comments.gmane.org/gmane.linux.linaro.devel/13787
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ fs/ocfs2/ioctl.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Changes from v1:
-- improved change log and code comments
-- added NULL check for devfreq runtime-pm callbacks
------
-
-Rajagopal Venkat (2):
-  PM / devfreq: Fix compiler warnings
-  PM / devfreq: tie suspend/resume to runtime-pm
-
- drivers/base/power/runtime.c |   21 ++++++++++++-
- drivers/devfreq/devfreq.c    |   69 +++++++++++++++++++++++++++++++++++++++---
- include/linux/devfreq.h      |   30 ++++++------------
- include/linux/pm.h           |    2 ++
- 4 files changed, 97 insertions(+), 25 deletions(-)
-
--- 
-1.7.10.4
+diff --git a/fs/ocfs2/ioctl.c b/fs/ocfs2/ioctl.c
+index 6cab301..0c60ef2 100644
+--- a/fs/ocfs2/ioctl.c
++++ b/fs/ocfs2/ioctl.c
+@@ -706,8 +706,10 @@ int ocfs2_info_handle_freefrag(struct inode *inode,
+ 
+ 	o2info_set_request_filled(&oiff->iff_req);
+ 
+-	if (o2info_to_user(*oiff, req))
++	if (o2info_to_user(*oiff, req)) {
++		status = -EFAULT;
+ 		goto bail;
++	}
+ 
+ 	status = 0;
+ bail:
 
