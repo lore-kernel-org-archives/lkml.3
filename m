@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab3C0D0m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 23:26:42 -0400
-Received: from fifo99.com ([67.223.236.141]:36726 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751988Ab3C0D0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 23:26:41 -0400
-Date: Tue, 26 Mar 2013 20:26:54 -0700
-From: Daniel Walker <dwalker@fifo99.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: ptracing a task from core_pattern pipe
-Message-ID: <20130327031737.GA12602@fifo99.com>
-References: <20130316011508.GA11010@fifo99.com>
- <20130316175845.GA6194@redhat.com>
- <20130317004431.GA28915@fifo99.com>
- <20130317143446.GB25236@redhat.com>
- <20130317211133.GA14189@fifo99.com>
- <20130318170302.GA21248@redhat.com>
- <20130318190943.GA16226@fifo99.com>
- <20130319201933.GB18670@redhat.com>
- <51501D57.1000605@redhat.com>
+	id S1756162Ab3C0D0z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 23:26:55 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54891 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988Ab3C0D0y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 23:26:54 -0400
+Message-ID: <515266FC.5090103@wwwdotorg.org>
+Date: Tue, 26 Mar 2013 21:26:52 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51501D57.1000605@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lubomir Rintel <lkundrak@v3.sk>
+CC: linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
+        linux-rpi-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH] watchdog: Add Broadcom BCM2708 watchdog timer driver
+References: <1363956907-5644-1-git-send-email-lkundrak@v3.sk>  <514D1273.8070902@wwwdotorg.org> <1364134324.2906.8.camel@hobbes.kokotovo>
+In-Reply-To: <1364134324.2906.8.camel@hobbes.kokotovo>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 10:48:07AM +0100, Denys Vlasenko wrote:
-> On 03/19/2013 09:19 PM, Oleg Nesterov wrote:
-> >> The above is regarding the situation which I'm running my corepipe_app ,
-> >> i.e. my system doesn't have a disk to save a core file for parsing.
-> > 
-> > Can't you process the data inplace? You do not need to save it to disk.
+On 03/24/2013 08:12 AM, Lubomir Rintel wrote:
+> On Fri, 2013-03-22 at 20:24 -0600, Stephen Warren wrote:
 > 
-> Daniel said:
+> Thank you for your response!
 > 
-> >> I'm trying to get the "dumpers" registers and stack out when it fails.
-> 
-> Registers would be easy'ish to get from coredump:
-> they are contained in note sections which are at the beginning
-> of the coredump. You can implement necessary parsing without
-> too much pain.
-> 
-> Getting at stack would be harder.
+>> On 03/22/2013 06:55 AM, Lubomir Rintel wrote:
+>>> Signed-off-by: Lubomir Rintel <lkundrak at v3.sk>
 
-There exists /proc/<pid>/mem and /proc/<pid>/maps on these tasks. If
-those don't work then that's a straight up defect..
-
-> But by asking kernel to allow you to poke around dead task's
-> address space with ptrace() calls you just shift difficulty away from you
-> (today you need to implement in-memory ELF parsing) to kernel people
-> (they will need to implement *and support* ptracing of coredumping
-> tasks).
+>> I'm curious where you got the documentation to write this driver; this
+>> HW module isn't described in BCM2835-ARM-Peripherals.pdf. I assume this
+>> is based on the downstream kernel driver? If so, at least some credit in
+>> the commit description might be appropriate. At least the relevant
+>> commit downstream already has an appropriate Signed-off-by line:-)
 > 
-> This is somewhat unfair, considering that coredumping code in kernel
-> is already a source of many complications, and that kernel-side coding
-> is harder than userspace.
+> Your guess is right, used bcm2708_wdog driver from rpi-3.6.y as a reference. 
+> I'll add that information to the commit message.
 > 
-> I think you are lucky that ptrace attach even *works* on coredumping task.
-> No documentation ever guaranteed such a thing.
+> The Signed-off-by line is indeed present, but unfortunately does not seem to be 
+> particularly appropriate:
+> 
+> Signed-off-by: popcornmix <popcornmix@gmail.com>
 
-There not much different from userspace between a task running, and one
-dumping.. I think it should be the inverse, ptrace either needs to work
-or the special case needs to be documented that it doesn't work.
+That s-o-b line maps to Dom Cobley. In a previous message on the
+linux-rpi-kernel mailing list, he gave his permission to re-write the
+name part of that to "Dom Cobley". That would make the s-o-b useful.
 
-However, I do agree that you can parse the core file..
+http://lists.infradead.org/pipermail/linux-rpi-kernel/2012-September/000154.html
 
-Daniel
