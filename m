@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab3C0AYB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 20:24:01 -0400
-Received: from 8bytes.org ([85.214.48.195]:46760 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab3C0AYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 20:24:00 -0400
-Date: Wed, 27 Mar 2013 01:23:57 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Minchan Kim <minchan.kim@lge.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+	id S1754227Ab3C0A0d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 20:26:33 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:64720 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940Ab3C0A0c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 20:26:32 -0400
+Date: Tue, 26 Mar 2013 17:26:06 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Michel Lespinasse <walken@google.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: Re: [PATCH] staging: zsmalloc: Fix link error on ARM
-Message-ID: <20130327002357.GG30540@8bytes.org>
-References: <1364337232-3513-1-git-send-email-joro@8bytes.org>
- <20130327000552.GA13283@blaptop>
+Subject: Revert VM_POPULATE?
+Message-ID: <alpine.LNX.2.00.1303261646070.23041@eggly.anvils>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130327000552.GA13283@blaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Mar 27 01:23:58 2013
-X-DSPAM-Confidence: 0.9991
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51523c1e23678558918148
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 09:05:52AM +0900, Minchan Kim wrote:
-> Oops, it was my fault. When I tested [1] on CONFIG_SMP machine on ARM,
-> it worked well. It means it's not always problem on every CONFIG_SMP
-> on ARM machine but some SMP machine define flush_tlb_kernel_range,
-> others don't.
-> 
-> At that time, Russell King already suggested same thing with your patch
-> and I meant to clean it up because the patch was already merged but I didn't.
-> Because we didn't catch up that it breaks build on some configuration
-> so I thought it's just clean up patch and Greg didn't want to accept
-> NOT-BUG patch of any z* family.
-> 
-> Now, it's BUG patch.
-> 
-> Remained problem is that Greg doesn't want to export core function for
-> staging driver and it's reasonable for me.
+Michel, I propose that we revert 3.9-rc1's VM_POPULATE flag - 186930500985
+"mm: introduce VM_POPULATE flag to better deal with racy userspace programs".
 
-Okay, I see. So that is probably also the reason for the
-reimplementation of unmap_kernel_range in the zsmalloc module :)
+Konstantin's 3.7 cleanup of VM_flags has left several bits below 32
+free, but sooner or later someone will want to come through again and
+free some more, and I think VM_POPULATE will be among the first to go.
 
-> So my opinion is remove zsmalloc module build and could recover it with
-> making unmap_kernel_range exported function after we merged it into
-> mainline.
+It just doesn't add much value, and flags a transient condition which
+then sticks around indefinitely.  Better we remove it now than later.
 
-Sounds reasonable, I update the patch to only allow zsmalloc to be
-built-in. The benefit is that this still allows to use
-unmap_kernel_range() in the driver.
+You said yourself in the 0/8 or 1/8:
+    - Patch 8 is optional to this entire series. It only helps to deal more
+      nicely with racy userspace programs that might modify their mappings
+      while we're trying to populate them. It adds a new VM_POPULATE flag
+      on the mappings we do want to populate, so that if userspace replaces
+      them with mappings it doesn't want populated, mm_populate() won't
+      populate those replacement mappings.
+when you were just testing the waters with 8/8 to see if it was wanted.
 
-Thanks,
+I don't see any serious problem with it.  We can probably contrive
+a case in which someone mlocks-then-munlocks scattered segments of a
+large vma, and the VM_POPULATE flag left behind prevents the segments
+from being merged back into a single vma; but that can happen in other
+ways, so it doesn't count for much.
 
-	Joerg
+(I presume VM_POPULATE is left uncleared, because there could always be
+races when it's cleared too soon - if userspace is racing with itself.)
 
+I just don't see VM_POPLULATE solving any real problem: the kernel code
+appears to be safe enough without it, and if userspace wishes to play
+racing mmap games, oh, just let it.
 
+The original patch appears to revert cleanly, except in mm/mmap.c
+where "*populate = true;" has since become "*populate = len;".
+
+Hugh
