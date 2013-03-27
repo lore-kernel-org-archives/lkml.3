@@ -1,33 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab3C0Iqj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 04:46:39 -0400
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:64950 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754186Ab3C0Iqf (ORCPT
+	id S1754743Ab3C0Iq4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 04:46:56 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:57972 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754364Ab3C0Iqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 04:46:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <006201ce215d$6f133d10$4d39b730$%han@samsung.com>
-References: <006201ce215d$6f133d10$4d39b730$%han@samsung.com>
-Date: Wed, 27 Mar 2013 09:46:34 +0100
-Message-ID: <CACRpkda6tPYbwtEvGzr-7TJdFN_gEYpgr5JSDTLELPSQaY4P7A@mail.gmail.com>
-Subject: Re: [PATCH 1/6] gpio: adp5520: use devm_kzalloc()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 27 Mar 2013 04:46:43 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-fbdev@vger.kernel.org, florianschandinat@gmx.de,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH 3/6] video: vt8500: Correct descriptions in video/Kconfig
+Date: Wed, 27 Mar 2013 21:46:58 +1300
+Message-Id: <1364374021-10844-4-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1364374021-10844-1-git-send-email-linux@prisktech.co.nz>
+References: <1364374021-10844-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 10:14 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+This patch corrects the descriptions for the VIA VT8500 and
+Wondermedia WM8xxx-series framebuffer drivers to correctly reflect
+which hardware they support.
 
-> Use devm_kzalloc() to make cleanup paths simpler.
->
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+---
+ drivers/video/Kconfig |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-Patch applied.
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 661aa54..ad762ed 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -1789,7 +1789,7 @@ config FB_AU1200
+ 	  option au1200fb:panel=<name>.
+ 
+ config FB_VT8500
+-	bool "VT8500 LCD Driver"
++	bool "VIA VT8500 framebuffer support"
+ 	depends on (FB = y) && ARM && ARCH_VT8500
+ 	select FB_SYS_FILLRECT if (!FB_WMT_GE_ROPS)
+ 	select FB_SYS_COPYAREA if (!FB_WMT_GE_ROPS)
+@@ -1799,17 +1799,18 @@ config FB_VT8500
+ 	  controller.
+ 
+ config FB_WM8505
+-	bool "WM8505 frame buffer support"
++	bool "Wondermedia WM8xxx-series frame buffer support"
+ 	depends on (FB = y) && ARM && ARCH_VT8500
+ 	select FB_SYS_FILLRECT if (!FB_WMT_GE_ROPS)
+ 	select FB_SYS_COPYAREA if (!FB_WMT_GE_ROPS)
+ 	select FB_SYS_IMAGEBLIT
+ 	help
+-	  This is the framebuffer driver for WonderMedia WM8505/WM8650
+-	  integrated LCD controller.
++	  This is the framebuffer driver for WonderMedia WM8xxx-series
++	  integrated LCD controller. This driver covers the WM8505, WM8650
++	  and WM8850 SoCs.
+ 
+ config FB_WMT_GE_ROPS
+-	bool "VT8500/WM85xx accelerated raster ops support"
++	bool "VT8500/WM8xxx accelerated raster ops support"
+ 	depends on (FB = y) && (FB_VT8500 || FB_WM8505)
+ 	default n
+ 	help
+-- 
+1.7.9.5
 
-Thanks!
-Linus Walleij
