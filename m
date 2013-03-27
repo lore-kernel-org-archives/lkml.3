@@ -1,58 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053Ab3C0SOy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 14:14:54 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:19091 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752159Ab3C0SOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 14:14:53 -0400
-X-IronPort-AV: E=Sophos;i="4.84,920,1355097600"; 
-   d="scan'208";a="15961903"
-Date: Wed, 27 Mar 2013 18:14:48 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Rob Herring <robherring2@gmail.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
-In-Reply-To: <201303271803.45420.arnd@arndb.de>
-Message-ID: <alpine.DEB.2.02.1303271811380.4430@kaball.uk.xensource.com>
-References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1303271642340.4430@kaball.uk.xensource.com> <51533037.5060004@gmail.com> <201303271803.45420.arnd@arndb.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752863Ab3C0SV4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 14:21:56 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:65110 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab3C0SVx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 14:21:53 -0400
+Date: Wed, 27 Mar 2013 11:21:50 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: [PATCH -next 1/3] bcache: Add missing #include <linux/prefetch.h>
+Message-ID: <20130327182150.GB25906@google.com>
+References: <1364406990-20541-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1364406990-20541-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Mar 2013, Arnd Bergmann wrote:
-> On Wednesday 27 March 2013, Rob Herring wrote:
-> > No, I was thinking in the case of Xen and mach-virt, you would not set
-> > mdesc->smp. So you would have something like this:
-> > 
-> > if (mdesc->smp)
-> >         smp_set_ops(mdesc->smp);
-> > else
-> >         smp_set_ops(&psci_smp_ops);
+On Wed, Mar 27, 2013 at 06:56:28PM +0100, Geert Uytterhoeven wrote:
+> m68k/allmodconfig:
 > 
-> The case that Stefano is interested in if obviously other platforms
-> that can either run as Dom0 under Xen with psci_smp_ops or natively
-> with their own smp_ops. A similar case would be a platform that
-> may implement psci using smc when run in secure mode but provide
-> its own smp_ops when run natively.
+> drivers/md/bcache/bset.c: In function ‘bset_search_tree’:
+> drivers/md/bcache/bset.c:727: error: implicit declaration of function ‘prefetch’
+> 
+> drivers/md/bcache/btree.c: In function ‘bch_btree_node_get’:
+> drivers/md/bcache/btree.c:933: error: implicit declaration of function ‘prefetch’
 
-That's correct.
-
-
-> In both cases, it would be simpler to use psci if available but
-> fall back to mdesc->smp otherwise.
-
-I agree.
+Thanks, applied! The other two I already have a patch queued up for.
