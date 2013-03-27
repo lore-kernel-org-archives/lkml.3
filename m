@@ -1,444 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab3C0XID (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 19:08:03 -0400
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:28495
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753461Ab3C0XHN (ORCPT
+	id S1754818Ab3C0XRQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 19:17:16 -0400
+Received: from mail-da0-f54.google.com ([209.85.210.54]:56576 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab3C0XRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 19:07:13 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-WSS-ID: 0MKCDJV-01-4UT-02
-X-M-MSG: 
-From: Jacob Shin <jacob.shin@amd.com>
-To: Ingo Molnar <mingo@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, <x86@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jiri Olsa <jolsa@redhat.com>, <linux-kernel@vger.kernel.org>,
-        Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH 3/3] perf, amd: Enable L2I performance counters on AMD Family 16h
-Date: Wed, 27 Mar 2013 18:07:04 -0500
-Message-ID: <1364425624-7556-4-git-send-email-jacob.shin@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364425624-7556-1-git-send-email-jacob.shin@amd.com>
-References: <1364425624-7556-1-git-send-email-jacob.shin@amd.com>
+	Wed, 27 Mar 2013 19:17:14 -0400
+Date: Wed, 27 Mar 2013 16:16:48 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Bob Liu <bob.liu@oracle.com>
+Subject: RE: [RFC] mm: remove swapcache page early
+In-Reply-To: <433aaa17-7547-4e39-b472-7060ee15e85f@default>
+Message-ID: <alpine.LNX.2.00.1303271541200.30535@eggly.anvils>
+References: <1364350932-12853-1-git-send-email-minchan@kernel.org> <alpine.LNX.2.00.1303271230210.29687@eggly.anvils> <433aaa17-7547-4e39-b472-7060ee15e85f@default>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AMD Family 16h processors provide 4 new performance counters (in
-addition to 4 legacy core counters, and 4 northbridge counters) for
-monitoring L2 cache specific events (i.e. L2 cache misses). These 4
-counters are shared between all CPUs in a "compute unit" (they share
-the same L2 cache). We will use the same existing event constraints
-handling logic to enforce this sharing.
+On Wed, 27 Mar 2013, Dan Magenheimer wrote:
+> > From: Hugh Dickins [mailto:hughd@google.com]
+> > Subject: Re: [RFC] mm: remove swapcache page early
+> > 
+> > On Wed, 27 Mar 2013, Minchan Kim wrote:
+> > 
+> > > Swap subsystem does lazy swap slot free with expecting the page
+> > > would be swapped out again so we can't avoid unnecessary write.
+> >                              so we can avoid unnecessary write.
+> > >
+> > > But the problem in in-memory swap is that it consumes memory space
+> > > until vm_swap_full(ie, used half of all of swap device) condition
+> > > meet. It could be bad if we use multiple swap device, small in-memory swap
+> > > and big storage swap or in-memory swap alone.
+> > 
+> > That is a very good realization: it's surprising that none of us
+> > thought of it before - no disrespect to you, well done, thank you.
+> 
+> Yes, my compliments also Minchan.  This problem has been thought of before
+> but this patch is the first to identify a possible solution.
+>  
+> > And I guess swap readahead is utterly unhelpful in this case too.
+> 
+> Yes... as is any "swap writeahead".  Excuse my ignorance, but I
+> think this is not done in the swap subsystem but instead the kernel
+> assumes write-coalescing will be done in the block I/O subsystem,
+> which means swap writeahead would affect zram but not zcache/zswap
+> (since frontswap subverts the block I/O subsystem).
 
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
----
- arch/x86/include/asm/cpufeature.h     |    2 +
- arch/x86/include/asm/perf_event.h     |    4 +
- arch/x86/include/uapi/asm/msr-index.h |    4 +
- arch/x86/kernel/cpu/perf_event.h      |    2 +
- arch/x86/kernel/cpu/perf_event_amd.c  |  159 +++++++++++++++++++++++++++++----
- 5 files changed, 154 insertions(+), 17 deletions(-)
+I don't know what swap writeahead is; but write coalescing, yes.
+I don't see any problem with it in this context.
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 93fe929..0f534af 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -168,6 +168,7 @@
- #define X86_FEATURE_TOPOEXT	(6*32+22) /* topology extensions CPUID leafs */
- #define X86_FEATURE_PERFCTR_CORE (6*32+23) /* core performance counter extensions */
- #define X86_FEATURE_PERFCTR_NB  (6*32+24) /* NB performance counter extensions */
-+#define X86_FEATURE_PERFCTR_L2I (6*32+28) /* L2I performance counter extensions */
- 
- /*
-  * Auxiliary flags: Linux defined - For features scattered in various
-@@ -311,6 +312,7 @@ extern const char * const x86_power_flags[32];
- #define cpu_has_pclmulqdq	boot_cpu_has(X86_FEATURE_PCLMULQDQ)
- #define cpu_has_perfctr_core	boot_cpu_has(X86_FEATURE_PERFCTR_CORE)
- #define cpu_has_perfctr_nb	boot_cpu_has(X86_FEATURE_PERFCTR_NB)
-+#define cpu_has_perfctr_l2i	boot_cpu_has(X86_FEATURE_PERFCTR_L2I)
- #define cpu_has_cx8		boot_cpu_has(X86_FEATURE_CX8)
- #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
- #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index 57cb634..ed430ea 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -36,6 +36,9 @@
- #define AMD64_EVENTSEL_INT_CORE_SEL_SHIFT		37
- #define AMD64_EVENTSEL_INT_CORE_SEL_MASK		\
- 	(0xFULL << AMD64_EVENTSEL_INT_CORE_SEL_SHIFT)
-+#define AMD64_EVENTSEL_THREAD_MASK_SHIFT		56
-+#define AMD64_EVENTSEL_THREAD_MASK_MASK			\
-+	(0xFULL << AMD64_EVENTSEL_THREAD_MASK_SHIFT)
- 
- #define AMD64_EVENTSEL_EVENT	\
- 	(ARCH_PERFMON_EVENTSEL_EVENT | (0x0FULL << 32))
-@@ -57,6 +60,7 @@
- #define AMD64_NUM_COUNTERS				4
- #define AMD64_NUM_COUNTERS_CORE				6
- #define AMD64_NUM_COUNTERS_NB				4
-+#define AMD64_NUM_COUNTERS_L2I				4
- 
- #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_SEL		0x3c
- #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_UMASK		(0x00 << 8)
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index 892ce40..9c54104 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -194,6 +194,10 @@
- #define MSR_AMD64_IBSBRTARGET		0xc001103b
- #define MSR_AMD64_IBS_REG_COUNT_MAX	8 /* includes MSR_AMD64_IBSBRTARGET */
- 
-+/* Fam 16h MSRs */
-+#define MSR_F16H_L2I_PERF_CTL		0xc0010230
-+#define MSR_F16H_L2I_PERF_CTR		0xc0010231
-+
- /* Fam 15h MSRs */
- #define MSR_F15H_PERF_CTL		0xc0010200
- #define MSR_F15H_PERF_CTR		0xc0010201
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 770f3b99..79b65ac 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -165,6 +165,8 @@ struct cpu_hw_events {
- 	 * AMD specific bits
- 	 */
- 	struct amd_shared_regs		*amd_nb;
-+	struct amd_shared_regs		*amd_l2i;
-+
- 	/* Inverted mask of bits to clear in the perf_ctr ctrl registers */
- 	u64				perf_ctr_virt_mask;
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 36b5162..b0e196c 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -132,7 +132,12 @@ static u64 amd_pmu_event_map(int hw_event)
- 	return amd_perfmon_event_map[hw_event];
- }
- 
-+#define CONFIG1_CORE_EVENT 0
-+#define CONFIG1_NB_EVENT   1
-+#define CONFIG1_L2I_EVENT  2
-+
- static struct event_constraint *amd_nb_event_constraint;
-+static struct event_constraint *amd_l2i_event_constraint;
- 
- /*
-  * Previously calculated offsets
-@@ -151,6 +156,9 @@ static unsigned int rdpmc_indexes[X86_PMC_IDX_MAX] __read_mostly;
-  * CPUs with north bridge performance counter extensions:
-  *   4 additional counters starting at 0xc0010240 each offset by 2
-  *   (indexed right above either one of the above core counters)
-+ *
-+ * CPUs with L2I performance counter extensions:
-+ *   4 additional counters starting at 0xc0010230 each offset by 2
-  */
- static inline int amd_pmu_addr_offset(int index, bool eventsel)
- {
-@@ -183,6 +191,18 @@ static inline int amd_pmu_addr_offset(int index, bool eventsel)
- 			base = MSR_F15H_NB_PERF_CTR - x86_pmu.perfctr;
- 
- 		offset = base + ((index - first) << 1);
-+	} else if (amd_l2i_event_constraint &&
-+		   test_bit(index, amd_l2i_event_constraint->idxmsk)) {
-+
-+		first = find_first_bit(amd_l2i_event_constraint->idxmsk,
-+				       X86_PMC_IDX_MAX);
-+
-+		if (eventsel)
-+			base = MSR_F16H_L2I_PERF_CTL - x86_pmu.eventsel;
-+		else
-+			base = MSR_F16H_L2I_PERF_CTR - x86_pmu.perfctr;
-+
-+		offset = base + ((index - first) << 1);
- 	} else if (!cpu_has_perfctr_core)
- 		offset = index;
- 	else
-@@ -218,6 +238,13 @@ static inline int amd_pmu_rdpmc_index(int index)
- 		first = find_first_bit(amd_nb_event_constraint->idxmsk,
- 				       X86_PMC_IDX_MAX);
- 		ret = index - first + 6;
-+	} else if (amd_l2i_event_constraint &&
-+	    test_bit(index, amd_l2i_event_constraint->idxmsk)) {
-+
-+		first = find_first_bit(amd_l2i_event_constraint->idxmsk,
-+				       X86_PMC_IDX_MAX);
-+
-+		ret = index - first + 10;
- 	} else
- 		ret = index;
- 
-@@ -245,14 +272,14 @@ static int amd_core_hw_config(struct perf_event *event)
- }
- 
- /*
-- * NB counters do not support the following event select bits:
-+ * NB and L2I counters do not support the following event select bits:
-  *   Host/Guest only
-  *   Counter mask
-  *   Invert counter mask
-  *   Edge detect
-  *   OS/User mode
-  */
--static int amd_nb_hw_config(struct perf_event *event)
-+static int amd_shared_hw_config(struct perf_event *event)
- {
- 	/* for NB, we only allow system wide counting mode */
- 	if (is_sampling_event(event) || event->attach_state & PERF_ATTACH_TASK)
-@@ -285,9 +312,22 @@ static inline int amd_is_nb_event(struct hw_perf_event *hwc)
- 	return (hwc->config & 0xe0) == 0xe0;
- }
- 
--static inline int amd_is_perfctr_nb_event(struct hw_perf_event *hwc)
-+static inline int amd_is_perfctr_nb_event(struct perf_event *event)
-+{
-+	return amd_nb_event_constraint && amd_is_nb_event(&event->hw);
-+}
-+
-+static inline int amd_is_perfctr_l2i_event(struct perf_event *event)
- {
--	return amd_nb_event_constraint && amd_is_nb_event(hwc);
-+	unsigned int event_code = amd_get_event_code(&event->hw);
-+
-+	if (!amd_l2i_event_constraint)
-+		return 0;
-+
-+	if (event_code >= 0x07d && event_code <= 0x07f)
-+		return 1;
-+
-+	return event->attr.config1 == CONFIG1_L2I_EVENT;
- }
- 
- static inline int amd_has_nb(struct cpu_hw_events *cpuc)
-@@ -297,6 +337,13 @@ static inline int amd_has_nb(struct cpu_hw_events *cpuc)
- 	return nb && nb->id != -1;
- }
- 
-+static inline int amd_has_l2i(struct cpu_hw_events *cpuc)
-+{
-+	struct amd_shared_regs *l2i = cpuc->amd_l2i;
-+
-+	return l2i && l2i->id != -1;
-+}
-+
- static int amd_pmu_hw_config(struct perf_event *event)
- {
- 	int ret;
-@@ -315,8 +362,8 @@ static int amd_pmu_hw_config(struct perf_event *event)
- 	if (event->attr.type == PERF_TYPE_RAW)
- 		event->hw.config |= event->attr.config & AMD64_RAW_EVENT_MASK;
- 
--	if (amd_is_perfctr_nb_event(&event->hw))
--		return amd_nb_hw_config(event);
-+	if (amd_is_perfctr_nb_event(event) || amd_is_perfctr_l2i_event(event))
-+		return amd_shared_hw_config(event);
- 
- 	return amd_core_hw_config(event);
- }
-@@ -340,8 +387,9 @@ static void amd_put_shared_event_constraints(struct amd_shared_regs *regs,
- 	}
- }
- 
--static void amd_nb_interrupt_hw_config(struct hw_perf_event *hwc)
-+static void amd_shared_interrupt_hw_config(struct perf_event *event)
- {
-+	struct hw_perf_event *hwc = &event->hw;
- 	int core_id = cpu_data(smp_processor_id()).cpu_core_id;
- 
- 	/* deliver interrupts only to this core */
-@@ -351,6 +399,13 @@ static void amd_nb_interrupt_hw_config(struct hw_perf_event *hwc)
- 		hwc->config |= (u64)(core_id) <<
- 			AMD64_EVENTSEL_INT_CORE_SEL_SHIFT;
- 	}
-+
-+	/* mask out events from other cores */
-+	if (amd_is_perfctr_l2i_event(event)) {
-+		hwc->config |= AMD64_EVENTSEL_THREAD_MASK_MASK;
-+		hwc->config &= ~(1ULL <<
-+			(AMD64_EVENTSEL_THREAD_MASK_SHIFT + core_id));
-+	}
- }
- 
-  /*
-@@ -441,8 +496,8 @@ amd_get_shared_event_constraints(struct cpu_hw_events *cpuc,
- 	if (new == -1)
- 		return &emptyconstraint;
- 
--	if (amd_is_perfctr_nb_event(hwc))
--		amd_nb_interrupt_hw_config(hwc);
-+	if (amd_is_perfctr_nb_event(event) || amd_is_perfctr_l2i_event(event))
-+		amd_shared_interrupt_hw_config(event);
- 
- 	return &regs->event_constraints[new];
- }
-@@ -482,14 +537,18 @@ static int amd_pmu_cpu_prepare(int cpu)
- 	if (!cpuc->amd_nb)
- 		return NOTIFY_BAD;
- 
-+	cpuc->amd_l2i = amd_alloc_shared_regs(cpu);
-+	if (!cpuc->amd_l2i)
-+		return NOTIFY_BAD;
-+
- 	return NOTIFY_OK;
- }
- 
- static void amd_pmu_cpu_starting(int cpu)
- {
- 	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
--	struct amd_shared_regs *nb;
--	int i, nb_id;
-+	struct amd_shared_regs *nb, *l2i;
-+	int i, nb_id, cu_id;
- 
- 	cpuc->perf_ctr_virt_mask = AMD64_EVENTSEL_HOSTONLY;
- 
-@@ -499,20 +558,36 @@ static void amd_pmu_cpu_starting(int cpu)
- 	nb_id = amd_get_nb_id(cpu);
- 	WARN_ON_ONCE(nb_id == BAD_APICID);
- 
-+	cu_id = cpu_data(cpu).compute_unit_id;
-+
- 	for_each_online_cpu(i) {
--		nb = per_cpu(cpu_hw_events, i).amd_nb;
--		if (WARN_ON_ONCE(!nb))
-+		struct cpu_hw_events *other_cpuc = &per_cpu(cpu_hw_events, i);
-+
-+		nb = other_cpuc->amd_nb;
-+		l2i = other_cpuc->amd_l2i;
-+
-+		if (WARN_ON_ONCE(!(nb && l2i)))
- 			continue;
- 
- 		if (nb->id == nb_id) {
--			cpuc->kfree_on_online[0] = cpuc->amd_nb;
--			cpuc->amd_nb = nb;
--			break;
-+			if (!cpuc->kfree_on_online[0]) {
-+				cpuc->kfree_on_online[0] = cpuc->amd_nb;
-+				cpuc->amd_nb = nb;
-+			}
-+
-+			if (l2i->id == cu_id) {
-+				cpuc->kfree_on_online[1] = cpuc->amd_l2i;
-+				cpuc->amd_l2i = l2i;
-+				break;
-+			}
- 		}
- 	}
- 
- 	cpuc->amd_nb->id = nb_id;
- 	cpuc->amd_nb->refcnt++;
-+
-+	cpuc->amd_l2i->id = cu_id;
-+	cpuc->amd_l2i->refcnt++;
- }
- 
- static void amd_pmu_cpu_dead(int cpu)
-@@ -532,6 +607,15 @@ static void amd_pmu_cpu_dead(int cpu)
- 
- 		cpuhw->amd_nb = NULL;
- 	}
-+
-+	if (cpuhw->amd_l2i) {
-+		struct amd_shared_regs *l2i = cpuhw->amd_l2i;
-+
-+		if (l2i->id == -1 || --l2i->refcnt == 0)
-+			kfree(l2i);
-+
-+		cpuhw->amd_l2i = NULL;
-+	}
- }
- 
- static struct event_constraint *
-@@ -550,8 +634,12 @@ amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- static void amd_put_event_constraints(struct cpu_hw_events *cpuc,
- 				      struct perf_event *event)
- {
--	if (amd_has_nb(cpuc) && amd_is_nb_event(&event->hw))
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (amd_has_nb(cpuc) && amd_is_nb_event(hwc))
- 		amd_put_shared_event_constraints(cpuc->amd_nb, event);
-+	else if (amd_has_l2i(cpuc) && amd_is_perfctr_l2i_event(event))
-+		amd_put_shared_event_constraints(cpuc->amd_l2i, event);
- }
- 
- PMU_FORMAT_ATTR(event,	"config:0-7,32-35");
-@@ -718,6 +806,25 @@ amd_get_event_constraints_f15h(struct cpu_hw_events *cpuc, struct perf_event *ev
- 	}
- }
- 
-+static struct event_constraint amd_f16_PMC30 = EVENT_CONSTRAINT(0, 0x0F, 0);
-+
-+static struct event_constraint amd_L2IPMC = EVENT_CONSTRAINT(0, 0xF00, 0);
-+
-+static struct event_constraint *
-+amd_get_event_constraints_f16h(struct cpu_hw_events *cpuc,
-+			       struct perf_event    *event)
-+{
-+	if (amd_is_perfctr_l2i_event(event))
-+		return amd_get_shared_event_constraints(cpuc, cpuc->amd_l2i,
-+				event, amd_l2i_event_constraint);
-+
-+	if (amd_is_perfctr_nb_event(event))
-+		return amd_get_shared_event_constraints(cpuc, cpuc->amd_nb,
-+				event, amd_nb_event_constraint);
-+
-+	return &amd_f16_PMC30;
-+}
-+
- static ssize_t amd_event_sysfs_show(char *page, u64 config)
- {
- 	u64 event = (config & ARCH_PERFMON_EVENTSEL_EVENT) |
-@@ -762,6 +869,9 @@ static int setup_event_constraints(void)
- {
- 	if (boot_cpu_data.x86 == 0x15)
- 		x86_pmu.get_event_constraints = amd_get_event_constraints_f15h;
-+	else if (boot_cpu_data.x86 == 0x16)
-+		x86_pmu.get_event_constraints = amd_get_event_constraints_f16h;
-+
- 	return 0;
- }
- 
-@@ -807,6 +917,20 @@ static int setup_perfctr_nb(void)
- 	return 0;
- }
- 
-+static int setup_perfctr_l2i(void)
-+{
-+	if (!cpu_has_perfctr_l2i)
-+		return -ENODEV;
-+
-+	x86_pmu.num_counters += AMD64_NUM_COUNTERS_L2I;
-+
-+	amd_l2i_event_constraint = &amd_L2IPMC;
-+
-+	printk(KERN_INFO "perf: AMD L2I performance counters detected\n");
-+
-+	return 0;
-+}
-+
- __init int amd_pmu_init(void)
- {
- 	/* Performance-monitoring supported from K7 and later: */
-@@ -818,6 +942,7 @@ __init int amd_pmu_init(void)
- 	setup_event_constraints();
- 	setup_perfctr_core();
- 	setup_perfctr_nb();
-+	setup_perfctr_l2i();
- 
- 	/* Events are common for all AMDs */
- 	memcpy(hw_cache_event_ids, amd_hw_cache_event_ids,
--- 
-1.7.9.5
+> 
+> However I think a swap-readahead solution would be helpful to
+> zram as well as zcache/zswap.
 
+Whereas swap readahead on zmem is uncompressing zmem to pagecache
+which may never be needed, and may take a circuit of the inactive
+LRU before it gets reclaimed (if it turns out not to be needed,
+at least it will remain clean and be easily reclaimed).
 
+> 
+> > > This patch changes vm_swap_full logic slightly so it could free
+> > > swap slot early if the backed device is really fast.
+> > > For it, I used SWP_SOLIDSTATE but It might be controversial.
+> > 
+> > But I strongly disagree with almost everything in your patch :)
+> > I disagree with addressing it in vm_swap_full(), I disagree that
+> > it can be addressed by device, I disagree that it has anything to
+> > do with SWP_SOLIDSTATE.
+> > 
+> > This is not a problem with swapping to /dev/ram0 or to /dev/zram0,
+> > is it?  In those cases, a fixed amount of memory has been set aside
+> > for swap, and it works out just like with disk block devices.  The
+> > memory set aside may be wasted, but that is accepted upfront.
+> 
+> It is (I believe) also a problem with swapping to ram.  Two
+> copies of the same page are kept in memory in different places,
+> right?  Fixed vs variable size is irrelevant I think.  Or am
+> I misunderstanding something about swap-to-ram?
+
+I may be misrembering how /dev/ram0 works, or simply assuming that
+if you want to use it for swap (interesting for testing, but probably
+not for general use), then you make sure to allocate each page of it
+in advance.
+
+The pages of /dev/ram0 don't get freed, or not before it's closed
+(swapoff'ed) anyway.  Yes, swapcache would be duplicating data from
+other memory into /dev/ram0 memory; but that /dev/ram0 memory has
+been set aside for this purpose, and removing from swapcache won't
+free any more memory.
+
+> 
+> > Similarly, this is not a problem with swapping to SSD.  There might
+> > or might not be other reasons for adjusting the vm_swap_full() logic
+> > for SSD or generally, but those have nothing to do with this issue.
+> 
+> I think it is at least highly related.  The key issue is the
+> tradeoff of the likelihood that the page will soon be read/written
+> again while it is in swap cache vs the time/resource-usage necessary
+> to "reconstitute" the page into swap cache.  Reconstituting from disk
+> requires a LOT of elapsed time.  Reconstituting from
+> an SSD likely takes much less time.  Reconstituting from
+> zcache/zram takes thousands of CPU cycles.
+
+I acknowledge my complete ignorance of how to judge the tradeoff
+between memory usage and cpu usage, but I think Minchan's main
+concern was with the memory usage.  Neither hard disk nor SSD
+is occupying memory.
+
+> 
+> > The problem here is peculiar to frontswap, and the variably sized
+> > memory behind it, isn't it?  We are accustomed to using swap to free
+> > up memory by transferring its data to some other, cheaper but slower
+> > resource.
+> 
+> Frontswap does make the problem more complex because some pages
+> are in "fairly fast" storage (zcache, needs decompression) and
+> some are on the actual (usually) rotating media.  Fortunately,
+> differentiating between these two cases is just a table lookup
+> (see frontswap_test).
+> 
+> > But in the case of frontswap and zmem (I'll say that to avoid thinking
+> > through which backends are actually involved), it is not a cheaper and
+> > slower resource, but the very same memory we are trying to save: swap
+> > is stolen from the memory under reclaim, so any duplication becomes
+> > counter-productive (if we ignore cpu compression/decompression costs:
+> > I have no idea how fair it is to do so, but anyone who chooses zmem
+> > is prepared to pay some cpu price for that).
+> 
+> Exactly.  There is some "robbing of Peter to pay Paul" and
+> other complex resource tradeoffs.  Presumably, though, it is
+> not "the very same memory we are trying to save" but a
+> fraction of it, saving the same page of data more efficiently
+> in memory, using less than a page, at some CPU cost.
+
+Yes, I'm not saying that frontswap/zmem is pointless: just agreeing
+with Minchan that in this case the duplication inherent in swapcache
+can be waste of memory that we should try to avoid.
+
+> 
+> > And because it's a frontswap thing, we cannot decide this by device:
+> > frontswap may or may not stand in front of each device.  There is no
+> > problem with swapcache duplicated on disk (until that area approaches
+> > being full or fragmented), but at the higher level we cannot see what
+> > is in zmem and what is on disk: we only want to free up the zmem dup.
+> 
+> I *think* frontswap_test(page) resolves this problem, as long as
+> we have a specific page available to use as a parameter.
+> 
+> > I believe the answer is for frontswap/zmem to invalidate the frontswap
+> > copy of the page (to free up the compressed memory when possible) and
+> > SetPageDirty on the PageUptodate PageSwapCache page when swapping in
+> > (setting page dirty so nothing will later go to read it from the
+> > unfreed location on backing swap disk, which was never written).
+> 
+> There are two duplication issues:  (1) When can the page be removed
+> from the swap cache after a call to frontswap_store; and (2) When
+> can the page be removed from the frontswap storage after it
+> has been brought back into memory via frontswap_load.
+> 
+> This patch from Minchan addresses (1).
+
+Ying Han was reminding me of this case a couple of hours ago, we don't
+see a problem there: when frontswap_store() succeeds, there's an
+end_page_writeback() as there should be, and shrink_page_list()
+should reclaim the page immediately.  So I think (1) is already
+handled and Minchan was not trying to address it.
+
+> The issue you are raising
+> here is (2).  You may not know that (2) has recently been solved
+> in frontswap, at least for zcache.  See frontswap_exclusive_gets_enabled.
+> If this is enabled (and it is for zcache but not yet for zswap),
+> what you suggest (SetPageDirty) is what happens.
+
+Ah, and I have a dim, perhaps mistaken, memory that I gave you
+input on that before, suggesting the SetPageDirty.  Good, sounds
+like the solution is already in place, if not actually activated.
+
+Thanks, must dash,
+Hugh
+
+> 
+> > We cannot rely on freeing the swap itself, because in general there
+> > may be multiple references to the swap, and we only satisfy the one
+> > which has faulted.  It may or may not be a good idea to use rmap to
+> > locate the other places to insert pte in place of swap entry, to
+> > resolve them all at once; but we have chosen not to do so in the
+> > past, and there's no need for that, if the zmem gets invalidated
+> > and the swapcache page set dirty.
+> 
+> I see.  Minchan's patch handles the removal "reactively"... it
+> might be possible to handle it more proactively.  Or it may
+> be possible to take the number of references into account when
+> deciding whether to frontswap_store the page as, presumably,
+> the likelihood of needing to "reconstitute" the page sooner increases
+> with each additional reference.
+> 
+> > Hugh
+> 
+> Very useful thoughts, Hugh.  Thanks much and looking forward
+> to more discussion at LSF/MM!
+> 
+> Dan
+> 
+> P.S. When I refer to zcache, I am referring to the version in
+> drivers/staging/zcache in 3.9.  The code in drivers/staging/zcache
+> in 3.8 is "old zcache"... "new zcache" is in drivers/staging/ramster
+> in 3.8.  Sorry for any confusion...
