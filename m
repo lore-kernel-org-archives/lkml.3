@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725Ab3C0PLI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 11:11:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54410 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240Ab3C0PLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 11:11:06 -0400
-Date: Wed, 27 Mar 2013 16:11:04 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
-        Li Zefan <lizefan@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
-Message-ID: <20130327151104.GK16579@dhcp22.suse.cz>
-References: <1364373399-17397-1-git-send-email-mhocko@suse.cz>
- <20130327145727.GD29052@cmpxchg.org>
+	id S1751753Ab3C0POw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 11:14:52 -0400
+Received: from anubis.se.axis.com ([195.60.68.12]:45902 "EHLO
+	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab3C0POu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 11:14:50 -0400
+X-Greylist: delayed 622 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Mar 2013 11:14:50 EDT
+Date: Wed, 27 Mar 2013 16:04:24 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [patch 13/34] cris: Use generic idle loop
+Message-ID: <20130327150421.GV28422@axis.com>
+References: <20130321214930.752934102@linutronix.de>
+ <20130321215234.148829489@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130327145727.GD29052@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130321215234.148829489@linutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 27-03-13 10:58:25, Johannes Weiner wrote:
-> On Wed, Mar 27, 2013 at 09:36:39AM +0100, Michal Hocko wrote:
-[...]
-> > +	/*
-> > +	 * kmem_cache_create_memcg duplicates the given name and
-> > +	 * cgroup_name for this name requires RCU context.
-> > +	 * This static temporary buffer is used to prevent from
-> > +	 * pointless shortliving allocation.
-> > +	 */
-> > +	if (!tmp_name) {
-> > +		tmp_name = kmalloc(PAGE_SIZE, GFP_KERNEL);
-> > +		WARN_ON_ONCE(!tmp_name);
-> 
-> Just use the page allocator directly and get a free allocation failure
-> warning. 
 
-WARN_ON_ONCE is probably pointless.
+On Thu, Mar 21, 2013 at 09:53:06PM -0000, Thomas Gleixner wrote:
+[snip]
+> Index: linux-2.6/arch/cris/arch-v32/kernel/process.c
+> ===================================================================
+> --- linux-2.6.orig/arch/cris/arch-v32/kernel/process.c
+> +++ linux-2.6/arch/cris/arch-v32/kernel/process.c
+> @@ -23,12 +23,10 @@ extern void stop_watchdog(void);
+>  /* We use this if we don't have any better idle routine. */
+>  void default_idle(void)
+>  {
+> -	local_irq_disable();
+> -	if (!need_resched()) {
+> -		/* Halt until exception. */
+> -		__asm__ volatile("ei    \n\t"
+> -				 "halt      ");
+> -	}
+> +	/* Halt until exception. */
+> +	__asm__ volatile("ei    \n\t"
+> +			 "halt      ");
+> +	/* CHECKME: Is this really needed ?? */
+>  	local_irq_enable();
 
-> Then again, order-0 pages are considered cheap enough that they never
-> even fail in our current implementation.
-> 
-> Which brings me to my other point: why not just a simple single-page
-> allocation?
+No, that local_irq_enable() is redundant since we already enabled interrupts
+in the assembler directive above.
 
-No objection from me. I was previously thinking about the "proper"
-size for something that is a file name. So I originally wanted to use
-PATH_MAX instead but ended up with PAGE_SIZE for reasons I do not
-remember now.  Maybe we can use NAME_MAX instead. I just do not like to
-use page allocator directly when allocatating something like strings
-etc...
+>  }
 
-To be honest, I do not care much which way to go.
+Looks good,
 
-> This just seems a little overelaborate.  I think this path would be
-> taken predominantly after cgroup creation and fork where we do a bunch
-> of allocations anyway.  And it happens asynchroneously from userspace,
-> so it's not even really performance critical.
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
 
+/^JN - Jesper Nilsson
 -- 
-Michal Hocko
-SUSE Labs
+               Jesper Nilsson -- jesper.nilsson@axis.com
