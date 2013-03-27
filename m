@@ -1,33 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab3C0DtO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 23:49:14 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58251 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab3C0DtN (ORCPT
+	id S1754157Ab3C0Dvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 23:51:44 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:64623 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab3C0Dvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 23:49:13 -0400
-Message-ID: <51526C37.5070400@wwwdotorg.org>
-Date: Tue, 26 Mar 2013 21:49:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Tue, 26 Mar 2013 23:51:42 -0400
 MIME-Version: 1.0
-To: Lubomir Rintel <lkundrak@v3.sk>
-CC: linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        Guenter Roeck <linux@roeck-us.net>,
-        linux-rpi-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH v3] watchdog: Add Broadcom BCM2835 watchdog timer driver
-References: <1364135137-26691-1-git-send-email-lkundrak@v3.sk> <1364320200-23569-1-git-send-email-lkundrak@v3.sk>
-In-Reply-To: <1364320200-23569-1-git-send-email-lkundrak@v3.sk>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <20130327144134.0809a21c09b45d20a1fe480d@canb.auug.org.au>
+References: <20130327144134.0809a21c09b45d20a1fe480d@canb.auug.org.au>
+Date: Wed, 27 Mar 2013 11:51:41 +0800
+Message-ID: <CACVXFVPM6qbG2zdDE7apfyKf5mtnEZ2uQNHQTcFNVQ+SPBtbRA@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the usb tree
+From: Ming Lei <tom.leiming@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2013 11:50 AM, Lubomir Rintel wrote:
-> This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
-> used in Raspberry Pi and Roku 2 devices.
+Hi,
 
-Tested-by: Stephen Warren <swarren@wwwdotorg.org>
+On Wed, Mar 27, 2013 at 11:41 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+>
+> I have reverted the commit from usb.current on the assumption that the
+> problem it solves has been, or will be, solved some other way.
+
+The commit is needed in 3.9 linus tree and stable tree,  but for next
+tree or 3.10,
+a revert commit is required.
+
+We know it is a problem, sorry, :-(
+
+
+Thanks,
+--
+Ming Lei
