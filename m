@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab3C0WHB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 18:07:01 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:39980 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068Ab3C0WG7 (ORCPT
+	id S1754737Ab3C0WKo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 18:10:44 -0400
+Received: from mail-ia0-f179.google.com ([209.85.210.179]:55663 "EHLO
+	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174Ab3C0WKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 18:06:59 -0400
+	Wed, 27 Mar 2013 18:10:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <1363434272-23172-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1363196884-20193-1-git-send-email-jason@lakedaemon.net>
-	<1363434272-23172-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Date: Wed, 27 Mar 2013 23:06:59 +0100
-Message-ID: <CACRpkdb-CdmzszyixBLGdZjXJXzef26u0qN9xWcrYa3JbAD3Ow@mail.gmail.com>
-Subject: Re: [PATCH v3] pinctrl: mvebu: prevent walking off the end of group array
+In-Reply-To: <003901ce293f$76639800$632ac800$%han@samsung.com>
+References: <003901ce293f$76639800$632ac800$%han@samsung.com>
+Date: Wed, 27 Mar 2013 23:10:42 +0100
+Message-ID: <CACRpkda=_g2Qir05_H4ELrNWM8tVoPQfmZRVdqxjrOs=3EAiXA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: plgpio: add CONFIG_PM_SLEEP to suspend/resume functions
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 16, 2013 at 12:44 PM, Sebastian Hesselbarth
-<sebastian.hesselbarth@gmail.com> wrote:
+On Mon, Mar 25, 2013 at 10:59 AM, Jingoo Han <jg1.han@samsung.com> wrote:
 
-> From: David Woodhouse <dwmw2@infradead.org>
+> Add CONFIG_PM_SLEEP to suspend/resume functions to fix the following
+> build warning when CONFIG_PM_SLEEP is not selected. This is because
+> sleep PM callbacks defined by SIMPLE_DEV_PM_OPS are only used when
+> the CONFIG_PM_SLEEP is enabled.
 >
-> While investigating (ab)use of krealloc, David found this bug.  It's
-> unlikely to occur, but now we detect the condition and error out
-> appropriately.
+> drivers/pinctrl/spear/pinctrl-plgpio.c:645:12: warning: 'plgpio_suspend' defined but not used [-Wunused-function]
+> drivers/pinctrl/spear/pinctrl-plgpio.c:684:12: warning: 'plgpio_resume' defined but not used [-Wunused-function]
 >
-> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-> Signed-off-by: Jason Cooper <jason@lakedaemon.net>
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-OK this v2 version applied for fixes...
-
-Is it so critical that it needs to be tagged for stable as well
-then tell me.
-
-If it's non-critical enough to live on for -next then tell me.
+Thanks, applied for fixes.
 
 Yours,
 Linus Walleij
