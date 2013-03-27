@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab3C0M3B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 08:29:01 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:36404 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab3C0M27 (ORCPT
+	id S1751521Ab3C0MeZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 08:34:25 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:37603 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab3C0MeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 08:28:59 -0400
-Date: Wed, 27 Mar 2013 21:28:57 +0900
-From: Simon Horman <horms@verge.net.au>
-To: zhouzhouyi@gmail.com
-Cc: kexec@lists.infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vgoyal@redhat.com, yizhouzhou@ict.ac.cn
-Subject: Re: [PATCH 1/1 v1] the recommended crash memory reservation is too
- small for x86_64.
-Message-ID: <20130327122856.GK17248@verge.net.au>
-References: <1364209009-11592-1-git-send-email-zhouzhouyi@gmail.com>
+	Wed, 27 Mar 2013 08:34:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364209009-11592-1-git-send-email-zhouzhouyi@gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANqRtoRBfjXgGt4_niN3m5ULVQVQXBBARLUkNPyeDnZLatgXKA@mail.gmail.com>
+References: <20130313113203.30133.49539.sendpatchset@w520>
+	<1670937.hEFtzrbkf6@avalon>
+	<CANqRtoSDc6YfnotMR2aw4niEYyjn1C7JRu4WciyKsP-QT+j4LA@mail.gmail.com>
+	<1938905.m8UJXV94pZ@avalon>
+	<CANqRtoRBfjXgGt4_niN3m5ULVQVQXBBARLUkNPyeDnZLatgXKA@mail.gmail.com>
+Date: Wed, 27 Mar 2013 13:34:23 +0100
+Message-ID: <CACRpkdaduNaUj0rZQjFmCbwWhK_CN_EnyRGNwut59bTCWp-PXA@mail.gmail.com>
+Subject: Re: [PATCH 00/03] gpio: Renesas R-Car GPIO driver update
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        grant.likely@secretlab.ca, horms@verge.net.au
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 06:56:49PM +0800, zhouzhouyi@gmail.com wrote:
-> From: root <root@zzy-Lenovo.(none)>
+On Tue, Mar 19, 2013 at 4:36 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+> On Thu, Mar 14, 2013 at 10:13 PM, Laurent Pinchart
+> <laurent.pinchart@ideasonboard.com> wrote:
 
-The above line is bogus.
+>> When submitting new drivers I usually try not to make the development history
+>> visible to mainline. It brings little additional value (beside possibly making
+>> backporting a bit easier, but in the devm_* case that shouldn't be a problem,
+>> unless Simon thinks otherwise) but adds review complexity, as reviewers need
+>> to validate the intermediate versions as well. More patches also mean more
+>> potential bisection breakages.
+>
+> Huh, it seems that my point of view is the total opposite. I see that
+> using incremental patches to show new development would make review
+> _easier_. Perhaps that's not the case for most people.
 
->  On Documentation/kdump/kdump.txt, section Boot into  System Kernel: On x86 and x86_64, use
->  "crashkernel=64M@16M", but some OSes like ubuntu 12.10 use ram fs larger than 64M, so in these cases the
->  memory reserved for crashkernel should be at least 128M.
+As subsystem maintainer what I don't want to see is a patch that
+at one point breaks something in some configuration and then later
+fixes it. Then I strongly prefer squashing. (Greg also mentions this
+in one of his seminars.)
 
-The above lines are way to wide. Something less than 80 columns is normal.
+What really makes me mad is the the above pattern + claim that
+it must be done in that way to preserve authorship. Like legaleaze
+or credit is more important that functionality.
 
-> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-> ---
->  Documentation/kdump/kdump.txt |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
-> index 13f1aa0..1e850e0 100644
-> --- a/Documentation/kdump/kdump.txt
-> +++ b/Documentation/kdump/kdump.txt
-> @@ -290,7 +290,9 @@ Boot into System Kernel
->     "crashkernel=64M@16M" tells the system kernel to reserve 64 MB of memory
->     starting at physical address 0x01000000 (16MB) for the dump-capture kernel.
->  
-> -   On x86 and x86_64, use "crashkernel=64M@16M".
-> +   On x86 and x86_64, use "crashkernel=64M@16M" (some OSes use init ram fs larger
-> +than 64M, for example ubuntu-12.10, use crashkernel=128M@16M instead, or dump-capture
-> +kernel will out of memory).
+If all patches are bisectable and perfectly fine then whether you
+take 8 stops when driving to Rome or just drive there in one
+big stretch is more a technical, secondary thing. Do whatever you
+like as long as all commits build and boot.
 
-I believe lines of kdmump.txt should also be 80 columns wide or less.
-
->     On ppc64, use "crashkernel=128M@32M".
->  
-> -- 
-> 1.7.10.4
-> 
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
-> 
+Yours,
+Linus Walleij
