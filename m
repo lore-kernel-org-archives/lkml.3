@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab3C0Nwx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 09:52:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49925 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751385Ab3C0Nww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 09:52:52 -0400
-Date: Wed, 27 Mar 2013 14:52:50 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/10] soft-offline: use migrate_pages() instead of
- migrate_huge_page()
-Message-ID: <20130327135250.GI16579@dhcp22.suse.cz>
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1363983835-20184-4-git-send-email-n-horiguchi@ah.jp.nec.com>
- <87boa69z6j.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87boa69z6j.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752132Ab3C0Nxm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 09:53:42 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:45986 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab3C0Nxk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 09:53:40 -0400
+From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+To: myungjoo.ham@samsung.com, rjw@sisk.pl, Kevin Hilman <khilman@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Subject: [PATCH v2 1/2] PM / devfreq: Fix compiler warnings
+Date: Wed, 27 Mar 2013 19:22:53 +0530
+Message-Id: <1364392374-12236-2-git-send-email-rajagopal.venkat@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1364392374-12236-1-git-send-email-rajagopal.venkat@linaro.org>
+References: <1364392374-12236-1-git-send-email-rajagopal.venkat@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 26-03-13 16:59:40, Aneesh Kumar K.V wrote:
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
-[...]
-> > diff --git v3.9-rc3.orig/mm/memory-failure.c v3.9-rc3/mm/memory-failure.c
-> > index df0694c..4e01082 100644
-> > --- v3.9-rc3.orig/mm/memory-failure.c
-> > +++ v3.9-rc3/mm/memory-failure.c
-> > @@ -1467,6 +1467,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
-> >  	int ret;
-> >  	unsigned long pfn = page_to_pfn(page);
-> >  	struct page *hpage = compound_head(page);
-> > +	LIST_HEAD(pagelist);
-> >
-> >  	/*
-> >  	 * This double-check of PageHWPoison is to avoid the race with
-> > @@ -1482,12 +1483,20 @@ static int soft_offline_huge_page(struct page *page, int flags)
-> >  	unlock_page(hpage);
-> >
-> >  	/* Keep page count to indicate a given hugepage is isolated. */
-> > -	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL,
-> > -				MIGRATE_SYNC);
-> > -	put_page(hpage);
-> > +	list_move(&hpage->lru, &pagelist);
-> 
-> we use hpage->lru to add the hpage to h->hugepage_activelist. This will
-> break a hugetlb cgroup removal isn't it ?
+Fix compiler warnings generated when devfreq is not enabled
+(CONFIG_PM_DEVFREQ is not set).
 
-This particular part will not break removal because
-hugetlb_cgroup_css_offline loops until hugetlb_cgroup_have_usage is 0.
+Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+---
+ include/linux/devfreq.h |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Little bit offtopic:
-Btw. hugetlb migration breaks to charging even before this patchset
-AFAICS. The above put_page should remove the last reference and then it
-will uncharge it but I do not see anything that would charge a new page.
-This is all because regula LRU pages are uncharged when they are
-unmapped. But this a different story not related to this series.
-
-[...]
+diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+index 04ad61d..5f1ab92 100644
+--- a/include/linux/devfreq.h
++++ b/include/linux/devfreq.h
+@@ -215,7 +215,7 @@ struct devfreq_simple_ondemand_data {
+ #endif
+ 
+ #else /* !CONFIG_PM_DEVFREQ */
+-static struct devfreq *devfreq_add_device(struct device *dev,
++static inline struct devfreq *devfreq_add_device(struct device *dev,
+ 					  struct devfreq_dev_profile *profile,
+ 					  const char *governor_name,
+ 					  void *data)
+@@ -223,34 +223,34 @@ static struct devfreq *devfreq_add_device(struct device *dev,
+ 	return NULL;
+ }
+ 
+-static int devfreq_remove_device(struct devfreq *devfreq)
++static inline int devfreq_remove_device(struct devfreq *devfreq)
+ {
+ 	return 0;
+ }
+ 
+-static int devfreq_suspend_device(struct devfreq *devfreq)
++static inline int devfreq_suspend_device(struct devfreq *devfreq)
+ {
+ 	return 0;
+ }
+ 
+-static int devfreq_resume_device(struct devfreq *devfreq)
++static inline int devfreq_resume_device(struct devfreq *devfreq)
+ {
+ 	return 0;
+ }
+ 
+-static struct opp *devfreq_recommended_opp(struct device *dev,
++static inline struct opp *devfreq_recommended_opp(struct device *dev,
+ 					   unsigned long *freq, u32 flags)
+ {
+-	return -EINVAL;
++	return ERR_PTR(-EINVAL);
+ }
+ 
+-static int devfreq_register_opp_notifier(struct device *dev,
++static inline int devfreq_register_opp_notifier(struct device *dev,
+ 					 struct devfreq *devfreq)
+ {
+ 	return -EINVAL;
+ }
+ 
+-static int devfreq_unregister_opp_notifier(struct device *dev,
++static inline int devfreq_unregister_opp_notifier(struct device *dev,
+ 					   struct devfreq *devfreq)
+ {
+ 	return -EINVAL;
 -- 
-Michal Hocko
-SUSE Labs
+1.7.10.4
+
