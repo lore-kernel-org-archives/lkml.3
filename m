@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab3C0RH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 13:07:56 -0400
-Received: from fe1.lbl.gov ([128.3.41.133]:22545 "EHLO fe1.lbl.gov"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880Ab3C0RHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 13:07:54 -0400
-X-Ironport-SBRS: 2.2
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmkCAGsmU1HRVdXGemdsb2JhbABDgzrAQncIFg4BAQkLDAgUBCSCHwEBBAF5BQsLCw0uIhIBBQEcBhOIDgYMoGqeFY8YB4NAA4h4jW+BH44GFimEThw
-X-IronPort-AV: E=Sophos;i="4.84,920,1355126400"; 
-   d="scan'208";a="13008966"
-MIME-Version: 1.0
-In-Reply-To: <87a9ppgvbk.fsf@sejong.aot.lge.com>
-References: <CA+BNSkWCX2TVYU26A7qHFqr6F5Pw44wy76BSfnS5MnVDKGCh9w@mail.gmail.com>
-	<87a9ppgvbk.fsf@sejong.aot.lge.com>
-Date: Wed, 27 Mar 2013 10:07:52 -0700
-Message-ID: <CA+BNSkVVmnUJuas2DFOoF6OBfZpnK16S9u2pvawv+aELgNUBHw@mail.gmail.com>
-Subject: Re: [PATCH v2] perf: add callgrind conversion tool
-From: Roberto Vitillo <ravitillo@lbl.gov>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, acme@ghostprotocols.net
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753120Ab3C0RHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 13:07:48 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57971 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971Ab3C0RHq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 13:07:46 -0400
+Date: Wed, 27 Mar 2013 13:07:43 -0400 (EDT)
+Message-Id: <20130327.130743.2174768360702998855.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: jasowang@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, edumazet@google.com
+Subject: Re: [PATCH net-next 2/3] net: core: introduce
+ skb_probe_transport_header()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1364395550.15753.6.camel@edumazet-glaptop>
+References: <1364375482-7439-1-git-send-email-jasowang@redhat.com>
+	<1364375482-7439-2-git-send-email-jasowang@redhat.com>
+	<1364395550.15753.6.camel@edumazet-glaptop>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 27 Mar 2013 10:07:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 12:23 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> Hi Roberto,
->
-> On Tue, 26 Mar 2013 12:14:49 -0700, Roberto Vitillo wrote:
->> The proposed patch adds the convert tool to perf which allows to convert a
->> perf.data file to a set of callgrind data files which can subsequently be
->> displayed with kcachegrind.
->>
->> Note that the code may trigger the following bug in libbfd:
->> http://sourceware.org/bugzilla/show_bug.cgi?id=15106
->
-> Does it now support call graph too?  Great if so!
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 27 Mar 2013 07:45:50 -0700
 
-Yes it does.
+> On Wed, 2013-03-27 at 17:11 +0800, Jason Wang wrote:
+>> Sometimes, we need probe and set the transport header for packets (e.g from
+>> untrusted source). This patch introduces a new helper
+>> skb_probe_transport_header() which tries to probe and set the l4 header through
+>> skb_flow_dissect(), if not just set the transport header to the hint passed by
+>> caller.
+>> 
+>> Cc: Eric Dumazet <edumazet@google.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>  include/linux/skbuff.h |   14 ++++++++++++++
+>>  1 files changed, 14 insertions(+), 0 deletions(-)
+> 
+> Acked-by: Eric Dumazet <edumazet@google.com>
 
-> Anyway, I suggest that splitting patch to two - one for addr2line and
-> another for actual 'convert' tool.
-
-Ok
-
-> I think we *can* use the tool
-> without libbfd (but with external addr2line binary or even with no line
-> number information).
-
-Well, I could use the external addr2line binary but the tool will
-become terribly slow. A warning message could notify the
-user to recompile perf with libbfd to speed up the conversion.
+Applied.
