@@ -1,77 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab3C0TbJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 15:31:09 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:58918 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340Ab3C0T3v (ORCPT
+	id S1754549Ab3C0TbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 15:31:07 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45982 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754491Ab3C0TbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 15:29:51 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, tj@kernel.org,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Sridhar Samudrala <sri@us.ibm.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH v2 6/6] sctp: convert sctp_assoc_set_id to use idr_alloc_cyclic
-Date: Wed, 27 Mar 2013 15:29:38 -0400
-Message-Id: <1364412578-7462-7-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1364412578-7462-1-git-send-email-jlayton@redhat.com>
-References: <1364412578-7462-1-git-send-email-jlayton@redhat.com>
+	Wed, 27 Mar 2013 15:31:03 -0400
+Message-Id: <1364412662.12858.140661209988437.506AD50B@webmail.messagingengine.com>
+X-Sasl-Enc: 1HnwmushmPxDpjZrykhNiNYKztJ5i1newr+fIQuWAY0H 1364412662
+From: Alexander van Heukelum <heukelum@fastmail.fm>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "intel-gfx" <intel-gfx@lists.freedesktop.org>,
+        Hans de Bruin <jmdebruin@xmsnet.nl>, Ingo Molnar <mingo@elte.hu>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="_----------=_1364412662128581";
+ charset="utf-8"
+X-Mailer: MessagingEngine.com Webmail Interface - html
+In-Reply-To: <5152F321.7020604@xmsnet.nl>
+References: <514F6DF9.1070602@xmsnet.nl>
+ <1364332526.8559.140661209554365.0203B0A4@webmail.messagingengine.com>
+ <5152F321.7020604@xmsnet.nl>
+Subject: [PATCH] x86, vm86: fix VM86 syscalls: use asmlinkage calling convention
+Date: Wed, 27 Mar 2013 20:31:02 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Note: compile-tested only)
+This is a multi-part message in MIME format.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-sctp@vger.kernel.org
-Cc: netdev@vger.kernel.org
----
- net/sctp/associola.c | 16 ++--------------
- 1 file changed, 2 insertions(+), 14 deletions(-)
+--_----------=_1364412662128581
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 
-diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-index d2709e2..fa261a3 100644
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -66,13 +66,6 @@ static void sctp_assoc_bh_rcv(struct work_struct *work);
- static void sctp_assoc_free_asconf_acks(struct sctp_association *asoc);
- static void sctp_assoc_free_asconf_queue(struct sctp_association *asoc);
- 
--/* Keep track of the new idr low so that we don't re-use association id
-- * numbers too fast.  It is protected by they idr spin lock is in the
-- * range of 1 - INT_MAX.
-- */
--static u32 idr_low = 1;
--
--
- /* 1st Level Abstractions. */
- 
- /* Initialize a new association from provided memory. */
-@@ -1601,13 +1594,8 @@ int sctp_assoc_set_id(struct sctp_association *asoc, gfp_t gfp)
- 	if (preload)
- 		idr_preload(gfp);
- 	spin_lock_bh(&sctp_assocs_id_lock);
--	/* 0 is not a valid id, idr_low is always >= 1 */
--	ret = idr_alloc(&sctp_assocs_id, asoc, idr_low, 0, GFP_NOWAIT);
--	if (ret >= 0) {
--		idr_low = ret + 1;
--		if (idr_low == INT_MAX)
--			idr_low = 1;
--	}
-+	/* 0 is not a valid assoc_id, must be >= 1 */
-+	ret = idr_alloc_cyclic(&sctp_assocs_id, asoc, 1, 0, GFP_NOWAIT);
- 	spin_unlock_bh(&sctp_assocs_id_lock);
- 	if (preload)
- 		idr_preload_end();
--- 
-1.7.11.7
+Hi Al,
+
+Hans de Bruin found a regression due to one of your changes. I asked him to test a fix and he reported back that it worked. (Thanks!) Can you see if you agree with the fix? Patch is attached due to webmail...
+
+Greetings,
+    Alexander
+
+--_----------=_1364412662128581
+Content-Disposition: attachment; filename="0001-x86-vm86-fix-VM86-syscalls-use-asmlinkage-calling-co.patch"
+Content-Id: <1364412278.11338.d72693b9f7a5a2edd412d946a884e70d611da608.7EA64BBE@messagingengine.com>
+Content-Transfer-Encoding: base64
+Content-Type: text/x-patch; name="0001-x86-vm86-fix-VM86-syscalls-use-asmlinkage-calling-co.patch"
+
+RnJvbSA5NjFhMWIxMzBhYTc5YWNiNTRmNTU2YTBhY2NmY2M2NDNkMWQzZWQx
+IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4YW5kZXIgdmFu
+IEhldWtlbHVtIDxoZXVrZWx1bUBmYXN0bWFpbC5mbT4KRGF0ZTogVHVlLCAy
+NiBNYXIgMjAxMyAyMTo1Nzo0MyArMDEwMApTdWJqZWN0OiBbUEFUQ0hdIHg4
+Niwgdm04NjogZml4IFZNODYgc3lzY2FsbHM6IHVzZSBhc21saW5rYWdlIGNh
+bGxpbmcgY29udmVudGlvbgoKQ29tbWl0IDQ5Y2IyNWU5MjkwIHg4NjogJ2dl
+dCByaWQgb2YgcHRfcmVncyBhcmd1bWVudCBpbiB2bTg2L3ZtODZvbGQnCmdv
+dCByaWQgb2YgdGhlIHB0X3JlZ3Mgc3R1YiBmb3Igc3lzX3ZtODZvbGQgYW5k
+IHN5c192bTg2LiBUaGUgZnVuY3Rpb25zCndlcmUsIGhvd2V2ZXIsIG5vdCBj
+aGFuZ2VkIHRvIHVzZSB0aGUgYXNtbGlua2FnZSBjYWxsaW5nIGNvbnZlbnRp
+b24uCgpUaGUgcmVncmVzc2lvbiB3YXMgcmVwb3J0ZWQgYW5kIHBpbnBvaW50
+ZWQgYnkgSGFucyBkZSBCcnVpbjoKPiBjb21taXQgNDljYjI1ZTkyOTAgeDg2
+OiAnZ2V0IHJpZCBvZiBwdF9yZWdzIGFyZ3VtZW50IGluIHZtODYvdm04Nm9s
+ZCcKPiBzb21laG93IGJyZWFrcyB0aGUgY29sb3JzIHdoZW4gSSBwbGF5ICdj
+aXZpbGl6YXRpb24gSScgdW5kZXIgeGRvc2VtdS4KPiBEdXJpbmcgdGhlIGlu
+dHJvIG9mIHRoZSBnYW1lIHNvbWV0aGluZyB0aGUgY29sb3JzIGdldCBtZXNz
+ZWQgdXAuIFdoZW4KPiB0aGUgZ2FtZSBiZWdpbnMgdGhlIGdyYXNzIG9mIHRo
+ZSBlYXJ0aCBpcyByZWQuIFJldmVydGluZyB0aGUgY29tbWl0Cj4gZml4ZXMg
+dGhlIHByb2JsZW0uCgpBbmQgaGUgdGVzdGVkIHRoZSBwYXRjaCB0b286Cj4g
+WWVwLCB0aGUgZ3Jhc3MgaXMgZ3JlZW4gYWdhaW4uCgpSZXBvcnRlZC1hbmQt
+dGVzdGVkLWJ5OiBIYW5zIGRlIEJydWluIDxqbWRlYnJ1aW5AeG1zbmV0Lm5s
+PgpTaWduZWQtb2ZmLWJ5OiBBbGV4YW5kZXIgdmFuIEhldWtlbHVtIDxoZXVr
+ZWx1bUBmYXN0bWFpbC5mbT4KLS0tCiBhcmNoL3g4Ni9pbmNsdWRlL2FzbS9z
+eXNjYWxscy5oIHwgNCArKy0tCiBhcmNoL3g4Ni9rZXJuZWwvdm04Nl8zMi5j
+ICAgICAgIHwgNiArKysrLS0KIDIgZmlsZXMgY2hhbmdlZCwgNiBpbnNlcnRp
+b25zKCspLCA0IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2FyY2gveDg2
+L2luY2x1ZGUvYXNtL3N5c2NhbGxzLmggYi9hcmNoL3g4Ni9pbmNsdWRlL2Fz
+bS9zeXNjYWxscy5oCmluZGV4IDZjZjBhOWMuLmEyNDViODggMTAwNjQ0Ci0t
+LSBhL2FyY2gveDg2L2luY2x1ZGUvYXNtL3N5c2NhbGxzLmgKKysrIGIvYXJj
+aC94ODYvaW5jbHVkZS9hc20vc3lzY2FsbHMuaApAQCAtMzcsOCArMzcsOCBA
+QCBhc21saW5rYWdlIGludCBzeXNfZ2V0X3RocmVhZF9hcmVhKHN0cnVjdCB1
+c2VyX2Rlc2MgX191c2VyICopOwogdW5zaWduZWQgbG9uZyBzeXNfc2lncmV0
+dXJuKHZvaWQpOwogCiAvKiBrZXJuZWwvdm04Nl8zMi5jICovCi1pbnQgc3lz
+X3ZtODZvbGQoc3RydWN0IHZtODZfc3RydWN0IF9fdXNlciAqKTsKLWludCBz
+eXNfdm04Nih1bnNpZ25lZCBsb25nLCB1bnNpZ25lZCBsb25nKTsKK2FzbWxp
+bmthZ2UgaW50IHN5c192bTg2b2xkKHN0cnVjdCB2bTg2X3N0cnVjdCBfX3Vz
+ZXIgKik7Cithc21saW5rYWdlIGludCBzeXNfdm04Nih1bnNpZ25lZCBsb25n
+LCB1bnNpZ25lZCBsb25nKTsKIAogI2Vsc2UgLyogQ09ORklHX1g4Nl8zMiAq
+LwogCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9rZXJuZWwvdm04Nl8zMi5jIGIv
+YXJjaC94ODYva2VybmVsL3ZtODZfMzIuYwppbmRleCAxY2Y1NzY2Li43Zjcy
+ODA3IDEwMDY0NAotLS0gYS9hcmNoL3g4Ni9rZXJuZWwvdm04Nl8zMi5jCisr
+KyBiL2FyY2gveDg2L2tlcm5lbC92bTg2XzMyLmMKQEAgLTIwMiw3ICsyMDIs
+NyBAQCBvdXQ6CiBzdGF0aWMgaW50IGRvX3ZtODZfaXJxX2hhbmRsaW5nKGlu
+dCBzdWJmdW5jdGlvbiwgaW50IGlycW51bWJlcik7CiBzdGF0aWMgdm9pZCBk
+b19zeXNfdm04NihzdHJ1Y3Qga2VybmVsX3ZtODZfc3RydWN0ICppbmZvLCBz
+dHJ1Y3QgdGFza19zdHJ1Y3QgKnRzayk7CiAKLWludCBzeXNfdm04Nm9sZChz
+dHJ1Y3Qgdm04Nl9zdHJ1Y3QgX191c2VyICp2ODYpCithc21saW5rYWdlIGlu
+dCBzeXNfdm04Nm9sZChzdHJ1Y3Qgdm04Nl9zdHJ1Y3QgX191c2VyICp2ODYp
+CiB7CiAJc3RydWN0IGtlcm5lbF92bTg2X3N0cnVjdCBpbmZvOyAvKiBkZWNs
+YXJlIHRoaXMgX29uIHRvcF8sCiAJCQkJCSAqIHRoaXMgYXZvaWRzIHdhc3Rp
+bmcgb2Ygc3RhY2sgc3BhY2UuCkBAIC0yMjcsMTEgKzIyNywxMiBAQCBpbnQg
+c3lzX3ZtODZvbGQoc3RydWN0IHZtODZfc3RydWN0IF9fdXNlciAqdjg2KQog
+CWRvX3N5c192bTg2KCZpbmZvLCB0c2spOwogCXJldCA9IDA7CS8qIHdlIG5l
+dmVyIHJldHVybiBoZXJlICovCiBvdXQ6CisJYXNtbGlua2FnZV9wcm90ZWN0
+KDEsIHJldCwgdjg2KTsKIAlyZXR1cm4gcmV0OwogfQogCiAKLWludCBzeXNf
+dm04Nih1bnNpZ25lZCBsb25nIGNtZCwgdW5zaWduZWQgbG9uZyBhcmcpCith
+c21saW5rYWdlIGludCBzeXNfdm04Nih1bnNpZ25lZCBsb25nIGNtZCwgdW5z
+aWduZWQgbG9uZyBhcmcpCiB7CiAJc3RydWN0IGtlcm5lbF92bTg2X3N0cnVj
+dCBpbmZvOyAvKiBkZWNsYXJlIHRoaXMgX29uIHRvcF8sCiAJCQkJCSAqIHRo
+aXMgYXZvaWRzIHdhc3Rpbmcgb2Ygc3RhY2sgc3BhY2UuCkBAIC0yNzgsNiAr
+Mjc5LDcgQEAgaW50IHN5c192bTg2KHVuc2lnbmVkIGxvbmcgY21kLCB1bnNp
+Z25lZCBsb25nIGFyZykKIAlkb19zeXNfdm04NigmaW5mbywgdHNrKTsKIAly
+ZXQgPSAwOwkvKiB3ZSBuZXZlciByZXR1cm4gaGVyZSAqLwogb3V0OgorCWFz
+bWxpbmthZ2VfcHJvdGVjdCgyLCByZXQsIGNtZCwgYXJnKTsKIAlyZXR1cm4g
+cmV0OwogfQogCi0tIAoxLjguMS4yCgo=
+
+--_----------=_1364412662128581--
 
