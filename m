@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab3C0RKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 13:10:24 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36701 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752318Ab3C0RKV (ORCPT
+	id S1753505Ab3C0RKd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 13:10:33 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:42698 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab3C0RKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 13:10:21 -0400
-Date: Wed, 27 Mar 2013 18:10:15 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jesper Nilsson <jesper.nilsson@axis.com>
-cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 13/34] cris: Use generic idle loop
-In-Reply-To: <20130327150421.GV28422@axis.com>
-Message-ID: <alpine.LFD.2.02.1303271809350.22263@ionos>
-References: <20130321214930.752934102@linutronix.de> <20130321215234.148829489@linutronix.de> <20130327150421.GV28422@axis.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 27 Mar 2013 13:10:31 -0400
+X-IronPort-AV: E=Sophos;i="4.84,920,1355097600"; 
+   d="scan'208";a="15200071"
+Date: Wed, 27 Mar 2013 17:10:26 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Rob Herring <robherring2@gmail.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
+In-Reply-To: <51531FE3.8010905@gmail.com>
+Message-ID: <alpine.DEB.2.02.1303271642340.4430@kaball.uk.xensource.com>
+References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130327133811.GE18429@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1303271610430.4430@kaball.uk.xensource.com> <51531FE3.8010905@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Mar 2013, Jesper Nilsson wrote:
+On Wed, 27 Mar 2013, Rob Herring wrote:
+> On 03/27/2013 11:23 AM, Stefano Stabellini wrote:
+> > Would you agree on a patch that moves virt_smp_ops out of mach-virt and
+> > renames them to psci_smp_ops (maybe to arch/arm/kernel/psci_smp_ops.c)?
+> > 
+> > Would you agree on initializing psci from setup_arch, right after the
+> > call to arm_dt_init_cpu_maps()?
+> > 
+> > Finally the most controversial point: would you agree on using
+> > psci_smp_ops by default if they are available?
+> > If not, would you at least agree on letting Xen overwrite the default
+> > machine smp_ops?
+> > We need one or the other for dom0 support.
 > 
-> On Thu, Mar 21, 2013 at 09:53:06PM -0000, Thomas Gleixner wrote:
-> [snip]
-> > Index: linux-2.6/arch/cris/arch-v32/kernel/process.c
-> > ===================================================================
-> > --- linux-2.6.orig/arch/cris/arch-v32/kernel/process.c
-> > +++ linux-2.6/arch/cris/arch-v32/kernel/process.c
-> > @@ -23,12 +23,10 @@ extern void stop_watchdog(void);
-> >  /* We use this if we don't have any better idle routine. */
-> >  void default_idle(void)
-> >  {
-> > -	local_irq_disable();
-> > -	if (!need_resched()) {
-> > -		/* Halt until exception. */
-> > -		__asm__ volatile("ei    \n\t"
-> > -				 "halt      ");
-> > -	}
-> > +	/* Halt until exception. */
-> > +	__asm__ volatile("ei    \n\t"
-> > +			 "halt      ");
-> > +	/* CHECKME: Is this really needed ?? */
-> >  	local_irq_enable();
-> 
-> No, that local_irq_enable() is redundant since we already enabled interrupts
-> in the assembler directive above.
+> It should not be *always* use PSCI smp ops if available, but use them
+> only if the platform does not define its own smp ops.
 
-That's what I thought:) Will remove it.
+Well, that is the one additional problem that we have on Xen.
+
+On x86 Xen replaces a lot of core native function calls with its own
+implementations (see paravirt_ops).
+On ARM we only need *one* set of calls: the smp_ops calls.
+
+So if we don't want to give priority to PSCI over the platform smp_ops,
+then we need a simple workaround just for Xen in common code like the
+one appended below.
+Not pretty, but at least small:
+
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 3f6cbb2..08cf7e0 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -43,6 +43,8 @@
+ #include <asm/cacheflush.h>
+ #include <asm/cachetype.h>
+ #include <asm/tlbflush.h>
++#include <xen/xen.h>
++#include <asm/xen/hypervisor.h>
  
-Thanks,
-
-	tglx
+ #include <asm/prom.h>
+ #include <asm/mach/arch.h>
+@@ -766,9 +768,13 @@ void __init setup_arch(char **cmdline_p)
+ 	unflatten_device_tree();
+ 
+ 	arm_dt_init_cpu_maps();
++	xen_early_init();
+ #ifdef CONFIG_SMP
+ 	if (is_smp()) {
+-		smp_set_ops(mdesc->smp);
++		if (xen_domain())
++			smp_set_ops(&xen_smp_ops);
++		else
++			smp_set_ops(mdesc->smp);
+ 		smp_init_cpus();
+ 	}
+ #endif
