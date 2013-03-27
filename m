@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429Ab3C0UEr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 16:04:47 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:23990 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753633Ab3C0UEp convert rfc822-to-8bit (ORCPT
+	id S1754347Ab3C0UFq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 16:05:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37758 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753994Ab3C0UFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 16:04:45 -0400
+	Wed, 27 Mar 2013 16:05:45 -0400
+Date: Wed, 27 Mar 2013 21:05:38 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Nathan Zimmer <nzimmer@sgi.com>, linux-kernel@vger.kernel.org,
+        John Stultz <johnstul@us.ibm.com>, Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH 2/2] timer_list: convert timer list to be a proper
+ seq_file
+In-Reply-To: <20130327121412.f589d0cc105843284e1d8eb5@linux-foundation.org>
+Message-ID: <alpine.LFD.2.02.1303272104150.22263@ionos>
+References: <alpine.LFD.2.02.1303251651200.22263@ionos> <1364345790-14577-1-git-send-email-nzimmer@sgi.com> <1364345790-14577-3-git-send-email-nzimmer@sgi.com> <20130327121412.f589d0cc105843284e1d8eb5@linux-foundation.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Message-ID: <ef105888-1996-4c78-829a-36b84973ce65@default>
-Date: Wed, 27 Mar 2013 13:04:25 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, Minchan Kim <minchan@kernel.org>,
-        Bob Liu <bob.liu@oracle.com>, Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: zsmalloc zbud hybrid design discussion?
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6668.5000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seth and all zproject folks --
+On Wed, 27 Mar 2013, Andrew Morton wrote:
+> On Tue, 26 Mar 2013 19:56:30 -0500 Nathan Zimmer <nzimmer@sgi.com> wrote:
+> > +void sysrq_timer_list_show(void)
+> > +{
+> > +	u64 now = ktime_to_ns(ktime_get());
+> > +	int cpu;
+> > +
+> > +	timer_list_header(NULL, now);
+> >  
+> >  	for_each_online_cpu(cpu)
+> 
+> hm, it seems this code is taking the optimistic approach to CPU hotplug.
 
-I've been giving some deep thought as to how a zpage
-allocator might be designed that would incorporate the
-best of both zsmalloc and zbud.
-
-Rather than dive into coding, it occurs to me that the
-best chance of success would be if all interested parties
-could first discuss (on-list) and converge on a design
-that we can all agree on.  If we achieve that, I don't
-care who writes the code and/or gets the credit or
-chooses the name.  If we can't achieve consensus, at
-least it will be much clearer where our differences lie.
-
-Any thoughts?
+Right. It's not really relevant. The data structures are not going
+away and this can cope with the fact that the cpu went away under us.
 
 Thanks,
-Dan
+
+	tglx
