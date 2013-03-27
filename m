@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab3C0TOQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 15:14:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35300 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753956Ab3C0TOP (ORCPT
+	id S1754168Ab3C0TOZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 15:14:25 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:54527 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907Ab3C0TOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 15:14:15 -0400
-Date: Wed, 27 Mar 2013 12:14:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH 2/2] timer_list: convert timer list to be a proper
- seq_file
-Message-Id: <20130327121412.f589d0cc105843284e1d8eb5@linux-foundation.org>
-In-Reply-To: <1364345790-14577-3-git-send-email-nzimmer@sgi.com>
-References: <alpine.LFD.2.02.1303251651200.22263@ionos>
-	<1364345790-14577-1-git-send-email-nzimmer@sgi.com>
-	<1364345790-14577-3-git-send-email-nzimmer@sgi.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 27 Mar 2013 15:14:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
+Date: Wed, 27 Mar 2013 19:14:13 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <201303271750.52015.arnd@arndb.de> <20130327181206.GD20990@mudshark.cambridge.arm.com>
+In-Reply-To: <20130327181206.GD20990@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201303271914.13544.arnd@arndb.de>
+X-Provags-ID: V02:K0:S5il1G/MNzF9dqgbqCzxKuytbF4T40MP/YmhRCJXTRn
+ JuBf4aZliau6A7jRklnbuFkMU4AxcKI5EkmrGbvWtbWnMSb2V2
+ fKvpfdp9XqXA05ieelVTQLmZERqZqrvpU+6BulvF5m8TdENKJ6
+ Ld8L3jD2i5tEmYozfJRzfRU7FUqsMlCwAHV9fJuKXXV0Tb+Gvh
+ RHMeM5Id0K+OtrYETd7uNS5xD3teWVPPUsZrhDlMCv6TqKrfFp
+ h/YYNoMjSj3/vWHPFB0muixWtaRFDMOORto0AqDbgauSBHkvLw
+ RIyqbxPNYmOf1J24bfYn9fsVVCEkA8b0Bhk0GQw/Xp7yaYx3/Q
+ ijVRC8VHEW7qKFYcUCR4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Mar 2013 19:56:30 -0500 Nathan Zimmer <nzimmer@sgi.com> wrote:
-
-> When running with 4096 cores attemping to read /proc/timer_list will fail
-> with an ENOMEM condition.  On a sufficantly large systems the total amount
-> of data is more then 4mb, so it won't fit into a single buffer.  The
-> failure can also occur on smaller systems when memory fragmentation is
-> high as reported by Dave Jones.
+On Wednesday 27 March 2013, Will Deacon wrote:
+> The interface is standard. The functions have well-defined headers and can
+> be called in the same way between implementations. The difference is in the
+> semantics of the parameters. For example:
 > 
-> Convert /proc/timer_list to a proper seq_file with its own iterator.  This
-> is a little more complex given that we have to make two passes with two
-> separate headers.
+>   int cpu_off(u32 power_state);
+
+I think that is the opposite of well-defined :(
+
+> If you look at the power_state parameter, it's actually a struct (see struct
+> psci_power_state) with a u16 id field. The current specification describes
+> that field as `This is platform specific, the number is understood by the
+> firmware, and used to program the power controller.'.
 > 
-> sysrq_timer_list_show also needed to be updated to reflect the fact that
-> now timer_list_show only does one cpu at at time.
-> 
-> ...
->
-> --- a/kernel/time/timer_list.c
-> +++ b/kernel/time/timer_list.c
-> @@ -20,6 +20,13 @@
->  
->  #include <asm/uaccess.h>
->  
-> +
-> +struct timer_list_iter {
-> +	int cpu;
-> +	bool second_pass;
-> +	u64 now;
-> +};
-> +
->  typedef void (*print_fn_t)(struct seq_file *m, unsigned int *classes);
->  
->  DECLARE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases);
-> @@ -247,43 +254,101 @@ static void timer_list_show_tickdevices_header(struct seq_file *m)
->  }
->  #endif
->  
-> -static int timer_list_show(struct seq_file *m, void *v)
-> +static inline void timer_list_header(struct seq_file *m, u64 now)
+> So unless we get everybody to agree on the definition of that field, we
+> can't blindly plug the interfaces together. Furthermore, there are other
+> parameters like this and, as new functions are specified, I would expect
+> them to grow.
 
-There's really no point in the explicit inline directive - modern gcc's
-basically ignore it anyway.
+I think it's expected that there will be vendor specific extensions,
+but any interface that is part of the standard has to be completely
+specified there, anything else is pure madness.
 
->  {
-> -	u64 now = ktime_to_ns(ktime_get());
-> -	int cpu;
-> -
->  	SEQ_printf(m, "Timer List Version: v0.7\n");
->  	SEQ_printf(m, "HRTIMER_MAX_CLOCK_BASES: %d\n", HRTIMER_MAX_CLOCK_BASES);
->  	SEQ_printf(m, "now at %Ld nsecs\n", (unsigned long long)now);
->  	SEQ_printf(m, "\n");
-> +}
->
-> ...
->
-> +void sysrq_timer_list_show(void)
-> +{
-> +	u64 now = ktime_to_ns(ktime_get());
-> +	int cpu;
-> +
-> +	timer_list_header(NULL, now);
->  
->  	for_each_online_cpu(cpu)
+Perhaps we could extend the device tree binding to add the missing bits,
+and pass the values that you are supposed to pass there as properties
+of the node, but it would be much more logical to require the interface
+to be well-behaved in the first place.
 
-hm, it seems this code is taking the optimistic approach to CPU hotplug.
-
-> -		print_cpu(m, cpu, now);
-> +		print_cpu(NULL, cpu, now);
-
+	Arnd
