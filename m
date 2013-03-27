@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751553Ab3C0Mzo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 08:55:44 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:59607 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3C0Mzm (ORCPT
+	id S1752993Ab3C0M4G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 08:56:06 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:49910 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751446Ab3C0M4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 08:55:42 -0400
-Date: Wed, 27 Mar 2013 13:55:37 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Andrew Murray <Andrew.Murray@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-pci@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [RFC PATCH v2] of/pci: Provide support for parsing PCI DT
- ranges property
-Message-ID: <20130327135537.52da5818@skate>
-In-Reply-To: <CACRpkdZ_iuz96JWjHcr+6ugRY29MPA-wiGWtQQJqk30iTQE--Q@mail.gmail.com>
-References: <20130221154709.GA26660@arm.com>
-	<20130320210521.65261e77@skate>
-	<CACRpkdZ_iuz96JWjHcr+6ugRY29MPA-wiGWtQQJqk30iTQE--Q@mail.gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Wed, 27 Mar 2013 08:56:04 -0400
+Message-ID: <1364388957.1345.33.camel@x61.thuisdomein>
+Subject: Re: [PATCH] powerpc: remove PReP
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Rob Landley <rob@landley.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        linuxppc-dev@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 27 Mar 2013 13:55:57 +0100
+In-Reply-To: <1364388152.1345.29.camel@x61.thuisdomein>
+References: <1363864206.1390.117.camel@x61.thuisdomein>
+	 <20130322042159.GC26908@concordia>
+	 <1364381223.1345.18.camel@x61.thuisdomein>
+	 <CAMuHMdVs-Xxu9e=8WZbTBXE1_+iYOBKODgj9_EKmVbZA3z=8JA@mail.gmail.com>
+	 <1364388152.1345.29.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Mar 2013 12:55:58.0193 (UTC) FILETIME=[6D213610:01CE2AEA]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Linus Walleij,
-
-On Wed, 27 Mar 2013 13:50:09 +0100, Linus Walleij wrote:
-
-> > Would it be possible to get this patch merged for 3.10, or get some
-> > review comments that would allow us to rework it in time for 3.10 ?
+By the way, I get bounces from Adam's address:
+> I'm sorry to have to inform you that your message could not
+> be delivered to one or more recipients. It's attached below.
 > 
-> Thomas can you supply a Reviewed-by/Tested-by tag?
-> That certainly helps...
+> For further assistance, please send mail to <postmaster>
+> 
+> If you do so, please include this problem report. You can
+> delete your own text from the attached returned message.
+> 
+> <abelay@mit.edu>: 550 5.1.1 <abelay@mit.edu>... User unknown
 
-Yes, I'm planning on testing RFC v3 from Andrew right now, and send a
-new version of the Marvell PCIe patch set that includes it. If all goes
-well, should happen this afternoon.
+(It's now removed from the CC line.) Does anyone know what's going on
+here?
 
-Thanks,
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Paul Bolle
+
