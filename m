@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab3C0FQS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 01:16:18 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55574 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753732Ab3C0FQR (ORCPT
+	id S1756298Ab3C0F1v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 01:27:51 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:58063 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754744Ab3C0F1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 01:16:17 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <5152807D.5010905@jp.fujitsu.com>
-Date: Wed, 27 Mar 2013 14:15:41 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>
-Subject: Re: [RFC] mm: remove swapcache page early
-References: <1364350932-12853-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1364350932-12853-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Mar 2013 01:27:49 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, stern@rowland.harvard.edu,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCHv2] usb: ehci: unlink_empty_async_suspended() only used with CONFIG_PM
+Date: Wed, 27 Mar 2013 18:28:00 +1300
+Message-Id: <1364362080-8489-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/03/27 11:22), Minchan Kim wrote:
-> Swap subsystem does lazy swap slot free with expecting the page
-> would be swapped out again so we can't avoid unnecessary write.
-> 
-> But the problem in in-memory swap is that it consumes memory space
-> until vm_swap_full(ie, used half of all of swap device) condition
-> meet. It could be bad if we use multiple swap device, small in-memory swap
-> and big storage swap or in-memory swap alone.
-> 
-> This patch changes vm_swap_full logic slightly so it could free
-> swap slot early if the backed device is really fast.
-> For it, I used SWP_SOLIDSTATE but It might be controversial.
-> So let's add Ccing Shaohua and Hugh.
-> If it's a problem for SSD, I'd like to create new type SWP_INMEMORY
-> or something for z* family.
-> 
-> Other problem is zram is block device so that it can set SWP_INMEMORY
-> or SWP_SOLIDSTATE easily(ie, actually, zram is already done) but
-> I have no idea to use it for frontswap.
-> 
-> Any idea?
-> 
-Another thinking....in what case, in what system configuration, 
-vm_swap_full() should return false and delay swp_entry freeing ?
+Compiling with !CONFIG_PM generates an unused function warning on
+unlink_empty_async_suspended().
 
-Thanks,
--Kame
+Enclose the function in a #ifdef CONFIG_PM
 
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+---
+v2:
+Tidy up blank line as requested by Alan Stern
+ drivers/usb/host/ehci-q.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/usb/host/ehci-q.c b/drivers/usb/host/ehci-q.c
+index 23d1369..1ea4de1 100644
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -1316,6 +1316,7 @@ static void unlink_empty_async(struct ehci_hcd *ehci)
+ 	}
+ }
+ 
++#ifdef CONFIG_PM
+ /* The root hub is suspended; unlink all the async QHs */
+ static void unlink_empty_async_suspended(struct ehci_hcd *ehci)
+ {
+@@ -1328,6 +1329,7 @@ static void unlink_empty_async_suspended(struct ehci_hcd *ehci)
+ 	}
+ 	start_iaa_cycle(ehci, false);
+ }
++#endif
+ 
+ /* makes sure the async qh will become idle */
+ /* caller must own ehci->lock */
+-- 
+1.7.9.5
 
