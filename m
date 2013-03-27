@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab3C0TJn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 15:09:43 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:57078 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753906Ab3C0TJm (ORCPT
+	id S1754026Ab3C0TKc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 15:10:32 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:61612 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753906Ab3C0TKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 15:09:42 -0400
-X-IronPort-AV: E=Sophos;i="4.84,920,1355126400"; 
-   d="scan'208";a="32994257"
-Message-ID: <d6658b60b7e09376cfcf692dc54ac922.squirrel@www.codeaurora.org>
-In-Reply-To: <20130325123410.GG22327@kernel.dk>
-References: <1364202150-8776-1-git-send-email-tlinder@codeaurora.org>
-    <20130325123410.GG22327@kernel.dk>
-Date: Wed, 27 Mar 2013 12:09:41 -0700
-Subject: Re: [PATCH v5 1/3] block: Add support for reinsert a dispatched req
-From: tlinder@codeaurora.org
-To: "Jens Axboe" <axboe@kernel.dk>
-Cc: "Tanya Brokhman" <tlinder@codeaurora.org>, linux-mmc@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, alex.lemberg@sandisk.com,
-        "open list" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.22
+	Wed, 27 Mar 2013 15:10:30 -0400
+Message-ID: <51534421.4050300@gmail.com>
+Date: Wed, 27 Mar 2013 14:10:25 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Will Deacon <will.deacon@arm.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
+References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <51531F76.2090200@gmail.com> <20130327170555.GA20990@mudshark.cambridge.arm.com> <201303271750.52015.arnd@arndb.de> <20130327181206.GD20990@mudshark.cambridge.arm.com>
+In-Reply-To: <20130327181206.GD20990@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens
-
->> Add support for reinserting a dispatched request back to the
->> scheduler's internal data structures.
->> This capability is used by the device driver when it chooses to
->> interrupt the current request transmission and execute another (more
->> urgent) pending request. For example: interrupting long write in order
->> to handle pending read. The device driver re-inserts the
->> remaining write request back to the scheduler, to be rescheduled
->> for transmission later on.
+On 03/27/2013 01:12 PM, Will Deacon wrote:
+> On Wed, Mar 27, 2013 at 05:50:51PM +0000, Arnd Bergmann wrote:
+>> On Wednesday 27 March 2013, Will Deacon wrote:
+>>> The channel is common, sure, but I wouldn't expect the semantics of each
+>>> call to be identical between firmware implementations (going back to my
+>>> previous examples of CPU IDs and implementation-defined state parameters).
+>>>
+>>> If a platform happens to have an id-mapping from smp_operations to psci,
+>>> then I still think there should be an indirection in there so that we have
+>>> the flexibility to change the smp_operations if we wish and not give
+>>> platforms the false impression that these two things are equivalent.
 >>
->> Add API for verifying whether the current scheduler
->> supports reinserting requests mechanism. If reinsert mechanism isn't
->> supported by the scheduler, this code path will never be activated.
->
-> This is practically the exact same operation as a requeue.
+>> I think the only reasonably implementation for psci is if we can assume
+>> that each callback with a specific property name has a well-defined behavior,
+>> and we should mandate that every platform that implements the callbacks
+>> we need for SMP actually implements them according to the spec.
+>>
+>> What would be the point of a standard psci interface if the specific
+>> implementation are not required to follow the same semantics?
+> 
+> The interface *is* standard. The functions have well-defined headers and can
+> be called in the same way between implementations. The difference is in the
+> semantics of the parameters. For example:
+> 
+>   int cpu_off(u32 power_state);
+> 
+> If you look at the power_state parameter, it's actually a struct (see struct
+> psci_power_state) with a u16 id field. The current specification describes
+> that field as `This is platform specific, the number is understood by the
+> firmware, and used to program the power controller.'.
+> 
+> So unless we get everybody to agree on the definition of that field, we
+> can't blindly plug the interfaces together. Furthermore, there are other
+> parameters like this and, as new functions are specified, I would expect
+> them to grow.
 
-Not exactly. When you requeue request X it will be the next one to be
-dispatched and handled by the device driver. When you reinsert a request,
-you reinset it back to the I/O scheduler and not to the dispatch queue.
-That means that this reinserted request will be rescheduled and its
-possible that it wont be the next one to be dispatched since there might
-be more urgent requests pending.
-For example: an urgent request notification was sent to the device driver
-that is currently transmitting a long packed WRITE command. The urgent
-request pending to be served is a READ request. The device driver decides
-to stop the packed WRITE request and handle the urgent READ. This is the
-difference between requeue and reinsert:
- - if we requeue the stopped packed WRITE, it will be immediately fetched
-and transmitted again and the READ will be left pending till the packed
-WRITE completes. In this case there was no point in stopping the packed
-WRITE
-- if we reinsert the stopped packed WRITE the next request to be
-dispatched will be the urgent READ request (since READ is given priority
-over WRITE) and this will reduce the READ latency greatly.
+Which is why I've said I think the ID field is a bad idea. I've used it
+in my implementation, but only in the case of system level reset,
+power-off, and suspend. I don't see how it would be used otherwise.
 
-> So why this
-> duplication? I also don't quite understand why an IO scheduler would
-> have to opt-in for this, seems like a pretty basic operation.
+I guess you could define a value of 0 must be supported at a minimum and
+then default implementation would at least work to some level.
 
-I hope the above example addressed this as well. Please let me know if
-this is not the case.
-
-Thanks
-Tanya Brokhman
-QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-of Code Aurora Forum, hosted by The Linux Foundation
-
-
-
+Rob
