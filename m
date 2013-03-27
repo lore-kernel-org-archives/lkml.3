@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab3C0OXf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 10:23:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10377 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751375Ab3C0OXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 10:23:34 -0400
-Date: Wed, 27 Mar 2013 15:23:23 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, acme@redhat.com, namhyung.kim@lge.com
-Subject: Re: [PATCH v7 11/18] perf tools: add mem access sampling core support
-Message-ID: <20130327142323.GD1092@krava.brq.redhat.com>
-References: <1359040242-8269-1-git-send-email-eranian@google.com>
- <1359040242-8269-12-git-send-email-eranian@google.com>
- <20130327141425.GC1092@krava.brq.redhat.com>
+	id S1752883Ab3C0OZd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 10:25:33 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:57179 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab3C0OZc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 10:25:32 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130327141425.GC1092@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: Thomas Gleixner <tglx@linutronix.de>, Ulf Hansson <ulf.hansson@linaro.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <alpine.LFD.2.02.1303271141470.22263@ionos>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+References: <1364368183-24420-1-git-send-email-mturquette@linaro.org>
+ <alpine.LFD.2.02.1303270941320.22263@ionos>
+ <CAKohpomWZ_9a_RceQ419QAAXOR17yrtrRP0Gf4xoS3B=yzbRXg@mail.gmail.com>
+ <CAPDyKFoHQK576H+zsW9ykzJT-gjc6=qeiRVi26THa_4dhNVRVw@mail.gmail.com>
+ <alpine.LFD.2.02.1303271141470.22263@ionos>
+Message-ID: <20130327142519.4014.82657@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH v4] clk: allow reentrant calls into the clk framework
+Date: Wed, 27 Mar 2013 07:25:19 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 03:14:25PM +0100, Jiri Olsa wrote:
-> On Thu, Jan 24, 2013 at 04:10:35PM +0100, Stephane Eranian wrote:
+Quoting Thomas Gleixner (2013-03-27 04:09:17)
+> On Wed, 27 Mar 2013, Ulf Hansson wrote:
+> > On 27 March 2013 10:55, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> > > On 27 March 2013 15:10, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > >> On Wed, 27 Mar 2013, Mike Turquette wrote:
+> > >>
+> > >>> Reentrancy into the clock framework from the clk.h api is necessary
+> > >>> for clocks that are prepared and unprepared via i2c_transfer (which
+> > >>> includes many PMICs and discrete audio chips) as well as for several
+> > >>> other use cases.
+> > >>
+> > >> That explanation sucks.
+> > >>
+> > >> Why does an i2c clock need reentrancy? Just because it's i2c or what?
+> > >
+> > > I am noway connected to this development but was just going through
+> > > your mail and i think i might know the answer why is this required.
+> > >
+> > > Consider an example where an external chip has clock controller and has
+> > > bits which can be programmed to enable/disable clock. And this chip is
+> > > connected via spi/i2c to SoC.
+> > >
+> > > clk_prepare(peripheral on external chip)
+> > >   -> i2c_xfer(to write to external chips register)
+> > >       -> clk_enable(i2c controller)
+> > >           ->controller-xfer-routine.. and finally we enable clk here...
 > 
-> SNIP
+> Which does not explain the whole issue:
 > 
-> >  
-> > +static void ip__resolve_data(struct machine *self, struct thread *thread,
-> > +			     u8 m,
-> > +			    struct addr_map_symbol *ams,
-> > +			    u64 addr)
-> > +{
-> > +	struct addr_location al;
-> > +
-> > +	memset(&al, 0, sizeof(al));
-> > +
-> > +	thread__find_addr_location(thread, self, m, MAP__VARIABLE, addr, &al,
-> > +				   NULL);
-> > +	ams->addr = addr;
-> > +	ams->al_addr = al.addr;
-> > +	ams->sym = al.sym;
-> > +	ams->map = al.map;
-> > +}
-> > +
-> > +struct mem_info *machine__resolve_mem(struct machine *self,
-> > +				      struct thread *thr,
-> > +				      struct perf_sample *sample,
-> > +				      u8 cpumode)
-> > +{
-> > +	struct mem_info *mi;
-> > +
-> > +	mi = calloc(1, sizeof(struct mem_info));
-> > +	if (!mi)
-> > +		return NULL;
-> > +
-> > +	ip__resolve_ams(self, thr, &mi->iaddr, sample->ip);
-> > +	ip__resolve_data(self, thr, cpumode, &mi->daddr, sample->addr);
+>     clk_prepare() takes the mutex
+>     clk_enable() takes the spinlock
 > 
-> question, should this be the other way around?  like:
+> That works today.
 > 
-> 	ip__resolve_ams(machine, thr, &mi->daddr, sample->addr);
-> 	ip__resolve_data(machine, thr, cpumode, &mi->iaddr, sample->ip);
+> The issue arises, if you need to call clk_prepare(i2c) in the xfer
+> routine.
+> 
 
-ugh, I missed the MAP__VARIABLE/MAP__FUNCTION difference there, thanks Arnaldo! ;-)
+The issue arises any time a clk_ops callback calls a function that
+unwittingly re-enters the clock framework.  I think the easiest example
+to understand and perhaps the most common in practice is a clock which
+is controlled via an i2c transfer.
 
-still, no need to guess the cpumode for ip and guess it for data?
+Viresh's example makes the mistake of calling
+clk_enable(i2c_controller), but it must also call
+clk_prepare(i2c_controller) which is missing in the call graph above.
+That nested call to clk_prepare is where the reentrancy comes from.
 
-jirka
+This has nothing to do with the prepare/enable locking split and leaves
+that relationship intact.
+
+> > >
+> > > Sorry if i am on the wrong side :)
+> 
+> Only slightly :)
+> 
+> > I agree with you Viresh. I guess Mike should update the commit message.
+> > 
+> > I would also like add another reason to why this is needed. For some
+> > clks you would like to do pinctrl operations from a clk hw. But since
+> > a pinctrl driver likely requires a clk to be prepared|enabled, we run
+> > into a clk reentrant issue.
+> 
+> Fair enough. This all wants to go into the changelog, so we can
+> understand why we have this business.
+> 
+
+I'll submit a v5 which I hope will end the pain and suffering this patch
+has caused you.
+
+Regards,
+Mike
+
+> Thanks,
+> 
+>         tglx
