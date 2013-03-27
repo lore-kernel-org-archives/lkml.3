@@ -1,222 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab3C0XRQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 19:17:16 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:56576 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023Ab3C0XRO (ORCPT
+	id S1754843Ab3C0XSJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 19:18:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52029 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751804Ab3C0XSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 19:17:14 -0400
-Date: Wed, 27 Mar 2013 16:16:48 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Bob Liu <bob.liu@oracle.com>
-Subject: RE: [RFC] mm: remove swapcache page early
-In-Reply-To: <433aaa17-7547-4e39-b472-7060ee15e85f@default>
-Message-ID: <alpine.LNX.2.00.1303271541200.30535@eggly.anvils>
-References: <1364350932-12853-1-git-send-email-minchan@kernel.org> <alpine.LNX.2.00.1303271230210.29687@eggly.anvils> <433aaa17-7547-4e39-b472-7060ee15e85f@default>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 27 Mar 2013 19:18:07 -0400
+Date: Wed, 27 Mar 2013 23:18:04 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFT 1/2] regulator: ab8500: Add missing enable_time
+ settings
+Message-ID: <20130327231804.GE18316@opensource.wolfsonmicro.com>
+References: <1364377642.13084.0.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Dd3wZ8lZB+7LG3KQ"
+Content-Disposition: inline
+In-Reply-To: <1364377642.13084.0.camel@phoenix>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Mar 2013, Dan Magenheimer wrote:
-> > From: Hugh Dickins [mailto:hughd@google.com]
-> > Subject: Re: [RFC] mm: remove swapcache page early
-> > 
-> > On Wed, 27 Mar 2013, Minchan Kim wrote:
-> > 
-> > > Swap subsystem does lazy swap slot free with expecting the page
-> > > would be swapped out again so we can't avoid unnecessary write.
-> >                              so we can avoid unnecessary write.
-> > >
-> > > But the problem in in-memory swap is that it consumes memory space
-> > > until vm_swap_full(ie, used half of all of swap device) condition
-> > > meet. It could be bad if we use multiple swap device, small in-memory swap
-> > > and big storage swap or in-memory swap alone.
-> > 
-> > That is a very good realization: it's surprising that none of us
-> > thought of it before - no disrespect to you, well done, thank you.
-> 
-> Yes, my compliments also Minchan.  This problem has been thought of before
-> but this patch is the first to identify a possible solution.
->  
-> > And I guess swap readahead is utterly unhelpful in this case too.
-> 
-> Yes... as is any "swap writeahead".  Excuse my ignorance, but I
-> think this is not done in the swap subsystem but instead the kernel
-> assumes write-coalescing will be done in the block I/O subsystem,
-> which means swap writeahead would affect zram but not zcache/zswap
-> (since frontswap subverts the block I/O subsystem).
 
-I don't know what swap writeahead is; but write coalescing, yes.
-I don't see any problem with it in this context.
+--Dd3wZ8lZB+7LG3KQ
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> However I think a swap-readahead solution would be helpful to
-> zram as well as zcache/zswap.
+On Wed, Mar 27, 2013 at 05:47:22PM +0800, Axel Lin wrote:
+> Base on the data provide by Bengt J=F6nsson, add below enable_time settin=
+gs:
 
-Whereas swap readahead on zmem is uncompressing zmem to pagecache
-which may never be needed, and may take a circuit of the inactive
-LRU before it gets reclaimed (if it turns out not to be needed,
-at least it will remain clean and be easily reclaimed).
+Applied both, thanks.
 
-> 
-> > > This patch changes vm_swap_full logic slightly so it could free
-> > > swap slot early if the backed device is really fast.
-> > > For it, I used SWP_SOLIDSTATE but It might be controversial.
-> > 
-> > But I strongly disagree with almost everything in your patch :)
-> > I disagree with addressing it in vm_swap_full(), I disagree that
-> > it can be addressed by device, I disagree that it has anything to
-> > do with SWP_SOLIDSTATE.
-> > 
-> > This is not a problem with swapping to /dev/ram0 or to /dev/zram0,
-> > is it?  In those cases, a fixed amount of memory has been set aside
-> > for swap, and it works out just like with disk block devices.  The
-> > memory set aside may be wasted, but that is accepted upfront.
-> 
-> It is (I believe) also a problem with swapping to ram.  Two
-> copies of the same page are kept in memory in different places,
-> right?  Fixed vs variable size is irrelevant I think.  Or am
-> I misunderstanding something about swap-to-ram?
+--Dd3wZ8lZB+7LG3KQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I may be misrembering how /dev/ram0 works, or simply assuming that
-if you want to use it for swap (interesting for testing, but probably
-not for general use), then you make sure to allocate each page of it
-in advance.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-The pages of /dev/ram0 don't get freed, or not before it's closed
-(swapoff'ed) anyway.  Yes, swapcache would be duplicating data from
-other memory into /dev/ram0 memory; but that /dev/ram0 memory has
-been set aside for this purpose, and removing from swapcache won't
-free any more memory.
+iQIcBAEBAgAGBQJRU34lAAoJELSic+t+oim9TLwP/0Ujd9N+ogiNhYhszPBDdOGb
+lglzWlo28tp8OoA5NB6umN1ZAeu3QiXpXtbNbYZCfL3/Ho8PnZJeGF5DsMABDth/
+QPMUNqP4ECvYyMCsXEWCsFL5ylSns2YeQ+R+VcjXCHXpPURkOXnBSJksbRtBdWFm
+tiNZeQqfRuzPLW/BWKax7SscIiyBiAKdIyX49bMuPfPpWCyBMhzxYdofqiEtv/8E
+WiWu1cJ/hOMWF39oOlMOnxx02vD9H3DO941/2cHrzO6j4AfSaPAjBTH2kcn7x8B8
+HIGiHzX/mKKZL7JE88vpo6FTGote2hW5WAzEW63WoPeAs7dGK3FcIxQouLQz8NUx
+yGYUapJXmghfxxUtvvbmQUtumTjYcWB/Y8D+UStDij26Cwiim/Yef/puZt0F1uCQ
+/B/VkkFYDnSB+DiDjHqqusikMAEqMifidRGjq0ps9Q2b0ZZTb+uCbmp0IMjeGud2
+ngjuVv8dp1mVP9Rw7nPO5s/vKrrbptfCwNbYQ/FDMB5j9gCbjbVAvsPtonas0MML
+zSr6XOZiFINu8FPuEMvKec0VETzk+FW0PIrUAxKk7td+WgSw4HzH7q6cdHuPW6ZH
+w/deiSxhO9hstQluFv/UuHi9gKOMd/WRN/Q0fBBroEaBSvh9MRaMM+S0xzYzH2O7
+YuIO2td/DvFmTH/Sguyt
+=Y2Ze
+-----END PGP SIGNATURE-----
 
-> 
-> > Similarly, this is not a problem with swapping to SSD.  There might
-> > or might not be other reasons for adjusting the vm_swap_full() logic
-> > for SSD or generally, but those have nothing to do with this issue.
-> 
-> I think it is at least highly related.  The key issue is the
-> tradeoff of the likelihood that the page will soon be read/written
-> again while it is in swap cache vs the time/resource-usage necessary
-> to "reconstitute" the page into swap cache.  Reconstituting from disk
-> requires a LOT of elapsed time.  Reconstituting from
-> an SSD likely takes much less time.  Reconstituting from
-> zcache/zram takes thousands of CPU cycles.
-
-I acknowledge my complete ignorance of how to judge the tradeoff
-between memory usage and cpu usage, but I think Minchan's main
-concern was with the memory usage.  Neither hard disk nor SSD
-is occupying memory.
-
-> 
-> > The problem here is peculiar to frontswap, and the variably sized
-> > memory behind it, isn't it?  We are accustomed to using swap to free
-> > up memory by transferring its data to some other, cheaper but slower
-> > resource.
-> 
-> Frontswap does make the problem more complex because some pages
-> are in "fairly fast" storage (zcache, needs decompression) and
-> some are on the actual (usually) rotating media.  Fortunately,
-> differentiating between these two cases is just a table lookup
-> (see frontswap_test).
-> 
-> > But in the case of frontswap and zmem (I'll say that to avoid thinking
-> > through which backends are actually involved), it is not a cheaper and
-> > slower resource, but the very same memory we are trying to save: swap
-> > is stolen from the memory under reclaim, so any duplication becomes
-> > counter-productive (if we ignore cpu compression/decompression costs:
-> > I have no idea how fair it is to do so, but anyone who chooses zmem
-> > is prepared to pay some cpu price for that).
-> 
-> Exactly.  There is some "robbing of Peter to pay Paul" and
-> other complex resource tradeoffs.  Presumably, though, it is
-> not "the very same memory we are trying to save" but a
-> fraction of it, saving the same page of data more efficiently
-> in memory, using less than a page, at some CPU cost.
-
-Yes, I'm not saying that frontswap/zmem is pointless: just agreeing
-with Minchan that in this case the duplication inherent in swapcache
-can be waste of memory that we should try to avoid.
-
-> 
-> > And because it's a frontswap thing, we cannot decide this by device:
-> > frontswap may or may not stand in front of each device.  There is no
-> > problem with swapcache duplicated on disk (until that area approaches
-> > being full or fragmented), but at the higher level we cannot see what
-> > is in zmem and what is on disk: we only want to free up the zmem dup.
-> 
-> I *think* frontswap_test(page) resolves this problem, as long as
-> we have a specific page available to use as a parameter.
-> 
-> > I believe the answer is for frontswap/zmem to invalidate the frontswap
-> > copy of the page (to free up the compressed memory when possible) and
-> > SetPageDirty on the PageUptodate PageSwapCache page when swapping in
-> > (setting page dirty so nothing will later go to read it from the
-> > unfreed location on backing swap disk, which was never written).
-> 
-> There are two duplication issues:  (1) When can the page be removed
-> from the swap cache after a call to frontswap_store; and (2) When
-> can the page be removed from the frontswap storage after it
-> has been brought back into memory via frontswap_load.
-> 
-> This patch from Minchan addresses (1).
-
-Ying Han was reminding me of this case a couple of hours ago, we don't
-see a problem there: when frontswap_store() succeeds, there's an
-end_page_writeback() as there should be, and shrink_page_list()
-should reclaim the page immediately.  So I think (1) is already
-handled and Minchan was not trying to address it.
-
-> The issue you are raising
-> here is (2).  You may not know that (2) has recently been solved
-> in frontswap, at least for zcache.  See frontswap_exclusive_gets_enabled.
-> If this is enabled (and it is for zcache but not yet for zswap),
-> what you suggest (SetPageDirty) is what happens.
-
-Ah, and I have a dim, perhaps mistaken, memory that I gave you
-input on that before, suggesting the SetPageDirty.  Good, sounds
-like the solution is already in place, if not actually activated.
-
-Thanks, must dash,
-Hugh
-
-> 
-> > We cannot rely on freeing the swap itself, because in general there
-> > may be multiple references to the swap, and we only satisfy the one
-> > which has faulted.  It may or may not be a good idea to use rmap to
-> > locate the other places to insert pte in place of swap entry, to
-> > resolve them all at once; but we have chosen not to do so in the
-> > past, and there's no need for that, if the zmem gets invalidated
-> > and the swapcache page set dirty.
-> 
-> I see.  Minchan's patch handles the removal "reactively"... it
-> might be possible to handle it more proactively.  Or it may
-> be possible to take the number of references into account when
-> deciding whether to frontswap_store the page as, presumably,
-> the likelihood of needing to "reconstitute" the page sooner increases
-> with each additional reference.
-> 
-> > Hugh
-> 
-> Very useful thoughts, Hugh.  Thanks much and looking forward
-> to more discussion at LSF/MM!
-> 
-> Dan
-> 
-> P.S. When I refer to zcache, I am referring to the version in
-> drivers/staging/zcache in 3.9.  The code in drivers/staging/zcache
-> in 3.8 is "old zcache"... "new zcache" is in drivers/staging/ramster
-> in 3.8.  Sorry for any confusion...
+--Dd3wZ8lZB+7LG3KQ--
