@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab3C0Dkx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 23:40:53 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40231 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413Ab3C0Dkv (ORCPT
+	id S1756588Ab3C0Dlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 23:41:45 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37335 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753792Ab3C0Dlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 23:40:51 -0400
-Message-ID: <51526A41.5090703@wwwdotorg.org>
-Date: Tue, 26 Mar 2013 21:40:49 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Lubomir Rintel <lkundrak@v3.sk>
-CC: linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        Guenter Roeck <linux@roeck-us.net>,
-        linux-rpi-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH v3] watchdog: Add Broadcom BCM2835 watchdog timer driver
-References: <1364135137-26691-1-git-send-email-lkundrak@v3.sk> <1364320200-23569-1-git-send-email-lkundrak@v3.sk>
-In-Reply-To: <1364320200-23569-1-git-send-email-lkundrak@v3.sk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Mar 2013 23:41:44 -0400
+Date: Wed, 27 Mar 2013 14:41:34 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>, Ming Lei <tom.leiming@gmail.com>
+Subject: linux-next: build failure after merge of the usb tree
+Message-Id: <20130327144134.0809a21c09b45d20a1fe480d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__27_Mar_2013_14_41_34_+1100_xZ_zhF_/G=kd+CRI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2013 11:50 AM, Lubomir Rintel wrote:
-> This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
-> used in Raspberry Pi and Roku 2 devices.
+--Signature=_Wed__27_Mar_2013_14_41_34_+1100_xZ_zhF_/G=kd+CRI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Since this patch defines a new DT binding, you should send it to
-devicetree-discuss@lists.ozlabs.org too.
+Hi Greg,
 
-> diff --git a/drivers/watchdog/bcm2835_wdt.c b/drivers/watchdog/bcm2835_wdt.c
+After merging the usb tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-> +/*
-> + * Watchdog driver for Broadcom BCM2835
-> + *
-> + * Interface to the Broadcom BCM2835 watchdog timer hardware is based on
-> + * "bcm2708_wdog" driver written by Luke Diamand that was obtained from branch
-> + * "rpi-3.6.y" of git://github.com/raspberrypi/linux.git
+drivers/usb/serial/usb-serial.c: In function 'usb_serial_probe':
+drivers/usb/serial/usb-serial.c:887:3: error: 'struct usb_serial_port' has =
+no member named 'delta_msr_wait'
 
-I see that the patch isn't S-o-b Luke in the downstream kernel. However,
-it is S-o-b Dom Cobley (popcornmix), and they both work for Broadcom, so
-I think that's OK.
+Caused by commit eba0e3c3a0ba ("USB: serial: fix hang when opening port")
+fro the usb.current tree interacting with commit 53ab34dc50ad ("USB:
+serial: remove unused MSR-wait queue") from the usb tree.
 
-> +static int bcm2835_wdt_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct device_node *np = dev->of_node;
-> +	struct bcm2835_wdt *wdt;
-> +	int err;
-> +
-> +	wdt = devm_kzalloc(dev, sizeof(struct bcm2835_wdt), GFP_KERNEL);
-> +	if (!wdt) {
-> +		dev_err(dev, "Failed to allocate memory for watchdog device");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	spin_lock_init(&wdt->lock);
-> +
-> +	wdt->base = of_iomap(np, 0);
-> +	if (!wdt->base) {
-> +		dev_err(dev, "Failed to remap watchdog regs");
-> +		return -ENODEV;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, wdt);
-> +	watchdog_set_drvdata(&bcm2835_wdt_wdd, wdt);
+I have reverted the commit from usb.current on the assumption that the
+problem it solves has been, or will be, solved some other way.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Do you really need both of those? I would have thought just one would
-have been enough.
+--Signature=_Wed__27_Mar_2013_14_41_34_+1100_xZ_zhF_/G=kd+CRI
+Content-Type: application/pgp-signature
 
-I'd be tempted to put the platform_set_drvdata() call right after the
-devm_kzalloc() of wdt, but it's not a big deal either way.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRUmpuAAoJEECxmPOUX5FElO0P/0CAydS0l27dBDEXb/AE1WnG
+QeXCQEFlrJuX1c+J6SoPcGI/9GlcSheACXcHXxw1wIQ/s4JSsIadzFPhdAnWI5UO
+KMDbiOKZlEmx+DHjOXamc7O93RgpDtZ6J3EWhdT257lwlcG85Q40jNNpWONIYpoc
+o+wNAJqPKyWmiQCfmg4Nr3Qf+D/CMVv5HL1qbD59R61DPLAPnKiMZaflfW/Jfkw7
+RgCnQ8j4zLOoUJSZJiMg731ijvu7EEG3fRCCqRuHPxNwN+g9V+THOZfeaO+Yov8w
+gY6EgL82GOagvuZrQzEQa2Ra/qei0SQ5F6aQ1ksF30sNfUltdtYHlsfjyzl+plhI
+ivesTtE6EIbiztMp9glvSyQQCG7pRZKUy2WoD4Zh23JeGOTU6Pdf0SrRkDEgftKd
+Pz1O/1CGIVE7V00Y4PkEoatyM3epNH82wNwBuco8EbtV5x0gRH+mq7DbUFAlJqK2
+Ub/Pa+QhJgopCgIzk8Yer/VOSy6KRRZNNeqaeuwfgGWTkpcRl1OQhI3h6mUO+H1w
+Y9iHKoYXghTAEY4FIKHiWVXsTYAaCcBXhLgFhf0dZyZPlZOXofqh7FxzcqS/cSvs
+SbJQ3C5zaALXjjCSzBZQHnGAkPEqCnz6vmp+NVx3n+KoWxjjS7KP5DoSrQDRLuwX
+oas7EOBwOQb+vHM0+XGV
+=fahz
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__27_Mar_2013_14_41_34_+1100_xZ_zhF_/G=kd+CRI--
