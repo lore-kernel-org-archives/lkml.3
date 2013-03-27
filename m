@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab3C0THj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 15:07:39 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48238 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753814Ab3C0THh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 15:07:37 -0400
-Date: Wed, 27 Mar 2013 20:07:27 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Joerg Roedel <joro@8bytes.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
- asm/8267
-Message-ID: <20130327190727.GD8385@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Joerg Roedel <joro@8bytes.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Ingo Molnar <mingo@kernel.org>,
-	Arnaldo Carvalho de Melo <acme@infradead.org>,
-	lkml <linux-kernel@vger.kernel.org>,
-	Stephane Eranian <eranian@google.com>,
-	Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>
-References: <20130324115556.GA4866@pd.tnic>
- <20130324155924.GB4866@pd.tnic>
- <20130326183452.GC27518@pd.tnic>
- <20130327131532.GL30540@8bytes.org>
- <1364393852.5053.74.camel@laptop>
- <20130327143715.GY4379@linux.vnet.ibm.com>
- <20130327163427.GN30540@8bytes.org>
- <20130327163806.GC8385@pd.tnic>
- <20130327180455.GA4379@linux.vnet.ibm.com>
+	id S1753994Ab3C0TJn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 15:09:43 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:57078 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753906Ab3C0TJm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 15:09:42 -0400
+X-IronPort-AV: E=Sophos;i="4.84,920,1355126400"; 
+   d="scan'208";a="32994257"
+Message-ID: <d6658b60b7e09376cfcf692dc54ac922.squirrel@www.codeaurora.org>
+In-Reply-To: <20130325123410.GG22327@kernel.dk>
+References: <1364202150-8776-1-git-send-email-tlinder@codeaurora.org>
+    <20130325123410.GG22327@kernel.dk>
+Date: Wed, 27 Mar 2013 12:09:41 -0700
+Subject: Re: [PATCH v5 1/3] block: Add support for reinsert a dispatched req
+From: tlinder@codeaurora.org
+To: "Jens Axboe" <axboe@kernel.dk>
+Cc: "Tanya Brokhman" <tlinder@codeaurora.org>, linux-mmc@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, alex.lemberg@sandisk.com,
+        "open list" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130327180455.GA4379@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 11:04:55AM -0700, Paul E. McKenney wrote:
-> On Wed, Mar 27, 2013 at 05:38:06PM +0100, Borislav Petkov wrote:
-> > On Wed, Mar 27, 2013 at 05:34:27PM +0100, Joerg Roedel wrote:
-> > > Interesting read, thanks guys. I think I should have a look into the
-> > > tree-preempt implementation and try to understand it :)
-> > 
-> > Hurry, before paulmck comes and changes it unrecognizable! :-)
-> 
-> Better yet, review my changes for 3.10.  ;-)
+Hi Jens
 
-Oh, and if one needs to brush up on RCU while doing that, there's this
-cool thing called perfbook (whole title is too long :)) I discovered
-while searching for your 3.10 queue on k.org. :-)
+>> Add support for reinserting a dispatched request back to the
+>> scheduler's internal data structures.
+>> This capability is used by the device driver when it chooses to
+>> interrupt the current request transmission and execute another (more
+>> urgent) pending request. For example: interrupting long write in order
+>> to handle pending read. The device driver re-inserts the
+>> remaining write request back to the scheduler, to be rescheduled
+>> for transmission later on.
+>>
+>> Add API for verifying whether the current scheduler
+>> supports reinserting requests mechanism. If reinsert mechanism isn't
+>> supported by the scheduler, this code path will never be activated.
+>
+> This is practically the exact same operation as a requeue.
 
--- 
-Regards/Gruss,
-    Boris.
+Not exactly. When you requeue request X it will be the next one to be
+dispatched and handled by the device driver. When you reinsert a request,
+you reinset it back to the I/O scheduler and not to the dispatch queue.
+That means that this reinserted request will be rescheduled and its
+possible that it wont be the next one to be dispatched since there might
+be more urgent requests pending.
+For example: an urgent request notification was sent to the device driver
+that is currently transmitting a long packed WRITE command. The urgent
+request pending to be served is a READ request. The device driver decides
+to stop the packed WRITE request and handle the urgent READ. This is the
+difference between requeue and reinsert:
+ - if we requeue the stopped packed WRITE, it will be immediately fetched
+and transmitted again and the READ will be left pending till the packed
+WRITE completes. In this case there was no point in stopping the packed
+WRITE
+- if we reinsert the stopped packed WRITE the next request to be
+dispatched will be the urgent READ request (since READ is given priority
+over WRITE) and this will reduce the READ latency greatly.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+> So why this
+> duplication? I also don't quite understand why an IO scheduler would
+> have to opt-in for this, seems like a pretty basic operation.
+
+I hope the above example addressed this as well. Please let me know if
+this is not the case.
+
+Thanks
+Tanya Brokhman
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
+
+
+
