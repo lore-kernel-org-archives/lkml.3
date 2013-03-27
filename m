@@ -1,83 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab3C0CfQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 22:35:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51572 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754150Ab3C0CfO (ORCPT
+	id S1754518Ab3C0Crn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 22:47:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63184 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265Ab3C0Crl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 22:35:14 -0400
-Message-ID: <1364351701.3520.18.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 084/104] USB: serial: add modem-status-change wait queue
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Wed, 27 Mar 2013 02:35:01 +0000
-In-Reply-To: <CAMgPeKXMgdQ1CUBtXCgmFse7uQaeEM0aNB5n09ubASVfobQ_BA@mail.gmail.com>
-References: <20130325010524.240972766@decadent.org.uk>
-	 <20130325010532.611847650@decadent.org.uk>
-	 <CAMgPeKXMgdQ1CUBtXCgmFse7uQaeEM0aNB5n09ubASVfobQ_BA@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-0ovYAbFgk+B+zPyQzkik"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:e40a:77e1:ece1:499b
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 26 Mar 2013 22:47:41 -0400
+From: Andrey Smirnov <andrew.smirnov@gmail.com>
+To: mchehab@redhat.com
+Cc: andrew.smirnov@gmail.com, hverkuil@xs4all.nl, sameo@linux.intel.com,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v8 0/9] Driver for Si476x series of chips
+Date: Tue, 26 Mar 2013 19:47:17 -0700
+Message-Id: <1364352446-28572-1-git-send-email-andrew.smirnov@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Driver for Si476x series of chips
 
---=-0ovYAbFgk+B+zPyQzkik
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This is a eight version of the patchset originaly posted here:
+https://lkml.org/lkml/2012/9/13/590
 
-On Tue, 2013-03-26 at 16:36 +0100, Johan Hovold wrote:
-> On Mon, Mar 25, 2013 at 2:06 AM, Ben Hutchings <ben@decadent.org.uk> wrot=
-e:
-> > 3.2-stable review patch.  If anyone has any objections, please let me k=
-now.
->=20
-> This patch is incorrect as the wait-queue initialisation is missing. A
-> fix has been posted to linux-usb:
->=20
->         http://marc.info/?l=3Dlinux-usb&m=3D136428758202815&w=3D2
->=20
-> and should show up in 3.9-rc5. This patch and the following
-> use-after-free patches should not be applied without that fix.
-[...]
+Second version of the patch was posted here:
+https://lkml.org/lkml/2012/10/5/598
 
-OK, I've dropped these for now.
+Third version of the patch was posted here:
+https://lkml.org/lkml/2012/10/23/510
 
-Ben.
+Fourth version of the patch was posted here:
+https://lkml.org/lkml/2013/2/18/572
 
---=20
-Ben Hutchings
-I'm not a reverse psychological virus.  Please don't copy me into your sig.
+Fifth version of the patch was posted here:
+https://lkml.org/lkml/2013/2/26/45
 
---=-0ovYAbFgk+B+zPyQzkik
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Sixth version of the patch was posted here:
+https://lkml.org/lkml/2013/2/26/257
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Seventh version of the patch was posted here:
+https://lkml.org/lkml/2013/2/27/22
 
-iQIVAwUAUVJa1ee/yOyVhhEJAQrCMQ/+LzY4UTCoVFI1nHZVLhVoF+KG/NFaEhco
-BGG0C4Ufn5dFNf2WXBgLqpyYvW+m3+rKrIpZPbPz8qpHrgNBx2Qdub278QnXFiZh
-ToZMwHeOjKWiUj+DF6IY8eCntgQtur1PiUeyX7zKtl9Q0N+9MMs/mDkyGV4GDyHk
-EMtrS0vM170bAD1nG82JKLzVsYAABfutQB6s6GYfw1X5xVvpEH2z1k1wwC4uMvny
-plG7geThs8BIOX8IW34KruEpFNCtVl51Vpac/0S2KyjLmlgWnivdZ+SPO4icBN8N
-BmzGLHkQD8UFyQ/AfAbP5bGpF/+kru0sW3TXouXTvnJL4VR9xYKv4wGL5G2mMXpg
-IgVBlNQk/dTZDd0+2TrMqU1AsEINjcd1STT+SSTs8QpF41BnnfpHtm51XAVL5Lsg
-M8Ay7mjcn1PO5AvSIU8YwRMyi4668u/eQYxeiu+eAFTBzyKLD/VYy5iQVOzAuhAk
-vgnzr/i5GAkO4O1wA9tk7LzAOywnaQHWkODWnOAn9uVsxPiB3x1TlHhJMPZjK6AJ
-7kCFBDx+zqJuqvfGSdISCIleSxCFjfsKwOIjH94OFzpyobjC5cU79GXI7lHcm3Pb
-j/ZRIS+Cp/u4zqEfjGYpy6I255LsPkT/nMAXAJYfcmajyMF8H1Da0bTMQcjrwaaN
-deOUM/Ae4+g=
-=b94b
------END PGP SIGNATURE-----
 
---=-0ovYAbFgk+B+zPyQzkik--
+To save everyone's time I'll repost the original description of it:
+
+This patchset contains a driver for a Silicon Laboratories 476x series
+of radio tuners. The driver itself is implemented as an MFD devices
+comprised of three parts: 
+ 1. Core device that provides all the other devices with basic
+functionality and locking scheme.
+ 2. Radio device that translates between V4L2 subsystem requests into
+Core device commands.
+ 3. Codec device that does similar to the earlier described task, but
+for ALSA SoC subsystem.
+
+v8 of this driver has following changes:
+   - checkpatch.pl fixes
+
+Pleas note that patches are not completely warning free, as far as
+checkpatch.pl is concerned, because I skipped all the places where
+80-character compliance can be acheived only by means of weird
+indentation.
+
+Andrey Smirnov (9):
+  mfd: Add commands abstraction layer for SI476X MFD
+  mfd: Add the main bulk of core driver for SI476x code
+  mfd: Add chip properties handling code for SI476X MFD
+  mfd: Add header files and Kbuild plumbing for SI476x MFD core
+  v4l2: Fix the type of V4L2_CID_TUNE_PREEMPHASIS in the documentation
+  v4l2: Add standard controls for FM receivers
+  v4l2: Add documentation for the FM RX controls
+  v4l2: Add private controls base for SI476X
+  v4l2: Add a V4L2 driver for SI476X MFD
+
+ Documentation/DocBook/media/v4l/compat.xml         |    3 +
+ Documentation/DocBook/media/v4l/controls.xml       |   74 +-
+ .../DocBook/media/v4l/vidioc-g-ext-ctrls.xml       |    9 +
+ Documentation/video4linux/si476x.txt               |  187 +++
+ drivers/media/radio/Kconfig                        |   17 +
+ drivers/media/radio/Makefile                       |    1 +
+ drivers/media/radio/radio-si476x.c                 | 1599 ++++++++++++++++++++
+ drivers/media/v4l2-core/v4l2-ctrls.c               |   14 +-
+ drivers/mfd/Kconfig                                |   12 +
+ drivers/mfd/Makefile                               |    4 +
+ drivers/mfd/si476x-cmd.c                           | 1554 +++++++++++++++++++
+ drivers/mfd/si476x-i2c.c                           |  886 +++++++++++
+ drivers/mfd/si476x-prop.c                          |  242 +++
+ include/linux/mfd/si476x-core.h                    |  525 +++++++
+ include/media/si476x.h                             |  426 ++++++
+ include/uapi/linux/v4l2-controls.h                 |   17 +
+ 16 files changed, 5566 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/video4linux/si476x.txt
+ create mode 100644 drivers/media/radio/radio-si476x.c
+ create mode 100644 drivers/mfd/si476x-cmd.c
+ create mode 100644 drivers/mfd/si476x-i2c.c
+ create mode 100644 drivers/mfd/si476x-prop.c
+ create mode 100644 include/linux/mfd/si476x-core.h
+ create mode 100644 include/media/si476x.h
+
+-- 
+1.7.10.4
+
