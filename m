@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab3C0DYD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 23:24:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59418 "EHLO mx1.redhat.com"
+	id S1756135Ab3C0D0m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 23:26:42 -0400
+Received: from fifo99.com ([67.223.236.141]:36726 "EHLO fifo99.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755996Ab3C0DYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 23:24:01 -0400
-Message-ID: <1364354635.24132.743.camel@bling.home>
-Subject: Re: [PATCH 1/2] vfio-pci: Use byte granularity in config map
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Gavin Shan <shangw@linux.vnet.ibm.com>
-Cc: benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Date: Tue, 26 Mar 2013 21:23:55 -0600
-In-Reply-To: <20130327023525.GA19001@shangw.(null)>
-References: <20130326180454.27467.7011.stgit@bling.home>
-	 <20130326181703.27467.45144.stgit@bling.home>
-	 <20130327023525.GA19001@shangw.(null)>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751988Ab3C0D0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Mar 2013 23:26:41 -0400
+Date: Tue, 26 Mar 2013 20:26:54 -0700
+From: Daniel Walker <dwalker@fifo99.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: ptracing a task from core_pattern pipe
+Message-ID: <20130327031737.GA12602@fifo99.com>
+References: <20130316011508.GA11010@fifo99.com>
+ <20130316175845.GA6194@redhat.com>
+ <20130317004431.GA28915@fifo99.com>
+ <20130317143446.GB25236@redhat.com>
+ <20130317211133.GA14189@fifo99.com>
+ <20130318170302.GA21248@redhat.com>
+ <20130318190943.GA16226@fifo99.com>
+ <20130319201933.GB18670@redhat.com>
+ <51501D57.1000605@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51501D57.1000605@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-27 at 10:35 +0800, Gavin Shan wrote:
-> On Tue, Mar 26, 2013 at 12:17:03PM -0600, Alex Williamson wrote:
-> >The config map previously used a byte per dword to map regions of
-> >config space to capabilities.  Modulo a bug where we round the length
-> >of capabilities down instead of up, this theoretically works well and
-> >saves space so long as devices don't try to hide registers in the gaps
-> >between capabilities.  Unfortunately they do exactly that so we need
-> >byte granularity on our config space map.  Increase the allocation of
-> >the config map and split accesses at capability region boundaries.
-> >
+On Mon, Mar 25, 2013 at 10:48:07AM +0100, Denys Vlasenko wrote:
+> On 03/19/2013 09:19 PM, Oleg Nesterov wrote:
+> >> The above is regarding the situation which I'm running my corepipe_app ,
+> >> i.e. my system doesn't have a disk to save a core file for parsing.
+> > 
+> > Can't you process the data inplace? You do not need to save it to disk.
 > 
-> Alex, one question that isn't related to the patch: With current implementation,
-> (pdev->cfg_size) bytes are used for capability bits. That's really waste of
-> memory because the memory for specific capability will be reserved even though
-> that capability can't be supported by the device. I'm not sure the following scheme
-> is workable in order to save more memory for that?
+> Daniel said:
 > 
-> Organize the config space using RB-tree by following struct. The benefit would be
-> we won't reserve memory for those unsupported capabilities.
+> >> I'm trying to get the "dumpers" registers and stack out when it fails.
 > 
-> struct pci_cap_map {
->         struct rb_node rb_node;
-> 	unsigned short start;	/* Start position */
-> 	unsigned short end;	/* End position   */
-> 	unsigned short cap_id;	/* Capability ID  */
-> };
+> Registers would be easy'ish to get from coredump:
+> they are contained in note sections which are at the beginning
+> of the coredump. You can implement necessary parsing without
+> too much pain.
+> 
+> Getting at stack would be harder.
 
-I would definitely like to see some kind of data structure make this
-more efficient.  The map obviously gives us direct indexing and if we
-just look at legacy config space, it's often tightly packed.  256 bytes
-vs (30 bytes * num_capability_regions) is nearly even on overall size.
-The extended config space is where space efficiency falls apart.  We
-don't actually have that many elements to track either, maybe up to a
-dozen.  A sorted list would make the structure size half that of the
-tree.  We could even use two lists to split legacy vs extended.
-Interested in working on it?  Thanks,
+There exists /proc/<pid>/mem and /proc/<pid>/maps on these tasks. If
+those don't work then that's a straight up defect..
 
-Alex
+> But by asking kernel to allow you to poke around dead task's
+> address space with ptrace() calls you just shift difficulty away from you
+> (today you need to implement in-memory ELF parsing) to kernel people
+> (they will need to implement *and support* ptracing of coredumping
+> tasks).
+> 
+> This is somewhat unfair, considering that coredumping code in kernel
+> is already a source of many complications, and that kernel-side coding
+> is harder than userspace.
+> 
+> I think you are lucky that ptrace attach even *works* on coredumping task.
+> No documentation ever guaranteed such a thing.
 
+There not much different from userspace between a task running, and one
+dumping.. I think it should be the inverse, ptrace either needs to work
+or the special case needs to be documented that it doesn't work.
+
+However, I do agree that you can parse the core file..
+
+Daniel
