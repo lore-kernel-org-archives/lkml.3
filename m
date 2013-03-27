@@ -1,145 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab3C0RrH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 13:47:07 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:62004 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052Ab3C0Rk0 (ORCPT
+	id S1753526Ab3C0RvJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 13:51:09 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58036 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705Ab3C0RvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 13:40:26 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, dm-devel@vger.kernel.org
-Cc: tj@kernel.org, neilb@suse.de, Kent Overstreet <koverstreet@google.com>,
-        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com
-Subject: [PATCH 07/22] dm-verity: convert to bvec iter
-Date: Wed, 27 Mar 2013 10:39:37 -0700
-Message-Id: <1364405992-28424-8-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1364405992-28424-1-git-send-email-koverstreet@google.com>
-References: <1364405992-28424-1-git-send-email-koverstreet@google.com>
+	Wed, 27 Mar 2013 13:51:07 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
+Date: Wed, 27 Mar 2013 17:50:51 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <51531F76.2090200@gmail.com> <20130327170555.GA20990@mudshark.cambridge.arm.com>
+In-Reply-To: <20130327170555.GA20990@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303271750.52015.arnd@arndb.de>
+X-Provags-ID: V02:K0:IbbDyyhx4roEU8Uo69IRlxopdHOMluqApkVTjx2TCpa
+ LiAwO8jEBnRtrW0CPPItwQ/GJvhxZdlJyliLoAotIlUHwav2o6
+ I6CQKVnrdT6//kLBypYk6KoVQMKmDw34vU+xKgU/JFdutQgHWk
+ MRMjHVw/Fn0IP5kHUyi0RCwfTKS1tiHkhpC9j/Lljj6kfxNbP2
+ ilQ4spxwStsL0PJLlWdpEVy2OcoMPXcyUL+/YTcTuX9JVYRlAn
+ AyIFsgmfrjKr2JhnV28F/OuUCTRmNJ2SjzetG/eg5EeK8uk5SJ
+ IXq62vMGk9xsB+S560vwa2kQ4Bd5eA86CC6VbXNOuQmzYs2JPD
+ X7UElPB9YKYJjNt3ir6E=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new primitives which respect the current value of bi_idx and
-bi_bvec_done.
+On Wednesday 27 March 2013, Will Deacon wrote:
+> The channel is common, sure, but I wouldn't expect the semantics of each
+> call to be identical between firmware implementations (going back to my
+> previous examples of CPU IDs and implementation-defined state parameters).
+> 
+> If a platform happens to have an id-mapping from smp_operations to psci,
+> then I still think there should be an indirection in there so that we have
+> the flexibility to change the smp_operations if we wish and not give
+> platforms the false impression that these two things are equivalent.
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Cc: Alasdair Kergon <agk@redhat.com>
-Cc: dm-devel@redhat.com
----
- drivers/md/dm-verity.c | 51 +++++++++++++-------------------------------------
- 1 file changed, 13 insertions(+), 38 deletions(-)
+I think the only reasonably implementation for psci is if we can assume
+that each callback with a specific property name has a well-defined behavior,
+and we should mandate that every platform that implements the callbacks
+we need for SMP actually implements them according to the spec.
 
-diff --git a/drivers/md/dm-verity.c b/drivers/md/dm-verity.c
-index 782ee42..2d01c33 100644
---- a/drivers/md/dm-verity.c
-+++ b/drivers/md/dm-verity.c
-@@ -73,15 +73,10 @@ struct dm_verity_io {
- 	sector_t block;
- 	unsigned n_blocks;
- 
--	/* saved bio vector */
--	struct bio_vec *io_vec;
--	unsigned io_vec_size;
-+	struct bvec_iter iter;
- 
- 	struct work_struct work;
- 
--	/* A space for short vectors; longer vectors are allocated separately. */
--	struct bio_vec io_vec_inline[DM_VERITY_IO_VEC_INLINE];
--
- 	/*
- 	 * Three variably-size fields follow this struct:
- 	 *
-@@ -277,9 +272,9 @@ release_ret_r:
- static int verity_verify_io(struct dm_verity_io *io)
- {
- 	struct dm_verity *v = io->v;
-+	struct bio *bio = dm_bio_from_per_bio_data(io, v->ti->per_bio_data_size);
- 	unsigned b;
- 	int i;
--	unsigned vector = 0, offset = 0;
- 
- 	for (b = 0; b < io->n_blocks; b++) {
- 		struct shash_desc *desc;
-@@ -329,31 +324,22 @@ test_block_hash:
- 		}
- 
- 		todo = 1 << v->data_dev_block_bits;
--		do {
--			struct bio_vec *bv;
-+		while (io->iter.bi_size) {
- 			u8 *page;
--			unsigned len;
--
--			BUG_ON(vector >= io->io_vec_size);
--			bv = &io->io_vec[vector];
--			page = kmap_atomic(bv->bv_page);
--			len = bv->bv_len - offset;
--			if (likely(len >= todo))
--				len = todo;
--			r = crypto_shash_update(desc,
--					page + bv->bv_offset + offset, len);
-+			struct bio_vec bv = bio_iovec_iter(bio, io->iter);
-+
-+			page = kmap_atomic(bv.bv_page);
-+			r = crypto_shash_update(desc, page + bv.bv_offset,
-+						bv.bv_len);
- 			kunmap_atomic(page);
-+
- 			if (r < 0) {
- 				DMERR("crypto_shash_update failed: %d", r);
- 				return r;
- 			}
--			offset += len;
--			if (likely(offset == bv->bv_len)) {
--				offset = 0;
--				vector++;
--			}
--			todo -= len;
--		} while (todo);
-+
-+			bio_advance_iter(bio, &io->iter, bv.bv_len);
-+		}
- 
- 		if (!v->version) {
- 			r = crypto_shash_update(desc, v->salt, v->salt_size);
-@@ -376,8 +362,6 @@ test_block_hash:
- 			return -EIO;
- 		}
- 	}
--	BUG_ON(vector != io->io_vec_size);
--	BUG_ON(offset);
- 
- 	return 0;
- }
-@@ -393,9 +377,6 @@ static void verity_finish_io(struct dm_verity_io *io, int error)
- 	bio->bi_end_io = io->orig_bi_end_io;
- 	bio->bi_private = io->orig_bi_private;
- 
--	if (io->io_vec != io->io_vec_inline)
--		mempool_free(io->io_vec, v->vec_mempool);
--
- 	bio_endio(bio, error);
- }
- 
-@@ -491,13 +472,7 @@ static int verity_map(struct dm_target *ti, struct bio *bio)
- 
- 	bio->bi_end_io = verity_end_io;
- 	bio->bi_private = io;
--	io->io_vec_size = bio_segments(bio);
--	if (io->io_vec_size < DM_VERITY_IO_VEC_INLINE)
--		io->io_vec = io->io_vec_inline;
--	else
--		io->io_vec = mempool_alloc(v->vec_mempool, GFP_NOIO);
--	memcpy(io->io_vec, __bio_iovec(bio),
--	       io->io_vec_size * sizeof(struct bio_vec));
-+	io->iter = bio->bi_iter;
- 
- 	verity_prefetch_io(v, io);
- 
--- 
-1.8.1.3
+What would be the point of a standard psci interface if the specific
+implementation are not required to follow the same semantics?
 
+	Arnd
