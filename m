@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247Ab3C0M2A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 08:28:00 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:60585 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab3C0M17 (ORCPT
+	id S1752498Ab3C0M2e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 08:28:34 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:48815 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315Ab3C0M2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 08:27:59 -0400
+	Wed, 27 Mar 2013 08:28:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130124140746.GI12933@pengutronix.de>
-References: <1355933229-25865-1-git-send-email-christian.gmeiner@gmail.com> <20130124140746.GI12933@pengutronix.de>
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Wed, 27 Mar 2013 13:27:38 +0100
-Message-ID: <CAH9NwWeKFaZEWwK9Dio39pkVqcRUfVi=dxvoXT71csJLA13qzQ@mail.gmail.com>
-Subject: Re: [PATCH] at24: extend driver to allow writing via i2c_smbus_write_byte_data
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Christian Gmeiner <c.gmeiner@bachmann.info>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>
+References: <1363223183-3772-1-git-send-email-ynvich@gmail.com>
+	<1363224194-7366-1-git-send-email-ynvich@gmail.com>
+	<87620jmkoe.fsf@octavius.laptop.org>
+	<CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>
+Date: Wed, 27 Mar 2013 16:28:31 +0400
+Message-ID: <CAL0eWdGjPKUUcm6mStAHgHKHLABmPw7nMwDhR8D5rbvg+DPzfQ@mail.gmail.com>
+Subject: Re: [PATCH v2] wait while adding MMC host to ensure root mounts
+From: =?UTF-8?B?0KHQtdGA0LPQtdC5INCv0L3QvtCy0LjRhw==?= <ynvich@gmail.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/24 Wolfram Sang <w.sang@pengutronix.de>:
-> On Wed, Dec 19, 2012 at 05:07:09PM +0100, Christian Gmeiner wrote:
->> I have a at24 EEPROM connected via i2c bus provided by ISCH i2c
->> bus driver. This bus driver does not support
->> I2C_FUNC_SMBUS_WRITE_I2C_BLOCK and so I was looking for a way
->> to be able to write the eeprom. This patch adds support for
->> I2C_SMBUS_BYTE_DATA writing via i2c_smbus_write_byte_data.
->> It is quite slow, but it works.
->>
->> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
->> ---
->>  drivers/misc/eeprom/at24.c | 35 +++++++++++++++++++++++++++++------
->>  1 file changed, 29 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/misc/eeprom/at24.c b/drivers/misc/eeprom/at24.c
->> index 2baeec5..723b411 100644
->> --- a/drivers/misc/eeprom/at24.c
->> +++ b/drivers/misc/eeprom/at24.c
->> @@ -56,6 +56,7 @@ struct at24_data {
->>       struct at24_platform_data chip;
->>       struct memory_accessor macc;
->>       int use_smbus;
->> +     int use_smbuse_write;
->
-> Can't you use the same 'use_smbus' variable and do a similar switch-case
-> as in the read function?
->
+Hi Ulf,
 
-Sorry for the really late answer.
+On 27 March 2013 15:13, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> Moreover, this patch will have bad impact on booting the kernel, since
+> every host device that has scheduled a detect work from it's probe
+> function will also wait for it to finish. Even if it is the boot
+> device of not. If this is needed, I would prefer that a host cap is
+> used.
 
-I am not sure if there exits some i2c buses which have different
-access methods for read and write.
-E.g. I2C_FUNC_SMBUS_WRITE_I2C_BLOCK and I2C_FUNC_SMBUS_READ_BYTE_DATA
+Do you have any profiling data supporting bad impact on boot?
 
-If there will never be such a combination then I can reuse the same
-'use_smbus' variable.
+It should be it in the range of dozens us, if any. Without the patch,
+approx. 30% of boots succeeded with CONFIG_PREEMT and aprox. 95%
+without CONFIG_PREEMT. mmc_rescan is just a few instructions, if there
+is no card present. On boot and with a card present, it might only
+sleep in the host implementation.
 
---
-Christian Gmeiner, MSc
+Anyway, something had to be done about mmc boot. rootdelay will not
+report error if the card is absent or its partition table is damaged.
+rootdelay is a workaround by definition, so it may occasionally fail
+if it is too small. Big rootdealy has a clear bad impact on boot time.
