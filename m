@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435Ab3C0RpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 13:45:15 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42580 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234Ab3C0RpK (ORCPT
+	id S1754455Ab3C0Rpe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 13:45:34 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:58717 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754203Ab3C0Rpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 13:45:10 -0400
-Date: Wed, 27 Mar 2013 17:45:06 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Yet another pipe related oops.
-Message-ID: <20130327174506.GZ21522@ZenIV.linux.org.uk>
-References: <20130311003530.GE21522@ZenIV.linux.org.uk>
- <CA+55aFx+TAg+z9eWVm3EeAHQga3ai6YRFEb7rVQ++iNTn4NhGQ@mail.gmail.com>
- <20130311180543.GF21522@ZenIV.linux.org.uk>
- <20130312130614.GA32237@ZenIV.linux.org.uk>
- <CA+55aFyPUYiFoiLrMCzeHpbAgAignCe_awU7SbvPh+T6eHeqng@mail.gmail.com>
- <20130312194353.GI21522@ZenIV.linux.org.uk>
- <CA+55aFx-8TrSSJZM-WTDN4Hc3pESLXBsGC9x3xVaxuwxnGKqpA@mail.gmail.com>
- <20130327135127.GB1738@redhat.com>
- <20130327152030.GY21522@ZenIV.linux.org.uk>
- <CA+55aFx=BPQ2empEahqCs2hQ=sRaw3OjJotrS6OMT3e6tUVMLQ@mail.gmail.com>
+	Wed, 27 Mar 2013 13:45:30 -0400
+Message-ID: <51533037.5060004@gmail.com>
+Date: Wed, 27 Mar 2013 12:45:27 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx=BPQ2empEahqCs2hQ=sRaw3OjJotrS6OMT3e6tUVMLQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Will Deacon <will.deacon@arm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
+References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130327133811.GE18429@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1303271610430.4430@kaball.uk.xensource.com> <51531FE3.8010905@gmail.com> <alpine.DEB.2.02.1303271642340.4430@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1303271642340.4430@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 09:33:35AM -0700, Linus Torvalds wrote:
-
-> Applied.
+On 03/27/2013 12:10 PM, Stefano Stabellini wrote:
+> On Wed, 27 Mar 2013, Rob Herring wrote:
+>> On 03/27/2013 11:23 AM, Stefano Stabellini wrote:
+>>> Would you agree on a patch that moves virt_smp_ops out of mach-virt and
+>>> renames them to psci_smp_ops (maybe to arch/arm/kernel/psci_smp_ops.c)?
+>>>
+>>> Would you agree on initializing psci from setup_arch, right after the
+>>> call to arm_dt_init_cpu_maps()?
+>>>
+>>> Finally the most controversial point: would you agree on using
+>>> psci_smp_ops by default if they are available?
+>>> If not, would you at least agree on letting Xen overwrite the default
+>>> machine smp_ops?
+>>> We need one or the other for dom0 support.
+>>
+>> It should not be *always* use PSCI smp ops if available, but use them
+>> only if the platform does not define its own smp ops.
 > 
-> Do we actually have files with NULL f_ops pointers? Should we? What
-> could we possibly do with a file descriptor that doesn't have any
-> fops?
-
-We shouldn't, at least not for something that has been successfully
-opened.  I've a patch series cleaning that up a bit in the local
-queue; will check for bitrot and throw into for-next.
-
-Another thing that is a definite for-next fodder - we really have no
-reason to put anything non-regular or opened not for write into ->s_files.
-And since read-only opens outnumber write-only/read-write ones by far
-(two orders of magnitude for something like kernel build), that gives
-a nice reduction of files_lglock accesses.  OTOH, the only remaining
-user of those lists is forced remount to read-only, and I'm not at all
-sure we wouldn't be better off by leaving those opened files alone and
-just teaching file_start_write() to fail with EROFS on such fs.  Then
-we could get rid of files_lglock and ->s_files completely...
-
-> Also, perhaps we should do something more akin to what we do for
-> dentry functions where we validate them on registration, and we could
-> fix up or validate read/write pointers, with semantics something like
+> Well, that is the one additional problem that we have on Xen.
 > 
->     if (!fop->write)
->         fop->write = fop->aio_write ? do_sync_write : EINVAL_write;
->     if (!fop->read)
->         fop->read = fop->aio_read ? do_sync_read : EINVAL_read;
+> On x86 Xen replaces a lot of core native function calls with its own
+> implementations (see paravirt_ops).
+> On ARM we only need *one* set of calls: the smp_ops calls.
 > 
-> kind of things?
+> So if we don't want to give priority to PSCI over the platform smp_ops,
+> then we need a simple workaround just for Xen in common code like the
+> one appended below.
+> Not pretty, but at least small:
+> 
+> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> index 3f6cbb2..08cf7e0 100644
+> --- a/arch/arm/kernel/setup.c
+> +++ b/arch/arm/kernel/setup.c
+> @@ -43,6 +43,8 @@
+>  #include <asm/cacheflush.h>
+>  #include <asm/cachetype.h>
+>  #include <asm/tlbflush.h>
+> +#include <xen/xen.h>
+> +#include <asm/xen/hypervisor.h>
+>  
+>  #include <asm/prom.h>
+>  #include <asm/mach/arch.h>
+> @@ -766,9 +768,13 @@ void __init setup_arch(char **cmdline_p)
+>  	unflatten_device_tree();
+>  
+>  	arm_dt_init_cpu_maps();
+> +	xen_early_init();
+>  #ifdef CONFIG_SMP
+>  	if (is_smp()) {
+> -		smp_set_ops(mdesc->smp);
+> +		if (xen_domain())
+> +			smp_set_ops(&xen_smp_ops);
+> +		else
+> +			smp_set_ops(mdesc->smp);
 
-As it is, file_operations instances are const, and it's a good idea, IMO...
+No, I was thinking in the case of Xen and mach-virt, you would not set
+mdesc->smp. So you would have something like this:
+
+if (mdesc->smp)
+	smp_set_ops(mdesc->smp);
+else
+	smp_set_ops(&psci_smp_ops);
+
+
+Rob
+
