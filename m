@@ -1,77 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab3C0JxH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 05:53:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49763 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753849Ab3C0Jth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755743Ab3C0Jxa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 05:53:30 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:64319 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753817Ab3C0Jth (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Mar 2013 05:49:37 -0400
-Date: Wed, 27 Mar 2013 10:49:32 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
- asm/8267
-Message-ID: <20130327094932.GA8385@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Arnaldo Carvalho de Melo <acme@infradead.org>,
-	lkml <linux-kernel@vger.kernel.org>,
-	Stephane Eranian <eranian@google.com>,
-	Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>
-References: <20130324115556.GA4866@pd.tnic>
- <20130324155924.GB4866@pd.tnic>
- <20130326183452.GC27518@pd.tnic>
- <87ip4dgz31.fsf@sejong.aot.lge.com>
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+CC: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Subject: [PATCH 05/14] tracing: switch syscall tracing to use event_trace_ops backend
+Date: Wed, 27 Mar 2013 17:48:47 +0800
+Message-ID: <1364377737-10540-7-git-send-email-jovi.zhangwei@huawei.com>
+X-Mailer: git-send-email 1.8.1.msysgit.1
+In-Reply-To: <1364377737-10540-1-git-send-email-jovi.zhangwei@huawei.com>
+References: <1364377737-10540-1-git-send-email-jovi.zhangwei@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <87ip4dgz31.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 03:02:10PM +0900, Namhyung Kim wrote:
-> > --
-> > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > index 7b4a55d41efc..f3bb3384a106 100644
-> > --- a/kernel/events/core.c
-> > +++ b/kernel/events/core.c
-> > @@ -4455,8 +4455,11 @@ static void perf_event_task_event(struct perf_task_event *task_event)
-> >  next:
-> >  		put_cpu_ptr(pmu->pmu_cpu_context);
-> >  	}
-> > +
-> > +	preempt_disable();
-> >  	if (task_event->task_ctx)
-> >  		perf_event_task_ctx(task_event->task_ctx, task_event);
-> > +	preempt_enable();
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-Ok, just for my own understanding: how do the events on the
-->task_ctx->event_list relate to the current cpu in this path? I mean,
-we're on the task exit path here so is it possible to be rescheduled
-somewhere else and the check in event_filter_match to become
-meaningless?
+Other tracepoints already switched to use event_trace_ops as
+backend store mechanism, syscall tracing can use same backend.
 
-Because with this fix, we have a small window between enabling
-preemption after the last pmu context and disabling it again to get
-moved somewhere else.
+This change would also expose syscall tracing to external modules
+with same interface like other tracepoints.
 
-Hmm.
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+---
+ kernel/trace/trace_syscalls.c |   49 ++++++++++++++---------------------------
+ 1 file changed, 16 insertions(+), 33 deletions(-)
 
-Thanks.
-
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 322e164..72675b1 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -302,12 +302,10 @@ static int __init syscall_exit_define_fields(struct ftrace_event_call *call)
+ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
+ {
+ 	struct trace_array *tr = data;
++	struct ftrace_event_file event_file;
++	struct trace_descriptor_t desc;
+ 	struct syscall_trace_enter *entry;
+ 	struct syscall_metadata *sys_data;
+-	struct ring_buffer_event *event;
+-	struct ring_buffer *buffer;
+-	unsigned long irq_flags;
+-	int pc;
+ 	int syscall_nr;
+ 	int size;
+ 
+@@ -323,34 +321,26 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
+ 
+ 	size = sizeof(*entry) + sizeof(unsigned long) * sys_data->nb_args;
+ 
+-	local_save_flags(irq_flags);
+-	pc = preempt_count();
+-
+-	buffer = tr->trace_buffer.buffer;
+-	event = trace_buffer_lock_reserve(buffer,
+-			sys_data->enter_event->event.type, size, irq_flags, pc);
+-	if (!event)
++	event_file.tr = tr;
++	event_file.event_call = sys_data->enter_event;
++	event_file.flags = FTRACE_EVENT_FL_ENABLED;
++	entry = tr->ops->pre_trace(&event_file, size, &desc);
++	if (!entry)
+ 		return;
+ 
+-	entry = ring_buffer_event_data(event);
+ 	entry->nr = syscall_nr;
+ 	syscall_get_arguments(current, regs, 0, sys_data->nb_args, entry->args);
+ 
+-	if (!filter_current_check_discard(buffer, sys_data->enter_event,
+-					  entry, event))
+-		trace_current_buffer_unlock_commit(buffer, event,
+-						   irq_flags, pc);
++	tr->ops->do_trace(&event_file, entry, size, &desc);
+ }
+ 
+ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
+ {
+ 	struct trace_array *tr = data;
++	struct ftrace_event_file event_file;
++	struct trace_descriptor_t desc;
+ 	struct syscall_trace_exit *entry;
+ 	struct syscall_metadata *sys_data;
+-	struct ring_buffer_event *event;
+-	struct ring_buffer *buffer;
+-	unsigned long irq_flags;
+-	int pc;
+ 	int syscall_nr;
+ 
+ 	syscall_nr = trace_get_syscall_nr(current, regs);
+@@ -363,24 +353,17 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
+ 	if (!sys_data)
+ 		return;
+ 
+-	local_save_flags(irq_flags);
+-	pc = preempt_count();
+-
+-	buffer = tr->trace_buffer.buffer;
+-	event = trace_buffer_lock_reserve(buffer,
+-			sys_data->exit_event->event.type, sizeof(*entry),
+-			irq_flags, pc);
+-	if (!event)
++	event_file.tr = tr;
++	event_file.event_call = sys_data->exit_event;
++	event_file.flags = FTRACE_EVENT_FL_ENABLED;
++	entry = tr->ops->pre_trace(&event_file, sizeof(*entry), &desc);
++	if (!entry)
+ 		return;
+ 
+-	entry = ring_buffer_event_data(event);
+ 	entry->nr = syscall_nr;
+ 	entry->ret = syscall_get_return_value(current, regs);
+ 
+-	if (!filter_current_check_discard(buffer, sys_data->exit_event,
+-					  entry, event))
+-		trace_current_buffer_unlock_commit(buffer, event,
+-						   irq_flags, pc);
++	tr->ops->do_trace(&event_file, entry, sizeof(*entry), &desc);
+ }
+ 
+ static int reg_event_syscall_enter(struct ftrace_event_file *file,
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.7
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+
