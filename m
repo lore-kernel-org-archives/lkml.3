@@ -1,113 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338Ab3C0E2x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 00:28:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52198 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753860Ab3C0E2v (ORCPT
+	id S1754711Ab3C0E32 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 00:29:28 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:46623 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753395Ab3C0E30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 00:28:51 -0400
-Message-ID: <1364358520.3520.38.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 64/86] IP_GRE: Fix kernel panic in IP_GRE with GRE csum.
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Pravin B Shelar <pshelar@nicira.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Wed, 27 Mar 2013 04:28:40 +0000
-In-Reply-To: <20130326173610.108770791@goodmis.org>
-References: <20130326172059.136127374@goodmis.org>
-	 <20130326173610.108770791@goodmis.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-krOoFXibGgArlqnZWIYc"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:e40a:77e1:ece1:499b
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 27 Mar 2013 00:29:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130326194832.GB24945@jshin-Toonie>
+References: <cover.1362381470.git.viresh.kumar@linaro.org>
+	<0823a96fea2d8284b7d83cee390dd5973fdaaa94.1362381470.git.viresh.kumar@linaro.org>
+	<CAKohponTZ29BX6CrUvFMy9RXV==0wRFu4C-W1xd6t1RmLASTvQ@mail.gmail.com>
+	<2565053.YP0dCLmaW9@vostro.rjw.lan>
+	<20130326152059.GA1698@jshin-Toonie>
+	<CAKohpons4Tr8F2RuRGCxbOFmJaK9YbAafV-3v6=cijRupe2hUA@mail.gmail.com>
+	<20130326194832.GB24945@jshin-Toonie>
+Date: Wed, 27 Mar 2013 09:59:25 +0530
+Message-ID: <CAKohpomaTLPZjxcTGKo2mmcqgPvqQVsj1778X1u2rbb3wV+phA@mail.gmail.com>
+Subject: Re: [PATCH V3 2/4] cpufreq: governor: Implement per policy instances
+ of governors
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, Arvind Chauhan <Arvind.Chauhan@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 27 March 2013 01:18, Jacob Shin <jacob.shin@amd.com> wrote:
+> On Wed, Mar 27, 2013 at 01:02:15AM +0530, Viresh Kumar wrote:
+>> +struct dbs_data *gdbs_data;
+>> +
+>
+> Hmm .. I don't think this works for both ondemand and conservative
+> governors running at the same time .
 
---=-krOoFXibGgArlqnZWIYc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Yes, this should fix it (untested for now, i will provide a complete fix
+today):
 
-On Tue, 2013-03-26 at 13:22 -0400, Steven Rostedt wrote:
+diff --git a/drivers/cpufreq/cpufreq_governor.c
+b/drivers/cpufreq/cpufreq_governor.c
+index f29feb4..54ca5fc 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -29,9 +29,6 @@
 
-> 3.6.11.1 stable review patch.
-> If anyone has any objections, please let me know.
->=20
-> ------------------
->=20
-> From: Pravin B Shelar <pshelar@nicira.com>
->=20
-> [ Upstream commit d0a7cc630a337b0f56dc145e7eb6232852b14dd4 ]
->=20
-> Due to IP_GRE GSO support, GRE can recieve non linear skb which
-> results in panic in case of GRE_CSUM.  Following patch fixes it by
-> using correct csum API.
->=20
-> Bug introduced in commit 6b78f16e4bdde3936b (gre: add GSO support)
+ #include "cpufreq_governor.h"
 
-That commit went into 3.7, so I don't think this fix is needed for 3.6.
+-/* Common data for platforms that don't need governor instance per policy */
+-struct dbs_data *gdbs_data;
+-
+ static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
+ {
+        u64 idle_time;
+@@ -233,7 +230,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+        if (have_multiple_policies())
+                dbs_data = policy->governor_data;
+        else
+-               dbs_data = gdbs_data;
++               dbs_data = cdata->gdbs_data;
 
-Ben.
+        WARN_ON(!dbs_data && (event != CPUFREQ_GOV_POLICY_INIT));
 
-> Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
-> Acked-by: Eric Dumazet <edumazet@google.com>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> ---
->  net/ipv4/ip_gre.c |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
->=20
-> diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
-> index b062a98..3ee08ce 100644
-> --- a/net/ipv4/ip_gre.c
-> +++ b/net/ipv4/ip_gre.c
-> @@ -946,8 +946,12 @@ static netdev_tx_t ipgre_tunnel_xmit(struct sk_buff =
-*skb, struct net_device *dev
->  			ptr--;
->  		}
->  		if (tunnel->parms.o_flags&GRE_CSUM) {
-> +			int offset =3D skb_transport_offset(skb);
-> +
->  			*ptr =3D 0;
-> -			*(__sum16 *)ptr =3D ip_compute_csum((void *)(iph+1), skb->len - sizeo=
-f(struct iphdr));
-> +			*(__sum16 *)ptr =3D csum_fold(skb_checksum(skb, offset,
-> +								 skb->len - offset,
-> +								 0));
->  		}
->  	}
-> =20
+@@ -289,7 +286,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+                }
 
---=20
-Ben Hutchings
-I'm not a reverse psychological virus.  Please don't copy me into your sig.
+                if (!have_multiple_policies())
+-                       gdbs_data = dbs_data;
++                       cdata->gdbs_data = dbs_data;
 
---=-krOoFXibGgArlqnZWIYc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+                return 0;
+        case CPUFREQ_GOV_POLICY_EXIT:
+@@ -307,7 +304,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+                        cdata->exit(dbs_data);
+                        kfree(dbs_data);
+-                       gdbs_data = NULL;
++                       cdata->gdbs_data = NULL;
+                }
 
-iQIVAwUAUVJ1eOe/yOyVhhEJAQpw1g//Wmplgra4VdENklcVFjPDaOfcSrG7CXxA
-J8GVfGy6YXG8FnGhoUvWEa6bmqoUNHxJfBgz1hFP2ubRiSKvzAoKXOXCtCTq3ZBD
-8yxMGuU71+bI3+XzhHZgFWlsGyF2I6kyjdWn/1q+X4KQYWLLG0Vix/CBKOuLGAQq
-kHIBtKuTS2SMbNGxYYXxWzBgZBy18SLi77g50zqV5eNk5yENasTsznm0qF3ibN5s
-5J625AlcSZPWkhk3tLRCnN2aeYd2HrsydhY0T0/3J8tjP4gQJSzFzvxRHgBXmMkF
-cy7uOjLpyAiqjNHou0ZBiw9hDcQyYe6LpBuk4nvAkAosyCGvi3Ni1E5Ya1hj7ZzM
-DHJMY9SV9OW9o2IPyFYqZOkmxRp/swdH1ldukrEyoPK5oRw2mFurWicYWy+GZ/5Y
-EKLG3/jgkZDCVzziGHYJCWpsGxq++0/RO8ajgxa0AwY9Gva2oR0Z9qJ4WW35Um6/
-AjHfDR4jY7Dcw2PEwGEwE7W32fiqMw3d0naMSmyNYpUzLgxmmtRaqfS4DdNQI2Wv
-mfN7ijdWMA4AFN5xUB0NbuOEqLPblIYmiysfXIypXjMMl16VadS8TCUEH8sis4C3
-NrXq9FORPF+rScoH1GeHOfDQa5et6mqCZFOMQxAFhSDHCChxmTBpoFBlbjer6HXe
-QsC+82qDL3k=
-=+WdO
------END PGP SIGNATURE-----
+                policy->governor_data = NULL;
+diff --git a/drivers/cpufreq/cpufreq_governor.h
+b/drivers/cpufreq/cpufreq_governor.h
+index 1f7de13..cc4a189 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -133,6 +133,9 @@ struct common_dbs_data {
+        int governor;
+        struct attribute_group *attr_group;
 
---=-krOoFXibGgArlqnZWIYc--
++       /* Common data for platforms that don't set have_multiple_policies */
++       struct dbs_data *gdbs_data;
++
+        struct cpu_dbs_common_info *(*get_cpu_cdbs)(int cpu);
+        void *(*get_cpu_dbs_info_s)(int cpu);
+        void (*gov_dbs_timer)(struct work_struct *work);
