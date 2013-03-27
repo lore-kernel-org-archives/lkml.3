@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab3C0TU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 15:20:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47105 "EHLO mail.skyhub.de"
+	id S1754095Ab3C0TVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 15:21:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59787 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753696Ab3C0TUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 15:20:24 -0400
-Date: Wed, 27 Mar 2013 20:20:15 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Joerg Roedel <joro@8bytes.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
- asm/8267
-Message-ID: <20130327192015.GE8385@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Joerg Roedel <joro@8bytes.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Ingo Molnar <mingo@kernel.org>,
-	Arnaldo Carvalho de Melo <acme@infradead.org>,
-	lkml <linux-kernel@vger.kernel.org>,
-	Stephane Eranian <eranian@google.com>,
-	Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>
-References: <20130324115556.GA4866@pd.tnic>
- <20130324155924.GB4866@pd.tnic>
- <20130326183452.GC27518@pd.tnic>
- <20130327131532.GL30540@8bytes.org>
- <1364393852.5053.74.camel@laptop>
- <20130327143715.GY4379@linux.vnet.ibm.com>
- <20130327163427.GN30540@8bytes.org>
- <20130327163806.GC8385@pd.tnic>
- <20130327180455.GA4379@linux.vnet.ibm.com>
- <20130327190727.GD8385@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1753823Ab3C0TVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 15:21:20 -0400
+Date: Wed, 27 Mar 2013 15:19:24 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org
+Message-ID: <1364411964-iukb7m94-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130327135250.GI16579@dhcp22.suse.cz>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1363983835-20184-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <87boa69z6j.fsf@linux.vnet.ibm.com>
+ <20130327135250.GI16579@dhcp22.suse.cz>
+Subject: Re: [PATCH 03/10] soft-offline: use migrate_pages() instead of
+ migrate_huge_page()
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20130327190727.GD8385@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-References: <20130327135250.GI16579@dhcp22.suse.cz>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 08:07:27PM +0100, Borislav Petkov wrote:
-> Oh, and if one needs to brush up on RCU while doing that, there's this
-> cool thing called perfbook (whole title is too long :)) I discovered
-> while searching for your 3.10 queue on k.org. :-)
+On Wed, Mar 27, 2013 at 02:52:50PM +0100, Michal Hocko wrote:
+> On Tue 26-03-13 16:59:40, Aneesh Kumar K.V wrote:
+> > Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
+> [...]
+> > > diff --git v3.9-rc3.orig/mm/memory-failure.c v3.9-rc3/mm/memory-failure.c
+> > > index df0694c..4e01082 100644
+> > > --- v3.9-rc3.orig/mm/memory-failure.c
+> > > +++ v3.9-rc3/mm/memory-failure.c
+> > > @@ -1467,6 +1467,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
+> > >  	int ret;
+> > >  	unsigned long pfn = page_to_pfn(page);
+> > >  	struct page *hpage = compound_head(page);
+> > > +	LIST_HEAD(pagelist);
+> > >
+> > >  	/*
+> > >  	 * This double-check of PageHWPoison is to avoid the race with
+> > > @@ -1482,12 +1483,20 @@ static int soft_offline_huge_page(struct page *page, int flags)
+> > >  	unlock_page(hpage);
+> > >
+> > >  	/* Keep page count to indicate a given hugepage is isolated. */
+> > > -	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL,
+> > > -				MIGRATE_SYNC);
+> > > -	put_page(hpage);
+> > > +	list_move(&hpage->lru, &pagelist);
+> > 
+> > we use hpage->lru to add the hpage to h->hugepage_activelist. This will
+> > break a hugetlb cgroup removal isn't it ?
+> 
+> This particular part will not break removal because
+> hugetlb_cgroup_css_offline loops until hugetlb_cgroup_have_usage is 0.
 
-And here's me contributing :-):
+Right.
 
----
-From: Borislav Petkov <bp@suse.de>
-Date: Wed, 27 Mar 2013 20:18:03 +0100
-Subject: [PATCH] Deferred Processing: Fix a typo
+> Little bit offtopic:
+> Btw. hugetlb migration breaks to charging even before this patchset
+> AFAICS. The above put_page should remove the last reference and then it
+> will uncharge it but I do not see anything that would charge a new page.
+> This is all because regula LRU pages are uncharged when they are
+> unmapped. But this a different story not related to this series.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- defer/defer.tex | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It seems to me that alloc_huge_page_node() needs to call
+hugetlb_cgroup_charge_cgroup() before dequeuing a new hugepage.
 
-diff --git a/defer/defer.tex b/defer/defer.tex
-index cedc86e13e5c..9895b6b5fce9 100644
---- a/defer/defer.tex
-+++ b/defer/defer.tex
-@@ -4,7 +4,7 @@
- 
- The strategy of deferring work goes back before the dawn of recorded
- history, and has generally been derided as procrastination or
--even shear laziness.
-+even sheer laziness.
- However, in the last few decades have workers recognized this strategy's value
- in simplifying and streamlining parallel algorithms~\cite{Kung80,HMassalinPhD}.
- Believe it or not, in parallel programming, laziness often performs and
--- 
-1.8.2.135.g7b592fa
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+Naoya
