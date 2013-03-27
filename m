@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab3C0VwI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 17:52:08 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:50042 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab3C0VwG (ORCPT
+	id S1754824Ab3C0Vx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 17:53:56 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:50367 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753463Ab3C0Vxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 17:52:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363351927.16666.2.camel@phoenix>
-References: <1363351927.16666.2.camel@phoenix>
-Date: Wed, 27 Mar 2013 22:52:06 +0100
-Message-ID: <CACRpkdbogB+Yv-1oCXr1g+XSzBcWcES0RK5UdvBM18xO0dT1Fw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: pl061: Add pl061_gpio_free()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 27 Mar 2013 17:53:55 -0400
+From: Andrei Epure <epure.andrei@gmail.com>
+To: cbou@mail.ru, dwmw2@infradead.org
+Cc: linux-kernel@vger.kernel.org, Andrei Epure <epure.andrei@gmail.com>
+Subject: [PATCH] power: resource_size() instead of computation
+Date: Wed, 27 Mar 2013 23:53:47 +0200
+Message-Id: <1364421227-11178-1-git-send-email-epure.andrei@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 15, 2013 at 1:52 PM, Axel Lin <axel.lin@ingics.com> wrote:
+Patch found using coccinelle.
 
-> commit 39b70ee051 "gpio: pl061: bind pinctrl by gpio request"
-> adds pl061_gpio_request() to request pinctrl.
-> Thus we need to add corresponding pl061_gpio_free() to free the pin.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
+---
+ drivers/power/goldfish_battery.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Excellent catch Axel (as usual).
+diff --git a/drivers/power/goldfish_battery.c b/drivers/power/goldfish_battery.c
+index c10f460..29eba88 100644
+--- a/drivers/power/goldfish_battery.c
++++ b/drivers/power/goldfish_battery.c
+@@ -178,7 +178,7 @@ static int goldfish_battery_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	data->reg_base = devm_ioremap(&pdev->dev, r->start, r->end - r->start + 1);
++	data->reg_base = devm_ioremap(&pdev->dev, r->start, resource_size(r));
+ 	if (data->reg_base == NULL) {
+ 		dev_err(&pdev->dev, "unable to remap MMIO\n");
+ 		return -ENOMEM;
+-- 
+1.7.9.5
 
-Correct Haojian?
-
-Patch applied.
-
-Yours,
-Linus Walleij
