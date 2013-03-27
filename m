@@ -1,142 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab3C0Kne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 06:43:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55360 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753763Ab3C0Knd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 06:43:33 -0400
-Date: Wed, 27 Mar 2013 11:42:56 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
- asm/8267
-Message-ID: <20130327104256.GB1092@krava.brq.redhat.com>
-References: <20130324115556.GA4866@pd.tnic>
- <20130324155924.GB4866@pd.tnic>
- <20130326183452.GC27518@pd.tnic>
- <87ip4dgz31.fsf@sejong.aot.lge.com>
- <20130327094932.GA8385@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130327094932.GA8385@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755323Ab3C0Knx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 06:43:53 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52939 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754388Ab3C0Knw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 06:43:52 -0400
+Date: Wed, 27 Mar 2013 21:43:47 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Prabhakar lad <prabhakar.csengg@gmail.com>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Sekhar Nori <nsekhar@ti.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: davinci: use is IS_ENABLED macro
+Message-Id: <20130327214347.f2a573510416b86223c58be1@canb.auug.org.au>
+In-Reply-To: <1364210495-7938-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1364210495-7938-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__27_Mar_2013_21_43_47_+1100_4ZKRJpY6a8yszMEC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 10:49:32AM +0100, Borislav Petkov wrote:
-> On Wed, Mar 27, 2013 at 03:02:10PM +0900, Namhyung Kim wrote:
-> > > --
-> > > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > > index 7b4a55d41efc..f3bb3384a106 100644
-> > > --- a/kernel/events/core.c
-> > > +++ b/kernel/events/core.c
-> > > @@ -4455,8 +4455,11 @@ static void perf_event_task_event(struct perf_task_event *task_event)
-> > >  next:
-> > >  		put_cpu_ptr(pmu->pmu_cpu_context);
-> > >  	}
-> > > +
-> > > +	preempt_disable();
-> > >  	if (task_event->task_ctx)
-> > >  		perf_event_task_ctx(task_event->task_ctx, task_event);
-> > > +	preempt_enable();
-> 
-> Ok, just for my own understanding: how do the events on the
-> ->task_ctx->event_list relate to the current cpu in this path? I mean,
-> we're on the task exit path here so is it possible to be rescheduled
-> somewhere else and the check in event_filter_match to become
-> meaningless?
-> 
-> Because with this fix, we have a small window between enabling
-> preemption after the last pmu context and disabling it again to get
-> moved somewhere else.
+--Signature=_Wed__27_Mar_2013_21_43_47_+1100_4ZKRJpY6a8yszMEC
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-hm, at that point we have 'task_event->task_ctx' detached from
-the task and all events on it are owned by the task
+Hi,
 
-so I wonder maybe we could eliminate the preempt switch and make
-a special case for task context, saying all event match for it,
-something like in patch below (untested)
+On Mon, 25 Mar 2013 16:51:35 +0530 Prabhakar lad <prabhakar.csengg@gmail.co=
+m> wrote:
+>
+> --- a/arch/arm/mach-davinci/board-da830-evm.c
+> +++ b/arch/arm/mach-davinci/board-da830-evm.c
+> @@ -298,7 +298,7 @@ static const short da830_evm_emif25_pins[] =3D {
+>  	-1
+>  };
+> =20
+> -#if defined(CONFIG_MMC_DAVINCI) || defined(CONFIG_MMC_DAVINCI_MODULE)
+> +#if IS_ENABLED(CONFIG_MMC_DAVINCI)
+>  #define HAS_MMC	1
+>  #else
+>  #define HAS_MMC	0
 
-because if we keep the check we could endup with no EXIT event,
-just because the exit code was scheduled on another cpu
-(for task events with specified cpu)
+Why not
 
-also that's probably what we want to do in here - send EXIT
-event for any task event that asked for it
+#define HAS_MMC		IS_ENABLED(CONFIG_MMC_DAVINCI)
 
-the output code in perf_event_task_output is guarding
-the preemption by itself
+and similarly in the rest?
 
-jirka
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Wed__27_Mar_2013_21_43_47_+1100_4ZKRJpY6a8yszMEC
+Content-Type: application/pgp-signature
 
----
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 7b4a55d..8414bcf 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4403,12 +4403,12 @@ out:
- 	task_event->event_id.header.size = size;
- }
- 
--static int perf_event_task_match(struct perf_event *event)
-+static int perf_event_task_match(struct perf_event *event, int match)
- {
- 	if (event->state < PERF_EVENT_STATE_INACTIVE)
- 		return 0;
- 
--	if (!event_filter_match(event))
-+	if (!match && !event_filter_match(event))
- 		return 0;
- 
- 	if (event->attr.comm || event->attr.mmap ||
-@@ -4419,12 +4419,13 @@ static int perf_event_task_match(struct perf_event *event)
- }
- 
- static void perf_event_task_ctx(struct perf_event_context *ctx,
--				  struct perf_task_event *task_event)
-+				  struct perf_task_event *task_event,
-+				int match)
- {
- 	struct perf_event *event;
- 
- 	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
--		if (perf_event_task_match(event))
-+		if (perf_event_task_match(event, match))
- 			perf_event_task_output(event, task_event);
- 	}
- }
-@@ -4441,7 +4442,7 @@ static void perf_event_task_event(struct perf_task_event *task_event)
- 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
- 		if (cpuctx->unique_pmu != pmu)
- 			goto next;
--		perf_event_task_ctx(&cpuctx->ctx, task_event);
-+		perf_event_task_ctx(&cpuctx->ctx, task_event, 0);
- 
- 		ctx = task_event->task_ctx;
- 		if (!ctx) {
-@@ -4450,13 +4451,13 @@ static void perf_event_task_event(struct perf_task_event *task_event)
- 				goto next;
- 			ctx = rcu_dereference(current->perf_event_ctxp[ctxn]);
- 			if (ctx)
--				perf_event_task_ctx(ctx, task_event);
-+				perf_event_task_ctx(ctx, task_event, 0);
- 		}
- next:
- 		put_cpu_ptr(pmu->pmu_cpu_context);
- 	}
- 	if (task_event->task_ctx)
--		perf_event_task_ctx(task_event->task_ctx, task_event);
-+		perf_event_task_ctx(task_event->task_ctx, task_event, 1);
- 
- 	rcu_read_unlock();
- }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRUs1jAAoJEECxmPOUX5FEZw4P/3q6+KZ8fRKOU5FPF+1xJMJC
+rvG4sZ2GxnmOevJPjokcy6UP2kmhdEy1lAy7UnsVvL3LzXOgQ/rb9v0JLqPWHSiD
+ZioDQ2gUlHld8Vh092YmNjMZPnKlrM86/bO6DR2JgExiE8Iazrefgs+JzkdENvf4
+C9g1Qqu4Doy3S3wxZ5fDjdP7FuFxaxIlEC2QSgXfeTmsDO30BZB+RXiMEgURt8Kh
+L6FCpN7GimtdAnxy5786d6aTrYFDS0/UGt20w9iES5/7C9uujAwmnInKOYDO++aP
+qvhEAB+XMhjZu4M6AYVd7f7otWw2BgMbrw6/eIUe+y2k6RHcakzCrqSaNDsXhEF5
+dLK1YVtk9VautwE/NTVLeqHlWjqbXfDubWgpz7I87iRyPsWdrVAIML7UJu6vTFrj
+Jdk9dkR7iptAHUoB/+UMOUKl0sp67o/lArIQXH93RvLVEGZeYzOqTS90RpPdIQ/U
+NiZeqhct50Fxrs6TVtTs7deeAZXUE3hTtCxfllNKvrq1KVcilg4ahmuj8nPgmdgo
+GTt913otRRNKx8gNxTCeAORnkOuQKnZsT2JqrpFih0GLGPxUweeDinQ0F/ufuEhI
+cJFIMNg3NeGbSGl5+l0M2ePhOsbrzoEBOb6TH0vuKF9YKBBHdyirNAHdWWdqz/A6
+XJcIdBEl04/fq7au97TU
+=pJU/
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__27_Mar_2013_21_43_47_+1100_4ZKRJpY6a8yszMEC--
