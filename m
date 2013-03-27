@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470Ab3C0NPh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 09:15:37 -0400
-Received: from 8bytes.org ([85.214.48.195]:47483 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753942Ab3C0NPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 09:15:36 -0400
-Date: Wed, 27 Mar 2013 14:15:32 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
- asm/8267
-Message-ID: <20130327131532.GL30540@8bytes.org>
-References: <20130324115556.GA4866@pd.tnic>
- <20130324155924.GB4866@pd.tnic>
- <20130326183452.GC27518@pd.tnic>
+	id S1754277Ab3C0NQE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 09:16:04 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:64457 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754364Ab3C0NQB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 09:16:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130326183452.GC27518@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Mar 27 14:15:34 2013
-X-DSPAM-Confidence: 0.9984
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5152f0f623671320318495
+In-Reply-To: <1363959373-10671-6-git-send-email-ian@slimlogic.co.uk>
+References: <1363959373-10671-1-git-send-email-ian@slimlogic.co.uk>
+	<1363959373-10671-6-git-send-email-ian@slimlogic.co.uk>
+Date: Wed, 27 Mar 2013 14:15:57 +0100
+Message-ID: <CACRpkdbc3U=4T4P-CtbzU1Ds4Fupno__AkZjPRenzdwW0jEOjg@mail.gmail.com>
+Subject: Re: [PATCH v9 05/11] gpio: palmas: add in GPIO support for palmas charger
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Ian Lartey <ian@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-leds@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        swarren@wwwdotorg.org, grant.likely@secretlab.ca,
+        broonie@opensource.wolfsonmicro.com, rob.herring@calxeda.com,
+        rob@landley.net, mturquette@linaro.org, cooloney@gmail.com,
+        sfr@canb.auug.org.au, rpurdie@rpsys.net, akpm@linux-foundation.org,
+        sameo@linux.intel.com, wim@iguana.be, lgirdwood@gmail.com,
+        gg@slimlogic.co.uk, j-keerthy@ti.com, ldewangan@nvidia.com,
+        t-kristo@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 07:34:52PM +0100, Borislav Petkov wrote:
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 7b4a55d41efc..f3bb3384a106 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -4455,8 +4455,11 @@ static void perf_event_task_event(struct perf_task_event *task_event)
->  next:
->  		put_cpu_ptr(pmu->pmu_cpu_context);
->  	}
-> +
-> +	preempt_disable();
->  	if (task_event->task_ctx)
->  		perf_event_task_ctx(task_event->task_ctx, task_event);
-> +	preempt_enable();
->  
->  	rcu_read_unlock();
->  }
+On Fri, Mar 22, 2013 at 2:36 PM, Ian Lartey <ian@slimlogic.co.uk> wrote:
 
-What makes me wonder here is that the code is preemptible in an
-rcu_read_locked section. As far as I know preemption needs to be
-disabled while holding the rcu_read_lock().
+> Palmas charger has 16 GPIOs
+> add palmas_gpio_[read|write|update] api to take account
+> second bank of GPIOs
+>
+> Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
+> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> ---
+>  drivers/gpio/gpio-palmas.c |   77 ++++++++++++++++++++++++++++++++++++--------
+>  include/linux/mfd/palmas.h |   12 ++++++-
+>  2 files changed, 74 insertions(+), 15 deletions(-)
+>
+> diff --git a/drivers/gpio/gpio-palmas.c b/drivers/gpio/gpio-palmas.c
+> index e3a4e56..636648c 100644
+> --- a/drivers/gpio/gpio-palmas.c
+> +++ b/drivers/gpio/gpio-palmas.c
+> @@ -1,7 +1,7 @@
+>  /*
+> - * TI Palma series PMIC's GPIO driver.
+> + * TI Palmas series PMIC's GPIO driver.
+>   *
+> - * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
+> + * Copyright (c) 2012-2012, NVIDIA CORPORATION.  All rights reserved.
 
+Do you mean 2012-2013?
 
-	Joerg
+Anyway, Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-
+Yours,
+Linus Walleij
