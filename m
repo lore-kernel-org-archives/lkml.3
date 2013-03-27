@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab3C0Rne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 13:43:34 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:45670 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468Ab3C0Rke (ORCPT
+	id S1754333Ab3C0Rnf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 13:43:35 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:39202 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753439Ab3C0Rkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 13:40:34 -0400
+	Wed, 27 Mar 2013 13:40:33 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, dm-devel@vger.kernel.org
-Cc: tj@kernel.org, neilb@suse.de, Kent Overstreet <koverstreet@google.com>,
-        Sage Weil <sage@inktank.com>, ceph-devel@vger.kernel.org
-Subject: [PATCH 13/22] ceph: Convert to bvec_iter
-Date: Wed, 27 Mar 2013 10:39:43 -0700
-Message-Id: <1364405992-28424-14-git-send-email-koverstreet@google.com>
+Cc: tj@kernel.org, neilb@suse.de, Kent Overstreet <koverstreet@google.com>
+Subject: [PATCH 12/22] umem: Convert to bvec_iter
+Date: Wed, 27 Mar 2013 10:39:42 -0700
+Message-Id: <1364405992-28424-13-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1364405992-28424-1-git-send-email-koverstreet@google.com>
 References: <1364405992-28424-1-git-send-email-koverstreet@google.com>
@@ -25,180 +24,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use new primitives which respect bi_bvec_done.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Cc: Sage Weil <sage@inktank.com>
-Cc: ceph-devel@vger.kernel.org
+Cc: NeilBrown <neilb@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>
 ---
- include/linux/ceph/messenger.h |  3 ++-
- net/ceph/messenger.c           | 53 ++++++++++++++++++++++--------------------
- 2 files changed, 30 insertions(+), 26 deletions(-)
+ drivers/block/umem.c | 50 +++++++++++++++++++++++---------------------------
+ 1 file changed, 23 insertions(+), 27 deletions(-)
 
-diff --git a/include/linux/ceph/messenger.h b/include/linux/ceph/messenger.h
-index 60903e0..dccf497 100644
---- a/include/linux/ceph/messenger.h
-+++ b/include/linux/ceph/messenger.h
-@@ -1,6 +1,7 @@
- #ifndef __FS_CEPH_MESSENGER_H
- #define __FS_CEPH_MESSENGER_H
+diff --git a/drivers/block/umem.c b/drivers/block/umem.c
+index dab4f1a..00145e8 100644
+--- a/drivers/block/umem.c
++++ b/drivers/block/umem.c
+@@ -108,8 +108,7 @@ struct cardinfo {
+ 				    * have been written
+ 				    */
+ 	struct bio	*bio, *currentbio, **biotail;
+-	int		current_idx;
+-	sector_t	current_sector;
++	struct bvec_iter current_iter;
  
-+#include <linux/blk_types.h>
- #include <linux/kref.h>
- #include <linux/mutex.h>
- #include <linux/net.h>
-@@ -86,7 +87,7 @@ struct ceph_msg {
- #ifdef CONFIG_BLOCK
- 	struct bio  *bio;		/* instead of pages/pagelist */
- 	struct bio  *bio_iter;		/* bio iterator */
--	int bio_seg;			/* current bio segment */
-+	struct bvec_iter bvec_iter;	/* current bio segment */
- #endif /* CONFIG_BLOCK */
- 	struct ceph_pagelist *trail;	/* the trailing part of the data */
- 	bool front_is_vmalloc;
-diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index 0c102ec..ee88ae4 100644
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -697,27 +697,30 @@ static void con_out_kvec_add(struct ceph_connection *con,
- }
+ 	struct request_queue *queue;
  
- #ifdef CONFIG_BLOCK
--static void init_bio_iter(struct bio *bio, struct bio **iter, int *seg)
-+static void init_bio_iter(struct bio *bio, struct bio **iter,
-+			  struct bvec_iter *bvec_iter)
- {
- 	if (!bio) {
- 		*iter = NULL;
--		*seg = 0;
- 		return;
+@@ -118,7 +117,7 @@ struct cardinfo {
+ 		struct mm_dma_desc	*desc;
+ 		int	 		cnt, headcnt;
+ 		struct bio		*bio, **biotail;
+-		int			idx;
++		struct bvec_iter	iter;
+ 	} mm_pages[2];
+ #define DESC_PER_PAGE ((PAGE_SIZE*2)/sizeof(struct mm_dma_desc))
+ 
+@@ -344,16 +343,13 @@ static int add_bio(struct cardinfo *card)
+ 	dma_addr_t dma_handle;
+ 	int offset;
+ 	struct bio *bio;
+-	struct bio_vec *vec;
+-	int idx;
++	struct bio_vec vec;
+ 	int rw;
+-	int len;
+ 
+ 	bio = card->currentbio;
+ 	if (!bio && card->bio) {
+ 		card->currentbio = card->bio;
+-		card->current_idx = card->bio->bi_iter.bi_idx;
+-		card->current_sector = card->bio->bi_iter.bi_sector;
++		card->current_iter = card->bio->bi_iter;
+ 		card->bio = card->bio->bi_next;
+ 		if (card->bio == NULL)
+ 			card->biotail = &card->bio;
+@@ -362,18 +358,17 @@ static int add_bio(struct cardinfo *card)
  	}
- 	*iter = bio;
--	*seg = bio->bi_iter.bi_idx;
-+	*bvec_iter = bio->bi_iter;
- }
+ 	if (!bio)
+ 		return 0;
+-	idx = card->current_idx;
  
--static void iter_bio_next(struct bio **bio_iter, int *seg)
-+static void iter_bio_next(struct bio **bio_iter, struct bvec_iter *bvec_iter)
- {
-+	struct bio_vec bv;
+ 	rw = bio_rw(bio);
+ 	if (card->mm_pages[card->Ready].cnt >= DESC_PER_PAGE)
+ 		return 0;
+ 
+-	vec = bio_iovec_idx(bio, idx);
+-	len = vec->bv_len;
++	vec = bio_iovec_iter(bio, card->current_iter);
 +
- 	if (*bio_iter == NULL)
- 		return;
+ 	dma_handle = pci_map_page(card->dev,
+-				  vec->bv_page,
+-				  vec->bv_offset,
+-				  len,
++				  vec.bv_page,
++				  vec.bv_offset,
++				  vec.bv_len,
+ 				  (rw == READ) ?
+ 				  PCI_DMA_FROMDEVICE : PCI_DMA_TODEVICE);
  
--	BUG_ON(*seg >= (*bio_iter)->bi_vcnt);
-+	BUG_ON(!bvec_iter->bi_size);
-+	bv = bio_iovec_iter(*bio_iter, *bvec_iter);
+@@ -381,7 +376,7 @@ static int add_bio(struct cardinfo *card)
+ 	desc = &p->desc[p->cnt];
+ 	p->cnt++;
+ 	if (p->bio == NULL)
+-		p->idx = idx;
++		p->iter = card->current_iter;
+ 	if ((p->biotail) != &bio->bi_next) {
+ 		*(p->biotail) = bio;
+ 		p->biotail = &(bio->bi_next);
+@@ -391,8 +386,8 @@ static int add_bio(struct cardinfo *card)
+ 	desc->data_dma_handle = dma_handle;
  
--	(*seg)++;
--	if (*seg == (*bio_iter)->bi_vcnt)
--		init_bio_iter((*bio_iter)->bi_next, bio_iter, seg);
-+	bio_advance_iter(*bio_iter, bvec_iter, bv.bv_len);
-+	if (!bvec_iter->bi_size)
-+		init_bio_iter((*bio_iter)->bi_next, bio_iter, bvec_iter);
- }
- #endif
+ 	desc->pci_addr = cpu_to_le64((u64)desc->data_dma_handle);
+-	desc->local_addr = cpu_to_le64(card->current_sector << 9);
+-	desc->transfer_size = cpu_to_le32(len);
++	desc->local_addr = cpu_to_le64(card->current_iter.bi_sector << 9);
++	desc->transfer_size = cpu_to_le32(vec.bv_len);
+ 	offset = (((char *)&desc->sem_control_bits) - ((char *)p->desc));
+ 	desc->sem_addr = cpu_to_le64((u64)(p->page_dma+offset));
+ 	desc->zero1 = desc->zero2 = 0;
+@@ -407,10 +402,9 @@ static int add_bio(struct cardinfo *card)
+ 		desc->control_bits |= cpu_to_le32(DMASCR_TRANSFER_READ);
+ 	desc->sem_control_bits = desc->control_bits;
  
-@@ -736,7 +739,7 @@ static void prepare_write_message_data(struct ceph_connection *con)
- 		con->out_msg_pos.page_pos = 0;
- #ifdef CONFIG_BLOCK
- 	if (msg->bio)
--		init_bio_iter(msg->bio, &msg->bio_iter, &msg->bio_seg);
-+		init_bio_iter(msg->bio, &msg->bio_iter, &msg->bvec_iter);
- #endif
- 	con->out_msg_pos.data_pos = 0;
- 	con->out_msg_pos.did_page_crc = false;
-@@ -1047,7 +1050,7 @@ static void out_msg_pos_next(struct ceph_connection *con, struct page *page,
- 			       &msg->pagelist->head);
- #ifdef CONFIG_BLOCK
- 	else if (msg->bio)
--		iter_bio_next(&msg->bio_iter, &msg->bio_seg);
-+		iter_bio_next(&msg->bio_iter, &msg->bvec_iter);
- #endif
- }
+-	card->current_sector += (len >> 9);
+-	idx++;
+-	card->current_idx = idx;
+-	if (idx >= bio->bi_vcnt)
++
++	bio_advance_iter(bio, &card->current_iter, vec.bv_len);
++	if (!card->current_iter.bi_size)
+ 		card->currentbio = NULL;
  
-@@ -1103,12 +1106,12 @@ static int write_partial_msg_pages(struct ceph_connection *con)
- 						struct page, lru);
- #ifdef CONFIG_BLOCK
- 		} else if (msg->bio) {
--			struct bio_vec *bv;
-+			struct bio_vec bv;
+ 	return 1;
+@@ -439,23 +433,25 @@ static void process_page(unsigned long data)
+ 		struct mm_dma_desc *desc = &page->desc[page->headcnt];
+ 		int control = le32_to_cpu(desc->sem_control_bits);
+ 		int last = 0;
+-		int idx;
++		struct bio_vec vec;
  
--			bv = bio_iovec_idx(msg->bio_iter, msg->bio_seg);
--			page = bv->bv_page;
--			bio_offset = bv->bv_offset;
--			max_write = bv->bv_len;
-+			bv = bio_iovec_iter(msg->bio_iter, msg->bvec_iter);
-+			page = bv.bv_page;
-+			bio_offset = bv.bv_offset;
-+			max_write = bv.bv_len;
- #endif
- 		} else {
- 			page = zero_page;
-@@ -1818,17 +1821,18 @@ static int read_partial_message_pages(struct ceph_connection *con,
+ 		if (!(control & DMASCR_DMA_COMPLETE)) {
+ 			control = dma_status;
+ 			last = 1;
+ 		}
++
+ 		page->headcnt++;
+-		idx = page->idx;
+-		page->idx++;
+-		if (page->idx >= bio->bi_vcnt) {
++		vec = bio_iovec_iter(bio, page->iter);
++		bio_advance_iter(bio, &page->iter, vec.bv_len);
++
++		if (!page->iter.bi_size) {
+ 			page->bio = bio->bi_next;
+ 			if (page->bio)
+-				page->idx = page->bio->bi_iter.bi_idx;
++				page->iter = page->bio->bi_iter;
+ 		}
  
- #ifdef CONFIG_BLOCK
- static int read_partial_message_bio(struct ceph_connection *con,
--				    struct bio **bio_iter, int *bio_seg,
-+				    struct bio **bio_iter,
-+				    struct bvec_iter *bvec_iter,
- 				    unsigned int data_len, bool do_datacrc)
- {
--	struct bio_vec *bv = bio_iovec_idx(*bio_iter, *bio_seg);
-+	struct bio_vec bv = bio_iovec_iter(*bio_iter, *bvec_iter);
- 	void *p;
- 	int ret, left;
- 
- 	left = min((int)(data_len - con->in_msg_pos.data_pos),
--		   (int)(bv->bv_len - con->in_msg_pos.page_pos));
-+		   (int)(bv.bv_len - con->in_msg_pos.page_pos));
- 
--	p = kmap(bv->bv_page) + bv->bv_offset;
-+	p = kmap(bv.bv_page) + bv.bv_offset;
- 
- 	ret = ceph_tcp_recvmsg(con->sock, p + con->in_msg_pos.page_pos,
- 			       left);
-@@ -1836,14 +1840,14 @@ static int read_partial_message_bio(struct ceph_connection *con,
- 		con->in_data_crc =
- 			crc32c(con->in_data_crc,
- 				  p + con->in_msg_pos.page_pos, ret);
--	kunmap(bv->bv_page);
-+	kunmap(bv.bv_page);
- 	if (ret <= 0)
- 		return ret;
- 	con->in_msg_pos.data_pos += ret;
- 	con->in_msg_pos.page_pos += ret;
--	if (con->in_msg_pos.page_pos == bv->bv_len) {
-+	if (con->in_msg_pos.page_pos == bv.bv_len) {
- 		con->in_msg_pos.page_pos = 0;
--		iter_bio_next(bio_iter, bio_seg);
-+		iter_bio_next(bio_iter, bvec_iter);
- 	}
- 
- 	return ret;
-@@ -1945,7 +1949,7 @@ static int read_partial_message(struct ceph_connection *con)
- 
- #ifdef CONFIG_BLOCK
- 		if (m->bio)
--			init_bio_iter(m->bio, &m->bio_iter, &m->bio_seg);
-+			init_bio_iter(m->bio, &m->bio_iter, &m->bvec_iter);
- #endif
- 	}
- 
-@@ -1975,7 +1979,7 @@ static int read_partial_message(struct ceph_connection *con)
- 		} else if (m->bio) {
- 			BUG_ON(!m->bio_iter);
- 			ret = read_partial_message_bio(con,
--						 &m->bio_iter, &m->bio_seg,
-+						 &m->bio_iter, &m->bvec_iter,
- 						 data_len, do_datacrc);
- 			if (ret <= 0)
- 				return ret;
-@@ -2720,7 +2724,6 @@ struct ceph_msg *ceph_msg_new(int type, int front_len, gfp_t flags,
- #ifdef	CONFIG_BLOCK
- 	m->bio = NULL;
- 	m->bio_iter = NULL;
--	m->bio_seg = 0;
- #endif	/* CONFIG_BLOCK */
- 	m->trail = NULL;
- 
+ 		pci_unmap_page(card->dev, desc->data_dma_handle,
+-			       bio_iovec_idx(bio, idx)->bv_len,
++			       vec.bv_len,
+ 				 (control & DMASCR_TRANSFER_READ) ?
+ 				PCI_DMA_TODEVICE : PCI_DMA_FROMDEVICE);
+ 		if (control & DMASCR_HARD_ERROR) {
 -- 
 1.8.1.3
 
