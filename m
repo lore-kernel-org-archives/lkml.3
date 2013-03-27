@@ -1,116 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab3C0RY4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 13:24:56 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:65019 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab3C0RYz (ORCPT
+	id S1752863Ab3C0RZU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 13:25:20 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:9390 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab3C0RZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 13:24:55 -0400
-Date: Wed, 27 Mar 2013 13:24:51 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-cc: Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
-In-Reply-To: <alpine.DEB.2.02.1303271642340.4430@kaball.uk.xensource.com>
-Message-ID: <alpine.LFD.2.03.1303271321290.1372@syhkavp.arg>
-References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130327133811.GE18429@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1303271610430.4430@kaball.uk.xensource.com> <51531FE3.8010905@gmail.com>
- <alpine.DEB.2.02.1303271642340.4430@kaball.uk.xensource.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 27 Mar 2013 13:25:18 -0400
+Message-ID: <1364404429.15745.74.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2] ACPI: Add sysfs links from memory device to memblocks
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, vasilis.liaskovitis@profitbricks.com
+Date: Wed, 27 Mar 2013 11:13:49 -0600
+In-Reply-To: <7718937.tEXDldppSg@vostro.rjw.lan>
+References: <1361826130-31062-1-git-send-email-toshi.kani@hp.com>
+	 <3205964.WeZJN7sRdd@vostro.rjw.lan>
+	 <1364338776.15745.27.camel@misato.fc.hp.com>
+	 <7718937.tEXDldppSg@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Mar 2013, Stefano Stabellini wrote:
-
-> On Wed, 27 Mar 2013, Rob Herring wrote:
-> > On 03/27/2013 11:23 AM, Stefano Stabellini wrote:
-> > > Would you agree on a patch that moves virt_smp_ops out of mach-virt and
-> > > renames them to psci_smp_ops (maybe to arch/arm/kernel/psci_smp_ops.c)?
+On Wed, 2013-03-27 at 00:39 +0100, Rafael J. Wysocki wrote:
+> On Tuesday, March 26, 2013 04:59:36 PM Toshi Kani wrote:
+> > On Tue, 2013-03-26 at 23:39 +0100, Rafael J. Wysocki wrote:
+> > > On Tuesday, March 26, 2013 09:42:06 AM Toshi Kani wrote:
+> > > > On Tue, 2013-03-26 at 14:04 +0100, Rafael J. Wysocki wrote:
+> > > > > On Monday, February 25, 2013 02:02:10 PM Toshi Kani wrote:
+> > > > > > In order to eject a memory device object represented as "PNP0C80:%d"
+> > > > > > in sysfs, its associated memblocks (system/memory/memory%d) need to
+> > > > > > be off-lined.  However, there is no user friendly way to correlate
+> > > > > > between a memory device object and its memblocks in sysfs.
+> > > > > > 
+> > > > > > This patch creates sysfs links to memblocks under a memory device
+> > > > > > object so that a user can easily checks and manipulates its memblocks
+> > > > > > in sysfs.
+> > > > > > 
+> > > > > > For example, when PNP0C80:05 is associated with memory8 and memory9,
+> > > > > > the following two links are created under PNP0C80:05.  This allows
+> > > > > > a user to access memory8/9 directly from PNP0C80:05.
+> > > > > > 
+> > > > > >   # ll /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C80:05
+> > > > > >   lrwxrwxrwx. memory8 -> ../../../system/memory/memory8
+> > > > > >   lrwxrwxrwx. memory9 -> ../../../system/memory/memory9
+> > > > > > 
+> > > > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > > > > 
+> > > > > Here I have some doubts.
+> > > > > 
+> > > > > This adds a very specific interface for user space that we're going to need to
+> > > > > maintain going forward if the user space starts to use it.  However, it kind of
+> > > > > duplicates the existing "physical_node" interface that we have for "regular"
+> > > > > devices.
+> > > > > 
+> > > > > So, if possible, I'd like the memory subsystem to utilize the existing
+> > > > > interface instead of creating an entirely new one.  Namely, why don't we create
+> > > > > a struct device-based object for each memory block and associated those new
+> > > > > "devices" with the PNP0C80 ACPI object through the functions in glue.c?
+> > > > > Then, we could add an "offline/online" interface to those "devices" too.
+> > > > 
+> > > > This patch simply adds symbolic links to system/memory/memoryN, which
+> > > > the memory subsystem already provides for the online/offline interface
+> > > > of memory blocks.  So, it does not introduce a new interface, but guides
+> > > > users (and user tools) to know which memory blocks need to be off-lined
+> > > > in order to hot-delete any particular memory device PNP0C80:X.  A cpu
+> > > > device LNXCPU:X also has a similar symbolic link "sysdev" that links to
+> > > > system/cpu/cpuN.  I could not use the same "sysdev" for PNP0C80:X since
+> > > > it typically associates with multiple memory blocks.
+> > > > 
+> > > > I thought about using glue.c to create symbolic links between memoryN
+> > > > and PNP0C80:X.  However, it has an ordering issue.  During boot-time,
+> > > > memoryN gets created before PNP0C80:X.  But during hot-add, PNP0C80:X
+> > > > gets created before memoryN.
 > > > 
-> > > Would you agree on initializing psci from setup_arch, right after the
-> > > call to arm_dt_init_cpu_maps()?
-> > > 
-> > > Finally the most controversial point: would you agree on using
-> > > psci_smp_ops by default if they are available?
-> > > If not, would you at least agree on letting Xen overwrite the default
-> > > machine smp_ops?
-> > > We need one or the other for dom0 support.
+> > > Quite frankly, this sounds like a bug to me.  Namely, what is memoryN really
+> > > good for without PNP0C80:X?  If it is not good for anything in that case,
+> > > it should never be created befor PNP0C80:X.
 > > 
-> > It should not be *always* use PSCI smp ops if available, but use them
-> > only if the platform does not define its own smp ops.
+> > memoryN works without PNP0C80:X and does not depend on ACPI.  A memoryN
+> > represents a memblk, each of which is merely a 128MB (in case of x86) of
+> > memory chunk sliced from the entire memory ranges.
 > 
-> Well, that is the one additional problem that we have on Xen.
+> Ah.  Why is it exported this way?
+
+This is because a memblk is the unit of the Sparse Memory design, which
+allows discontinuous memory ranges (ex. NUMA) and online/offline
+operations.  So, it makes sense for the memory subsystem to export this
+interface, although I feel that 128MB is rather small these days.
+
+> > This is why it is
+> > hard to associate between memoryN and PNP0C80:X without these symbolic
+> > links (otherwise, you will have to calculate from memory address.)
 > 
-> On x86 Xen replaces a lot of core native function calls with its own
-> implementations (see paravirt_ops).
-> On ARM we only need *one* set of calls: the smp_ops calls.
+> Sure.
 > 
-> So if we don't want to give priority to PSCI over the platform smp_ops,
-> then we need a simple workaround just for Xen in common code like the
-> one appended below.
-> Not pretty, but at least small:
-[...]
+> > The memory subsystem also obtains the memory ranges from EFI or e820
+> > during boot, and ACPI is not necessary to construct memoryN at boot.
+> > Since EFI / e820 only provides the boot-time configuration, ACPI is used
+> > to update the memory ranges during hot-add/delete.
+> > 
+> > > > This patch calls
+> > > > acpi_setup_mem_blk_links() in a point that solves this ordering issue
+> > > > since this point guarantees that both memoryN and PNP0C80X are created
+> > > > for both boot-time and hot-add.
+> > > 
+> > > I would prefer the ordering of creation to be the same in both cases.
+> > > Otherwise it really looks like we need to work around a problem that we're
+> > > creating for ourselves.
+> > > 
+> > > How exactly are memoryN created during boot?
+> > 
+> > memoryN is created in memory_dev_init().  This is even before
+> > do_initcalls().  I'd also prefer the same ordering, but I felt that
+> > changing this ordering would be rather challenging.
+> > 
+> > do_basic_setup()
+> >   driver_init()
+> >     memory_dev_init()
+> 
+> What about having a "physical memory module" device that will be associated
+> with those memory blocks (and will have links to them from its directory in
+> sysfs) and that will be pointed to by the "physical_node" pointer from
+> under PNP0C80:X?  Then, it may have a driver that will do the online/offline
+> (and export the interface for that to user space through sysfs) and will
+> interact with the ACPI interface provided by PNP0C80:X.
 
-What about the patch below that I'm carying in my MCPM branch 
-which has been posted here already:
+It sounds interesting idea, but I think it has several issues:
 
-From: Jon Medhurst <tixy@linaro.org>
-Date: Thu, 13 Dec 2012 13:23:13 +0000
-Subject: [PATCH] ARM: Enable selection of SMP operations at boot time
+ - Maintenance: It is not clear to me who owns this physical device.
+>From the memory subsystem perspective, a memblk is an object that is
+managed like a device internally.  So, I do not think the memory
+subsystem needs this.  If ACPI owns this, it adds complication to us and
+we need to keep up with the memory changes.    
+ - Rollback: As offline/online proceeds on each memblk, the driver has
+to support rollback when one of memblks failed to offline.  This seems
+to against the direction of this approach (no rollback in the kernel).
+ - Ordering issue: Creating symbolic links among 3 types of devices
+(PNP0C80, memblk, new physical device) further complicates the ordering
+issue. 
+ - Representation: PNP0C80:X represents the state of an ACPI PNP0C80
+device.  memoryN represents the state of a memblk.  It is not clear what
+this new physical device really represents when there isn't such device
+visible to users.  It may be seen as duplication.
 
-Add a new 'smp_init' hook to machine_desc so platforms can specify a
-function to be used to setup smp ops instead of having a statically
-defined value.
+Frankly, if we are to provide a good sysfs UI for hot-delete, I'd prefer
+to go with my updated patchset, which keeps user to allow doing "echo 1
+> PNP0C80:X/eject", and all associated memblks will be offlined
+together.  I think the user space approach will require good management
+tools to take care of the UI issue, and the kernel just has to provide
+the necessary info to the user space, which this patch is intended.
 
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
-Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Thanks,
+-Toshi
 
-diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
-index 308ad7d6f9..c01bf53b85 100644
---- a/arch/arm/include/asm/mach/arch.h
-+++ b/arch/arm/include/asm/mach/arch.h
-@@ -16,8 +16,10 @@ struct pt_regs;
- struct smp_operations;
- #ifdef CONFIG_SMP
- #define smp_ops(ops) (&(ops))
-+#define smp_init_ops(ops) (&(ops))
- #else
- #define smp_ops(ops) (struct smp_operations *)NULL
-+#define smp_init_ops(ops) (void (*)(void))NULL
- #endif
- 
- struct machine_desc {
-@@ -41,6 +43,7 @@ struct machine_desc {
- 	unsigned char		reserve_lp2 :1;	/* never has lp2	*/
- 	char			restart_mode;	/* default restart mode	*/
- 	struct smp_operations	*smp;		/* SMP operations	*/
-+	void			(*smp_init)(void);
- 	void			(*fixup)(struct tag *, char **,
- 					 struct meminfo *);
- 	void			(*reserve)(void);/* reserve mem blocks	*/
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 3f6cbb2e3e..41edca8582 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -768,7 +768,10 @@ void __init setup_arch(char **cmdline_p)
- 	arm_dt_init_cpu_maps();
- #ifdef CONFIG_SMP
- 	if (is_smp()) {
--		smp_set_ops(mdesc->smp);
-+		if(mdesc->smp_init)
-+			(*mdesc->smp_init)();
-+		else
-+			smp_set_ops(mdesc->smp);
- 		smp_init_cpus();
- 	}
- #endif
