@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737Ab3C0QFV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 12:05:21 -0400
-Received: from claranet-outbound-smtp06.uk.clara.net ([195.8.89.39]:38209 "EHLO
-	claranet-outbound-smtp06.uk.clara.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751391Ab3C0QFT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 12:05:19 -0400
-X-Greylist: delayed 2054 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Mar 2013 12:05:18 EDT
-From: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-To: linux-kernel <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Change in behaviour when unmounting recursive bind mounts
-Date: Wed, 27 Mar 2013 15:30:57 +0000
-Message-ID: <2987308.JNKpYDEnfV@deuteros>
-User-Agent: KMail/4.10.1 (Linux/3.8.3-103.fc17.x86_64; KDE/4.10.1; x86_64; ; )
+	id S1753038Ab3C0QFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 12:05:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20698 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752115Ab3C0QFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 12:05:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,920,1355126400"; 
+   d="scan'208";a="285328904"
+Message-ID: <515318D1.5030005@linux.intel.com>
+Date: Wed, 27 Mar 2013 09:05:37 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Seth Heasley <seth.heasley@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] gpio-sch: Allow for more than 8 lines in the resume well
+References: <dabdda74b7aabe3edece1c5edb9aed1c24093695.1362606482.git.dvhart@linux.intel.com> <CACRpkdYfDRtcQ4z4PdinpNKmTHHS5+T2asSPgRGHvGK1qRL_XQ@mail.gmail.com>
+In-Reply-To: <CACRpkdYfDRtcQ4z4PdinpNKmTHHS5+T2asSPgRGHvGK1qRL_XQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi Al, all,
 
-Please have a look at the command sequence below, does it look right to you?
+On 03/27/2013 01:20 AM, Linus Walleij wrote:
+> On Wed, Mar 6, 2013 at 10:49 PM, Darren Hart <dvhart@linux.intel.com> wrote:
+>
+>> The E6xx (TunnelCreek) CPUs have 9 GPIO lines in the resume well. Update
+>> the resume functions to allow for more than 8 GPIO lines, using the core
+>> functions as a template.
+>>
+>> Cc: <stable@vger.kernel.org> # 3.4.x
+>> Cc: <stable@vger.kernel.org> # 3.8.x
+>> Cc: Grant Likely <grant.likely@secretlab.ca>
+>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+>
+> I have applied this for next (v3.10)
+>
+> I cannot for my life figure out what kind of *regression* you are
+> fixing so that it should go into fixes for the -rc:s or the two stable
+> branches indicated above.
 
-+ M1=testmp1
-+ M2=testmp2
-+ SM=submount
-+ mkdir -p testmp1
-+ mkdir -p testmp2
-+ mount none -t tmpfs testmp1
-+ mkdir -p testmp1/submount
-+ mount none -t tmpfs testmp1/submount
-+ strace -f -e trace=mount,umount mount testmp1 --rbind testmp2
-mount("/dev/shm/testmp1", "/dev/shm/testmp2", 0x7fcd30b821e0, MS_MGC_VAL|
-MS_BIND|MS_REC, NULL) = 0
-+++ exited with 0 +++
-+ strace -f -e trace=mount,umount umount -l testmp2
-umount("/dev/shm/testmp2", MNT_DETACH)  = 0
-+++ exited with 0 +++
-+ mountpoint testmp1/submount
-testmp1/submount is not a mountpoint
-+ echo nay
-nay
-+ umount testmp2
-umount: testmp2: not mounted
-+ umount testmp1
-+ rmdir testmp1
-+ rmdir testmp2
-rmdir: failed to remove `testmp2': Device or resource busy
+I apologize. This is not a regression, it has always been broken for the
+TunnelCreek (which was added later). With only 8 bits for the resume well,
+trying to read the 9th GPIO line always fails. I suspect it was just never
+tested or needed until a board came along using it. As adding support
+for new
+systems is acceptable for stable, I felt this landed in that bucket, as
+well as
+the "obvious bug fix" bucket.
 
-Previously unmounting the recursive bind target would not unmount the source, 
-which to me looks like a more sensible outcome. 
 
-However what could be causing this weird behaviour puzzles me since I am not 
-sure it is purely the kernel on it's own. When I first hit this problem some 
-months ago unfortunately I did not have the time to dig deeper. However a 
-mental note remained that I thought, at the time, it is possible some 
-userspace change was a contributing factor.
+> I need a more verbose commit message with descriptions of
+> user-percieved problems on deployed systems that for that.
 
-Regards,
 
-Tvrtko
+Would you like me to resubmit with a more verbose commit message? Happy
+to do so.
 
+
+> BTW: are you interested in adding yourself as mainatiner of
+> this driver in the MAINTAINERS file Darren?
+
+That might make sense. I'm doing a lot of TunnelCreek driver fixes for
+the MinnowBoard. If that would be helpful, I'm willing.
+
+Thanks,
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
