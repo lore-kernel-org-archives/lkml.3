@@ -1,627 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab3C0Luh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 07:50:37 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:54541 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840Ab3C0LsJ (ORCPT
+	id S1751859Ab3C0LzJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 07:55:09 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:60134 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab3C0LzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 07:48:09 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Min Zhang <mzhang@mvista.com>, Ilya Zykov <linux@izyk.ru>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v2 11/18] tty: Convert termios_mutex to termios_rwsem
-Date: Wed, 27 Mar 2013 07:44:01 -0400
-Message-Id: <1364384648-6636-12-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1364384648-6636-1-git-send-email-peter@hurleysoftware.com>
-References: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>
- <1364384648-6636-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Wed, 27 Mar 2013 07:55:07 -0400
+X-RZG-AUTH: :IGUKYFjleetgZuRbHZjp6Ve7NzeE1efWuTR/wV06y353QgIuD5+acdRFtJ8MDHZp4u74mTVB5dOWYQ==
+X-RZG-CLASS-ID: mo00
+Message-ID: <5152DE0B.9030703@giantdisaster.de>
+Date: Wed, 27 Mar 2013 12:54:51 +0100
+From: Stefan Behrens <sbehrens@giantdisaster.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Linux Btrfs List <linux-btrfs@vger.kernel.org>
+CC: linux-kernel@vger.kernel.org, Sami Liedes <sami.liedes@iki.fi>
+Subject: Re: btrfs GPF in read_extent_buffer() while scrubbing with kernel
+ 3.4.2
+References: <20120702230121.GD12755@sli.dy.fi>
+In-Reply-To: <20120702230121.GD12755@sli.dy.fi>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-termios is commonly accessed unsafely (especially by N_TTY)
-because the existing mutex forces exclusive access.
-Convert existing usage.
+On Tue, 3 Jul 2012 02:01:21 +0300, Sami Liedes wrote:
+> Hi,
+> 
+> I just got this oops on a computer running 3.4.2.
+> 
+> A few minutes before I had started "btrfs device scrub /" and had a
+> watcher process running "btrfs scrub status /" every 5 seconds. After
+> a few gigabytes of scrubbing, I got this crash.
+> 
+> The oops is transcribed from photos, so it may contain some errors. I
+> tried to be careful, and double checked the backtrace.
+> 
+> 	Sami
+> 
+> ------------------------------------------------------------
+> general protection fault: 0000 [#1] SMP
+> CPU 4
+> Modules linked in: tcp_diag inet_diag nfnetlink_log nfnetlink ufs qnx4 hfsplus hfs minix ntfs vfat msdos fat jfs reiserfs ext3 jbd ext2 ip6_tables ebtable_nat ebtables cn rfcomm bnep
+> parport_pc ppdev lp parport tun cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_conservative binfmt_misc fuse nfsd nfs nfs_acl auth_rpcgss fscache lockd sunrpc iptable_filter ipt_MASQUERADE
+> ipt_REDIRECT iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack ip_tables x_tables xfs ext4 jbd2 mbcache radeon drm_kms_helper ttm drm i2c_algo_bit loop kvm_intel kvm snd_hda_codec_hdmi
+> snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_usb_audio snd_usbmidi_lib snd_hwdep snd_pcm_oss snd_mixer_oss joydev snd_pcm acpi_cpufreq snd_page_alloc snd_seq_midi snd_seq_midi_event snd_rawmi
+> di ath3k snd_seq snd_seq_device snd_timer iTCO_wdt bluetooth eeepci_wmi asus_wmi sparse_keymap crc16 rfkill pcspkr psmouse coretemp serio_raw evdev mperf pci_hotplug i2c_i801 i2c_core processor button
+> intel_agp snd mxm_wmi video wmi intel_gtt microcode soundcore sha256_generic dm_crypt dm_mod raid456 async_raid6_recov async_memcpy async_pq async_xor xor async_tx raid6_pq md_mod nbd btrfs libcrc32c
+> zlib_deflate sd_mod crc_t10dif crc32c_intel ghash_cmulni_intel firewire_ohci r8196 firewire_core ahci aesni_intel libahci mii crc_itu_t aes_x86_64 libata aes_generic cryptd scsi_mod e1000e thermal fa
+> n thermal_sys [last unloaded: scsi_wait_scan]
+> 
+> Pid: 30863, comm: btrfs-endio-met Tainted: G        W    3.4.2 #1 System manufacturer System Product Name/P8P67 EVO
+> RIP: 0010:[<ffffffff811e83bd>]  [<ffffffff811e83bd>] memcpy+0xd/0x110
+> RSP: 0000:ffff88003174dba8  EFLAGS: 00010202
+> RAX: ffff88003174dc8f RBX: 0000000000000011 RCX: 0000000000000002
+> RDX: 0000000000000001 RSI: 0005080000000003 RDI: ffff88003174dc8f
+> RBP: ffff88003174dbf0 R08: 000000000000000a R09: 0000000000000000
+> R10: 0000000000000000 R11: 0000000000000000 R12: ffff88003174dca0
+> R13: ffff8800659f42b0 R14: 0000000000000048 R15: 0000000000000011
+> FS:  0000000000000000(0000) GS:ffff88021ed00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 000000000973c000 CR3: 0000000167ef3000 CR4: 00000000000407e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process btrfs-endio-met (pid: 30863, threadinfo ffff88003174c000, task ffff88006f818000)
+> Stack:
+>  ffffffffa026bd6b ffff8801960f5000 0000000000008003 0000000000001000
+>  ffff88003174dc58 00000000000003dd ffff88000ac13c60 ffff88003174dc58
+>  696f70203a61685f ffff88003174dc00 ffffffffa026904d ffff88003174dcd0
+> Call Trace:
+>  [<ffffffffa026bd6b>] ? read_extent_buffer+0xbb/0x110 [btrfs]
+>  [<ffffffffa026304d>] btrfs_node_key+0x1d/0x20 [btrfs]
+>  [<ffffffffa02994e0>] __readahead_hook.isra.5+0x3c0/0x420 [btrfs]
+>  [<ffffffffa029986f>] btree_readahead_hook+0x1f/0x40 [btrfs]
+>  [<ffffffffa023f841>] btree_readpage_end_io_hook+0x111/0x260 [btrfs]
+>  [<ffffffffa0267452>] ? find_first_extent_bit_state+0x22/0x80 [btrfs]
+>  [<ffffffffa026809b>] end_bio_extent_readpage+0xcb/0xa30 [btrfs]
+>  [<ffffffffa023ee61>] ? end_workqueue_fn+0x31/0x50 [btrfs]
+>  [<ffffffff81158958>] bio_endio+0x18/0x30
+>  [<ffffffffa023ee6c>] end_workqueue_fn+0x3c/0x50 [btrfs]
+>  [<ffffffffa0275857>] worker_loop+0x157/0x560 [btrfs]
+>  [<ffffffffa0275700>] ? btrfs_queue_worker+0x310/0x310 [btrfs]
+>  [<ffffffff81058e5e>] kthread+0x8e/0xa0
+>  [<ffffffff81418fe4>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff81058dd0>] ? flush_kthread_worker+0x70/0x70
+>  [<ffffffff81418fe0>] ? gs_change+0x13/0x13
+> Code: 4e 48 83 c4 08 5b 5d c3 66 0f 1f 44 00 00 e8 eb fb ff ff eb e1 90 90 90 90 90 90 90...
+> 8 4c 8b 56 10 4c
+> RIP  [<ffffffff811e83bd>] memcpy+0xd/0x110
+>  RSP <ffff88003174dba8>
+> 
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/net/irda/irtty-sir.c |  8 ++--
- drivers/tty/n_tty.c          |  2 +-
- drivers/tty/pty.c            |  4 +-
- drivers/tty/tty_io.c         | 14 +++----
- drivers/tty/tty_ioctl.c      | 90 ++++++++++++++++++++++----------------------
- drivers/tty/tty_ldisc.c      | 10 ++---
- drivers/tty/vt/vt.c          |  4 +-
- include/linux/tty.h          |  7 ++--
- 8 files changed, 70 insertions(+), 69 deletions(-)
 
-diff --git a/drivers/net/irda/irtty-sir.c b/drivers/net/irda/irtty-sir.c
-index a412671..177441a 100644
---- a/drivers/net/irda/irtty-sir.c
-+++ b/drivers/net/irda/irtty-sir.c
-@@ -123,14 +123,14 @@ static int irtty_change_speed(struct sir_dev *dev, unsigned speed)
- 
- 	tty = priv->tty;
- 
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	old_termios = tty->termios;
- 	cflag = tty->termios.c_cflag;
- 	tty_encode_baud_rate(tty, speed, speed);
- 	if (tty->ops->set_termios)
- 		tty->ops->set_termios(tty, &old_termios);
- 	priv->io.speed = speed;
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- 
- 	return 0;
- }
-@@ -280,7 +280,7 @@ static inline void irtty_stop_receiver(struct tty_struct *tty, int stop)
- 	struct ktermios old_termios;
- 	int cflag;
- 
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	old_termios = tty->termios;
- 	cflag = tty->termios.c_cflag;
- 	
-@@ -292,7 +292,7 @@ static inline void irtty_stop_receiver(struct tty_struct *tty, int stop)
- 	tty->termios.c_cflag = cflag;
- 	if (tty->ops->set_termios)
- 		tty->ops->set_termios(tty, &old_termios);
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- }
- 
- /*****************************************************************/
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index f777ec6..fa463a9 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1540,7 +1540,7 @@ int is_ignored(int sig)
-  *	guaranteed that this function will not be re-entered or in progress
-  *	when the ldisc is closed.
-  *
-- *	Locking: Caller holds tty->termios_mutex
-+ *	Locking: Caller holds tty->termios_rwsem
-  */
- 
- static void n_tty_set_termios(struct tty_struct *tty, struct ktermios *old)
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index c24b4db..50bec0d 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -290,7 +290,7 @@ static int pty_resize(struct tty_struct *tty,  struct winsize *ws)
- 	struct tty_struct *pty = tty->link;
- 
- 	/* For a PTY we need to lock the tty side */
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	if (!memcmp(ws, &tty->winsize, sizeof(*ws)))
- 		goto done;
- 
-@@ -317,7 +317,7 @@ static int pty_resize(struct tty_struct *tty,  struct winsize *ws)
- 	tty->winsize = *ws;
- 	pty->winsize = *ws;	/* Never used so will go away soon */
- done:
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- 	return 0;
- }
- 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 9dcb2ce..30201e6 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -550,7 +550,7 @@ EXPORT_SYMBOL_GPL(tty_wakeup);
-  *		  redirect lock for undoing redirection
-  *		  file list lock for manipulating list of ttys
-  *		  tty_ldisc_lock from called functions
-- *		  termios_mutex resetting termios data
-+ *		  termios_rwsem resetting termios data
-  *		  tasklist_lock to walk task list for hangup event
-  *		    ->siglock to protect ->signal/->sighand
-  */
-@@ -2166,7 +2166,7 @@ static int tiocsti(struct tty_struct *tty, char __user *p)
-  *
-  *	Copies the kernel idea of the window size into the user buffer.
-  *
-- *	Locking: tty->termios_mutex is taken to ensure the winsize data
-+ *	Locking: tty->termios_rwsem is taken to ensure the winsize data
-  *		is consistent.
-  */
- 
-@@ -2174,9 +2174,9 @@ static int tiocgwinsz(struct tty_struct *tty, struct winsize __user *arg)
- {
- 	int err;
- 
--	mutex_lock(&tty->termios_mutex);
-+	down_read(&tty->termios_rwsem);
- 	err = copy_to_user(arg, &tty->winsize, sizeof(*arg));
--	mutex_unlock(&tty->termios_mutex);
-+	up_read(&tty->termios_rwsem);
- 
- 	return err ? -EFAULT: 0;
- }
-@@ -2197,7 +2197,7 @@ int tty_do_resize(struct tty_struct *tty, struct winsize *ws)
- 	unsigned long flags;
- 
- 	/* Lock the tty */
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	if (!memcmp(ws, &tty->winsize, sizeof(*ws)))
- 		goto done;
- 	/* Get the PID values and reference them so we can
-@@ -2212,7 +2212,7 @@ int tty_do_resize(struct tty_struct *tty, struct winsize *ws)
- 
- 	tty->winsize = *ws;
- done:
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- 	return 0;
- }
- EXPORT_SYMBOL(tty_do_resize);
-@@ -2951,7 +2951,7 @@ void initialize_tty_struct(struct tty_struct *tty,
- 	tty->session = NULL;
- 	tty->pgrp = NULL;
- 	mutex_init(&tty->legacy_mutex);
--	mutex_init(&tty->termios_mutex);
-+	init_rwsem(&tty->termios_rwsem);
- 	init_ldsem(&tty->ldisc_sem);
- 	init_waitqueue_head(&tty->write_wait);
- 	init_waitqueue_head(&tty->read_wait);
-diff --git a/drivers/tty/tty_ioctl.c b/drivers/tty/tty_ioctl.c
-index 2febed5..490e499 100644
---- a/drivers/tty/tty_ioctl.c
-+++ b/drivers/tty/tty_ioctl.c
-@@ -94,20 +94,20 @@ EXPORT_SYMBOL(tty_driver_flush_buffer);
-  *	@tty: terminal
-  *
-  *	Indicate that a tty should stop transmitting data down the stack.
-- *	Takes the termios mutex to protect against parallel throttle/unthrottle
-+ *	Takes the termios rwsem to protect against parallel throttle/unthrottle
-  *	and also to ensure the driver can consistently reference its own
-  *	termios data at this point when implementing software flow control.
-  */
- 
- void tty_throttle(struct tty_struct *tty)
- {
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	/* check TTY_THROTTLED first so it indicates our state */
- 	if (!test_and_set_bit(TTY_THROTTLED, &tty->flags) &&
- 	    tty->ops->throttle)
- 		tty->ops->throttle(tty);
- 	tty->flow_change = 0;
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- }
- EXPORT_SYMBOL(tty_throttle);
- 
-@@ -116,7 +116,7 @@ EXPORT_SYMBOL(tty_throttle);
-  *	@tty: terminal
-  *
-  *	Indicate that a tty may continue transmitting data down the stack.
-- *	Takes the termios mutex to protect against parallel throttle/unthrottle
-+ *	Takes the termios rwsem to protect against parallel throttle/unthrottle
-  *	and also to ensure the driver can consistently reference its own
-  *	termios data at this point when implementing software flow control.
-  *
-@@ -126,12 +126,12 @@ EXPORT_SYMBOL(tty_throttle);
- 
- void tty_unthrottle(struct tty_struct *tty)
- {
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	if (test_and_clear_bit(TTY_THROTTLED, &tty->flags) &&
- 	    tty->ops->unthrottle)
- 		tty->ops->unthrottle(tty);
- 	tty->flow_change = 0;
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- }
- EXPORT_SYMBOL(tty_unthrottle);
- 
-@@ -151,7 +151,7 @@ int tty_throttle_safe(struct tty_struct *tty)
- {
- 	int ret = 0;
- 
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	if (!test_bit(TTY_THROTTLED, &tty->flags)) {
- 		if (tty->flow_change != TTY_THROTTLE_SAFE)
- 			ret = 1;
-@@ -161,7 +161,7 @@ int tty_throttle_safe(struct tty_struct *tty)
- 				tty->ops->throttle(tty);
- 		}
- 	}
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- 
- 	return ret;
- }
-@@ -182,7 +182,7 @@ int tty_unthrottle_safe(struct tty_struct *tty)
- {
- 	int ret = 0;
- 
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	if (test_bit(TTY_THROTTLED, &tty->flags)) {
- 		if (tty->flow_change != TTY_UNTHROTTLE_SAFE)
- 			ret = 1;
-@@ -192,7 +192,7 @@ int tty_unthrottle_safe(struct tty_struct *tty)
- 				tty->ops->unthrottle(tty);
- 		}
- 	}
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- 
- 	return ret;
- }
-@@ -468,7 +468,7 @@ EXPORT_SYMBOL_GPL(tty_termios_encode_baud_rate);
-  *	@obad: output baud rate
-  *
-  *	Update the current termios data for the tty with the new speed
-- *	settings. The caller must hold the termios_mutex for the tty in
-+ *	settings. The caller must hold the termios_rwsem for the tty in
-  *	question.
-  */
- 
-@@ -556,7 +556,7 @@ EXPORT_SYMBOL(tty_termios_hw_change);
-  *	is a bit of layering violation here with n_tty in terms of the
-  *	internal knowledge of this function.
-  *
-- *	Locking: termios_mutex
-+ *	Locking: termios_rwsem
-  */
- 
- int tty_set_termios(struct tty_struct *tty, struct ktermios *new_termios)
-@@ -572,7 +572,7 @@ int tty_set_termios(struct tty_struct *tty, struct ktermios *new_termios)
- 
- 	/* FIXME: we need to decide on some locking/ordering semantics
- 	   for the set_termios notification eventually */
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	old_termios = tty->termios;
- 	tty->termios = *new_termios;
- 	unset_locked_termios(&tty->termios, &old_termios, &tty->termios_locked);
-@@ -614,7 +614,7 @@ int tty_set_termios(struct tty_struct *tty, struct ktermios *new_termios)
- 			(ld->ops->set_termios)(tty, &old_termios);
- 		tty_ldisc_deref(ld);
- 	}
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(tty_set_termios);
-@@ -629,7 +629,7 @@ EXPORT_SYMBOL_GPL(tty_set_termios);
-  *	functions before using tty_set_termios to do the actual changes.
-  *
-  *	Locking:
-- *		Called functions take ldisc and termios_mutex locks
-+ *		Called functions take ldisc and termios_rwsem locks
-  */
- 
- static int set_termios(struct tty_struct *tty, void __user *arg, int opt)
-@@ -641,9 +641,9 @@ static int set_termios(struct tty_struct *tty, void __user *arg, int opt)
- 	if (retval)
- 		return retval;
- 
--	mutex_lock(&tty->termios_mutex);
-+	down_read(&tty->termios_rwsem);
- 	tmp_termios = tty->termios;
--	mutex_unlock(&tty->termios_mutex);
-+	up_read(&tty->termios_rwsem);
- 
- 	if (opt & TERMIOS_TERMIO) {
- 		if (user_termio_to_kernel_termios(&tmp_termios,
-@@ -695,16 +695,16 @@ static int set_termios(struct tty_struct *tty, void __user *arg, int opt)
- 
- static void copy_termios(struct tty_struct *tty, struct ktermios *kterm)
- {
--	mutex_lock(&tty->termios_mutex);
-+	down_read(&tty->termios_rwsem);
- 	*kterm = tty->termios;
--	mutex_unlock(&tty->termios_mutex);
-+	up_read(&tty->termios_rwsem);
- }
- 
- static void copy_termios_locked(struct tty_struct *tty, struct ktermios *kterm)
- {
--	mutex_lock(&tty->termios_mutex);
-+	down_read(&tty->termios_rwsem);
- 	*kterm = tty->termios_locked;
--	mutex_unlock(&tty->termios_mutex);
-+	up_read(&tty->termios_rwsem);
- }
- 
- static int get_termio(struct tty_struct *tty, struct termio __user *termio)
-@@ -751,10 +751,10 @@ static int set_termiox(struct tty_struct *tty, void __user *arg, int opt)
- 			return -ERESTARTSYS;
- 	}
- 
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	if (tty->ops->set_termiox)
- 		tty->ops->set_termiox(tty, &tnew);
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- 	return 0;
- }
- 
-@@ -789,13 +789,13 @@ static int get_sgttyb(struct tty_struct *tty, struct sgttyb __user *sgttyb)
- {
- 	struct sgttyb tmp;
- 
--	mutex_lock(&tty->termios_mutex);
-+	down_read(&tty->termios_rwsem);
- 	tmp.sg_ispeed = tty->termios.c_ispeed;
- 	tmp.sg_ospeed = tty->termios.c_ospeed;
- 	tmp.sg_erase = tty->termios.c_cc[VERASE];
- 	tmp.sg_kill = tty->termios.c_cc[VKILL];
- 	tmp.sg_flags = get_sgflags(tty);
--	mutex_unlock(&tty->termios_mutex);
-+	up_read(&tty->termios_rwsem);
- 
- 	return copy_to_user(sgttyb, &tmp, sizeof(tmp)) ? -EFAULT : 0;
- }
-@@ -834,7 +834,7 @@ static void set_sgflags(struct ktermios *termios, int flags)
-  *	Updates a terminal from the legacy BSD style terminal information
-  *	structure.
-  *
-- *	Locking: termios_mutex
-+ *	Locking: termios_rwsem
-  */
- 
- static int set_sgttyb(struct tty_struct *tty, struct sgttyb __user *sgttyb)
-@@ -850,7 +850,7 @@ static int set_sgttyb(struct tty_struct *tty, struct sgttyb __user *sgttyb)
- 	if (copy_from_user(&tmp, sgttyb, sizeof(tmp)))
- 		return -EFAULT;
- 
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	termios = tty->termios;
- 	termios.c_cc[VERASE] = tmp.sg_erase;
- 	termios.c_cc[VKILL] = tmp.sg_kill;
-@@ -860,7 +860,7 @@ static int set_sgttyb(struct tty_struct *tty, struct sgttyb __user *sgttyb)
- 	tty_termios_encode_baud_rate(&termios, termios.c_ispeed,
- 						termios.c_ospeed);
- #endif
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- 	tty_set_termios(tty, &termios);
- 	return 0;
- }
-@@ -871,14 +871,14 @@ static int get_tchars(struct tty_struct *tty, struct tchars __user *tchars)
- {
- 	struct tchars tmp;
- 
--	mutex_lock(&tty->termios_mutex);
-+	down_read(&tty->termios_rwsem);
- 	tmp.t_intrc = tty->termios.c_cc[VINTR];
- 	tmp.t_quitc = tty->termios.c_cc[VQUIT];
- 	tmp.t_startc = tty->termios.c_cc[VSTART];
- 	tmp.t_stopc = tty->termios.c_cc[VSTOP];
- 	tmp.t_eofc = tty->termios.c_cc[VEOF];
- 	tmp.t_brkc = tty->termios.c_cc[VEOL2];	/* what is brkc anyway? */
--	mutex_unlock(&tty->termios_mutex);
-+	up_read(&tty->termios_rwsem);
- 	return copy_to_user(tchars, &tmp, sizeof(tmp)) ? -EFAULT : 0;
- }
- 
-@@ -888,14 +888,14 @@ static int set_tchars(struct tty_struct *tty, struct tchars __user *tchars)
- 
- 	if (copy_from_user(&tmp, tchars, sizeof(tmp)))
- 		return -EFAULT;
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	tty->termios.c_cc[VINTR] = tmp.t_intrc;
- 	tty->termios.c_cc[VQUIT] = tmp.t_quitc;
- 	tty->termios.c_cc[VSTART] = tmp.t_startc;
- 	tty->termios.c_cc[VSTOP] = tmp.t_stopc;
- 	tty->termios.c_cc[VEOF] = tmp.t_eofc;
- 	tty->termios.c_cc[VEOL2] = tmp.t_brkc;	/* what is brkc anyway? */
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- 	return 0;
- }
- #endif
-@@ -905,7 +905,7 @@ static int get_ltchars(struct tty_struct *tty, struct ltchars __user *ltchars)
- {
- 	struct ltchars tmp;
- 
--	mutex_lock(&tty->termios_mutex);
-+	down_read(&tty->termios_rwsem);
- 	tmp.t_suspc = tty->termios.c_cc[VSUSP];
- 	/* what is dsuspc anyway? */
- 	tmp.t_dsuspc = tty->termios.c_cc[VSUSP];
-@@ -914,7 +914,7 @@ static int get_ltchars(struct tty_struct *tty, struct ltchars __user *ltchars)
- 	tmp.t_flushc = tty->termios.c_cc[VEOL2];
- 	tmp.t_werasc = tty->termios.c_cc[VWERASE];
- 	tmp.t_lnextc = tty->termios.c_cc[VLNEXT];
--	mutex_unlock(&tty->termios_mutex);
-+	up_read(&tty->termios_rwsem);
- 	return copy_to_user(ltchars, &tmp, sizeof(tmp)) ? -EFAULT : 0;
- }
- 
-@@ -925,7 +925,7 @@ static int set_ltchars(struct tty_struct *tty, struct ltchars __user *ltchars)
- 	if (copy_from_user(&tmp, ltchars, sizeof(tmp)))
- 		return -EFAULT;
- 
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	tty->termios.c_cc[VSUSP] = tmp.t_suspc;
- 	/* what is dsuspc anyway? */
- 	tty->termios.c_cc[VEOL2] = tmp.t_dsuspc;
-@@ -934,7 +934,7 @@ static int set_ltchars(struct tty_struct *tty, struct ltchars __user *ltchars)
- 	tty->termios.c_cc[VEOL2] = tmp.t_flushc;
- 	tty->termios.c_cc[VWERASE] = tmp.t_werasc;
- 	tty->termios.c_cc[VLNEXT] = tmp.t_lnextc;
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- 	return 0;
- }
- #endif
-@@ -974,7 +974,7 @@ static int send_prio_char(struct tty_struct *tty, char ch)
-  *	@arg: enable/disable CLOCAL
-  *
-  *	Perform a change to the CLOCAL state and call into the driver
-- *	layer to make it visible. All done with the termios mutex
-+ *	layer to make it visible. All done with the termios rwsem
-  */
- 
- static int tty_change_softcar(struct tty_struct *tty, int arg)
-@@ -983,7 +983,7 @@ static int tty_change_softcar(struct tty_struct *tty, int arg)
- 	int bit = arg ? CLOCAL : 0;
- 	struct ktermios old;
- 
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	old = tty->termios;
- 	tty->termios.c_cflag &= ~CLOCAL;
- 	tty->termios.c_cflag |= bit;
-@@ -991,7 +991,7 @@ static int tty_change_softcar(struct tty_struct *tty, int arg)
- 		tty->ops->set_termios(tty, &old);
- 	if ((tty->termios.c_cflag & CLOCAL) != bit)
- 		ret = -EINVAL;
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- 	return ret;
- }
- 
-@@ -1094,9 +1094,9 @@ int tty_mode_ioctl(struct tty_struct *tty, struct file *file,
- 		if (user_termios_to_kernel_termios(&kterm,
- 					       (struct termios __user *) arg))
- 			return -EFAULT;
--		mutex_lock(&real_tty->termios_mutex);
-+		down_write(&real_tty->termios_rwsem);
- 		real_tty->termios_locked = kterm;
--		mutex_unlock(&real_tty->termios_mutex);
-+		up_write(&real_tty->termios_rwsem);
- 		return 0;
- #else
- 	case TIOCGLCKTRMIOS:
-@@ -1111,9 +1111,9 @@ int tty_mode_ioctl(struct tty_struct *tty, struct file *file,
- 		if (user_termios_to_kernel_termios_1(&kterm,
- 					       (struct termios __user *) arg))
- 			return -EFAULT;
--		mutex_lock(&real_tty->termios_mutex);
-+		down_write(&real_tty->termios_rwsem);
- 		real_tty->termios_locked = kterm;
--		mutex_unlock(&real_tty->termios_mutex);
-+		up_write(&real_tty->termios_rwsem);
- 		return ret;
- #endif
- #ifdef TCGETX
-@@ -1121,9 +1121,9 @@ int tty_mode_ioctl(struct tty_struct *tty, struct file *file,
- 		struct termiox ktermx;
- 		if (real_tty->termiox == NULL)
- 			return -EINVAL;
--		mutex_lock(&real_tty->termios_mutex);
-+		down_read(&real_tty->termios_rwsem);
- 		memcpy(&ktermx, real_tty->termiox, sizeof(struct termiox));
--		mutex_unlock(&real_tty->termios_mutex);
-+		up_read(&real_tty->termios_rwsem);
- 		if (copy_to_user(p, &ktermx, sizeof(struct termiox)))
- 			ret = -EFAULT;
- 		return ret;
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 5a6c43d..d7d5e6a 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -414,14 +414,14 @@ EXPORT_SYMBOL_GPL(tty_ldisc_flush);
-  *	they are not on hot paths so a little discipline won't do
-  *	any harm.
-  *
-- *	Locking: takes termios_mutex
-+ *	Locking: takes termios_rwsem
-  */
- 
- static void tty_set_termios_ldisc(struct tty_struct *tty, int num)
- {
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	tty->termios.c_line = num;
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- }
- 
- /**
-@@ -599,11 +599,11 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 
- static void tty_reset_termios(struct tty_struct *tty)
- {
--	mutex_lock(&tty->termios_mutex);
-+	down_write(&tty->termios_rwsem);
- 	tty->termios = tty->driver->init_termios;
- 	tty->termios.c_ispeed = tty_termios_input_baud_rate(&tty->termios);
- 	tty->termios.c_ospeed = tty_termios_baud_rate(&tty->termios);
--	mutex_unlock(&tty->termios_mutex);
-+	up_write(&tty->termios_rwsem);
- }
- 
- 
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index fbd447b..0829c02 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -829,7 +829,7 @@ static inline int resize_screen(struct vc_data *vc, int width, int height,
-  *	If the caller passes a tty structure then update the termios winsize
-  *	information and perform any necessary signal handling.
-  *
-- *	Caller must hold the console semaphore. Takes the termios mutex and
-+ *	Caller must hold the console semaphore. Takes the termios rwsem and
-  *	ctrl_lock of the tty IFF a tty is passed.
-  */
- 
-@@ -973,7 +973,7 @@ int vc_resize(struct vc_data *vc, unsigned int cols, unsigned int rows)
-  *	the actual work.
-  *
-  *	Takes the console sem and the called methods then take the tty
-- *	termios_mutex and the tty ctrl_lock in that order.
-+ *	termios_rwsem and the tty ctrl_lock in that order.
-  */
- static int vt_resize(struct tty_struct *tty, struct winsize *ws)
- {
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index b05fa7f..09a5165 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -10,6 +10,7 @@
- #include <linux/mutex.h>
- #include <linux/tty_flags.h>
- #include <uapi/linux/tty.h>
-+#include <linux/rwsem.h>
- 
- 
- 
-@@ -243,9 +244,9 @@ struct tty_struct {
- 
- 	struct mutex atomic_write_lock;
- 	struct mutex legacy_mutex;
--	struct mutex termios_mutex;
-+	struct rw_semaphore termios_rwsem;
- 	spinlock_t ctrl_lock;
--	/* Termios values are protected by the termios mutex */
-+	/* Termios values are protected by the termios rwsem */
- 	struct ktermios termios, termios_locked;
- 	struct termiox *termiox;	/* May be NULL for unsupported */
- 	char name[64];
-@@ -253,7 +254,7 @@ struct tty_struct {
- 	struct pid *session;
- 	unsigned long flags;
- 	int count;
--	struct winsize winsize;		/* termios mutex */
-+	struct winsize winsize;		/* termios rwsem */
- 	unsigned char stopped:1, hw_stopped:1, flow_stopped:1, packet:1;
- 	unsigned char warned:1;
- 	unsigned char ctrl_status;	/* ctrl_lock */
--- 
-1.8.1.2
+Tonight my box had the same on a system running 3.7.10. Also with a Btrfs scrub running.
+
+general protection fault: 0000 [#1] SMP
+Modules linked in: xt_LOG xt_limit xt_multiport iptable_nat nf_nat_ipv4 nf_nat ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables iptable_mangle ipt_REJECT xt_tcpudp nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack iptable_filter ip_tables x_tables bnep rfcomm bluetooth sp5100_tco edac_core edac_mce_amd k8temp i2c_piix4 kvm_amd kvm e1000e serio_raw mac_hid shpchp lp parport btrfs zlib_deflate libcrc32c raid10 raid456 async_pq async_xor xor async_memcpy async_raid6_recov raid6_pq async_tx raid1 raid0 multipath linear ahci libahci [last unloaded: ipmi_msghandler]
+CPU 1
+Pid: 10376, comm: btrfs-endio-met Not tainted 3.7.10-030710-generic #201302271235 MICRO-STAR INTERNATIONAL CO., LTD MS-96B3/MS-96B3
+RIP: 0010:[<ffffffff8134dcc2>]  [<ffffffff8134dcc2>] memcpy+0x12/0x110
+RSP: 0018:ffff88011791fbc0  EFLAGS: 00010206
+RAX: ffff88011791fca5 RBX: ffff88005d6836d8 RCX: 0000000000000003
+RDX: 0000000000000003 RSI: 0005080000000000 RDI: ffff88011791fca5
+RBP: ffff88011791fc08 R08: 0000000000003fd1 R09: ffff88011791fbd8
+R10: 0000000000000000 R11: 0000000000000003 R12: 0000000000000003
+R13: 0000000000000003 R14: ffff88011791fca8 R15: 0000000000000028
+FS:  00007f78717fa700(0000) GS:ffff88011fc80000(0000) knlGS:00000000f743f700
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: ffffffffff600000 CR3: 0000000092a4e000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process btrfs-endio-met (pid: 10376, threadinfo ffff88011791e000, task ffff8801128a1700)
+Stack:
+ ffffffffa00f1e5c ffff88010e407000 0000000000003000 0000000000001000
+ ffff88011791fca8 ffff880073b5cea0 9b9628ac89c7f24a ffff88011791fca8
+ 00000000000001ed ffff88011791fc18 ffffffffa00e87f2 ffff88011791fce8
+Call Trace:
+ [<ffffffffa00f1e5c>] ? read_extent_buffer+0xbc/0x120 [btrfs]
+ [<ffffffffa00e87f2>] btrfs_node_key+0x22/0x30 [btrfs]
+ [<ffffffffa01255d3>] __readahead_hook.isra.4+0x3d3/0x410 [btrfs]
+ [<ffffffffa01259d4>] btree_readahead_hook+0x24/0x40 [btrfs]
+ [<ffffffffa00cd7b9>] btree_readpage_end_io_hook+0x149/0x290 [btrfs]
+ [<ffffffffa00ee912>] end_bio_extent_readpage+0x142/0x330 [btrfs]
+ [<ffffffffa00cbe66>] ? end_workqueue_fn+0x36/0x50 [btrfs]
+ [<ffffffff811c8a5d>] bio_endio+0x1d/0x40
+ [<ffffffffa00cbe71>] end_workqueue_fn+0x41/0x50 [btrfs]
+ [<ffffffffa00fcd80>] worker_loop+0xa0/0x320 [btrfs]
+ [<ffffffffa00fcce0>] ? check_pending_worker_creates.isra.1+0xf0/0xf0 [btrfs]
+ [<ffffffff8107dca0>] kthread+0xc0/0xd0
+ [<ffffffff8107dbe0>] ? flush_kthread_worker+0xb0/0xb0
+ [<ffffffff816d19ec>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8107dbe0>] ? flush_kthread_worker+0xb0/0xb0
+Code: 4e 48 83 c4 08 5b 5d c3 90 e8 fb fd ff ff eb e6 90 90 90 90 90 90 90 90 90 48 89 f8 48 89 d1 48 c1 e9 03 83 e2 07 f3 48 a5 89 d1 <f3> a4 c3 20 4c 8b 06 4c 8b 4e 08 4c 8b 56 10 4c 8b 5e 18 48 8d
+RIP  [<ffffffff8134dcc2>] memcpy+0x12/0x110
+ RSP <ffff88011791fbc0>
+---[ end trace 76ff4bab3b10384b ]---
+
+Looking at memcpy() in arch/x86/lib/memcpy_64.S, RDX is the length, RSI the source and RDI the destination.
+And looking at the registers when the issue happens, there's a pattern. RDX is not as expected, RSI is 000508000000.... and RDI looks good.
+
+The one from tonight: RDX is 0x3 (0x11 would be expected), RSI is 0005080000000000 (unexpected), RDI is ffff88011791fca5 (looks good).
+The one from Sami in the quoted mail is excatly the same issue that my box had tonight. RDX is 0x1 (0x11 would be expected), RSI is 0005080000000003, RDI looks good.
+"GPF in read_extent_buffer while scrubbing on 3.7.0-rc8-00014-g27d7c2a" http://comments.gmane.org/gmane.comp.file-systems.btrfs/21559 is the same, but this time RDX is 0x11 as expected. RSI is 0005080000000003 (unexpected), RDI looks good.
+http://abrt.fedoraproject.org/faf/problems/326667/ is something that shows a similar pattern (without Btrfs being involved), here the "report backtrace 53429" looks somehow similar (memcpy is the crashing function, RSI: 00050800000007e1, RDI would make sense).
+
+What's causing this issue? The RSI register content, does it look like CPU flags or anything else known?
 
