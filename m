@@ -1,178 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab3C0O7g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 10:59:36 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29553 "EHLO mga14.intel.com"
+	id S1753985Ab3C0O7l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 10:59:41 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:42126 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753714Ab3C0O7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 10:59:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,919,1355126400"; 
-   d="scan'208";a="276679490"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 5/5] mei: move mei-me to separate module
-Date: Wed, 27 Mar 2013 16:58:30 +0200
-Message-Id: <1364396310-10718-6-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1364396310-10718-1-git-send-email-tomas.winkler@intel.com>
-References: <1364396310-10718-1-git-send-email-tomas.winkler@intel.com>
+	id S1753269Ab3C0O7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 10:59:39 -0400
+Date: Wed, 27 Mar 2013 10:58:25 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
+        Li Zefan <lizefan@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
+Message-ID: <20130327145727.GD29052@cmpxchg.org>
+References: <1364373399-17397-1-git-send-email-mhocko@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364373399-17397-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mei layer provides host bus message layer, client management,
-and os interface
+On Wed, Mar 27, 2013 at 09:36:39AM +0100, Michal Hocko wrote:
+> As cgroup supports rename, it's unsafe to dereference dentry->d_name
+> without proper vfs locks. Fix this by using cgroup_name() rather than
+> dentry directly.
+> 
+> Also open code memcg_cache_name because it is called only from
+> kmem_cache_dup which frees the returned name right after
+> kmem_cache_create_memcg makes a copy of it. Such a short-lived
+> allocation doesn't make too much sense. So replace it by a static
+> buffer as kmem_cache_dup is called with memcg_cache_mutex.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Acked-by: Glauber Costa <glommer@parallels.com>
+> ---
+>  mm/memcontrol.c |   64 ++++++++++++++++++++++++++++---------------------------
+>  1 file changed, 33 insertions(+), 31 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index f608546..b30547b 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3364,52 +3364,54 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
+>  	schedule_work(&cachep->memcg_params->destroy);
+>  }
+>  
+> -static char *memcg_cache_name(struct mem_cgroup *memcg, struct kmem_cache *s)
+> -{
+> -	char *name;
+> -	struct dentry *dentry;
+> -
+> -	rcu_read_lock();
+> -	dentry = rcu_dereference(memcg->css.cgroup->dentry);
+> -	rcu_read_unlock();
+> -
+> -	BUG_ON(dentry == NULL);
+> -
+> -	name = kasprintf(GFP_KERNEL, "%s(%d:%s)", s->name,
+> -			 memcg_cache_id(memcg), dentry->d_name.name);
+> -
+> -	return name;
+> -}
+> +/*
+> + * This lock protects updaters, not readers. We want readers to be as fast as
+> + * they can, and they will either see NULL or a valid cache value. Our model
+> + * allow them to see NULL, in which case the root memcg will be selected.
+> + *
+> + * We need this lock because multiple allocations to the same cache from a non
+> + * will span more than one worker. Only one of them can create the cache.
+> + */
+> +static DEFINE_MUTEX(memcg_cache_mutex);
+>  
+> +/*
+> + * Called with memcg_cache_mutex held
+> + */
+>  static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+>  					 struct kmem_cache *s)
+>  {
+> -	char *name;
+>  	struct kmem_cache *new;
+> +	static char *tmp_name = NULL;
+>  
+> -	name = memcg_cache_name(memcg, s);
+> -	if (!name)
+> -		return NULL;
+> +	lockdep_assert_held(&memcg_cache_mutex);
+> +
+> +	/*
+> +	 * kmem_cache_create_memcg duplicates the given name and
+> +	 * cgroup_name for this name requires RCU context.
+> +	 * This static temporary buffer is used to prevent from
+> +	 * pointless shortliving allocation.
+> +	 */
+> +	if (!tmp_name) {
+> +		tmp_name = kmalloc(PAGE_SIZE, GFP_KERNEL);
+> +		WARN_ON_ONCE(!tmp_name);
 
-mei-me - provides access to ME hardware through
-the pci bus
+Just use the page allocator directly and get a free allocation failure
+warning.  Then again, order-0 pages are considered cheap enough that
+they never even fail in our current implementation.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/Kconfig     | 5 ++---
- drivers/misc/mei/Makefile    | 6 ++++--
- drivers/misc/mei/init.c      | 7 +++++--
- drivers/misc/mei/interrupt.c | 4 ++++
- drivers/misc/mei/main.c      | 4 ++++
- 5 files changed, 19 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/misc/mei/Kconfig b/drivers/misc/mei/Kconfig
-index d21b4d0..c76fa31 100644
---- a/drivers/misc/mei/Kconfig
-+++ b/drivers/misc/mei/Kconfig
-@@ -10,10 +10,9 @@ config INTEL_MEI
- 	  <http://software.intel.com/en-us/manageability/>
- 
- config INTEL_MEI_ME
--	bool "ME Enabled Intel Chipsets"
--	depends on INTEL_MEI
-+	tristate "ME Enabled Intel Chipsets"
-+	select INTEL_MEI
- 	depends on X86 && PCI && WATCHDOG_CORE
--	default y
- 	help
- 	  MEI support for ME Enabled Intel chipsets.
- 
-diff --git a/drivers/misc/mei/Makefile b/drivers/misc/mei/Makefile
-index 040af6c..2c336d0 100644
---- a/drivers/misc/mei/Makefile
-+++ b/drivers/misc/mei/Makefile
-@@ -10,5 +10,7 @@ mei-objs += client.o
- mei-objs += main.o
- mei-objs += amthif.o
- mei-objs += wd.o
--mei-$(CONFIG_INTEL_MEI_ME) += pci-me.o
--mei-$(CONFIG_INTEL_MEI_ME) += hw-me.o
-+
-+obj-$(CONFIG_INTEL_MEI_ME) += mei-me.o
-+mei-me-objs := pci-me.o
-+mei-me-objs += hw-me.o
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index b3f7c3e..c1c8d76 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -14,6 +14,7 @@
-  *
-  */
- 
-+#include <linux/export.h>
- #include <linux/pci.h>
- #include <linux/sched.h>
- #include <linux/wait.h>
-@@ -67,6 +68,7 @@ void mei_device_init(struct mei_device *dev)
- 	mei_io_list_init(&dev->amthif_rd_complete_list);
- 
- }
-+EXPORT_SYMBOL_GPL(mei_device_init);
- 
- /**
-  * mei_start - initializes host and fw to start work.
-@@ -136,6 +138,7 @@ err:
- 	mutex_unlock(&dev->device_lock);
- 	return -ENODEV;
- }
-+EXPORT_SYMBOL_GPL(mei_start);
- 
- /**
-  * mei_reset - resets host and fw.
-@@ -203,6 +206,7 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
- 	/* remove all waiting requests */
- 	mei_cl_all_write_clear(dev);
- }
-+EXPORT_SYMBOL_GPL(mei_reset);
- 
- void mei_stop(struct mei_device *dev)
- {
-@@ -222,9 +226,8 @@ void mei_stop(struct mei_device *dev)
- 	flush_scheduled_work();
- 
- 	mei_watchdog_unregister(dev);
--
- }
--
-+EXPORT_SYMBOL_GPL(mei_stop);
- 
- 
- 
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index 73fbce3..6ce45ef 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -15,6 +15,7 @@
-  */
- 
- 
-+#include <linux/export.h>
- #include <linux/pci.h>
- #include <linux/kthread.h>
- #include <linux/interrupt.h>
-@@ -78,6 +79,7 @@ void mei_irq_compl_handler(struct mei_device *dev, struct mei_cl_cb *compl_list)
- 			mei_cl_complete_handler(cl, cb);
- 	}
- }
-+EXPORT_SYMBOL_GPL(mei_irq_compl_handler);
- /**
-  * _mei_irq_thread_state_ok - checks if mei header matches file private data
-  *
-@@ -440,6 +442,7 @@ int mei_irq_read_handler(struct mei_device *dev,
- end:
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(mei_irq_read_handler);
- 
- 
- /**
-@@ -590,6 +593,7 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
- 	}
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(mei_irq_write_handler);
- 
- 
- 
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index 903f809..27b3df2 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -758,12 +758,16 @@ int mei_register(struct device *dev)
- 	mei_misc_device.parent = dev;
- 	return misc_register(&mei_misc_device);
- }
-+EXPORT_SYMBOL_GPL(mei_register);
- 
- void mei_deregister(void)
- {
- 	misc_deregister(&mei_misc_device);
- 	mei_misc_device.parent = NULL;
- }
-+EXPORT_SYMBOL_GPL(mei_deregister);
- 
-+MODULE_AUTHOR("Intel Corporation");
-+MODULE_DESCRIPTION("Intel(R) Management Engine Interface");
- MODULE_LICENSE("GPL v2");
- 
--- 
-1.7.11.7
-
+Which brings me to my other point: why not just a simple single-page
+allocation?  This just seems a little overelaborate.  I think this
+path would be taken predominantly after cgroup creation and fork where
+we do a bunch of allocations anyway.  And it happens asynchroneously
+from userspace, so it's not even really performance critical.
