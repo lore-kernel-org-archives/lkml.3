@@ -1,43 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab3C0Q2O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 12:28:14 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:49915 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553Ab3C0Q2K (ORCPT
+	id S1753219Ab3C0QaZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 12:30:25 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45498 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab3C0QaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 12:28:10 -0400
-Date: Wed, 27 Mar 2013 09:27:55 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Steve Wise <swise@opengridcomputing.com>,
-        Tom Tucker <tom@opengridcomputing.com>, linux-rdma@vger.kernel.org
-Subject: Re: [PATCH v1 2/6] amso1100: convert to using idr_alloc_cyclic
-Message-ID: <20130327162755.GC7395@htj.dyndns.org>
-References: <1364390288-30968-1-git-send-email-jlayton@redhat.com>
- <1364390288-30968-3-git-send-email-jlayton@redhat.com>
+	Wed, 27 Mar 2013 12:30:24 -0400
+Message-ID: <51531E92.9070805@wwwdotorg.org>
+Date: Wed, 27 Mar 2013 10:30:10 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364390288-30968-3-git-send-email-jlayton@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rhyland Klein <rklein@nvidia.com>
+CC: Grant Likely <grant.likely@secretlab.ca>, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [REPOST Patch v1 2/3] power: power_supply: Add core support for
+ supplied_from
+References: <1364264690-2124-1-git-send-email-rklein@nvidia.com> <1364264690-2124-3-git-send-email-rklein@nvidia.com>
+In-Reply-To: <1364264690-2124-3-git-send-email-rklein@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 09:18:04AM -0400, Jeff Layton wrote:
->  void c2_init_qp_table(struct c2_dev *c2dev)
->  {
->  	spin_lock_init(&c2dev->qp_table.lock);
-> -	idr_init(&c2dev->qp_table.idr);
-> +	idr_init_cyclic(&c2dev->qp_table.idr, 0);
+On 03/25/2013 08:24 PM, Rhyland Klein wrote:
+> This patch adds support for supplies to register a list of char *'s
+> which represent the list of supplies which supply them. This is the
+> opposite as the supplied_to list.
+> 
+> This change maintains support for supplied_to until all drivers which
+> make use of it already are converted.
+
+> diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+
+> +static int __power_supply_is_supplied_by(struct power_supply *supplier,
+> +					 struct power_supply *supply)
+
+Shouldn't this function return a Boolean since it's "is" something? At
+least, 1 for yes 0 for no would be more comprehensible than 0 for yes
+and error for no?
+
+> +{
+> +	int i;
+> +
+> +	if (!supply->supplied_from && !supplier->supplied_to)
+> +		return -EINVAL;
+> +
+> +	/* Support both supplied_to and supplied_from modes */
+> +	if (supply->supplied_from) {
+> +		for (i = 0; i < supply->num_supplies; i++) {
+> +			if (!supplier->name)
+> +				continue;
+
+That test is loop invariant. Why put it inside the loop?
+
+Why wouldn't a supply have a name? The loop in
+__power_supply_changed_work() that this function replaces doesn't test
+for NULL names.
+
+> +			if (!strcmp(supplier->name, supply->supplied_from[i]))
+> +				return 0;
+
+Don't you want to return something true here, so that the if block
+inside __power_supply_changed_work() is executed in this case?
+
+Similar comment for the else block.
+
+>  static int __power_supply_changed_work(struct device *dev, void *data)
+
+> -	for (i = 0; i < psy->num_supplicants; i++)
+> -		if (!strcmp(psy->supplied_to[i], pst->name)) {
+> -			if (pst->external_power_changed)
+> -				pst->external_power_changed(pst);
+> -		}
+> +	if (__power_supply_is_supplied_by(psy, pst)) {
+> +		if (pst->external_power_changed)
+> +			pst->external_power_changed(pst);
+> +	}
+> +
+>  	return 0;
 >  }
 
-Why is this necessary?  In general, why is idr_init_cyclic()
-necessary?
-
-Thanks.
-
--- 
-tejun
