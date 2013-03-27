@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab3C0L4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 07:56:41 -0400
-Received: from nick.hrz.tu-chemnitz.de ([134.109.228.11]:46758 "EHLO
-	nick.hrz.tu-chemnitz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168Ab3C0L4k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 07:56:40 -0400
-Message-ID: <5152DE75.5010701@web.de>
-Date: Wed, 27 Mar 2013 12:56:37 +0100
-From: Danny Baumann <dannybaumann@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1753417Ab3C0L5m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 07:57:42 -0400
+Received: from void.printf.net ([89.145.121.20]:50284 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751643Ab3C0L5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 07:57:40 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Sergey Yanovich <ynvich@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH v2] wait while adding MMC host to ensure root mounts
+References: <1363223183-3772-1-git-send-email-ynvich@gmail.com>
+	<1363224194-7366-1-git-send-email-ynvich@gmail.com>
+	<87620jmkoe.fsf@octavius.laptop.org>
+	<CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>
+Date: Wed, 27 Mar 2013 07:57:34 -0400
+In-Reply-To: <CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>
+	(Ulf Hansson's message of "Wed, 27 Mar 2013 12:13:12 +0100")
+Message-ID: <87ppylf429.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] drm/i915: Allow specifying a minimum brightness level
- for sysfs control.
-References: <1364298525-4337-1-git-send-email-dannybaumann@web.de> <20130326170203.GA23549@srcf.ucam.org> <5151D686.9070701@web.de> <20130326172103.GA24566@srcf.ucam.org>
-In-Reply-To: <20130326172103.GA24566@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-purgate: clean
-X-purgate-type: clean
-X-purgate-ID: 154106::1364385398-000004D6-3FAE65D8/0-0/0-0
-X-Scan-AV: nick.hrz.tu-chemnitz.de;2013-03-27 12:56:38;ebf1cfd9add5f02d5173ace1fd3f60f9
-X-Scan-SA: nick.hrz.tu-chemnitz.de;2013-03-27 12:56:38;4b5c11ae722a059e269755b935a5a00d
-X-Spam-Score: -1.0 (-)
-X-Spam-Report: --- Textanalyse SpamAssassin 3.3.1 (-1.0 Punkte)
- Fragen an/questions to:  Postmaster TU Chemnitz <postmaster@tu-chemnitz.de>
- * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
- *  0.0 FREEMAIL_FROM Sender email is commonly abused enduser mail provider
- *      (dannybaumann[at]web.de)
- --- Ende Textanalyse
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
->> Well, the ACPI spec says this (section B.5.2):
->>
->> "
->> The OEM may define the number 0 as "Zero brightness" that can mean
->> to turn off the lighting (e.g. LCD panel backlight) in the device.
->> This may be useful in the case of an output device that can still be
->> viewed using only ambient light, for example, a transflective LCD.
->> "
->>
->> My interpretation of this is that the value 0 is supposed to still
->> be visible. I'm pretty sure I saw a statement that 0 is supposed to
->> mean "barely visible" somewhere, but can't find it at the moment.
->> I'll search for the source of it.
->
-> I think that's a stretch - "This may be useful" isn't normative
-> language, "The OEM may define" is. But even if we do assert it for the
-> ACPI backlight, it's not true for other interfaces - zero backlight
-> intensity is supposed to be screen off on Apple hardware, for instance.
+On Wed, Mar 27 2013, Ulf Hansson wrote:
+> I noticed you merged this. I thought the idea was to use the rootwait
+> or rootdelay?
 
-OK, I see. And there is user space depending on that behaviour? And 
-again - how is user space supposed to know about the behavioral 
-differences? Is it something like 'if type is raw, don't expect anything'?
-The reason for my question is that I want to determine what a) the 
-correct place to fix this and b) the correct fix is. As Xrandr abstracts 
-away the used backlight interface, I see no way for user space using 
-Xrandr (e.g. KDE) to meaningfully handle this.
+That's necessary before the patch, but it would be better if we didn't
+have to pass rootwait, all else being equal.
+
+> Moreover, this patch will have bad impact on booting the kernel, since
+> every host device that has scheduled a detect work from it's probe
+> function will also wait for it to finish. Even if it is the boot
+> device of not. If this is needed, I would prefer that a host cap is
+> used.
+
+I see, you're worried about a performance regression where every boot
+takes longer than it used to while MMC quiesces.  That's fair.  Do you
+think you could tell me how much delay this adds to a boot for you, so
+that we can consider whether the usability improvement is worth it?
+
+If the delay's significant, I agree with you and will revert this patch.
 
 Thanks,
 
-Danny
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
