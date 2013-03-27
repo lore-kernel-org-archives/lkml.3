@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab3C0Kb0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 06:31:26 -0400
-Received: from 8bytes.org ([85.214.48.195]:47219 "EHLO mail.8bytes.org"
+	id S1754897Ab3C0KdU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 06:33:20 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:53542 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716Ab3C0KbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 06:31:25 -0400
-Date: Wed, 27 Mar 2013 11:31:22 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Takao Indoh <indou.takao@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        dwmw2@infradead.org, kexec@lists.infradead.org
-Subject: Re: [PATCH] intel-iommu: Synchronize gcmd value with global command
- register
-Message-ID: <20130327103122.GK30540@8bytes.org>
-References: <1363829556-2128-1-git-send-email-indou.takao@jp.fujitsu.com>
- <20130326144629.GB2727@8bytes.org>
- <51527D74.9080209@jp.fujitsu.com>
+	id S1753629Ab3C0KdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 06:33:17 -0400
+Message-ID: <5152CADA.4020502@ti.com>
+Date: Wed, 27 Mar 2013 16:02:58 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51527D74.9080209@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Mar 27 11:31:23 2013
-X-DSPAM-Confidence: 0.9985
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5152ca7b23673325315251
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: <rjw@sisk.pl>, <arvind.chauhan@arm.com>, <robin.randhawa@arm.com>,
+        <Steve.Bannister@arm.com>, <Liviu.Dudau@arm.com>,
+        <charles.garcia-tobin@arm.com>, <cpufreq@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linaro-kernel@lists.linaro.org>, <arnd.bergmann@linaro.org>,
+        <linux@arm.linux.org.uk>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+Subject: Re: [PATCH 3/9] cpufreq: davinci: move cpufreq driver to drivers/cpufreq
+References: <cover.1364205812.git.viresh.kumar@linaro.org> <ef225dbf63b1d834761773384d3f70cb4ac7b611.1364205812.git.viresh.kumar@linaro.org> <5152C755.7010404@ti.com> <CAKohponaNZRdYETsb8W3trk8V7LeC7jsR49hJwGv1iYiVJcduw@mail.gmail.com>
+In-Reply-To: <CAKohponaNZRdYETsb8W3trk8V7LeC7jsR49hJwGv1iYiVJcduw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 02:02:44PM +0900, Takao Indoh wrote:
-> The root cause of this problem is mismatch between iommu->gcmd and
-> global command register in the case of kdump. At boot time, initial
-> value of iommu->gcmd is zero as I wrote above, but actual global command
-> register is *not* zero because some bits like IRE/TE/QIE are already set
-> in *first* kernel. Therefore this patch synchronize them to fix this
-> problem.
+On 3/27/2013 3:51 PM, Viresh Kumar wrote:
+> On 27 March 2013 15:47, Sekhar Nori <nsekhar@ti.com> wrote:
+>> On 3/25/2013 3:41 PM, Viresh Kumar wrote:
+>> I am unable to apply this patch for testing. Looks like this could be
+>> because of:
+>>
+>> Content-Type: text/plain; charset="WINDOWS-1252"
+>>
+>> Can you get rid of that charset="WINDOWS-1252"?
+> 
+> I can't, its MSF exchange server behind this.
 
-Ok, I understand, but I still don't see why this is a problem. There is
-no point for the kdump kernel to preserve hardware state from the
-previous kernel. So I think the way it is implemented is correct.
+Too bad. But something needs to be done about it since we all like to
+apply patches received in email ;). I have seen reports of people
+configuring gmail to know their @company.com address as another e-mail
+address they own and then using gmail SMTP to send patches (git config).
+You should try that.
 
+> 
+> And for this reason only i push my patches in my public repo all the
+> time, mentioned in cover-letter.
+> 
+> http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/cpufreq-move-drivers
 
-	Joerg
+Okay but you never copied me on the cover letter so I only saw this one
+patch. I will pull your tree and test now.
 
-
+Thanks,
+Sekhar
