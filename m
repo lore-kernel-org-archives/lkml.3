@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753617Ab3C0PKO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 11:10:14 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:36267 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab3C0PKM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 11:10:12 -0400
-Date: Wed, 27 Mar 2013 15:10:08 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Danny Baumann <dannybaumann@web.de>
-Cc: David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] drm/i915: Allow specifying a minimum brightness
- level for sysfs control.
-Message-ID: <20130327151007.GA13554@srcf.ucam.org>
-References: <1364298525-4337-1-git-send-email-dannybaumann@web.de>
- <20130326170203.GA23549@srcf.ucam.org>
- <5151D686.9070701@web.de>
- <20130326172103.GA24566@srcf.ucam.org>
- <5152DE75.5010701@web.de>
+	id S1753725Ab3C0PLI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 11:11:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54410 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752240Ab3C0PLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 11:11:06 -0400
+Date: Wed, 27 Mar 2013 16:11:04 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
+        Li Zefan <lizefan@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
+Message-ID: <20130327151104.GK16579@dhcp22.suse.cz>
+References: <1364373399-17397-1-git-send-email-mhocko@suse.cz>
+ <20130327145727.GD29052@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5152DE75.5010701@web.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20130327145727.GD29052@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 12:56:37PM +0100, Danny Baumann wrote:
+On Wed 27-03-13 10:58:25, Johannes Weiner wrote:
+> On Wed, Mar 27, 2013 at 09:36:39AM +0100, Michal Hocko wrote:
+[...]
+> > +	/*
+> > +	 * kmem_cache_create_memcg duplicates the given name and
+> > +	 * cgroup_name for this name requires RCU context.
+> > +	 * This static temporary buffer is used to prevent from
+> > +	 * pointless shortliving allocation.
+> > +	 */
+> > +	if (!tmp_name) {
+> > +		tmp_name = kmalloc(PAGE_SIZE, GFP_KERNEL);
+> > +		WARN_ON_ONCE(!tmp_name);
+> 
+> Just use the page allocator directly and get a free allocation failure
+> warning. 
 
-> OK, I see. And there is user space depending on that behaviour? And
-> again - how is user space supposed to know about the behavioral
-> differences? Is it something like 'if type is raw, don't expect
-> anything'?
+WARN_ON_ONCE is probably pointless.
 
-"Do not rely upon 0 being visible".
+> Then again, order-0 pages are considered cheap enough that they never
+> even fail in our current implementation.
+> 
+> Which brings me to my other point: why not just a simple single-page
+> allocation?
+
+No objection from me. I was previously thinking about the "proper"
+size for something that is a file name. So I originally wanted to use
+PATH_MAX instead but ended up with PAGE_SIZE for reasons I do not
+remember now.  Maybe we can use NAME_MAX instead. I just do not like to
+use page allocator directly when allocatating something like strings
+etc...
+
+To be honest, I do not care much which way to go.
+
+> This just seems a little overelaborate.  I think this path would be
+> taken predominantly after cgroup creation and fork where we do a bunch
+> of allocations anyway.  And it happens asynchroneously from userspace,
+> so it's not even really performance critical.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Michal Hocko
+SUSE Labs
