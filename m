@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab3C0RrM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 13:47:12 -0400
-Received: from mail-da0-f42.google.com ([209.85.210.42]:46982 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab3C0RkY (ORCPT
+	id S1754640Ab3C0RrK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 13:47:10 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:64804 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038Ab3C0RkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 13:40:24 -0400
+	Wed, 27 Mar 2013 13:40:25 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, dm-devel@vger.kernel.org
 Cc: tj@kernel.org, neilb@suse.de, Kent Overstreet <koverstreet@google.com>,
-        Lars Ellenberg <drbd-dev@lists.linbit.com>,
-        Paul Clements <Paul.Clements@steeleye.com>, drbd-user@lists.linbit.com,
-        nbd-general@lists.sourceforge.net
-Subject: [PATCH 05/22] block: Immutable bio vecs
-Date: Wed, 27 Mar 2013 10:39:35 -0700
-Message-Id: <1364405992-28424-6-git-send-email-koverstreet@google.com>
+        "Ed L. Cashin" <ecashin@coraid.com>
+Subject: [PATCH 06/22] aoe: Convert to bvec_iter
+Date: Wed, 27 Mar 2013 10:39:36 -0700
+Message-Id: <1364405992-28424-7-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1364405992-28424-1-git-send-email-koverstreet@google.com>
 References: <1364405992-28424-1-git-send-email-koverstreet@google.com>
@@ -24,282 +22,309 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a mechanism by which we can advance a bio by an arbitrary
-number of bytes without modifying the biovec: bio->bi_iter.bi_bvec_done
-indicates the number of bytes completed in the current bvec.
-
-Various driver code still needs to be updated to not refer to the bvec
-directly before we can use this for interesting things, like efficient
-bio splitting.
+When we start using immutable biovecs to for efficient bio splitting,
+drivers need to be using the new primitives that handle
+bvec_iter.bi_bvec_done. Otherwise, this should be eqivalent to the old
+code.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Lars Ellenberg <drbd-dev@lists.linbit.com>
-Cc: Paul Clements <Paul.Clements@steeleye.com>
-Cc: drbd-user@lists.linbit.com
-Cc: nbd-general@lists.sourceforge.net
+Cc: "Ed L. Cashin" <ecashin@coraid.com>
 ---
- drivers/block/drbd/drbd_main.c |   4 +-
- drivers/block/nbd.c            |   2 +-
- fs/bio.c                       |  23 +--------
- include/linux/bio.h            | 108 ++++++++++++++++++++++++++++++++---------
- include/linux/blk_types.h      |   2 +
- include/linux/blkdev.h         |   4 +-
- 6 files changed, 94 insertions(+), 49 deletions(-)
+ drivers/block/aoe/aoe.h    |  10 +---
+ drivers/block/aoe/aoecmd.c | 130 +++++++++++++++++----------------------------
+ 2 files changed, 51 insertions(+), 89 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index e90074c..b3c013e 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -1546,7 +1546,7 @@ static int _drbd_send_bio(struct drbd_conf *mdev, struct bio *bio)
+diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
+index 1756494..e959e6b 100644
+--- a/drivers/block/aoe/aoe.h
++++ b/drivers/block/aoe/aoe.h
+@@ -100,11 +100,8 @@ enum {
  
- 		err = _drbd_no_send_page(mdev, bvec.bv_page,
- 					 bvec.bv_offset, bvec.bv_len,
--					 bio_iter_last(bio, iter)
-+					 bio_iter_last(bvec, iter)
- 					 ? 0 : MSG_MORE);
- 		if (err)
- 			return err;
-@@ -1565,7 +1565,7 @@ static int _drbd_send_zc_bio(struct drbd_conf *mdev, struct bio *bio)
- 
- 		err = _drbd_send_page(mdev, bvec.bv_page,
- 				      bvec.bv_offset, bvec.bv_len,
--				      bio_iter_last(bio, iter) ? 0 : MSG_MORE);
-+				      bio_iter_last(bvec, iter) ? 0 : MSG_MORE);
- 		if (err)
- 			return err;
- 	}
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index c426d18..6c01425 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -278,7 +278,7 @@ static int nbd_send_req(struct nbd_device *nbd, struct request *req)
- 		 */
- 		rq_for_each_segment(bvec, req, iter) {
- 			flags = 0;
--			if (!rq_iter_last(req, iter))
-+			if (!rq_iter_last(bvec, iter))
- 				flags = MSG_MORE;
- 			dprintk(DBG_TX, "%s: request %p: sending %d bytes data\n",
- 					nbd->disk->disk_name, req, bvec.bv_len);
-diff --git a/fs/bio.c b/fs/bio.c
-index 400f90c..cb89a59 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -807,28 +807,7 @@ void bio_advance(struct bio *bio, unsigned bytes)
- 	if (bio_integrity(bio))
- 		bio_integrity_advance(bio, bytes);
- 
--	bio->bi_iter.bi_sector += bytes >> 9;
--	bio->bi_iter.bi_size -= bytes;
--
--	if (bio->bi_rw & BIO_NO_ADVANCE_ITER_MASK)
--		return;
--
--	while (bytes) {
--		if (unlikely(bio->bi_iter.bi_idx >= bio->bi_vcnt)) {
--			WARN_ONCE(1, "bio idx %d >= vcnt %d\n",
--				  bio->bi_iter.bi_idx, bio->bi_vcnt);
--			break;
--		}
--
--		if (bytes >= bio_iovec(bio).bv_len) {
--			bytes -= bio_iovec(bio).bv_len;
--			bio->bi_iter.bi_idx++;
--		} else {
--			bio_iovec(bio).bv_len -= bytes;
--			bio_iovec(bio).bv_offset += bytes;
--			bytes = 0;
--		}
--	}
-+	bio_advance_iter(bio, &bio->bi_iter, bytes);
- }
- EXPORT_SYMBOL(bio_advance);
- 
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index a31bcd2..3c194bc 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -61,21 +61,58 @@
-  * various member access, note that bio_data should of course not be used
-  * on highmem page vectors
-  */
--#define bio_iovec_iter(bio, iter) ((bio)->bi_io_vec[(iter).bi_idx])
--
- #define bio_iovec_idx(bio, idx)	(&((bio)->bi_io_vec[(idx)]))
- #define __bio_iovec(bio)	bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
--#define bio_iovec(bio)		(*__bio_iovec(bio))
- 
--#define bio_page(bio)		(bio_iovec((bio)).bv_page)
--#define bio_offset(bio)		(bio_iovec((bio)).bv_offset)
-+#define __bvec_iter_bvec(bvec, iter)	(&(bvec)[(iter).bi_idx])
-+
-+#define bvec_iter_page(bvec, iter)				\
-+	(__bvec_iter_bvec((bvec), (iter))->bv_page)
-+#define bvec_iter_len(bio, iter)				\
-+	min((iter).bi_size,					\
-+	    __bvec_iter_bvec((bio), (iter))->bv_len - (iter).bi_bvec_done)
-+#define bvec_iter_offset(bio, iter)				\
-+	(__bvec_iter_bvec((bio), (iter))->bv_offset + (iter).bi_bvec_done)
-+
-+#define bvec_iter_bvec(bvec, iter)				\
-+((struct bio_vec) {						\
-+	.bv_page	= bvec_iter_page((bvec), (iter)),	\
-+	.bv_len		= bvec_iter_len((bvec), (iter)),	\
-+	.bv_offset	= bvec_iter_offset((bvec), (iter)),	\
-+})
-+
-+
-+#define bio_iovec_iter(bio, iter)				\
-+	bvec_iter_bvec((bio)->bi_io_vec, (iter))
-+#define bio_page_iter(bio, iter)				\
-+	bvec_iter_page((bio)->bi_io_vec, (iter))
-+#define bio_offset_iter(bio, iter)				\
-+	bvec_iter_offset((bio)->bi_io_vec, (iter))
-+
-+#define bio_page(bio)		bio_page_iter((bio), (bio)->bi_iter)
-+#define bio_offset(bio)		bio_offset_iter((bio), (bio)->bi_iter)
-+#define bio_iovec(bio)		bio_iovec_iter((bio), (bio)->bi_iter)
-+
- #define bio_segments(bio)	((bio)->bi_vcnt - (bio)->bi_iter.bi_idx)
- #define bio_sectors(bio)	((bio)->bi_iter.bi_size >> 9)
- #define bio_end_sector(bio)	((bio)->bi_iter.bi_sector + bio_sectors((bio)))
- 
-+/*
-+ * Check whether this bio carries any data or not. A NULL bio is allowed.
-+ */
-+static inline bool bio_has_data(struct bio *bio)
-+{
-+	if (bio &&
-+	    bio->bi_iter.bi_size &&
-+	    !(bio->bi_rw & BIO_NO_ADVANCE_ITER_MASK))
-+		return true;
-+
-+	return false;
-+}
-+
- static inline unsigned int bio_cur_bytes(struct bio *bio)
- {
--	if (bio->bi_vcnt)
-+	if (bio_has_data(bio))
- 		return bio_iovec(bio).bv_len;
- 	else /* dataless requests such as discard */
- 		return bio->bi_iter.bi_size;
-@@ -83,7 +120,7 @@ static inline unsigned int bio_cur_bytes(struct bio *bio)
- 
- static inline void *bio_data(struct bio *bio)
- {
--	if (bio->bi_vcnt)
-+	if (bio_has_data(bio))
- 		return page_address(bio_page(bio)) + bio_offset(bio);
- 
- 	return NULL;
-@@ -144,16 +181,54 @@ static inline void *bio_data(struct bio *bio)
- 	     bvl = bio_iovec_idx((bio), (i)), i < (bio)->bi_vcnt;	\
- 	     i++)
- 
-+static inline void bvec_iter_advance(struct bio_vec *bv, struct bvec_iter *iter,
-+				     unsigned bytes)
-+{
-+	WARN_ONCE(bytes > iter->bi_size,
-+		  "Attempted to advance past end of bvec iter\n");
-+
-+	while (bytes) {
-+		unsigned len = min(bytes, bvec_iter_len(bv, *iter));
-+
-+		bytes -= len;
-+		iter->bi_size -= len;
-+		iter->bi_bvec_done += len;
-+
-+		if (iter->bi_bvec_done == __bvec_iter_bvec(bv, *iter)->bv_len) {
-+			iter->bi_bvec_done = 0;
-+			iter->bi_idx++;
-+		}
-+	}
-+}
-+
-+#define for_each_bvec(bvl, bio_vec, iter, start)			\
-+	for ((iter) = start;						\
-+	     (bvl) = bvec_iter_bvec((bio_vec), (iter)),			\
-+		(iter).bi_size;						\
-+	     bvec_iter_advance((bio_vec), &(iter), (bvl).bv_len))
-+
-+
-+static inline void bio_advance_iter(struct bio *bio, struct bvec_iter *iter,
-+				    unsigned bytes)
-+{
-+	iter->bi_sector += bytes >> 9;
-+
-+	if (bio->bi_rw & BIO_NO_ADVANCE_ITER_MASK)
-+		iter->bi_size -= bytes;
-+	else
-+		bvec_iter_advance(bio->bi_io_vec, iter, bytes);
-+}
-+
- #define __bio_for_each_segment(bvl, bio, iter, start)			\
- 	for (iter = (start);						\
--	     bvl = bio_iovec_iter((bio), (iter)),			\
--	     (iter).bi_idx < (bio)->bi_vcnt;				\
--	     (iter).bi_idx++)
-+	     (iter).bi_size &&						\
-+		((bvl = bio_iovec_iter((bio), (iter))), 1);		\
-+	     bio_advance_iter((bio), &(iter), (bvl).bv_len))
- 
- #define bio_for_each_segment(bvl, bio, iter)				\
- 	__bio_for_each_segment(bvl, bio, iter, (bio)->bi_iter)
- 
--#define bio_iter_last(bio, iter) ((iter).bi_idx == (bio)->bi_vcnt - 1)
-+#define bio_iter_last(bvec, iter) ((iter).bi_size == (bvec).bv_len)
- 
- /*
-  * get a reference to a bio, so it won't disappear. the intended use is
-@@ -368,17 +443,6 @@ static inline char *__bio_kmap_irq(struct bio *bio, unsigned short idx,
- 	__bio_kmap_irq((bio), (bio)->bi_iter.bi_idx, (flags))
- #define bio_kunmap_irq(buf,flags)	__bio_kunmap_irq(buf, flags)
- 
--/*
-- * Check whether this bio carries any data or not. A NULL bio is allowed.
-- */
--static inline bool bio_has_data(struct bio *bio)
--{
--	if (bio && bio->bi_vcnt)
--		return true;
--
--	return false;
--}
--
- static inline bool bio_is_rw(struct bio *bio)
- {
- 	if (!bio_has_data(bio))
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 66bf67a..495a025 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -34,6 +34,8 @@ struct bvec_iter {
- 	unsigned int		bi_size;	/* residual I/O count */
- 
- 	unsigned int		bi_idx;		/* current index into bvl_vec */
-+
-+	unsigned int            bi_bvec_done;
+ struct buf {
+ 	ulong nframesout;
+-	ulong resid;
+-	ulong bv_resid;
+-	sector_t sector;
+ 	struct bio *bio;
+-	struct bio_vec *bv;
++	struct bvec_iter iter;
+ 	struct request *rq;
  };
  
- /*
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index f589ed3..870a347 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -714,9 +714,9 @@ struct req_iterator {
- 	__rq_for_each_bio(_iter.bio, _rq)			\
- 		bio_for_each_segment(bvl, _iter.bio, _iter.iter)
+@@ -120,13 +117,10 @@ struct frame {
+ 	ulong waited;
+ 	ulong waited_total;
+ 	struct aoetgt *t;		/* parent target I belong to */
+-	sector_t lba;
+ 	struct sk_buff *skb;		/* command skb freed on module exit */
+ 	struct sk_buff *r_skb;		/* response skb for async processing */
+ 	struct buf *buf;
+-	struct bio_vec *bv;
+-	ulong bcnt;
+-	ulong bv_off;
++	struct bvec_iter iter;
+ 	char flags;
+ };
  
--#define rq_iter_last(rq, _iter)					\
-+#define rq_iter_last(bvec, _iter)				\
- 		(_iter.bio->bi_next == NULL &&			\
--		 bio_iter_last(_iter.bio, _iter.iter))
-+		 bio_iter_last(bvec, _iter.iter))
+diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+index 63acfa1..08422a9 100644
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -182,8 +182,7 @@ aoe_freetframe(struct frame *f)
  
- #ifndef ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE
- # error	"You should define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE for your platform"
+ 	t = f->t;
+ 	f->buf = NULL;
+-	f->lba = 0;
+-	f->bv = NULL;
++	memset(&f->iter, 0, sizeof(f->iter));
+ 	f->r_skb = NULL;
+ 	f->flags = 0;
+ 	list_add(&f->head, &t->ffree);
+@@ -281,21 +280,17 @@ newframe(struct aoedev *d)
+ }
+ 
+ static void
+-skb_fillup(struct sk_buff *skb, struct bio_vec *bv, ulong off, ulong cnt)
++skb_fillup(struct sk_buff *skb, struct bio *bio, struct bvec_iter *iter)
+ {
+ 	int frag = 0;
+-	ulong fcnt;
+-loop:
+-	fcnt = bv->bv_len - (off - bv->bv_offset);
+-	if (fcnt > cnt)
+-		fcnt = cnt;
+-	skb_fill_page_desc(skb, frag++, bv->bv_page, off, fcnt);
+-	cnt -= fcnt;
+-	if (cnt <= 0)
+-		return;
+-	bv++;
+-	off = bv->bv_offset;
+-	goto loop;
++
++	while (iter->bi_size) {
++		struct bio_vec bv = bio_iovec_iter(bio, *iter);
++
++		skb_fill_page_desc(skb, frag++, bv.bv_page,
++				   bv.bv_offset, bv.bv_len);
++		bio_advance_iter(bio, iter, bv.bv_len);
++	}
+ }
+ 
+ static void
+@@ -332,12 +327,10 @@ ata_rw_frameinit(struct frame *f)
+ 	t->nout++;
+ 	f->waited = 0;
+ 	f->waited_total = 0;
+-	if (f->buf)
+-		f->lba = f->buf->sector;
+ 
+ 	/* set up ata header */
+-	ah->scnt = f->bcnt >> 9;
+-	put_lba(ah, f->lba);
++	ah->scnt = f->iter.bi_size >> 9;
++	put_lba(ah, f->iter.bi_sector);
+ 	if (t->d->flags & DEVFL_EXT) {
+ 		ah->aflags |= AOEAFL_EXT;
+ 	} else {
+@@ -346,11 +339,11 @@ ata_rw_frameinit(struct frame *f)
+ 		ah->lba3 |= 0xe0;	/* LBA bit + obsolete 0xa0 */
+ 	}
+ 	if (f->buf && bio_data_dir(f->buf->bio) == WRITE) {
+-		skb_fillup(skb, f->bv, f->bv_off, f->bcnt);
++		skb->len += f->iter.bi_size;
++		skb->data_len = f->iter.bi_size;
++		skb->truesize += f->iter.bi_size;
++		skb_fillup(skb, f->buf->bio, &f->iter);
+ 		ah->aflags |= AOEAFL_WRITE;
+-		skb->len += f->bcnt;
+-		skb->data_len = f->bcnt;
+-		skb->truesize += f->bcnt;
+ 		t->wpkts++;
+ 	} else {
+ 		t->rpkts++;
+@@ -369,7 +362,7 @@ aoecmd_ata_rw(struct aoedev *d)
+ 	struct aoetgt *t;
+ 	struct sk_buff *skb;
+ 	struct sk_buff_head queue;
+-	ulong bcnt, fbcnt;
++	ulong bcnt;
+ 
+ 	buf = nextbuf(d);
+ 	if (buf == NULL)
+@@ -381,36 +374,19 @@ aoecmd_ata_rw(struct aoedev *d)
+ 	bcnt = d->maxbcnt;
+ 	if (bcnt == 0)
+ 		bcnt = DEFAULTBCNT;
+-	if (bcnt > buf->resid)
+-		bcnt = buf->resid;
+-	fbcnt = bcnt;
+-	f->bv = buf->bv;
+-	f->bv_off = f->bv->bv_offset + (f->bv->bv_len - buf->bv_resid);
+-	do {
+-		if (fbcnt < buf->bv_resid) {
+-			buf->bv_resid -= fbcnt;
+-			buf->resid -= fbcnt;
+-			break;
+-		}
+-		fbcnt -= buf->bv_resid;
+-		buf->resid -= buf->bv_resid;
+-		if (buf->resid == 0) {
+-			d->ip.buf = NULL;
+-			break;
+-		}
+-		buf->bv++;
+-		buf->bv_resid = buf->bv->bv_len;
+-		WARN_ON(buf->bv_resid == 0);
+-	} while (fbcnt);
++	if (bcnt > buf->iter.bi_size)
++		bcnt = buf->iter.bi_size;
++
++	bio_advance_iter(buf->bio, &buf->iter, bcnt);
+ 
+ 	/* initialize the headers & frame */
+ 	f->buf = buf;
+-	f->bcnt = bcnt;
++	f->iter = buf->iter;
++	f->iter.bi_size = bcnt;
+ 	ata_rw_frameinit(f);
+ 
+ 	/* mark all tracking fields and load out */
+ 	buf->nframesout += 1;
+-	buf->sector += bcnt >> 9;
+ 
+ 	skb = skb_clone(f->skb, GFP_ATOMIC);
+ 	if (skb) {
+@@ -603,10 +579,7 @@ reassign_frame(struct frame *f)
+ 	skb = nf->skb;
+ 	nf->skb = f->skb;
+ 	nf->buf = f->buf;
+-	nf->bcnt = f->bcnt;
+-	nf->lba = f->lba;
+-	nf->bv = f->bv;
+-	nf->bv_off = f->bv_off;
++	nf->iter = f->iter;
+ 	nf->waited = 0;
+ 	nf->waited_total = f->waited_total;
+ 	nf->sent = f->sent;
+@@ -625,6 +598,7 @@ probe(struct aoetgt *t)
+ 	struct sk_buff_head queue;
+ 	size_t n, m;
+ 	int frag;
++	ulong bcnt;
+ 
+ 	d = t->d;
+ 	f = newtframe(d, t);
+@@ -638,19 +612,20 @@ probe(struct aoetgt *t)
+ 	}
+ 	f->flags |= FFL_PROBE;
+ 	ifrotate(t);
+-	f->bcnt = t->d->maxbcnt ? t->d->maxbcnt : DEFAULTBCNT;
++	bcnt = t->d->maxbcnt ? t->d->maxbcnt : DEFAULTBCNT;
++	f->iter.bi_size = bcnt;
+ 	ata_rw_frameinit(f);
+ 	skb = f->skb;
+-	for (frag = 0, n = f->bcnt; n > 0; ++frag, n -= m) {
++	for (frag = 0, n = bcnt; n > 0; ++frag, n -= m) {
+ 		if (n < PAGE_SIZE)
+ 			m = n;
+ 		else
+ 			m = PAGE_SIZE;
+ 		skb_fill_page_desc(skb, frag, empty_page, 0, m);
+ 	}
+-	skb->len += f->bcnt;
+-	skb->data_len = f->bcnt;
+-	skb->truesize += f->bcnt;
++	skb->len += bcnt;
++	skb->data_len = bcnt;
++	skb->truesize += bcnt;
+ 
+ 	skb = skb_clone(f->skb, GFP_ATOMIC);
+ 	if (skb) {
+@@ -919,17 +894,11 @@ bio_pagedec(struct bio *bio)
+ static void
+ bufinit(struct buf *buf, struct request *rq, struct bio *bio)
+ {
+-	struct bio_vec *bv;
+-
+ 	memset(buf, 0, sizeof(*buf));
+ 	buf->rq = rq;
+ 	buf->bio = bio;
+-	buf->resid = bio->bi_iter.bi_size;
+-	buf->sector = bio->bi_iter.bi_sector;
++	buf->iter = bio->bi_iter;
+ 	bio_pageinc(bio);
+-	buf->bv = bv = __bio_iovec(bio);
+-	buf->bv_resid = bv->bv_len;
+-	WARN_ON(buf->bv_resid == 0);
+ }
+ 
+ static struct buf *
+@@ -1114,24 +1083,24 @@ gettgt(struct aoedev *d, char *addr)
+ }
+ 
+ static void
+-bvcpy(struct bio_vec *bv, ulong off, struct sk_buff *skb, long cnt)
++bvcpy(struct sk_buff *skb, struct bio *bio, struct bvec_iter *iter,
++      long cnt)
+ {
+-	ulong fcnt;
+ 	char *p;
+ 	int soff = 0;
+-loop:
+-	fcnt = bv->bv_len - (off - bv->bv_offset);
+-	if (fcnt > cnt)
+-		fcnt = cnt;
+-	p = page_address(bv->bv_page) + off;
+-	skb_copy_bits(skb, soff, p, fcnt);
+-	soff += fcnt;
+-	cnt -= fcnt;
+-	if (cnt <= 0)
+-		return;
+-	bv++;
+-	off = bv->bv_offset;
+-	goto loop;
++
++	do {
++		struct bio_vec bv = bio_iovec_iter(bio, *iter);
++
++		p = page_address(bv.bv_page) + bv.bv_offset;
++		skb_copy_bits(skb, soff, p, bv.bv_len);
++
++		bio_advance_iter(bio, iter, bv.bv_len);
++		soff += bv.bv_len;
++		cnt -= bv.bv_len;
++		if (cnt <= 0)
++			return;
++	} while (cnt > 0);
+ }
+ 
+ void
+@@ -1224,7 +1193,7 @@ noskb:		if (buf)
+ 			clear_bit(BIO_UPTODATE, &buf->bio->bi_flags);
+ 			break;
+ 		}
+-		bvcpy(f->bv, f->bv_off, skb, n);
++		bvcpy(skb, f->buf->bio, &f->iter, n);
+ 	case ATA_CMD_PIO_WRITE:
+ 	case ATA_CMD_PIO_WRITE_EXT:
+ 		spin_lock_irq(&d->lock);
+@@ -1267,7 +1236,7 @@ out:
+ 
+ 	aoe_freetframe(f);
+ 
+-	if (buf && --buf->nframesout == 0 && buf->resid == 0)
++	if (buf && --buf->nframesout == 0 && buf->iter.bi_size == 0)
+ 		aoe_end_buf(d, buf);
+ 
+ 	spin_unlock_irq(&d->lock);
+@@ -1698,7 +1667,6 @@ aoe_failbuf(struct aoedev *d, struct buf *buf)
+ {
+ 	if (buf == NULL)
+ 		return;
+-	buf->resid = 0;
+ 	clear_bit(BIO_UPTODATE, &buf->bio->bi_flags);
+ 	if (buf->nframesout == 0)
+ 		aoe_end_buf(d, buf);
 -- 
 1.8.1.3
 
