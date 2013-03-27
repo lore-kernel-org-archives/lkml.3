@@ -1,37 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab3C0NSE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 09:18:04 -0400
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:64699 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab3C0NSC (ORCPT
+	id S1753965Ab3C0NS2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 09:18:28 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:47292 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753630Ab3C0NS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 09:18:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363966065-2478-3-git-send-email-lee.jones@linaro.org>
-References: <1363966065-2478-1-git-send-email-lee.jones@linaro.org>
-	<1363966065-2478-3-git-send-email-lee.jones@linaro.org>
-Date: Wed, 27 Mar 2013 14:18:01 +0100
-Message-ID: <CACRpkdY-NCVekZ+jr4ZwxHHXuSrYbn-8j7p0OSaPbydO5jBR7A@mail.gmail.com>
-Subject: Re: [PATCH 3/5] ARM: ux500: Remove platform specific PRCMU and Clk initialisation
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 27 Mar 2013 09:18:26 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, tj@kernel.org,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Sridhar Samudrala <sri@us.ibm.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH v1 6/6] sctp: convert sctp_assoc_set_id to use idr_alloc_cyclic
+Date: Wed, 27 Mar 2013 09:18:08 -0400
+Message-Id: <1364390288-30968-7-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1364390288-30968-1-git-send-email-jlayton@redhat.com>
+References: <1364390288-30968-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 4:27 PM, Lee Jones <lee.jones@linaro.org> wrote:
+(Note: compile-tested only)
 
-> For the moment at least, every platform which executes though
-> ux500_init_irq requires the same clk and prcmu initialisation.
-> So let's call those functions without clause.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: linux-sctp@vger.kernel.org
+Cc: netdev@vger.kernel.org
+---
+ net/sctp/associola.c | 15 +--------------
+ net/sctp/protocol.c  |  2 +-
+ 2 files changed, 2 insertions(+), 15 deletions(-)
 
-This is not true after the multiplatform series so won't work, sorry!
+diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+index d2709e2..8b21563 100644
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -66,13 +66,6 @@ static void sctp_assoc_bh_rcv(struct work_struct *work);
+ static void sctp_assoc_free_asconf_acks(struct sctp_association *asoc);
+ static void sctp_assoc_free_asconf_queue(struct sctp_association *asoc);
+ 
+-/* Keep track of the new idr low so that we don't re-use association id
+- * numbers too fast.  It is protected by they idr spin lock is in the
+- * range of 1 - INT_MAX.
+- */
+-static u32 idr_low = 1;
+-
+-
+ /* 1st Level Abstractions. */
+ 
+ /* Initialize a new association from provided memory. */
+@@ -1601,13 +1594,7 @@ int sctp_assoc_set_id(struct sctp_association *asoc, gfp_t gfp)
+ 	if (preload)
+ 		idr_preload(gfp);
+ 	spin_lock_bh(&sctp_assocs_id_lock);
+-	/* 0 is not a valid id, idr_low is always >= 1 */
+-	ret = idr_alloc(&sctp_assocs_id, asoc, idr_low, 0, GFP_NOWAIT);
+-	if (ret >= 0) {
+-		idr_low = ret + 1;
+-		if (idr_low == INT_MAX)
+-			idr_low = 1;
+-	}
++	ret = idr_alloc_cyclic(&sctp_assocs_id, asoc, 1, 0, GFP_NOWAIT);
+ 	spin_unlock_bh(&sctp_assocs_id_lock);
+ 	if (preload)
+ 		idr_preload_end();
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index 1c2e46c..bc7b069 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -1352,7 +1352,7 @@ SCTP_STATIC __init int sctp_init(void)
+ 	sctp_max_outstreams   		= SCTP_DEFAULT_OUTSTREAMS;
+ 
+ 	/* Initialize handle used for association ids. */
+-	idr_init(&sctp_assocs_id);
++	idr_init_cyclic(&sctp_assocs_id, 1);
+ 
+ 	limit = nr_free_buffer_pages() / 8;
+ 	limit = max(limit, 128UL);
+-- 
+1.7.11.7
 
-Yours,
-Linus Walleij
