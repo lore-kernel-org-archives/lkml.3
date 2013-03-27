@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423Ab3C0LmJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 07:42:09 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:44469 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659Ab3C0LmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 07:42:07 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: cw00.choi@samsung.com, myungjoo.ham@samsung.com, sachin.kamat@linaro.org,
-        patches@linaro.org
-Subject: [PATCH 1/2] extcon: max77693: Fix return value
-Date: Wed, 27 Mar 2013 16:53:29 +0530
-Message-Id: <1364383410-15093-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752615Ab3C0Lm5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 07:42:57 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23085 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750770Ab3C0Lm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 07:42:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,919,1355126400"; 
+   d="scan'208";a="312589341"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 2/2 V2] mei: drop RECOVERING_FROM_RESET device state
+Date: Wed, 27 Mar 2013 13:42:15 +0200
+Message-Id: <1364384535-31943-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return the value obtained from the function instead of hardcoding.
-Silences the following warning:
-drivers/extcon/extcon-max77693.c:297 max77693_muic_set_path()
-info: why not propagate 'ret' from max77693_update_reg() instead of (-11)?
-drivers/extcon/extcon-max77693.c:310 max77693_muic_set_path()
-info: why not propagate 'ret' from max77693_update_reg() instead of (-11)?
+ECOVERING_FROM_RESET device state is never set
+we can remove it
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/extcon/extcon-max77693.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+v2: rebased over char-misc-next: 8c876be81a1f2f0ab33ffb2b00871e65c7a658b3
 
-diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-index 8f3c947..894e20e 100644
---- a/drivers/extcon/extcon-max77693.c
-+++ b/drivers/extcon/extcon-max77693.c
-@@ -294,7 +294,7 @@ static int max77693_muic_set_path(struct max77693_muic_info *info,
- 			MAX77693_MUIC_REG_CTRL1, ctrl1, COMP_SW_MASK);
- 	if (ret < 0) {
- 		dev_err(info->dev, "failed to update MUIC register\n");
--		return -EAGAIN;
-+		return ret;
- 	}
+ drivers/misc/mei/init.c    | 4 ----
+ drivers/misc/mei/mei_dev.h | 1 -
+ 2 files changed, 5 deletions(-)
+
+diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
+index 1ab1fb1..09a9980 100644
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -34,7 +34,6 @@ const char *mei_dev_state_str(int state)
+ 	MEI_DEV_STATE(ENABLED);
+ 	MEI_DEV_STATE(RESETING);
+ 	MEI_DEV_STATE(DISABLED);
+-	MEI_DEV_STATE(RECOVERING_FROM_RESET);
+ 	MEI_DEV_STATE(POWER_DOWN);
+ 	MEI_DEV_STATE(POWER_UP);
+ 	default:
+@@ -139,9 +138,6 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
+ {
+ 	bool unexpected;
  
- 	if (attached)
-@@ -307,7 +307,7 @@ static int max77693_muic_set_path(struct max77693_muic_info *info,
- 			CONTROL2_LOWPWR_MASK | CONTROL2_CPEN_MASK);
- 	if (ret < 0) {
- 		dev_err(info->dev, "failed to update MUIC register\n");
--		return -EAGAIN;
-+		return ret;
- 	}
- 
- 	dev_info(info->dev,
+-	if (dev->dev_state == MEI_DEV_RECOVERING_FROM_RESET)
+-		return;
+-
+ 	unexpected = (dev->dev_state != MEI_DEV_INITIALIZING &&
+ 			dev->dev_state != MEI_DEV_DISABLED &&
+ 			dev->dev_state != MEI_DEV_POWER_DOWN &&
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index d6fd3d6..091f50af 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -97,7 +97,6 @@ enum mei_dev_state {
+ 	MEI_DEV_ENABLED,
+ 	MEI_DEV_RESETING,
+ 	MEI_DEV_DISABLED,
+-	MEI_DEV_RECOVERING_FROM_RESET,
+ 	MEI_DEV_POWER_DOWN,
+ 	MEI_DEV_POWER_UP
+ };
 -- 
-1.7.4.1
+1.7.11.7
 
