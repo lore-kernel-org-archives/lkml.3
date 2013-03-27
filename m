@@ -1,161 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab3C0NMo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 09:12:44 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:59817 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754284Ab3C0NMk (ORCPT
+	id S1754398Ab3C0NMA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 09:12:00 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:44330 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab3C0NJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 09:12:40 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] pinctrl: sunxi: Rename wemac functions to emac
-Date: Wed, 27 Mar 2013 14:12:33 +0100
-Message-Id: <1364389953-20688-1-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 27 Mar 2013 09:09:21 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com, Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>
+Subject: [PATCH 11/17] drbd: validate resync_after dependency on attach already
+Date: Wed, 27 Mar 2013 14:08:43 +0100
+Message-Id: <1364389729-17559-12-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1364389729-17559-1-git-send-email-philipp.reisner@linbit.com>
+References: <1364389729-17559-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pin functions associated to the ethernet controller were introduced
-with the label "wemac", which was the name of the ethernet driver in the
-allwinner source tree, while the real name of the IP is actually "emac",
-as advertised in several documents including the datasheet.
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-Since this is part of the device tree bindings, and that these part of
-the bindings have not yet be released in a kernel version, it seems like
-the good timing to change it and assure consistency.
+We validated resync_after dependencies, if changed via disk-options.
+But we did not validate them when first created via attach.
+We also did not check or cleanup dependencies that used to be correct,
+but now point to meanwhile removed minor devices.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+If the drbd_resync_after_valid() validation in disk-options tried to
+follow a dependency chain in this way, this could lead to NULL pointer
+dereference.
+
+Validate resync_after settings in drbd_adm_attach() already, as well as
+in drbd_adm_disk_opts(), and and only reject dependency loops.
+Depending on non-existing disks is allowed and equivalent to no dependency.
+
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/pinctrl/pinctrl-sunxi.c |   36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+ drivers/block/drbd/drbd_nl.c     |    6 ++++++
+ drivers/block/drbd/drbd_worker.c |   15 ++++++++++++---
+ 2 files changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-sunxi.c
-index 3e41cd1..5a15ce4 100644
---- a/drivers/pinctrl/pinctrl-sunxi.c
-+++ b/drivers/pinctrl/pinctrl-sunxi.c
-@@ -31,101 +31,101 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA0,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ERXD3 */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ERXD3 */
- 		SUNXI_FUNCTION(0x3, "spi1"),		/* CS0 */
- 		SUNXI_FUNCTION(0x4, "uart2")),		/* RTS */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA1,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ERXD2 */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ERXD2 */
- 		SUNXI_FUNCTION(0x3, "spi1"),		/* CLK */
- 		SUNXI_FUNCTION(0x4, "uart2")),		/* CTS */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA2,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ERXD1 */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ERXD1 */
- 		SUNXI_FUNCTION(0x3, "spi1"),		/* MOSI */
- 		SUNXI_FUNCTION(0x4, "uart2")),		/* TX */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA3,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ERXD0 */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ERXD0 */
- 		SUNXI_FUNCTION(0x3, "spi1"),		/* MISO */
- 		SUNXI_FUNCTION(0x4, "uart2")),		/* RX */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA4,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ETXD3 */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ETXD3 */
- 		SUNXI_FUNCTION(0x3, "spi1")),		/* CS1 */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA5,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ETXD2 */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ETXD2 */
- 		SUNXI_FUNCTION(0x3, "spi3")),		/* CS0 */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA6,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ETXD1 */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ETXD1 */
- 		SUNXI_FUNCTION(0x3, "spi3")),		/* CLK */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA7,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ETXD0 */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ETXD0 */
- 		SUNXI_FUNCTION(0x3, "spi3")),		/* MOSI */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA8,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ERXCK */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ERXCK */
- 		SUNXI_FUNCTION(0x3, "spi3")),		/* MISO */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA9,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ERXERR */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ERXERR */
- 		SUNXI_FUNCTION(0x3, "spi3")),		/* CS1 */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA10,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ERXDV */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ERXDV */
- 		SUNXI_FUNCTION(0x4, "uart1")),		/* TX */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA11,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* EMDC */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* EMDC */
- 		SUNXI_FUNCTION(0x4, "uart1")),		/* RX */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA12,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* EMDIO */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* EMDIO */
- 		SUNXI_FUNCTION(0x3, "uart6"),		/* TX */
- 		SUNXI_FUNCTION(0x4, "uart1")),		/* RTS */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA13,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ETXEN */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ETXEN */
- 		SUNXI_FUNCTION(0x3, "uart6"),		/* RX */
- 		SUNXI_FUNCTION(0x4, "uart1")),		/* CTS */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA14,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ETXCK */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ETXCK */
- 		SUNXI_FUNCTION(0x3, "uart7"),		/* TX */
- 		SUNXI_FUNCTION(0x4, "uart1")),		/* DTR */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA15,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ECRS */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ECRS */
- 		SUNXI_FUNCTION(0x3, "uart7"),		/* RX */
- 		SUNXI_FUNCTION(0x4, "uart1")),		/* DSR */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA16,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ECOL */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ECOL */
- 		SUNXI_FUNCTION(0x3, "can"),		/* TX */
- 		SUNXI_FUNCTION(0x4, "uart1")),		/* DCD */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA17,
- 		SUNXI_FUNCTION(0x0, "gpio_in"),
- 		SUNXI_FUNCTION(0x1, "gpio_out"),
--		SUNXI_FUNCTION(0x2, "wemac"),		/* ETXERR */
-+		SUNXI_FUNCTION(0x2, "emac"),		/* ETXERR */
- 		SUNXI_FUNCTION(0x3, "can"),		/* RX */
- 		SUNXI_FUNCTION(0x4, "uart1")),		/* RING */
- 	/* Hole */
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 39e9a91..9e3f441 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -1381,6 +1381,12 @@ int drbd_adm_attach(struct sk_buff *skb, struct genl_info *info)
+ 		goto fail;
+ 	}
+ 
++	write_lock_irq(&global_state_lock);
++	retcode = drbd_resync_after_valid(mdev, new_disk_conf->resync_after);
++	write_unlock_irq(&global_state_lock);
++	if (retcode != NO_ERROR)
++		goto fail;
++
+ 	rcu_read_lock();
+ 	nc = rcu_dereference(mdev->tconn->net_conf);
+ 	if (nc) {
+diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
+index 7f51f88..891c0ec 100644
+--- a/drivers/block/drbd/drbd_worker.c
++++ b/drivers/block/drbd/drbd_worker.c
+@@ -1426,7 +1426,7 @@ static int _drbd_may_sync_now(struct drbd_conf *mdev)
+ 	int resync_after;
+ 
+ 	while (1) {
+-		if (!odev->ldev)
++		if (!odev->ldev || odev->state.disk == D_DISKLESS)
+ 			return 1;
+ 		rcu_read_lock();
+ 		resync_after = rcu_dereference(odev->ldev->disk_conf)->resync_after;
+@@ -1434,7 +1434,7 @@ static int _drbd_may_sync_now(struct drbd_conf *mdev)
+ 		if (resync_after == -1)
+ 			return 1;
+ 		odev = minor_to_mdev(resync_after);
+-		if (!expect(odev))
++		if (!odev)
+ 			return 1;
+ 		if ((odev->state.conn >= C_SYNC_SOURCE &&
+ 		     odev->state.conn <= C_PAUSED_SYNC_T) ||
+@@ -1516,7 +1516,7 @@ enum drbd_ret_code drbd_resync_after_valid(struct drbd_conf *mdev, int o_minor)
+ 
+ 	if (o_minor == -1)
+ 		return NO_ERROR;
+-	if (o_minor < -1 || minor_to_mdev(o_minor) == NULL)
++	if (o_minor < -1 || o_minor > MINORMASK)
+ 		return ERR_RESYNC_AFTER;
+ 
+ 	/* check for loops */
+@@ -1525,6 +1525,15 @@ enum drbd_ret_code drbd_resync_after_valid(struct drbd_conf *mdev, int o_minor)
+ 		if (odev == mdev)
+ 			return ERR_RESYNC_AFTER_CYCLE;
+ 
++		/* You are free to depend on diskless, non-existing,
++		 * or not yet/no longer existing minors.
++		 * We only reject dependency loops.
++		 * We cannot follow the dependency chain beyond a detached or
++		 * missing minor.
++		 */
++		if (!odev || !odev->ldev || odev->state.disk == D_DISKLESS)
++			return NO_ERROR;
++
+ 		rcu_read_lock();
+ 		resync_after = rcu_dereference(odev->ldev->disk_conf)->resync_after;
+ 		rcu_read_unlock();
 -- 
-1.7.10.4
+1.7.9.5
 
