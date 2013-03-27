@@ -1,81 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab3C0MFl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 08:05:41 -0400
-Received: from forward18.mail.yandex.net ([95.108.253.143]:34247 "EHLO
-	forward18.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab3C0MFj (ORCPT
+	id S1753792Ab3C0MJp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 08:09:45 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:43865 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab3C0MJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 08:05:39 -0400
-X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Mar 2013 08:05:39 EDT
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Michal Marek <mmarek@suse.cz>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20130326213532.GB22359@pobox.suse.cz>
-References: <1810321364036300@web2f.yandex.ru> <20130326213532.GB22359@pobox.suse.cz>
-Subject: Re: [PATCH] scripts/tags.sh: Add magic for OFFSET and DEFINE
-MIME-Version: 1.0
-Message-Id: <1897121364385591@web7g.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 27 Mar 2013 15:59:51 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+	Wed, 27 Mar 2013 08:09:44 -0400
+From: Joseph CHANG <josright123@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Matthew Leach <matthew@mattleach.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joseph CHANG <joseph_chang@davicom.com.tw>,
+        Jiri Pirko <jiri@resnulli.us>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Joseph CHANG <josright123@gmail.com>
+Subject: [PATCH 2/2] ethernet: dm9000 driver: davicom: upgrade driver: 3rd trial patch2
+Date: Wed, 27 Mar 2013 20:09:28 +0800
+Message-Id: <1364386168-12503-2-git-send-email-josright123@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1364386168-12503-1-git-send-email-josright123@gmail.com>
+References: <1364386168-12503-1-git-send-email-josright123@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fixing bug for DM9000B(DSP) patch2
 
+Tested to Davicom DM9000E, DM9000A, DM9000B(DSP),
+and DM9000C(DSP) patch2
 
-27.03.2013, 01:35, "Michal Marek" <mmarek@suse.cz>:
-> On Sat, Mar 23, 2013 at 02:58:20PM +0400, Kirill Tkhai wrote:
->
->> šAdd rules for definitions which is generally used in asm-offsets files.
->>
->> šSigned-off-by: Kirill V Tkhai <tkhai@yandex.ru>
->> šCC: Michal Marek <mmarek@suse.cz>
->> šCC: Andrew Morton <akpm@linux-foundation.org>
->> š---
->> ššscripts/tags.sh | ššš4 +++-
->> šš1 file changed, 3 insertions(+), 1 deletion(-)
->> šdiff --git a/scripts/tags.sh b/scripts/tags.sh
->> šindex 26a87e6..74f02e4 100755
->> š--- a/scripts/tags.sh
->> š+++ b/scripts/tags.sh
->> š@@ -199,7 +199,9 @@ exuberant()
->> šššššššššš--regex-c='/DEFINE_PER_CPU_SHARED_ALIGNED\(([^,]*,\s*)(\w*).*\)/\2/v/' \
->> šššššššššš--regex-c='/DECLARE_WAIT_QUEUE_HEAD\((\w*)/\1/v/' \
->> šššššššššš--regex-c='/DECLARE_(TASKLET|WORK|DELAYED_WORK)\((\w*)/\2/v/' \
->> š- --regex-c='/DEFINE_PCI_DEVICE_TABLE\((\w*)/\1/v/'
->> š+ --regex-c='/DEFINE_PCI_DEVICE_TABLE\((\w*)/\1/v/' \
->> š+ --regex-c='/(^\s)OFFSET\((\w*)/\2/v/' \
->> š+ --regex-c='/(^\s)DEFINE\((\w*)/\2/v/'
->
-> The macro definitions in the asm-offsets.h file are ammended with a
-> comment explaining what the value actually means. So you see both the
-> value and the semantic of the macro:
->
-> #define TI_flags 16 /* offsetof(struct thread_info, flags) ššššš# */
->
-> By jumping to the asm-offset.c file instead, you would get only a subset
-> of that information.
->
-> OFFSET(TI_flags, thread_info, flags);
->
-> Unless I'm missing something, I don't think that this patch improves
-> much.
+Signed-off-by: Joseph CHANG <josright123@gmail.com>
+---
+ drivers/net/ethernet/davicom/dm9000.c |   26 ++++++++++++--------------
+ 1 files changed, 12 insertions(+), 14 deletions(-)
 
-This patch does not annul definitions in asm-offsets.h. They stay still on their places.
-It adds OFFSETs and DEFINEs from asm-offsets.c files.
+diff --git a/drivers/net/ethernet/davicom/dm9000.c b/drivers/net/ethernet/davicom/dm9000.c
+index 9dd4bd6..a5cd4ad 100644
+--- a/drivers/net/ethernet/davicom/dm9000.c
++++ b/drivers/net/ethernet/davicom/dm9000.c
+@@ -269,9 +269,7 @@ static void dm9000_msleep(board_info_t *db, unsigned int ms)
+ 		msleep(ms);
+ }
+ 
+-/*
+- *   Read a word from phyxcer
+- */
++/* Read a word from phyxcer */
+ static int
+ dm9000_phy_read(struct net_device *dev, int phy_reg_unused, int reg)
+ {
+@@ -282,7 +280,7 @@ dm9000_phy_read(struct net_device *dev, int phy_reg_unused, int reg)
+ 
+ 	mutex_lock(&db->addr_lock);
+ 
+-	spin_lock_irqsave(&db->lock,flags);
++	spin_lock_irqsave(&db->lock, flags);
+ 
+ 	/* Save previous register address */
+ 	reg_save = readb(db->io_addr);
+@@ -290,14 +288,15 @@ dm9000_phy_read(struct net_device *dev, int phy_reg_unused, int reg)
+ 	/* Fill the phyxcer register into REG_0C */
+ 	iow(db, DM9000_EPAR, DM9000_PHY | reg);
+ 
+-	iow(db, DM9000_EPCR, EPCR_ERPRR | EPCR_EPOS);	/* Issue phyxcer read command */
++	/* Issue phyxcer read command */
++	iow(db, DM9000_EPCR, EPCR_ERPRR | EPCR_EPOS);
+ 
+ 	writeb(reg_save, db->io_addr);
+-	spin_unlock_irqrestore(&db->lock,flags);
++	spin_unlock_irqrestore(&db->lock, flags);
+ 
+ 	dm9000_msleep(db, 1);		/* Wait read complete */
+ 
+-	spin_lock_irqsave(&db->lock,flags);
++	spin_lock_irqsave(&db->lock, flags);
+ 	reg_save = readb(db->io_addr);
+ 
+ 	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer read command */
+@@ -307,7 +306,7 @@ dm9000_phy_read(struct net_device *dev, int phy_reg_unused, int reg)
+ 
+ 	/* restore the previous address */
+ 	writeb(reg_save, db->io_addr);
+-	spin_unlock_irqrestore(&db->lock,flags);
++	spin_unlock_irqrestore(&db->lock, flags);
+ 
+ 	mutex_unlock(&db->addr_lock);
+ 
+@@ -315,9 +314,7 @@ dm9000_phy_read(struct net_device *dev, int phy_reg_unused, int reg)
+ 	return ret;
+ }
+ 
+-/*
+- *   Write a word to phyxcer
+- */
++/* Write a word to phyxcer */
+ static void
+ dm9000_phy_write(struct net_device *dev,
+ 		 int phyaddr_unused, int reg, int value)
+@@ -329,7 +326,7 @@ dm9000_phy_write(struct net_device *dev,
+ 	dm9000_dbg(db, 5, "phy_write[%02x] = %04x\n", reg, value);
+ 	mutex_lock(&db->addr_lock);
+ 
+-	spin_lock_irqsave(&db->lock,flags);
++	spin_lock_irqsave(&db->lock, flags);
+ 
+ 	/* Save previous register address */
+ 	reg_save = readb(db->io_addr);
+@@ -341,14 +338,15 @@ dm9000_phy_write(struct net_device *dev,
+ 	iow(db, DM9000_EPDRL, value);
+ 	iow(db, DM9000_EPDRH, value >> 8);
+ 
+-	iow(db, DM9000_EPCR, EPCR_EPOS | EPCR_ERPRW);	/* Issue phyxcer write command */
++	/* Issue phyxcer write command */
++	iow(db, DM9000_EPCR, EPCR_EPOS | EPCR_ERPRW);
+ 
+ 	writeb(reg_save, db->io_addr);
+ 	spin_unlock_irqrestore(&db->lock, flags);
+ 
+ 	dm9000_msleep(db, 1);		/* Wait write complete */
+ 
+-	spin_lock_irqsave(&db->lock,flags);
++	spin_lock_irqsave(&db->lock, flags);
+ 	reg_save = readb(db->io_addr);
+ 
+ 	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer write command */
+-- 
+1.7.1
 
-When kernel is not precompiled you do not have asm-offsets.h and you are not
-able to see what is the place offsets are defined for yor architecture.
-
-Also, you are not able to look at other architectures because they do not have
-precompiled asm-offsets.h.
-
-I use ALLSOURCE_ARCHS=`ls arch/ | grep -v Kconfig` make tags to generate tags.
-I thing some people do the same and sometimes they need offsets for another
-architectures.
-
-Kirill
