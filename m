@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab3C0Pg3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 11:36:29 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24787 "EHLO mga09.intel.com"
+	id S1753332Ab3C0Pg1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 11:36:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:65387 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751704Ab3C0PbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751601Ab3C0PbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Mar 2013 11:31:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,920,1355126400"; 
-   d="scan'208";a="308169925"
+   d="scan'208";a="308170149"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
         Samuel Ortiz <sameo@linux.intel.com>,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 01/11 V5] mei: bus: Initial MEI Client bus type implementation
-Date: Wed, 27 Mar 2013 17:29:53 +0200
-Message-Id: <1364398203-11159-2-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 03/11 V5] mei: bus: Initial implementation for I/O routines
+Date: Wed, 27 Mar 2013 17:29:55 +0200
+Message-Id: <1364398203-11159-4-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1364398203-11159-1-git-send-email-tomas.winkler@intel.com>
 References: <1364398203-11159-1-git-send-email-tomas.winkler@intel.com>
@@ -26,508 +26,344 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Samuel Ortiz <sameo@linux.intel.com>
 
-mei client bus will present some of the mei clients
-as devices for other standard subsystems
-
-Implement the probe, remove, match, device addtion routines, along with
-the sysfs and uevent ones. mei_cl_device_id is also added to
-mod_devicetable.h
-A mei-cleint-bus.txt document describing the rationale and the API usage
-is also added while ABI/testing/sysfs-bus-mei describeis the modalias ABI.
-
 Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- Documentation/ABI/testing/sysfs-bus-mei           |   7 +
- Documentation/misc-devices/mei/mei-client-bus.txt | 135 +++++++++++++++++
- drivers/misc/mei/Makefile                         |   1 +
- drivers/misc/mei/bus.c                            | 172 ++++++++++++++++++++++
- drivers/misc/mei/mei_dev.h                        |  26 ++++
- include/linux/mei_cl_bus.h                        |  20 +++
- include/linux/mod_devicetable.h                   |   9 ++
- scripts/mod/devicetable-offsets.c                 |   3 +
- scripts/mod/file2alias.c                          |  12 ++
- 9 files changed, 385 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-bus-mei
- create mode 100644 Documentation/misc-devices/mei/mei-client-bus.txt
- create mode 100644 drivers/misc/mei/bus.c
- create mode 100644 include/linux/mei_cl_bus.h
+ drivers/misc/mei/bus.c     | 226 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/misc/mei/mei_dev.h |  30 ++++++
+ include/linux/mei_cl_bus.h |  11 +++
+ 3 files changed, 267 insertions(+)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-mei b/Documentation/ABI/testing/sysfs-bus-mei
-new file mode 100644
-index 0000000..2066f0b
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-mei
-@@ -0,0 +1,7 @@
-+What:		/sys/bus/mei/devices/.../modalias
-+Date:		March 2013
-+KernelVersion:	3.10
-+Contact:	Samuel Ortiz <sameo@linux.intel.com>
-+		linux-mei@linux.intel.com
-+Description:	Stores the same MODALIAS value emitted by uevent
-+		Format: mei:<mei device name>
-diff --git a/Documentation/misc-devices/mei/mei-client-bus.txt b/Documentation/misc-devices/mei/mei-client-bus.txt
-new file mode 100644
-index 0000000..9dc5ebf
---- /dev/null
-+++ b/Documentation/misc-devices/mei/mei-client-bus.txt
-@@ -0,0 +1,135 @@
-+Intel(R) Management Engine (ME) Client bus API
-+===============================================
-+
-+
-+Rationale
-+=========
-+MEI misc character device is useful for dedicated applications to send and receive
-+data to the many FW appliance found in Intel's ME from the user space.
-+However for some of the ME functionalities it make sense to leverage existing software
-+stack and expose them through existing kernel subsystems.
-+
-+In order to plug seamlessly into the kernel device driver model we add kernel virtual
-+bus abstraction on top of the MEI driver. This allows implementing linux kernel drivers
-+for the various MEI features as a stand alone entities found in their respective subsystem.
-+Existing device drivers can even potentially be re-used by adding an MEI CL bus layer to
-+the existing code.
-+
-+
-+MEI CL bus API
-+===========
-+A driver implementation for an MEI Client is very similar to existing bus
-+based device drivers. The driver registers itself as an MEI CL bus driver through
-+the mei_cl_driver structure:
-+
-+struct mei_cl_driver {
-+	struct device_driver driver;
-+	const char *name;
-+
-+	const struct mei_cl_device_id *id_table;
-+
-+	int (*probe)(struct mei_cl_device *dev, const struct mei_cl_id *id);
-+	int (*remove)(struct mei_cl_device *dev);
-+};
-+
-+struct mei_cl_id {
-+	char name[MEI_NAME_SIZE];
-+	kernel_ulong_t driver_info;
-+};
-+
-+The mei_cl_id structure allows the driver to bind itself against a device name.
-+
-+To actually register a driver on the ME Client bus one must call the mei_cl_add_driver()
-+API. This is typically called at module init time.
-+
-+Once registered on the ME Client bus, a driver will typically try to do some I/O on
-+this bus and this should be done through the mei_cl_send() and mei_cl_recv()
-+routines. The latter is synchronous (blocks and sleeps until data shows up).
-+In order for drivers to be notified of pending events waiting for them (e.g.
-+an Rx event) they can register an event handler through the
-+mei_cl_register_event_cb() routine. Currently only the MEI_EVENT_RX event
-+will trigger an event handler call and the driver implementation is supposed
-+to call mei_recv() from the event handler in order to fetch the pending
-+received buffers.
-+
-+
-+Example
-+=======
-+As a theoretical example let's pretend the ME comes with a "contact" NFC IP.
-+The driver init and exit routines for this device would look like:
-+
-+#define CONTACT_DRIVER_NAME "contact"
-+
-+static struct mei_cl_device_id contact_mei_cl_tbl[] = {
-+	{ CONTACT_DRIVER_NAME, },
-+
-+	/* required last entry */
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(mei_cl, contact_mei_cl_tbl);
-+
-+static struct mei_cl_driver contact_driver = {
-+       .id_table = contact_mei_tbl,
-+       .name = CONTACT_DRIVER_NAME,
-+
-+       .probe = contact_probe,
-+       .remove = contact_remove,
-+};
-+
-+static int contact_init(void)
-+{
-+	int r;
-+
-+	r = mei_cl_driver_register(&contact_driver);
-+	if (r) {
-+		pr_err(CONTACT_DRIVER_NAME ": driver registration failed\n");
-+		return r;
-+	}
-+
-+	return 0;
-+}
-+
-+static void __exit contact_exit(void)
-+{
-+	mei_cl_driver_unregister(&contact_driver);
-+}
-+
-+module_init(contact_init);
-+module_exit(contact_exit);
-+
-+And the driver's simplified probe routine would look like that:
-+
-+int contact_probe(struct mei_cl_device *dev, struct mei_cl_device_id *id)
-+{
-+	struct contact_driver *contact;
-+
-+	[...]
-+	mei_cl_register_event_cb(dev, contact_event_cb, contact);
-+
-+	return 0;
-+ }
-+
-+In the probe routine the driver basically registers an ME bus event handler
-+which is as close as it can get to registering a threaded IRQ handler.
-+The handler implementation will typically call some I/O routine depending on
-+the pending events:
-+
-+#define MAX_NFC_PAYLOAD 128
-+
-+static void contact_event_cb(struct mei_cl_device *dev, u32 events,
-+			     void *context)
-+{
-+	struct contact_driver *contact = context;
-+
-+	if (events & BIT(MEI_EVENT_RX)) {
-+		u8 payload[MAX_NFC_PAYLOAD];
-+		int payload_size;
-+
-+		payload_size = mei_recv(dev, payload, MAX_NFC_PAYLOAD);
-+		if (payload_size <= 0)
-+			return;
-+
-+		/* Hook to the NFC subsystem */
-+		nfc_hci_recv_frame(contact->hdev, payload, payload_size);
-+	}
-+}
-diff --git a/drivers/misc/mei/Makefile b/drivers/misc/mei/Makefile
-index 2c336d0..1b29f7c 100644
---- a/drivers/misc/mei/Makefile
-+++ b/drivers/misc/mei/Makefile
-@@ -10,6 +10,7 @@ mei-objs += client.o
- mei-objs += main.o
- mei-objs += amthif.o
- mei-objs += wd.o
-+mei-objs += bus.o
- 
- obj-$(CONFIG_INTEL_MEI_ME) += mei-me.o
- mei-me-objs := pci-me.o
 diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-new file mode 100644
-index 0000000..78c876a
---- /dev/null
+index d16b3c3..16c7fff 100644
+--- a/drivers/misc/mei/bus.c
 +++ b/drivers/misc/mei/bus.c
-@@ -0,0 +1,172 @@
-+/*
-+ * Intel Management Engine Interface (Intel MEI) Linux driver
-+ * Copyright (c) 2012-2013, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/device.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/errno.h>
-+#include <linux/slab.h>
-+#include <linux/mutex.h>
-+#include <linux/interrupt.h>
-+#include <linux/pci.h>
-+#include <linux/mei_cl_bus.h>
-+
-+#include "mei_dev.h"
-+
-+#define to_mei_cl_driver(d) container_of(d, struct mei_cl_driver, driver)
-+#define to_mei_cl_device(d) container_of(d, struct mei_cl_device, dev)
-+
-+static int mei_cl_device_match(struct device *dev, struct device_driver *drv)
-+{
-+	struct mei_cl_device *device = to_mei_cl_device(dev);
-+	struct mei_cl_driver *driver = to_mei_cl_driver(drv);
-+	const struct mei_cl_device_id *id;
-+
-+	if (!device)
-+		return 0;
-+
-+	if (!driver || !driver->id_table)
-+		return 0;
-+
-+	id = driver->id_table;
-+
-+	while (id->name[0]) {
-+		if (!strcmp(dev_name(dev), id->name))
-+			return 1;
-+
-+		id++;
+@@ -16,6 +16,7 @@
+ #include <linux/module.h>
+ #include <linux/device.h>
+ #include <linux/kernel.h>
++#include <linux/sched.h>
+ #include <linux/init.h>
+ #include <linux/errno.h>
+ #include <linux/slab.h>
+@@ -25,6 +26,8 @@
+ #include <linux/mei_cl_bus.h>
+ 
+ #include "mei_dev.h"
++#include "hw-me.h"
++#include "client.h"
+ 
+ #define to_mei_cl_driver(d) container_of(d, struct mei_cl_driver, driver)
+ #define to_mei_cl_device(d) container_of(d, struct mei_cl_device, dev)
+@@ -81,6 +84,11 @@ static int mei_cl_device_remove(struct device *dev)
+ 	if (!device || !dev->driver)
+ 		return 0;
+ 
++	if (device->event_cb) {
++		device->event_cb = NULL;
++		cancel_work_sync(&device->event_work);
 +	}
 +
-+	return 0;
-+}
+ 	driver = to_mei_cl_driver(dev->driver);
+ 	if (!driver->remove) {
+ 		dev->driver = NULL;
+@@ -196,3 +204,221 @@ void mei_cl_driver_unregister(struct mei_cl_driver *driver)
+ 	pr_debug("mei: driver [%s] unregistered\n", driver->driver.name);
+ }
+ EXPORT_SYMBOL_GPL(mei_cl_driver_unregister);
 +
-+static int mei_cl_device_probe(struct device *dev)
++int __mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length)
 +{
-+	struct mei_cl_device *device = to_mei_cl_device(dev);
-+	struct mei_cl_driver *driver;
-+	struct mei_cl_device_id id;
++	struct mei_device *dev;
++	struct mei_msg_hdr mei_hdr;
++	struct mei_cl_cb *cb;
++	int me_cl_id, err;
 +
-+	if (!device)
-+		return 0;
-+
-+	driver = to_mei_cl_driver(dev->driver);
-+	if (!driver || !driver->probe)
++	if (WARN_ON(!cl || !cl->dev))
 +		return -ENODEV;
 +
-+	dev_dbg(dev, "Device probe\n");
++	if (cl->state != MEI_FILE_CONNECTED)
++		return -ENODEV;
 +
-+	strncpy(id.name, dev_name(dev), MEI_CL_NAME_SIZE);
++	cb = mei_io_cb_init(cl, NULL);
++	if (!cb)
++		return -ENOMEM;
 +
-+	return driver->probe(device, &id);
-+}
-+
-+static int mei_cl_device_remove(struct device *dev)
-+{
-+	struct mei_cl_device *device = to_mei_cl_device(dev);
-+	struct mei_cl_driver *driver;
-+
-+	if (!device || !dev->driver)
-+		return 0;
-+
-+	driver = to_mei_cl_driver(dev->driver);
-+	if (!driver->remove) {
-+		dev->driver = NULL;
-+
-+		return 0;
++	err = mei_io_cb_alloc_req_buf(cb, length);
++	if (err < 0) {
++		mei_io_cb_free(cb);
++		return err;
 +	}
 +
-+	return driver->remove(device);
++	memcpy(cb->request_buffer.data, buf, length);
++	cb->fop_type = MEI_FOP_WRITE;
++
++	dev = cl->dev;
++
++	mutex_lock(&dev->device_lock);
++
++	/* Check if we have an ME client device */
++	me_cl_id = mei_me_cl_by_id(dev, cl->me_client_id);
++	if (me_cl_id == dev->me_clients_num) {
++		err = -ENODEV;
++		goto out_err;
++	}
++
++	if (length > dev->me_clients[me_cl_id].props.max_msg_length) {
++		err = -EINVAL;
++		goto out_err;
++	}
++
++	err = mei_cl_flow_ctrl_creds(cl);
++	if (err < 0)
++		goto out_err;
++
++	/* Host buffer is not ready, we queue the request */
++	if (err == 0 || !dev->hbuf_is_ready) {
++		cb->buf_idx = 0;
++		mei_hdr.msg_complete = 0;
++		cl->writing_state = MEI_WRITING;
++		list_add_tail(&cb->list, &dev->write_list.list);
++
++		mutex_unlock(&dev->device_lock);
++
++		return length;
++	}
++
++	dev->hbuf_is_ready = false;
++
++	/* Check for a maximum length */
++	if (length > mei_hbuf_max_len(dev)) {
++		mei_hdr.length = mei_hbuf_max_len(dev);
++		mei_hdr.msg_complete = 0;
++	} else {
++		mei_hdr.length = length;
++		mei_hdr.msg_complete = 1;
++	}
++
++	mei_hdr.host_addr = cl->host_client_id;
++	mei_hdr.me_addr = cl->me_client_id;
++	mei_hdr.reserved = 0;
++
++	if (mei_write_message(dev, &mei_hdr, buf)) {
++		err = -EIO;
++		goto out_err;
++	}
++
++	cl->writing_state = MEI_WRITING;
++	cb->buf_idx = mei_hdr.length;
++
++	if (!mei_hdr.msg_complete) {
++		list_add_tail(&cb->list, &dev->write_list.list);
++	} else {
++		if (mei_cl_flow_ctrl_reduce(cl)) {
++			err = -EIO;
++			goto out_err;
++		}
++
++		list_add_tail(&cb->list, &dev->write_waiting_list.list);
++	}
++
++	mutex_unlock(&dev->device_lock);
++
++	return mei_hdr.length;
++
++out_err:
++	mutex_unlock(&dev->device_lock);
++	mei_io_cb_free(cb);
++
++	return err;
 +}
 +
-+static ssize_t modalias_show(struct device *dev, struct device_attribute *a,
-+			     char *buf)
++int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length)
 +{
-+	int len;
++	struct mei_device *dev;
++	struct mei_cl_cb *cb;
++	size_t r_length;
++	int err;
 +
-+	len = snprintf(buf, PAGE_SIZE, "mei:%s\n", dev_name(dev));
++	if (WARN_ON(!cl || !cl->dev))
++		return -ENODEV;
 +
-+	return (len >= PAGE_SIZE) ? (PAGE_SIZE - 1) : len;
++	dev = cl->dev;
++
++	mutex_lock(&dev->device_lock);
++
++	if (!cl->read_cb) {
++		err = mei_cl_read_start(cl);
++		if (err < 0) {
++			mutex_unlock(&dev->device_lock);
++			return err;
++		}
++	}
++
++	if (cl->reading_state != MEI_READ_COMPLETE &&
++	    !waitqueue_active(&cl->rx_wait)) {
++		mutex_unlock(&dev->device_lock);
++
++		if (wait_event_interruptible(cl->rx_wait,
++				(MEI_READ_COMPLETE == cl->reading_state))) {
++			if (signal_pending(current))
++				return -EINTR;
++			return -ERESTARTSYS;
++		}
++
++		mutex_lock(&dev->device_lock);
++	}
++
++	cb = cl->read_cb;
++
++	if (cl->reading_state != MEI_READ_COMPLETE) {
++		r_length = 0;
++		goto out;
++	}
++
++	r_length = min_t(size_t, length, cb->buf_idx);
++
++	memcpy(buf, cb->response_buffer.data, r_length);
++
++	mei_io_cb_free(cb);
++	cl->reading_state = MEI_IDLE;
++	cl->read_cb = NULL;
++
++out:
++	mutex_unlock(&dev->device_lock);
++
++	return r_length;
 +}
 +
-+static struct device_attribute mei_cl_dev_attrs[] = {
-+	__ATTR_RO(modalias),
-+	__ATTR_NULL,
-+};
-+
-+static int mei_cl_uevent(struct device *dev, struct kobj_uevent_env *env)
++int mei_cl_send(struct mei_cl_device *device, u8 *buf, size_t length)
 +{
-+	if (add_uevent_var(env, "MODALIAS=mei:%s", dev_name(dev)))
-+		return -ENOMEM;
++	struct mei_cl *cl = NULL;
++
++	/* TODO: hook between mei_bus_client and mei_cl */
++
++	if (device->ops && device->ops->send)
++		return device->ops->send(device, buf, length);
++
++	return __mei_cl_send(cl, buf, length);
++}
++EXPORT_SYMBOL_GPL(mei_cl_send);
++
++int mei_cl_recv(struct mei_cl_device *device, u8 *buf, size_t length)
++{
++	struct mei_cl *cl = NULL;
++
++	/* TODO: hook between mei_bus_client and mei_cl */
++
++	if (device->ops && device->ops->recv)
++		return device->ops->recv(device, buf, length);
++
++	return __mei_cl_recv(cl, buf, length);
++}
++EXPORT_SYMBOL_GPL(mei_cl_recv);
++
++static void mei_bus_event_work(struct work_struct *work)
++{
++	struct mei_cl_device *device;
++
++	device = container_of(work, struct mei_cl_device, event_work);
++
++	if (device->event_cb)
++		device->event_cb(device, device->events, device->event_context);
++
++	device->events = 0;
++
++	/* Prepare for the next read */
++	mei_cl_read_start(device->cl);
++}
++
++int mei_cl_register_event_cb(struct mei_cl_device *device,
++			  mei_cl_event_cb_t event_cb, void *context)
++{
++	if (device->event_cb)
++		return -EALREADY;
++
++	device->events = 0;
++	device->event_cb = event_cb;
++	device->event_context = context;
++	INIT_WORK(&device->event_work, mei_bus_event_work);
++
++	mei_cl_read_start(device->cl);
 +
 +	return 0;
 +}
-+
-+static struct bus_type mei_cl_bus_type = {
-+	.name		= "mei",
-+	.dev_attrs	= mei_cl_dev_attrs,
-+	.match		= mei_cl_device_match,
-+	.probe		= mei_cl_device_probe,
-+	.remove		= mei_cl_device_remove,
-+	.uevent		= mei_cl_uevent,
-+};
-+
-+static void mei_cl_dev_release(struct device *dev)
-+{
-+	kfree(to_mei_cl_device(dev));
-+}
-+
-+static struct device_type mei_cl_device_type = {
-+	.release	= mei_cl_dev_release,
-+};
-+
-+struct mei_cl_device *mei_cl_add_device(struct mei_device *mei_device,
-+				  uuid_le uuid, char *name)
-+{
-+	struct mei_cl_device *device;
-+	int status;
-+
-+	device = kzalloc(sizeof(struct mei_cl_device), GFP_KERNEL);
-+	if (!device)
-+		return NULL;
-+
-+	device->dev.parent = &mei_device->pdev->dev;
-+	device->dev.bus = &mei_cl_bus_type;
-+	device->dev.type = &mei_cl_device_type;
-+
-+	dev_set_name(&device->dev, "%s", name);
-+
-+	status = device_register(&device->dev);
-+	if (status)
-+		goto out_err;
-+
-+	dev_dbg(&device->dev, "client %s registered\n", name);
-+
-+	return device;
-+
-+out_err:
-+	dev_err(device->dev.parent, "Failed to register MEI client\n");
-+
-+	kfree(device);
-+
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(mei_cl_add_device);
-+
-+void mei_cl_remove_device(struct mei_cl_device *device)
-+{
-+	device_unregister(&device->dev);
-+}
-+EXPORT_SYMBOL_GPL(mei_cl_remove_device);
++EXPORT_SYMBOL_GPL(mei_cl_register_event_cb);
 diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index b5d6607..7abb705d 100644
+index 7abb705d..cde5687 100644
 --- a/drivers/misc/mei/mei_dev.h
 +++ b/drivers/misc/mei/mei_dev.h
-@@ -21,6 +21,7 @@
- #include <linux/watchdog.h>
- #include <linux/poll.h>
- #include <linux/mei.h>
-+#include <linux/mei_cl_bus.h>
+@@ -268,6 +268,25 @@ struct mei_cl_device *mei_cl_add_device(struct mei_device *dev,
+ 				  uuid_le uuid, char *name);
+ void mei_cl_remove_device(struct mei_cl_device *device);
  
- #include "hw.h"
- #include "hw-me-regs.h"
-@@ -262,6 +263,31 @@ struct mei_hw_ops {
- 		     unsigned char *buf, unsigned long len);
- };
- 
-+/* MEI bus API*/
-+struct mei_cl_device *mei_cl_add_device(struct mei_device *dev,
-+				  uuid_le uuid, char *name);
-+void mei_cl_remove_device(struct mei_cl_device *device);
++int __mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length);
++int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length);
 +
 +/**
-+ * struct mei_cl_device - MEI device handle
-+ * An mei_cl_device pointer is returned from mei_add_device()
-+ * and links MEI bus clients to their actual ME host client pointer.
-+ * Drivers for MEI devices will get an mei_cl_device pointer
-+ * when being probed and shall use it for doing ME bus I/O.
++ * struct mei_cl_transport_ops - MEI CL device transport ops
++ * This structure allows ME host clients to implement technology
++ * specific transport layers.
 + *
-+ * @dev: linux driver model device pointer
-+ * @uuid: me client uuid
-+ * @cl: mei client
-+ * @priv_data: client private data
++ * @send: Tx hook for the device. This allows ME host clients to trap
++ *	the device driver buffers before actually physically
++ *	pushing it to the ME.
++ * @recv: Rx hook for the device. This allows ME host clients to trap the
++ *	ME buffers before forwarding them to the device driver.
 + */
-+struct mei_cl_device {
-+	struct device dev;
-+
-+	struct mei_cl *cl;
-+
-+	void *priv_data;
++struct mei_cl_transport_ops {
++	int (*send)(struct mei_cl_device *device, u8 *buf, size_t length);
++	int (*recv)(struct mei_cl_device *device, u8 *buf, size_t length);
 +};
 +
  /**
-  * struct mei_device -  MEI private device struct
+  * struct mei_cl_device - MEI device handle
+  * An mei_cl_device pointer is returned from mei_add_device()
+@@ -278,6 +297,10 @@ void mei_cl_remove_device(struct mei_cl_device *device);
+  * @dev: linux driver model device pointer
+  * @uuid: me client uuid
+  * @cl: mei client
++ * @ops: ME transport ops
++ * @event_cb: Drivers register this callback to get asynchronous ME
++ *	events (e.g. Rx buffer pending) notifications.
++ * @events: Events bitmask sent to the driver.
+  * @priv_data: client private data
+  */
+ struct mei_cl_device {
+@@ -285,6 +308,13 @@ struct mei_cl_device {
  
-diff --git a/include/linux/mei_cl_bus.h b/include/linux/mei_cl_bus.h
-new file mode 100644
-index 0000000..4e7351d
---- /dev/null
-+++ b/include/linux/mei_cl_bus.h
-@@ -0,0 +1,20 @@
-+#ifndef _LINUX_MEI_CL_BUS_H
-+#define _LINUX_MEI_CL_BUS_H
-+
-+#include <linux/device.h>
-+#include <linux/uuid.h>
-+
-+struct mei_cl_device;
-+
-+struct mei_cl_driver {
-+	struct device_driver driver;
-+	const char *name;
-+
-+	const struct mei_cl_device_id *id_table;
-+
-+	int (*probe)(struct mei_cl_device *dev,
-+		     const struct mei_cl_device_id *id);
-+	int (*remove)(struct mei_cl_device *dev);
-+};
-+
-+#endif /* _LINUX_MEI_CL_BUS_H */
-diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
-index 779cf7c..b508016 100644
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@ -9,6 +9,7 @@
+ 	struct mei_cl *cl;
  
- #ifdef __KERNEL__
- #include <linux/types.h>
-+#include <linux/uuid.h>
- typedef unsigned long kernel_ulong_t;
- #endif
- 
-@@ -568,4 +569,12 @@ struct ipack_device_id {
- 	__u32 device;			/* Device ID or IPACK_ANY_ID */
++	const struct mei_cl_transport_ops *ops;
++
++	struct work_struct event_work;
++	mei_cl_event_cb_t event_cb;
++	void *event_context;
++	unsigned long events;
++
+ 	void *priv_data;
  };
  
-+#define MEI_CL_MODULE_PREFIX "mei:"
-+#define MEI_CL_NAME_SIZE 32
-+
-+struct mei_cl_device_id {
-+	char name[MEI_CL_NAME_SIZE];
-+	kernel_ulong_t driver_info;
-+};
-+
- #endif /* LINUX_MOD_DEVICETABLE_H */
-diff --git a/scripts/mod/devicetable-offsets.c b/scripts/mod/devicetable-offsets.c
-index b45260b..e66d4d2 100644
---- a/scripts/mod/devicetable-offsets.c
-+++ b/scripts/mod/devicetable-offsets.c
-@@ -174,5 +174,8 @@ int main(void)
- 	DEVID_FIELD(x86_cpu_id, model);
- 	DEVID_FIELD(x86_cpu_id, vendor);
+diff --git a/include/linux/mei_cl_bus.h b/include/linux/mei_cl_bus.h
+index ba2aa3b..d9958c3 100644
+--- a/include/linux/mei_cl_bus.h
++++ b/include/linux/mei_cl_bus.h
+@@ -24,4 +24,15 @@ int __mei_cl_driver_register(struct mei_cl_driver *driver,
  
-+	DEVID(mei_cl_device_id);
-+	DEVID_FIELD(mei_cl_device_id, name);
-+
- 	return 0;
- }
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index 771ac17..45f9a33 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -1133,6 +1133,18 @@ static int do_x86cpu_entry(const char *filename, void *symval,
- }
- ADD_TO_DEVTABLE("x86cpu", x86_cpu_id, do_x86cpu_entry);
+ void mei_cl_driver_unregister(struct mei_cl_driver *driver);
  
-+/* Looks like: mei:S */
-+static int do_mei_entry(const char *filename, void *symval,
-+			char *alias)
-+{
-+	DEF_FIELD_ADDR(symval, mei_cl_device_id, name);
++int mei_cl_send(struct mei_cl_device *device, u8 *buf, size_t length);
++int mei_cl_recv(struct mei_cl_device *device, u8 *buf, size_t length);
 +
-+	sprintf(alias, MEI_CL_MODULE_PREFIX "%s", *name);
++typedef void (*mei_cl_event_cb_t)(struct mei_cl_device *device,
++			       u32 events, void *context);
++int mei_cl_register_event_cb(struct mei_cl_device *device,
++			  mei_cl_event_cb_t read_cb, void *context);
 +
-+	return 1;
-+}
-+ADD_TO_DEVTABLE("mei", mei_cl_device_id, do_mei_entry);
++#define MEI_CL_EVENT_RX 0
++#define MEI_CL_EVENT_TX 1
 +
- /* Does namelen bytes of name exactly match the symbol? */
- static bool sym_is(const char *name, unsigned namelen, const char *symbol)
- {
+ #endif /* _LINUX_MEI_CL_BUS_H */
 -- 
 1.7.11.7
 
