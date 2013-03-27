@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab3C0NNs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 09:13:48 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:44297 "EHLO
+	id S1754530Ab3C0NOM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 09:14:12 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:44218 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab3C0NJU (ORCPT
+	with ESMTP id S1751843Ab3C0NJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 09:09:20 -0400
+	Wed, 27 Mar 2013 09:09:19 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com, Philipp Reisner <philipp.reisner@linbit.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>
-Subject: [PATCH 05/17] drbd: fix effective error returned when refusing an invalidate
-Date: Wed, 27 Mar 2013 14:08:37 +0100
-Message-Id: <1364389729-17559-6-git-send-email-philipp.reisner@linbit.com>
+Cc: drbd-dev@lists.linbit.com, George Spelvin <linux@horizon.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>
+Subject: [PATCH 01/17] idr: document exit conditions on idr_for_each_entry better
+Date: Wed, 27 Mar 2013 14:08:33 +0100
+Message-Id: <1364389729-17559-2-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1364389729-17559-1-git-send-email-philipp.reisner@linbit.com>
 References: <1364389729-17559-1-git-send-email-philipp.reisner@linbit.com>
@@ -21,40 +21,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit
-  drbd: Disallow the peer_disk_state to be D_OUTDATED while connected
-trying to invalidate a disconnected Primary returned an error code
-that did not really match the situation:
-"Refusing to be Outdated while Connected"
+From: George Spelvin <linux@horizon.com>
 
-Insert two more specific conditions into is_valid_state(),
-changing that to "Need access to UpToDate data",
-respectively "Need a connection to start verify or resync".
+And some manual common subexpression elimination which may help the
+compiler produce smaller code.
 
+Signed-off-by: George Spelvin <linux@horizon.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_state.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ include/linux/idr.h |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
-index 3bc686f..22e259f 100644
---- a/drivers/block/drbd/drbd_state.c
-+++ b/drivers/block/drbd/drbd_state.c
-@@ -570,6 +570,13 @@ is_valid_state(struct drbd_conf *mdev, union drbd_state ns)
- 		  mdev->tconn->agreed_pro_version < 88)
- 		rv = SS_NOT_SUPPORTED;
+diff --git a/include/linux/idr.h b/include/linux/idr.h
+index 2640c7e..6ece058 100644
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -122,11 +122,13 @@ static inline void *idr_find(struct idr *idr, int id)
+  * @idp:     idr handle
+  * @entry:   the type * to use as cursor
+  * @id:      id entry's key
++ *
++ * @entry and @id do not need to be initialized before the loop, and
++ * after normal terminatinon @entry is left with the value NULL.  This
++ * is convenient for a "not found" value.
+  */
+-#define idr_for_each_entry(idp, entry, id)				\
+-	for (id = 0, entry = (typeof(entry))idr_get_next((idp), &(id)); \
+-	     entry != NULL;                                             \
+-	     ++id, entry = (typeof(entry))idr_get_next((idp), &(id)))
++#define idr_for_each_entry(idp, entry, id)			\
++	for (id = 0; ((entry) = idr_get_next(idp, &(id))) != NULL; ++id)
  
-+	else if (ns.role == R_PRIMARY && ns.disk < D_UP_TO_DATE && ns.pdsk < D_UP_TO_DATE)
-+		rv = SS_NO_UP_TO_DATE_DISK;
-+
-+	else if ((ns.conn == C_STARTING_SYNC_S || ns.conn == C_STARTING_SYNC_T) &&
-+                 ns.pdsk == D_UNKNOWN)
-+		rv = SS_NEED_CONNECTION;
-+
- 	else if (ns.conn >= C_CONNECTED && ns.pdsk == D_UNKNOWN)
- 		rv = SS_CONNECTED_OUTDATES;
- 
+ /*
+  * Don't use the following functions.  These exist only to suppress
 -- 
 1.7.9.5
 
