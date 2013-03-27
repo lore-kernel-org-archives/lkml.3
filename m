@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab3C0Loe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 07:44:34 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:24768 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab3C0Lod (ORCPT
+	id S1753749Ab3C0LsC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 07:48:02 -0400
+Received: from mail-ia0-f176.google.com ([209.85.210.176]:38044 "EHLO
+	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab3C0LsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 07:44:33 -0400
-X-Spam-Score: -100.8
-Message-ID: <5152DB83.8080703@asianux.com>
-Date: Wed, 27 Mar 2013 19:44:03 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 27 Mar 2013 07:48:00 -0400
 MIME-Version: 1.0
-To: catalin.marinas@arm.com, Will Deacon <will.deacon@arm.com>,
-        marc.zyngier@arm.com, anup.patel@linaro.org,
-        Arnd Bergmann <arnd@arndb.de>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [Suggestion] ARM64:kernel: compiling issue for early_console.
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Date: Wed, 27 Mar 2013 05:47:58 -0600
+Message-ID: <CA+ekxPUJwgEAkXg4y0qgMAWe2O-oxasHTKMCcCGP=PW4MdtU9Q@mail.gmail.com>
+Subject: Attempted Breakin of Go Daddy by LKML Member (Foiled)
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
+After posting the latest MDB version, this linux developer (which I
+monitor from San Diego periodically) attempted a break in of godaddy's
+servers with an XSS embedded script attack.  This notice is posted to
+warn others of this address.  I am certain Linus and Co. can check
+kernel.org and track down this address if they are a user of LKML.
+The following is provided from server logs at godaddy.
 
-  it is a compiling issue for early_console.
+2013-03-26 16:36:16	GET
+/?page=maillist&name=press	108.64.212.227	108-64-212-227.lightspeed.sndgca.sbcglobal.net
+2013-03-26 16:36:21	GET
+/?page=account&action=messages	108.64.212.227	108-64-212-227.lightspeed.sndgca.sbcglobal.net
+2013-03-26 16:36:29	GET
+/?page=maillist&name=discussion	108.64.212.227	108-64-212-227.lightspeed.sndgca.sbcglobal.net
+2013-03-26 16:36:48	GET
+/?page=maillist&name=%3Cscript%3Ealert('woot');%3C/script%3E	108.64.212.227	108-64-212-227.lightspeed.sndgca.sbcglobal.net
+2013-03-26 16:37:01	GET /?page=admin	108.64.212.227	
 
-  the make command:
-    make V=1 EXTRA_CFLAGS=-W ARCH=arm64 allmodconfig
-    make V=1 EXTRA_CFLAGS=-W ARCH=arm64 menuconfig
-      set aarch64-linux-gnu- for tool chain prefix.
-    make V=1 EXTRA_CFLAGS=-W ARCH=arm64
+geolocation shows the address is a duckblind from.  He is a linux user
+on Ubuntu.  See:
+User-Agent : Mozilla/5.0 (X11; U; Linux i686; it-IT; rv:1.9.0.2)
+Gecko/2008092313 Ubuntu/9.25 (jaunty) ...
 
-  the error message:
-    arch/arm64/kernel/early_printk.c: At top level:
-    arch/arm64/kernel/early_printk.c:98:23: error: conflicting types for ‘early_console’
-    In file included from arch/arm64/kernel/early_printk.c:20:0:
-    include/linux/console.h:145:24: note: previous declaration of ‘early_console’ was here
-    make[1]: *** [arch/arm64/kernel/early_printk.o] Error 1
-    make: *** [arch/arm64/kernel] Error 2
+http://geo-location.com/host-76-219-253-168.lightspeed.sndgca.sbcglobal.net/
 
+Here is a description of this type of attack.
 
-  I guess, we can just reference the 32-bit arm implementation is ok.
-    (it is in arch/arm/kernel/early_printk.c line 32..44)
+http://www.acunetix.com/websitesecurity/cross-site-scripting/
 
-  if really just like what I guess, may I send related patch for it ?
+This IP address has been reported to godaddy IAW their site policies
+on breakin attempts to their hosted servers.  So I know you are
+trolling this list hacker (LKML) and I want to let you know your IP
+address in San Diego won't be around much longer.  Have a nice day.
 
-  :-)
-
-
-gchen.
+Jeff Merkey
