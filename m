@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab3C0T3s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 15:29:48 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:63846 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753876Ab3C0T3o (ORCPT
+	id S1754459Ab3C0Tbs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 15:31:48 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:56341 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754255Ab3C0T3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 15:29:44 -0400
+	Wed, 27 Mar 2013 15:29:47 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, tj@kernel.org
-Subject: [PATCH v2 1/6] idr: introduce idr_alloc_cyclic
-Date: Wed, 27 Mar 2013 15:29:33 -0400
-Message-Id: <1364412578-7462-2-git-send-email-jlayton@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tj@kernel.org,
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>, linux-rdma@vger.kernel.org
+Subject: [PATCH v2 3/6] mlx4: convert to using idr_alloc_cyclic
+Date: Wed, 27 Mar 2013 15:29:35 -0400
+Message-Id: <1364412578-7462-4-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1364412578-7462-1-git-send-email-jlayton@redhat.com>
 References: <1364412578-7462-1-git-send-email-jlayton@redhat.com>
@@ -20,86 +23,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thus spake Tejun Heo:
+(Note: compile tested only)
 
-    Ooh, BTW, the cyclic allocation is broken.  It's prone to -ENOSPC
-    after the first wraparound.  There are several cyclic users in the
-    kernel and I think it probably would be best to implement cyclic
-    support in idr.
-
-This patch does that by adding new idr_alloc_cyclic function that such
-users in the kernel can use. With this, there's no need for a caller to
-keep track of the last value used as that's now tracked internally.
-This should prevent the ENOSPC problems that can hit when the "last
-allocated" counter exceeds INT_MAX.
-
-Later patches will convert existing cyclic users to the new interface.
-
-Reviewed-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Jack Morgenstein <jackm@dev.mellanox.co.il>
+Cc: Or Gerlitz <ogerlitz@mellanox.com>
+Cc: Roland Dreier <roland@purestorage.com>
+Cc: linux-rdma@vger.kernel.org
 ---
- include/linux/idr.h |  2 ++
- lib/idr.c           | 27 +++++++++++++++++++++++++++
- 2 files changed, 29 insertions(+)
+ drivers/infiniband/hw/mlx4/cm.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/include/linux/idr.h b/include/linux/idr.h
-index 2640c7e..a470ac3 100644
---- a/include/linux/idr.h
-+++ b/include/linux/idr.h
-@@ -42,6 +42,7 @@ struct idr {
- 	struct idr_layer	*id_free;
- 	int			layers;	/* only valid w/o concurrent changes */
- 	int			id_free_cnt;
-+	int			cur;	/* current pos for cyclic allocation */
- 	spinlock_t		lock;
- };
- 
-@@ -75,6 +76,7 @@ struct idr {
- void *idr_find_slowpath(struct idr *idp, int id);
- void idr_preload(gfp_t gfp_mask);
- int idr_alloc(struct idr *idp, void *ptr, int start, int end, gfp_t gfp_mask);
-+int idr_alloc_cyclic(struct idr *idr, void *ptr, int start, int end, gfp_t gfp_mask);
- int idr_for_each(struct idr *idp,
- 		 int (*fn)(int id, void *p, void *data), void *data);
- void *idr_get_next(struct idr *idp, int *nextid);
-diff --git a/lib/idr.c b/lib/idr.c
-index 322e281..cca4b93 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -495,6 +495,33 @@ int idr_alloc(struct idr *idr, void *ptr, int start, int end, gfp_t gfp_mask)
- }
- EXPORT_SYMBOL_GPL(idr_alloc);
- 
-+/**
-+ * idr_alloc_cyclic - allocate new idr entry in a cyclical fashion
-+ * @idr: the (initialized) idr
-+ * @ptr: pointer to be associated with the new id
-+ * @start: the minimum id (inclusive)
-+ * @end: the maximum id (exclusive, <= 0 for max)
-+ * @gfp_mask: memory allocation flags
-+ *
-+ * Essentially the same as idr_alloc, but prefers to allocate progressively
-+ * higher ids if it can. If the "cur" counter wraps, then it will start again
-+ * at the "start" end of the range and allocate one that has already been used.
-+ */
-+int idr_alloc_cyclic(struct idr *idr, void *ptr, int start, int end,
-+			gfp_t gfp_mask)
-+{
-+	int id;
-+
-+	id = idr_alloc(idr, ptr, max(start, idr->cur), end, gfp_mask);
-+	if (id == -ENOSPC)
-+		id = idr_alloc(idr, ptr, start, end, gfp_mask);
-+
-+	if (likely(id >= 0))
-+		idr->cur = id + 1;
-+	return id;
-+}
-+EXPORT_SYMBOL(idr_alloc_cyclic);
-+
- static void idr_remove_warning(int id)
+diff --git a/drivers/infiniband/hw/mlx4/cm.c b/drivers/infiniband/hw/mlx4/cm.c
+index add98d0..d1f5f1d 100644
+--- a/drivers/infiniband/hw/mlx4/cm.c
++++ b/drivers/infiniband/hw/mlx4/cm.c
+@@ -204,7 +204,6 @@ static struct id_map_entry *
+ id_map_alloc(struct ib_device *ibdev, int slave_id, u32 sl_cm_id)
  {
- 	printk(KERN_WARNING
+ 	int ret;
+-	static int next_id;
+ 	struct id_map_entry *ent;
+ 	struct mlx4_ib_sriov *sriov = &to_mdev(ibdev)->sriov;
+ 
+@@ -223,9 +222,8 @@ id_map_alloc(struct ib_device *ibdev, int slave_id, u32 sl_cm_id)
+ 	idr_preload(GFP_KERNEL);
+ 	spin_lock(&to_mdev(ibdev)->sriov.id_map_lock);
+ 
+-	ret = idr_alloc(&sriov->pv_id_table, ent, next_id, 0, GFP_NOWAIT);
++	ret = idr_alloc_cyclic(&sriov->pv_id_table, ent, 0, 0, GFP_NOWAIT);
+ 	if (ret >= 0) {
+-		next_id = max(ret + 1, 0);
+ 		ent->pv_cm_id = (u32)ret;
+ 		sl_id_map_add(ibdev, ent);
+ 		list_add_tail(&ent->list, &sriov->cm_list);
 -- 
 1.7.11.7
 
