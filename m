@@ -1,103 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab3C0Iqw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 04:46:52 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:63025 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385Ab3C0Iqn (ORCPT
+	id S1754824Ab3C0Isk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 04:48:40 -0400
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:39176 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753586Ab3C0Isg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 04:46:43 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: linux-fbdev@vger.kernel.org, florianschandinat@gmx.de,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH 2/6] video: vt8500: Remove unused platform_data/video-vt8500lcdfb.h
-Date: Wed, 27 Mar 2013 21:46:57 +1300
-Message-Id: <1364374021-10844-3-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364374021-10844-1-git-send-email-linux@prisktech.co.nz>
-References: <1364374021-10844-1-git-send-email-linux@prisktech.co.nz>
+	Wed, 27 Mar 2013 04:48:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <006401ce215d$95c565a0$c15030e0$%han@samsung.com>
+References: <006201ce215d$6f133d10$4d39b730$%han@samsung.com>
+	<006401ce215d$95c565a0$c15030e0$%han@samsung.com>
+Date: Wed, 27 Mar 2013 09:48:35 +0100
+Message-ID: <CACRpkday=WvsEhC8aLyF4WeP_m+AjU2Fw7SiJ9YyYUYCcJCQkw@mail.gmail.com>
+Subject: Re: [PATCH 3/6] gpio: max7301: use devm_kzalloc()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the conversion to devicetree only for arch-vt8500, this
-header is no longer required. This patch removes the #include
-from the two framebuffer drivers that used it, and the header file.
+On Fri, Mar 15, 2013 at 10:15 AM, Jingoo Han <jg1.han@samsung.com> wrote:
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
- drivers/video/vt8500lcdfb.c                     |    2 --
- drivers/video/wm8505fb.c                        |    2 --
- include/linux/platform_data/video-vt8500lcdfb.h |   31 -----------------------
- 3 files changed, 35 deletions(-)
- delete mode 100644 include/linux/platform_data/video-vt8500lcdfb.h
+> Use devm_kzalloc() to make cleanup paths simpler.
+>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-diff --git a/drivers/video/vt8500lcdfb.c b/drivers/video/vt8500lcdfb.c
-index d8cc1f6..1c34821 100644
---- a/drivers/video/vt8500lcdfb.c
-+++ b/drivers/video/vt8500lcdfb.c
-@@ -30,8 +30,6 @@
- #include <linux/platform_device.h>
- #include <linux/wait.h>
- 
--#include <linux/platform_data/video-vt8500lcdfb.h>
--
- #include "vt8500lcdfb.h"
- 
- #ifdef CONFIG_FB_WMT_GE_ROPS
-diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
-index db49803..ce23a00 100644
---- a/drivers/video/wm8505fb.c
-+++ b/drivers/video/wm8505fb.c
-@@ -32,8 +32,6 @@
- #include <linux/of_fdt.h>
- #include <linux/memblock.h>
- 
--#include <linux/platform_data/video-vt8500lcdfb.h>
--
- #include "wm8505fb_regs.h"
- 
- #ifdef CONFIG_FB_WMT_GE_ROPS
-diff --git a/include/linux/platform_data/video-vt8500lcdfb.h b/include/linux/platform_data/video-vt8500lcdfb.h
-deleted file mode 100644
-index 7f399c3..0000000
---- a/include/linux/platform_data/video-vt8500lcdfb.h
-+++ /dev/null
-@@ -1,31 +0,0 @@
--/*
-- *  VT8500/WM8505 Frame Buffer platform data definitions
-- *
-- *  Copyright (C) 2010 Ed Spiridonov <edo.rus@gmail.com>
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- */
--
--#ifndef _VT8500FB_H
--#define _VT8500FB_H
--
--#include <linux/fb.h>
--
--struct vt8500fb_platform_data {
--	struct fb_videomode	mode;
--	u32			xres_virtual;
--	u32			yres_virtual;
--	u32			bpp;
--	unsigned long		video_mem_phys;
--	void			*video_mem_virt;
--	unsigned long		video_mem_len;
--};
--
--#endif /* _VT8500FB_H */
--- 
-1.7.9.5
+Patch applied.
 
+Thanks!
+Linus Walleij
