@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab3C0A6E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 20:58:04 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42471 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755894Ab3C0A6C (ORCPT
+	id S1755495Ab3C0BJx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 21:09:53 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63794 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752281Ab3C0BJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 20:58:02 -0400
-Date: Wed, 27 Mar 2013 11:57:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pravin B Shelar <pshelar@nicira.com>
-Subject: linux-next: manual merge of the net-next tree with Linus' tree
-Message-Id: <20130327115743.7d6c10f1e1c67f02e9c96ff8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__27_Mar_2013_11_57_43_+1100_Nsh5HxZ5UA=__njk"
+	Tue, 26 Mar 2013 21:09:53 -0400
+X-AuditID: 9c930197-b7c9dae000006959-36-515246db334e
+Date: Wed, 27 Mar 2013 10:09:47 +0900
+From: Minchan Kim <minchan.kim@lge.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] staging: zsmalloc: Fix link error on ARM
+Message-ID: <20130327010947.GA2710@blaptop>
+References: <1364337232-3513-1-git-send-email-joro@8bytes.org>
+ <20130327000552.GA13283@blaptop>
+ <20130327004314.GH30540@8bytes.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130327004314.GH30540@8bytes.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__27_Mar_2013_11_57_43_+1100_Nsh5HxZ5UA=__njk
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Mar 27, 2013 at 01:43:14AM +0100, Joerg Roedel wrote:
+> On Wed, Mar 27, 2013 at 09:05:52AM +0900, Minchan Kim wrote:
+> > And please Cc stable.
+> 
+> Okay, here it is. The result is compile-tested.
+> 
+> Changes since v1:
+> 
+> * Remove the module-export for unmap_kernel_range and make zsmalloc
+>   built-in instead
+> 
+> Here is the patch:
+> 
+> >From 2b70502720b36909f9f39bdf27be21321a219c31 Mon Sep 17 00:00:00 2001
+> From: Joerg Roedel <joro@8bytes.org>
+> Date: Tue, 26 Mar 2013 23:24:22 +0100
+> Subject: [PATCH v2] staging: zsmalloc: Fix link error on ARM
+> 
+> Testing the arm chromebook config against the upstream
+> kernel produces a linker error for the zsmalloc module from
+> staging. The symbol flush_tlb_kernel_range is not available
+> there. Fix this by removing the reimplementation of
+> unmap_kernel_range in the zsmalloc module and using the
+> function directly. The unmap_kernel_range function is not
+> usable by modules, so also disallow building the driver as a
+> module for now.
+> 
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-Hi all,
-
-Today's linux-next merge of the net-next tree got a conflict in
-include/net/ipip.h between commit 330305cc4a6b ("pv4: Fix ip-header
-identification for gso packets") from Linus' tree and commit c54419321455
-("GRE: Refactor GRE tunneling code") from the net-next tree.
-
-I just dropped the file (as the latter change did) and can carry the fix
-as necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__27_Mar_2013_11_57_43_+1100_Nsh5HxZ5UA=__njk
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRUkQHAAoJEECxmPOUX5FEgGcQAIpoYOTTVWNFnLPle4ds+Wdk
-QA+vgzI/RM7vK3CGHC7dcDenJdAgp4bmxgFImiVOMR0PNYJ9se2EBFXN7krbrFXN
-kJ/famdQJRnZKMw1Wd9na3Rcb1hLtHUe9ASErq4PKl41Cn0C4edwI9dBQcJJ13xJ
-1uIg31IOZmZsakLoXw5V+l+BYYD3vSPJfGEw5EMDAtW6vKo5+NZFYmw3jABxRG5X
-lm83qBXAaJsg1IV1J4ZzDUVfepE5djXIHpzlWeCLupdMnQx86WK1DwwmW8jLe29l
-kkvQ3nThBUbOGSZ4ITfkZqNbxwQx3rWLlCysRvQzaEljt+fMilVqCC60MuWfTtTs
-0mnu/Ednm/+aifaD3TQnWXDHAGNUvBnkMvffJ/qOH/2G8tyBuuTkFdXRbwW6ykU9
-GV2+18E6jeTTjm3jDLASA1WhqrL1q7MdfR5giyML71JBkhr2ZupJmiUEwKHI1xqT
-SCuP00bYXRUH5O5xP2s30E1tWXgUw954ghOSMfKexSxlky4IDvdTWborYKZ+p0s4
-rtc1SNmBBrzYhYeALJl+vv2NefuqZJ1zGPl8tc2orINHlLiLaZNW8xti+YTaGh0Q
-Wroam+2hy2Hmepy3omL37ivIuAgrOLYAF7iYgONFvGXtAlMgBHDDaNI18gT7qCdx
-zf0brDL/LfNVzojNdvIA
-=kTCc
------END PGP SIGNATURE-----
-
---Signature=_Wed__27_Mar_2013_11_57_43_+1100_Nsh5HxZ5UA=__njk--
+-- 
+Kind regards,
+Minchan Kim
