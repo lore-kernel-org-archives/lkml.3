@@ -1,121 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab3C0LKi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 07:10:38 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55748 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751728Ab3C0LKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 07:10:36 -0400
-Message-ID: <5152D39F.1090104@ti.com>
-Date: Wed, 27 Mar 2013 13:10:23 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Tony Prisk <linux@prisktech.co.nz>
-CC: <linux-fbdev@vger.kernel.org>, <florianschandinat@gmx.de>,
-        <vt8500-wm8505-linux-kernel@googlegroups.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/6] video: fb: vt8500: Convert framebuffer drivers to
- standardized binding
-References: <1364374021-10844-1-git-send-email-linux@prisktech.co.nz> <1364374021-10844-7-git-send-email-linux@prisktech.co.nz>
-In-Reply-To: <1364374021-10844-7-git-send-email-linux@prisktech.co.nz>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enig376836BFAA8AAA23B8CFC0F7"
+	id S1751218Ab3C0LLr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 07:11:47 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36564 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab3C0LLp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 07:11:45 -0400
+Date: Wed, 27 Mar 2013 22:11:28 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans Verkuil <hans.verkuil@cisco.com>, Greg KH <greg@kroah.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (v4l-dvb tree related)
+Message-Id: <20130327221128.db6d370b4c06ceaf600b6ab5@canb.auug.org.au>
+In-Reply-To: <20130327105234.3396059519ca69f405f703b1@canb.auug.org.au>
+References: <20130326171847.18cd41b85d3caee6373d9447@canb.auug.org.au>
+	<20130326090452.01550c37@redhat.com>
+	<20130327105234.3396059519ca69f405f703b1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__27_Mar_2013_22_11_28_+1100_lLQO+D24Ab5V1o6f"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enig376836BFAA8AAA23B8CFC0F7
-Content-Type: text/plain; charset=ISO-8859-1
+--Signature=_Wed__27_Mar_2013_22_11_28_+1100_lLQO+D24Ab5V1o6f
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Hi Mauro,
 
-On 2013-03-27 10:47, Tony Prisk wrote:
-> Now that a display timing binding is available, convert our almost iden=
-tical
-> binding to use the standard binding.
+On Wed, 27 Mar 2013 10:52:34 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> On Tue, 26 Mar 2013 09:04:52 -0300 Mauro Carvalho Chehab <mchehab@redhat.=
+com> wrote:
+> >
+> > Em Tue, 26 Mar 2013 17:18:47 +1100
+> > Stephen Rothwell <sfr@canb.auug.org.au> escreveu:
+> >=20
+> > > After merging the final tree, today's linux-next build (powerpc
+> > > allyesconfig) failed like this:
+> > >=20
+> > > drivers/staging/media/solo6x10/solo6x10-v4l2-enc.c: In function 'solo=
+_enc_default':
+> > > drivers/staging/media/solo6x10/solo6x10-v4l2-enc.c:1031:7: error: cas=
+e label does not reduce to an integer constant
+> > > drivers/staging/media/solo6x10/solo6x10-v4l2-enc.c:1035:7: error: cas=
+e label does not reduce to an integer constant
+> > >=20
+> > > I am not sure why this has suddenly appeared, but I have disabled the
+> > > driver for now using this patch:
+> >=20
+> > Well, solo6x10 didn't use to have its own private ioctl's until now.
+> > Still, that's strange, as there are other drivers also using vidioc_def=
+ault.
+> >=20
+> > I suspect that those _IO* have its highest bit equal to 1 on powerpc
+> > being too big for int. If so, the enclosed patch should fix.=20
+> > I'm still wandering why it didn't cause any compilation problems here.
+> >=20
+> > Ok, I didn't try to compile it on powerpc, but still integers have 32
+> > bits on ppc, right?
 >=20
-> This patch converts the vt8500 and wm8505 framebuffer drivers and
-> associated dts/dtsi files to use the standard binding as defined in
-> bindings/video/display-timing.txt.
+> yes.
 >=20
-> There are two side-effects of making this conversion:
+> > Anyway, could you please try the enclosed patch?
 >=20
-> 1) The fb node should now be in the board file, rather than the soc fil=
-e as
-> the display-timing node is a child of the fb node.
+> Doesn't help.
 >=20
-> 2) We still require a bits per pixel property to initialize the framebu=
-ffer
-> for the different lcd panels. Rather than including this as part of the=
-
-> display timing, it is moved into the framebuffer node.
+> on powerpc, SOLO_IOC_G_MOTION_THRESHOLDS expands to
 >=20
-> I have also taken the opportunity to alphabetise the includes of each
-> driver to avoid double-ups.
+> (((2U) << (((0 +8)+8)+13)) | ((('V')) << (0 +8)) | (((192 +0)) << 0) | ((=
+(((sizeof(struct solo_motion_thresholds) =3D=3D sizeof(struct solo_motion_t=
+hresholds[1]) && sizeof(struct solo_motion_thresholds) < (1 << 13)) ? sizeo=
+f(struct solo_motion_thresholds) : __invalid_size_argument_for_IOC))) << ((=
+0 +8)+8)))
+>=20
+> sizeof(struct solo_motion_thresholds) is 64*64*2 =3D=3D 8192 which is not
+> less than 1 << 13
 
-I don't think this is correct. I don't have that much experience with
-DT, but I think you should have, for example:
+Note that this will also break on alpha and mips.  Sparc seems to have a
+tricky workaround (to allow 14 bits for size) - I wonder if that could be
+used for these other arches as well?
 
-wm8850.dtsi:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-	fb: fb@d8051700 {
-		compatible =3D "wm,wm8505-fb";
-		reg =3D <0xd8051700 0x200>;
-	};
-
-wm8850-w70v2.dts:
-
-&fb {
-	bits-per-pixel =3D <16>;
-
-	display-timings {
-		native-mode =3D <&timing0>;
-		timing0: 800x480 {
-			clock-frequency =3D <0>;
-			...
-		};
-	};
-};
-
-So, the core fb part should be in the SoC's file, as it's part of the
-SoC. And the stuff that tells what kind of display is attached is in the
-board dts file.
-
-Also, just a word of warning, I think the videomode series I've sent for
-review will cause some breakage with this series if the videomode series
-is accepted. Nothing difficult to fix, though, but we'll need some extra
-management to avoid compilation failures.
-
- Tomi
-
-
-
---------------enig376836BFAA8AAA23B8CFC0F7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+--Signature=_Wed__27_Mar_2013_22_11_28_+1100_lLQO+D24Ab5V1o6f
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRUtOfAAoJEPo9qoy8lh71/EYP/0JKVD/rqgcE71MywBTPZdYk
-XEV4tY8ALrfutQy0AXKTxSbG3PzJRZbR4QcIlU6J/5OdTn0diuXDeBG5GbFyFyAe
-K1BqiRxJGRWVKn7Tl1zSOHw52nenRI9iB09drZYRpxGIkXud89/cxGbuH0W2YoAe
-Dv11ZRP3tfbWBKCl95GvjPqa6HMONqWOsE3xXYWKbBmkPiolKjcanPBwLhLU2kmA
-iRwdB3WN1LDsd+plVlLngM0KodZUlpa0ZVRVzdvtmQ8zMs7BlrfXYmfY3p3opPGu
-8BxPxbfGkC+Sb1CxfSjSXqx3r/637K00tCn8sw2u+fkiXKFv8jzZmpxl73mUj9PT
-KRgBatqkJBKneRHoAFKWFcwQUEonxkOVd86bO+GDLUeJbfrfCr2Cmfn20CmTrlRV
-UBkPzQiIGjuIssaCMqvUBjdYmj1PbVmMlYxgJkR9yp7sjpR2OdmYDMFKQ6Lpsi6C
-ZynxAmPb5OrLuRmHDgep4PkDcEDa+K0OjVtAHnm4bhDIIKO9zKW1wVHu6qJaamuC
-12nwKueViOSLmsWyKwT5ZL7E9+XyRhPgSQm/ULsLiUKBCGaOCmnSK2zK2nmENEUp
-/E/BzPBarTVTa+FPOtGsEq98RZe1vt6XWrktaqLfi3OXZzL5XxceiMW5lgQVmRyD
-oI59oVcFoeU1xBiSuTh8
-=bulL
+iQIcBAEBCAAGBQJRUtPgAAoJEECxmPOUX5FEizQQAJz/rVFBGnQwDvJAXrWmTFTX
+hyN6xfOF6+0Sp920TbbLGG1GEJo17majM5uJhtTOPY2KtYvfa1STi5ILFeZN5Ts9
+Zw8zTmeTNEbb1dpADsQhBz/1ABzRmXlRoHhgnUepQ72khjgF8U9lCkDbbNxVamGV
+686raNhmGv5qTYPsRs/DFvfRnpxa+d68oFHFb1H16df5nQzWKrMWx90RgM6U1fzU
+DAW9S6Ln/ke2Io8VaDoPHrnU9FK/YugqqwaHIse5UjXBwuUMakT7zEByY/2P88br
+pQThcbbNIlWx3smTm5A2O6+bQ+LO2iakL317IG0A6QUSWUuKZ22kdtDZOjrQh9ZL
+5N5lNySUVIrPNK5uyav6achRQT4d8p4+cyTjqSy7d+pDu6N9tXHOypazZ4cR/yw5
+ERGRANqx/O211wWufsGJF83dCWHIfc7YIust1YJCRR0i6knLehUVhYWysWdVj8xh
+a8c1lEx9T/PD9rSLbUQGyJVyszyiRi9trO/efSXD6TQkgUu17E0AagJ6VMln9Lco
+XusQYRz1wR0jOgi8gFgi6QKScdg++KAKUM2F8SfhaAn3GUCTdHFC5OYDC+oxG1NQ
+OnESnmZGGvcBZx4Te13SskKMgGuKw7URiBw1QBuFliGRJnbtUp/7PwyU0XXGu/Wo
+Vr8NAwW65UXQhepiBQIT
+=Bh1i
 -----END PGP SIGNATURE-----
 
---------------enig376836BFAA8AAA23B8CFC0F7--
+--Signature=_Wed__27_Mar_2013_22_11_28_+1100_lLQO+D24Ab5V1o6f--
