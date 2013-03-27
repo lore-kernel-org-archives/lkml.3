@@ -1,49 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab3C0OBK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 10:01:10 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:42630 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab3C0OBI (ORCPT
+	id S1752320Ab3C0OER (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 10:04:17 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:54317 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab3C0OEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 10:01:08 -0400
+	Wed, 27 Mar 2013 10:04:16 -0400
 MIME-Version: 1.0
-Date: Wed, 27 Mar 2013 22:01:07 +0800
-Message-ID: <CAPgLHd_JduxWJtpcvFsYJD+39neJf5xQOZfNO0qS+zAX4GTzug@mail.gmail.com>
-Subject: [PATCH -next] ocfs2: fix error return code in ocfs2_info_handle_freefrag()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: mfasheh@suse.com, jlbec@evilplan.org
-Cc: yongjun_wei@trendmicro.com.cn, ocfs2-devel@oss.oracle.com,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <1363407672.3898.1.camel@phoenix>
+References: <1363407672.3898.1.camel@phoenix>
+Date: Wed, 27 Mar 2013 15:04:16 +0100
+Message-ID: <CACRpkdbKVnNvRYQPrPKXYKWiiyhwLM75Jdji_HqGCta+mcQHVQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND] gpio: samsung: Add terminating entry for exynos_pinctrl_ids
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Sat, Mar 16, 2013 at 5:21 AM, Axel Lin <axel.lin@ingics.com> wrote:
 
-Fix to return a negative error code from the error handling
-case instead of 0, as returned elsewhere in this function.
+> The of_device_id table is supposed to be zero-terminated.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- fs/ocfs2/ioctl.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Patch applied with Kukjin's ACK.
 
-diff --git a/fs/ocfs2/ioctl.c b/fs/ocfs2/ioctl.c
-index 6cab301..0c60ef2 100644
---- a/fs/ocfs2/ioctl.c
-+++ b/fs/ocfs2/ioctl.c
-@@ -706,8 +706,10 @@ int ocfs2_info_handle_freefrag(struct inode *inode,
- 
- 	o2info_set_request_filled(&oiff->iff_req);
- 
--	if (o2info_to_user(*oiff, req))
-+	if (o2info_to_user(*oiff, req)) {
-+		status = -EFAULT;
- 		goto bail;
-+	}
- 
- 	status = 0;
- bail:
-
+Thanks!
+Linus Walleij
