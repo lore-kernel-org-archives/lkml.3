@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab3C0Czn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Mar 2013 22:55:43 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52860 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105Ab3C0Czm (ORCPT
+	id S1755064Ab3C0C7L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Mar 2013 22:59:11 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47761 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842Ab3C0C7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Mar 2013 22:55:42 -0400
-Message-ID: <51525FAC.2010106@wwwdotorg.org>
-Date: Tue, 26 Mar 2013 20:55:40 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Tue, 26 Mar 2013 22:59:10 -0400
+X-AuditID: 9c930197-b7c9dae000006959-5a-5152607b539f
+Date: Wed, 27 Mar 2013 11:59:57 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <clark@redhat.com>
+Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
+ unfreeze_partials() code.
+Message-ID: <20130327025957.GA17125@lge.com>
+References: <1363906545.6345.81.camel@gandalf.local.home>
+ <0000013d92c37ff3-5fb85400-bec1-4eda-8ba1-332566884c59-000000@email.amazonses.com>
+ <1364010673.6345.156.camel@gandalf.local.home>
+ <0000013da1f93be3-c3d42ae8-ff34-4c63-8094-77a83291ea19-000000@email.amazonses.com>
+ <1364227073.6345.182.camel@gandalf.local.home>
+ <1364228039.6345.183.camel@gandalf.local.home>
+ <0000013da2ace21a-9e87fe8a-75c2-4b7c-b5e1-37ad196ce012-000000@email.amazonses.com>
+ <1364234613.6345.184.camel@gandalf.local.home>
+ <0000013da2ce20f8-0e3a64ef-67ed-4ab4-9f20-b77980c876c3-000000@email.amazonses.com>
+ <1364236355.6345.185.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: Lubomir Rintel <lkundrak@v3.sk>
-CC: linux-kernel@vger.kernel.org, linux-rpi-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] bcm2835: Add Broadcom BCM2835 RNG to the device tree
-References: <1363956930-5717-1-git-send-email-lkundrak@v3.sk> <1364135511-26970-1-git-send-email-lkundrak@v3.sk>
-In-Reply-To: <1364135511-26970-1-git-send-email-lkundrak@v3.sk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364236355.6345.185.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2013 08:31 AM, Lubomir Rintel wrote:
-> This adds a device tree binding for random number generator present on Broadcom
-> BCM2835 SoC, used in Raspberry Pi and Roku 2 devices.
+On Mon, Mar 25, 2013 at 02:32:35PM -0400, Steven Rostedt wrote:
+> On Mon, 2013-03-25 at 18:27 +0000, Christoph Lameter wrote:
+> > On Mon, 25 Mar 2013, Steven Rostedt wrote:
+> > 
+> > > If this makes it more deterministic, and lower worse case latencies,
+> > > then it's definitely worth the price.
+> > 
+> > Yes that would make it more deterministic. Maybe I should add an option
+> > to be able to compile the allocator without cpu partial page support?
 > 
-> Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: linux-rpi-kernel@lists.infradead.org
-> ---
-> Changes for v2:
->     - Split out from the driver changeset
->     - Added documentation
+> I agree that would be useful.
+
+Hello, Steven and Christoph.
+
+How about using spin_try_lock() in unfreeze_partials() and
+using spin_lock_contented() in get_partial_node() to reduce latency?
+IMHO, this doesn't make code more deterministic, but can maintain
+a benefit of cpu partial page with tolerable latency.
+
+Thanks.
+
 > 
->  .../devicetree/bindings/rng/brcm,bcm2835.txt       |   13 +++++++++++++
->  arch/arm/boot/dts/bcm2835.dtsi                     |    5 +++++
->  2 files changed, 18 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/rng/brcm,bcm2835.txt
-
-I think it's more typical to include the binding document with the
-driver patch, so that one patch both defines and implements the binding.
-A separate patch then instantiates the binding (i.e. adds entries to *.dts).
-
-Patches that create new DT bindings should be posted to
-devicetree-discuss@lists.ozlabs.org, although this one is so simple that
-I doubt it will generate any discussion.
-
-Patches that affect ARM files should be posted to
-linux-arm-kernel@lists.infradead.org. I typically post there instead of
-the main linux-kernel@ mailing list.
-
-I assume you're going to repost this anyway once you've addressed the
-authorship issue, so you'll have an opportunity to correct all this.
-
-The actual content of this patch seems fine.
+> -- Steve
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
