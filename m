@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab3C0NHO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 09:07:14 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:63286 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878Ab3C0NHL (ORCPT
+	id S1753240Ab3C0NJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 09:09:26 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:44310 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602Ab3C0NJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 09:07:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <4cbdc8777bbe14d4c8ea3b2124e9df57d497f066.1363914598.git.dvhart@linux.intel.com>
-References: <4cbdc8777bbe14d4c8ea3b2124e9df57d497f066.1363914598.git.dvhart@linux.intel.com>
-Date: Wed, 27 Mar 2013 14:07:10 +0100
-Message-ID: <CACRpkdaxnF+OWGt7M5wTX4t9S573TDf861Jk0Auds8yKUUKBtA@mail.gmail.com>
-Subject: Re: [PATCH][RESEND] gpio-sch: Allow for more than 8 lines in the
- resume well
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 27 Mar 2013 09:09:24 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com, Philipp Reisner <philipp.reisner@linbit.com>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>
+Subject: [PATCH 16/17] drbd: use sched_setscheduler()
+Date: Wed, 27 Mar 2013 14:08:48 +0100
+Message-Id: <1364389729-17559-17-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1364389729-17559-1-git-send-email-philipp.reisner@linbit.com>
+References: <1364389729-17559-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 22, 2013 at 2:10 AM, Darren Hart <dvhart@linux.intel.com> wrote:
+It was unnoticed for some time that assigning to current->policy is
+no longer sufficient to set a real time priority for a kernel thread.
 
-> The E6xx (TunnelCreek) CPUs have 9 GPIO lines in the resume well. Update
-> the resume functions to allow for more than 8 GPIO lines, using the core
-> functions as a template.
->
-> Cc: <stable@vger.kernel.org> # 3.4.x
-> Cc: <stable@vger.kernel.org> # 3.8.x
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Reported-by: Charlie Suffin <Charlie.Suffin@stratus.com>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_receiver.c |    6 ++++--
+ include/linux/drbd.h               |    2 +-
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
-I think I replied to the first posting earlier today.
-Sorry for slowness, I've been swamped.
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index a75c0b1..0f449bb 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -5257,9 +5257,11 @@ int drbd_asender(struct drbd_thread *thi)
+ 	bool ping_timeout_active = false;
+ 	struct net_conf *nc;
+ 	int ping_timeo, tcp_cork, ping_int;
++	struct sched_param param = { .sched_priority = 2 };
+ 
+-	current->policy = SCHED_RR;  /* Make this a realtime task! */
+-	current->rt_priority = 2;    /* more important than all other tasks */
++	rv = sched_setscheduler(current, SCHED_RR, &param);
++	if (rv < 0)
++		conn_err(tconn, "drbd_asender: ERROR set priority, ret=%d\n", rv);
+ 
+ 	while (get_t_state(thi) == RUNNING) {
+ 		drbd_thread_current_set_cpu(thi);
+diff --git a/include/linux/drbd.h b/include/linux/drbd.h
+index 3163307..1b4d4ee 100644
+--- a/include/linux/drbd.h
++++ b/include/linux/drbd.h
+@@ -52,7 +52,7 @@
+ #endif
+ 
+ extern const char *drbd_buildtag(void);
+-#define REL_VERSION "8.4.2"
++#define REL_VERSION "8.4.3"
+ #define API_VERSION 1
+ #define PRO_VERSION_MIN 86
+ #define PRO_VERSION_MAX 101
+-- 
+1.7.9.5
 
-Yours,
-Linus Walleij
