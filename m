@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751600Ab3C0MUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 08:20:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45652 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750843Ab3C0MUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 08:20:38 -0400
-Date: Wed, 27 Mar 2013 13:20:35 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [TRIVIAL] Fix typo "CONFIG_CGROUP_CGROUP_MEMCG_SWAP"
-In-Reply-To: <1364252356.1390.303.camel@x61.thuisdomein>
-Message-ID: <alpine.LNX.2.00.1303271320120.23442@pobox.suse.cz>
-References: <1364252356.1390.303.camel@x61.thuisdomein>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751708Ab3C0MVJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 08:21:09 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:54079 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab3C0MVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 08:21:07 -0400
+Message-ID: <5152E41D.2030901@huawei.com>
+Date: Wed, 27 Mar 2013 20:20:45 +0800
+From: Kefeng Wang <wangkefeng.wang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: <davem@davemloft.net>
+CC: <sparclinux@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sparc:remove unused declaration smp_boot_cpus()
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.221]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Mar 2013, Paul Bolle wrote:
+smp_boot_cpus() was replaced smp_prepare_cpus() long ago, and it no
+longer needed, so delete it.
 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
->  Documentation/cgroups/memory.txt | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> index 8b8c28b..17b91e0 100644
-> --- a/Documentation/cgroups/memory.txt
-> +++ b/Documentation/cgroups/memory.txt
-> @@ -194,7 +194,7 @@ the cgroup that brought it in -- this will happen on memory pressure).
->  But see section 8.2: when moving a task to another cgroup, its pages may
->  be recharged to the new cgroup, if move_charge_at_immigrate has been chosen.
->  
-> -Exception: If CONFIG_CGROUP_CGROUP_MEMCG_SWAP is not used.
-> +Exception: If CONFIG_MEMCG_SWAP is not used.
->  When you do swapoff and make swapped-out pages of shmem(tmpfs) to
->  be backed into memory in force, charges for pages are accounted against the
->  caller of swapoff rather than the users of shmem.
+Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
+---
+ arch/sparc/include/asm/smp_32.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-While you are at it, how about updating various defconfigs which have the 
-bogus name in there as well?
+diff --git a/arch/sparc/include/asm/smp_32.h b/arch/sparc/include/asm/smp_32.h
+index b73da3c..68503d3 100644
+--- a/arch/sparc/include/asm/smp_32.h
++++ b/arch/sparc/include/asm/smp_32.h
+@@ -46,7 +46,6 @@ void sun4m_init_smp(void);
+ void sun4d_init_smp(void);
 
-Thanks,
+ void smp_callin(void);
+-void smp_boot_cpus(void);
+ void smp_store_cpu_info(int);
 
+ void smp_resched_interrupt(void);
 -- 
-Jiri Kosina
-SUSE Labs
+1.6.0.2
+
