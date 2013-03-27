@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab3C0Kf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 06:35:58 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37760 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022Ab3C0Kf4 (ORCPT
+	id S1754989Ab3C0Khw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 06:37:52 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:38099 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754581Ab3C0Khu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 06:35:56 -0400
-Date: Wed, 27 Mar 2013 21:35:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warnings after merge of the regmap tree
-Message-Id: <20130327213542.ebbac5f00544f89ae369e7cc@canb.auug.org.au>
-In-Reply-To: <20130327102456.GR18316@opensource.wolfsonmicro.com>
-References: <20130327154737.bdcc835ec2ea56409fa0c7e8@canb.auug.org.au>
-	<20130327102456.GR18316@opensource.wolfsonmicro.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__27_Mar_2013_21_35_42_+1100_/EClizkvt6eejYb0"
+	Wed, 27 Mar 2013 06:37:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <5152CADA.4020502@ti.com>
+References: <cover.1364205812.git.viresh.kumar@linaro.org>
+	<ef225dbf63b1d834761773384d3f70cb4ac7b611.1364205812.git.viresh.kumar@linaro.org>
+	<5152C755.7010404@ti.com>
+	<CAKohponaNZRdYETsb8W3trk8V7LeC7jsR49hJwGv1iYiVJcduw@mail.gmail.com>
+	<5152CADA.4020502@ti.com>
+Date: Wed, 27 Mar 2013 16:07:50 +0530
+Message-ID: <CAKohpom9KLu0L_Ehkmd7sVd6KnhH0AsOV0jHF+CCZhwBLs671Q@mail.gmail.com>
+Subject: Re: [PATCH 3/9] cpufreq: davinci: move cpufreq driver to drivers/cpufreq
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: rjw@sisk.pl, arvind.chauhan@arm.com, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, arnd.bergmann@linaro.org,
+        linux@arm.linux.org.uk, davinci-linux-open-source@linux.davincidsp.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__27_Mar_2013_21_35_42_+1100_/EClizkvt6eejYb0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 27 March 2013 16:02, Sekhar Nori <nsekhar@ti.com> wrote:
+> Too bad. But something needs to be done about it since we all like to
+> apply patches received in email ;). I have seen reports of people
+> configuring gmail to know their @company.com address as another e-mail
+> address they own and then using gmail SMTP to send patches (git config).
+> You should try that.
 
-On Wed, 27 Mar 2013 10:24:57 +0000 Mark Brown <broonie@opensource.wolfsonmi=
-cro.com> wrote:
+I don't use ARM's email id for sending mails and linaro id uses gmail servers
+only for sending mails..
+
+The problem is, when i am in office, i can' use google servers to send mails
+and whatever mail i send from within ARM, they are broken.
+
+I can use linaro servers from outside office without any issues and it is never
+broken.
+
+>> And for this reason only i push my patches in my public repo all the
+>> time, mentioned in cover-letter.
+>>
+>> http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/cpufreq-move-drivers
 >
-> On Wed, Mar 27, 2013 at 03:47:37PM +1100, Stephen Rothwell wrote:
->=20
-> > Introduced by commit 45c6a3e449ea ("regmap: cache: Provide a get address
-> > of value operation").
->=20
-> Don't know when you grabbed the tree but that's not what's there now.
+> Okay but you never copied me on the cover letter so I only saw this one
+> patch. I will pull your tree and test now.
 
-Just before 10:30 am my time (UTC+1100) - so about 11 hours ago.  I just
-refetched and the regmap tree
-(git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git#for-next)
-is still the same as what I fetched this morning (top commit is
-b32667515168 "Merge remote-tracking branch 'regmap/topic/range' into
-regmap-next").  Probably just the mirroring delays.
+This series was affecting lots of people and so every patch had a number of
+people added as cc. I didn't wanted to add everybody in cc of complete
+patchset.
 
-Anyway, good to know it is fixed.  Thanks.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+BUT, i have another idea now. The way i used to add people in cc for specific
+patches (by editing the patch), i will do the same for cover-letter
+too next time.
 
---Signature=_Wed__27_Mar_2013_21_35_42_+1100_/EClizkvt6eejYb0
-Content-Type: application/pgp-signature
+And so all people will receive relevant patches + cover letter.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRUst+AAoJEECxmPOUX5FE/WUP/j5Ddcw4qct+HPROP0htQbc5
-nVLc6TPIQE84/8izX2bYxT7ILaIYAqSqCM+0oXyeBw37uhuVPiUk5FjKzFOhTQGm
-6NPgk2xPglG1fb5INm9Px44xLOA60iv5KNT0d60gfeS6Pv14cde4odV3vs2LKi3j
-9+T6A0HA+OpG/Gk/uLOsc8uyd/Rrc1Y4q5UFrdEei2de1X8U2WPNyhlNKH7KjeA+
-+enUkALHlCxgx4iXEkEZN7XW/y+V63WxvMh20SqNkpuQoqJQATpPQyufyfFARUkl
-kK9DjUjDX/kpTsTDXELli7Xl5+jbGDNlIkJ0rnlsAaOBGjfSrukxFRhS2wuzkO/E
-LrSSLs/VfgalYFbP6UT3qWAmTdNbhcs1omkCTppnYYqxmjWRHhEUo3CwLSL0g/Hc
-UzhWRDdDkoyuMcag9o3NakJuhkanwhQIkrDW5l5RagoH5Ln8BYtJKUxOT14veNmt
-L0fCEjjADJ3TLf2i+k7ginkuyazD6+O8vf3zuh9ROClvFxb+O3lGxZsp6Jpdpmmo
-ZXewjB6d87uTVdSX2Z64O82CrxerRR2UaWilXClDmcJLwKD/PghUI5TfqUp28d2N
-eFAT3/dIOG27u/GOpRkxwkL9YCLlzFYPuhWz5+CywqUEkkE+Hy+3Hn5OBIa7yR/J
-b+bTONtwEQTHc2K2vUm9
-=llUM
------END PGP SIGNATURE-----
-
---Signature=_Wed__27_Mar_2013_21_35_42_+1100_/EClizkvt6eejYb0--
+--
+viresh
