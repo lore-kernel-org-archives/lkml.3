@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab3C0RVK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 13:21:10 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:48002 "EHLO e9.ny.us.ibm.com"
+	id S1752717Ab3C0RVq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 13:21:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14956 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751878Ab3C0RVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 13:21:07 -0400
-Message-ID: <51532A0F.3010402@linux.vnet.ibm.com>
-Date: Wed, 27 Mar 2013 12:19:11 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>
-Subject: Re: [RFC] mm: remove swapcache page early
-References: <1364350932-12853-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1364350932-12853-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751615Ab3C0RVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 13:21:45 -0400
+Date: Wed, 27 Mar 2013 13:21:41 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 1/6] idr: introduce idr_alloc_cyclic
+Message-ID: <20130327132141.2dcb2b7b@tlielax.poochiereds.net>
+In-Reply-To: <20130327170135.GD7395@htj.dyndns.org>
+References: <1364390288-30968-1-git-send-email-jlayton@redhat.com>
+	<1364390288-30968-2-git-send-email-jlayton@redhat.com>
+	<20130327162553.GB7395@htj.dyndns.org>
+	<20130327124804.3ceef49a@tlielax.poochiereds.net>
+	<20130327170135.GD7395@htj.dyndns.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032717-7182-0000-0000-000005F9EFA8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2013 09:22 PM, Minchan Kim wrote:
-> Swap subsystem does lazy swap slot free with expecting the page
-> would be swapped out again so we can't avoid unnecessary write.
+On Wed, 27 Mar 2013 10:01:35 -0700
+Tejun Heo <tj@kernel.org> wrote:
+
+> Hello,
 > 
-> But the problem in in-memory swap is that it consumes memory space
-> until vm_swap_full(ie, used half of all of swap device) condition
-> meet. It could be bad if we use multiple swap device, small in-memory swap
-> and big storage swap or in-memory swap alone.
+> On Wed, Mar 27, 2013 at 12:48:04PM -0400, Jeff Layton wrote:
+> > > > + * Note that people using cyclic allocation to avoid premature reuse of an
+> > > > + * already-used ID may be in for a nasty surprise after idr->cur wraps. The
+> > > > + * IDR code is designed to avoid unnecessary allocations. If there is space
+> > > > + * in an existing layer that holds high IDs then it will return one of those
+> > > > + * instead of allocating a new layer at the bottom of the range.
+> > > 
+> > > Ooh, does it?  Where?
+> > > 
+> > 
+> > That's what I gathered from looking at idr_get_empty_slot. I could be
+> > wrong here, so please correct me if I am. The IDR internals are really
+> > hard to follow...
 > 
-> This patch changes vm_swap_full logic slightly so it could free
-> swap slot early if the backed device is really fast.
+> Amen, it's horrible.
+> 
+> > In any case, it looks like it only tries to allocate a new layer if:
+> > 
+> > idr->top is empty
+> > 
+> > ...or...
+> > 
+> > while (id > idr_max(layers)) {
+> > ...
+> > }
+> >
+> > After the wrap, idr->top won't be empty if we have at least one layer
+> > still in use. We start with id = starting_id, which after wrap will be
+> > much lower than idr_max() at that point (right?).
+> > 
+> > So we'll skip the while loop and fall right into sub_alloc and will
+> > quite possibly end up allocating a slot out of the current layer, which
+> > is almost certainly not near the bottom of the range.
+> > 
+> > Again, I'm far from sure of my understanding of the internals here, so
+> > please do correct me if that's not right...
+> 
+> So, there are two paths which do layer allocation.
+> idr_get_empty_slot() does bottom -> top expansion.  ie. it grows the
+> tree if the current position can't be covered by the current tree.
+> Note that the tree can always point to zero.  That is, the first slot
+> of the top layer always includes zero.
+> 
+> The other part - building tree top -> bottom - happens in sub_alloc()
+> which traverses the tree downwards for the current position and
+> creates new idr_layer if it doesn't exist.
+> 
+> So, after wrap, the tree is already tall enough so
+> idr_get_empty_slot() will just call into sub_alloc() which will build
+> the tree downwards.  AFAICS, it does guarantee lowest-packing.
+> 
 
-Great idea!
+Ok, that's good to know, and I'll remove the comment for the v2 patch.
+I'm glad to be wrong in this case :)
 
-> For it, I used SWP_SOLIDSTATE but It might be controversial.
-
-The comment for SWP_SOLIDSTATE is that "blkdev seeks are cheap". Just
-because seeks are cheap doesn't mean the read itself is also cheap.
-For example, QUEUE_FLAG_NONROT is set for mmc devices, but some of
-them can be pretty slow.
-
-> So let's add Ccing Shaohua and Hugh.
-> If it's a problem for SSD, I'd like to create new type SWP_INMEMORY
-> or something for z* family.
-
-Afaict, setting SWP_SOLIDSTATE depends on characteristics of the
-underlying block device (i.e. blk_queue_nonrot()).  zram is a block
-device but zcache and zswap are not.
-
-Any idea by what criteria SWP_INMEMORY would be set?
-
-Also, frontswap backends (zcache and zswap) are a caching layer on top
-of the real swap device, which might actually be rotating media.  So
-you have the issue of to different characteristics, in-memory caching
-on top of rotation media, present in a single swap device.
-
-Thanks,
-Seth
-
+-- 
+Jeff Layton <jlayton@redhat.com>
