@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521Ab3C0MeZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 08:34:25 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:37603 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab3C0MeY (ORCPT
+	id S1751643Ab3C0MfE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 08:35:04 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:38309 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab3C0MfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 08:34:24 -0400
+	Wed, 27 Mar 2013 08:35:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <CANqRtoRBfjXgGt4_niN3m5ULVQVQXBBARLUkNPyeDnZLatgXKA@mail.gmail.com>
-References: <20130313113203.30133.49539.sendpatchset@w520>
-	<1670937.hEFtzrbkf6@avalon>
-	<CANqRtoSDc6YfnotMR2aw4niEYyjn1C7JRu4WciyKsP-QT+j4LA@mail.gmail.com>
-	<1938905.m8UJXV94pZ@avalon>
-	<CANqRtoRBfjXgGt4_niN3m5ULVQVQXBBARLUkNPyeDnZLatgXKA@mail.gmail.com>
-Date: Wed, 27 Mar 2013 13:34:23 +0100
-Message-ID: <CACRpkdaduNaUj0rZQjFmCbwWhK_CN_EnyRGNwut59bTCWp-PXA@mail.gmail.com>
-Subject: Re: [PATCH 00/03] gpio: Renesas R-Car GPIO driver update
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        grant.likely@secretlab.ca, horms@verge.net.au
+In-Reply-To: <5152DE75.5010701@web.de>
+References: <1364298525-4337-1-git-send-email-dannybaumann@web.de>
+	<20130326170203.GA23549@srcf.ucam.org>
+	<5151D686.9070701@web.de>
+	<20130326172103.GA24566@srcf.ucam.org>
+	<5152DE75.5010701@web.de>
+Date: Wed, 27 Mar 2013 08:35:01 -0400
+Message-ID: <CADnq5_MECot=9sbnF3+dSX93qmkE4Er0hN2gv2cAKpEg2D8Stg@mail.gmail.com>
+Subject: Re: [PATCH 0/1] drm/i915: Allow specifying a minimum brightness level
+ for sysfs control.
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Danny Baumann <dannybaumann@web.de>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 4:36 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
-> On Thu, Mar 14, 2013 at 10:13 PM, Laurent Pinchart
-> <laurent.pinchart@ideasonboard.com> wrote:
-
->> When submitting new drivers I usually try not to make the development history
->> visible to mainline. It brings little additional value (beside possibly making
->> backporting a bit easier, but in the devm_* case that shouldn't be a problem,
->> unless Simon thinks otherwise) but adds review complexity, as reviewers need
->> to validate the intermediate versions as well. More patches also mean more
->> potential bisection breakages.
+On Wed, Mar 27, 2013 at 7:56 AM, Danny Baumann <dannybaumann@web.de> wrote:
+> Hi,
 >
-> Huh, it seems that my point of view is the total opposite. I see that
-> using incremental patches to show new development would make review
-> _easier_. Perhaps that's not the case for most people.
+>>> Well, the ACPI spec says this (section B.5.2):
+>>>
+>>> "
+>>> The OEM may define the number 0 as "Zero brightness" that can mean
+>>> to turn off the lighting (e.g. LCD panel backlight) in the device.
+>>> This may be useful in the case of an output device that can still be
+>>> viewed using only ambient light, for example, a transflective LCD.
+>>> "
+>>>
+>>> My interpretation of this is that the value 0 is supposed to still
+>>> be visible. I'm pretty sure I saw a statement that 0 is supposed to
+>>> mean "barely visible" somewhere, but can't find it at the moment.
+>>> I'll search for the source of it.
+>>
+>>
+>> I think that's a stretch - "This may be useful" isn't normative
+>> language, "The OEM may define" is. But even if we do assert it for the
+>> ACPI backlight, it's not true for other interfaces - zero backlight
+>> intensity is supposed to be screen off on Apple hardware, for instance.
+>
+>
+> OK, I see. And there is user space depending on that behaviour? And again -
+> how is user space supposed to know about the behavioral differences? Is it
+> something like 'if type is raw, don't expect anything'?
+> The reason for my question is that I want to determine what a) the correct
+> place to fix this and b) the correct fix is. As Xrandr abstracts away the
+> used backlight interface, I see no way for user space using Xrandr (e.g.
+> KDE) to meaningfully handle this.
 
-As subsystem maintainer what I don't want to see is a patch that
-at one point breaks something in some configuration and then later
-fixes it. Then I strongly prefer squashing. (Greg also mentions this
-in one of his seminars.)
+In practice does it really matter?  As a user if you set the
+brightness really low and you either can't see the screen or can
+barely make it out does it matter if the screen is off or just really,
+really dim?  The 0 brightness setting is probably not practically
+usable regardless of what it does.
 
-What really makes me mad is the the above pattern + claim that
-it must be done in that way to preserve authorship. Like legaleaze
-or credit is more important that functionality.
-
-If all patches are bisectable and perfectly fine then whether you
-take 8 stops when driving to Rome or just drive there in one
-big stretch is more a technical, secondary thing. Do whatever you
-like as long as all commits build and boot.
-
-Yours,
-Linus Walleij
+Alex
