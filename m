@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab3C0Pdx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 11:33:53 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:42143 "EHLO zene.cmpxchg.org"
+	id S1753687Ab3C0PeU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 11:34:20 -0400
+Received: from r00tworld.com ([212.85.137.150]:35649 "EHLO r00tworld.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753365Ab3C0Pc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 11:32:57 -0400
-Date: Wed, 27 Mar 2013 11:32:26 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
-        Li Zefan <lizefan@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
-Message-ID: <20130327153226.GF29052@cmpxchg.org>
-References: <1364373399-17397-1-git-send-email-mhocko@suse.cz>
- <20130327145727.GD29052@cmpxchg.org>
- <20130327151104.GK16579@dhcp22.suse.cz>
+	id S1752683Ab3C0PeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 11:34:18 -0400
+X-Greylist: delayed 2435 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Mar 2013 11:34:18 EDT
+From: "PaX Team" <pageexec@freemail.hu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com,
+        Luis Henriques <luis.henriques@canonical.com>
+Date: Wed, 27 Mar 2013 15:53:25 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130327151104.GK16579@dhcp22.suse.cz>
+Subject: Re: [PATCH 150/150] kernel/signal.c: use __ARCH_HAS_SA_RESTORER instead of SA_RESTORER
+Reply-to: pageexec@freemail.hu
+CC: Emese Revfy <re.emese@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Julien Tinnes <jln@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Message-ID: <515307E5.8858.4BC860B3@pageexec.freemail.hu>
+X-mailer: Pegasus Mail for Windows (4.63)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Wed, 27 Mar 2013 15:53:29 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 04:11:04PM +0100, Michal Hocko wrote:
-> On Wed 27-03-13 10:58:25, Johannes Weiner wrote:
-> > On Wed, Mar 27, 2013 at 09:36:39AM +0100, Michal Hocko wrote:
-> [...]
-> > > +	/*
-> > > +	 * kmem_cache_create_memcg duplicates the given name and
-> > > +	 * cgroup_name for this name requires RCU context.
-> > > +	 * This static temporary buffer is used to prevent from
-> > > +	 * pointless shortliving allocation.
-> > > +	 */
-> > > +	if (!tmp_name) {
-> > > +		tmp_name = kmalloc(PAGE_SIZE, GFP_KERNEL);
-> > > +		WARN_ON_ONCE(!tmp_name);
-> > 
-> > Just use the page allocator directly and get a free allocation failure
-> > warning. 
-> 
-> WARN_ON_ONCE is probably pointless.
-> 
-> > Then again, order-0 pages are considered cheap enough that they never
-> > even fail in our current implementation.
-> > 
-> > Which brings me to my other point: why not just a simple single-page
-> > allocation?
-> 
-> No objection from me. I was previously thinking about the "proper"
-> size for something that is a file name. So I originally wanted to use
-> PATH_MAX instead but ended up with PAGE_SIZE for reasons I do not
-> remember now.  Maybe we can use NAME_MAX instead. I just do not like to
-> use page allocator directly when allocatating something like strings
-> etc...
+sorry if you got this twice, had smtpd problems...
 
-Don't grep for GFP_TEMPORARY then, we do it in a couple places :-)
-NAME_MAX is just for single dentry names, not path names, no?  Might
-be a little short.
+On 26 Mar 2013 at 15:20, Luis Henriques wrote:
+
+> 3.5.7.9 -stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Andrew Morton <akpm@linux-foundation.org>
+> 
+> commit 522cff142d7d2f9230839c9e1f21a4d8bcc22a4a upstream.
+> 
+> __ARCH_HAS_SA_RESTORER is the preferred conditional for use in 3.9 and
+> later kernels, per Kees.
+
+does __ARCH_HAS_SA_RESTORER exist in the 3.5 stable series at all? i thought it
+was new to 3.9...
+
+
+
