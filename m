@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472Ab3C0Tvt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 15:51:49 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57856 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754238Ab3C0Tvs (ORCPT
+	id S1754363Ab3C0TyQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 15:54:16 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:38550 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753864Ab3C0TyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 15:51:48 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 27 Mar 2013 12:52:01 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Lubomir Rintel <lkundrak@v3.sk>
-Cc: linux-kernel@vger.kernel.org, Dom Cobley <popcornmix@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-rpi-kernel@lists.infradead.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH v4] watchdog: Add Broadcom BCM2835 watchdog timer driver
-Message-ID: <20130327195201.GC11086@roeck-us.net>
-References: <1364320200-23569-1-git-send-email-lkundrak@v3.sk>
- <1364402424-19503-1-git-send-email-lkundrak@v3.sk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364402424-19503-1-git-send-email-lkundrak@v3.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 27 Mar 2013 15:54:15 -0400
+From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Subject: [PATCH] fs: f2fs: Use kmemdup
+Date: Wed, 27 Mar 2013 21:53:31 +0200
+Message-Id: <1364414011-3144-1-git-send-email-gheorghiuandru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 05:40:24PM +0100, Lubomir Rintel wrote:
-> This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
-> used in Raspberry Pi and Roku 2 devices.
-> 
-> Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-> Signed-off-by: Dom Cobley <popcornmix@gmail.com>
-> Tested-by: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Wim Van Sebroeck <wim@iguana.be>
-> Cc: Guenter Roeck <linux@roeck-us.net>
+Used kmemdup instead of kzalloc followed by memcpy.
+Patch found using coccinelle.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+---
+ fs/f2fs/segment.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 777f17e..1758149 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -1403,10 +1403,9 @@ static int build_sit_info(struct f2fs_sb_info *sbi)
+ 	bitmap_size = __bitmap_size(sbi, SIT_BITMAP);
+ 	src_bitmap = __bitmap_ptr(sbi, SIT_BITMAP);
+ 
+-	dst_bitmap = kzalloc(bitmap_size, GFP_KERNEL);
++	dst_bitmap = kmemdup(src_bitmap, bitmap_size, GFP_KERNEL);
+ 	if (!dst_bitmap)
+ 		return -ENOMEM;
+-	memcpy(dst_bitmap, src_bitmap, bitmap_size);
+ 
+ 	/* init SIT information */
+ 	sit_i->s_ops = &default_salloc_ops;
+-- 
+1.7.9.5
+
