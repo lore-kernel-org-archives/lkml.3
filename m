@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890Ab3C0P2Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 11:28:16 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47351 "EHLO arroyo.ext.ti.com"
+	id S1752218Ab3C0PbN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 11:31:13 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24787 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751288Ab3C0P2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 11:28:15 -0400
-Date: Wed, 27 Mar 2013 17:24:23 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Mugunthan V N <mugunthanvnm@ti.com>
-CC: <joe@perches.com>, <apw@canonical.com>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] checkpatch: adding Suggested-by as standard signature
-Message-ID: <20130327152423.GC11558@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1364396902-16749-1-git-send-email-mugunthanvnm@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+xNpyl7Qekk2NvDX"
-Content-Disposition: inline
-In-Reply-To: <1364396902-16749-1-git-send-email-mugunthanvnm@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751753Ab3C0PbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 11:31:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,920,1355126400"; 
+   d="scan'208";a="308170141"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 02/11 V5] mei: bus: Implement driver registration
+Date: Wed, 27 Mar 2013 17:29:54 +0200
+Message-Id: <1364398203-11159-3-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1364398203-11159-1-git-send-email-tomas.winkler@intel.com>
+References: <1364398203-11159-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---+xNpyl7Qekk2NvDX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Samuel Ortiz <sameo@linux.intel.com>
 
-Hi,
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/bus.c     | 26 ++++++++++++++++++++++++++
+ include/linux/mei_cl_bus.h |  7 +++++++
+ 2 files changed, 33 insertions(+)
 
-On Wed, Mar 27, 2013 at 08:38:22PM +0530, Mugunthan V N wrote:
-> As people started using Suggested-by as standard signature, adding
-> "Suggested-by" to the standard signature so that checkpatch won't
-> generate warning when Suggested-by is used in patch signature
+diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
+index 78c876a..d16b3c3 100644
+--- a/drivers/misc/mei/bus.c
++++ b/drivers/misc/mei/bus.c
+@@ -170,3 +170,29 @@ void mei_cl_remove_device(struct mei_cl_device *device)
+ 	device_unregister(&device->dev);
+ }
+ EXPORT_SYMBOL_GPL(mei_cl_remove_device);
++
++int __mei_cl_driver_register(struct mei_cl_driver *driver, struct module *owner)
++{
++	int err;
++
++	driver->driver.name = driver->name;
++	driver->driver.owner = owner;
++	driver->driver.bus = &mei_cl_bus_type;
++
++	err = driver_register(&driver->driver);
++	if (err)
++		return err;
++
++	pr_debug("mei: driver [%s] registered\n", driver->driver.name);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(__mei_cl_driver_register);
++
++void mei_cl_driver_unregister(struct mei_cl_driver *driver)
++{
++	driver_unregister(&driver->driver);
++
++	pr_debug("mei: driver [%s] unregistered\n", driver->driver.name);
++}
++EXPORT_SYMBOL_GPL(mei_cl_driver_unregister);
+diff --git a/include/linux/mei_cl_bus.h b/include/linux/mei_cl_bus.h
+index 4e7351d..ba2aa3b 100644
+--- a/include/linux/mei_cl_bus.h
++++ b/include/linux/mei_cl_bus.h
+@@ -17,4 +17,11 @@ struct mei_cl_driver {
+ 	int (*remove)(struct mei_cl_device *dev);
+ };
+ 
++int __mei_cl_driver_register(struct mei_cl_driver *driver,
++				struct module *owner);
++#define mei_cl_driver_register(driver)             \
++	__mei_cl_driver_register(driver, THIS_MODULE)
++
++void mei_cl_driver_unregister(struct mei_cl_driver *driver);
++
+ #endif /* _LINUX_MEI_CL_BUS_H */
+-- 
+1.7.11.7
 
-if that's the case, then I guess you need to update
-Documentation/SubmittingPatches explaining when to use Suggested-by tag.
-
---=20
-balbi
-
---+xNpyl7Qekk2NvDX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRUw8nAAoJEIaOsuA1yqREVb4QALMGdgFAtQkzRtmd7pfcj1zg
-jGcMOKI1I4RvoC582gL0esp0wVhIt95jnkyG96T6CVylVWLUz04eyHlyBqG3Ro7a
-fzxcdeCaxOoHrnAUbS6v+degfSGqb+4mIjYOnVGGU/0PtMmMedKOHxofERCz2v9G
-SqTVSFxnNTopBAsAVH8pFBbWYYGafnAzEUD5xNQ84mftup+KX8kyXs6Ak5XuaZPi
-elXDMxkH9SDb581006W5qka40Ch+H10UiJETX2TeMm/4mI+OwJk9WTRchx1UPbk/
-nw03+dNTwaOBjkpGnArNCCqLTanImHJ3JH+xnIDGKK3iNpub/0blkihHeSTGazOo
-WWCldmhPme+FOLAwBDAhNhi0BryRwNMyPovePu+mAYFNNFB4a1Z0nMRE8C6Q8ecu
-GEX4z32DzUVBjtkHzS69qkuvp/B1sp6lxogZnBj3ZJ319UBxmobLCGClbXtBsBW1
-I6u1zsjsXBq4dE8VTJ+sHddcP5HzzyjHt76gsYTfa6BC4Z/bZdS/w2LqmGlCYvyh
-M5JftDACKSd7xPK0X0D686TphntXz4jcbU5IuNoujaTSfJeP8+MEGUnSsPCJ7NlY
-Gb96IGfQy9/0/nJEkkqcPH8/gY9szaueLuANy8cdh9lRCP7eZmFcYM5rmakAZyYB
-W8Jg5tvF/I4UbkSID/y7
-=gyFT
------END PGP SIGNATURE-----
-
---+xNpyl7Qekk2NvDX--
