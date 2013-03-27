@@ -1,41 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab3C0KtL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 06:49:11 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:5693 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755553Ab3C0Kso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 06:48:44 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: Jeff Dike <jdike@addtoit.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        "Richard Weinberger" <richard@nod.at>,
-        <user-mode-linux-devel@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH 0/3] hostfs: tweaks from imgdafs review
-Date: Wed, 27 Mar 2013 10:47:11 +0000
-Message-ID: <1364381234-22960-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
-MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_03_27_10_48_34
+	id S1751597Ab3C0Kvi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 06:51:38 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:63348 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751017Ab3C0Kvg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 06:51:36 -0400
+Message-ID: <1364381495.1345.21.camel@x61.thuisdomein>
+Subject: Re: [PATCH] powerpc: drop even more unused Kconfig symbols
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 27 Mar 2013 11:51:35 +0100
+In-Reply-To: <1363864206.1390.117.camel@x61.thuisdomein>
+References: <1363864206.1390.117.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Mar 2013 10:51:35.0566 (UTC) FILETIME=[0D0EB2E0:01CE2AD9]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset contains some tweaks to hostfs, based on imgdafs review
-comments from Al Viro which also apply to hostfs.
+On Thu, 2013-03-21 at 12:10 +0100, Paul Bolle wrote:
+> diff --git a/arch/powerpc/platforms/wsp/Kconfig b/arch/powerpc/platforms/wsp/Kconfig
+> index 79d2225..9eea710 100644
+> --- a/arch/powerpc/platforms/wsp/Kconfig
+> +++ b/arch/powerpc/platforms/wsp/Kconfig
+> @@ -29,7 +29,3 @@ config PPC_CHROMA
+>  	default y
+>  
+>  endmenu
+> -
+> -config PPC_A2_DD2
+> -	bool "Support for DD2 based A2/WSP systems"
+> -	depends on PPC_A2
 
-James Hogan (3):
-  hostfs: remove "will unlock" comment
-  hostfs: move HOSTFS_SUPER_MAGIC to <linux/magic.h>
-  hostfs: use kmalloc instead of kzalloc
+This part was not included in the "powerpc: remove PReP" follow up
+patch. Should I resend separately?
 
- fs/hostfs/hostfs_kern.c    | 8 ++++----
- include/uapi/linux/magic.h | 1 +
- 2 files changed, 5 insertions(+), 4 deletions(-)
 
--- 
-1.8.1.2
-
+Paul Bolle
 
