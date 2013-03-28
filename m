@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab3C1ALU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 20:11:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41829 "EHLO
+	id S1754513Ab3C1AN4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 20:13:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56270 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754323Ab3C1ALT (ORCPT
+	by vger.kernel.org with ESMTP id S1752803Ab3C1ANz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 20:11:19 -0400
-Date: Thu, 28 Mar 2013 00:11:17 +0000
+	Wed, 27 Mar 2013 20:13:55 -0400
+Date: Thu, 28 Mar 2013 00:13:53 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH 18/46] regulator: ab8500: Clean out SoC registers
-Message-ID: <20130328001117.GM18316@opensource.wolfsonmicro.com>
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        Jonas Aaberg <jonas.aberg@stericsson.com>
+Subject: Re: [PATCH 21/46] regulator: ab8500: Correct TVOUT regulator
+ start-up delay
+Message-ID: <20130328001353.GN18316@opensource.wolfsonmicro.com>
 References: <1363881583-15234-1-git-send-email-lee.jones@linaro.org>
- <1363881583-15234-19-git-send-email-lee.jones@linaro.org>
+ <1363881583-15234-22-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QlMGl5G66NJfRa6E"
+	protocol="application/pgp-signature"; boundary="JWxvw4U2tXStDw65"
 Content-Disposition: inline
-In-Reply-To: <1363881583-15234-19-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1363881583-15234-22-git-send-email-lee.jones@linaro.org>
 X-Cookie: Your aim is high and to the right.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,38 +30,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---QlMGl5G66NJfRa6E
+--JWxvw4U2tXStDw65
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Mar 21, 2013 at 03:59:15PM +0000, Lee Jones wrote:
-> Clean out initialisation that is handled by SoC. Regulator
-> settings for Vpll (partly), Vsmps1, Vsmps2, Vsmps3 (partly),
-> Vrf1, Varm, Vape, Vbb, Vmod are cleaned out. They should not
-> be touched by the kernel.
+On Thu, Mar 21, 2013 at 03:59:18PM +0000, Lee Jones wrote:
+> From: Jonas Aaberg <jonas.aberg@stericsson.com>
+>=20
+> Update TVOUT regulator to match specification. (Was 10ms,
+> changed to 500us.)
 
-Applied, thanks.
+This fails to apply due to Axel's changes which remove delay entirely...
 
---QlMGl5G66NJfRa6E
+--JWxvw4U2tXStDw65
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRU4qeAAoJELSic+t+oim9BdYP/3OvMUjh3D2bb6RBZiAp42YP
-OREi+MuWbuYQ+E+Nfz0t4cauHQnHqQqqXWE3ZzkxWEyEED7ZBoWsw16XnhGNE1P8
-KVmZRVesqxQc5jCgOuafyM18tJTc/pPq8mdZ8hiV+eVOJV2fDhxfGZCK4ie6iI86
-4OViMezEX6ntOOntc/Wn+Lo2soWpprOLCCWAt5+oVBLyOw7S4wrUGiyJza+Aa//8
-rRQgzrncEb+hF7nbIe/K/WsGReFOIbNQCQtEeoaghrDQPsKcM66w/98STe76t430
-tzhgqaOzN6n4dBtfoH3bq5RKzn6nz10fCsVeN5NfjGwabK0OyS78C+kUOeDc5T7I
-Juef2d3OWFEewJhYwgIsVOKy3VUiDtcKOsNWJ26CJ27D7I53vEBoLzT4E7e+i0gU
-fK39VE5H4Ig+ls1+08VCX8F4+yk0YdE+6jKdmy+eoXZiDURZxBbBJ02yWzwzWmSt
-Zo1bIr3XYqawkF9uU9DvRry3y7jyMC/5XAMEhisX27UaBZwm171ckWajUSAX3NA0
-4ZBBQmuRtUZrIw3Yv3bXM+Vk3MGQVzmRxbc0enEf1UBLM7cSoxA8jZwffK9RQpFS
-XlYc45MD+o/SYWuUhzqjMXDgJ60BNioFzM3CFkMLNPR37GOcdvoGHcWbNGzshXpA
-eM9MAZ++ITJ7V5YAXwX7
-=gvox
+iQIcBAEBAgAGBQJRU4s7AAoJELSic+t+oim9oyIP/0Wfs/Ef7pbg7xXXXST9cxWh
+x/kDSx1U9/DIoVUmuXqmqaIhx6WNqRw4yT4f2pjqGpBtEGiHqeE9exyWIYF74oOE
+hObZsnTihd+NHPbfyNMNbqrZmUw4zSymRWprZQTrKqhf4IVdx+8NlS102LLDrC9F
+HgWJoaTPeNDw86vReAX9ZzFKYtF22sD/N1b/4vVbFRprZjktby9S4RiGZ/kuu3tv
+VeSur7AcMXbzXhImSFC+dQ8/8M10mUKJ/R1m9i4zOmXyw5Db2+LQ/Jf1z+SgqaQv
+sHmZq3dwi3EDF7xtm6+GCPdoRZrtdTJkLbcrQBLZUWCp/Di4KgN47um9hnH9ttPQ
+TO3T84nvf6/tn/8mG/qoABF9KOIwXCNcW3XiecF+F2cI8ujGf7UIC/k7Vnwp/QBL
+Ao2aWFbC2NtRyDySqFenbeOc0+iXNZazvniS5E3HxP9ffNqzvl59HaZUvUbps3dC
+9YVGzNvftgoYkH9LIOHKxafbaoEJqM3naC4fJUqX0adNYSszd1nmwM302EA8PA77
+Aq6VL3EC3gDR38PxjracBXPGdiFtQDxSu0ecovSnuFYF2umB3cy1JSnoOK1xkXQ9
+ogdkiRPK/eXKMZl8XmfcJQOOytWPdPEEy74yUT67h/EPvUwpM1REZC0VuMWVTXrt
+nBM1p9Dlp8TLF3mF+Zbh
+=hX+P
 -----END PGP SIGNATURE-----
 
---QlMGl5G66NJfRa6E--
+--JWxvw4U2tXStDw65--
