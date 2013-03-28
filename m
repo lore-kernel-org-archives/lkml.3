@@ -1,107 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab3C1Tb5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 15:31:57 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:47558 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575Ab3C1Tbz (ORCPT
+	id S1752945Ab3C1Tda (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 15:33:30 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39916 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab3C1Td3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 15:31:55 -0400
+	Thu, 28 Mar 2013 15:33:29 -0400
+Date: Thu, 28 Mar 2013 20:33:23 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Olof Johansson <olof@lixom.net>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: 3.9-rc1 regression in arm dtb build
+Message-ID: <20130328193323.GA25166@amd.pavel.ucw.cz>
+References: <20130306193332.GA6022@amd.pavel.ucw.cz>
+ <5137C404.9060902@wwwdotorg.org>
+ <20130307144506.GB7344@amd.pavel.ucw.cz>
+ <5138FDAE.8060202@wwwdotorg.org>
+ <20130311050546.GA21863@quad.lixom.net>
+ <CACxGe6vkC7fjzf1-+K8O81+w=jQ63PvuTEhSPyitEBA9XiKYnw@mail.gmail.com>
+ <20130328092916.GA11187@amd.pavel.ucw.cz>
+ <51545870.4010209@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <OF7BC8BFEB.18C33C7E-ON44257B3C.0064CB53-44257B3C.00652C31@gb.elster.com>
-References: <OF7BC8BFEB.18C33C7E-ON44257B3C.0064CB53-44257B3C.00652C31@gb.elster.com>
-Date: Thu, 28 Mar 2013 12:31:54 -0700
-X-Google-Sender-Auth: piVmsv1O7SHS3gR_JWI4rnj6ac4
-Message-ID: <CA+55aFyAAEvm4KMc2ERGbwUxNH==PJ440nW1aDf3wwxEipXKfw@mail.gmail.com>
-Subject: Re: Bug in ks8851.c
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Max.Nekludov@us.elster.com, "David S. Miller" <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Matt Renzelmann <mjr@cs.wisc.edu>,
-        Jiri Pirko <jiri@resnulli.us>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        trivial@rustcorp.com.au
-Content-Type: multipart/mixed; boundary=bcaec5040e060af93104d901359d
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51545870.4010209@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bcaec5040e060af93104d901359d
-Content-Type: text/plain; charset=UTF-8
+On Thu 2013-03-28 08:49:20, Stephen Warren wrote:
+> On 03/28/2013 03:29 AM, Pavel Machek wrote:
+> ...
+> > There's change that makes it pretty much impossible to build dtbs
+> > reliably between different kernel versions, because it leaves old dtbs
+> > around, and they survive even make clean.
+> 
+> One question here: Presumably the dtbs don't survive "make clean" if you
+> run that right after building the dtbs, but only if you check out a new
+> kernel version before running clean? Or is that not the case?
 
-Max,
- please cc the actual maintainers of the driver. The patch looks sane,
-though. I assume you've tested it in practice?
+That was the case I seen, yes.
 
-You also seem to have based this on an ancient version, the code has
-long since moved from drivers/net/ks8851.c to
-drivers/net/ethernet/micrel/ks8851.c (back in June of 2011), and it's
-missing a sign-off from you.
+Have old kernel running, dtbs building. Apply a patch. It starts
+behaving weird. You do make clean... but you still get old dtbs.
 
-I'm attaching an updated patch for the rename/capitalization issue.
+(It would be nice if make socfpga_cyclone5.dtb would magically remove
+all the dtbs from old location; make dtbs does that if I understand
+stuff correctly).
 
-     Linus
-
-On Thu, Mar 28, 2013 at 11:25 AM,  <Max.Nekludov@us.elster.com> wrote:
->
-> According to the Datasheet (page 52):
-> 15-12 Reserved
-> 11-0 RXBC Receive Byte Count
-> This field indicates the present received frame byte size.
->
-> I suppose the code has a bug:
->                 rxh = ks8851_rdreg32(ks, KS_RXFHSR);
->                 rxstat = rxh & 0xffff;
->                 rxlen = rxh >> 16; // BUG!!! 0xFFF mask should be applied
->
-> P.S.
-> without bit mask applied I saw rxlen equal to 15360 which is bigger then
-> entire RX queue size (12KB).
->
-> Thanks,
-> Max Nekludov
->
-> From cb3199cee4490f98d6062e32a75ca377a32b55bc Mon Sep 17 00:00:00 2001
-> From: Max Neklyudov <macscomp@gmail.com>
-> Date: Tue, 26 Mar 2013 11:46:57 +0400
-> Subject: [PATCH] Fix bug in ks8851 driver
->
-> ---
->  drivers/net/ks8851.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/net/ks8851.c b/drivers/net/ks8851.c
-> index 91a93cb..0dc03da 100644
-> --- a/drivers/net/ks8851.c
-> +++ b/drivers/net/ks8851.c
-> @@ -553,7 +553,7 @@ static void ks8851_rx_pkts(struct ks8851_net *ks)
->         for (; rxfc != 0; rxfc--) {
->                 rxh = ks8851_rdreg32(ks, KS_RXFHSR);
->                 rxstat = rxh & 0xffff;
-> -               rxlen = rxh >> 16;
-> +               rxlen = (rxh >> 16) & 0xFFF;
->
->                 netif_dbg(ks, rx_status, ks->netdev,
->                           "rx: stat 0x%04x, len 0x%04x\n", rxstat, rxlen);
-> --
-> 1.7.10.4
->
-
---bcaec5040e060af93104d901359d
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_heubigou0
-
-IGRyaXZlcnMvbmV0L2V0aGVybmV0L21pY3JlbC9rczg4NTEuYyB8IDIgKy0KIDEgZmlsZSBjaGFu
-Z2VkLCAxIGluc2VydGlvbigrKSwgMSBkZWxldGlvbigtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMv
-bmV0L2V0aGVybmV0L21pY3JlbC9rczg4NTEuYyBiL2RyaXZlcnMvbmV0L2V0aGVybmV0L21pY3Jl
-bC9rczg4NTEuYwppbmRleCAzM2JjYjYzZDU2YTIuLjhmYjQ4MTI1MmUyYyAxMDA2NDQKLS0tIGEv
-ZHJpdmVycy9uZXQvZXRoZXJuZXQvbWljcmVsL2tzODg1MS5jCisrKyBiL2RyaXZlcnMvbmV0L2V0
-aGVybmV0L21pY3JlbC9rczg4NTEuYwpAQCAtNTI4LDcgKzUyOCw3IEBAIHN0YXRpYyB2b2lkIGtz
-ODg1MV9yeF9wa3RzKHN0cnVjdCBrczg4NTFfbmV0ICprcykKIAlmb3IgKDsgcnhmYyAhPSAwOyBy
-eGZjLS0pIHsKIAkJcnhoID0ga3M4ODUxX3JkcmVnMzIoa3MsIEtTX1JYRkhTUik7CiAJCXJ4c3Rh
-dCA9IHJ4aCAmIDB4ZmZmZjsKLQkJcnhsZW4gPSByeGggPj4gMTY7CisJCXJ4bGVuID0gKHJ4aCA+
-PiAxNikgJiAweGZmZjsKIAogCQluZXRpZl9kYmcoa3MsIHJ4X3N0YXR1cywga3MtPm5ldGRldiwK
-IAkJCSAgInJ4OiBzdGF0IDB4JTA0eCwgbGVuIDB4JTA0eFxuIiwgcnhzdGF0LCByeGxlbik7Cg==
---bcaec5040e060af93104d901359d--
+Thanks,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
