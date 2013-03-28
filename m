@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757028Ab3C1RNL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:13:11 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:47727
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756617Ab3C1RCt (ORCPT
+	id S1757372Ab3C1RNm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:13:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36274 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756350Ab3C1RCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Mar 2013 13:02:49 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,14 +16,14 @@ Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 02/36] perf tools: Let get_tracing_file() return NULL to indicate failure.
-Date: Thu, 28 Mar 2013 14:02:02 -0300
-Message-Id: <1364490156-32064-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 10/36] perf tools: Cleanup calc_data_size logic
+Date: Thu, 28 Mar 2013 14:02:10 -0300
+Message-Id: <1364490156-32064-11-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1364490156-32064-1-git-send-email-acme@infradead.org>
 References: <1364490156-32064-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,7 +31,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-So that it can be used by other places.
+It's for calculating whole trace data size during reading.  However
+relation functions are called only in this file, no need to
+conditionalize it with tricky +1 offset and rename the variable to
+more meaningful name like trace_data_size.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -39,98 +42,65 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1363850332-25297-2-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1363850332-25297-10-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/trace-event-info.c |   25 ++++++++++++++++++++++---
- 1 files changed, 22 insertions(+), 3 deletions(-)
+ tools/perf/util/trace-event-read.c |   13 ++++---------
+ 1 files changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index 5729f43..81c6732 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -62,7 +62,7 @@ static const char *find_debugfs(void)
- 	const char *path = perf_debugfs_mount(NULL);
+diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
+index 644ad3b..af215c0 100644
+--- a/tools/perf/util/trace-event-read.c
++++ b/tools/perf/util/trace-event-read.c
+@@ -43,7 +43,7 @@ int file_bigendian;
+ int host_bigendian;
+ static int long_size;
  
- 	if (!path)
--		die("Your kernel not support debugfs filesystem");
-+		pr_debug("Your kernel does not support the debugfs filesystem");
+-static ssize_t calc_data_size;
++static ssize_t trace_data_size;
+ static bool repipe;
  
- 	return path;
+ static int __do_read(int fd, void *buf, int size)
+@@ -83,8 +83,7 @@ static int do_read(void *data, int size)
+ 		return -1;
+ 	}
+ 
+-	if (calc_data_size)
+-		calc_data_size += r;
++	trace_data_size += r;
+ 
+ 	return r;
  }
-@@ -81,8 +81,12 @@ static const char *find_tracing_dir(void)
- 		return tracing;
+@@ -155,8 +154,7 @@ static char *read_string(void)
+ 			break;
+ 	}
  
- 	debugfs = find_debugfs();
-+	if (!debugfs)
-+		return NULL;
+-	if (calc_data_size)
+-		calc_data_size += size;
++	trace_data_size += size;
  
--	tracing = malloc_or_die(strlen(debugfs) + 9);
-+	tracing = malloc(strlen(debugfs) + 9);
-+	if (!tracing)
-+		return NULL;
+ 	str = malloc(size);
+ 	if (str)
+@@ -356,9 +354,7 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
  
- 	sprintf(tracing, "%s/tracing", debugfs);
+ 	*ppevent = NULL;
  
-@@ -99,7 +103,9 @@ static char *get_tracing_file(const char *name)
- 	if (!tracing)
- 		return NULL;
+-	calc_data_size = 1;
+ 	repipe = __repipe;
+-
+ 	input_fd = fd;
  
--	file = malloc_or_die(strlen(tracing) + strlen(name) + 2);
-+	file = malloc(strlen(tracing) + strlen(name) + 2);
-+	if (!file)
-+		return NULL;
+ 	if (do_read(buf, 3) < 0)
+@@ -417,8 +413,7 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ 	if (err)
+ 		goto out;
  
- 	sprintf(file, "%s/%s", tracing, name);
- 	return file;
-@@ -170,6 +176,9 @@ static void read_header_files(void)
- 	struct stat st;
+-	size = calc_data_size - 1;
+-	calc_data_size = 0;
++	size = trace_data_size;
+ 	repipe = false;
  
- 	path = get_tracing_file("events/header_page");
-+	if (!path)
-+		die("can't get tracing/events/header_page");
-+
- 	if (stat(path, &st) < 0)
- 		die("can't read '%s'", path);
- 
-@@ -178,6 +187,9 @@ static void read_header_files(void)
- 	put_tracing_file(path);
- 
- 	path = get_tracing_file("events/header_event");
-+	if (!path)
-+		die("can't get tracing/events/header_event");
-+
- 	if (stat(path, &st) < 0)
- 		die("can't read '%s'", path);
- 
-@@ -251,6 +263,8 @@ static void read_ftrace_files(struct tracepoint_path *tps)
- 	char *path;
- 
- 	path = get_tracing_file("events/ftrace");
-+	if (!path)
-+		die("can't get tracing/events/ftrace");
- 
- 	copy_event_system(path, tps);
- 
-@@ -279,6 +293,8 @@ static void read_event_files(struct tracepoint_path *tps)
- 	int ret;
- 
- 	path = get_tracing_file("events");
-+	if (!path)
-+		die("can't get tracing/events");
- 
- 	dir = opendir(path);
- 	if (!dir)
-@@ -343,6 +359,9 @@ static void read_ftrace_printk(void)
- 	int ret;
- 
- 	path = get_tracing_file("printk_formats");
-+	if (!path)
-+		die("can't get tracing/printk_formats");
-+
- 	ret = stat(path, &st);
- 	if (ret < 0) {
- 		/* not found */
+ 	if (show_funcs) {
 -- 
 1.7.1
 
