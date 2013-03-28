@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab3C1MEm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 08:04:42 -0400
-Received: from mail-da0-f44.google.com ([209.85.210.44]:45027 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619Ab3C1MEj (ORCPT
+	id S1755805Ab3C1MEv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 08:04:51 -0400
+Received: from mail-da0-f42.google.com ([209.85.210.42]:50854 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755617Ab3C1MEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 08:04:39 -0400
+	Thu, 28 Mar 2013 08:04:44 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: FlorianSchandinat@gmx.de
 Cc: linux-fbdev@vger.kernel.org, dri-devel@lists.freedesktop.org,
@@ -15,168 +15,171 @@ Cc: linux-fbdev@vger.kernel.org, dri-devel@lists.freedesktop.org,
         julia.lawall@lip6.fr, rodrigo.vivi@gmail.com, daniel.vetter@ffwll.ch,
         rafael.j.wysocki@intel.com,
         "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [PATCH] compat/compat-drivers/linux-next: fb skip_vt_switch
-Date: Thu, 28 Mar 2013 05:04:26 -0700
-Message-Id: <1364472270-9297-1-git-send-email-mcgrof@do-not-panic.com>
+Subject: [PATCH 1/4] compat-drivers: backport fb_info->skip_vt_switch using ifdefs
+Date: Thu, 28 Mar 2013 05:04:27 -0700
+Message-Id: <1364472270-9297-2-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1364472270-9297-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1364472270-9297-1-git-send-email-mcgrof@do-not-panic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-I maintain the the compat-drivers project [0] which aims at backporting the
-Linux kernel drivers down to older kernels, automatically [1]. Thanks to
-Ozan Caglayan as a GSoC project we now backport DRM drivers.
+Commit 3cf2667 as of next-20130301 extended the struct fb_info
+with a skip_vt_switch to allow drivers to skip the VT switch
+at suspend/resume time. For older kernels we can skip this
+as all this switch does is call pm_vt_switch_required() with true
+or false depending on this new flag and later
+pm_vt_switch_unregister() would not have been made.
 
-The initial framework we had set up to help with the automatic juice was
-simply quilt refresh to help with hunk offsets, later it consisted of
-writing cleaner diffs, then compartamentalizing shared differences into a
-compat backport module [2].
+This patch cannot be broken down further so I'm pegging
+this as the first one with 4 digits under the DRM folder
+for collateral evolutions. This reflects its as atomic as
+is possible. As we'll see on the next commit, these type
+of collateral evolutions can best be backported not by
+keeping ifdef's as below but instead by using a wrapper
+caller, to help reduce with the amount of lines of code
+we need. If a static inline is added upstream for these
+changes, then no code is required for backporting, at all,
+we'd just implement the static inline later upstream as
+a no-op.
 
-Recently I looked into Coccinelle SmPL to help push for collateral evolutions
-on the Linux kernel to be written when possible with SmPL [3] given that, as
-discussed with Julia, the very inverse of the grammar may allow us to backport
-that collateral evolution on older kernels. I'm still experimenting with that,
-but another benefit of studying INRIA's Coccinelle work is that the concept
-of collateral evolutions is now formalized and as I've studied their work
-I'm realizing we have different categories for collateral evolutions. From
-what I've experienced through the backport work, data structure changes are
-the more difficult collateral evolutions to backport. Instead of updates on
-our compat module these require manual diffs... One strategy to simplify
-backporting these data structure changes however was to replace the uses of
-the new elements on the data structure with static inlines and requiring
-the heavy changes to be implementd on a helper. That is, we actually simplfied
-the backport by changing the form of the collateral evolution.
+The tradeoffs to consider for this is if we can live with
+these practices upstream, we may be able to support full
+subsystems only with a compat module, and no need for
+patches. This also means less code and likely less bugs
+on the distribution front when backporting is required.
+At least IMHO this may be worthy to consider at least to
+support kernels listed as supported on kernel.org. We could
+just leave the ifdef hell to older unsupported kernels.
 
-The new commit by Jesse that extended the fb_info with a skip_vt_switch
-element is the simplest example of a data structure expansion. We'd backport
-this by adding a static inline to compat so that new kernels muck with the
-new element and for older kernels this would be a no-op. This reduces the
-size of the backport and unclutters the required patch with #idefs, and
-insteads leaves only a replacement of the usage of the new elements with
-a static inline, this however would still be required on our end:
+Relevant commits below, starting with the first one that
+added this new collateral evolution.
 
-	-      info->skip_vt_switch = true;
-	+      fb_enable_skip_vt_switch(info);
+commit 3cf2667b9f8b2c2fe298a427deb399e52321da6b
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Mon Feb 4 13:37:21 2013 +0000
 
-So we'd then have to just add this static inline change for each new driver...
-There may be a way to get SmPL to do this for us...
+    fb: add support for drivers not needing VT switch at suspend/resume time
 
-However... if the static inline makes it upstream it means 0 changes are
-required for *any* driver!
+    Use the new PM routines to indicate whether we need to VT switch at suspend
+    and resume time.  When a new driver is bound, set its flag accordingly,
+    and when unbound, remove it from the PM's console tracking list.
 
-I've been reluctant to request a change upstream because of these side
-backport benefits but due to this case's simplcity I figured I'd shoot
-this out for review now.
+    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+    Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-A more elaborate example would be the netdev_attach_ops() which is not
-yet upstream. This exands to this simple inline for new kernels:
+commit 24576d23976746cb52e7700c4cadbf4bc1bc3472
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Tue Mar 26 09:25:45 2013 -0700
 
-static inline void netdev_attach_ops(struct net_device *dev,                    
-                       const struct net_device_ops *ops)                        
-{                                                                               
-        dev->netdev_ops = ops;                                                  
-} 
+    drm/i915: enable VT switchless resume v3
 
-For older kernels this expands to:
+    With the other bits in place, we can do this safely.
 
-void netdev_attach_ops(struct net_device *dev,                                  
-                       const struct net_device_ops *ops)                        
-{                                                                               
-        dev->open = ops->ndo_open;                                              
-        dev->init = ops->ndo_init;                                              
-        dev->stop = ops->ndo_stop;                                              
-        dev->hard_start_xmit = ops->ndo_start_xmit;                             
-        dev->change_rx_flags = ops->ndo_change_rx_flags;                        
-        dev->set_multicast_list = ops->ndo_set_multicast_list;                  
-        dev->validate_addr = ops->ndo_validate_addr;                            
-        dev->do_ioctl = ops->ndo_do_ioctl;                                      
-        dev->set_config = ops->ndo_set_config;                                  
-        dev->change_mtu = ops->ndo_change_mtu;                                  
-        dev->set_mac_address = ops->ndo_set_mac_address;                        
-        dev->tx_timeout = ops->ndo_tx_timeout;                                  
-        if (ops->ndo_get_stats)                                                 
-                dev->get_stats = ops->ndo_get_stats;                            
-        dev->vlan_rx_register = ops->ndo_vlan_rx_register;                      
-        dev->vlan_rx_add_vid = ops->ndo_vlan_rx_add_vid;                        
-        dev->vlan_rx_kill_vid = ops->ndo_vlan_rx_kill_vid;                      
-#ifdef CONFIG_NET_POLL_CONTROLLER                                               
-        dev->poll_controller = ops->ndo_poll_controller;                        
-#endif                                                                          
-                                                                                
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27))                              
-        dev->select_queue = ops->ndo_select_queue;                              
-#endif                                                                          
-}
+    v2: disable backlight on suspend to prevent premature enablement on resume
+    v3: disable CRTCs on suspend to allow RTD3 (Kristen)
 
-Even though we have the static inline in compat it still means
-every driver must be changed to use it. For example:
+    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+    Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 
---- a/drivers/net/usb/rndis_host.c                                              
-+++ b/drivers/net/usb/rndis_host.c                                              
-@@ -358,7 +358,7 @@ generic_rndis_bind(struct usbnet *dev, s                    
-        dev->rx_urb_size &= ~(dev->maxpacket - 1);                              
-        u.init->max_transfer_size = cpu_to_le32(dev->rx_urb_size);              
-                                                                                
--       net->netdev_ops = &rndis_netdev_ops;                                    
-+       netdev_attach_ops(net, &rndis_netdev_ops);                              
-                                                                                
-        retval = rndis_command(dev, u.header, CONTROL_BUFFER_SIZE);             
-        if (unlikely(retval < 0)) {   
-
-This is just one driver. The patch that deals with this collateral
-evolution is now 290 lines. I've been working with Julia to express
-these type of tranformations as SmPL grammar, seeing if its possible
-to use the inverse of SmPL in the long run, and so on... but in the end,
-if we add a static inline upstream for small changes like these -- we'd
-end up requring zero changes for the backport of these type of collateral
-evolutions.
-
-This should mean less bugs and cleaner backport code and maintenance.
-
-Curious if video guys would care to accept this as an example simple
-test case to help with the project with this respective small
-collateral evolution and test case.
-
-What follows are patches that deal with the changes on all the projects.
-I'll apply the compat and compat-driver patches now as these are required,
-but if my fb patch (patch #4 in this series) is accepted it'd simpify
-backporting this collateral evolution for all video drivers tremendously.
-
-[0] https://backports.wiki.kernel.org
-[1] http://www.do-not-panic.com/2012/08/automatically-backporting-linux-kernel.html
-[2] https://git.kernel.org/cgit/linux/kernel/git/mcgrof/compat.git/
-[3] http://www.do-not-panic.com/2012/08/optimizing-backporting-collateral.html
-
-linux-next:
-
-Luis R. Rodriguez (1):
-  fb: add helpers to enable and test for the skip_vt_switch
-
- drivers/gpu/drm/i915/intel_fb.c |    2 +-
- drivers/video/fbmem.c           |    2 +-
- include/linux/fb.h              |   10 ++++++++++
- 3 files changed, 12 insertions(+), 2 deletions(-)
-
-compat:
-
-Luis R. Rodriguez (1):                                                          
-  compat: backport fb_info->skip_vt_switch using a static inline                
-                                                                                
- include/linux/compat-3.10.h |   41 +++++++++++++++++++++++++++++++++++++++++   
- 1 file changed, 41 insertions(+)  
-
-compat-drivers:
-
-Luis R. Rodriguez (2):                                                          
-  compat-drivers: backport fb_info->skip_vt_switch using ifdefs                 
-  compat-drivers: simplify backport fb_info->skip_vt_switch CE                  
-                                                                                
- .../drm/0001-fb-info-vt_switch.patch               |   56 ++++++++++++++++++++ 
- 1 file changed, 56 insertions(+)                                               
+Cc: cocci@systeme.lip6.fr
+Cc: backports@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
+---
+ .../drm/0001-fb-info-vt_switch.patch               |   73 ++++++++++++++++++++
+ 1 file changed, 73 insertions(+)
  create mode 100644 patches/collateral-evolutions/drm/0001-fb-info-vt_switch.patch
 
+diff --git a/patches/collateral-evolutions/drm/0001-fb-info-vt_switch.patch b/patches/collateral-evolutions/drm/0001-fb-info-vt_switch.patch
+new file mode 100644
+index 0000000..cdced87
+--- /dev/null
++++ b/patches/collateral-evolutions/drm/0001-fb-info-vt_switch.patch
+@@ -0,0 +1,73 @@
++Commit 3cf2667 as of next-20130301 extended the struct fb_info
++with a skip_vt_switch to allow drivers to skip the VT switch
++at suspend/resume time. For older kernels we can skip this
++as all this switch does is call pm_vt_switch_required() with true
++or false depending on this new flag and later
++pm_vt_switch_unregister() would not have been made.
++
++This patch cannot be broken down further so I'm pegging
++this as the first one with 4 digits under the DRM folder
++for collateral evolutions. This reflects its as atomic as
++is possible. As we'll see on the next commit, these type
++of collateral evolutions can best be backported not by
++keeping ifdef's as below but instead by using a wrapper
++caller, to help reduce with the amount of lines of code
++we need. If a static inline is added upstream for these
++changes, then no code is required for backporting, at all,
++we'd just implement the static inline later upstream as
++a no-op.
++
++The tradeoffs to consider for this is if we can live with
++these practices upstream, we may be able to support full
++subsystems only with a compat module, and no need for
++patches. This also means less code and likely less bugs
++on the distribution front when backporting is required.
++At least IMHO this may be worthy to consider at least to
++support kernels listed as supported on kernel.org. We could
++just leave the ifdef hell to older unsupported kernels.
++
++Relevant commits below, starting with the first one that
++added this new collateral evolution.
++
++commit 3cf2667b9f8b2c2fe298a427deb399e52321da6b
++Author: Jesse Barnes <jbarnes@virtuousgeek.org>
++Date:   Mon Feb 4 13:37:21 2013 +0000
++
++    fb: add support for drivers not needing VT switch at suspend/resume time
++    
++    Use the new PM routines to indicate whether we need to VT switch at suspend
++    and resume time.  When a new driver is bound, set its flag accordingly,
++    and when unbound, remove it from the PM's console tracking list.
++    
++    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
++    Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
++
++commit 24576d23976746cb52e7700c4cadbf4bc1bc3472
++Author: Jesse Barnes <jbarnes@virtuousgeek.org>
++Date:   Tue Mar 26 09:25:45 2013 -0700
++
++    drm/i915: enable VT switchless resume v3
++    
++    With the other bits in place, we can do this safely.
++    
++    v2: disable backlight on suspend to prevent premature enablement on resume
++    v3: disable CRTCs on suspend to allow RTD3 (Kristen)
++    
++    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
++    Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
++    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
++
++--- a/drivers/gpu/drm/i915/intel_fb.c
+++++ b/drivers/gpu/drm/i915/intel_fb.c
++@@ -150,8 +150,10 @@ static int intelfb_create(struct drm_fb_
++ 	}
++ 	info->screen_size = size;
++ 
+++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0))
++ 	/* This driver doesn't need a VT switch to restore the mode on resume */
++ 	info->skip_vt_switch = true;
+++#endif
++ 
++ 	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->depth);
++ 	drm_fb_helper_fill_var(info, &ifbdev->helper, sizes->fb_width, sizes->fb_height);
 -- 
 1.7.10.4
 
