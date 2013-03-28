@@ -1,52 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab3C1Ffj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 01:35:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48362 "EHLO mail.zytor.com"
+	id S1755800Ab3C1Fow (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 01:44:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37689 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab3C1Ffh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 01:35:37 -0400
-Message-ID: <5153D698.6010102@zytor.com>
-Date: Wed, 27 Mar 2013 22:35:20 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1755692Ab3C1Fot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 01:44:49 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
+        <akpm@linux-foundation.org>, <rob@landley.net>
+CC: <sylvester.nawrocki@gmail.com>, <swarren@wwwdotorg.org>,
+        <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <tony@atomide.com>,
+        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <b-cousson@ti.com>, <linux@arm.linux.org.uk>, <eballetbo@gmail.com>,
+        <javier@dowhile0.org>, <kishon@ti.com>, <mchehab@redhat.com>,
+        <santosh.shilimkar@ti.com>, <broonie@opensource.wolfsonmicro.com>,
+        <swarren@nvidia.com>, <linux-doc@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v4 6/6] usb: musb: omap2430: use the new generic PHY framework
+Date: Thu, 28 Mar 2013 11:13:28 +0530
+Message-ID: <1364449408-9510-7-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1364449408-9510-1-git-send-email-kishon@ti.com>
+References: <1364449408-9510-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-To: Ley Foon Tan <lftan@altera.com>
-CC: linux-kernel@vger.kernel.org, arnd@arndb.de, linux-arch@vger.kernel.org
-Subject: Re: Generic syscall ABI support
-References: <1364440182.2289.45.camel@leyfoon-vm>
-In-Reply-To: <1364440182.2289.45.camel@leyfoon-vm>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/2013 08:09 PM, Ley Foon Tan wrote:
-> Need advise regarding the generic syscall ABI support.
-> 
-> We are planning to upstream our Nios II kernel (arch/nios2) to mainline.
-> But it doesn't support generic syscall ABI yet (It requires an updated
-> Glibc port as well). 
-> 
-> The question is, is it a requirement for new arch to support generic
-> syscall ABI when upstreaming? Can we upstream a non-generic syscall ABI
-> first and migrate to generic syscall ABI in future?
-> Thanks.
-> 
-> Regards
-> LFTAN
-> 
+Use the generic PHY framework API to get the PHY. The usb_phy_set_suspend
+and usb_phy_set_resume is replaced with phy_suspend and phy_resume to
+align with the new PHY framework.
 
-That would be extremely difficult.
+musb->xceiv can't be removed as of now because musb core uses xceiv.state and
+xceiv.otg. Once there is a separate state machine to handle otg, these can be
+moved out of xceiv and then we can start using the generic PHY framework.
 
-In general, you should use the generic ABI for a new port unless you
-have *very* strong and convincing reasons not to.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/usb/musb/musb_core.h |    2 ++
+ drivers/usb/musb/omap2430.c  |   22 ++++++++++++++++------
+ 2 files changed, 18 insertions(+), 6 deletions(-)
 
-Given how long the Nios2 port has been in upstreaming (unfortunate, I
-like to play with FPGAs ;) it seems worthwhile to adjust it before
-pushing it.
-
-	-hpa
+diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
+index 7fb4819..78251fd 100644
+--- a/drivers/usb/musb/musb_core.h
++++ b/drivers/usb/musb/musb_core.h
+@@ -46,6 +46,7 @@
+ #include <linux/usb.h>
+ #include <linux/usb/otg.h>
+ #include <linux/usb/musb.h>
++#include <linux/phy/phy.h>
+ 
+ struct musb;
+ struct musb_hw_ep;
+@@ -357,6 +358,7 @@ struct musb {
+ 	u16			int_tx;
+ 
+ 	struct usb_phy		*xceiv;
++	struct phy		*phy;
+ 
+ 	int nIrq;
+ 	unsigned		irq_wake:1;
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index 1a42a45..55f071d 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -349,14 +349,24 @@ static int omap2430_musb_init(struct musb *musb)
+ 	 * up through ULPI.  TWL4030-family PMICs include one,
+ 	 * which needs a driver, drivers aren't always needed.
+ 	 */
+-	if (dev->parent->of_node)
++	if (dev->parent->of_node) {
++		musb->phy = devm_of_phy_get_byname(dev->parent, "usb2-phy");
++
++		/* We can't totally remove musb->xceiv as of now because
++		 * musb core uses xceiv.state and xceiv.otg. Once we have
++		 * a separate state machine to handle otg, these can be moved
++		 * out of xceiv and then we can start using the generic PHY
++		 * framework
++		 */
+ 		musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
+ 		    "usb-phy", 0);
+-	else
++	} else {
+ 		musb->xceiv = devm_usb_get_phy_dev(dev, 0);
++		musb->phy = devm_phy_get(dev, 0);
++	}
+ 
+-	if (IS_ERR_OR_NULL(musb->xceiv)) {
+-		pr_err("HS USB OTG: no transceiver configured\n");
++	if (IS_ERR_OR_NULL(musb->xceiv) || IS_ERR_OR_NULL(musb->phy)) {
++		dev_err(dev, "no transceiver configured\n");
+ 		return -EPROBE_DEFER;
+ 	}
+ 
+@@ -612,7 +622,7 @@ static int omap2430_runtime_suspend(struct device *dev)
+ 				OTG_INTERFSEL);
+ 
+ 		omap2430_low_level_exit(musb);
+-		usb_phy_set_suspend(musb->xceiv, 1);
++		phy_suspend(musb->phy);
+ 	}
+ 
+ 	return 0;
+@@ -628,7 +638,7 @@ static int omap2430_runtime_resume(struct device *dev)
+ 		musb_writel(musb->mregs, OTG_INTERFSEL,
+ 				musb->context.otg_interfsel);
+ 
+-		usb_phy_set_suspend(musb->xceiv, 0);
++		phy_resume(musb->phy);
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.10.4
 
