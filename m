@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272Ab3C1GSK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 02:18:10 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:53223 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab3C1GSI (ORCPT
+	id S1755628Ab3C1GTS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 02:19:18 -0400
+Received: from mail-da0-f44.google.com ([209.85.210.44]:64546 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab3C1GTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 02:18:08 -0400
-Message-ID: <1364451516.15039.11.camel@gitbox>
-Subject: Re: [PATCH] pinctrl: bcm2835: make use of
- of_property_read_u32_index()
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        linux-rpi-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 28 Mar 2013 19:18:36 +1300
-In-Reply-To: <1364447397-29005-1-git-send-email-swarren@wwwdotorg.org>
-References: <1364447397-29005-1-git-send-email-swarren@wwwdotorg.org>
+	Thu, 28 Mar 2013 02:19:17 -0400
+Message-ID: <1364451550.4448.1.camel@phoenix>
+Subject: [PATCH] iommu: exynos: Fix out of bound array access
+From: Axel Lin <axel.lin@ingics.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, KyongHo Cho <pullip.cho@samsung.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 28 Mar 2013 14:19:10 +0800
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-27 at 23:09 -0600, Stephen Warren wrote:
-> Use the new standard API of_property_read_u32_index() instead of open-
-> coding it.
-> 
-> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
-> ---
-> Note: This depends on the proposed patch "of: Add support for reading
-> a u32 from a multi-value property" by Tony Prisk.
-> 
-> BTW, I realized why I didn't create that standard API, but wrote custom
-> prop_u32() instead; the code has already looked up the properties, and
-> validated their length, so prop_u32() can simply index into the property
-> data, whereas of_property_read_u32_index() needs to go search for the
-> property and re-validate it every time, so there's a bunch more overhead.
-> It also means duplicating the property name, although I could use a
-> define for that. I'm not entirely convinced that using this standard API
-> is a win in this case. LinusW, Tony, what do you think?
-> ---
+In the case of no-match in "for (i = 0; i < (pdev->num_resources / 2); i++)",
+i is "pdev->num_resources / 2". Fix the boundary checking to avoid the out of
+bound array access for data->sfrbases[i].
 
-When I was writing the function I had a similar thought about the fact
-we need to work out the length first, which as you mentioned, requires
-all the prior work on the property anyway.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/iommu/exynos-iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I didn't bring it up, because I thought someone might say 'hey, you
-should add a function to get the count as well' :)
+diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+index 238a3ca..de04e6a 100644
+--- a/drivers/iommu/exynos-iommu.c
++++ b/drivers/iommu/exynos-iommu.c
+@@ -357,7 +357,7 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
+ 			break;
+ 	}
+ 
+-	if (i == pdev->num_resources) {
++	if (i == pdev->num_resources / 2) {
+ 		itype = SYSMMU_FAULT_UNKNOWN;
+ 	} else {
+ 		itype = (enum exynos_sysmmu_inttype)
+-- 
+1.7.10.4
 
-In both the brcm and vt8500 use cases, we will have the issue of
-multiple lookups on the same property using 'generic' functions. Price
-we have to pay for generic code?
 
-Regards
-Tony P
 
