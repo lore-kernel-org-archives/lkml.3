@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab3C1Cvr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 22:51:47 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:54138 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755079Ab3C1Cvq (ORCPT
+	id S1754983Ab3C1Cyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 22:54:44 -0400
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:36146
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754744Ab3C1Cym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 22:51:46 -0400
-Message-ID: <5153B03E.2050201@gmail.com>
-Date: Wed, 27 Mar 2013 19:51:42 -0700
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 27 Mar 2013 22:54:42 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zcb8kz98dI1432Izz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Thu, 28 Mar 2013 10:54:23 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Javier Martin <javier.martin@vista-silicon.com>,
+        <kernel@pengutronix.de>, <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v9 RESEND 4/4] ARM: dts: add sram for imx53 and imx6q
+Message-ID: <20130328025422.GH5429@S2101-09.ap.freescale.net>
+References: <1363776767-2635-1-git-send-email-p.zabel@pengutronix.de>
+ <1363776767-2635-5-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
-To: Parag Warudkar <parag.lkml@gmail.com>
-CC: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        dirk.brandewie@gmail.com
-Subject: Re: intel_pstate_timer_func divide by zero oops
-References: <alpine.LFD.2.03.1303272103380.8412@gmail.com>
-In-Reply-To: <alpine.LFD.2.03.1303272103380.8412@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1363776767-2635-5-git-send-email-p.zabel@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 20, 2013 at 11:52:47AM +0100, Philipp Zabel wrote:
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+> Changes since v8:
+>  - Changed device tree compatible string to "mmio-sram"
+> ---
+>  arch/arm/boot/dts/imx53.dtsi |    5 +++++
+>  arch/arm/boot/dts/imx6q.dtsi |    6 ++++++
+>  2 files changed, 11 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/imx53.dtsi b/arch/arm/boot/dts/imx53.dtsi
+> index edc3f1e..69d0680 100644
+> --- a/arch/arm/boot/dts/imx53.dtsi
+> +++ b/arch/arm/boot/dts/imx53.dtsi
+> @@ -664,5 +664,10 @@
+>  				status = "disabled";
+>  			};
+>  		};
+> +
+> +		ocram: ocram@f8000000 {
+> +			compatible = "fsl,imx-ocram", "mmio-sram";
 
-Is there any way to capture the beginning of this trace?
+We should probably just drop "fsl,imx-ocram".
 
-pid_param_set() is on the stack which means that something is changing
-the debugfs parameters or the stack is FUBAR.
+Shawn
 
-On 03/27/2013 06:49 PM, Parag Warudkar wrote:
-> I get this same oops occassionally - the machine freezes and there doesn't
-> seem to be any record of the oops on disk.
->
-
->
-> That  is -
-> 	sample->pstate_pct_busy = 100 - div64_u64(
-> 					sample->idletime_us * 100,
-> 					sample->duration_us);
->
-
-I don't see how duration_us can be zero unless somehow I am getting back-to-back
-timer callbacks which seems unlikely since the timer is not re-armed until
-the timer function is about to return and the driver has done all its work
-for the sample period
-
---Dirk
-
-> So looks like sample->duration_us is 0? If so, that implies that
-> ktime_us_delta(now, cpu->prev_sample) is zero. I am not entirely sure how
-> to handle this case - return if sampling too early, or if there is some
-> other bug making the delta calculation go poof.
->
->
-> Thanks,
->
-> Parag
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> +			reg = <0xf8000000 0x20000>;
+> +		};
+>  	};
+>  };
+> diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
+> index ff1205e..73302db 100644
+> --- a/arch/arm/boot/dts/imx6q.dtsi
+> +++ b/arch/arm/boot/dts/imx6q.dtsi
+> @@ -124,6 +124,12 @@
+>  			status = "disabled";
+>  		};
+>  
+> +		ocram: ocram@00900000 {
+> +			compatible = "fsl,imx-ocram", "mmio-sram";
+> +			reg = <0x00900000 0x3f000>;
+> +			clocks = <&clks 142>;
+> +		};
+> +
+>  		timer@00a00600 {
+>  			compatible = "arm,cortex-a9-twd-timer";
+>  			reg = <0x00a00600 0x20>;
+> -- 
+> 1.7.10.4
+> 
 
