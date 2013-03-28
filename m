@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756451Ab3C1PvP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 11:51:15 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:55617 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715Ab3C1PvN (ORCPT
+	id S1756621Ab3C1Pwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 11:52:37 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:61782 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756419Ab3C1Pwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 11:51:13 -0400
-Date: Thu, 28 Mar 2013 08:51:09 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        stable@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: [PATCH 1/2] hugetlbfs: stop setting VM_DONTDUMP in initializing
- vma(VM_HUGETLB)
-Message-ID: <20130328155109.GA13075@kroah.com>
-References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1364485358-8745-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+	Thu, 28 Mar 2013 11:52:35 -0400
+Date: Thu, 28 Mar 2013 16:52:29 +0100
+From: Robert Richter <rric@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Borislav Petkov <bp@suse.de>
+Subject: Re: [RFC PATCH 0/3] Perf persistent events
+Message-ID: <20130328155229.GP11449@rric.localhost>
+References: <1363352789-17991-1-git-send-email-bp@alien8.de>
+ <87d2uxje6u.fsf@sejong.aot.lge.com>
+ <20130318084638.GC17959@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1364485358-8745-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130318084638.GC17959@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 11:42:37AM -0400, Naoya Horiguchi wrote:
-> Currently we fail to include any data on hugepages into coredump,
-> because VM_DONTDUMP is set on hugetlbfs's vma. This behavior was recently
-> introduced by commit 314e51b98 "mm: kill vma flag VM_RESERVED and
-> mm->reserved_vm counter". This looks to me a serious regression,
-> so let's fix it.
+On 18.03.13 09:46:38, Ingo Molnar wrote:
 > 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> ---
->  fs/hugetlbfs/inode.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> * Namhyung Kim <namhyung@kernel.org> wrote:
+> 
+> > So my question is how can an user know which persistent events are 
+> > available in her system?
+> 
+> I think we need VFS enumeration for that: directories give a high level a 
+> structure (allowing things like per user contexts) while readdir will give 
+> list of specific persistent buffer contexts.
+> 
+> Sensible naming convention would be needed to make things easy to discover 
+> and list - and for active buffers to not be forgotten about.
+> 
+> cgroups or a new 'eventfs' filesystem would be an option.
 
+An option would be to attach the persistent events to a hosting pmu
+(e.g. 'ras' in this case) and provide the events via sysfs as already
+done by other pmus:
 
-<formletter>
+ /sys/bus/event_source/devices/ras/events/
+ /sys/bus/event_source/devices/ras/events/mce_record
+ ...
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
+perf tools work then out-the-box with -e ras/mce_record/.
 
-</formletter>
+The event is selected by the 'ras' pmu and then routed to the original
+pmu that might be e.g. 'tracepoint'. So we attach each persistent
+event to a 'virtual' pmu which does the grouping in the perf sysfs and
+the forwarding to its actual pmu.
+
+-Robert
