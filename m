@@ -1,133 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab3C1SYX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 14:24:23 -0400
-Received: from gate.crashing.org ([63.228.1.57]:44920 "EHLO gate.crashing.org"
+	id S1754007Ab3C1SYk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 14:24:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43457 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752272Ab3C1SYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 14:24:18 -0400
-Message-ID: <1364495050.11644.47.camel@pasglop>
-Subject: Re: Fwd: [PATCH v2] drivers/crypto/nx: fix init race, alignmasks
- and GCM bug
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Kent Yoder <shpedoikal@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Date: Thu, 28 Mar 2013 19:24:10 +0100
-In-Reply-To: <CAM0nabGe1ZYeZyjuCp9vSjTfnd4GHQXg4QYFimoCqZ1njjhXaw@mail.gmail.com>
-References: <CAM0nabE5yQB3xQuATiAEyt3Ahpqqh7EMNDxcnK2PgSUaNG1Y_A@mail.gmail.com>
-	 <CAM0nabGe1ZYeZyjuCp9vSjTfnd4GHQXg4QYFimoCqZ1njjhXaw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753118Ab3C1SYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 14:24:37 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [RFE PATCH] hrtimer, add expiry time overflow check in hrtimer_interrupt
+Date: Thu, 28 Mar 2013 14:24:22 -0400
+Message-Id: <1364495062-26997-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-28 at 11:32 -0500, Kent Yoder wrote:
-> Hi Ben, will you carry this patch in the linuxppc-dev tree?
+The settimeofday01 test in the LTP testsuite effectively does
 
-I can but I'm on vacation until end of April roughly.
+        gettimeofday(current time);
+        settimeofday(Jan 1, 1970 + 100 seconds);
+        settimeofday(current time);
 
-Cheers,
-Ben.
+This test causes a stack trace to be displayed on the console during the
+setting of timeofday to Jan 1, 1970 + 100 seconds:
 
-> Thanks,
-> Kent
-> 
-> ---------- Forwarded message ----------
-> From: Kent Yoder <shpedoikal@gmail.com>
-> Date: Wed, Mar 20, 2013 at 9:22 AM
-> Subject: [PATCH v2] drivers/crypto/nx: fix init race, alignmasks and GCM bug
-> To: linux-kernel@vger.kernel.org
-> Cc: linux-crypto@vger.kernel.org, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org>
-> 
-> 
->   Fixes a race on driver init with registering algorithms where the
-> driver status flag wasn't being set before self testing started.
-> 
->   Added the cra_alignmask field for CBC and ECB modes.
-> 
->   Fixed a bug in GCM where AES block size was being used instead of
-> authsize.
-> 
-> Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
-> ---
-> Only changes in v2 were to leave stable off the cc and add Ben for PPC.
-> 
->  drivers/crypto/nx/nx-aes-cbc.c | 1 +
->  drivers/crypto/nx/nx-aes-ecb.c | 1 +
->  drivers/crypto/nx/nx-aes-gcm.c | 2 +-
->  drivers/crypto/nx/nx.c         | 4 ++--
->  4 files changed, 5 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/crypto/nx/nx-aes-cbc.c b/drivers/crypto/nx/nx-aes-cbc.c
-> index a76d4c4..35d483f 100644
-> --- a/drivers/crypto/nx/nx-aes-cbc.c
-> +++ b/drivers/crypto/nx/nx-aes-cbc.c
-> @@ -126,6 +126,7 @@ struct crypto_alg nx_cbc_aes_alg = {
->         .cra_blocksize   = AES_BLOCK_SIZE,
->         .cra_ctxsize     = sizeof(struct nx_crypto_ctx),
->         .cra_type        = &crypto_blkcipher_type,
-> +       .cra_alignmask   = 0xf,
->         .cra_module      = THIS_MODULE,
->         .cra_init        = nx_crypto_ctx_aes_cbc_init,
->         .cra_exit        = nx_crypto_ctx_exit,
-> diff --git a/drivers/crypto/nx/nx-aes-ecb.c b/drivers/crypto/nx/nx-aes-ecb.c
-> index ba5f161..7bbc9a8 100644
-> --- a/drivers/crypto/nx/nx-aes-ecb.c
-> +++ b/drivers/crypto/nx/nx-aes-ecb.c
-> @@ -123,6 +123,7 @@ struct crypto_alg nx_ecb_aes_alg = {
->         .cra_priority    = 300,
->         .cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
->         .cra_blocksize   = AES_BLOCK_SIZE,
-> +       .cra_alignmask   = 0xf,
->         .cra_ctxsize     = sizeof(struct nx_crypto_ctx),
->         .cra_type        = &crypto_blkcipher_type,
->         .cra_module      = THIS_MODULE,
-> diff --git a/drivers/crypto/nx/nx-aes-gcm.c b/drivers/crypto/nx/nx-aes-gcm.c
-> index c8109ed..6cca6c3 100644
-> --- a/drivers/crypto/nx/nx-aes-gcm.c
-> +++ b/drivers/crypto/nx/nx-aes-gcm.c
-> @@ -219,7 +219,7 @@ static int gcm_aes_nx_crypt(struct aead_request
-> *req, int enc)
->         if (enc)
->                 NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
->         else
-> -               nbytes -= AES_BLOCK_SIZE;
-> +               nbytes -= crypto_aead_authsize(crypto_aead_reqtfm(req));
-> 
->         csbcpb->cpb.aes_gcm.bit_length_data = nbytes * 8;
-> 
-> diff --git a/drivers/crypto/nx/nx.c b/drivers/crypto/nx/nx.c
-> index c767f23..7621d05 100644
-> --- a/drivers/crypto/nx/nx.c
-> +++ b/drivers/crypto/nx/nx.c
-> @@ -454,6 +454,8 @@ static int nx_register_algs(void)
->         if (rc)
->                 goto out;
-> 
-> +       nx_driver.of.status = NX_OKAY;
-> +
->         rc = crypto_register_alg(&nx_ecb_aes_alg);
->         if (rc)
->                 goto out;
-> @@ -498,8 +500,6 @@ static int nx_register_algs(void)
->         if (rc)
->                 goto out_unreg_s512;
-> 
-> -       nx_driver.of.status = NX_OKAY;
-> -
->         goto out;
-> 
->  out_unreg_s512:
-> --
-> 1.7.11.7
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+[  131.066751] ------------[ cut here ]------------
+[  131.096448] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x135/0x140()
+[  131.104935] Hardware name: Dinar
+[  131.108150] Modules linked in: sg nfsv3 nfs_acl nfsv4 auth_rpcgss nfs dns_resolver fscache lockd sunrpc nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables iptable_filter ip_tables kvm_amd kvm sp5100_tco bnx2 i2c_piix4 crc32c_intel k10temp fam15h_power ghash_clmulni_intel amd64_edac_mod pcspkr serio_raw edac_mce_amd edac_core microcode xfs libcrc32c sr_mod sd_mod cdrom ata_generic crc_t10dif pata_acpi radeon i2c_algo_bit drm_kms_helper ttm drm ahci pata_atiixp libahci libata usb_storage i2c_core dm_mirror dm_region_hash dm_log dm_mod
+[  131.176784] Pid: 0, comm: swapper/28 Not tainted 3.8.0+ #6
+[  131.182248] Call Trace:
+[  131.184684]  <IRQ>  [<ffffffff810612af>] warn_slowpath_common+0x7f/0xc0
+[  131.191312]  [<ffffffff8106130a>] warn_slowpath_null+0x1a/0x20
+[  131.197131]  [<ffffffff810b9fd5>] clockevents_program_event+0x135/0x140
+[  131.203721]  [<ffffffff810bb584>] tick_program_event+0x24/0x30
+[  131.209534]  [<ffffffff81089ab1>] hrtimer_interrupt+0x131/0x230
+[  131.215437]  [<ffffffff814b9600>] ? cpufreq_p4_target+0x130/0x130
+[  131.221509]  [<ffffffff81619119>] smp_apic_timer_interrupt+0x69/0x99
+[  131.227839]  [<ffffffff8161805d>] apic_timer_interrupt+0x6d/0x80
+[  131.233816]  <EOI>  [<ffffffff81099745>] ? sched_clock_cpu+0xc5/0x120
+[  131.240267]  [<ffffffff814b9ff0>] ? cpuidle_wrap_enter+0x50/0xa0
+[  131.246252]  [<ffffffff814b9fe9>] ? cpuidle_wrap_enter+0x49/0xa0
+[  131.252238]  [<ffffffff814ba050>] cpuidle_enter_tk+0x10/0x20
+[  131.257877]  [<ffffffff814b9c89>] cpuidle_idle_call+0xa9/0x260
+[  131.263692]  [<ffffffff8101c42f>] cpu_idle+0xaf/0x120
+[  131.268727]  [<ffffffff815f8971>] start_secondary+0x255/0x257
+[  131.274449] ---[ end trace 1151a50552231615 ]---
 
+When we change the system time to a low value like this, the value of
+timekeeper->offs_real will be a negative value.
+
+It seems that the WARN occurs because an hrtimer has been started in the time
+between the releasing of the timekeeper lock and the IPI call (via a call to
+on_each_cpu) in clock_was_set() in the do_settimeofday() code.  The end result
+is that a REALTIME_CLOCK timer has been added with softexpires = expires =
+KTIME_MAX.  The hrtimer_interrupt() fires/is called and the loop at
+kernel/hrtimer.c:1289 is executed.  In this loop the code subtracts the
+clock base's offset (which was set to timekeeper->offs_real in
+do_settimeofday()) from the current hrtimer_cpu_base->expiry value (which
+was KTIME_MAX):
+
+	KTIME_MAX - (a negative value) = overflow
+
+A simple check for an overflow can resolve this problem.  Using KTIME_MAX
+instead of the overflow value will result in the hrtimer function being run,
+and the reprogramming of the timer after that.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+---
+ kernel/hrtimer.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index cc47812..17eafd7 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1309,6 +1309,8 @@ retry:
+ 
+ 				expires = ktime_sub(hrtimer_get_expires(timer),
+ 						    base->offset);
++				if (expires.tv64 < 0)
++					expires.tv64 = KTIME_MAX;
+ 				if (expires.tv64 < expires_next.tv64)
+ 					expires_next = expires;
+ 				break;
+-- 
+1.7.9.3
 
