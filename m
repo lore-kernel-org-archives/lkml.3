@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab3C1MVO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 08:21:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43454 "EHLO arroyo.ext.ti.com"
+	id S1755596Ab3C1MYL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 08:24:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:25848 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755368Ab3C1MVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 08:21:13 -0400
-Message-ID: <51543595.40004@ti.com>
-Date: Thu, 28 Mar 2013 13:20:37 +0100
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Philip Avinash <avinashphilip@ti.com>
-CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <vaibhav.bedia@ti.com>,
-        <hvaibhav@ti.com>
-Subject: Re: [PATCH] ARM: dts: AM33XX: Corrects typo in interrupt field in
- SPI node
-References: <1359697047-1816-1-git-send-email-avinashphilip@ti.com>
-In-Reply-To: <1359697047-1816-1-git-send-email-avinashphilip@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1754918Ab3C1MYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 08:24:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,925,1355126400"; 
+   d="scan'208";a="309721674"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <514C773A.6070000@sr71.net>
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1363283435-7666-15-git-send-email-kirill.shutemov@linux.intel.com>
+ <514C773A.6070000@sr71.net>
+Subject: Re: [PATCHv2, RFC 14/30] thp, mm: naive support of thp in generic
+ read/write routines
 Content-Transfer-Encoding: 7bit
+Message-Id: <20130328122557.2D6A7E0085@blue.fi.intel.com>
+Date: Thu, 28 Mar 2013 14:25:57 +0200 (EET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philip,
-
-On 02/01/2013 06:37 AM, Philip Avinash wrote:
-> DT field of "interrupts" was mentioned wrongly as "interrupt" in SPI
-> node. This went unnoticed as spi-omap2 driver not making use of
-> interrupt. Fixes the typo.
+Dave Hansen wrote:
+> On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > 
+> > For now we still write/read at most PAGE_CACHE_SIZE bytes a time.
+> > 
+> > This implementation doesn't cover address spaces with backing store.
+> ...
+> > --- a/mm/filemap.c
+> > +++ b/mm/filemap.c
+> > @@ -1165,12 +1165,23 @@ find_page:
+> >  			if (unlikely(page == NULL))
+> >  				goto no_cached_page;
+> >  		}
+> > +		if (PageTransTail(page)) {
+> > +			page_cache_release(page);
+> > +			page = find_get_page(mapping,
+> > +					index & ~HPAGE_CACHE_INDEX_MASK);
+> > +			if (!PageTransHuge(page)) {
+> > +				page_cache_release(page);
+> > +				goto find_page;
+> > +			}
+> > +		}
 > 
-> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-> ---
->  arch/arm/boot/dts/am33xx.dtsi |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> index fbcb90b..cece3ad 100644
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -309,7 +309,7 @@
->  			#address-cells = <1>;
->  			#size-cells = <0>;
->  			reg = <0x48030000 0x400>;
-> -			interrupt = <65>;
-> +			interrupts = <65>;
->  			ti,spi-num-cs = <2>;
->  			ti,hwmods = "spi0";
->  			status = "disabled";
-> @@ -320,7 +320,7 @@
->  			#address-cells = <1>;
->  			#size-cells = <0>;
->  			reg = <0x481a0000 0x400>;
-> -			interrupt = <125>;
-> +			interrupts = <125>;
->  			ti,spi-num-cs = <2>;
->  			ti,hwmods = "spi1";
->  			status = "disabled";
-> 
+> So, we're going to do a read of a file, and we pulled a tail page out of
+> the page cache.  Why can't we just deal with the tail page directly?
 
-Thanks for the fix. Applied with Peter Acked-by. It will be available in the following branch:
+Good point. I'll redo it once again.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git for_3.10/dts
+First I thought to make it possible to read/write more PAGE_SIZE at once.
+If not take this option in account for now, it's possible to make code much
+cleaner.
 
-Regards,
-Benoit
+-- 
+ Kirill A. Shutemov
