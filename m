@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756230Ab3C1H2i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 03:28:38 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59651 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755139Ab3C1H2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 03:28:37 -0400
-From: Mugunthan V N <mugunthanvnm@ti.com>
-To: <joe@perches.com>
-CC: <apw@canonical.com>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, Mugunthan V N <mugunthanvnm@ti.com>
-Subject: [PATCHv2 1/1] checkpatch: adding Suggested-by as standard signature
-Date: Thu, 28 Mar 2013 12:58:22 +0530
-Message-ID: <1364455702-13900-1-git-send-email-mugunthanvnm@ti.com>
-X-Mailer: git-send-email 1.8.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756355Ab3C1Ha2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 03:30:28 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64029 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754507Ab3C1Ha1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 03:30:27 -0400
+X-IronPort-AV: E=Sophos;i="4.87,364,1363104000"; 
+   d="scan'208";a="6961689"
+From: liguang <lig.fnst@cn.fujitsu.com>
+To: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: liguang <lig.fnst@cn.fujitsu.com>
+Subject: [PATCH] Makefile: allow no update .config build
+Date: Thu, 28 Mar 2013 15:28:06 +0800
+Message-Id: <1364455686-18930-1-git-send-email-lig.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.2.5
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/28 15:29:30,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/28 15:29:36,
+	Serialize complete at 2013/03/28 15:29:36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As people started using Suggested-by as standard signature, adding
-"Suggested-by" to the standard signature so that checkpatch won't
-generate warning when Suggested-by is used in patch signature
+if we pull some commits from other git repo
+which bring in a few CONFIG_* options, then
+we have to build all again, but we do assure
+these options are not interesting for us,
+so the long waiting build will be offending.
+this change help us to avoid all-build.
 
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
 ---
-Changes from Initial version
-* Updated Documentation/SubmittingPatches explaining when to use
-  Suggested-by tag.
+ Makefile |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
- Documentation/SubmittingPatches |    9 ++++++++-
- scripts/checkpatch.pl           |    1 +
- 2 files changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-index aa0c1e6..6e97e73 100644
---- a/Documentation/SubmittingPatches
-+++ b/Documentation/SubmittingPatches
-@@ -420,7 +420,7 @@ person it names.  This tag documents that potentially interested parties
- have been included in the discussion
+diff --git a/Makefile b/Makefile
+index 54d2b2a..d10e505 100644
+--- a/Makefile
++++ b/Makefile
+@@ -106,6 +106,12 @@ ifeq ("$(origin W)", "command line")
+   export KBUILD_ENABLE_EXTRA_GCC_CHECKS := $(W)
+ endif
  
- 
--14) Using Reported-by:, Tested-by: and Reviewed-by:
-+14) Using Reported-by:, Tested-by:, Reviewed-by: and Suggested-by:
- 
- If this patch fixes a problem reported by somebody else, consider adding a
- Reported-by: tag to credit the reporter for their contribution.  Please
-@@ -468,6 +468,13 @@ done on the patch.  Reviewed-by: tags, when supplied by reviewers known to
- understand the subject area and to perform thorough reviews, will normally
- increase the likelihood of your patch getting into the kernel.
- 
-+A Suggested-by: tag indicates that the patch idea is suggested by the person
-+named and ensures credit to the person for the idea. Please note that this
-+tag should not be added without the reporter's permission, especially if the
-+idea was not posted in a public forum. That said, if we diligently credit our
-+idea reporters, they will, hopefully, be inspired to help us again in the
-+future.
++# KBUILD_NCU is set to do not update .config even
++# a few new CONFIG_* options appeared
++ifeq ("$(origin NCU)", "command line")
++  KBUILD_NCU := $(NCU)
++endif
 +
- 
- 15) The canonical patch format
- 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index b28cc38..6be4d27 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -281,6 +281,7 @@ our $signature_tags = qr{(?xi:
- 	Tested-by:|
- 	Reviewed-by:|
- 	Reported-by:|
-+	Suggested-by:|
- 	To:|
- 	Cc:
- )};
+ # That's our default target when none is given on the command line
+ PHONY := _all
+ _all:
+@@ -540,8 +546,10 @@ $(KCONFIG_CONFIG) include/config/auto.conf.cmd: ;
+ # with it and forgot to run make oldconfig.
+ # if auto.conf.cmd is missing then we are probably in a cleaned tree so
+ # we execute the config step to be sure to catch updated Kconfig files
++ifneq ($(KBUILD_NCU), 1)
+ include/config/%.conf: $(KCONFIG_CONFIG) include/config/auto.conf.cmd
+ 	$(Q)$(MAKE) -f $(srctree)/Makefile silentoldconfig
++endif # $(KBUILD_NCU)
+ else
+ # external modules needs include/generated/autoconf.h and include/config/auto.conf
+ # but do not care if they are up-to-date. Use auto.conf to trigger the test
+@@ -1157,6 +1165,7 @@ help:
+ 	@echo  '		2: warnings which occur quite often but may still be relevant'
+ 	@echo  '		3: more obscure warnings, can most likely be ignored'
+ 	@echo  '		Multiple levels can be combined with W=12 or W=123'
++	@echo  '  make NCU=1 [targets] no .config udate'
+ 	@echo  ''
+ 	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
+ 	@echo  'For further info see the ./README file'
 -- 
-1.7.9.5
+1.7.2.5
 
