@@ -1,130 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab3C1R34 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:29:56 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:49219 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab3C1R3z (ORCPT
+	id S1752563Ab3C1ReS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:34:18 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:40253 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643Ab3C1ReR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 13:29:55 -0400
-Message-ID: <1364491792.15753.47.camel@edumazet-glaptop>
-Subject: Re: [BUG] Crash with NULL pointer dereference in bond_handle_frame
- in -rt (possibly mainline)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jiri Pirko <jpirko@redhat.com>, Andy Gospodarek <andy@greyhouse.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Nicolas de =?ISO-8859-1?Q?Peslo=FCan?= 
-	<nicolas.2p.debian@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Guy Streeter <streeter@redhat.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Date: Thu, 28 Mar 2013 10:29:52 -0700
-In-Reply-To: <1364490997.6345.237.camel@gandalf.local.home>
-References: <1364490997.6345.237.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 28 Mar 2013 13:34:17 -0400
+Date: Thu, 28 Mar 2013 18:34:00 +0100
+From: Richard GENOUD <richard.genoud@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] pinctrl: re-enable old state in case of error in
+ pinctrl_select_state
+Message-ID: <20130328173356.GA10420@lnx-rg>
+References: <1364222843-30305-1-git-send-email-richard.genoud@gmail.com>
+ <1364222843-30305-5-git-send-email-richard.genoud@gmail.com>
+ <51538701.60409@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51538701.60409@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-28 at 13:16 -0400, Steven Rostedt wrote:
-> Hi,
+On [mer., 27.03.2013 17:55:45], Stephen Warren wrote:
+> On 03/25/2013 08:47 AM, Richard Genoud wrote:
+> > If a new state is applied, the groups configured in the old state but
+> > not in the new state are disabled.
+> > If something goes wrong and the new state can't be applied, we have to
+> > re-enable those groups.
 > 
-> I'm currently debugging a crash in an old 3.0-rt kernel that one of our
-> customers is seeing. The bug happens with a stress test that loads and
-> unloads the bonding module in a loop (I don't know all the details as
-> I'm not the one that is directly interacting with the customer). But the
-> bug looks to be something that may still be present and possibly present
-> in mainline too. It will just be much harder to trigger it in mainline.
+> What is the use-case for this? I wonder if it isn't better to simply
+> undo the partial selection of the new state (as patch 3/4 attempts to
+> do) and then leave p->state==NULL, indicating that no state is actively
+> selected. IIRC, this would be the same as right after the initial
+> pinctrl_select().
 > 
-> In -rt, interrupts are threads, and can schedule in and out just like
-> any other thread. Note, mainline now supports interrupt threads so this
-> may be easily reproducible in mainline as well. I don't have the ability
-> to tell the customer to try mainline or other kernels, so my hands are
-> somewhat tied to what I can do.
+> I wonder if it's likely that attempting to re-apply the old state would
+> actually work, given that applying something just failed.
 > 
-> But according to a core dump, I tracked down that the eth irq thread
-> crashed in bond_handle_frame() here:
+> Finally, this recovery code doesn't:
 > 
-> 	slave = bond_slave_get_rcu(skb->dev);
-> 	bond = slave->bond; <--- BUG
+> a) Process anything except MUX_GROUP; any pin config settings in the old
+> state aren't restored.
 > 
-> 
-> the slave returned was NULL and accessing slave->bond caused a NULL
-> pointer dereference.
-> 
-> Looking at the code that unregisters the handler:
-> 
-> void netdev_rx_handler_unregister(struct net_device *dev)
-> {
-> 
->         ASSERT_RTNL();
->         RCU_INIT_POINTER(dev->rx_handler, NULL);
->         RCU_INIT_POINTER(dev->rx_handler_data, NULL);
-> }
-> 
-> Which is basically:
-> 	dev->rx_handler = NULL;
-> 	dev->rx_handler_data = NULL;
-> 
-> And looking at __netif_receive_skb() we have:
-> 
->         rx_handler = rcu_dereference(skb->dev->rx_handler);
->         if (rx_handler) {
->                 if (pt_prev) {
->                         ret = deliver_skb(skb, pt_prev, orig_dev);
->                         pt_prev = NULL;
->                 }
->                 switch (rx_handler(&skb)) {
-> 
-> My question to all of you is, what stops this interrupt from happening
-> while the bonding module is unloading?  What happens if the interrupt
-> triggers and we have this:
-> 
-> 
-> 	CPU0			CPU1
-> 	----			----
->   rx_handler = skb->dev->rx_handler
-> 
-> 			netdev_rx_handler_unregister() {
-> 			   dev->rx_handler = NULL;
-> 			   dev->rx_handler_data = NULL;
-> 
->   rx_handler()
->    bond_handle_frame() {
->     slave = skb->dev->rx_handler;
->     bond = slave->bond; <-- NULL pointer dereference!!!
-> 
-> 
-> What protection am I missing in the bond release handler that would
-> prevent the above from happening?
-
-Nothing :(
-
-bug introduced in commit 35d48903e9781975e823b359ee85c257c9ff5c1c
-(bonding: fix rx_handler locking)
-
-CC Jiri
-
-Fix seems simple :
-
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 6bbd90e..7956ca5 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1457,6 +1457,8 @@ static rx_handler_result_t bond_handle_frame(struct sk_buff **pskb)
- 	*pskb = skb;
+> b) (I think) Apply any mux settings that don't involve groups that are
+> referenced by both the old and new states; given that patch 3/4 attempts
+> to undo everything in the failed application of the new state, I think
+> this "re-apply the old state" code should simple run through everything
+> in the old state any apply it unconditionally.
+So, if I understand correctly, it could be as simple as that:
+ 	}
  
- 	slave = bond_slave_get_rcu(skb->dev);
-+	if (!slave)
-+		return ret;
- 	bond = slave->bond;
- 
- 	if (bond->params.arp_interval)
+-	if (old_state) {
+-		list_for_each_entry(setting, &old_state->settings, node) {
+-			bool found = false;
+-			if (setting->type != PIN_MAP_TYPE_MUX_GROUP)
+-				continue;
+-			list_for_each_entry(setting2, &state->settings, node) {
+-				if (setting2->type != PIN_MAP_TYPE_MUX_GROUP)
+-					continue;
+-				if (setting2->data.mux.group ==
+-						setting->data.mux.group) {
+-					found = true;
+-					break;
+-				}
+-			}
+-			if (!found)
+-				pinmux_enable_setting(setting);
+-		}
+-	}
+-
+ 	p->state = old_state;
++
++	if (old_state)
++		pinctrl_select_state_locked(p, NULL);
++
+ 	return ret;
+ }
 
-
-
+> 
+> c) Set p->state = oldstate, so it's left at NULL, which would confuse
+> any future pinctrl_select().
