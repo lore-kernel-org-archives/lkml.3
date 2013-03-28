@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab3C1Fom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 01:44:42 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49507 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753517Ab3C1Foj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 01:44:39 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
-        <akpm@linux-foundation.org>, <rob@landley.net>
-CC: <sylvester.nawrocki@gmail.com>, <swarren@wwwdotorg.org>,
-        <davem@davemloft.net>, <cesarb@cesarb.net>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <tony@atomide.com>,
-        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <b-cousson@ti.com>, <linux@arm.linux.org.uk>, <eballetbo@gmail.com>,
-        <javier@dowhile0.org>, <kishon@ti.com>, <mchehab@redhat.com>,
-        <santosh.shilimkar@ti.com>, <broonie@opensource.wolfsonmicro.com>,
-        <swarren@nvidia.com>, <linux-doc@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v4 4/6] ARM: OMAP: USB: Add phy binding information
-Date: Thu, 28 Mar 2013 11:13:26 +0530
-Message-ID: <1364449408-9510-5-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1364449408-9510-1-git-send-email-kishon@ti.com>
-References: <1364449408-9510-1-git-send-email-kishon@ti.com>
+	id S1753161Ab3C1F7D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 01:59:03 -0400
+Received: from mail-da0-f42.google.com ([209.85.210.42]:34687 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab3C1F7B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 01:59:01 -0400
+Date: Wed, 27 Mar 2013 22:58:58 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: seb <sebastien.royen@gmail.com>
+Cc: Bill Pemberton <wfp5p@virginia.edu>, linux-kernel@vger.kernel.org,
+        seb <sebastien.royen@armadeus.com>
+Subject: Re: [PATCH 1/1] Input: mma8450 - fix signed 12bits to 32bits
+ conversion
+Message-ID: <20130328055858.GA6523@core.coreip.homeip.net>
+References: <1364372263-16848-1-git-send-email-sebastien.royen@armadeus.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364372263-16848-1-git-send-email-sebastien.royen@armadeus.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order for controllers to get PHY in case of non dt boot, the phy
-binding information should be added in the platform specific
-initialization code using phy_bind.
+Hi Seb,
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/mach-omap2/usb-musb.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+On Wed, Mar 27, 2013 at 09:17:43AM +0100, seb wrote:
+> Event value is wrong. Should be in range -2048 to 2047, but is in range 0 to 4095.
+> Use int8_t to int conversion and remove 0xfff mask.
+> 
+> Signed-off-by: seb <sebastien.royen@armadeus.com>
+> ---
+>  drivers/input/misc/mma8450.c |   15 ++++++++++-----
+>  1 file changed, 10 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/input/misc/mma8450.c b/drivers/input/misc/mma8450.c
+> index 480557f..c3781a1 100644
+> --- a/drivers/input/misc/mma8450.c
+> +++ b/drivers/input/misc/mma8450.c
+> @@ -110,7 +110,7 @@ static void mma8450_poll(struct input_polled_dev *dev)
+>  	struct mma8450 *m = dev->private;
+>  	int x, y, z;
+>  	int ret;
+> -	u8 buf[6];
+> +	int8_t buf[6];
+>  
+>  	ret = mma8450_read(m, MMA8450_STATUS);
+>  	if (ret < 0)
+> @@ -119,13 +119,18 @@ static void mma8450_poll(struct input_polled_dev *dev)
+>  	if (!(ret & MMA8450_STATUS_ZXYDR))
+>  		return;
+>  
+> -	ret = mma8450_read_block(m, MMA8450_OUT_X_LSB, buf, sizeof(buf));
+> +	ret = mma8450_read_block(m, MMA8450_OUT_X_LSB, (u8*)buf, sizeof(buf));
+>  	if (ret < 0)
+>  		return;
+>  
+> -	x = ((buf[1] << 4) & 0xff0) | (buf[0] & 0xf);
+> -	y = ((buf[3] << 4) & 0xff0) | (buf[2] & 0xf);
+> -	z = ((buf[5] << 4) & 0xff0) | (buf[4] & 0xf);
+> +	/* convert 8 MSB from int8_t to int */
+> +	x = buf[1];
+> +	y = buf[3];
+> +	z = buf[5];
+> +	/* add 4 LSB */
+> +	x = (x << 4) | (buf[0] & 0xf);
+> +	y = (y << 4) | (buf[2] & 0xf);
+> +	z = (z << 4) | (buf[4] & 0xf);
 
-diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
-index 3242a55..f01bc42 100644
---- a/arch/arm/mach-omap2/usb-musb.c
-+++ b/arch/arm/mach-omap2/usb-musb.c
-@@ -24,6 +24,7 @@
- #include <linux/dma-mapping.h>
- #include <linux/io.h>
- #include <linux/usb/musb.h>
-+#include <linux/phy/phy.h>
- 
- #include "omap_device.h"
- #include "soc.h"
-@@ -85,8 +86,12 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
- 	musb_plat.mode = board_data->mode;
- 	musb_plat.extvbus = board_data->extvbus;
- 
--	if (cpu_is_omap44xx())
-+	if (cpu_is_omap44xx()) {
- 		musb_plat.has_mailbox = true;
-+		phy_bind("musb-hdrc.0.auto", 0, "omap-usb2.1.auto");
-+	} else if (cpu_is_omap34xx()) {
-+		phy_bind("musb-hdrc.0.auto", 0, "twl4030_usb");
-+	}
- 
- 	if (soc_is_am35xx()) {
- 		oh_name = "am35x_otg_hs";
+Should we just say:
+
+	x = ((int)(s8)buf[1] << 4) | (buf[0] & 0xf);
+	y = ...
+	z = ...
+
+and leave the rest as is?
+
+Thanks.
+
 -- 
-1.7.10.4
-
+Dmitry
