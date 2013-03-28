@@ -1,216 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757121Ab3C1QRp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 12:17:45 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:49369 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756955Ab3C1QRn (ORCPT
+	id S1756940Ab3C1QMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 12:12:24 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:39452 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756773Ab3C1QMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 12:17:43 -0400
-Message-ID: <1364487442.3559.3.camel@thor.lan>
-Subject: Re: [PATCH v2 11/13] rwsem: implement support for write lock
- stealing on the fastpath
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 28 Mar 2013 12:17:22 -0400
-In-Reply-To: <1363344869-15732-12-git-send-email-walken@google.com>
-References: <1363344869-15732-1-git-send-email-walken@google.com>
-	 <1363344869-15732-12-git-send-email-walken@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Thu, 28 Mar 2013 12:12:13 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
+Cc: Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 10/33] regulator: ab8500: Prepare the driver for additional platforms
+Date: Thu, 28 Mar 2013 16:11:10 +0000
+Message-Id: <1364487093-19551-11-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1364487093-19551-1-git-send-email-lee.jones@linaro.org>
+References: <1364487093-19551-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+More platforms are to be supported by the AB8500 regulator driver,
+so in this patch we prepare for their arrival. Instead of using
+the AB8500 settings blindly, we provide an infrastructure where
+adding a new platform is as easy as providing a couple of platform
+specific data structures.
 
-On Fri, 2013-03-15 at 03:54 -0700, Michel Lespinasse wrote:
-> When we decide to wake up readers, we must first grant them as many
-> read locks as necessary, and then actually wake up all these readers.
-> But in order to know how many read shares to grant, we must first
-> count the readers at the head of the queue. This might take a while
-> if there are many readers, and we want to be protected against a
-> writer stealing the lock while we're counting. To that end, we grant
-> the first reader lock before counting how many more readers are queued.
-> 
-> We also require some adjustments to the wake_type semantics.
-> 
-> RWSEM_WAKE_NO_ACTIVE used to mean that we had found the count to
-> be RWSEM_WAITING_BIAS, in which case the rwsem was known to be free
-> as nobody could steal it while we hold the wait_lock. This doesn't
-> make sense once we implement fastpath write lock stealing, so we now
-> use RWSEM_WAKE_ANY in that case.
-> 
-> Similarly, when rwsem_down_write_failed found that a read lock was active,
-> it would use RWSEM_WAKE_READ_OWNED which signalled that new readers could
-> be woken without checking first that the rwsem was available. We can't do
-> that anymore since the existing readers might release their read locks,
-> and a writer could steal the lock before we wake up additional readers.
-> So, we have to use a new RWSEM_WAKE_READERS value to indicate we only want
-> to wake readers, but we don't currently hold any read lock.
-> 
-> Signed-off-by: Michel Lespinasse <walken@google.com>
-> 
-> ---
->  lib/rwsem.c | 63 ++++++++++++++++++++++++++++++-------------------------------
->  1 file changed, 31 insertions(+), 32 deletions(-)
-> 
-> diff --git a/lib/rwsem.c b/lib/rwsem.c
-> index 9a675fa9d78e..09bf03e7808c 100644
-> --- a/lib/rwsem.c
-> +++ b/lib/rwsem.c
-> @@ -41,13 +41,11 @@ struct rwsem_waiter {
->  	enum rwsem_waiter_type type;
->  };
->  
-> -/* Wake types for __rwsem_do_wake().  Note that RWSEM_WAKE_NO_ACTIVE and
-> - * RWSEM_WAKE_READ_OWNED imply that the spinlock must have been kept held
-> - * since the rwsem value was observed.
-> - */
-> -#define RWSEM_WAKE_ANY        0 /* Wake whatever's at head of wait list */
-> -#define RWSEM_WAKE_NO_ACTIVE  1 /* rwsem was observed with no active thread */
-> -#define RWSEM_WAKE_READ_OWNED 2 /* rwsem was observed to be read owned */
-> +enum rwsem_wake_type {
-> +	RWSEM_WAKE_ANY,		/* Wake whatever's at head of wait list */
-> +	RWSEM_WAKE_READERS,	/* Wake readers only */
-> +	RWSEM_WAKE_READ_OWNED	/* Waker thread holds the read lock */
-> +};
->  
->  /*
->   * handle the lock release when processes blocked on it that can now run
-> @@ -60,16 +58,16 @@ struct rwsem_waiter {
->   * - writers are only woken if downgrading is false
->   */
->  static struct rw_semaphore *
-> -__rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
-> +__rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
->  {
->  	struct rwsem_waiter *waiter;
->  	struct task_struct *tsk;
->  	struct list_head *next;
-> -	signed long woken, loop, adjustment;
-> +	signed long oldcount, woken, loop, adjustment;
->  
->  	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
->  	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
-> -		if (wake_type != RWSEM_WAKE_READ_OWNED)
-> +		if (wake_type == RWSEM_WAKE_ANY)
->  			/* Wake writer at the front of the queue, but do not
->  			 * grant it the lock yet as we want other writers
->  			 * to be able to steal it.  Readers, on the other hand,
-> @@ -79,24 +77,24 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
->  		goto out;
->  	}
->  
-> -	/* If we come here from up_xxxx(), another thread might have reached
-> -	 * rwsem_down_failed_common() before we acquired the spinlock and
-> -	 * woken up a waiter, making it now active.  We prefer to check for
-> -	 * this first in order to not spend too much time with the spinlock
-> -	 * held if we're not going to be able to wake up readers in the end.
-> -	 *
-> -	 * Note that we do not need to update the rwsem count: any writer
-> -	 * trying to acquire rwsem will run rwsem_down_write_failed() due
-> -	 * to the waiting threads and block trying to acquire the spinlock.
-> -	 *
-> -	 * We use a dummy atomic update in order to acquire the cache line
-> -	 * exclusively since we expect to succeed and run the final rwsem
-> -	 * count adjustment pretty soon.
-> +	/* Writers might steal the lock before we grant it to the next reader.
-> +	 * We prefer to do the first reader grant before counting readers
-> +	 * so we can bail out early if a writer stole the lock.
->  	 */
-> -	if (wake_type == RWSEM_WAKE_ANY &&
-> -	    rwsem_atomic_update(0, sem) < RWSEM_WAITING_BIAS)
-> -		/* Someone grabbed the sem for write already */
-> -		goto out;
-> +	adjustment = 0;
-> +	if (wake_type != RWSEM_WAKE_READ_OWNED) {
-> +		adjustment = RWSEM_ACTIVE_READ_BIAS;
-> + try_reader_grant:
-> +		oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
-> +		if (unlikely(oldcount < RWSEM_WAITING_BIAS)) {
-> +			/* A writer stole the lock. Undo our reader grant. */
-> +			if (rwsem_atomic_update(-adjustment, sem) &
-> +						RWSEM_ACTIVE_MASK)
-> +				goto out;
-> +			/* Last active locker left. Retry waking readers. */
-> +			goto try_reader_grant;
-> +		}
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/regulator/ab8500.c |   76 ++++++++++++++++++++++++++++----------------
+ 1 file changed, 49 insertions(+), 27 deletions(-)
 
-I'm not a big fan of goto loops (though I know they were in here
-before). The equivalent solution by factoring:
-
-		if (!__rwsem_try_reader_grant(sem, adjustment))
-			goto out;
-
-
-static inline int __rwsem_try_reader_grant(struct rw_semaphore *sem, long adj)
-{
-	while (1) {
-		long count = rwsem_atomic_update(adj, sem) - adj;
-		if (likely(count >= RWSEM_WAITING_BIAS))
-			break;
-
-		/* A writer stole the lock. Undo our reader grant. */
-		if (rwsem_atomic_update(-adj, sem) & RWSEM_ACTIVE_MASK)
-			return 0;
-		/* Last active locker left. Retry waking readers. */
-	}
-	return 1;
-}
-
-Everything else here looks good.
-
-> +	}
->  
->  	/* Grant an infinite number of read locks to the readers at the front
->  	 * of the queue.  Note we increment the 'active part' of the count by
-> @@ -114,12 +112,13 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
->  
->  	} while (waiter->type != RWSEM_WAITING_FOR_WRITE);
->  
-> -	adjustment = woken * RWSEM_ACTIVE_READ_BIAS;
-> +	adjustment = woken * RWSEM_ACTIVE_READ_BIAS - adjustment;
->  	if (waiter->type != RWSEM_WAITING_FOR_WRITE)
->  		/* hit end of list above */
->  		adjustment -= RWSEM_WAITING_BIAS;
->  
-> -	rwsem_atomic_add(adjustment, sem);
-> +	if (adjustment)
-> +		rwsem_atomic_add(adjustment, sem);
->  
->  	next = sem->wait_list.next;
->  	loop = woken;
-> @@ -164,8 +163,8 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
->  	count = rwsem_atomic_update(adjustment, sem);
->  
->  	/* If there are no active locks, wake the front queued process(es). */
-> -	if (count == RWSEM_WAITING_BIAS)
-> -		sem = __rwsem_do_wake(sem, RWSEM_WAKE_NO_ACTIVE);
-> +	if (!(count & RWSEM_ACTIVE_MASK))
-> +		sem = __rwsem_do_wake(sem, RWSEM_WAKE_ANY);
->  
->  	raw_spin_unlock_irq(&sem->wait_lock);
->  
-> @@ -209,7 +208,7 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
->  	 * any read locks that were queued ahead of us. */
->  	if (count > RWSEM_WAITING_BIAS &&
->  	    adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
-> -		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READ_OWNED);
-> +		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READERS);
->  
->  	/* wait until we successfully acquire the lock */
->  	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-
-
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index bf34c4c..f323fba 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -763,46 +763,47 @@ static struct ab8500_reg_init ab8500_reg_init[] = {
+ };
+ 
+ static int ab8500_regulator_init_registers(struct platform_device *pdev,
++					   struct ab8500_reg_init *reg_init,
+ 					   int id, int mask, int value)
+ {
+ 	int err;
+ 
+ 	BUG_ON(value & ~mask);
+-	BUG_ON(mask & ~ab8500_reg_init[id].mask);
++	BUG_ON(mask & ~reg_init[id].mask);
+ 
+ 	/* initialize register */
+ 	err = abx500_mask_and_set_register_interruptible(
+ 		&pdev->dev,
+-		ab8500_reg_init[id].bank,
+-		ab8500_reg_init[id].addr,
++		reg_init[id].bank,
++		reg_init[id].addr,
+ 		mask, value);
+ 	if (err < 0) {
+ 		dev_err(&pdev->dev,
+ 			"Failed to initialize 0x%02x, 0x%02x.\n",
+-			ab8500_reg_init[id].bank,
+-			ab8500_reg_init[id].addr);
++			reg_init[id].bank,
++			reg_init[id].addr);
+ 		return err;
+ 	}
+ 	dev_vdbg(&pdev->dev,
+ 		 "  init: 0x%02x, 0x%02x, 0x%02x, 0x%02x\n",
+-		 ab8500_reg_init[id].bank,
+-		 ab8500_reg_init[id].addr,
++		 reg_init[id].bank,
++		 reg_init[id].addr,
+ 		 mask, value);
+ 
+ 	return 0;
+ }
+ 
+ static int ab8500_regulator_register(struct platform_device *pdev,
+-					struct regulator_init_data *init_data,
+-					int id,
+-					struct device_node *np)
++				     struct regulator_init_data *init_data,
++				     struct ab8500_regulator_info *regulator_info,
++				     int id, struct device_node *np)
+ {
+ 	struct ab8500_regulator_info *info = NULL;
+ 	struct regulator_config config = { };
+ 	int err;
+ 
+ 	/* assign per-regulator data */
+-	info = &ab8500_regulator_info[id];
++	info = &regulator_info[id];
+ 	info->dev = &pdev->dev;
+ 
+ 	config.dev = &pdev->dev;
+@@ -828,7 +829,7 @@ static int ab8500_regulator_register(struct platform_device *pdev,
+ 			info->desc.name);
+ 		/* when we fail, un-register all earlier regulators */
+ 		while (--id >= 0) {
+-			info = &ab8500_regulator_info[id];
++			info = &regulator_info[id];
+ 			regulator_unregister(info->regulator);
+ 		}
+ 		return err;
+@@ -837,7 +838,7 @@ static int ab8500_regulator_register(struct platform_device *pdev,
+ 	return 0;
+ }
+ 
+-static struct of_regulator_match ab8500_regulator_matches[] = {
++static struct of_regulator_match ab8500_regulator_match[] = {
+ 	{ .name	= "ab8500_ldo_aux1",    .driver_data = (void *) AB8500_LDO_AUX1, },
+ 	{ .name	= "ab8500_ldo_aux2",    .driver_data = (void *) AB8500_LDO_AUX2, },
+ 	{ .name	= "ab8500_ldo_aux3",    .driver_data = (void *) AB8500_LDO_AUX3, },
+@@ -851,14 +852,18 @@ static struct of_regulator_match ab8500_regulator_matches[] = {
+ };
+ 
+ static int
+-ab8500_regulator_of_probe(struct platform_device *pdev, struct device_node *np)
++ab8500_regulator_of_probe(struct platform_device *pdev,
++			  struct ab8500_regulator_info *regulator_info,
++			  int regulator_info_size,
++			  struct of_regulator_match *match,
++			  struct device_node *np)
+ {
+ 	int err, i;
+ 
+-	for (i = 0; i < ARRAY_SIZE(ab8500_regulator_info); i++) {
++	for (i = 0; i < regulator_info_size; i++) {
+ 		err = ab8500_regulator_register(
+-			pdev, ab8500_regulator_matches[i].init_data,
+-			i, ab8500_regulator_matches[i].of_node);
++			pdev, match[i].init_data, regulator_info,
++			i, match[i].of_node);
+ 		if (err)
+ 			return err;
+ 	}
+@@ -870,21 +875,32 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
+ 	struct device_node *np = pdev->dev.of_node;
++	struct of_regulator_match *match;
+ 	struct ab8500_platform_data *ppdata;
+ 	struct ab8500_regulator_platform_data *pdata;
+ 	int i, err;
++	struct ab8500_regulator_info *regulator_info;
++	int regulator_info_size;
++	struct ab8500_reg_init *reg_init;
++	int reg_init_size;
++
++	regulator_info = ab8500_regulator_info;
++	regulator_info_size = ARRAY_SIZE(ab8500_regulator_info);
++	reg_init = ab8500_reg_init;
++	reg_init_size = AB8500_NUM_REGULATOR_REGISTERS;
++	match = ab8500_regulator_match;
++	match_size = ARRAY_SIZE(ab8500_regulator_match)
+ 
+ 	if (np) {
+-		err = of_regulator_match(&pdev->dev, np,
+-					ab8500_regulator_matches,
+-					ARRAY_SIZE(ab8500_regulator_matches));
++		err = of_regulator_match(&pdev->dev, np, match, match_size);
+ 		if (err < 0) {
+ 			dev_err(&pdev->dev,
+ 				"Error parsing regulator init data: %d\n", err);
+ 			return err;
+ 		}
+ 
+-		err = ab8500_regulator_of_probe(pdev, np);
++		err = ab8500_regulator_of_probe(pdev, regulator_info,
++						regulator_info_size, match, np);
+ 		return err;
+ 	}
+ 
+@@ -906,7 +922,7 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* make sure the platform data has the correct size */
+-	if (pdata->num_regulator != ARRAY_SIZE(ab8500_regulator_info)) {
++	if (pdata->num_regulator != regulator_info_size) {
+ 		dev_err(&pdev->dev, "Configuration error: size mismatch.\n");
+ 		return -EINVAL;
+ 	}
+@@ -927,7 +943,7 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ 		/* check for configuration errors */
+ 		BUG_ON(id >= AB8500_NUM_REGULATOR_REGISTERS);
+ 
+-		err = ab8500_regulator_init_registers(pdev, id, mask, value);
++		err = ab8500_regulator_init_registers(pdev, reg_init, id, mask, value);
+ 		if (err < 0)
+ 			return err;
+ 	}
+@@ -938,8 +954,9 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ 		return err;
+ 
+ 	/* register all regulators */
+-	for (i = 0; i < ARRAY_SIZE(ab8500_regulator_info); i++) {
+-		err = ab8500_regulator_register(pdev, &pdata->regulator[i], i, NULL);
++	for (i = 0; i < regulator_info_size; i++) {
++		err = ab8500_regulator_register(pdev, &pdata->regulator[i],
++						regulator_info, i, NULL);
+ 		if (err < 0)
+ 			return err;
+ 	}
+@@ -950,10 +967,15 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ static int ab8500_regulator_remove(struct platform_device *pdev)
+ {
+ 	int i, err;
++	struct ab8500_regulator_info *regulator_info;
++	int regulator_info_size;
+ 
+-	for (i = 0; i < ARRAY_SIZE(ab8500_regulator_info); i++) {
++	regulator_info = ab8500_regulator_info;
++	regulator_info_size = ARRAY_SIZE(ab8500_regulator_info);
++
++	for (i = 0; i < regulator_info_size; i++) {
+ 		struct ab8500_regulator_info *info = NULL;
+-		info = &ab8500_regulator_info[i];
++		info = &regulator_info[i];
+ 
+ 		dev_vdbg(rdev_get_dev(info->regulator),
+ 			"%s-remove\n", info->desc.name);
+-- 
+1.7.10.4
 
