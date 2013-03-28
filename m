@@ -1,113 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab3C1GDQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 02:03:16 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:60655 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163Ab3C1GDO (ORCPT
+	id S1755163Ab3C1GIM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 02:08:12 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3249 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754862Ab3C1GIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 02:03:14 -0400
+	Thu, 28 Mar 2013 02:08:10 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 27 Mar 2013 23:07:41 -0700
+Message-ID: <5153DD9F.2090101@nvidia.com>
+Date: Thu, 28 Mar 2013 11:35:19 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <1364392374-12236-2-git-send-email-rajagopal.venkat@linaro.org>
-References: <1364392374-12236-1-git-send-email-rajagopal.venkat@linaro.org>
-	<1364392374-12236-2-git-send-email-rajagopal.venkat@linaro.org>
-Date: Thu, 28 Mar 2013 15:03:12 +0900
-X-Google-Sender-Auth: K35zaavy1Mpr4CGgritjhNLxxzk
-Message-ID: <CAJ0PZbQNTLEmJQ_sRnByNCzwTKs84dGA7Ap2Yj5KRPefoeNsyw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] PM / devfreq: Fix compiler warnings
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-Cc: rjw@sisk.pl, Kevin Hilman <khilman@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] gpio: palmas: add dt support
+References: <1363876214-25933-1-git-send-email-ldewangan@nvidia.com> <CACRpkdY_9pEkNfp7L82nGjsjFOi-VXwPHo7_3XwjCz8XcN8osg@mail.gmail.com> <51531706.4040608@wwwdotorg.org>
+In-Reply-To: <51531706.4040608@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 10:52 PM, Rajagopal Venkat
-<rajagopal.venkat@linaro.org> wrote:
-> Fix compiler warnings generated when devfreq is not enabled
-> (CONFIG_PM_DEVFREQ is not set).
+On Wednesday 27 March 2013 09:27 PM, Stephen Warren wrote:
+> On 03/27/2013 07:00 AM, Linus Walleij wrote:
+>> On Thu, Mar 21, 2013 at 3:30 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+>>
+>>>   #ifdef CONFIG_OF_GPIO
+>>> -       palmas_gpio->gpio_chip.of_node = palmas->dev->of_node;
+>>> +       palmas_gpio->gpio_chip.of_node = pdev->dev.of_node;
+>>>   #endif
+>> OK I think that #ifdef is necessary...
+> Laxman,
 >
-> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+> Don't we need to resolve and agree on the final DT bindings before we
+> can start making changes like this? It's not clear yet whether everyone
+> is on the same page re: how the MFD sub-devices are modelled in DT -
+> whether each sub-component really is a standalone device, or whether the
+> MFD itself instantiates all its children based on internal static tables
+> rather than DT.
+Yes, we need to agree on DT. I sent the patch based on the patches came 
+from TI/Slimlogic and other discussion about DT patches.
+Recently, you commented on  DT for palmas, it need to  be completely IP 
+based or hw based. Mix will not work.
+If it is IP based then almost all palmas-* file need to be rewrite, no 
+one is written as IP based. All are using palma structures, palma 
+header, palma macro etc
+which should not be there.
 
-Thanks!
+>
+> Given that, I'm not sure why the Slimlogic people aren't CC'd on this
+> patch:-(
 
-Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-
-
-> ---
->  include/linux/devfreq.h |   16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
->
-> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-> index 04ad61d..5f1ab92 100644
-> --- a/include/linux/devfreq.h
-> +++ b/include/linux/devfreq.h
-> @@ -215,7 +215,7 @@ struct devfreq_simple_ondemand_data {
->  #endif
->
->  #else /* !CONFIG_PM_DEVFREQ */
-> -static struct devfreq *devfreq_add_device(struct device *dev,
-> +static inline struct devfreq *devfreq_add_device(struct device *dev,
->                                           struct devfreq_dev_profile *profile,
->                                           const char *governor_name,
->                                           void *data)
-> @@ -223,34 +223,34 @@ static struct devfreq *devfreq_add_device(struct device *dev,
->         return NULL;
->  }
->
-> -static int devfreq_remove_device(struct devfreq *devfreq)
-> +static inline int devfreq_remove_device(struct devfreq *devfreq)
->  {
->         return 0;
->  }
->
-> -static int devfreq_suspend_device(struct devfreq *devfreq)
-> +static inline int devfreq_suspend_device(struct devfreq *devfreq)
->  {
->         return 0;
->  }
->
-> -static int devfreq_resume_device(struct devfreq *devfreq)
-> +static inline int devfreq_resume_device(struct devfreq *devfreq)
->  {
->         return 0;
->  }
->
-> -static struct opp *devfreq_recommended_opp(struct device *dev,
-> +static inline struct opp *devfreq_recommended_opp(struct device *dev,
->                                            unsigned long *freq, u32 flags)
->  {
-> -       return -EINVAL;
-> +       return ERR_PTR(-EINVAL);
->  }
->
-> -static int devfreq_register_opp_notifier(struct device *dev,
-> +static inline int devfreq_register_opp_notifier(struct device *dev,
->                                          struct devfreq *devfreq)
->  {
->         return -EINVAL;
->  }
->
-> -static int devfreq_unregister_opp_notifier(struct device *dev,
-> +static inline int devfreq_unregister_opp_notifier(struct device *dev,
->                                            struct devfreq *devfreq)
->  {
->         return -EINVAL;
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I have not added then on my original patch as 
+./script/get_maintainers.pl did not give me name.
+However, you added immediately them (TI and slimlogic) on this patch 
+itself. I have not got any feedback from them yet.
 
 
 
--- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab, DMC Business, Samsung Electronics
+I
+
