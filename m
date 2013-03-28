@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951Ab3C1RCz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:02:55 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36290 "EHLO
+	id S1757397Ab3C1RGv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:06:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36340 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756784Ab3C1RCu (ORCPT
+	with ESMTP id S1756906Ab3C1RCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 13:02:50 -0400
+	Thu, 28 Mar 2013 13:02:54 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        peterz@infradead.org, ak@linux.intel.com, acme@redhat.com,
-        jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH 21/36] perf/x86: Export PEBS load latency threshold register to sysfs
-Date: Thu, 28 Mar 2013 14:02:21 -0300
-Message-Id: <1364490156-32064-22-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@gmail.com>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 13/36] perf stat: Add per-core aggregation
+Date: Thu, 28 Mar 2013 14:02:13 -0300
+Message-Id: <1364490156-32064-14-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1364490156-32064-1-git-send-email-acme@infradead.org>
 References: <1364490156-32064-1-git-send-email-acme@infradead.org>
@@ -25,44 +28,248 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+From: Stephane Eranian <eranian@gmail.com>
 
-Make the PEBS Load Latency threshold register layout
-and encoding visible to user level tools.
+This patch adds the --per-core option to perf stat.
+
+This option is used to aggregate system-wide counts
+on a per physical core basis. On processors with
+hyperthreading, this means counts of all HT threads
+running on a physical core are aggregated.
+
+This mode is useful to find imblance between physical
+cores running an uniform workload. Cores are identified
+by socket: S0-C1, means physical core 1 on socket 0. Note
+that cores are identified using their physical core id,
+thus their numbering may not be continuous.
+
+Per core aggregation can be combined with interval printing:
+
+ # perf stat -a --per-core -I 1000 -e cycles sleep 1000
+ #           time core         cpus             counts events
+      1.000090030 S0-C0           1          4,765,747 cycles
+      1.000090030 S0-C1           1          5,580,647 cycles
+      1.000090030 S0-C2           1            221,181 cycles
+      1.000090030 S0-C3           1            266,092 cycles
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: peterz@infradead.org
-Cc: ak@linux.intel.com
-Cc: acme@redhat.com
-Cc: jolsa@redhat.com
-Cc: namhyung.kim@lge.com
-Link: http://lkml.kernel.org/r/1359040242-8269-10-git-send-email-eranian@google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1360846649-6411-4-git-send-email-eranian@google.com
+[ committer note: Remove parts already applied on 86ee6e1 to keep bisectability ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ tools/perf/Documentation/perf-stat.txt |    6 ++++
+ tools/perf/builtin-stat.c              |   31 +++++++++++++++++++--
+ tools/perf/util/cpumap.c               |   46 ++++++++++++++++++++++++++++++++
+ tools/perf/util/cpumap.h               |   12 ++++++++
+ 4 files changed, 92 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index d5ea5a0..ae6096b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1781,6 +1781,8 @@ static void intel_pmu_flush_branch_stack(void)
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 46027e1..2fe87fb 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -126,6 +126,12 @@ use --per-socket in addition to -a. (system-wide).  The output includes the
+ socket number and the number of online processors on that socket. This is
+ useful to gauge the amount of aggregation.
  
- PMU_FORMAT_ATTR(offcore_rsp, "config1:0-63");
- 
-+PMU_FORMAT_ATTR(ldlat, "config1:0-15");
++--per-core::
++Aggregate counts per physical processor for system-wide mode measurements.  This
++is a useful mode to detect imbalance between physical cores.  To enable this mode,
++use --per-core in addition to -a. (system-wide).  The output includes the
++core number and the number of online logical processors on that physical processor.
 +
- static struct attribute *intel_arch3_formats_attr[] = {
- 	&format_attr_event.attr,
- 	&format_attr_umask.attr,
-@@ -1791,6 +1793,7 @@ static struct attribute *intel_arch3_formats_attr[] = {
- 	&format_attr_cmask.attr,
+ EXAMPLES
+ --------
  
- 	&format_attr_offcore_rsp.attr, /* XXX do NHM/WSM + SNB breakout */
-+	&format_attr_ldlat.attr, /* PEBS load latency */
- 	NULL,
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 6f6ea93..7e910ba 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -80,6 +80,7 @@ enum aggr_mode {
+ 	AGGR_NONE,
+ 	AGGR_GLOBAL,
+ 	AGGR_SOCKET,
++	AGGR_CORE,
  };
  
+ static int			run_count			=  1;
+@@ -384,6 +385,9 @@ static void print_interval(void)
+ 		case AGGR_SOCKET:
+ 			fprintf(output, "#           time socket cpus             counts events\n");
+ 			break;
++		case AGGR_CORE:
++			fprintf(output, "#           time core         cpus             counts events\n");
++			break;
+ 		case AGGR_NONE:
+ 			fprintf(output, "#           time CPU                 counts events\n");
+ 			break;
+@@ -397,6 +401,7 @@ static void print_interval(void)
+ 		num_print_interval = 0;
+ 
+ 	switch (aggr_mode) {
++	case AGGR_CORE:
+ 	case AGGR_SOCKET:
+ 		print_aggr(prefix);
+ 		break;
+@@ -566,13 +571,23 @@ static void print_noise(struct perf_evsel *evsel, double avg)
+ 	print_noise_pct(stddev_stats(&ps->res_stats[0]), avg);
+ }
+ 
+-static void aggr_printout(struct perf_evsel *evsel, int cpu, int nr)
++static void aggr_printout(struct perf_evsel *evsel, int id, int nr)
+ {
+ 	switch (aggr_mode) {
++	case AGGR_CORE:
++		fprintf(output, "S%d-C%*d%s%*d%s",
++			cpu_map__id_to_socket(id),
++			csv_output ? 0 : -8,
++			cpu_map__id_to_cpu(id),
++			csv_sep,
++			csv_output ? 0 : 4,
++			nr,
++			csv_sep);
++		break;
+ 	case AGGR_SOCKET:
+ 		fprintf(output, "S%*d%s%*d%s",
+ 			csv_output ? 0 : -5,
+-			cpu,
++			id,
+ 			csv_sep,
+ 			csv_output ? 0 : 4,
+ 			nr,
+@@ -581,7 +596,7 @@ static void aggr_printout(struct perf_evsel *evsel, int cpu, int nr)
+ 	case AGGR_NONE:
+ 		fprintf(output, "CPU%*d%s",
+ 			csv_output ? 0 : -4,
+-			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
++			perf_evsel__cpus(evsel)->map[id], csv_sep);
+ 		break;
+ 	case AGGR_GLOBAL:
+ 	default:
+@@ -1095,6 +1110,7 @@ static void print_stat(int argc, const char **argv)
+ 	}
+ 
+ 	switch (aggr_mode) {
++	case AGGR_CORE:
+ 	case AGGR_SOCKET:
+ 		print_aggr(NULL);
+ 		break;
+@@ -1163,6 +1179,13 @@ static int perf_stat_init_aggr_mode(void)
+ 		}
+ 		aggr_get_id = cpu_map__get_socket;
+ 		break;
++	case AGGR_CORE:
++		if (cpu_map__build_core_map(evsel_list->cpus, &aggr_map)) {
++			perror("cannot build core map");
++			return -1;
++		}
++		aggr_get_id = cpu_map__get_core;
++		break;
+ 	case AGGR_NONE:
+ 	case AGGR_GLOBAL:
+ 	default:
+@@ -1372,6 +1395,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "print counts at regular interval in ms (>= 100)"),
+ 	OPT_SET_UINT(0, "per-socket", &aggr_mode,
+ 		     "aggregate counts per processor socket", AGGR_SOCKET),
++	OPT_SET_UINT(0, "per-core", &aggr_mode,
++		     "aggregate counts per physical processor core", AGGR_CORE),
+ 	OPT_END()
+ 	};
+ 	const char * const stat_usage[] = {
+diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+index 7bb8e87..beb8cf9 100644
+--- a/tools/perf/util/cpumap.c
++++ b/tools/perf/util/cpumap.c
+@@ -267,7 +267,53 @@ static int cpu_map__build_map(struct cpu_map *cpus, struct cpu_map **res,
+ 	return 0;
+ }
+ 
++int cpu_map__get_core(struct cpu_map *map, int idx)
++{
++	FILE *fp;
++	const char *mnt;
++	char path[PATH_MAX];
++	int cpu, ret, s;
++
++	if (idx > map->nr)
++		return -1;
++
++	cpu = map->map[idx];
++
++	mnt = sysfs_find_mountpoint();
++	if (!mnt)
++		return -1;
++
++	snprintf(path, PATH_MAX,
++		"%s/devices/system/cpu/cpu%d/topology/core_id",
++		mnt, cpu);
++
++	fp = fopen(path, "r");
++	if (!fp)
++		return -1;
++	ret = fscanf(fp, "%d", &cpu);
++	fclose(fp);
++	if (ret != 1)
++		return -1;
++
++	s = cpu_map__get_socket(map, idx);
++	if (s == -1)
++		return -1;
++
++	/*
++	 * encode socket in upper 16 bits
++	 * core_id is relative to socket, and
++	 * we need a global id. So we combine
++	 * socket+ core id
++	 */
++	return (s << 16) | (cpu & 0xffff);
++}
++
+ int cpu_map__build_socket_map(struct cpu_map *cpus, struct cpu_map **sockp)
+ {
+ 	return cpu_map__build_map(cpus, sockp, cpu_map__get_socket);
+ }
++
++int cpu_map__build_core_map(struct cpu_map *cpus, struct cpu_map **corep)
++{
++	return cpu_map__build_map(cpus, corep, cpu_map__get_core);
++}
+diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+index 161b007..9bed02e 100644
+--- a/tools/perf/util/cpumap.h
++++ b/tools/perf/util/cpumap.h
+@@ -15,7 +15,9 @@ void cpu_map__delete(struct cpu_map *map);
+ struct cpu_map *cpu_map__read(FILE *file);
+ size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp);
+ int cpu_map__get_socket(struct cpu_map *map, int idx);
++int cpu_map__get_core(struct cpu_map *map, int idx);
+ int cpu_map__build_socket_map(struct cpu_map *cpus, struct cpu_map **sockp);
++int cpu_map__build_core_map(struct cpu_map *cpus, struct cpu_map **corep);
+ 
+ static inline int cpu_map__socket(struct cpu_map *sock, int s)
+ {
+@@ -24,6 +26,16 @@ static inline int cpu_map__socket(struct cpu_map *sock, int s)
+ 	return sock->map[s];
+ }
+ 
++static inline int cpu_map__id_to_socket(int id)
++{
++	return id >> 16;
++}
++
++static inline int cpu_map__id_to_cpu(int id)
++{
++	return id & 0xffff;
++}
++
+ static inline int cpu_map__nr(const struct cpu_map *map)
+ {
+ 	return map ? map->nr : 1;
 -- 
 1.7.1
 
