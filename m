@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab3C1QMI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 12:12:08 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:58204 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756776Ab3C1QMA (ORCPT
+	id S1756794Ab3C1QMG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 12:12:06 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:58386 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756282Ab3C1QMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 12:12:00 -0400
+	Thu, 28 Mar 2013 12:12:03 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
 Cc: Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 02/33] ARM: ux500: Add regulator platform data for AB8500 external regulators
-Date: Thu, 28 Mar 2013 16:11:02 +0000
-Message-Id: <1364487093-19551-3-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 05/33] ARM: ux500: Setup external regulator supply #2 for HREF v20 boards
+Date: Thu, 28 Mar 2013 16:11:05 +0000
+Message-Id: <1364487093-19551-6-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1364487093-19551-1-git-send-email-lee.jones@linaro.org>
 References: <1364487093-19551-1-git-send-email-lee.jones@linaro.org>
@@ -20,99 +20,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pass constraint information for recently supported external AB8500
-controlled regulators. Also change the start-up initialisation settings
-for each of the 3 supported external supplies to low-power, off and
-high-power for supply 1, 2 and 3 respectively.
+v20 HREFs require non-standard configuration of EXT_SUPPLY2 to
+function correctly (specific information is commented). Here we make
+use of the recently added mechanism to adapt initialisation values
+for such use-cases.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-regulators.c |   59 +++++++++++++++++++++++--
- 1 file changed, 55 insertions(+), 4 deletions(-)
+ arch/arm/mach-ux500/board-mop500-regulators.c |   28 +++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
 diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index 035b92f..089cf2a 100644
+index 2a2751e..c1173a1 100644
 --- a/arch/arm/mach-ux500/board-mop500-regulators.c
 +++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -259,13 +259,13 @@ static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
- 	 */
- 	INIT_REGULATOR_REGISTER(AB8500_VREFDDR,                0x03, 0x00),
- 	/*
--	 * VextSupply1Regu          = HW control
--	 * VextSupply2Regu          = HW control
--	 * VextSupply3Regu          = HW control
-+	 * VextSupply1Regu          = force LP
-+	 * VextSupply2Regu          = force OFF
-+	 * VextSupply3Regu          = force HP (-> STBB2=LP and TPS=LP)
- 	 * ExtSupply2Bypass         = ExtSupply12LPn ball is 0 when Ena is 0
- 	 * ExtSupply3Bypass         = ExtSupply3LPn ball is 0 when Ena is 0
- 	 */
--	INIT_REGULATOR_REGISTER(AB8500_EXTSUPPLYREGU,          0xff, 0x1a),
-+	INIT_REGULATOR_REGISTER(AB8500_EXTSUPPLYREGU,          0xff, 0x13),
- 	/*
- 	 * Vaux1Regu                = force HP
- 	 * Vaux2Regu                = force off
-@@ -419,9 +419,60 @@ static struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
- 	},
- };
- 
-+/* supply for VextSupply3 */
-+static struct regulator_consumer_supply ab8500_ext_supply3_consumers[] = {
-+	/* SIM supply for 3 V SIM cards */
-+	REGULATOR_SUPPLY("vinvsim", "sim-detect.0"),
-+};
+@@ -510,4 +510,32 @@ void mop500_regulator_init(void)
+ 		regulator->constraints.state_mem.disabled = 1;
+ 		regulator->constraints.state_standby.disabled = 1;
+ 	}
 +
-+/* extended configuration for VextSupply2, only used for HREFP_V20 boards */
-+static struct ab8500_ext_regulator_cfg ab8500_ext_supply2 = {
-+	.hwreq = true,
-+};
++	/*
++	 * Handle AB8500_EXT_SUPPLY2 on HREFP_V20_V50 boards (do it for
++	 * all HREFP_V20 boards)
++	 */
++	if (cpu_is_u8500v20()) {
++		/* VextSupply2RequestCtrl =  HP/OFF depending on VxRequest */
++		ab8500_modify_reg_init(AB8500_REGUREQUESTCTRL3, 0x01, 0x01);
 +
-+/*
-+ * AB8500 external regulators
-+ */
-+static struct regulator_init_data ab8500_ext_regulators[] = {
-+	/* fixed Vbat supplies VSMPS1_EXT_1V8 */
-+	[AB8500_EXT_SUPPLY1] = {
-+		.constraints = {
-+			.name = "ab8500-ext-supply1",
-+			.min_uV = 1800000,
-+			.max_uV = 1800000,
-+			.initial_mode = REGULATOR_MODE_IDLE,
-+			.boot_on = 1,
-+			.always_on = 1,
-+		},
-+	},
-+	/* fixed Vbat supplies VSMPS2_EXT_1V36 and VSMPS5_EXT_1V15 */
-+	[AB8500_EXT_SUPPLY2] = {
-+		.constraints = {
-+			.name = "ab8500-ext-supply2",
-+			.min_uV = 1360000,
-+			.max_uV = 1360000,
-+		},
-+	},
-+	/* fixed Vbat supplies VSMPS3_EXT_3V4 and VSMPS4_EXT_3V4 */
-+	[AB8500_EXT_SUPPLY3] = {
-+		.constraints = {
-+			.name = "ab8500-ext-supply3",
-+			.min_uV = 3400000,
-+			.max_uV = 3400000,
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+			.boot_on = 1,
-+		},
-+		.num_consumer_supplies =
-+			ARRAY_SIZE(ab8500_ext_supply3_consumers),
-+		.consumer_supplies = ab8500_ext_supply3_consumers,
-+	},
-+};
++		/* VextSupply2SysClkReq1HPValid = SysClkReq1 controlled */
++		ab8500_modify_reg_init(AB8500_REGUSYSCLKREQ1HPVALID2,
++			0x20, 0x20);
 +
- struct ab8500_regulator_platform_data ab8500_regulator_plat_data = {
- 	.reg_init               = ab8500_reg_init,
- 	.num_reg_init           = ARRAY_SIZE(ab8500_reg_init),
- 	.regulator              = ab8500_regulators,
- 	.num_regulator          = ARRAY_SIZE(ab8500_regulators),
-+	.ext_regulator          = ab8500_ext_regulators,
-+	.num_ext_regulator      = ARRAY_SIZE(ab8500_ext_regulators),
- };
++		/* VextSupply2 = force HP at initialization */
++		ab8500_modify_reg_init(AB8500_EXTSUPPLYREGU, 0x0c, 0x04);
++
++		/* enable VextSupply2 during platform active */
++		regulator = &ab8500_ext_regulators[AB8500_EXT_SUPPLY2];
++		regulator->constraints.always_on = 1;
++
++		/* disable VextSupply2 in suspend */
++		regulator = &ab8500_ext_regulators[AB8500_EXT_SUPPLY2];
++		regulator->constraints.state_mem.disabled = 1;
++		regulator->constraints.state_standby.disabled = 1;
++
++		/* enable VextSupply2 HW control (used in suspend) */
++		regulator->driver_data = (void *)&ab8500_ext_supply2;
++	}
+ }
 -- 
 1.7.10.4
 
