@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161Ab3C1F7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 01:59:03 -0400
-Received: from mail-da0-f42.google.com ([209.85.210.42]:34687 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273Ab3C1F7B (ORCPT
+	id S1753195Ab3C1F7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 01:59:49 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:11599 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab3C1F7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 01:59:01 -0400
-Date: Wed, 27 Mar 2013 22:58:58 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: seb <sebastien.royen@gmail.com>
-Cc: Bill Pemberton <wfp5p@virginia.edu>, linux-kernel@vger.kernel.org,
-        seb <sebastien.royen@armadeus.com>
-Subject: Re: [PATCH 1/1] Input: mma8450 - fix signed 12bits to 32bits
- conversion
-Message-ID: <20130328055858.GA6523@core.coreip.homeip.net>
-References: <1364372263-16848-1-git-send-email-sebastien.royen@armadeus.com>
+	Thu, 28 Mar 2013 01:59:48 -0400
+X-Spam-Score: -100.8
+Message-ID: <5153DC24.4010104@asianux.com>
+Date: Thu, 28 Mar 2013 13:59:00 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364372263-16848-1-git-send-email-sebastien.royen@armadeus.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: edumazet@google.com, dborkman@redhat.com, wad@chromium.org,
+        eparis@redhat.com
+CC: David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] include/linux: printk is needed in filter.h when CONFIG_BPF_JIT
+ is defined
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seb,
 
-On Wed, Mar 27, 2013 at 09:17:43AM +0100, seb wrote:
-> Event value is wrong. Should be in range -2048 to 2047, but is in range 0 to 4095.
-> Use int8_t to int conversion and remove 0xfff mask.
-> 
-> Signed-off-by: seb <sebastien.royen@armadeus.com>
-> ---
->  drivers/input/misc/mma8450.c |   15 ++++++++++-----
->  1 file changed, 10 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/input/misc/mma8450.c b/drivers/input/misc/mma8450.c
-> index 480557f..c3781a1 100644
-> --- a/drivers/input/misc/mma8450.c
-> +++ b/drivers/input/misc/mma8450.c
-> @@ -110,7 +110,7 @@ static void mma8450_poll(struct input_polled_dev *dev)
->  	struct mma8450 *m = dev->private;
->  	int x, y, z;
->  	int ret;
-> -	u8 buf[6];
-> +	int8_t buf[6];
->  
->  	ret = mma8450_read(m, MMA8450_STATUS);
->  	if (ret < 0)
-> @@ -119,13 +119,18 @@ static void mma8450_poll(struct input_polled_dev *dev)
->  	if (!(ret & MMA8450_STATUS_ZXYDR))
->  		return;
->  
-> -	ret = mma8450_read_block(m, MMA8450_OUT_X_LSB, buf, sizeof(buf));
-> +	ret = mma8450_read_block(m, MMA8450_OUT_X_LSB, (u8*)buf, sizeof(buf));
->  	if (ret < 0)
->  		return;
->  
-> -	x = ((buf[1] << 4) & 0xff0) | (buf[0] & 0xf);
-> -	y = ((buf[3] << 4) & 0xff0) | (buf[2] & 0xf);
-> -	z = ((buf[5] << 4) & 0xff0) | (buf[4] & 0xf);
-> +	/* convert 8 MSB from int8_t to int */
-> +	x = buf[1];
-> +	y = buf[3];
-> +	z = buf[5];
-> +	/* add 4 LSB */
-> +	x = (x << 4) | (buf[0] & 0xf);
-> +	y = (y << 4) | (buf[2] & 0xf);
-> +	z = (z << 4) | (buf[4] & 0xf);
+  for make V=1 EXTRA_CFLAGS=-W ARCH=arm allmodconfig
+    printk is need when CONFIG_BPF_JIT is defined
+    or it will report pr_err and print_hex_dump are implicit declaration
 
-Should we just say:
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ include/linux/filter.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-	x = ((int)(s8)buf[1] << 4) | (buf[0] & 0xf);
-	y = ...
-	z = ...
-
-and leave the rest as is?
-
-Thanks.
-
+diff --git a/include/linux/filter.h b/include/linux/filter.h
+index d7d2508..d1248f4 100644
+--- a/include/linux/filter.h
++++ b/include/linux/filter.h
+@@ -48,6 +48,9 @@ extern int sk_chk_filter(struct sock_filter *filter, unsigned int flen);
+ extern int sk_get_filter(struct sock *sk, struct sock_filter __user *filter, unsigned len);
+ 
+ #ifdef CONFIG_BPF_JIT
++#include <linux/linkage.h>
++#include <linux/printk.h>
++
+ extern void bpf_jit_compile(struct sk_filter *fp);
+ extern void bpf_jit_free(struct sk_filter *fp);
+ 
 -- 
-Dmitry
+1.7.7.6
