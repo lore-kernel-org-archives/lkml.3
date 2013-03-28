@@ -1,36 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab3C1Nbo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 09:31:44 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:39508 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755755Ab3C1Nbn (ORCPT
+	id S1756121Ab3C1Nim (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 09:38:42 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:54776 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755540Ab3C1Nil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 09:31:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130328125439.GB1384@redhat.com>
-References: <20130328125439.GB1384@redhat.com>
-Date: Thu, 28 Mar 2013 14:31:41 +0100
-Message-ID: <CAFTL4hwj0R+VvSPqd_58Y6RnabfXpN1aSKJPGNUYyAh=T-UqHA@mail.gmail.com>
-Subject: Re: [PATCH 3.9] cputime: Fix accounting on multi-threaded processes
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 28 Mar 2013 09:38:41 -0400
+From: Charles Wang <muming.wq@gmail.com>
+To: mingo@kernel.org, gaoyang.zyh@taobao.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] sched: Precise load checking in get_rr_interval_fair
+Date: Thu, 28 Mar 2013 21:37:45 +0800
+Message-Id: <1364477865-1777-1-git-send-email-muming.wq@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/28 Stanislaw Gruszka <sgruszka@redhat.com>:
-> Recent commit 6fac4829 "cputime: Use accessors to read task cputime
-> stats" introduced a bug, that make we account many times cputime of
-> the first thread, instead of cputimes of all threads.
->
-> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Charles Wang <muming.wq@taobao.com>
 
+Positive load weight of rq.cfs can not represent positive load weight
+of se->cfs_rq. And when se->cfs_rq's load is 0, the slice calculated 
+by sched_slice is not that sensible.
 
-Nice catch!
+Use se->cfs_rq for load checking instead of rq->cfs. And correct the
+comments.
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Zhu Yanhai <gaoyang.zyh@taobao.com>
+Signed-off-by: Charles Wang <muming.wq@taobao.com>
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 539760e..5d58ac9 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6086,14 +6086,15 @@ void unregister_fair_sched_group(struct task_group *tg, int cpu) { }
+ static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task)
+ {
+ 	struct sched_entity *se = &task->se;
++	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+ 	unsigned int rr_interval = 0;
+ 
+ 	/*
+ 	 * Time slice is 0 for SCHED_OTHER tasks that are on an otherwise
+-	 * idle runqueue:
++	 * idle cfs_rq:
+ 	 */
+-	if (rq->cfs.load.weight)
+-		rr_interval = NS_TO_JIFFIES(sched_slice(cfs_rq_of(se), se));
++	if (cfs_rq->load.weight)
++		rr_interval = NS_TO_JIFFIES(sched_slice(cfs_rq, se));
+ 
+ 	return rr_interval;
+ }
+-- 
+1.7.9.5
+
