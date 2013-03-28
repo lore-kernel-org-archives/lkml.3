@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab3C1KkY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 06:40:24 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:60990 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754999Ab3C1KkX (ORCPT
+	id S1756011Ab3C1Kne (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 06:43:34 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:46130 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755696Ab3C1Knc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 06:40:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ley Foon Tan <lftan@altera.com>
-Subject: Re: Generic syscall ABI support
-Date: Thu, 28 Mar 2013 10:40:04 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-References: <1364440182.2289.45.camel@leyfoon-vm> <201303280744.27477.arnd@arndb.de> <1364459522.2308.6.camel@leyfoon-vm>
-In-Reply-To: <1364459522.2308.6.camel@leyfoon-vm>
+	Thu, 28 Mar 2013 06:43:32 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        rajagopal.venkat@linaro.org, davidb@codeaurora.org,
+        ulf.hansson@linaro.org, tglx@linutronix.de
+Subject: Re: [PATCH v5 0/2] reentrancy in the common clk framework
+Date: Thu, 28 Mar 2013 11:44:22 +0100
+Message-ID: <1703638.PLNmMUvYmW@avalon>
+User-Agent: KMail/4.10 (Linux/3.7.10-gentoo; KDE/4.10.0; x86_64; ; )
+In-Reply-To: <1364445958-2999-1-git-send-email-mturquette@linaro.org>
+References: <1364368183-24420-1-git-send-email-mturquette@linaro.org> <1364445958-2999-1-git-send-email-mturquette@linaro.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303281040.04463.arnd@arndb.de>
-X-Provags-ID: V02:K0:ljvYg5EVhx7ctSkyVUBQ5galM+/OiEccm9ISNLuN4Z/
- Ml/bolmI0jFkQ1Qq9OIXYbQ4TF5beS+24HehlxUyFcyV2ihnH3
- 8U91HHaBm32SO5L9jlf3QorzR+dN9xT3rQCQN3LiMbOCASc9r7
- MKG4ro5tKwHdk6amc2XS0Jn9xoLS8Oqw1Mtnkdn8encSw0SDwQ
- FUi4Zj5DoqwmwsYkvahB9GG/cDj9d7meGBqK1IzX3Yl/SHll+v
- yschFuE7tl8ygtAM/t1zWHLajJOZAHUtT+HDC+YIdTSqXViAiO
- LZI7pxaqJsYocCZFE8idmToYzDHT+FRtHg52K6BCWNttpGWRZz
- pFhyPSjOMMyb6FFREaL8=
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 March 2013, Ley Foon Tan wrote:
-> We will working on generic ABI for kernel and Glibc. This might take
-> some times.
+Hi Mike,
 
-Ok. Don't let that hold you up from submitting the kernel patches
-for review though.
+On Wednesday 27 March 2013 21:45:56 Mike Turquette wrote:
+> This fifth attempt at allowing calls to the clk api to reenter splits
+> the last patch into two parts.  The first patch abstracts out the
+> locking details into some helper functions and converts all of the
+> direct calls to the mutex and spinlock api to use these helpers.
+> 
+> The second patch introduces the reentrancy logic into these helper
+> functions.  Fundamentally the reentrancy logic hasn't changed since v4,
+> but fixing casting bugs, removing unnecessary barriers and better design
+> & beautification separate this approach from the last one.
+> 
+> Changes tested on top of the latest clk-next branch with an OMAP4430
+> Panda board.
+> 
+> Mike Turquette (2):
+>   clk: abstract locking out into helper functions
+>   clk: allow reentrant calls into the clk framework
+> 
+>  drivers/clk/clk.c |  136 +++++++++++++++++++++++++++++++++++---------------
+>  1 file changed, 98 insertions(+), 38 deletions(-)
 
-	Arnd
+For the whole patch set,
+
+Tested-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+on a DM3730.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
