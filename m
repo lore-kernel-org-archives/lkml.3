@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab3C1Pp5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 11:45:57 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:60973 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756745Ab3C1Ppw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 11:45:52 -0400
-Message-ID: <5154651A.6010304@linux.vnet.ibm.com>
-Date: Thu, 28 Mar 2013 21:13:22 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Magnus Damm <magnus.damm@gmail.com>, x86@kernel.org
-Subject: Re: [patch 33/34] x86: Use generic idle loop
-References: <20130321214930.752934102@linutronix.de> <20130321215235.486594473@linutronix.de>
-In-Reply-To: <20130321215235.486594473@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032815-8256-0000-0000-000006D7ED30
+	id S1756499Ab3C1Pn5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 11:43:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10279 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751214Ab3C1Pnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 11:43:55 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        stable@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: [PATCH 1/2] hugetlbfs: stop setting VM_DONTDUMP in initializing vma(VM_HUGETLB)
+Date: Thu, 28 Mar 2013 11:42:37 -0400
+Message-Id: <1364485358-8745-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2013 03:23 AM, Thomas Gleixner wrote:
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: x86@kernel.org
-> ---
-[...]
-> +#define POLL_IDLE	(void*) 0x01
-> +
+Currently we fail to include any data on hugepages into coredump,
+because VM_DONTDUMP is set on hugetlbfs's vma. This behavior was recently
+introduced by commit 314e51b98 "mm: kill vma flag VM_RESERVED and
+mm->reserved_vm counter". This looks to me a serious regression,
+so let's fix it.
 
-[...]
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ fs/hugetlbfs/inode.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->  #ifdef CONFIG_APM_MODULE
-> @@ -411,20 +376,6 @@ void stop_this_cpu(void *dummy)
->  		halt();
->  }
-> 
-> -/*
-> - * On SMP it's slightly faster (but much more power-consuming!)
-> - * to poll the ->work.need_resched flag instead of waiting for the
-> - * cross-CPU IPI to arrive. Use this option with caution.
-> - */
-> -static void poll_idle(void)
-> -{
-> -	trace_cpu_idle_rcuidle(0, smp_processor_id());
-> -	local_irq_enable();
-> -	while (!need_resched())
-> -		cpu_relax();
-> -	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
-> -}
-> -
->  bool amd_e400_c1e_detected;
->  EXPORT_SYMBOL(amd_e400_c1e_detected);
-> 
-> @@ -489,7 +440,7 @@ static void amd_e400_idle(void)
->  void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
->  {
->  #ifdef CONFIG_SMP
-> -	if (x86_idle == poll_idle && smp_num_siblings > 1)
-> +	if (x86_idle == POLL_IDLE && smp_num_siblings > 1)
->  		pr_warn_once("WARNING: polling idle and HT enabled, performance may degrade\n");
->  #endif
->  	if (x86_idle)
-> @@ -517,8 +468,9 @@ static int __init idle_setup(char *str)
-> 
->  	if (!strcmp(str, "poll")) {
->  		pr_info("using polling idle threads\n");
-> -		x86_idle = poll_idle;
-> +		x86_idle = POLL_IDLE;
->  		boot_option_idle_override = IDLE_POLL;
-> +		cpu_idle_poll_ctrl(true);
-
-Why is that POLL_IDLE needed? Won't cpu_idle_poll_ctrl() suffice?
-
-By the way, booting with idle=poll locks up the kernel during boot with
-this patch applied (I verified it). So I think we should just skip the
-whole POLL_IDLE thing and leave the job to cpu_idle_poll_ctrl().
-
+diff --git v3.9-rc3.orig/fs/hugetlbfs/inode.c v3.9-rc3/fs/hugetlbfs/inode.c
+index 84e3d85..523464e 100644
+--- v3.9-rc3.orig/fs/hugetlbfs/inode.c
++++ v3.9-rc3/fs/hugetlbfs/inode.c
+@@ -110,7 +110,7 @@ static int hugetlbfs_file_mmap(struct file *file, struct vm_area_struct *vma)
+ 	 * way when do_mmap_pgoff unwinds (may be important on powerpc
+ 	 * and ia64).
+ 	 */
+-	vma->vm_flags |= VM_HUGETLB | VM_DONTEXPAND | VM_DONTDUMP;
++	vma->vm_flags |= VM_HUGETLB | VM_DONTEXPAND;
+ 	vma->vm_ops = &hugetlb_vm_ops;
  
-Regards,
-Srivatsa S. Bhat
+ 	if (vma->vm_pgoff & (~huge_page_mask(h) >> PAGE_SHIFT))
+-- 
+1.7.11.7
 
