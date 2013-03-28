@@ -1,98 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab3C1RFX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:05:23 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:45734 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756827Ab3C1RFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 13:05:20 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [GIT PULL] ACPI and power management fixes for v3.9-rc5
-Date: Thu, 28 Mar 2013 18:12:48 +0100
-Message-ID: <2079293.xj33ftEVWq@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1757300Ab3C1RFp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:05:45 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:53605 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757222Ab3C1RFo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 13:05:44 -0400
+Message-ID: <1364490332.3559.25.camel@thor.lan>
+Subject: Re: [PATCH v2 03/13] rwsem: move rwsem_down_failed_common code into
+ rwsem_down_{read,write}_failed
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 28 Mar 2013 13:05:32 -0400
+In-Reply-To: <1363344869-15732-4-git-send-email-walken@google.com>
+References: <1363344869-15732-1-git-send-email-walken@google.com>
+	 <1363344869-15732-4-git-send-email-walken@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 2013-03-15 at 03:54 -0700, Michel Lespinasse wrote:
+> Remove the rwsem_down_failed_common function and replace it with two
+> identical copies of its code in rwsem_down_{read,write}_failed.
+> 
+> This is because we want to make different optimizations in
+> rwsem_down_{read,write}_failed; we are adding this pure-duplication
+> step as a separate commit in order to make it easier to check the
+> following steps.
+> 
+> Signed-off-by: Michel Lespinasse <walken@google.com>
+> 
+> ---
+>  lib/rwsem.c | 72 ++++++++++++++++++++++++++++++++++++++++++++++++-------------
+>  1 file changed, 57 insertions(+), 15 deletions(-)
+> 
+> diff --git a/lib/rwsem.c b/lib/rwsem.c
+> index 40636454cf3c..fb658af1c12c 100644
+> --- a/lib/rwsem.c
+> +++ b/lib/rwsem.c
+> @@ -178,12 +178,12 @@ try_again_write:
+>  }
+>  
+>  /*
+> - * wait for a lock to be granted
+> + * wait for the read lock to be granted
+>   */
+> -static struct rw_semaphore __sched *
+> -rwsem_down_failed_common(struct rw_semaphore *sem,
+> -			 enum rwsem_waiter_type type, signed long adjustment)
+> +struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
+>  {
+> +	enum rwsem_waiter_type type = RWSEM_WAITING_FOR_READ;
+> +	signed long adjustment = -RWSEM_ACTIVE_READ_BIAS;
 
-Please pull from the git repository at
+Again, just my opinion (and I suspect you only did this because that's
+what was here) but I think this should be:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.9-rc5
++	long adjustment = -RWSEM_ACTIVE_READ_BIAS;
 
-to receive ACPI and power management fixes for v3.9-rc5 with top-most commit
-6125c2be96b941a08e05516cfa1125ca53945bb2
+>  	struct rwsem_waiter waiter;
+>  	struct task_struct *tsk = current;
+>  	signed long count;
 
-  Merge branch 'acpi-fixes' into fixes
+Same here.
 
-on top of commit 8bb9660418e05bb1845ac1a2428444d78e322cc7
+> @@ -238,21 +238,63 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+>  }
+>  
+>  /*
+> - * wait for the read lock to be granted
+> - */
+> -struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
+> -{
+> -	return rwsem_down_failed_common(sem, RWSEM_WAITING_FOR_READ,
+> -					-RWSEM_ACTIVE_READ_BIAS);
+> -}
+> -
+> -/*
+>   * wait for the write lock to be granted
+>   */
+>  struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+>  {
+> -	return rwsem_down_failed_common(sem, RWSEM_WAITING_FOR_WRITE,
+> -					-RWSEM_ACTIVE_WRITE_BIAS);
+> +	enum rwsem_waiter_type type = RWSEM_WAITING_FOR_WRITE;
+> +	signed long adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
 
-  Linux 3.9-rc5
+Same here.
 
-Included are:
+> +	struct rwsem_waiter waiter;
+> +	struct task_struct *tsk = current;
+> +	signed long count;
 
-- Fix for a recent cpufreq regression related to acpi-cpufreq and
-  suspend/resume from Viresh Kumar.
+And here.
 
-- cpufreq stats reference counting fix from Viresh Kumar.
+> +
+> +	/* set up my own style of waitqueue */
+> +	waiter.task = tsk;
+> +	waiter.type = type;
+> +	get_task_struct(tsk);
+> +
+> +	raw_spin_lock_irq(&sem->wait_lock);
+> +	if (list_empty(&sem->wait_list))
+> +		adjustment += RWSEM_WAITING_BIAS;
+> +	list_add_tail(&waiter.list, &sem->wait_list);
+> +
+> +	/* we're now waiting on the lock, but no longer actively locking */
+> +	count = rwsem_atomic_update(adjustment, sem);
+> +
+> +	/* If there are no active locks, wake the front queued process(es) up.
+> +	 *
+> +	 * Alternatively, if we're called from a failed down_write(), there
+> +	 * were already threads queued before us and there are no active
+> +	 * writers, the lock must be read owned; so we try to wake any read
+> +	 * locks that were queued ahead of us. */
+> +	if (count == RWSEM_WAITING_BIAS)
+> +		sem = __rwsem_do_wake(sem, RWSEM_WAKE_NO_ACTIVE);
+> +	else if (count > RWSEM_WAITING_BIAS &&
+> +		 adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
+> +		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READ_OWNED);
+> +
+> +	raw_spin_unlock_irq(&sem->wait_lock);
+> +
+> +	/* wait to be given the lock */
+> +	while (true) {
+> +		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+> +		if (!waiter.task)
+> +			break;
+> +
+> +		raw_spin_lock_irq(&sem->wait_lock);
+> +		/* Try to get the writer sem, may steal from the head writer: */
+> +		if (type == RWSEM_WAITING_FOR_WRITE)
+> +			if (try_get_writer_sem(sem, &waiter)) {
+> +				raw_spin_unlock_irq(&sem->wait_lock);
+> +				return sem;
+> +			}
+> +		raw_spin_unlock_irq(&sem->wait_lock);
+> +		schedule();
+> +	}
+> +
+> +	tsk->state = TASK_RUNNING;
+> +
+> +	return sem;
+>  }
+>  
+>  /*
 
-- intel_pstate driver fixes from Dirk Brandewie and
-  Konrad Rzeszutek Wilk.
 
-- New ACPI suspend blacklist entry for Sony Vaio VGN-FW21M from
-  Fabio Valentini.
-
-- ACPI Platform Error Interface (APEI) fix from Chen Gong.
-
-- Fix for the new PCI root bridge hotplug code to make it use
-  acpi_scan_lock in analogy with the rest of the ACPI subsystem.
-  From Yinghai Lu.
-
-Thanks!
-
-
----------------
-
-Chen Gong (1):
-      ACPI / APEI: fix error status check condition for CPER
-
-Dirk Brandewie (2):
-      cpufreq / intel_pstate: Add function to check that all MSRs are valid
-      cpufreq / intel_pstate: Fix calculation of current frequency
-
-Fabio Valentini (1):
-      ACPI / PM: fix suspend and resume on Sony Vaio VGN-FW21M
-
-Konrad Rzeszutek Wilk (1):
-      intel-pstate: Use #defines instead of hard-coded values.
-
-Viresh Kumar (2):
-      cpufreq: acpi-cpufreq: Don't set policy->related_cpus from .init()
-      cpufreq: stats: do cpufreq_cpu_put() corresponding to cpufreq_cpu_get()
-
-Yinghai Lu (1):
-      PCI / ACPI: hold acpi_scan_lock during root bus hotplug
-
----------------
-
- arch/x86/include/uapi/asm/msr-index.h |    1 +
- drivers/acpi/apei/cper.c              |    2 +-
- drivers/acpi/pci_root.c               |    9 +++++++--
- drivers/acpi/sleep.c                  |    8 ++++++++
- drivers/cpufreq/acpi-cpufreq.c        |    2 --
- drivers/cpufreq/cpufreq_stats.c       |   12 ++++++++----
- drivers/cpufreq/intel_pstate.c        |   34 ++++++++++++++++++++++++++++++----
- 7 files changed, 55 insertions(+), 13 deletions(-)
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
