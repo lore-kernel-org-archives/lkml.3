@@ -1,115 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab3C1J6R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 05:58:17 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:59459 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab3C1J6P (ORCPT
+	id S1755626Ab3C1KBX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 06:01:23 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:33521 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755079Ab3C1KBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 05:58:15 -0400
-Date: Thu, 28 Mar 2013 10:57:18 +0100
-From: Johan Hovold <jhovold@gmail.com>
-To: Douglas Gilbert <dgilbert@interlog.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtc: rtc-at91rm9200: use a variable for storing IMR
-Message-ID: <20130328095718.GA30276@localhost>
-References: <1363369032-12639-1-git-send-email-nicolas.ferre@atmel.com>
- <20130326192713.GA31628@localhost>
- <51520EA7.8090808@interlog.com>
+	Thu, 28 Mar 2013 06:01:21 -0400
+Message-ID: <515414E2.3070601@stericsson.com>
+Date: Thu, 28 Mar 2013 11:01:06 +0100
+From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51520EA7.8090808@interlog.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFT v2] regulator: ab8500: Update info->update_val only
+ when successfully update register
+References: <1364462580.17483.1.camel@phoenix>
+In-Reply-To: <1364462580.17483.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 05:09:59PM -0400, Douglas Gilbert wrote:
-> On 13-03-26 03:27 PM, Johan Hovold wrote:
-> > On Fri, Mar 15, 2013 at 06:37:12PM +0100, Nicolas Ferre wrote:
-> >> On some revisions of AT91 SoCs, the RTC IMR register is not working.
-> >> Instead of elaborating a workaround for that specific SoC or IP version,
-> >> we simply use a software variable to store the Interrupt Mask Register and
-> >> modify it for each enabling/disabling of an interrupt. The overhead of this
-> >> is negligible anyway.
-> >
-> > The patch does not add any memory barriers or register read-backs when
-> > manipulating the interrupt-mask variable. This could possibly lead to
-> > spurious interrupts both when enabling and disabling the various
-> > RTC-interrupts due to write reordering and bus latencies.
-> >
-> > Has this been considered? And is this reason enough for a more targeted
-> > work-around so that the SOCs with functional RTC_IMR are not affected?
-> 
-> The SoCs in question use a single embedded ARM926EJ-S and
-> according to the Atmel documentation, that CPU's instruction
-> set contains no barrier (or related) instructions.
-
-The ARM926EJ-S actually does have a Drain Write Buffer instruction but
-it's not used by the ARM barrier-implementation unless
-CONFIG_ARM_DMA_MEM_BUFFERABLE or CONFIG_SMP is set.
-
-However, wmb() always implies a compiler barrier which is what is needed
-in this case.
-
-> In the arch/arm/mach-at91 sub-tree of the kernel source
-> I can find no use of the wmb() call. Also checked all drivers
-> in the kernel containing "at91" and none called wmb().
-
-I/O-operations are normally not reordered, but this patch is faking a
-hardware register and thus extra care needs to be taken.
-
-To repeat:
-
-> @@ -198,9 +203,12 @@ static int at91_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+On 03/28/2013 10:23 AM, Axel Lin wrote:
+> Don't update info->update_val if write to the register fails.
 >
->       if (enabled) {
->               at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_ALARM);
-> +             at91_rtc_imr |= AT91_RTC_ALARM;
-
-Here a barrier is needed to prevent the compiler from reordering the two
-writes (i.e., mask update and interrupt enable).
-
->               at91_rtc_write(AT91_RTC_IER, AT91_RTC_ALARM);
-> -     } else
-> +     } else {
->               at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ALARM);
-
-Here a barrier is again needed to prevent the compiler from reordering,
-but we also need a register read back (of some RTC-register) before
-updating the mask. Without the register read back, there could be a
-window where the mask does not match the hardware state due to bus
-latencies.
-
-Note that even with a register read back there is a (theoretical)
-possibility that the interrupts have not yet been disabled when the fake
-mask is updated. The only way to know for sure is to poll RTC_IMR but
-that is the very register you're trying to emulate.
-
-> +             at91_rtc_imr &= ~AT91_RTC_ALARM;
-> +     }
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+> v2:
+> On the second thought, I think it's ok to update info->update_val when
+> regulator is disabled, the mode will change when the regulator is enabled.
+That is better of course. I did not notice before.
+> Hi Bengt,
+> I just got your Ack for v1.
+> Can you review this v2 again, and let Mark know which version do you prefer.
 >
->       return 0;
-> }
+> Thanks.
+> Axel
+I prefer this v2, thanks.
 
-In the worst-case scenario ignoring the shared RTC-interrupt could lead
-to the disabling of the system interrupt and thus also PIT, DBGU, ...
+Acked-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+>   drivers/regulator/ab8500.c |   27 +++++++++++++++++++--------
+>   1 file changed, 19 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+> index 12e2740..7814ac3 100644
+> --- a/drivers/regulator/ab8500.c
+> +++ b/drivers/regulator/ab8500.c
+> @@ -182,8 +182,8 @@ static unsigned int ab8500_regulator_get_optimum_mode(
+>   static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
+>   				     unsigned int mode)
+>   {
+> -	int ret = 0;
+> -
+> +	int ret;
+> +	u8 update_val;
+>   	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+>   
+>   	if (info == NULL) {
+> @@ -193,31 +193,42 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
+>   
+>   	switch (mode) {
+>   	case REGULATOR_MODE_NORMAL:
+> -		info->update_val = info->update_val_normal;
+> +		update_val = info->update_val_normal;
+>   		break;
+>   	case REGULATOR_MODE_IDLE:
+> -		info->update_val = info->update_val_idle;
+> +		update_val = info->update_val_idle;
+>   		break;
+>   	default:
+>   		return -EINVAL;
+>   	}
+>   
+> +	/* ab8500 regulators share mode and enable in the same register bits.
+> +	   off = 0b00
+> +	   low power mode= 0b11
+> +	   full powermode = 0b01
+> +	   (HW control mode = 0b10)
+> +	   Thus we don't write to the register when regulator is disabled.
+> +	*/
+>   	if (info->is_enabled) {
+>   		ret = abx500_mask_and_set_register_interruptible(info->dev,
+>   			info->update_bank, info->update_reg,
+> -			info->update_mask, info->update_val);
+> -		if (ret < 0)
+> +			info->update_mask, update_val);
+> +		if (ret < 0) {
+>   			dev_err(rdev_get_dev(rdev),
+>   				"couldn't set regulator mode\n");
+> +			return ret;
+> +		}
+>   
+>   		dev_vdbg(rdev_get_dev(rdev),
+>   			"%s-set_mode (bank, reg, mask, value): "
+>   			"0x%x, 0x%x, 0x%x, 0x%x\n",
+>   			info->desc.name, info->update_bank, info->update_reg,
+> -			info->update_mask, info->update_val);
+> +			info->update_mask, update_val);
+>   	}
+>   
+> -	return ret;
+> +	info->update_val = update_val;
+> +
+> +	return 0;
+>   }
+>   
+>   static unsigned int ab8500_regulator_get_mode(struct regulator_dev *rdev)
 
-I think this patch should be reverted and a fix for the broken SoCs be
-implemented which does not penalise the other SoCs. That is, only
-fall-back to faking IMR on the SoCs where it is actually broken.
-
-Nicolas, should I send a revert patch and follow up with a fix for the
-broken SoCs which includes the required barriers and read-backs?
-
-Note that the patch is already being picked up for some stable trees.
-The fix I'm proposing would require adding minimal DT-support to the
-driver and is not really stable material. Therefore, a revert followed
-by a patch for 3.10 seems like the way to go.
-
-Johan
