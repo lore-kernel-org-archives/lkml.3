@@ -1,71 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab3C1GIM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 02:08:12 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3249 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754862Ab3C1GIK (ORCPT
+	id S1755610Ab3C1GK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 02:10:27 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:61337 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562Ab3C1GKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 02:08:10 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 27 Mar 2013 23:07:41 -0700
-Message-ID: <5153DD9F.2090101@nvidia.com>
-Date: Thu, 28 Mar 2013 11:35:19 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] gpio: palmas: add dt support
-References: <1363876214-25933-1-git-send-email-ldewangan@nvidia.com> <CACRpkdY_9pEkNfp7L82nGjsjFOi-VXwPHo7_3XwjCz8XcN8osg@mail.gmail.com> <51531706.4040608@wwwdotorg.org>
-In-Reply-To: <51531706.4040608@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Mar 2013 02:10:25 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com, swarren@wwwdotorg.org,
+        arnd@arndb.de, olof@lixom.net, linux-kernel@vger.kernel.org,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCHv3 0/6] arm: vt8500: Add support for pinctrl/gpio module
+Date: Thu, 28 Mar 2013 19:10:43 +1300
+Message-Id: <1364451049-2981-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 March 2013 09:27 PM, Stephen Warren wrote:
-> On 03/27/2013 07:00 AM, Linus Walleij wrote:
->> On Thu, Mar 21, 2013 at 3:30 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
->>
->>>   #ifdef CONFIG_OF_GPIO
->>> -       palmas_gpio->gpio_chip.of_node = palmas->dev->of_node;
->>> +       palmas_gpio->gpio_chip.of_node = pdev->dev.of_node;
->>>   #endif
->> OK I think that #ifdef is necessary...
-> Laxman,
->
-> Don't we need to resolve and agree on the final DT bindings before we
-> can start making changes like this? It's not clear yet whether everyone
-> is on the same page re: how the MFD sub-devices are modelled in DT -
-> whether each sub-component really is a standalone device, or whether the
-> MFD itself instantiates all its children based on internal static tables
-> rather than DT.
-Yes, we need to agree on DT. I sent the patch based on the patches came 
-from TI/Slimlogic and other discussion about DT patches.
-Recently, you commented on  DT for palmas, it need to  be completely IP 
-based or hw based. Mix will not work.
-If it is IP based then almost all palmas-* file need to be rewrite, no 
-one is written as IP based. All are using palma structures, palma 
-header, palma macro etc
-which should not be there.
+v3 changes:
+Rebased onto v3.9-rc4
+Added the missing interrupt-controller info to the relevant dtsi files.
+Removed the gpio-vt8500.txt binding along with the gpio driver.
 
->
-> Given that, I'm not sure why the Slimlogic people aren't CC'd on this
-> patch:-(
+Changes made as requested by Linux Walleij:
+Removed the wm,pinmux property which has caused too much confusion, and left the
+	open-coded version in arm/arch-vt8500/vt8500.c until a proper solution
+	is sorted out.
 
-I have not added then on my original patch as 
-./script/get_maintainers.pl did not give me name.
-However, you added immediately them (TI and slimlogic) on this patch 
-itself. I have not got any feedback from them yet.
+Changes made as requested by Stephen Warren:
+Defined an active-low flag for gpio since its useful and we will have a use-case
+	for it with our LCD power-on/off.
+
+v2 changes:
+Rebased onto v3.9-rc2
+
+Changes made as requested by Linus Walleij:
+Moved the files into drivers/pinctrl/vt8500/ to keep them tidy.
+Changed readl/writel to *_relaxed variants.
+Comment indentation corrected and remove additional whitespace.
+Changed wmt_pctl_find_group_by_pin() error code from -1 to -EINVAL.
+Removed OF read indexed-u32 function to OF subsystem.
+General code tidy up as requested.
+
+Changes made as requested by Stephen Warren:
+Add binding information for interrupt generation.
+Move optional properties to correct location in document.
 
 
+This patch series removes the existing GPIO driver and replaces it with
+a combined pinctrl+gpio driver.
 
-I
+Patch 1 - Add an OF function to read the nth u32 value from a property
+  listing multiple values.
+
+Patch 2 - Increase the available GPIO space for the newly added gpios.
+  Because there is no hardware documentation from Wondermedia we don't know
+  how many GPIO's there actually are. New gpio pins have been located since
+  the original GPIO driver was written, hence the increase.
+
+Patch 3 - The main pinctrl/gpio driver and the data for the 5 supported SoCs.
+  Each SoC is different, and therefore has its own data. This design was
+  borrowed from the Tegra pinctrl driver. The pin numbering is based on a
+  bank+pin encoding so that when other pin functions are found later on we can
+  add them without having to renumber existing pins.
+
+Patch 4 - Update the SoC dts(i) files to support the new pinctrl driver.
+
+Patch 5 - Remove the existing GPIO driver nodes from the dtsi's.
+
+Patch 6 - Remove the existing GPIO driver.
+
+I suspect this series may need to be broken up since there are two arm-soc
+patches, and 4 pinctrl/gpio patches.
+
+Patch 1 is required for the new driver to function properly.
+Patch 2 is independant, but required for the driver to function properly.
+Patches 3-4 are pinctrl/gpio patches.
+Patch 5-6 remove the old gpio code which is no longer required.
+
+
+Patch 2 could go via arm-soc if necessary.
+
+Regards
+Tony Prisk
+
+Tony Prisk (6):
+  of: Add support for reading a u32 from a multi-value property.
+  arm: vt8500: Increase available GPIOs on arch-vt8500
+  pinctrl: gpio: vt8500: Add pincontrol driver for arch-vt8500
+  arm: dts: vt8500: Update Wondermedia SoC dtsi files for pinctrl
+    driver
+  arm: vt8500: Remove gpio devicetree nodes
+  gpio: vt8500: Remove arch-vt8500 gpio driver
+
+ .../devicetree/bindings/gpio/gpio-vt8500.txt       |   24 -
+ .../devicetree/bindings/pinctrl/pinctrl-vt8500.txt |   57 ++
+ arch/arm/Kconfig                                   |    3 +-
+ arch/arm/boot/dts/vt8500.dtsi                      |   10 +-
+ arch/arm/boot/dts/wm8505.dtsi                      |   10 +-
+ arch/arm/boot/dts/wm8650.dtsi                      |   10 +-
+ arch/arm/boot/dts/wm8850.dtsi                      |   10 +-
+ arch/arm/mach-vt8500/Kconfig                       |    1 +
+ drivers/gpio/Kconfig                               |    6 -
+ drivers/gpio/Makefile                              |    1 -
+ drivers/gpio/gpio-vt8500.c                         |  355 -----------
+ drivers/of/base.c                                  |   33 +
+ drivers/pinctrl/Kconfig                            |    1 +
+ drivers/pinctrl/Makefile                           |    1 +
+ drivers/pinctrl/vt8500/Kconfig                     |   52 ++
+ drivers/pinctrl/vt8500/Makefile                    |    8 +
+ drivers/pinctrl/vt8500/pinctrl-vt8500.c            |  509 ++++++++++++++++
+ drivers/pinctrl/vt8500/pinctrl-wm8505.c            |  540 +++++++++++++++++
+ drivers/pinctrl/vt8500/pinctrl-wm8650.c            |  378 ++++++++++++
+ drivers/pinctrl/vt8500/pinctrl-wm8750.c            |  417 +++++++++++++
+ drivers/pinctrl/vt8500/pinctrl-wm8850.c            |  396 ++++++++++++
+ drivers/pinctrl/vt8500/pinctrl-wmt.c               |  628 ++++++++++++++++++++
+ drivers/pinctrl/vt8500/pinctrl-wmt.h               |   79 +++
+ include/linux/of.h                                 |    9 +
+ 24 files changed, 3135 insertions(+), 403 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/gpio/gpio-vt8500.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl-vt8500.txt
+ delete mode 100644 drivers/gpio/gpio-vt8500.c
+ create mode 100644 drivers/pinctrl/vt8500/Kconfig
+ create mode 100644 drivers/pinctrl/vt8500/Makefile
+ create mode 100644 drivers/pinctrl/vt8500/pinctrl-vt8500.c
+ create mode 100644 drivers/pinctrl/vt8500/pinctrl-wm8505.c
+ create mode 100644 drivers/pinctrl/vt8500/pinctrl-wm8650.c
+ create mode 100644 drivers/pinctrl/vt8500/pinctrl-wm8750.c
+ create mode 100644 drivers/pinctrl/vt8500/pinctrl-wm8850.c
+ create mode 100644 drivers/pinctrl/vt8500/pinctrl-wmt.c
+ create mode 100644 drivers/pinctrl/vt8500/pinctrl-wmt.h
+
+-- 
+1.7.9.5
 
