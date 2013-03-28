@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab3C1F7t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 01:59:49 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:11599 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab3C1F7s (ORCPT
+	id S1753942Ab3C1GBv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 02:01:51 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2808 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353Ab3C1GBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 01:59:48 -0400
-X-Spam-Score: -100.8
-Message-ID: <5153DC24.4010104@asianux.com>
-Date: Thu, 28 Mar 2013 13:59:00 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 28 Mar 2013 02:01:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 27 Mar 2013 23:01:22 -0700
+Message-ID: <5153DC24.7040309@nvidia.com>
+Date: Thu, 28 Mar 2013 11:29:00 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: edumazet@google.com, dborkman@redhat.com, wad@chromium.org,
-        eparis@redhat.com
-CC: David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] include/linux: printk is needed in filter.h when CONFIG_BPF_JIT
- is defined
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] gpio: palmas: add dt support
+References: <1363876214-25933-1-git-send-email-ldewangan@nvidia.com> <CACRpkdY_9pEkNfp7L82nGjsjFOi-VXwPHo7_3XwjCz8XcN8osg@mail.gmail.com>
+In-Reply-To: <CACRpkdY_9pEkNfp7L82nGjsjFOi-VXwPHo7_3XwjCz8XcN8osg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 27 March 2013 06:30 PM, Linus Walleij wrote:
+> On Thu, Mar 21, 2013 at 3:30 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+>
+>> +#ifdef CONFIG_OF
+>> +static struct of_device_id of_palmas_gpio_match[] = {
+>> +       { .compatible = "ti,palmas-gpio"},
+>> +       { },
+>> +};
+>> +MODULE_DEVICE_TABLE(of, of_palmas_gpio_match);
+>> +#endif
+> But please drop the #ifdef here unless it causes compile errors
+> (I don't think it will.)
+>
 
-  for make V=1 EXTRA_CFLAGS=-W ARCH=arm allmodconfig
-    printk is need when CONFIG_BPF_JIT is defined
-    or it will report pr_err and print_hex_dump are implicit declaration
+I am using this table as
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- include/linux/filter.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+driver.of_match_table = of_match_ptr(of_palmas_gpio_match),
+of_match_ptr is macro which is NULL in case of CONFIG_OF not defined.
+So if I remove ifdefs then it may create build warning as unused variable.
 
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index d7d2508..d1248f4 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -48,6 +48,9 @@ extern int sk_chk_filter(struct sock_filter *filter, unsigned int flen);
- extern int sk_get_filter(struct sock *sk, struct sock_filter __user *filter, unsigned len);
- 
- #ifdef CONFIG_BPF_JIT
-+#include <linux/linkage.h>
-+#include <linux/printk.h>
-+
- extern void bpf_jit_compile(struct sk_filter *fp);
- extern void bpf_jit_free(struct sk_filter *fp);
- 
--- 
-1.7.7.6
+Therefore, I think it is require here.
+
+
