@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab3C1E2a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 00:28:30 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:26357 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab3C1E20 (ORCPT
+	id S1752640Ab3C1E2i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 00:28:38 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:50206 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535Ab3C1E2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 00:28:26 -0400
+	Thu, 28 Mar 2013 00:28:35 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -14,30 +14,40 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
         Matthew Whitehead <mwhitehe@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
         stable@kernel.org
-Subject: [PATCH 1/2] eisa, PCI: Fix bus res reference
-Date: Wed, 27 Mar 2013 21:28:04 -0700
-Message-Id: <1364444885-19751-2-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 2/2] eisa, PCI: init eisa early before pnp step in
+Date: Wed, 27 Mar 2013 21:28:05 -0700
+Message-Id: <1364444885-19751-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1364444885-19751-1-git-send-email-yinghai@kernel.org>
 References: <1364444885-19751-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthem found that 3.8.3 is having problems with an old (ancient)
-PCI-to-EISA bridge, the Intel 82375. It worked with the 3.2 kernel.
-He identified the 82375, but doesn't assign the struct resource *res
-pointer inside the struct eisa_root_device, and panics.
+Mathhew reported kernels fail the pci_eisa probe and are later successful
+with the virtual_eisa_root_init force probe without slot0.
 
-After looking at pci_eisa_init(), found it referring bus resource
-directly instead of pci_bus_resource_n().
+The reason for that is: pnp probing is early than pci_eisa_init get called
+as pci_eisa_init is called via pci_driver.
 
-After commit 45ca9e97 (PCI: add helpers for building PCI bus resource lists)
-and commit 0efd5aab (PCI: add struct pci_host_bridge_window with CPU/bus
-address offset), bus->resource[] is not used for pci root bus any more.
+pnp 00:0f has 0xc80 - 0xc84 reserved.
+[    9.700409] pnp 00:0f: [io  0x0c80-0x0c84]
 
-Fix it by using pci_bus_resource_n() and correct idx for root bus.
+so eisa_probe will fail from pci_eisa_init
+				==>eisa_root_register
+					==>eisa_probe path.
+as force_probe is not set in pci_eisa_root, it will bail early when
+slot0 is not probed and initialized.
+
+Try to use subsys_initcall_sync instead, and will keep following sequence:
+	pci_subsys_init
+	pci_eisa_init_early
+	pnpacpi_init/isapnp_init
+
+After this patch eisa can be initialized properly, and pnp overlapping
+resource will not be reserved.
+[   10.104434] system 00:0f: [io  0x0c80-0x0c84] could not be reserved
 
 Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
 Tested-by: Matthew Whitehead <mwhitehe@redhat.com>
@@ -45,35 +55,64 @@ Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Cc: stable@kernel.org
 
 ---
- drivers/eisa/pci_eisa.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/eisa/pci_eisa.c |   41 ++++++++++++++++++++++-------------------
+ 1 file changed, 22 insertions(+), 19 deletions(-)
 
 Index: linux-2.6/drivers/eisa/pci_eisa.c
 ===================================================================
 --- linux-2.6.orig/drivers/eisa/pci_eisa.c
 +++ linux-2.6/drivers/eisa/pci_eisa.c
-@@ -22,7 +22,8 @@ static struct eisa_root_device pci_eisa_
- static int __init pci_eisa_init(struct pci_dev *pdev,
- 				const struct pci_device_id *ent)
+@@ -19,8 +19,7 @@
+ /* There is only *one* pci_eisa device per machine, right ? */
+ static struct eisa_root_device pci_eisa_root;
+ 
+-static int __init pci_eisa_init(struct pci_dev *pdev,
+-				const struct pci_device_id *ent)
++static int __init pci_eisa_init(struct pci_dev *pdev)
  {
--	int rc;
-+	int rc, n = 0;
-+	struct resource *bus_res;
+ 	int rc, n = 0;
+ 	struct resource *bus_res;
+@@ -49,22 +48,26 @@ static int __init pci_eisa_init(struct p
+ 	return 0;
+ }
  
- 	if ((rc = pci_enable_device (pdev))) {
- 		printk (KERN_ERR "pci_eisa : Could not enable device %s\n",
-@@ -30,9 +31,12 @@ static int __init pci_eisa_init(struct p
- 		return rc;
- 	}
+-static struct pci_device_id pci_eisa_pci_tbl[] = {
+-	{ PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+-	  PCI_CLASS_BRIDGE_EISA << 8, 0xffff00, 0 },
+-	{ 0, }
+-};
+-
+-static struct pci_driver __refdata pci_eisa_driver = {
+-	.name		= "pci_eisa",
+-	.id_table	= pci_eisa_pci_tbl,
+-	.probe		= pci_eisa_init,
+-};
+-
+-static int __init pci_eisa_init_module (void)
++/*
++ * We have to call pci_eisa_init_early() before pnpacpi_init()/isapnp_init().
++ *   Otherwise pnp resource will get enabled early and could prevent eisa
++ *   to be initialized.
++ * Also need to make sure pci_eisa_init_early() is called after
++ * x86/pci_subsys_init().
++ * So need to use subsys_initcall_sync with it.
++ */
++static int __init pci_eisa_init_early(void)
+ {
+-	return pci_register_driver (&pci_eisa_driver);
+-}
++	struct pci_dev *dev = NULL;
++	int ret;
++
++	for_each_pci_dev(dev)
++		if ((dev->class >> 8) == PCI_CLASS_BRIDGE_EISA) {
++			ret = pci_eisa_init(dev);
++			if (ret)
++				return ret;
++		}
  
-+	if (pci_is_root_bus(pdev->bus))
-+		n = PCI_BRIDGE_RESOURCE_NUM;
-+	bus_res = pci_bus_resource_n(pdev->bus, n);
- 	pci_eisa_root.dev              = &pdev->dev;
--	pci_eisa_root.res	       = pdev->bus->resource[0];
--	pci_eisa_root.bus_base_addr    = pdev->bus->resource[0]->start;
-+	pci_eisa_root.res	       = bus_res;
-+	pci_eisa_root.bus_base_addr    = bus_res->start;
- 	pci_eisa_root.slots	       = EISA_MAX_SLOTS;
- 	pci_eisa_root.dma_mask         = pdev->dma_mask;
- 	dev_set_drvdata(pci_eisa_root.dev, &pci_eisa_root);
+-device_initcall(pci_eisa_init_module);
+-MODULE_DEVICE_TABLE(pci, pci_eisa_pci_tbl);
++	return 0;
++}
++subsys_initcall_sync(pci_eisa_init_early);
