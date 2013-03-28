@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756860Ab3C1QML (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 12:12:11 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:59354 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756773Ab3C1QMA (ORCPT
+	id S1756990Ab3C1QM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 12:12:28 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:41675 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756848Ab3C1QMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 12:12:00 -0400
+	Thu, 28 Mar 2013 12:12:10 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Cc: Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 04/33] ARM: ux500: Turn off external regulator #1 when early HREFs suspend
-Date: Thu, 28 Mar 2013 16:11:04 +0000
-Message-Id: <1364487093-19551-5-git-send-email-lee.jones@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Subject: [PATCH 08/33] regulator: ab8500: Remove USB regulator
+Date: Thu, 28 Mar 2013 16:11:08 +0000
+Message-Id: <1364487093-19551-9-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1364487093-19551-1-git-send-email-lee.jones@linaro.org>
 References: <1364487093-19551-1-git-send-email-lee.jones@linaro.org>
@@ -20,58 +21,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When older variants of the HREF (earlier than v22) development
-platform enter suspend mode, power down EXT_SUPPLY1.
+The USB regulator is controlled by hardware. The software support
+was only needed for early hardware (ED) which is no longer supported.
 
+Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-regulators.c |   17 +++++++++++++++++
- arch/arm/mach-ux500/board-mop500-regulators.h |    2 ++
- 2 files changed, 19 insertions(+)
+ drivers/regulator/ab8500.c       |   20 --------------------
+ include/linux/regulator/ab8500.h |    1 -
+ 2 files changed, 21 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index 22dfaf3..2a2751e 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.c
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -11,6 +11,7 @@
- #include <linux/kernel.h>
- #include <linux/regulator/machine.h>
- #include <linux/regulator/ab8500.h>
-+#include <mach/id.h> /* to identify older boards for fixes */
- #include "board-mop500-regulators.h"
- 
- static struct regulator_consumer_supply gpio_en_3v3_consumers[] = {
-@@ -494,3 +495,19 @@ static void ab8500_modify_reg_init(int id, u8 mask, u8 value)
- 
- 	BUG_ON(1);
- }
-+
-+void mop500_regulator_init(void)
-+{
-+	struct regulator_init_data *regulator;
-+
-+	/*
-+	 * Handle VextSupply1 on older boards than HREFP_V22_V1x
-+	 * (turn off in suspend)
-+	 */
-+	if (cpu_is_u8500v20() || cpu_is_u8500v21()) {
-+		/* disable VextSupply1 in suspend */
-+		regulator = &ab8500_ext_regulators[AB8500_EXT_SUPPLY1];
-+		regulator->constraints.state_mem.disabled = 1;
-+		regulator->constraints.state_standby.disabled = 1;
-+	}
-+}
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
-index 9ca4869..3d4c412 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.h
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.h
-@@ -18,4 +18,6 @@ extern struct ab8500_regulator_platform_data ab8500_regulator_plat_data;
- extern struct regulator_init_data tps61052_regulator;
- extern struct regulator_init_data gpio_en_3v3_regulator;
- 
-+void mop500_regulator_init(void);
-+
- #endif
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index 4974688..4d88a60 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -488,25 +488,6 @@ static struct ab8500_regulator_info
+ 		.update_val_idle	= 0x82,
+ 		.update_val_normal	= 0x02,
+ 	},
+-
+-	/*
+-	 * Regulators with fixed voltage and normal mode
+-	 */
+-	[AB8500_LDO_USB] = {
+-		.desc = {
+-			.name           = "LDO-USB",
+-			.ops            = &ab8500_regulator_ops,
+-			.type           = REGULATOR_VOLTAGE,
+-			.id             = AB8500_LDO_USB,
+-			.owner          = THIS_MODULE,
+-			.n_voltages     = 1,
+-			.min_uV		= 3300000,
+-			.enable_time	= 150,
+-		},
+-		.update_bank            = 0x03,
+-		.update_reg             = 0x82,
+-		.update_mask            = 0x03,
+-	},
+ 	[AB8500_LDO_AUDIO] = {
+ 		.desc = {
+ 			.name		= "LDO-AUDIO",
+@@ -862,7 +843,6 @@ static struct of_regulator_match ab8500_regulator_matches[] = {
+ 	{ .name	= "ab8500_ldo_aux3",    .driver_data = (void *) AB8500_LDO_AUX3, },
+ 	{ .name	= "ab8500_ldo_intcore", .driver_data = (void *) AB8500_LDO_INTCORE, },
+ 	{ .name	= "ab8500_ldo_tvout",   .driver_data = (void *) AB8500_LDO_TVOUT, },
+-	{ .name = "ab8500_ldo_usb",     .driver_data = (void *) AB8500_LDO_USB, },
+ 	{ .name = "ab8500_ldo_audio",   .driver_data = (void *) AB8500_LDO_AUDIO, },
+ 	{ .name	= "ab8500_ldo_anamic1", .driver_data = (void *) AB8500_LDO_ANAMIC1, },
+ 	{ .name	= "ab8500_ldo_amamic2", .driver_data = (void *) AB8500_LDO_ANAMIC2, },
+diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
+index cf496e9..b86e089 100644
+--- a/include/linux/regulator/ab8500.h
++++ b/include/linux/regulator/ab8500.h
+@@ -19,7 +19,6 @@ enum ab8500_regulator_id {
+ 	AB8500_LDO_AUX3,
+ 	AB8500_LDO_INTCORE,
+ 	AB8500_LDO_TVOUT,
+-	AB8500_LDO_USB,
+ 	AB8500_LDO_AUDIO,
+ 	AB8500_LDO_ANAMIC1,
+ 	AB8500_LDO_ANAMIC2,
 -- 
 1.7.10.4
 
