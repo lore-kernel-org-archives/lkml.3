@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab3C1Kd1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 06:33:27 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:35452 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab3C1Kd0 convert rfc822-to-8bit (ORCPT
+	id S1755753Ab3C1KeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 06:34:09 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:53314 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479Ab3C1KeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 06:33:26 -0400
-From: Fabio Coatti <fabio.coatti@gmail.com>
-To: =?utf-8?B?546L6YeR5rWm?= <jinpuwang@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: 3.7.10 kernel crash
-Date: Thu, 28 Mar 2013 11:33:21 +0100
-Message-ID: <2118676.n3dmTseAg8@calvin>
-User-Agent: KMail/4.10.1 (Linux/3.8.4; KDE/4.10.1; x86_64; ; )
-In-Reply-To: <CAD9gYJJL7keTNEHE0nFt6ROy2NbTTJ+=Th+tO7cj9AjygDjmVQ@mail.gmail.com>
-References: <CADpTngWo_c0MHNwYEFwSR_9KQrWKrOVgQSze+rZc4Ze9Rj2hsw@mail.gmail.com> <CADpTngW8RTVX28bVJQe5tV_ccc+FNOJezeQbczXFudy+7bMRDQ@mail.gmail.com> <CAD9gYJJL7keTNEHE0nFt6ROy2NbTTJ+=Th+tO7cj9AjygDjmVQ@mail.gmail.com>
+	Thu, 28 Mar 2013 06:34:07 -0400
+Message-ID: <51541C9B.4000802@suse.cz>
+Date: Thu, 28 Mar 2013 11:34:03 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+To: Linus Torvalds <torvalds@linux-foundation.org>, mathieu.poirier@linaro.org
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Out-of-bound access in sysrq
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well, according to kernel source the driver is 3.125 September 26, 2012 
-(drivers/net/ethernet/broadcom/tg3.c) while the latest source downloadable 
-from broadcom site is 3.124c Aug 14, 2012 so I guess that the driver in 
-vanilla kernel is the latest available.
+Guys,
+
+how is this supposed to work?
+
+#define SYSRQ_KEY_RESET_MAX     20 /* Should be plenty */
+static unsigned short sysrq_reset_seq[SYSRQ_KEY_RESET_MAX];
+...
+unsigned short platform_sysrq_reset_seq[] __weak = { KEY_RESERVED };
+...
+static inline void sysrq_register_handler(void)
+{
+...
+        for (i = 0; i < ARRAY_SIZE(sysrq_reset_seq); i++) {
+                key = platform_sysrq_reset_seq[i];
+                if (key == KEY_RESERVED || key > KEY_MAX)
+...
 
 
-> In data giovedì 28 marzo 2013 11:09:50, 王金浦 ha scritto:
-> 
-> Hi Fabio,
-> 
-> 
-> Have you try latest tg3 driver from Broadcom, the backtrace show the tg3 may 
-the cause of the panic?
-> 
-> 
-> Jack
-> 
-> 
-> 2013/3/27 Fabio Coatti <fabio.coatti@gmail.com>:
-> 
-> > Hi all,
-> > we are experiencing crashes on some servers, right now running 3.7.10;
-> > I've been able to get only screenshots from dying server that I
-> > attached below. Probably we can exclude hardware issues, as it
-> > happened on two different servers.
-> 
-> 
-> 
-> --
-> Fabio
+
+
+i runs from 0 to 19 incl., but platform_sysrq_reset_seq, if not
+overriden, is of size 1, so?
+
+thanks,
+-- 
+js
+suse labs
