@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab3C1OzX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 10:55:23 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55309 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756117Ab3C1OzV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 10:55:21 -0400
-Message-ID: <515459D8.4010001@nvidia.com>
-Date: Thu, 28 Mar 2013 08:55:20 -0600
-From: Stephen Warren <swarren@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1756764Ab3C1O4E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 10:56:04 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:56843 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756703Ab3C1O4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 10:56:00 -0400
+Date: Thu, 28 Mar 2013 10:20:27 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: Re: [PATCH 05/33] char: add aio_{read,write} to /dev/{null,zero}
+Message-ID: <20130328142027.GE4989@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Kent Overstreet <koverstreet@google.com>,
+	linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+	akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+	Felipe Balbi <balbi@ti.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+	Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+	Asai Thambi S P <asamymuthupa@micron.com>,
+	Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+	Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+	Benjamin LaHaise <bcrl@kvack.org>
+References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+ <1363883754-27966-6-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] gpio: palmas: add dt support
-References: <1363876214-25933-1-git-send-email-ldewangan@nvidia.com> <CACRpkdY_9pEkNfp7L82nGjsjFOi-VXwPHo7_3XwjCz8XcN8osg@mail.gmail.com> <5153DC24.7040309@nvidia.com>
-In-Reply-To: <5153DC24.7040309@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363883754-27966-6-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/2013 11:59 PM, Laxman Dewangan wrote:
-> On Wednesday 27 March 2013 06:30 PM, Linus Walleij wrote:
->> On Thu, Mar 21, 2013 at 3:30 PM, Laxman Dewangan
->> <ldewangan@nvidia.com> wrote:
->>
->>> +#ifdef CONFIG_OF
->>> +static struct of_device_id of_palmas_gpio_match[] = {
->>> +       { .compatible = "ti,palmas-gpio"},
->>> +       { },
->>> +};
->>> +MODULE_DEVICE_TABLE(of, of_palmas_gpio_match);
->>> +#endif
->>
->> But please drop the #ifdef here unless it causes compile errors
->> (I don't think it will.)
->>
+On Thu, Mar 21, 2013 at 09:35:26AM -0700, Kent Overstreet wrote:
+> From: Zach Brown <zab@redhat.com>
 > 
-> I am using this table as
+> These are handy for measuring the cost of the aio infrastructure with
+> operations that do very little and complete immediately.
 > 
-> driver.of_match_table = of_match_ptr(of_palmas_gpio_match),
-> of_match_ptr is macro which is NULL in case of CONFIG_OF not defined.
-> So if I remove ifdefs then it may create build warning as unused variable.
+> Signed-off-by: Zach Brown <zab@redhat.com>
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
 
-I think Linus's point is that you can simply remove the use of
-of_match_ptr(). The only disadvantage of doing so is that the table will
-always be included in the object file, but it's so small that it's
-probably not worth worrying about.
+Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
+
