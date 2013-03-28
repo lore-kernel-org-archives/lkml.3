@@ -1,127 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab3C1Ms0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 08:48:26 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:2901 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755617Ab3C1MsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 08:48:25 -0400
-X-IronPort-AV: E=Sophos;i="4.84,925,1355097600"; 
-   d="scan'208";a="15368636"
-Date: Thu, 28 Mar 2013 12:48:20 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Will Deacon <will.deacon@arm.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "nico@linaro.org" <nico@linaro.org>
-Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
-In-Reply-To: <20130327172306.GB20990@mudshark.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.02.1303281225050.4430@kaball.uk.xensource.com>
-References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130327133811.GE18429@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1303271610430.4430@kaball.uk.xensource.com> <20130327172306.GB20990@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1756226Ab3C1Mwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 08:52:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25852 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755734Ab3C1Mwf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 08:52:35 -0400
+X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=wHWRjsBrAToA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=tm-Dbz-0zS0A:10 a=a_U1oVfrAAAA:8 a=VwQbUJbxAAAA:8 a=nnS9Z_ekIDrHSj9FyUoA:9 a=QEXdDO2ut3YA:10 a=k4qQewaewV0A:10 a=jeBq3FmKZ4MA:10 a=45nWZrmACNp8bfXQgn8A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130328125232.535380915@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 28 Mar 2013 08:52:16 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, <stable@vger.kernel.org>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: [PATCH 2/3] ftrace: Consistently restore trace function on sysctl enabling
+References: <20130328125214.132479321@goodmis.org>
+Content-Disposition: inline; filename=0002-ftrace-Consistently-restore-trace-function-on-sysctl.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Mar 2013, Will Deacon wrote:
-> On Wed, Mar 27, 2013 at 04:23:15PM +0000, Stefano Stabellini wrote:
-> > OK, let's see if I can make this acceptable to you.
-> > 
-> > 
-> > Would you agree on a patch that moves virt_smp_ops out of mach-virt and
-> > renames them to psci_smp_ops (maybe to arch/arm/kernel/psci_smp_ops.c)?
-> 
-> Moving the code out of psci.c is certainly a good first step, yes.
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-OK, I'll do that.
+From: Jan Kiszka <jan.kiszka@siemens.com>
 
+If we reenable ftrace via syctl, we currently set ftrace_trace_function
+based on the previous simplistic algorithm. This is inconsistent with
+what update_ftrace_function does. So better call that helper instead.
 
-> > Would you agree on initializing psci from setup_arch, right after the
-> > call to arm_dt_init_cpu_maps()?
-> 
-> Hmmm. An early_initcall runs before SMP is up, so why do you need this
-> earlier than that? Is it because you don't want to set the SMP ops later on?
+Link: http://lkml.kernel.org/r/5151D26F.1070702@siemens.com
 
-Because I need to set the right smp_ops before any of the smp_ops
-functions are called.
-If I wait until early_initcall, the wrong smp_init_cpus is going to be
-called.
+Cc: stable@vger.kernel.org
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ftrace.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-
-> > Finally the most controversial point: would you agree on using
-> > psci_smp_ops by default if they are available?
-> > If not, would you at least agree on letting Xen overwrite the default
-> > machine smp_ops?
-> > We need one or the other for dom0 support.
-> 
-> Again, I think there needs to be a dummy layer between the smp_ops and PSCI,
-> rather than assigning the things directly if we're going to use this as a
-> default implementation. I still question whether default PSCI operations make
-> any sense though... I understand that you're currently saying `yes, Xen can
-> use the same firmware interface as KVM' but will that always be true? What
-> happens when we want to run virtual machines on multi-cluster platforms, for
-> example? Will KVM and Xen make sure that CPU affinities are described in the
-> same way? What if one or the other decides to pass side-band information in
-> the power_state parameters?
-> 
-> In all of these cases, we'd have to split the code back up, so I don't see
-> any long-term value in consolidating everything just because it might be
-> possible today. The real problem you're trying to solve seems to stem from
-> patching the smp_ops in your dom0 kernel.
-
-That is correct.
-Although having a clean generic solution would be preferable to me, if
-we cannot reach an agreement or if just cannot be done, an hack that
-patch smp_ops would also solve the Xen problem (see
-http://marc.info/?l=linux-arm-kernel&m=136440425214113&w=2).
-I distaste hacks as anybody else, so I would rather solve the issue in a
-different way.
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 6893d5a..cc4943c 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -4555,12 +4555,8 @@ ftrace_enable_sysctl(struct ctl_table *table, int wr=
+ite,
+ 		ftrace_startup_sysctl();
+=20
+ 		/* we are starting ftrace again */
+-		if (ftrace_ops_list !=3D &ftrace_list_end) {
+-			if (ftrace_ops_list->next =3D=3D &ftrace_list_end)
+-				ftrace_trace_function =3D ftrace_ops_list->func;
+-			else
+-				ftrace_trace_function =3D ftrace_ops_list_func;
+-		}
++		if (ftrace_ops_list !=3D &ftrace_list_end)
++			update_ftrace_function();
+=20
+ 	} else {
+ 		/* stopping ftrace calls (just send to ftrace_stub) */
+--=20
+1.7.10.4
 
 
-> Can you elaborate a bit more on
-> what's going on here please? How would having PSCI default smp_ops help you?
 
-As Arnd quickly explained
-(http://marc.info/?l=linux-arm-kernel&m=136440746215589&w=2), the
-hardware environment provided by Xen to Dom0 looks very similar to the
-native hardware but with a few important differences:
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-- the amount of memory is probably lower, in fact Xen is going to edit
-the device tree and only tell Dom0 about the memory that Dom0 can
-actually see;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-- the number of cpus might be different, in fact Xen is going to edit
-the device tree and tell Dom0 about the vcpus that Dom0 can actually
-see;
+iQEcBAABAgAGBQJRVD0QAAoJEOdOSU1xswtMTwwH/2EFq/3AIIDBeXh/C6ses0Y4
+N9g3a/hFPTRR7PPnu5LN4mnqJzf2rMBOEJg8CLJRg7QvR10tOB768+KkSFAir5Q5
+bI4RjYI/VsAjjwVud7zdDoA0oVnPbRFEB5JyeC9VgzA4i5LPq/iVKf2G9AKhIn0a
+Q/kdcSdhRXhxqQdcrUgpR++Oak7FLjKDBaCV1PFa/0E0us73sykokq6zmpez1kb6
+yRXT5jjQeO/ZupisgKaQFyJ8mn8J5YlPX63/R82lVSJQznU4eQwuAX3d6tK/Onde
+I/XT4uv24TWi9z9TWrCGh7fe3QnK7FhjPCxZkigW8vuRnMFoGIyqHoKgJYtQP1A=
+=fH43
+-----END PGP SIGNATURE-----
 
-- not all the devices present might actually be exported to Dom0, in
-fact Xen is going to remove these devices from the device tree so that
-Dom0 won't try to access them;
-
-- the interface to bring up secondary cpus is different and based on
-PSCI, in fact Xen is going to add a PSCI node to the device tree so that
-Dom0 can use it.
-
-Oh wait, Dom0 is not going to use the PSCI interface even if the node is
-present on device tree because it's going to prefer the platform smp_ops
-instead.
-
-Fail.
-
-
-Xen can however add any nodes to device tree besides PSCI, it already
-adds a Xen hypervisor node, unfortunately the smp_ops are not detected
-via device tree at the moment so that won't help.
-
-So I guess what we really need is a way to export a set of firmware
-operations for cpu bring up via device tree. I thought that PSCI was
-exactly meant for this, but if it isn't, then we need to come up with
-something else.
+--00GvhwF7k39YY--
