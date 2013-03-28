@@ -1,117 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab3C1VzN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 17:55:13 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:61974 "EHLO
+	id S1754585Ab3C1VzK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 17:55:10 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:55764 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754468Ab3C1VzF (ORCPT
+	with ESMTP id S1754413Ab3C1VzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 17:55:05 -0400
+	Thu, 28 Mar 2013 17:55:04 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Alan Stern <stern@rowland.harvard.edu>
 Cc: linux-usb@vger.kernel.org, Manjunath Goudar <manjunath.goudar@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
+        Greg KH <greg@kroah.com>, Andrew Victor <linux@maxim.org.za>,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com
-Subject: [PATCH v3 0/7] USB EHCI multiplatform series again
-Date: Thu, 28 Mar 2013 22:54:58 +0100
-Message-Id: <1364507705-22012-1-git-send-email-arnd@arndb.de>
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v3 5/7] USB: EHCI: make ehci-atmel a separate driver
+Date: Thu, 28 Mar 2013 22:55:03 +0100
+Message-Id: <1364507705-22012-6-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
-X-Provags-ID: V02:K0:KPtVNkUJPuc+XFKS0l+AEtNqYsy4MaO8JGAcVsKEq+N
- S6Ev/DSCxXI2pUGVZonQ1bbr7mkttlSEKNbb1+zjwcnh3qqAfe
- /E9Brvulw0x7y2iqERUPA+GlKmJFTphaAUJeDi8DtU/h47JD3N
- bnv42fwaGQNUxzbjjjOOoWmjNuWuUlD8iXv8vYlaVjNXhoh8Lr
- 00MC7I0zohtehghQKJV/L/aAUnmFpBLXRro8LRNKdYHa11idfF
- a12gQPxjr9ZTBweAhEm9AZhmxN1e9BETayzqerse5dSsYNQaD+
- y4QBb0uM7EtA8KGO6BlYHdOrL+kzLTtJ2yyCKBilZpCF+5pIWx
- M9kq6PT5aczgvttVjiyXu9RueuIZFpx3P3RUD6kDD
+In-Reply-To: <1364507705-22012-1-git-send-email-arnd@arndb.de>
+References: <1364507705-22012-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:oEK0KX2zDDI3ntOZHmcDBmr0KMhNP52LHgMB+P2ThQV
+ AOYnT96+TSQUq2+crPxNxMZaUumAZtP5GWN8vrq5SB6Mp0tQCk
+ BoQD8o+KfPpGglz2KWHUL9vcffkLyzQukHAjAZ2Rc9YT0eliUq
+ 6EcLOYsAQ4gGgwNxGdwbdy9wctI0D8DVgxJbG0q0XF7rwxF7dG
+ mOUq8jzs3Xv3DWpOudzWgVgE/y44eLVDLcc/vozBnOlaiZbcud
+ f50K+dPLExQ3UtkFlJDfAuq+J3blLT25Oy87/ZzoshEDPxXX68
+ QgdCoqLtserVMEOlLeS/gbULSTItfQcr+tLnHv24HudnrDGPLF
+ dHVP2KFP5QT7WjwXOQc0Ue1hRRgODkEPFdvpbwJhg
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+From: Manjunath Goudar <manjunath.goudar@linaro.org>
 
-These are the current patches from Manjunath, after I helped him address
-the remaining review comments and found a few more in the process.
+Separate the Atmel host controller driver from ehci-hcd host code
+so that it can be built as a separate driver module.
+This work is part of enabling multi-platform kernels on ARM;
+however, note that other changes are still needed before Atmel can be
+booted with a multi-platform kernel. This is currently planned for
+Linux-3.11.
 
-Unfortunately, Manjunath is currently on vacation and I will be away for
-the next couple of days when he returns, so I took the liberty to send
-the patches myself to have a chance of getting them merged in time for
-3.10.
+With the infrastructure added by Alan Stern in patch 3e0232039
+"USB: EHCI: prepare to make ehci-hcd a library module", we can
+avoid this problem by turning a bus glue into a separate
+module, as we do here for the Atmel bus glue.
 
-The patches are all based on today's usb-next branch, which includes
-my earlier patch to remove the vt8500 backend. They are sorted by
-priority: the first one obviously should have been in 3.9 but didn't
-make it. The second one will be needed in 3.10, and the third one
-quite likely as well. The atmel and msm patches can wait for 3.11
-since we don't plan to have multiplatform support for those SoCs
-in 3.10. Manjunath also did patches for the tegra, mv and w90X900
-back-ends, but there are still known bugs in them so we don't submit
-them yet. Tegra might become multiplatform in 3.10, but that will
-still work as long as it's the only platform defining the
-PLATFORM_DRIVER macro.
+In V3:
+ -Detailed commit message added here about why this patch is required.
+ -Replaced hcd_name string "ehci-atmel" to "atmel-ehci".
+ -In Makefile inserted Blank line that separates the EHCI drivers from the following non-EHCI drivers.
+ -Export ehci_shutdown symbol as it is needed by the Atmel driver.
+ -Eliminated ehci_atmel_setup routine beacuse hcd registers
+  directly setting in ehci_atmel_drv_probe function.
 
-Please review the latest version so we can get at least the first
-three patches merged for 3.10, or more if you are happy with them.
-I'm not sure what to do about OHCI, the last patch in this series
-is the best I could think of, given that nobody has worked on a
-proper series.
+In V2:
+Resolved below compiler error.
+drivers/usb/host/ehci-atmel.c: In function 'ehci_atmel_drv_remove':
+drivers/usb/host/ehci-atmel.c:167: error: implicit declaration of function 'ehci_shutdown'
 
-Nicolas and David: the at91 and msm patches have no maintainer
-Ack so far and are build-tested only. Please let us know if you
-want to get them merged for 3.10, or if we should drop them for
-now and let you pick them up when you get around to adding
-multiplatform support for your SoCs. The at91 patch requires
-"USB: EHCI: export ehci_shutdown", which will also be needed
-for the upcoming Tegra patch.
-
-	Arnd
-
-Arnd Bergmann (2):
-  USB: EHCI: export ehci_shutdown
-  USB: OHCI: avoid conflicting platform drivers
-
-Manjunath Goudar (5):
-  USB: EHCI: make ehci-orion a separate driver
-  USB: EHCI: make ehci-spear a separate driver
-  USB: EHCI: make ehci-s5p a separate driver
-  USB: EHCI: make ehci-atmel a separate driver
-  USB: EHCI: make ehci-msm a separate driver
-
- drivers/usb/host/Kconfig      |  33 ++++++++-
- drivers/usb/host/Makefile     |   5 ++
- drivers/usb/host/ehci-atmel.c |  85 +++++++++++------------
- drivers/usb/host/ehci-hcd.c   |  33 ++-------
- drivers/usb/host/ehci-msm.c   |  85 ++++++++++-------------
- drivers/usb/host/ehci-orion.c |  82 ++++++++++------------
- drivers/usb/host/ehci-s5p.c   | 153 +++++++++++++++++++++---------------------
- drivers/usb/host/ehci-spear.c |  88 +++++++++++-------------
- drivers/usb/host/ehci.h       |   1 +
- drivers/usb/host/ohci-hcd.c   | 136 ++++++++++++++++++++++++++++++++-----
- 10 files changed, 391 insertions(+), 310 deletions(-)
-
+Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
 Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Bryan Huntsman <bryanh@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>
 Cc: Greg KH <greg@kroah.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Manjunath Goudar <manjunath.goudar@linaro.org>
+Cc: Andrew Victor <linux@maxim.org.za>
 Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Shiraz Hashim <shiraz.hashim@st.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
 Cc: linux-usb@vger.kernel.org
-Cc: spear-devel@list.st.com
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/usb/host/Kconfig      |  8 ++++
+ drivers/usb/host/Makefile     |  1 +
+ drivers/usb/host/ehci-atmel.c | 85 ++++++++++++++++++++-----------------------
+ drivers/usb/host/ehci-hcd.c   |  6 +--
+ 4 files changed, 50 insertions(+), 50 deletions(-)
 
-
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 01c1acb..8c564aa 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -181,6 +181,14 @@ config USB_EHCI_HCD_SPEAR
+           Enables support for the on-chip EHCI controller on
+           ST SPEAr chips.
+ 
++config USB_EHCI_HCD_AT91
++        tristate  "Support for Atmel on-chip EHCI USB controller"
++        depends on USB_EHCI_HCD && ARCH_AT91
++        default y
++        ---help---
++          Enables support for the on-chip EHCI controller on
++          Atmel chips.
++
+ config USB_EHCI_MSM
+ 	bool "Support for MSM on-chip EHCI USB controller"
+ 	depends on USB_EHCI_HCD && ARCH_MSM
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index 3d895b5..368d3eb 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -31,6 +31,7 @@ obj-$(CONFIG_USB_EHCI_HCD_OMAP)	+= ehci-omap.o
+ obj-$(CONFIG_USB_EHCI_HCD_ORION)	+= ehci-orion.o
+ obj-$(CONFIG_USB_EHCI_HCD_SPEAR)	+= ehci-spear.o
+ obj-$(CONFIG_USB_EHCI_S5P)	+= ehci-s5p.o
++obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
+ 
+ obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
+ obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
+diff --git a/drivers/usb/host/ehci-atmel.c b/drivers/usb/host/ehci-atmel.c
+index f3beac4..9ce1217 100644
+--- a/drivers/usb/host/ehci-atmel.c
++++ b/drivers/usb/host/ehci-atmel.c
+@@ -15,6 +15,19 @@
+ #include <linux/platform_device.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/usb.h>
++#include <linux/usb/hcd.h>
++#include <linux/io.h>
++#include <linux/dma-mapping.h>
++
++#include "ehci.h"
++
++#define DRIVER_DESC "EHCI atmel driver"
++
++static const char hcd_name[] = "ehci-atmel";
++static struct hc_driver __read_mostly ehci_atmel_hc_driver;
+ 
+ /* interface and function clocks */
+ static struct clk *iclk, *fclk;
+@@ -50,51 +63,6 @@ static void atmel_stop_ehci(struct platform_device *pdev)
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+-static int ehci_atmel_setup(struct usb_hcd *hcd)
+-{
+-	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+-
+-	/* registers start at offset 0x0 */
+-	ehci->caps = hcd->regs;
+-
+-	return ehci_setup(hcd);
+-}
+-
+-static const struct hc_driver ehci_atmel_hc_driver = {
+-	.description		= hcd_name,
+-	.product_desc		= "Atmel EHCI UHP HS",
+-	.hcd_priv_size		= sizeof(struct ehci_hcd),
+-
+-	/* generic hardware linkage */
+-	.irq			= ehci_irq,
+-	.flags			= HCD_MEMORY | HCD_USB2,
+-
+-	/* basic lifecycle operations */
+-	.reset			= ehci_atmel_setup,
+-	.start			= ehci_run,
+-	.stop			= ehci_stop,
+-	.shutdown		= ehci_shutdown,
+-
+-	/* managing i/o requests and associated device resources */
+-	.urb_enqueue		= ehci_urb_enqueue,
+-	.urb_dequeue		= ehci_urb_dequeue,
+-	.endpoint_disable	= ehci_endpoint_disable,
+-	.endpoint_reset		= ehci_endpoint_reset,
+-
+-	/* scheduling support */
+-	.get_frame_number	= ehci_get_frame,
+-
+-	/* root hub support */
+-	.hub_status_data	= ehci_hub_status_data,
+-	.hub_control		= ehci_hub_control,
+-	.bus_suspend		= ehci_bus_suspend,
+-	.bus_resume		= ehci_bus_resume,
+-	.relinquish_port	= ehci_relinquish_port,
+-	.port_handed_over	= ehci_port_handed_over,
+-
+-	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
+-};
+-
+ static u64 at91_ehci_dma_mask = DMA_BIT_MASK(32);
+ 
+ static int ehci_atmel_drv_probe(struct platform_device *pdev)
+@@ -102,6 +70,7 @@ static int ehci_atmel_drv_probe(struct platform_device *pdev)
+ 	struct usb_hcd *hcd;
+ 	const struct hc_driver *driver = &ehci_atmel_hc_driver;
+ 	struct resource *res;
++	struct ehci_hcd *ehci;
+ 	int irq;
+ 	int retval;
+ 
+@@ -162,6 +131,10 @@ static int ehci_atmel_drv_probe(struct platform_device *pdev)
+ 		goto fail_request_resource;
+ 	}
+ 
++	ehci = hcd_to_ehci(hcd);
++	/* registers start at offset 0x0 */
++	ehci->caps = hcd->regs;
++
+ 	atmel_start_ehci(pdev);
+ 
+ 	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
+@@ -213,3 +186,25 @@ static struct platform_driver ehci_atmel_driver = {
+ 		.of_match_table	= of_match_ptr(atmel_ehci_dt_ids),
+ 	},
+ };
++
++static int __init ehci_atmel_init(void)
++{
++	if (usb_disabled())
++		return -ENODEV;
++
++	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
++	ehci_init_driver(&ehci_atmel_hc_driver, NULL);
++	return platform_driver_register(&ehci_atmel_driver);
++}
++module_init(ehci_atmel_init);
++
++static void __exit ehci_atmel_cleanup(void)
++{
++	platform_driver_unregister(&ehci_atmel_driver);
++}
++module_exit(ehci_atmel_cleanup);
++
++MODULE_DESCRIPTION(DRIVER_DESC);
++MODULE_ALIAS("platform:atmel-ehci");
++MODULE_AUTHOR("Nicolas Ferre");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 1c9aa17..efc641c 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1255,11 +1255,6 @@ MODULE_LICENSE ("GPL");
+ #define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
+ #endif
+ 
+-#ifdef CONFIG_ARCH_AT91
+-#include "ehci-atmel.c"
+-#define	PLATFORM_DRIVER		ehci_atmel_driver
+-#endif
+-
+ #ifdef CONFIG_USB_OCTEON_EHCI
+ #include "ehci-octeon.c"
+ #define PLATFORM_DRIVER		ehci_octeon_driver
+@@ -1308,6 +1303,7 @@ MODULE_LICENSE ("GPL");
+ 	!IS_ENABLED(CONFIG_USB_EHCI_HCD_ORION) && \
+ 	!IS_ENABLED(CONFIG_USB_EHCI_HCD_SPEAR) && \
+ 	!IS_ENABLED(CONFIG_USB_EHCI_S5P) && \
++	!IS_ENABLED(CONFIG_USB_EHCI_HCD_AT91) && \
+ 	!defined(PLATFORM_DRIVER) && \
+ 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
+ 	!defined(OF_PLATFORM_DRIVER) && \
 -- 
 1.8.1.2
 
