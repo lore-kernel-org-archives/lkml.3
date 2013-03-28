@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757182Ab3C1QQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 12:16:49 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:47585 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757000Ab3C1QMd (ORCPT
+	id S1756965Ab3C1QM0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 12:12:26 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:46324 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756859Ab3C1QML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 12:12:33 -0400
+	Thu, 28 Mar 2013 12:12:11 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
 Cc: Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 19/33] regulator: ab8500: Supply platform specific regulator id values
-Date: Thu, 28 Mar 2013 16:11:19 +0000
-Message-Id: <1364487093-19551-20-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 09/33] regulator: ab8500: Init debug from regulator driver
+Date: Thu, 28 Mar 2013 16:11:09 +0000
+Message-Id: <1364487093-19551-10-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1364487093-19551-1-git-send-email-lee.jones@linaro.org>
 References: <1364487093-19551-1-git-send-email-lee.jones@linaro.org>
@@ -20,297 +20,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regulator ID in the regulator info array should be the same
-values as the position of the element within the array.
+The purpose of this patch is to guarantee that ab8500-debug will
+record the regulator registers before they are modified by the
+ab8500 regulator driver.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/regulator/ab8500.c |   62 ++++++++++++++++++++++----------------------
- 1 file changed, 31 insertions(+), 31 deletions(-)
+ drivers/regulator/ab8500.c       |   10 ++++++++++
+ include/linux/regulator/ab8500.h |   14 ++++++++++++++
+ 2 files changed, 24 insertions(+)
 
 diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 9c3fc09..a5e204d 100644
+index 4d88a60..bf34c4c 100644
 --- a/drivers/regulator/ab8500.c
 +++ b/drivers/regulator/ab8500.c
-@@ -648,7 +648,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-AUX1",
- 			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_AUX1,
-+			.id		= AB8505_LDO_AUX1,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
- 			.volt_table	= ldo_vauxn_voltages,
-@@ -669,7 +669,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-AUX2",
- 			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_AUX2,
-+			.id		= AB8505_LDO_AUX2,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
- 			.volt_table	= ldo_vauxn_voltages,
-@@ -690,7 +690,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-AUX3",
- 			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_AUX3,
-+			.id		= AB8505_LDO_AUX3,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vaux3_voltages),
- 			.volt_table	= ldo_vaux3_voltages,
-@@ -711,7 +711,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-AUX4",
- 			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB9540_LDO_AUX4,
-+			.id		= AB8505_LDO_AUX4,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
- 			.volt_table	= ldo_vauxn_voltages,
-@@ -778,7 +778,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-INTCORE",
- 			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_INTCORE,
-+			.id		= AB8505_LDO_INTCORE,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vintcore_voltages),
- 			.volt_table	= ldo_vintcore_voltages,
-@@ -825,7 +825,7 @@ static struct ab8500_regulator_info
- 			.name           = "LDO-USB",
- 			.ops            = &ab8500_regulator_mode_ops,
- 			.type           = REGULATOR_VOLTAGE,
--			.id             = AB9540_LDO_USB,
-+			.id             = AB8505_LDO_USB,
- 			.owner          = THIS_MODULE,
- 			.n_voltages     = 1,
- 			.volt_table	= fixed_3300000_voltage,
-@@ -842,7 +842,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-AUDIO",
- 			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_AUDIO,
-+			.id		= AB8505_LDO_AUDIO,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_2000000_voltage,
-@@ -857,7 +857,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-ANAMIC1",
- 			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_ANAMIC1,
-+			.id		= AB8505_LDO_ANAMIC1,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_2050000_voltage,
-@@ -872,7 +872,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-ANAMIC2",
- 			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_ANAMIC2,
-+			.id		= AB8505_LDO_ANAMIC2,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_2050000_voltage,
-@@ -905,7 +905,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-ANA",
- 			.ops		= &ab8500_regulator_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_ANA,
-+			.id		= AB8505_LDO_ANA,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_1200000_voltage,
-@@ -934,7 +934,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-AUX1",
- 			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_AUX1,
-+			.id		= AB9540_LDO_AUX1,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
- 			.volt_table	= ldo_vauxn_voltages,
-@@ -955,7 +955,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-AUX2",
- 			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_AUX2,
-+			.id		= AB9540_LDO_AUX2,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
- 			.volt_table	= ldo_vauxn_voltages,
-@@ -976,7 +976,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-AUX3",
- 			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_AUX3,
-+			.id		= AB9540_LDO_AUX3,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vaux3_voltages),
- 			.volt_table	= ldo_vaux3_voltages,
-@@ -1020,7 +1020,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-INTCORE",
- 			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_INTCORE,
-+			.id		= AB9540_LDO_INTCORE,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vintcore_voltages),
- 			.volt_table	= ldo_vintcore_voltages,
-@@ -1048,7 +1048,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-TVOUT",
- 			.ops		= &ab8500_regulator_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_TVOUT,
-+			.id		= AB9540_LDO_TVOUT,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_2000000_voltage,
-@@ -1084,7 +1084,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-AUDIO",
- 			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_AUDIO,
-+			.id		= AB9540_LDO_AUDIO,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_2000000_voltage,
-@@ -1099,7 +1099,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-ANAMIC1",
- 			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_ANAMIC1,
-+			.id		= AB9540_LDO_ANAMIC1,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_2050000_voltage,
-@@ -1114,7 +1114,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-ANAMIC2",
- 			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_ANAMIC2,
-+			.id		= AB9540_LDO_ANAMIC2,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_2050000_voltage,
-@@ -1129,7 +1129,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-DMIC",
- 			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_DMIC,
-+			.id		= AB9540_LDO_DMIC,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_1800000_voltage,
-@@ -1148,7 +1148,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-ANA",
- 			.ops		= &ab8500_regulator_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_ANA,
-+			.id		= AB9540_LDO_ANA,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_1200000_voltage,
-@@ -1177,7 +1177,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-AUX1",
- 			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_AUX1,
-+			.id		= AB8540_LDO_AUX1,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
- 			.volt_table	= ldo_vauxn_voltages,
-@@ -1198,7 +1198,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-AUX2",
- 			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_AUX2,
-+			.id		= AB8540_LDO_AUX2,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
- 			.volt_table	= ldo_vauxn_voltages,
-@@ -1219,7 +1219,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-AUX3",
- 			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_AUX3,
-+			.id		= AB8540_LDO_AUX3,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vaux3_ab8540_voltages),
- 			.volt_table	= ldo_vaux3_ab8540_voltages,
-@@ -1240,7 +1240,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-AUX4",
- 			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB9540_LDO_AUX4,
-+			.id		= AB8540_LDO_AUX4,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
- 			.volt_table	= ldo_vauxn_voltages,
-@@ -1263,7 +1263,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-INTCORE",
- 			.ops		= &ab8500_regulator_volt_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_INTCORE,
-+			.id		= AB8540_LDO_INTCORE,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= ARRAY_SIZE(ldo_vintcore_voltages),
- 			.volt_table	= ldo_vintcore_voltages,
-@@ -1291,7 +1291,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-TVOUT",
- 			.ops		= &ab8500_regulator_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_TVOUT,
-+			.id		= AB8540_LDO_TVOUT,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 		},
-@@ -1309,7 +1309,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-AUDIO",
- 			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_AUDIO,
-+			.id		= AB8540_LDO_AUDIO,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_2000000_voltage,
-@@ -1324,7 +1324,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-ANAMIC1",
- 			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_ANAMIC1,
-+			.id		= AB8540_LDO_ANAMIC1,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_2050000_voltage,
-@@ -1339,7 +1339,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-ANAMIC2",
- 			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_ANAMIC2,
-+			.id		= AB8540_LDO_ANAMIC2,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table	= fixed_2050000_voltage,
-@@ -1354,7 +1354,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-DMIC",
- 			.ops		= &ab8500_regulator_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_DMIC,
-+			.id		= AB8540_LDO_DMIC,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 		},
-@@ -1372,7 +1372,7 @@ static struct ab8500_regulator_info
- 			.name		= "LDO-ANA",
- 			.ops		= &ab8500_regulator_mode_ops,
- 			.type		= REGULATOR_VOLTAGE,
--			.id		= AB8500_LDO_ANA,
-+			.id		= AB8540_LDO_ANA,
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.volt_table     = fixed_1200000_voltage,
+@@ -911,6 +911,11 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
++	/* initialize debug (initial state is recorded with this call) */
++	err = ab8500_regulator_debug_init(pdev);
++	if (err)
++		return err;
++
+ 	/* initialize registers */
+ 	for (i = 0; i < pdata->num_reg_init; i++) {
+ 		int id, mask, value;
+@@ -961,6 +966,11 @@ static int ab8500_regulator_remove(struct platform_device *pdev)
+ 	if (err)
+ 		return err;
+ 
++	/* remove regulator debug */
++	err = ab8500_regulator_debug_exit(pdev);
++	if (err)
++		return err;
++
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
+index b86e089..592a3f3 100644
+--- a/include/linux/regulator/ab8500.h
++++ b/include/linux/regulator/ab8500.h
+@@ -178,4 +178,18 @@ inline int ab8500_ext_regulator_exit(struct platform_device *pdev)
+ }
+ #endif
+ 
++#ifdef CONFIG_REGULATOR_AB8500_DEBUG
++int ab8500_regulator_debug_init(struct platform_device *pdev);
++int ab8500_regulator_debug_exit(struct platform_device *pdev);
++#else
++static inline int ab8500_regulator_debug_init(struct platform_device *pdev)
++{
++	return 0;
++}
++static inline int ab8500_regulator_debug_exit(struct platform_device *pdev)
++{
++	return 0;
++}
++#endif
++
+ #endif
 -- 
 1.7.10.4
 
