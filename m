@@ -1,135 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757333Ab3C1RLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:11:12 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:47747
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756820Ab3C1RCv (ORCPT
+	id S1756965Ab3C1RLL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:11:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36306 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756822Ab3C1RCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Mar 2013 13:02:51 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Stephane Eranian <eranian@google.com>, peterz@infradead.org,
-        acme@redhat.com, jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH 18/36] perf/core: Add weighted samples
-Date: Thu, 28 Mar 2013 14:02:18 -0300
-Message-Id: <1364490156-32064-19-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        peterz@infradead.org, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH 16/36] perf/x86: Improve sysfs event mapping with event string
+Date: Thu, 28 Mar 2013 14:02:16 -0300
+Message-Id: <1364490156-32064-17-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1364490156-32064-1-git-send-email-acme@infradead.org>
 References: <1364490156-32064-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+From: Stephane Eranian <eranian@google.com>
 
-For some events it's useful to weight sample with a hardware
-provided number. This expresses how expensive the action the
-sample represent was.  This allows the profiler to scale
-the samples to be more informative to the programmer.
+This patch extends Jiri's changes to make generic
+events mapping visible via sysfs. The patch extends
+the mechanism to non-generic events by allowing
+the mappings to be hardcoded in strings.
 
-There is already the period which is used similarly, but it
-means something different, so I chose to not overload it.
-Instead a new sample type for WEIGHT is added.
+This mechanism will be used by the PEBS-LL patch
+later on.
 
-Can be used for multiple things. Initially it is used for TSX
-abort costs and profiling by memory latencies (so to make
-expensive load appear higher up in the histograms). The concept
-is quite generic and can be extended to many other kinds of
-events or architectures, as long as the hardware provides
-suitable auxillary values. In principle it could be also used
-for software tracepoints.
-
-This adds the generic glue. A new optional sample format for a
-64-bit weight value.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Stephane Eranian <eranian@google.com>
 Cc: peterz@infradead.org
+Cc: ak@linux.intel.com
 Cc: acme@redhat.com
 Cc: jolsa@redhat.com
 Cc: namhyung.kim@lge.com
-Link: http://lkml.kernel.org/r/1359040242-8269-5-git-send-email-eranian@google.com
+Link: http://lkml.kernel.org/r/1359040242-8269-3-git-send-email-eranian@google.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[ fixed up conflict with 2663960 "perf: Make EVENT_ATTR global" ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- include/linux/perf_event.h      |    2 ++
- include/uapi/linux/perf_event.h |    6 +++++-
- kernel/events/core.c            |    6 ++++++
- 3 files changed, 13 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |   20 ++++++++++++--------
+ arch/x86/kernel/cpu/perf_event.h |   17 +++++++++++++++++
+ include/linux/perf_event.h       |    1 +
+ 3 files changed, 30 insertions(+), 8 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index c886dc8..6e8ab04 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1316,9 +1316,16 @@ static struct attribute_group x86_pmu_format_group = {
+  */
+ static void __init filter_events(struct attribute **attrs)
+ {
++	struct device_attribute *d;
++	struct perf_pmu_events_attr *pmu_attr;
+ 	int i, j;
+ 
+ 	for (i = 0; attrs[i]; i++) {
++		d = (struct device_attribute *)attrs[i];
++		pmu_attr = container_of(d, struct perf_pmu_events_attr, attr);
++		/* str trumps id */
++		if (pmu_attr->event_str)
++			continue;
+ 		if (x86_pmu.event_map(i))
+ 			continue;
+ 
+@@ -1361,17 +1368,14 @@ static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *at
+ {
+ 	struct perf_pmu_events_attr *pmu_attr = \
+ 		container_of(attr, struct perf_pmu_events_attr, attr);
+-
+ 	u64 config = x86_pmu.event_map(pmu_attr->id);
+-	return x86_pmu.events_sysfs_show(page, config);
+-}
+ 
+-#define EVENT_VAR(_id)  event_attr_##_id
+-#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
++	/* string trumps id */
++	if (pmu_attr->event_str)
++		return sprintf(page, "%s", pmu_attr->event_str);
+ 
+-#define EVENT_ATTR(_name, _id)						\
+-	PMU_EVENT_ATTR(_name, EVENT_VAR(_id), PERF_COUNT_HW_##_id,	\
+-			events_sysfs_show)
++	return x86_pmu.events_sysfs_show(page, config);
++}
+ 
+ EVENT_ATTR(cpu-cycles,			CPU_CYCLES		);
+ EVENT_ATTR(instructions,		INSTRUCTIONS		);
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 95152c1..b1518ee 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -422,6 +422,23 @@ do {									\
+ #define ERF_NO_HT_SHARING	1
+ #define ERF_HAS_RSP_1		2
+ 
++#define EVENT_VAR(_id)  event_attr_##_id
++#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
++
++#define EVENT_ATTR(_name, _id)						\
++static struct perf_pmu_events_attr EVENT_VAR(_id) = {			\
++	.attr		= __ATTR(_name, 0444, events_sysfs_show, NULL),	\
++	.id		= PERF_COUNT_HW_##_id,				\
++	.event_str	= NULL,						\
++};
++
++#define EVENT_ATTR_STR(_name, v, str)					\
++static struct perf_pmu_events_attr event_attr_##v = {			\
++	.attr		= __ATTR(_name, 0444, events_sysfs_show, NULL),	\
++	.id		= 0,						\
++	.event_str	= str,						\
++};
++
+ extern struct x86_pmu x86_pmu __read_mostly;
+ 
+ DECLARE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index cd3bb2c..7ce0b37 100644
+index 8737e1c..1c59211 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -573,6 +573,7 @@ struct perf_sample_data {
- 	struct perf_branch_stack	*br_stack;
- 	struct perf_regs_user		regs_user;
- 	u64				stack_user_size;
-+	u64				weight;
+@@ -809,6 +809,7 @@ do {									\
+ struct perf_pmu_events_attr {
+ 	struct device_attribute attr;
+ 	u64 id;
++	const char *event_str;
  };
  
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -586,6 +587,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
- 	data->regs_user.regs = NULL;
- 	data->stack_user_size = 0;
-+	data->weight = 0;
- }
- 
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 9fa9c62..cdc255d 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -132,8 +132,10 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
-+	PERF_SAMPLE_WEIGHT			= 1U << 14,
-+
-+	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
- 
--	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
- };
- 
- /*
-@@ -588,6 +590,8 @@ enum perf_event_type {
- 	 * 	{ u64			size;
- 	 * 	  char			data[size];
- 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
-+	 *
-+	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 7b4a55d..9e3edb2 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -976,6 +976,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_PERIOD)
- 		size += sizeof(data->period);
- 
-+	if (sample_type & PERF_SAMPLE_WEIGHT)
-+		size += sizeof(data->weight);
-+
- 	if (sample_type & PERF_SAMPLE_READ)
- 		size += event->read_size;
- 
-@@ -4193,6 +4196,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 		perf_output_sample_ustack(handle,
- 					  data->stack_user_size,
- 					  data->regs_user.regs);
-+
-+	if (sample_type & PERF_SAMPLE_WEIGHT)
-+		perf_output_put(handle, data->weight);
- }
- 
- void perf_prepare_sample(struct perf_event_header *header,
+ #define PMU_EVENT_ATTR(_name, _var, _id, _show)				\
 -- 
 1.7.1
 
