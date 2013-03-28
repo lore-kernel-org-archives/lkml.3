@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab3C1IxV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 04:53:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:34365 "EHLO mga09.intel.com"
+	id S1756809Ab3C1Ixa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 04:53:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59921 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756057Ab3C1IxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 04:53:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,924,1355126400"; 
-   d="scan'208";a="285681039"
-Message-ID: <5154054B.6050706@intel.com>
-Date: Thu, 28 Mar 2013 16:54:35 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1756057Ab3C1IxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 04:53:25 -0400
+Date: Thu, 28 Mar 2013 09:53:20 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/10] soft-offline: use migrate_pages() instead of
+ migrate_huge_page()
+Message-ID: <20130328085320.GC3018@dhcp22.suse.cz>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1363983835-20184-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <87boa69z6j.fsf@linux.vnet.ibm.com>
+ <20130327135250.GI16579@dhcp22.suse.cz>
+ <1364411964-iukb7m94-mutt-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-CC: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Aaron Lu <aaron.lwe@gmail.com>, Shane Huang <shane.huang@amd.com>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: Re: [PATCH v12 0/5] block layer runtime pm
-References: <1364010148-8584-1-git-send-email-aaron.lu@intel.com> <20130323042345.GR1628@kernel.dk>
-In-Reply-To: <20130323042345.GR1628@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364411964-iukb7m94-mutt-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2013 12:23 PM, Jens Axboe wrote:
-> On Sat, Mar 23 2013, Aaron Lu wrote:
->> In August 2010, Jens and Alan discussed about "Runtime PM and the block
->> layer". http://marc.info/?t=128259108400001&r=1&w=2
->> And then Alan has given a detailed implementation guide:
->> http://marc.info/?l=linux-scsi&m=133727953625963&w=2
->>
->> To test:
->> # ls -l /sys/block/sda
->> /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/block/sda
->>
->> # echo 10000 > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/autosuspend_delay_ms
->> # echo auto > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/control
->> Then you'll see sda is suspended after 10secs idle.
->>
->> [ 1767.680192] sd 2:0:0:0: [sda] Synchronizing SCSI cache
->> [ 1767.680317] sd 2:0:0:0: [sda] Stopping disk
->>
->> And if you do some IO, it will resume immediately.
->> [ 1791.052438] sd 2:0:0:0: [sda] Starting disk
->>
->> For test, I often set the autosuspend time to 1 second. If you are using
->> a GUI, the 10 seconds delay may be too long that the disk can not enter
->> runtime suspended state.
->>
->> Note that sd's runtime suspend callback will dump some kernel messages
->> and the syslog daemon will write kernel message to /var/log/messages,
->> making the disk instantly resume after suspended. So for test, the
->> syslog daemon should better be temporarily stopped.
->>
->> A git repo for it, on top of block/for-next:
->> https://github.com/aaronlu/linux.git blockpm
->>
->> v12:
->> - Split patch 1 into 2 patches, one introduces REQ_PM in block layer
->>   and one uses that flag in SCSI layer, suggested by Jens Axboe.
+On Wed 27-03-13 15:19:24, Naoya Horiguchi wrote:
+> On Wed, Mar 27, 2013 at 02:52:50PM +0100, Michal Hocko wrote:
+> > On Tue 26-03-13 16:59:40, Aneesh Kumar K.V wrote:
+> > > Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
+> > [...]
+> > > > diff --git v3.9-rc3.orig/mm/memory-failure.c v3.9-rc3/mm/memory-failure.c
+> > > > index df0694c..4e01082 100644
+> > > > --- v3.9-rc3.orig/mm/memory-failure.c
+> > > > +++ v3.9-rc3/mm/memory-failure.c
+> > > > @@ -1467,6 +1467,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
+> > > >  	int ret;
+> > > >  	unsigned long pfn = page_to_pfn(page);
+> > > >  	struct page *hpage = compound_head(page);
+> > > > +	LIST_HEAD(pagelist);
+> > > >
+> > > >  	/*
+> > > >  	 * This double-check of PageHWPoison is to avoid the race with
+> > > > @@ -1482,12 +1483,20 @@ static int soft_offline_huge_page(struct page *page, int flags)
+> > > >  	unlock_page(hpage);
+> > > >
+> > > >  	/* Keep page count to indicate a given hugepage is isolated. */
+> > > > -	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL,
+> > > > -				MIGRATE_SYNC);
+> > > > -	put_page(hpage);
+> > > > +	list_move(&hpage->lru, &pagelist);
+> > > 
+> > > we use hpage->lru to add the hpage to h->hugepage_activelist. This will
+> > > break a hugetlb cgroup removal isn't it ?
+> > 
+> > This particular part will not break removal because
+> > hugetlb_cgroup_css_offline loops until hugetlb_cgroup_have_usage is 0.
 > 
-> Thanks Aaron, I've applied 1, and 3-4. I'll leave 2 and 5 for James to
-> pickup. James, if you want me to carry them, just let me know.
+> Right.
+> 
+> > Little bit offtopic:
+> > Btw. hugetlb migration breaks to charging even before this patchset
+> > AFAICS. The above put_page should remove the last reference and then it
+> > will uncharge it but I do not see anything that would charge a new page.
+> > This is all because regula LRU pages are uncharged when they are
+> > unmapped. But this a different story not related to this series.
+> 
+> It seems to me that alloc_huge_page_node() needs to call
+> hugetlb_cgroup_charge_cgroup() before dequeuing a new hugepage.
 
-Hi James,
-
-May I know your opinion on the two SCSI patches in this series?
-
-Thanks,
-Aaron
-
+This is not that easy because the new page has to be charged to the same
+group as the original one but the migration process might be running in
+the context of a different group.
+-- 
+Michal Hocko
+SUSE Labs
