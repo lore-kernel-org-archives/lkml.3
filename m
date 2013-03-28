@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab3C1Lll (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 07:41:41 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8776 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754956Ab3C1Llk (ORCPT
+	id S1754936Ab3C1Lm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 07:42:57 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52071 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab3C1Lmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 07:41:40 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 28 Mar 2013 04:41:11 -0700
-Message-ID: <51542BC5.10701@nvidia.com>
-Date: Thu, 28 Mar 2013 17:08:45 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Thu, 28 Mar 2013 07:42:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>
+Subject: Re: Generic syscall ABI support
+Date: Thu, 28 Mar 2013 11:42:47 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+References: <1364440182.2289.45.camel@leyfoon-vm> <201303281040.04463.arnd@arndb.de> <1364470251.3146.1.camel@leyfoon-vm>
+In-Reply-To: <1364470251.3146.1.camel@leyfoon-vm>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Manish Badarkhe <badarkhe.manish@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V3] spi: tegra114: add spi driver
-References: <1361536659-23225-1-git-send-email-ldewangan@nvidia.com> <CAKDJKT5yngpZQC-ZvHSaKeBVHW97wo4QwLSXQ4KsVWCs5J1YKg@mail.gmail.com> <20130302230906.141BE3E336A@localhost>
-In-Reply-To: <20130302230906.141BE3E336A@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201303281142.47631.arnd@arndb.de>
+X-Provags-ID: V02:K0:ULCzgxZmxwqH21bXdfZXeL10w45kqwt+t764HNZ0LZ6
+ b+NUFVj/qNoyTdkXx/7Cyy4BKUG3VQLMyZWLcQYIWbgW76k6cq
+ d4KYRfaCjt67OqzaDwqG9b/kRMAQiOVlPvzwR074YQdyKF+n7P
+ lVs6HbbQd34/0ifvcmzqLdAkKBiiNSP5waCNgUmB0wtoPBm0FD
+ sHrsMxfIlus/ryX6PXbzqkXZnKPnwctwtfkFACgiYkmxojqOfW
+ +bXi7cv5hr8+YmNhVVHwEBLVDmAhhodyy56jOP0dvl0jd+Yx5n
+ D/mGhbCHA5dXaSULXkjiHQQNAxmFmtEOuaVBsdIn8vZiI32R6p
+ B9e8QeWWbE5SUGosGGIo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 03 March 2013 04:39 AM, Grant Likely wrote:
-> On Fri, 22 Feb 2013 19:59:11 +0530, Manish Badarkhe <badarkhe.manish@gmail.com> wrote:
->> On Fri, Feb 22, 2013 at 6:07 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
->>> Add SPI driver for NVIDIA's Tegra114 SPI controller. This controller
->>> is different than the older SoCs SPI controller in internal design as
->>> well as register interface.
->>>
->>> This driver supports the:
->>> - non DMA based transfer for smaller transfer i.e. less than FIFO depth.
->>> - APB DMA based transfer for lager transfer i.e. more than FIFO depth.
->> s/lager/larger
-> Applied, thanks. And I fixed up the typo when I did.
+On Thursday 28 March 2013, Ley Foon Tan wrote:
+> On Thu, 2013-03-28 at 10:40 +0000, Arnd Bergmann wrote:
+> > On Thursday 28 March 2013, Ley Foon Tan wrote:
+> > > We will working on generic ABI for kernel and Glibc. This might take
+> > > some times.
+> > 
+> > Ok. Don't let that hold you up from submitting the kernel patches
+> > for review though.
 >
+> Do you mean we can submit the patches for review before we got the
+> generic ABI support?
 
-Grant,
-I still do not see this change in linux-next? Are you going to put this 
-change for K3.10? Wanted to close some of stuff from Tegra side.
+I mean you can send the other patches for review already. Changing
+your implementtion to use the generic ABI will basically just mean
+not sending the patches tht implement your own ABI, so that's not
+hard. Of course until you also have a new glibc port, you won't be
+able to test that it actually works, but that is not essential for
+the reviewing stage.
+
+	Arnd
