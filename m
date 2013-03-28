@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab3C1PGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 11:06:07 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:37576 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab3C1PGF (ORCPT
+	id S1756364Ab3C1PGY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 11:06:24 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:44623 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548Ab3C1PGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 11:06:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130328150018.GA13795@infradead.org>
-References: <1359040242-8269-1-git-send-email-eranian@google.com>
-	<1359040242-8269-12-git-send-email-eranian@google.com>
-	<20130327141425.GC1092@krava.brq.redhat.com>
-	<1364394014.5053.76.camel@laptop>
-	<20130327143437.GE1092@krava.brq.redhat.com>
-	<CABPqkBSSBdzGJtJ6HLFCM_Hhnwv1ASZ=JCX+zpWcM5X3KwZk6w@mail.gmail.com>
-	<20130327165644.GB14744@infradead.org>
-	<CABPqkBQESorC6U6kZOjntdgsnwTkT4GiT669mVHw6Wuf_JqDbQ@mail.gmail.com>
-	<20130328150018.GA13795@infradead.org>
-Date: Thu, 28 Mar 2013 16:06:04 +0100
-Message-ID: <CABPqkBTfb-ESOwNShZyi-7gE5vitmk8Tmm1RYnTC2ECxHGKXkg@mail.gmail.com>
-Subject: Re: [PATCH v7 11/18] perf tools: add mem access sampling core support
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 28 Mar 2013 11:06:20 -0400
+From: Konstantin Holoborodko <klh.kernel@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Johan Hovold <jhovold@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Konstantin Holoborodko <klh.kernel@gmail.com>
+Subject: [PATCH] usb: ftdi_sio: Add support for Mitsubishi FX-USB-AW/-BD
+Date: Fri, 29 Mar 2013 00:06:13 +0900
+Message-Id: <1364483173-11500-1-git-send-email-klh.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 4:00 PM, Arnaldo Carvalho de Melo
-<acme@redhat.com> wrote:
-> Em Thu, Mar 28, 2013 at 03:24:30PM +0100, Stephane Eranian escreveu:
->> On Wed, Mar 27, 2013 at 5:56 PM, Arnaldo Carvalho de Melo
->> > Stephane, if you could give it a try again to see that the fixups I did
->> > (documented in the commit logs, just before my Signed-off-by) are ok,
->> > that would be good.
->
->> I tried on a few examples on both NHM (only loads, no TLB) and SNB
->> and got the right answers for my tests, including data symbol resolution.
->
->> What we discussed with Jiri yesterday can be added later on.
->
->> Thanks for the integration work. Looks good to me.
->
-> Humm, I just tried it with a simple:
->
-> perf mem -t load rec
->
-That cmdline should not product anything. It is missing a command to run?
+It enhances the driver for FTDI-based USB serial adapters
+to recognize Mitsubishi Electric Corp. USB/RS422 Converters
+as FT232BM chips and support them.
+https://search.meau.com/?q=FX-USB-AW
 
-> And got an OOPS, trying again, and this machine was suspended, perhaps
-> perf/core doesn't have that PEBS fix, will check.
->
-What HW is this running on?
-I was running with your kernel.
+Signed-off-by: Konstantin Holoborodko <klh.kernel@gmail.com>
+Tested-by: Konstantin Holoborodko <klh.kernel@gmail.com>
+---
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index d4809d5..9886180 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -640,6 +640,7 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RM_CANVIEW_PID) },
+ 	{ USB_DEVICE(ACTON_VID, ACTON_SPECTRAPRO_PID) },
+ 	{ USB_DEVICE(CONTEC_VID, CONTEC_COM1USBH_PID) },
++	{ USB_DEVICE(MITSUBISHI_VID, MITSUBISHI_FXUSB_PID) },
+ 	{ USB_DEVICE(BANDB_VID, BANDB_USOTL4_PID) },
+ 	{ USB_DEVICE(BANDB_VID, BANDB_USTL4_PID) },
+ 	{ USB_DEVICE(BANDB_VID, BANDB_USO9ML2_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 9d359e1..e79861e 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -584,6 +584,13 @@
+ #define CONTEC_COM1USBH_PID	0x8311	/* COM-1(USB)H */
+ 
+ /*
++ * Mitsubishi Electric Corp. (http://www.meau.com)
++ * Submitted by Konstantin Holoborodko
++ */
++#define MITSUBISHI_VID		0x06D3
++#define MITSUBISHI_FXUSB_PID	0x0284 /* USB/RS422 converters: FX-USB-AW/-BD */
++
++/*
+  * Definitions for B&B Electronics products.
+  */
+ #define BANDB_VID		0x0856	/* B&B Electronics Vendor ID */
+-- 
+1.7.9.5
+
