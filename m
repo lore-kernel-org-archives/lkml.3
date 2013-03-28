@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab3C1CzK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 22:55:10 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:48393 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755077Ab3C1CzJ (ORCPT
+	id S1754890Ab3C1DAd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 23:00:33 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39591 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753514Ab3C1DAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 22:55:09 -0400
-Message-ID: <5153B0ED.8020309@huawei.com>
-Date: Thu, 28 Mar 2013 10:54:37 +0800
-From: Xie XiuQi <xiexiuqi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Wed, 27 Mar 2013 23:00:31 -0400
+Message-ID: <5153B24D.1010408@wwwdotorg.org>
+Date: Wed, 27 Mar 2013 21:00:29 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: <fenghua.yu@intel.com>
-CC: <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH] ia64: Fix example error_injection_tool
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Lubomir Rintel <lkundrak@v3.sk>
+CC: linux-kernel@vger.kernel.org, Dom Cobley <popcornmix@gmail.com>,
+        Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
+        linux-rpi-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v4] watchdog: Add Broadcom BCM2835 watchdog timer driver
+References: <1364320200-23569-1-git-send-email-lkundrak@v3.sk> <1364402424-19503-1-git-send-email-lkundrak@v3.sk>
+In-Reply-To: <1364402424-19503-1-git-send-email-lkundrak@v3.sk>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.18]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got a "sched_setaffinity:: Invalid argument" error when using
-err_injection_tool to inject error on a system with over 32 cpus.
+On 03/27/2013 10:40 AM, Lubomir Rintel wrote:
+> This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
+> used in Raspberry Pi and Roku 2 devices.
+> 
+> Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+> Signed-off-by: Dom Cobley <popcornmix@gmail.com>
 
-Error information when injecting an error on a system with over 32 cpus:
-$ ./err_injection_tool -i
-/sys/devices/system/cpu/cpu0/err_inject//err_type_info
-Begine at Tue Mar 26 11:20:08 2013
-Configurations:
-On cpu32: loop=10, interval=5(s) err_type_info=4101,err_struct_info=95
-Error sched_setaffinity:: Invalid argument
-All done
+Those two s-o-b lines should be swapped, since if Dom did sign off on
+any part of this patch, he did it before you did.
 
-This because there is overflow when calculating the cpumask: the
-type of (1<<k) is int, while mask[j] is unsigned long. When k > 31,
-(1<<k) is truncated to ZERO, resulting in a unexpected cpumask.
+That said...
 
-Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
----
- Documentation/ia64/err_inject.txt |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I wonder if it's actually appropriate to include Dom's s-o-b here, since
+I don't think he really wrote this patch itself. I think you mentioned
+that you hadn't use much of the downstream driver except for some defines?
 
-diff --git a/Documentation/ia64/err_inject.txt b/Documentation/ia64/err_inject.txt
-index 223e4f0..ec61ac1 100644
---- a/Documentation/ia64/err_inject.txt
-+++ b/Documentation/ia64/err_inject.txt
-@@ -882,7 +882,7 @@ int err_inj()
- 			cpu=parameters[i].cpu;
- 			k = cpu%64;
- 			j = cpu/64;
--			mask[j]=1<<k;
-+			mask[j] = (unsigned long)1<<k;
+To be clear, I mentioned the existence of the S-o-b line downstream
+simply to demonstrate that the commits you were getting information from
+had correctly followed the process described in
+Documentation/SubmittingPatches, and so it was OK to use that
+information while creating a GPL'd driver.
 
- 			if (sched_setaffinity(0, MASK_SIZE*8, mask)==-1) {
- 				perror("Error sched_setaffinity:");
--- 
-1.6.0.2
+So there are a couple of ways that this patch could have been created:
+
+1) You took the downstream commit itself, cherry-picked it into the
+upstream kernel, modified it to suit upstream, and then submitted that.
+The modifications might be extensive, such as renaming the file,
+removing parts of the code that the upstream watchdog core now handles,
+adding some new features, fixing bugs, cleanup, etc.; whatever is needed
+to upstream the patch.
+
+In this case, I believe it would be appropriate to maintain any S-o-b
+lines from the original downstream commit, and add yours. But, I believe
+you should also (a) maintain the git author field from the original
+downstream commit (b) include a list of the changes you made to the
+patch in the commit description, so you can be blamed for them rather
+than the original author:-)
+
+2) You read the downstream commit for information, but created a
+completely new driver for the upstream kernel, using the downstream
+driver just as a reference. In this case, I believe it's fine for the
+git author field to be you, and for the only s-o-b line present to be
+yours, since you really did write the patch from scratch. However, you
+should credit the downstream work in the (c) header and/or commit
+description.
+
+This current patch sees to be a slight hybrid of both approaches (you're
+listed as the git author, but have included Dom's s-o-b line on a patch
+I don't think he created, and wasn't directly derived from one he created).
+
+I'm not sure if I'm being too picky. I guess I'll leave it up to Wim Van
+Sebroeck, since he's the watchdog maintainer and would be the person who
+applies this patch.
 
