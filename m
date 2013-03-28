@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab3C1PEJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 11:04:09 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:61317 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160Ab3C1PEH (ORCPT
+	id S1756142Ab3C1PGH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 11:06:07 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:37576 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab3C1PGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 11:04:07 -0400
-Message-ID: <51545BE4.9050206@gmail.com>
-Date: Thu, 28 Mar 2013 10:04:04 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Thu, 28 Mar 2013 11:06:05 -0400
 MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
-References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130327133811.GE18429@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1303271610430.4430@kaball.uk.xensource.com> <20130327172306.GB20990@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1303281225050.4430@kaball.uk.xensource.com> <alpine.LFD.2.03.1303281048060.1372@syhkavp.arg>
-In-Reply-To: <alpine.LFD.2.03.1303281048060.1372@syhkavp.arg>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130328150018.GA13795@infradead.org>
+References: <1359040242-8269-1-git-send-email-eranian@google.com>
+	<1359040242-8269-12-git-send-email-eranian@google.com>
+	<20130327141425.GC1092@krava.brq.redhat.com>
+	<1364394014.5053.76.camel@laptop>
+	<20130327143437.GE1092@krava.brq.redhat.com>
+	<CABPqkBSSBdzGJtJ6HLFCM_Hhnwv1ASZ=JCX+zpWcM5X3KwZk6w@mail.gmail.com>
+	<20130327165644.GB14744@infradead.org>
+	<CABPqkBQESorC6U6kZOjntdgsnwTkT4GiT669mVHw6Wuf_JqDbQ@mail.gmail.com>
+	<20130328150018.GA13795@infradead.org>
+Date: Thu, 28 Mar 2013 16:06:04 +0100
+Message-ID: <CABPqkBTfb-ESOwNShZyi-7gE5vitmk8Tmm1RYnTC2ECxHGKXkg@mail.gmail.com>
+Subject: Re: [PATCH v7 11/18] perf tools: add mem access sampling core support
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2013 09:51 AM, Nicolas Pitre wrote:
-> On Thu, 28 Mar 2013, Stefano Stabellini wrote:
-> 
->> - the interface to bring up secondary cpus is different and based on
->> PSCI, in fact Xen is going to add a PSCI node to the device tree so that
->> Dom0 can use it.
->>
->> Oh wait, Dom0 is not going to use the PSCI interface even if the node is
->> present on device tree because it's going to prefer the platform smp_ops
->> instead.
-> 
-> Waitaminute...  I must have missed this part.
-> 
-> Who said platform specific methods must be used in preference to PSCI?
+On Thu, Mar 28, 2013 at 4:00 PM, Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+> Em Thu, Mar 28, 2013 at 03:24:30PM +0100, Stephane Eranian escreveu:
+>> On Wed, Mar 27, 2013 at 5:56 PM, Arnaldo Carvalho de Melo
+>> > Stephane, if you could give it a try again to see that the fixups I did
+>> > (documented in the commit logs, just before my Signed-off-by) are ok,
+>> > that would be good.
+>
+>> I tried on a few examples on both NHM (only loads, no TLB) and SNB
+>> and got the right answers for my tests, including data symbol resolution.
+>
+>> What we discussed with Jiri yesterday can be added later on.
+>
+>> Thanks for the integration work. Looks good to me.
+>
+> Humm, I just tried it with a simple:
+>
+> perf mem -t load rec
+>
+That cmdline should not product anything. It is missing a command to run?
 
-I did. Specifically, I said the platform should be allowed to provide
-its own smp_ops. A platform may need to do addtional things on top of
-PSCI for example.
-
-> If DT does provide PSCI description, then PSCI should be used.  Doing 
-> otherwise is senseless.  If PSCI is not to be used, then it should not 
-> be present in DT.
-
-You can't assume the DT and kernel are in-sync. For example, I've added
-PSCI in the firmware and DTB (part of the firmware), but the highbank
-kernel may or may not use it depending if I convert it.
-
-Rob
-
-> 
-> 
-> Nicolas
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
-
+> And got an OOPS, trying again, and this machine was suspended, perhaps
+> perf/core doesn't have that PEBS fix, will check.
+>
+What HW is this running on?
+I was running with your kernel.
