@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab3C1E3J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 00:29:09 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:26706 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab3C1E3H (ORCPT
+	id S1752995Ab3C1E3N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 00:29:13 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51885 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818Ab3C1E3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 00:29:07 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pci@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, stable@kernel.org
-Subject: [PATCH] PCI, ACPI: Don't query OSC support with all possible controls
-Date: Wed, 27 Mar 2013 21:28:58 -0700
-Message-Id: <1364444938-19801-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 28 Mar 2013 00:29:10 -0400
+Date: Thu, 28 Mar 2013 15:28:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the signal tree with Linus' tree
+Message-Id: <20130328152857.e0bb45f7cd88a04614427665@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__28_Mar_2013_15_28_57_+1100_cwO2kToWja16qkco"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found problem on system that firmware that could handle pci aer.
-Firmware get error reporting after pci injecting error, before os boots.
-But after os boots, firmware can not get report anymore, even pci=noaer
-is passed.
+--Signature=_Thu__28_Mar_2013_15_28_57_+1100_cwO2kToWja16qkco
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Root cause: BIOS _OSC has problem with query bit checking.
-It turns out that BIOS vendor is copying example code from ACPI Spec.
-In ACPI Spec 5.0, page 290:
+Hi Al,
 
-	If (Not(And(CDW1,1))) // Query flag clear?
-	{	// Disable GPEs for features granted native control.
-		If (And(CTRL,0x01)) // Hot plug control granted?
-		{
-			Store(0,HPCE) // clear the hot plug SCI enable bit
-			Store(1,HPCS) // clear the hot plug SCI status bit
-		}
-	...
-	}
+Today's linux-next merge of the signal tree got a conflict in fs/splice.c
+between commit 06ae43f34bcc ("Don't bother with redoing rw_verify_area()
+from default_file_splice_from()") from Linus' tree and commit
+76b021d053ed ("convert vmsplice to COMPAT_SYSCALL_DEFINE") from the
+signal tree.
 
-When Query flag is set, And(CDW1,1) will be 1, Not(1) will return 0xfffffffe.
-So it will get into code path that should be for control set only.
-BIOS acpi code should be changed to "If (LEqual(And(CDW1,1), 0)))"
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Current kernel code is using _OSC query to notify firmware about support
-from OS and then use _OSC to set control bits.
-During query support, current code is using all possible controls.
-So will execute code that should be only for control set stage.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-That will have problem when pci=noaer or aer firmware_first is used.
-As firmware have that control set for os aer already in query support stage,
-but later will not os aer handling.
+diff --cc fs/splice.c
+index 29e394e,23ade0e..0000000
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@@ -31,7 -31,7 +31,8 @@@
+  #include <linux/security.h>
+  #include <linux/gfp.h>
+  #include <linux/socket.h>
++ #include <linux/compat.h>
+ +#include "internal.h"
+ =20
+  /*
+   * Attempt to steal a page from a pipe buffer. This should perhaps go into
 
-We should avoid passing all possible controls, just use osc_control_set
-instead.
-That should workaround BIOS bugs with affected systems on the field
-as more bios vendors are copying sample code from ACPI spec.
+--Signature=_Thu__28_Mar_2013_15_28_57_+1100_cwO2kToWja16qkco
+Content-Type: application/pgp-signature
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: stable@kernel.org
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
----
- drivers/acpi/pci_root.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+iQIcBAEBCAAGBQJRU8cJAAoJEECxmPOUX5FEZ2QP/37+964z9sB/re5mMuTHKjVt
+0YSTEsFA51qJpG9YNYXUxIkO9LL9D0EYM0R50nJQ0pHWVSDBeAv9Iv/02ts/Vy17
+MVpHnYdh/JwvSac6LeLSqvLXlwYtkWdAysV0iOHtzbvnb1792bF3A14dDEAZYkON
+G9UJVpgPIa4wKdCOEsC4UkRY/vjnSrUCWh6MCuDjnShkL9pyshQNvw8zGPqeTf2s
+aG5JlOnbJGqGMHdkuzMbjDW8+QQUKejQ8+/Sjzz0ysyEY+e1rB+C9aj89A4e9Hu4
+zCCMr0+KG8wbxdem7uHR0h8wmej+WK4SOWq86t/NwUqVCrkmmkiBjBfEAHEeU6kY
+qg7T7YjdtAgTUXAujSoK7ifRbAk+ip9hbKP2ASAMELd5KTjG0ov726DzWWkXFJ+i
+GDqsCF3ae5REcOLcDUgKSufoRSyJhGzmviwORV9KPlNIQF6UzxUtSVTlHNetOAbr
+ntxuFf+uzexmIpXetiI9ZhivFiaUUh7UJxABl8HFc+ztT79mODUmHUS2V+No5566
+u3lrqFLIkYxyNCJ8YP11brAdwhUjjN8ibIiJNnzqJH3Z+TQe9DcWlwNYpsIEClF/
+F4ZrsFln27GTF20hpsJ+faT/ngNk/KcMVp4438OVc9B8f709tlvejAKSFxZuLbcL
+peJ+pi4n/D+AwdGCguOC
+=b7iL
+-----END PGP SIGNATURE-----
 
-Index: linux-2.6/drivers/acpi/pci_root.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/pci_root.c
-+++ linux-2.6/drivers/acpi/pci_root.c
-@@ -201,8 +201,8 @@ static acpi_status acpi_pci_query_osc(st
- 		*control &= OSC_PCI_CONTROL_MASKS;
- 		capbuf[OSC_CONTROL_TYPE] = *control | root->osc_control_set;
- 	} else {
--		/* Run _OSC query for all possible controls. */
--		capbuf[OSC_CONTROL_TYPE] = OSC_PCI_CONTROL_MASKS;
-+		/* Run _OSC query only with existing controls. */
-+		capbuf[OSC_CONTROL_TYPE] = root->osc_control_set;
- 	}
- 
- 	status = acpi_pci_run_osc(root->device->handle, capbuf, &result);
+--Signature=_Thu__28_Mar_2013_15_28_57_+1100_cwO2kToWja16qkco--
