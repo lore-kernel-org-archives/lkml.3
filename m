@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504Ab3C1HWa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 03:22:30 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:44251 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756485Ab3C1HW2 (ORCPT
+	id S1756536Ab3C1HWg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 03:22:36 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:38591 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756509Ab3C1HWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 03:22:28 -0400
-Message-ID: <5153EF8D.2080502@huawei.com>
-Date: Thu, 28 Mar 2013 15:21:49 +0800
+	Thu, 28 Mar 2013 03:22:33 -0400
+Message-ID: <5153EF6A.9050906@huawei.com>
+Date: Thu, 28 Mar 2013 15:21:14 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
 To: Ingo Molnar <mingo@kernel.org>, Tejun Heo <tj@kernel.org>
 CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
         Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 5/5] cgroup: Remove subsys.active flag
+Subject: [PATCH 3/5] cpuacct: Initialize cpuacct subsystem earlier
 References: <5153EF24.3040608@huawei.com>
 In-Reply-To: <5153EF24.3040608@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -26,53 +26,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only user was cpuacct.
+Initialize cpuacct before the scheduler is functioning, so when
+cpuacct_charge() and cpuacct_account_field() are called, task_ca()
+won't return NULL.
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- include/linux/cgroup.h | 1 -
- kernel/cgroup.c        | 3 ---
- 2 files changed, 4 deletions(-)
+ kernel/sched/cpuacct.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 7d73905..a236a5b 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -457,7 +457,6 @@ struct cgroup_subsys {
- 	void (*bind)(struct cgroup *root);
+diff --git a/kernel/sched/cpuacct.c b/kernel/sched/cpuacct.c
+index 0425581..75e46d2 100644
+--- a/kernel/sched/cpuacct.c
++++ b/kernel/sched/cpuacct.c
+@@ -292,9 +292,10 @@ void cpuacct_account_field(struct task_struct *p, int index, u64 val)
+ }
  
- 	int subsys_id;
--	int active;
- 	int disabled;
- 	int early_init;
- 	/*
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 4855892..64dd57d 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4415,7 +4415,6 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
- 	 * need to invoke fork callbacks here. */
- 	BUG_ON(!list_empty(&init_task.tasks));
- 
--	ss->active = 1;
- 	BUG_ON(online_css(ss, dummytop));
- 
- 	mutex_unlock(&cgroup_mutex);
-@@ -4523,7 +4522,6 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
- 	}
- 	write_unlock(&css_set_lock);
- 
--	ss->active = 1;
- 	ret = online_css(ss, dummytop);
- 	if (ret)
- 		goto err_unload;
-@@ -4565,7 +4563,6 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
- 	mutex_lock(&cgroup_mutex);
- 
- 	offline_css(ss, dummytop);
--	ss->active = 0;
- 
- 	if (ss->use_id) {
- 		idr_remove_all(&ss->idr);
+ struct cgroup_subsys cpuacct_subsys = {
+-	.name = "cpuacct",
+-	.css_alloc = cpuacct_css_alloc,
+-	.css_free = cpuacct_css_free,
+-	.subsys_id = cpuacct_subsys_id,
+-	.base_cftypes = files,
++	.name		= "cpuacct",
++	.css_alloc	= cpuacct_css_alloc,
++	.css_free	= cpuacct_css_free,
++	.subsys_id	= cpuacct_subsys_id,
++	.base_cftypes	= files,
++	.early_init	= 1,
+ };
 -- 
 1.8.0.2
