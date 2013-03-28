@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300Ab3C1OWV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 10:22:21 -0400
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:26750
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756033Ab3C1OWT (ORCPT
+	id S1756336Ab3C1OYc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 10:24:32 -0400
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:58673 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756103Ab3C1OYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 10:22:19 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zcb8kz98dI1432Izz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 28 Mar 2013 22:22:08 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Javier Martin <javier.martin@vista-silicon.com>,
-        <kernel@pengutronix.de>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v9 RESEND 4/4] ARM: dts: add sram for imx53 and imx6q
-Message-ID: <20130328142106.GA699@S2101-09.ap.freescale.net>
-References: <1363776767-2635-1-git-send-email-p.zabel@pengutronix.de>
- <1363776767-2635-5-git-send-email-p.zabel@pengutronix.de>
- <20130328025422.GH5429@S2101-09.ap.freescale.net>
- <1364461518.4018.4.camel@pizza.hi.pengutronix.de>
+	Thu, 28 Mar 2013 10:24:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1364461518.4018.4.camel@pizza.hi.pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+In-Reply-To: <20130327165644.GB14744@infradead.org>
+References: <1359040242-8269-1-git-send-email-eranian@google.com>
+	<1359040242-8269-12-git-send-email-eranian@google.com>
+	<20130327141425.GC1092@krava.brq.redhat.com>
+	<1364394014.5053.76.camel@laptop>
+	<20130327143437.GE1092@krava.brq.redhat.com>
+	<CABPqkBSSBdzGJtJ6HLFCM_Hhnwv1ASZ=JCX+zpWcM5X3KwZk6w@mail.gmail.com>
+	<20130327165644.GB14744@infradead.org>
+Date: Thu, 28 Mar 2013 15:24:30 +0100
+Message-ID: <CABPqkBQESorC6U6kZOjntdgsnwTkT4GiT669mVHw6Wuf_JqDbQ@mail.gmail.com>
+Subject: Re: [PATCH v7 11/18] perf tools: add mem access sampling core support
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 10:05:18AM +0100, Philipp Zabel wrote:
-> > > +
-> > > +		ocram: ocram@f8000000 {
-> > > +			compatible = "fsl,imx-ocram", "mmio-sram";
-> > 
-> > We should probably just drop "fsl,imx-ocram".
-> > 
-> > Shawn
-> 
-> I thought that in the future somebody might want to implement some i.MX
-> OCRAM specifics in a different driver, like the L2 cache / OCRAM mode
-> switching, the timing settings, or the TrustZone bits that are
-> configurable in the IOMUXC GPR registers.
+Arnaldo,
 
-We can add i.MX OCRAM specific compatible when we see that real need.
-Also, generally we should use a specific chip/osc name rather than "imx"
-for compatible to specify the particular hardware version.
+On Wed, Mar 27, 2013 at 5:56 PM, Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+> Em Wed, Mar 27, 2013 at 03:48:15PM +0100, Stephane Eranian escreveu:
+>> On Wed, Mar 27, 2013 at 3:34 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+>> > On Wed, Mar 27, 2013 at 03:20:14PM +0100, Peter Zijlstra wrote:
+>> > > On Wed, 2013-03-27 at 15:14 +0100, Jiri Olsa wrote:
+>> > > > we have correct cpumode for sample->ip, but I think it's the
+>> > > > PEBS->dla (sample->addr) where we need to guess.. right?
+>
+>> > > kernel mode very much fakes the cpumode/segment stuff for PEBS. PEBS
+>> > > assumes you're running in a linear/flat mode.
+>
+>> > say we hit the sample when kernel accesses the user data, we will endup
+>> > with IP in kernel space and DATA ptr in user space.. in theory ;-)
+>
+>> Yes, this is possible. So I think we could probably leaverage ip__resolve_ams()
+>> and pass the extra parameter for MAP_VARIABLE vs. MAP_FUNCTION.
+>
+> BTW, I fixed up the patches (kernel and user parts) and have them in
+> perf/mem at:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux
+>
+> Hope to push it to Ingo today/tomorrow, after some more testing, thanks
+> Jiri for reviewing it.
+>
+> Stephane, if you could give it a try again to see that the fixups I did
+> (documented in the commit logs, just before my Signed-off-by) are ok,
+> that would be good.
+>
+I tried on a few examples on both NHM (only loads, no TLB) and SNB
+and got the right answers for my tests, including data symbol resolution.
 
-Shawn
+What we discussed with Jiri yesterday can be added later on.
 
+Thanks for the integration work. Looks good to me.
+
+> - Arnaldo
+>
+>>
+>> >
+>> > and that would need the cpumode guessing for DATA ptr, because
+>> > cpumode value is deduced from cs register
+>> >
+>> > jirka
