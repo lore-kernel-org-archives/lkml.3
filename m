@@ -1,315 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757051Ab3C1QxD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 12:53:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50155 "EHLO mx1.redhat.com"
+	id S1757125Ab3C1Qx3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 12:53:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29580 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757022Ab3C1QxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 12:53:00 -0400
+	id S1756535Ab3C1Qw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 12:52:56 -0400
 From: Stanislaw Gruszka <sgruszka@redhat.com>
 To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         hpa@zytor.com, rostedt@goodmis.org, akpm@linux-foundation.org,
         tglx@linutronix.de, Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: [RFC 4/4] cputime: remove scaling
-Date: Thu, 28 Mar 2013 17:53:25 +0100
-Message-Id: <1364489605-5443-5-git-send-email-sgruszka@redhat.com>
+Subject: [RFC 1/4] cputime: change parameter of thread_group_cputime_adjusted
+Date: Thu, 28 Mar 2013 17:53:22 +0100
+Message-Id: <1364489605-5443-2-git-send-email-sgruszka@redhat.com>
 In-Reply-To: <1364489605-5443-1-git-send-email-sgruszka@redhat.com>
 References: <1364489605-5443-1-git-send-email-sgruszka@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scaling cputime cause problems, bunch of them was fixed, but still is possible
-to hit multiplication overflow issue, which make {u,s}time values incorrect.
-This problem has no good solution in kernel.
-
-This patch remove scaling code and export raw values of {u,t}ime . Procps
-programs can use newly introduced sum_exec_runtime to find out precisely
-calculated process cpu time and scale utime, stime values accordingly.
-
-Unfortunately times(2) syscall has no such option.
-
-This change affect kernels compiled without CONFIG_VIRT_CPU_ACCOUNTING_*.
+This is preparation for further changes in cputime code.
 
 Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 ---
- fs/proc/array.c        |    4 +-
- include/linux/sched.h  |   20 --------
- kernel/exit.c          |    2 +-
- kernel/fork.c          |    3 -
- kernel/sched/cputime.c |  117 +-----------------------------------------------
- kernel/sys.c           |    6 +-
- 6 files changed, 7 insertions(+), 145 deletions(-)
+ fs/proc/array.c        |    5 ++++-
+ include/linux/sched.h  |    2 +-
+ kernel/exit.c          |    8 ++++----
+ kernel/sched/cputime.c |   18 ++++++------------
+ kernel/sys.c           |   18 ++++++++++--------
+ 5 files changed, 25 insertions(+), 26 deletions(-)
 
 diff --git a/fs/proc/array.c b/fs/proc/array.c
-index 1444dc5..5feadc4 100644
+index f7ed9ee..fef7850 100644
 --- a/fs/proc/array.c
 +++ b/fs/proc/array.c
-@@ -459,7 +459,7 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+@@ -446,6 +446,7 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+ 		/* add up live thread stats at the group level */
+ 		if (whole) {
+ 			struct task_struct *t = task;
++			struct task_cputime cputime;
+ 			do {
+ 				min_flt += t->min_flt;
+ 				maj_flt += t->maj_flt;
+@@ -455,7 +456,9 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
  
  			min_flt += sig->min_flt;
  			maj_flt += sig->maj_flt;
--			thread_group_cputime_adjusted(task, &cputime);
-+			thread_group_cputime(task, &cputime);
- 			utime = cputime.utime;
- 			stime = cputime.stime;
- 			sum_exec_runtime = cputime.sum_exec_runtime;
-@@ -478,7 +478,7 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
- 	if (!whole) {
- 		min_flt = task->min_flt;
- 		maj_flt = task->maj_flt;
--		task_cputime_adjusted(task, &utime, &stime);
-+		task_cputime(task, &utime, &stime);
- 		sum_exec_runtime = task->se.sum_exec_runtime;
- 		gtime = task_gtime(task);
- 	}
+-			thread_group_cputime_adjusted(task, &utime, &stime);
++			thread_group_cputime_adjusted(task, &cputime);
++			utime = cputime.utime;
++			stime = cputime.stime;
+ 			gtime += sig->gtime;
+ 		}
+ 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 6673a59..26257a7 100644
+index 10626e2..eb6005c 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -397,18 +397,6 @@ struct cpu_itimer {
- };
- 
- /**
-- * struct cputime - snaphsot of system and user cputime
-- * @utime: time spent in user mode
-- * @stime: time spent in system mode
-- *
-- * Gathers a generic snapshot of user and system time.
-- */
--struct cputime {
--	cputime_t utime;
--	cputime_t stime;
--};
--
--/**
-  * struct task_cputime - collected CPU time counts
-  * @utime:		time spent in user mode, in &cputime_t units
-  * @stime:		time spent in kernel mode, in &cputime_t units
-@@ -558,9 +546,6 @@ struct signal_struct {
- 	cputime_t utime, stime, cutime, cstime;
- 	cputime_t gtime;
- 	cputime_t cgtime;
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
--	struct cputime prev_cputime;
--#endif
- 	unsigned long nvcsw, nivcsw, cnvcsw, cnivcsw;
- 	unsigned long min_flt, maj_flt, cmin_flt, cmaj_flt;
- 	unsigned long inblock, oublock, cinblock, coublock;
-@@ -1159,9 +1144,6 @@ struct task_struct {
- 
- 	cputime_t utime, stime, utimescaled, stimescaled;
- 	cputime_t gtime;
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
--	struct cputime prev_cputime;
--#endif
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
- 	seqlock_t vtime_seqlock;
- 	unsigned long long vtime_snap;
-@@ -1595,8 +1577,6 @@ static inline cputime_t task_gtime(struct task_struct *t)
- 	return t->gtime;
+@@ -1595,7 +1595,7 @@ static inline cputime_t task_gtime(struct task_struct *t)
  }
  #endif
--extern void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st);
--extern void thread_group_cputime_adjusted(struct task_struct *p, struct task_cputime *ct);
+ extern void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st);
+-extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st);
++extern void thread_group_cputime_adjusted(struct task_struct *p, struct task_cputime *ct);
  
  /*
   * Per process flags
 diff --git a/kernel/exit.c b/kernel/exit.c
-index eda4fa7..9a7ecbb 100644
+index 51e485c..5a7023f 100644
 --- a/kernel/exit.c
 +++ b/kernel/exit.c
-@@ -1088,7 +1088,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+@@ -1067,7 +1067,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 		struct signal_struct *psig;
+ 		struct signal_struct *sig;
+ 		unsigned long maxrss;
+-		cputime_t tgutime, tgstime;
++		struct task_cputime tg_cputime;
+ 
+ 		/*
+ 		 * The resource counters for the group leader are in its
+@@ -1088,12 +1088,12 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
  		 * group, which consolidates times for all threads in the
  		 * group including the group leader.
  		 */
--		thread_group_cputime_adjusted(p, &tg_cputime);
-+		thread_group_cputime(p, &tg_cputime);
+-		thread_group_cputime_adjusted(p, &tgutime, &tgstime);
++		thread_group_cputime_adjusted(p, &tg_cputime);
  		spin_lock_irq(&p->real_parent->sighand->siglock);
  		psig = p->real_parent->signal;
  		sig = p->signal;
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 339f60d..2ae1706 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1233,9 +1233,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 
- 	p->utime = p->stime = p->gtime = 0;
- 	p->utimescaled = p->stimescaled = 0;
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
--	p->prev_cputime.utime = p->prev_cputime.stime = 0;
--#endif
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
- 	seqlock_init(&p->vtime_seqlock);
- 	p->vtime_snap = 0;
+-		psig->cutime += tgutime + sig->cutime;
+-		psig->cstime += tgstime + sig->cstime;
++		psig->cutime += tg_cputime.utime + sig->cutime;
++		psig->cstime += tg_cputime.stime + sig->cstime;
+ 		psig->cgtime += task_gtime(p) + sig->gtime + sig->cgtime;
+ 		psig->cmin_flt +=
+ 			p->min_flt + sig->min_flt + sig->cmin_flt;
 diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index a600f7f..23df74b 100644
+index 4006b42..a600f7f 100644
 --- a/kernel/sched/cputime.c
 +++ b/kernel/sched/cputime.c
-@@ -448,19 +448,7 @@ EXPORT_SYMBOL_GPL(vtime_account_irq_enter);
- #endif /* __ARCH_HAS_VTIME_ACCOUNT */
- #endif /* CONFIG_VIRT_CPU_ACCOUNTING */
- 
--
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
--void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
--{
--	*ut = p->utime;
--	*st = p->stime;
--}
--
--void thread_group_cputime_adjusted(struct task_struct *p, struct task_cputime *cputime)
--{
--	thread_group_cputime(p, cputime);
--}
--#else /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- /*
-  * Account a single tick of cpu time.
-  * @p: the process that the cpu time gets accounted to
-@@ -516,109 +504,6 @@ void account_idle_ticks(unsigned long ticks)
- 	account_idle_time(jiffies_to_cputime(ticks));
+@@ -456,14 +456,9 @@ void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 	*st = p->stime;
  }
  
--/*
-- * Perform (stime * rtime) / total with reduced chances
-- * of multiplication overflows by using smaller factors
-- * like quotient and remainders of divisions between
-- * rtime and total.
-- */
--static cputime_t scale_stime(u64 stime, u64 rtime, u64 total)
--{
--	u64 rem, res, scaled;
+-void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
++void thread_group_cputime_adjusted(struct task_struct *p, struct task_cputime *cputime)
+ {
+-	struct task_cputime cputime;
 -
--	if (rtime >= total) {
--		/*
--		 * Scale up to rtime / total then add
--		 * the remainder scaled to stime / total.
--		 */
--		res = div64_u64_rem(rtime, total, &rem);
--		scaled = stime * res;
--		scaled += div64_u64(stime * rem, total);
--	} else {
--		/*
--		 * Same in reverse: scale down to total / rtime
--		 * then substract that result scaled to
--		 * to the remaining part.
--		 */
--		res = div64_u64_rem(total, rtime, &rem);
--		scaled = div64_u64(stime, res);
--		scaled -= div64_u64(scaled * rem, total);
--	}
+-	thread_group_cputime(p, &cputime);
 -
--	return (__force cputime_t) scaled;
--}
+-	*ut = cputime.utime;
+-	*st = cputime.stime;
++	thread_group_cputime(p, cputime);
+ }
+ #else /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+ /*
+@@ -618,12 +613,11 @@ void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ /*
+  * Must be called with siglock held.
+  */
+-void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
++void thread_group_cputime_adjusted(struct task_struct *p, struct task_cputime *cputime)
+ {
+-	struct task_cputime cputime;
 -
--/*
-- * Adjust tick based cputime random precision against scheduler
-- * runtime accounting.
-- */
--static void cputime_adjust(struct task_cputime *curr,
--			   struct cputime *prev,
--			   cputime_t *ut, cputime_t *st)
--{
--	cputime_t rtime, stime, total;
--
--	if (vtime_accounting_enabled()) {
--		*ut = curr->utime;
--		*st = curr->stime;
--		return;
--	}
--
--	stime = curr->stime;
--	total = stime + curr->utime;
--
--	/*
--	 * Tick based cputime accounting depend on random scheduling
--	 * timeslices of a task to be interrupted or not by the timer.
--	 * Depending on these circumstances, the number of these interrupts
--	 * may be over or under-optimistic, matching the real user and system
--	 * cputime with a variable precision.
--	 *
--	 * Fix this by scaling these tick based values against the total
--	 * runtime accounted by the CFS scheduler.
--	 */
--	rtime = nsecs_to_cputime(curr->sum_exec_runtime);
--
--	if (!rtime) {
--		stime = 0;
--	} else if (!total) {
--		stime = rtime;
--	} else {
--		stime = scale_stime((__force u64)stime,
--				    (__force u64)rtime, (__force u64)total);
--	}
--
--	/*
--	 * If the tick based count grows faster than the scheduler one,
--	 * the result of the scaling may go backward.
--	 * Let's enforce monotonicity.
--	 */
--	prev->stime = max(prev->stime, stime);
--	prev->utime = max(prev->utime, rtime - prev->stime);
--
--	*ut = prev->utime;
--	*st = prev->stime;
--}
--
--void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
--{
--	struct task_cputime cputime = {
--		.sum_exec_runtime = p->se.sum_exec_runtime,
--	};
--
--	task_cputime(p, &cputime.utime, &cputime.stime);
--	cputime_adjust(&cputime, &p->prev_cputime, ut, st);
--}
--
--/*
-- * Must be called with siglock held.
-- */
--void thread_group_cputime_adjusted(struct task_struct *p, struct task_cputime *cputime)
--{
--	thread_group_cputime(p, cputime);
--	cputime_adjust(cputime, &p->signal->prev_cputime,
--		       &cputime->utime, &cputime->stime);
--}
+-	thread_group_cputime(p, &cputime);
+-	cputime_adjust(&cputime, &p->signal->prev_cputime, ut, st);
++	thread_group_cputime(p, cputime);
++	cputime_adjust(cputime, &p->signal->prev_cputime,
++		       &cputime->utime, &cputime->stime);
+ }
  #endif /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
  
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
 diff --git a/kernel/sys.c b/kernel/sys.c
-index 2f555c1..00f143e 100644
+index 39c9c4a..2f555c1 100644
 --- a/kernel/sys.c
 +++ b/kernel/sys.c
-@@ -1049,7 +1049,7 @@ void do_sys_times(struct tms *tms)
- 	struct task_cputime tg_cputime;
+@@ -1045,15 +1045,16 @@ change_okay:
+ 
+ void do_sys_times(struct tms *tms)
+ {
+-	cputime_t tgutime, tgstime, cutime, cstime;
++	cputime_t cutime, cstime;
++	struct task_cputime tg_cputime;
  
  	spin_lock_irq(&current->sighand->siglock);
--	thread_group_cputime_adjusted(current, &tg_cputime);
-+	thread_group_cputime(current, &tg_cputime);
+-	thread_group_cputime_adjusted(current, &tgutime, &tgstime);
++	thread_group_cputime_adjusted(current, &tg_cputime);
  	cutime = current->signal->cutime;
  	cstime = current->signal->cstime;
  	spin_unlock_irq(&current->sighand->siglock);
-@@ -1708,7 +1708,7 @@ static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
- 	utime = stime = 0;
+-	tms->tms_utime = cputime_to_clock_t(tgutime);
+-	tms->tms_stime = cputime_to_clock_t(tgstime);
++	tms->tms_utime = cputime_to_clock_t(tg_cputime.utime);
++	tms->tms_stime = cputime_to_clock_t(tg_cputime.stime);
+ 	tms->tms_cutime = cputime_to_clock_t(cutime);
+ 	tms->tms_cstime = cputime_to_clock_t(cstime);
+ }
+@@ -1699,8 +1700,9 @@ static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
+ {
+ 	struct task_struct *t;
+ 	unsigned long flags;
+-	cputime_t tgutime, tgstime, utime, stime;
++	cputime_t utime, stime;
+ 	unsigned long maxrss = 0;
++	struct task_cputime tg_cputime;
  
- 	if (who == RUSAGE_THREAD) {
--		task_cputime_adjusted(current, &utime, &stime);
-+		task_cputime(current, &utime, &stime);
- 		accumulate_thread_rusage(p, r);
- 		maxrss = p->signal->maxrss;
- 		goto out;
-@@ -1734,7 +1734,7 @@ static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
+ 	memset((char *) r, 0, sizeof *r);
+ 	utime = stime = 0;
+@@ -1732,9 +1734,9 @@ static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
  				break;
  
  		case RUSAGE_SELF:
--			thread_group_cputime_adjusted(p, &tg_cputime);
-+			thread_group_cputime(p, &tg_cputime);
- 			utime += tg_cputime.utime;
- 			stime += tg_cputime.stime;
+-			thread_group_cputime_adjusted(p, &tgutime, &tgstime);
+-			utime += tgutime;
+-			stime += tgstime;
++			thread_group_cputime_adjusted(p, &tg_cputime);
++			utime += tg_cputime.utime;
++			stime += tg_cputime.stime;
  			r->ru_nvcsw += p->signal->nvcsw;
+ 			r->ru_nivcsw += p->signal->nivcsw;
+ 			r->ru_minflt += p->signal->min_flt;
 -- 
 1.7.1
 
