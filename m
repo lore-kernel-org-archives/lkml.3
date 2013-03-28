@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984Ab3C1SKz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 14:10:55 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:20256
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751718Ab3C1SKx (ORCPT
+	id S1752787Ab3C1SNl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 14:13:41 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:49058 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab3C1SNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 14:10:53 -0400
-X-IronPort-AV: E=Sophos;i="4.87,927,1363129200"; 
-   d="scan'208";a="9094077"
-Date: Thu, 28 Mar 2013 19:10:50 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-cc: Julia Lawall <julia.lawall@lip6.fr>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, FlorianSchandinat@gmx.de,
-        linux-fbdev@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        cocci@systeme.lip6.fr,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rodrigo.vivi@gmail.com, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        rafael.j.wysocki@intel.com
-Subject: Re: [PATCH] compat/compat-drivers/linux-next: fb skip_vt_switch
-In-Reply-To: <CAB=NE6WbNwPqEPYsASAPaECe4qbAWdd4=eJ402ib+CzZbT69=g@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1303281909570.1928@hadrien>
-References: <1364472270-9297-1-git-send-email-mcgrof@do-not-panic.com> <20130328083943.01e61b4b@jbarnes-desktop> <alpine.DEB.2.02.1303281718490.1928@hadrien> <CAB=NE6WbNwPqEPYsASAPaECe4qbAWdd4=eJ402ib+CzZbT69=g@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 28 Mar 2013 14:13:39 -0400
+Date: Thu, 28 Mar 2013 11:13:32 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
+        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
+        peterz@infradead.org, rostedt@goodmis.org,
+        linaro-kernel@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, Arvind.Chauhan@arm.com,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 3/7] workqueue: Add helpers to schedule work on any cpu
+Message-ID: <20130328181332.GD14088@htj.dyndns.org>
+References: <cover.1363617402.git.viresh.kumar@linaro.org>
+ <fb2e721fc43fbc3517a7ebb905aa573b12bb83a5.1363617402.git.viresh.kumar@linaro.org>
+ <20130321001211.GC31256@htj.dyndns.org>
+ <CAKohponKUGbwEZ_edu353Y7YVZKgFOhZunTSUi04FGYWveftkw@mail.gmail.com>
+ <20130321182937.GB20500@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130321182937.GB20500@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 21, 2013 at 11:29:37AM -0700, Tejun Heo wrote:
+> Yes, I actually like that part a lot although I do wish the idle check
+> was inlined.
+> 
+> What I'm wondering is whether the kinda out-of-band decision via
+> sched_select_cpu() is justified given that it can and is likely to go
+> through full scheduling decision anyway.  For timer, we don't have
+> that, so it makes sense.  For work items, it's a bit different.
+> 
+> To rephrase, *if* the scheduler can't already make proper decisions
+> regarding power consumption on an idlish system, maybe it can be
+> improved to do so?  It could as well be that this CPU selection is
+> special enough that it's just better to keep it separate as this
+> patchset proposes.  This is something up to the scheduler people.
+> Peter, Ingo, what do you guys think?
 
+Ping.  Peter, Ingo?
 
-On Thu, 28 Mar 2013, Luis R. Rodriguez wrote:
+Viresh, would it be difficult to make another measurement of the same
+workload with the said workqueues converted to unbound?  I think that
+would at least provide a nice reference point.
 
-> On Thu, Mar 28, 2013 at 9:19 AM, Julia Lawall <julia.lawall@lip6.fr> wrote:
-> > On Thu, 28 Mar 2013, Jesse Barnes wrote:
-> >> >     -      info->skip_vt_switch = true;
-> >> >     +      fb_enable_skip_vt_switch(info);
-> >> >
-> >> > So we'd then have to just add this static inline change for each new driver...
-> >> > There may be a way to get SmPL to do this for us...
-> >
-> > @@
-> > type of info  *info;
-> > @@
-> >
-> > -      info->skip_vt_switch = true;
-> > +      fb_enable_skip_vt_switch(info);
-> >
-> > for whatever the type of info is.
->
-> Thanks Julia! I'll be sure to try to add this to compat-drivers if the
-> upstream fb patch is not accepted. If it is accepted we would not need
-> this at all!
->
-> > Then I guess there would be a similar rule for the false case?
->
-> Nope, see that's the proactive strategy taken by the static inline and
-> hence the patch. compat would have a static inline for both cases, and
-> for the false case it'd be a no-op. If accepted upstream though then
-> we would not need any changes for this collateral evolution. However
-> *spotting* these collateral evolutions and giving you SmPL for them as
-> a proactive strategy might be good given that if these type of patches
-> are indeed welcomed upstream we'd then be able to address these as
-> secondary steps. If they are not accepted then indeed we'd use them to
-> backport that collateral evolution through both compat (adds the
-> static inlines) and compat-drivers (the SmPL).
+Thanks.
 
-Probably I am missing something, since I haven't looked at the code in
-detail, bu wouldn't it be nicer to have a function call for the false
-case, if there is a function call for the true case?  In looking at the
-code, one could wonder why things are not done in a parallel way.
-
-julia
+-- 
+tejun
