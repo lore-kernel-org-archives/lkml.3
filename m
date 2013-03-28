@@ -1,288 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab3C1AgO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 20:36:14 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46372 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755067Ab3C1AgM (ORCPT
+	id S1754648Ab3C1Akz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 20:40:55 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43424 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754392Ab3C1Aky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 20:36:12 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-a5-5153907957d6
-Date: Thu, 28 Mar 2013 09:36:09 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC] mm: remove swapcache page early
-Message-ID: <20130328003609.GA22908@blaptop>
-References: <1364350932-12853-1-git-send-email-minchan@kernel.org>
- <alpine.LNX.2.00.1303271230210.29687@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1303271230210.29687@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 27 Mar 2013 20:40:54 -0400
+Date: Thu, 28 Mar 2013 11:40:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jikos@jikos.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: linux-next: manual merge of the hid tree with Linus' tree
+Message-Id: <20130328114043.b83caaadbd48417f5814e6cc@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__28_Mar_2013_11_40_43_+1100_.Q/lZ7WRkBWXGvjW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
+--Signature=_Thu__28_Mar_2013_11_40_43_+1100_.Q/lZ7WRkBWXGvjW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Mar 27, 2013 at 02:41:07PM -0700, Hugh Dickins wrote:
-> On Wed, 27 Mar 2013, Minchan Kim wrote:
-> 
-> > Swap subsystem does lazy swap slot free with expecting the page
-> > would be swapped out again so we can't avoid unnecessary write.
->                              so we can avoid unnecessary write.
-> > 
-> > But the problem in in-memory swap is that it consumes memory space
-> > until vm_swap_full(ie, used half of all of swap device) condition
-> > meet. It could be bad if we use multiple swap device, small in-memory swap
-> > and big storage swap or in-memory swap alone.
-> 
-> That is a very good realization: it's surprising that none of us
-> thought of it before - no disrespect to you, well done, thank you.
-> 
-> And I guess swap readahead is utterly unhelpful in this case too.
-> 
-> > 
-> > This patch changes vm_swap_full logic slightly so it could free
-> > swap slot early if the backed device is really fast.
-> > For it, I used SWP_SOLIDSTATE but It might be controversial.
-> 
-> But I strongly disagree with almost everything in your patch :)
-> I disagree with addressing it in vm_swap_full(), I disagree that
-> it can be addressed by device, I disagree that it has anything to
-> do with SWP_SOLIDSTATE.
-> 
-> This is not a problem with swapping to /dev/ram0 or to /dev/zram0,
-> is it?  In those cases, a fixed amount of memory has been set aside
-> for swap, and it works out just like with disk block devices.  The
+Hi Jiri,
 
-Brd is okay but it seems you are miunderstanding zram.
-The zram doesn't reserve any memory and allocate dynamic memory when
-swap out happens so it can make duplicate space in pusdo block device
-and memory.
+Today's linux-next merge of the hid tree got a conflict in
+drivers/hid/hid-multitouch.c between commit 4c43755506ec ("HID:
+multitouch: fix touchpad buttons") from Linus' tree and commit
+5b62efd8250d ("HID: multitouch: remove useless last_field_index field")
+from the hid tree.
 
-> memory set aside may be wasted, but that is accepted upfront.
-> 
-> Similarly, this is not a problem with swapping to SSD.  There might
-> or might not be other reasons for adjusting the vm_swap_full() logic
-> for SSD or generally, but those have nothing to do with this issue.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Yes.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> 
-> The problem here is peculiar to frontswap, and the variably sized
-> memory behind it, isn't it?  We are accustomed to using swap to free
+diff --cc drivers/hid/hid-multitouch.c
+index 82e9211,aceaf6c..0000000
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@@ -680,11 -723,7 +727,7 @@@ static void mt_process_mt_event(struct=20
+  		if (usage->usage_index + 1 =3D=3D field->report_count) {
+  			/* we only take into account the last report. */
+  			if (usage->hid =3D=3D td->last_slot_field)
+ -				mt_complete_slot(td, field->hidinput->input);
+ +				mt_complete_slot(td, input);
+-=20
+- 			if (field->index =3D=3D td->last_field_index
+- 				&& td->num_received >=3D td->num_expected)
+- 				mt_sync_frame(td, field->hidinput->input);
+  		}
+ =20
+  	}
 
-Zram, too.
+--Signature=_Thu__28_Mar_2013_11_40_43_+1100_.Q/lZ7WRkBWXGvjW
+Content-Type: application/pgp-signature
 
-> up memory by transferring its data to some other, cheaper but slower
-> resource.
-> 
-> But in the case of frontswap and zmem (I'll say that to avoid thinking
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Frankly speaking, I couldn't understand what you means, frontswap and zmem.
-The frontswap is just layer for hook the swap subsystem.
-Real instance of frontswap is zcache and zswap at the moment.
-I will understand them as zcache and zswap. Okay?
+iQIcBAEBCAAGBQJRU5GLAAoJEECxmPOUX5FEWCQP+wZ/mxf7PiKL1HLMou4kQYsq
+hyLppX6U9vOzbHE1E4qBFKjs4SXZVpUtH/x6Hy6/rlNP+77INlQnNInxYZYmi7e9
+SCTfvsd5j4NQc4Un6bx9i7jS10+ICTzHjj2CZwP5u4CNJvixKxFHSy2QQuSJXEhR
+GvY9J1Y03SdyIHrzTUQCBf+Aev5x82TeGrn5lSCZZ2pFAGU/E0+aCs6rcOS4wSsN
+BRtvhinOdBGnSHqcnQB6k4O9+OJ4dxthB9BNOskyY0aw+mNKgtk1BkXwRXV6HUq3
+Vah6b0s3lNbqaFGkbSvvf+/cL0QizeFOLfxuiNVHHMPXBnJBquI2qUmt5vKkmM+k
+eVSpRp+RnYrMSZgo0AeRCCpzljSVnBVVVIsgxsyds5feRTwoZlSlUbFrP+18qThG
+0cUNbahUJcAllYDikUy5CfXjwd9Acq2vSWbn10H/Ld4iZk8IAI62G7ek0R0Idc9p
+qNSbUWaI22S4ACehuqbuwtbLXKoI/nLf0Rifb2ip3qYWCYyzhpP6Q7L7vwiFflpm
+yU/DksYfznhSRQ9NgF7UACx7ElXtI1MhmmgukGjeWt5Ta8xKSWKyNDvBDnFW7H59
+Nfr2HabqzltTf6FhJcdzpDsT8j5rSMvikSGTjsQCaJ5dinOAQsY7YWX0XxKSo/OG
+EhjDLEPN+dLHx+JAXWFY
+=VLw2
+-----END PGP SIGNATURE-----
 
-> through which backends are actually involved), it is not a cheaper and
-> slower resource, but the very same memory we are trying to save: swap
-> is stolen from the memory under reclaim, so any duplication becomes
-> counter-productive (if we ignore cpu compression/decompression costs:
-> I have no idea how fair it is to do so, but anyone who chooses zmem
-> is prepared to pay some cpu price for that).
-
-Agree.
-
-> 
-> And because it's a frontswap thing, we cannot decide this by device:
-> frontswap may or may not stand in front of each device.  There is no
-> problem with swapcache duplicated on disk (until that area approaches
-> being full or fragmented), but at the higher level we cannot see what
-> is in zmem and what is on disk: we only want to free up the zmem dup.
-
-That's what I really have a concern and why I begged idea.
-
-> 
-> I believe the answer is for frontswap/zmem to invalidate the frontswap
-> copy of the page (to free up the compressed memory when possible) and
-> SetPageDirty on the PageUptodate PageSwapCache page when swapping in
-> (setting page dirty so nothing will later go to read it from the
-> unfreed location on backing swap disk, which was never written).
-
-You mean that zcache and zswap have to do garbage collection by some
-policy? It could be but how about zram? It's just pseudo block device
-and he don't have any knowledge on top of it. It could be swap or normal
-block device. I mean zram has no information of swap to handle it.
-
-> 
-> We cannot rely on freeing the swap itself, because in general there
-> may be multiple references to the swap, and we only satisfy the one
-> which has faulted.  It may or may not be a good idea to use rmap to
-> locate the other places to insert pte in place of swap entry, to
-> resolve them all at once; but we have chosen not to do so in the
-> past, and there's no need for that, if the zmem gets invalidated
-> and the swapcache page set dirty.
-
-Yes it could be better but as I mentioned above, it couldn't handle
-zram case. If there is a solution for zram, I will be happy. :)
-
-And another point, fronstwap is already percolated into swap subsystem
-very tightly. So I doubt adding one another hook is a really problem.
-
-Thanks for great comment, Hugh!
-
-> 
-> Hugh
-> 
-> > So let's add Ccing Shaohua and Hugh.
-> > If it's a problem for SSD, I'd like to create new type SWP_INMEMORY
-> > or something for z* family.
-> > 
-> > Other problem is zram is block device so that it can set SWP_INMEMORY
-> > or SWP_SOLIDSTATE easily(ie, actually, zram is already done) but
-> > I have no idea to use it for frontswap.
-> > 
-> > Any idea?
-> > 
-> > Other optimize point is we remove it unconditionally when we
-> > found it's exclusive when swap in happen.
-> > It could help frontswap family, too.
-> > What do you think about it?
-> > 
-> > Cc: Hugh Dickins <hughd@google.com>
-> > Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-> > Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> > Cc: Nitin Gupta <ngupta@vflare.org>
-> > Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
-> > Cc: Shaohua Li <shli@kernel.org>
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  include/linux/swap.h | 11 ++++++++---
-> >  mm/memory.c          |  3 ++-
-> >  mm/swapfile.c        | 11 +++++++----
-> >  mm/vmscan.c          |  2 +-
-> >  4 files changed, 18 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/include/linux/swap.h b/include/linux/swap.h
-> > index 2818a12..1f4df66 100644
-> > --- a/include/linux/swap.h
-> > +++ b/include/linux/swap.h
-> > @@ -359,9 +359,14 @@ extern struct page *swapin_readahead(swp_entry_t, gfp_t,
-> >  extern atomic_long_t nr_swap_pages;
-> >  extern long total_swap_pages;
-> >  
-> > -/* Swap 50% full? Release swapcache more aggressively.. */
-> > -static inline bool vm_swap_full(void)
-> > +/*
-> > + * Swap 50% full or fast backed device?
-> > + * Release swapcache more aggressively.
-> > + */
-> > +static inline bool vm_swap_full(struct swap_info_struct *si)
-> >  {
-> > +	if (si->flags & SWP_SOLIDSTATE)
-> > +		return true;
-> >  	return atomic_long_read(&nr_swap_pages) * 2 < total_swap_pages;
-> >  }
-> >  
-> > @@ -405,7 +410,7 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
-> >  #define get_nr_swap_pages()			0L
-> >  #define total_swap_pages			0L
-> >  #define total_swapcache_pages()			0UL
-> > -#define vm_swap_full()				0
-> > +#define vm_swap_full(si)			0
-> >  
-> >  #define si_swapinfo(val) \
-> >  	do { (val)->freeswap = (val)->totalswap = 0; } while (0)
-> > diff --git a/mm/memory.c b/mm/memory.c
-> > index 705473a..1ca21a9 100644
-> > --- a/mm/memory.c
-> > +++ b/mm/memory.c
-> > @@ -3084,7 +3084,8 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> >  	mem_cgroup_commit_charge_swapin(page, ptr);
-> >  
-> >  	swap_free(entry);
-> > -	if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
-> > +	if (likely(PageSwapCache(page)) && (vm_swap_full(page_swap_info(page))
-> > +			|| (vma->vm_flags & VM_LOCKED) || PageMlocked(page)))
-> >  		try_to_free_swap(page);
-> >  	unlock_page(page);
-> >  	if (page != swapcache) {
-> > diff --git a/mm/swapfile.c b/mm/swapfile.c
-> > index 1bee6fa..f9cc701 100644
-> > --- a/mm/swapfile.c
-> > +++ b/mm/swapfile.c
-> > @@ -293,7 +293,7 @@ checks:
-> >  		scan_base = offset = si->lowest_bit;
-> >  
-> >  	/* reuse swap entry of cache-only swap if not busy. */
-> > -	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
-> > +	if (vm_swap_full(si) && si->swap_map[offset] == SWAP_HAS_CACHE) {
-> >  		int swap_was_freed;
-> >  		spin_unlock(&si->lock);
-> >  		swap_was_freed = __try_to_reclaim_swap(si, offset);
-> > @@ -382,7 +382,8 @@ scan:
-> >  			spin_lock(&si->lock);
-> >  			goto checks;
-> >  		}
-> > -		if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
-> > +		if (vm_swap_full(si) &&
-> > +			si->swap_map[offset] == SWAP_HAS_CACHE) {
-> >  			spin_lock(&si->lock);
-> >  			goto checks;
-> >  		}
-> > @@ -397,7 +398,8 @@ scan:
-> >  			spin_lock(&si->lock);
-> >  			goto checks;
-> >  		}
-> > -		if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
-> > +		if (vm_swap_full(si) &&
-> > +			si->swap_map[offset] == SWAP_HAS_CACHE) {
-> >  			spin_lock(&si->lock);
-> >  			goto checks;
-> >  		}
-> > @@ -763,7 +765,8 @@ int free_swap_and_cache(swp_entry_t entry)
-> >  		 * Also recheck PageSwapCache now page is locked (above).
-> >  		 */
-> >  		if (PageSwapCache(page) && !PageWriteback(page) &&
-> > -				(!page_mapped(page) || vm_swap_full())) {
-> > +				(!page_mapped(page) ||
-> > +				  vm_swap_full(page_swap_info(page)))) {
-> >  			delete_from_swap_cache(page);
-> >  			SetPageDirty(page);
-> >  		}
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index df78d17..145c59c 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -933,7 +933,7 @@ cull_mlocked:
-> >  
-> >  activate_locked:
-> >  		/* Not a candidate for swapping, so reclaim swap space. */
-> > -		if (PageSwapCache(page) && vm_swap_full())
-> > +		if (PageSwapCache(page) && vm_swap_full(page_swap_info(page)))
-> >  			try_to_free_swap(page);
-> >  		VM_BUG_ON(PageActive(page));
-> >  		SetPageActive(page);
-> > -- 
-> > 1.8.2
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+--Signature=_Thu__28_Mar_2013_11_40_43_+1100_.Q/lZ7WRkBWXGvjW--
