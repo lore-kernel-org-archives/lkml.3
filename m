@@ -1,121 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab3C1PmM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 11:42:12 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:49328 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615Ab3C1PmJ (ORCPT
+	id S1756419Ab3C1Pmj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 11:42:39 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:60025 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479Ab3C1Pmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 11:42:09 -0400
-Message-ID: <5154642C.6080709@linux.vnet.ibm.com>
-Date: Thu, 28 Mar 2013 21:09:24 +0530
+	Thu, 28 Mar 2013 11:42:38 -0400
+Message-ID: <51546452.3090408@linux.vnet.ibm.com>
+Date: Thu, 28 Mar 2013 21:10:02 +0530
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Thomas Gleixner <tglx@linutronix.de>
 CC: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Rusty Russell <rusty@rustcorp.com.au>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 05/34] idle: Implement generic idle function
-References: <20130321214930.752934102@linutronix.de> <20130321215233.646635455@linutronix.de>
-In-Reply-To: <20130321215233.646635455@linutronix.de>
+        Magnus Damm <magnus.damm@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Subject: Re: [patch 26/34] powerpc: Use generic idle loop
+References: <20130321214930.752934102@linutronix.de> <20130321215235.026838003@linutronix.de>
+In-Reply-To: <20130321215235.026838003@linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032815-3864-0000-0000-0000077B30DE
+x-cbid: 13032815-8256-0000-0000-000006D7EA8D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 03/22/2013 03:23 AM, Thomas Gleixner wrote:
-> All idle functions in arch/* are more or less the same, plus minus a
-> few bugs and extra instrumentation, tickless support and other
-> optional items.
-> 
-> Implement a generic idle function which resembles the functionality
-> found in arch/. Provide weak arch_cpu_idle_* functions which can be
-> overridden by the architecture code if needed.
-> 
 > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 > ---
->  arch/Kconfig        |    3 +
->  include/linux/cpu.h |    8 +++
->  kernel/cpu/idle.c   |  105 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 116 insertions(+)
 [...]
-> +
-> +/*
-> + * Generic idle loop implementation
-> + */
-> +static void cpu_idle_loop(void)
-> +{
-> +	while (1) {
-> +		tick_nohz_idle_enter();
-> +
-> +		while (!need_resched()) {
-> +			check_pgt_cache();
-> +			rmb();
-> +
-> +			if (cpu_is_offline(smp_processor_id()))
-> +				arch_cpu_idle_dead();
-> +
-> +			local_irq_disable();
-> +			arch_cpu_idle_enter();
-> +
-> +			if (cpu_idle_force_poll) {
-> +				cpu_idle_poll();
-> +			} else {
-> +				current_clr_polling();
-> +				if (!need_resched()) {
-> +					stop_critical_timings();
-> +					rcu_idle_enter();
-> +					arch_cpu_idle();
-> +					WARN_ON_ONCE(!irqs_disabled());
-
-I understand that you have changed it to WARN_ON_ONCE(irqs_disabled()) in
-the v2 hosted in your git tree..
-
-Sometime ago, Deepthi (in CC) had added such a check and Rafael had faced
-some weird problems with that, and hence it was removed. Below are some
-links to that discussion.
-
-https://lkml.org/lkml/2012/6/22/48
-https://lkml.org/lkml/2012/6/24/132
-https://lkml.org/lkml/2012/6/25/402
-
-Rafael, do you still see that problem after applying Thomas' patches?
-
-> +					rcu_idle_exit();
-> +					start_critical_timings();
-> +				} else {
-> +					local_irq_enable();
-> +				}
-> +				current_set_polling();
-> +			}
-> +			arch_cpu_idle_exit();
-> +		}
-> +		tick_nohz_idle_exit();
-> +		schedule_preempt_disabled();
-> +	}
-> +}
-> +
-> +void cpu_startup_entry(enum cpuhp_state state)
-> +{
-> +	current_set_polling();
-> +	arch_cpu_idle_prepare();
-> +	cpu_idle_loop();
-> +}
-> +#endif
+> Index: linux-2.6/arch/powerpc/kernel/idle.c
+> ===================================================================
+> --- linux-2.6.orig/arch/powerpc/kernel/idle.c
+> +++ linux-2.6/arch/powerpc/kernel/idle.c
+> @@ -50,64 +50,30 @@ static int __init powersave_off(char *ar
+>  }
+>  __setup("powersave=off", powersave_off);
 > 
+> -/*
+> - * The body of the idle task.
+> - */
+> -void cpu_idle(void)
+> +void arch_cpu_idle(void)
+>  {
+> -	set_thread_flag(TIF_POLLING_NRFLAG);
+> -	while (1) {
+> -		tick_nohz_idle_enter();
+> -		rcu_idle_enter();
+> -
+> -		while (!need_resched() && !cpu_should_die()) {
+> -			ppc64_runlatch_off();
+> -
+> -			if (ppc_md.power_save) {
+> -				clear_thread_flag(TIF_POLLING_NRFLAG);
+> -				/*
+> -				 * smp_mb is so clearing of TIF_POLLING_NRFLAG
+> -				 * is ordered w.r.t. need_resched() test.
+> -				 */
+> -				smp_mb();
+> -				local_irq_disable();
+> -
+> -				/* Don't trace irqs off for idle */
+> -				stop_critical_timings();
+> -
+> -				/* check again after disabling irqs */
+> -				if (!need_resched() && !cpu_should_die())
+> -					ppc_md.power_save();
+> -
+> -				start_critical_timings();
+> -
+> -				/* Some power_save functions return with
+> -				 * interrupts enabled, some don't.
+> -				 */
+> -				if (irqs_disabled())
+> -					local_irq_enable();
+> -				set_thread_flag(TIF_POLLING_NRFLAG);
+> -
+> -			} else {
+> -				/*
+> -				 * Go into low thread priority and possibly
+> -				 * low power mode.
+> -				 */
+> -				HMT_low();
+> -				HMT_very_low();
+> -			}
+> -		}
+> -
+> -		HMT_medium();
+> -		ppc64_runlatch_on();
+> -		rcu_idle_exit();
+> -		tick_nohz_idle_exit();
+> -		if (cpu_should_die()) {
+> -			sched_preempt_enable_no_resched();
+> -			cpu_die();
+> -		}
+> -		schedule_preempt_disabled();
+> +	ppc64_runlatch_off();
+> +
+> +	if (ppc_md.power_save) {
+> +		ppc_md.power_save();
+> +		/*
+> +		 * Some power_save functions return with
+> +		 * interrupts enabled, some don't.
+> +		 */
+> +		if (irqs_disabled())
+> +			local_irq_enable();
+> +	} else {
+> +		local_irq_enable();
+> +		/*
+> +		 * Go into low thread priority and possibly
+> +		 * low power mode.
+> +		 */
+> +		HMT_low();
+> +		HMT_very_low();
+>  	}
+> +
+> +	HMT_medium();
+> +	ppc64_runlatch_on();
+>  }
 > 
 
+
+The call to cpu_die() seems to be missing. And considering this commit,
+
+commit a7c2bb8279d20d853e43c34584eaf2b039de8026
+Author: Signed-off-by: Darren Hart <dvhltc@us.ibm.com>
+Date:   Wed Aug 4 18:28:33 2010 +0000
+
+    powerpc: Re-enable preemption before cpu_die()
+
+we need to call it with preempt enabled. So how about folding the
+following diff with this patch?
+
+
+diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
+index b751baa..e434fb9 100644
+--- a/arch/powerpc/kernel/idle.c
++++ b/arch/powerpc/kernel/idle.c
+@@ -33,11 +33,6 @@
+ #include <asm/runlatch.h>
+ #include <asm/smp.h>
+ 
+-#ifdef CONFIG_HOTPLUG_CPU
+-#define cpu_should_die()	cpu_is_offline(smp_processor_id())
+-#else
+-#define cpu_should_die()	0
+-#endif
+ 
+ unsigned long cpuidle_disable = IDLE_NO_OVERRIDE;
+ EXPORT_SYMBOL(cpuidle_disable);
+@@ -50,6 +45,12 @@ static int __init powersave_off(char *arg)
+ }
+ __setup("powersave=off", powersave_off);
+ 
++void arch_cpu_idle_dead(void)
++{
++	sched_preempt_enable_no_resched();
++	cpu_die();
++}
++
+ void arch_cpu_idle(void)
+ {
+ 	ppc64_runlatch_off();
+
+ 
 Regards,
 Srivatsa S. Bhat
 
