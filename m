@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058Ab3C1BDD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 21:03:03 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19764 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753960Ab3C1BDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 21:03:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,922,1355126400"; 
-   d="scan'208";a="276924709"
-Message-ID: <515396B7.1060909@intel.com>
-Date: Thu, 28 Mar 2013 09:02:47 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1755273Ab3C1BGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 21:06:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49440 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754090Ab3C1BGR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 21:06:17 -0400
+Date: Thu, 28 Mar 2013 01:06:12 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andrei Epure <epure.andrei@gmail.com>
+Cc: cbou@mail.ru, dwmw2@infradead.org, milo.kim@ti.com,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] power: pass IRQF_ONESHOT to request_threaded_irq()
+Message-ID: <20130328010611.GV18316@opensource.wolfsonmicro.com>
+References: <1364431370-25029-1-git-send-email-epure.andrei@gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Yinghai Lu <yinghai@kernel.org>, Len Brown <len.brown@intel.com>,
-        Changlong Xie <changlongx.xie@intel.com>, linux-acpi@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>, lkp@linux.intel.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [LKP] Commit ac3ebafa81a makes NHM EX/EP machines hung out since
- 3.9-rc1
-References: <20130313022759.GA120840@bee> <5152781B.6060603@intel.com> <CAE9FiQUnXev4Q+B1Cww-bhZM8O7bhbvOT=Y5c4SOjFksq1oXEw@mail.gmail.com> <15175142.3Xo9lEvds6@vostro.rjw.lan>
-In-Reply-To: <15175142.3Xo9lEvds6@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="t1CmwkW5H+10rlDA"
+Content-Disposition: inline
+In-Reply-To: <1364431370-25029-1-git-send-email-epure.andrei@gmail.com>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2013 08:40 AM, Rafael J. Wysocki wrote:
->> > 
->> > It fixes the problem on my 8 sockets Nehalem-EX that will hang around
->> > ip_auto_config()
->> > 
->> > Tested-by: Yinghai Lu <yinghai@kernel.org>
->> > 
->> > Rafael,
->> > Can you please push this one to Linus tree ?
->> > As the offending patch was via your tree to upstream.
-> I will if there's no better way to address this issue before -rc6.
 
-If it can be pushed to upstream, please add:
+--t1CmwkW5H+10rlDA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reported-by: LKP project <lkp@linux.intel.com>
-Reported-by: Xie ChanglongX <changlongx.xie@intel.com>
--- 
-Thanks Alex
+On Thu, Mar 28, 2013 at 02:42:50AM +0200, Andrei Epure wrote:
+> Patch found using coccinelle.
+>=20
+> Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
+
+Some of these may be false positives especially for PMICs - often the
+interrupts are guaranteed to be generated from the interrupt controller
+on the device which runs in thread context.
+
+More generally though why not fix this in request_threaded_irq() itself,
+if there's no hard IRQ handler then add the flag transparently?  It'd
+save boilerplate.  Indeed I could've sworn someone did that...
+
+--t1CmwkW5H+10rlDA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRU5duAAoJELSic+t+oim9rQEP/ikW9huREn1RjpHcJKf7ym7N
+s/8XvT9BG/YyVcej+0I7npbayY3mN5DrGMn4FvYxqIMflZteqp8qjusBpL+9l2nQ
+QrqbIA8kvTdK8Dw/SvLVqQXKqN+QFWfBNZE4BT78WEB1H57agCDbg7njTj4UiyMp
+XquQn9madOWDokb6F6EMED0piSAoRNvSCyNkWtUPD1Ss4QZgawDqf5TK7V6IRC9R
+/3wnZUyxFg+rSq215L0mfslcqwDmsy3rXMdmA6IwtZU9lVdSNmeWJlyHBH1z7FO+
+4G/139a38DI+mcKdwVpXLEoMk7tfruSpJV3vmpuT2TcChGfy9EjUqL8KDt9gjkHM
+ze/Q349F3QDcwNxJtAoJd63zMDPIlLl9dxqBYINOVW9FIkGuaTZMDbnVlXHDWORv
+j49NoPt2IaBb8RaHugfBluRYWAaNaMqvZA239gkomJ+xtDkSlFi+bz7aULaV3VeQ
+V1HdE2j/CiTb8XWGe8p9V57ywcHcCrFq+tA6ZeSuOJpv98b9rJdUKQ6a4MdayZTt
+bDcUveh37aG6MxPuB6oBqhtbIe3hQJoyT4i9i1MockwGd3GX3vTehf57WFUjQA4t
+3Bh6DRMJ+MnaQ8RmxFIUuY+8yPIoUZeaKZjOFX7QlUZknqe1VsPKBt7448zKMliN
+zAh7Egfa6jJngM1x444I
+=fMy2
+-----END PGP SIGNATURE-----
+
+--t1CmwkW5H+10rlDA--
