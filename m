@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab3C1SBE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 14:01:04 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35615 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276Ab3C1SBB (ORCPT
+	id S1752440Ab3C1SFE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 14:05:04 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49275 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751110Ab3C1SFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 14:01:01 -0400
-Message-ID: <51548559.6030605@wwwdotorg.org>
-Date: Thu, 28 Mar 2013 12:00:57 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 28 Mar 2013 14:05:01 -0400
+X-Sasl-enc: HSk8JteyQh30Ufts0DAe2rbw9ps7R2ana53NMr3d7fju 1364493900
+Date: Thu, 28 Mar 2013 11:04:59 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>, Ming Lei <tom.leiming@gmail.com>
+Subject: Re: linux-next: build failure after merge of the usb tree
+Message-ID: <20130328180459.GA20456@kroah.com>
+References: <20130327144134.0809a21c09b45d20a1fe480d@canb.auug.org.au>
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>
-CC: arm@kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, linux-kbuild@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH REPOST 2/7] kbuild: fixdep: support concatenated dep files
-References: <1363890194-31538-1-git-send-email-swarren@wwwdotorg.org> <1363890194-31538-2-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1363890194-31538-2-git-send-email-swarren@wwwdotorg.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130327144134.0809a21c09b45d20a1fe480d@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2013 12:23 PM, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
+On Wed, Mar 27, 2013 at 02:41:34PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> The current use-case for fixdep is: a source file is run through a single
-> processing step, which creates a single dependency file as a side-effect,
-> which fixdep transforms into the file used by the kernel build process.
+> After merging the usb tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
 > 
-> In order to transparently run the C pre-processor on device-tree files,
-> we wish to run both gcc -E and dtc on a source file in a single rule.
-> This generates two dependency files, which must be transformed together
-> into the file used by the kernel build process. This change modifies
-> fixdep so it can process the concatenation of multiple separate input
-> dependency files, and produce a correct unified output.
+> drivers/usb/serial/usb-serial.c: In function 'usb_serial_probe':
+> drivers/usb/serial/usb-serial.c:887:3: error: 'struct usb_serial_port' has no member named 'delta_msr_wait'
 > 
-> The code changes have the slight benefit of transforming the loop in
-> parse_dep_file() into more of a lexer/tokenizer, with the loop body being
-> more of a parser. Previously, some of this logic was mixed together
-> before the loop. I also added some comments, which I hope are useful.
+> Caused by commit eba0e3c3a0ba ("USB: serial: fix hang when opening port")
+> fro the usb.current tree interacting with commit 53ab34dc50ad ("USB:
+> serial: remove unused MSR-wait queue") from the usb tree.
 > 
-> Benchmarking shows that on a cross-compiled ARM tegra_defconfig build,
-> there is less than 0.5 seconds speed decrease with this change, on top
-> of a build time of ~2m24s. This is probably within the noise.
+> I have reverted the commit from usb.current on the assumption that the
+> problem it solves has been, or will be, solved some other way.
 
-Marek, do patches 2, 3, and 4 in this series look good to you from a
-kbuild perspective?
+I've now fixed this in my tree, so all should be good.
 
-I'm hoping that you can review/ack those 3 patches for kbuild, and that
-Grant will review/ack the whole series, and then the series can be
-merged via arm-soc for 3.10.
+thanks,
 
-Let me know if you need me to repost the series again in case it's
-fallen out of your inbox.
-
-Thanks.
+greg k-h
