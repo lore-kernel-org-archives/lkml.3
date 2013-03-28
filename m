@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab3C1Vcc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 17:32:32 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:62812 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927Ab3C1Vca (ORCPT
+	id S1754215Ab3C1Vc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 17:32:58 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:34712 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753946Ab3C1Vc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 17:32:30 -0400
-From: Alexandru Copot <alex.mihai.c@gmail.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net
-Cc: honkiko@gmail.com, tgraf@suug.ch, Alexandru Copot <alex.mihai.c@gmail.com>
-Subject: [PATCH net-next] audit: pass int* to nlmsg_next
-Date: Thu, 28 Mar 2013 23:31:29 +0200
-Message-Id: <1364506289-9146-1-git-send-email-alex.mihai.c@gmail.com>
-X-Mailer: git-send-email 1.8.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 28 Mar 2013 17:32:56 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH 1/2] net: calxedaxgmac: fix rx ring handling when OOM
+Date: Thu, 28 Mar 2013 16:32:44 -0500
+Message-Id: <1364506365-13689-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 941912133025926307c7a65b203fa38403b1063a replaced the macros
-NLMSG_NEXT with calls to nlmsg_next which produces this warning:
+From: Rob Herring <rob.herring@calxeda.com>
 
-kernel/audit.c: In function ‘audit_receive_skb’:
-kernel/audit.c:928:3: warning: passing argument 2 of ‘nlmsg_next’ makes pointer from integer without a cast
-In file included from include/net/rtnetlink.h:5:0,
-                 from include/net/neighbour.h:28,
-                 from include/net/dst.h:17,
-                 from include/net/sock.h:68,
-                 from kernel/audit.c:55:
-include/net/netlink.h:359:1: note: expected ‘int *’ but argument is of type ‘int’
+If skb allocation for the rx ring fails repeatedly, we can reach a point
+were the ring is empty. In this condition, the driver is out of sync with
+the h/w. While this has always been possible, the removal of the skb
+recycling seems to have made triggering this problem easier.
 
-Fix this by sending the intended pointer.
-
-Signed-off-by: Alexandru Copot <alex.mihai.c@gmail.com>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 ---
- kernel/audit.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/calxeda/xgmac.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 4dbb047..488f85f 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -925,7 +925,7 @@ static void audit_receive_skb(struct sk_buff *skb)
- 		if (err || (nlh->nlmsg_flags & NLM_F_ACK))
- 			netlink_ack(skb, nlh, err);
+diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
+index a170065..bb1e80b 100644
+--- a/drivers/net/ethernet/calxeda/xgmac.c
++++ b/drivers/net/ethernet/calxeda/xgmac.c
+@@ -1141,6 +1141,9 @@ static int xgmac_rx(struct xgmac_priv *priv, int limit)
+ 		struct sk_buff *skb;
+ 		int frame_len;
  
--		nlh = nlmsg_next(nlh, len);
-+		nlh = nlmsg_next(nlh, &len);
- 	}
- }
- 
++		if (!dma_ring_cnt(priv->rx_head, priv->rx_tail, DMA_RX_RING_SZ))
++			break;
++
+ 		entry = priv->rx_tail;
+ 		p = priv->dma_rx + entry;
+ 		if (desc_get_owner(p))
 -- 
-1.8.2
+1.7.10.4
 
