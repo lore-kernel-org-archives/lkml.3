@@ -1,41 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033Ab3C1HLm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 03:11:42 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:56720 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755584Ab3C1HLl (ORCPT
+	id S1756092Ab3C1HQe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 03:16:34 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:58839 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596Ab3C1HQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 03:11:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1302251820431.3030@axis700.grange>
-References: <Pine.LNX.4.64.1302251820431.3030@axis700.grange>
-Date: Thu, 28 Mar 2013 12:41:40 +0530
-X-Google-Sender-Auth: OjZMhkyZEi0c3Vb_AdcNRN1aKtU
-Message-ID: <CAOh2x=nnafMWKFqsi+6JUA38nKT-x4dZ0fimfiKS12vhK5tHmg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: use the exact frequency for clk_set_rate()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 28 Mar 2013 03:16:33 -0400
+From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+To: linkinjeon@gmail.com
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Subject: [PATCH] fs: f2fs: Use kmemdup
+Date: Thu, 28 Mar 2013 02:24:53 +0200
+Message-Id: <1364430293-7624-1-git-send-email-gheorghiuandru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 10:52 PM, Guennadi Liakhovetski
-<g.liakhovetski@gmx.de> wrote:
-> clk_set_rate() isn't supposed to accept approximate frequencies, instead
-> a supported frequency should be obtained from clk_round_rate() and then
-> used to set the clock.
->
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> ---
->
-> Applies on top of my previous patch to fix unsigned freq_Hz "cpufreq: fix
-> sign check of an unsigned variable in cpufreq-cpu0"
->
->  drivers/cpufreq/cpufreq-cpu0.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
+Use kmemdup instead of kzalloc and memcpy.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+---
+ fs/f2fs/node.c    |   12 +++++-------
+ fs/f2fs/segment.c |    3 +--
+ 2 files changed, 6 insertions(+), 9 deletions(-)
+
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index e275218..9f5eca4 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1661,19 +1661,17 @@ static int init_node_manager(struct f2fs_sb_info *sbi)
+ 	spin_lock_init(&nm_i->free_nid_list_lock);
+ 	rwlock_init(&nm_i->nat_tree_lock);
+ 
+-	nm_i->bitmap_size = __bitmap_size(sbi, NAT_BITMAP);
+ 	nm_i->init_scan_nid = le32_to_cpu(sbi->ckpt->next_free_nid);
+ 	nm_i->next_scan_nid = le32_to_cpu(sbi->ckpt->next_free_nid);
+-
+-	nm_i->nat_bitmap = kzalloc(nm_i->bitmap_size, GFP_KERNEL);
+-	if (!nm_i->nat_bitmap)
+-		return -ENOMEM;
++	nm_i->bitmap_size = __bitmap_size(sbi, NAT_BITMAP);
+ 	version_bitmap = __bitmap_ptr(sbi, NAT_BITMAP);
+ 	if (!version_bitmap)
+ 		return -EFAULT;
+ 
+-	/* copy version bitmap */
+-	memcpy(nm_i->nat_bitmap, version_bitmap, nm_i->bitmap_size);
++	nm_i->nat_bitmap = kmemdup(version_bitmap, nm_i->bitmap_size,
++					GFP_KERNEL);
++	if (!nm_i->nat_bitmap)
++		return -ENOMEM;
+ 	return 0;
+ }
+ 
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 777f17e..1758149 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -1403,10 +1403,9 @@ static int build_sit_info(struct f2fs_sb_info *sbi)
+ 	bitmap_size = __bitmap_size(sbi, SIT_BITMAP);
+ 	src_bitmap = __bitmap_ptr(sbi, SIT_BITMAP);
+ 
+-	dst_bitmap = kzalloc(bitmap_size, GFP_KERNEL);
++	dst_bitmap = kmemdup(src_bitmap, bitmap_size, GFP_KERNEL);
+ 	if (!dst_bitmap)
+ 		return -ENOMEM;
+-	memcpy(dst_bitmap, src_bitmap, bitmap_size);
+ 
+ 	/* init SIT information */
+ 	sit_i->s_ops = &default_salloc_ops;
+-- 
+1.7.9.5
+
