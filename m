@@ -1,105 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab3C1Leu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 07:34:50 -0400
-Received: from chicago.guarana.org ([192.210.136.102]:53911 "EHLO
-	chicago.guarana.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752660Ab3C1Les (ORCPT
+	id S1754807Ab3C1Lf0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 07:35:26 -0400
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:60244 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660Ab3C1LfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 07:34:48 -0400
-X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Mar 2013 07:34:48 EDT
-Date: Thu, 28 Mar 2013 22:25:04 +1100
-From: Kevin Easton <kevin@guarana.org>
-To: mtk.manpages@gmail.com
-Cc: linux-man@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch] clone.2, execve.2: Describe interaction of execve(2) and
- CLONE_FILES
-Message-ID: <20130328112504.GA16163@chicago.guarana.org>
+	Thu, 28 Mar 2013 07:35:25 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="nFreZHaLTZJo0R7j"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <51538701.60409@wwwdotorg.org>
+References: <1364222843-30305-1-git-send-email-richard.genoud@gmail.com>
+ <1364222843-30305-5-git-send-email-richard.genoud@gmail.com> <51538701.60409@wwwdotorg.org>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Thu, 28 Mar 2013 12:35:04 +0100
+Message-ID: <CACQ1gAjZjcBzW5dEBYL3LzbkCq+Bj1g3jCGk1o8OMsZ9T8RH2w@mail.gmail.com>
+Subject: Re: [PATCH 4/4] pinctrl: re-enable old state in case of error in pinctrl_select_state
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013/3/28 Stephen Warren <swarren@wwwdotorg.org>:
+> On 03/25/2013 08:47 AM, Richard Genoud wrote:
+>> If a new state is applied, the groups configured in the old state but
+>> not in the new state are disabled.
+>> If something goes wrong and the new state can't be applied, we have to
+>> re-enable those groups.
+>
+> What is the use-case for this? I wonder if it isn't better to simply
+> undo the partial selection of the new state (as patch 3/4 attempts to
+> do) and then leave p->state==NULL, indicating that no state is actively
+> selected. IIRC, this would be the same as right after the initial
+> pinctrl_select().
+>
+> I wonder if it's likely that attempting to re-apply the old state would
+> actually work, given that applying something just failed.
+>
+> Finally, this recovery code doesn't:
+>
+> a) Process anything except MUX_GROUP; any pin config settings in the old
+> state aren't restored.
+>
+> b) (I think) Apply any mux settings that don't involve groups that are
+> referenced by both the old and new states; given that patch 3/4 attempts
+> to undo everything in the failed application of the new state, I think
+> this "re-apply the old state" code should simple run through everything
+> in the old state any apply it unconditionally.
+Well, I'm not comfortable enough with this code to argue on that...
 
---nFreZHaLTZJo0R7j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hi Michael,
-
-This very small patch against man-pages-3.50 adds a description of the
-way in which a shared file descriptor table, as created by the
-CLONE_FILES flag of clone(2), is unshared when a process calls execve(2).
-
-It's easy to see this from the source - there's an unshare_files()
-call early in do_execve_common().
-
-    - Kevin
-
-diff -urN man-pages-3.50.orig/man2/clone.2 man-pages-3.50/man2/clone.2
---- man-pages-3.50.orig/man2/clone.2    2013-03-15 18:17:35.000000000 +1100
-+++ man-pages-3.50/man2/clone.2 2013-03-28 21:50:04.745932956 +1100
-@@ -180,6 +180,9 @@
- .BR fcntl (2)
- .B F_SETFD
- operation), the other process is also affected.
-+If a process sharing a file descriptor table calls
-+.BR execve (2),
-+its file descriptor table is duplicated (unshared).
-
- If
- .B CLONE_FILES
-diff -urN man-pages-3.50.orig/man2/execve.2 man-pages-3.50/man2/execve.2
---- man-pages-3.50.orig/man2/execve.2   2013-03-15 18:17:35.000000000 +1100
-+++ man-pages-3.50/man2/execve.2    2013-03-28 22:02:56.793844616 +1100
-@@ -204,6 +204,11 @@
- .B SIGCHLD
- (see
- .BR clone (2)).
-+.IP *
-+The file descriptor table is unshared, undoing the effect of the
-+.B CLONE_FILES
-+flag of
-+.BR clone (2).
- .PP
- Note the following further points:
- .IP * 3
+> c) Set p->state = oldstate, so it's left at NULL, which would confuse
+> any future pinctrl_select().
+Arrrggg !
+I forgot it !
+I'll send a fix on that
 
 
---nFreZHaLTZJo0R7j
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="clone-files.diff"
-
-diff -urN man-pages-3.50.orig/man2/clone.2 man-pages-3.50/man2/clone.2
---- man-pages-3.50.orig/man2/clone.2	2013-03-15 18:17:35.000000000 +1100
-+++ man-pages-3.50/man2/clone.2	2013-03-28 21:50:04.745932956 +1100
-@@ -180,6 +180,9 @@
- .BR fcntl (2)
- .B F_SETFD
- operation), the other process is also affected.
-+If a process sharing a file descriptor table calls
-+.BR execve (2),
-+its file descriptor table is duplicated (unshared).
- 
- If
- .B CLONE_FILES
-diff -urN man-pages-3.50.orig/man2/execve.2 man-pages-3.50/man2/execve.2
---- man-pages-3.50.orig/man2/execve.2	2013-03-15 18:17:35.000000000 +1100
-+++ man-pages-3.50/man2/execve.2	2013-03-28 22:02:56.793844616 +1100
-@@ -204,6 +204,11 @@
- .B SIGCHLD
- (see
- .BR clone (2)).
-+.IP *
-+The file descriptor table is unshared, undoing the effect of the
-+.B CLONE_FILES
-+flag of
-+.BR clone (2).
- .PP
- Note the following further points:
- .IP * 3
-
---nFreZHaLTZJo0R7j--
+-- 
+for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
