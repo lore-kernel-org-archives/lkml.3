@@ -1,159 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab3C1U75 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 16:59:57 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:42562 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222Ab3C1U7z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 16:59:55 -0400
-From: Mike Turquette <mturquette@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, rajagopal.venkat@linaro.org,
-        davidb@codeaurora.org, ulf.hansson@linaro.org,
-        laurent.pinchart@ideasonboard.com, tglx@linutronix.de,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 2/2] clk: allow reentrant calls into the clk framework
-Date: Thu, 28 Mar 2013 13:59:02 -0700
-Message-Id: <1364504343-12635-3-git-send-email-mturquette@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1364504343-12635-1-git-send-email-mturquette@linaro.org>
-References: <1364445958-2999-1-git-send-email-mturquette@linaro.org>
- <1364504343-12635-1-git-send-email-mturquette@linaro.org>
+	id S1753262Ab3C1VBI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 17:01:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13042 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752600Ab3C1VBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 17:01:07 -0400
+Message-ID: <5154AF3C.4080104@redhat.com>
+Date: Thu, 28 Mar 2013 16:59:40 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Michel Lespinasse <walken@google.com>
+CC: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 07/13] rwsem: use cmpxchg for trying to steal write
+ lock
+References: <1363344869-15732-1-git-send-email-walken@google.com> <1363344869-15732-8-git-send-email-walken@google.com>
+In-Reply-To: <1363344869-15732-8-git-send-email-walken@google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reentrancy into the clock framework is necessary for clock operations
-that result in nested calls to the clk api.  A common example is a clock
-that is prepared via an i2c transaction, such as a clock inside of a
-discrete audio chip or a power management IC.  The i2c subsystem itself
-will use the clk api resulting in a deadlock:
+On 03/15/2013 06:54 AM, Michel Lespinasse wrote:
+> Using rwsem_atomic_update to try stealing the write lock forced us to
+> undo the adjustment in the failure path. We can have simpler and faster
+> code by using cmpxchg instead.
+>
+> Signed-off-by: Michel Lespinasse <walken@google.com>
 
-clk_prepare(audio_clk)
-	i2c_transfer(..)
-		clk_prepare(i2c_controller_clk)
-
-The ability to reenter the clock framework prevents this deadlock.
-
-Other use cases exist such as allowing .set_rate callbacks to call
-clk_set_parent to achieve the best rate, or to save power in certain
-configurations.  Yet another example is performing pinctrl operations
-from a clk_ops callback.  Calls into the pinctrl subsystem may call
-clk_{un}prepare on an unrelated clock.  Allowing for nested calls to
-reenter the clock framework enables both of these use cases.
-
-Reentrancy is implemented by two global pointers that track the owner
-currently holding a global lock.  One pointer tracks the owner during
-sleepable, mutex-protected operations and the other one tracks the owner
-during non-interruptible, spinlock-protected operations.
-
-When the clk framework is entered we try to hold the global lock.  If it
-is held we compare the current task against the current owner; a match
-implies a nested call and we reenter.  If the values do not match then
-we block on the lock until it is released.
-
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
-Cc: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-Cc: David Brown <davidb@codeaurora.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Tested-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
----
-Changes since v5:
- * fixed up typo in changelog
-
-Changes since v4:
- * remove uneccesary atomic operations
- * remove casting bugs
- * place reentrancy logic into locking helper functions
- * improve debugging with reference counting and WARNs
-
- drivers/clk/clk.c |   44 ++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 42 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 0b5d612..0230c9d 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -19,10 +19,17 @@
- #include <linux/of.h>
- #include <linux/device.h>
- #include <linux/init.h>
-+#include <linux/sched.h>
- 
- static DEFINE_SPINLOCK(enable_lock);
- static DEFINE_MUTEX(prepare_lock);
- 
-+static struct task_struct *prepare_owner;
-+static struct task_struct *enable_owner;
-+
-+static int prepare_refcnt;
-+static int enable_refcnt;
-+
- static HLIST_HEAD(clk_root_list);
- static HLIST_HEAD(clk_orphan_list);
- static LIST_HEAD(clk_notifier_list);
-@@ -30,23 +37,56 @@ static LIST_HEAD(clk_notifier_list);
- /***           locking             ***/
- static void clk_prepare_lock(void)
- {
--	mutex_lock(&prepare_lock);
-+	if (!mutex_trylock(&prepare_lock)) {
-+		if (prepare_owner == current) {
-+			prepare_refcnt++;
-+			return;
-+		}
-+		mutex_lock(&prepare_lock);
-+	}
-+	WARN_ON_ONCE(prepare_owner != NULL);
-+	WARN_ON_ONCE(prepare_refcnt != 0);
-+	prepare_owner = current;
-+	prepare_refcnt = 1;
- }
- 
- static void clk_prepare_unlock(void)
- {
-+	WARN_ON_ONCE(prepare_owner != current);
-+	WARN_ON_ONCE(prepare_refcnt == 0);
-+
-+	if (--prepare_refcnt)
-+		return;
-+	prepare_owner = NULL;
- 	mutex_unlock(&prepare_lock);
- }
- 
- static unsigned long clk_enable_lock(void)
- {
- 	unsigned long flags;
--	spin_lock_irqsave(&enable_lock, flags);
-+
-+	if (!spin_trylock_irqsave(&enable_lock, flags)) {
-+		if (enable_owner == current) {
-+			enable_refcnt++;
-+			return flags;
-+		}
-+		spin_lock_irqsave(&enable_lock, flags);
-+	}
-+	WARN_ON_ONCE(enable_owner != NULL);
-+	WARN_ON_ONCE(enable_refcnt != 0);
-+	enable_owner = current;
-+	enable_refcnt = 1;
- 	return flags;
- }
- 
- static void clk_enable_unlock(unsigned long flags)
- {
-+	WARN_ON_ONCE(enable_owner != current);
-+	WARN_ON_ONCE(enable_refcnt == 0);
-+
-+	if (--enable_refcnt)
-+		return;
-+	enable_owner = NULL;
- 	spin_unlock_irqrestore(&enable_lock, flags);
- }
- 
--- 
-1.7.10.4
+Acked-by: Rik van Riel <riel@redhat.com>
 
