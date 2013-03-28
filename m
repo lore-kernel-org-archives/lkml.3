@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab3C1HVv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 03:21:51 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:40133 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755848Ab3C1HVu (ORCPT
+	id S1756469Ab3C1HWP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 03:22:15 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:44128 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756442Ab3C1HWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 03:21:50 -0400
-Message-ID: <5153EFB3.5070002@parallels.com>
-Date: Thu, 28 Mar 2013 11:22:27 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Thu, 28 Mar 2013 03:22:13 -0400
+Message-ID: <5153EF7B.1020403@huawei.com>
+Date: Thu, 28 Mar 2013 15:21:31 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
-References: <1364373399-17397-1-git-send-email-mhocko@suse.cz> <20130327161527.GA7395@htj.dyndns.org> <20130327161905.GN16579@dhcp22.suse.cz> <CAOS58YPsrZNU9qDeMgJG3-Hkn0cBaigz16eTS5M57G95E8fxUQ@mail.gmail.com> <20130327162707.GO16579@dhcp22.suse.cz>
-In-Reply-To: <20130327162707.GO16579@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Ingo Molnar <mingo@kernel.org>, Tejun Heo <tj@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH 4/5] cpuacct: No need to check subsys active state
+References: <5153EF24.3040608@huawei.com>
+In-Reply-To: <5153EF24.3040608@huawei.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/2013 08:27 PM, Michal Hocko wrote:
-> On Wed 27-03-13 09:21:02, Tejun Heo wrote:
->> On Wed, Mar 27, 2013 at 9:19 AM, Michal Hocko <mhocko@suse.cz> wrote:
->>>> Maybe the name could signify it's part of memcg?
->>>
->>> kmem_ prefix is used for all CONFIG_MEMCG_KMEM functions. I understand
->>> it clashes with sl?b naming but this is out of scope of this patch IMO.
->>
->> Oh, it's not using kmemcg? I see. Maybe we can rename later.
-> 
-> Some parts use memcg_kmem_* other kmem_. A cleanup would be nice.
-> Glauber?
-> 
-I have been using kmem_ only in functions that will deal directly with
-the slab caches and with the single purpose of operating them.
+Now we're guaranteed when cpuacct_charge() and cpuacct_account_field()
+are called, cpuacct has already been properly initialized, so we no
+longer need those checks.
 
-kmem_cache_destroy_work_func => worker interface to kmem_cache_destroy
-kmem_cache_destroy_memcg_children => cache destructor iterator
-kmem_cache_dup => interface to kmem_cache_create
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/sched/cpuacct.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-All the other functions start with memcg_
-Analogously, all slab-side functions that deal with memcg *ends* with
-_memcg. except the functions that are only there to operate memcg data
-structures:
-
-memcg_update_all_caches.
-
-In general, those functions could very well live in the other file (slab
-or memcg), but they need to take locks or manipulate data structures
-that are internal to slab/memcg.
-
-I believe this is a sound convention.
+diff --git a/kernel/sched/cpuacct.c b/kernel/sched/cpuacct.c
+index 75e46d2..ef57ab6 100644
+--- a/kernel/sched/cpuacct.c
++++ b/kernel/sched/cpuacct.c
+@@ -247,9 +247,6 @@ void cpuacct_charge(struct task_struct *tsk, u64 cputime)
+ 	struct cpuacct *ca;
+ 	int cpu;
+ 
+-	if (unlikely(!cpuacct_subsys.active))
+-		return;
+-
+ 	cpu = task_cpu(tsk);
+ 
+ 	rcu_read_lock();
+@@ -278,9 +275,6 @@ void cpuacct_account_field(struct task_struct *p, int index, u64 val)
+ 	struct kernel_cpustat *kcpustat;
+ 	struct cpuacct *ca;
+ 
+-	if (unlikely(!cpuacct_subsys.active))
+-		return;
+-
+ 	rcu_read_lock();
+ 	ca = task_ca(p);
+ 	while (ca != &root_cpuacct) {
+-- 
+1.8.0.2
