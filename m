@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab3C1TqS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 15:46:18 -0400
-Received: from dcvr.yhbt.net ([64.71.152.64]:51870 "EHLO dcvr.yhbt.net"
+	id S1753350Ab3C1Tsg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 15:48:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42666 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751854Ab3C1TqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 15:46:17 -0400
-Date: Thu, 28 Mar 2013 19:46:16 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH -mm] epoll: cleanup: use RCU_INIT_POINTER when nulling
-Message-ID: <20130328194616.GA19478@dcvr.yhbt.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752056Ab3C1Tsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 15:48:35 -0400
+Date: Thu, 28 Mar 2013 15:47:38 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        stable@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Message-ID: <1364500058-epefjxd9-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130328193901.GQ9079@decadent.org.uk>
+References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1364485358-8745-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130328155109.GA13075@kroah.com>
+ <1364486669-10tbmvlb-mutt-n-horiguchi@ah.jp.nec.com>
+ <20130328193901.GQ9079@decadent.org.uk>
+Subject: Re: [PATCH 1/2] hugetlbfs: stop setting VM_DONTDUMP in initializing
+ vma(VM_HUGETLB)
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mutt-References: <20130328193901.GQ9079@decadent.org.uk>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is always safe to use RCU_INIT_POINTER to NULL a pointer.
-This results in slightly smaller/faster code.
+On Thu, Mar 28, 2013 at 07:39:01PM +0000, Ben Hutchings wrote:
+> On Thu, Mar 28, 2013 at 12:04:29PM -0400, Naoya Horiguchi wrote:
+> [...]
+> > I guess you mean this patch violates one/both of these rules:
+> > 
+> >  - It must fix a problem that causes a build error (but not for things
+> >    marked CONFIG_BROKEN), an oops, a hang, data corruption, a real
+> >    security issue, or some "oh, that's not good" issue.  In short, something
+> >    critical.
+> >  - It or an equivalent fix must already exist in Linus' tree (upstream).
+> > 
+> > I'm not sure if the problem "we can't get any hugepage in coredump"
+> > is considered as 'some "oh, that's not good" issue'.
+> > But yes, it's not a critical one.
+> > If you mean I violated the second rule, sorry, I'll get it into upstream first.
+>  
+> The second rule is the clear one.  If you are submitting a patch to
+> a subsystem maintainer and you want it to go into stable branches as
+> well, you must put 'Cc: stable@vger.kernel.org' in the commit message,
+> not just the mail header.
 
-Signed-off-by: Eric Wong <normalperson@yhbt.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- Andrew: Sorry for the noise and requiring these cleanups.  Would you
- want a squashed commit with all my RCU+ws-related epoll changes to keep
- history cleaner?  I will try to be more careful and require less
- followup patches in the future :x
-
- fs/eventpoll.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index dcf7906..1295d3a 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1207,7 +1207,7 @@ static noinline void ep_destroy_wakeup_source(struct epitem *epi)
- {
- 	struct wakeup_source *ws = ep_wakeup_source(epi);
- 
--	rcu_assign_pointer(epi->ws, NULL);
-+	RCU_INIT_POINTER(epi->ws, NULL);
- 
- 	/*
- 	 * wait for ep_pm_stay_awake_rcu to finish, synchronize_rcu is
--- 
-Eric Wong
+Got it. Thank you.
+Naoya
