@@ -1,110 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab3C1MFH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 08:05:07 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:44126 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755887Ab3C1MFB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 08:05:01 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: FlorianSchandinat@gmx.de
-Cc: linux-fbdev@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        jbarnes@virtuousgeek.org, backports@vger.kernel.org,
-        cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org,
-        julia.lawall@lip6.fr, rodrigo.vivi@gmail.com, daniel.vetter@ffwll.ch,
-        rafael.j.wysocki@intel.com,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [PATCH 4/4] fb: add helpers to enable and test for the skip_vt_switch
-Date: Thu, 28 Mar 2013 05:04:30 -0700
-Message-Id: <1364472270-9297-5-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1364472270-9297-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1364472270-9297-1-git-send-email-mcgrof@do-not-panic.com>
+	id S1755938Ab3C1MFY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 08:05:24 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:56702 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754922Ab3C1MFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 08:05:20 -0400
+Date: Thu, 28 Mar 2013 08:05:17 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: CAI Qian <caiqian@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
+        linux-ext4@vger.kernel.org
+Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591!
+Message-ID: <20130328120517.GB5737@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	CAI Qian <caiqian@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+	linux-s390 <linux-s390@vger.kernel.org>,
+	Steve Best <sbest@redhat.com>, linux-ext4@vger.kernel.org
+References: <863434221.7624846.1364452822093.JavaMail.root@redhat.com>
+ <356372233.7624880.1364452833412.JavaMail.root@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <356372233.7624880.1364452833412.JavaMail.root@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+On Thu, Mar 28, 2013 at 02:40:33AM -0400, CAI Qian wrote:
+> System hung when running xfstests-dev 013 test case on an s390x guest. Never saw
+> this on 3.9-rc3 before but need to double-check. Any idea?
+> 
+> Ý 1113.795759¨ ------------Ý cut here ¨------------
+> Ý 1113.795771¨ kernel BUG at fs/ext4/inode.c:1591!
 
-This adds helpers to enable and test for the skip_vt_switch.
-This gets us two things:
+thanks for the report.  What kernel version did this come from?  Was
+it 3.9-rc4?  (line 1591 for 3.9-rc3 doesn't contain a BUG_ON).
 
-1) It allows us to require less collateral evolutions
-   should we need changes on the fb_info data structure
-   later (perhaps a bitmap flag).
+If it is indeed 3.9-rc4, it would be helpful, since you can reproduce
+the problem, to insert a debugging printk which fires when
+bh->b_blocknr != pblock before the BUG_ON, and have it print the
+b_blocknr and pblock values.
 
-2) Allows this feature to be backported with 0 delta
-   required on the upstream drivers, we'd just require
-   the static inline to do a no-op.
+Thanks,
 
-1) may be worth while considering, 2) is a new consideration
-I'm trying to get others to evaluate to help with automatically
-backporting the Linux kernel. This is the first time I am
-aware someone argues for it.
-
-Cc: cocci@systeme.lip6.fr
-Cc: backports@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
----
- drivers/gpu/drm/i915/intel_fb.c |    2 +-
- drivers/video/fbmem.c           |    2 +-
- include/linux/fb.h              |   10 ++++++++++
- 3 files changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_fb.c b/drivers/gpu/drm/i915/intel_fb.c
-index 8d81c929..c0f306c 100644
---- a/drivers/gpu/drm/i915/intel_fb.c
-+++ b/drivers/gpu/drm/i915/intel_fb.c
-@@ -151,7 +151,7 @@ static int intelfb_create(struct drm_fb_helper *helper,
- 	info->screen_size = size;
- 
- 	/* This driver doesn't need a VT switch to restore the mode on resume */
--	info->skip_vt_switch = true;
-+	fb_enable_skip_vt_switch(info);
- 
- 	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->depth);
- 	drm_fb_helper_fill_var(info, &ifbdev->helper, sizes->fb_width, sizes->fb_height);
-diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-index ccd44b0..daffadc 100644
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1645,7 +1645,7 @@ static int do_register_framebuffer(struct fb_info *fb_info)
- 	if (!fb_info->modelist.prev || !fb_info->modelist.next)
- 		INIT_LIST_HEAD(&fb_info->modelist);
- 
--	if (fb_info->skip_vt_switch)
-+	if (fb_skip_vt_switch_isset(fb_info))
- 		pm_vt_switch_required(fb_info->dev, false);
- 	else
- 		pm_vt_switch_required(fb_info->dev, true);
-diff --git a/include/linux/fb.h b/include/linux/fb.h
-index d49c60f..d534966 100644
---- a/include/linux/fb.h
-+++ b/include/linux/fb.h
-@@ -505,6 +505,16 @@ struct fb_info {
- 	bool skip_vt_switch; /* no VT switch on suspend/resume required */
- };
- 
-+static inline void fb_enable_skip_vt_switch(struct fb_info *info)
-+{
-+	info->skip_vt_switch = true;
-+}
-+
-+static inline bool fb_skip_vt_switch_isset(struct fb_info *info)
-+{
-+	return info->skip_vt_switch;
-+}
-+
- static inline struct apertures_struct *alloc_apertures(unsigned int max_num) {
- 	struct apertures_struct *a = kzalloc(sizeof(struct apertures_struct)
- 			+ max_num * sizeof(struct aperture), GFP_KERNEL);
--- 
-1.7.10.4
-
+						- Ted
