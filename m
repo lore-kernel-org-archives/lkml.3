@@ -1,74 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab3C1SYZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 14:24:25 -0400
-Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:33039
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753269Ab3C1SYT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 14:24:19 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-WSS-ID: 0MKDV4A-01-YEU-02
-X-M-MSG: 
-From: Jacob Shin <jacob.shin@amd.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>,
-        Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH V2 0/2] cpufreq: ondemand: add AMD specific powersave bias
-Date: Thu, 28 Mar 2013 13:24:15 -0500
-Message-ID: <1364495057-14939-1-git-send-email-jacob.shin@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	id S1753666Ab3C1SYX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 14:24:23 -0400
+Received: from gate.crashing.org ([63.228.1.57]:44920 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752272Ab3C1SYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 14:24:18 -0400
+Message-ID: <1364495050.11644.47.camel@pasglop>
+Subject: Re: Fwd: [PATCH v2] drivers/crypto/nx: fix init race, alignmasks
+ and GCM bug
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Kent Yoder <shpedoikal@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Date: Thu, 28 Mar 2013 19:24:10 +0100
+In-Reply-To: <CAM0nabGe1ZYeZyjuCp9vSjTfnd4GHQXg4QYFimoCqZ1njjhXaw@mail.gmail.com>
+References: <CAM0nabE5yQB3xQuATiAEyt3Ahpqqh7EMNDxcnK2PgSUaNG1Y_A@mail.gmail.com>
+	 <CAM0nabGe1ZYeZyjuCp9vSjTfnd4GHQXg4QYFimoCqZ1njjhXaw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds AMD specific powersave bias function to the ondemand
-governor; which can be used to help ondemand governor make more power conscious
-frequency change decisions based on feedback from hardware (availble on AMD
-Family 16h and above).
+On Thu, 2013-03-28 at 11:32 -0500, Kent Yoder wrote:
+> Hi Ben, will you carry this patch in the linuxppc-dev tree?
 
-Hardware feedback tells software how "sensitive" to frequency changes the
-workloads are. CPU-bound workloads will be more sensitive -- they will
-perform better as frequency increases. Memory/IO-bound workloads will be less
-sensitive -- they will not necessarily perform better as frequnecy increases.
+I can but I'm on vacation until end of April roughly.
 
-This patchset was compared against ondemand governor without powersave bias
-and did not show any performance degradation on CPU-bound workloads such as
-kernbench and unixbench. While saving power on Memory-bound workloads such as
-stream.
+Cheers,
+Ben.
 
-This applies to linux-pm's linux-next branch, on top of Viresh's 'Implement
-per policy instance of governor' V4 patchset:
-
-https://lkml.org/lkml/2013/3/27/348
-
-V2:
-* Added proper include files to amd_freq_sensitivity.c
-* Only register powersave_bias_target function pointer and not the entire
-  od_ops.
-
-Jacob Shin (2):
-  cpufreq: ondemand: allow custom powersave_bias_target function to be
-    registered
-  cpufreq: AMD "frequency sensitivity feedback" powersave bias for
-    ondemand governor
-
- arch/x86/include/uapi/asm/msr-index.h  |    1 +
- drivers/cpufreq/Kconfig.x86            |   10 +++
- drivers/cpufreq/Makefile               |    1 +
- drivers/cpufreq/amd_freq_sensitivity.c |  147 ++++++++++++++++++++++++++++++++
- drivers/cpufreq/cpufreq_governor.h     |    3 +
- drivers/cpufreq/cpufreq_ondemand.c     |   22 ++++-
- 6 files changed, 181 insertions(+), 3 deletions(-)
- create mode 100644 drivers/cpufreq/amd_freq_sensitivity.c
-
--- 
-1.7.9.5
+> Thanks,
+> Kent
+> 
+> ---------- Forwarded message ----------
+> From: Kent Yoder <shpedoikal@gmail.com>
+> Date: Wed, Mar 20, 2013 at 9:22 AM
+> Subject: [PATCH v2] drivers/crypto/nx: fix init race, alignmasks and GCM bug
+> To: linux-kernel@vger.kernel.org
+> Cc: linux-crypto@vger.kernel.org, Benjamin Herrenschmidt
+> <benh@kernel.crashing.org>
+> 
+> 
+>   Fixes a race on driver init with registering algorithms where the
+> driver status flag wasn't being set before self testing started.
+> 
+>   Added the cra_alignmask field for CBC and ECB modes.
+> 
+>   Fixed a bug in GCM where AES block size was being used instead of
+> authsize.
+> 
+> Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+> ---
+> Only changes in v2 were to leave stable off the cc and add Ben for PPC.
+> 
+>  drivers/crypto/nx/nx-aes-cbc.c | 1 +
+>  drivers/crypto/nx/nx-aes-ecb.c | 1 +
+>  drivers/crypto/nx/nx-aes-gcm.c | 2 +-
+>  drivers/crypto/nx/nx.c         | 4 ++--
+>  4 files changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/crypto/nx/nx-aes-cbc.c b/drivers/crypto/nx/nx-aes-cbc.c
+> index a76d4c4..35d483f 100644
+> --- a/drivers/crypto/nx/nx-aes-cbc.c
+> +++ b/drivers/crypto/nx/nx-aes-cbc.c
+> @@ -126,6 +126,7 @@ struct crypto_alg nx_cbc_aes_alg = {
+>         .cra_blocksize   = AES_BLOCK_SIZE,
+>         .cra_ctxsize     = sizeof(struct nx_crypto_ctx),
+>         .cra_type        = &crypto_blkcipher_type,
+> +       .cra_alignmask   = 0xf,
+>         .cra_module      = THIS_MODULE,
+>         .cra_init        = nx_crypto_ctx_aes_cbc_init,
+>         .cra_exit        = nx_crypto_ctx_exit,
+> diff --git a/drivers/crypto/nx/nx-aes-ecb.c b/drivers/crypto/nx/nx-aes-ecb.c
+> index ba5f161..7bbc9a8 100644
+> --- a/drivers/crypto/nx/nx-aes-ecb.c
+> +++ b/drivers/crypto/nx/nx-aes-ecb.c
+> @@ -123,6 +123,7 @@ struct crypto_alg nx_ecb_aes_alg = {
+>         .cra_priority    = 300,
+>         .cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
+>         .cra_blocksize   = AES_BLOCK_SIZE,
+> +       .cra_alignmask   = 0xf,
+>         .cra_ctxsize     = sizeof(struct nx_crypto_ctx),
+>         .cra_type        = &crypto_blkcipher_type,
+>         .cra_module      = THIS_MODULE,
+> diff --git a/drivers/crypto/nx/nx-aes-gcm.c b/drivers/crypto/nx/nx-aes-gcm.c
+> index c8109ed..6cca6c3 100644
+> --- a/drivers/crypto/nx/nx-aes-gcm.c
+> +++ b/drivers/crypto/nx/nx-aes-gcm.c
+> @@ -219,7 +219,7 @@ static int gcm_aes_nx_crypt(struct aead_request
+> *req, int enc)
+>         if (enc)
+>                 NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
+>         else
+> -               nbytes -= AES_BLOCK_SIZE;
+> +               nbytes -= crypto_aead_authsize(crypto_aead_reqtfm(req));
+> 
+>         csbcpb->cpb.aes_gcm.bit_length_data = nbytes * 8;
+> 
+> diff --git a/drivers/crypto/nx/nx.c b/drivers/crypto/nx/nx.c
+> index c767f23..7621d05 100644
+> --- a/drivers/crypto/nx/nx.c
+> +++ b/drivers/crypto/nx/nx.c
+> @@ -454,6 +454,8 @@ static int nx_register_algs(void)
+>         if (rc)
+>                 goto out;
+> 
+> +       nx_driver.of.status = NX_OKAY;
+> +
+>         rc = crypto_register_alg(&nx_ecb_aes_alg);
+>         if (rc)
+>                 goto out;
+> @@ -498,8 +500,6 @@ static int nx_register_algs(void)
+>         if (rc)
+>                 goto out_unreg_s512;
+> 
+> -       nx_driver.of.status = NX_OKAY;
+> -
+>         goto out;
+> 
+>  out_unreg_s512:
+> --
+> 1.7.11.7
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
