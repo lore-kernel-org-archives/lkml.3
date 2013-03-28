@@ -1,97 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab3C1QoV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 12:44:21 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:51568 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755844Ab3C1QoU (ORCPT
+	id S1756739Ab3C1QrX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 12:47:23 -0400
+Received: from mga14.intel.com ([143.182.124.37]:34081 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755844Ab3C1QrW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 12:44:20 -0400
-Message-ID: <1364489046.3559.14.camel@thor.lan>
-Subject: Re: [PATCH v2 07/13] rwsem: use cmpxchg for trying to steal write
- lock
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 28 Mar 2013 12:44:06 -0400
-In-Reply-To: <1363344869-15732-8-git-send-email-walken@google.com>
-References: <1363344869-15732-1-git-send-email-walken@google.com>
-	 <1363344869-15732-8-git-send-email-walken@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Thu, 28 Mar 2013 12:47:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,927,1363158000"; 
+   d="scan'208";a="219941918"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Xie XiuQi <xiexiuqi@huawei.com>, "Yu, Fenghua" <fenghua.yu@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>
+Subject: RE: [PATCH] ia64: Fix example error_injection_tool
+Thread-Topic: [PATCH] ia64: Fix example error_injection_tool
+Thread-Index: AQHOK1/BVjdISEv1w0alJtWktDd8mpi7UAAw
+Date: Thu, 28 Mar 2013 16:47:13 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F1E093C98@ORSMSX108.amr.corp.intel.com>
+References: <5153B0ED.8020309@huawei.com>
+In-Reply-To: <5153B0ED.8020309@huawei.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-15 at 03:54 -0700, Michel Lespinasse wrote:
-> Using rwsem_atomic_update to try stealing the write lock forced us to
-> undo the adjustment in the failure path. We can have simpler and faster
-> code by using cmpxchg instead.
-> 
-> Signed-off-by: Michel Lespinasse <walken@google.com>
-> 
-> ---
->  lib/rwsem.c | 26 ++++++--------------------
->  1 file changed, 6 insertions(+), 20 deletions(-)
-> 
-> diff --git a/lib/rwsem.c b/lib/rwsem.c
-> index 2360bf204098..64c2dc007be2 100644
-> --- a/lib/rwsem.c
-> +++ b/lib/rwsem.c
-> @@ -142,25 +142,6 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
->  	return sem;
->  }
->  
-> -/* Try to get write sem, caller holds sem->wait_lock: */
-> -static int try_get_writer_sem(struct rw_semaphore *sem)
-> -{
-> -	long oldcount, adjustment;
-> -
-> -	adjustment = RWSEM_ACTIVE_WRITE_BIAS;
-> -	if (list_is_singular(&sem->wait_list))
-> -		adjustment -= RWSEM_WAITING_BIAS;
-> -
-> -try_again_write:
-> -	oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
-> -	if (!(oldcount & RWSEM_ACTIVE_MASK))
-> -		return 1;
-> -	/* some one grabbed the sem already */
-> -	if (rwsem_atomic_update(-adjustment, sem) & RWSEM_ACTIVE_MASK)
-> -		return 0;
-> -	goto try_again_write;
-> -}
-> -
->  /*
->   * wait for the read lock to be granted
->   */
-> @@ -236,7 +217,12 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
->  	while (true) {
->  		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
->  
-> -		if (try_get_writer_sem(sem))
-> +		/* Try acquiring the write lock. */
-> +		count = RWSEM_ACTIVE_WRITE_BIAS;
-> +		if (!list_is_singular(&sem->wait_list))
-> +			count += RWSEM_WAITING_BIAS;
-> +		if (cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
-> +							RWSEM_WAITING_BIAS)
+Nice catch.
 
-This is just my opinion but I think this is way more readable if this
-stays in try_get_writer_sem() and you change that to static inline
-rather than inlining here. Especially because 9/13 adds a scope.
+-			mask[j]=1<<k;
++			mask[j] = (unsigned long)1<<k;
 
->  			break;
->  
->  		raw_spin_unlock_irq(&sem->wait_lock);
+Could use
+			mask[j] = 1ul << k;
+to avoid the verbose cast.
 
-
+-Tony
