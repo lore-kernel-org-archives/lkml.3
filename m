@@ -1,84 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab3C1WdB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 18:33:01 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54122 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab3C1Wc7 (ORCPT
+	id S1753817Ab3C1Wk3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 18:40:29 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:52246 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251Ab3C1Wk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 18:32:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] irqchip: Add support for ARMv7-M's NVIC
-Date: Thu, 28 Mar 2013 22:32:42 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Uwe =?utf-8?q?Kleine-K=C3=B6nig?=" <u.kleine-koenig@pengutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, kernel@pengutronix.de,
-        linux-kernel@vger.kernel.org
-References: <alpine.LFD.2.02.1303122150490.22263@ionos> <1363612826-15623-1-git-send-email-u.kleine-koenig@pengutronix.de>
-In-Reply-To: <1363612826-15623-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	Thu, 28 Mar 2013 18:40:28 -0400
+Date: Thu, 28 Mar 2013 15:39:53 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>
+Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: perf test failures on Power
+Message-ID: <20130328223952.GA21777@us.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201303282232.42955.arnd@arndb.de>
-X-Provags-ID: V02:K0:KuRC9ndWN0WvXKjbngpzwRkLBpTYrFMVKZmEHOWNIcY
- qHTES5GzbNZ9mAXpTyOyagE6bB3ef5JTaCNQ8eGEXNigBAFV+q
- CQ9K9u+OA3kdcWAOjhIFOEdkB1WYT6+xius6CgeaRukS87jzyh
- UsKGTUwhWnMLqnXUPUtHN2gCYNg6j+He6/HORi8ZhC6IOeyaI/
- SSSgohCk9c43MF6kbm3SXBrwpX4Kl6Hwk+En3DBfE9NHqetyPH
- o466U3eieMJ2+T8qtD6HIrX0PIWTg6euF+PmIuw//S8XQSbJ3P
- p6z9qcf22YYFk1fzAG3gDOuRKX4FlCe1JaNjgAPUnl5lVnr8RR
- o8p+8l/xiLwzF4u5MG8U=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032822-3620-0000-0000-000001D10425
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 18 March 2013, Uwe Kleine-König wrote:
 
-> +static int __init nvic_init_bases(struct device_node *node,
-> +				  void __iomem *nvic_base)
-> +{
 
-There is probably no point to keep this function separate from
-nvic_of_init any more, unless you plan to mke it globally
-accessible and called from non-DT platforms. In that case
-you would need an irq_base argument though.
+The 'perf' tool has some built-in test cases and one of them checks to
+see if the symbols in vmlinux match those in /proc/kallsyms.
 
-> +	irq_base = irq_alloc_descs_from(16, irqs, numa_node_id());
-> +	if (irq_base < 0) {
-> +		pr_warn("Cannot allocate irq_descs\n");
-> +		ret = irq_base;
-> +		goto err_irq_alloc_descs;
-> +	}
-> +	if (irq_base != 16) {
-> +		/*
-> +		 * The entry code just passes the exception number (i.e. irq
-> +		 * number + 16) to asm_do_IRQ, so the offset needs to be fixed
-> +		 * here.
-> +		 */
-> +		pr_warn("Failed to allocate irq_descs at offset 16\n");
-> +		goto err_wrong_irq_base;
-> +	}
-> +
-> +	irq_domain = irq_domain_add_legacy(node, irqs, irq_base, 0,
-> +					   &irq_domain_simple_ops, NULL);
+This test is failing on Power for several reasons. I fixed a couple of
+them (described briefly at the end of the mail) and these fixes take
+the test further.
 
-Why do you use a legacy domain here, and hardcode the irq_base?
-For a fully DT-enabled platform, the base should not matter and you
-can use irq_domain_add_linear, while a legacy platform would likely
-need a different base.
+One pending failure is because maps in vmlinux differ from kallsyms.
 
-> +static int __init nvic_of_init(struct device_node *node,
-> +			       struct device_node *parent)
-> +{
-> +	void __iomem *nvic_base;
-> +
-> +	if (!node)
-> +		return -ENODEV;
+Here is some output:
 
-As Thomas commented, the check for !node is pointless here.
+$ ./perf test -v 1
 
-	Arnd
+---
+Using /lib/modules/3.8.0-rc4-perf-core+/build/vmlinux for symbols
+
+0xc000000000001800: diff name v: machine_check_fwnmi k: machine_check_pSeries
+0xc000000000005780: diff name v: __end_interrupts k: system_call_entry_direct
+0xc000000000006800: diff name v: __end_handlers k: .do_hash_page
+0xc000000000009300: diff name v: __secondary_start k: copy_to_here
+0xc00000000063d7a0: diff name v: __kprobes_text_end k: .vdso_getcpu_init
+Maps only in vmlinux:
+ c00000000063d804-c000000000642077 0 [kernel].cpuinit.text
+ c000000000642078-c00000000064225f 0 [kernel].text.unlikely
+ c000000000642260-c0000000007cffff 0 [kernel].meminit.text
+ c0000000007d0000-c000000000812043 0 [kernel].init.text
+ c000000000812044-d000000000f8ffff 0 [kernel].exit.text
+Maps in vmlinux with a different name in kallsyms:
+---
+
+Looking a the first pair of differing symbols in kallsyms and vmlinux:
+
+	$ grep c000000000001800 /proc/kallsyms
+	c000000000001800 T machine_check_fwnmi
+	c000000000001800 t machine_check_pSeries
+
+	$ nm /boot/vmlinux-3.8.0-rc4-perf-core |grep c000000000001800 
+	c000000000001800 T machine_check_fwnmi
+	c000000000001800 t machine_check_pSeries
+
+Now perf attempts to "fixup" the duplicates (see choose_best_symbol() in
+tools/perf/util/symbol.c) and use heuristics to choose one from the pair
+and discard the other.
+
+When processing the pair of 'machine_check_fwnmi' and 'machine_check_pSeries'
+from kallsyms, it finds that they both have global binding and it chooses
+'machine_check_pSeries' based on the string length of the symbol name.
+
+When processing the same pair from vmlinux, it finds that 'machine_check_fwnmi'
+has the global binding and chooses that.
+
+Finally, when comparing the vmlinux symbols with kallsyms, this mismatch
+is shows up as a failure.
+
+Some questions:
+	- Is perf trying to choose one from the pair, so we have only one
+	  symbol to use when building a profile or call-graph ?
+
+	- Why do some symbols like 'machine_check_fwnmi' above, appear with
+	  global binding in /proc/kallsyms and local binding in vmlinux ?
+
+
+
+
+----
+Here are couple of other failures in 'perf test' on Power. I applied some
+quick fixes for these to expose the above failures.
+
+1. Look for .__start or _stext.
+
+    On powerpc, multiple symbols match the address of '_stext':
+
+        $ grep c000000000000000 /proc/kallsyms
+        c000000000000000 T .__start
+        c000000000000000 T _stext
+        c000000000000000 T _text
+
+   choose_best_symbol() discards all but .__start() because, ironically, it
+   has the least preceding underscores. The vmlinux test case later looks for
+   _stext and fails.
+
+   Quick fix, have the test case look for either _stext or .__start.
+
+2. In vmlinux, system call names have '.sys' or '_sys_'. 
+   In kallsyms, the names have '.SyS' or '_SyS_'
+
+    0xc000000000067660: diff name v: .sys_sched_get_priority_max k: .SyS_sched_get_priority_max
+    0xc000000000067690: diff name v: .sys_sched_get_priority_min k: .SyS_sched_get_priority_min
+    0xc0000000000f2650: diff name v: .compat_sys_waitid k: .compat_SyS_waitid
+    0xc0000000000f2780: diff name v: .compat_sys_wait4 k: .compat_SyS_wait4
+
+  	Quick fix: treat names as identical if they only differ in upper/lower
+	case of the substring 'sys'.
+
+	Curious though why kallsyms and vmlinux differ this way.
+
