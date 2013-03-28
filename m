@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab3C1Br6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 21:47:58 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:40756 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754809Ab3C1Br4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 21:47:56 -0400
-X-IronPort-AV: E=Sophos;i="4.87,363,1363104000"; 
-   d="scan'208";a="6958619"
-Message-ID: <5153A1C7.6030409@cn.fujitsu.com>
-Date: Thu, 28 Mar 2013 09:49:59 +0800
-From: Lin Feng <linfeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754712Ab3C1BtZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 21:49:25 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:47273 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131Ab3C1BtX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 21:49:23 -0400
+Date: Wed, 27 Mar 2013 21:49:13 -0400 (EDT)
+From: Parag Warudkar <parag.lkml@gmail.com>
+X-X-Sender: parag@Parags-iMac.carolina.rr.com
+To: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: intel_pstate_timer_func divide by zero oops
+Message-ID: <alpine.LFD.2.03.1303272103380.8412@gmail.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH] kernel/range.c: subtract_range: fix the broken phrase
- issued by printk
-References: <CAE9FiQUrt11A0YAOLgvv3uTAWtTvVg3Mho9eD53orbxW6Jd8Vg@mail.gmail.com> <1363665251-14377-1-git-send-email-linfeng@cn.fujitsu.com> <CAErSpo6DWfHii8d8rGPJ1dLj5TVzsgU7QGDoAvBM5Fb_N5=mtw@mail.gmail.com>
-In-Reply-To: <CAErSpo6DWfHii8d8rGPJ1dLj5TVzsgU7QGDoAvBM5Fb_N5=mtw@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/28 09:47:04,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/28 09:47:05,
-	Serialize complete at 2013/03/28 09:47:05
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn and others,
+I get this same oops occassionally - the machine freezes and there doesn't 
+seem to be any record of the oops on disk.
 
-On 03/28/2013 01:27 AM, Bjorn Helgaas wrote:
->> -                               printk(KERN_ERR "run of slot in ranges\n");
->> > +                               pr_err("%s: run out of slot in ranges\n",
->> > +                                       __func__);
->> >                         }
->> >                         range[j].end = start;
->> >                         continue;
-> So now the user might see:
-> 
->     subtract_range: run out of slot in ranges
-> 
-> What is the user supposed to do when he sees that?  If he happens to
-> mention it on LKML, what are we going to do about it?  If he attaches
-> the complete dmesg log, is there enough information to do something?
-> 
-> IMHO, that message is still totally useless.
-> 
+I captured it on camera - 
+https://lh3.googleusercontent.com/-K0lNbJrZBMQ/UVOU1vv1vvI/AAAAAAAANqI/pY92mWm3caE/s800/20130327_205245.jpg
 
-Yes, we need to issue some useful message. 
-How about dump_stack() there so that we can find some clues more since
-subtract_range() is called mtrr_bp_init path and pci relative path, then
-it may help to instruct us to do something ;-) ?
+If I am reading this right, it dies on this instruction -
 
-thanks,
-linfeng
+   0xffffffff8145792d <+349>:   divq   0x18(%rcx)
+
+>From the lst file that *seems* to be this inline function -
+
+static inline void intel_pstate_calc_busy(struct cpudata *cpu,
+                                        struct sample *sample)
+{
+        u64 core_pct;
+        sample->pstate_pct_busy = 100 - div64_u64(
+ffffffff8145791d:       48 8b 41 20             mov    0x20(%rcx),%rax
+ffffffff81457921:       48 8d 04 80             lea    (%rax,%rax,4),%rax
+ffffffff81457925:       48 8d 04 80             lea    (%rax,%rax,4),%rax
+ffffffff81457929:       48 c1 e0 02             shl    $0x2,%rax
+ffffffff8145792d:       48 f7 71 18             divq   0x18(%rcx)
+
+
+That  is -
+	sample->pstate_pct_busy = 100 - div64_u64(
+					sample->idletime_us * 100,
+					sample->duration_us);
+
+So looks like sample->duration_us is 0? If so, that implies that 
+ktime_us_delta(now, cpu->prev_sample) is zero. I am not entirely sure how 
+to handle this case - return if sampling too early, or if there is some 
+other bug making the delta calculation go poof.
+
+
+Thanks,
+
+Parag
