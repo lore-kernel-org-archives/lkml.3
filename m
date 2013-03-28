@@ -1,85 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab3C1PoH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 11:44:07 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:33694 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753930Ab3C1PoF (ORCPT
+	id S1756541Ab3C1Po3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 11:44:29 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:47305
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751887Ab3C1Po0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 11:44:05 -0400
-Message-ID: <515464B0.8080704@linux.vnet.ibm.com>
-Date: Thu, 28 Mar 2013 21:11:36 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 28 Mar 2013 11:44:26 -0400
+Date: Thu, 28 Mar 2013 09:44:11 -0600
+From: Jens Axboe <axboe@kernel.dk>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Wei Yongjun'" <weiyj.lk@gmail.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Rafael J. Wysocki'" <rjw@sisk.pl>, yongjun_wei@trendmicro.com.cn,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] mg_disk: fix error return code in mg_probe()
+Message-ID: <20130328154411.GB19488@kernel.dk>
+References: <CAPgLHd87a0=e8pX4YRwpxzxk1=YgcVimjxTFnpJKH8wRs1WfjQ@mail.gmail.com>
+ <000501ce2b6e$db4963e0$91dc2ba0$%han@samsung.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [patch 31/34] tile: Use generic idle loop
-References: <20130321214930.752934102@linutronix.de> <20130321215235.348460344@linutronix.de>
-In-Reply-To: <20130321215235.348460344@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032815-9574-0000-0000-0000073E16F2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000501ce2b6e$db4963e0$91dc2ba0$%han@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2013 03:23 AM, Thomas Gleixner wrote:
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> ---
->  arch/tile/kernel/process.c |   61 ++++-----------------------------------------
->  arch/tile/kernel/smpboot.c |    2 -
->  2 files changed, 7 insertions(+), 56 deletions(-)
+On Thu, Mar 28 2013, Jingoo Han wrote:
+> On Thursday, March 28, 2013 1:32 PM, Wei Yongjun wrote:
+> > 
+> > From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> > 
+> > Fix to return a negative error code from the error handling
+> > case instead of 0, as returned elsewhere in this function.
+> > 
+> > Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > 
-> Index: linux-2.6/arch/tile/kernel/process.c
-> ===================================================================
-> --- linux-2.6.orig/arch/tile/kernel/process.c
-> +++ linux-2.6/arch/tile/kernel/process.c
-> @@ -40,13 +40,11 @@
->  #include <arch/abi.h>
->  #include <arch/sim_def.h>
+> CC'ed Jens Axboe
 > 
-> -
->  /*
->   * Use the (x86) "idle=poll" option to prefer low latency when leaving the
->   * idle loop over low power while in the idle loop, e.g. if we have
->   * one thread per core and we want to get threads out of futex waits fast.
->   */
-> -static int no_idle_nap;
->  static int __init idle_setup(char *str)
->  {
->  	if (!str)
-> @@ -54,64 +52,17 @@ static int __init idle_setup(char *str)
-> 
->  	if (!strcmp(str, "poll")) {
->  		pr_info("using polling idle threads.\n");
-> -		no_idle_nap = 1;
-> +		cpu_idle_poll_ctrl(true);
->  	} else if (!strcmp(str, "halt"))
-> -		no_idle_nap = 0;
-> -	else
-> -		return -1;
-> -
-> -	return 0;
-> +		return 0;
-> +	return -1;
->  }
->  early_param("idle", idle_setup);
->
+> It looks good.
+> Reviewed-by: Jingoo Han <jg1.han@samsung.com>
 
-That doesn't look quite right, since it returns -1 (instead of 0) when
-str == poll.
+Applied, thanks guys.
 
-Regards,
-Srivatsa S. Bhat
+-- 
+Jens Axboe
 
