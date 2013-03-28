@@ -1,456 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756996Ab3C1RC5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:02:57 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:47735
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756726Ab3C1RCu (ORCPT
+	id S1757302Ab3C1REu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:04:50 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36359 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756784Ab3C1RC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 13:02:50 -0400
+	Thu, 28 Mar 2013 13:02:56 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Naohiro Aota <naota@elisp.net>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/36] perf tools: Get rid of write_or_die() from trace-event-info.c
-Date: Thu, 28 Mar 2013 14:02:04 -0300
-Message-Id: <1364490156-32064-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 33/36] perf python: Fix dependency for python/perf.so
+Date: Thu, 28 Mar 2013 14:02:33 -0300
+Message-Id: <1364490156-32064-34-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1364490156-32064-1-git-send-email-acme@infradead.org>
 References: <1364490156-32064-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Naohiro Aota <naota@elisp.net>
 
-Check return value of write and fail if error.
+The python/perf.so binding lacks dependency for libtraceevent.a so that
+it cause the following error building python/perf.so. This patch
+introduce the dependency for it.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+   $ make python/perf.so
+       CHK -fstack-protector-all
+       CHK -Wstack-protector
+       CHK -Wvolatile-register-var
+       CHK -D_FORTIFY_SOURCE=2
+       CHK bionic
+       CHK libelf
+       CHK libdw
+       CHK libunwind
+       CHK -DLIBELF_MMAP
+       CHK libaudit
+       CHK libnewt
+       CHK gtk2
+       CHK -DHAVE_GTK_INFO_BAR
+       CHK perl
+       CHK python
+       CHK python version
+       CHK libbfd
+       CHK -DHAVE_STRLCPY
+       CHK -DHAVE_ON_EXIT
+       CHK -DBACKTRACE_SUPPORT
+       CHK libnuma
+       GEN python/perf.so
+   x86_64-pc-linux-gnu-gcc: error: ../lib/traceevent/libtraceevent.a: No such file or directory
+   error: command 'x86_64-pc-linux-gnu-gcc' failed with exit status 1
+   cp: cannot stat 'python_ext_build/lib/perf.so': No such file or directory
+   make: *** [python/perf.so] Error 1
+
+Signed-off-by: Naohiro Aota <naota@elisp.net>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1363850332-25297-4-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/87wqswzznx.fsf@locke.i-did-not-set--mail-host-address--so-tickle-me
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/trace-event-info.c |  180 +++++++++++++++++++++++++-----------
- tools/perf/util/trace-event.h      |    2 +-
- 2 files changed, 127 insertions(+), 55 deletions(-)
+ tools/perf/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index 91db6e8..090e80d 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -106,17 +106,6 @@ static void put_tracing_file(char *file)
- 	free(file);
- }
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 07feae7..8b4c952 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -272,7 +272,7 @@ export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
+ python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
  
--static ssize_t write_or_die(const void *buf, size_t len)
--{
--	int ret;
--
--	ret = write(output_fd, buf, len);
--	if (ret < 0)
--		die("writing to '%s'", output_file);
--
--	return ret;
--}
--
- int bigendian(void)
- {
- 	unsigned char str[] = { 0x1, 0x2, 0x3, 0x4, 0x0, 0x0, 0x0, 0x0};
-@@ -127,29 +116,32 @@ int bigendian(void)
- }
+ PYTHON_EXT_SRCS := $(shell grep -v ^\# util/python-ext-sources)
+-PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py
++PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py $(LIBTRACEEVENT)
  
- /* unfortunately, you can not stat debugfs or proc files for size */
--static void record_file(const char *file, size_t hdr_sz)
-+static int record_file(const char *file, ssize_t hdr_sz)
- {
- 	unsigned long long size = 0;
- 	char buf[BUFSIZ], *sizep;
- 	off_t hdr_pos = lseek(output_fd, 0, SEEK_CUR);
- 	int r, fd;
-+	int err = -EIO;
- 
- 	fd = open(file, O_RDONLY);
- 	if (fd < 0)
- 		die("Can't read '%s'", file);
- 
- 	/* put in zeros for file size, then fill true size later */
--	if (hdr_sz)
--		write_or_die(&size, hdr_sz);
-+	if (hdr_sz) {
-+		if (write(output_fd, &size, hdr_sz) != hdr_sz)
-+			goto out;
-+	}
- 
- 	do {
- 		r = read(fd, buf, BUFSIZ);
- 		if (r > 0) {
- 			size += r;
--			write_or_die(buf, r);
-+			if (write(output_fd, buf, r) != r)
-+				goto out;
- 		}
- 	} while (r > 0);
--	close(fd);
- 
- 	/* ugh, handle big-endian hdr_size == 4 */
- 	sizep = (char*)&size;
-@@ -158,12 +150,18 @@ static void record_file(const char *file, size_t hdr_sz)
- 
- 	if (hdr_sz && pwrite(output_fd, sizep, hdr_sz, hdr_pos) < 0)
- 		die("writing to %s", output_file);
-+
-+	err = 0;
-+out:
-+	close(fd);
-+	return err;
- }
- 
--static void read_header_files(void)
-+static int read_header_files(void)
- {
- 	char *path;
- 	struct stat st;
-+	int err = -EIO;
- 
- 	path = get_tracing_file("events/header_page");
- 	if (!path)
-@@ -172,8 +170,16 @@ static void read_header_files(void)
- 	if (stat(path, &st) < 0)
- 		die("can't read '%s'", path);
- 
--	write_or_die("header_page", 12);
--	record_file(path, 8);
-+	if (write(output_fd, "header_page", 12) != 12) {
-+		pr_debug("can't write header_page\n");
-+		goto out;
-+	}
-+
-+	if (record_file(path, 8) < 0) {
-+		pr_debug("can't record header_page file\n");
-+		goto out;
-+	}
-+
- 	put_tracing_file(path);
- 
- 	path = get_tracing_file("events/header_event");
-@@ -183,9 +189,20 @@ static void read_header_files(void)
- 	if (stat(path, &st) < 0)
- 		die("can't read '%s'", path);
- 
--	write_or_die("header_event", 13);
--	record_file(path, 8);
-+	if (write(output_fd, "header_event", 13) != 13) {
-+		pr_debug("can't write header_event\n");
-+		goto out;
-+	}
-+
-+	if (record_file(path, 8) < 0) {
-+		pr_debug("can't record header_event file\n");
-+		goto out;
-+	}
-+
-+	err = 0;
-+out:
- 	put_tracing_file(path);
-+	return err;
- }
- 
- static bool name_in_tp_list(char *sys, struct tracepoint_path *tps)
-@@ -232,7 +249,11 @@ static int copy_event_system(const char *sys, struct tracepoint_path *tps)
- 		count++;
- 	}
- 
--	write_or_die(&count, 4);
-+	if (write(output_fd, &count, 4) != 4) {
-+		err = -EIO;
-+		pr_debug("can't write count\n");
-+		goto out;
-+	}
- 
- 	rewinddir(dir);
- 	while ((dent = readdir(dir))) {
-@@ -249,8 +270,13 @@ static int copy_event_system(const char *sys, struct tracepoint_path *tps)
- 		sprintf(format, "%s/%s/format", sys, dent->d_name);
- 		ret = stat(format, &st);
- 
--		if (ret >= 0)
--			record_file(format, 8);
-+		if (ret >= 0) {
-+			err = record_file(format, 8);
-+			if (err) {
-+				free(format);
-+				goto out;
-+			}
-+		}
- 		free(format);
- 	}
- 	err = 0;
-@@ -259,17 +285,20 @@ out:
- 	return err;
- }
- 
--static void read_ftrace_files(struct tracepoint_path *tps)
-+static int read_ftrace_files(struct tracepoint_path *tps)
- {
- 	char *path;
-+	int ret;
- 
- 	path = get_tracing_file("events/ftrace");
- 	if (!path)
- 		die("can't get tracing/events/ftrace");
- 
--	copy_event_system(path, tps);
-+	ret = copy_event_system(path, tps);
- 
- 	put_tracing_file(path);
-+
-+	return ret;
- }
- 
- static bool system_in_tp_list(char *sys, struct tracepoint_path *tps)
-@@ -312,7 +341,11 @@ static int read_event_files(struct tracepoint_path *tps)
- 		count++;
- 	}
- 
--	write_or_die(&count, 4);
-+	if (write(output_fd, &count, 4) != 4) {
-+		err = -EIO;
-+		pr_debug("can't write count\n");
-+		goto out;
-+	}
- 
- 	rewinddir(dir);
- 	while ((dent = readdir(dir))) {
-@@ -330,8 +363,14 @@ static int read_event_files(struct tracepoint_path *tps)
- 		sprintf(sys, "%s/%s", path, dent->d_name);
- 		ret = stat(sys, &st);
- 		if (ret >= 0) {
--			write_or_die(dent->d_name, strlen(dent->d_name) + 1);
--			copy_event_system(sys, tps);
-+			ssize_t size = strlen(dent->d_name) + 1;
-+
-+			if (write(output_fd, dent->d_name, size) != size ||
-+			    copy_event_system(sys, tps) < 0) {
-+				err = -EIO;
-+				free(sys);
-+				goto out;
-+			}
- 		}
- 		free(sys);
- 	}
-@@ -343,29 +382,30 @@ out:
- 	return err;
- }
- 
--static void read_proc_kallsyms(void)
-+static int read_proc_kallsyms(void)
- {
- 	unsigned int size;
- 	const char *path = "/proc/kallsyms";
- 	struct stat st;
--	int ret;
-+	int ret, err = 0;
- 
- 	ret = stat(path, &st);
- 	if (ret < 0) {
- 		/* not found */
- 		size = 0;
--		write_or_die(&size, 4);
--		return;
-+		if (write(output_fd, &size, 4) != 4)
-+			err = -EIO;
-+		return err;
- 	}
--	record_file(path, 4);
-+	return record_file(path, 4);
- }
- 
--static void read_ftrace_printk(void)
-+static int read_ftrace_printk(void)
- {
- 	unsigned int size;
- 	char *path;
- 	struct stat st;
--	int ret;
-+	int ret, err = 0;
- 
- 	path = get_tracing_file("printk_formats");
- 	if (!path)
-@@ -375,13 +415,15 @@ static void read_ftrace_printk(void)
- 	if (ret < 0) {
- 		/* not found */
- 		size = 0;
--		write_or_die(&size, 4);
-+		if (write(output_fd, &size, 4) != 4)
-+			err = -EIO;
- 		goto out;
- 	}
--	record_file(path, 4);
-+	err = record_file(path, 4);
- 
- out:
- 	put_tracing_file(path);
-+	return err;
- }
- 
- static struct tracepoint_path *
-@@ -428,9 +470,10 @@ bool have_tracepoints(struct list_head *pattrs)
- 	return false;
- }
- 
--static void tracing_data_header(void)
-+static int tracing_data_header(void)
- {
- 	char buf[20];
-+	ssize_t size;
- 
- 	/* just guessing this is someone's birthday.. ;) */
- 	buf[0] = 23;
-@@ -438,9 +481,12 @@ static void tracing_data_header(void)
- 	buf[2] = 68;
- 	memcpy(buf + 3, "tracing", 7);
- 
--	write_or_die(buf, 10);
-+	if (write(output_fd, buf, 10) != 10)
-+		return -1;
- 
--	write_or_die(VERSION, strlen(VERSION) + 1);
-+	size = strlen(VERSION) + 1;
-+	if (write(output_fd, VERSION, size) != size)
-+		return -1;
- 
- 	/* save endian */
- 	if (bigendian())
-@@ -450,14 +496,19 @@ static void tracing_data_header(void)
- 
- 	read_trace_init(buf[0], buf[0]);
- 
--	write_or_die(buf, 1);
-+	if (write(output_fd, buf, 1) != 1)
-+		return -1;
- 
- 	/* save size of long */
- 	buf[0] = sizeof(long);
--	write_or_die(buf, 1);
-+	if (write(output_fd, buf, 1) != 1)
-+		return -1;
- 
- 	/* save page_size */
--	write_or_die(&page_size, 4);
-+	if (write(output_fd, &page_size, 4) != 4)
-+		return -1;
-+
-+	return 0;
- }
- 
- struct tracing_data *tracing_data_get(struct list_head *pattrs,
-@@ -465,6 +516,7 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
- {
- 	struct tracepoint_path *tps;
- 	struct tracing_data *tdata;
-+	int err;
- 
- 	output_fd = fd;
- 
-@@ -498,13 +550,24 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
- 		output_fd = temp_fd;
- 	}
- 
--	tracing_data_header();
--	read_header_files();
--	read_ftrace_files(tps);
--	read_event_files(tps);
--	read_proc_kallsyms();
--	read_ftrace_printk();
-+	err = tracing_data_header();
-+	if (err)
-+		goto out;
-+	err = read_header_files();
-+	if (err)
-+		goto out;
-+	err = read_ftrace_files(tps);
-+	if (err)
-+		goto out;
-+	err = read_event_files(tps);
-+	if (err)
-+		goto out;
-+	err = read_proc_kallsyms();
-+	if (err)
-+		goto out;
-+	err = read_ftrace_printk();
- 
-+out:
- 	/*
- 	 * All tracing data are stored by now, we can restore
- 	 * the default output file in case we used temp file.
-@@ -515,22 +578,31 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
- 		output_fd = fd;
- 	}
- 
-+	if (err) {
-+		free(tdata);
-+		tdata = NULL;
-+	}
-+
- 	put_tracepoints_path(tps);
- 	return tdata;
- }
- 
--void tracing_data_put(struct tracing_data *tdata)
-+int tracing_data_put(struct tracing_data *tdata)
- {
-+	int err = 0;
-+
- 	if (tdata->temp) {
--		record_file(tdata->temp_file, 0);
-+		err = record_file(tdata->temp_file, 0);
- 		unlink(tdata->temp_file);
- 	}
- 
- 	free(tdata);
-+	return err;
- }
- 
- int read_tracing_data(int fd, struct list_head *pattrs)
- {
-+	int err;
- 	struct tracing_data *tdata;
- 
- 	/*
-@@ -541,6 +613,6 @@ int read_tracing_data(int fd, struct list_head *pattrs)
- 	if (!tdata)
- 		return -ENOMEM;
- 
--	tracing_data_put(tdata);
--	return 0;
-+	err = tracing_data_put(tdata);
-+	return err;
- }
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index 28ccde8..1978c39 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -68,7 +68,7 @@ struct tracing_data {
- 
- struct tracing_data *tracing_data_get(struct list_head *pattrs,
- 				      int fd, bool temp);
--void tracing_data_put(struct tracing_data *tdata);
-+int tracing_data_put(struct tracing_data *tdata);
- 
- 
- struct addr_location;
+ $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
+ 	$(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
 -- 
 1.7.1
 
