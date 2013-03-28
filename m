@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756559Ab3C1PnB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 11:43:01 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:51670 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756524Ab3C1Pm6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 11:42:58 -0400
-Message-ID: <5154646E.1090203@linux.vnet.ibm.com>
-Date: Thu, 28 Mar 2013 21:10:30 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1756373Ab3C1Png (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 11:43:36 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17445 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752615Ab3C1Pnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 11:43:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,927,1355126400"; 
+   d="scan'208";a="308708015"
+From: Andi Kleen <andi@firstfloor.org>
+To: a.p.zijlstra@chello.nl
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH] perf, x86: Add Sandy Bridge constraints for CYCLE_ACTIVITY.*
+References: <1362784968-12542-1-git-send-email-andi@firstfloor.org>
+Date: Thu, 28 Mar 2013 08:43:33 -0700
+In-Reply-To: <1362784968-12542-1-git-send-email-andi@firstfloor.org> (Andi
+	Kleen's message of "Fri, 8 Mar 2013 15:22:48 -0800")
+Message-ID: <m27gkril7e.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Tony Luck <tony.luck@intel.com>
-Subject: Re: [patch 17/34] ia64: Use generic idle loop
-References: <20130321214930.752934102@linutronix.de> <20130321215234.406851909@linutronix.de>
-In-Reply-To: <20130321215234.406851909@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032815-8878-0000-0000-0000067CD863
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2013 03:23 AM, Thomas Gleixner wrote:
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Tony Luck <tony.luck@intel.com>
+Andi Kleen <andi@firstfloor.org> writes:
+
+> From: Andi Kleen <ak@linux.intel.com>
+
+Ping! Patch is missing review.
+
+-Andi
+
+>
+> Add CYCLE_ACTIVITY.CYCLES_NO_DISPATCH/CYCLES_L1D_PENDING
+> These recently documented events have restrictions to counter 0-3
+> and counter 2 respectively.  The scheduler needs to know that
+> to schedule them correctly.
+>
+> IvyBridge already has the necessary constraints.
+>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 > ---
->  arch/ia64/Kconfig          |    1 
->  arch/ia64/kernel/perfmon.c |   13 ++-----
->  arch/ia64/kernel/process.c |   83 +++++++++------------------------------------
->  arch/ia64/kernel/smpboot.c |    2 -
->  4 files changed, 23 insertions(+), 76 deletions(-)
-> 
-[...]
-> -void
-> -update_pal_halt_status(int status)
-> -{
-> -	can_do_pal_halt = pal_halt && status;
-> -}
-> -
-> -/*
-> - * We use this if we don't have any better idle routine..
-> - */
-> -void
-> -default_idle (void)
-> -{
-> -	local_irq_enable();
-> -	while (!need_resched()) {
-> -		if (can_do_pal_halt) {
-> -			local_irq_disable();
-> -			if (!need_resched()) {
-> -				safe_halt();
-> -			}
-> -			local_irq_enable();
-> -		} else
-> -			cpu_relax();
-> -	}
-> -}
-> -
- 
-We can also get rid of the function prototype declaration of default_idle()
-inside arch/ia64/include/asm/processor.h
+>  arch/x86/kernel/cpu/perf_event_intel.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 5b59c6c..0d2f9d8 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -104,6 +104,8 @@ static struct event_constraint intel_snb_event_constraints[] __read_mostly =
+>  	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
+>  	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
+>  	INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
+> +	INTEL_UEVENT_CONSTRAINT(0x04a3, 0xf), /* CYCLE_ACTIVITY.CYCLES_NO_DISPATCH */
+> +	INTEL_UEVENT_CONSTRAINT(0x02a3, 0x4), /* CYCLE_ACTIVITY.CYCLES_L1D_PENDING */
+>  	EVENT_CONSTRAINT_END
+>  };
 
-Regards,
-Srivatsa S. Bhat
-
+-- 
+ak@linux.intel.com -- Speaking for myself only
