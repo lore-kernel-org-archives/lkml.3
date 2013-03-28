@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab3C1NTa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 09:19:30 -0400
-Received: from mail-da0-f42.google.com ([209.85.210.42]:53042 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754922Ab3C1NT3 (ORCPT
+	id S1756018Ab3C1NWj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 09:22:39 -0400
+Received: from smtp2.infineon.com ([217.10.52.18]:40234 "EHLO
+	smtp2.infineon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755724Ab3C1NWi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 09:19:29 -0400
-Message-ID: <51544367.2020904@linaro.org>
-Date: Thu, 28 Mar 2013 07:19:35 -0600
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 28 Mar 2013 09:22:38 -0400
+X-Greylist: delayed 579 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Mar 2013 09:22:37 EDT
+X-SBRS: None
+From: <Peter.Huewe@infineon.com>
+To: <aaron.lu@intel.com>, <mail@srajiv.net>, <peterasplund@gentoo.se>
+CC: <tpmdd-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
+        <key@linux.vnet.ibm.com>
+Subject: RE: [tpmdd-devel] tpm_tis driver failed to suspend, error -62
+Thread-Topic: [tpmdd-devel] tpm_tis driver failed to suspend, error -62
+Thread-Index: AQHOKwNWW9kxaOIYfE+hF1ecEL/pS5i6u3IAgABU5GA=
+Date: Thu, 28 Mar 2013 13:12:54 +0000
+Message-ID: <74A44E99E3274B4CB570415926B37D4414B14E@MUCSE501.eu.infineon.com>
+References: <20130319023440.GA12425@aaronlu.sh.intel.com>
+	<CAA25o9RJJ5Rkti9_fTJz2ieaHvrtSp5mE_2LTW_t16_cf_TNcg@mail.gmail.com>
+	<ed364e68730267510d49b2bdc38679a0@gentoo.se>
+	<CAEQAOwpmnLXBCJQTf_xU-oSKvAtmpQjHWwMYDm_QOsP+1Kd_aQ@mail.gmail.com>
+	<CAEQAOwqWL=WekQqg5WY8TGxzB3x9nB9MVj_UTAVK0ro7TqB2WQ@mail.gmail.com>
+ <51540408.3000702@intel.com>
+In-Reply-To: <51540408.3000702@intel.com>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.8.248]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: Out-of-bound access in sysrq
-References: <51541C9B.4000802@suse.cz>
-In-Reply-To: <51541C9B.4000802@suse.cz>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-03-28 04:34 AM, Jiri Slaby wrote:
-> Guys,
-> 
-> how is this supposed to work?
-> 
-> #define SYSRQ_KEY_RESET_MAX     20 /* Should be plenty */
-> static unsigned short sysrq_reset_seq[SYSRQ_KEY_RESET_MAX];
-> ...
-> unsigned short platform_sysrq_reset_seq[] __weak = { KEY_RESERVED };
-> ...
-> static inline void sysrq_register_handler(void)
-> {
-> ...
->         for (i = 0; i < ARRAY_SIZE(sysrq_reset_seq); i++) {
->                 key = platform_sysrq_reset_seq[i];
->                 if (key == KEY_RESERVED || key > KEY_MAX)
-> ...
-> 
-> 
-> 
-> 
-> i runs from 0 to 19 incl., but platform_sysrq_reset_seq, if not
-> overriden, is of size 1, so?
-> 
-> thanks,
-> 
+Hi Aaron, Rajob, PeterA and everybody else,
 
-Unless I'm missing something, 'i' won't go higher than '0' since the
-first element of platform_sysrq_reset_seq is set to KEY_RESERVED and in
-such case the 'break' is executed.
+(sorry for the late reply)
+
+>On 03/27/2013 11:22 PM, Rajiv Andrade wrote:
+>> Sorry for the delay. Can you send us the dmesg output after setting
+>> loglevel=7 at boot time? Additionally, can you send us the TPM manufacturer model/version
+
+>>> On Thu, Mar 21, 2013 at 10:17 AM, <peterasplund@gentoo.se> wrote:
+>>>>
+>>>> Hi! Sadly, I have to say that I'm totally oblivious to power-related 
+>>>> stuff both in software and hardware, so I have no idea what you are 
+>>>> asking or proposing.. :
+
+According to the BootDmesg.txt it's an Infineon TPM
+[    0.293936] pnp 00:0a: Plug and Play ACPI device, IDs IFX0102 PNP0c31 (active)
+[   12.413651] tpm_tis 00:0a: 1.2 TPM (device-id 0xB, rev-id 16)
 
 
+
+
+@PeterA: 
+Can you perhaps try find out the exact tpm version?
+1) Install trousers and tpm_tools (emerge app-crypt/trousers app-crypt/tpm-tools)
+2) Kill the tcsd and run it in the foreground
+# pkill -9 tcsd
+# tcsd -f
+(if it says up and running you can send it to background)
+3) Run 
+#tpm_version and post the output.
+
+
+
+Also the flags etc would perhaps be handy, they can be retrieved via sysfs - on you machine it _should_ be
+# cat /sys/devices/pnp0/00:0a/*
+and also post the output.
+
+
+What also might be worth a look - in your bugzilla it states:
+[ 0.225891] pnp 00:0a: Plug and Play ACPI device, IDs IFX0102 PNP0c31 (active)
+[ 9.150673] tpm_tis 00:0a: 1.2 TPM (device-id 0xB, rev-id 16)
+[ 9.292148] tpm_tis 00:0a: Adjusting TPM timeout parameters.
+[ 10.084067] tpm_tis 00:0a: A TPM error (7) occurred attempting to read a pcr
+value
+[ 10.084077] tpm_tis 00:0a: TPM is disabled/deactivated (0x7)
+
+
+Can you perhaps try to enable your TPM in the BIOS? It's quite often hidden under "embedded security device" or "system security".
+Quite often you have to have a bios password set to access these settings.
+If your system does not have bios support for TPMs, please tell me so and I'll try to help you out.
+
+Thanks,
+PeterH
