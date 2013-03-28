@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab3C1SBp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 14:01:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35822 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab3C1SBo (ORCPT
+	id S1753259Ab3C1SBE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 14:01:04 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35615 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276Ab3C1SBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 14:01:44 -0400
-Date: Thu, 28 Mar 2013 18:01:42 +0000
-From: Thomas Graf <tgraf@suug.ch>
-To: Hong zhi guo <honkiko@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>, stephen@networkplumber.org
-Subject: Re: [PATCH 1/6] net-next: replace obsolete NLMSG_* with type safe
- nlmsg_*
-Message-ID: <20130328180142.GJ23043@casper.infradead.org>
-References: <1364402824-32680-1-git-send-email-honkiko@gmail.com>
- <20130328143216.GC23043@casper.infradead.org>
- <CAA7+ByVp4K__=mESAu4jEy=t4TJD+rV0KOA2ZhHSinm1fvedzg@mail.gmail.com>
+	Thu, 28 Mar 2013 14:01:01 -0400
+Message-ID: <51548559.6030605@wwwdotorg.org>
+Date: Thu, 28 Mar 2013 12:00:57 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA7+ByVp4K__=mESAu4jEy=t4TJD+rV0KOA2ZhHSinm1fvedzg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>
+CC: arm@kernel.org, Shawn Guo <shawn.guo@linaro.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, linux-kbuild@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH REPOST 2/7] kbuild: fixdep: support concatenated dep files
+References: <1363890194-31538-1-git-send-email-swarren@wwwdotorg.org> <1363890194-31538-2-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <1363890194-31538-2-git-send-email-swarren@wwwdotorg.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/13 at 12:08am, Hong zhi guo wrote:
-> Thanks, Thomas. But I didn't change any formatting. Just do the
-> substitution in place.
+On 03/21/2013 12:23 PM, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+> 
+> The current use-case for fixdep is: a source file is run through a single
+> processing step, which creates a single dependency file as a side-effect,
+> which fixdep transforms into the file used by the kernel build process.
+> 
+> In order to transparently run the C pre-processor on device-tree files,
+> we wish to run both gcc -E and dtc on a source file in a single rule.
+> This generates two dependency files, which must be transformed together
+> into the file used by the kernel build process. This change modifies
+> fixdep so it can process the concatenation of multiple separate input
+> dependency files, and produce a correct unified output.
+> 
+> The code changes have the slight benefit of transforming the loop in
+> parse_dep_file() into more of a lexer/tokenizer, with the loop body being
+> more of a parser. Previously, some of this logic was mixed together
+> before the loop. I also added some comments, which I hope are useful.
+> 
+> Benchmarking shows that on a cross-compiled ARM tegra_defconfig build,
+> there is less than 0.5 seconds speed decrease with this change, on top
+> of a build time of ~2m24s. This is probably within the noise.
 
-Your change would require reformatting on the lines following
-your change because the required level of indentation changed.
-I don't want to cause you unneeded pain but it really helps
-everyone used to the kernel coding style.
+Marek, do patches 2, 3, and 4 in this series look good to you from a
+kbuild perspective?
 
-> >> -     rep = alloc_skb(NLMSG_SPACE((sizeof(struct inet_diag_msg) +
-> >> -                                  sizeof(struct inet_diag_meminfo) +
-> >> -                                  64)), GFP_KERNEL);
-> >> +     rep = nlmsg_new(sizeof(struct inet_diag_msg) +
-> >> +                                  sizeof(struct inet_diag_meminfo) + 64,
-> >> +                                  GFP_KERNEL);
-                           ^^^^^^^^^^^^^^
+I'm hoping that you can review/ack those 3 patches for kbuild, and that
+Grant will review/ack the whole series, and then the series can be
+merged via arm-soc for 3.10.
 
-> Should I re-format and re-send the patch?
+Let me know if you need me to repost the series again in case it's
+fallen out of your inbox.
 
-Yes please, just resubmit the patches that changed and include
-a proper vN in the subject.
+Thanks.
