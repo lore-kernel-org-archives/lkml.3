@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab3C1PXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 11:23:15 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44223 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753980Ab3C1PXN (ORCPT
+	id S1756284Ab3C1PX3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 11:23:29 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52215 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756116Ab3C1PX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 11:23:13 -0400
-Date: Thu, 28 Mar 2013 15:22:55 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3 03/10] ARM: smp_twd: Divorce smp_twd from local timer
- API
-Message-ID: <20130328152255.GD30477@e106331-lin.cambridge.arm.com>
-References: <1363198676-30417-1-git-send-email-sboyd@codeaurora.org>
- <1363198676-30417-4-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363198676-30417-4-git-send-email-sboyd@codeaurora.org>
-Thread-Topic: [PATCHv3 03/10] ARM: smp_twd: Divorce smp_twd from local
- timer API
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 28 Mar 2013 11:23:28 -0400
+Message-ID: <1364484186.4018.66.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH v9 RESEND 4/4] ARM: dts: add sram for imx53 and imx6q
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Javier Martin <javier.martin@vista-silicon.com>, kernel@pengutronix.de,
+        devicetree-discuss@lists.ozlabs.org
+Date: Thu, 28 Mar 2013 16:23:06 +0100
+In-Reply-To: <20130328142106.GA699@S2101-09.ap.freescale.net>
+References: <1363776767-2635-1-git-send-email-p.zabel@pengutronix.de>
+	 <1363776767-2635-5-git-send-email-p.zabel@pengutronix.de>
+	 <20130328025422.GH5429@S2101-09.ap.freescale.net>
+	 <1364461518.4018.4.camel@pizza.hi.pengutronix.de>
+	 <20130328142106.GA699@S2101-09.ap.freescale.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This works on my A9x4 coretile, bringing CPUs up and down via
-/sys/devices/system/cpu/*/online, so:
-
-Tested-by: Mark Rutland <mark.rutland@arm.com>
-
-Otherwise, is there any reason we couldn't now use the twd driver on a UP
-system? Or would the overhead of handling frequency change make this pointless?
-
-On Wed, Mar 13, 2013 at 06:17:49PM +0000, Stephen Boyd wrote:
-> Separate the smp_twd timers from the local timer API. This will
-> allow us to remove ARM local timer support in the near future and
-> gets us closer to moving this driver to drivers/clocksource.
+Am Donnerstag, den 28.03.2013, 22:22 +0800 schrieb Shawn Guo:
+> On Thu, Mar 28, 2013 at 10:05:18AM +0100, Philipp Zabel wrote:
+> > > > +
+> > > > +		ocram: ocram@f8000000 {
+> > > > +			compatible = "fsl,imx-ocram", "mmio-sram";
+> > > 
+> > > We should probably just drop "fsl,imx-ocram".
+> > > 
+> > > Shawn
+> > 
+> > I thought that in the future somebody might want to implement some i.MX
+> > OCRAM specifics in a different driver, like the L2 cache / OCRAM mode
+> > switching, the timing settings, or the TrustZone bits that are
+> > configurable in the IOMUXC GPR registers.
 > 
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
-> 
-> Changes since v2:
->  * Fix booting on qemu and omap
-> 
->  arch/arm/Kconfig          |  2 +-
->  arch/arm/kernel/smp_twd.c | 64 +++++++++++++++++++++++++++++++----------------
->  2 files changed, 44 insertions(+), 22 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 5b71469..5ad2ccf 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1527,6 +1527,7 @@ config SMP
->  	depends on HAVE_SMP
->  	depends on MMU
->  	select HAVE_ARM_SCU if !ARCH_MSM_SCORPIONMP
-> +	select HAVE_ARM_TWD if (!ARCH_MSM_SCORPIONMP && !EXYNOS4_MCT)
+> We can add i.MX OCRAM specific compatible when we see that real need.
+> Also, generally we should use a specific chip/osc name rather than "imx"
+> for compatible to specify the particular hardware version.
 
-Could you not depend on your "Push selects for TWD/SCU into machine entries"
-for this?
+Alright, I'll drop it, then.
 
-Mark.
+thanks
+Philipp
+
