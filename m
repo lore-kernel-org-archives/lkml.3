@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686Ab3C1Pon (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 11:44:43 -0400
-Received: from mga14.intel.com ([143.182.124.37]:12703 "EHLO mga14.intel.com"
+	id S1756580Ab3C1Pn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 11:43:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11211 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756332Ab3C1Pol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 11:44:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,927,1355126400"; 
-   d="scan'208";a="277220631"
-From: Andi Kleen <andi@firstfloor.org>
-To: a.p.zijlstra@chello.nl
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH] perf, x86: Allow setting period 1
-References: <1362785070-12860-1-git-send-email-andi@firstfloor.org>
-Date: Thu, 28 Mar 2013 08:44:40 -0700
-In-Reply-To: <1362785070-12860-1-git-send-email-andi@firstfloor.org> (Andi
-	Kleen's message of "Fri, 8 Mar 2013 15:24:30 -0800")
-Message-ID: <m238vfil5j.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751385Ab3C1Pnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 11:43:55 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        stable@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] hugetlbfs: add swap entry check in follow_hugetlb_page()
+Date: Thu, 28 Mar 2013 11:42:38 -0400
+Message-Id: <1364485358-8745-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> writes:
+With applying the previous patch "hugetlbfs: stop setting VM_DONTDUMP in
+initializing vma(VM_HUGETLB)" to reenable hugepage coredump, if a memory
+error happens on a hugepage and the affected processes try to access
+the error hugepage, we hit VM_BUG_ON(atomic_read(&page->_count) <= 0)
+in get_page().
 
-> From: Andi Kleen <ak@linux.intel.com>
->
-> I had some requests for setting period 1, so that every event of something
-> is caught.  To my knowledge there is no limit to 1 on Intel hardware.
-> Just remove the check for minimum 2
+The reason for this bug is that coredump-related code doesn't recognise
+"hugepage hwpoison entry" with which a pmd entry is replaced when a memory
+error occurs on a hugepage.
+In other words, physical address information is stored in different bit layout
+between hugepage hwpoison entry and pmd entry, so follow_hugetlb_page()
+which is called in get_dump_page() returns a wrong page from a given address.
 
-Ping! patch is missing review.
+We need to filter out only hwpoison hugepages to have data on healthy
+hugepages in coredump. So this patch makes follow_hugetlb_page() avoid
+trying to get page when a pmd is in swap entry like format.
 
->
-> If specific CPUs have problems we can black list them.
->
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event.c |    5 -----
->  1 files changed, 0 insertions(+), 5 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index bf0f01a..2b394ae 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -946,11 +946,6 @@ int x86_perf_event_set_period(struct perf_event *event)
->  		hwc->last_period = period;
->  		ret = 1;
->  	}
-> -	/*
-> -	 * Quirk: certain CPUs dont like it if just 1 hw_event is left:
-> -	 */
-> -	if (unlikely(left < 2))
-> -		left = 2;
->  
->  	if (left > x86_pmu.max_period)
->  		left = x86_pmu.max_period;
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ mm/hugetlb.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
+diff --git v3.9-rc3.orig/mm/hugetlb.c v3.9-rc3/mm/hugetlb.c
+index 0d1705b..8462e2c 100644
+--- v3.9-rc3.orig/mm/hugetlb.c
++++ v3.9-rc3/mm/hugetlb.c
+@@ -2968,7 +2968,8 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		 * first, for the page indexing below to work.
+ 		 */
+ 		pte = huge_pte_offset(mm, vaddr & huge_page_mask(h));
+-		absent = !pte || huge_pte_none(huge_ptep_get(pte));
++		absent = !pte || huge_pte_none(huge_ptep_get(pte)) ||
++			is_swap_pte(huge_ptep_get(pte));
+ 
+ 		/*
+ 		 * When coredumping, it suits get_dump_page if we just return
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.11.7
+
