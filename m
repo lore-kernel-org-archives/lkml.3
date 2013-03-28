@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab3C1RoK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:44:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27534 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab3C1RoI (ORCPT
+	id S1752312Ab3C1RqN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:46:13 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47651 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751160Ab3C1RqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 13:44:08 -0400
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=W6PAbytqgoIA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=bpkUmt_rH-IA:10 a=26UNjcSdM5vJxEUXTMQA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1364492646.10629.1.camel@gandalf.local.home>
-Subject: Re: [BUG] Crash with NULL pointer dereference in bond_handle_frame
- in -rt (possibly mainline)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jiri Pirko <jpirko@redhat.com>, Andy Gospodarek <andy@greyhouse.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Nicolas de =?ISO-8859-1?Q?Peslo=FCan?= 
-	<nicolas.2p.debian@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Guy Streeter <streeter@redhat.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Date: Thu, 28 Mar 2013 13:44:06 -0400
-In-Reply-To: <1364491792.15753.47.camel@edumazet-glaptop>
-References: <1364490997.6345.237.camel@gandalf.local.home>
-	 <1364491792.15753.47.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Mar 2013 13:46:11 -0400
+Date: Thu, 28 Mar 2013 13:46:10 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Udo van den Heuvel <udovdh@xs4all.nl>
+cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: 3.8.4: ohci question
+In-Reply-To: <51546814.7080509@xs4all.nl>
+Message-ID: <Pine.LNX.4.44L0.1303281345140.1652-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-28 at 10:29 -0700, Eric Dumazet wrote:
+On Thu, 28 Mar 2013, Udo van den Heuvel wrote:
 
-> Nothing :(
+> On 2013-03-28 15:35, Alan Stern wrote:
+> >>> When my dmesg gives me a growing number of lines like the one below,
+> >>> what is going on?
+> >>>
+> >>>  ohci_hcd 0000:00:12.0: urb ffff88023025c500 path 2 ep1in 6c160000 cc 6
+> >>> --> status -71
+> >>>
+> >>> Please let me know!
+> > 
+> > -71 errors indicate a low-level problem on the USB bus.  Generally it
+> > means that the device isn't sending any packets.  Maybe the device's
+> > firmware has crashed or maybe it has been disconnected.
 > 
-> bug introduced in commit 35d48903e9781975e823b359ee85c257c9ff5c1c
-> (bonding: fix rx_handler locking)
-> 
-> CC Jiri
-> 
-> Fix seems simple :
-> 
-> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-> index 6bbd90e..7956ca5 100644
-> --- a/drivers/net/bonding/bond_main.c
-> +++ b/drivers/net/bonding/bond_main.c
-> @@ -1457,6 +1457,8 @@ static rx_handler_result_t bond_handle_frame(struct sk_buff **pskb)
->  	*pskb = skb;
->  
->  	slave = bond_slave_get_rcu(skb->dev);
-> +	if (!slave)
-> +		return ret;
+> Could it be due to a defect in the mainboard?
+> Or the device connected to that port?
 
-Thanks! That's basically what I thought, but wanted to make sure there's
-wasn't some other synchronization that I may have been missing.
+Yes.  Or it could be due to any number of other things.  Do you want to 
+post a complete dmesg log?
 
--- Steve
-
->  	bond = slave->bond;
->  
->  	if (bond->params.arp_interval)
-> 
-> 
-
+Alan Stern
 
