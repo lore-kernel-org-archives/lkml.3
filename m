@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827Ab3C1Mwo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 08:52:44 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:41082 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596Ab3C1Mwi (ORCPT
+	id S1756192Ab3C1Mwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 08:52:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25852 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755596Ab3C1Mwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 08:52:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <1364444885-19751-2-git-send-email-yinghai@kernel.org>
-References: <1364444885-19751-1-git-send-email-yinghai@kernel.org> <1364444885-19751-2-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 28 Mar 2013 06:52:17 -0600
-Message-ID: <CAErSpo7UYk5q2BPcS4xX06S3qwjK-XRw2LTgOUEiDqwNeAWNgQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] eisa, PCI: Fix bus res reference
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Whitehead <mwhitehe@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 28 Mar 2013 08:52:34 -0400
+X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=A0Xx6ySGHMwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=h-k7l3VsYcsA:10 a=VwQbUJbxAAAA:8 a=TExKkRM8WJb7dC8g9ioA:9 a=QEXdDO2ut3YA:10 a=Du4RQqgcx0bw7taqpBQA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130328125214.132479321@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 28 Mar 2013 08:52:14 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 0/3] [GIT PULL][3.9] tracing/perf: Various fixes
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 10:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> Matthem found that 3.8.3 is having problems with an old (ancient)
-> PCI-to-EISA bridge, the Intel 82375. It worked with the 3.2 kernel.
-> He identified the 82375, but doesn't assign the struct resource *res
-> pointer inside the struct eisa_root_device, and panics.
->
-> After looking at pci_eisa_init(), found it referring bus resource
-> directly instead of pci_bus_resource_n().
->
-> After commit 45ca9e97 (PCI: add helpers for building PCI bus resource lists)
-> and commit 0efd5aab (PCI: add struct pci_host_bridge_window with CPU/bus
-> address offset), bus->resource[] is not used for pci root bus any more.
->
-> Fix it by using pci_bus_resource_n() and correct idx for root bus.
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Please include URLs for the problem reports for these problems
-(bugzilla or mailing list discussion).
 
-> Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
-> Tested-by: Matthew Whitehead <mwhitehe@redhat.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: stable@kernel.org
+Ingo,
 
-You are consistently using the wrong stable email address.  It should
-be "stable@vger.kernel.org".  I assume you see a bounce every time; at
-least, I get a bounce when I reply to your messages.
+Please pull the latest tip/perf/urgent tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/perf/urgent
+
+Head SHA1: cc1e2627b179f0fccb3285fe565e893b570558b8
+
+
+Jan Kiszka (1):
+      ftrace: Consistently restore trace function on sysctl enabling
+
+Steven Rostedt (Red Hat) (2):
+      tracing: Fix race with update_max_tr_single and changing tracers
+      ftrace: Do not call stub functions in control loop
+
+----
+ include/linux/ftrace.h |    2 ++
+ kernel/trace/ftrace.c  |   13 +++++--------
+ kernel/trace/trace.c   |    5 ++++-
+ 3 files changed, 11 insertions(+), 9 deletions(-)
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAABAgAGBQJRVD0NAAoJEOdOSU1xswtMqyAH/3q44CiXaLrkFX4/QWqiBUGY
+LDuPj8jr6fPjIcWd5cZuEwVpB8ljTm+2CmycZrCibAlid24bAMSNoaCqns2E7/Lt
+zSLuBHkvUYnzOgF9Ryw0uLt5i6oA7PZf/FKOPMpPgCK8QcQhKciljBdisj6Mi1kw
+BVCjbVOMJ1Ua8maS6wx2N3kfvthcliPbcI+GwIvlWQ1puG9PmcNVZkyg0O7cFseP
+kYFyldYo8Zx1ftBGeFe0/aSSp1nGATI5AgMVUn8XswBEqrLdi/oX951xFs6qCCs+
+o3XMljWiW5sIcOmU/mbySFBCXtFX5sTmiCa4MltjvGuMLro61e2t3wuNxWMTBCc=
+=X+b+
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
