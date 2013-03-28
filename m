@@ -1,83 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662Ab3C1VEa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 17:04:30 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47466 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab3C1VE3 (ORCPT
+	id S1753093Ab3C1VFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 17:05:51 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:11822 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951Ab3C1VFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 17:04:29 -0400
-Date: Thu, 28 Mar 2013 21:04:12 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dove: fix Dove cpu type from V7 to PJ4
-Message-ID: <20130328210412.GG3368@n2100.arm.linux.org.uk>
-References: <1364051211-24414-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130328170654.GX13280@titan.lakedaemon.net> <20130328181425.GE3368@n2100.arm.linux.org.uk> <5154A5B5.7@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5154A5B5.7@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 28 Mar 2013 17:05:50 -0400
+Message-ID: <1364504747.8132.10.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH -mm -next] ipc,sem: untangle RCU locking with
+ find_alloc_undo
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Rik van Riel <riel@surriel.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        hhuang@redhat.com, jason.low2@hp.com, walken@google.com,
+        lwoodman@redhat.com, chegu_vinod@hp.com,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Thu, 28 Mar 2013 14:05:47 -0700
+In-Reply-To: <20130328113222.194bbfe8@cuia.bos.redhat.com>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+	 <5151DBD3.6080201@oracle.com> <20130328113222.194bbfe8@cuia.bos.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 09:19:01PM +0100, Sebastian Hesselbarth wrote:
-> On 03/28/2013 07:14 PM, Russell King - ARM Linux wrote:
->> On Thu, Mar 28, 2013 at 01:06:54PM -0400, Jason Cooper wrote:
->>> On Sat, Mar 23, 2013 at 04:06:51PM +0100, Sebastian Hesselbarth wrote:
->>>> The CPU used in Marvell Dove SoCs is a PJ4 Sheeva core. Using
->>>> CONFIG_CPU_PJ4 instead of CONFIG_CPU_V7 will also allow to enable
->>>> iWMMXt extensions on Dove.
->>>>
->>>> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->>>> ---
->>>> Cc: Russell King<linux@arm.linux.org.uk>
->>>> Cc: Jason Cooper<jason@lakedaemon.net>
->>>> Cc: Andrew Lunn<andrew@lunn.ch>
->>>> Cc: linux-arm-kernel@lists.infradead.org
->>>> Cc: linux-kernel@vger.kernel.org
->>>> ---
->>>>   arch/arm/Kconfig |    2 +-
->>>>   1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> Hmmm, I'm getting (with dove_defconfig):
->>>
->>> arch/arm/kernel/built-in.o: In function `iwmmxt_do':
->>> /.../arch/arm/kernel/pj4-cp0.c:36: undefined reference to `iwmmxt_task_release'
->>> /.../arch/arm/kernel/pj4-cp0.c:40: undefined reference to `iwmmxt_task_switch'
->>> make: *** [vmlinux] Error 1
->>
->> Looks to me like PJ4 IWMMXT support wasn't properly tested out when it
->> was submitted - it's possible to end up with pj4-cp0.c built without
->> the IWMMXT code that it depends on being built...
->
-> Russel, Jason,
->
-> do we force iWMMXt on CPU_PJ4 or should there be some #ifdef'ery if  
-> IWMMXT is not selected?
+On Thu, 2013-03-28 at 11:32 -0400, Rik van Riel wrote:
+> On Tue, 26 Mar 2013 13:33:07 -0400
+> Sasha Levin <sasha.levin@oracle.com> wrote:
+> 
+> > [   96.347341] ================================================
+> > [   96.348085] [ BUG: lock held when returning to user space! ]
+> > [   96.348834] 3.9.0-rc4-next-20130326-sasha-00011-gbcb2313 #318 Tainted: G        W
+> > [   96.360300] ------------------------------------------------
+> > [   96.361084] trinity-child9/7583 is leaving the kernel with locks still held!
+> > [   96.362019] 1 lock held by trinity-child9/7583:
+> > [   96.362610]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff8192eafb>] SYSC_semtimedop+0x1fb/0xec0
+> > 
+> > It seems that we can leave semtimedop without releasing the rcu read lock.
+> 
+> Sasha, this patch untangles the RCU locking with find_alloc_undo,
+> and should fix the above issue. As a side benefit, this makes the
+> code a little cleaner.
+> 
+> Next up: implement locking in a way that does not trigger any 
+> lockdep warnings...
+> 
+> ---8<---
+> 
+> Subject: ipc,sem: untangle RCU locking with find_alloc_undo
+> 
+> The ipc semaphore code has a nasty RCU locking tangle, with both
+> find_alloc_undo and semtimedop taking the rcu_read_lock(). The
+> code can be cleaned up somewhat by only taking the rcu_read_lock
+> once.
 
->From what I could see, there's not much point to pj4-cp0.c without
-iwmmxt.S also being built.  So, what I'd suggest is this, which will
-ensure IWMMXT is enabled when PJ4 is set, otherwise giving people the
-choice as it used to be.
+indeed!
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 67874b8..ef6733a 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1171,9 +1171,9 @@ config ARM_NR_BANKS
- 	default 8
- 
- config IWMMXT
--	bool "Enable iWMMXt support"
-+	bool "Enable iWMMXt support" if !CPU_PJ4
- 	depends on CPU_XSCALE || CPU_XSC3 || CPU_MOHAWK || CPU_PJ4
--	default y if PXA27x || PXA3xx || ARCH_MMP
-+	default y if PXA27x || PXA3xx || ARCH_MMP || CPU_PJ4
- 	help
- 	  Enable support for iWMMXt context switching at run time if
- 	  running on a CPU that supports it.
+> 
+> The only caller of find_alloc_undo is in semtimedop.
+> 
+> This should solve the trinity issue reported by Sasha Levin.
+> 
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+>  ipc/sem.c |   31 +++++++++----------------------
+>  1 files changed, 9 insertions(+), 22 deletions(-)
+> 
+> diff --git a/ipc/sem.c b/ipc/sem.c
+> index f46441a..2ec2945 100644
+> --- a/ipc/sem.c
+> +++ b/ipc/sem.c
+> @@ -1646,22 +1646,23 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
+>  			alter = 1;
+>  	}
+>  
+> +	INIT_LIST_HEAD(&tasks);
+> +
+>  	if (undos) {
+> +		/* On success, find_alloc_undo takes the rcu_read_lock */
+>  		un = find_alloc_undo(ns, semid);
+
+find_alloc_undo() has some nested rcu_read_locks of its own. We can
+simplify that as well. Will look into it, but don't want to introduce
+any more changes until we address all the issues with the patchset, and
+know it to behave.
+
+>  		if (IS_ERR(un)) {
+>  			error = PTR_ERR(un);
+>  			goto out_free;
+>  		}
+> -	} else
+> +	} else {
+>  		un = NULL;
+> +		rcu_read_lock();
+> +	}
+>  
+> -	INIT_LIST_HEAD(&tasks);
+> -
+> -	rcu_read_lock();
+>  	sma = sem_obtain_object_check(ns, semid);
+>  	if (IS_ERR(sma)) {
+> -		if (un)
+> -			rcu_read_unlock();
+> +		rcu_read_unlock();
+>  		error = PTR_ERR(sma);
+>  		goto out_free;
+>  	}
+> @@ -1693,22 +1694,8 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
+>  	 */
+>  	error = -EIDRM;
+>  	locknum = sem_lock(sma, sops, nsops);
+> -	if (un) {
+> -		if (un->semid == -1) {
+> -			rcu_read_unlock();
+> -			goto out_unlock_free;
+> -		} else {
+> -			/*
+> -			 * rcu lock can be released, "un" cannot disappear:
+> -			 * - sem_lock is acquired, thus IPC_RMID is
+> -			 *   impossible.
+> -			 * - exit_sem is impossible, it always operates on
+> -			 *   current (or a dead task).
+> -			 */
+> -
+> -			rcu_read_unlock();
+> -		}
+> -	}
+> +	if (un && un->semid == -1)
+> +		goto out_unlock_free;
+
+Yeah, I was tempted in doing something much like this, but didn't want
+to change any existing logic. Hopefully we can get away with this and it
+fixes Sasha's issue.
+
+>  
+>  	error = try_atomic_semop (sma, sops, nsops, un, task_tgid_vnr(current));
+>  	if (error <= 0) {
+
+Reviewed-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+
 
