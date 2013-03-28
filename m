@@ -1,205 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab3C1RIP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:08:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36339 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756905Ab3C1RCy (ORCPT
+	id S1756891Ab3C1RCx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:02:53 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:47741
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756786Ab3C1RCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 13:02:54 -0400
+	Thu, 28 Mar 2013 13:02:50 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        peterz@infradead.org, ak@linux.intel.com, acme@redhat.com,
-        jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH 22/36] perf/x86: Add support for PEBS Precise Store
-Date: Thu, 28 Mar 2013 14:02:22 -0300
-Message-Id: <1364490156-32064-23-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 09/36] perf tools: Get rid of die() calls in trace-data-read.c
+Date: Thu, 28 Mar 2013 14:02:09 -0300
+Message-Id: <1364490156-32064-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1364490156-32064-1-git-send-email-acme@infradead.org>
 References: <1364490156-32064-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-This patch adds support for PEBS Precise Store
-which is available on Intel Sandy Bridge and
-Ivy Bridge processors.
+Convert them to pr_debug() and propagate error code.
 
-To use Precise store, the proper PEBS event
-must be used: mem_trans_retired:precise_stores.
-For the perf tool, the generic mem-stores event
-exported via sysfs can be used directly.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: peterz@infradead.org
-Cc: ak@linux.intel.com
-Cc: acme@redhat.com
-Cc: jolsa@redhat.com
-Cc: namhyung.kim@lge.com
-Link: http://lkml.kernel.org/r/1359040242-8269-11-git-send-email-eranian@google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1363850332-25297-9-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/kernel/cpu/perf_event.h          |    5 +++
- arch/x86/kernel/cpu/perf_event_intel.c    |    2 +
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   49 +++++++++++++++++++++++++++-
- 3 files changed, 54 insertions(+), 2 deletions(-)
+ tools/perf/util/trace-event-read.c |   44 +++++++++++++++++++++++------------
+ 1 files changed, 29 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index f3a9a94..ba9aadf 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -66,6 +66,7 @@ struct event_constraint {
-  * struct event_constraint flags
-  */
- #define PERF_X86_EVENT_PEBS_LDLAT	0x1 /* ld+ldlat data address sampling */
-+#define PERF_X86_EVENT_PEBS_ST		0x2 /* st data address sampling */
+diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
+index 877706b..644ad3b 100644
+--- a/tools/perf/util/trace-event-read.c
++++ b/tools/perf/util/trace-event-read.c
+@@ -130,17 +130,23 @@ static char *read_string(void)
  
- struct amd_nb {
- 	int nb_id;  /* NorthBridge id */
-@@ -242,6 +243,10 @@ struct cpu_hw_events {
- 	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
- 			   HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LDLAT)
+ 	for (;;) {
+ 		r = read(input_fd, &c, 1);
+-		if (r < 0)
+-			die("reading input file");
++		if (r < 0) {
++			pr_debug("reading input file");
++			goto out;
++		}
  
-+#define INTEL_PST_CONSTRAINT(c, n)	\
-+	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
-+			  HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST)
-+
- #define EVENT_CONSTRAINT_END		\
- 	EVENT_CONSTRAINT(0, 0, 0)
+-		if (!r)
+-			die("no data");
++		if (!r) {
++			pr_debug("no data");
++			goto out;
++		}
  
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index ae6096b..e84c4ba 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -163,6 +163,7 @@ static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
+ 		if (repipe) {
+ 			int retw = write(STDOUT_FILENO, &c, 1);
  
- EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x0b,umask=0x10,ldlat=3");
- EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
-+EVENT_ATTR_STR(mem-stores, mem_st_snb, "event=0xcd,umask=0x2");
+-			if (retw <= 0 || retw != r)
+-				die("repiping input file string");
++			if (retw <= 0 || retw != r) {
++				pr_debug("repiping input file string");
++				goto out;
++			}
+ 		}
  
- struct attribute *nhm_events_attrs[] = {
- 	EVENT_PTR(mem_ld_nhm),
-@@ -171,6 +172,7 @@ struct attribute *nhm_events_attrs[] = {
- 
- struct attribute *snb_events_attrs[] = {
- 	EVENT_PTR(mem_ld_snb),
-+	EVENT_PTR(mem_st_snb),
- 	NULL,
- };
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index a6400bd..36dc13d 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -69,6 +69,44 @@ static const u64 pebs_data_source[] = {
- 	OP_LH | P(LVL, UNC) | P(SNOOP, NONE), /* 0x0f: uncached */
- };
- 
-+static u64 precise_store_data(u64 status)
-+{
-+	union intel_x86_pebs_dse dse;
-+	u64 val = P(OP, STORE) | P(SNOOP, NA) | P(LVL, L1) | P(TLB, L2);
-+
-+	dse.val = status;
-+
-+	/*
-+	 * bit 4: TLB access
-+	 * 1 = stored missed 2nd level TLB
-+	 *
-+	 * so it either hit the walker or the OS
-+	 * otherwise hit 2nd level TLB
-+	 */
-+	if (dse.st_stlb_miss)
-+		val |= P(TLB, MISS);
-+	else
-+		val |= P(TLB, HIT);
-+
-+	/*
-+	 * bit 0: hit L1 data cache
-+	 * if not set, then all we know is that
-+	 * it missed L1D
-+	 */
-+	if (dse.st_l1d_hit)
-+		val |= P(LVL, HIT);
-+	else
-+		val |= P(LVL, MISS);
-+
-+	/*
-+	 * bit 5: Locked prefix
-+	 */
-+	if (dse.st_locked)
-+		val |= P(LOCK, LOCKED);
-+
-+	return val;
-+}
-+
- static u64 load_latency_data(u64 status)
- {
- 	union intel_x86_pebs_dse dse;
-@@ -486,6 +524,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
- 	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
- 	INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
-+	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
- 	INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-@@ -500,6 +539,7 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
-         INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-         INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
-         INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
-+	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
-         INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
-         INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
-         INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-@@ -537,6 +577,8 @@ void intel_pmu_pebs_enable(struct perf_event *event)
- 
- 	if (event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT)
- 		cpuc->pebs_enabled |= 1ULL << (hwc->idx + 32);
-+	else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST)
-+		cpuc->pebs_enabled |= 1ULL << 63;
+ 		buf[size++] = c;
+@@ -155,7 +161,7 @@ static char *read_string(void)
+ 	str = malloc(size);
+ 	if (str)
+ 		memcpy(str, buf, size);
+-
++out:
+ 	return str;
  }
  
- void intel_pmu_pebs_disable(struct perf_event *event)
-@@ -657,12 +699,13 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	struct perf_sample_data data;
- 	struct pt_regs regs;
- 	u64 sample_type;
--	int fll;
-+	int fll, fst;
+@@ -219,8 +225,10 @@ static int read_header_files(struct pevent *pevent)
+ 	if (do_read(buf, 12) < 0)
+ 		return -1;
  
- 	if (!intel_pmu_save_and_restart(event))
- 		return;
+-	if (memcmp(buf, "header_page", 12) != 0)
+-		die("did not read header page");
++	if (memcmp(buf, "header_page", 12) != 0) {
++		pr_debug("did not read header page");
++		return -1;
++	}
  
- 	fll = event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT;
-+	fst = event->hw.flags & PERF_X86_EVENT_PEBS_ST;
+ 	size = read8(pevent);
+ 	skip(size);
+@@ -234,8 +242,10 @@ static int read_header_files(struct pevent *pevent)
+ 	if (do_read(buf, 13) < 0)
+ 		return -1;
  
- 	perf_sample_data_init(&data, 0, event->hw.last_period);
+-	if (memcmp(buf, "header_event", 13) != 0)
+-		die("did not read header event");
++	if (memcmp(buf, "header_event", 13) != 0) {
++		pr_debug("did not read header event");
++		return -1;
++	}
  
-@@ -672,7 +715,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	/*
- 	 * if PEBS-LL or PreciseStore
- 	 */
--	if (fll) {
-+	if (fll || fst) {
- 		if (sample_type & PERF_SAMPLE_ADDR)
- 			data.addr = pebs->dla;
+ 	size = read8(pevent);
+ 	header_event = malloc(size);
+@@ -353,13 +363,17 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
  
-@@ -688,6 +731,8 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 		if (sample_type & PERF_SAMPLE_DATA_SRC) {
- 			if (fll)
- 				data.data_src.val = load_latency_data(pebs->dse);
-+			else
-+				data.data_src.val = precise_store_data(pebs->dse);
- 		}
- 	}
+ 	if (do_read(buf, 3) < 0)
+ 		return -1;
+-	if (memcmp(buf, test, 3) != 0)
+-		die("no trace data in the file");
++	if (memcmp(buf, test, 3) != 0) {
++		pr_debug("no trace data in the file");
++		return -1;
++	}
  
+ 	if (do_read(buf, 7) < 0)
+ 		return -1;
+-	if (memcmp(buf, "tracing", 7) != 0)
+-		die("not a trace file (missing 'tracing' tag)");
++	if (memcmp(buf, "tracing", 7) != 0) {
++		pr_debug("not a trace file (missing 'tracing' tag)");
++		return -1;
++	}
+ 
+ 	version = read_string();
+ 	if (version == NULL)
 -- 
 1.7.1
 
