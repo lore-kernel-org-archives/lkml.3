@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757368Ab3C1RKN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:10:13 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36317 "EHLO
+	id S1757457Ab3C1RKO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:10:14 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36307 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756844Ab3C1RCw (ORCPT
+	with ESMTP id S1756823Ab3C1RCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Mar 2013 13:02:52 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 11/36] perf stat: Refactor aggregation code
-Date: Thu, 28 Mar 2013 14:02:11 -0300
-Message-Id: <1364490156-32064-12-git-send-email-acme@infradead.org>
+        peterz@infradead.org, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH 19/36] perf: Add generic memory sampling interface
+Date: Thu, 28 Mar 2013 14:02:19 -0300
+Message-Id: <1364490156-32064-20-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1364490156-32064-1-git-send-email-acme@infradead.org>
 References: <1364490156-32064-1-git-send-email-acme@infradead.org>
@@ -29,507 +27,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephane Eranian <eranian@google.com>
 
-Refactor aggregation code by introducing a single aggr_mode variable and an
-enum for aggregation.
+This patch adds PERF_SAMPLE_DATA_SRC.
 
-Also refactor cpumap code having to do with cpu to socket mappings. All in
-preparation for extended modes, such as cpu -> core.
-
-Also fix socket aggregation and ensure that sockets are printed in increasing
-order.
+PERF_SAMPLE_DATA_SRC collects the data source, i.e., where
+did the data associated with the sampled instruction
+come from. Information is stored in a perf_mem_data_src
+structure. It contains opcode, mem level, tlb, snoop,
+lock information, subject to availability in hardware.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1360846649-6411-2-git-send-email-eranian@google.com
-[ committer note: Fixup conflicts with a7e191c "--repeat forever" and
-  acf2892 "Use perf_evlist__prepare/start_workload()" ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: peterz@infradead.org
+Cc: ak@linux.intel.com
+Cc: acme@redhat.com
+Cc: jolsa@redhat.com
+Cc: namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1359040242-8269-8-git-send-email-eranian@google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/builtin-stat.c |  207 ++++++++++++++++++++++++++-------------------
- tools/perf/util/cpumap.c  |   40 ++++++---
- 2 files changed, 147 insertions(+), 100 deletions(-)
+ include/linux/perf_event.h      |    2 +
+ include/uapi/linux/perf_event.h |   68 +++++++++++++++++++++++++++++++++++++-
+ kernel/events/core.c            |    6 +++
+ 3 files changed, 74 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index ba0bdd8..ded34fc 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -68,7 +68,7 @@
- static void print_stat(int argc, const char **argv);
- static void print_counter_aggr(struct perf_evsel *counter, char *prefix);
- static void print_counter(struct perf_evsel *counter, char *prefix);
--static void print_aggr_socket(char *prefix);
-+static void print_aggr(char *prefix);
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 7ce0b37..42a6daa 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -568,6 +568,7 @@ struct perf_sample_data {
+ 		u32	reserved;
+ 	}				cpu_entry;
+ 	u64				period;
++	union  perf_mem_data_src	data_src;
+ 	struct perf_callchain_entry	*callchain;
+ 	struct perf_raw_record		*raw;
+ 	struct perf_branch_stack	*br_stack;
+@@ -588,6 +589,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->regs_user.regs = NULL;
+ 	data->stack_user_size = 0;
+ 	data->weight = 0;
++	data->data_src.val = 0;
+ }
  
- static struct perf_evlist	*evsel_list;
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index cdc255d..5b57620 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -133,9 +133,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_REGS_USER			= 1U << 12,
+ 	PERF_SAMPLE_STACK_USER			= 1U << 13,
+ 	PERF_SAMPLE_WEIGHT			= 1U << 14,
++	PERF_SAMPLE_DATA_SRC			= 1U << 15,
  
-@@ -76,11 +76,16 @@ static struct perf_target	target = {
- 	.uid	= UINT_MAX,
+-	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
+-
++	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
  };
  
-+enum aggr_mode {
-+	AGGR_NONE,
-+	AGGR_GLOBAL,
-+	AGGR_SOCKET,
+ /*
+@@ -592,6 +592,7 @@ enum perf_event_type {
+ 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
+ 	 *
+ 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
++	 *	{ u64			data_src;     } && PERF_SAMPLE_DATA_SRC
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+@@ -617,4 +618,67 @@ enum perf_callchain_context {
+ #define PERF_FLAG_FD_OUTPUT		(1U << 1)
+ #define PERF_FLAG_PID_CGROUP		(1U << 2) /* pid=cgroup id, per-cpu mode only */
+ 
++union perf_mem_data_src {
++	__u64 val;
++	struct {
++		__u64   mem_op:5,	/* type of opcode */
++			mem_lvl:14,	/* memory hierarchy level */
++			mem_snoop:5,	/* snoop mode */
++			mem_lock:2,	/* lock instr */
++			mem_dtlb:7,	/* tlb access */
++			mem_rsvd:31;
++	};
 +};
 +
- static int			run_count			=  1;
- static bool			no_inherit			= false;
- static bool			scale				=  true;
--static bool			no_aggr				= false;
--static bool			aggr_socket			= false;
-+static enum aggr_mode		aggr_mode			= AGGR_GLOBAL;
- static pid_t			child_pid			= -1;
- static bool			null_run			=  false;
- static int			detailed_run			=  0;
-@@ -96,7 +101,8 @@ static bool			sync_run			= false;
- static unsigned int		interval			= 0;
- static bool			forever				= false;
- static struct timespec		ref_time;
--static struct cpu_map		*sock_map;
-+static struct cpu_map		*aggr_map;
-+static int			(*aggr_get_id)(struct cpu_map *m, int cpu);
- 
- static volatile int done = 0;
- 
-@@ -355,41 +361,51 @@ static void print_interval(void)
- 	struct timespec ts, rs;
- 	char prefix[64];
- 
--	if (no_aggr) {
-+	if (aggr_mode == AGGR_GLOBAL) {
- 		list_for_each_entry(counter, &evsel_list->entries, node) {
- 			ps = counter->priv;
- 			memset(ps->res_stats, 0, sizeof(ps->res_stats));
--			read_counter(counter);
-+			read_counter_aggr(counter);
- 		}
--	} else {
-+	} else	{
- 		list_for_each_entry(counter, &evsel_list->entries, node) {
- 			ps = counter->priv;
- 			memset(ps->res_stats, 0, sizeof(ps->res_stats));
--			read_counter_aggr(counter);
-+			read_counter(counter);
- 		}
- 	}
++/* type of opcode (load/store/prefetch,code) */
++#define PERF_MEM_OP_NA		0x01 /* not available */
++#define PERF_MEM_OP_LOAD	0x02 /* load instruction */
++#define PERF_MEM_OP_STORE	0x04 /* store instruction */
++#define PERF_MEM_OP_PFETCH	0x08 /* prefetch */
++#define PERF_MEM_OP_EXEC	0x10 /* code (execution) */
++#define PERF_MEM_OP_SHIFT	0
 +
- 	clock_gettime(CLOCK_MONOTONIC, &ts);
- 	diff_timespec(&rs, &ts, &ref_time);
- 	sprintf(prefix, "%6lu.%09lu%s", rs.tv_sec, rs.tv_nsec, csv_sep);
++/* memory hierarchy (memory level, hit or miss) */
++#define PERF_MEM_LVL_NA		0x01  /* not available */
++#define PERF_MEM_LVL_HIT	0x02  /* hit level */
++#define PERF_MEM_LVL_MISS	0x04  /* miss level  */
++#define PERF_MEM_LVL_L1		0x08  /* L1 */
++#define PERF_MEM_LVL_LFB	0x10  /* Line Fill Buffer */
++#define PERF_MEM_LVL_L2		0x20  /* L2 hit */
++#define PERF_MEM_LVL_L3		0x40  /* L3 hit */
++#define PERF_MEM_LVL_LOC_RAM	0x80  /* Local DRAM */
++#define PERF_MEM_LVL_REM_RAM1	0x100 /* Remote DRAM (1 hop) */
++#define PERF_MEM_LVL_REM_RAM2	0x200 /* Remote DRAM (2 hops) */
++#define PERF_MEM_LVL_REM_CCE1	0x400 /* Remote Cache (1 hop) */
++#define PERF_MEM_LVL_REM_CCE2	0x800 /* Remote Cache (2 hops) */
++#define PERF_MEM_LVL_IO		0x1000 /* I/O memory */
++#define PERF_MEM_LVL_UNC	0x2000 /* Uncached memory */
++#define PERF_MEM_LVL_SHIFT	5
++
++/* snoop mode */
++#define PERF_MEM_SNOOP_NA	0x01 /* not available */
++#define PERF_MEM_SNOOP_NONE	0x02 /* no snoop */
++#define PERF_MEM_SNOOP_HIT	0x04 /* snoop hit */
++#define PERF_MEM_SNOOP_MISS	0x08 /* snoop miss */
++#define PERF_MEM_SNOOP_HITM	0x10 /* snoop hit modified */
++#define PERF_MEM_SNOOP_SHIFT	19
++
++/* locked instruction */
++#define PERF_MEM_LOCK_NA	0x01 /* not available */
++#define PERF_MEM_LOCK_LOCKED	0x02 /* locked transaction */
++#define PERF_MEM_LOCK_SHIFT	24
++
++/* TLB access */
++#define PERF_MEM_TLB_NA		0x01 /* not available */
++#define PERF_MEM_TLB_HIT	0x02 /* hit level */
++#define PERF_MEM_TLB_MISS	0x04 /* miss level */
++#define PERF_MEM_TLB_L1		0x08 /* L1 */
++#define PERF_MEM_TLB_L2		0x10 /* L2 */
++#define PERF_MEM_TLB_WK		0x20 /* Hardware Walker*/
++#define PERF_MEM_TLB_OS		0x40 /* OS fault handler */
++#define PERF_MEM_TLB_SHIFT	26
++
++#define PERF_MEM_S(a, s) \
++	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
++
+ #endif /* _UAPI_LINUX_PERF_EVENT_H */
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 9e3edb2..77c96d1 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -982,6 +982,9 @@ static void perf_event__header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		size += event->read_size;
  
- 	if (num_print_interval == 0 && !csv_output) {
--		if (aggr_socket)
-+		switch (aggr_mode) {
-+		case AGGR_SOCKET:
- 			fprintf(output, "#           time socket cpus             counts events\n");
--		else if (no_aggr)
-+			break;
-+		case AGGR_NONE:
- 			fprintf(output, "#           time CPU                 counts events\n");
--		else
-+			break;
-+		case AGGR_GLOBAL:
-+		default:
- 			fprintf(output, "#           time             counts events\n");
-+		}
- 	}
- 
- 	if (++num_print_interval == 25)
- 		num_print_interval = 0;
- 
--	if (aggr_socket)
--		print_aggr_socket(prefix);
--	else if (no_aggr) {
-+	switch (aggr_mode) {
-+	case AGGR_SOCKET:
-+		print_aggr(prefix);
-+		break;
-+	case AGGR_NONE:
- 		list_for_each_entry(counter, &evsel_list->entries, node)
- 			print_counter(counter, prefix);
--	} else {
-+		break;
-+	case AGGR_GLOBAL:
-+	default:
- 		list_for_each_entry(counter, &evsel_list->entries, node)
- 			print_counter_aggr(counter, prefix);
- 	}
-@@ -412,12 +428,6 @@ static int __run_perf_stat(int argc, const char **argv)
- 		ts.tv_nsec = 0;
- 	}
- 
--	if (aggr_socket
--	    && cpu_map__build_socket_map(evsel_list->cpus, &sock_map)) {
--		perror("cannot build socket map");
--		return -1;
--	}
--
- 	if (forks) {
- 		if (perf_evlist__prepare_workload(evsel_list, &target, argv,
- 						  false, false) < 0) {
-@@ -493,17 +503,17 @@ static int __run_perf_stat(int argc, const char **argv)
- 
- 	update_stats(&walltime_nsecs_stats, t1 - t0);
- 
--	if (no_aggr) {
--		list_for_each_entry(counter, &evsel_list->entries, node) {
--			read_counter(counter);
--			perf_evsel__close_fd(counter, perf_evsel__nr_cpus(counter), 1);
--		}
--	} else {
-+	if (aggr_mode == AGGR_GLOBAL) {
- 		list_for_each_entry(counter, &evsel_list->entries, node) {
- 			read_counter_aggr(counter);
- 			perf_evsel__close_fd(counter, perf_evsel__nr_cpus(counter),
- 					     thread_map__nr(evsel_list->threads));
- 		}
-+	} else {
-+		list_for_each_entry(counter, &evsel_list->entries, node) {
-+			read_counter(counter);
-+			perf_evsel__close_fd(counter, perf_evsel__nr_cpus(counter), 1);
-+		}
- 	}
- 
- 	return WEXITSTATUS(status);
-@@ -556,26 +566,37 @@ static void print_noise(struct perf_evsel *evsel, double avg)
- 	print_noise_pct(stddev_stats(&ps->res_stats[0]), avg);
++	if (sample_type & PERF_SAMPLE_DATA_SRC)
++		size += sizeof(data->data_src.val);
++
+ 	event->header_size = size;
  }
  
--static void nsec_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
-+static void aggr_printout(struct perf_evsel *evsel, int cpu, int nr)
- {
--	double msecs = avg / 1e6;
--	char cpustr[16] = { '\0', };
--	const char *fmt = csv_output ? "%s%.6f%s%s" : "%s%18.6f%s%-25s";
--
--	if (aggr_socket)
--		sprintf(cpustr, "S%*d%s%*d%s",
-+	switch (aggr_mode) {
-+	case AGGR_SOCKET:
-+		fprintf(output, "S%*d%s%*d%s",
- 			csv_output ? 0 : -5,
- 			cpu,
- 			csv_sep,
- 			csv_output ? 0 : 4,
- 			nr,
- 			csv_sep);
--	else if (no_aggr)
--		sprintf(cpustr, "CPU%*d%s",
-+			break;
-+	case AGGR_NONE:
-+		fprintf(output, "CPU%*d%s",
- 			csv_output ? 0 : -4,
- 			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
-+		break;
-+	case AGGR_GLOBAL:
-+	default:
-+		break;
-+	}
-+}
+@@ -4199,6 +4202,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		perf_output_put(handle, data->weight);
 +
-+static void nsec_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
-+{
-+	double msecs = avg / 1e6;
-+	const char *fmt = csv_output ? "%.6f%s%s" : "%18.6f%s%-25s";
-+
-+	aggr_printout(evsel, cpu, nr);
- 
--	fprintf(output, fmt, cpustr, msecs, csv_sep, perf_evsel__name(evsel));
-+	fprintf(output, fmt, msecs, csv_sep, perf_evsel__name(evsel));
- 
- 	if (evsel->cgrp)
- 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
-@@ -772,32 +793,21 @@ static void print_ll_cache_misses(int cpu,
- static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- {
- 	double total, ratio = 0.0;
--	char cpustr[16] = { '\0', };
- 	const char *fmt;
- 
- 	if (csv_output)
--		fmt = "%s%.0f%s%s";
-+		fmt = "%.0f%s%s";
- 	else if (big_num)
--		fmt = "%s%'18.0f%s%-25s";
-+		fmt = "%'18.0f%s%-25s";
- 	else
--		fmt = "%s%18.0f%s%-25s";
-+		fmt = "%18.0f%s%-25s";
- 
--	if (aggr_socket)
--		sprintf(cpustr, "S%*d%s%*d%s",
--			csv_output ? 0 : -5,
--			cpu,
--			csv_sep,
--			csv_output ? 0 : 4,
--			nr,
--			csv_sep);
--	else if (no_aggr)
--		sprintf(cpustr, "CPU%*d%s",
--			csv_output ? 0 : -4,
--			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
--	else
-+	aggr_printout(evsel, cpu, nr);
-+
-+	if (aggr_mode == AGGR_GLOBAL)
- 		cpu = 0;
- 
--	fprintf(output, fmt, cpustr, avg, csv_sep, perf_evsel__name(evsel));
-+	fprintf(output, fmt, avg, csv_sep, perf_evsel__name(evsel));
- 
- 	if (evsel->cgrp)
- 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
-@@ -896,23 +906,23 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- 	}
++	if (sample_type & PERF_SAMPLE_DATA_SRC)
++		perf_output_put(handle, data->data_src.val);
  }
  
--static void print_aggr_socket(char *prefix)
-+static void print_aggr(char *prefix)
- {
- 	struct perf_evsel *counter;
-+	int cpu, s, s2, id, nr;
- 	u64 ena, run, val;
--	int cpu, s, s2, sock, nr;
- 
--	if (!sock_map)
-+	if (!(aggr_map || aggr_get_id))
- 		return;
- 
--	for (s = 0; s < sock_map->nr; s++) {
--		sock = cpu_map__socket(sock_map, s);
-+	for (s = 0; s < aggr_map->nr; s++) {
-+		id = aggr_map->map[s];
- 		list_for_each_entry(counter, &evsel_list->entries, node) {
- 			val = ena = run = 0;
- 			nr = 0;
- 			for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
--				s2 = cpu_map__get_socket(evsel_list->cpus, cpu);
--				if (s2 != sock)
-+				s2 = aggr_get_id(evsel_list->cpus, cpu);
-+				if (s2 != id)
- 					continue;
- 				val += counter->counts->cpu[cpu].val;
- 				ena += counter->counts->cpu[cpu].ena;
-@@ -923,18 +933,15 @@ static void print_aggr_socket(char *prefix)
- 				fprintf(output, "%s", prefix);
- 
- 			if (run == 0 || ena == 0) {
--				fprintf(output, "S%*d%s%*d%s%*s%s%*s",
--					csv_output ? 0 : -5,
--					s,
--					csv_sep,
--					csv_output ? 0 : 4,
--					nr,
--					csv_sep,
-+				aggr_printout(counter, cpu, nr);
-+
-+				fprintf(output, "%*s%s%*s",
- 					csv_output ? 0 : 18,
- 					counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
- 					csv_sep,
- 					csv_output ? 0 : -24,
- 					perf_evsel__name(counter));
-+
- 				if (counter->cgrp)
- 					fprintf(output, "%s%s",
- 						csv_sep, counter->cgrp->name);
-@@ -944,9 +951,9 @@ static void print_aggr_socket(char *prefix)
- 			}
- 
- 			if (nsec_counter(counter))
--				nsec_printout(sock, nr, counter, val);
-+				nsec_printout(id, nr, counter, val);
- 			else
--				abs_printout(sock, nr, counter, val);
-+				abs_printout(id, nr, counter, val);
- 
- 			if (!csv_output) {
- 				print_noise(counter, 1.0);
-@@ -1087,14 +1094,20 @@ static void print_stat(int argc, const char **argv)
- 		fprintf(output, ":\n\n");
- 	}
- 
--	if (aggr_socket)
--		print_aggr_socket(NULL);
--	else if (no_aggr) {
--		list_for_each_entry(counter, &evsel_list->entries, node)
--			print_counter(counter, NULL);
--	} else {
-+	switch (aggr_mode) {
-+	case AGGR_SOCKET:
-+		print_aggr(NULL);
-+		break;
-+	case AGGR_GLOBAL:
- 		list_for_each_entry(counter, &evsel_list->entries, node)
- 			print_counter_aggr(counter, NULL);
-+		break;
-+	case AGGR_NONE:
-+		list_for_each_entry(counter, &evsel_list->entries, node)
-+			print_counter(counter, NULL);
-+		break;
-+	default:
-+		break;
- 	}
- 
- 	if (!csv_output) {
-@@ -1140,6 +1153,25 @@ static int stat__set_big_num(const struct option *opt __maybe_unused,
- 	return 0;
- }
- 
-+static int perf_stat_init_aggr_mode(void)
-+{
-+	switch (aggr_mode) {
-+	case AGGR_SOCKET:
-+		if (cpu_map__build_socket_map(evsel_list->cpus, &aggr_map)) {
-+			perror("cannot build socket map");
-+			return -1;
-+		}
-+		aggr_get_id = cpu_map__get_socket;
-+		break;
-+	case AGGR_NONE:
-+	case AGGR_GLOBAL:
-+	default:
-+		break;
-+	}
-+	return 0;
-+}
-+
-+
- /*
-  * Add default attributes, if there were no attributes specified or
-  * if -d/--detailed, -d -d or -d -d -d is used:
-@@ -1322,7 +1354,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 			   stat__set_big_num),
- 	OPT_STRING('C', "cpu", &target.cpu_list, "cpu",
- 		    "list of cpus to monitor in system-wide"),
--	OPT_BOOLEAN('A', "no-aggr", &no_aggr, "disable CPU count aggregation"),
-+	OPT_SET_UINT('A', "no-aggr", &aggr_mode,
-+		    "disable CPU count aggregation", AGGR_NONE),
- 	OPT_STRING('x', "field-separator", &csv_sep, "separator",
- 		   "print counts with custom separator"),
- 	OPT_CALLBACK('G', "cgroup", &evsel_list, "name",
-@@ -1337,7 +1370,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 			"command to run after to the measured command"),
- 	OPT_UINTEGER('I', "interval-print", &interval,
- 		    "print counts at regular interval in ms (>= 100)"),
--	OPT_BOOLEAN(0, "aggr-socket", &aggr_socket, "aggregate counts per processor socket"),
-+	OPT_SET_UINT(0, "aggr-socket", &aggr_mode,
-+		     "aggregate counts per processor socket", AGGR_SOCKET),
- 	OPT_END()
- 	};
- 	const char * const stat_usage[] = {
-@@ -1420,19 +1454,13 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 	}
- 
- 	/* no_aggr, cgroup are for system-wide only */
--	if ((no_aggr || nr_cgroups) && !perf_target__has_cpu(&target)) {
-+	if ((aggr_mode != AGGR_GLOBAL || nr_cgroups)
-+	     && !perf_target__has_cpu(&target)) {
- 		fprintf(stderr, "both cgroup and no-aggregation "
- 			"modes only available in system-wide mode\n");
- 
- 		usage_with_options(stat_usage, options);
--	}
--
--	if (aggr_socket) {
--		if (!perf_target__has_cpu(&target)) {
--			fprintf(stderr, "--aggr-socket only available in system-wide mode (-a)\n");
--			usage_with_options(stat_usage, options);
--		}
--		no_aggr = true;
-+		return -1;
- 	}
- 
- 	if (add_default_attributes())
-@@ -1458,6 +1486,9 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (perf_evlist__alloc_stats(evsel_list, interval))
- 		goto out_free_maps;
- 
-+	if (perf_stat_init_aggr_mode())
-+		goto out;
-+
- 	/*
- 	 * We dont want to block the signals - that would cause
- 	 * child tasks to inherit that and Ctrl-C would not work.
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index f817046..7bb8e87 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -4,6 +4,7 @@
- #include "cpumap.h"
- #include <assert.h>
- #include <stdio.h>
-+#include <stdlib.h>
- 
- static struct cpu_map *cpu_map__default_new(void)
- {
-@@ -219,7 +220,7 @@ int cpu_map__get_socket(struct cpu_map *map, int idx)
- 	if (!mnt)
- 		return -1;
- 
--	sprintf(path,
-+	snprintf(path, PATH_MAX,
- 		"%s/devices/system/cpu/cpu%d/topology/physical_package_id",
- 		mnt, cpu);
- 
-@@ -231,27 +232,42 @@ int cpu_map__get_socket(struct cpu_map *map, int idx)
- 	return ret == 1 ? cpu : -1;
- }
- 
--int cpu_map__build_socket_map(struct cpu_map *cpus, struct cpu_map **sockp)
-+static int cmp_ids(const void *a, const void *b)
- {
--	struct cpu_map *sock;
-+	return *(int *)a - *(int *)b;
-+}
-+
-+static int cpu_map__build_map(struct cpu_map *cpus, struct cpu_map **res,
-+			      int (*f)(struct cpu_map *map, int cpu))
-+{
-+	struct cpu_map *c;
- 	int nr = cpus->nr;
- 	int cpu, s1, s2;
- 
--	sock = calloc(1, sizeof(*sock) + nr * sizeof(int));
--	if (!sock)
-+	/* allocate as much as possible */
-+	c = calloc(1, sizeof(*c) + nr * sizeof(int));
-+	if (!c)
- 		return -1;
- 
- 	for (cpu = 0; cpu < nr; cpu++) {
--		s1 = cpu_map__get_socket(cpus, cpu);
--		for (s2 = 0; s2 < sock->nr; s2++) {
--			if (s1 == sock->map[s2])
-+		s1 = f(cpus, cpu);
-+		for (s2 = 0; s2 < c->nr; s2++) {
-+			if (s1 == c->map[s2])
- 				break;
- 		}
--		if (s2 == sock->nr) {
--			sock->map[sock->nr] = s1;
--			sock->nr++;
-+		if (s2 == c->nr) {
-+			c->map[c->nr] = s1;
-+			c->nr++;
- 		}
- 	}
--	*sockp = sock;
-+	/* ensure we process id in increasing order */
-+	qsort(c->map, c->nr, sizeof(int), cmp_ids);
-+
-+	*res = c;
- 	return 0;
- }
-+
-+int cpu_map__build_socket_map(struct cpu_map *cpus, struct cpu_map **sockp)
-+{
-+	return cpu_map__build_map(cpus, sockp, cpu_map__get_socket);
-+}
+ void perf_prepare_sample(struct perf_event_header *header,
 -- 
 1.7.1
 
