@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab3C1OvP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 10:51:15 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:45644 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab3C1OvO (ORCPT
+	id S1756625Ab3C1OwJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 10:52:09 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47108 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab3C1OwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 10:51:14 -0400
-Date: Thu, 28 Mar 2013 10:51:11 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-cc: Will Deacon <will.deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
-In-Reply-To: <alpine.DEB.2.02.1303281225050.4430@kaball.uk.xensource.com>
-Message-ID: <alpine.LFD.2.03.1303281048060.1372@syhkavp.arg>
-References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130327133811.GE18429@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1303271610430.4430@kaball.uk.xensource.com> <20130327172306.GB20990@mudshark.cambridge.arm.com>
- <alpine.DEB.2.02.1303281225050.4430@kaball.uk.xensource.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Thu, 28 Mar 2013 10:52:08 -0400
+Date: Thu, 28 Mar 2013 14:51:55 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ARM: irq: Call irqchit_init if no init_irq
+	function is specified
+Message-ID: <20130328145155.GB3368@n2100.arm.linux.org.uk>
+References: <1364463704-13692-1-git-send-email-maxime.ripard@free-electrons.com> <1364463704-13692-2-git-send-email-maxime.ripard@free-electrons.com> <51545832.1050504@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51545832.1050504@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Mar 2013, Stefano Stabellini wrote:
-
-> - the interface to bring up secondary cpus is different and based on
-> PSCI, in fact Xen is going to add a PSCI node to the device tree so that
-> Dom0 can use it.
+On Thu, Mar 28, 2013 at 09:48:18AM -0500, Rob Herring wrote:
+> On 03/28/2013 04:41 AM, Maxime Ripard wrote:
+> > +	if (machine_desc->init_irq)
+> > +		machine_desc->init_irq();
+> > +	else
+> > +		irqchip_init();
 > 
-> Oh wait, Dom0 is not going to use the PSCI interface even if the node is
-> present on device tree because it's going to prefer the platform smp_ops
-> instead.
+> There needs to be an empty version defined for !OF.
 
-Waitaminute...  I must have missed this part.
+Better:
 
-Who said platform specific methods must be used in preference to PSCI?
+#ifdef CONFIG_OF
+	if (!machine_desc->init_irq)
+		irqchip_init();
+	else
+#endif
+		machine_desc->init_irq();
 
-If DT does provide PSCI description, then PSCI should be used.  Doing 
-otherwise is senseless.  If PSCI is not to be used, then it should not 
-be present in DT.
-
-
-Nicolas
+which means we don't even get the test if !OF, and if someone mistakenly
+sets this to NULL for a !OF platform, they get to know about it.
