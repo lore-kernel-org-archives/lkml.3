@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab3C1EcA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 00:32:00 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:63649 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab3C1Eb7 (ORCPT
+	id S1752548Ab3C1EhY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 00:37:24 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:62870 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163Ab3C1EhX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 00:31:59 -0400
+	Thu, 28 Mar 2013 00:37:23 -0400
 MIME-Version: 1.0
-Date: Thu, 28 Mar 2013 12:31:55 +0800
-Message-ID: <CAPgLHd87a0=e8pX4YRwpxzxk1=YgcVimjxTFnpJKH8wRs1WfjQ@mail.gmail.com>
-Subject: [PATCH -next] mg_disk: fix error return code in mg_probe()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: jg1.han@samsung.com, akpm@linux-foundation.org, rjw@sisk.pl
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130327214347.f2a573510416b86223c58be1@canb.auug.org.au>
+References: <1364210495-7938-1-git-send-email-prabhakar.csengg@gmail.com> <20130327214347.f2a573510416b86223c58be1@canb.auug.org.au>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Thu, 28 Mar 2013 10:07:00 +0530
+Message-ID: <CA+V-a8urWyzaU-nKh7sumr3tbmswixzWsumVHMpis6=fgD3Z+g@mail.gmail.com>
+Subject: Re: [PATCH] ARM: davinci: use is IS_ENABLED macro
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Hi Sekhar,
 
-Fix to return a negative error code from the error handling
-case instead of 0, as returned elsewhere in this function.
+On Wed, Mar 27, 2013 at 4:13 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi,
+>
+> On Mon, 25 Mar 2013 16:51:35 +0530 Prabhakar lad <prabhakar.csengg@gmail.com> wrote:
+>>
+>> --- a/arch/arm/mach-davinci/board-da830-evm.c
+>> +++ b/arch/arm/mach-davinci/board-da830-evm.c
+>> @@ -298,7 +298,7 @@ static const short da830_evm_emif25_pins[] = {
+>>       -1
+>>  };
+>>
+>> -#if defined(CONFIG_MMC_DAVINCI) || defined(CONFIG_MMC_DAVINCI_MODULE)
+>> +#if IS_ENABLED(CONFIG_MMC_DAVINCI)
+>>  #define HAS_MMC      1
+>>  #else
+>>  #define HAS_MMC      0
+>
+> Why not
+>
+> #define HAS_MMC         IS_ENABLED(CONFIG_MMC_DAVINCI)
+>
+> and similarly in the rest?
+>
+Stephen's suggestion looks good to me, if you haven’t queued it i'll post a v2,
+or if you have already queued it I'll create a patch on top of the
+same patch fixing it.
+lemme know how would you want it.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/block/mg_disk.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Regards,
+--Prabhakar
 
-diff --git a/drivers/block/mg_disk.c b/drivers/block/mg_disk.c
-index 532bb89..a56cfcd 100644
---- a/drivers/block/mg_disk.c
-+++ b/drivers/block/mg_disk.c
-@@ -892,8 +892,10 @@ static int mg_probe(struct platform_device *plat_dev)
- 	gpio_direction_output(host->rst, 1);
- 
- 	/* reset out pin */
--	if (!(prv_data->dev_attr & MG_DEV_MASK))
-+	if (!(prv_data->dev_attr & MG_DEV_MASK)) {
-+		err = -EINVAL;
- 		goto probe_err_3a;
-+	}
- 
- 	if (prv_data->dev_attr != MG_BOOT_DEV) {
- 		rsc = platform_get_resource_byname(plat_dev, IORESOURCE_IO,
-
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
