@@ -1,123 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab3C1GrY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 02:47:24 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:40321 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756043Ab3C1GoM (ORCPT
+	id S1755958Ab3C1HIP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 03:08:15 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:36259 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755708Ab3C1HIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 02:44:12 -0400
-From: Tejun Heo <tj@kernel.org>
-To: laijs@cn.fujitsu.com
-Cc: axboe@kernel.dk, jack@suse.cz, fengguang.wu@intel.com, jmoyer@redhat.com,
-        zab@redhat.com, linux-kernel@vger.kernel.org,
-        herbert@gondor.hengli.com.au, davem@davemloft.net,
-        linux-crypto@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 02/14] workqueue: add wq_numa_tbl_len and wq_numa_possible_cpumask[]
-Date: Wed, 27 Mar 2013 23:43:28 -0700
-Message-Id: <1364453020-2829-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1364453020-2829-1-git-send-email-tj@kernel.org>
-References: <1364453020-2829-1-git-send-email-tj@kernel.org>
+	Thu, 28 Mar 2013 03:08:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <1364398334-19662-1-git-send-email-paolo.pisati@canonical.com>
+References: <1364398334-19662-1-git-send-email-paolo.pisati@canonical.com>
+Date: Thu, 28 Mar 2013 12:38:11 +0530
+X-Google-Sender-Auth: iawNsD3EIuW130VDUFLtUjcdwzU
+Message-ID: <CAOh2x=nckhpbeoFMfg4qVC2LPynOCwZqVxLr-34vbiQ+QCZJ7A@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: check OF /cpus presence before dereferencing it
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Paolo Pisati <paolo.pisati@canonical.com>
+Cc: cpufreq@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unbound workqueues are going to be NUMA-affine.  Add wq_numa_tbl_len
-and wq_numa_possible_cpumask[] in preparation.  The former is the
-highest NUMA node ID + 1 and the latter is masks of possibles CPUs for
-each NUMA node.
+On Wed, Mar 27, 2013 at 9:02 PM, Paolo Pisati
+<paolo.pisati@canonical.com> wrote:
+> check for '/cpus' presence before blindly dereferencing it:
+>
+> [    4.181793] Unable to handle kernel NULL pointer dereference at virtual address 0000001c
+> [    4.181793] pgd = c0004000
+> [    4.181823] [0000001c] *pgd=00000000
+> [    4.181823] Internal error: Oops: 5 [#1] SMP ARM
+> [    4.181823] Modules linked in:
+> [    4.181823] CPU: 1    Tainted: G        W     (3.8.0-15-generic #25~hbankD)
+> [    4.181854] PC is at of_get_next_child+0x64/0x70
+> [    4.181854] LR is at of_get_next_child+0x24/0x70
+> [    4.181854] pc : [<c04fda18>]    lr : [<c04fd9d8>]    psr: 60000113
+> [    4.181854] sp : ed891ec0  ip : ed891ec0  fp : ed891ed4
+> [    4.181884] r10: c04dafd0  r9 : c098690c  r8 : c0936208
+> [    4.181884] r7 : ed890000  r6 : c0a63d00  r5 : 00000000  r4 : 00000000
+> [    4.181884] r3 : 00000000  r2 : 00000000  r1 : 00000000  r0 : c0b2acc8
+> [    4.181884] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+> [    4.181884] Control: 10c5387d  Table: adcb804a  DAC: 00000015
+> [    4.181915] Process swapper/0 (pid: 1, stack limit = 0xed890238)
+> [    4.181915] Stack: (0xed891ec0 to 0xed892000)
+> [    4.181915] 1ec0: c09b7b70 00000007 ed891efc ed891ed8 c04daff4 c04fd9c0 00000000 c09b7b70
+> [    4.181915] 1ee0: 00000007 c0a63d00 ed890000 c0936208 ed891f54 ed891f00 c00088e0 c04dafdc
+> [    4.181945] 1f00: ed891f54 ed891f10 c006e940 00000000 00000000 00000007 00000007 c08a4914
+> [    4.181945] 1f20: 00000000 c07dbd30 c0a63d00 c09b7b70 00000007 c0a63d00 000000bc c0936208
+> [    4.181945] 1f40: c098690c c0986914 ed891f94 ed891f58 c0936a40 c00087bc 00000007 00000007
+> [    4.181976] 1f60: c0936208 be8bda20 b6eea010 c0a63d00 c064547c 00000000 00000000 00000000
+> [    4.181976] 1f80: 00000000 00000000 ed891fac ed891f98 c0645498 c09368c8 00000000 00000000
+> [    4.181976] 1fa0: 00000000 ed891fb0 c0014658 c0645488 00000000 00000000 00000000 00000000
+> [    4.182006] 1fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> [    4.182006] 1fe0: 00000000 00000000 00000000 00000000 00000013 00000000 00000000 00000000
+> [    4.182037] [<c04fda18>] (of_get_next_child+0x64/0x70) from [<c04daff4>] (cpu0_cpufreq_driver_init+0x24/0x284)
+> [    4.182067] [<c04daff4>] (cpu0_cpufreq_driver_init+0x24/0x284) from [<c00088e0>] (do_one_initcall+0x130/0x1b0)
+> [    4.182067] [<c00088e0>] (do_one_initcall+0x130/0x1b0) from [<c0936a40>] (kernel_init_freeable+0x184/0x24c)
+> [    4.182098] [<c0936a40>] (kernel_init_freeable+0x184/0x24c) from [<c0645498>] (kernel_init+0x1c/0xf4)
+> [    4.182128] [<c0645498>] (kernel_init+0x1c/0xf4) from [<c0014658>] (ret_from_fork+0x14/0x20)
+> [    4.182128] Code: f57ff04f e320f004 e89da830 e89da830 (e595001c)
+> [    4.182128] ---[ end trace 634903a22e8609cb ]---
+> [    4.182189] Kernel panic - not syncing: Attempted to kill init!  exitcode=0x0000000b
+> [    4.182189]
+> [    4.642395] CPU0: stopping
+>
+> Signed-off-by: Paolo Pisati <paolo.pisati@canonical.com>
+> ---
+>  drivers/cpufreq/cpufreq-cpu0.c |   10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+> index 4e5b7fb..f3e8f51 100644
+> --- a/drivers/cpufreq/cpufreq-cpu0.c
+> +++ b/drivers/cpufreq/cpufreq-cpu0.c
+> @@ -178,10 +178,16 @@ static struct cpufreq_driver cpu0_cpufreq_driver = {
+>
+>  static int cpu0_cpufreq_probe(struct platform_device *pdev)
+>  {
+> -       struct device_node *np;
+> +       struct device_node *np, *tmp;
+>         int ret;
+>
+> -       for_each_child_of_node(of_find_node_by_path("/cpus"), np) {
+> +       tmp = of_find_node_by_path("/cpus");
+> +       if (!tmp) {
+> +               pr_err("failed to find OF /cpus\n");
+> +               return -ENOENT;
+> +       }
+> +
+> +       for_each_child_of_node(tmp, np) {
+>                 if (of_get_property(np, "operating-points", NULL))
+>                         break;
+>         }
 
-This patch only introduces these.  Future patches will make use of
-them.
+Just do: s/tmp/parent
 
-v2: NUMA initialization move into wq_numa_init().  Also, the possible
-    cpumask array is not created if there aren't multiple nodes on the
-    system.  wq_numa_enabled bool added.
+and add
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/workqueue.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 26771f4e..54b5048 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -44,6 +44,7 @@
- #include <linux/jhash.h>
- #include <linux/hashtable.h>
- #include <linux/rculist.h>
-+#include <linux/nodemask.h>
- 
- #include "workqueue_internal.h"
- 
-@@ -253,6 +254,12 @@ struct workqueue_struct {
- 
- static struct kmem_cache *pwq_cache;
- 
-+static int wq_numa_tbl_len;		/* highest possible NUMA node id + 1 */
-+static cpumask_var_t *wq_numa_possible_cpumask;
-+					/* possible CPUs of each node */
-+
-+static bool wq_numa_enabled;		/* unbound NUMA affinity enabled */
-+
- static DEFINE_MUTEX(wq_pool_mutex);	/* protects pools and workqueues list */
- static DEFINE_SPINLOCK(wq_mayday_lock);	/* protects wq->maydays list */
- 
-@@ -4402,6 +4409,43 @@ out_unlock:
- }
- #endif /* CONFIG_FREEZER */
- 
-+static void __init wq_numa_init(void)
-+{
-+	cpumask_var_t *tbl;
-+	int node, cpu;
-+
-+	/* determine NUMA pwq table len - highest node id + 1 */
-+	for_each_node(node)
-+		wq_numa_tbl_len = max(wq_numa_tbl_len, node + 1);
-+
-+	if (num_possible_nodes() <= 1)
-+		return;
-+
-+	/*
-+	 * We want masks of possible CPUs of each node which isn't readily
-+	 * available.  Build one from cpu_to_node() which should have been
-+	 * fully initialized by now.
-+	 */
-+	tbl = kzalloc(wq_numa_tbl_len * sizeof(tbl[0]), GFP_KERNEL);
-+	BUG_ON(!tbl);
-+
-+	for_each_node(node)
-+		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL, node));
-+
-+	for_each_possible_cpu(cpu) {
-+		node = cpu_to_node(cpu);
-+		if (WARN_ON(node == NUMA_NO_NODE)) {
-+			pr_warn("workqueue: NUMA node mapping not available for cpu%d, disabling NUMA support\n", cpu);
-+			/* happens iff arch is bonkers, let's just proceed */
-+			return;
-+		}
-+		cpumask_set_cpu(cpu, tbl[node]);
-+	}
-+
-+	wq_numa_possible_cpumask = tbl;
-+	wq_numa_enabled = true;
-+}
-+
- static int __init init_workqueues(void)
- {
- 	int std_nice[NR_STD_WORKER_POOLS] = { 0, HIGHPRI_NICE_LEVEL };
-@@ -4418,6 +4462,8 @@ static int __init init_workqueues(void)
- 	cpu_notifier(workqueue_cpu_up_callback, CPU_PRI_WORKQUEUE_UP);
- 	hotcpu_notifier(workqueue_cpu_down_callback, CPU_PRI_WORKQUEUE_DOWN);
- 
-+	wq_numa_init();
-+
- 	/* initialize CPU pools */
- 	for_each_possible_cpu(cpu) {
- 		struct worker_pool *pool;
--- 
-1.8.1.4
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
