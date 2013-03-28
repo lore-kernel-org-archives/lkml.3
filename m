@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab3C1GMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 02:12:33 -0400
-Received: from norkia.v3.sk ([91.210.183.14]:50830 "EHLO norkia.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751299Ab3C1GMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 02:12:31 -0400
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: linux-kernel@vger.kernel.org
-Cc: Lubomir Rintel <lkundrak@v3.sk>, Stephen Warren <swarren@wwwdotorg.org>,
-        linux-rpi-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] bcm2835: Add Broadcom BCM2835 RNG to the device tree
-Date: Thu, 28 Mar 2013 07:12:04 +0100
-Message-Id: <1364451124-5039-1-git-send-email-lkundrak@v3.sk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1364135511-26970-1-git-send-email-lkundrak@v3.sk>
-References: <1364135511-26970-1-git-send-email-lkundrak@v3.sk>
+	id S1753455Ab3C1GON (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 02:14:13 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:53692 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab3C1GOL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 02:14:11 -0400
+Date: Thu, 28 Mar 2013 00:14:36 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] ALSA: hda - Clean up documentation a bit
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+References: <1364373022.1390.331.camel@x61.thuisdomein>
+In-Reply-To: <1364373022.1390.331.camel@x61.thuisdomein> (from
+	pebolle@tiscali.nl on Wed Mar 27 03:30:22 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1364447676.18069.3@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a device tree binding for random number generator present on Broadcom
-BCM2835 SoC, used in Raspberry Pi and Roku 2 devices.
+On 03/27/2013 03:30:22 AM, Paul Bolle wrote:
+> CONFIG_SND_HDA_POWER_SAVE was removed in v3.6.7, see commit
+> 83012a7ccbb90dee33c97a004b3e374f988612af ("ALSA: hda - Clean up
+> CONFIG_SND_HDA_POWER_SAVE"). Clean up hda's documentation to reflect
+> that.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> 0) I send this to the sound maintainers. I guess this they need to  
+> send
+> it to the Documentation maintainer (after review).
 
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-Tested-by: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-rpi-kernel@lists.infradead.org
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-arm-kernel@lists.infradead.org
----
-Changes for v2:
-    - Split out from the driver changeset
-    - Added documentation
+No, it can go in via their tree. I'm more a librarian trying to keep  
+the shelves in order, and some light copyediting on the side. I'm not a  
+domain expert in everything, and thus can't _write_ most of this stuff.
 
-Changes for v3:
-    - Moved documentation away to the driver commit
-
- arch/arm/boot/dts/bcm2835.dtsi |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/boot/dts/bcm2835.dtsi b/arch/arm/boot/dts/bcm2835.dtsi
-index 7e0481e..dc22336 100644
---- a/arch/arm/boot/dts/bcm2835.dtsi
-+++ b/arch/arm/boot/dts/bcm2835.dtsi
-@@ -34,6 +34,11 @@
- 			reg = <0x7e100000 0x28>;
- 		};
- 
-+		rng {
-+			compatible = "brcm,bcm2835-rng";
-+			reg = <0x7e104000 0x10>;
-+		};
-+
- 		uart@20201000 {
- 			compatible = "brcm,bcm2835-pl011", "arm,pl011", "arm,primecell";
- 			reg = <0x7e201000 0x1000>;
--- 
-1.7.1
-
+Rob
