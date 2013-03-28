@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab3C1SNl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 14:13:41 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:49058 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab3C1SNj (ORCPT
+	id S1752963Ab3C1SOH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 14:14:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35899 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab3C1SOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 14:13:39 -0400
-Date: Thu, 28 Mar 2013 11:13:32 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
-        peterz@infradead.org, rostedt@goodmis.org,
-        linaro-kernel@lists.linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, Arvind.Chauhan@arm.com,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 3/7] workqueue: Add helpers to schedule work on any cpu
-Message-ID: <20130328181332.GD14088@htj.dyndns.org>
-References: <cover.1363617402.git.viresh.kumar@linaro.org>
- <fb2e721fc43fbc3517a7ebb905aa573b12bb83a5.1363617402.git.viresh.kumar@linaro.org>
- <20130321001211.GC31256@htj.dyndns.org>
- <CAKohponKUGbwEZ_edu353Y7YVZKgFOhZunTSUi04FGYWveftkw@mail.gmail.com>
- <20130321182937.GB20500@htj.dyndns.org>
+	Thu, 28 Mar 2013 14:14:04 -0400
+Message-ID: <51547A4E.4010600@infradead.org>
+Date: Thu, 28 Mar 2013 10:13:50 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130321182937.GB20500@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: liguang <lig.fnst@cn.fujitsu.com>
+CC: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Makefile: allow no update .config build
+References: <1364455686-18930-1-git-send-email-lig.fnst@cn.fujitsu.com>
+In-Reply-To: <1364455686-18930-1-git-send-email-lig.fnst@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 11:29:37AM -0700, Tejun Heo wrote:
-> Yes, I actually like that part a lot although I do wish the idle check
-> was inlined.
+On 03/28/13 00:28, liguang wrote:
+> if we pull some commits from other git repo
+> which bring in a few CONFIG_* options, then
+> we have to build all again, but we do assure
+> these options are not interesting for us,
+> so the long waiting build will be offending.
+> this change help us to avoid all-build.
 > 
-> What I'm wondering is whether the kinda out-of-band decision via
-> sched_select_cpu() is justified given that it can and is likely to go
-> through full scheduling decision anyway.  For timer, we don't have
-> that, so it makes sense.  For work items, it's a bit different.
+> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+> ---
+>  Makefile |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
 > 
-> To rephrase, *if* the scheduler can't already make proper decisions
-> regarding power consumption on an idlish system, maybe it can be
-> improved to do so?  It could as well be that this CPU selection is
-> special enough that it's just better to keep it separate as this
-> patchset proposes.  This is something up to the scheduler people.
-> Peter, Ingo, what do you guys think?
+> diff --git a/Makefile b/Makefile
+> index 54d2b2a..d10e505 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -106,6 +106,12 @@ ifeq ("$(origin W)", "command line")
+>    export KBUILD_ENABLE_EXTRA_GCC_CHECKS := $(W)
+>  endif
+>  
+> +# KBUILD_NCU is set to do not update .config even
+> +# a few new CONFIG_* options appeared
+> +ifeq ("$(origin NCU)", "command line")
+> +  KBUILD_NCU := $(NCU)
+> +endif
+> +
+>  # That's our default target when none is given on the command line
+>  PHONY := _all
+>  _all:
+> @@ -540,8 +546,10 @@ $(KCONFIG_CONFIG) include/config/auto.conf.cmd: ;
+>  # with it and forgot to run make oldconfig.
+>  # if auto.conf.cmd is missing then we are probably in a cleaned tree so
+>  # we execute the config step to be sure to catch updated Kconfig files
+> +ifneq ($(KBUILD_NCU), 1)
+>  include/config/%.conf: $(KCONFIG_CONFIG) include/config/auto.conf.cmd
+>  	$(Q)$(MAKE) -f $(srctree)/Makefile silentoldconfig
+> +endif # $(KBUILD_NCU)
+>  else
+>  # external modules needs include/generated/autoconf.h and include/config/auto.conf
+>  # but do not care if they are up-to-date. Use auto.conf to trigger the test
+> @@ -1157,6 +1165,7 @@ help:
+>  	@echo  '		2: warnings which occur quite often but may still be relevant'
+>  	@echo  '		3: more obscure warnings, can most likely be ignored'
+>  	@echo  '		Multiple levels can be combined with W=12 or W=123'
+> +	@echo  '  make NCU=1 [targets] no .config udate'
 
-Ping.  Peter, Ingo?
+	                                          update
 
-Viresh, would it be difficult to make another measurement of the same
-workload with the said workqueues converted to unbound?  I think that
-would at least provide a nice reference point.
+>  	@echo  ''
+>  	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
+>  	@echo  'For further info see the ./README file'
+> 
 
-Thanks.
 
 -- 
-tejun
+~Randy
