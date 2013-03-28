@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab3C1Hmy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 03:42:54 -0400
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:62966 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755860Ab3C1Hmx (ORCPT
+	id S1756610Ab3C1Hoe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 03:44:34 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62538 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755865Ab3C1Hoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 03:42:53 -0400
+	Thu, 28 Mar 2013 03:44:32 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: Generic syscall ABI support
+Date: Thu, 28 Mar 2013 07:44:27 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: Ley Foon Tan <lftan@altera.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+References: <1364440182.2289.45.camel@leyfoon-vm> <5153D698.6010102@zytor.com>
+In-Reply-To: <5153D698.6010102@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <20130327152723.723cd65e884413df405abe2d@linux-foundation.org>
-References: <1363776767-2635-1-git-send-email-p.zabel@pengutronix.de>
-	<1363776767-2635-3-git-send-email-p.zabel@pengutronix.de>
-	<20130327152723.723cd65e884413df405abe2d@linux-foundation.org>
-Date: Thu, 28 Mar 2013 08:42:52 +0100
-Message-ID: <CAHTX3dLT5AePkC77bTMQxre1aQL6-uxj2XBFTHeUZLVyZdN58Q@mail.gmail.com>
-Subject: Re: [PATCH v9 RESEND 2/4] misc: Generic on-chip SRAM allocation driver
-From: Michal Simek <monstr@monstr.eu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Javier Martin <javier.martin@vista-silicon.com>, kernel@pengutronix.de,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303280744.27477.arnd@arndb.de>
+X-Provags-ID: V02:K0:eEIGbrPDJp3zUB8qUAHUaQrCT2LUXbPM/NPRUuoEIpy
+ mT0yLHNc/LCLqcQazEdWgzdU1wA9+6LpX3PwR8kN5Ve1mZ+skS
+ hPcdmyRNXZ8O9DGLAAD57/52gpb3magnxZqJ5DzcBuENAWjsEH
+ Mq1XFPjX4uHRrzoxV0QXyAlTTlNklWOkXKcIzBXdbbvS7z4PfZ
+ TLRLU2k4sF0T4STE1+jGqNjOEljQmWyDwWU35YnZBz/oIfB0EN
+ YkHPAWWw8U2EEPSsWTi2cLaC7NE0nZWrMqfT9ciQrmxqFy2O9+
+ qFX3Iq0VQgtjqnA517fXwBqA5wu3k//FL70L+SFnVnzv1cUyk3
+ 6pWaL/E7FdBmxxU/ZQIY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Thursday 28 March 2013, H. Peter Anvin wrote:
+> On 03/27/2013 08:09 PM, Ley Foon Tan wrote:
 
-2013/3/27 Andrew Morton <akpm@linux-foundation.org>:
-> On Wed, 20 Mar 2013 11:52:45 +0100 Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> > The question is, is it a requirement for new arch to support generic
+> > syscall ABI when upstreaming? Can we upstream a non-generic syscall ABI
+> > first and migrate to generic syscall ABI in future?
+> > Thanks.
 >
->> This driver requests and remaps a memory region as configured in the
->> device tree. It serves memory from this region via the genalloc API.
->> It optionally enables the SRAM clock.
->>
->> Other drivers can retrieve the genalloc pool from a phandle pointing
->> to this drivers' device node in the device tree.
->>
->> The allocation granularity is hard-coded to 32 bytes for now,
->> to make the SRAM driver useful for the 6502 remoteproc driver.
->> There is overhead for bigger SRAMs, where only a much coarser
->> allocation granularity is needed: At 32 bytes minimum allocation
->> size, a 256 KiB SRAM needs a 1 KiB bitmap to track allocations.
->>
->>  Documentation/devicetree/bindings/misc/sram.txt |   16 +++
->>  drivers/misc/Kconfig                            |    9 ++
->>  drivers/misc/Makefile                           |    1 +
->>  drivers/misc/sram.c                             |  121 +++++++++++++++++++++++
->
-> drivers/misc/sram.c is a pretty generic-sounding thing.  Is it really
-> Linux's One True SRAM driver?  How many different sorts of sram devices
-> do we expect this can be used with?  If I don't use DT?
+> In general, you should use the generic ABI for a new port unless you
+> have very strong and convincing reasons not to.
 
-I want to use it for xilinx microblaze BRAM and zynq OCM and BRAMS connected
-to buses on Microblaze, PPC and ARM zynq.
+Yes, absolutely. What a couple of the previous architectures have done is
+to keep out of tree patches for their old ABI for a while, and to submit
+only code that follows the generic ABI upstream. Usually it doesn't take
+long for users to migrate to a new user space after that, but it gives
+people a migration strategy. Normally you have other patches that are
+required on top of the stuff that is already upstream while you are
+getting everything merged, so this is not much different to a device
+driver that needs to get rewritten to adapt to a new kernel subsystem.
 
-I have there just one small problem with OCM because we have a suspend code
-which is copied to it and execute from it and current implementation
-has no handling for it because all memory you get is not executable.
-
-I am not sure how to handle this properly. Currently I am calling
-gen_pool_alloc which returns virtual address, then gen_pool_virt_to_phys to
-get physical address and then __arm_ioremap with MT_DEVICE .
-This works but it looks ugly. And also this is not generic solution
-because it doesn't work on Microblaze.
-
-Is there any other nice way how to ask for executable memory?
-
-Thanks,
-Michal
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+	Arnd
