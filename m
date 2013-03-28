@@ -1,78 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab3C1QtZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 12:49:25 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:38484 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756536Ab3C1QtX (ORCPT
+	id S1756920Ab3C1Qvv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 12:51:51 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:52188 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756535Ab3C1Qvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 12:49:23 -0400
-Date: Thu, 28 Mar 2013 12:49:19 -0400
-From: Andrew Shewmaker <agshew@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        simon.jeons@gmail.com, ric.masonn@gmail.com
-Subject: Re: [PATCH v6 1/2] mm: limit growth of 3% hardcoded other user
- reserve
-Message-ID: <20130328164919.GA1459@localhost.localdomain>
-References: <20130318214442.GA1441@localhost.localdomain>
- <20130327142832.8505be7276064bf4b1daab5c@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130327142832.8505be7276064bf4b1daab5c@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 28 Mar 2013 12:51:49 -0400
+Message-ID: <1364489492.3559.18.camel@thor.lan>
+Subject: Re: [PATCH v2 10/13] rwsem: simplify __rwsem_do_wake
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 28 Mar 2013 12:51:32 -0400
+In-Reply-To: <1363344869-15732-11-git-send-email-walken@google.com>
+References: <1363344869-15732-1-git-send-email-walken@google.com>
+	 <1363344869-15732-11-git-send-email-walken@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 02:28:32PM -0700, Andrew Morton wrote:
-> On Mon, 18 Mar 2013 17:44:42 -0400 Andrew Shewmaker <agshew@gmail.com> wrote:
+On Fri, 2013-03-15 at 03:54 -0700, Michel Lespinasse wrote:
+> This is mostly for cleanup value:
 > 
-> > Add user_reserve_kbytes knob.
-> > 
-> > Limit the growth of the memory reserved for other user
-> > processes to min(3% current process size, user_reserve_pages).
-> > 
-> > user_reserve_pages defaults to min(3% free pages, 128MB)
+> - We don't need several gotos to handle the case where the first
+>   waiter is a writer. Two simple tests will do (and generate very
+>   similar code).
 > 
-> That was an epic changelog ;)
-
-I didn't want to err on the side of brevity again :)
-But I definitely don't want to be annoying, so I'll work 
-on being concise without sacrificing important detail.
- 
-> >
-> > ...
-> >
-> > +int __meminit init_user_reserve(void)
-> > +{
-> > +	unsigned long free_kbytes;
-> > +
-> > +	free_kbytes = global_page_state(NR_FREE_PAGES) << (PAGE_SHIFT - 10);
-> > +
-> > +	sysctl_user_reserve_kbytes = min(free_kbytes / 32, 1UL << 17);
-> > +	return 0;
-> > +}
-> > +module_init(init_user_reserve)
+> - In the remainder of the function, we know the first waiter is a reader,
+>   so we don't have to double check that. We can use do..while loops
+>   to iterate over the readers to wake (generates slightly better code).
 > 
-> Problem is, the initial default values will become wrong if memory if
-> hot-added or hot-removed.
+> Signed-off-by: Michel Lespinasse <walken@google.com>
 > 
-> That could be fixed up by appropriate use of
-> register_memory_notifier(), but what would the notification handler do
-> if the operator has modified the value?  Proportionally scale it?
+> ---
+>  lib/rwsem-spinlock.c | 25 ++++++++-----------------
+>  lib/rwsem.c          | 26 ++++++++++++--------------
+>  2 files changed, 20 insertions(+), 31 deletions(-)
+> 
+> diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
+> index 5f117f37ac0a..20207a6e8ac3 100644
+> --- a/lib/rwsem-spinlock.c
+> +++ b/lib/rwsem-spinlock.c
+> @@ -70,26 +70,17 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
+>  
+>  	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+>  
+> -	if (!wakewrite) {
+> -		if (waiter->type == RWSEM_WAITING_FOR_WRITE)
+> -			goto out;
+> -		goto dont_wake_writers;
+> -	}
+> -
+> -	/*
+> -	 * as we support write lock stealing, we can't set sem->activity
+> -	 * to -1 here to indicate we get the lock. Instead, we wake it up
+> -	 * to let it go get it again.
+> -	 */
+>  	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
+> -		wake_up_process(waiter->task);
+> +		if (wakewrite)
+> +			/* Wake up a writer. Note that we do not grant it the
+> +			 * lock - it will have to acquire it when it runs. */
+> +			wake_up_process(waiter->task);
+>  		goto out;
+>  	}
+>  
+> -	/* grant an infinite number of read locks to the front of the queue */
+> - dont_wake_writers:
+> +	/* grant read locks to all queued readers. */
 
-If the operator changed it to a greater value, then I imagine that would
-be because the applications they use to recover require a bigger reserve 
-to function. Then proportionally scaling down the value on hot-removal 
-might mean that the operator can't recover when they expected to be able 
-to. Maybe the best thing would be to leave it be in that case, or 
-print a message telling them they need to re-evaluate the reserve size?
+I think the original comment still applies here now?
 
-I won't be able to look at this again until next week, but I'll work on a 
-version that handles hot-addition and hot-removal.
+>  	woken = 0;
+> -	while (waiter->type == RWSEM_WAITING_FOR_READ) {
+> +	do {
+>  		struct list_head *next = waiter->list.next;
+>  
+>  		list_del(&waiter->list);
+> @@ -99,10 +90,10 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
+>  		wake_up_process(tsk);
+>  		put_task_struct(tsk);
+>  		woken++;
+> -		if (list_empty(&sem->wait_list))
+> +		if (next == &sem->wait_list)
+>  			break;
+>  		waiter = list_entry(next, struct rwsem_waiter, list);
+> -	}
+> +	} while (waiter->type != RWSEM_WAITING_FOR_WRITE);
 
-Thanks,
+Maybe convert this to list_for_each_entry_safe() since you're cleaning
+it up?
 
-Andrew
+>  
+>  	sem->activity += woken;
+>  
+> diff --git a/lib/rwsem.c b/lib/rwsem.c
+> index 0d50e46d5b0c..9a675fa9d78e 100644
+> --- a/lib/rwsem.c
+> +++ b/lib/rwsem.c
+> @@ -68,20 +68,17 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+>  	signed long woken, loop, adjustment;
+>  
+>  	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+> -	if (waiter->type != RWSEM_WAITING_FOR_WRITE)
+> -		goto readers_only;
+> -
+> -	if (wake_type == RWSEM_WAKE_READ_OWNED)
+> -		/* Another active reader was observed, so wakeup is not
+> -		 * likely to succeed. Save the atomic op.
+> -		 */
+> +	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
+> +		if (wake_type != RWSEM_WAKE_READ_OWNED)
+> +			/* Wake writer at the front of the queue, but do not
+> +			 * grant it the lock yet as we want other writers
+> +			 * to be able to steal it.  Readers, on the other hand,
+> +			 * will block as they will notice the queued writer.
+> +			 */
+> +			wake_up_process(waiter->task);
+>  		goto out;
+> +	}
+>  
+> -	/* Wake up the writing waiter and let the task grab the sem: */
+> -	wake_up_process(waiter->task);
+> -	goto out;
+> -
+> - readers_only:
+>  	/* If we come here from up_xxxx(), another thread might have reached
+>  	 * rwsem_down_failed_common() before we acquired the spinlock and
+>  	 * woken up a waiter, making it now active.  We prefer to check for
+> @@ -125,7 +122,8 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+>  	rwsem_atomic_add(adjustment, sem);
+>  
+>  	next = sem->wait_list.next;
+> -	for (loop = woken; loop > 0; loop--) {
+> +	loop = woken;
+> +	do {
+>  		waiter = list_entry(next, struct rwsem_waiter, list);
+>  		next = waiter->list.next;
+>  		tsk = waiter->task;
+> @@ -133,7 +131,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+>  		waiter->task = NULL;
+>  		wake_up_process(tsk);
+>  		put_task_struct(tsk);
+> -	}
+> +	} while (--loop);
+>  
+>  	sem->wait_list.next = next;
+>  	next->prev = &sem->wait_list;
+
+
