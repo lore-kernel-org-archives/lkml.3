@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab3C1IOW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 04:14:22 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:35857 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755495Ab3C1IOS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 04:14:18 -0400
-Date: Thu, 28 Mar 2013 01:14:15 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Sebastien Royen <sebastien.royen@gmail.com>
-Cc: Bill Pemberton <wfp5p@virginia.edu>, linux-kernel@vger.kernel.org,
-        seb <sebastien.royen@armadeus.com>
-Subject: Re: [PATCH 1/1] Input: mma8450 - fix signed 12bits to 32bits
- conversion
-Message-ID: <20130328081415.GA18754@core.coreip.homeip.net>
-References: <1364372263-16848-1-git-send-email-sebastien.royen@armadeus.com>
- <20130328055858.GA6523@core.coreip.homeip.net>
- <CADFrO6HRWfjTxkmLfVdq3+GBEQShNx5QUDEnMwZcTBx7e+SOxg@mail.gmail.com>
+	id S1755894Ab3C1IS2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 04:18:28 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58209 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755800Ab3C1ISY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 04:18:24 -0400
+X-IronPort-AV: E=Sophos;i="4.87,364,1363104000"; 
+   d="scan'208";a="6961937"
+Message-ID: <5153FC6D.5020801@cn.fujitsu.com>
+Date: Thu, 28 Mar 2013 16:16:45 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADFrO6HRWfjTxkmLfVdq3+GBEQShNx5QUDEnMwZcTBx7e+SOxg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, vgoyal@redhat.com
+CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] Documentation: Add ABI entry for crash_notes and crash_notes_size
+References: <5153FC27.70001@cn.fujitsu.com>
+In-Reply-To: <5153FC27.70001@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/28 16:17:25,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/28 16:17:33,
+	Serialize complete at 2013/03/28 16:17:33
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 08:36:52AM +0100, Sebastien Royen wrote:
-> Hi Dmitry
-> 
-> 2013/3/28 Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> >
-> > Hi Seb,
-> >
-> > On Wed, Mar 27, 2013 at 09:17:43AM +0100, seb wrote:
-> > > Event value is wrong. Should be in range -2048 to 2047, but is in range 0 to 4095.
-> > > Use int8_t to int conversion and remove 0xfff mask.
-> > >
-> > > Signed-off-by: seb <sebastien.royen@armadeus.com>
-> > > ---
-> > >  drivers/input/misc/mma8450.c |   15 ++++++++++-----
-> > >  1 file changed, 10 insertions(+), 5 deletions(-)
-> > >
-> > > diff --git a/drivers/input/misc/mma8450.c b/drivers/input/misc/mma8450.c
-> > > index 480557f..c3781a1 100644
-> > > --- a/drivers/input/misc/mma8450.c
-> > > +++ b/drivers/input/misc/mma8450.c
-> > > @@ -110,7 +110,7 @@ static void mma8450_poll(struct input_polled_dev *dev)
-> > >       struct mma8450 *m = dev->private;
-> > >       int x, y, z;
-> > >       int ret;
-> > > -     u8 buf[6];
-> > > +     int8_t buf[6];
-> > >
-> > >       ret = mma8450_read(m, MMA8450_STATUS);
-> > >       if (ret < 0)
-> > > @@ -119,13 +119,18 @@ static void mma8450_poll(struct input_polled_dev *dev)
-> > >       if (!(ret & MMA8450_STATUS_ZXYDR))
-> > >               return;
-> > >
-> > > -     ret = mma8450_read_block(m, MMA8450_OUT_X_LSB, buf, sizeof(buf));
-> > > +     ret = mma8450_read_block(m, MMA8450_OUT_X_LSB, (u8*)buf, sizeof(buf));
-> > >       if (ret < 0)
-> > >               return;
-> > >
-> > > -     x = ((buf[1] << 4) & 0xff0) | (buf[0] & 0xf);
-> > > -     y = ((buf[3] << 4) & 0xff0) | (buf[2] & 0xf);
-> > > -     z = ((buf[5] << 4) & 0xff0) | (buf[4] & 0xf);
-> > > +     /* convert 8 MSB from int8_t to int */
-> > > +     x = buf[1];
-> > > +     y = buf[3];
-> > > +     z = buf[5];
-> > > +     /* add 4 LSB */
-> > > +     x = (x << 4) | (buf[0] & 0xf);
-> > > +     y = (y << 4) | (buf[2] & 0xf);
-> > > +     z = (z << 4) | (buf[4] & 0xf);
-> >
-> > Should we just say:
-> >
-> >         x = ((int)(s8)buf[1] << 4) | (buf[0] & 0xf);
-> >         y = ...
-> >         z = ...
-> >
-> > and leave the rest as is?
-> >
-> > Thanks.
-> >
-> > --
-> > Dmitry
-> 
-> Yes, it works too and is more close to original version.
-> It's my first contrib so I'm not familiar with process,
-> do you need another patch with right changes ?
+Add an Documentation/ABI entry for /sys/devices/system/cpu/cpu0/crash_notes
+and /sys/devices/system/cpu/cpu0/crash_notes_size.
 
-Yes please as I do not have the hardware to test modified patch.
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ Documentation/ABI/testing/sysfs-devices-system-cpu |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
+diff --git a/Documentation/ABI/testing/sysfs-devices-system-cpu b/Documentation/ABI/testing/sysfs-devices-system-cpu
+index 9c978dc..2447698 100644
+--- a/Documentation/ABI/testing/sysfs-devices-system-cpu
++++ b/Documentation/ABI/testing/sysfs-devices-system-cpu
+@@ -173,3 +173,15 @@ Description:	Processor frequency boosting control
+ 		Boosting allows the CPU and the firmware to run at a frequency
+ 		beyound it's nominal limit.
+ 		More details can be found in Documentation/cpu-freq/boost.txt
++
++
++What:		/sys/devices/system/cpu/cpu#/crash_notes
++		/sys/devices/system/cpu/cpu#/crash_notes_size
++Date:		April 2013
++Contact:	kexec@lists.infradead.org
++Description:	address and size of the percpu note.
++
++		crash_notes: the physical address of the memory that holds the
++		note of cpu#.
++
++		crash_notes_size: size of the note of cpu#.
 -- 
-Dmitry
+1.7.1
+
