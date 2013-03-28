@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592Ab3C1QF0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 12:05:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29912 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756158Ab3C1QFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 12:05:22 -0400
-Date: Thu, 28 Mar 2013 12:04:29 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        stable@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Message-ID: <1364486669-10tbmvlb-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130328155109.GA13075@kroah.com>
-References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1364485358-8745-2-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130328155109.GA13075@kroah.com>
-Subject: Re: [PATCH 1/2] hugetlbfs: stop setting VM_DONTDUMP in initializing
- vma(VM_HUGETLB)
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <20130328155109.GA13075@kroah.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1756516Ab3C1QG4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 12:06:56 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:56629 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756188Ab3C1QGz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 12:06:55 -0400
+Date: Thu, 28 Mar 2013 12:06:52 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+cc: Rob Herring <robherring2@gmail.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
+In-Reply-To: <20130328160026.GA3026@mudshark.cambridge.arm.com>
+Message-ID: <alpine.LFD.2.03.1303281204370.1372@syhkavp.arg>
+References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130327133811.GE18429@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1303271610430.4430@kaball.uk.xensource.com> <20130327172306.GB20990@mudshark.cambridge.arm.com>
+ <alpine.DEB.2.02.1303281225050.4430@kaball.uk.xensource.com> <alpine.LFD.2.03.1303281048060.1372@syhkavp.arg> <51545BE4.9050206@gmail.com> <alpine.LFD.2.03.1303281135320.1372@syhkavp.arg> <20130328160026.GA3026@mudshark.cambridge.arm.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 08:51:09AM -0700, Greg KH wrote:
-> On Thu, Mar 28, 2013 at 11:42:37AM -0400, Naoya Horiguchi wrote:
-> > Currently we fail to include any data on hugepages into coredump,
-> > because VM_DONTDUMP is set on hugetlbfs's vma. This behavior was recently
-> > introduced by commit 314e51b98 "mm: kill vma flag VM_RESERVED and
-> > mm->reserved_vm counter". This looks to me a serious regression,
-> > so let's fix it.
+On Thu, 28 Mar 2013, Will Deacon wrote:
+
+> On Thu, Mar 28, 2013 at 03:39:42PM +0000, Nicolas Pitre wrote:
+> > On Thu, 28 Mar 2013, Rob Herring wrote:
 > > 
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> > ---
-> >  fs/hugetlbfs/inode.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > On 03/28/2013 09:51 AM, Nicolas Pitre wrote:
+> > > > On Thu, 28 Mar 2013, Stefano Stabellini wrote:
+> > > > 
+> > > >> - the interface to bring up secondary cpus is different and based on
+> > > >> PSCI, in fact Xen is going to add a PSCI node to the device tree so that
+> > > >> Dom0 can use it.
+> > > >>
+> > > >> Oh wait, Dom0 is not going to use the PSCI interface even if the node is
+> > > >> present on device tree because it's going to prefer the platform smp_ops
+> > > >> instead.
+> > > > 
+> > > > Waitaminute...  I must have missed this part.
+> > > > 
+> > > > Who said platform specific methods must be used in preference to PSCI?
+> > > 
+> > > I did. Specifically, I said the platform should be allowed to provide
+> > > its own smp_ops. A platform may need to do addtional things on top of
+> > > PSCI for example.
+> > 
+> > Then the platform should have its special hook that would override the 
+> > default PSCI methods.  But, by *default* the PSCI methods should be used 
+> > if the related DT information is present.
 > 
-> 
-> <formletter>
-> 
-> This is not the correct way to submit patches for inclusion in the
-> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-> for how to do this properly.
-> 
-> </formletter>
+> I'm fine with a default PSCI-based implementation, providing that it's actually
+> a layer between the smp ops and the psci code, not just glueing pointers
+> together.
 
-I guess you mean this patch violates one/both of these rules:
+Absolutely.
 
- - It must fix a problem that causes a build error (but not for things
-   marked CONFIG_BROKEN), an oops, a hang, data corruption, a real
-   security issue, or some "oh, that's not good" issue.  In short, something
-   critical.
- - It or an equivalent fix must already exist in Linus' tree (upstream).
+Even in the MCPM case, the PSCI is wrapped into a MCPM backend while 
+MCPM provides its own SMP ops methods.
 
-I'm not sure if the problem "we can't get any hugepage in coredump"
-is considered as 'some "oh, that's not good" issue'.
-But yes, it's not a critical one.
-If you mean I violated the second rule, sorry, I'll get it into upstream first.
 
-Thanks,
-Naoya
+Nicolas
