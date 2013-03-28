@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab3C1Dns (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 23:43:48 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:64352 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021Ab3C1Dnr (ORCPT
+	id S1754835Ab3C1D5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 23:57:41 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62969 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754498Ab3C1D5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 23:43:47 -0400
-Message-ID: <5153BC45.807@huawei.com>
-Date: Thu, 28 Mar 2013 11:43:01 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 27 Mar 2013 23:57:40 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 27 Mar 2013 20:50:18 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Lubomir Rintel <lkundrak@v3.sk>, linux-kernel@vger.kernel.org,
+        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
+        linux-rpi-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v4] watchdog: Add Broadcom BCM2835 watchdog timer driver
+Message-ID: <20130328035018.GA11872@roeck-us.net>
+References: <1364320200-23569-1-git-send-email-lkundrak@v3.sk>
+ <1364402424-19503-1-git-send-email-lkundrak@v3.sk>
+ <5153B24D.1010408@wwwdotorg.org>
 MIME-Version: 1.0
-To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] checkpatch: do not exit in main process subroutine
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5153B24D.1010408@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently checkpatch program exit when process empty file,
-This will cause issue when @ARGV include many files ready to check.
+On Wed, Mar 27, 2013 at 09:00:29PM -0600, Stephen Warren wrote:
+> On 03/27/2013 10:40 AM, Lubomir Rintel wrote:
+> > This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
+> > used in Raspberry Pi and Roku 2 devices.
+> > 
+> > Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+> > Signed-off-by: Dom Cobley <popcornmix@gmail.com>
+> 
+> Those two s-o-b lines should be swapped, since if Dom did sign off on
+> any part of this patch, he did it before you did.
+> 
+> That said...
+> 
+> I wonder if it's actually appropriate to include Dom's s-o-b here, since
+> I don't think he really wrote this patch itself. I think you mentioned
+> that you hadn't use much of the downstream driver except for some defines?
+> 
+> To be clear, I mentioned the existence of the S-o-b line downstream
+> simply to demonstrate that the commits you were getting information from
+> had correctly followed the process described in
+> Documentation/SubmittingPatches, and so it was OK to use that
+> information while creating a GPL'd driver.
+> 
+> So there are a couple of ways that this patch could have been created:
+> 
+> 1) You took the downstream commit itself, cherry-picked it into the
+> upstream kernel, modified it to suit upstream, and then submitted that.
+> The modifications might be extensive, such as renaming the file,
+> removing parts of the code that the upstream watchdog core now handles,
+> adding some new features, fixing bugs, cleanup, etc.; whatever is needed
+> to upstream the patch.
+> 
+> In this case, I believe it would be appropriate to maintain any S-o-b
+> lines from the original downstream commit, and add yours. But, I believe
+> you should also (a) maintain the git author field from the original
+> downstream commit (b) include a list of the changes you made to the
+> patch in the commit description, so you can be blamed for them rather
+> than the original author:-)
+> 
+> 2) You read the downstream commit for information, but created a
+> completely new driver for the upstream kernel, using the downstream
+> driver just as a reference. In this case, I believe it's fine for the
+> git author field to be you, and for the only s-o-b line present to be
+> yours, since you really did write the patch from scratch. However, you
+> should credit the downstream work in the (c) header and/or commit
+> description.
+> 
+> This current patch sees to be a slight hybrid of both approaches (you're
+> listed as the git author, but have included Dom's s-o-b line on a patch
+> I don't think he created, and wasn't directly derived from one he created).
+> 
+> I'm not sure if I'm being too picky. I guess I'll leave it up to Wim Van
+> Sebroeck, since he's the watchdog maintainer and would be the person who
+> applies this patch.
+> 
+I wondered about the same.
 
-For example, there may have Module.symvers empty file in kernel directory.
+I think 2) would be more appropriate. My approach would have been to reference
+previous work in the file header, something along the line of "derived from
+xxx", and add a copyright statement from the original work if there was one -
+pretty much what you propose above.
 
-[root@jovi ~]# scripts/checkpatch.pl -f kernel/*
-
-then many file "after" empty file will not be check by script.
-so disallow exit in main process subroutine.
-
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
----
- scripts/checkpatch.pl |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index b28cc38..6924733 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3634,19 +3634,19 @@ sub process {
- 	# If we have no input at all, then there is nothing to report on
- 	# so just keep quiet.
- 	if ($#rawlines == -1) {
--		exit(0);
-+		return $clean;
- 	}
-
- 	# In mailback mode only produce a report in the negative, for
- 	# things that appear to be patches.
- 	if ($mailback && ($clean == 1 || !$is_patch)) {
--		exit(0);
-+		return $clean;
- 	}
-
- 	# This is not a patch, and we are are in 'no-patch' mode so
- 	# just keep quiet.
- 	if (!$chk_patch && !$is_patch) {
--		exit(0);
-+		return $clean;
- 	}
-
- 	if (!$is_patch) {
--- 
-1.7.9.7
-
-
+Guenter
