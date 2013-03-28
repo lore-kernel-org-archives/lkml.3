@@ -1,148 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab3C1VFv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 17:05:51 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:11822 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab3C1VFu (ORCPT
+	id S1753365Ab3C1VKH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 17:10:07 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63666 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600Ab3C1VKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 17:05:50 -0400
-Message-ID: <1364504747.8132.10.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH -mm -next] ipc,sem: untangle RCU locking with
- find_alloc_undo
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Rik van Riel <riel@surriel.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        hhuang@redhat.com, jason.low2@hp.com, walken@google.com,
-        lwoodman@redhat.com, chegu_vinod@hp.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Thu, 28 Mar 2013 14:05:47 -0700
-In-Reply-To: <20130328113222.194bbfe8@cuia.bos.redhat.com>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	 <5151DBD3.6080201@oracle.com> <20130328113222.194bbfe8@cuia.bos.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Thu, 28 Mar 2013 17:10:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH] usb: ehci: mark unlink_empty_async_suspended() as __maybe_unused
+Date: Thu, 28 Mar 2013 21:09:46 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, stern@rowland.harvard.edu
+References: <1364362080-8489-1-git-send-email-linux@prisktech.co.nz>
+In-Reply-To: <1364362080-8489-1-git-send-email-linux@prisktech.co.nz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201303282109.47130.arnd@arndb.de>
+X-Provags-ID: V02:K0:ctAxc6qwwbd1TVqJ8RU9cICUvNqw/1AIEkq98mVJ6sC
+ fhqpOKyNDHwTRHeH4RBq8OBWs5cT1TAUG9mOGXB0+NAYtnJaxh
+ RgVTlNSLbYCSMZZ8bneBk+PchnCgJnS9sdJAvNRKWGeUPJ2Fxs
+ DncefPfxVzh5uf5+1exsNmMHavlgKah4NBj5i6O/QqF5p47BE+
+ zRV4KunCdIEJJhNcFsQTX20RhDcTQxnmS4Edm00JiFzJBoJKiQ
+ B3hbn+YBM5cWTMfRdH4kpeZxpF5aLy6jBMbHcn/iNQw8MeECh7
+ TEziOYxL+1WLJI8O/kL840/8axKgMxQigpAnqbVaYE/4Jj4nX/
+ 0N+zZzgfstrD1+s8FXhM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-28 at 11:32 -0400, Rik van Riel wrote:
-> On Tue, 26 Mar 2013 13:33:07 -0400
-> Sasha Levin <sasha.levin@oracle.com> wrote:
-> 
-> > [   96.347341] ================================================
-> > [   96.348085] [ BUG: lock held when returning to user space! ]
-> > [   96.348834] 3.9.0-rc4-next-20130326-sasha-00011-gbcb2313 #318 Tainted: G        W
-> > [   96.360300] ------------------------------------------------
-> > [   96.361084] trinity-child9/7583 is leaving the kernel with locks still held!
-> > [   96.362019] 1 lock held by trinity-child9/7583:
-> > [   96.362610]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff8192eafb>] SYSC_semtimedop+0x1fb/0xec0
-> > 
-> > It seems that we can leave semtimedop without releasing the rcu read lock.
-> 
-> Sasha, this patch untangles the RCU locking with find_alloc_undo,
-> and should fix the above issue. As a side benefit, this makes the
-> code a little cleaner.
-> 
-> Next up: implement locking in a way that does not trigger any 
-> lockdep warnings...
-> 
-> ---8<---
-> 
-> Subject: ipc,sem: untangle RCU locking with find_alloc_undo
-> 
-> The ipc semaphore code has a nasty RCU locking tangle, with both
-> find_alloc_undo and semtimedop taking the rcu_read_lock(). The
-> code can be cleaned up somewhat by only taking the rcu_read_lock
-> once.
+Patch 4d053fdac3 "usb: ehci: unlink_empty_async_suspended() only used
+with CONFIG_PM" tried to hide the unlink_empty_async_suspended function
+inside of an #ifdef to work around an unused function warning.
 
-indeed!
+Unfortunately that had the effect of introducing a new warning:
 
-> 
-> The only caller of find_alloc_undo is in semtimedop.
-> 
-> This should solve the trinity issue reported by Sasha Levin.
-> 
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  ipc/sem.c |   31 +++++++++----------------------
->  1 files changed, 9 insertions(+), 22 deletions(-)
-> 
-> diff --git a/ipc/sem.c b/ipc/sem.c
-> index f46441a..2ec2945 100644
-> --- a/ipc/sem.c
-> +++ b/ipc/sem.c
-> @@ -1646,22 +1646,23 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
->  			alter = 1;
->  	}
->  
-> +	INIT_LIST_HEAD(&tasks);
-> +
->  	if (undos) {
-> +		/* On success, find_alloc_undo takes the rcu_read_lock */
->  		un = find_alloc_undo(ns, semid);
+drivers/usb/host/ehci-q.c:1297:13: warning: 'unlink_empty_async_suspended' 
+	declared 'static' but never defined [-Wunused-function]
 
-find_alloc_undo() has some nested rcu_read_locks of its own. We can
-simplify that as well. Will look into it, but don't want to introduce
-any more changes until we address all the issues with the patchset, and
-know it to behave.
+While we could add another #ifdef around the function declaration to avoid
+this, a nicer solution is to mark it as __maybe_unused, which will let
+gcc silently drop the function definition when it is not needed.
 
->  		if (IS_ERR(un)) {
->  			error = PTR_ERR(un);
->  			goto out_free;
->  		}
-> -	} else
-> +	} else {
->  		un = NULL;
-> +		rcu_read_lock();
-> +	}
->  
-> -	INIT_LIST_HEAD(&tasks);
-> -
-> -	rcu_read_lock();
->  	sma = sem_obtain_object_check(ns, semid);
->  	if (IS_ERR(sma)) {
-> -		if (un)
-> -			rcu_read_unlock();
-> +		rcu_read_unlock();
->  		error = PTR_ERR(sma);
->  		goto out_free;
->  	}
-> @@ -1693,22 +1694,8 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
->  	 */
->  	error = -EIDRM;
->  	locknum = sem_lock(sma, sops, nsops);
-> -	if (un) {
-> -		if (un->semid == -1) {
-> -			rcu_read_unlock();
-> -			goto out_unlock_free;
-> -		} else {
-> -			/*
-> -			 * rcu lock can be released, "un" cannot disappear:
-> -			 * - sem_lock is acquired, thus IPC_RMID is
-> -			 *   impossible.
-> -			 * - exit_sem is impossible, it always operates on
-> -			 *   current (or a dead task).
-> -			 */
-> -
-> -			rcu_read_unlock();
-> -		}
-> -	}
-> +	if (un && un->semid == -1)
-> +		goto out_unlock_free;
-
-Yeah, I was tempted in doing something much like this, but didn't want
-to change any existing logic. Hopefully we can get away with this and it
-fixes Sasha's issue.
-
->  
->  	error = try_atomic_semop (sma, sops, nsops, un, task_tgid_vnr(current));
->  	if (error <= 0) {
-
-Reviewed-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-
-
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+diff --git a/drivers/usb/host/ehci-q.c b/drivers/usb/host/ehci-q.c
+index 7562d76..d34b399 100644
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -1293,9 +1293,8 @@ static void unlink_empty_async(struct ehci_hcd *ehci)
+ 	}
+ }
+ 
+-#ifdef CONFIG_PM
+ /* The root hub is suspended; unlink all the async QHs */
+-static void unlink_empty_async_suspended(struct ehci_hcd *ehci)
++static void __maybe_unused unlink_empty_async_suspended(struct ehci_hcd *ehci)
+ {
+ 	struct ehci_qh		*qh;
+ 
+@@ -1306,7 +1305,6 @@ static void unlink_empty_async_suspended(struct ehci_hcd *ehci)
+ 	}
+ 	start_iaa_cycle(ehci);
+ }
+-#endif
+ 
+ /* makes sure the async qh will become idle */
+ /* caller must own ehci->lock */
