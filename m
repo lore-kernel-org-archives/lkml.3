@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419Ab3C1P4R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 11:56:17 -0400
-Received: from pindarots.xs4all.nl ([80.101.128.228]:36430 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715Ab3C1P4Q (ORCPT
+	id S1756607Ab3C1P6L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 11:58:11 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:50237 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752715Ab3C1P6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 11:56:16 -0400
-Message-ID: <51546814.7080509@xs4all.nl>
-Date: Thu, 28 Mar 2013 16:56:04 +0100
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Thu, 28 Mar 2013 11:58:10 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19xSy5zGU9dRKrXOK+ekNG4
+Date: Thu, 28 Mar 2013 08:58:04 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>
+Cc: pali.rohar@gmail.com, nm@ti.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: omap: RX-51: ARM errata 430973 workaround
+Message-ID: <20130328155803.GT10155@atomide.com>
+References: <24838523.73311.1364448607026.JavaMail.apache@mail82.abv.bg>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: 3.8.4: ohci question
-References: <Pine.LNX.4.44L0.1303281034160.1652-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1303281034160.1652-100000@iolanthe.rowland.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <24838523.73311.1364448607026.JavaMail.apache@mail82.abv.bg>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-03-28 15:35, Alan Stern wrote:
->>> When my dmesg gives me a growing number of lines like the one below,
->>> what is going on?
->>>
->>>  ohci_hcd 0000:00:12.0: urb ffff88023025c500 path 2 ep1in 6c160000 cc 6
->>> --> status -71
->>>
->>> Please let me know!
+* Ивайло Димитров <freemangordon@abv.bg> [130327 22:34]:
+>  Tony,
 > 
-> -71 errors indicate a low-level problem on the USB bus.  Generally it
-> means that the device isn't sending any packets.  Maybe the device's
-> firmware has crashed or maybe it has been disconnected.
+> Who do you expect to make that code merge? Do you expect us to mechanically merge RX51 PPA API patch with the existing generic OMAP PPA API code putting #ifdefs all over the place? Not that it is impossible, but the only real piece of HW I have here is n900, so I just can't be sure the code will still work on the other platforms besides RX51, once the code modified. Please, advice on how to proceed.
 
-Could it be due to a defect in the mainboard?
-Or the device connected to that port?
+Probably ifdefs won't work nice for other omapss. It seems that
+your original patch is pretty close based on all that's been
+discussed. Can you please repost with a proper patch description
+also summarizing why we cannot have generci SMC API as discussed?
 
-Kind regards,
-Udo
+Thanks,
 
+Tony
