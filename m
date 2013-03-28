@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab3C1Wwx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 18:52:53 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:40859 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab3C1Www (ORCPT
+	id S1753706Ab3C1WxG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 18:53:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62149 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753460Ab3C1WxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 18:52:52 -0400
-Message-ID: <5154C9C0.3030306@gmail.com>
-Date: Thu, 28 Mar 2013 17:52:48 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Thu, 28 Mar 2013 18:53:03 -0400
+Date: Thu, 28 Mar 2013 15:53:00 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Adrian Chadd <adrian@freebsd.org>, Jouni Malinen <j@w1.fi>,
+        Kalle Valo <kvalo@adurom.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kathy Giori <Kathy.Giori@qca.qualcomm.com>,
+        Yanbo Li <dreamfly281@gmail.com>,
+        Mathieu Olivari <mathieu@qca.qualcomm.com>, k.eugene.e@gmail.com
+Subject: Re: Possibility for an external staging tree - bring up quality code
+Message-ID: <20130328225300.GA20285@kroah.com>
+References: <CAB=NE6WLuz7-QD3v4BwZkLLNUed=X7jgvZtZX8cDEh3HiD51oQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] ARM: irq: Call irqchit_init if no init_irq function
- is specified
-References: <1364503606-10597-1-git-send-email-maxime.ripard@free-electrons.com> <1364503606-10597-2-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1364503606-10597-2-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB=NE6WLuz7-QD3v4BwZkLLNUed=X7jgvZtZX8cDEh3HiD51oQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2013 03:46 PM, Maxime Ripard wrote:
-> More and more sub-architectures are using only the irqchip_init
-> function. Make the core code call this function if no init_irq field is
-> provided in the machine description to remove some boilerplate code.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+On Thu, Mar 28, 2013 at 01:13:23PM -0700, Luis R. Rodriguez wrote:
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+<huge snip>
 
-> ---
->  arch/arm/kernel/irq.c |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
-> index 8e4ef4c..9723d17 100644
-> --- a/arch/arm/kernel/irq.c
-> +++ b/arch/arm/kernel/irq.c
-> @@ -26,6 +26,7 @@
->  #include <linux/ioport.h>
->  #include <linux/interrupt.h>
->  #include <linux/irq.h>
-> +#include <linux/irqchip.h>
->  #include <linux/random.h>
->  #include <linux/smp.h>
->  #include <linux/init.h>
-> @@ -114,7 +115,10 @@ EXPORT_SYMBOL_GPL(set_irq_flags);
->  
->  void __init init_IRQ(void)
->  {
-> -	machine_desc->init_irq();
-> +	if (IS_ENABLED(CONFIG_OF) && !machine_desc->init_irq)
-> +		irqchip_init();
-> +	else
-> +		machine_desc->init_irq();
->  }
->  
->  #ifdef CONFIG_MULTI_IRQ_HANDLER
-> 
+> This has me thinking if it makes sense to have an external driver tree
+> for staging drivers but lead by engineers who already know the rules
+> of upstream, they just want to get things done faster.
 
+That's called a "fork" or "tree" or whatever you want to call it, and
+all of us have them, and end up merging stuff to mainline through them
+eventually.
+
+There is no need to "codify" something that we all have been doing for
+years.  If someone thinks they can "work faster" in their own tree,
+great for them, have them do it.  I don't see what I need to agree or
+disagree with here to keep anyone from doing such a thing.
+
+Or am I just totally missing something here?
+
+greg k-h
