@@ -1,83 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab3C1CVK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 22:21:10 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:27364 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754806Ab3C1CVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 22:21:08 -0400
-X-IronPort-AV: E=Sophos;i="4.87,363,1363104000"; 
-   d="scan'208";a="6958886"
-Message-ID: <5153A953.2000101@cn.fujitsu.com>
-Date: Thu, 28 Mar 2013 10:22:11 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1755560Ab3C1CYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 22:24:45 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:44793 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754563Ab3C1CYo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 22:24:44 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 1/2] mm: remove CONFIG_HOTPLUG ifdefs
+Date: Thu, 28 Mar 2013 10:23:38 +0800
+Message-ID: <1364437418-9144-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
-To: JBottomley@parallels.com
-CC: Wanlong Gao <gaowanlong@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, rusty@rustcorp.com.au,
-        mst@redhat.com, asias@redhat.com, venkateshs@google.com,
-        pbonzini@redhat.com
-Subject: Re: [PATCH V7 0/5] virtio-scsi multiqueue
-References: <1364038124-32479-1-git-send-email-gaowanlong@cn.fujitsu.com>
-In-Reply-To: <1364038124-32479-1-git-send-email-gaowanlong@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/28 10:20:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/28 10:20:17,
-	Serialize complete at 2013/03/28 10:20:17
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2013 07:28 PM, Wanlong Gao wrote:
-> This series implements virtio-scsi queue steering, which gives
-> performance improvements of up to 50% (measured both with QEMU and
-> tcm_vhost backends).
-> 
-> This version rebased on Rusty's virtio ring rework patches, which
-> has already gone into virtio-next today.
-> We hope this can go into virtio-next together with the virtio ring
-> rework pathes.
-> 
-> V7: respin to fix the patch apply error
-> 
-> V6: rework "redo allocation of target data" (James)
->     fix comments (Venkatesh)
->     rebase to virtio-next
-> 
-> V5: improving the grammar of 1/5 (Paolo)
->     move the dropping of sg_elems to 'virtio-scsi: use virtqueue_add_sgs for command buffers'. (Asias)
-> 
-> V4: rebase on virtio ring rework patches (rusty's pending-rebases branch)
-> 
-> V3 and be found http://marc.info/?l=linux-virtualization&m=136067440717154&w=2
-> 
-> 
-> It would probably be easier to get it in via Rusty's tree
-> because of the prerequisites.  James, can we get your Acked-by?
+CONFIG_HOTPLUG is going away as an option, cleanup CONFIG_HOTPLUG
+ifdefs in mm files.
 
-James, any thoughts for this version?
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Bill Pemberton <wfp5p@virginia.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ include/linux/vmstat.h |    7 +------
+ mm/vmstat.c            |    2 --
+ 2 files changed, 1 insertions(+), 8 deletions(-)
 
-Thanks,
-Wanlong Gao
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index 5fd71a7..c586679 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -48,13 +48,8 @@ static inline void count_vm_events(enum vm_event_item item, long delta)
+ }
+ 
+ extern void all_vm_events(unsigned long *);
+-#ifdef CONFIG_HOTPLUG
++
+ extern void vm_events_fold_cpu(int cpu);
+-#else
+-static inline void vm_events_fold_cpu(int cpu)
+-{
+-}
+-#endif
+ 
+ #else
+ 
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index e1d8ed1..c823776 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -52,7 +52,6 @@ void all_vm_events(unsigned long *ret)
+ }
+ EXPORT_SYMBOL_GPL(all_vm_events);
+ 
+-#ifdef CONFIG_HOTPLUG
+ /*
+  * Fold the foreign cpu events into our own.
+  *
+@@ -69,7 +68,6 @@ void vm_events_fold_cpu(int cpu)
+ 		fold_state->event[i] = 0;
+ 	}
+ }
+-#endif /* CONFIG_HOTPLUG */
+ 
+ #endif /* CONFIG_VM_EVENT_COUNTERS */
+ 
+-- 
+1.7.1
 
-> 
-> Paolo Bonzini (3):
->   virtio-scsi: pass struct virtio_scsi to virtqueue completion function
->   virtio-scsi: push vq lock/unlock into virtscsi_vq_done
->   virtio-scsi: introduce multiqueue support
-> 
-> Wanlong Gao (2):
->   virtio-scsi: redo allocation of target data
->   virtio-scsi: reset virtqueue affinity when doing cpu hotplug
-> 
->  drivers/scsi/virtio_scsi.c | 387 ++++++++++++++++++++++++++++++++++++---------
->  1 file changed, 309 insertions(+), 78 deletions(-)
-> 
 
