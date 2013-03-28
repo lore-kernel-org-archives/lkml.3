@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563Ab3C1ReS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:34:18 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:40253 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab3C1ReR (ORCPT
+	id S1751487Ab3C1Rhf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:37:35 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19340 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab3C1Rhe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 13:34:17 -0400
-Date: Thu, 28 Mar 2013 18:34:00 +0100
-From: Richard GENOUD <richard.genoud@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] pinctrl: re-enable old state in case of error in
- pinctrl_select_state
-Message-ID: <20130328173356.GA10420@lnx-rg>
-References: <1364222843-30305-1-git-send-email-richard.genoud@gmail.com>
- <1364222843-30305-5-git-send-email-richard.genoud@gmail.com>
- <51538701.60409@wwwdotorg.org>
+	Thu, 28 Mar 2013 13:37:34 -0400
 MIME-Version: 1.0
+Message-ID: <125abdf8-0af9-447b-8782-68acf1c9c229@default>
+Date: Thu, 28 Mar 2013 10:35:52 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Bob Liu <bob.liu@oracle.com>
+Subject: RE: [RFC] mm: remove swapcache page early
+References: <1364350932-12853-1-git-send-email-minchan@kernel.org>
+ <alpine.LNX.2.00.1303271230210.29687@eggly.anvils>
+ <433aaa17-7547-4e39-b472-7060ee15e85f@default>
+ <alpine.LNX.2.00.1303271541200.30535@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1303271541200.30535@eggly.anvils>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6668.5000 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51538701.60409@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On [mer., 27.03.2013 17:55:45], Stephen Warren wrote:
-> On 03/25/2013 08:47 AM, Richard Genoud wrote:
-> > If a new state is applied, the groups configured in the old state but
-> > not in the new state are disabled.
-> > If something goes wrong and the new state can't be applied, we have to
-> > re-enable those groups.
+> From: Hugh Dickins [mailto:hughd@google.com]
+> Subject: RE: [RFC] mm: remove swapcache page early
 > 
-> What is the use-case for this? I wonder if it isn't better to simply
-> undo the partial selection of the new state (as patch 3/4 attempts to
-> do) and then leave p->state==NULL, indicating that no state is actively
-> selected. IIRC, this would be the same as right after the initial
-> pinctrl_select().
+> On Wed, 27 Mar 2013, Dan Magenheimer wrote:
+> > > From: Hugh Dickins [mailto:hughd@google.com]
+> > > Subject: Re: [RFC] mm: remove swapcache page early
+> > >
+> > The issue you are raising
+> > here is (2).  You may not know that (2) has recently been solved
+> > in frontswap, at least for zcache.  See frontswap_exclusive_gets_enabled.
+> > If this is enabled (and it is for zcache but not yet for zswap),
+> > what you suggest (SetPageDirty) is what happens.
 > 
-> I wonder if it's likely that attempting to re-apply the old state would
-> actually work, given that applying something just failed.
+> Ah, and I have a dim, perhaps mistaken, memory that I gave you
+> input on that before, suggesting the SetPageDirty.  Good, sounds
+> like the solution is already in place, if not actually activated.
 > 
-> Finally, this recovery code doesn't:
-> 
-> a) Process anything except MUX_GROUP; any pin config settings in the old
-> state aren't restored.
-> 
-> b) (I think) Apply any mux settings that don't involve groups that are
-> referenced by both the old and new states; given that patch 3/4 attempts
-> to undo everything in the failed application of the new state, I think
-> this "re-apply the old state" code should simple run through everything
-> in the old state any apply it unconditionally.
-So, if I understand correctly, it could be as simple as that:
- 	}
- 
--	if (old_state) {
--		list_for_each_entry(setting, &old_state->settings, node) {
--			bool found = false;
--			if (setting->type != PIN_MAP_TYPE_MUX_GROUP)
--				continue;
--			list_for_each_entry(setting2, &state->settings, node) {
--				if (setting2->type != PIN_MAP_TYPE_MUX_GROUP)
--					continue;
--				if (setting2->data.mux.group ==
--						setting->data.mux.group) {
--					found = true;
--					break;
--				}
--			}
--			if (!found)
--				pinmux_enable_setting(setting);
--		}
--	}
--
- 	p->state = old_state;
-+
-+	if (old_state)
-+		pinctrl_select_state_locked(p, NULL);
-+
- 	return ret;
- }
+> Thanks, must dash,
+> Hugh
 
-> 
-> c) Set p->state = oldstate, so it's left at NULL, which would confuse
-> any future pinctrl_select().
+Hi Hugh --
+
+Credit where it is due...  Yes, I do recall now that the idea
+was originally yours.  It went on a to-do list where I eventually
+tried it and it worked... I'm sorry I had forgotten and neglected
+to give you credit!
+
+(BTW, it is activated for zcache in 3.9.)
+
+Thanks,
+Dan
