@@ -1,60 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab3C1RDZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:03:25 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:56909 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756827Ab3C1RDV (ORCPT
+	id S1757081Ab3C1RDB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:03:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36299 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755844Ab3C1RCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 13:03:21 -0400
-Message-ID: <515477D4.1060206@openvz.org>
-Date: Thu, 28 Mar 2013 21:03:16 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
-MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] hugetlbfs: stop setting VM_DONTDUMP in initializing
- vma(VM_HUGETLB)
-References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1364485358-8745-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1364485358-8745-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Mar 2013 13:02:51 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Stephane Eranian <eranian@google.com>, peterz@infradead.org,
+        acme@redhat.com, jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH 15/36] perf/x86: Support CPU specific sysfs events
+Date: Thu, 28 Mar 2013 14:02:15 -0300
+Message-Id: <1364490156-32064-16-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
+In-Reply-To: <1364490156-32064-1-git-send-email-acme@infradead.org>
+References: <1364490156-32064-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Naoya Horiguchi wrote:
-> Currently we fail to include any data on hugepages into coredump,
-> because VM_DONTDUMP is set on hugetlbfs's vma. This behavior was recently
-> introduced by commit 314e51b98 "mm: kill vma flag VM_RESERVED and
-> mm->reserved_vm counter". This looks to me a serious regression,
-> so let's fix it.
+From: Andi Kleen <ak@linux.intel.com>
 
-That was introduced in my patch? Really?
-Here was VM_RESERVED and it had the same effect as VM_DONTDUMP. At least I thought so.
+Add a way for the CPU initialization code to register additional
+events, and merge them into the events attribute directory. Used
+in the next patch.
 
->
-> Signed-off-by: Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>
-> Cc: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> ---
->   fs/hugetlbfs/inode.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git v3.9-rc3.orig/fs/hugetlbfs/inode.c v3.9-rc3/fs/hugetlbfs/inode.c
-> index 84e3d85..523464e 100644
-> --- v3.9-rc3.orig/fs/hugetlbfs/inode.c
-> +++ v3.9-rc3/fs/hugetlbfs/inode.c
-> @@ -110,7 +110,7 @@ static int hugetlbfs_file_mmap(struct file *file, struct vm_area_struct *vma)
->   	 * way when do_mmap_pgoff unwinds (may be important on powerpc
->   	 * and ia64).
->   	 */
-> -	vma->vm_flags |= VM_HUGETLB | VM_DONTEXPAND | VM_DONTDUMP;
-> +	vma->vm_flags |= VM_HUGETLB | VM_DONTEXPAND;
->   	vma->vm_ops =&hugetlb_vm_ops;
->
->   	if (vma->vm_pgoff&  (~huge_page_mask(h)>>  PAGE_SHIFT))
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: acme@redhat.com
+Cc: jolsa@redhat.com
+Cc: namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1359040242-8269-2-git-send-email-eranian@google.com
+[ small cleanups ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[ merge_attr returns a **, not just * ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |   34 ++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event.h |    1 +
+ 2 files changed, 35 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index bf0f01a..c886dc8 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1330,6 +1330,32 @@ static void __init filter_events(struct attribute **attrs)
+ 	}
+ }
+ 
++/* Merge two pointer arrays */
++static __init struct attribute **merge_attr(struct attribute **a, struct attribute **b)
++{
++	struct attribute **new;
++	int j, i;
++
++	for (j = 0; a[j]; j++)
++		;
++	for (i = 0; b[i]; i++)
++		j++;
++	j++;
++
++	new = kmalloc(sizeof(struct attribute *) * j, GFP_KERNEL);
++	if (!new)
++		return NULL;
++
++	j = 0;
++	for (i = 0; a[i]; i++)
++		new[j++] = a[i];
++	for (i = 0; b[i]; i++)
++		new[j++] = b[i];
++	new[j] = NULL;
++
++	return new;
++}
++
+ static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
+ 			  char *page)
+ {
+@@ -1469,6 +1495,14 @@ static int __init init_hw_perf_events(void)
+ 	else
+ 		filter_events(x86_pmu_events_group.attrs);
+ 
++	if (x86_pmu.cpu_events) {
++		struct attribute **tmp;
++
++		tmp = merge_attr(x86_pmu_events_group.attrs, x86_pmu.cpu_events);
++		if (!WARN_ON(!tmp))
++			x86_pmu_events_group.attrs = tmp;
++	}
++
+ 	pr_info("... version:                %d\n",     x86_pmu.version);
+ 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
+ 	pr_info("... generic registers:      %d\n",     x86_pmu.num_counters);
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 7f5c75c..95152c1 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -357,6 +357,7 @@ struct x86_pmu {
+ 	struct attribute **format_attrs;
+ 
+ 	ssize_t		(*events_sysfs_show)(char *page, u64 config);
++	struct attribute **cpu_events;
+ 
+ 	/*
+ 	 * CPU Hotplug hooks
+-- 
+1.7.1
 
