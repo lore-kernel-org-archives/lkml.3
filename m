@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab3C1Tsg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 15:48:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42666 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752056Ab3C1Tsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 15:48:35 -0400
-Date: Thu, 28 Mar 2013 15:47:38 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        stable@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Message-ID: <1364500058-epefjxd9-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130328193901.GQ9079@decadent.org.uk>
-References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1364485358-8745-2-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130328155109.GA13075@kroah.com>
- <1364486669-10tbmvlb-mutt-n-horiguchi@ah.jp.nec.com>
- <20130328193901.GQ9079@decadent.org.uk>
-Subject: Re: [PATCH 1/2] hugetlbfs: stop setting VM_DONTDUMP in initializing
- vma(VM_HUGETLB)
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	id S1752716Ab3C1UAm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 16:00:42 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:46120 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520Ab3C1UAl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 16:00:41 -0400
+Date: Thu, 28 Mar 2013 12:54:56 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: 3.9-rc1 regression in arm dtb build
+Message-ID: <20130328195456.GA22527@quad.lixom.net>
+References: <20130306193332.GA6022@amd.pavel.ucw.cz>
+ <5137C404.9060902@wwwdotorg.org>
+ <20130307144506.GB7344@amd.pavel.ucw.cz>
+ <5138FDAE.8060202@wwwdotorg.org>
+ <20130311050546.GA21863@quad.lixom.net>
+ <CACxGe6vkC7fjzf1-+K8O81+w=jQ63PvuTEhSPyitEBA9XiKYnw@mail.gmail.com>
+ <20130328092916.GA11187@amd.pavel.ucw.cz>
+ <51545870.4010209@wwwdotorg.org>
+ <20130328193323.GA25166@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-References: <20130328193901.GQ9079@decadent.org.uk>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+In-Reply-To: <20130328193323.GA25166@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 07:39:01PM +0000, Ben Hutchings wrote:
-> On Thu, Mar 28, 2013 at 12:04:29PM -0400, Naoya Horiguchi wrote:
-> [...]
-> > I guess you mean this patch violates one/both of these rules:
+On Thu, Mar 28, 2013 at 08:33:23PM +0100, Pavel Machek wrote:
+> On Thu 2013-03-28 08:49:20, Stephen Warren wrote:
+> > On 03/28/2013 03:29 AM, Pavel Machek wrote:
+> > ...
+> > > There's change that makes it pretty much impossible to build dtbs
+> > > reliably between different kernel versions, because it leaves old dtbs
+> > > around, and they survive even make clean.
 > > 
-> >  - It must fix a problem that causes a build error (but not for things
-> >    marked CONFIG_BROKEN), an oops, a hang, data corruption, a real
-> >    security issue, or some "oh, that's not good" issue.  In short, something
-> >    critical.
-> >  - It or an equivalent fix must already exist in Linus' tree (upstream).
-> > 
-> > I'm not sure if the problem "we can't get any hugepage in coredump"
-> > is considered as 'some "oh, that's not good" issue'.
-> > But yes, it's not a critical one.
-> > If you mean I violated the second rule, sorry, I'll get it into upstream first.
->  
-> The second rule is the clear one.  If you are submitting a patch to
-> a subsystem maintainer and you want it to go into stable branches as
-> well, you must put 'Cc: stable@vger.kernel.org' in the commit message,
-> not just the mail header.
+> > One question here: Presumably the dtbs don't survive "make clean" if you
+> > run that right after building the dtbs, but only if you check out a new
+> > kernel version before running clean? Or is that not the case?
+> 
+> That was the case I seen, yes.
+> 
+> Have old kernel running, dtbs building. Apply a patch. It starts
+> behaving weird. You do make clean... but you still get old dtbs.
+> 
+> (It would be nice if make socfpga_cyclone5.dtb would magically remove
+> all the dtbs from old location; make dtbs does that if I understand
+> stuff correctly).
 
-Got it. Thank you.
-Naoya
+
+This takes care of the "make dtbs" case (or just "make" case), but not
+when you build a specific target.
+
+
+
+
+ARM: dts: remove stale dtb files from arch/arm/boot
+
+This will result in stale dtb files being removed from arch/arm/boot, which
+can cause confusion when someone goes from an older kernel version to a newer
+one without doing make clean on the old version (or git clean -f -d -x).
+
+
+Signed-off-by: Olof Johansson <olof@lixom.net>
+
+index 84aa2ca..b1127b8 100644
+--- a/arch/arm/boot/Makefile
++++ b/arch/arm/boot/Makefile
+@@ -115,4 +115,5 @@ i:
+ 	$(CONFIG_SHELL) $(srctree)/$(src)/install.sh $(KERNELRELEASE) \
+ 	$(obj)/Image System.map "$(INSTALL_PATH)"
+ 
++clean-files := *.dtb
+ subdir-	    := bootp compressed dts
