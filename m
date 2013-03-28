@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab3C1Mwj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 08:52:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25852 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734Ab3C1Mwf (ORCPT
+	id S1755827Ab3C1Mwo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 08:52:44 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:41082 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755596Ab3C1Mwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 08:52:35 -0400
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=wHWRjsBrAToA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=tm-Dbz-0zS0A:10 a=a_U1oVfrAAAA:8 a=VwQbUJbxAAAA:8 a=nnS9Z_ekIDrHSj9FyUoA:9 a=QEXdDO2ut3YA:10 a=k4qQewaewV0A:10 a=jeBq3FmKZ4MA:10 a=45nWZrmACNp8bfXQgn8A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130328125232.535380915@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 28 Mar 2013 08:52:16 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, <stable@vger.kernel.org>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: [PATCH 2/3] ftrace: Consistently restore trace function on sysctl enabling
-References: <20130328125214.132479321@goodmis.org>
-Content-Disposition: inline; filename=0002-ftrace-Consistently-restore-trace-function-on-sysctl.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Thu, 28 Mar 2013 08:52:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <1364444885-19751-2-git-send-email-yinghai@kernel.org>
+References: <1364444885-19751-1-git-send-email-yinghai@kernel.org> <1364444885-19751-2-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 28 Mar 2013 06:52:17 -0600
+Message-ID: <CAErSpo7UYk5q2BPcS4xX06S3qwjK-XRw2LTgOUEiDqwNeAWNgQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] eisa, PCI: Fix bus res reference
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Whitehead <mwhitehe@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Wed, Mar 27, 2013 at 10:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Matthem found that 3.8.3 is having problems with an old (ancient)
+> PCI-to-EISA bridge, the Intel 82375. It worked with the 3.2 kernel.
+> He identified the 82375, but doesn't assign the struct resource *res
+> pointer inside the struct eisa_root_device, and panics.
+>
+> After looking at pci_eisa_init(), found it referring bus resource
+> directly instead of pci_bus_resource_n().
+>
+> After commit 45ca9e97 (PCI: add helpers for building PCI bus resource lists)
+> and commit 0efd5aab (PCI: add struct pci_host_bridge_window with CPU/bus
+> address offset), bus->resource[] is not used for pci root bus any more.
+>
+> Fix it by using pci_bus_resource_n() and correct idx for root bus.
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+Please include URLs for the problem reports for these problems
+(bugzilla or mailing list discussion).
 
-If we reenable ftrace via syctl, we currently set ftrace_trace_function
-based on the previous simplistic algorithm. This is inconsistent with
-what update_ftrace_function does. So better call that helper instead.
+> Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
+> Tested-by: Matthew Whitehead <mwhitehe@redhat.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: stable@kernel.org
 
-Link: http://lkml.kernel.org/r/5151D26F.1070702@siemens.com
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/ftrace.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 6893d5a..cc4943c 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -4555,12 +4555,8 @@ ftrace_enable_sysctl(struct ctl_table *table, int wr=
-ite,
- 		ftrace_startup_sysctl();
-=20
- 		/* we are starting ftrace again */
--		if (ftrace_ops_list !=3D &ftrace_list_end) {
--			if (ftrace_ops_list->next =3D=3D &ftrace_list_end)
--				ftrace_trace_function =3D ftrace_ops_list->func;
--			else
--				ftrace_trace_function =3D ftrace_ops_list_func;
--		}
-+		if (ftrace_ops_list !=3D &ftrace_list_end)
-+			update_ftrace_function();
-=20
- 	} else {
- 		/* stopping ftrace calls (just send to ftrace_stub) */
---=20
-1.7.10.4
-
-
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJRVD0QAAoJEOdOSU1xswtMTwwH/2EFq/3AIIDBeXh/C6ses0Y4
-N9g3a/hFPTRR7PPnu5LN4mnqJzf2rMBOEJg8CLJRg7QvR10tOB768+KkSFAir5Q5
-bI4RjYI/VsAjjwVud7zdDoA0oVnPbRFEB5JyeC9VgzA4i5LPq/iVKf2G9AKhIn0a
-Q/kdcSdhRXhxqQdcrUgpR++Oak7FLjKDBaCV1PFa/0E0us73sykokq6zmpez1kb6
-yRXT5jjQeO/ZupisgKaQFyJ8mn8J5YlPX63/R82lVSJQznU4eQwuAX3d6tK/Onde
-I/XT4uv24TWi9z9TWrCGh7fe3QnK7FhjPCxZkigW8vuRnMFoGIyqHoKgJYtQP1A=
-=fH43
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+You are consistently using the wrong stable email address.  It should
+be "stable@vger.kernel.org".  I assume you see a bounce every time; at
+least, I get a bounce when I reply to your messages.
