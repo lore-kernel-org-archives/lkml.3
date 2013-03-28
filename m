@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab3C1A0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 20:26:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47262 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753942Ab3C1A0u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 20:26:50 -0400
-Date: Thu, 28 Mar 2013 00:26:43 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: swarren@nvidia.com, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V2] regulator: palmas: add input supply names
-Message-ID: <20130328002643.GU18316@opensource.wolfsonmicro.com>
-References: <1363787797-20659-1-git-send-email-ldewangan@nvidia.com>
+	id S1754910Ab3C1AcB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 20:32:01 -0400
+Received: from ozlabs.org ([203.10.76.45]:44065 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754282Ab3C1AcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 20:32:00 -0400
+Date: Thu, 28 Mar 2013 11:31:56 +1100
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc: drop even more unused Kconfig symbols
+Message-ID: <20130328003156.GA8130@concordia>
+References: <1363864206.1390.117.camel@x61.thuisdomein>
+ <1364381495.1345.21.camel@x61.thuisdomein>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xO5xrem3WM9Yl24j"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363787797-20659-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Your aim is high and to the right.
+In-Reply-To: <1364381495.1345.21.camel@x61.thuisdomein>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 27, 2013 at 11:51:35AM +0100, Paul Bolle wrote:
+> On Thu, 2013-03-21 at 12:10 +0100, Paul Bolle wrote:
+> > diff --git a/arch/powerpc/platforms/wsp/Kconfig b/arch/powerpc/platforms/wsp/Kconfig
+> > index 79d2225..9eea710 100644
+> > --- a/arch/powerpc/platforms/wsp/Kconfig
+> > +++ b/arch/powerpc/platforms/wsp/Kconfig
+> > @@ -29,7 +29,3 @@ config PPC_CHROMA
+> >  	default y
+> >  
+> >  endmenu
+> > -
+> > -config PPC_A2_DD2
+> > -	bool "Support for DD2 based A2/WSP systems"
+> > -	depends on PPC_A2
+> 
+> This part was not included in the "powerpc: remove PReP" follow up
+> patch. Should I resend separately?
 
---xO5xrem3WM9Yl24j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes thanks.
 
-On Wed, Mar 20, 2013 at 07:26:37PM +0530, Laxman Dewangan wrote:
-> Palmas regulator support the different input supply pins for each of
-> the rails. Fill the regulator info data with their input supply pin
-> names.
+It was added in commit a1d0d98 "Add WSP platform" but should not have
+been, it was to support bringup hacks that were never merged upstream.
 
-Applied, thanks.
-
---xO5xrem3WM9Yl24j
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRU44gAAoJELSic+t+oim9GhoP/iPWdrgs1W7dXzhmIMPMth5h
-01AnGFHLbMCdUA3oLeLLQJa2S0N/2hyVLYaXcWUd/Rw3JpF+rSbbURpKzNDgnXqm
-Djy99ar2DpzHCIYIhKfK6hjXIXOopYELvIoiIbCOMXPehGXd0fCbqQBszBZsJXjt
-L70+bq3l87Dhj7n4QXXZcx+Fe+6uDN51HOCMCTQPy6nRS4Oz0PNLkComtNO6j/5J
-/5OHEopVpSD7kcaKr5pB7Ax8cpBjP10obblsDpNaxyML8FSlvB31zMRp32rRk055
-NLEjqCct258PlQdzTHNo1aaHpdBZxSLYshb5TwCMlCKKGSPvD+SnoRSkLAeoaAsT
-M0+tsPrhioXnFi5RpeA+pZ7ZuVeqeDZxyMwcLFzN3KkykevenKRlHPo4X5IvTTKI
-j/KbQWk7pS7iMVDTXEjUZHPh9R08nvkRR1XwFECgS5QLrW3EM0V8yFWCA4G308dc
-bLOsdqERsV6a+0nkvJrqLJugLwjoc5+t8weYWtIivHggJ14gusuP8WoGDmLQKvbR
-+d9rR087jggG0WJSxr1SBYnFVEVT6fVYiYLiC3G9xe46hKhxEkSBWRAnhnfwTLek
-fJNOnGzBV6EjnXvMkkL3peIorf1Vap/cKcZD4JH2Nt3UK55ye5EWkzmb3j/ZXYrn
-xVw/w44YzDPMxDxYb+vt
-=k2hS
------END PGP SIGNATURE-----
-
---xO5xrem3WM9Yl24j--
+cheers
