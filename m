@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835Ab3C1KXQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 06:23:16 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:59098 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755492Ab3C1KXP (ORCPT
+	id S1755983Ab3C1KZP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 06:25:15 -0400
+Received: from skade.schwarzvogel.de ([144.76.18.87]:49143 "EHLO
+	mail.schwarzvogel.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755051Ab3C1KZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 06:23:15 -0400
+	Thu, 28 Mar 2013 06:25:14 -0400
+Date: Thu, 28 Mar 2013 11:25:11 +0100
+From: Tobias Klausmann <klausman@schwarzvogel.de>
+To: Michael Cree <mcree@orcon.net.nz>,
+        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] alpha: makefile: don't enforce small data model for
+ kernel builds
+Message-ID: <20130328102511.GA4658@skade.schwarzvogel.de>
+Mail-Followup-To: Michael Cree <mcree@orcon.net.nz>,
+	"linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1363556926-21097-1-git-send-email-will.deacon@arm.com>
+ <BFB01C0A-95E5-4C2B-8AF2-A06BE1FF74E0@orcon.net.nz>
+ <20130325133710.GD14280@mudshark.cambridge.arm.com>
+ <20130325150958.GA13894@skade.schwarzvogel.de>
+ <D7731577-A2C0-4FC5-A7E3-62F251A18798@orcon.net.nz>
+ <20130327175631.GA99121@skade.schwarzvogel.de>
 MIME-Version: 1.0
-In-Reply-To: <001501ce2b8f$b6e39950$24aacbf0$%han@samsung.com>
-References: <001001ce2b8f$61824c90$2486e5b0$%han@samsung.com>
-	<001501ce2b8f$b6e39950$24aacbf0$%han@samsung.com>
-Date: Thu, 28 Mar 2013 15:53:14 +0530
-X-Google-Sender-Auth: wJ-peik6WeOopzIbD7LhUVG4JJA
-Message-ID: <CAOh2x==GXtnxrj_DH+79MkFOWR2RK7Ei4SbZL6dmXkEo8yoWeg@mail.gmail.com>
-Subject: Re: [PATCH 6/8] rtc: rtc-spear: convert spear_rtc_driver to dev_pm_ops
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130327175631.GA99121@skade.schwarzvogel.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 2:09 PM, Jingoo Han <jg1.han@samsung.com> wrote:
-> Instead of using legacy suspend/resume methods, using newer dev_pm_ops
-> structure allows better control over power management.
->
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/rtc/rtc-spear.c |   18 ++++++++----------
->  1 files changed, 8 insertions(+), 10 deletions(-)
+Hi! 
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+On a whim, I tried fiddling with ALPHA_LEGACY_START_ADDRESS.
+While this necessitates switching the system type  to
+GENERIC_ALPHA, it makes the whole thing work. I suspect the
+change in segment size shifted stuff around enough to make the
+DP264 layout a "legacy" one. 
+
+Regards,
+Tobias
+
+
+-- 
+Sent from aboard the Culture ship
+	ROU (Killer-class) Trade Surplus
