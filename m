@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab3C1QG4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 12:06:56 -0400
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:56629 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756188Ab3C1QGz (ORCPT
+	id S1756678Ab3C1QI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 12:08:29 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:56067 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755204Ab3C1QI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 12:06:55 -0400
-Date: Thu, 28 Mar 2013 12:06:52 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-cc: Rob Herring <robherring2@gmail.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
-In-Reply-To: <20130328160026.GA3026@mudshark.cambridge.arm.com>
-Message-ID: <alpine.LFD.2.03.1303281204370.1372@syhkavp.arg>
-References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130327133811.GE18429@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1303271610430.4430@kaball.uk.xensource.com> <20130327172306.GB20990@mudshark.cambridge.arm.com>
- <alpine.DEB.2.02.1303281225050.4430@kaball.uk.xensource.com> <alpine.LFD.2.03.1303281048060.1372@syhkavp.arg> <51545BE4.9050206@gmail.com> <alpine.LFD.2.03.1303281135320.1372@syhkavp.arg> <20130328160026.GA3026@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Thu, 28 Mar 2013 12:08:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130328143216.GC23043@casper.infradead.org>
+References: <1364402824-32680-1-git-send-email-honkiko@gmail.com>
+	<20130328143216.GC23043@casper.infradead.org>
+Date: Fri, 29 Mar 2013 00:08:26 +0800
+Message-ID: <CAA7+ByVp4K__=mESAu4jEy=t4TJD+rV0KOA2ZhHSinm1fvedzg@mail.gmail.com>
+Subject: Re: [PATCH 1/6] net-next: replace obsolete NLMSG_* with type safe nlmsg_*
+From: Hong zhi guo <honkiko@gmail.com>
+To: Thomas Graf <tgraf@suug.ch>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>, stephen@networkplumber.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Mar 2013, Will Deacon wrote:
+Thanks, Thomas. But I didn't change any formatting. Just do the
+substitution in place.
+Should I re-format and re-send the patch?
 
-> On Thu, Mar 28, 2013 at 03:39:42PM +0000, Nicolas Pitre wrote:
-> > On Thu, 28 Mar 2013, Rob Herring wrote:
-> > 
-> > > On 03/28/2013 09:51 AM, Nicolas Pitre wrote:
-> > > > On Thu, 28 Mar 2013, Stefano Stabellini wrote:
-> > > > 
-> > > >> - the interface to bring up secondary cpus is different and based on
-> > > >> PSCI, in fact Xen is going to add a PSCI node to the device tree so that
-> > > >> Dom0 can use it.
-> > > >>
-> > > >> Oh wait, Dom0 is not going to use the PSCI interface even if the node is
-> > > >> present on device tree because it's going to prefer the platform smp_ops
-> > > >> instead.
-> > > > 
-> > > > Waitaminute...  I must have missed this part.
-> > > > 
-> > > > Who said platform specific methods must be used in preference to PSCI?
-> > > 
-> > > I did. Specifically, I said the platform should be allowed to provide
-> > > its own smp_ops. A platform may need to do addtional things on top of
-> > > PSCI for example.
-> > 
-> > Then the platform should have its special hook that would override the 
-> > default PSCI methods.  But, by *default* the PSCI methods should be used 
-> > if the related DT information is present.
-> 
-> I'm fine with a default PSCI-based implementation, providing that it's actually
-> a layer between the smp ops and the psci code, not just glueing pointers
-> together.
-
-Absolutely.
-
-Even in the MCPM case, the PSCI is wrapped into a MCPM backend while 
-MCPM provides its own SMP ops methods.
+On Thu, Mar 28, 2013 at 10:32 PM, Thomas Graf <tgraf@suug.ch> wrote:
+> On 03/28/13 at 12:47am, Hong Zhiguo wrote:
+>> diff --git a/net/ipv4/udp_diag.c b/net/ipv4/udp_diag.c
+>> index 505b30a..467fb92 100644
+>> --- a/net/ipv4/udp_diag.c
+>> +++ b/net/ipv4/udp_diag.c
+>> @@ -64,9 +64,9 @@ static int udp_dump_one(struct udp_table *tbl, struct sk_buff *in_skb,
+>>               goto out;
+>>
+>>       err = -ENOMEM;
+>> -     rep = alloc_skb(NLMSG_SPACE((sizeof(struct inet_diag_msg) +
+>> -                                  sizeof(struct inet_diag_meminfo) +
+>> -                                  64)), GFP_KERNEL);
+>> +     rep = nlmsg_new(sizeof(struct inet_diag_msg) +
+>> +                                  sizeof(struct inet_diag_meminfo) + 64,
+>> +                                  GFP_KERNEL);
+>
+> This is formatted incorrectly, otherwise the patch looks good.
 
 
-Nicolas
+
+--
+best regards
+Hong Zhiguo
