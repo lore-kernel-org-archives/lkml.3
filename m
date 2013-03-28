@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757457Ab3C1RKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:10:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36307 "EHLO
+	id S1757415Ab3C1RKL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:10:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36318 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756823Ab3C1RCw (ORCPT
+	with ESMTP id S1756849Ab3C1RCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Mar 2013 13:02:52 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        peterz@infradead.org, ak@linux.intel.com, acme@redhat.com,
-        jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH 19/36] perf: Add generic memory sampling interface
-Date: Thu, 28 Mar 2013 14:02:19 -0300
-Message-Id: <1364490156-32064-20-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 34/36] perf map browser: Use ui_browser__input_window()
+Date: Thu, 28 Mar 2013 14:02:34 -0300
+Message-Id: <1364490156-32064-35-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1364490156-32064-1-git-send-email-acme@infradead.org>
 References: <1364490156-32064-1-git-send-email-acme@infradead.org>
@@ -25,166 +29,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-This patch adds PERF_SAMPLE_DATA_SRC.
+Instead of an ad-hoc, libnewt based equivalent.
 
-PERF_SAMPLE_DATA_SRC collects the data source, i.e., where
-did the data associated with the sampled instruction
-come from. Information is stored in a perf_mem_data_src
-structure. It contains opcode, mem level, tlb, snoop,
-lock information, subject to availability in hardware.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: peterz@infradead.org
-Cc: ak@linux.intel.com
-Cc: acme@redhat.com
-Cc: jolsa@redhat.com
-Cc: namhyung.kim@lge.com
-Link: http://lkml.kernel.org/r/1359040242-8269-8-git-send-email-eranian@google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-elrijp95pijt66y6mmij4xm1@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- include/linux/perf_event.h      |    2 +
- include/uapi/linux/perf_event.h |   68 +++++++++++++++++++++++++++++++++++++-
- kernel/events/core.c            |    6 +++
- 3 files changed, 74 insertions(+), 2 deletions(-)
+ tools/perf/ui/browsers/map.c |   44 +++++------------------------------------
+ 1 files changed, 6 insertions(+), 38 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 7ce0b37..42a6daa 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -568,6 +568,7 @@ struct perf_sample_data {
- 		u32	reserved;
- 	}				cpu_entry;
- 	u64				period;
-+	union  perf_mem_data_src	data_src;
- 	struct perf_callchain_entry	*callchain;
- 	struct perf_raw_record		*raw;
- 	struct perf_branch_stack	*br_stack;
-@@ -588,6 +589,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->regs_user.regs = NULL;
- 	data->stack_user_size = 0;
- 	data->weight = 0;
-+	data->data_src.val = 0;
- }
+diff --git a/tools/perf/ui/browsers/map.c b/tools/perf/ui/browsers/map.c
+index 98851d5..10b549c 100644
+--- a/tools/perf/ui/browsers/map.c
++++ b/tools/perf/ui/browsers/map.c
+@@ -1,6 +1,5 @@
+ #include "../libslang.h"
+ #include <elf.h>
+-#include <newt.h>
+ #include <inttypes.h>
+ #include <sys/ttydefaults.h>
+ #include <string.h>
+@@ -10,41 +9,9 @@
+ #include "../../util/symbol.h"
+ #include "../browser.h"
+ #include "../helpline.h"
++#include "../keysyms.h"
+ #include "map.h"
  
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index cdc255d..5b57620 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -133,9 +133,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
- 	PERF_SAMPLE_WEIGHT			= 1U << 14,
-+	PERF_SAMPLE_DATA_SRC			= 1U << 15,
- 
--	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
+-static int ui_entry__read(const char *title, char *bf, size_t size, int width)
+-{
+-	struct newtExitStruct es;
+-	newtComponent form, entry;
+-	const char *result;
+-	int err = -1;
 -
-+	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
- };
+-	newtCenteredWindow(width, 1, title);
+-	form = newtForm(NULL, NULL, 0);
+-	if (form == NULL)
+-		return -1;
+-
+-	entry = newtEntry(0, 0, "0x", width, &result, NEWT_FLAG_SCROLL);
+-	if (entry == NULL)
+-		goto out_free_form;
+-
+-	newtFormAddComponent(form, entry);
+-	newtFormAddHotKey(form, NEWT_KEY_ENTER);
+-	newtFormAddHotKey(form, NEWT_KEY_ESCAPE);
+-	newtFormAddHotKey(form, NEWT_KEY_LEFT);
+-	newtFormAddHotKey(form, CTRL('c'));
+-	newtFormRun(form, &es);
+-
+-	if (result != NULL) {
+-		strncpy(bf, result, size);
+-		err = 0;
+-	}
+-out_free_form:
+-	newtPopWindow();
+-	newtFormDestroy(form);
+-	return err;
+-}
+-
+ struct map_browser {
+ 	struct ui_browser b;
+ 	struct map	  *map;
+@@ -78,10 +45,11 @@ static int map_browser__search(struct map_browser *self)
+ {
+ 	char target[512];
+ 	struct symbol *sym;
+-	int err = ui_entry__read("Search by name/addr", target, sizeof(target), 40);
+-
+-	if (err)
+-		return err;
++	int err = ui_browser__input_window("Search by name/addr",
++					   "Prefix with 0x to search by address",
++					   target, "ENTER: OK, ESC: Cancel", 0);
++	if (err != K_ENTER)
++		return -1;
  
- /*
-@@ -592,6 +592,7 @@ enum perf_event_type {
- 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
- 	 *
- 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
-+	 *	{ u64			data_src;     } && PERF_SAMPLE_DATA_SRC
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-@@ -617,4 +618,67 @@ enum perf_callchain_context {
- #define PERF_FLAG_FD_OUTPUT		(1U << 1)
- #define PERF_FLAG_PID_CGROUP		(1U << 2) /* pid=cgroup id, per-cpu mode only */
- 
-+union perf_mem_data_src {
-+	__u64 val;
-+	struct {
-+		__u64   mem_op:5,	/* type of opcode */
-+			mem_lvl:14,	/* memory hierarchy level */
-+			mem_snoop:5,	/* snoop mode */
-+			mem_lock:2,	/* lock instr */
-+			mem_dtlb:7,	/* tlb access */
-+			mem_rsvd:31;
-+	};
-+};
-+
-+/* type of opcode (load/store/prefetch,code) */
-+#define PERF_MEM_OP_NA		0x01 /* not available */
-+#define PERF_MEM_OP_LOAD	0x02 /* load instruction */
-+#define PERF_MEM_OP_STORE	0x04 /* store instruction */
-+#define PERF_MEM_OP_PFETCH	0x08 /* prefetch */
-+#define PERF_MEM_OP_EXEC	0x10 /* code (execution) */
-+#define PERF_MEM_OP_SHIFT	0
-+
-+/* memory hierarchy (memory level, hit or miss) */
-+#define PERF_MEM_LVL_NA		0x01  /* not available */
-+#define PERF_MEM_LVL_HIT	0x02  /* hit level */
-+#define PERF_MEM_LVL_MISS	0x04  /* miss level  */
-+#define PERF_MEM_LVL_L1		0x08  /* L1 */
-+#define PERF_MEM_LVL_LFB	0x10  /* Line Fill Buffer */
-+#define PERF_MEM_LVL_L2		0x20  /* L2 hit */
-+#define PERF_MEM_LVL_L3		0x40  /* L3 hit */
-+#define PERF_MEM_LVL_LOC_RAM	0x80  /* Local DRAM */
-+#define PERF_MEM_LVL_REM_RAM1	0x100 /* Remote DRAM (1 hop) */
-+#define PERF_MEM_LVL_REM_RAM2	0x200 /* Remote DRAM (2 hops) */
-+#define PERF_MEM_LVL_REM_CCE1	0x400 /* Remote Cache (1 hop) */
-+#define PERF_MEM_LVL_REM_CCE2	0x800 /* Remote Cache (2 hops) */
-+#define PERF_MEM_LVL_IO		0x1000 /* I/O memory */
-+#define PERF_MEM_LVL_UNC	0x2000 /* Uncached memory */
-+#define PERF_MEM_LVL_SHIFT	5
-+
-+/* snoop mode */
-+#define PERF_MEM_SNOOP_NA	0x01 /* not available */
-+#define PERF_MEM_SNOOP_NONE	0x02 /* no snoop */
-+#define PERF_MEM_SNOOP_HIT	0x04 /* snoop hit */
-+#define PERF_MEM_SNOOP_MISS	0x08 /* snoop miss */
-+#define PERF_MEM_SNOOP_HITM	0x10 /* snoop hit modified */
-+#define PERF_MEM_SNOOP_SHIFT	19
-+
-+/* locked instruction */
-+#define PERF_MEM_LOCK_NA	0x01 /* not available */
-+#define PERF_MEM_LOCK_LOCKED	0x02 /* locked transaction */
-+#define PERF_MEM_LOCK_SHIFT	24
-+
-+/* TLB access */
-+#define PERF_MEM_TLB_NA		0x01 /* not available */
-+#define PERF_MEM_TLB_HIT	0x02 /* hit level */
-+#define PERF_MEM_TLB_MISS	0x04 /* miss level */
-+#define PERF_MEM_TLB_L1		0x08 /* L1 */
-+#define PERF_MEM_TLB_L2		0x10 /* L2 */
-+#define PERF_MEM_TLB_WK		0x20 /* Hardware Walker*/
-+#define PERF_MEM_TLB_OS		0x40 /* OS fault handler */
-+#define PERF_MEM_TLB_SHIFT	26
-+
-+#define PERF_MEM_S(a, s) \
-+	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
-+
- #endif /* _UAPI_LINUX_PERF_EVENT_H */
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 9e3edb2..77c96d1 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -982,6 +982,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_READ)
- 		size += event->read_size;
- 
-+	if (sample_type & PERF_SAMPLE_DATA_SRC)
-+		size += sizeof(data->data_src.val);
-+
- 	event->header_size = size;
- }
- 
-@@ -4199,6 +4202,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		perf_output_put(handle, data->weight);
-+
-+	if (sample_type & PERF_SAMPLE_DATA_SRC)
-+		perf_output_put(handle, data->data_src.val);
- }
- 
- void perf_prepare_sample(struct perf_event_header *header,
+ 	if (target[0] == '0' && tolower(target[1]) == 'x') {
+ 		u64 addr = strtoull(target, NULL, 16);
 -- 
 1.7.1
 
