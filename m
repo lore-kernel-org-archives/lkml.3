@@ -1,171 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754985Ab3C1Acq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 20:32:46 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:45110 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753257Ab3C1Aco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 20:32:44 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Alex Shi <alex.shi@intel.com>, Len Brown <len.brown@intel.com>,
-        Changlong Xie <changlongx.xie@intel.com>, linux-acpi@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>, lkp@linux.intel.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [LKP] Commit ac3ebafa81a makes NHM EX/EP machines hung out since 3.9-rc1
-Date: Thu, 28 Mar 2013 01:40:11 +0100
-Message-ID: <15175142.3Xo9lEvds6@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQUnXev4Q+B1Cww-bhZM8O7bhbvOT=Y5c4SOjFksq1oXEw@mail.gmail.com>
-References: <20130313022759.GA120840@bee> <5152781B.6060603@intel.com> <CAE9FiQUnXev4Q+B1Cww-bhZM8O7bhbvOT=Y5c4SOjFksq1oXEw@mail.gmail.com>
+	id S1755114Ab3C1AgO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 20:36:14 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46372 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755067Ab3C1AgM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Mar 2013 20:36:12 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-a5-5153907957d6
+Date: Thu, 28 Mar 2013 09:36:09 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC] mm: remove swapcache page early
+Message-ID: <20130328003609.GA22908@blaptop>
+References: <1364350932-12853-1-git-send-email-minchan@kernel.org>
+ <alpine.LNX.2.00.1303271230210.29687@eggly.anvils>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1303271230210.29687@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 27, 2013 09:36:44 AM Yinghai Lu wrote:
-> On Tue, Mar 26, 2013 at 9:39 PM, Alex Shi <alex.shi@intel.com> wrote:
-> > On 03/13/2013 10:27 AM, Changlong Xie wrote:
-> >> Hi Len,
-> >>
-> >>       FYI, since 3.9-rc1 our three NHM EP/EX LKP(linux kernel performance) test servers
-> >>       except SNB/IVB/WSM hung up unexpectly.
-> >>
-> >>       We did git bisect for about 8 times on all servers, it said that the first bad commit is ac3ebafa.
-> >>
-> >>       commit ac3ebafa81af76d65e4fb45c6388f08e90ddcc6d
-> >>       Author: Daniel Lezcano <daniel.lezcano@linaro.org>
-> >>       Date:   Mon Feb 4 22:44:43 2013 +0000
-> >
-> > fixing patch for review:
-> >
-> >
-> > -----------------------
-> > From 78a74aea386b0969909c2e4ae388024ce71fdb18 Mon Sep 17 00:00:00 2001
-> > From: Alex Shi <alex.shi@intel.com>
-> > Date: Tue, 26 Mar 2013 22:57:47 +0800
-> > Subject: [PATCH] cpuidle/acpi: recover percpu acpi processor cstate
-> >
-> > Commit: ac3ebafa81af76d6 "ACPI / idle: remove usage of the statedata"
-> > change the percpu processor cstate to a unify unique cstate in acpi
-> > idle. That cause all our NHM box boot hang or panic.
-> >
-> > 2178751 Task dump for CPU 1:^M
-> >         2178752 swapper/1       R  running task     6736     0      1
-> > 0x00000000^M
-> >         2178753  ffff8801e8029dc8 ffffffff8101cf96 ffff8801e8029e28
-> > ffffffff813d294b^M
-> >         2178754  0000000000000f99 0000000000000003 00000000003cf654
-> > 0000000025c17d03^M
-> >         2178755  ffff8801e8029e38 ffff8801e74fc000 00000002590dc5c4
-> > ffffffff8163cdb0^M
-> >         2178756 Call Trace:^M
-> >         2178757  [<ffffffff8101cf96>] ? acpi_processor_ffh_cstate_enter+0x2d/0x2f^M
-> >         2178758  [<ffffffff813d294b>] acpi_idle_enter_bm+0x1b1/0x236^M
-> >         2178759  [<ffffffff8163cdb0>] ? disable_cpuidle+0x10/0x10^M
-> >         2178760  [<ffffffff8163cdc2>] cpuidle_enter+0x12/0x14^M
-> >         2178761  [<ffffffff8163d286>] cpuidle_wrap_enter+0x2f/0x6d^M
-> >         2178762  [<ffffffff8163d2d4>] cpuidle_enter_tk+0x10/0x12^M
-> >         2178763  [<ffffffff8163cdd6>] cpuidle_enter_state+0x12/0x3a^M
-> >         2178764  [<ffffffff8163d4a7>] cpuidle_idle_call+0xe8/0x161^M
-> >         2178765  [<ffffffff81008d99>] cpu_idle+0x5e/0xa4^M
-> >         2178766  [<ffffffff8174c6c1>] start_secondary+0x1a9/0x1ad^M
-> >         2178767 Task dump for CPU 2:^M
-> >
-> > In fact, the acpi idle bases on percpu cstate difference assumption, the
-> > infrastructure use many percpu structures to implement self.
-> > Just unique acpi_processor_cx is far far not enough.
-> >
-> > This patch just is a quick fix by introducing back the percpu cstates.
-> > And keep driver_data away.
-> >
-> > If someone really want to unify the acpi cstates, please make sure whole
-> > software infrastructure changed and get the grant from hardware,
-> > include many kinds of BIOS setting.
-> >
-> > Signed-off-by: Alex Shi <alex.shi@intel.com>
+Hi Hugh,
+
+On Wed, Mar 27, 2013 at 02:41:07PM -0700, Hugh Dickins wrote:
+> On Wed, 27 Mar 2013, Minchan Kim wrote:
+> 
+> > Swap subsystem does lazy swap slot free with expecting the page
+> > would be swapped out again so we can't avoid unnecessary write.
+>                              so we can avoid unnecessary write.
+> > 
+> > But the problem in in-memory swap is that it consumes memory space
+> > until vm_swap_full(ie, used half of all of swap device) condition
+> > meet. It could be bad if we use multiple swap device, small in-memory swap
+> > and big storage swap or in-memory swap alone.
+> 
+> That is a very good realization: it's surprising that none of us
+> thought of it before - no disrespect to you, well done, thank you.
+> 
+> And I guess swap readahead is utterly unhelpful in this case too.
+> 
+> > 
+> > This patch changes vm_swap_full logic slightly so it could free
+> > swap slot early if the backed device is really fast.
+> > For it, I used SWP_SOLIDSTATE but It might be controversial.
+> 
+> But I strongly disagree with almost everything in your patch :)
+> I disagree with addressing it in vm_swap_full(), I disagree that
+> it can be addressed by device, I disagree that it has anything to
+> do with SWP_SOLIDSTATE.
+> 
+> This is not a problem with swapping to /dev/ram0 or to /dev/zram0,
+> is it?  In those cases, a fixed amount of memory has been set aside
+> for swap, and it works out just like with disk block devices.  The
+
+Brd is okay but it seems you are miunderstanding zram.
+The zram doesn't reserve any memory and allocate dynamic memory when
+swap out happens so it can make duplicate space in pusdo block device
+and memory.
+
+> memory set aside may be wasted, but that is accepted upfront.
+> 
+> Similarly, this is not a problem with swapping to SSD.  There might
+> or might not be other reasons for adjusting the vm_swap_full() logic
+> for SSD or generally, but those have nothing to do with this issue.
+
+Yes.
+
+> 
+> The problem here is peculiar to frontswap, and the variably sized
+> memory behind it, isn't it?  We are accustomed to using swap to free
+
+Zram, too.
+
+> up memory by transferring its data to some other, cheaper but slower
+> resource.
+> 
+> But in the case of frontswap and zmem (I'll say that to avoid thinking
+
+Frankly speaking, I couldn't understand what you means, frontswap and zmem.
+The frontswap is just layer for hook the swap subsystem.
+Real instance of frontswap is zcache and zswap at the moment.
+I will understand them as zcache and zswap. Okay?
+
+> through which backends are actually involved), it is not a cheaper and
+> slower resource, but the very same memory we are trying to save: swap
+> is stolen from the memory under reclaim, so any duplication becomes
+> counter-productive (if we ignore cpu compression/decompression costs:
+> I have no idea how fair it is to do so, but anyone who chooses zmem
+> is prepared to pay some cpu price for that).
+
+Agree.
+
+> 
+> And because it's a frontswap thing, we cannot decide this by device:
+> frontswap may or may not stand in front of each device.  There is no
+> problem with swapcache duplicated on disk (until that area approaches
+> being full or fragmented), but at the higher level we cannot see what
+> is in zmem and what is on disk: we only want to free up the zmem dup.
+
+That's what I really have a concern and why I begged idea.
+
+> 
+> I believe the answer is for frontswap/zmem to invalidate the frontswap
+> copy of the page (to free up the compressed memory when possible) and
+> SetPageDirty on the PageUptodate PageSwapCache page when swapping in
+> (setting page dirty so nothing will later go to read it from the
+> unfreed location on backing swap disk, which was never written).
+
+You mean that zcache and zswap have to do garbage collection by some
+policy? It could be but how about zram? It's just pseudo block device
+and he don't have any knowledge on top of it. It could be swap or normal
+block device. I mean zram has no information of swap to handle it.
+
+> 
+> We cannot rely on freeing the swap itself, because in general there
+> may be multiple references to the swap, and we only satisfy the one
+> which has faulted.  It may or may not be a good idea to use rmap to
+> locate the other places to insert pte in place of swap entry, to
+> resolve them all at once; but we have chosen not to do so in the
+> past, and there's no need for that, if the zmem gets invalidated
+> and the swapcache page set dirty.
+
+Yes it could be better but as I mentioned above, it couldn't handle
+zram case. If there is a solution for zram, I will be happy. :)
+
+And another point, fronstwap is already percolated into swap subsystem
+very tightly. So I doubt adding one another hook is a really problem.
+
+Thanks for great comment, Hugh!
+
+> 
+> Hugh
+> 
+> > So let's add Ccing Shaohua and Hugh.
+> > If it's a problem for SSD, I'd like to create new type SWP_INMEMORY
+> > or something for z* family.
+> > 
+> > Other problem is zram is block device so that it can set SWP_INMEMORY
+> > or SWP_SOLIDSTATE easily(ie, actually, zram is already done) but
+> > I have no idea to use it for frontswap.
+> > 
+> > Any idea?
+> > 
+> > Other optimize point is we remove it unconditionally when we
+> > found it's exclusive when swap in happen.
+> > It could help frontswap family, too.
+> > What do you think about it?
+> > 
+> > Cc: Hugh Dickins <hughd@google.com>
+> > Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+> > Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> > Cc: Nitin Gupta <ngupta@vflare.org>
+> > Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
+> > Cc: Shaohua Li <shli@kernel.org>
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
 > > ---
-> >  drivers/acpi/processor_idle.c | 13 +++++++------
-> >  1 file changed, 7 insertions(+), 6 deletions(-)
-> >
-> > diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-> > index fc95308..ee255c6 100644
-> > --- a/drivers/acpi/processor_idle.c
-> > +++ b/drivers/acpi/processor_idle.c
-> > @@ -66,7 +66,8 @@ module_param(latency_factor, uint, 0644);
-> >
-> >  static DEFINE_PER_CPU(struct cpuidle_device *, acpi_cpuidle_device);
-> >
-> > -static struct acpi_processor_cx *acpi_cstate[CPUIDLE_STATE_MAX];
-> > +static DEFINE_PER_CPU(struct acpi_processor_cx * [CPUIDLE_STATE_MAX],
-> > +                                                               acpi_cstate);
-> >
-> >  static int disabled_by_idle_boot_param(void)
+> >  include/linux/swap.h | 11 ++++++++---
+> >  mm/memory.c          |  3 ++-
+> >  mm/swapfile.c        | 11 +++++++----
+> >  mm/vmscan.c          |  2 +-
+> >  4 files changed, 18 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/include/linux/swap.h b/include/linux/swap.h
+> > index 2818a12..1f4df66 100644
+> > --- a/include/linux/swap.h
+> > +++ b/include/linux/swap.h
+> > @@ -359,9 +359,14 @@ extern struct page *swapin_readahead(swp_entry_t, gfp_t,
+> >  extern atomic_long_t nr_swap_pages;
+> >  extern long total_swap_pages;
+> >  
+> > -/* Swap 50% full? Release swapcache more aggressively.. */
+> > -static inline bool vm_swap_full(void)
+> > +/*
+> > + * Swap 50% full or fast backed device?
+> > + * Release swapcache more aggressively.
+> > + */
+> > +static inline bool vm_swap_full(struct swap_info_struct *si)
 > >  {
-> > @@ -722,7 +723,7 @@ static int acpi_idle_enter_c1(struct cpuidle_device *dev,
-> >                 struct cpuidle_driver *drv, int index)
-> >  {
-> >         struct acpi_processor *pr;
-> > -       struct acpi_processor_cx *cx = acpi_cstate[index];
-> > +       struct acpi_processor_cx *cx = per_cpu(acpi_cstate[index], dev->cpu);
-> >
-> >         pr = __this_cpu_read(processors);
-> >
-> > @@ -745,7 +746,7 @@ static int acpi_idle_enter_c1(struct cpuidle_device *dev,
-> >   */
-> >  static int acpi_idle_play_dead(struct cpuidle_device *dev, int index)
-> >  {
-> > -       struct acpi_processor_cx *cx = acpi_cstate[index];
-> > +       struct acpi_processor_cx *cx = per_cpu(acpi_cstate[index], dev->cpu);
-> >
-> >         ACPI_FLUSH_CPU_CACHE();
-> >
-> > @@ -775,7 +776,7 @@ static int acpi_idle_enter_simple(struct cpuidle_device *dev,
-> >                 struct cpuidle_driver *drv, int index)
-> >  {
-> >         struct acpi_processor *pr;
-> > -       struct acpi_processor_cx *cx = acpi_cstate[index];
-> > +       struct acpi_processor_cx *cx = per_cpu(acpi_cstate[index], dev->cpu);
-> >
-> >         pr = __this_cpu_read(processors);
-> >
-> > @@ -833,7 +834,7 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
-> >                 struct cpuidle_driver *drv, int index)
-> >  {
-> >         struct acpi_processor *pr;
-> > -       struct acpi_processor_cx *cx = acpi_cstate[index];
-> > +       struct acpi_processor_cx *cx = per_cpu(acpi_cstate[index], dev->cpu);
-> >
-> >         pr = __this_cpu_read(processors);
-> >
-> > @@ -960,7 +961,7 @@ static int acpi_processor_setup_cpuidle_cx(struct acpi_processor *pr,
-> >                     !(acpi_gbl_FADT.flags & ACPI_FADT_C2_MP_SUPPORTED))
-> >                         continue;
-> >  #endif
-> > -               acpi_cstate[count] = cx;
-> > +               per_cpu(acpi_cstate[count], dev->cpu) = cx;
-> >
-> >                 count++;
-> >                 if (count == CPUIDLE_STATE_MAX)
-> > --
+> > +	if (si->flags & SWP_SOLIDSTATE)
+> > +		return true;
+> >  	return atomic_long_read(&nr_swap_pages) * 2 < total_swap_pages;
+> >  }
+> >  
+> > @@ -405,7 +410,7 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
+> >  #define get_nr_swap_pages()			0L
+> >  #define total_swap_pages			0L
+> >  #define total_swapcache_pages()			0UL
+> > -#define vm_swap_full()				0
+> > +#define vm_swap_full(si)			0
+> >  
+> >  #define si_swapinfo(val) \
+> >  	do { (val)->freeswap = (val)->totalswap = 0; } while (0)
+> > diff --git a/mm/memory.c b/mm/memory.c
+> > index 705473a..1ca21a9 100644
+> > --- a/mm/memory.c
+> > +++ b/mm/memory.c
+> > @@ -3084,7 +3084,8 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  	mem_cgroup_commit_charge_swapin(page, ptr);
+> >  
+> >  	swap_free(entry);
+> > -	if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
+> > +	if (likely(PageSwapCache(page)) && (vm_swap_full(page_swap_info(page))
+> > +			|| (vma->vm_flags & VM_LOCKED) || PageMlocked(page)))
+> >  		try_to_free_swap(page);
+> >  	unlock_page(page);
+> >  	if (page != swapcache) {
+> > diff --git a/mm/swapfile.c b/mm/swapfile.c
+> > index 1bee6fa..f9cc701 100644
+> > --- a/mm/swapfile.c
+> > +++ b/mm/swapfile.c
+> > @@ -293,7 +293,7 @@ checks:
+> >  		scan_base = offset = si->lowest_bit;
+> >  
+> >  	/* reuse swap entry of cache-only swap if not busy. */
+> > -	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
+> > +	if (vm_swap_full(si) && si->swap_map[offset] == SWAP_HAS_CACHE) {
+> >  		int swap_was_freed;
+> >  		spin_unlock(&si->lock);
+> >  		swap_was_freed = __try_to_reclaim_swap(si, offset);
+> > @@ -382,7 +382,8 @@ scan:
+> >  			spin_lock(&si->lock);
+> >  			goto checks;
+> >  		}
+> > -		if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
+> > +		if (vm_swap_full(si) &&
+> > +			si->swap_map[offset] == SWAP_HAS_CACHE) {
+> >  			spin_lock(&si->lock);
+> >  			goto checks;
+> >  		}
+> > @@ -397,7 +398,8 @@ scan:
+> >  			spin_lock(&si->lock);
+> >  			goto checks;
+> >  		}
+> > -		if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
+> > +		if (vm_swap_full(si) &&
+> > +			si->swap_map[offset] == SWAP_HAS_CACHE) {
+> >  			spin_lock(&si->lock);
+> >  			goto checks;
+> >  		}
+> > @@ -763,7 +765,8 @@ int free_swap_and_cache(swp_entry_t entry)
+> >  		 * Also recheck PageSwapCache now page is locked (above).
+> >  		 */
+> >  		if (PageSwapCache(page) && !PageWriteback(page) &&
+> > -				(!page_mapped(page) || vm_swap_full())) {
+> > +				(!page_mapped(page) ||
+> > +				  vm_swap_full(page_swap_info(page)))) {
+> >  			delete_from_swap_cache(page);
+> >  			SetPageDirty(page);
+> >  		}
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index df78d17..145c59c 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -933,7 +933,7 @@ cull_mlocked:
+> >  
+> >  activate_locked:
+> >  		/* Not a candidate for swapping, so reclaim swap space. */
+> > -		if (PageSwapCache(page) && vm_swap_full())
+> > +		if (PageSwapCache(page) && vm_swap_full(page_swap_info(page)))
+> >  			try_to_free_swap(page);
+> >  		VM_BUG_ON(PageActive(page));
+> >  		SetPageActive(page);
+> > -- 
+> > 1.8.2
 > 
-> It fixes the problem on my 8 sockets Nehalem-EX that will hang around
-> ip_auto_config()
-> 
-> Tested-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> Rafael,
-> Can you please push this one to Linus tree ?
-> As the offending patch was via your tree to upstream.
-
-I will if there's no better way to address this issue before -rc6.
-
-Thanks,
-Rafael
-
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Kind regards,
+Minchan Kim
