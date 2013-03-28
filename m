@@ -1,49 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab3C1Ppw (ORCPT <rfc822;w@1wt.eu>);
+	id S1756792Ab3C1Pp5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 11:45:57 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:60973 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756745Ab3C1Ppw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Mar 2013 11:45:52 -0400
-Received: from plane.gmane.org ([80.91.229.3]:58266 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756744Ab3C1Ppt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 11:45:49 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: "Holger Hoffstaette" <holger.hoffstaette@googlemail.com>
-Subject: drm/radeon: continued dead graphics with X on Thinkpad T60 with kernel 3.8.x/3.9.x
-Date: Thu, 28 Mar 2013 16:45:32 +0100
-Organization: The Fists of the White Lotus
-Message-ID: <pan.2013.03.28.15.45.32.586480@googlemail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: p5487679d.dip.t-dialin.net
-User-Agent: Pan/0.13.91 (Before we let euphoria convince us we are free)
+Message-ID: <5154651A.6010304@linux.vnet.ibm.com>
+Date: Thu, 28 Mar 2013 21:13:22 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Magnus Damm <magnus.damm@gmail.com>, x86@kernel.org
+Subject: Re: [patch 33/34] x86: Use generic idle loop
+References: <20130321214930.752934102@linutronix.de> <20130321215235.486594473@linutronix.de>
+In-Reply-To: <20130321215235.486594473@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032815-8256-0000-0000-000006D7ED30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/22/2013 03:23 AM, Thomas Gleixner wrote:
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: x86@kernel.org
+> ---
+[...]
+> +#define POLL_IDLE	(void*) 0x01
+> +
 
-My old trusty Thinkpad T60 with a Mobility Radeon X1400 runs fine with
-3.7.10 - glxgears, vlc work great. However with kernel >=3.8.x any attempt
-at X dies in various ways. While waiting for all the other regressions in
-3.8.x to settle down I've collected the occasional attempt with newer
-kernels. As even latest 3.8.5 and 3.9-rc2 are affected (the two failing
-almost identically) I figured it is about time I complain. :)
+[...]
 
-Captured logs with annotations and oopses are at:
-http://hoho.dyndns.org/linux/radeon/, including as much relevant info as I
-could collect. All kernels are built the same way (via genkernel, an
-automated script) and configurations between kernel versions have not been
-altered. The 3.7.10 log is just included for reference (maybe the HW
-is initialized differently?); the system is rock-stable otherwise.
+>  #ifdef CONFIG_APM_MODULE
+> @@ -411,20 +376,6 @@ void stop_this_cpu(void *dummy)
+>  		halt();
+>  }
+> 
+> -/*
+> - * On SMP it's slightly faster (but much more power-consuming!)
+> - * to poll the ->work.need_resched flag instead of waiting for the
+> - * cross-CPU IPI to arrive. Use this option with caution.
+> - */
+> -static void poll_idle(void)
+> -{
+> -	trace_cpu_idle_rcuidle(0, smp_processor_id());
+> -	local_irq_enable();
+> -	while (!need_resched())
+> -		cpu_relax();
+> -	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
+> -}
+> -
+>  bool amd_e400_c1e_detected;
+>  EXPORT_SYMBOL(amd_e400_c1e_detected);
+> 
+> @@ -489,7 +440,7 @@ static void amd_e400_idle(void)
+>  void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
+>  {
+>  #ifdef CONFIG_SMP
+> -	if (x86_idle == poll_idle && smp_num_siblings > 1)
+> +	if (x86_idle == POLL_IDLE && smp_num_siblings > 1)
+>  		pr_warn_once("WARNING: polling idle and HT enabled, performance may degrade\n");
+>  #endif
+>  	if (x86_idle)
+> @@ -517,8 +468,9 @@ static int __init idle_setup(char *str)
+> 
+>  	if (!strcmp(str, "poll")) {
+>  		pr_info("using polling idle threads\n");
+> -		x86_idle = poll_idle;
+> +		x86_idle = POLL_IDLE;
+>  		boot_option_idle_override = IDLE_POLL;
+> +		cpu_idle_poll_ctrl(true);
 
-I can gladly help track this down/build/patch from git but need some
-pointers how to proceed. 3.7.10 is the last kernel that works (very well)
-but is unmaintained, and it would be nice to move on to 3.8.5 to benefit
-from ongoing bug fixes.
+Why is that POLL_IDLE needed? Won't cpu_idle_poll_ctrl() suffice?
 
-thanks!
-Holger
+By the way, booting with idle=poll locks up the kernel during boot with
+this patch applied (I verified it). So I think we should just skip the
+whole POLL_IDLE thing and leave the job to cpu_idle_poll_ctrl().
 
+ 
+Regards,
+Srivatsa S. Bhat
 
