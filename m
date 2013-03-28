@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab3C1GgZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 02:36:25 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:33455 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755782Ab3C1GgX (ORCPT
+	id S1755887Ab3C1GjD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 02:39:03 -0400
+Received: from mail-da0-f51.google.com ([209.85.210.51]:48689 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755829Ab3C1GjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 02:36:23 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAD=FV=XVWe+GNzEuYkXL3n85t2zRCHJkz5ry_uVXY62rp61qKQ@mail.gmail.com>
-References: <1363129994-10438-1-git-send-email-dianders@chromium.org> <1363207202-10858-1-git-send-email-dianders@chromium.org> <1363207202-10858-2-git-send-email-dianders@chromium.org> <CAHfPSqDLXD-T6__eF=d+U7Me953DqTgMXi=Jmx7LnHL+W-FLhQ@mail.gmail.com> <51533D34.7020406@metafoo.de> <CAD=FV=XVWe+GNzEuYkXL3n85t2zRCHJkz5ry_uVXY62rp61qKQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v2 1/4] iio: adc: Document the regulator/clocks for exynos-adc
-From: Jonathan Cameron <jic23@kernel.org>
-Date: Thu, 28 Mar 2013 06:31:06 +0000
-To: Doug Anderson <dianders@chromium.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-CC: Kukjin Kim <kgene.kim@samsung.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Guenter Roeck <linux@roeck-us.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20b79acf-6799-4aad-b2fc-8300d04f5faa@email.android.com>
+	Thu, 28 Mar 2013 02:39:02 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, sachin.kamat@linaro.org,
+        patches@linaro.org
+Subject: [PATCH v2 1/2] extcon: max77693: Fix return value
+Date: Thu, 28 Mar 2013 11:57:32 +0530
+Message-Id: <1364452053-17405-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Return the value obtained from the function instead of hardcoding.
+Silences the following warnings:
+drivers/extcon/extcon-max77693.c:297 max77693_muic_set_path()
+info: why not propagate 'ret' from max77693_update_reg() instead of (-11)?
+drivers/extcon/extcon-max77693.c:310 max77693_muic_set_path()
+info: why not propagate 'ret' from max77693_update_reg() instead of (-11)?
 
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+Changes since v1:
+Include additional instances.
+Compile tested.
+---
+ drivers/extcon/extcon-max77693.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Doug Anderson <dianders@chromium.org> wrote:
-
->Hi,
->
->On Wed, Mar 27, 2013 at 11:40 AM, Lars-Peter Clausen <lars@metafoo.de>
->wrote:
->> On 03/27/2013 07:35 PM, Naveen Krishna Ch wrote:
->>> On 13 March 2013 13:39, Doug Anderson <dianders@chromium.org> wrote:
->>>> The exynos ADC won't work without a regulator called "vdd" and a
->clock
->>>> called "adc".  Document this fact in the device tree bindings.
->>>>
->>>> Signed-off-by: Doug Anderson <dianders@chromium.org>
->>> Reviewed-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->>>
->>> Lars, any update on this patch set. This change is required.
->>
->> Uhm, looks fine to me. I'm sure Jonathan will pick it up :)
->
->Part 2 made it in, but not the documentation patch.  Now that it has a
->Reviewed-by it can probably go in...  :)
->
->-Doug
-I'll take it sometime over the weekend. 
-
-Thanks. 
-Jonathan
-
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index 8f3c947..924db01 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -258,7 +258,7 @@ static int max77693_muic_set_debounce_time(struct max77693_muic_info *info,
+ 					  CONTROL3_ADCDBSET_MASK);
+ 		if (ret) {
+ 			dev_err(info->dev, "failed to set ADC debounce time\n");
+-			return -EAGAIN;
++			return ret;
+ 		}
+ 		break;
+ 	default:
+@@ -294,7 +294,7 @@ static int max77693_muic_set_path(struct max77693_muic_info *info,
+ 			MAX77693_MUIC_REG_CTRL1, ctrl1, COMP_SW_MASK);
+ 	if (ret < 0) {
+ 		dev_err(info->dev, "failed to update MUIC register\n");
+-		return -EAGAIN;
++		return ret;
+ 	}
+ 
+ 	if (attached)
+@@ -307,7 +307,7 @@ static int max77693_muic_set_path(struct max77693_muic_info *info,
+ 			CONTROL2_LOWPWR_MASK | CONTROL2_CPEN_MASK);
+ 	if (ret < 0) {
+ 		dev_err(info->dev, "failed to update MUIC register\n");
+-		return -EAGAIN;
++		return ret;
+ 	}
+ 
+ 	dev_info(info->dev,
+@@ -1035,7 +1035,7 @@ static int max77693_muic_detect_accessory(struct max77693_muic_info *info)
+ 	if (ret) {
+ 		dev_err(info->dev, "failed to read MUIC register\n");
+ 		mutex_unlock(&info->mutex);
+-		return -EINVAL;
++		return ret;
+ 	}
+ 
+ 	adc = max77693_muic_get_cable_type(info, MAX77693_CABLE_GROUP_ADC,
 -- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+1.7.4.1
+
