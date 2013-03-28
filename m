@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab3C1PX3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 11:23:29 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52215 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756116Ab3C1PX2 (ORCPT
+	id S1756353Ab3C1PXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 11:23:46 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:45090 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755605Ab3C1PXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 11:23:28 -0400
-Message-ID: <1364484186.4018.66.camel@pizza.hi.pengutronix.de>
-Subject: Re: [PATCH v9 RESEND 4/4] ARM: dts: add sram for imx53 and imx6q
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Javier Martin <javier.martin@vista-silicon.com>, kernel@pengutronix.de,
-        devicetree-discuss@lists.ozlabs.org
-Date: Thu, 28 Mar 2013 16:23:06 +0100
-In-Reply-To: <20130328142106.GA699@S2101-09.ap.freescale.net>
-References: <1363776767-2635-1-git-send-email-p.zabel@pengutronix.de>
-	 <1363776767-2635-5-git-send-email-p.zabel@pengutronix.de>
-	 <20130328025422.GH5429@S2101-09.ap.freescale.net>
-	 <1364461518.4018.4.camel@pizza.hi.pengutronix.de>
-	 <20130328142106.GA699@S2101-09.ap.freescale.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 28 Mar 2013 11:23:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1303281031260.22263@ionos>
+References: <1364368183-24420-1-git-send-email-mturquette@linaro.org>
+ <1364445958-2999-1-git-send-email-mturquette@linaro.org> <1364445958-2999-3-git-send-email-mturquette@linaro.org>
+ <alpine.LFD.2.02.1303281031260.22263@ionos>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Thu, 28 Mar 2013 08:23:22 -0700
+Message-ID: <CAPtuhTiPqJkQw-nJMuyaZuTQ2iYbrbtEWMobBf5fWCB3dUG2jQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] clk: allow reentrant calls into the clk framework
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Patch Tracking <patches@linaro.org>, linaro-kernel@lists.linaro.org,
+        Rajagopal Venkat <rajagopal.venkat@linaro.org>,
+        David Brown <davidb@codeaurora.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        laurent.pinchart@ideasonboard.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 28.03.2013, 22:22 +0800 schrieb Shawn Guo:
-> On Thu, Mar 28, 2013 at 10:05:18AM +0100, Philipp Zabel wrote:
-> > > > +
-> > > > +		ocram: ocram@f8000000 {
-> > > > +			compatible = "fsl,imx-ocram", "mmio-sram";
-> > > 
-> > > We should probably just drop "fsl,imx-ocram".
-> > > 
-> > > Shawn
-> > 
-> > I thought that in the future somebody might want to implement some i.MX
-> > OCRAM specifics in a different driver, like the L2 cache / OCRAM mode
-> > switching, the timing settings, or the TrustZone bits that are
-> > configurable in the IOMUXC GPR registers.
-> 
-> We can add i.MX OCRAM specific compatible when we see that real need.
-> Also, generally we should use a specific chip/osc name rather than "imx"
-> for compatible to specify the particular hardware version.
+On Thu, Mar 28, 2013 at 2:33 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Wed, 27 Mar 2013, Mike Turquette wrote:
+>
+>> Reentrancy into the clock framework is necessary for clock operations
+>> that result in nested calls to the clk api.  A common example is a clock
+>> that is prepared via an i2c transaction, such as a clock inside of a
+>> discrete audio chip or a power management IC.  The i2c subsystem itself
+>> will use the clk api resulting in a deadlock:
+>>
+>> clk_prepare(audio_clk)
+>>       i2c_transfer(..)
+>>               clk_prepare(i2c_controller_clk)
+>>
+>> The ability to reenter the clock framework prevents this deadlock.
+>>
+>> Other use cases exist such as allowing .set_rate callbacks to call
+>> clk_set_parent to achieve the best rate, or to save power in certain
+>> configurations.  Yet another example is performing pinctrl operations
+>> from a clk_ops callback.  Calls into the pinctrl subsystem may call
+>> clk_{un}prepare on an unrelated clock.  Allowing for nested calls to
+>> reenter the clock framework enables both of these use cases.
+>>
+>> Reentrancy is implemented by two global pointers that track the owner
+>> currently holding a global lock.  One pointer tracks the owner during
+>> sleepable, mutex-protected operations and the other one tracks the owner
+>> during non-interruptible, spinlock-protected operations.
+>>
+>> When the clk framework is entered we try to hold the global lock.  If it
+>> is held we compare the current task id against the current owner; a
+>
+> s/task id/task/ We store a the task pointer in the owner variable.
+>
+> Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 
-Alright, I'll drop it, then.
+Will fix the typo and add your reviewed-by.
 
-thanks
-Philipp
-
+Thanks for the review,
+Mike
