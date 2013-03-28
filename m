@@ -1,124 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab3C0X6b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 19:58:31 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40556 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253Ab3C0X6a (ORCPT
+	id S1755291Ab3C1AEE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 20:04:04 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:24646 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754323Ab3C1AEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 19:58:30 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5153878B.2050307@jp.fujitsu.com>
-Date: Thu, 28 Mar 2013 08:58:03 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Toshi Kani <toshi.kani@hp.com>, <linux-acpi@vger.kernel.org>,
-        <tangchen@cn.fujitsu.com>, <wency@cn.fujitsu.com>,
-        <laijs@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/2] ACPI,acpi_memhotplug: Remove acpi_memory_info->failed
- bit
-References: <514022BF.3080303@jp.fujitsu.com> <1363983884.11659.14.camel@misato.fc.hp.com> <5150E451.3010100@jp.fujitsu.com> <4310971.etCm8Nd6PX@vostro.rjw.lan>
-In-Reply-To: <4310971.etCm8Nd6PX@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Mar 2013 20:04:01 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-c5-515388efe837
+Message-id: <515388F0.3060604@samsung.com>
+Date: Thu, 28 Mar 2013 09:04:00 +0900
+From: Donghwa Lee <dh09.lee@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Andrei Epure <epure.andrei@gmail.com>
+Cc: inki.dae@samsung.com, kyungmin.park@samsung.com, FlorianSchandinat@gmx.de,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] video: exynos: remove useless safety check in list
+ traversal
+References: <1364419145-30375-1-git-send-email-epure.andrei@gmail.com>
+In-reply-to: <1364419145-30375-1-git-send-email-epure.andrei@gmail.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIIsWRmVeSWpSXmKPExsVy+t8zHd33HcGBBp9nq1uc+LmUzaJz5jVG
+	i0n3J7BYnG16w25xou8Dq8XlXXPYHNg8ds66y+7x4WOcR9+WVYwenzfJBbBEcdmkpOZklqUW
+	6dslcGUcWS9f0MNbceTaTKYGxoNcXYycHBICJhLnXuxhh7DFJC7cW8/WxcjFISSwjFHi0O0u
+	NpiibY/msEMkpjNKvH7+CMp5ySjRuPkgcxcjBwevgJbErR1pICaLgKrE+V91IL1sAhoSp+/d
+	B1sgKhAmsXL6FRYQm1dAUOLH5HtgtoiApsTE7V/BbGaBLkaJlqsWILawQLDE+t5prCC2kICb
+	xK8tz8DmcAq4S/T+OM8GUW8tsXLSNkYIW15i85q3zCCnSQjsY5d49asDbCiLgIDEt8mHWEBu
+	kxCQldh0gBniL0mJgytusExgFJuF5KRZSMbOQjJ2ASPzKkbR1ILkguKk9CJjveLE3OLSvHS9
+	5PzcTYyQ6OrfwXj3gPUhxmSglROZpUST84HRmVcSb2hsZmRhamJqbGRuaUaasJI4r1qLdaCQ
+	QHpiSWp2ampBalF8UWlOavEhRiYOTqkGxr2e8i9mOChtUOq4MF33X20mR9eK2ObZD+Zbv1P0
+	n5sizrgv5mC1kVts1izzP9tS39Uuq5onEGR729k04scOnZ0GnT7iRgvC6urD/M7MXp3NrPp3
+	d8XVP2fa59rFKIoEv05qSIx4HVXm/Y6TdemTF9MdlBf+kRVUnKyjct8kSfqC7OvkcK44JZbi
+	jERDLeai4kQAab5x48QCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjleLIzCtJLcpLzFFi42I5/e+xoO77juBAg2WfFC1O/FzKZtE58xqj
+	xaT7E1gszja9Ybc40feB1eLyrjlsDmweO2fdZff48DHOo2/LKkaPz5vkAliiGhhtMlITU1KL
+	FFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4CWKymUJeaUAoUCEouL
+	lfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzjqyXL+jhrThybSZTA+NBri5GTg4JAROJbY/m
+	sEPYYhIX7q1n62Lk4hASmM4o8fr5I3YI5yWjROPmg8xdjBwcvAJaErd2pIGYLAKqEud/1YH0
+	sgloSJy+dx9sjqhAmMTK6VdYQGxeAUGJH5PvgdkiApoSE7d/BbOZBboYJVquWoDYwgLBEut7
+	p7GC2EICbhK/tjwDm8Mp4C7R++M8G0S9tcTKSdsYIWx5ic1r3jJPYBSYhWTFLCRls5CULWBk
+	XsUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHLvPpHYwrmywOMQowMGoxMNbIRAcKMSaWFZc
+	mXuIUYKDWUmEd1YNUIg3JbGyKrUoP76oNCe1+BBjMjAAJjJLiSbnA9NKXkm8obGJmZGlkZmx
+	ibmxMWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUw9vz6F/5DZmNz9XKRrGifSO2jBRMD
+	laR7Hn7vnTZ/TsaEo0q/1U+U7Lq56v/hoKzVz79lxbzud0h8qrngwRP/mVkr9jyQaFzAkTxD
+	6aEmz/f1V8NPJ5WeP6iTH/Qo4F/7fMnKaQyp+/sPzFw2/4TNnatfWdc5c7Afm9lfc3yptHVq
+	8guLpkk5y5RYijMSDbWYi4oTAdEvX1ohAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
 
-2013/03/26 22:41, Rafael J. Wysocki wrote:
-> On Tuesday, March 26, 2013 08:57:05 AM Yasuaki Ishimatsu wrote:
->> 2013/03/23 5:24, Toshi Kani wrote:
->>> On Fri, 2013-03-22 at 10:53 +0900, Yasuaki Ishimatsu wrote:
->>>> acpi_memory_info has enabled bit and failed bit for controlling memory
->>>> hotplug. But we don't need to keep both bits.
->>>>
->>>> The patch removes acpi_memory_info->failed bit.
->>>>
->>>> Signed-off-by: yasuaki ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>>
->>> Thanks for the update.  It looks good.  For the series:
->>>
->>> Acked-by: Toshi Kani <toshi.kani@hp.com>
->>
->> Thanks!
+Hi,
+
+It looks good to me.
+
+Acked-by: Donghwa Lee <dh09.lee@samsung.com>
+
+Best regard,
+Donghwa Lee
+
+On Thu, Mar 28, 2013 at 06:19, Andrei Epure wrote:
+> list_for_each_entry_safe() does not require safety check.
+> Patch found using coccinelle.
 >
-> Both patches applied to linux-pm.git/linux-next.
-
-Thank you for applying both patches.
-If you don't mind, I hope these patches are merged into linux-3.9
-since this is bug fix.
-
-Thanks,
-Yasuaki Ishimatsu
-
+> Signed-off-by: Andrei Epure<epure.andrei@gmail.com>
+> ---
+>   drivers/video/exynos/exynos_mipi_dsi.c |   16 ++++++----------
+>   1 file changed, 6 insertions(+), 10 deletions(-)
 >
-> Thanks,
-> Rafael
->
->
->>>> ---
->>>>
->>>> v3 : Continue to memory hot remove when (!info->enabled) case.
->>>> v2 : Changed a based kernel from linux-3.9-rc2 to linux-pm.git/bleeding-edge.
->>>>
->>>> ---
->>>>     drivers/acpi/acpi_memhotplug.c |   15 ++-------------
->>>>     1 files changed, 2 insertions(+), 13 deletions(-)
->>>>
->>>> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
->>>> index ea78988..5e6301e 100644
->>>> --- a/drivers/acpi/acpi_memhotplug.c
->>>> +++ b/drivers/acpi/acpi_memhotplug.c
->>>> @@ -73,7 +73,6 @@ struct acpi_memory_info {
->>>>     	unsigned short caching;	/* memory cache attribute */
->>>>     	unsigned short write_protect;	/* memory read/write attribute */
->>>>     	unsigned int enabled:1;
->>>> -	unsigned int failed:1;
->>>>     };
->>>>
->>>>     struct acpi_memory_device {
->>>> @@ -201,10 +200,8 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
->>>>     		 * returns -EEXIST. If add_memory() returns the other error, it
->>>>     		 * means that this memory block is not used by the kernel.
->>>>     		 */
->>>> -		if (result && result != -EEXIST) {
->>>> -			info->failed = 1;
->>>> +		if (result && result != -EEXIST)
->>>>     			continue;
->>>> -		}
->>>>
->>>>     		info->enabled = 1;
->>>>
->>>> @@ -238,16 +235,8 @@ static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
->>>>     	nid = acpi_get_node(mem_device->device->handle);
->>>>
->>>>     	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
->>>> -		if (info->failed)
->>>> -			/* The kernel does not use this memory block */
->>>> -			continue;
->>>> -
->>>>     		if (!info->enabled)
->>>> -			/*
->>>> -			 * The kernel uses this memory block, but it may be not
->>>> -			 * managed by us.
->>>> -			 */
->>>> -			return -EBUSY;
->>>> +			continue;
->>>>
->>>>     		if (nid < 0)
->>>>     			nid = memory_add_physaddr_to_nid(info->start_addr);
->>>>
->>>
->>>
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+> diff --git a/drivers/video/exynos/exynos_mipi_dsi.c b/drivers/video/exynos/exynos_mipi_dsi.c
+> index dd5e5e9..fe84f08 100644
+> --- a/drivers/video/exynos/exynos_mipi_dsi.c
+> +++ b/drivers/video/exynos/exynos_mipi_dsi.c
+> @@ -214,8 +214,6 @@ static struct mipi_dsim_ddi *exynos_mipi_dsi_find_lcd_device(
+>   	mutex_lock(&mipi_dsim_lock);
+>   
+>   	list_for_each_entry_safe(dsim_ddi, next, &dsim_ddi_list, list) {
+> -		if (!dsim_ddi)
+> -			goto out;
+>   
+>   		lcd_dev = dsim_ddi->dsim_lcd_dev;
+>   		if (!lcd_dev)
+> @@ -473,17 +471,15 @@ static int exynos_mipi_dsi_remove(struct platform_device *pdev)
+>   	clk_disable(dsim->clock);
+>   
+>   	list_for_each_entry_safe(dsim_ddi, next, &dsim_ddi_list, list) {
+> -		if (dsim_ddi) {
+> -			if (dsim->id != dsim_ddi->bus_id)
+> -				continue;
+> +		if (dsim->id != dsim_ddi->bus_id)
+> +			continue;
+>   
+> -			dsim_lcd_drv = dsim_ddi->dsim_lcd_drv;
+> +		dsim_lcd_drv = dsim_ddi->dsim_lcd_drv;
+>   
+> -			if (dsim_lcd_drv->remove)
+> -				dsim_lcd_drv->remove(dsim_ddi->dsim_lcd_dev);
+> +		if (dsim_lcd_drv->remove)
+> +			dsim_lcd_drv->remove(dsim_ddi->dsim_lcd_dev);
+>   
+> -			kfree(dsim_ddi);
+> -		}
+> +		kfree(dsim_ddi);
+>   	}
+>   
+>   	return 0;
 
