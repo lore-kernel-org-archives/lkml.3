@@ -1,41 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab3C1Bvm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Mar 2013 21:51:42 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:44266 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620Ab3C1Bvl (ORCPT
+	id S1754847Ab3C1CBn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Mar 2013 22:01:43 -0400
+Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:26047 "EHLO
+	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754282Ab3C1CBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Mar 2013 21:51:41 -0400
-Message-ID: <5153A209.1090502@gmail.com>
-Date: Thu, 28 Mar 2013 09:51:05 +0800
-From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 27 Mar 2013 22:01:42 -0400
+Date: Thu, 28 Mar 2013 01:01:48 +0000
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: linux-kernel@vger.kernel.org
+Subject: smartd broken in 3.9.0-rc4
+Message-ID: <20130328010148.GB25406@milliways>
 MIME-Version: 1.0
-To: Ed Cashin <ecashin@coraid.com>
-CC: Chen Gang <gang.chen@asianux.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [Suggestion] drivers/block/aoe: using uninitialized variable.
-References: <51529C39.7050207@asianux.com> <D32F8009-1A9F-43C5-9A0B-2849FB06AE87@coraid.com>
-In-Reply-To: <D32F8009-1A9F-43C5-9A0B-2849FB06AE87@coraid.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Cloudmark-Analysis: v=1.1 cv=AUhbpHVS+xhHrj9wLCYAQoYnFLYUZdbP8UM0GmH2jwk= c=1 sm=0 a=wom5GMh1gUkA:10 a=uObrxnre4hsA:10 a=8nJEP1OIZ-IA:10 a=-9fLHVDCAAAA:8 a=rO2lHrpLJJmYZB5c7ncA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年03月27日 22:04, Ed Cashin wrote:
-> Thanks.  Jens Axboe said about it to Dan Carpenter that ...
-> 
->> > It was fixed up yesterday, it was a merge error in the for-next branch.
+Hi,
 
+ just tested my first 3.9 kernel today.  During boot, smartd (from
+smartmontools-6.0) fails to start.  Works fine in 3.8.4.
 
-  thanks.
+ In 3.8.4 I get messages like this :
 
-  :-)
+Mar 27 22:02:02 ac4tv smartd[3981]: smartd 6.0 2012-10-10 r3643
+[x86_64-linux-3.8.4] (local build) 
+Mar 27 22:02:02 ac4tv smartd[3981]: Copyright (C) 2002-12, Bruce
+Allen, Christian Franke, www.smartmontools.org 
+Mar 27 22:02:02 ac4tv smartd[3981]: Opened configuration file
+/etc/smartd.conf 
+Mar 27 22:02:02 ac4tv smartd[3981]: Configuration file
+/etc/smartd.conf parsed. 
+Mar 27 22:02:02 ac4tv smartd[3981]: Device: /dev/sda, opened 
+Mar 27 22:02:02 ac4tv smartd[3981]: Device: /dev/sda, WDC
+WD5000AAKX-001CA0, S/N:WD-WMAYU6818967, WWN:5-0014ee-0ad9caed4,
+FW:15.01H15, 500 GB 
+Mar 27 22:02:02 ac4tv smartd[3981]: Device: /dev/sda, found in
+smartd database: Western Digital Caviar Blue Serial ATA 
+Mar 27 22:02:02 ac4tv smartd[3981]: Device: /dev/sda, enabled SMART
+Automatic Offline Testing. 
+Mar 27 22:02:02 ac4tv smartd[3981]: Device: /dev/sda, is SMART
+capable. Adding to "monitor" list. 
+Mar 27 22:02:02 ac4tv smartd[3981]: Monitoring 1 ATA and 0 SCSI
+devices 
 
+ but in 3.9.0-rc4 all I get is
+Mar 28 00:39:32 ac4tv smartd[2487]: Copyright (C) 2002-12, Bruce
+Allen, Christian Franke, www.smartmontools.org 
+Mar 28 00:39:32 ac4tv smartd[2487]: Opened configuration file
+/etc/smartd.conf 
+Mar 28 00:39:32 ac4tv smartd[2487]: Configuration file
+/etc/smartd.conf parsed. 
+Mar 28 00:39:32 ac4tv smartd[2487]: Device: /dev/sda, opened 
+Mar 28 00:39:32 ac4tv smartd[2487]: Device: /dev/sda, WDC
+WD5000AAKX-001CA0, S/N:WD-WMAYU6818967, WWN:5-0014ee-0ad9caed4,
+FW:15.01H15, 500 GB 
+Mar 28 00:39:32 ac4tv smartd[2487]: Device: /dev/sda, found in
+smartd database: Western Digital Caviar Blue Serial ATA 
+Mar 28 00:39:32 ac4tv smartd[2487]: Device: /dev/sda, could not
+enable SMART capability 
+Mar 28 00:39:32 ac4tv smartd[2487]: Unable to register ATA device
+/dev/sda at line 1 of file /etc/smartd.conf 
+Mar 28 00:39:32 ac4tv smartd[2487]: Unable to register device
+/dev/sda (no Directive -d removable). Exiting. 
+
+ Using strace, in the failing version I get
+2643  ioctl(3, HDIO_DRIVE_CMD, 0x7fff53288a60) = -1 EIO (Input/output error)
+
+instead of the normal
+3981  ioctl(3, HDIO_DRIVE_CMD, 0x7fff04437340) = 0
+3981  ioctl(3, HDIO_DRIVE_TASK, 0x7fff04437350) = 0
+3981  ioctl(3, HDIO_DRIVE_CMD, 0x7fff04437330) = 0
+3981  ioctl(3, HDIO_DRIVE_CMD, 0x7fff04437330) = 0
+3981  ioctl(3, HDIO_DRIVE_TASK, 0x7fff04437340) = 0
+
+ Looks like I'll be bisecting.
+
+ken
 -- 
-Chen Gang
-
-Flying Transformer
+das eine Mal als Trag�die, das andere Mal als Farce
