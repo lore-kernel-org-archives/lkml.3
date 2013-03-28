@@ -1,39 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555Ab3C1Hgm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 03:36:42 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:50959 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125Ab3C1Hgk (ORCPT
+	id S1756576Ab3C1Hgz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 03:36:55 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:40622 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753424Ab3C1Hgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 03:36:40 -0400
+	Thu, 28 Mar 2013 03:36:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <1364423841-6920-2-git-send-email-jacob.shin@amd.com>
-References: <1364423841-6920-1-git-send-email-jacob.shin@amd.com>
-	<1364423841-6920-2-git-send-email-jacob.shin@amd.com>
-Date: Thu, 28 Mar 2013 13:06:39 +0530
-Message-ID: <CAKohpokNNOfawOuvYFnFacMwKQV9gLnhD370UU4-BiVMnft87g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpufreq: ondemand: allow custom od_ops to be registered
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20130328055858.GA6523@core.coreip.homeip.net>
+References: <1364372263-16848-1-git-send-email-sebastien.royen@armadeus.com>
+	<20130328055858.GA6523@core.coreip.homeip.net>
+Date: Thu, 28 Mar 2013 08:36:52 +0100
+Message-ID: <CADFrO6HRWfjTxkmLfVdq3+GBEQShNx5QUDEnMwZcTBx7e+SOxg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Input: mma8450 - fix signed 12bits to 32bits conversion
+From: Sebastien Royen <sebastien.royen@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Bill Pemberton <wfp5p@virginia.edu>, linux-kernel@vger.kernel.org,
+        seb <sebastien.royen@armadeus.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 March 2013 04:07, Jacob Shin <jacob.shin@amd.com> wrote:
-> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-> +void od_register_ops(struct od_ops *ops)
-> +{
-> +       if (ops->powersave_bias_init_cpu)
-> +               od_ops.powersave_bias_init_cpu = ops->powersave_bias_init_cpu;
-> +       if (ops->powersave_bias_target)
-> +               od_ops.powersave_bias_target = ops->powersave_bias_target;
-> +       if (ops->freq_increase)
-> +               od_ops.freq_increase = ops->freq_increase;
-> +}
+Hi Dmitry
 
-We don't need to support all the three. First and last ones strictly belong
-to ondemand governor.
+2013/3/28 Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>
+> Hi Seb,
+>
+> On Wed, Mar 27, 2013 at 09:17:43AM +0100, seb wrote:
+> > Event value is wrong. Should be in range -2048 to 2047, but is in range 0 to 4095.
+> > Use int8_t to int conversion and remove 0xfff mask.
+> >
+> > Signed-off-by: seb <sebastien.royen@armadeus.com>
+> > ---
+> >  drivers/input/misc/mma8450.c |   15 ++++++++++-----
+> >  1 file changed, 10 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/drivers/input/misc/mma8450.c b/drivers/input/misc/mma8450.c
+> > index 480557f..c3781a1 100644
+> > --- a/drivers/input/misc/mma8450.c
+> > +++ b/drivers/input/misc/mma8450.c
+> > @@ -110,7 +110,7 @@ static void mma8450_poll(struct input_polled_dev *dev)
+> >       struct mma8450 *m = dev->private;
+> >       int x, y, z;
+> >       int ret;
+> > -     u8 buf[6];
+> > +     int8_t buf[6];
+> >
+> >       ret = mma8450_read(m, MMA8450_STATUS);
+> >       if (ret < 0)
+> > @@ -119,13 +119,18 @@ static void mma8450_poll(struct input_polled_dev *dev)
+> >       if (!(ret & MMA8450_STATUS_ZXYDR))
+> >               return;
+> >
+> > -     ret = mma8450_read_block(m, MMA8450_OUT_X_LSB, buf, sizeof(buf));
+> > +     ret = mma8450_read_block(m, MMA8450_OUT_X_LSB, (u8*)buf, sizeof(buf));
+> >       if (ret < 0)
+> >               return;
+> >
+> > -     x = ((buf[1] << 4) & 0xff0) | (buf[0] & 0xf);
+> > -     y = ((buf[3] << 4) & 0xff0) | (buf[2] & 0xf);
+> > -     z = ((buf[5] << 4) & 0xff0) | (buf[4] & 0xf);
+> > +     /* convert 8 MSB from int8_t to int */
+> > +     x = buf[1];
+> > +     y = buf[3];
+> > +     z = buf[5];
+> > +     /* add 4 LSB */
+> > +     x = (x << 4) | (buf[0] & 0xf);
+> > +     y = (y << 4) | (buf[2] & 0xf);
+> > +     z = (z << 4) | (buf[4] & 0xf);
+>
+> Should we just say:
+>
+>         x = ((int)(s8)buf[1] << 4) | (buf[0] & 0xf);
+>         y = ...
+>         z = ...
+>
+> and leave the rest as is?
+>
+> Thanks.
+>
+> --
+> Dmitry
+
+Yes, it works too and is more close to original version.
+It's my first contrib so I'm not familiar with process,
+do you need another patch with right changes ?
+
+Regards,
+
+Sebastien Royen
