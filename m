@@ -1,116 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab3C1Iur (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 04:50:47 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:46593 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572Ab3C1Iup (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 04:50:45 -0400
-From: Prabhakar lad <prabhakar.csengg@gmail.com>
-To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] davinci: vpif: add pm_runtime support
-Date: Thu, 28 Mar 2013 14:20:32 +0530
-Message-Id: <1364460632-21697-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756641Ab3C1IxV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 04:53:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34365 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756057Ab3C1IxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 04:53:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,924,1355126400"; 
+   d="scan'208";a="285681039"
+Message-ID: <5154054B.6050706@intel.com>
+Date: Thu, 28 Mar 2013 16:54:35 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+CC: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Aaron Lu <aaron.lwe@gmail.com>, Shane Huang <shane.huang@amd.com>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: Re: [PATCH v12 0/5] block layer runtime pm
+References: <1364010148-8584-1-git-send-email-aaron.lu@intel.com> <20130323042345.GR1628@kernel.dk>
+In-Reply-To: <20130323042345.GR1628@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On 03/23/2013 12:23 PM, Jens Axboe wrote:
+> On Sat, Mar 23 2013, Aaron Lu wrote:
+>> In August 2010, Jens and Alan discussed about "Runtime PM and the block
+>> layer". http://marc.info/?t=128259108400001&r=1&w=2
+>> And then Alan has given a detailed implementation guide:
+>> http://marc.info/?l=linux-scsi&m=133727953625963&w=2
+>>
+>> To test:
+>> # ls -l /sys/block/sda
+>> /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/block/sda
+>>
+>> # echo 10000 > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/autosuspend_delay_ms
+>> # echo auto > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/control
+>> Then you'll see sda is suspended after 10secs idle.
+>>
+>> [ 1767.680192] sd 2:0:0:0: [sda] Synchronizing SCSI cache
+>> [ 1767.680317] sd 2:0:0:0: [sda] Stopping disk
+>>
+>> And if you do some IO, it will resume immediately.
+>> [ 1791.052438] sd 2:0:0:0: [sda] Starting disk
+>>
+>> For test, I often set the autosuspend time to 1 second. If you are using
+>> a GUI, the 10 seconds delay may be too long that the disk can not enter
+>> runtime suspended state.
+>>
+>> Note that sd's runtime suspend callback will dump some kernel messages
+>> and the syslog daemon will write kernel message to /var/log/messages,
+>> making the disk instantly resume after suspended. So for test, the
+>> syslog daemon should better be temporarily stopped.
+>>
+>> A git repo for it, on top of block/for-next:
+>> https://github.com/aaronlu/linux.git blockpm
+>>
+>> v12:
+>> - Split patch 1 into 2 patches, one introduces REQ_PM in block layer
+>>   and one uses that flag in SCSI layer, suggested by Jens Axboe.
+> 
+> Thanks Aaron, I've applied 1, and 3-4. I'll leave 2 and 5 for James to
+> pickup. James, if you want me to carry them, just let me know.
 
-Add pm_runtime support to the TI Davinci VPIF driver.
-Along side this patch replaces clk_get() with devm_clk_get()
-to simplify the error handling.
+Hi James,
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/platform/davinci/vpif.c |   21 +++++++++++----------
- 1 files changed, 11 insertions(+), 10 deletions(-)
+May I know your opinion on the two SCSI patches in this series?
 
-diff --git a/drivers/media/platform/davinci/vpif.c b/drivers/media/platform/davinci/vpif.c
-index 28638a8..7d14625 100644
---- a/drivers/media/platform/davinci/vpif.c
-+++ b/drivers/media/platform/davinci/vpif.c
-@@ -25,6 +25,7 @@
- #include <linux/io.h>
- #include <linux/clk.h>
- #include <linux/err.h>
-+#include <linux/pm_runtime.h>
- #include <linux/v4l2-dv-timings.h>
- 
- #include <mach/hardware.h>
-@@ -44,7 +45,6 @@ static struct resource	*res;
- spinlock_t vpif_lock;
- 
- void __iomem *vpif_base;
--struct clk *vpif_clk;
- 
- /**
-  * ch_params: video standard configuration parameters for vpif
-@@ -421,6 +421,7 @@ EXPORT_SYMBOL(vpif_channel_getfid);
- 
- static int vpif_probe(struct platform_device *pdev)
- {
-+	struct clk *vpif_clk;
- 	int status = 0;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -439,12 +440,17 @@ static int vpif_probe(struct platform_device *pdev)
- 		goto fail;
- 	}
- 
--	vpif_clk = clk_get(&pdev->dev, "vpif");
-+	vpif_clk = devm_clk_get(&pdev->dev, "vpif");
- 	if (IS_ERR(vpif_clk)) {
- 		status = PTR_ERR(vpif_clk);
- 		goto clk_fail;
- 	}
--	clk_prepare_enable(vpif_clk);
-+	clk_put(vpif_clk);
-+
-+	pm_runtime_enable(&pdev->dev);
-+	pm_runtime_resume(&pdev->dev);
-+
-+	pm_runtime_get(&pdev->dev);
- 
- 	spin_lock_init(&vpif_lock);
- 	dev_info(&pdev->dev, "vpif probe success\n");
-@@ -459,11 +465,6 @@ fail:
- 
- static int vpif_remove(struct platform_device *pdev)
- {
--	if (vpif_clk) {
--		clk_disable_unprepare(vpif_clk);
--		clk_put(vpif_clk);
--	}
--
- 	iounmap(vpif_base);
- 	release_mem_region(res->start, res_len);
- 	return 0;
-@@ -472,13 +473,13 @@ static int vpif_remove(struct platform_device *pdev)
- #ifdef CONFIG_PM
- static int vpif_suspend(struct device *dev)
- {
--	clk_disable_unprepare(vpif_clk);
-+	pm_runtime_put(dev);
- 	return 0;
- }
- 
- static int vpif_resume(struct device *dev)
- {
--	clk_prepare_enable(vpif_clk);
-+	pm_runtime_get(dev);
- 	return 0;
- }
- 
--- 
-1.7.4.1
+Thanks,
+Aaron
 
