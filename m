@@ -1,125 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab3C1L7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 07:59:03 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:44760 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754718Ab3C1L7B convert rfc822-to-8bit (ORCPT
+	id S1755565Ab3C1MEm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 08:04:42 -0400
+Received: from mail-da0-f44.google.com ([209.85.210.44]:45027 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab3C1MEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 07:59:01 -0400
-Message-ID: <51543084.9070004@arm.com>
-Date: Thu, 28 Mar 2013 11:59:00 +0000
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will@willdeacon.co.uk>, Lokesh Vutla <lokeshvutla@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] ARM: hw_breakpoint: Enable debug powerdown only if system
- supports 'has_ossr'
-References: <1363157553-21085-1-git-send-email-lokeshvutla@ti.com> <51406BA7.8010306@arm.com> <51407120.7030709@ti.com> <51417E58.5050501@ti.com> <20130315050014.GA15706@tiny-lites> <5146B972.1010002@ti.com> <20130318150724.GC28585@mudshark.cambridge.arm.com> <514736D4.4070906@ti.com> <20130318170649.GA29585@mudshark.cambridge.arm.com> <5148082A.3060503@ti.com> <20130319102803.GB22452@mudshark.cambridge.arm.com>
-In-Reply-To: <20130319102803.GB22452@mudshark.cambridge.arm.com>
-X-MC-Unique: 113032811585902701
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Thu, 28 Mar 2013 08:04:39 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: FlorianSchandinat@gmx.de
+Cc: linux-fbdev@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        jbarnes@virtuousgeek.org, backports@vger.kernel.org,
+        cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org,
+        julia.lawall@lip6.fr, rodrigo.vivi@gmail.com, daniel.vetter@ffwll.ch,
+        rafael.j.wysocki@intel.com,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Subject: [PATCH] compat/compat-drivers/linux-next: fb skip_vt_switch
+Date: Thu, 28 Mar 2013 05:04:26 -0700
+Message-Id: <1364472270-9297-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/03/13 10:28, Will Deacon wrote:
-> On Tue, Mar 19, 2013 at 06:39:38AM +0000, Santosh Shilimkar wrote:
->> On Monday 18 March 2013 10:36 PM, Will Deacon wrote:
->>> Any chance you could follow up with your firmware/hardware guys about this
->>> please? I'd really like to understand how we end up in this state in case we
->>> can do something in the architecture to stop it from happening in future.
->>>
->> I will check on this part and update you when I hear from them.
->
-> Ok, thanks.
->
-> Dietmar -- I seem to remember that you thought GDB did actually work with
-> hardware breakpoints on Pandaboard across low-power states. Can you
-> confirm/deny this please?
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-Sorry for the late response.
+I maintain the the compat-drivers project [0] which aims at backporting the
+Linux kernel drivers down to older kernels, automatically [1]. Thanks to
+Ozan Caglayan as a GSoC project we now backport DRM drivers.
 
-I did some testing on my Pandaboard trying to set hwbp from gdb.
+The initial framework we had set up to help with the automatic juice was
+simply quilt refresh to help with hunk offsets, later it consisted of
+writing cleaner diffs, then compartamentalizing shared differences into a
+compat backport module [2].
 
-System is a vanilla Linaro 13.02.
-gdb is (GNU gdb (GDB) 7.5.1), build from tag gdb_7_5_1-2012-11-29-release
+Recently I looked into Coccinelle SmPL to help push for collateral evolutions
+on the Linux kernel to be written when possible with SmPL [3] given that, as
+discussed with Julia, the very inverse of the grammar may allow us to backport
+that collateral evolution on older kernels. I'm still experimenting with that,
+but another benefit of studying INRIA's Coccinelle work is that the concept
+of collateral evolutions is now formalized and as I've studied their work
+I'm realizing we have different categories for collateral evolutions. From
+what I've experienced through the backport work, data structure changes are
+the more difficult collateral evolutions to backport. Instead of updates on
+our compat module these require manual diffs... One strategy to simplify
+backporting these data structure changes however was to replace the uses of
+the new elements on the data structure with static inlines and requiring
+the heavy changes to be implementd on a helper. That is, we actually simplfied
+the backport by changing the form of the collateral evolution.
 
-(gdb) hb *0x00008440
-Hardware assisted breakpoint 2 at 0x8440: file test.c, line 14.
-(gdb) c
-Continuing.
-Unexpected error setting breakpoint address: No such device.
+The new commit by Jesse that extended the fb_info with a skip_vt_switch
+element is the simplest example of a data structure expansion. We'd backport
+this by adding a static inline to compat so that new kernels muck with the
+new element and for older kernels this would be a no-op. This reduces the
+size of the backport and unclutters the required patch with #idefs, and
+insteads leaves only a replacement of the usage of the new elements with
+a static inline, this however would still be required on our end:
 
-With additional kernel logs:
+	-      info->skip_vt_switch = true;
+	+      fb_enable_skip_vt_switch(info);
 
-[<c0011597>] (unwind_backtrace+0x1/0x92) from [<c0012603>]
-(arch_validate_hwbkpt_settings+0x23/0x1d4)
-[<c0012603>] (arch_validate_hwbkpt_settings+0x23/0x1d4) from
-[<c0088aa9>] (register_perf_hw_breakpoint+0x19/0x30)
-[<c0088aa9>] (register_perf_hw_breakpoint+0x19/0x30) from [<c0088ae9>]
-(hw_breakpoint_event_init+0x29/0x48)
-[<c0088ae9>] (hw_breakpoint_event_init+0x29/0x48) from [<c0086c81>]
-(perf_init_event+0x79/0xcc)
-[<c0086c81>] (perf_init_event+0x79/0xcc) from [<c0086e97>]
-(perf_event_alloc+0x1c3/0x32c)
-[<c0086e97>] (perf_event_alloc+0x1c3/0x32c) from [<c00871eb>]
-(perf_event_create_kernel_counter+0x19/0xc6)
-[<c00871eb>] (perf_event_create_kernel_counter+0x19/0xc6) from
-[<c00885e9>] (register_user_hw_breakpoint+0x2d/0x38)
-[<c00885e9>] (register_user_hw_breakpoint+0x2d/0x38) from [<c03dd723>]
-(ptrace_hbp_create+0x53/0x5c)
-[<c03dd723>] (ptrace_hbp_create+0x53/0x5c) from [<c000e0d7>]
-(ptrace_sethbpregs+0x95/0x1a6)
-[<c000e0d7>] (ptrace_sethbpregs+0x95/0x1a6) from [<c000e777>]
-(arch_ptrace+0x3bf/0x3ec)
-[<c000e777>] (arch_ptrace+0x3bf/0x3ec) from [<c002f621>]
-(sys_ptrace+0x251/0x278)
-[<c002f621>] (sys_ptrace+0x251/0x278) from [<c000c781>]
-(ret_fast_syscall+0x1/0x52)
-perf_event_create_kernel_counter:6721 ret=-19
-ptrace_sethbpregs:557 ret=-19
+So we'd then have to just add this static inline change for each new driver...
+There may be a way to get SmPL to do this for us...
 
-The call to monitor_mode_enabled() in arch_validate_hwbkpt_settings()
-fails since DSCR.15 MDBGen is not set:
+However... if the static inline makes it upstream it means 0 changes are
+required for *any* driver!
 
-monitor_mode_enabled:239 dscr=0x1030002
+I've been reluctant to request a change upstream because of these side
+backport benefits but due to this case's simplcity I figured I'd shoot
+this out for review now.
 
-I don't get the warning "Failed to enable monitor mode on CPU" during
-system start-up though.
+A more elaborate example would be the netdev_attach_ops() which is not
+yet upstream. This exands to this simple inline for new kernels:
 
-Doing the same on my TC2 gives me:
+static inline void netdev_attach_ops(struct net_device *dev,                    
+                       const struct net_device_ops *ops)                        
+{                                                                               
+        dev->netdev_ops = ops;                                                  
+} 
 
-monitor_mode_enabled:239 dscr=0x2008002
+For older kernels this expands to:
 
-So I guess that setting hwbp from self-hosted debugger on Pandaboard is
-not possible at all.
+void netdev_attach_ops(struct net_device *dev,                                  
+                       const struct net_device_ops *ops)                        
+{                                                                               
+        dev->open = ops->ndo_open;                                              
+        dev->init = ops->ndo_init;                                              
+        dev->stop = ops->ndo_stop;                                              
+        dev->hard_start_xmit = ops->ndo_start_xmit;                             
+        dev->change_rx_flags = ops->ndo_change_rx_flags;                        
+        dev->set_multicast_list = ops->ndo_set_multicast_list;                  
+        dev->validate_addr = ops->ndo_validate_addr;                            
+        dev->do_ioctl = ops->ndo_do_ioctl;                                      
+        dev->set_config = ops->ndo_set_config;                                  
+        dev->change_mtu = ops->ndo_change_mtu;                                  
+        dev->set_mac_address = ops->ndo_set_mac_address;                        
+        dev->tx_timeout = ops->ndo_tx_timeout;                                  
+        if (ops->ndo_get_stats)                                                 
+                dev->get_stats = ops->ndo_get_stats;                            
+        dev->vlan_rx_register = ops->ndo_vlan_rx_register;                      
+        dev->vlan_rx_add_vid = ops->ndo_vlan_rx_add_vid;                        
+        dev->vlan_rx_kill_vid = ops->ndo_vlan_rx_kill_vid;                      
+#ifdef CONFIG_NET_POLL_CONTROLLER                                               
+        dev->poll_controller = ops->ndo_poll_controller;                        
+#endif                                                                          
+                                                                                
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27))                              
+        dev->select_queue = ops->ndo_select_queue;                              
+#endif                                                                          
+}
 
-There is no CPUidle enabled on Linaro 13.02 Pandaboard.
+Even though we have the static inline in compat it still means
+every driver must be changed to use it. For example:
 
--- Dietmar
+--- a/drivers/net/usb/rndis_host.c                                              
++++ b/drivers/net/usb/rndis_host.c                                              
+@@ -358,7 +358,7 @@ generic_rndis_bind(struct usbnet *dev, s                    
+        dev->rx_urb_size &= ~(dev->maxpacket - 1);                              
+        u.init->max_transfer_size = cpu_to_le32(dev->rx_urb_size);              
+                                                                                
+-       net->netdev_ops = &rndis_netdev_ops;                                    
++       netdev_attach_ops(net, &rndis_netdev_ops);                              
+                                                                                
+        retval = rndis_command(dev, u.header, CONTROL_BUFFER_SIZE);             
+        if (unlikely(retval < 0)) {   
 
+This is just one driver. The patch that deals with this collateral
+evolution is now 290 lines. I've been working with Julia to express
+these type of tranformations as SmPL grammar, seeing if its possible
+to use the inverse of SmPL in the long run, and so on... but in the end,
+if we add a static inline upstream for small changes like these -- we'd
+end up requring zero changes for the backport of these type of collateral
+evolutions.
 
->
->>> Well, we could just add the warn_once prints but that doesn't stop debug
->>> from breaking after the first pm/suspend/hotplug operation.
->>>
->> Probably we should drop the $subject patch approach and use warn_once
->> at least for current rc. Ofcourse it doesn't help to get working
->> hw_breakpoint support. Patch end of the email with warn_once.
->
-> Yeah, I'll merge that, but it's a real shame that this breaks hardware debug
-> on one of the few platforms where it was reported to work.
->
-> Will
->
+This should mean less bugs and cleaner backport code and maintenance.
 
--- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
+Curious if video guys would care to accept this as an example simple
+test case to help with the project with this respective small
+collateral evolution and test case.
+
+What follows are patches that deal with the changes on all the projects.
+I'll apply the compat and compat-driver patches now as these are required,
+but if my fb patch (patch #4 in this series) is accepted it'd simpify
+backporting this collateral evolution for all video drivers tremendously.
+
+[0] https://backports.wiki.kernel.org
+[1] http://www.do-not-panic.com/2012/08/automatically-backporting-linux-kernel.html
+[2] https://git.kernel.org/cgit/linux/kernel/git/mcgrof/compat.git/
+[3] http://www.do-not-panic.com/2012/08/optimizing-backporting-collateral.html
+
+linux-next:
+
+Luis R. Rodriguez (1):
+  fb: add helpers to enable and test for the skip_vt_switch
+
+ drivers/gpu/drm/i915/intel_fb.c |    2 +-
+ drivers/video/fbmem.c           |    2 +-
+ include/linux/fb.h              |   10 ++++++++++
+ 3 files changed, 12 insertions(+), 2 deletions(-)
+
+compat:
+
+Luis R. Rodriguez (1):                                                          
+  compat: backport fb_info->skip_vt_switch using a static inline                
+                                                                                
+ include/linux/compat-3.10.h |   41 +++++++++++++++++++++++++++++++++++++++++   
+ 1 file changed, 41 insertions(+)  
+
+compat-drivers:
+
+Luis R. Rodriguez (2):                                                          
+  compat-drivers: backport fb_info->skip_vt_switch using ifdefs                 
+  compat-drivers: simplify backport fb_info->skip_vt_switch CE                  
+                                                                                
+ .../drm/0001-fb-info-vt_switch.patch               |   56 ++++++++++++++++++++ 
+ 1 file changed, 56 insertions(+)                                               
+ create mode 100644 patches/collateral-evolutions/drm/0001-fb-info-vt_switch.patch
+
+-- 
+1.7.10.4
 
