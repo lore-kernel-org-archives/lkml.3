@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757294Ab3C1RRY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:17:24 -0400
-Received: from mail-da0-f52.google.com ([209.85.210.52]:64050 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756911Ab3C1RRX (ORCPT
+	id S1757313Ab3C1RRq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:17:46 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:49201 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755610Ab3C1RRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 13:17:23 -0400
-Date: Thu, 28 Mar 2013 10:17:21 -0700
+	Thu, 28 Mar 2013 13:17:45 -0400
+Date: Thu, 28 Mar 2013 10:17:42 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] Driver core fixes for 3.9-rc4
-Message-ID: <20130328171721.GA2609@kroah.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PATCH] Staging driver fixes for 3.9-rc4
+Message-ID: <20130328171742.GA2637@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,25 +28,27 @@ The following changes since commit a937536b868b8369b98967929045f1df54234323:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.9-rc4
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.9-rc4
 
-for you to fetch changes up to e5110f411d2ee35bf8d202ccca2e89c633060dca:
+for you to fetch changes up to e4317ce877a31dbb9d96375391c1c4ad2210d637:
 
-  sysfs: handle failure path correctly for readdir() (2013-03-20 16:53:42 -0700)
+  staging: comedi: s626: fix continuous acquisition (2013-03-25 11:35:38 -0700)
 
 ----------------------------------------------------------------
-sysfs fixes for 3.9-rc4
+Staging driver fixes for 3.9-rc4
 
-Here are two fixes for sysfs that resolve issues that have been found by the
-Trinity fuzz tool, causing oopses in sysfs.  They both have been in linux-next
-for a while to ensure that they do not cause any other problems.
+Here are two tiny staging driver fixes to resolve issues that have been
+reported.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Ming Lei (2):
-      sysfs: fix race between readdir and lseek
-      sysfs: handle failure path correctly for readdir()
+Ian Abbott (1):
+      staging: comedi: s626: fix continuous acquisition
 
- fs/sysfs/dir.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+Paul Bolle (1):
+      staging: zcache: fix typo "64_BIT"
+
+ drivers/staging/comedi/drivers/s626.c | 2 +-
+ drivers/staging/zcache/Kconfig        | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
