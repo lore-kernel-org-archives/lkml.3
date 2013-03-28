@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab3C1E7j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 00:59:39 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:55200 "EHLO
+	id S1752440Ab3C1FEP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 01:04:15 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:62792 "EHLO
 	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284Ab3C1E7Z (ORCPT
+	with ESMTP id S1750864Ab3C1FEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 00:59:25 -0400
-Message-ID: <1364446793.15039.2.camel@gitbox>
-Subject: Re: [PATCH] video: fixed missing iounmap coccinelle errors
+	Thu, 28 Mar 2013 01:04:13 -0400
+Message-ID: <1364447081.15039.5.camel@gitbox>
+Subject: Re: [PATCH 6/6] video: fb: vt8500: Convert framebuffer drivers to
+ standardized binding
 From: Tony Prisk <linux@prisktech.co.nz>
-To: Andrei Epure <epure.andrei@gmail.com>
-Cc: FlorianSchandinat@gmx.de, linux-arm-kernel@lists.infradead.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 28 Mar 2013 17:59:53 +1300
-In-Reply-To: <1364427805-11972-1-git-send-email-epure.andrei@gmail.com>
-References: <1364427805-11972-1-git-send-email-epure.andrei@gmail.com>
+To: vt8500-wm8505-linux-kernel@googlegroups.com
+Cc: linux-fbdev@vger.kernel.org, florianschandinat@gmx.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Thu, 28 Mar 2013 18:04:41 +1300
+In-Reply-To: <5152D39F.1090104@ti.com>
+References: <1364374021-10844-1-git-send-email-linux@prisktech.co.nz>
+	 <1364374021-10844-7-git-send-email-linux@prisktech.co.nz>
+	 <5152D39F.1090104@ti.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
@@ -24,83 +27,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-28 at 01:43 +0200, Andrei Epure wrote:
-> Modified or added the necessary goto statements so that the ioremapped
-> regions get unmapped before return.
+On Wed, 2013-03-27 at 13:10 +0200, Tomi Valkeinen wrote:
+> Hi,
 > 
-> Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
-> ---
->  drivers/video/vt8500lcdfb.c |    7 ++++---
->  drivers/video/wm8505fb.c    |    7 ++++---
->  2 files changed, 8 insertions(+), 6 deletions(-)
+> On 2013-03-27 10:47, Tony Prisk wrote:
+> > Now that a display timing binding is available, convert our almost identical
+> > binding to use the standard binding.
+> > 
+> > This patch converts the vt8500 and wm8505 framebuffer drivers and
+> > associated dts/dtsi files to use the standard binding as defined in
+> > bindings/video/display-timing.txt.
+> > 
+> > There are two side-effects of making this conversion:
+> > 
+> > 1) The fb node should now be in the board file, rather than the soc file as
+> > the display-timing node is a child of the fb node.
+> > 
+> > 2) We still require a bits per pixel property to initialize the framebuffer
+> > for the different lcd panels. Rather than including this as part of the
+> > display timing, it is moved into the framebuffer node.
+> > 
+> > I have also taken the opportunity to alphabetise the includes of each
+> > driver to avoid double-ups.
 > 
-> diff --git a/drivers/video/vt8500lcdfb.c b/drivers/video/vt8500lcdfb.c
-> index aa2579c..b4ccca2 100644
-> --- a/drivers/video/vt8500lcdfb.c
-> +++ b/drivers/video/vt8500lcdfb.c
-> @@ -350,7 +350,7 @@ static int vt8500lcd_probe(struct platform_device *pdev)
->  	if (!np) {
->  		pr_err("%s: No display description in Device Tree\n", __func__);
->  		ret = -EINVAL;
-> -		goto failed_free_res;
-> +		goto failed_free_io;
->  	}
->  
->  	/*
-> @@ -369,7 +369,7 @@ static int vt8500lcd_probe(struct platform_device *pdev)
->  	ret |= of_property_read_u32(np, "bpp", &bpp);
->  	if (ret) {
->  		pr_err("%s: Unable to read display properties\n", __func__);
-> -		goto failed_free_res;
-> +		goto failed_free_io;
->  	}
->  	of_mode.vmode = FB_VMODE_NONINTERLACED;
->  
-> @@ -379,7 +379,8 @@ static int vt8500lcd_probe(struct platform_device *pdev)
->  				GFP_KERNEL);
->  	if (!fb_mem_virt) {
->  		pr_err("%s: Failed to allocate framebuffer\n", __func__);
-> -		return -ENOMEM;
-> +		ret = -ENOMEM;
-> +		goto failed_free_io;
->  	};
->  
->  	fbi->fb.fix.smem_start	= fb_mem_phys;
-> diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
-> index 4dd0580..2e8298e 100644
-> --- a/drivers/video/wm8505fb.c
-> +++ b/drivers/video/wm8505fb.c
-> @@ -332,7 +332,7 @@ static int wm8505fb_probe(struct platform_device *pdev)
->  	if (!np) {
->  		pr_err("%s: No display description in Device Tree\n", __func__);
->  		ret = -EINVAL;
-> -		goto failed_free_res;
-> +		goto failed_free_io;
->  	}
->  
->  	/*
-> @@ -351,7 +351,7 @@ static int wm8505fb_probe(struct platform_device *pdev)
->  	ret |= of_property_read_u32(np, "bpp", &bpp);
->  	if (ret) {
->  		pr_err("%s: Unable to read display properties\n", __func__);
-> -		goto failed_free_res;
-> +		goto failed_free_io;
->  	}
->  
->  	of_mode.vmode = FB_VMODE_NONINTERLACED;
-> @@ -369,7 +369,8 @@ static int wm8505fb_probe(struct platform_device *pdev)
->  				GFP_KERNEL);
->  	if (!fb_mem_virt) {
->  		pr_err("%s: Failed to allocate framebuffer\n", __func__);
-> -		return -ENOMEM;
-> +		ret = -ENOMEM;
-> +		goto failed_free_io;
->  	};
->  
->  	fbi->fb.var.xres_virtual	= of_mode.xres;
+> I don't think this is correct. I don't have that much experience with
+> DT, but I think you should have, for example:
+> 
+> wm8850.dtsi:
+> 
+> 	fb: fb@d8051700 {
+> 		compatible = "wm,wm8505-fb";
+> 		reg = <0xd8051700 0x200>;
+> 	};
+> 
+> wm8850-w70v2.dts:
+> 
+> &fb {
+> 	bits-per-pixel = <16>;
+> 
+> 	display-timings {
+> 		native-mode = <&timing0>;
+> 		timing0: 800x480 {
+> 			clock-frequency = <0>;
+> 			...
+> 		};
+> 	};
+> };
+> 
+> So, the core fb part should be in the SoC's file, as it's part of the
+> SoC. And the stuff that tells what kind of display is attached is in the
+> board dts file.
+> 
+> Also, just a word of warning, I think the videomode series I've sent for
+> review will cause some breakage with this series if the videomode series
+> is accepted. Nothing difficult to fix, though, but we'll need some extra
+> management to avoid compilation failures.
+> 
+>  Tomi
+> 
+> 
 
-NACK
-Already have a patch queued up for this from Julia Lawall
+Thanks for the feedback and the heads-up.
+
+I believe you are correct about the DT info - it looks right when
+described the way you did, so I have changed it.
+
+If there is no other feedback, I will post a version 2 after Easter.
 
 Regards
 Tony P
