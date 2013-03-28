@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab3C1SkO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 14:40:14 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:40704 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766Ab3C1SkM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 14:40:12 -0400
-Message-ID: <51548E89.9060505@gmail.com>
-Date: Thu, 28 Mar 2013 13:40:09 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1753713Ab3C1Ssd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 14:48:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8581 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751493Ab3C1Ssb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 14:48:31 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH 1/2] xhci: Use ilog2() rather than __ffs() for calculating
+ SEGMENT_SHIFT
+To: sarah.a.sharp@linux.intel.com
+From: David Howells <dhowells@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 28 Mar 2013 18:48:28 +0000
+Message-ID: <20130328184827.29679.62426.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] ARM: irq: Call irqchit_init if no init_irq function
- is specified
-References: <1364463704-13692-1-git-send-email-maxime.ripard@free-electrons.com> <1364463704-13692-2-git-send-email-maxime.ripard@free-electrons.com> <51545832.1050504@gmail.com> <20130328145155.GB3368@n2100.arm.linux.org.uk>
-In-Reply-To: <20130328145155.GB3368@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2013 09:51 AM, Russell King - ARM Linux wrote:
-> On Thu, Mar 28, 2013 at 09:48:18AM -0500, Rob Herring wrote:
->> On 03/28/2013 04:41 AM, Maxime Ripard wrote:
->>> +	if (machine_desc->init_irq)
->>> +		machine_desc->init_irq();
->>> +	else
->>> +		irqchip_init();
->>
->> There needs to be an empty version defined for !OF.
-> 
-> Better:
-> 
-> #ifdef CONFIG_OF
-> 	if (!machine_desc->init_irq)
-> 		irqchip_init();
-> 	else
-> #endif
+Use ilog2() rather than __ffs() for calculating SEGMENT_SHIFT as ilog2() can
+be worked out at compile time, whereas __ffs() must be calculated at runtime.
 
-Or the new style:
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: linux-usb@vger.kernel.org
+---
 
-	if (IS_ENABLED(CONFIG_OF) && !machine_desc->init_irq)
-		irqchip_init();
-	else
+ drivers/usb/host/xhci.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-That needs the empty version, but handles your case.
-
-Rob
-
-> 		machine_desc->init_irq();
-> 
-> which means we don't even get the test if !OF, and if someone mistakenly
-> sets this to NULL for a !OF platform, they get to know about it.
-> 
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index 2c510e4..558ba50 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1235,7 +1235,7 @@ union xhci_trb {
+ /* Allow two commands + a link TRB, along with any reserved command TRBs */
+ #define MAX_RSVD_CMD_TRBS	(TRBS_PER_SEGMENT - 3)
+ #define SEGMENT_SIZE		(TRBS_PER_SEGMENT*16)
+-#define SEGMENT_SHIFT		(__ffs(SEGMENT_SIZE))
++#define SEGMENT_SHIFT		(ilog2(SEGMENT_SIZE))
+ /* TRB buffer pointers can't cross 64KB boundaries */
+ #define TRB_MAX_BUFF_SHIFT		16
+ #define TRB_MAX_BUFF_SIZE	(1 << TRB_MAX_BUFF_SHIFT)
 
