@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab3C1SZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 14:25:40 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:63537 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909Ab3C1SZg (ORCPT
+	id S1754225Ab3C1SZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 14:25:59 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:48854 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753719Ab3C1SZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 14:25:36 -0400
+	Thu, 28 Mar 2013 14:25:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1303281909570.1928@hadrien>
-References: <1364472270-9297-1-git-send-email-mcgrof@do-not-panic.com>
- <20130328083943.01e61b4b@jbarnes-desktop> <alpine.DEB.2.02.1303281718490.1928@hadrien>
- <CAB=NE6WbNwPqEPYsASAPaECe4qbAWdd4=eJ402ib+CzZbT69=g@mail.gmail.com> <alpine.DEB.2.02.1303281909570.1928@hadrien>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 28 Mar 2013 11:25:11 -0700
-X-Google-Sender-Auth: SOL9FrBUA625IMOo5S4GpTuSuYU
-Message-ID: <CAB=NE6VPRu8DvneVdwd=pXF0ngi5OifNTpZtX3pLi50i116_OA@mail.gmail.com>
-Subject: Re: [PATCH] compat/compat-drivers/linux-next: fb skip_vt_switch
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        florianschandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev <linux-fbdev@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        cocci@systeme.lip6.fr,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rodrigo.vivi" <rodrigo.vivi@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "rafael.j.wysocki" <rafael.j.wysocki@intel.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <51546359.8000002@gmail.com>
+References: <alpine.LFD.2.03.1303272103380.8412@gmail.com>
+	<5153B03E.2050201@gmail.com>
+	<CAOULuOa1O5LxwDh6peSGBRR9PyeEtXuhyiaFVvKnFNiqrb4bfQ@mail.gmail.com>
+	<51546359.8000002@gmail.com>
+Date: Thu, 28 Mar 2013 14:25:55 -0400
+Message-ID: <CAOULuOa70BDS8Sq2p9oC9MZGzjngJD5FB5Wdk4Sk1FXRJKrAnQ@mail.gmail.com>
+Subject: Re: intel_pstate_timer_func divide by zero oops
+From: Parag Warudkar <parag.lkml@gmail.com>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 11:10 AM, Julia Lawall <julia.lawall@lip6.fr> wrote:
-> On Thu, 28 Mar 2013, Luis R. Rodriguez wrote:
+On Thu, Mar 28, 2013 at 11:35 AM, Dirk Brandewie
+<dirk.brandewie@gmail.com> wrote:
+>>> pid_param_set() is on the stack which means that something is changing
+>>> the debugfs parameters or the stack is FUBAR.
+>>>
+>> I somehow doubt the stack is messed up as the call traces are always
+>> identical.
+>> (pid_param_set() seems to be in first trace as well.)
 >>
->> Thanks Julia! I'll be sure to try to add this to compat-drivers if the
->> upstream fb patch is not accepted. If it is accepted we would not need
->> this at all!
->>
->> > Then I guess there would be a similar rule for the false case?
->>
->> Nope, see that's the proactive strategy taken by the static inline and
->> hence the patch. compat would have a static inline for both cases, and
->> for the false case it'd be a no-op. If accepted upstream though then
->> we would not need any changes for this collateral evolution. However
->> *spotting* these collateral evolutions and giving you SmPL for them as
->> a proactive strategy might be good given that if these type of patches
->> are indeed welcomed upstream we'd then be able to address these as
->> secondary steps. If they are not accepted then indeed we'd use them to
->> backport that collateral evolution through both compat (adds the
->> static inlines) and compat-drivers (the SmPL).
 >
-> Probably I am missing something, since I haven't looked at the code in
-> detail, bu wouldn't it be nicer to have a function call for the false
-> case, if there is a function call for the true case?
+> I agree that the two oops are likely the same but unless something is
+> crawling
+> through debugfs writing random values to the files there pid_param_set()
+> should not be on any stack anywhere.
 
-Yes, and indeed we have that, its the same function call, in the
-negative case its a no-op, in the newer kernels it wraps to modifying
-the element as in the original code.
+Ok.
 
-> In looking at the
-> code, one could wonder why things are not done in a parallel way.
+>
+> There was a similar bug reported by fedora:
+> https://bugzilla.redhat.com/show_bug.cgi?id=920289
+>
+> This bug has not showed up again since rc3 can you try the current rc to see
+> if
+> you still see the problem?
+>
 
-Not sure I get this.
+I updated the Fedora BZ - the oops I got is from latest git as of
+yesterday. So I think the bug is still there post -rc3.
 
-  Luis
+Parag
