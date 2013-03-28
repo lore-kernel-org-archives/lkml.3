@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab3C1UPI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 16:15:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2789 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751637Ab3C1UPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 16:15:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,367,1363158000"; 
-   d="scan'208";a="308834278"
-Date: Thu, 28 Mar 2013 13:15:05 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] xhci: Rename SEGMENT_SIZE and SEGMENT_SHIFT as the
- former is used in a.out.h
-Message-ID: <20130328201505.GC5995@xanatos>
-References: <20130328184827.29679.62426.stgit@warthog.procyon.org.uk>
- <20130328184835.29679.62285.stgit@warthog.procyon.org.uk>
+	id S1753381Ab3C1UTJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 16:19:09 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:59961 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab3C1UTH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 16:19:07 -0400
+Message-ID: <5154A5B5.7@gmail.com>
+Date: Thu, 28 Mar 2013 21:19:01 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130328184835.29679.62285.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dove: fix Dove cpu type from V7 to PJ4
+References: <1364051211-24414-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130328170654.GX13280@titan.lakedaemon.net> <20130328181425.GE3368@n2100.arm.linux.org.uk>
+In-Reply-To: <20130328181425.GE3368@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
-
-I'm a little bit confused about your description for the second one.
-Did you need to change the #defines names because they could conflict
-with other drivers when the xHCI driver is built in?  Or is there some
-other point I'm missing?
-
-Are these feature patches for 3.10, or bug fixes for 3.9?  If they're
-for 3.9, should they go into stable?  My inclination is the first patch
-shouldn't but I'm not sure about this one.
-
-On Thu, Mar 28, 2013 at 06:48:35PM +0000, David Howells wrote:
-> Rename SEGMENT_SIZE and SEGMENT_SHIFT as the former is used in a.out.h.
+On 03/28/2013 07:14 PM, Russell King - ARM Linux wrote:
+> On Thu, Mar 28, 2013 at 01:06:54PM -0400, Jason Cooper wrote:
+>> On Sat, Mar 23, 2013 at 04:06:51PM +0100, Sebastian Hesselbarth wrote:
+>>> The CPU used in Marvell Dove SoCs is a PJ4 Sheeva core. Using
+>>> CONFIG_CPU_PJ4 instead of CONFIG_CPU_V7 will also allow to enable
+>>> iWMMXt extensions on Dove.
+>>>
+>>> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
+>>> ---
+>>> Cc: Russell King<linux@arm.linux.org.uk>
+>>> Cc: Jason Cooper<jason@lakedaemon.net>
+>>> Cc: Andrew Lunn<andrew@lunn.ch>
+>>> Cc: linux-arm-kernel@lists.infradead.org
+>>> Cc: linux-kernel@vger.kernel.org
+>>> ---
+>>>   arch/arm/Kconfig |    2 +-
+>>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> Hmmm, I'm getting (with dove_defconfig):
+>>
+>> arch/arm/kernel/built-in.o: In function `iwmmxt_do':
+>> /.../arch/arm/kernel/pj4-cp0.c:36: undefined reference to `iwmmxt_task_release'
+>> /.../arch/arm/kernel/pj4-cp0.c:40: undefined reference to `iwmmxt_task_switch'
+>> make: *** [vmlinux] Error 1
 >
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> cc: linux-usb@vger.kernel.org
-...
-> --- a/drivers/usb/host/xhci.h
-> +++ b/drivers/usb/host/xhci.h
-> @@ -1234,8 +1234,8 @@ union xhci_trb {
->  #define TRBS_PER_SEGMENT	64
->  /* Allow two commands + a link TRB, along with any reserved command TRBs */
->  #define MAX_RSVD_CMD_TRBS	(TRBS_PER_SEGMENT - 3)
-> -#define SEGMENT_SIZE		(TRBS_PER_SEGMENT*16)
-> -#define SEGMENT_SHIFT		(ilog2(SEGMENT_SIZE))
-> +#define TRB_SEGMENT_SIZE	(TRBS_PER_SEGMENT*16)
-> +#define TRB_SEGMENT_SHIFT	(ilog2(TRB_SEGMENT_SIZE))
+> Looks to me like PJ4 IWMMXT support wasn't properly tested out when it
+> was submitted - it's possible to end up with pj4-cp0.c built without
+> the IWMMXT code that it depends on being built...
 
-I would prefer an XHCI_ prefix instead of a TRB_ prefix.  Segments are
-comprised of TRBs, so my brain doesn't parse this well. :)
+Russel, Jason,
 
-Thanks,
-Sarah Sharp
+do we force iWMMXt on CPU_PJ4 or should there be some #ifdef'ery if 
+IWMMXT is not selected?
+
+Sebastian
