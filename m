@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab3C1GoN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 02:44:13 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:56231 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755829Ab3C1GoI (ORCPT
+	id S1756109Ab3C1GoX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 02:44:23 -0400
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:65065 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756076Ab3C1GoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 02:44:08 -0400
+	Thu, 28 Mar 2013 02:44:20 -0400
 From: Tejun Heo <tj@kernel.org>
 To: laijs@cn.fujitsu.com
 Cc: axboe@kernel.dk, jack@suse.cz, fengguang.wu@intel.com, jmoyer@redhat.com,
         zab@redhat.com, linux-kernel@vger.kernel.org,
         herbert@gondor.hengli.com.au, davem@davemloft.net,
         linux-crypto@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/14] workqueue: move pwq_pool_locking outside of get/put_unbound_pool()
-Date: Wed, 27 Mar 2013 23:43:27 -0700
-Message-Id: <1364453020-2829-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 04/14] workqueue: determine NUMA node of workers accourding to the allowed cpumask
+Date: Wed, 27 Mar 2013 23:43:30 -0700
+Message-Id: <1364453020-2829-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1364453020-2829-1-git-send-email-tj@kernel.org>
 References: <1364453020-2829-1-git-send-email-tj@kernel.org>
@@ -23,123 +23,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The scheduled NUMA affinity support for unbound workqueues would need
-to walk workqueues list and pool related operations on each workqueue.
+When worker tasks are created using kthread_create_on_node(),
+currently only per-cpu ones have the matching NUMA node specified.
+All unbound workers are always created with NUMA_NO_NODE.
 
-Move wq_pool_mutex locking out of get/put_unbound_pool() to their
-callers so that pool operations can be performed while walking the
-workqueues list, which is also protected by wq_pool_mutex.
+Now that an unbound worker pool may have an arbitrary cpumask
+associated with it, this isn't optimal.  Add pool->node which is
+determined by the pool's cpumask.  If the pool's cpumask is contained
+inside a NUMA node proper, the pool is associated with that node, and
+all workers of the pool are created on that node.
+
+This currently only makes difference for unbound worker pools with
+cpumask contained inside single NUMA node, but this will serve as
+foundation for making all unbound pools NUMA-affine.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/workqueue.c | 36 ++++++++++++++++++++++--------------
- 1 file changed, 22 insertions(+), 14 deletions(-)
+ kernel/workqueue.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index abe1f0d..26771f4e 100644
+index 57ced49..fab2630 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -3395,31 +3395,28 @@ static void rcu_free_pool(struct rcu_head *rcu)
-  * safe manner.  get_unbound_pool() calls this function on its failure path
-  * and this function should be able to release pools which went through,
-  * successfully or not, init_worker_pool().
-+ *
-+ * Should be called with wq_pool_mutex held.
-  */
- static void put_unbound_pool(struct worker_pool *pool)
+@@ -138,6 +138,7 @@ enum {
+ struct worker_pool {
+ 	spinlock_t		lock;		/* the pool lock */
+ 	int			cpu;		/* I: the associated cpu */
++	int			node;		/* I: the associated node ID */
+ 	int			id;		/* I: pool ID */
+ 	unsigned int		flags;		/* X: flags */
+ 
+@@ -1645,7 +1646,6 @@ static struct worker *alloc_worker(void)
+ static struct worker *create_worker(struct worker_pool *pool)
  {
- 	struct worker *worker;
+ 	struct worker *worker = NULL;
+-	int node = pool->cpu >= 0 ? cpu_to_node(pool->cpu) : NUMA_NO_NODE;
+ 	int id = -1;
+ 	char id_buf[16];
  
--	mutex_lock(&wq_pool_mutex);
--	if (--pool->refcnt) {
--		mutex_unlock(&wq_pool_mutex);
-+	lockdep_assert_held(&wq_pool_mutex);
-+
-+	if (--pool->refcnt)
- 		return;
--	}
+@@ -1678,7 +1678,7 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 	else
+ 		snprintf(id_buf, sizeof(id_buf), "u%d:%d", pool->id, id);
  
- 	/* sanity checks */
- 	if (WARN_ON(!(pool->flags & POOL_DISASSOCIATED)) ||
--	    WARN_ON(!list_empty(&pool->worklist))) {
--		mutex_unlock(&wq_pool_mutex);
-+	    WARN_ON(!list_empty(&pool->worklist)))
- 		return;
--	}
- 
- 	/* release id and unhash */
- 	if (pool->id >= 0)
- 		idr_remove(&worker_pool_idr, pool->id);
- 	hash_del(&pool->hash_node);
- 
--	mutex_unlock(&wq_pool_mutex);
--
- 	/*
- 	 * Become the manager and destroy all workers.  Grabbing
- 	 * manager_arb prevents @pool's workers from blocking on
-@@ -3453,13 +3450,15 @@ static void put_unbound_pool(struct worker_pool *pool)
-  * reference count and return it.  If there already is a matching
-  * worker_pool, it will be used; otherwise, this function attempts to
-  * create a new one.  On failure, returns NULL.
-+ *
-+ * Should be called with wq_pool_mutex held.
-  */
- static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
+-	worker->task = kthread_create_on_node(worker_thread, worker, node,
++	worker->task = kthread_create_on_node(worker_thread, worker, pool->node,
+ 					      "kworker/%s", id_buf);
+ 	if (IS_ERR(worker->task))
+ 		goto fail;
+@@ -3360,6 +3360,7 @@ static int init_worker_pool(struct worker_pool *pool)
+ 	spin_lock_init(&pool->lock);
+ 	pool->id = -1;
+ 	pool->cpu = -1;
++	pool->node = NUMA_NO_NODE;
+ 	pool->flags |= POOL_DISASSOCIATED;
+ 	INIT_LIST_HEAD(&pool->worklist);
+ 	INIT_LIST_HEAD(&pool->idle_list);
+@@ -3465,6 +3466,7 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
  {
  	u32 hash = wqattrs_hash(attrs);
  	struct worker_pool *pool;
++	int node;
  
--	mutex_lock(&wq_pool_mutex);
-+	lockdep_assert_held(&wq_pool_mutex);
+ 	lockdep_assert_held(&wq_pool_mutex);
  
- 	/* do we already have a matching pool? */
- 	hash_for_each_possible(unbound_pool_hash, pool, hash_node, hash) {
-@@ -3490,10 +3489,8 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
- 	/* install */
- 	hash_add(unbound_pool_hash, &pool->hash_node, hash);
- out_unlock:
--	mutex_unlock(&wq_pool_mutex);
- 	return pool;
- fail:
--	mutex_unlock(&wq_pool_mutex);
- 	if (pool)
- 		put_unbound_pool(pool);
- 	return NULL;
-@@ -3530,7 +3527,10 @@ static void pwq_unbound_release_workfn(struct work_struct *work)
- 	is_last = list_empty(&wq->pwqs);
- 	mutex_unlock(&wq->mutex);
+@@ -3487,6 +3489,17 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
+ 	lockdep_set_subclass(&pool->lock, 1);	/* see put_pwq() */
+ 	copy_workqueue_attrs(pool->attrs, attrs);
  
-+	mutex_lock(&wq_pool_mutex);
- 	put_unbound_pool(pool);
-+	mutex_unlock(&wq_pool_mutex);
-+
- 	call_rcu_sched(&pwq->rcu, rcu_free_pwq);
- 
- 	/*
-@@ -3653,13 +3653,21 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
- 	copy_workqueue_attrs(new_attrs, attrs);
- 	cpumask_and(new_attrs->cpumask, new_attrs->cpumask, cpu_possible_mask);
- 
-+	mutex_lock(&wq_pool_mutex);
-+
- 	pwq = kmem_cache_zalloc(pwq_cache, GFP_KERNEL);
--	if (!pwq)
-+	if (!pwq) {
-+		mutex_unlock(&wq_pool_mutex);
- 		goto enomem;
-+	}
- 
- 	pool = get_unbound_pool(new_attrs);
--	if (!pool)
-+	if (!pool) {
-+		mutex_unlock(&wq_pool_mutex);
- 		goto enomem;
++	/* if cpumask is contained inside a NUMA node, we belong to that node */
++	if (wq_numa_enabled) {
++		for_each_node(node) {
++			if (cpumask_subset(pool->attrs->cpumask,
++					   wq_numa_possible_cpumask[node])) {
++				pool->node = node;
++				break;
++			}
++		}
 +	}
 +
-+	mutex_unlock(&wq_pool_mutex);
+ 	if (worker_pool_assign_id(pool) < 0)
+ 		goto fail;
  
- 	init_and_link_pwq(pwq, wq, pool, &last_pwq);
- 	if (last_pwq) {
+@@ -4475,6 +4488,7 @@ static int __init init_workqueues(void)
+ 			pool->cpu = cpu;
+ 			cpumask_copy(pool->attrs->cpumask, cpumask_of(cpu));
+ 			pool->attrs->nice = std_nice[i++];
++			pool->node = cpu_to_node(cpu);
+ 
+ 			/* alloc pool ID */
+ 			mutex_lock(&wq_pool_mutex);
 -- 
 1.8.1.4
 
