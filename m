@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab3C1LTc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 07:19:32 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50737 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754956Ab3C1LT3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 07:19:29 -0400
-Subject: Re: regarding arm: update ARM_ERRATA_430973 Kconfig
-From: Tim Niemeyer <tim.niemeyer@corscience.de>
-To: Peter Meerwald <pmeerw@pmeerw.net>
-Cc: Thomas Weber <thomas.weber@corscience.de>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.01.1303261247320.18121@pmeerw.net>
-References: <alpine.DEB.2.01.1303261247320.18121@pmeerw.net>
+	id S1755479Ab3C1LbB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 07:31:01 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:24530
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755364Ab3C1LbA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 07:31:00 -0400
+X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(z1039mz98dI936eI1432Izz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2fh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+Message-ID: <1364470251.3146.1.camel@leyfoon-vm>
+Subject: Re: Generic syscall ABI support
+From: Ley Foon Tan <lftan@altera.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>
+Date: Thu, 28 Mar 2013 19:30:51 +0800
+In-Reply-To: <201303281040.04463.arnd@arndb.de>
+References: <1364440182.2289.45.camel@leyfoon-vm>
+	 <201303280744.27477.arnd@arndb.de> <1364459522.2308.6.camel@leyfoon-vm>
+	 <201303281040.04463.arnd@arndb.de>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Mar 2013 12:19:25 +0100
-Message-ID: <1364469565.2235.6.camel@herbert.er.corscience.de>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:SOa86mM7INTjFhYStXVH22MLQlfRSYvPQSbEztiIx2Q
- /wW77eKaYu0/HS9TcXdZgFVLJqGyJdQ3ECkZulA1IOF+Jfcu6i
- CfSNBmktHTAKo/rU3GvC2Lg51lCgirbMDMP9LAr4iKwIz+6Hz1
- vf0ihsVRLb5FFwRZOOflqgwoR10FouOAolmPeXA8mwU2Zcs6Ns
- Emgs4pph9jVT3y0k6i3xyOFYR4PtKoVTPbUspz5Y2YhnmijjOw
- Mad7OTSRLExuGFjBfjmr/0R0znw6MFWuyIohHg90H2GdGCRD0D
- wiO5BbhmieloboCeQoj5/SiwlxS4XM+ToYZlc9JKhBI5/tRwDv
- CHMud5RYpzGxZLYvtm9FiBFhM9cArL9mKrN+++QuIw6BndA2KM
- FJhBi9zs+KxahPYK4SNhBqG0itMcU1ETdQ=
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+MIME-Version: 1.0
+X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-Am Dienstag, den 26.03.2013, 12:57 +0100 schrieb Peter Meerwald:
-> regarding your patch against arch/arm/Kconfig:
+On Thu, 2013-03-28 at 10:40 +0000, Arnd Bergmann wrote:
+> On Thursday 28 March 2013, Ley Foon Tan wrote:
+> > We will working on generic ABI for kernel and Glibc. This might take
+> > some times.
 > 
-> @@ -1215,7 +1215,7 @@  config ARM_ERRATA_430973
->  	depends on CPU_V7
->  	help
->  	  This option enables the workaround for the 430973 Cortex-A8
-> -	  (r1p0..r1p2) erratum. If a code sequence containing an ARM/Thumb
-> +	  (r1p*) erratum. If a code sequence containing an ARM/Thumb
->  	  interworking branch is replaced with another code sequence at the
->  	  same virtual address, whether due to self-modifying code or virtual
->  	  to physical address re-mapping, Cortex-A8 does not recover from the
+> Ok. Don't let that hold you up from submitting the kernel patches
+> for review though.
 > 
+> 	Arnd
 > 
-> I am seeing strange segfault/illegal instructions fixed by enabling 
-> ARM_ERRATA_430973 on a TI OMAP3 DM3730, r3p2 IMHO (see below) 
-The only information i have is that it was fixed in r2p1. The statement
-is from mru on:
-http://www.beagleboard.org/irclogs/index.php?date=2013-02-18#T15:00:07
+Do you mean we can submit the patches for review before we got the
+generic ABI support?
 
-> ARM_ERRATA_430973 is relevant for which processors? have you checked the 
-> errata list? I had no luck obtaining it yet
-No, i don't have it either.
-
--- 
-Tim Niemeyer
-
-Corscience GmbH & Co. KG
-Henkestr. 91
-D-91052 Erlangen
-Germany
-
-e-mail: tim.niemeyer@corscience.de
-Internet: www.corscience.de
+Regards
+LFTAN
 
