@@ -1,83 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab3C1XZm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 19:25:42 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:65369 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab3C1XZd (ORCPT
+	id S1754137Ab3C1X0y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 19:26:54 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:62244 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753471Ab3C1X0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 19:25:33 -0400
+	Thu, 28 Mar 2013 19:26:52 -0400
+Date: Thu, 28 Mar 2013 16:26:23 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Michel Lespinasse <walken@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH] Revert "mm: introduce VM_POPULATE flag to better deal with
+ racy userspace programs"
+In-Reply-To: <20130327014000.GA9876@google.com>
+Message-ID: <alpine.LNX.2.00.1303281618030.664@eggly.anvils>
+References: <alpine.LNX.2.00.1303261646070.23041@eggly.anvils> <CANN689HuK7773-B3NOxLN9xRRXY=5i1j5Sv_CT8WKChMRw5_Aw@mail.gmail.com> <20130327014000.GA9876@google.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1303282328200.2022@localhost6.localdomain6>
-References: <1364472270-9297-1-git-send-email-mcgrof@do-not-panic.com>
- <20130328083943.01e61b4b@jbarnes-desktop> <alpine.DEB.2.02.1303281718490.1928@hadrien>
- <CAB=NE6WbNwPqEPYsASAPaECe4qbAWdd4=eJ402ib+CzZbT69=g@mail.gmail.com>
- <alpine.DEB.2.02.1303281909570.1928@hadrien> <CAB=NE6VPRu8DvneVdwd=pXF0ngi5OifNTpZtX3pLi50i116_OA@mail.gmail.com>
- <alpine.DEB.2.02.1303282328200.2022@localhost6.localdomain6>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 28 Mar 2013 16:25:10 -0700
-X-Google-Sender-Auth: uTOsHumbSUFClPJUOGP9uA87lo0
-Message-ID: <CAB=NE6WX5Dv9p2jrNwe9GxfH=EUm596uvSspsLQ5-Uuonc6Fqg@mail.gmail.com>
-Subject: Re: [PATCH] compat/compat-drivers/linux-next: fb skip_vt_switch
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        florianschandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev <linux-fbdev@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        cocci@systeme.lip6.fr,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rodrigo.vivi" <rodrigo.vivi@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "rafael.j.wysocki" <rafael.j.wysocki@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 3:29 PM, Julia Lawall <julia.lawall@lip6.fr> wrote:
-> On Thu, 28 Mar 2013, Luis R. Rodriguez wrote:
->
->> On Thu, Mar 28, 2013 at 11:10 AM, Julia Lawall <julia.lawall@lip6.fr> wrote:
->> > On Thu, 28 Mar 2013, Luis R. Rodriguez wrote:
->> >>
->> >> Thanks Julia! I'll be sure to try to add this to compat-drivers if the
->> >> upstream fb patch is not accepted. If it is accepted we would not need
->> >> this at all!
->> >>
->> >> > Then I guess there would be a similar rule for the false case?
->> >>
->> >> Nope, see that's the proactive strategy taken by the static inline and
->> >> hence the patch. compat would have a static inline for both cases, and
->> >> for the false case it'd be a no-op. If accepted upstream though then
->> >> we would not need any changes for this collateral evolution. However
->> >> *spotting* these collateral evolutions and giving you SmPL for them as
->> >> a proactive strategy might be good given that if these type of patches
->> >> are indeed welcomed upstream we'd then be able to address these as
->> >> secondary steps. If they are not accepted then indeed we'd use them to
->> >> backport that collateral evolution through both compat (adds the
->> >> static inlines) and compat-drivers (the SmPL).
->> >
->> > Probably I am missing something, since I haven't looked at the code in
->> > detail, bu wouldn't it be nicer to have a function call for the false
->> > case, if there is a function call for the true case?
->>
->> Yes, and indeed we have that, its the same function call, in the
->> negative case its a no-op, in the newer kernels it wraps to modifying
->> the element as in the original code.
->>
->> > In looking at the
->> > code, one could wonder why things are not done in a parallel way.
->>
->> Not sure I get this.
->
-> I looked in today's linux-next, and there seems to be only one
-> initialization of this field, to true, and one test of this field.  So
-> perhaps the case for setting the field to false just isn't needed.
+From: Michel Lespinasse <walken@google.com>
 
-Oh sorry now I get what you mean! I thought about this -- and yes I
-decided to not add a bool false setting for the structure field given
-that the assumption is this would not be something dynamic, and data
-structure would be kzalloc()'d so by default they are 0.
+This reverts commit 1869305009857cdeaabe6283bcdc2359c5784543 ("mm:
+introduce VM_POPULATE flag to better deal with racy userspace programs").
 
-  Luis
+VM_POPULATE only has any effect when userspace plays racy games with
+vmas by trying to unmap and remap memory regions that mmap or mlock
+are operating on.
+
+Also, the only effect of VM_POPULATE when userspace plays such games
+is that it avoids populating new memory regions that get remapped into
+the address range that was being operated on by the original mmap or
+mlock calls.
+
+Let's remove VM_POPULATE as there isn't any strong argument to mandate
+a new vm_flag.
+
+Signed-off-by: Michel Lespinasse <walken@google.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+Andrew has taken this patch into his tree, but remarked that he is
+away from keyboard until the end of next week: though not a serious
+matter, I think we had better include this revert in -rc5 than later.
+
+ include/linux/mm.h   |  1 -
+ include/linux/mman.h |  4 +---
+ mm/fremap.c          | 12 ++----------
+ mm/mlock.c           | 11 +++++------
+ mm/mmap.c            |  4 +++-
+ 5 files changed, 11 insertions(+), 21 deletions(-)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 7acc9dc73c9f..e19ff30ad0a2 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -87,7 +87,6 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_PFNMAP	0x00000400	/* Page-ranges managed without "struct page", just pure PFN */
+ #define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
+ 
+-#define VM_POPULATE     0x00001000
+ #define VM_LOCKED	0x00002000
+ #define VM_IO           0x00004000	/* Memory mapped I/O or similar */
+ 
+diff --git a/include/linux/mman.h b/include/linux/mman.h
+index 61c7a87e5d2b..9aa863da287f 100644
+--- a/include/linux/mman.h
++++ b/include/linux/mman.h
+@@ -79,8 +79,6 @@ calc_vm_flag_bits(unsigned long flags)
+ {
+ 	return _calc_vm_trans(flags, MAP_GROWSDOWN,  VM_GROWSDOWN ) |
+ 	       _calc_vm_trans(flags, MAP_DENYWRITE,  VM_DENYWRITE ) |
+-	       ((flags & MAP_LOCKED) ? (VM_LOCKED | VM_POPULATE) : 0) |
+-	       (((flags & (MAP_POPULATE | MAP_NONBLOCK)) == MAP_POPULATE) ?
+-							VM_POPULATE : 0);
++	       _calc_vm_trans(flags, MAP_LOCKED,     VM_LOCKED    );
+ }
+ #endif /* _LINUX_MMAN_H */
+diff --git a/mm/fremap.c b/mm/fremap.c
+index 4723ac8d2fc2..87da3590c61e 100644
+--- a/mm/fremap.c
++++ b/mm/fremap.c
+@@ -204,10 +204,8 @@ get_write_lock:
+ 			unsigned long addr;
+ 			struct file *file = get_file(vma->vm_file);
+ 
+-			vm_flags = vma->vm_flags;
+-			if (!(flags & MAP_NONBLOCK))
+-				vm_flags |= VM_POPULATE;
+-			addr = mmap_region(file, start, size, vm_flags, pgoff);
++			addr = mmap_region(file, start, size,
++					vma->vm_flags, pgoff);
+ 			fput(file);
+ 			if (IS_ERR_VALUE(addr)) {
+ 				err = addr;
+@@ -226,12 +224,6 @@ get_write_lock:
+ 		mutex_unlock(&mapping->i_mmap_mutex);
+ 	}
+ 
+-	if (!(flags & MAP_NONBLOCK) && !(vma->vm_flags & VM_POPULATE)) {
+-		if (!has_write_lock)
+-			goto get_write_lock;
+-		vma->vm_flags |= VM_POPULATE;
+-	}
+-
+ 	if (vma->vm_flags & VM_LOCKED) {
+ 		/*
+ 		 * drop PG_Mlocked flag for over-mapped range
+diff --git a/mm/mlock.c b/mm/mlock.c
+index 1c5e33fce639..79b7cf7d1bca 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -358,7 +358,7 @@ static int do_mlock(unsigned long start, size_t len, int on)
+ 
+ 		newflags = vma->vm_flags & ~VM_LOCKED;
+ 		if (on)
+-			newflags |= VM_LOCKED | VM_POPULATE;
++			newflags |= VM_LOCKED;
+ 
+ 		tmp = vma->vm_end;
+ 		if (tmp > end)
+@@ -418,8 +418,7 @@ int __mm_populate(unsigned long start, unsigned long len, int ignore_errors)
+ 		 * range with the first VMA. Also, skip undesirable VMA types.
+ 		 */
+ 		nend = min(end, vma->vm_end);
+-		if ((vma->vm_flags & (VM_IO | VM_PFNMAP | VM_POPULATE)) !=
+-		    VM_POPULATE)
++		if (vma->vm_flags & (VM_IO | VM_PFNMAP))
+ 			continue;
+ 		if (nstart < vma->vm_start)
+ 			nstart = vma->vm_start;
+@@ -492,9 +491,9 @@ static int do_mlockall(int flags)
+ 	struct vm_area_struct * vma, * prev = NULL;
+ 
+ 	if (flags & MCL_FUTURE)
+-		current->mm->def_flags |= VM_LOCKED | VM_POPULATE;
++		current->mm->def_flags |= VM_LOCKED;
+ 	else
+-		current->mm->def_flags &= ~(VM_LOCKED | VM_POPULATE);
++		current->mm->def_flags &= ~VM_LOCKED;
+ 	if (flags == MCL_FUTURE)
+ 		goto out;
+ 
+@@ -503,7 +502,7 @@ static int do_mlockall(int flags)
+ 
+ 		newflags = vma->vm_flags & ~VM_LOCKED;
+ 		if (flags & MCL_CURRENT)
+-			newflags |= VM_LOCKED | VM_POPULATE;
++			newflags |= VM_LOCKED;
+ 
+ 		/* Ignore errors */
+ 		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 2664a47cec93..6466699b16cb 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1306,7 +1306,9 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
+ 	}
+ 
+ 	addr = mmap_region(file, addr, len, vm_flags, pgoff);
+-	if (!IS_ERR_VALUE(addr) && (vm_flags & VM_POPULATE))
++	if (!IS_ERR_VALUE(addr) &&
++	    ((vm_flags & VM_LOCKED) ||
++	     (flags & (MAP_POPULATE | MAP_NONBLOCK)) == MAP_POPULATE))
+ 		*populate = len;
+ 	return addr;
+ }
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
