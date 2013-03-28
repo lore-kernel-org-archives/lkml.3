@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab3C1Tda (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 15:33:30 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39916 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab3C1Td3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 15:33:29 -0400
-Date: Thu, 28 Mar 2013 20:33:23 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Olof Johansson <olof@lixom.net>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: 3.9-rc1 regression in arm dtb build
-Message-ID: <20130328193323.GA25166@amd.pavel.ucw.cz>
-References: <20130306193332.GA6022@amd.pavel.ucw.cz>
- <5137C404.9060902@wwwdotorg.org>
- <20130307144506.GB7344@amd.pavel.ucw.cz>
- <5138FDAE.8060202@wwwdotorg.org>
- <20130311050546.GA21863@quad.lixom.net>
- <CACxGe6vkC7fjzf1-+K8O81+w=jQ63PvuTEhSPyitEBA9XiKYnw@mail.gmail.com>
- <20130328092916.GA11187@amd.pavel.ucw.cz>
- <51545870.4010209@wwwdotorg.org>
+	id S1752927Ab3C1TeM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 15:34:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9393 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751145Ab3C1TeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 15:34:10 -0400
+Date: Thu, 28 Mar 2013 15:33:43 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
+        Mikulas Patocka <mpatocka@redhat.com>, dm-devel@redhat.com,
+        Andi Kleen <andi@firstfloor.org>, dm-crypt@saout.de,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        Christian Schmidt <schmidt@digadd.de>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: dm-crypt performance
+Message-ID: <20130328193343.GA15969@redhat.com>
+References: <Pine.LNX.4.64.1303252051520.9745@file.rdu.redhat.com>
+ <20130326122713.GC27610@agk-dp.fab.redhat.com>
+ <5151FF82.6090405@gmail.com>
+ <20130326202837.GA5599@redhat.com>
+ <20130328185327.GF14088@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51545870.4010209@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130328185327.GF14088@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2013-03-28 08:49:20, Stephen Warren wrote:
-> On 03/28/2013 03:29 AM, Pavel Machek wrote:
-> ...
-> > There's change that makes it pretty much impossible to build dtbs
-> > reliably between different kernel versions, because it leaves old dtbs
-> > around, and they survive even make clean.
+On Thu, Mar 28, 2013 at 11:53:27AM -0700, Tejun Heo wrote:
+> Hello,
 > 
-> One question here: Presumably the dtbs don't survive "make clean" if you
-> run that right after building the dtbs, but only if you check out a new
-> kernel version before running clean? Or is that not the case?
+> (cc'ing Vivek and Jens for the iosched related bits)
+> 
+> On Tue, Mar 26, 2013 at 04:28:38PM -0400, Mike Snitzer wrote:
+> > On Tue, Mar 26 2013 at  4:05pm -0400,
+> > Milan Broz <gmazyland@gmail.com> wrote:
+> > 
+> > > >On Mon, Mar 25, 2013 at 11:47:22PM -0400, Mikulas Patocka wrote:
+> > > >
+> > > >>For best performance we could use the unbound workqueue implementation
+> > > >>with request sorting, if people don't object to the request sorting being
+> > > >>done in dm-crypt.
+> > > 
+> > > So again:
+> > > 
+> > > - why IO scheduler is not working properly here? Do it need some extensions?
+> > > If fixed, it can help even is some other non-dmcrypt IO patterns.
+> > > (I mean dmcrypt can set some special parameter for underlying device queue
+> > > automagically to fine-tune sorting parameters.)
+> > 
+> > Not sure, but IO scheduler changes are fairly slow to materialize given
+> > the potential for adverse side-effects.  Are you so surprised that a
+> > shotgun blast of IOs might make the IO schduler less optimal than if
+> > some basic sorting were done at the layer above?
+> 
+> My memory is already pretty hazy but Vivek should be able to correct
+> me if I say something nonsense.  The thing is, the order and timings
+> of IOs coming down from upper layers has certain meanings to ioscheds
+> and they exploit those patterns to do better scheduling.
+> 
+> Reordering IOs randomly actually makes certain information about the
+> IO stream lost and makes ioscheds mis-classify the IO stream -
+> e.g. what could have been classfied as "mostly consecutive streaming
+> IO" could after such reordering fail to be detected as such.  Sure,
+> ioscheds can probably be improved to compensate for such temporary
+> localized reorderings but nothing is free and given that most of the
+> upper stacks already do pretty good job of issuing IOs orderly when
+> possible, it would be a bit silly to do more than usually necessary in
+> ioscheds.
+> 
+> So, no, I don't think maintaining IO order in stacking drivers is a
+> bad idea.  I actually think all stacking drivers should do that;
+> otherwise, they really are destroying actual useful side-band
+> information.
 
-That was the case I seen, yes.
+I am curious why out of order bio is a problem. Doesn't the elevator
+already merge bio's with existing requests and if merging does not
+happen then requests are sorted in order. So why ordering is not
+happening properly with dm-crypt. What additional info dm-crypt has
+that it can do better ordering than IO scheduler.
 
-Have old kernel running, dtbs building. Apply a patch. It starts
-behaving weird. You do make clean... but you still get old dtbs.
+CFQ might seeing more performance hit because we maintain per
+process queues and kernel threads might not be sharing the IO context
+(i am not sure). So if all the crypto threads can share the IO
+context, atleast it will make sure all IO from them goes into a
+single queue.
 
-(It would be nice if make socfpga_cyclone5.dtb would magically remove
-all the dtbs from old location; make dtbs does that if I understand
-stuff correctly).
+So it would help if somebody can explain that why existing merging
+and sorting logic is not working well with dm-crypt and what additional
+info dm-crypt has which can help it do better job.
 
-Thanks,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks
+Vivek
