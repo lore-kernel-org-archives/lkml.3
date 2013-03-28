@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757066Ab3C1RSg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:18:36 -0400
-Received: from mail-da0-f48.google.com ([209.85.210.48]:55107 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756786Ab3C1RSe (ORCPT
+	id S1757125Ab3C1RTV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:19:21 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:61927 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756759Ab3C1RTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 13:18:34 -0400
-Date: Thu, 28 Mar 2013 10:18:32 -0700
+	Thu, 28 Mar 2013 13:19:19 -0400
+Date: Thu, 28 Mar 2013 10:19:17 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: [GIT PATCH] TTY/Serial fixes for 3.9-rc4
-Message-ID: <20130328171832.GA2704@kroah.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB fixes for 3.9-rc4
+Message-ID: <20130328171917.GA2737@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,53 +22,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit c51d41a1dd8f23a06a4ed651ebb9617de7f59368:
+The following changes since commit 8bb9660418e05bb1845ac1a2428444d78e322cc7:
 
-  tty: serial: fix typo "SERIAL_S3C2412" (2013-03-12 08:53:23 -0700)
+  Linux 3.9-rc4 (2013-03-23 16:52:44 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.9-rc4
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.9-rc4
 
-for you to fetch changes up to 855f6fd941019ecc9525ca038b78f50c6c1e80a8:
+for you to fetch changes up to 482b0b5d82bd916cc0c55a2abf65bdc69023b843:
 
-  Xilinx: ARM: UART: clear pending irqs before enabling irqs (2013-03-25 16:26:23 -0700)
+  usb: ftdi_sio: Add support for Mitsubishi FX-USB-AW/-BD (2013-03-28 08:50:22 -0700)
 
 ----------------------------------------------------------------
-TTY/serial fixes for 3.9-rc4
+USB fixes for 3.9-rc4
 
-Here are some tty/serial driver fixes for 3.9.
-
-The big thing here is the fix for the huge mess we caused renaming the 8250
-driver accidentally in the 3.7 kernel release, without realizing that there
-were users of the module options that suddenly broke.  This is now resolved,
-and, to top the injury off, we have a backwards-compatible option for those
-users who got used to the new name since 3.7.  Ugh, sorry about that.
-
-Other than that, some other minor fixes for issues that have been reported by
-users.
+Here are some USB fixes to resolve issues reported recently, as well as a new
+device id for the ftdi_sio driver.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Jiri Slaby (2):
-      TTY: 8250, revert module name change
-      TTY: 8250, deprecated 8250_core.* options
+Greg Kroah-Hartman (1):
+      Merge tag 'for-usb-linus-2013-03-26' of git://git.kernel.org/.../sarah/xhci into usb-linus
 
-John Linn (1):
-      Xilinx: ARM: UART: clear pending irqs before enabling irqs
+Konstantin Holoborodko (1):
+      usb: ftdi_sio: Add support for Mitsubishi FX-USB-AW/-BD
 
-Pawel Wieczorkiewicz (1):
-      tty: atmel_serial_probe(): index of atmel_ports[] fix
+Lan Tianyu (2):
+      usb: add find_raw_port_number callback to struct hc_driver()
+      usb/acpi: binding xhci root hub usb port with ACPI
 
-Wang YanQing (1):
-      serial: 8250_pci: Add WCH CH352 quirk to avoid Xscale detection
+Ming Lei (1):
+      USB: serial: fix hang when opening port
 
- drivers/tty/serial/8250/{8250.c => 8250_core.c} |  6 ++++--
- drivers/tty/serial/8250/8250_pci.c              | 13 +++++++++++++
- drivers/tty/serial/8250/Kconfig                 | 17 +++++++++++++++++
- drivers/tty/serial/8250/Makefile                |  8 ++++----
- drivers/tty/serial/atmel_serial.c               | 11 +++++------
- drivers/tty/serial/xilinx_uartps.c              |  2 ++
- 6 files changed, 45 insertions(+), 12 deletions(-)
- rename drivers/tty/serial/8250/{8250.c => 8250_core.c} (99%)
+Peter Chen (1):
+      usb: xhci: fix build warning
+
+Roland Stigge (1):
+      usb: Fix compile error by selecting USB_OTG_UTILS
+
+Sarah Sharp (1):
+      xhci: Don't warn on empty ring for suspended devices.
+
+Soeren Moch (1):
+      USB: EHCI: fix bug in iTD/siTD DMA pool allocation
+
+Vivek Gautam (1):
+      usb: xhci: Fix TRB transfer length macro used for Event TRB.
+
+ drivers/usb/core/hcd.c            |  8 +++++
+ drivers/usb/core/usb-acpi.c       |  8 ++++-
+ drivers/usb/gadget/Kconfig        |  1 +
+ drivers/usb/host/ehci-sched.c     |  2 ++
+ drivers/usb/host/xhci-mem.c       | 36 +++++------------------
+ drivers/usb/host/xhci-pci.c       |  1 +
+ drivers/usb/host/xhci-ring.c      | 61 ++++++++++++++++++++++-----------------
+ drivers/usb/host/xhci.c           | 22 ++++++++++++++
+ drivers/usb/host/xhci.h           |  5 ++++
+ drivers/usb/phy/Kconfig           |  1 +
+ drivers/usb/serial/ftdi_sio.c     |  1 +
+ drivers/usb/serial/ftdi_sio_ids.h |  7 +++++
+ drivers/usb/serial/usb-serial.c   |  1 +
+ include/linux/usb/hcd.h           |  2 ++
+ 14 files changed, 101 insertions(+), 55 deletions(-)
