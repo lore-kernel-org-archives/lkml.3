@@ -1,147 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab3C1IsB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 04:48:01 -0400
-Received: from mga14.intel.com ([143.182.124.37]:60417 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756786Ab3C1Irz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 04:47:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,924,1355126400"; 
-   d="scan'208";a="219780343"
-Message-ID: <51540408.3000702@intel.com>
-Date: Thu, 28 Mar 2013 16:49:12 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1756409Ab3C1Isy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 04:48:54 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:33836 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756260Ab3C1Isv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 04:48:51 -0400
+Message-ID: <515403ED.6010008@gmail.com>
+Date: Thu, 28 Mar 2013 10:48:45 +0200
+From: =?UTF-8?B?TWFudGFzIE1pa3VsxJduYXM=?= <grawity@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Rajiv Andrade <mail@srajiv.net>, peterasplund@gentoo.se
-CC: Luigi Semenzato <semenzato@google.com>, tpmdd-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, key@linux.vnet.ibm.com
-Subject: Re: [tpmdd-devel] tpm_tis driver failed to suspend, error -62
-References: <20130319023440.GA12425@aaronlu.sh.intel.com> <CAA25o9RJJ5Rkti9_fTJz2ieaHvrtSp5mE_2LTW_t16_cf_TNcg@mail.gmail.com> <ed364e68730267510d49b2bdc38679a0@gentoo.se> <CAEQAOwpmnLXBCJQTf_xU-oSKvAtmpQjHWwMYDm_QOsP+1Kd_aQ@mail.gmail.com> <CAEQAOwqWL=WekQqg5WY8TGxzB3x9nB9MVj_UTAVK0ro7TqB2WQ@mail.gmail.com>
-In-Reply-To: <CAEQAOwqWL=WekQqg5WY8TGxzB3x9nB9MVj_UTAVK0ro7TqB2WQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Matthew Garrett <matthew.garrett@nebula.com>,
+        Dave Airlie <airlied@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        "skeggsb@gmail.com" <skeggsb@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Murphy <bugzilla@colorremedies.com>
+Subject: Re: [PATCH 1/3] pci: Add PCI ROM helper for platform-provided ROM
+ images
+References: <CAPM=9tyYMSsK_2eCNRTx5EsgAQtnvmHxhgPHP3GHPxKUn+wo5w@mail.gmail.com> <1364333156-4530-1-git-send-email-matthew.garrett@nebula.com> <CAErSpo7fy+MVxDoLe6w+4noH5X2xJw_Lfdg6fVvgcbhgvUyAaw@mail.gmail.com> <1364338554.2553.53.camel@x230.sbx07502.somerma.wayport.net> <CAErSpo7ZYMsRAp=EKMS0YPmiw6YytN4pZVzoWPd-PL5EzT8+SQ@mail.gmail.com>
+In-Reply-To: <CAErSpo7ZYMsRAp=EKMS0YPmiw6YytN4pZVzoWPd-PL5EzT8+SQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/2013 11:22 PM, Rajiv Andrade wrote:
-> Hey Aaron,
+On 2013-03-27 22:33, Bjorn Helgaas wrote:
+> On Tue, Mar 26, 2013 at 4:55 PM, Matthew Garrett
+> <matthew.garrett@nebula.com> wrote:
+>> On Tue, 2013-03-26 at 16:53 -0600, Bjorn Helgaas wrote:
+>>
+>>> I've been on vacation and didn't follow this closely, but it seems
+>>> like this fixes a regression and should be merged before v3.9, right?
+>>> Can you include a reference to a bugzilla or the mailing list
+>>> discussion in the changelog?  I can just fold it in if you want.
+>>
+>> https://bugzilla.redhat.com/show_bug.cgi?id=927451
 > 
-> Sorry for the delay. Can you send us the dmesg output after setting
-> loglevel=7 at boot time? Additionally, can you send us the TPM
-> manufacturer model/version?
-> 
-> # cat /sys/devices/pnp0/00\:0*/caps
-> 
-> Adding Kent.
+> Thanks, I added that URL and queued up these patches.  I'll wait to
+> push them until we have confirmation from Mantas [1] and Chris [2]
+> that this fixes it for both.
 
-Thanks Rajiv.
+Tested the three patches on top of v3.9-rc4-134-gb175293, works fine.
 
-Peter,
-Please kindly provide the required information, thanks.
 
--Aaron
+[the first patch refers to reverting commit f4eb5ff05, which doesn't
+seem to exist; should probably have been 547b52463]
 
-> 
-> Cheers,
-> Rajiv
-> 
-> On Wed, Mar 27, 2013 at 12:17 PM, Rajiv Andrade <mail@srajiv.net> wrote:
->> Hey Aaron,
->>
->> Sorry for the delay. Can you send us the dmesg output after setting
->> loglevel=7 at boot time? Additionally, can you send us the TPM manufacturer
->> model/version?
->>
->> # cat /sys/devices/pnp0/00\:0*/caps
->>
->> Adding Kent.
->>
->> Cheers,
->> Rajiv
->>
->>
->> On Thu, Mar 21, 2013 at 10:17 AM, <peterasplund@gentoo.se> wrote:
->>>
->>> Hi! Sadly, I have to say that I'm totally oblivious to power-related stuff
->>> both in software and hardware, so I have no idea what you are asking or
->>> proposing.. :)
->>>
->>> I don't know if you have access to the files I've included in the bug
->>> report, so here are the links to them:
->>> https://launchpadlibrarian.net/105830773/lspci.txt
->>> https://launchpadlibrarian.net/95994294/AcpiTables.txt
->>> https://launchpadlibrarian.net/95994318/BootDmesg.txt
->>> https://launchpadlibrarian.net/95994354/UdevDb.txt
->>>
->>> Regarding the syslog during boot, is that the same as the BootDmesg I've
->>> attached? Or should I search in another log file?
->>> I'm not sure about the model, but I was hoping you could deduct something
->>> from the UdevDb or the lspci output above.
->>>
->>> BR,
->>> Peter
->>>
->>> 2013-03-19 16:50 skrev Luigi Semenzato:
->>>
->>>> Error 62 is ETIME.  The driver is timing out during a tpm_send,
->>>> possibly trying to send the Tpm_SaveState command.
->>>>
->>>> It may be that you cannot talk to the TPM at all.  Have you tried
->>>> sending messages to the TPM before suspending?
->>>>
->>>> Are there any other tpm entries in the syslog?  Like at boot?
->>>>
->>>> What model TPM is it?
->>>>
->>>>
->>>> On Mon, Mar 18, 2013 at 7:34 PM, Aaron Lu <aaron.lu@intel.com> wrote:
->>>>>
->>>>> Hi Rajiv,
->>>>>
->>>>> Not sure if I should send this to you, please kindly forward it to the
->>>>> appropriate person if not, thanks.
->>>>>
->>>>> Peter has encountered a problem during suspend, the tpm_tis driver's
->>>>> suspend callback will fail, the relevant message is:
->>>>>
->>>>> [  192.281757] PM: Syncing filesystems ... done.
->>>>> [  192.692479] Freezing user space processes ... (elapsed 0.01 seconds)
->>>>> done.
->>>>> [  192.708159] Freezing remaining freezable tasks ... (elapsed 0.01
->>>>> seconds)
->>>>> done.
->>>>> [  192.724151] Suspending console(s) (use no_console_suspend to debug)
->>>>> [  192.724612] sd 2:0:0:0: [sda] Synchronizing SCSI cache
->>>>> [  192.724785] sd 2:0:0:0: [sda] Stopping disk
->>>>> [  197.512047] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
->>>>> [  197.512055] legacy_suspend(): pnp_bus_suspend+0x0/0xa0 returns -62
->>>>> [  197.512057] PM: Device 00:08 failed to suspend: error -62
->>>>> [  197.512058] PM: Some devices failed to suspend
->>>>>
->>>>> And the problem has been there since v2.6.32(shipped in ubuntu 10.04),
->>>>> and the latest upstream tree(v3.9-rcx) also has this problem. The bug
->>>>> link is here:
->>>>> https://bugzilla.kernel.org/show_bug.cgi?id=45761
->>>>>
->>>>> Please feel free to ask for more information, thanks.
->>>>>
->>>>> -Aaron
->>>>>
->>>>>
->>>>>
->>>>>
->>>>> ------------------------------------------------------------------------------
->>>>> Everyone hates slow websites. So do we.
->>>>> Make your web apps faster with AppDynamics
->>>>> Download AppDynamics Lite for free today:
->>>>> http://p.sf.net/sfu/appdyn_d2d_mar
->>>>> _______________________________________________
->>>>> tpmdd-devel mailing list
->>>>> tpmdd-devel@lists.sourceforge.net
->>>>> https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
->>
->>
-
+-- 
+Mantas Mikulėnas <grawity@gmail.com>
