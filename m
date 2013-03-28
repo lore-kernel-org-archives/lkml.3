@@ -1,66 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab3C1QaI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 12:30:08 -0400
-Received: from claranet-outbound-smtp05.uk.clara.net ([195.8.89.38]:46136 "EHLO
-	claranet-outbound-smtp05.uk.clara.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756388Ab3C1QaH (ORCPT
+	id S1756754Ab3C1Qd3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 12:33:29 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:33800 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754297Ab3C1Qd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 12:30:07 -0400
-From: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: Change in behaviour when unmounting recursive bind mounts
-Date: Thu, 28 Mar 2013 16:29:47 +0000
-Message-ID: <1845538.MuH6UK6OzG@deuteros>
-User-Agent: KMail/4.10.1 (Linux/3.8.4; KDE/4.10.1; x86_64; ; )
-In-Reply-To: <20130328153549.GP6400@ram.oc3035372033.ibm.com>
-References: <2987308.JNKpYDEnfV@deuteros> <1694652.5MYOe5IR6S@deuteros> <20130328153549.GP6400@ram.oc3035372033.ibm.com>
+	Thu, 28 Mar 2013 12:33:27 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CAM0nabE5yQB3xQuATiAEyt3Ahpqqh7EMNDxcnK2PgSUaNG1Y_A@mail.gmail.com>
+References: <CAM0nabE5yQB3xQuATiAEyt3Ahpqqh7EMNDxcnK2PgSUaNG1Y_A@mail.gmail.com>
+From: Kent Yoder <shpedoikal@gmail.com>
+Date: Thu, 28 Mar 2013 11:32:54 -0500
+Message-ID: <CAM0nabGe1ZYeZyjuCp9vSjTfnd4GHQXg4QYFimoCqZ1njjhXaw@mail.gmail.com>
+Subject: Fwd: [PATCH v2] drivers/crypto/nx: fix init race, alignmasks and GCM bug
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 March 2013 23:35:49 Ram Pai wrote:
-> On Thu, Mar 28, 2013 at 01:05:56PM +0000, Tvrtko Ursulin wrote:
-> > Hi,
-> > 
-> > On Thursday 28 March 2013 11:03:51 Ram Pai wrote:
-> > > I tried these commands on a 3.8.0-rc1+ kernel and did not find the
-> > > problem. Is this on a recent kernel?
-> > 
-> > I am on Fedora 17 latest, but I've seen this problem with different
-> > kernels. Pretty sure from 3.5 something to 3.8 something. All Fedora
-> > flavoured. I will try vanilla soon.
-> > 
-> > What I am not sure is whether this behaviour was there from the start (on
-> > Fedora 17). I *think* it started to happen later on, which would mean a
-> > potential userland change somehow causes it.
-> > 
-> > Would that be at all possible with some mechanism?
-> > 
-> > > > Previously unmounting the recursive bind target would not unmount the
-> > > > source, which to me looks like a more sensible outcome.
-> > > 
-> > > yes. it should not unless they are peer-mounts, which in your case is
-> > > not.
-> > 
-> > What are these and how to create them?
-> 
-> These are mounts that are created by marking mount as shared, followed
-> by bind mount, followed by submount and then unmount.
-> 
-> Documentation/filesystem/sharedsubtree.txt has the details.
+Hi Ben, will you carry this patch in the linuxppc-dev tree?
 
-Knowing the right keywords certainly enabled me to hunt it down, thanks!
+Thanks,
+Kent
 
-Culprit is systemd as per following commit:  
-http://cgit.freedesktop.org/systemd/systemd/commit/?id=b3ac5f8cb98757416d8660023d6564a7c411f0a0
+---------- Forwarded message ----------
+From: Kent Yoder <shpedoikal@gmail.com>
+Date: Wed, Mar 20, 2013 at 9:22 AM
+Subject: [PATCH v2] drivers/crypto/nx: fix init race, alignmasks and GCM bug
+To: linux-kernel@vger.kernel.org
+Cc: linux-crypto@vger.kernel.org, Benjamin Herrenschmidt
+<benh@kernel.crashing.org>
 
-Regards,
 
-Tvrtko
+  Fixes a race on driver init with registering algorithms where the
+driver status flag wasn't being set before self testing started.
 
+  Added the cra_alignmask field for CBC and ECB modes.
+
+  Fixed a bug in GCM where AES block size was being used instead of
+authsize.
+
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+---
+Only changes in v2 were to leave stable off the cc and add Ben for PPC.
+
+ drivers/crypto/nx/nx-aes-cbc.c | 1 +
+ drivers/crypto/nx/nx-aes-ecb.c | 1 +
+ drivers/crypto/nx/nx-aes-gcm.c | 2 +-
+ drivers/crypto/nx/nx.c         | 4 ++--
+ 4 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/crypto/nx/nx-aes-cbc.c b/drivers/crypto/nx/nx-aes-cbc.c
+index a76d4c4..35d483f 100644
+--- a/drivers/crypto/nx/nx-aes-cbc.c
++++ b/drivers/crypto/nx/nx-aes-cbc.c
+@@ -126,6 +126,7 @@ struct crypto_alg nx_cbc_aes_alg = {
+        .cra_blocksize   = AES_BLOCK_SIZE,
+        .cra_ctxsize     = sizeof(struct nx_crypto_ctx),
+        .cra_type        = &crypto_blkcipher_type,
++       .cra_alignmask   = 0xf,
+        .cra_module      = THIS_MODULE,
+        .cra_init        = nx_crypto_ctx_aes_cbc_init,
+        .cra_exit        = nx_crypto_ctx_exit,
+diff --git a/drivers/crypto/nx/nx-aes-ecb.c b/drivers/crypto/nx/nx-aes-ecb.c
+index ba5f161..7bbc9a8 100644
+--- a/drivers/crypto/nx/nx-aes-ecb.c
++++ b/drivers/crypto/nx/nx-aes-ecb.c
+@@ -123,6 +123,7 @@ struct crypto_alg nx_ecb_aes_alg = {
+        .cra_priority    = 300,
+        .cra_flags       = CRYPTO_ALG_TYPE_BLKCIPHER,
+        .cra_blocksize   = AES_BLOCK_SIZE,
++       .cra_alignmask   = 0xf,
+        .cra_ctxsize     = sizeof(struct nx_crypto_ctx),
+        .cra_type        = &crypto_blkcipher_type,
+        .cra_module      = THIS_MODULE,
+diff --git a/drivers/crypto/nx/nx-aes-gcm.c b/drivers/crypto/nx/nx-aes-gcm.c
+index c8109ed..6cca6c3 100644
+--- a/drivers/crypto/nx/nx-aes-gcm.c
++++ b/drivers/crypto/nx/nx-aes-gcm.c
+@@ -219,7 +219,7 @@ static int gcm_aes_nx_crypt(struct aead_request
+*req, int enc)
+        if (enc)
+                NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
+        else
+-               nbytes -= AES_BLOCK_SIZE;
++               nbytes -= crypto_aead_authsize(crypto_aead_reqtfm(req));
+
+        csbcpb->cpb.aes_gcm.bit_length_data = nbytes * 8;
+
+diff --git a/drivers/crypto/nx/nx.c b/drivers/crypto/nx/nx.c
+index c767f23..7621d05 100644
+--- a/drivers/crypto/nx/nx.c
++++ b/drivers/crypto/nx/nx.c
+@@ -454,6 +454,8 @@ static int nx_register_algs(void)
+        if (rc)
+                goto out;
+
++       nx_driver.of.status = NX_OKAY;
++
+        rc = crypto_register_alg(&nx_ecb_aes_alg);
+        if (rc)
+                goto out;
+@@ -498,8 +500,6 @@ static int nx_register_algs(void)
+        if (rc)
+                goto out_unreg_s512;
+
+-       nx_driver.of.status = NX_OKAY;
+-
+        goto out;
+
+ out_unreg_s512:
+--
+1.7.11.7
