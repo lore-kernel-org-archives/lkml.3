@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312Ab3C1RqN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:46:13 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:47651 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751160Ab3C1RqL (ORCPT
+	id S1752826Ab3C1Rsr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:48:47 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49835 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab3C1Rsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 13:46:11 -0400
-Date: Thu, 28 Mar 2013 13:46:10 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: 3.8.4: ohci question
-In-Reply-To: <51546814.7080509@xs4all.nl>
-Message-ID: <Pine.LNX.4.44L0.1303281345140.1652-100000@iolanthe.rowland.org>
+	Thu, 28 Mar 2013 13:48:46 -0400
+Message-ID: <5154827B.8010701@wwwdotorg.org>
+Date: Thu, 28 Mar 2013 11:48:43 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Bibek Basu <bbasu@nvidia.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Pritesh Raithatha <praithatha@nvidia.com>
+Subject: Re: [PATCH] pinctrl: tegra: add suspend-resume support
+References: <1364490685-21831-1-git-send-email-bbasu@nvidia.com>
+In-Reply-To: <1364490685-21831-1-git-send-email-bbasu@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Mar 2013, Udo van den Heuvel wrote:
-
-> On 2013-03-28 15:35, Alan Stern wrote:
-> >>> When my dmesg gives me a growing number of lines like the one below,
-> >>> what is going on?
-> >>>
-> >>>  ohci_hcd 0000:00:12.0: urb ffff88023025c500 path 2 ep1in 6c160000 cc 6
-> >>> --> status -71
-> >>>
-> >>> Please let me know!
-> > 
-> > -71 errors indicate a low-level problem on the USB bus.  Generally it
-> > means that the device isn't sending any packets.  Maybe the device's
-> > firmware has crashed or maybe it has been disconnected.
+On 03/28/2013 11:11 AM, Bibek Basu wrote:
+> From: Pritesh Raithatha <praithatha@nvidia.com>
 > 
-> Could it be due to a defect in the mainboard?
-> Or the device connected to that port?
+> This patch adds suspend and resume callbacks to the pinctrl-tegra driver.
+> 
+> Based on work by:
+> Pritesh Raithatha <praithatha@nvidia.com>
 
-Yes.  Or it could be due to any number of other things.  Do you want to 
-post a complete dmesg log?
+Those two lines are somewhat implied by the fact the commit's git author
+field is Pritesh, and his s-o-b line is included below.
 
-Alan Stern
+> Signed-off-by: Pritesh Raithatha <praithatha@nvidia.com>
+> Signed-off-by: Bibek Basu <bbasu@nvidia.com>
 
+> diff --git a/drivers/pinctrl/pinctrl-tegra.c b/drivers/pinctrl/pinctrl-tegra.c
+
+> +static struct tegra_pmx *pmx;
+
+Isn't there any way to pass data into the suspend/resume functions so
+that this global isn't needed?
+
+Why can't we just use the device suspend/resume functions rather than
+global (syscore) suspend/resume functions? Presumably this is to ensure
+that all other drivers suspend first, then the pinctrl driver does, and
+the reverse for resume. Can't we rely on deferred probe to ensure that
+instead?
+
+To make that work, we might need every affected driver to define a dummy
+pinmux state in DT that references the pinctrl driver, to make sure they
+all get probed after the pinctrl driver.
+
+> +#ifdef CONFIG_PM_SLEEP
+
+Perhaps we can remove the ifdefs, and always compile this code. The
+compiler should remove any unused functions from the final linked image.
+
+>  int tegra_pinctrl_probe(struct platform_device *pdev,
+>  			const struct tegra_pinctrl_soc_data *soc_data)
+> -{
+> -	struct tegra_pmx *pmx;
+> +	{
+
+The indentation of the { is wrong there.
+
+> +#ifdef CONFIG_PM_SLEEP
+
+I think you can use if (IS_ENABLED(CONFIG_PM_SLEEP)) here instead of an
+ifdef. This will allow the code to be compiled in all cases (to allow
+better compile coverage), but it will be optimized out if
+CONFIG_PM_SLEEP isn't enabled. Can you please make that change, and
+verify that it works?
+
+The same comment applies to the other ifdefs below.
