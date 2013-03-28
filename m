@@ -1,91 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab3C1VAF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 17:00:05 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:45927 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754044Ab3C1VAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 17:00:01 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Accardi, Kristen C" <kristen.c.accardi@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>, linux-pci@vger.kernel.org
-Subject: [Update][PATCH] PCI / ACPI: Always resume devices on ACPI wakeup notifications
-Date: Thu, 28 Mar 2013 22:07:29 +0100
-Message-ID: <2699206.HmPyNvCpNR@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1396732.fV788D0xgr@vostro.rjw.lan>
-References: <2282655.IicBMMa6jN@vostro.rjw.lan> <1396732.fV788D0xgr@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753996Ab3C1U75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 16:59:57 -0400
+Received: from mail-da0-f50.google.com ([209.85.210.50]:42562 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222Ab3C1U7z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 16:59:55 -0400
+From: Mike Turquette <mturquette@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, rajagopal.venkat@linaro.org,
+        davidb@codeaurora.org, ulf.hansson@linaro.org,
+        laurent.pinchart@ideasonboard.com, tglx@linutronix.de,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 2/2] clk: allow reentrant calls into the clk framework
+Date: Thu, 28 Mar 2013 13:59:02 -0700
+Message-Id: <1364504343-12635-3-git-send-email-mturquette@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1364504343-12635-1-git-send-email-mturquette@linaro.org>
+References: <1364445958-2999-1-git-send-email-mturquette@linaro.org>
+ <1364504343-12635-1-git-send-email-mturquette@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: PCI / ACPI: Always resume devices on ACPI wakeup notifications
+Reentrancy into the clock framework is necessary for clock operations
+that result in nested calls to the clk api.  A common example is a clock
+that is prepared via an i2c transaction, such as a clock inside of a
+discrete audio chip or a power management IC.  The i2c subsystem itself
+will use the clk api resulting in a deadlock:
 
-It turns out that the _Lxx control methods provided by some BIOSes
-clear the PME Status bit of PCI devices they handle, which means that
-pci_acpi_wake_dev() cannot really use that bit to check whether or
-not the device has signalled wakeup.
+clk_prepare(audio_clk)
+	i2c_transfer(..)
+		clk_prepare(i2c_controller_clk)
 
-One symptom of the problem is, for example, that when an affected PCI
-USB controller is runtime-suspended, then plugging in a new USB device
-into one of the controller's ports will not wake up the controller,
-which should happen.
+The ability to reenter the clock framework prevents this deadlock.
 
-For this reason, make pci_acpi_wake_dev() always attempt to resume
-the device it is called for regardless of the device's PME Status bit
-value (that bit still has to be cleared if set at this point,
-though).
+Other use cases exist such as allowing .set_rate callbacks to call
+clk_set_parent to achieve the best rate, or to save power in certain
+configurations.  Yet another example is performing pinctrl operations
+from a clk_ops callback.  Calls into the pinctrl subsystem may call
+clk_{un}prepare on an unrelated clock.  Allowing for nested calls to
+reenter the clock framework enables both of these use cases.
 
-Reported-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: 3.7+ <stable@vger.kernel.org>
+Reentrancy is implemented by two global pointers that track the owner
+currently holding a global lock.  One pointer tracks the owner during
+sleepable, mutex-protected operations and the other one tracks the owner
+during non-interruptible, spinlock-protected operations.
+
+When the clk framework is entered we try to hold the global lock.  If it
+is held we compare the current task against the current owner; a match
+implies a nested call and we reenter.  If the values do not match then
+we block on the lock until it is released.
+
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+Cc: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Cc: David Brown <davidb@codeaurora.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
+Tested-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 ---
+Changes since v5:
+ * fixed up typo in changelog
 
-The changelog in this version is slightly better than in the previous one, IMHO.
+Changes since v4:
+ * remove uneccesary atomic operations
+ * remove casting bugs
+ * place reentrancy logic into locking helper functions
+ * improve debugging with reference counting and WARNs
 
-Thanks,
-Rafael
+ drivers/clk/clk.c |   44 ++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 42 insertions(+), 2 deletions(-)
 
----
- drivers/pci/pci-acpi.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
-
-Index: linux-pm/drivers/pci/pci-acpi.c
-===================================================================
---- linux-pm.orig/drivers/pci/pci-acpi.c
-+++ linux-pm/drivers/pci/pci-acpi.c
-@@ -53,14 +53,15 @@ static void pci_acpi_wake_dev(acpi_handl
- 		return;
- 	}
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 0b5d612..0230c9d 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -19,10 +19,17 @@
+ #include <linux/of.h>
+ #include <linux/device.h>
+ #include <linux/init.h>
++#include <linux/sched.h>
  
--	if (!pci_dev->pm_cap || !pci_dev->pme_support
--	     || pci_check_pme_status(pci_dev)) {
--		if (pci_dev->pme_poll)
--			pci_dev->pme_poll = false;
-+	/* Clear PME Status if set. */
-+	if (pci_dev->pme_support)
-+		pci_check_pme_status(pci_dev);
+ static DEFINE_SPINLOCK(enable_lock);
+ static DEFINE_MUTEX(prepare_lock);
  
--		pci_wakeup_event(pci_dev);
--		pm_runtime_resume(&pci_dev->dev);
--	}
-+	if (pci_dev->pme_poll)
-+		pci_dev->pme_poll = false;
++static struct task_struct *prepare_owner;
++static struct task_struct *enable_owner;
 +
-+	pci_wakeup_event(pci_dev);
-+	pm_runtime_resume(&pci_dev->dev);
++static int prepare_refcnt;
++static int enable_refcnt;
++
+ static HLIST_HEAD(clk_root_list);
+ static HLIST_HEAD(clk_orphan_list);
+ static LIST_HEAD(clk_notifier_list);
+@@ -30,23 +37,56 @@ static LIST_HEAD(clk_notifier_list);
+ /***           locking             ***/
+ static void clk_prepare_lock(void)
+ {
+-	mutex_lock(&prepare_lock);
++	if (!mutex_trylock(&prepare_lock)) {
++		if (prepare_owner == current) {
++			prepare_refcnt++;
++			return;
++		}
++		mutex_lock(&prepare_lock);
++	}
++	WARN_ON_ONCE(prepare_owner != NULL);
++	WARN_ON_ONCE(prepare_refcnt != 0);
++	prepare_owner = current;
++	prepare_refcnt = 1;
+ }
  
- 	if (pci_dev->subordinate)
- 		pci_pme_wakeup_bus(pci_dev->subordinate);
+ static void clk_prepare_unlock(void)
+ {
++	WARN_ON_ONCE(prepare_owner != current);
++	WARN_ON_ONCE(prepare_refcnt == 0);
++
++	if (--prepare_refcnt)
++		return;
++	prepare_owner = NULL;
+ 	mutex_unlock(&prepare_lock);
+ }
+ 
+ static unsigned long clk_enable_lock(void)
+ {
+ 	unsigned long flags;
+-	spin_lock_irqsave(&enable_lock, flags);
++
++	if (!spin_trylock_irqsave(&enable_lock, flags)) {
++		if (enable_owner == current) {
++			enable_refcnt++;
++			return flags;
++		}
++		spin_lock_irqsave(&enable_lock, flags);
++	}
++	WARN_ON_ONCE(enable_owner != NULL);
++	WARN_ON_ONCE(enable_refcnt != 0);
++	enable_owner = current;
++	enable_refcnt = 1;
+ 	return flags;
+ }
+ 
+ static void clk_enable_unlock(unsigned long flags)
+ {
++	WARN_ON_ONCE(enable_owner != current);
++	WARN_ON_ONCE(enable_refcnt == 0);
++
++	if (--enable_refcnt)
++		return;
++	enable_owner = NULL;
+ 	spin_unlock_irqrestore(&enable_lock, flags);
+ }
+ 
+-- 
+1.7.10.4
 
