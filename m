@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab3C1FEP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 01:04:15 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:62792 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab3C1FEN (ORCPT
+	id S1752650Ab3C1FEd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 01:04:33 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57297 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab3C1FEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 01:04:13 -0400
-Message-ID: <1364447081.15039.5.camel@gitbox>
-Subject: Re: [PATCH 6/6] video: fb: vt8500: Convert framebuffer drivers to
- standardized binding
-From: Tony Prisk <linux@prisktech.co.nz>
-To: vt8500-wm8505-linux-kernel@googlegroups.com
-Cc: linux-fbdev@vger.kernel.org, florianschandinat@gmx.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 28 Mar 2013 18:04:41 +1300
-In-Reply-To: <5152D39F.1090104@ti.com>
-References: <1364374021-10844-1-git-send-email-linux@prisktech.co.nz>
-	 <1364374021-10844-7-git-send-email-linux@prisktech.co.nz>
-	 <5152D39F.1090104@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Mar 2013 01:04:31 -0400
+Date: Thu, 28 Mar 2013 16:04:20 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jason Wang <jasowang@redhat.com>
+Subject: linux-next: build failure after merge of the final tree (net-next
+ tree related)
+Message-Id: <20130328160420.e57d7fdbd2894807e73e8497@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__28_Mar_2013_16_04_20_+1100_TGef+=DYYQ0ECeQT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-27 at 13:10 +0200, Tomi Valkeinen wrote:
-> Hi,
-> 
-> On 2013-03-27 10:47, Tony Prisk wrote:
-> > Now that a display timing binding is available, convert our almost identical
-> > binding to use the standard binding.
-> > 
-> > This patch converts the vt8500 and wm8505 framebuffer drivers and
-> > associated dts/dtsi files to use the standard binding as defined in
-> > bindings/video/display-timing.txt.
-> > 
-> > There are two side-effects of making this conversion:
-> > 
-> > 1) The fb node should now be in the board file, rather than the soc file as
-> > the display-timing node is a child of the fb node.
-> > 
-> > 2) We still require a bits per pixel property to initialize the framebuffer
-> > for the different lcd panels. Rather than including this as part of the
-> > display timing, it is moved into the framebuffer node.
-> > 
-> > I have also taken the opportunity to alphabetise the includes of each
-> > driver to avoid double-ups.
-> 
-> I don't think this is correct. I don't have that much experience with
-> DT, but I think you should have, for example:
-> 
-> wm8850.dtsi:
-> 
-> 	fb: fb@d8051700 {
-> 		compatible = "wm,wm8505-fb";
-> 		reg = <0xd8051700 0x200>;
-> 	};
-> 
-> wm8850-w70v2.dts:
-> 
-> &fb {
-> 	bits-per-pixel = <16>;
-> 
-> 	display-timings {
-> 		native-mode = <&timing0>;
-> 		timing0: 800x480 {
-> 			clock-frequency = <0>;
-> 			...
-> 		};
-> 	};
-> };
-> 
-> So, the core fb part should be in the SoC's file, as it's part of the
-> SoC. And the stuff that tells what kind of display is attached is in the
-> board dts file.
-> 
-> Also, just a word of warning, I think the videomode series I've sent for
-> review will cause some breakage with this series if the videomode series
-> is accepted. Nothing difficult to fix, though, but we'll need some extra
-> management to avoid compilation failures.
-> 
->  Tomi
-> 
-> 
+--Signature=_Thu__28_Mar_2013_16_04_20_+1100_TGef+=DYYQ0ECeQT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the feedback and the heads-up.
+Hi all,
 
-I believe you are correct about the DT info - it looks right when
-described the way you did, so I have changed it.
+After merging the final tree, today's linux-next build (powerpc
+ppc44x_defconfig) failed like this:
 
-If there is no other feedback, I will post a version 2 after Easter.
+net/packet/af_packet.c: In function 'packet_sendmsg_spkt':
+net/packet/af_packet.c:1515:2: error: implicit declaration of function 'skb=
+_probe_transport_header' [-Werror=3Dimplicit-function-declaration]
+drivers/net/tun.c: In function 'tun_get_user':
+drivers/net/tun.c:1206:2: error: implicit declaration of function 'skb_prob=
+e_transport_header' [-Werror=3Dimplicit-function-declaration]
 
-Regards
-Tony P
+Caused by commit 40893fd0fd4e ("net: switch to use
+skb_probe_transport_header()").  This is a 32 bit build, so that
+"BITS_PER_LONG > 32" is false and so NET_SKBUFF_DATA_USES_OFFSET is not
+defined ... and skb_probe_transport_header() is only defined in an area of
+skbuff.h protected by "#ifdef NET_SKBUFF_DATA_USES_OFFSET"  :-(
 
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__28_Mar_2013_16_04_20_+1100_TGef+=DYYQ0ECeQT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRU89UAAoJEECxmPOUX5FEn6IP/3vN6nDZpA0VF/AQ7P/rF31Q
+gU1bYl40SHBe8Nmb+bZYGXXAdU2o2y7u52nR+rOQsnjlRL7V22BUyCVY/glpqIP8
+82r0i5zCplZ+6cK+LqzFEy86//YSMivUi0Tu+rrmXMPsBtEAsQhV+oF50hSZIhn/
+/4JpO8+M5IdxkjjWyhkaNJEVSzzgK0hazQ4ZRn5qL71YV7oC8fj9Zr035C1/0Iut
+ns5Z1cnWOAbrBtmKz86tKPUAF1rtrGipKqnWetnEbDktV8eHw5H3xdZ11TRuzax8
+LzcE3q/uIYA76D5qlqHbsPpIEZYMl+UmL1dTjgm/Gr0hrJPIZeBFRpx+bYHtT3tp
+nozQrkVuQGVKbV6VOas0sFxo2AbQHLVM1ySQfkzy90oH52UCVYOJCsBCn9HeKl35
+Fw7hPz1PS9+muexoVREH8O2VFDHZozCOMQe4e0JDQXi9V7K6PbcOKzV2xvVchXlh
+Rhttok2fjkeqsFPLfn0yBx9414GEtZTpMr+ws1IG1xkAGcOLw0JOMOHiOhUD8C3q
+Fi3Mghjr+01omQUlh7BIMbTObURLujsEb/nHX1trKNxQJy3vsmR7A4t6oHNOQq0p
+zzqwoC0cB7VvhP4aM1wPerWyYnsysaUt4AjiPp77bLChRsJBiOCYGmqIVpEy7pMh
+E5meeCUSWr0JviLofgNT
+=a1zM
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__28_Mar_2013_16_04_20_+1100_TGef+=DYYQ0ECeQT--
