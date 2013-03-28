@@ -1,76 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab3C1PpL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 11:45:11 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32089 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751887Ab3C1PpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 11:45:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,927,1355126400"; 
-   d="scan'208";a="285839313"
-From: Andi Kleen <andi@firstfloor.org>
-To: a.p.zijlstra@chello.nl
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] perf: Enable function tracing for perf core
-References: <1362785086-12901-1-git-send-email-andi@firstfloor.org>
-Date: Thu, 28 Mar 2013 08:45:08 -0700
-In-Reply-To: <1362785086-12901-1-git-send-email-andi@firstfloor.org> (Andi
-	Kleen's message of "Fri, 8 Mar 2013 15:24:46 -0800")
-Message-ID: <m2y5d7h6kb.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1756634Ab3C1PpT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 11:45:19 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:36298 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756593Ab3C1PpN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 11:45:13 -0400
+Message-ID: <515464EB.1090809@linux.vnet.ibm.com>
+Date: Thu, 28 Mar 2013 21:12:35 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [patch 22/34] mips: Use generic idle loop
+References: <20130321214930.752934102@linutronix.de> <20130321215234.754954871@linutronix.de>
+In-Reply-To: <20130321215234.754954871@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032815-9574-0000-0000-0000073E1831
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> writes:
-
-> From: Andi Kleen <ak@linux.intel.com>
->
-> According to Steven R. there is no reason left to not support
-> function tracing for the perf core. This makes it easier to debug
-> perf.
->
-> Don't remove -pg for the x86 and generic perf core.
-
-Ping! patch is missing review.
-
-
->
-> Cc: rostedt@goodmis.org
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+On 03/22/2013 03:23 AM, Thomas Gleixner wrote:
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
 > ---
->  arch/x86/kernel/cpu/Makefile |    1 -
->  kernel/events/Makefile       |    4 ----
->  2 files changed, 0 insertions(+), 5 deletions(-)
+>  arch/mips/Kconfig          |    1 
+>  arch/mips/kernel/process.c |   46 ++++++++++++---------------------------------
+>  arch/mips/kernel/smp.c     |    2 -
+>  3 files changed, 15 insertions(+), 34 deletions(-)
 >
-> diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-> index a0e067d..8eb5d28 100644
-> --- a/arch/x86/kernel/cpu/Makefile
-> +++ b/arch/x86/kernel/cpu/Makefile
-> @@ -5,7 +5,6 @@
->  # Don't trace early stages of a secondary CPU boot
->  ifdef CONFIG_FUNCTION_TRACER
->  CFLAGS_REMOVE_common.o = -pg
-> -CFLAGS_REMOVE_perf_event.o = -pg
->  endif
->  
->  # Make sure load_percpu_segment has no stackprotector
-> diff --git a/kernel/events/Makefile b/kernel/events/Makefile
-> index 103f5d1..a630994 100644
-> --- a/kernel/events/Makefile
-> +++ b/kernel/events/Makefile
-> @@ -1,7 +1,3 @@
-> -ifdef CONFIG_FUNCTION_TRACER
-> -CFLAGS_REMOVE_core.o = -pg
-> -endif
+[...]
+ 
+> Index: linux-2.6/arch/mips/kernel/process.c
+> ===================================================================
+> --- linux-2.6.orig/arch/mips/kernel/process.c
+> +++ linux-2.6/arch/mips/kernel/process.c
+> @@ -41,44 +41,24 @@
+>  #include <asm/inst.h>
+>  #include <asm/stacktrace.h>
+> 
+> -/*
+> - * The idle thread. There's no useful work to be done, so just try to conserve
+> - * power and have a low exit latency (ie sit in a loop waiting for somebody to
+> - * say that they'd like to reschedule)
+> - */
+> -void __noreturn cpu_idle(void)
+> +void arch_cpu_idle_dead(void)
+>  {
+> -	int cpu;
 > -
->  obj-y := core.o ring_buffer.o callchain.o
->  
->  obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
+> -	/* CPU is going idle. */
+> -	cpu = smp_processor_id();
+> +	/* What the heck is this check doing ? */
+> +	if (!cpu_isset(cpu, cpu_callin_map))
+> +		play_dead();}
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+Extra closing brace?
+
+> +}
+> 
+> -	/* endless idle loop with no priority at all */
+> -	while (1) {
+> -		tick_nohz_idle_enter();
+> -		rcu_idle_enter();
+> -		while (!need_resched() && cpu_online(cpu)) {
+> +void arch__cpu_idle(void)
+
+s/arch__cpu_idle/arch_cpu_idle (single underscore)
+
+
+Regards,
+Srivatsa S. Bhat
+
+> +{
+>  #ifdef CONFIG_MIPS_MT_SMTC
+> -			extern void smtc_idle_loop_hook(void);
+> +	extern void smtc_idle_loop_hook(void);
+> 
+> -			smtc_idle_loop_hook();
+> +	smtc_idle_loop_hook();
+>  #endif
+> -
+> -			if (cpu_wait) {
+> -				/* Don't trace irqs off for idle */
+> -				stop_critical_timings();
+> -				(*cpu_wait)();
+> -				start_critical_timings();
+> -			}
+> -		}
+> -#ifdef CONFIG_HOTPLUG_CPU
+> -		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map))
+> -			play_dead();
+> -#endif
+> -		rcu_idle_exit();
+> -		tick_nohz_idle_exit();
+> -		schedule_preempt_disabled();
+> -	}
+> +	if (cpu_wait)
+> +		(*cpu_wait)();
+> +	else
+> +		local_irq_enable();
+>  }
+> 
+
