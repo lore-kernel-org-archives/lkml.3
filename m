@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050Ab3C1QWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 12:22:48 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:47925 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756703Ab3C1QMF (ORCPT
+	id S1756664Ab3C1QaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 12:30:08 -0400
+Received: from claranet-outbound-smtp05.uk.clara.net ([195.8.89.38]:46136 "EHLO
+	claranet-outbound-smtp05.uk.clara.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756388Ab3C1QaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 12:12:05 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 07/33] regulator: ab8500-ext: Add suspend support
-Date: Thu, 28 Mar 2013 16:11:07 +0000
-Message-Id: <1364487093-19551-8-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1364487093-19551-1-git-send-email-lee.jones@linaro.org>
-References: <1364487093-19551-1-git-send-email-lee.jones@linaro.org>
+	Thu, 28 Mar 2013 12:30:07 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: Change in behaviour when unmounting recursive bind mounts
+Date: Thu, 28 Mar 2013 16:29:47 +0000
+Message-ID: <1845538.MuH6UK6OzG@deuteros>
+User-Agent: KMail/4.10.1 (Linux/3.8.4; KDE/4.10.1; x86_64; ; )
+In-Reply-To: <20130328153549.GP6400@ram.oc3035372033.ibm.com>
+References: <2987308.JNKpYDEnfV@deuteros> <1694652.5MYOe5IR6S@deuteros> <20130328153549.GP6400@ram.oc3035372033.ibm.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+On Thursday 28 March 2013 23:35:49 Ram Pai wrote:
+> On Thu, Mar 28, 2013 at 01:05:56PM +0000, Tvrtko Ursulin wrote:
+> > Hi,
+> > 
+> > On Thursday 28 March 2013 11:03:51 Ram Pai wrote:
+> > > I tried these commands on a 3.8.0-rc1+ kernel and did not find the
+> > > problem. Is this on a recent kernel?
+> > 
+> > I am on Fedora 17 latest, but I've seen this problem with different
+> > kernels. Pretty sure from 3.5 something to 3.8 something. All Fedora
+> > flavoured. I will try vanilla soon.
+> > 
+> > What I am not sure is whether this behaviour was there from the start (on
+> > Fedora 17). I *think* it started to happen later on, which would mean a
+> > potential userland change somehow causes it.
+> > 
+> > Would that be at all possible with some mechanism?
+> > 
+> > > > Previously unmounting the recursive bind target would not unmount the
+> > > > source, which to me looks like a more sensible outcome.
+> > > 
+> > > yes. it should not unless they are peer-mounts, which in your case is
+> > > not.
+> > 
+> > What are these and how to create them?
+> 
+> These are mounts that are created by marking mount as shared, followed
+> by bind mount, followed by submount and then unmount.
+> 
+> Documentation/filesystem/sharedsubtree.txt has the details.
 
-Operations regulator_suspend_enable and regulator_suspend_disable
-are added.
+Knowing the right keywords certainly enabled me to hunt it down, thanks!
 
-Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Reviewed-by: Mattias NILSSON <mattias.i.nilsson@stericsson.com>
-Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
----
- drivers/regulator/ab8500-ext.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+Culprit is systemd as per following commit:  
+http://cgit.freedesktop.org/systemd/systemd/commit/?id=b3ac5f8cb98757416d8660023d6564a7c411f0a0
 
-diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
-index 21b9bfb..95fe706 100644
---- a/drivers/regulator/ab8500-ext.c
-+++ b/drivers/regulator/ab8500-ext.c
-@@ -102,6 +102,13 @@ static int ab8500_ext_regulator_enable(struct regulator_dev *rdev)
- 	return ret;
- }
- 
-+static int ab8500_ext_regulator_set_suspend_enable(struct regulator_dev *rdev)
-+{
-+	dev_dbg(rdev_get_dev(rdev), "suspend: ");
-+
-+	return ab8500_ext_regulator_enable(rdev);
-+}
-+
- static int disable(struct ab8500_ext_regulator_info *info, u8 *regval)
- {
- 	int ret;
-@@ -147,6 +154,13 @@ static int ab8500_ext_regulator_disable(struct regulator_dev *rdev)
- 	return ret;
- }
- 
-+static int ab8500_ext_regulator_set_suspend_disable(struct regulator_dev *rdev)
-+{
-+	dev_dbg(rdev_get_dev(rdev), "suspend: ");
-+
-+	return ab8500_ext_regulator_disable(rdev);
-+}
-+
- static int ab8500_ext_regulator_is_enabled(struct regulator_dev *rdev)
- {
- 	int ret;
-@@ -275,7 +289,9 @@ static int ab8500_ext_list_voltage(struct regulator_dev *rdev,
- 
- static struct regulator_ops ab8500_ext_regulator_ops = {
- 	.enable			= ab8500_ext_regulator_enable,
-+	.set_suspend_enable	= ab8500_ext_regulator_set_suspend_enable,
- 	.disable		= ab8500_ext_regulator_disable,
-+	.set_suspend_disable	= ab8500_ext_regulator_set_suspend_disable,
- 	.is_enabled		= ab8500_ext_regulator_is_enabled,
- 	.set_mode		= ab8500_ext_regulator_set_mode,
- 	.get_mode		= ab8500_ext_regulator_get_mode,
--- 
-1.7.10.4
+Regards,
+
+Tvrtko
 
