@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab3C1Ppp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 11:45:45 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:49078 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756332Ab3C1Ppk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 11:45:40 -0400
-Message-ID: <5154650A.1060406@linux.vnet.ibm.com>
-Date: Thu, 28 Mar 2013 21:13:06 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [patch 30/34] tile: Enter idle with preemption disabled
-References: <20130321214930.752934102@linutronix.de> <20130321215235.280451779@linutronix.de>
-In-Reply-To: <20130321215235.280451779@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032815-5816-0000-0000-0000075300C6
+	id S1756773Ab3C1Ppw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 11:45:52 -0400
+Received: from plane.gmane.org ([80.91.229.3]:58266 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756744Ab3C1Ppt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 11:45:49 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: "Holger Hoffstaette" <holger.hoffstaette@googlemail.com>
+Subject: drm/radeon: continued dead graphics with X on Thinkpad T60 with kernel 3.8.x/3.9.x
+Date: Thu, 28 Mar 2013 16:45:32 +0100
+Organization: The Fists of the White Lotus
+Message-ID: <pan.2013.03.28.15.45.32.586480@googlemail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: p5487679d.dip.t-dialin.net
+User-Agent: Pan/0.13.91 (Before we let euphoria convince us we are free)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2013 03:23 AM, Thomas Gleixner wrote:
-> cpu_idle() needs to be called with preemption disabled.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> ---
->  arch/tile/kernel/smpboot.c |    2 --
->  1 file changed, 2 deletions(-)
-> 
-> Index: linux-2.6/arch/tile/kernel/smpboot.c
-> ===================================================================
-> --- linux-2.6.orig/arch/tile/kernel/smpboot.c
-> +++ linux-2.6/arch/tile/kernel/smpboot.c
-> @@ -207,8 +207,6 @@ void __cpuinit online_secondary(void)
->  	/* Set up tile-timer clock-event device on this cpu */
->  	setup_tile_timer();
-> 
-> -	preempt_enable();
-> -
 
-Hmm, so shouldn't we call preempt_disabled() here?
+My old trusty Thinkpad T60 with a Mobility Radeon X1400 runs fine with
+3.7.10 - glxgears, vlc work great. However with kernel >=3.8.x any attempt
+at X dies in various ways. While waiting for all the other regressions in
+3.8.x to settle down I've collected the occasional attempt with newer
+kernels. As even latest 3.8.5 and 3.9-rc2 are affected (the two failing
+almost identically) I figured it is about time I complain. :)
 
-I see that start_secondary() calls preempt_disabled(), but I didn't quite
-understand as to which of the *_secondary() functions have to call
-it... especially since its the online_secondary() function which calls
-cpu_idle().
+Captured logs with annotations and oopses are at:
+http://hoho.dyndns.org/linux/radeon/, including as much relevant info as I
+could collect. All kernels are built the same way (via genkernel, an
+automated script) and configurations between kernel versions have not been
+altered. The 3.7.10 log is just included for reference (maybe the HW
+is initialized differently?); the system is rock-stable otherwise.
 
->  	cpu_idle();
->  }
-> 
-> 
-> 
- 
-Regards,
-Srivatsa S. Bhat
+I can gladly help track this down/build/patch from git but need some
+pointers how to proceed. 3.7.10 is the last kernel that works (very well)
+but is unmaintained, and it would be nice to move on to 3.8.5 to benefit
+from ongoing bug fixes.
+
+thanks!
+Holger
+
 
