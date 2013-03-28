@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab3C1Tj2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 15:39:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37057 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751528Ab3C1Tj0 (ORCPT
+	id S1752933Ab3C1To5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 15:44:57 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:59559 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab3C1Toz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 15:39:26 -0400
-Date: Thu, 28 Mar 2013 19:39:01 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        stable@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Message-ID: <20130328193901.GQ9079@decadent.org.uk>
-References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1364485358-8745-2-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130328155109.GA13075@kroah.com>
- <1364486669-10tbmvlb-mutt-n-horiguchi@ah.jp.nec.com>
+	Thu, 28 Mar 2013 15:44:55 -0400
+Date: Thu, 28 Mar 2013 12:44:43 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
+        Mikulas Patocka <mpatocka@redhat.com>, dm-devel@redhat.com,
+        Andi Kleen <andi@firstfloor.org>, dm-crypt@saout.de,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        Christian Schmidt <schmidt@digadd.de>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: dm-crypt performance
+Message-ID: <20130328194443.GG14088@htj.dyndns.org>
+References: <Pine.LNX.4.64.1303252051520.9745@file.rdu.redhat.com>
+ <20130326122713.GC27610@agk-dp.fab.redhat.com>
+ <5151FF82.6090405@gmail.com>
+ <20130326202837.GA5599@redhat.com>
+ <20130328185327.GF14088@htj.dyndns.org>
+ <20130328193343.GA15969@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1364486669-10tbmvlb-mutt-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH 1/2] hugetlbfs: stop setting VM_DONTDUMP in
- initializing vma(VM_HUGETLB)
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+In-Reply-To: <20130328193343.GA15969@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 12:04:29PM -0400, Naoya Horiguchi wrote:
-[...]
-> I guess you mean this patch violates one/both of these rules:
-> 
->  - It must fix a problem that causes a build error (but not for things
->    marked CONFIG_BROKEN), an oops, a hang, data corruption, a real
->    security issue, or some "oh, that's not good" issue.  In short, something
->    critical.
->  - It or an equivalent fix must already exist in Linus' tree (upstream).
-> 
-> I'm not sure if the problem "we can't get any hugepage in coredump"
-> is considered as 'some "oh, that's not good" issue'.
-> But yes, it's not a critical one.
-> If you mean I violated the second rule, sorry, I'll get it into upstream first.
- 
-The second rule is the clear one.  If you are submitting a patch to
-a subsystem maintainer and you want it to go into stable branches as
-well, you must put 'Cc: stable@vger.kernel.org' in the commit message,
-not just the mail header.
+Hello,
 
-Ben.
+On Thu, Mar 28, 2013 at 03:33:43PM -0400, Vivek Goyal wrote:
+> I am curious why out of order bio is a problem. Doesn't the elevator
+> already merge bio's with existing requests and if merging does not
+> happen then requests are sorted in order. So why ordering is not
+> happening properly with dm-crypt. What additional info dm-crypt has
+> that it can do better ordering than IO scheduler.
+
+Hmmm... well, for one, it doesn't only change ordering.  It also
+changes the timings.  Before iosched would get contiguous stream of
+IOs when the queue gets unplugged (BTW, how does dm crypt handling
+plugging?  If not handled properly, it could definitely affect a lot
+of things.)  With multiple threads doing encryption in the middle, the
+iosched could get scattered IOs which could easily span multiple
+millisecs.  Even if context tagging was done properly, it could easily
+lead to much less efficient IO patterns to hardware.
+
+Keeping IO order combined with proper plug handling would not only
+keep the ordering constant but also the relative timing of events,
+which is an important factor when scheduling IOs.
+
+> CFQ might seeing more performance hit because we maintain per
+> process queues and kernel threads might not be sharing the IO context
+> (i am not sure). So if all the crypto threads can share the IO
+> context, atleast it will make sure all IO from them goes into a
+> single queue.
+
+Right, this is important too although I fail to see how workqueue
+vs. custom dispatch would make any difference here.  dm-crypt should
+definitely be using bio_associate_current().
+
+Thanks.
 
 -- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+tejun
