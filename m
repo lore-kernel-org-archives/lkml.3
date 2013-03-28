@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab3C1Mj4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 08:39:56 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54382 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572Ab3C1Mjz (ORCPT
+	id S1755949Ab3C1Mmh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 08:42:37 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:40715 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755084Ab3C1Mmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 08:39:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] clocksource: Fix build in non-OF case
-Date: Thu, 28 Mar 2013 12:39:46 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: Rob Herring <robherring2@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        Axel Lin <axel.lin@ingics.com>
-References: <1364473805-773-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1364473805-773-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Thu, 28 Mar 2013 08:42:32 -0400
+Date: Thu, 28 Mar 2013 21:42:28 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        STEricsson <STEricsson_nomadik_linux@list.st.com>,
+        Jamie Iles <jamie@jamieiles.com>, Barry Song <baohua.song@csr.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: remove mach .init_irq for irqchip_init users
+Message-ID: <20130328124228.GA29616@verge.net.au>
+References: <1364463704-13692-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1364463704-13692-3-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303281239.46639.arnd@arndb.de>
-X-Provags-ID: V02:K0:nU/gI+SkWXKQ54UdF2SWHV8cELVnFQ6xcWdLp9ARn+L
- 5lGtXHOsBdX8ZS0k0JIBN05bWvclmYMRl+nmFa6Dhf/kt4dabq
- rHecoaPAg+EqmMk5oBbUVuMdZ0PM2DTCBX/7tqIpxlyRc1otit
- WrQnlRp5K84viOpcqBIjcrZkPEWJNhnnTmty1kjdopufQPsevR
- 6tb5Y5KcM31HHlQTSzq/rycIGk+wdK1dwURr3Xc2Rie1CkOi2j
- RfUa10szLfCSbUvppPgzOzejGAFQr88KF7s0pJxcWOkbecnZFD
- /c4ynRNzQfCB7/0I81Pxx7uP2mvLzAgTDrYPUIlTSzSVUuT4ye
- N6TIh/sioTasDW/YtSUM=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364463704-13692-3-git-send-email-maxime.ripard@free-electrons.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 March 2013, Mark Brown wrote:
-> Commit 4d10f054 (clocksource: make CLOCKSOURCE_OF_DECLARE type safe)
-> made CLOCKSOURCE_OF_DECLARE reference the function pointer in both the
-> OF and non-OF cases. In the non-OF case this is likely to introduce
-> build failures as users may reasonably conditionally compile the OF
-> specific code, either the macro ought to be used within CONFIG_OF and
-> not have a !CONFIG_OF case or the macro ought not to reference its
-> arguments in that case.
+On Thu, Mar 28, 2013 at 10:41:44AM +0100, Maxime Ripard wrote:
+> Now that the arm core code calls irqchip_init, we can remove it from all
+> the machines that were using it.
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>  arch/arm/mach-bcm/board_bcm.c                  |    1 -
+>  arch/arm/mach-msm/board-dt-8660.c              |    1 -
+>  arch/arm/mach-msm/board-dt-8960.c              |    1 -
+>  arch/arm/mach-nomadik/cpu-8815.c               |    1 -
+>  arch/arm/mach-picoxcell/common.c               |    1 -
+>  arch/arm/mach-prima2/common.c                  |    1 -
+>  arch/arm/mach-shmobile/board-kzm9g-reference.c |    1 -
+>  arch/arm/mach-shmobile/setup-emev2.c           |    1 -
+>  arch/arm/mach-shmobile/setup-sh73a0.c          |    1 -
+>  arch/arm/mach-spear/spear1310.c                |    1 -
+>  arch/arm/mach-spear/spear1340.c                |    1 -
+>  arch/arm/mach-spear/spear300.c                 |    1 -
+>  arch/arm/mach-spear/spear310.c                 |    1 -
+>  arch/arm/mach-spear/spear320.c                 |    1 -
+>  arch/arm/mach-spear/spear6xx.c                 |    1 -
+>  arch/arm/mach-vexpress/v2m.c                   |    1 -
+>  arch/arm/mach-virt/virt.c                      |    1 -
+>  arch/arm/mach-zynq/common.c                    |    1 -
+>  18 files changed, 18 deletions(-)
 
-Hi Mark,
+mach-shmobile portion:
 
-Axel Lin reported the same problem and I fixed the below code earlier
-today by using the correct __attribute__((unused)) and dropping the
-section magic for the non-OF case. My patch now looks contains the
-change below. I also proposed a fix for the clocksource driver
-at http://lkml.org/lkml/2013/3/26/103.
+Acked-by: Simon Horman <horms+renesas@verge.net.au>
 
-	Arnd
+I have some new users of this queued up for v3.10.
+How should we handle that?
 
-----
-@@ -332,16 +332,23 @@ extern int clocksource_mmio_init(void __iomem *, const char *,
- 
- extern int clocksource_i8253_init(void);
- 
-+struct device_node;
-+typedef void(*clocksource_of_init_fn)(struct device_node *);
- #ifdef CONFIG_CLKSRC_OF
- extern void clocksource_of_init(void);
- 
- #define CLOCKSOURCE_OF_DECLARE(name, compat, fn)                       \
-        static const struct of_device_id __clksrc_of_table_##name       \
-                __used __section(__clksrc_of_table)                     \
--                = { .compatible = compat, .data = fn };
-+                = { .compatible = compat,                              \
-+                    .data = (fn == (clocksource_of_init_fn)NULL) ? fn : fn }
- #else
- static inline void clocksource_of_init(void) {}
--#define CLOCKSOURCE_OF_DECLARE(name, compat, fn)
-+#define CLOCKSOURCE_OF_DECLARE(name, compat, fn)                       \
-+       static const struct of_device_id __clksrc_of_table_##name       \
-+               __attribute__((unused))                                 \
-+                = { .compatible = compat,                              \
-+                    .data = (fn == (clocksource_of_init_fn)NULL) ? fn : fn }
- #endif
- 
- #endif /* _LINUX_CLOCKSOURCE_H */
+In particular:
+
+arch/arm/mach-shmobile/setup-r8a73a4.c
+arch/arm/mach-shmobile/intc-r8a7779.c
+arch/arm/mach-shmobile/setup-r8a7778.c
+
+You can find these in the renesas-next-20130328 tag of
+my renesas tree on kernel.org. They are or will soon
+be in linux-next.
+
