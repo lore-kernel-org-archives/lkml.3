@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab3C1MqI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 08:46:08 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:48814 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755291Ab3C1MqF (ORCPT
+	id S1755983Ab3C1MrE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 08:47:04 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:58393 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755407Ab3C1Mq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 08:46:05 -0400
+	Thu, 28 Mar 2013 08:46:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130327150807.GC14004@redacted.bos.redhat.com>
-References: <1363642353-30749-1-git-send-email-matthew.garrett@nebula.com>
-	<1363642353-30749-5-git-send-email-matthew.garrett@nebula.com>
-	<CA+5PVA4VFgExGNrt5Yh+F4f48amAXKYAbdNFDy7VTFTguh6qTA@mail.gmail.com>
-	<20130327150807.GC14004@redacted.bos.redhat.com>
-Date: Thu, 28 Mar 2013 08:46:04 -0400
-Message-ID: <CA+5PVA6zYkjnzgHvso4zwg_PRZ+kssU76Fugc4p5rw3RDnYhpA@mail.gmail.com>
-Subject: Re: [PATCH 05/12] PCI: Require CAP_COMPROMISE_KERNEL for PCI BAR access
-From: Josh Boyer <jwboyer@gmail.com>
-To: Kyle McMartin <kmcmarti@redhat.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
-        kexec@lists.infradead.org, linux-pci@vger.kernel.org
+In-Reply-To: <CAE9FiQU7cDzJdHxmqhJNgc9UCsRLgvCFQpv8+fLxD79pLEUC5A@mail.gmail.com>
+References: <CAE9FiQXmeb66dc8fET0y99BjqpUXp11c7utiQ5keR1Wf+N9xaA@mail.gmail.com>
+ <1363628226-6679-1-git-send-email-yinghai@kernel.org> <CAErSpo6v0mj9=Q13d=G4hho0mb9XTcsmefzke9fROYmZ7oBWxQ@mail.gmail.com>
+ <CAE9FiQU7cDzJdHxmqhJNgc9UCsRLgvCFQpv8+fLxD79pLEUC5A@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 28 Mar 2013 06:46:39 -0600
+Message-ID: <CAErSpo4ncW8rkcpDiccORZedj30m7jRmpXK+amfDGn_wjwt7EA@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Remove not needed check in disable aspm link
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>, stable@kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 11:08 AM, Kyle McMartin <kmcmarti@redhat.com> wrote:
-> On Wed, Mar 27, 2013 at 11:03:26AM -0400, Josh Boyer wrote:
->> On Mon, Mar 18, 2013 at 5:32 PM, Matthew Garrett
->> <matthew.garrett@nebula.com> wrote:
->> > Any hardware that can potentially generate DMA has to be locked down from
->> > userspace in order to avoid it being possible for an attacker to cause
->> > arbitrary kernel behaviour. Default to paranoid - in future we can
->> > potentially relax this for sufficiently IOMMU-isolated devices.
->> >
->> > Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+On Thu, Mar 28, 2013 at 1:41 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Wed, Mar 27, 2013 at 3:56 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
 >>
->> As noted here:
->>
->> https://bugzilla.redhat.com/show_bug.cgi?id=908888
->>
->> this breaks pci passthru with QEMU.  The suggestion in the bug is to move
->> the check from read/write to open, but sysfs makes that somewhat
->> difficult.  The open code is part of the core sysfs functionality shared
->> with the majority of sysfs files, so adding a check there would restrict
->> things that clearly don't need to be restricted.
->>
->> Kyle had the idea to add a cap field to the attribute structure, and do
->> a capable check if that is set.  That would allow for a more generic
->> usage of capabilities in sysfs code, at the cost of slightly increasing
->> the structure size and open path.  That seems somewhat promising if we
->> stick with capabilities.
->>
->> I would love to just squarely blame capabilities for causing this, but we
->> can't just replace it with an efi_enabled(EFI_SECURE_BOOT) check because
->> of the sysfs open case.  I'm not sure there are great answers here.
->>
+>> Why can't we set all the ASPM flags *first*, before calling
+>> pci_acpi_scan_root()?  That way we could just do the correct ASPM
+>> setup as we discover devices during enumeration, rather than trying to
+>> fix things up afterwards.  I suspect pcie_clear_aspm() is broken
+>> anyway, because it looks like it only touches one level of the
+>> hierarchy, without recursively descending it.
 >
-> Yeah, that was something like this (I don't even remember which Fedora
-> kernel version this was against.)
+> Yes, we can clean up aspm stop/clear up.
+> and that should be for 3.10 right?
+>
+> But this patch should be safe for 3.9 and stable.
 
-Mostly an FYI for the peanut gallery, but we noticed moving the cap check
-to open breaks lspci being run by an unprivileged user.  It also doesn't
-fix pci passthrough because QEMU opens the PCI resource files by itself
-after it's already dropped all caps.
+This patch might be *safe*, but it (and the changelog) are completely
+unintelligible.
 
-More thinking required.
+The problem with applying an unintelligible stop-gap patch is that it
+becomes forever part of the changelog, and it's a huge waste of time
+to everybody who tries to understand the history later.  That's why I
+think it's worth spending some time to make a good patch now.
 
-josh
+Bjorn
