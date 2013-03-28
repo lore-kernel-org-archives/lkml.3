@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab3C1ErH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 00:47:07 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:52093 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136Ab3C1ErE (ORCPT
+	id S1753317Ab3C1ErY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 00:47:24 -0400
+Received: from mail-da0-f52.google.com ([209.85.210.52]:64092 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148Ab3C1ErG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 00:47:04 -0400
+	Thu, 28 Mar 2013 00:47:06 -0400
 From: Mike Turquette <mturquette@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
@@ -14,9 +14,9 @@ Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
         davidb@codeaurora.org, ulf.hansson@linaro.org,
         laurent.pinchart@ideasonboard.com, tglx@linutronix.de,
         Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 1/2] clk: abstract locking out into helper functions
-Date: Wed, 27 Mar 2013 21:45:57 -0700
-Message-Id: <1364445958-2999-2-git-send-email-mturquette@linaro.org>
+Subject: [PATCH 2/2] clk: allow reentrant calls into the clk framework
+Date: Wed, 27 Mar 2013 21:45:58 -0700
+Message-Id: <1364445958-2999-3-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1364445958-2999-1-git-send-email-mturquette@linaro.org>
 References: <1364368183-24420-1-git-send-email-mturquette@linaro.org>
@@ -25,9 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create locking helpers for the global mutex and global spinlock.  The
-definitions of these helpers will be expanded upon in the next patch
-which introduces reentrancy into the locking scheme.
+Reentrancy into the clock framework is necessary for clock operations
+that result in nested calls to the clk api.  A common example is a clock
+that is prepared via an i2c transaction, such as a clock inside of a
+discrete audio chip or a power management IC.  The i2c subsystem itself
+will use the clk api resulting in a deadlock:
+
+clk_prepare(audio_clk)
+	i2c_transfer(..)
+		clk_prepare(i2c_controller_clk)
+
+The ability to reenter the clock framework prevents this deadlock.
+
+Other use cases exist such as allowing .set_rate callbacks to call
+clk_set_parent to achieve the best rate, or to save power in certain
+configurations.  Yet another example is performing pinctrl operations
+from a clk_ops callback.  Calls into the pinctrl subsystem may call
+clk_{un}prepare on an unrelated clock.  Allowing for nested calls to
+reenter the clock framework enables both of these use cases.
+
+Reentrancy is implemented by two global pointers that track the owner
+currently holding a global lock.  One pointer tracks the owner during
+sleepable, mutex-protected operations and the other one tracks the owner
+during non-interruptible, spinlock-protected operations.
+
+When the clk framework is entered we try to hold the global lock.  If it
+is held we compare the current task id against the current owner; a
+match implies a nested call and we reenter.  If the values do not match
+then we block on the lock until it is released.
 
 Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Cc: Rajagopal Venkat <rajagopal.venkat@linaro.org>
@@ -36,333 +61,93 @@ Cc: Ulf Hansson <ulf.hansson@linaro.org>
 Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/clk/clk.c |   97 ++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 59 insertions(+), 38 deletions(-)
+Changes since v4:
+ * remove uneccesary atomic operations
+ * remove casting bugs
+ * place reentrancy logic into locking helper functions
+ * improve debugging with reference counting and WARNs
+
+ drivers/clk/clk.c |   43 +++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 41 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 5e8ffff..bea47d5 100644
+index bea47d5..fe7c054 100644
 --- a/drivers/clk/clk.c
 +++ b/drivers/clk/clk.c
-@@ -27,6 +27,27 @@ static HLIST_HEAD(clk_root_list);
+@@ -19,10 +19,17 @@
+ #include <linux/of.h>
+ #include <linux/device.h>
+ #include <linux/init.h>
++#include <linux/sched.h>
+ 
+ static DEFINE_SPINLOCK(enable_lock);
+ static DEFINE_MUTEX(prepare_lock);
+ 
++static struct task_struct *prepare_owner;
++static struct task_struct *enable_owner;
++
++static int prepare_refcnt;
++static int enable_refcnt;
++
+ static HLIST_HEAD(clk_root_list);
  static HLIST_HEAD(clk_orphan_list);
  static LIST_HEAD(clk_notifier_list);
+@@ -30,21 +37,53 @@ static LIST_HEAD(clk_notifier_list);
+ /***           locking             ***/
+ static void clk_prepare_lock(void)
+ {
+-	mutex_lock(&prepare_lock);
++	if (!mutex_trylock(&prepare_lock)) {
++		if (prepare_owner == current) {
++			prepare_refcnt++;
++			return;
++		}
++		mutex_lock(&prepare_lock);
++	}
++	WARN_ON_ONCE(prepare_owner != NULL);
++	WARN_ON_ONCE(prepare_refcnt != 0);
++	prepare_owner = current;
++	prepare_refcnt = 1;
+ }
  
-+/***           locking             ***/
-+static void clk_prepare_lock(void)
-+{
-+	mutex_lock(&prepare_lock);
-+}
+ static void clk_prepare_unlock(void)
+ {
++	WARN_ON_ONCE(prepare_owner != current);
++	WARN_ON_ONCE(prepare_refcnt == 0);
 +
-+static void clk_prepare_unlock(void)
-+{
-+	mutex_unlock(&prepare_lock);
-+}
++	if (--prepare_refcnt)
++		return;
++	prepare_owner = NULL;
+ 	mutex_unlock(&prepare_lock);
+ }
+ 
+ static void clk_enable_lock(unsigned long *flags)
+ {
+-	spin_lock_irqsave(&enable_lock, *flags);
++	if (!spin_trylock_irqsave(&enable_lock, *flags)) {
++		if (enable_owner == current) {
++			enable_refcnt++;
++			return;
++		}
++		spin_lock_irqsave(&enable_lock, *flags);
++	}
++	WARN_ON_ONCE(enable_owner != NULL);
++	WARN_ON_ONCE(enable_refcnt != 0);
++	enable_owner = current;
++	enable_refcnt = 1;
+ }
+ 
+ static void clk_enable_unlock(unsigned long *flags)
+ {
++	WARN_ON_ONCE(enable_owner != current);
++	WARN_ON_ONCE(enable_refcnt == 0);
 +
-+static void clk_enable_lock(unsigned long *flags)
-+{
-+	spin_lock_irqsave(&enable_lock, *flags);
-+}
-+
-+static void clk_enable_unlock(unsigned long *flags)
-+{
-+	spin_unlock_irqrestore(&enable_lock, *flags);
-+}
-+
- /***        debugfs support        ***/
- 
- #ifdef CONFIG_COMMON_CLK_DEBUG
-@@ -69,7 +90,7 @@ static int clk_summary_show(struct seq_file *s, void *data)
- 	seq_printf(s, "   clock                        enable_cnt  prepare_cnt  rate\n");
- 	seq_printf(s, "---------------------------------------------------------------------\n");
- 
--	mutex_lock(&prepare_lock);
-+	clk_prepare_lock();
- 
- 	hlist_for_each_entry(c, &clk_root_list, child_node)
- 		clk_summary_show_subtree(s, c, 0);
-@@ -77,7 +98,7 @@ static int clk_summary_show(struct seq_file *s, void *data)
- 	hlist_for_each_entry(c, &clk_orphan_list, child_node)
- 		clk_summary_show_subtree(s, c, 0);
- 
--	mutex_unlock(&prepare_lock);
-+	clk_prepare_unlock();
- 
- 	return 0;
++	if (--enable_refcnt)
++		return;
++	enable_owner = NULL;
+ 	spin_unlock_irqrestore(&enable_lock, *flags);
  }
-@@ -130,7 +151,7 @@ static int clk_dump(struct seq_file *s, void *data)
  
- 	seq_printf(s, "{");
- 
--	mutex_lock(&prepare_lock);
-+	clk_prepare_lock();
- 
- 	hlist_for_each_entry(c, &clk_root_list, child_node) {
- 		if (!first_node)
-@@ -144,7 +165,7 @@ static int clk_dump(struct seq_file *s, void *data)
- 		clk_dump_subtree(s, c, 0);
- 	}
- 
--	mutex_unlock(&prepare_lock);
-+	clk_prepare_unlock();
- 
- 	seq_printf(s, "}");
- 	return 0;
-@@ -316,7 +337,7 @@ static int __init clk_debug_init(void)
- 	if (!orphandir)
- 		return -ENOMEM;
- 
--	mutex_lock(&prepare_lock);
-+	clk_prepare_lock();
- 
- 	hlist_for_each_entry(clk, &clk_root_list, child_node)
- 		clk_debug_create_subtree(clk, rootdir);
-@@ -326,7 +347,7 @@ static int __init clk_debug_init(void)
- 
- 	inited = 1;
- 
--	mutex_unlock(&prepare_lock);
-+	clk_prepare_unlock();
- 
- 	return 0;
- }
-@@ -372,7 +393,7 @@ static void clk_disable_unused_subtree(struct clk *clk)
- 	hlist_for_each_entry(child, &clk->children, child_node)
- 		clk_disable_unused_subtree(child);
- 
--	spin_lock_irqsave(&enable_lock, flags);
-+	clk_enable_lock(&flags);
- 
- 	if (clk->enable_count)
- 		goto unlock_out;
-@@ -393,7 +414,7 @@ static void clk_disable_unused_subtree(struct clk *clk)
- 	}
- 
- unlock_out:
--	spin_unlock_irqrestore(&enable_lock, flags);
-+	clk_enable_unlock(&flags);
- 
- out:
- 	return;
-@@ -403,7 +424,7 @@ static int clk_disable_unused(void)
- {
- 	struct clk *clk;
- 
--	mutex_lock(&prepare_lock);
-+	clk_prepare_lock();
- 
- 	hlist_for_each_entry(clk, &clk_root_list, child_node)
- 		clk_disable_unused_subtree(clk);
-@@ -417,7 +438,7 @@ static int clk_disable_unused(void)
- 	hlist_for_each_entry(clk, &clk_orphan_list, child_node)
- 		clk_unprepare_unused_subtree(clk);
- 
--	mutex_unlock(&prepare_lock);
-+	clk_prepare_unlock();
- 
- 	return 0;
- }
-@@ -600,9 +621,9 @@ void __clk_unprepare(struct clk *clk)
-  */
- void clk_unprepare(struct clk *clk)
- {
--	mutex_lock(&prepare_lock);
-+	clk_prepare_lock();
- 	__clk_unprepare(clk);
--	mutex_unlock(&prepare_lock);
-+	clk_prepare_unlock();
- }
- EXPORT_SYMBOL_GPL(clk_unprepare);
- 
-@@ -648,9 +669,9 @@ int clk_prepare(struct clk *clk)
- {
- 	int ret;
- 
--	mutex_lock(&prepare_lock);
-+	clk_prepare_lock();
- 	ret = __clk_prepare(clk);
--	mutex_unlock(&prepare_lock);
-+	clk_prepare_unlock();
- 
- 	return ret;
- }
-@@ -692,9 +713,9 @@ void clk_disable(struct clk *clk)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&enable_lock, flags);
-+	clk_enable_lock(&flags);
- 	__clk_disable(clk);
--	spin_unlock_irqrestore(&enable_lock, flags);
-+	clk_enable_unlock(&flags);
- }
- EXPORT_SYMBOL_GPL(clk_disable);
- 
-@@ -745,9 +766,9 @@ int clk_enable(struct clk *clk)
- 	unsigned long flags;
- 	int ret;
- 
--	spin_lock_irqsave(&enable_lock, flags);
-+	clk_enable_lock(&flags);
- 	ret = __clk_enable(clk);
--	spin_unlock_irqrestore(&enable_lock, flags);
-+	clk_enable_unlock(&flags);
- 
- 	return ret;
- }
-@@ -792,9 +813,9 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
- {
- 	unsigned long ret;
- 
--	mutex_lock(&prepare_lock);
-+	clk_prepare_lock();
- 	ret = __clk_round_rate(clk, rate);
--	mutex_unlock(&prepare_lock);
-+	clk_prepare_unlock();
- 
- 	return ret;
- }
-@@ -889,13 +910,13 @@ unsigned long clk_get_rate(struct clk *clk)
- {
- 	unsigned long rate;
- 
--	mutex_lock(&prepare_lock);
-+	clk_prepare_lock();
- 
- 	if (clk && (clk->flags & CLK_GET_RATE_NOCACHE))
- 		__clk_recalc_rates(clk, 0);
- 
- 	rate = __clk_get_rate(clk);
--	mutex_unlock(&prepare_lock);
-+	clk_prepare_unlock();
- 
- 	return rate;
- }
-@@ -1100,7 +1121,7 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
- 	int ret = 0;
- 
- 	/* prevent racing with updates to the clock topology */
--	mutex_lock(&prepare_lock);
-+	clk_prepare_lock();
- 
- 	/* bail early if nothing to do */
- 	if (rate == clk->rate)
-@@ -1132,7 +1153,7 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
- 	clk_change_rate(top);
- 
- out:
--	mutex_unlock(&prepare_lock);
-+	clk_prepare_unlock();
- 
- 	return ret;
- }
-@@ -1148,9 +1169,9 @@ struct clk *clk_get_parent(struct clk *clk)
- {
- 	struct clk *parent;
- 
--	mutex_lock(&prepare_lock);
-+	clk_prepare_lock();
- 	parent = __clk_get_parent(clk);
--	mutex_unlock(&prepare_lock);
-+	clk_prepare_unlock();
- 
- 	return parent;
- }
-@@ -1294,19 +1315,19 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
- 		__clk_prepare(parent);
- 
- 	/* FIXME replace with clk_is_enabled(clk) someday */
--	spin_lock_irqsave(&enable_lock, flags);
-+	clk_enable_lock(&flags);
- 	if (clk->enable_count)
- 		__clk_enable(parent);
--	spin_unlock_irqrestore(&enable_lock, flags);
-+	clk_enable_unlock(&flags);
- 
- 	/* change clock input source */
- 	ret = clk->ops->set_parent(clk->hw, i);
- 
- 	/* clean up old prepare and enable */
--	spin_lock_irqsave(&enable_lock, flags);
-+	clk_enable_lock(&flags);
- 	if (clk->enable_count)
- 		__clk_disable(old_parent);
--	spin_unlock_irqrestore(&enable_lock, flags);
-+	clk_enable_unlock(&flags);
- 
- 	if (clk->prepare_count)
- 		__clk_unprepare(old_parent);
-@@ -1338,7 +1359,7 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
- 		return -ENOSYS;
- 
- 	/* prevent racing with updates to the clock topology */
--	mutex_lock(&prepare_lock);
-+	clk_prepare_lock();
- 
- 	if (clk->parent == parent)
- 		goto out;
-@@ -1367,7 +1388,7 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
- 	__clk_reparent(clk, parent);
- 
- out:
--	mutex_unlock(&prepare_lock);
-+	clk_prepare_unlock();
- 
- 	return ret;
- }
-@@ -1390,7 +1411,7 @@ int __clk_init(struct device *dev, struct clk *clk)
- 	if (!clk)
- 		return -EINVAL;
- 
--	mutex_lock(&prepare_lock);
-+	clk_prepare_lock();
- 
- 	/* check to see if a clock with this name is already registered */
- 	if (__clk_lookup(clk->name)) {
-@@ -1514,7 +1535,7 @@ int __clk_init(struct device *dev, struct clk *clk)
- 	clk_debug_register(clk);
- 
- out:
--	mutex_unlock(&prepare_lock);
-+	clk_prepare_unlock();
- 
- 	return ret;
- }
-@@ -1748,7 +1769,7 @@ int clk_notifier_register(struct clk *clk, struct notifier_block *nb)
- 	if (!clk || !nb)
- 		return -EINVAL;
- 
--	mutex_lock(&prepare_lock);
-+	clk_prepare_lock();
- 
- 	/* search the list of notifiers for this clk */
- 	list_for_each_entry(cn, &clk_notifier_list, node)
-@@ -1772,7 +1793,7 @@ int clk_notifier_register(struct clk *clk, struct notifier_block *nb)
- 	clk->notifier_count++;
- 
- out:
--	mutex_unlock(&prepare_lock);
-+	clk_prepare_unlock();
- 
- 	return ret;
- }
-@@ -1797,7 +1818,7 @@ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb)
- 	if (!clk || !nb)
- 		return -EINVAL;
- 
--	mutex_lock(&prepare_lock);
-+	clk_prepare_lock();
- 
- 	list_for_each_entry(cn, &clk_notifier_list, node)
- 		if (cn->clk == clk)
-@@ -1818,7 +1839,7 @@ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb)
- 		ret = -ENOENT;
- 	}
- 
--	mutex_unlock(&prepare_lock);
-+	clk_prepare_unlock();
- 
- 	return ret;
- }
 -- 
 1.7.10.4
 
