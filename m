@@ -1,102 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab3C1HVn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 03:21:43 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:37982 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755541Ab3C1HVk (ORCPT
+	id S1756350Ab3C1HVv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 03:21:51 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:40133 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755848Ab3C1HVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 03:21:40 -0400
-Message-ID: <5153EF5A.3060402@huawei.com>
-Date: Thu, 28 Mar 2013 15:20:58 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Thu, 28 Mar 2013 03:21:50 -0400
+Message-ID: <5153EFB3.5070002@parallels.com>
+Date: Thu, 28 Mar 2013 11:22:27 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Tejun Heo <tj@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 2/5] cpuacct: Initialize root cpuacct earlier
-References: <5153EF24.3040608@huawei.com>
-In-Reply-To: <5153EF24.3040608@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+To: Michal Hocko <mhocko@suse.cz>
+CC: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
+References: <1364373399-17397-1-git-send-email-mhocko@suse.cz> <20130327161527.GA7395@htj.dyndns.org> <20130327161905.GN16579@dhcp22.suse.cz> <CAOS58YPsrZNU9qDeMgJG3-Hkn0cBaigz16eTS5M57G95E8fxUQ@mail.gmail.com> <20130327162707.GO16579@dhcp22.suse.cz>
+In-Reply-To: <20130327162707.GO16579@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we don't need cpuacct_init(), and instead we just initialize
-root_cpuacct when it's defined.
+On 03/27/2013 08:27 PM, Michal Hocko wrote:
+> On Wed 27-03-13 09:21:02, Tejun Heo wrote:
+>> On Wed, Mar 27, 2013 at 9:19 AM, Michal Hocko <mhocko@suse.cz> wrote:
+>>>> Maybe the name could signify it's part of memcg?
+>>>
+>>> kmem_ prefix is used for all CONFIG_MEMCG_KMEM functions. I understand
+>>> it clashes with sl?b naming but this is out of scope of this patch IMO.
+>>
+>> Oh, it's not using kmemcg? I see. Maybe we can rename later.
+> 
+> Some parts use memcg_kmem_* other kmem_. A cleanup would be nice.
+> Glauber?
+> 
+I have been using kmem_ only in functions that will deal directly with
+the slab caches and with the single purpose of operating them.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/sched/core.c    |  2 --
- kernel/sched/cpuacct.c | 11 ++++-------
- kernel/sched/cpuacct.h |  5 -----
- 3 files changed, 4 insertions(+), 14 deletions(-)
+kmem_cache_destroy_work_func => worker interface to kmem_cache_destroy
+kmem_cache_destroy_memcg_children => cache destructor iterator
+kmem_cache_dup => interface to kmem_cache_create
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9f5a804..e12649c 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6860,8 +6860,6 @@ void __init sched_init(void)
- 
- #endif /* CONFIG_CGROUP_SCHED */
- 
--	cpuacct_init();
--
- 	for_each_possible_cpu(i) {
- 		struct rq *rq;
- 
-diff --git a/kernel/sched/cpuacct.c b/kernel/sched/cpuacct.c
-index a691c4d..0425581 100644
---- a/kernel/sched/cpuacct.c
-+++ b/kernel/sched/cpuacct.c
-@@ -59,7 +59,10 @@ static inline struct cpuacct *parent_ca(struct cpuacct *ca)
- }
- 
- static DEFINE_PER_CPU(u64, root_cpuacct_cpuusage);
--static struct cpuacct root_cpuacct;
-+static struct cpuacct root_cpuacct = {
-+	.cpustat	= &kernel_cpustat,
-+	.cpuusage	= &root_cpuacct_cpuusage,
-+};
- 
- /* create a new cpu accounting group */
- static struct cgroup_subsys_state *cpuacct_css_alloc(struct cgroup *cgrp)
-@@ -288,12 +291,6 @@ void cpuacct_account_field(struct task_struct *p, int index, u64 val)
- 	rcu_read_unlock();
- }
- 
--void __init cpuacct_init(void)
--{
--	root_cpuacct.cpustat = &kernel_cpustat;
--	root_cpuacct.cpuusage = &root_cpuacct_cpuusage;
--}
--
- struct cgroup_subsys cpuacct_subsys = {
- 	.name = "cpuacct",
- 	.css_alloc = cpuacct_css_alloc,
-diff --git a/kernel/sched/cpuacct.h b/kernel/sched/cpuacct.h
-index 51cd76e..ed60562 100644
---- a/kernel/sched/cpuacct.h
-+++ b/kernel/sched/cpuacct.h
-@@ -1,15 +1,10 @@
- #ifdef CONFIG_CGROUP_CPUACCT
- 
--extern void cpuacct_init(void);
- extern void cpuacct_charge(struct task_struct *tsk, u64 cputime);
- extern void cpuacct_account_field(struct task_struct *p, int index, u64 val);
- 
- #else
- 
--static inline void cpuacct_init(void)
--{
--}
--
- static inline void cpuacct_charge(struct task_struct *tsk, u64 cputime)
- {
- }
--- 
-1.8.0.2
+All the other functions start with memcg_
+Analogously, all slab-side functions that deal with memcg *ends* with
+_memcg. except the functions that are only there to operate memcg data
+structures:
+
+memcg_update_all_caches.
+
+In general, those functions could very well live in the other file (slab
+or memcg), but they need to take locks or manipulate data structures
+that are internal to slab/memcg.
+
+I believe this is a sound convention.
