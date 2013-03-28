@@ -1,49 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab3C1Vkr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 17:40:47 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46134 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753946Ab3C1Vkl (ORCPT
+	id S1754271Ab3C1VoX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 17:44:23 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:51869 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753909Ab3C1VoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 17:40:41 -0400
-Date: Thu, 28 Mar 2013 17:40:39 -0400 (EDT)
-Message-Id: <20130328.174039.1409554953798783786.davem@davemloft.net>
-To: alex.mihai.c@gmail.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, honkiko@gmail.com,
-        tgraf@suug.ch
-Subject: Re: [PATCH net-next] audit: pass int* to nlmsg_next
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1364506289-9146-1-git-send-email-alex.mihai.c@gmail.com>
-References: <1364506289-9146-1-git-send-email-alex.mihai.c@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Thu, 28 Mar 2013 14:40:40 -0700 (PDT)
+	Thu, 28 Mar 2013 17:44:21 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+b/8QrWYxUPXXr6U3w5d3g
+Date: Thu, 28 Mar 2013 14:44:11 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Cc: Juha Yrjola <juha.yrjola@solidboot.com>,
+        Russell King <linux@arm.linux.org.uk>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] OMAP3 ROM Random Number Generator support
+Message-ID: <20130328214411.GZ10155@atomide.com>
+References: <201302281905.48546@pali>
+ <201303272303.44420@pali>
+ <20130327222524.GR10155@atomide.com>
+ <201303281854.02847@pali>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201303281854.02847@pali>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2SLeoeF024713
 
-From: Alexandru Copot <alex.mihai.c@gmail.com>
-Date: Thu, 28 Mar 2013 23:31:29 +0200
+* Pali Roh√°r <pali.rohar@gmail.com> [130328 10:58]:
+> 
+> Here is new version of patch:
+> 
+> --- a/arch/arm/mach-omap2/devices.c
+> +++ b/arch/arm/mach-omap2/devices.c
+> @@ -486,6 +486,23 @@ static void omap_init_mcspi(void)
+>  static inline void omap_init_mcspi(void) {}
+>  #endif
+>  
+> +extern u32 *omap3_rom_rng_call(u32 id, u32 proc, u32 flags, u32 va_ptr);
+> +
+> +static struct platform_device omap3_rom_rng_device = {
+> +	.name		= "omap3-rom-rng",
+> +	.id		= -1,
+> +	.dev	= {
+> +		.platform_data	= omap3_rom_rng_call,
+> +	},
+> +};
+> +
+> +static void omap_init_rom_rng(void)
+> +{
+> +	if (!cpu_is_omap34xx() || omap_type() == OMAP2_DEVICE_TYPE_GP)
+> +		return;
+> +	platform_device_register(&omap3_rom_rng_device);
+> +}
+> +
+>  /**
+>   * omap_init_rng - bind the RNG hwmod to the RNG omap_device
+>   *
 
-> Commit 941912133025926307c7a65b203fa38403b1063a replaced the macros
-> NLMSG_NEXT with calls to nlmsg_next which produces this warning:
-> 
-> kernel/audit.c: In function °audit_receive_skb¢:
-> kernel/audit.c:928:3: warning: passing argument 2 of °nlmsg_next¢ makes pointer from integer without a cast
-> In file included from include/net/rtnetlink.h:5:0,
->                  from include/net/neighbour.h:28,
->                  from include/net/dst.h:17,
->                  from include/net/sock.h:68,
->                  from kernel/audit.c:55:
-> include/net/netlink.h:359:1: note: expected °int *¢ but argument is of type °int¢
-> 
-> Fix this by sending the intended pointer.
-> 
-> Signed-off-by: Alexandru Copot <alex.mihai.c@gmail.com>
+This driver probably only works on Nokia boards because of the
+different SMC call numbering. Until it's been verified on some
+other HS omap34xx, I'd probably register this only from the
+Nokia board-*.c file.
 
-Applied, thanks.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+> --- /dev/null
+> +++ b/drivers/char/hw_random/omap3-rom-rng.c
+> +static int omap3_rom_rng_probe(struct platform_device *pdev)
+> +{
+> +	printk(KERN_INFO "%s: initializing\n", omap3_rom_rng_name);
+> +
+> +	omap3_rom_rng_call = pdev->dev.platform_data;
+> +	if (!omap3_rom_rng_call) {
+> +		printk(KERN_ERR "%s: omap3_rom_rng_call is NULL\n",
+> +		       omap3_rom_rng_name);
+> +		return -EINVAL;
+> +	}
+> +
+> +	setup_timer(&idle_timer, omap3_rom_idle_rng, 0);
+> +	rng_clk = clk_get_sys("omap_rng", "ick");
+> +	if (IS_ERR(rng_clk)) {
+> +		printk(KERN_ERR "%s: unable to get RNG clock\n",
+> +		       omap3_rom_rng_name);
+> +		return IS_ERR(rng_clk);
+> +	}
+
+You can use regular clk_get if you add the alias to
+struct omap_clk omap3xxx_clks table.
+
+Regards,
+
+Tony
