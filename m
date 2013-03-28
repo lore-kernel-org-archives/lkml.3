@@ -1,112 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757009Ab3C1RQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 13:16:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17265 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756820Ab3C1RQk (ORCPT
+	id S1757418Ab3C1RRA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 13:17:00 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:50555 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756900Ab3C1RQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 13:16:40 -0400
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=O9J7wxHhePYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=WCZO_3J5bzIA:10 a=0NXcx_fzVF4rnZ_rYIMA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1364490997.6345.237.camel@gandalf.local.home>
-Subject: [BUG] Crash with NULL pointer dereference in bond_handle_frame in
- -rt (possibly mainline)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Pirko <jpirko@redhat.com>, Andy Gospodarek <andy@greyhouse.net>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Nicolas de =?ISO-8859-1?Q?Peslo=FCan?= 
-	<nicolas.2p.debian@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Guy Streeter <streeter@redhat.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Date: Thu, 28 Mar 2013 13:16:37 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Mar 2013 13:16:58 -0400
+Date: Thu, 28 Mar 2013 10:16:55 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] char/misc fixes for 3.9-rc4
+Message-ID: <20130328171655.GA2577@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The following changes since commit 3d374d09f16f64ab4d71704cbe621514d36cd0b1:
 
-I'm currently debugging a crash in an old 3.0-rt kernel that one of our
-customers is seeing. The bug happens with a stress test that loads and
-unloads the bonding module in a loop (I don't know all the details as
-I'm not the one that is directly interacting with the customer). But the
-bug looks to be something that may still be present and possibly present
-in mainline too. It will just be much harder to trigger it in mainline.
+  final removal of CONFIG_EXPERIMENTAL (2013-03-12 16:30:27 -0700)
 
-In -rt, interrupts are threads, and can schedule in and out just like
-any other thread. Note, mainline now supports interrupt threads so this
-may be easily reproducible in mainline as well. I don't have the ability
-to tell the customer to try mainline or other kernels, so my hands are
-somewhat tied to what I can do.
+are available in the git repository at:
 
-But according to a core dump, I tracked down that the eth irq thread
-crashed in bond_handle_frame() here:
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.9-rc4
 
-	slave = bond_slave_get_rcu(skb->dev);
-	bond = slave->bond; <--- BUG
+for you to fetch changes up to 347e0899b1c75d907f01ac883ca38d37fe9bfa42:
 
+  VMCI: Fix process-to-process DRGAMs. (2013-03-15 12:58:12 -0700)
 
-the slave returned was NULL and accessing slave->bond caused a NULL
-pointer dereference.
+----------------------------------------------------------------
+char/misc driver fixes for 3.9-rc4
 
-Looking at the code that unregisters the handler:
+Here are some small char/misc driver fixes that resolve issues recently
+reported against the 3.9-rc kernels.  All have been in linux-next for a while.
 
-void netdev_rx_handler_unregister(struct net_device *dev)
-{
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-        ASSERT_RTNL();
-        RCU_INIT_POINTER(dev->rx_handler, NULL);
-        RCU_INIT_POINTER(dev->rx_handler_data, NULL);
-}
+----------------------------------------------------------------
+Andy King (1):
+      VMCI: Fix process-to-process DRGAMs.
 
-Which is basically:
-	dev->rx_handler = NULL;
-	dev->rx_handler_data = NULL;
+Chanwoo Choi (3):
+      extcon: max8997: Check the pointer of platform data to protect null pointer error
+      extcon: max77693: Fix bug of wrong pointer when platform data is not used
+      extcon: max77693: Initialize register of MUIC device to bring up it without platform data
 
-And looking at __netif_receive_skb() we have:
+Greg Kroah-Hartman (1):
+      Merge tag 'extcon-3.9-rc3' of git://git.kernel.org/.../chanwoo/extcon into char-misc-linus
 
-        rx_handler = rcu_dereference(skb->dev->rx_handler);
-        if (rx_handler) {
-                if (pt_prev) {
-                        ret = deliver_skb(skb, pt_prev, orig_dev);
-                        pt_prev = NULL;
-                }
-                switch (rx_handler(&skb)) {
+Tomas Winkler (2):
+      mei: add mei_stop function to stop mei device
+      mei: ME hardware reset needs to be synchronized
 
-My question to all of you is, what stops this interrupt from happening
-while the bonding module is unloading?  What happens if the interrupt
-triggers and we have this:
-
-
-	CPU0			CPU1
-	----			----
-  rx_handler = skb->dev->rx_handler
-
-			netdev_rx_handler_unregister() {
-			   dev->rx_handler = NULL;
-			   dev->rx_handler_data = NULL;
-
-  rx_handler()
-   bond_handle_frame() {
-    slave = skb->dev->rx_handler;
-    bond = slave->bond; <-- NULL pointer dereference!!!
-
-
-What protection am I missing in the bond release handler that would
-prevent the above from happening?
-
-Thanks!
-
--- Steve
-
-
-
-
+ drivers/extcon/extcon-max77693.c      | 103 ++++++++++++++++++++++++++--------
+ drivers/extcon/extcon-max8997.c       |  56 ++++++++++--------
+ drivers/misc/mei/hw-me.c              |  29 +++++++---
+ drivers/misc/mei/init.c               |  18 ++++++
+ drivers/misc/mei/mei_dev.h            |   1 +
+ drivers/misc/mei/pci-me.c             |  52 +++--------------
+ drivers/misc/vmw_vmci/vmci_datagram.c |   4 +-
+ include/linux/mfd/max77693-private.h  |  23 ++++++++
+ 8 files changed, 186 insertions(+), 100 deletions(-)
