@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab3C2HLW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 03:11:22 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:50967 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab3C2HLU (ORCPT
+	id S1755617Ab3C2HO0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 03:14:26 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:57132 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736Ab3C2HOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 03:11:20 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r2T7B81P023060, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <bowgotsai@google.com>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH] r8169: fix auto speed down issue
-Date: Fri, 29 Mar 2013 15:11:02 +0800
-Message-ID: <1364541062-9024-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.1
+	Fri, 29 Mar 2013 03:14:24 -0400
+Message-ID: <51553EF5.90702@linux.vnet.ibm.com>
+Date: Fri, 29 Mar 2013 12:42:53 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 4/5] sched: don't consider upper se in sched_slice()
+References: <1364457537-15114-1-git-send-email-iamjoonsoo.kim@lge.com> <1364457537-15114-5-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1364457537-15114-5-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032907-9264-0000-0000-0000036CDCD8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It would cause no link after suspending or shutdowning when the
-nic changes the speed to 10M and connects to a link partner which
-forces the speed to 100M.
+Hi Joonsoo,
 
-Check the link partner ability to determine if to change the speed
-to 10M when suspending or shutdowning. Regardless of keeping the
-speed to giga for power saving.
+On 03/28/2013 01:28 PM, Joonsoo Kim wrote:
+> Following-up upper se in sched_slice() should not be done,
+> because sched_slice() is used for checking that resched is needed
+> whithin *this* cfs_rq and there is one problem related to this
+> in current implementation.
+> 
+> The problem is that if we follow-up upper se in sched_slice(), it is
+> possible that we get a ideal slice which is lower than
+> sysctl_sched_min_granularity.
+> 
+> For example, we assume that we have 4 tg which is attached to root tg
+> with same share and each one have 20 runnable tasks on cpu0, respectivly.
+> In this case, __sched_period() return sysctl_sched_min_granularity * 20
+> and then go into loop. At first iteration, we compute a portion of slice
+> for this task on this cfs_rq, so get a slice, sysctl_sched_min_granularity.
+> Afterward, we enter second iteration and get a slice which is a quarter of
+> sysctl_sched_min_granularity, because there is 4 tgs with same share
+> in that cfs_rq.
+> 
+> Ensuring slice larger than min_granularity is important for performance
+> and there is no lower bound about this, except timer tick, we should
+> fix it not to consider upper se when calculating sched_slice.
+> 
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+I am assuming the sysctl_sched_latency = 20ms and
+sysctl_sched_min_granularity = 4ms.
+In that case:
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 28fb50a..a9eedf7 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -3818,6 +3818,21 @@ static void rtl_init_mdio_ops(struct rtl8169_private *tp)
- 	}
- }
- 
-+static void rtl_speed_down(struct rtl8169_private *tp)
-+{
-+	u32	adv;
-+	int	lpa;
-+
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	lpa = rtl_readphy(tp, MII_LPA);
-+
-+	adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full;
-+	if (!(lpa & (ADVERTISE_10HALF | ADVERTISE_10FULL)))
-+		adv |= ADVERTISED_100baseT_Half | ADVERTISED_100baseT_Full;
-+
-+	rtl8169_set_speed(tp->dev, AUTONEG_ENABLE, SPEED_100, DUPLEX_FULL, adv);
-+}
-+
- static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
- {
- 	void __iomem *ioaddr = tp->mmio_addr;
-@@ -3848,9 +3863,7 @@ static bool rtl_wol_pll_power_down(struct rtl8169_private *tp)
- 	if (!(__rtl8169_get_wol(tp) & WAKE_ANY))
- 		return false;
- 
--	rtl_writephy(tp, 0x1f, 0x0000);
--	rtl_writephy(tp, MII_BMCR, 0x0000);
--
-+	rtl_speed_down(tp);
- 	rtl_wol_suspend_quirk(tp);
- 
- 	return true;
--- 
-1.8.1
+With your patch, the sum of the sched_slice(runnable_task) on each_tg is
+ 40ms = sched_min_granularity * 10, while the parent tg has a
+sched_slice of sysctl_sched_latency / 4 = (20 / 4) = 5ms.
+
+Ideally the children's cpu share must add upto the parent's share.
+
+
+Thank you
+
+Regards
+Preeti U Murthy
 
