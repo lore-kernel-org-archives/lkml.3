@@ -1,87 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262Ab3C2WUH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 18:20:07 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:47055 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757078Ab3C2WUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 18:20:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 6/6] ACPI / LPSS: add Lynxpoint DMA controller to the list
-Date: Fri, 29 Mar 2013 23:27:36 +0100
-Message-ID: <2319438.p9o9oINmPt@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1364374682-8547-7-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1364374682-8547-1-git-send-email-andriy.shevchenko@linux.intel.com> <1364374682-8547-7-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1757272Ab3C2WUv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 18:20:51 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:47910 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757078Ab3C2WUu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 18:20:50 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Message-ID: <72696b1d-3a45-4eb5-8072-6406db98c60c@default>
+Date: Fri, 29 Mar 2013 15:19:43 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: RE: zsmalloc/lzo compressibility vs entropy
+References: <026ccf11-82db-4ddf-9882-294ee578775f@default>
+In-Reply-To: <026ccf11-82db-4ddf-9882-294ee578775f@default>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6668.5000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 27, 2013 10:58:02 AM Andy Shevchenko wrote:
-> In Lynxpoint we have to enable clock per each LPSS device. That's why we have
-> to enumerate them from drivers/acpi/acpi_lpss.c. The DMA controller is one of
-> such devices.
-
-We'll do that after we've sorted out [5/6].
-
-Thanks,
-Rafael
-
-
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  drivers/acpi/acpi_lpss.c  | 7 +++++++
->  drivers/clk/x86/clk-lpt.c | 2 +-
->  2 files changed, 8 insertions(+), 1 deletion(-)
+> From: Dan Magenheimer
+> Sent: Wednesday, March 27, 2013 3:42 PM
+> To: Seth Jennings; Konrad Wilk; Minchan Kim; Bob Liu; Robert Jennings; Nitin Gupta; Wanpeng Li; Andrew
+> Morton; Mel Gorman
+> Cc: linux-mm@kvack.org; linux-kernel@vger.kernel.org
+> Subject: zsmalloc/lzo compressibility vs entropy
 > 
-> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-> index 4015929..d80c81e 100644
-> --- a/drivers/acpi/acpi_lpss.c
-> +++ b/drivers/acpi/acpi_lpss.c
-> @@ -47,6 +47,10 @@ struct lpss_private_data {
->  	const struct lpss_device_desc *dev_desc;
->  };
->  
-> +static struct lpss_device_desc lpss_dev_desc = {
-> +	.clk_required = true,
-> +};
-> +
->  static struct lpss_device_desc lpt_dev_desc = {
->  	.clk_required = true,
->  	.clk_parent = "lpss_clk",
-> @@ -60,6 +64,9 @@ static struct lpss_device_desc lpt_sdio_dev_desc = {
->  };
->  
->  static const struct acpi_device_id acpi_lpss_device_ids[] = {
-> +	/* Generic LPSS devices */
-> +	{ "INTL9C60", (unsigned long)&lpss_dev_desc },
-> +
->  	/* Lynxpoint LPSS devices */
->  	{ "INT33C0", (unsigned long)&lpt_dev_desc },
->  	{ "INT33C1", (unsigned long)&lpt_dev_desc },
-> diff --git a/drivers/clk/x86/clk-lpt.c b/drivers/clk/x86/clk-lpt.c
-> index 5cf4f46..719817e 100644
-> --- a/drivers/clk/x86/clk-lpt.c
-> +++ b/drivers/clk/x86/clk-lpt.c
-> @@ -30,7 +30,7 @@ static int lpt_clk_probe(struct platform_device *pdev)
->  		return PTR_ERR(clk);
->  
->  	/* Shared DMA clock */
-> -	clk_register_clkdev(clk, "hclk", "INTL9C60.0.auto");
-> +	clk_register_clkdev(clk, "hclk", "INTL9C60:00");
->  	return 0;
->  }
->  
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> This might be obvious to those of you who are better
+> mathematicians than I, but I ran some experiments
+> to confirm the relationship between entropy and compressibility
+> and thought I should report the results to the list.
+
+A few new observations worth mentioning:
+
+Since Seth long ago mentioned that the text of Moby Dick
+resulted in poor (but not horribly poor) compression I thought
+I'd look at some ASCII data.
+
+I used the first sentence of the Gettysburg Address (91 characters)
+and repeated it to fill a page.  Interestingly, LZO apparently
+discovered the repetition... the page compressed to 118 bytes
+even though the result had 15618 one-bits (fairly high entropy).
+
+I used the full Gettysburg Address (1459 characters), again
+repeated to fill a page.  LZO compressed this to 1070 bytes.
+(14568 one-bits.)
+
+To fill a page with text, I added part of the Declaration of
+Independence.  No repeating text now.  This only compressed
+to 2754 bytes (which, I assume, is close to Seth's observations
+on Moby Dick).  14819 one-bits.
+
+Last (for swap), to see if random ascii would compress better
+than binary, I masked off the MSB in each byte of a random
+page.  The mean zsize was 4116 bytes (larger than a page)
+with a stddev of 51.  The one-bit mean was 14336 (7/16 of a page).
+
+On a completely different track, I thought it would be relevant
+to look at the difference between frontswap (anonymous) page
+zsize distribution and cleancache (file) page zsize distribution.
+
+Running kernbench, zsize mean was 1974 (stddev 895).
+
+For a different benchmark, I did:
+
+# find / | grep3
+
+where grep3 is a simple bash script that does three separate
+greps on the first argument.  Since this fills the page cache
+and causes reclaiming, and reclaims are captured by cleancache
+and fed to zcache, this data page stream approximates random
+pages on the disk.
+
+This "benchmark" generated a zsize mean of 2265 with stddev 1008.
+Also of note: Only a fraction of a percent of cleancache pages
+are zero-filled, so Wanpeng's zcache patch to handle zero-filled
+pages more efficiently is very good for frontswap pages but may
+have little benefit for cleancache pages.
+
+Bottom line conclusions:  (1) Entropy is probably less a factor
+for LZO-compressibility than data repetition. (2) Cleancache
+data pages may have a very different zsize distribution than
+frontswap data pages, anecdotally skewed to much higher zsize.
