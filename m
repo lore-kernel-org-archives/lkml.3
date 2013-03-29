@@ -1,122 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab3C2BSG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 21:18:06 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64512 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754243Ab3C2BSE (ORCPT
+	id S1753754Ab3C2BU4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 21:20:56 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:63460 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092Ab3C2BUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 21:18:04 -0400
-X-AuditID: 9c93016f-b7b6aae000000e9c-0b-5154ebc871fc
-Date: Fri, 29 Mar 2013 10:18:01 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Bob Liu <bob.liu@oracle.com>
-Subject: Re: [RFC] mm: remove swapcache page early
-Message-ID: <20130329011801.GA32245@blaptop>
-References: <1364350932-12853-1-git-send-email-minchan@kernel.org>
- <alpine.LNX.2.00.1303271230210.29687@eggly.anvils>
- <433aaa17-7547-4e39-b472-7060ee15e85f@default>
- <20130328010706.GB22908@blaptop>
- <5f1504e7-8b07-4109-8271-b214b496ca61@default>
+	Thu, 28 Mar 2013 21:20:55 -0400
+Message-ID: <5154EC4F.5030704@gmail.com>
+Date: Fri, 29 Mar 2013 09:20:15 +0800
+From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5f1504e7-8b07-4109-8271-b214b496ca61@default>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: David Miller <davem@davemloft.net>
+CC: gang.chen@asianux.com, edumazet@google.com, dborkman@redhat.com,
+        wad@chromium.org, eparis@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] include/linux: printk is needed in filter.h when CONFIG_BPF_JIT
+ is defined
+References: <5153DC24.4010104@asianux.com> <20130328.143158.157689302620030740.davem@davemloft.net>
+In-Reply-To: <20130328.143158.157689302620030740.davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 11:19:12AM -0700, Dan Magenheimer wrote:
-> > From: Minchan Kim [mailto:minchan@kernel.org]
-> > Subject: Re: [RFC] mm: remove swapcache page early
-> > 
-> > Hi Dan,
-> > 
-> > On Wed, Mar 27, 2013 at 03:24:00PM -0700, Dan Magenheimer wrote:
-> > > > From: Hugh Dickins [mailto:hughd@google.com]
-> > > > Subject: Re: [RFC] mm: remove swapcache page early
-> > > >
-> > > > I believe the answer is for frontswap/zmem to invalidate the frontswap
-> > > > copy of the page (to free up the compressed memory when possible) and
-> > > > SetPageDirty on the PageUptodate PageSwapCache page when swapping in
-> > > > (setting page dirty so nothing will later go to read it from the
-> > > > unfreed location on backing swap disk, which was never written).
-> > >
-> > > There are two duplication issues:  (1) When can the page be removed
-> > > from the swap cache after a call to frontswap_store; and (2) When
-> > > can the page be removed from the frontswap storage after it
-> > > has been brought back into memory via frontswap_load.
-> > >
-> > > This patch from Minchan addresses (1).  The issue you are raising
-> > 
-> > No. I am addressing (2).
-> > 
-> > > here is (2).  You may not know that (2) has recently been solved
-> > > in frontswap, at least for zcache.  See frontswap_exclusive_gets_enabled.
-> > > If this is enabled (and it is for zcache but not yet for zswap),
-> > > what you suggest (SetPageDirty) is what happens.
-> > 
-> > I am blind on zcache so I didn't see it. Anyway, I'd like to address it
-> > on zram and zswap.
-> 
-> Zswap can enable it trivially by adding a function call in init_zswap.
-> (Note that it is not enabled by default for all frontswap backends
-> because it is another complicated tradeoff of cpu time vs memory space
-> that needs more study on a broad set of workloads.)
-> 
-> I wonder if something like this would have a similar result for zram?
-> (Completely untested... snippet stolen from swap_entry_free with
-> SetPageDirty added... doesn't compile yet, but should give you the idea.)
+On 2013年03月29日 02:31, David Miller wrote:
+> Please post networking patches to netdev@vger.kernel.org, thanks.
 
-Nice idea!
+  ok, thanks.
 
-After I see your patch, I realized it was Hugh's suggestion and
-you implemented it in proper place.
+  it is my fault.
+    originally, I get mail addresses by ./scripts/get_maintainers.pl
+    it is a useful tool for members to get mail addresses.
+    I should fully use it, but should not depend on it.
 
-Will resend it after testing. Maybe nextweek.
-Thanks!
+  next time
+    I should think of the mail addresses, after get them from the tool.
 
-> 
-> diff --git a/mm/page_io.c b/mm/page_io.c
-> index 56276fe..2d10988 100644
-> --- a/mm/page_io.c
-> +++ b/mm/page_io.c
-> @@ -81,7 +81,17 @@ void end_swap_bio_read(struct bio *bio, int err)
->  				iminor(bio->bi_bdev->bd_inode),
->  				(unsigned long long)bio->bi_sector);
->  	} else {
-> +		struct swap_info_struct *sis;
-> +
->  		SetPageUptodate(page);
-> +		sis = page_swap_info(page);
-> +		if (sis->flags & SWP_BLKDEV) {
-> +			struct gendisk *disk = sis->bdev->bd_disk;
-> +			if (disk->fops->swap_slot_free_notify) {
-> +				SetPageDirty(page);
-> +				disk->fops->swap_slot_free_notify(sis->bdev,
-> +								  offset);
-> +			}
-> +		}
->  	}
->  	unlock_page(page);
->  	bio_put(bio);
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+  thanks.
 
 -- 
-Kind regards,
-Minchan Kim
+Chen Gang
+
+Flying Transformer
