@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632Ab3C2Sn1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 14:43:27 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:37047 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756515Ab3C2Sn0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 14:43:26 -0400
+	id S1756759Ab3C2Snf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 14:43:35 -0400
+Received: from fieldses.org ([174.143.236.118]:58844 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756553Ab3C2Snc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 14:43:32 -0400
+Date: Fri, 29 Mar 2013 14:43:31 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+Cc: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kernel 3.8.4 : kernel BUG at fs/locks.c:2093!   part #2
+Message-ID: <20130329184331.GH22307@fieldses.org>
+References: <514F31AF.3080709@gmx.de>
+ <20130325220143.GD10887@fieldses.org>
+ <20130326144640.GB3353@fieldses.org>
+ <51536610.7010809@gmx.de>
+ <20130327215727.GB27426@fieldses.org>
 MIME-Version: 1.0
-In-Reply-To: <20130329161746.GA8391@redhat.com>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	<20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org>
-	<20130326192852.GA25899@redhat.com>
-	<20130326124309.077e21a9f59aaa3f3355e09b@linux-foundation.org>
-	<20130329161746.GA8391@redhat.com>
-Date: Fri, 29 Mar 2013 11:43:25 -0700
-X-Google-Sender-Auth: eHeezT1SVtsEiiqa-dAzRUZafok
-Message-ID: <CA+55aFwA6CpODkJwHFd59EbNxOrP-FHM+xG8Xcgeni2DBotGPA@mail.gmail.com>
-Subject: Re: ipc,sem: sysv semaphore scalability
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@surriel.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        hhuang@redhat.com, "Low, Jason" <jason.low2@hp.com>,
-        Michel Lespinasse <walken@google.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-Content-Type: multipart/mixed; boundary=047d7bb04ce67e04df04d914a56f
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130327215727.GB27426@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7bb04ce67e04df04d914a56f
-Content-Type: text/plain; charset=UTF-8
+On Wed, Mar 27, 2013 at 05:57:27PM -0400, J. Bruce Fields wrote:
+> On Wed, Mar 27, 2013 at 10:35:12PM +0100, Toralf Förster wrote:
+> > On 03/26/2013 03:46 PM, J. Bruce Fields wrote:
+> > > Can you run with test patches?
+> > 
+> > applied - today I got a warning instead a bug at the host kernel (3.8.4):
+> 
+> Excellent!  Thanks, I think I see the bug now....
 
-On Fri, Mar 29, 2013 at 9:17 AM, Dave Jones <davej@redhat.com> wrote:
->
-> Now that I have that reverted, I'm not seeing msgrcv traces any more, but
-> I've started seeing this..
->
-> general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+This logic is just terrible; I'll see what if I can make this more
+sensible.
 
-Do you have CONFIG_CHECKPOINT_RESTORE enabled? Does it go away if you
-disable it?
+For now, though, this should fix the bug.
 
-I think I foud at least one bug in the MSG_COPY stuff: it leaks the
-"copy" allocation if
+Thanks again for this testing.
 
-    mode == SEARCH_LESSEQUAL
+--b.
 
-but maybe I'm misreading it. And that shouldn't cause the problem you
-see, but it's indicative of how badly tested and thought through the
-MSG_COPY code is.
+commit 01463db0a864d43bd2c9a69ff37d5a75b7822a49
+Author: J. Bruce Fields <bfields@redhat.com>
+Date:   Thu Mar 28 20:37:14 2013 -0400
 
-Totally UNTESTED leak fix appended. Stanislav?
+    nfsd4: don't close read-write opens too soon
+    
+    Don't actually close any opens until we don't need them at all.
+    
+    This means being left with write access when it's not really necessary,
+    but that's better than putting a file that might still have posix locks
+    held on it, as we have been.
+    
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 
-                     Linus
-
---047d7bb04ce67e04df04d914a56f
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hevp6i5a0
-
-IGlwYy9tc2cuYyB8IDYgKysrLS0tCiAxIGZpbGUgY2hhbmdlZCwgMyBpbnNlcnRpb25zKCspLCAz
-IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2lwYy9tc2cuYyBiL2lwYy9tc2cuYwppbmRleCAz
-MWNkMWJmNmFmMjcuLmI4NDE1MDg1NTZjYiAxMDA2NDQKLS0tIGEvaXBjL21zZy5jCisrKyBiL2lw
-Yy9tc2cuYwpAQCAtODcwLDYgKzg3MCw3IEBAIGxvbmcgZG9fbXNncmN2KGludCBtc3FpZCwgdm9p
-ZCBfX3VzZXIgKmJ1Ziwgc2l6ZV90IGJ1ZnN6LCBsb25nIG1zZ3R5cCwKIAkJCQkJCW1zZyA9IGNv
-cHlfbXNnKG1zZywgY29weSk7CiAJCQkJCQlpZiAoSVNfRVJSKG1zZykpCiAJCQkJCQkJZ290byBv
-dXRfdW5sb2NrOworCQkJCQkJY29weSA9IE5VTEw7CiAJCQkJCQlicmVhazsKIAkJCQkJfQogCQkJ
-CX0gZWxzZQpAQCAtOTc2LDEwICs5NzcsOSBAQCBvdXRfdW5sb2NrOgogCQkJYnJlYWs7CiAJCX0K
-IAl9Ci0JaWYgKElTX0VSUihtc2cpKSB7Ci0JCWZyZWVfY29weShjb3B5KTsKKwlmcmVlX2NvcHko
-Y29weSk7CisJaWYgKElTX0VSUihtc2cpKQogCQlyZXR1cm4gUFRSX0VSUihtc2cpOwotCX0KIAog
-CWJ1ZnN6ID0gbXNnX2hhbmRsZXIoYnVmLCBtc2csIGJ1ZnN6KTsKIAlmcmVlX21zZyhtc2cpOwo=
---047d7bb04ce67e04df04d914a56f--
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index aac878e..285a0c8 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -210,13 +210,7 @@ static void __nfs4_file_put_access(struct nfs4_file *fp, int oflag)
+ {
+ 	if (atomic_dec_and_test(&fp->fi_access[oflag])) {
+ 		nfs4_file_put_fd(fp, oflag);
+-		/*
+-		 * It's also safe to get rid of the RDWR open *if*
+-		 * we no longer have need of the other kind of access
+-		 * or if we already have the other kind of open:
+-		 */
+-		if (fp->fi_fds[1-oflag]
+-			|| atomic_read(&fp->fi_access[1 - oflag]) == 0)
++		if (atomic_read(&fp->fi_access[1 - oflag]) == 0)
+ 			nfs4_file_put_fd(fp, O_RDWR);
+ 	}
+ }
