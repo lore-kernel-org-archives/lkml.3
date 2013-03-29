@@ -1,164 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab3C2IxH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 04:53:07 -0400
-Received: from mail-da0-f45.google.com ([209.85.210.45]:44279 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753349Ab3C2IxF (ORCPT
+	id S1755780Ab3C2Ixv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 04:53:51 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:45379 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab3C2Ixr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 04:53:05 -0400
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: rusty@rustcorp.com.au, dhowells@redhat.com
-Cc: linux-kernel@vger.kernel.org, Chun-Yi Lee <jlee@suse.com>,
-        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH v3] X.509: Support parse long form of length octets in Authority Key Identifier
-Date: Fri, 29 Mar 2013 16:52:33 +0800
-Message-Id: <1364547153-1416-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
+	Fri, 29 Mar 2013 04:53:47 -0400
+Date: Fri, 29 Mar 2013 04:53:43 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
+        linux-ext4@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
+Message-ID: <20431405.8258404.1364547223843.JavaMail.root@redhat.com>
+In-Reply-To: <87ppyjd13u.fsf@openvz.org>
+Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591!
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.66.13.149]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chun-Yi Lee <jlee@suse.com>
 
-Per X.509 spec in 4.2.1.1 section, the structure of Authority Key
-Identifier Extension is:
 
-   AuthorityKeyIdentifier ::= SEQUENCE {
-      keyIdentifier             [0] KeyIdentifier           OPTIONAL,
-      authorityCertIssuer       [1] GeneralNames            OPTIONAL,
-      authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL  }
-
-   KeyIdentifier ::= OCTET STRING
-
-When a certificate also provides
-authorityCertIssuer and authorityCertSerialNumber then the length of
-AuthorityKeyIdentifier SEQUENCE is likely to long form format.
-e.g.
-   The example certificate demos/tunala/A-server.pem in openssl source:
-
-X509v3 Authority Key Identifier:
-    keyid:49:FB:45:72:12:C4:CC:E1:45:A1:D3:08:9E:95:C4:2C:6D:55:3F:17
-    DirName:/C=NZ/L=Wellington/O=Really Irresponsible Authorisation Authority (RIAA)/OU=Cert-stamping/CN=Jackov al-Trades/emailAddress=none@fake.domain
-    serial:00
-
-Current parsing rule of OID_authorityKeyIdentifier only take care the
-short form format, it causes load certificate to modsign_keyring fail:
-
-[   12.061147] X.509: Extension: 47
-[   12.075121] MODSIGN: Problem loading in-kernel X.509 certificate (-74)
-
-So, this patch add the parsing rule for support long form format against
-Authority Key Identifier.
-
-v3:
-Changed the size check in "Short Form length" case, we allow v[3] smaller
-then (vlen - 4) because authorityCertIssuer and authorityCertSerialNumber
-are also possible attach in AuthorityKeyIdentifier sequence.
-
-v2:
- - Removed comma from author's name.
- - Moved 'Short Form length' comment inside the if-body.
- - Changed the type of sub to size_t.
- - Use ASN1_INDEFINITE_LENGTH rather than writing 0x80 and 127.
- - Moved the key_len's value assignment before alter v.
- - Fixed the typo of octets.
- - Add 2 to v before entering the loop for calculate the length.
- - Removed the comment of check vlen.
-
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Acked-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Chun-Yi Lee <jlee@suse.com>
----
- crypto/asymmetric_keys/x509_cert_parser.c |   55 ++++++++++++++++++++++++----
- 1 files changed, 47 insertions(+), 8 deletions(-)
-
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index 7fabc4c..59ab6d2 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -373,6 +373,9 @@ int rsa_extract_mpi(void *context, size_t hdrlen,
- 	return 0;
- }
- 
-+/* The keyIdentifier in AuthorityKeyIdentifier SEQUENCE is tag(CONT,PRIM,0) */
-+#define SEQ_TAG_KEYID (ASN1_CONT << 6)
-+
- /*
-  * Process certificate extensions that are used to qualify the certificate.
-  */
-@@ -407,21 +410,57 @@ int x509_process_extension(void *context, size_t hdrlen,
- 	}
- 
- 	if (ctx->last_oid == OID_authorityKeyIdentifier) {
-+		size_t key_len;
-+
- 		/* Get hold of the CA key fingerprint */
- 		if (vlen < 5)
- 			return -EBADMSG;
--		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)) ||
--		    v[1] != vlen - 2 ||
--		    v[2] != (ASN1_CONT << 6) ||
--		    v[3] != vlen - 4)
-+
-+		/* Authority Key Identifier must be a Constructed SEQUENCE */
-+		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)))
- 			return -EBADMSG;
--		v += 4;
--		vlen -= 4;
- 
--		f = kmalloc(vlen * 2 + 1, GFP_KERNEL);
-+		/* Authority Key Identifier is not indefinite length */
-+		if (unlikely(vlen == ASN1_INDEFINITE_LENGTH))
-+			return -EBADMSG;
-+
-+		if (vlen < ASN1_INDEFINITE_LENGTH) {
-+			/* Short Form length */
-+			if (v[1] != vlen - 2 ||
-+			    v[2] != SEQ_TAG_KEYID ||
-+			    v[3] > vlen - 4)
-+				return -EBADMSG;
-+
-+			key_len = v[3];
-+			v += 4;
-+		} else {
-+			/* Long Form length */
-+			size_t seq_len = 0;
-+			size_t sub = v[1] - ASN1_INDEFINITE_LENGTH;
-+
-+			if (sub > 2)
-+				return -EBADMSG;
-+
-+			/* calculate the length from subsequent octets */
-+			v += 2;
-+			for (i = 0; i < sub; i++) {
-+				seq_len <<= 8;
-+				seq_len |= v[i];
-+			}
-+
-+			if (seq_len != vlen - 2 - sub ||
-+			    v[sub] != SEQ_TAG_KEYID ||
-+			    v[sub + 1] > vlen - 4 - sub)
-+				return -EBADMSG;
-+
-+			key_len = v[sub + 1];
-+			v += (sub + 2);
-+		}
-+
-+		f = kmalloc(key_len * 2 + 1, GFP_KERNEL);
- 		if (!f)
- 			return -ENOMEM;
--		for (i = 0; i < vlen; i++)
-+		for (i = 0; i < key_len; i++)
- 			sprintf(f + i * 2, "%02x", v[i]);
- 		pr_debug("authority   %s\n", f);
- 		ctx->cert->authority = f;
--- 
-1.6.4.2
-
+----- Original Message -----
+> From: "Dmitry Monakhov" <dmonakhov@openvz.org>
+> To: "Theodore Ts'o" <tytso@mit.edu>, "CAI Qian" <caiqian@redhat.com>
+> Cc: "LKML" <linux-kernel@vger.kernel.org>, "linux-s390" <linux-s390@vger.kernel.org>, "Steve Best"
+> <sbest@redhat.com>, linux-ext4@vger.kernel.org
+> Sent: Thursday, March 28, 2013 10:56:37 PM
+> Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591!
+> 
+> On Thu, 28 Mar 2013 08:05:17 -0400, Theodore Ts'o <tytso@mit.edu>
+> wrote:
+> > On Thu, Mar 28, 2013 at 02:40:33AM -0400, CAI Qian wrote:
+> > > System hung when running xfstests-dev 013 test case on an s390x
+> > > guest. Never saw
+> > > this on 3.9-rc3 before but need to double-check. Any idea?
+> > > 
+> > > Ý 1113.795759¨ ------------Ý cut here ¨------------
+> > > Ý 1113.795771¨ kernel BUG at fs/ext4/inode.c:1591!
+> > 
+> > thanks for the report.  What kernel version did this come from?
+> >  Was
+> > it 3.9-rc4?  (line 1591 for 3.9-rc3 doesn't contain a BUG_ON).
+> > 
+> > If it is indeed 3.9-rc4, it would be helpful, since you can
+> > reproduce
+> > the problem, to insert a debugging printk which fires when
+> > bh->b_blocknr != pblock before the BUG_ON, and have it print the
+> > b_blocknr and pblock values.
+> I've triggered this bug on before at the time i've worked on
+> e4defrag functionality, but AFAIK all related issues was aready fixed
+> and 013 has nothing with e4defrag.
+> But still bh->b_blocknr under us. So other obvious place I suspect is
+> puch_hole but this also not true because 013 use fsstress
+> test in vegetarian mode: "-f rmdir=10 -f link=10 -f creat=10 -f
+> mkdir=10
+> -f rename=30 -f stat=30 -f unlink=30 -f truncate=20"
+> So the only place I suspect is some unknown bug in extent status tree
+> Can you please enable ES_AGGRESSIVE_TEST and rerun xfstest.
+What is ES_AGGRESSIVE_TEST and how can it enable it?
+> > 
+> > Thanks,
+> > 
+> > 						- Ted
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe
+> > linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
