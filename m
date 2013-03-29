@@ -1,32 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757177Ab3C2V3q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 17:29:46 -0400
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:62685 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757021Ab3C2V3p (ORCPT
+	id S1757199Ab3C2Vby (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 17:31:54 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:59760 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756854Ab3C2Vbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 17:29:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <1364589997.13783.3.camel@buesod1.americas.hpqcorp.net>
-References: <1364589997.13783.3.camel@buesod1.americas.hpqcorp.net>
-Date: Fri, 29 Mar 2013 14:29:44 -0700
-Message-ID: <CANN689FL3hE1fo5pZMk3Pn7c=_K=meU_E3UtCApSM2sRhjHG_A@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] rbtree_test: add __init/__exit annotations
-From: Michel Lespinasse <walken@google.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 29 Mar 2013 17:31:52 -0400
+X-Auth-Info: xGAFisHaLwmLmgZVRA8FD33+nwTV3bRL0Il6ulT31xA=
+Date: Fri, 29 Mar 2013 22:31:57 +0100
+From: Anatolij Gustschin <agust@denx.de>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: stern@rowland.harvard.edu, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
+Subject: Re: [RFC PATCH 2/5] USB: remove USB_EHCI_BIG_ENDIAN_{DESC,MMIO}
+ depends on architecture symbol
+Message-ID: <20130329223157.5f2adef4@crub>
+In-Reply-To: <1364321177-12146-3-git-send-email-florian@openwrt.org>
+References: <1364321177-12146-1-git-send-email-florian@openwrt.org>
+	<1364321177-12146-3-git-send-email-florian@openwrt.org>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29, 2013 at 1:46 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
-> Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Hello Florian,
 
-Reviewed-by: Michel Lespinasse <walken@google.com>
+On Tue, 26 Mar 2013 19:06:14 +0100
+Florian Fainelli <florian@openwrt.org> wrote:
+...
+> diff --git a/arch/powerpc/platforms/52xx/Kconfig b/arch/powerpc/platforms/52xx/Kconfig
+> index 90f4496..65232cb 100644
+> --- a/arch/powerpc/platforms/52xx/Kconfig
+> +++ b/arch/powerpc/platforms/52xx/Kconfig
+> @@ -3,6 +3,8 @@ config PPC_MPC52xx
+>  	depends on 6xx
+>  	select PPC_CLOCK
+>  	select PPC_PCI_CHOICE
+> +	select USB_EHCI_BIG_ENDIAN_MMIO
+> +	select USB_EHCI_BIG_ENDIAN_DESC
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Note that mpc52xx only has an OHCI controller, so this change here
+is wrong. It belongs into arch/powerpc/platforms/512x/Kconfig.
+mpc512x has an EHCI controller.
+
+Thanks,
+
+Anatolij
