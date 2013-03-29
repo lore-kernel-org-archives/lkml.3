@@ -1,212 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab3C2NB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 09:01:29 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:46142 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754433Ab3C2NB0 (ORCPT
+	id S1754993Ab3C2NFS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 09:05:18 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51708 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754572Ab3C2NFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 09:01:26 -0400
-Message-ID: <1364562082.5113.16.camel@edumazet-glaptop>
-Subject: [PATCH] net: add a synchronize_net() in
- netdev_rx_handler_unregister()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jiri Pirko <jpirko@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Andy Gospodarek <andy@greyhouse.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Nicolas de =?ISO-8859-1?Q?Peslo=FCan?= 
-	<nicolas.2p.debian@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Guy Streeter <streeter@redhat.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, stephen@networkplumber.org
-Date: Fri, 29 Mar 2013 06:01:22 -0700
-In-Reply-To: <20130329094856.GB1677@minipsycho.orion>
-References: <1364490997.6345.237.camel@gandalf.local.home>
-	 <1364491792.15753.47.camel@edumazet-glaptop>
-	 <20130329094856.GB1677@minipsycho.orion>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Fri, 29 Mar 2013 09:05:15 -0400
+Message-ID: <51559150.3040407@oracle.com>
+Date: Fri, 29 Mar 2013 09:04:16 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130310 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
+        Dave Jones <davej@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: mm: BUG in do_huge_pmd_wp_page
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+Hi all,
 
-On Fri, 2013-03-29 at 10:48 +0100, Jiri Pirko wrote:
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
+I've stumbled on the following.
 
-> Hmm. I think that this might be issue introduced by:
-> commit a9b3cd7f323b2e57593e7215362a7b02fc933e3a
-> Author: Stephen Hemminger <shemminger@vyatta.com>
-> Date:   Mon Aug 1 16:19:00 2011 +0000
-> 
->     rcu: convert uses of rcu_assign_pointer(x, NULL) to RCU_INIT_POINTER
-> 
-> 
-> Because, if rcu_dereference(dev->rx_handler) is null,
-> rcu_dereference(dev->rx_handler_data) is never done. Therefore I believe
-> we are hitting following scenario:
-> 
-> 
->    CPU0				CPU1
->    ----				----
->   			    dev->rx_handler_data = NULL
->  rcu_read_lock()
->  			    dev->rx_handler = NULL
-> 
-> 
-> CPU0 will see rx_handler set and yet, rx_handler_data nulled. Write
-> barrier in rcu_assign_pointer() might prevent this reorder from happening.
-> Therefore I suggest:
-> 
-> diff --git a/net/core/dev.c b/net/core/dev.c
-> index 0caa38e..c16b829 100644
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -3332,8 +3332,8 @@ void netdev_rx_handler_unregister(struct net_device *dev)
->  {
->  
->  	ASSERT_RTNL();
-> -	RCU_INIT_POINTER(dev->rx_handler, NULL);
-> -	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
-> +	rcu_assign_pointer(dev->rx_handler, NULL);
-> +	rcu_assign_pointer(dev->rx_handler_data, NULL);
->  }
->  EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
->  
-> 
+It seems that the code in do_huge_pmd_wp_page() was recently modified in
+"thp: do_huge_pmd_wp_page(): handle huge zero page".
 
-Nope this changes nothing at all.
+Here's the trace:
 
-However, we can fix the bug in a different way, if we want to avoid a
-test in fast path.
+[  246.244708] BUG: unable to handle kernel paging request at ffff88009c422000
+[  246.245743] IP: [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
+[  246.250569] PGD 7232067 PUD 7235067 PMD bfefe067 PTE 800000009c422060
+[  246.251529] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  246.252325] Dumping ftrace buffer:
+[  246.252791]    (ftrace buffer empty)
+[  246.252869] Modules linked in:
+[  246.252869] CPU 3
+[  246.252869] Pid: 11985, comm: trinity-child12 Tainted: G        W    3.9.0-rc4-next-20130328-sasha-00014-g91a3267 #319
+[  246.252869] RIP: 0010:[<ffffffff81a0a795>]  [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
+[  246.252869] RSP: 0018:ffff88000015bc40  EFLAGS: 00010286
+[  246.252869] RAX: ffff88000015bfd8 RBX: 0000000002710880 RCX: 0000000000000200
+[  246.252869] RDX: 0000000000000000 RSI: ffff88009c422000 RDI: ffff88009a422000
+[  246.252869] RBP: ffff88000015bc98 R08: 0000000002718000 R09: 0000000000000001
+[  246.252869] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880000000000
+[  246.252869] R13: ffff88000015bfd8 R14: ffff88000015bfd8 R15: fffffffffff80000
+[  246.252869] FS:  00007f53db93f700(0000) GS:ffff8800bba00000(0000) knlGS:0000000000000000
+[  246.252869] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  246.252869] CR2: ffff88009c422000 CR3: 0000000000159000 CR4: 00000000000406e0
+[  246.252869] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  246.252869] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  246.252869] Process trinity-child12 (pid: 11985, threadinfo ffff88000015a000, task ffff88009c60b000)
+[  246.252869] Stack:
+[  246.252869]  ffffffff81234aae ffff88000015bc88 ffffffff81273639 0000000000a00000
+[  246.252869]  0000000002718000 ffff8800ab36d050 ffff880000153800 ffffea0002690000
+[  246.252869]  0000000000a00000 ffff8800ab36d000 ffffea0002710000 ffff88000015bd48
+[  246.252869] Call Trace:
+[  246.252869]  [<ffffffff81234aae>] ? copy_user_huge_page+0x1de/0x240
+[  246.252869]  [<ffffffff81273639>] ? mem_cgroup_charge_common+0xa9/0xc0
+[  246.252869]  [<ffffffff8126b4d7>] do_huge_pmd_wp_page+0x9f7/0xc60
+[  246.252869]  [<ffffffff81a0acd9>] ? __const_udelay+0x29/0x30
+[  246.252869]  [<ffffffff8123364e>] handle_mm_fault+0x26e/0x650
+[  246.252869]  [<ffffffff8117dc1a>] ? __lock_is_held+0x5a/0x80
+[  246.252869]  [<ffffffff83db3814>] ? __do_page_fault+0x514/0x5e0
+[  246.252869]  [<ffffffff83db3870>] __do_page_fault+0x570/0x5e0
+[  246.252869]  [<ffffffff811c6500>] ? rcu_eqs_exit_common+0x60/0x260
+[  246.252869]  [<ffffffff811c740e>] ? rcu_eqs_enter_common+0x33e/0x3b0
+[  246.252869]  [<ffffffff811c679c>] ? rcu_eqs_exit+0x9c/0xb0
+[  246.252869]  [<ffffffff83db3912>] do_page_fault+0x32/0x50
+[  246.252869]  [<ffffffff83db2ef0>] do_async_page_fault+0x30/0xc0
+[  246.252869]  [<ffffffff83db01e8>] async_page_fault+0x28/0x30
+[  246.252869] Code: 90 90 90 90 90 90 9c fa 65 48 3b 06 75 14 65 48 3b 56 08 75 0d 65 48 89 1e 65 48 89 4e 08 9d b0 01 c3 9d 30
+c0 c3 b9 00 02 00 00 <f3> 48 a5 c3 0f 1f 80 00 00 00 00 eb ee 66 66 66 90 66 66 66 90
+[  246.252869] RIP  [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
+[  246.252869]  RSP <ffff88000015bc40>
+[  246.252869] CR2: ffff88009c422000
+[  246.252869] ---[ end trace 09fbe37b108d5766 ]---
 
-With following patch, we can make sure that a reader seeing a non NULL
-rx_handler has a guarantee to see a non NULL rx_handler_data
+And this is the code:
 
-Thanks
-
-[PATCH] net: add a synchronize_net() in netdev_rx_handler_unregister()
-
-commit 35d48903e97819 (bonding: fix rx_handler locking) added a race
-in bonding driver, reported by Steven Rostedt who did a very good
-diagnosis :
-
-<quoting Steven>
-
-I'm currently debugging a crash in an old 3.0-rt kernel that one of our
-customers is seeing. The bug happens with a stress test that loads and
-unloads the bonding module in a loop (I don't know all the details as
-I'm not the one that is directly interacting with the customer). But the
-bug looks to be something that may still be present and possibly present
-in mainline too. It will just be much harder to trigger it in mainline.
-
-In -rt, interrupts are threads, and can schedule in and out just like
-any other thread. Note, mainline now supports interrupt threads so this
-may be easily reproducible in mainline as well. I don't have the ability
-to tell the customer to try mainline or other kernels, so my hands are
-somewhat tied to what I can do.
-
-But according to a core dump, I tracked down that the eth irq thread
-crashed in bond_handle_frame() here:
-
-        slave = bond_slave_get_rcu(skb->dev);
-        bond = slave->bond; <--- BUG
+        if (is_huge_zero_pmd(orig_pmd))
+                clear_huge_page(new_page, haddr, HPAGE_PMD_NR);
+        else
+                copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR); <--- this
 
 
-the slave returned was NULL and accessing slave->bond caused a NULL
-pointer dereference.
-
-Looking at the code that unregisters the handler:
-
-void netdev_rx_handler_unregister(struct net_device *dev)
-{
-
-        ASSERT_RTNL();
-        RCU_INIT_POINTER(dev->rx_handler, NULL);
-        RCU_INIT_POINTER(dev->rx_handler_data, NULL);
-}
-
-Which is basically:
-        dev->rx_handler = NULL;
-        dev->rx_handler_data = NULL;
-
-And looking at __netif_receive_skb() we have:
-
-        rx_handler = rcu_dereference(skb->dev->rx_handler);
-        if (rx_handler) {
-                if (pt_prev) {
-                        ret = deliver_skb(skb, pt_prev, orig_dev);
-                        pt_prev = NULL;
-                }
-                switch (rx_handler(&skb)) {
-
-My question to all of you is, what stops this interrupt from happening
-while the bonding module is unloading?  What happens if the interrupt
-triggers and we have this:
-
-
-        CPU0                    CPU1
-        ----                    ----
-  rx_handler = skb->dev->rx_handler
-
-                        netdev_rx_handler_unregister() {
-                           dev->rx_handler = NULL;
-                           dev->rx_handler_data = NULL;
-
-  rx_handler()
-   bond_handle_frame() {
-    slave = skb->dev->rx_handler;
-    bond = slave->bond; <-- NULL pointer dereference!!!
-
-
-What protection am I missing in the bond release handler that would
-prevent the above from happening?
-
-</quoting Steven>
-
-We can fix bug this in two ways. First is adding a test in
-bond_handle_frame() and others to check if rx_handler_data is NULL.
-
-A second way is adding a synchronize_net() in
-netdev_rx_handler_unregister() to make sure that a rcu protected reader
-has the guarantee to see a non NULL rx_handler_data.
-
-The second way is better as it avoids an extra test in fast path.
-
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Jiri Pirko <jpirko@redhat.com>
-Cc: Paul E. McKenney <paulmck@us.ibm.com>
----
- net/core/dev.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/net/core/dev.c b/net/core/dev.c
-index b13e5c7..56932a4 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3314,6 +3314,7 @@ int netdev_rx_handler_register(struct net_device *dev,
- 	if (dev->rx_handler)
- 		return -EBUSY;
- 
-+	/* Note: rx_handler_data must be set before rx_handler */
- 	rcu_assign_pointer(dev->rx_handler_data, rx_handler_data);
- 	rcu_assign_pointer(dev->rx_handler, rx_handler);
- 
-@@ -3334,6 +3335,11 @@ void netdev_rx_handler_unregister(struct net_device *dev)
- 
- 	ASSERT_RTNL();
- 	RCU_INIT_POINTER(dev->rx_handler, NULL);
-+	/* a reader seeing a non NULL rx_handler in a rcu_read_lock()
-+	 * section has a guarantee to see a non NULL rx_handler_data
-+	 * as well.
-+	 */
-+	synchronize_net();
- 	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
- }
- EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
-
-
+Thanks,
+Sasha
