@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab3C2Lri (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 07:47:38 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:63401 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754169Ab3C2Lrh (ORCPT
+	id S1754538Ab3C2L6k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 07:58:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43627 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753549Ab3C2L6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 07:47:37 -0400
-Message-ID: <1364557655.1345.58.camel@x61.thuisdomein>
-Subject: [PATCH] ARM: davinci: remove test for undefined Kconfig macro
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@ti.com>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 29 Mar 2013 12:47:35 +0100
+	Fri, 29 Mar 2013 07:58:39 -0400
+Message-ID: <1364558306.5053.87.camel@laptop>
+Subject: Re: [PATCH 2/5] sched: factor out code to should_we_balance()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Date: Fri, 29 Mar 2013 12:58:26 +0100
+In-Reply-To: <1364457537-15114-3-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1364457537-15114-1-git-send-email-iamjoonsoo.kim@lge.com>
+	 <1364457537-15114-3-git-send-email-iamjoonsoo.kim@lge.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Mar 2013 11:47:35.0709 (UTC) FILETIME=[34AF54D0:01CE2C73]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DaVinci debugging macro contains a check for
-CONFIG_DEBUG_DAVINCI_DA8XX_UART0. But there's corresponding Kconfig
-symbol, so this test will always evaluate to false. That Kconfig symbol
-is not needed because, as __arch_decomp_setup() shows, there are no
-DaVinci DA8XX boards that use UART0 for debugging. We can remove two
-lines of unneeded code.
+On Thu, 2013-03-28 at 16:58 +0900, Joonsoo Kim wrote:
+> +static int should_we_balance(struct lb_env *env)
+> +{
+> +       struct sched_group *sg = env->sd->groups;
+> +       int cpu, balance_cpu = -1;
+> +
+> +       /*
+> +        * In the newly idle case, we will allow all the cpu's
+> +        * to do the newly idle load balance.
+> +        */
+> +       if (env->idle == CPU_NEWLY_IDLE)
+> +               return 1;
+> +
+> +       /* Try to find first idle cpu */
+> +       for_each_cpu_and(cpu, sched_group_cpus(sg), env->cpus)
+> +               if (cpumask_test_cpu(cpu, sched_group_mask(sg)) &&
+> +                       idle_cpu(cpu)) {
+> +                               balance_cpu = cpu;
+> +                               break;
+> +                       }
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Untested.
+/me hands you a bucket of curlies too.. use them I'll send you another
+bucket when this one gets empty!
 
-1) See commit 477099f189101a6675d93782164446015a3633bd ("ARM: davinci:
-implement DEBUG_LL port choice") for the introduction of this code.
+(We always put in curlies on multi lines statements -- as opposed to
+multi statement blocks where they're required)
 
- arch/arm/mach-davinci/include/mach/debug-macro.S | 2 --
- 1 file changed, 2 deletions(-)
+> +
+> +       if (balance_cpu == -1)
+> +               balance_cpu = group_balance_cpu(sg);
+> +
+> +       /*
+> +        * First idle cpu or the first cpu(busiest) in this sched
+> group
+> +        * is eligible for doing load balancing at this and above
+> domains.
+> +        */
+> +       if (balance_cpu != env->dst_cpu)
+> +               return 0;
+> +
+> +       return 1;
+> +}
 
-diff --git a/arch/arm/mach-davinci/include/mach/debug-macro.S b/arch/arm/mach-davinci/include/mach/debug-macro.S
-index 34290d1..b18b8eb 100644
---- a/arch/arm/mach-davinci/include/mach/debug-macro.S
-+++ b/arch/arm/mach-davinci/include/mach/debug-macro.S
-@@ -24,8 +24,6 @@
- 
- #if defined(CONFIG_DEBUG_DAVINCI_DMx_UART0)
- #define UART_BASE	DAVINCI_UART0_BASE
--#elif defined(CONFIG_DEBUG_DAVINCI_DA8XX_UART0)
--#define UART_BASE	DA8XX_UART0_BASE
- #elif defined(CONFIG_DEBUG_DAVINCI_DA8XX_UART1)
- #define UART_BASE	DA8XX_UART1_BASE
- #elif defined(CONFIG_DEBUG_DAVINCI_DA8XX_UART2)
--- 
-1.7.11.7
 
