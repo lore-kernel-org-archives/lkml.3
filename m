@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399Ab3C2ArJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 20:47:09 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:35016 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754359Ab3C2ArG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 20:47:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130328225300.GA20285@kroah.com>
-References: <CAB=NE6WLuz7-QD3v4BwZkLLNUed=X7jgvZtZX8cDEh3HiD51oQ@mail.gmail.com>
- <20130328225300.GA20285@kroah.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 28 Mar 2013 17:46:44 -0700
-X-Google-Sender-Auth: Cy6rSWVzyv0beIqXhN7D4WW9krQ
-Message-ID: <CAB=NE6UF97ETqXXyNFCRRhv=d=AgA=nq3d830uG+pvykAmB2xA@mail.gmail.com>
-Subject: Re: Possibility for an external staging tree - bring up quality code
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Adrian Chadd <adrian@freebsd.org>, Jouni Malinen <j@w1.fi>,
-        Kalle Valo <kvalo@adurom.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kathy Giori <Kathy.Giori@qca.qualcomm.com>,
-        Yanbo Li <dreamfly281@gmail.com>,
-        Mathieu Olivari <mathieu@qca.qualcomm.com>,
-        "k.eugene.e" <k.eugene.e@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754442Ab3C2As6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 20:48:58 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:1119 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753570Ab3C2As5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 20:48:57 -0400
+X-IronPort-AV: E=Sophos;i="4.87,370,1363104000"; 
+   d="scan'208";a="6965405"
+From: liguang <lig.fnst@cn.fujitsu.com>
+To: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: liguang <lig.fnst@cn.fujitsu.com>
+Subject: [PATCH][update] Makefile: allow no update .config build
+Date: Fri, 29 Mar 2013 08:46:37 +0800
+Message-Id: <1364517997-24067-1-git-send-email-lig.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.2.5
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/29 08:48:05,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/29 08:48:05,
+	Serialize complete at 2013/03/29 08:48:05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 3:53 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Thu, Mar 28, 2013 at 01:13:23PM -0700, Luis R. Rodriguez wrote:
->
-> <huge snip>
->
->> This has me thinking if it makes sense to have an external driver tree
->> for staging drivers but lead by engineers who already know the rules
->> of upstream, they just want to get things done faster.
->
-> That's called a "fork" or "tree" or whatever you want to call it, and
-> all of us have them, and end up merging stuff to mainline through them
-> eventually.
->
-> There is no need to "codify" something that we all have been doing for
-> years.  If someone thinks they can "work faster" in their own tree,
-> great for them, have them do it.  I don't see what I need to agree or
-> disagree with here to keep anyone from doing such a thing.
->
-> Or am I just totally missing something here?
+if we pull some commits from other git repo
+which bring in a few CONFIG_* options, then
+we have to build all again, but we do assure
+these options are not interesting for us,
+so the long waiting build will be offending.
+this change help us to avoid all-build.
 
-OK, yes I think we can work better if we had an external trees for
-each driver to cherry pick them as they get sanitized, prior to
-upstream for *some* drivers. Very well. I'll simply let vendors /
-developers get their 802.11 driver as part of compat-drivers so long
-as they maintain their poo.
+Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+---
+ Makefile |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-  Luis
+diff --git a/Makefile b/Makefile
+index 54d2b2a..d10e505 100644
+--- a/Makefile
++++ b/Makefile
+@@ -106,6 +106,12 @@ ifeq ("$(origin W)", "command line")
+   export KBUILD_ENABLE_EXTRA_GCC_CHECKS := $(W)
+ endif
+ 
++# KBUILD_NCU is set to do not update .config even
++# a few new CONFIG_* options appeared
++ifeq ("$(origin NCU)", "command line")
++  KBUILD_NCU := $(NCU)
++endif
++
+ # That's our default target when none is given on the command line
+ PHONY := _all
+ _all:
+@@ -540,8 +546,10 @@ $(KCONFIG_CONFIG) include/config/auto.conf.cmd: ;
+ # with it and forgot to run make oldconfig.
+ # if auto.conf.cmd is missing then we are probably in a cleaned tree so
+ # we execute the config step to be sure to catch updated Kconfig files
++ifneq ($(KBUILD_NCU), 1)
+ include/config/%.conf: $(KCONFIG_CONFIG) include/config/auto.conf.cmd
+ 	$(Q)$(MAKE) -f $(srctree)/Makefile silentoldconfig
++endif # $(KBUILD_NCU)
+ else
+ # external modules needs include/generated/autoconf.h and include/config/auto.conf
+ # but do not care if they are up-to-date. Use auto.conf to trigger the test
+@@ -1157,6 +1165,7 @@ help:
+ 	@echo  '		2: warnings which occur quite often but may still be relevant'
+ 	@echo  '		3: more obscure warnings, can most likely be ignored'
+ 	@echo  '		Multiple levels can be combined with W=12 or W=123'
++	@echo  '  make NCU=1 [targets] no .config update'
+ 	@echo  ''
+ 	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
+ 	@echo  'For further info see the ./README file'
+-- 
+1.7.2.5
+
