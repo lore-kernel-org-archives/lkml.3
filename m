@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798Ab3C2SrL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 14:47:11 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:39043 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476Ab3C2SrI (ORCPT
+	id S1756824Ab3C2Sr1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 14:47:27 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:43029 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755476Ab3C2SrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 14:47:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130329182411.GD2567@kernel.dk>
-References: <20130329153831.GQ19488@kernel.dk>
-	<CA+55aFwoj=g0YrFOrpoKNY43o8qDAhDEHSP-zrtpWCXciwz_-Q@mail.gmail.com>
-	<20130329182411.GD2567@kernel.dk>
-Date: Fri, 29 Mar 2013 11:47:07 -0700
-X-Google-Sender-Auth: RjRAU9i3o4mS_o088AlUaKt_dZQ
-Message-ID: <CA+55aFwWFma7qK3v7QtxRqp=GHnON8DF0kO84yDvsxu3nkb-xA@mail.gmail.com>
-Subject: Re: [GIT PULL] block fixes for 3.9-rc
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 29 Mar 2013 14:47:24 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: jimwall@q.com, brian@crystalfontz.com,
+        Maxime Rpard <maxime.ripard@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: cfa10036: add one wire bitbanging to the cfa10049
+Date: Fri, 29 Mar 2013 19:46:41 +0100
+Message-Id: <1364582801-15087-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29, 2013 at 11:24 AM, Jens Axboe <axboe@kernel.dk> wrote:
->
->> Don't do this kind of thing. That branch is pointless, and just
->> confused you.
->
-> Tag, you mean?
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/boot/dts/imx28-cfa10049.dts |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
-No. Branch. Why would you have a public branch called "for-linus",
-when you intend to tag the end result before sending it to me?
+diff --git a/arch/arm/boot/dts/imx28-cfa10049.dts b/arch/arm/boot/dts/imx28-cfa10049.dts
+index ded7784..b9dad4e 100644
+--- a/arch/arm/boot/dts/imx28-cfa10049.dts
++++ b/arch/arm/boot/dts/imx28-cfa10049.dts
+@@ -30,7 +30,6 @@
+ 					reg = <0>;
+ 					fsl,pinmux-ids = <
+ 						0x0073 /* MX28_PAD_GPMI_D7__GPIO_0_7 */
+-						0x1153 /* MX28_PAD_LCD_D22__GPIO_1_21 */
+ 						0x1163 /* MX28_PAD_LCD_D22__GPIO_1_22 */
+ 						0x1173 /* MX28_PAD_LCD_D22__GPIO_1_23 */
+ 						0x2153 /* MX28_PAD_SSP2_D5__GPIO_2_21 */
+@@ -120,6 +119,16 @@
+ 					fsl,voltage = <1>;
+ 					fsl,pull-up = <0>;
+ 				};
++
++				w1_gpio_pins: w1-gpio@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
++						0x1153 /* MX28_PAD_LCD_D21__GPIO_1_21 */
++					>;
++					fsl,drive-strength = <1>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <0>; /* 0 will enable the keeper */
++				};
+ 			};
+ 
+ 			lcdif@80030000 {
+@@ -304,5 +313,14 @@
+ 		pwms = <&pwm 3 5000000>;
+ 		brightness-levels = <0 4 8 16 32 64 128 255>;
+ 		default-brightness-level = <6>;
++
++	};
++
++	onewire@0 {
++		compatible = "w1-gpio";
++		pinctrl-names = "default";
++		pinctrl-0 = <&w1_gpio_pins>;
++		status = "okay";
++		gpios = <&gpio1 21 0>;
+ 	};
+ };
+-- 
+1.7.10.4
 
-It would make much more sense if you just did your development in your
-"master" branch, perhaps with a separate branch for fixes during
-stabilization (so that you don't mix up fixes with your future
-development. Call it "fixes" or "stable" or whatever. No "for-linus"
-branches anywhere. After all, the branch isn't for me at all. It's for
-me only once you're ready. And at that point you tag it, so having a
-*tag* called for-linus makes sense and gives us the nice signing etc.
-
-Hmm?
-
-            Linus
