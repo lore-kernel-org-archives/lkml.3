@@ -1,241 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab3C2Rpd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 13:45:33 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:62481 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756297Ab3C2Rpa (ORCPT
+	id S1756561Ab3C2RrM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 13:47:12 -0400
+Received: from dkim2.fusionio.com ([66.114.96.54]:40847 "EHLO
+	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756268Ab3C2RrL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 13:45:30 -0400
-Message-ID: <5155D32A.3030603@openwrt.org>
-Date: Fri, 29 Mar 2013 18:45:14 +0100
-From: Florian Fainelli <florian@openwrt.org>
-Organization: OpenWrt
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Fri, 29 Mar 2013 13:47:11 -0400
+X-ASG-Debug-ID: 1364579229-03d6a52ac0157c70001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Ben Collins <ben.c@servergy.com>
-CC: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH] of_mdio: Remove flags argument from of_phy_connect
-References: <E1UJ1fR-0004hv-8a@swissweb.swissdisk.com>
-In-Reply-To: <E1UJ1fR-0004hv-8a@swissweb.swissdisk.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Message-ID: <20130329174706.4227.39785@localhost.localdomain>
+From: Chris Mason <chris.mason@fusionio.com>
+User-Agent: alot/0.3.4
+Subject: [GIT PULL] Btrfs updates
+Date: Fri, 29 Mar 2013 13:47:06 -0400
+X-ASG-Orig-Subj: [GIT PULL] Btrfs updates
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1364579229
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.126596
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 03/19/13 00:49, Ben Collins a écrit :
-> of_phy_connect() only required a flags argument in order to pass it down to
-> to phy_connect(). Since that argument was removed, it is of no use in this
-> function either (confirmed by checking all callers in kernel tree as well).
+Hi Linus,
 
-Looks good to me:
+Please pull my for-linus branch:
 
-Reviewed-by: Florian Fainelli <florian@openwrt.org>
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-(you should have CC'd netdev@vger.kernel.org as it is probably going to 
-get merged via the net tree)
+We've had a busy two weeks of bug fixing.  The biggest patches in here
+are some long standing early-enospc problems (Josef) and a very old race
+where compression and mmap combine forces to lose writes (me).  I'm
+fairly sure the mmap bug goes all the way back to the introduction of
+the compression code, which is proof that fsx doesn't trigger every
+possible mmap corner after all.
 
->
-> Signed-off-by: Ben Collins <ben.c@servergy.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> ---
->   drivers/net/ethernet/freescale/fec_mpc52xx.c          | 2 +-
->   drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c | 2 +-
->   drivers/net/ethernet/freescale/gianfar.c              | 2 +-
->   drivers/net/ethernet/freescale/ucc_geth.c             | 2 +-
->   drivers/net/ethernet/marvell/mvneta.c                 | 2 +-
->   drivers/net/ethernet/octeon/octeon_mgmt.c             | 2 +-
->   drivers/net/ethernet/pasemi/pasemi_mac.c              | 2 +-
->   drivers/net/ethernet/xilinx/ll_temac_main.c           | 2 +-
->   drivers/net/ethernet/xilinx/xilinx_axienet_main.c     | 2 +-
->   drivers/net/ethernet/xilinx/xilinx_emaclite.c         | 2 +-
->   drivers/of/of_mdio.c                                  | 2 +-
->   drivers/staging/octeon/ethernet-mdio.c                | 2 +-
->   include/linux/of_mdio.h                               | 4 ++--
->   13 files changed, 14 insertions(+), 14 deletions(-)
->
-> diff --git a/drivers/net/ethernet/freescale/fec_mpc52xx.c b/drivers/net/ethernet/freescale/fec_mpc52xx.c
-> index 77943a6..ea01dcd 100644
-> --- a/drivers/net/ethernet/freescale/fec_mpc52xx.c
-> +++ b/drivers/net/ethernet/freescale/fec_mpc52xx.c
-> @@ -217,7 +217,7 @@ static int mpc52xx_fec_open(struct net_device *dev)
->
->   	if (priv->phy_node) {
->   		priv->phydev = of_phy_connect(priv->ndev, priv->phy_node,
-> -					      mpc52xx_fec_adjust_link, 0, 0);
-> +					      mpc52xx_fec_adjust_link, 0);
->   		if (!priv->phydev) {
->   			dev_err(&dev->dev, "of_phy_connect failed\n");
->   			return -ENODEV;
-> diff --git a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
-> index 46df288..5523fc0 100644
-> --- a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
-> +++ b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
-> @@ -799,7 +799,7 @@ static int fs_init_phy(struct net_device *dev)
->   	iface = fep->fpi->use_rmii ?
->   		PHY_INTERFACE_MODE_RMII : PHY_INTERFACE_MODE_MII;
->
-> -	phydev = of_phy_connect(dev, fep->fpi->phy_node, &fs_adjust_link, 0,
-> +	phydev = of_phy_connect(dev, fep->fpi->phy_node, &fs_adjust_link,
->   				iface);
->   	if (!phydev) {
->   		phydev = of_phy_connect_fixed_link(dev, &fs_adjust_link,
-> diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
-> index d2c5441..383d302 100644
-> --- a/drivers/net/ethernet/freescale/gianfar.c
-> +++ b/drivers/net/ethernet/freescale/gianfar.c
-> @@ -1467,7 +1467,7 @@ static int init_phy(struct net_device *dev)
->
->   	interface = gfar_get_interface(dev);
->
-> -	priv->phydev = of_phy_connect(dev, priv->phy_node, &adjust_link, 0,
-> +	priv->phydev = of_phy_connect(dev, priv->phy_node, &adjust_link,
->   				      interface);
->   	if (!priv->phydev)
->   		priv->phydev = of_phy_connect_fixed_link(dev, &adjust_link,
-> diff --git a/drivers/net/ethernet/freescale/ucc_geth.c b/drivers/net/ethernet/freescale/ucc_geth.c
-> index 0a70bb5..fb9a573 100644
-> --- a/drivers/net/ethernet/freescale/ucc_geth.c
-> +++ b/drivers/net/ethernet/freescale/ucc_geth.c
-> @@ -1745,7 +1745,7 @@ static int init_phy(struct net_device *dev)
->   	priv->oldspeed = 0;
->   	priv->oldduplex = -1;
->
-> -	phydev = of_phy_connect(dev, ug_info->phy_node, &adjust_link, 0,
-> +	phydev = of_phy_connect(dev, ug_info->phy_node, &adjust_link,
->   				priv->phy_interface);
->   	if (!phydev)
->   		phydev = of_phy_connect_fixed_link(dev, &adjust_link,
-> diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
-> index cd345b8..dcb865e8 100644
-> --- a/drivers/net/ethernet/marvell/mvneta.c
-> +++ b/drivers/net/ethernet/marvell/mvneta.c
-> @@ -2344,7 +2344,7 @@ static int mvneta_mdio_probe(struct mvneta_port *pp)
->   {
->   	struct phy_device *phy_dev;
->
-> -	phy_dev = of_phy_connect(pp->dev, pp->phy_node, mvneta_adjust_link, 0,
-> +	phy_dev = of_phy_connect(pp->dev, pp->phy_node, mvneta_adjust_link,
->   				 pp->phy_interface);
->   	if (!phy_dev) {
->   		netdev_err(pp->dev, "could not find the PHY\n");
-> diff --git a/drivers/net/ethernet/octeon/octeon_mgmt.c b/drivers/net/ethernet/octeon/octeon_mgmt.c
-> index 921729f..c2d281e 100644
-> --- a/drivers/net/ethernet/octeon/octeon_mgmt.c
-> +++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
-> @@ -970,7 +970,7 @@ static int octeon_mgmt_init_phy(struct net_device *netdev)
->   	}
->
->   	p->phydev = of_phy_connect(netdev, p->phy_np,
-> -				   octeon_mgmt_adjust_link, 0,
-> +				   octeon_mgmt_adjust_link,
->   				   PHY_INTERFACE_MODE_MII);
->
->   	if (!p->phydev)
-> diff --git a/drivers/net/ethernet/pasemi/pasemi_mac.c b/drivers/net/ethernet/pasemi/pasemi_mac.c
-> index b1cfbb7..aad29d1 100644
-> --- a/drivers/net/ethernet/pasemi/pasemi_mac.c
-> +++ b/drivers/net/ethernet/pasemi/pasemi_mac.c
-> @@ -1100,7 +1100,7 @@ static int pasemi_mac_phy_init(struct net_device *dev)
->   	mac->speed = 0;
->   	mac->duplex = -1;
->
-> -	phydev = of_phy_connect(dev, phy_dn, &pasemi_adjust_link, 0,
-> +	phydev = of_phy_connect(dev, phy_dn, &pasemi_adjust_link,
->   				PHY_INTERFACE_MODE_SGMII);
->
->   	if (!phydev) {
-> diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
-> index 9fc2ada..4c5e0a9 100644
-> --- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-> +++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-> @@ -857,7 +857,7 @@ static int temac_open(struct net_device *ndev)
->
->   	if (lp->phy_node) {
->   		lp->phy_dev = of_phy_connect(lp->ndev, lp->phy_node,
-> -					     temac_adjust_link, 0, 0);
-> +					     temac_adjust_link, 0);
->   		if (!lp->phy_dev) {
->   			dev_err(lp->dev, "of_phy_connect() failed\n");
->   			return -ENODEV;
-> diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-> index 278c9db..7f2afdd 100644
-> --- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-> +++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-> @@ -935,7 +935,7 @@ static int axienet_open(struct net_device *ndev)
->
->   	if (lp->phy_node) {
->   		lp->phy_dev = of_phy_connect(lp->ndev, lp->phy_node,
-> -					     axienet_adjust_link, 0,
-> +					     axienet_adjust_link,
->   					     PHY_INTERFACE_MODE_GMII);
->   		if (!lp->phy_dev) {
->   			dev_err(lp->dev, "of_phy_connect() failed\n");
-> diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-> index 919b983..bccb064 100644
-> --- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-> +++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-> @@ -931,7 +931,7 @@ static int xemaclite_open(struct net_device *dev)
->   		u32 bmcr;
->
->   		lp->phy_dev = of_phy_connect(lp->ndev, lp->phy_node,
-> -					     xemaclite_adjust_link, 0,
-> +					     xemaclite_adjust_link,
->   					     PHY_INTERFACE_MODE_MII);
->   		if (!lp->phy_dev) {
->   			dev_err(&lp->ndev->dev, "of_phy_connect() failed\n");
-> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-> index e3a8b22..199b7f2 100644
-> --- a/drivers/of/of_mdio.c
-> +++ b/drivers/of/of_mdio.c
-> @@ -149,7 +149,7 @@ EXPORT_SYMBOL(of_phy_find_device);
->    */
->   struct phy_device *of_phy_connect(struct net_device *dev,
->   				  struct device_node *phy_np,
-> -				  void (*hndlr)(struct net_device *), u32 flags,
-> +				  void (*hndlr)(struct net_device *),
->   				  phy_interface_t iface)
->   {
->   	struct phy_device *phy = of_phy_find_device(phy_np);
-> diff --git a/drivers/staging/octeon/ethernet-mdio.c b/drivers/staging/octeon/ethernet-mdio.c
-> index 83b1030..37897e3 100644
-> --- a/drivers/staging/octeon/ethernet-mdio.c
-> +++ b/drivers/staging/octeon/ethernet-mdio.c
-> @@ -171,7 +171,7 @@ int cvm_oct_phy_setup_device(struct net_device *dev)
->   	if (!phy_node)
->   		return 0;
->
-> -	priv->phydev = of_phy_connect(dev, phy_node, cvm_oct_adjust_link, 0,
-> +	priv->phydev = of_phy_connect(dev, phy_node, cvm_oct_adjust_link,
->   				      PHY_INTERFACE_MODE_GMII);
->
->   	if (priv->phydev == NULL)
-> diff --git a/include/linux/of_mdio.h b/include/linux/of_mdio.h
-> index 8163107..cdc62c9 100644
-> --- a/include/linux/of_mdio.h
-> +++ b/include/linux/of_mdio.h
-> @@ -18,7 +18,7 @@ extern struct phy_device *of_phy_find_device(struct device_node *phy_np);
->   extern struct phy_device *of_phy_connect(struct net_device *dev,
->   					 struct device_node *phy_np,
->   					 void (*hndlr)(struct net_device *),
-> -					 u32 flags, phy_interface_t iface);
-> +					 phy_interface_t iface);
->   extern struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
->   					 void (*hndlr)(struct net_device *),
->   					 phy_interface_t iface);
-> @@ -39,7 +39,7 @@ static inline struct phy_device *of_phy_find_device(struct device_node *phy_np)
->   static inline struct phy_device *of_phy_connect(struct net_device *dev,
->   						struct device_node *phy_np,
->   						void (*hndlr)(struct net_device *),
-> -						u32 flags, phy_interface_t iface)
-> +						phy_interface_t iface)
->   {
->   	return NULL;
->   }
->
+I'm sure you'll notice one of these is from this morning, it's a small
+and isolated use-after-free fix in our scrub error reporting.  I double
+checked it here.
+
+Josef Bacik (6) commits (+90/-18):
+    Btrfs: hold the ordered operations mutex when waiting on ordered extents (+2/-0)
+    Btrfs: don't drop path when printing out tree errors in scrub (+2/-1)
+    Btrfs: fix space leak when we fail to reserve metadata space (+41/-6)
+    Btrfs: fix space accounting for unlink and rename (+2/-4)
+    Btrfs: limit the global reserve to 512mb (+1/-1)
+    Btrfs: handle a bogus chunk tree nicely (+42/-6)
+
+Jan Schmidt (2) commits (+24/-16):
+    Btrfs: fix EIO from btrfs send in is_extent_unchanged for punched holes (+4/-6)
+    Btrfs: fix locking on ROOT_REPLACE operations in tree mod log (+20/-10)
+
+Wang Shilong (2) commits (+10/-2):
+    Btrfs: fix double free in the btrfs_qgroup_account_ref() (+1/-2)
+    Btrfs: fix missing qgroup reservation before fallocating (+9/-0)
+
+Miao Xie (2) commits (+5/-3):
+    Btrfs: fix wrong return value of btrfs_lookup_csum() (+3/-1)
+    Btrfs: fix wrong reservation of csums (+2/-2)
+
+Chris Mason (1) commits (+49/-0):
+    Btrfs: fix race between mmap writes and compression
+
+Liu Bo (1) commits (+1/-1):
+    Btrfs: update to use fs_state bit
+
+Tsutomu Itoh (1) commits (+9/-3):
+    Btrfs: fix memory leak in btrfs_create_tree()
+
+Total: (15) commits
+
+ fs/btrfs/ctree.c        | 30 ++++++++++++------
+ fs/btrfs/disk-io.c      | 14 ++++++---
+ fs/btrfs/extent-tree.c  | 84 ++++++++++++++++++++++++++++++++++++++++++-------
+ fs/btrfs/extent_io.c    | 33 +++++++++++++++++++
+ fs/btrfs/extent_io.h    |  2 ++
+ fs/btrfs/file-item.c    |  6 ++--
+ fs/btrfs/file.c         |  9 ++++++
+ fs/btrfs/inode.c        | 22 ++++++++++---
+ fs/btrfs/ordered-data.c |  2 ++
+ fs/btrfs/qgroup.c       |  3 +-
+ fs/btrfs/scrub.c        |  3 +-
+ fs/btrfs/send.c         | 10 +++---
+ fs/btrfs/volumes.c      | 13 +++++++-
+ 13 files changed, 188 insertions(+), 43 deletions(-)
