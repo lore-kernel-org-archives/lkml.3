@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab3C2Dsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 23:48:45 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:46231 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753662Ab3C2Dsn (ORCPT
+	id S1754701Ab3C2Dve (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 23:51:34 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:60222 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754412Ab3C2Dvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 23:48:43 -0400
-Date: Fri, 29 Mar 2013 12:48:40 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        STEricsson <STEricsson_nomadik_linux@list.st.com>,
-        Jamie Iles <jamie@jamieiles.com>, Barry Song <baohua.song@csr.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: remove mach .init_irq for irqchip_init users
-Message-ID: <20130329034839.GB13429@verge.net.au>
-References: <1364463704-13692-1-git-send-email-maxime.ripard@free-electrons.com>
- <1364463704-13692-3-git-send-email-maxime.ripard@free-electrons.com>
- <20130328124228.GA29616@verge.net.au>
- <51548AC2.1010802@free-electrons.com>
+	Thu, 28 Mar 2013 23:51:32 -0400
+Date: Thu, 28 Mar 2013 20:51:25 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/4] nohz: Print final full dynticks CPUs range on boot
+Message-ID: <20130329035124.GM3337@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1364398359-21990-1-git-send-email-fweisbec@gmail.com>
+ <1364398359-21990-3-git-send-email-fweisbec@gmail.com>
+ <20130328074045.GB24433@gmail.com>
+ <20130329002555.GA3444@windriver.com>
+ <CAFTL4hzz1jKu0tZn=-d0_csvYM_m9L+eRpw1qmmn30iC7cU=BQ@mail.gmail.com>
+ <20130329020054.GK3337@linux.vnet.ibm.com>
+ <20130329020822.GD3444@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51548AC2.1010802@free-electrons.com>
-Organisation: Horms Solutions Ltd.
+In-Reply-To: <20130329020822.GD3444@windriver.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032903-3620-0000-0000-000001D1B6E4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 07:24:02PM +0100, Maxime Ripard wrote:
-> Hi Simon,
+On Thu, Mar 28, 2013 at 10:08:23PM -0400, Paul Gortmaker wrote:
+> [Re: [PATCH 2/4] nohz: Print final full dynticks CPUs range on boot] On 28/03/2013 (Thu 19:00) Paul E. McKenney wrote:
 > 
-> Le 28/03/2013 13:42, Simon Horman a écrit :
-> > On Thu, Mar 28, 2013 at 10:41:44AM +0100, Maxime Ripard wrote:
-> >> Now that the arm core code calls irqchip_init, we can remove it from all
-> >> the machines that were using it.
-> >>
-> >> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> >> ---
-> >>  arch/arm/mach-bcm/board_bcm.c                  |    1 -
-> >>  arch/arm/mach-msm/board-dt-8660.c              |    1 -
-> >>  arch/arm/mach-msm/board-dt-8960.c              |    1 -
-> >>  arch/arm/mach-nomadik/cpu-8815.c               |    1 -
-> >>  arch/arm/mach-picoxcell/common.c               |    1 -
-> >>  arch/arm/mach-prima2/common.c                  |    1 -
-> >>  arch/arm/mach-shmobile/board-kzm9g-reference.c |    1 -
-> >>  arch/arm/mach-shmobile/setup-emev2.c           |    1 -
-> >>  arch/arm/mach-shmobile/setup-sh73a0.c          |    1 -
-> >>  arch/arm/mach-spear/spear1310.c                |    1 -
-> >>  arch/arm/mach-spear/spear1340.c                |    1 -
-> >>  arch/arm/mach-spear/spear300.c                 |    1 -
-> >>  arch/arm/mach-spear/spear310.c                 |    1 -
-> >>  arch/arm/mach-spear/spear320.c                 |    1 -
-> >>  arch/arm/mach-spear/spear6xx.c                 |    1 -
-> >>  arch/arm/mach-vexpress/v2m.c                   |    1 -
-> >>  arch/arm/mach-virt/virt.c                      |    1 -
-> >>  arch/arm/mach-zynq/common.c                    |    1 -
-> >>  18 files changed, 18 deletions(-)
+> > On Fri, Mar 29, 2013 at 01:39:04AM +0100, Frederic Weisbecker wrote:
+> > > 2013/3/29 Paul Gortmaker <paul.gortmaker@windriver.com>:
+> > > > [Re: [PATCH 2/4] nohz: Print final full dynticks CPUs range on boot] On 28/03/2013 (Thu 08:40) Ingo Molnar wrote:
+> > > >
+> > > >>
+> > > >> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > >>
+> > > >> > +   cpulist_scnprintf(nohz_ext_buf, sizeof(nohz_ext_buf), nohz_extended_mask);
+> > > >> > +   pr_info("NO_HZ: Experimental full dynticks CPUs: %s.\n", nohz_ext_buf);
+> > > >>
+> > > >> I'd suggest removing the 'experimental' word. We are not sending anything
+> > > >> experimental to Linus: we'll send something that is tested and that we
+> > > >> expect to not break anything. (and which we'll fix if it does)
+> > > >
+> > > > In that case, should we vector a patch through PaulM to clobber these too?
+> > > >
+> > > > $ git grep xperiment |grep rcu
+> > > > kernel/rcutree_plugin.h: printk(KERN_INFO "\tExperimental boot-time adjustment of leaf fanout to %d.\n", rcu_fanout_leaf);
 > > 
-> > mach-shmobile portion:
+> > This one has been this way for quite some time.  I must confess that I am
+> > more inclined to remove this Kconfig option entirely than I am to remove
+> > the "Experimental".  ;-)
 > > 
-> > Acked-by: Simon Horman <horms+renesas@verge.net.au>
-> 
-> Thanks!
-> 
+> > > > kernel/rcutree_plugin.h: pr_info("\tExperimental no-CBs CPUs: %s.\n", nocb_buf);
+> > > > kernel/rcutree_plugin.h: pr_info("\tExperimental polled no-CBs CPUs.\n");
+> > > 
+> > > Hehe, that's indeed what I inspired from ;-)
 > > 
-> > I have some new users of this queued up for v3.10.
-> > How should we handle that?
+> > I guess we can rerun the earlier "how to mark Kconfig options as not
+> > yet being ready for 100 million unsuspecting victims^Wusers.  ;-)
 > 
-> Since the old behaviour is preserved, I guess it doesn't matter much,
-> and one of us can always make a followup patch on top of these patches.
+> Perhaps consider "hiding" these kinds of choices behind CONFIG_EXPERT ?
 
-Ok, sound good.
+We tried that with CONFIG_EXPERIMENTAL (or something like that), and
+what happened was that all distros eventually enabled CONFIG_EXPERIMENTAL.
+
+But if I was -really- serious about keeping the testing population down,
+I would take Matthew Garret's advice and force a splat during boot-up.
+So I now have a commit for 3.11 queued to remove the "Experimental"
+from these strings, with your Reported-by.
+
+							Thanx, Paul
+
