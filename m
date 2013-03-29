@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab3C2N5e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 09:57:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57074 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755938Ab3C2N5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 09:57:32 -0400
-Date: Fri, 29 Mar 2013 14:57:30 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        stable@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] hugetlbfs: add swap entry check in
- follow_hugetlb_page()
-Message-ID: <20130329135730.GB21879@dhcp22.suse.cz>
-References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1364485358-8745-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1756151Ab3C2N7n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 09:59:43 -0400
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:40994 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754215Ab3C2N7l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 09:59:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364485358-8745-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130329095558.5fffd95f@annuminas.surriel.com>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+	<5150B1C2.8090607@oracle.com>
+	<20130325163844.042a45ba@annuminas.surriel.com>
+	<CANN689FdtXs0-VKxwWHQKgnnSvcvu5hHDMmGOe0H+bdHA4BhXg@mail.gmail.com>
+	<1364303965.5053.29.camel@laptop>
+	<CANN689HCbuVOc73BpVubYy2AjA2mcz_iyTg6Fo2Zz-NGnQ93TA@mail.gmail.com>
+	<1364308023.5053.40.camel@laptop>
+	<5151BC78.3030306@surriel.com>
+	<1364373750.5053.54.camel@laptop>
+	<20130328162337.3003ccd4@cuia.bos.redhat.com>
+	<CANN689GGwztb=beCNtUU8SJp6sfjn_mNTaHQxezt=ehtxvYBAA@mail.gmail.com>
+	<20130329095558.5fffd95f@annuminas.surriel.com>
+Date: Fri, 29 Mar 2013 06:59:41 -0700
+Message-ID: <CANN689HTXusmGcLNByvmSQt0RGaCieZ3=YBJ-BSoeXXBO36=Xw@mail.gmail.com>
+Subject: Re: [PATCH v3 -mm -next] ipc,sem: fix lockdep false positive
+From: Michel Lespinasse <walken@google.com>
+To: Rik van Riel <riel@surriel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>, torvalds@linux-foundation.org,
+        davidlohr.bueso@hp.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
+        lwoodman@redhat.com, chegu_vinod@hp.com, Dave Jones <davej@redhat.com>,
+        benisty.e@gmail.com, Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 28-03-13 11:42:38, Naoya Horiguchi wrote:
-[...]
-> @@ -2968,7 +2968,8 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  		 * first, for the page indexing below to work.
->  		 */
->  		pte = huge_pte_offset(mm, vaddr & huge_page_mask(h));
-> -		absent = !pte || huge_pte_none(huge_ptep_get(pte));
-> +		absent = !pte || huge_pte_none(huge_ptep_get(pte)) ||
-> +			is_swap_pte(huge_ptep_get(pte));
+On Fri, Mar 29, 2013 at 6:55 AM, Rik van Riel <riel@surriel.com> wrote:
+> On Thu, 28 Mar 2013 19:50:47 -0700
+> Michel Lespinasse <walken@google.com> wrote:
+>
+>> This is IMO where the spin_unlock_wait(&sma->sem_perm.lock) would
+>> belong - right before the goto again.
+>
+> Here is the slightly more optimistic (and probably more readable)
+> version of the patch:
+>
+> ---8<---
+> Unfortunately the locking scheme originally proposed has false positives
+> with lockdep.  This can be fixed by changing the code to only ever take
+> one lock, and making sure that other relevant locks are not locked, before
+> entering a critical section.
+>
+> For the "global lock" case, this is done by taking the sem_array lock,
+> and then (potentially) waiting for all the semaphore's spinlocks to be
+> unlocked.
+>
+> For the "local lock" case, we wait on the sem_array's lock to be free,
+> before taking the semaphore local lock. To prevent races, we need to
+> check again after we have taken the local lock.
+>
+> Suggested-by: Peter Zijlstra <peterz@infradead.org>
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
 
-is_swap_pte doesn't seem right. Shouldn't you use is_hugetlb_entry_hwpoisoned
-instead?
+Looks good.
+
+Reviewed-by: Michel Lespinasse <walken@google.com>
 
 -- 
-Michal Hocko
-SUSE Labs
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
