@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980Ab3C2Tla (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 15:41:30 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:52468 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756675Ab3C2Tl2 (ORCPT
+	id S1757022Ab3C2Tlo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 15:41:44 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:48413 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757000Ab3C2Tlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 15:41:28 -0400
+	Fri, 29 Mar 2013 15:41:42 -0400
+Date: Fri, 29 Mar 2013 15:41:41 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-usb@vger.kernel.org, Manjunath Goudar <manjunath.goudar@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Greg KH <greg@kroah.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v3 3/7] USB: EHCI: make ehci-s5p a separate driver
+In-Reply-To: <1364507705-22012-4-git-send-email-arnd@arndb.de>
+Message-ID: <Pine.LNX.4.44L0.1303291534190.1467-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-X-Originating-IP: [2001:470:1f05:1640:47c:d90f:eea8:ac64]
-In-Reply-To: <5155C9C6.4070702@wwwdotorg.org>
-References: <20130306193332.GA6022@amd.pavel.ucw.cz>
-	<5137C404.9060902@wwwdotorg.org>
-	<20130307144506.GB7344@amd.pavel.ucw.cz>
-	<5138FDAE.8060202@wwwdotorg.org>
-	<20130311050546.GA21863@quad.lixom.net>
-	<CACxGe6vkC7fjzf1-+K8O81+w=jQ63PvuTEhSPyitEBA9XiKYnw@mail.gmail.com>
-	<20130328092916.GA11187@amd.pavel.ucw.cz>
-	<51545870.4010209@wwwdotorg.org>
-	<20130328193323.GA25166@amd.pavel.ucw.cz>
-	<20130328195456.GA22527@quad.lixom.net>
-	<5155C9C6.4070702@wwwdotorg.org>
-Date: Fri, 29 Mar 2013 12:41:27 -0700
-Message-ID: <CAOesGMj5yN_-Xvks=tYqYw1M1mre-uKQFCTXOe_gPE=abqF_GA@mail.gmail.com>
-Subject: Re: 3.9-rc1 regression in arm dtb build
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Pavel Machek <pavel@ucw.cz>, Grant Likely <grant.likely@secretlab.ca>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29, 2013 at 10:05 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 03/28/2013 01:54 PM, Olof Johansson wrote:
->> On Thu, Mar 28, 2013 at 08:33:23PM +0100, Pavel Machek wrote:
->>> On Thu 2013-03-28 08:49:20, Stephen Warren wrote:
->>>> On 03/28/2013 03:29 AM, Pavel Machek wrote:
->>>> ...
->>>>> There's change that makes it pretty much impossible to build dtbs
->>>>> reliably between different kernel versions, because it leaves old dtbs
->>>>> around, and they survive even make clean.
->>>>
->>>> One question here: Presumably the dtbs don't survive "make clean" if you
->>>> run that right after building the dtbs, but only if you check out a new
->>>> kernel version before running clean? Or is that not the case?
->>>
->>> That was the case I seen, yes.
->>>
->>> Have old kernel running, dtbs building. Apply a patch. It starts
->>> behaving weird. You do make clean... but you still get old dtbs.
->>>
->>> (It would be nice if make socfpga_cyclone5.dtb would magically remove
->>> all the dtbs from old location; make dtbs does that if I understand
->>> stuff correctly).
->>
->>
->> This takes care of the "make dtbs" case (or just "make" case), but not
->> when you build a specific target.
->
-> I guess to really solve this, we need the following changes:
->
-> In the all kernels:
->
-> For both arch/*/boot and arch/*/boot/dts: clean removes *.dtb
->
-> In kernels that build *.dtb in the new location:
->
-> make dtbs and make foo.dtb both rm ../*.dtb
+On Thu, 28 Mar 2013, Arnd Bergmann wrote:
 
-I don't think this is useful. If you're building a specific dtb
-target, there should be no expectation that other dtb files should
-automatically be removed.
+> From: Manjunath Goudar <manjunath.goudar@linaro.org>
+> 
+> Separate the  Samsung S5P/EXYNOS host controller driver from ehci-hcd
+> host code so that it can be built as a separate driver module.
+> This work is part of enabling multi-platform kernels on ARM;
+> however, note that other changes are still needed before S5P/EXYNOS can
+> be booted with a multi-platform kernel. We currently expect those
+> to get merged for 3.10.
+> 
+> With the infrastructure added by Alan Stern in patch 3e0232039
+> "USB: EHCI: prepare to make ehci-hcd a library module", we can
+> avoid this problem by turning a bus glue into a separate
+> module, as we do here for the s5p bus glue.
+> 
+> In V3:
+>  -Detail commit message added here,why this patch is required.
+>  -MODULE_LICENSE is GPL v2.
+>  -Added .extra_priv_size to eliminate the separate allocation of the s5p_ehci_hcd structure
+>   and removed .reset function pointer initialization.
+>  -Arranged  #include's in alphabetical order.
+>  -After using extra_priv_size initialization,struct usb_hcd *hcd is redundant that's why removed
+>   from the prob function.
+>  -Eliminated s5p_ehci_phy_enable,contents of statements moved into the s5p_ehci_probe
+>  -Eliminated s5p_ehci_phy_disable, contents of statements moved into the s5p_ehci_remove.
 
-The original complaint was that make clean didn't remove the old dtb
-files. That's been resolved with the provided patch.
+And several other places as well.
 
-I don't think it's worth the hassle of trying to remove ../foo.dtb.
+Personally, I would have left these two functions the way they were and 
+relied on the compiler to inline them when appropriate.  Eliminating 
+them just makes the code more complicated.
 
-> In kernels that build *.dtb in the old location:
->
-> make dtbs and make foo.dtb both rm dts/*.dtb
->
-> Is that too much to retrofit into all the stable kernels?
+...
 
-I also don't think this is worth the effort. If you're going to check
-out old and new kernels in the same tree, you should probably get into
-the habit of using git clean.
+> @@ -113,9 +76,10 @@ static u64 ehci_s5p_dma_mask = DMA_BIT_MASK(32);
+>  
+>  static int s5p_ehci_probe(struct platform_device *pdev)
+>  {
+> +	struct usb_hcd *hcd ;
+>  	struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
+> +	const struct hc_driver *driver = &s5p_ehci_hc_driver;
+>  	struct s5p_ehci_hcd *s5p_ehci;
+> -	struct usb_hcd *hcd;
 
-Perhaps we need a "dtb_install" target instead, so people stop copying
-from the source directories.
+What's the reason for these changes?  There's no need for the "driver" 
+variable, and improper whitespace was added to the declaration of 
+"hcd".
 
+> @@ -153,16 +117,12 @@ static int s5p_ehci_probe(struct platform_device *pdev)
+>  		s5p_ehci->otg = phy->otg;
+>  	}
+>  
+> -	s5p_ehci->dev = &pdev->dev;
+> -
+> -	hcd = usb_create_hcd(&s5p_ehci_hc_driver, &pdev->dev,
+> -					dev_name(&pdev->dev));
+> +	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
 
--Olof
+s5p_ehci is not initialized correctly.  The devm_kzalloc() call was 
+left in and to_s5p_ehci() was not called.  Was anybody able to test 
+this patch?
+
+Alan Stern
+
