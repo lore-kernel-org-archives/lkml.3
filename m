@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab3C2IyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 04:54:15 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:24849 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754250Ab3C2IyN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 04:54:13 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <maxime.ripard@free-electrons.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [GIT PULL] at91: tiny cleanup for 3.10 #2
-Date: Fri, 29 Mar 2013 09:54:10 +0100
-Message-ID: <1364547250-19675-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
+	id S1756171Ab3C2JCX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 05:02:23 -0400
+Received: from co202.xi-lite.net ([149.6.83.202]:48790 "EHLO co202.xi-lite.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755652Ab3C2JCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 05:02:21 -0400
+Date: Fri, 29 Mar 2013 10:02:19 +0100
+From: Ivan Djelic <ivan.djelic@parrot.com>
+To: Aaron Williams <Aaron.Williams@caviumnetworks.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>
+Subject: Re: MTD NAND BCH support for 24 bits/1K of ECC correction?
+Message-ID: <20130329090219.GB6928@parrot.com>
+References: <5154C2C5.5000903@caviumnetworks.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5154C2C5.5000903@caviumnetworks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof,
+On Thu, Mar 28, 2013 at 10:23:01PM +0000, Aaron Williams wrote:
+> Hi all,
+> 
+> I am trying to clean up our OCTEON NAND flash driver in the Linux kernel 
+> and enable support for multi-bit ECC using BCH and am having some 
+> issues. I am able to successfully work with NAND flash that requires 4 
+> bits ECC per 512 bytes but I am having issues with one of our boards 
+> that has a NAND device that requires 24 bits of ECC per 1024 bytes.
+> 
+> I was wondering if ECC of this magnitude has been successfully tested in 
+> the past. By my calculations I should have 42 bytes of ECC per 1K block 
+> (m=14, t=24 for 336 bits of ECC data). My problem is that when decoding 
+> an encoded block I am seeing that nroots != err in decode_bch() after 
+> find_poly_roots(). I am seeing this for all of the blocks I attempt to 
+> read. As far as I can tell the data being sent to BCH is good, though it 
+> might have a few bad bits but nowhere near 24.
+> 
+> I am also seeing this same behavior in my U-Boot code which uses the 
+> identical bch and nand_bch code.
+> 
 
-This is a one-line cleanup patch. I have made a pull-request anyway because
-I do not want to mix it with my upcoming DT pull-request. I guess that you can
-simply cherry-pick the patch if you want. It is based on material that you
-already have in arm-soc/at91/cleanup branch.
+Hi Aaron,
 
-Thanks, best regards,
+CC-ing your message to linux-mtd which is the place to go for such questions :-)
 
+Your configuration (m=14 t=24 with 1024 bytes of data) has been tested, and should work
+with the BCH library. Could you give some details about your ECC setup:
 
-The following changes since commit 9317960fa38ff50ac287904e4c751a169635ecbf:
+1. Are you trying to locate and correct errors from hardware-computed syndromes ?
 
-  ARM: at91: renamme rm9200 dt file (2013-03-13 17:28:14 +0100)
+2. If yes, did you provide the BCH lib with the specific primitive polynomial used by
+   your hardware ? What is this polynomial ?
 
-are available in the git repository at:
+3. Could you provide the ECC bytes generated for the following block patterns:
+  - a 0xff-filled 1024 bytes block
+  - a 0xff-filled 1024 bytes block, except for the first byte set to 0xfe
+  This would help me find out how to setup the library to match your hardware.
 
-  git://github.com/at91linux/linux-at91.git tags/at91-cleanup
-
-for you to fetch changes up to e7619459d47a673af3433208a42f583af920e9db:
-
-  ARM: at91: Fix typo in restart code panic message (2013-03-26 12:21:25 +0100)
-
-----------------------------------------------------------------
-Tiny one-line typo patch.
-
-----------------------------------------------------------------
-Maxime Ripard (1):
-      ARM: at91: Fix typo in restart code panic message
-
- arch/arm/mach-at91/setup.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Regards,
+-- 
+Ivan
