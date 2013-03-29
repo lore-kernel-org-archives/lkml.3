@@ -1,63 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab3C2Jg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 05:36:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49226 "EHLO mx2.suse.de"
+	id S1755317Ab3C2JtT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 05:49:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6432 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755867Ab3C2Jg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 05:36:28 -0400
-Date: Fri, 29 Mar 2013 10:36:24 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/10] soft-offline: use migrate_pages() instead of
- migrate_huge_page()
-Message-ID: <20130329093624.GC21227@dhcp22.suse.cz>
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1363983835-20184-4-git-send-email-n-horiguchi@ah.jp.nec.com>
- <87boa69z6j.fsf@linux.vnet.ibm.com>
- <20130327135250.GI16579@dhcp22.suse.cz>
- <87li967p5j.fsf@linux.vnet.ibm.com>
+	id S1754388Ab3C2JtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 05:49:11 -0400
+Date: Fri, 29 Mar 2013 10:48:56 +0100
+From: Jiri Pirko <jpirko@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Andy Gospodarek <andy@greyhouse.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        Nicolas de =?iso-8859-1?Q?Peslo=FCan?= 
+	<nicolas.2p.debian@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Guy Streeter <streeter@redhat.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>, stephen@networkplumber.org
+Subject: Re: [BUG] Crash with NULL pointer dereference in bond_handle_frame
+ in -rt (possibly mainline)
+Message-ID: <20130329094856.GB1677@minipsycho.orion>
+References: <1364490997.6345.237.camel@gandalf.local.home>
+ <1364491792.15753.47.camel@edumazet-glaptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87li967p5j.fsf@linux.vnet.ibm.com>
+In-Reply-To: <1364491792.15753.47.camel@edumazet-glaptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 29-03-13 10:56:00, Aneesh Kumar K.V wrote:
-> Michal Hocko <mhocko@suse.cz> writes:
-[...]
-> > Little bit offtopic:
-> > Btw. hugetlb migration breaks to charging even before this patchset
-> > AFAICS. The above put_page should remove the last reference and then it
-> > will uncharge it but I do not see anything that would charge a new page.
-> > This is all because regula LRU pages are uncharged when they are
-> > unmapped. But this a different story not related to this series.
-> 
-> 
-> But when we call that put_page, we would have alreayd move the cgroup
-> information to the new page. We have
-> 
-> 	h_cg = hugetlb_cgroup_from_page(oldhpage);
-> 	set_hugetlb_cgroup(oldhpage, NULL);
-> 
-> 	/* move the h_cg details to new cgroup */
-> 	set_hugetlb_cgroup(newhpage, h_cg);
-> 
-> 
-> in hugetlb_cgroup_migrate
+Thu, Mar 28, 2013 at 06:29:52PM CET, eric.dumazet@gmail.com wrote:
+>On Thu, 2013-03-28 at 13:16 -0400, Steven Rostedt wrote:
+>> Hi,
+>> 
+>> I'm currently debugging a crash in an old 3.0-rt kernel that one of our
+>> customers is seeing. The bug happens with a stress test that loads and
+>> unloads the bonding module in a loop (I don't know all the details as
+>> I'm not the one that is directly interacting with the customer). But the
+>> bug looks to be something that may still be present and possibly present
+>> in mainline too. It will just be much harder to trigger it in mainline.
+>> 
+>> In -rt, interrupts are threads, and can schedule in and out just like
+>> any other thread. Note, mainline now supports interrupt threads so this
+>> may be easily reproducible in mainline as well. I don't have the ability
+>> to tell the customer to try mainline or other kernels, so my hands are
+>> somewhat tied to what I can do.
+>> 
+>> But according to a core dump, I tracked down that the eth irq thread
+>> crashed in bond_handle_frame() here:
+>> 
+>> 	slave = bond_slave_get_rcu(skb->dev);
+>> 	bond = slave->bond; <--- BUG
+>> 
+>> 
+>> the slave returned was NULL and accessing slave->bond caused a NULL
+>> pointer dereference.
+>> 
+>> Looking at the code that unregisters the handler:
+>> 
+>> void netdev_rx_handler_unregister(struct net_device *dev)
+>> {
+>> 
+>>         ASSERT_RTNL();
+>>         RCU_INIT_POINTER(dev->rx_handler, NULL);
+>>         RCU_INIT_POINTER(dev->rx_handler_data, NULL);
+>> }
+>> 
+>> Which is basically:
+>> 	dev->rx_handler = NULL;
+>> 	dev->rx_handler_data = NULL;
+>> 
+>> And looking at __netif_receive_skb() we have:
+>> 
+>>         rx_handler = rcu_dereference(skb->dev->rx_handler);
+>>         if (rx_handler) {
+>>                 if (pt_prev) {
+>>                         ret = deliver_skb(skb, pt_prev, orig_dev);
+>>                         pt_prev = NULL;
+>>                 }
+>>                 switch (rx_handler(&skb)) {
+>> 
+>> My question to all of you is, what stops this interrupt from happening
+>> while the bonding module is unloading?  What happens if the interrupt
+>> triggers and we have this:
+>> 
+>> 
+>> 	CPU0			CPU1
+>> 	----			----
+>>   rx_handler = skb->dev->rx_handler
+>> 
+>> 			netdev_rx_handler_unregister() {
+>> 			   dev->rx_handler = NULL;
+>> 			   dev->rx_handler_data = NULL;
+>> 
+>>   rx_handler()
+>>    bond_handle_frame() {
+>>     slave = skb->dev->rx_handler;
+>>     bond = slave->bond; <-- NULL pointer dereference!!!
+>> 
+>> 
+>> What protection am I missing in the bond release handler that would
+>> prevent the above from happening?
 
-Yes but the res counter charge would be missing for the newpage after
-put_page
 
--- 
-Michal Hocko
-SUSE Labs
+Hmm. I think that this might be issue introduced by:
+commit a9b3cd7f323b2e57593e7215362a7b02fc933e3a
+Author: Stephen Hemminger <shemminger@vyatta.com>
+Date:   Mon Aug 1 16:19:00 2011 +0000
+
+    rcu: convert uses of rcu_assign_pointer(x, NULL) to RCU_INIT_POINTER
+
+
+Because, if rcu_dereference(dev->rx_handler) is null,
+rcu_dereference(dev->rx_handler_data) is never done. Therefore I believe
+we are hitting following scenario:
+
+
+   CPU0				CPU1
+   ----				----
+  			    dev->rx_handler_data = NULL
+ rcu_read_lock()
+ 			    dev->rx_handler = NULL
+
+
+CPU0 will see rx_handler set and yet, rx_handler_data nulled. Write
+barrier in rcu_assign_pointer() might prevent this reorder from happening.
+Therefore I suggest:
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 0caa38e..c16b829 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3332,8 +3332,8 @@ void netdev_rx_handler_unregister(struct net_device *dev)
+ {
+ 
+ 	ASSERT_RTNL();
+-	RCU_INIT_POINTER(dev->rx_handler, NULL);
+-	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
++	rcu_assign_pointer(dev->rx_handler, NULL);
++	rcu_assign_pointer(dev->rx_handler_data, NULL);
+ }
+ EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
+ 
+
+>
+>Nothing :(
+>
+>bug introduced in commit 35d48903e9781975e823b359ee85c257c9ff5c1c
+>(bonding: fix rx_handler locking)
+>
+>CC Jiri
+>
+>Fix seems simple :
+>
+>diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+>index 6bbd90e..7956ca5 100644
+>--- a/drivers/net/bonding/bond_main.c
+>+++ b/drivers/net/bonding/bond_main.c
+>@@ -1457,6 +1457,8 @@ static rx_handler_result_t bond_handle_frame(struct sk_buff **pskb)
+> 	*pskb = skb;
+> 
+> 	slave = bond_slave_get_rcu(skb->dev);
+>+	if (!slave)
+>+		return ret;
+> 	bond = slave->bond;
+> 
+> 	if (bond->params.arp_interval)
+>
+>
+>
