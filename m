@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab3C2XQF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 19:16:05 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:41084 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238Ab3C2XQD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 19:16:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyT6jxC=+jfORJkymo4Eagzpz-SajmnCO_PjGAPE6o25A@mail.gmail.com>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	<20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org>
-	<20130326192852.GA25899@redhat.com>
-	<20130326124309.077e21a9f59aaa3f3355e09b@linux-foundation.org>
-	<20130329161746.GA8391@redhat.com>
-	<CA+55aFyKhgwYUMGs8MBLY5WDXhHwXP3dLWs40ayCYfgiwwncsQ@mail.gmail.com>
-	<CA+55aFyT6jxC=+jfORJkymo4Eagzpz-SajmnCO_PjGAPE6o25A@mail.gmail.com>
-Date: Fri, 29 Mar 2013 16:16:01 -0700
-X-Google-Sender-Auth: moEl-vZ4xaaGLXl2iuvbQ7nHIUk
-Message-ID: <CA+55aFygTH-tqhL1=FY32+HkjfqqpkX-nvb1c5f3V6S-iykS8A@mail.gmail.com>
-Subject: Re: ipc,sem: sysv semaphore scalability
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@surriel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        hhuang@redhat.com, "Low, Jason" <jason.low2@hp.com>,
-        Michel Lespinasse <walken@google.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Emmanuel Benisty <benisty.e@gmail.com>
-Content-Type: multipart/mixed; boundary=047d7b3a805e5fbd3404d9187486
+	id S1757323Ab3C2XUS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 19:20:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14037 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757195Ab3C2XUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 19:20:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,375,1363158000"; 
+   d="scan'208";a="286435495"
+Subject: Load balancing behavior for sched autogroup
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@kernel.org>
+Cc: Alex Shi <alex.shi@intel.com>, Changlong Xie <changlongx.xie@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Mar 2013 16:20:19 -0700
+Message-ID: <1364599219.27102.56.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b3a805e5fbd3404d9187486
-Content-Type: text/plain; charset=UTF-8
+During our testings of 3.8 kernel, we noticed that after the patch
 
-On Fri, Mar 29, 2013 at 2:12 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> I dunno. I'm still not sure this is triggerable, but it looks bad. But
-> both the semaphore case and the msg cases seem to be solvable by
-> moving the unlock down, and shm seem to have no getref/putref users to
-> race with, so this (whitespace-damaged) patch *may* be sufficient:
+Revert "sched: Update_cfs_shares at period edge" (commit 17bc14b7), 
 
-Well, the patch doesn't seem to cause any problems, at least neither
-lockdep nor spinlock sleep debugging complains. I have no idea whether
-it actually fixes any problems, though.
+the load between the sockets or larger system can have 
+large imbalance.  For example, for a 4 socket Westmere-EX 
+(10 cores/socket), we notice the loadings between the sockets
+can differ by more than a factor of 4. 
 
-I do wonder if this might explain the problem Emmanuel saw. A double
-free of a RCU-freeable object would possibly result in exactly the
-kind of mess that Emmanuel reported with the semaphore scalability
-patches.
+We did a simple experiment that kicks off 29 simple 
+processes that execute a tight loop.  We noticed
+socket 3 is already starting to schedule on hyperthreaded cpus 
+(13 loaded cpus) while socket 1 still have lots of 
+idle cores (3 loaded cpus).  Before the patch, the 
+load was evenly distributed across sockets.  
+If I turn off CONFIG_SCHED_AUTOGROUP,the loads are also 
+distributed evenly.
 
-Emmanuel, can you try the attached patch? I think it applies cleanly
-on top of the scalability series too without any changes, but I didn't
-check if the patches perhaps changed some of the naming or something.
+(load on cpus, running on 4)
+socket                    0                    1                    2                    3
+---------------------------------------------------------------------------------------------
+cpu:    0-3               0.00                 0.00                 0.00                99.00
+cpu:    4-7               0.00                 0.00                 0.00                99.20
+cpu:    8-11              0.00                 0.00                 0.00                99.00
+cpu:   12-15             99.20                 0.00                 0.00                 0.00
+cpu:   16-19              0.00                 0.00                 0.00                99.00
+cpu:   20-23              0.00                 0.00                 0.00                 0.00
+cpu:   24-27              0.00                 0.00                 0.00                 0.00
+cpu:   28-31              0.00                 0.00                 0.00                 0.00
+cpu:   32-35             99.20                 0.00                 0.00                99.00
+cpu:   36-39             99.20                99.40                99.20                 0.00
+cpu:   40-43              0.00                99.40                99.40                99.20
+cpu:   44-47              0.00                99.40                99.40                99.20
+cpu:   48-51             99.40                 0.00                99.40                99.20
+cpu:   52-55             99.20                 0.00                99.40                99.20
+cpu:   56-59              0.00                 0.00                99.40                99.40
+cpu:   60-63              0.00                 0.00                 0.00                99.00
+cpu:   64-67              0.00                 0.00                 0.00                99.40
+cpu:   68-71              0.00                 0.00                 0.00                99.40
+cpu:   72-75             99.40                 0.00                 0.00                 0.00
+cpu:   76-79             99.40                 0.00                 0.00                 0.00
+---------------------------------------------------------------------------------------------
+Loaded cpus                  7                    3                    6                   13
 
-              Linus
+Is this the intended behavior of sched autogroup? I'm a bit surprised 
+that we are reserving this much cpu bandwidth for very low load 
+processes (or interactive processes) in other groups.
 
---047d7b3a805e5fbd3404d9187486
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hevyypa01
+So should the sched autogroup config option be turned off by default for server 
+system, when we are not concerned about interactivity but want to maximize 
+throughput by balancing out the load?
 
-IGlwYy9tc2cuYyB8IDIgKy0KIGlwYy9zZW0uYyB8IDIgKy0KIDIgZmlsZXMgY2hhbmdlZCwgMiBp
-bnNlcnRpb25zKCspLCAyIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2lwYy9tc2cuYyBiL2lw
-Yy9tc2cuYwppbmRleCAzMWNkMWJmNmFmMjcuLjMzOGQ4ZTJiNTg5YiAxMDA2NDQKLS0tIGEvaXBj
-L21zZy5jCisrKyBiL2lwYy9tc2cuYwpAQCAtMjg0LDcgKzI4NCw2IEBAIHN0YXRpYyB2b2lkIGZy
-ZWVxdWUoc3RydWN0IGlwY19uYW1lc3BhY2UgKm5zLCBzdHJ1Y3Qga2Vybl9pcGNfcGVybSAqaXBj
-cCkKIAlleHB1bmdlX2FsbChtc3EsIC1FSURSTSk7CiAJc3Nfd2FrZXVwKCZtc3EtPnFfc2VuZGVy
-cywgMSk7CiAJbXNnX3JtaWQobnMsIG1zcSk7Ci0JbXNnX3VubG9jayhtc3EpOwogCiAJdG1wID0g
-bXNxLT5xX21lc3NhZ2VzLm5leHQ7CiAJd2hpbGUgKHRtcCAhPSAmbXNxLT5xX21lc3NhZ2VzKSB7
-CkBAIC0yOTcsNiArMjk2LDcgQEAgc3RhdGljIHZvaWQgZnJlZXF1ZShzdHJ1Y3QgaXBjX25hbWVz
-cGFjZSAqbnMsIHN0cnVjdCBrZXJuX2lwY19wZXJtICppcGNwKQogCWF0b21pY19zdWIobXNxLT5x
-X2NieXRlcywgJm5zLT5tc2dfYnl0ZXMpOwogCXNlY3VyaXR5X21zZ19xdWV1ZV9mcmVlKG1zcSk7
-CiAJaXBjX3JjdV9wdXRyZWYobXNxKTsKKwltc2dfdW5sb2NrKG1zcSk7CiB9CiAKIC8qCmRpZmYg
-LS1naXQgYS9pcGMvc2VtLmMgYi9pcGMvc2VtLmMKaW5kZXggNThkMzFmMWMxZWI1Li4xY2YwMjRi
-OWVhYzAgMTAwNjQ0Ci0tLSBhL2lwYy9zZW0uYworKysgYi9pcGMvc2VtLmMKQEAgLTc2NiwxMiAr
-NzY2LDEyIEBAIHN0YXRpYyB2b2lkIGZyZWVhcnkoc3RydWN0IGlwY19uYW1lc3BhY2UgKm5zLCBz
-dHJ1Y3Qga2Vybl9pcGNfcGVybSAqaXBjcCkKIAogCS8qIFJlbW92ZSB0aGUgc2VtYXBob3JlIHNl
-dCBmcm9tIHRoZSBJRFIgKi8KIAlzZW1fcm1pZChucywgc21hKTsKLQlzZW1fdW5sb2NrKHNtYSk7
-CiAKIAl3YWtlX3VwX3NlbV9xdWV1ZV9kbygmdGFza3MpOwogCW5zLT51c2VkX3NlbXMgLT0gc21h
-LT5zZW1fbnNlbXM7CiAJc2VjdXJpdHlfc2VtX2ZyZWUoc21hKTsKIAlpcGNfcmN1X3B1dHJlZihz
-bWEpOworCXNlbV91bmxvY2soc21hKTsKIH0KIAogc3RhdGljIHVuc2lnbmVkIGxvbmcgY29weV9z
-ZW1pZF90b191c2VyKHZvaWQgX191c2VyICpidWYsIHN0cnVjdCBzZW1pZDY0X2RzICppbiwgaW50
-IHZlcnNpb24pCg==
---047d7b3a805e5fbd3404d9187486--
+Thanks for clarifying.
+
+Tim
+
+
