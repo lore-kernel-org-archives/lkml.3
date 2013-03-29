@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293Ab3C2SaG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 14:30:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43445 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753713Ab3C2SaE (ORCPT
+	id S1756501Ab3C2SbK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 14:31:10 -0400
+Received: from mtaout03-winn.ispmail.ntl.com ([81.103.221.49]:49371 "EHLO
+	mtaout03-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756390Ab3C2SbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 14:30:04 -0400
-Date: Fri, 29 Mar 2013 18:30:01 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Herring <robherring2@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        Axel Lin <axel.lin@ingics.com>
-Subject: Re: [PATCH] clocksource: Fix build in non-OF case
-Message-ID: <20130329183001.GK18316@opensource.wolfsonmicro.com>
-References: <1364473805-773-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <201303281308.22738.arnd@arndb.de>
- <20130328131044.GA18316@opensource.wolfsonmicro.com>
- <201303281447.51532.arnd@arndb.de>
+	Fri, 29 Mar 2013 14:31:08 -0400
+Date: Fri, 29 Mar 2013 18:31:03 +0000
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: Gwendal Grignou <gwendal@google.com>
+Cc: linux-kernel@vger.kernel.org, jgarzik@redhat.com
+Subject: Re: [PATCH] [libata] Fix HDIO_DRIVE_CMD ioctl sense data check
+Message-ID: <20130329183103.GA27693@milliways>
+References: <CAMHSBOVZ7w51+8B=LyNBdeqP2BEYaNMDX3_WbEzUYqjdn2FZFg@mail.gmail.com>
+ <1364536609-17398-1-git-send-email-gwendal@google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pBVEohhI2cZ2uXfo"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <201303281447.51532.arnd@arndb.de>
-X-Cookie: Your aim is high and to the right.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1364536609-17398-1-git-send-email-gwendal@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Cloudmark-Analysis: v=1.1 cv=GaEGOwq9FwezmTggA+b6yC6zDZF2HYaK6RN/tSqdnVA= c=1 sm=0 a=wom5GMh1gUkA:10 a=7tItc54Vev4A:10 a=uObrxnre4hsA:10 a=8nJEP1OIZ-IA:10 a=1XWaLZrsAAAA:8 a=rQh_3bXj2wYxUjjygnUA:9 a=wPNLvfGTeEIA:10 a=UTB_XpHje0EA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 28, 2013 at 10:56:49PM -0700, Gwendal Grignou wrote:
 
---pBVEohhI2cZ2uXfo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+ Hmm, not sure.  Smartd started and was happy to monitor the disk,
+but I got two new messages between 'found in smartd database' and
+'is SMART capable. Adding to "monitor" list' -
 
-On Thu, Mar 28, 2013 at 02:47:51PM +0000, Arnd Bergmann wrote:
+Mar 29 17:26:42 ac4tv smartd[2481]: Device: /dev/sda, not capable of
+SMART Health Status check
+Mar 29 17:26:42 ac4tv smartd[2481]: Device: /dev/sda, enable SMART
+Automatic Offline Testing failed.
 
-> Since we recently introduced the IS_ENABLED() macro to test for preprocessor
-> symbols, I think there is a general trend away from any #ifdefs in driver
-> code.
+ I've seen the first (intermittently) when a drive was starting to
+fail, and apparently there was a taskfile issue in the days of 2.6.22
+which also caused it to appear.  I don't think I've seen the second
+of these before.
 
-I have to say I'm not seeing any evidence of this in the patches I'm
-seeing, and I'm not sure what the connection with IS_ENABLED() is?  It's
-a reasonable idea, just likely to surprise people given the amount of
-boilerplate we've got for things like PM - I guess we'd need to make
-sure those macros do references as well, they're the main users of
-ifdefs.
+ After going back and forth between the kernel where I reverted your
+original patch, and regular rc4 plus this new patch the output from
+running smartctl as root all seems to be consistent (including
+'Passed' for the health check).
 
---pBVEohhI2cZ2uXfo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ I'm now running with the patch again, and I've started a manual
+'long' test (which will take 85 minutes, the default 'offline' is
+about 150 minutes).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> commit 84a9a8cd9d0aa93c17e5815ab8a9cc4c0a765c63 changed the sense key
+> used for returning task registers, but HDIO_DRIVE_CMD ioctl was
+> not changed accordingly.
+> 
+> Tested: check that SMART ENABLE sent using HDIO_DRIVE_CMD returns 0
+> instead of EIO.
+> 
+> Signed-off-by: Gwendal Grignou <gwendal@google.com>
+> ---
+>  drivers/ata/libata-scsi.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+> index 318b413..e05bf4c 100644
+> --- a/drivers/ata/libata-scsi.c
+> +++ b/drivers/ata/libata-scsi.c
+> @@ -532,8 +532,8 @@ int ata_cmd_ioctl(struct scsi_device *scsidev, void __user *arg)
+>  			struct scsi_sense_hdr sshdr;
+>  			scsi_normalize_sense(sensebuf, SCSI_SENSE_BUFFERSIZE,
+>  					     &sshdr);
+> -			if (sshdr.sense_key == 0 &&
+> -			    sshdr.asc == 0 && sshdr.ascq == 0)
+> +			if (sshdr.sense_key == RECOVERED_ERROR &&
+> +			    sshdr.asc == 0 && sshdr.ascq == 0x1D)
+>  				cmd_result &= ~SAM_STAT_CHECK_CONDITION;
+>  		}
+>  
+> -- 
+> 1.8.1.3
 
-iQIcBAEBAgAGBQJRVd2iAAoJELSic+t+oim9weQP/11NCDjtnuYnFM9nh4wButqf
-GZeVogw5/KccJ4zOrdxsdyycbPMR4Szi0yv3XSTDERv8wbt6srW0H1q/kAHCj3Vf
-nF5aEIV3XY9A7+eUy1vDjOkxYDkgczvpyTK0M0Ckvx8iY5JWpFOZnWSJTh1nAGwh
-kqOihBg7rqRGXtBBQ9SYjsfyBdyDQEzknds1CqKDR5AApAuQPErpZycmwP40jls9
-LjblvmUEmuubg0GtNnssiNPmAUeulZHkNXNvA83qeaCKGz5V2PymNGQ7x++64AZT
-aS2jWnRtHWzJNEchb6yipbP2gTCB3D9I4c9CsNUVZ5Pf7ZtZxsp593qMIDFR41BC
-sayo0g5ZsZ8qwrx5CtBF23Q8X0CQ+iV8rpq5qptEbbSxJFocENfY71k+xszFt8DW
-o+8b0aABFodP2Xj9k4lMhPp9BqbeUDDlkbVn8DEFaYg1lD/z80Z5wqb/3WwiwGa+
-Py9MbVGOEcepDRtTmHNYADSsxWaYEY7hEK73xYDHdGXUOPsCq6z7KUjXexyECWNq
-0wuaP+/6XEXZLLg+ez+hXJbE7IzDo3NQW/UsUMZlITqHlLFYnOuBpCmzsabtT7+Z
-F/Z3TOViY1aWOLDGnjnvEDSCNurd76TOM0cYgwoXubxU7fcmh8Hnq1FXEff+ChVF
-7fY7/+0K+sFkNhcHw5fl
-=glpU
------END PGP SIGNATURE-----
-
---pBVEohhI2cZ2uXfo--
+-- 
+das eine Mal als Tragödie, das andere Mal als Farce
