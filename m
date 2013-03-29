@@ -1,53 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab3C2HaK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 03:30:10 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:55053 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab3C2HaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 03:30:07 -0400
+	id S1756030Ab3C2IKZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 04:10:25 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:55610 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755936Ab3C2IKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 04:10:17 -0400
+Date: Fri, 29 Mar 2013 08:10:16 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] wfcqueue: add function for unsynchronized prepend
+Message-ID: <20130329081016.GA15979@dcvr.yhbt.net>
+References: <20130311213602.GB9829@Krystal>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1303290720350.2023@localhost6.localdomain6>
-References: <1364472270-9297-1-git-send-email-mcgrof@do-not-panic.com>
- <20130328083943.01e61b4b@jbarnes-desktop> <alpine.DEB.2.02.1303281718490.1928@hadrien>
- <CAB=NE6WbNwPqEPYsASAPaECe4qbAWdd4=eJ402ib+CzZbT69=g@mail.gmail.com>
- <alpine.DEB.2.02.1303281909570.1928@hadrien> <CAB=NE6VPRu8DvneVdwd=pXF0ngi5OifNTpZtX3pLi50i116_OA@mail.gmail.com>
- <alpine.DEB.2.02.1303282328200.2022@localhost6.localdomain6>
- <CAB=NE6WX5Dv9p2jrNwe9GxfH=EUm596uvSspsLQ5-Uuonc6Fqg@mail.gmail.com> <alpine.DEB.2.02.1303290720350.2023@localhost6.localdomain6>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Fri, 29 Mar 2013 00:29:44 -0700
-X-Google-Sender-Auth: Jd4C-ktBfnXrNm-xx5KrQ9l1juM
-Message-ID: <CAB=NE6U2-4uc90p5Os1kUp6QWChMcjarCMR7af0g=XUbGEXjGg@mail.gmail.com>
-Subject: Re: [PATCH] compat/compat-drivers/linux-next: fb skip_vt_switch
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        florianschandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev <linux-fbdev@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        cocci@systeme.lip6.fr,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rodrigo.vivi" <rodrigo.vivi@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "rafael.j.wysocki" <rafael.j.wysocki@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130311213602.GB9829@Krystal>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 11:21 PM, Julia Lawall <julia.lawall@lip6.fr> wrote:
->> > I looked in today's linux-next, and there seems to be only one
->> > initialization of this field, to true, and one test of this field.  So
->> > perhaps the case for setting the field to false just isn't needed.
->>
->> Oh sorry now I get what you mean! I thought about this -- and yes I
->> decided to not add a bool false setting for the structure field given
->> that the assumption is this would not be something dynamic, and data
->> structure would be kzalloc()'d so by default they are 0.
->
-> What do you do about the test, though?
+In some situations, it is necessary to prepend a node to a queue.
+For epoll, this is necessary for two rare conditions:
 
-Return the value.
+* when the user triggers -EFAULT
+* when reinjecting elements from the ovflist (implemented as a stack)
 
-  Luis
+Signed-off-by: Eric Wong <normalperson@yhbt.net>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+---
+ This is on top of my other patch to implement __wfcq_enqueue
+
+ include/linux/wfcqueue.h | 35 +++++++++++++++++++++++++++--------
+ 1 file changed, 27 insertions(+), 8 deletions(-)
+
+diff --git a/include/linux/wfcqueue.h b/include/linux/wfcqueue.h
+index a452ab9..4cb8f22 100644
+--- a/include/linux/wfcqueue.h
++++ b/include/linux/wfcqueue.h
+@@ -56,15 +56,17 @@
+  * [5] __wfcq_first
+  * [6] __wfcq_next
+  * [7] __wfcq_enqueue
++ * [8] __wfcq_prepend
+  *
+- *     [1] [2] [3] [4] [5] [6] [7]
+- * [1]  -   -   -   -   -   -   X
+- * [2]  -   -   -   -   -   -   X
+- * [3]  -   -   X   X   X   X   X
+- * [4]  -   -   X   -   X   X   X
+- * [5]  -   -   X   X   -   -   X
+- * [6]  -   -   X   X   -   -   X
+- * [7]  X   X   X   X   X   X   X
++ *     [1] [2] [3] [4] [5] [6] [7] [8]
++ * [1]  -   -   -   -   -   -   X   X
++ * [2]  -   -   -   -   -   -   X   X
++ * [3]  -   -   X   X   X   X   X   X
++ * [4]  -   -   X   -   X   X   X   X
++ * [5]  -   -   X   X   -   -   X   X
++ * [6]  -   -   X   X   -   -   X   X
++ * [7]  X   X   X   X   X   X   X   X
++ * [8]  X   X   X   X   X   X   X   X
+  *
+  * Besides locking, mutual exclusion of dequeue, splice and iteration
+  * can be ensured by performing all of those operations from a single
+@@ -441,6 +443,23 @@ static inline enum wfcq_ret __wfcq_splice(
+ }
+ 
+ /*
++ * __wfcq_prepend: prepend a node into a queue, requiring mutual exclusion.
++ *
++ * No memory barriers are issued.  Mutual exclusion is the responsibility
++ * of the caller.
++ */
++static inline void __wfcq_prepend(struct wfcq_head *head,
++				struct wfcq_tail *tail, struct wfcq_node *node)
++{
++	node->next = head->node.next;
++	head->node.next = node;
++
++	/* if the queue was empty before, it is no longer empty now */
++	if (tail->p == &head->node)
++		tail->p = node;
++}
++
++/*
+  * __wfcq_for_each: Iterate over all nodes in a queue,
+  * without dequeuing them.
+  * @head: head of the queue (struct wfcq_head pointer).
+-- 
+Eric Wong
+
