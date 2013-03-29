@@ -1,47 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913Ab3C2T53 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 15:57:29 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:53592 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756681Ab3C2T52 (ORCPT
+	id S1756842Ab3C2UBm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 16:01:42 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:48831 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756616Ab3C2UBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 15:57:28 -0400
+	Fri, 29 Mar 2013 16:01:40 -0400
+Date: Fri, 29 Mar 2013 13:01:14 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Minchan Kim <minchan@kernel.org>
+cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Bob Liu <bob.liu@oracle.com>
+Subject: Re: [RFC] mm: remove swapcache page early
+In-Reply-To: <20130329011801.GA32245@blaptop>
+Message-ID: <alpine.LNX.2.00.1303291250160.3741@eggly.anvils>
+References: <1364350932-12853-1-git-send-email-minchan@kernel.org> <alpine.LNX.2.00.1303271230210.29687@eggly.anvils> <433aaa17-7547-4e39-b472-7060ee15e85f@default> <20130328010706.GB22908@blaptop> <5f1504e7-8b07-4109-8271-b214b496ca61@default>
+ <20130329011801.GA32245@blaptop>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20130329190017.GE2567@kernel.dk>
-References: <20130329153831.GQ19488@kernel.dk>
-	<CA+55aFwoj=g0YrFOrpoKNY43o8qDAhDEHSP-zrtpWCXciwz_-Q@mail.gmail.com>
-	<20130329182411.GD2567@kernel.dk>
-	<CA+55aFwWFma7qK3v7QtxRqp=GHnON8DF0kO84yDvsxu3nkb-xA@mail.gmail.com>
-	<20130329190017.GE2567@kernel.dk>
-Date: Fri, 29 Mar 2013 12:57:26 -0700
-X-Google-Sender-Auth: lhwLnYT05pVGegFRCSJgETpoNFA
-Message-ID: <CA+55aFz8qeasecRz9SP2BaidzQfL89DD-MBU04k+dc1yraTonQ@mail.gmail.com>
-Subject: Re: [GIT PULL] block fixes for 3.9-rc
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29, 2013 at 12:00 PM, Jens Axboe <axboe@kernel.dk> wrote:
->
-> Outside of "that's what I have always done", the intent was for others
-> that send patches through me to know what to base it off, if not
-> previous release. All those folks know that for-3.x/drivers is for the
-> next x release, and that for-linus is for the existing tree.
+On Fri, 29 Mar 2013, Minchan Kim wrote:
+> On Thu, Mar 28, 2013 at 11:19:12AM -0700, Dan Magenheimer wrote:
+> > > From: Minchan Kim [mailto:minchan@kernel.org]
+> > > On Wed, Mar 27, 2013 at 03:24:00PM -0700, Dan Magenheimer wrote:
+> > > > > From: Hugh Dickins [mailto:hughd@google.com]
+> > > > > Subject: Re: [RFC] mm: remove swapcache page early
+> > > > >
+> > > > > I believe the answer is for frontswap/zmem to invalidate the frontswap
+> > > > > copy of the page (to free up the compressed memory when possible) and
+> > > > > SetPageDirty on the PageUptodate PageSwapCache page when swapping in
+> > > > > (setting page dirty so nothing will later go to read it from the
+> > > > > unfreed location on backing swap disk, which was never written).
+> > > >
+> > > > There are two duplication issues:  (1) When can the page be removed
+> > > > from the swap cache after a call to frontswap_store; and (2) When
+> > > > can the page be removed from the frontswap storage after it
+> > > > has been brought back into memory via frontswap_load.
+> > > >
+> > > > This patch from Minchan addresses (1).  The issue you are raising
+> > > 
+> > > No. I am addressing (2).
+> > > 
+> > > > here is (2).  You may not know that (2) has recently been solved
+> > > > in frontswap, at least for zcache.  See frontswap_exclusive_gets_enabled.
+> > > > If this is enabled (and it is for zcache but not yet for zswap),
+> > > > what you suggest (SetPageDirty) is what happens.
+> > > 
+> > > I am blind on zcache so I didn't see it. Anyway, I'd like to address it
+> > > on zram and zswap.
+> > 
+> > Zswap can enable it trivially by adding a function call in init_zswap.
+> > (Note that it is not enabled by default for all frontswap backends
+> > because it is another complicated tradeoff of cpu time vs memory space
+> > that needs more study on a broad set of workloads.)
+> > 
+> > I wonder if something like this would have a similar result for zram?
+> > (Completely untested... snippet stolen from swap_entry_free with
+> > SetPageDirty added... doesn't compile yet, but should give you the idea.)
 
-Ok. Whatever. Feel free to continue doing it, but at least then make
-sure that the pull message refers to "tags/for-linus" and not that
-ambiguous "for-linus" thing.
+Thanks for correcting me on zram (in earlier mail of this thread), yes,
+I was forgetting about the swap_slot_free_notify entry point which lets
+that memory be freed.
 
-Because you screwed up that pull request, and I argue that you screwed
-up exactly *because* it's ambiguous and confusing.  The confusion may
-have happened before too, but because git will silently default to the
-branch for the ambiguous case, I just never noticed that I didn't
-actually get the proper signature. Now I noticed, because you said it
-was signed and yet my pull got the non-signed thing.
+> 
+> Nice idea!
+> 
+> After I see your patch, I realized it was Hugh's suggestion and
+> you implemented it in proper place.
+> 
+> Will resend it after testing. Maybe nextweek.
+> Thanks!
 
-              Linus
+Be careful, although Dan is right that something like this can be
+done for zram, I believe you will find that it needs a little more:
+either a separate new entry point (not my preference) or a flags arg
+(or boolean) added to swap_slot_free_notify.
+
+Because this is a different operation: end_swap_bio_read() wants
+to free up zram's compressed copy of the page, but the swp_entry_t
+must remain valid until swap_entry_free() can clear up the rest.
+Precisely how much of the work each should do, you will discover.
+
+Hugh
+
+> 
+> > 
+> > diff --git a/mm/page_io.c b/mm/page_io.c
+> > index 56276fe..2d10988 100644
+> > --- a/mm/page_io.c
+> > +++ b/mm/page_io.c
+> > @@ -81,7 +81,17 @@ void end_swap_bio_read(struct bio *bio, int err)
+> >  				iminor(bio->bi_bdev->bd_inode),
+> >  				(unsigned long long)bio->bi_sector);
+> >  	} else {
+> > +		struct swap_info_struct *sis;
+> > +
+> >  		SetPageUptodate(page);
+> > +		sis = page_swap_info(page);
+> > +		if (sis->flags & SWP_BLKDEV) {
+> > +			struct gendisk *disk = sis->bdev->bd_disk;
+> > +			if (disk->fops->swap_slot_free_notify) {
+> > +				SetPageDirty(page);
+> > +				disk->fops->swap_slot_free_notify(sis->bdev,
+> > +								  offset);
+> > +			}
+> > +		}
+> >  	}
+> >  	unlock_page(page);
+> >  	bio_put(bio);
