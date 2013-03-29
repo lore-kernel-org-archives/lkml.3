@@ -1,99 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab3C2BlD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 21:41:03 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:45761 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754362Ab3C2BlA (ORCPT
+	id S1753624Ab3C2BoK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 21:44:10 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:40613 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755Ab3C2BoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 21:41:00 -0400
-X-AuditID: cbfee68d-b7f786d000005188-90-5154f128d56a
-Date: Fri, 29 Mar 2013 01:40:50 +0000 (GMT)
-From: Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH RESEND] fbmon: use VESA_DMT_VSYNC_HIGH to fix typo
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        tomi.valkeinen@ti.com, FlorianSchandinat@gmx.de,
-        s.trumtrar@pengutronix.de, plagnioj@jcrosoft.com, jg1.han@samsung.com
-Reply-to: jg1.han@samsung.com
-MIME-version: 1.0
-X-MTR: 20130329013857424@jg1.han
-Msgkey: 20130329013857424@jg1.han
-X-EPLocale: en_US.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130329013857424@jg1.han
-X-ParentMTR: 
-X-ArchiveUser: EV
-X-CPGSPASS: Y
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <8984685.165951364521249756.JavaMail.weblogic@epml18>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEJsWRmVeSWpSXmKPExsVy+t8zY12NjyGBBtv+Wllc3jWHzYHR4/Mm
-	uQDGqAZGm8Si5IzMslSF1Lzk/JTMvHRbpdAQN10LJYWM/OISW6VoIwNjPSNTEz0jE3M9S4NY
-	KyNTJYW8xNxUW6UKXaheJYWi5AKg2tzKYqABOal6UHG94tS8FIes/FKQS/SKE3OLS/PS9ZLz
-	c5UUyhJzSoFGKOknTGXM6Nl9ga1gGlfFhOZP7A2MHzi7GDk5hASUJCad3MsIYksImEhMXHaN
-	BcIWk7hwbz1bFyMXUM0yRonJ85+xwBQtOT+XHSIxn1Fi1YYFTF2MHBwsAqoSB9YFgtSwCahL
-	TPjdzAISFhZwkjh6KBIkLAK0a1Z3HxNIK7PAE0aJsy+WMkEcIStxb/JsZhCbV0BQ4uTMJ1C7
-	FCS23PzABBFXlGid/oQZIi4hcef+flYIm1diRvtTqHo5iWlf10DVSEucn7WBEeaZxd8fQ8X5
-	JY7d3gF2Mkjvk/vBMGN2b/7CBmELSEw9c5ARokRV4v8RO4gwn8SahW+hNglKnL7WzQzT2rDx
-	NzuIzQx05ZTuh1C2lsSXH/vY0H3FK+AocWLdBeYJjMqzkKRmIWmfhaQdWc0CRpZVjKKpBckF
-	xUnpRYbIcb2JEZIEe3cw3j5gfYhxPyMwRiYyS4km5wPTaF5JvKGxmZGFqYmpsZG5pRmFwiam
-	FhYmRlQRVhLnVWuxDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAeK6oJIJ5mkLP/y3u4Tdt
-	d1keWFlm/1arnVtkw+a+L4vW37d5Z7Lkat7PizM5HYO61mXu3XFWUdT6hviXliZjpdvXDt/R
-	9N2939h/7l6tl5b6/y5eX8m8+vDsdgZdx7Uu4ufDfXkL+xOfcsp2a5o8KJztfc9Lhd8zoKVE
-	bv1H21MPWt2KGRWPKrEUZyQaajEXFScCAB97ybn1AwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2DF2NjyGBBtdvmVlc3jWHzYHR4/Mm
-	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz1jy1grQwMDI1OgqoSM
-	jJ7dF9gKpnFVTGj+xN7A+IGzi5GTQ0hASWLSyb2MILaEgInEkvNz2SFsMYkL99azdTFyAdXM
-	Z5RYtWEBUxcjBweLgKrEgXWBIDVsAuoSE343s4CEhQWcJI4eigQJiwCNnNXdxwTSyizwhFHi
-	7IulTBC7ZCXuTZ7NDGLzCghKnJz5hAVil4LElpsfmCDiihKt058wQ8QlJO7c388KYfNKzGh/
-	ClUvJzHt6xqoGmmJ87M2MMLcvPj7Y6g4v8Sx2zvATgbpfXI/GGbM7s1f2CBsAYmpZw4yQpSo
-	Svw/YgcR5pNYs/At1CZBidPXuplhWhs2/gaHDjPQlVO6H0LZWhJffuxjQ/cVr4CjxIl1F5gn
-	MMrNQpKahaR9FpJ2ZDULGFlWMYqmFiQXFCelVxjpFSfmFpfmpesl5+duYgSnp2eLdjD+O299
-	iFGAg1GJh3dGREigEGtiWXFl7iFGCQ5mJRHeaeeBQrwpiZVVqUX58UWlOanFhxiTgdE3kVlK
-	NDkfmDrzSuINjY1NzExMzQ0sDCzNSRNWEud91modKCSQnliSmp2aWpBaBLOFiYNTqoGxcObz
-	pjUBb411n14O+fpj80TD3e3Fs5gqSw5vlVV2+ZL/S9r4aVmnm+iZp5te/rHJvfIwqTQrKaLw
-	MW/Ez1zOo8v3HlQ/ll3jx6/r+aD9Rfksvk0FobUP1yYdTA45NPHWtKU/a6OPMM4WlY68tfyH
-	T3XYDwevOzsyphlWVs04wMSiXDZh2RcbJZbijERDLeai4kQACcjL+ZMDAAA=
-DLP-Filter: Pass
+	Thu, 28 Mar 2013 21:44:08 -0400
+Message-ID: <5154F1D3.6050600@huawei.com>
+Date: Fri, 29 Mar 2013 09:43:47 +0800
+From: Xie XiuQi <xiexiuqi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Tony Luck <tony.luck@intel.com>
+CC: Fenghua Yu <fenghua.yu@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] ia64: Fix example error_injection_tool
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.69.18]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2T1f99Y025662
 
-VESA_DMT_VSYNC_HIGH should be used instead of VESA_DMT_HSYNC_HIGH,
-because FB_SYNC_VERT_HIGH_ACT is related to vsync, not to hsync.
+I got a "sched_setaffinity:: Invalid argument" error when using
+err_injection_tool to inject error on a system with over 32 cpus.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Error information when injecting an error on a system with over 32 cpus:
+$ ./err_injection_tool -i
+/sys/devices/system/cpu/cpu0/err_inject//err_type_info
+Begine at Tue Mar 26 11:20:08 2013
+Configurations:
+On cpu32: loop=10, interval=5(s) err_type_info=4101,err_struct_info=95
+Error sched_setaffinity:: Invalid argument
+All done
+
+This because there is overflow when calculating the cpumask: the
+type of (1<<k) is int, while mask[j] is unsigned long. When k > 31,
+(1<<k) is truncated to ZERO, resulting in a unexpected cpumask.
+
+v2:
+ - use "1UL" to avoid the verbose cast suggested by Tony.
+
+Suggested-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
 ---
- drivers/video/fbmon.c |    2 +-
+ Documentation/ia64/err_inject.txt |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/fbmon.c b/drivers/video/fbmon.c
-index 94ad0f7..7f67099 100644
---- a/drivers/video/fbmon.c
-+++ b/drivers/video/fbmon.c
-@@ -1400,7 +1400,7 @@ int fb_videomode_from_videomode(const struct videomode *vm,
- 	fbmode->vmode = 0;
- 	if (vm->dmt_flags & VESA_DMT_HSYNC_HIGH)
- 		fbmode->sync |= FB_SYNC_HOR_HIGH_ACT;
--	if (vm->dmt_flags & VESA_DMT_HSYNC_HIGH)
-+	if (vm->dmt_flags & VESA_DMT_VSYNC_HIGH)
- 		fbmode->sync |= FB_SYNC_VERT_HIGH_ACT;
- 	if (vm->data_flags & DISPLAY_FLAGS_INTERLACED)
- 		fbmode->vmode |= FB_VMODE_INTERLACED;
+diff --git a/Documentation/ia64/err_inject.txt b/Documentation/ia64/err_inject.txt
+index 223e4f0..9f651c1 100644
+--- a/Documentation/ia64/err_inject.txt
++++ b/Documentation/ia64/err_inject.txt
+@@ -882,7 +882,7 @@ int err_inj()
+ 			cpu=parameters[i].cpu;
+ 			k = cpu%64;
+ 			j = cpu/64;
+-			mask[j]=1<<k;
++			mask[j] = 1UL << k;
+
+ 			if (sched_setaffinity(0, MASK_SIZE*8, mask)==-1) {
+ 				perror("Error sched_setaffinity:");
 -- 
-1.7.2.5
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+1.6.0.2
+
