@@ -1,42 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab3C2LJK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 07:09:10 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:15272 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab3C2LJI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 07:09:08 -0400
-Date: Fri, 29 Mar 2013 12:09:04 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Kefeng Wang <wangkefeng.wang@huawei.com>
-Cc: davem@davemloft.net, sparclinux@vger.kernel.org,
+	id S1754092Ab3C2LLW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 07:11:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58609 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753019Ab3C2LLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 07:11:20 -0400
+Date: Fri, 29 Mar 2013 08:11:15 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sparc:remove unused declaration smp_boot_cpus()
-Message-ID: <20130329110904.GA2765@merkur.ravnborg.org>
-References: <5152E41D.2030901@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5152E41D.2030901@huawei.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Subject: Re: [PATCH] [media] gspca: remove obsolete Kconfig macros
+Message-ID: <20130329081115.30d82656@redhat.com>
+In-Reply-To: <51555598.1040505@redhat.com>
+References: <1364506437.1345.42.camel@x61.thuisdomein>
+	<51555598.1040505@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 08:20:45PM +0800, Kefeng Wang wrote:
-> smp_boot_cpus() was replaced smp_prepare_cpus() long ago, and it no
-> longer needed, so delete it.
+Em Fri, 29 Mar 2013 09:49:28 +0100
+Hans de Goede <hdegoede@redhat.com> escreveu:
+
+> Mauro,
 > 
-> Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
+> Can you pick this one up? I don't have anything pending for gspca,
+> and to create a tree + pullreq for just a trivial patch is not really
+> efficient.
 
-But when looking at the same file it looks like we have
-more candidates for removal:
-smp4m_irq_rotate,
-prof_multiplier,
-prof_counter,
+No problem. I'll handle that.
 
-Care to send a follow-up patch that remvoe these also.
+Regards,
+Mauro
+> Alternatively I can put it on my TODO for when there is more gspca work,
+> esp. since there is not really a need to hurry with merging this.
+> 
+> Regards,
+> 
+> Hans
+> 
+> 
+> On 03/28/2013 10:33 PM, Paul Bolle wrote:
+> > The et61x251 driver was removed in v3.5. Remove the last references to
+> > its Kconfig macro now.
+> >
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > ---
+> > Untested, as usual.
+> >
+> >   drivers/media/usb/gspca/etoms.c | 2 --
+> >   1 file changed, 2 deletions(-)
+> >
+> > diff --git a/drivers/media/usb/gspca/etoms.c b/drivers/media/usb/gspca/etoms.c
+> > index 38f68e1..f165581 100644
+> > --- a/drivers/media/usb/gspca/etoms.c
+> > +++ b/drivers/media/usb/gspca/etoms.c
+> > @@ -768,9 +768,7 @@ static const struct sd_desc sd_desc = {
+> >   /* -- module initialisation -- */
+> >   static const struct usb_device_id device_table[] = {
+> >   	{USB_DEVICE(0x102c, 0x6151), .driver_info = SENSOR_PAS106},
+> > -#if !defined CONFIG_USB_ET61X251 && !defined CONFIG_USB_ET61X251_MODULE
+> >   	{USB_DEVICE(0x102c, 0x6251), .driver_info = SENSOR_TAS5130CXX},
+> > -#endif
+> >   	{}
+> >   };
+> >
+> >
 
-	Sam
+
+-- 
+
+Cheers,
+Mauro
