@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab3C2Gi0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 02:38:26 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:62227 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754109Ab3C2GiZ (ORCPT
+	id S1754962Ab3C2Gim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 02:38:42 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:52998 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614Ab3C2Gij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 02:38:25 -0400
-Message-ID: <51553687.1060906@huawei.com>
-Date: Fri, 29 Mar 2013 14:36:55 +0800
+	Fri, 29 Mar 2013 02:38:39 -0400
+Message-ID: <5155367B.2060506@huawei.com>
+Date: Fri, 29 Mar 2013 14:36:43 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
 To: Ingo Molnar <mingo@kernel.org>
 CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 3/7] cpuacct: Add cpuacct_init()
+Subject: [PATCH v2 2/7] sched: Split cpuacct code out of sched.h
 References: <5155365F.1010203@huawei.com>
 In-Reply-To: <5155365F.1010203@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -25,71 +25,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So we don't open-coded initialization of cpuacct in core.c.
+Add cpuacct.h and let sched.h include it.
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- kernel/sched/core.c    | 8 ++------
- kernel/sched/cpuacct.c | 7 +++++++
- kernel/sched/cpuacct.h | 5 +++++
- 3 files changed, 14 insertions(+), 6 deletions(-)
+ kernel/sched/cpuacct.h | 52 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/sched.h   | 48 +---------------------------------------------
+ 2 files changed, 53 insertions(+), 47 deletions(-)
+ create mode 100644 kernel/sched/cpuacct.h
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c4e2b81..c7016c1 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6936,12 +6936,8 @@ void __init sched_init(void)
+diff --git a/kernel/sched/cpuacct.h b/kernel/sched/cpuacct.h
+new file mode 100644
+index 0000000..a7f3d4a
+--- /dev/null
++++ b/kernel/sched/cpuacct.h
+@@ -0,0 +1,52 @@
++/* Time spent by the tasks of the cpu accounting group executing in ... */
++enum cpuacct_stat_index {
++	CPUACCT_STAT_USER,	/* ... user mode */
++	CPUACCT_STAT_SYSTEM,	/* ... kernel mode */
++
++	CPUACCT_STAT_NSTATS,
++};
++
++#ifdef CONFIG_CGROUP_CPUACCT
++
++#include <linux/cgroup.h>
++/* track cpu usage of a group of tasks and its child groups */
++struct cpuacct {
++	struct cgroup_subsys_state css;
++	/* cpuusage holds pointer to a u64-type object on every cpu */
++	u64 __percpu *cpuusage;
++	struct kernel_cpustat __percpu *cpustat;
++};
++
++extern struct cgroup_subsys cpuacct_subsys;
++extern struct cpuacct root_cpuacct;
++
++/* return cpu accounting group corresponding to this container */
++static inline struct cpuacct *cgroup_ca(struct cgroup *cgrp)
++{
++	return container_of(cgroup_subsys_state(cgrp, cpuacct_subsys_id),
++			    struct cpuacct, css);
++}
++
++/* return cpu accounting group to which this task belongs */
++static inline struct cpuacct *task_ca(struct task_struct *tsk)
++{
++	return container_of(task_subsys_state(tsk, cpuacct_subsys_id),
++			    struct cpuacct, css);
++}
++
++static inline struct cpuacct *parent_ca(struct cpuacct *ca)
++{
++	if (!ca || !ca->css.cgroup->parent)
++		return NULL;
++	return cgroup_ca(ca->css.cgroup->parent);
++}
++
++extern void cpuacct_charge(struct task_struct *tsk, u64 cputime);
++
++#else
++
++static inline void cpuacct_charge(struct task_struct *tsk, u64 cputime)
++{
++}
++
++#endif
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 3bd15a4..8116cf8 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -7,6 +7,7 @@
+ #include <linux/stop_machine.h>
  
- #endif /* CONFIG_CGROUP_SCHED */
+ #include "cpupri.h"
++#include "cpuacct.h"
+ 
+ extern __read_mostly int scheduler_running;
+ 
+@@ -950,14 +951,6 @@ static const u32 prio_to_wmult[40] = {
+  /*  15 */ 119304647, 148102320, 186737708, 238609294, 286331153,
+ };
+ 
+-/* Time spent by the tasks of the cpu accounting group executing in ... */
+-enum cpuacct_stat_index {
+-	CPUACCT_STAT_USER,	/* ... user mode */
+-	CPUACCT_STAT_SYSTEM,	/* ... kernel mode */
+-
+-	CPUACCT_STAT_NSTATS,
+-};
+-
+ #define ENQUEUE_WAKEUP		1
+ #define ENQUEUE_HEAD		2
+ #ifdef CONFIG_SMP
+@@ -1054,45 +1047,6 @@ extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime
+ 
+ extern void update_idle_cpu_load(struct rq *this_rq);
  
 -#ifdef CONFIG_CGROUP_CPUACCT
--	root_cpuacct.cpustat = &kernel_cpustat;
--	root_cpuacct.cpuusage = alloc_percpu(u64);
--	/* Too early, not expected to fail */
--	BUG_ON(!root_cpuacct.cpuusage);
+-#include <linux/cgroup.h>
+-/* track cpu usage of a group of tasks and its child groups */
+-struct cpuacct {
+-	struct cgroup_subsys_state css;
+-	/* cpuusage holds pointer to a u64-type object on every cpu */
+-	u64 __percpu *cpuusage;
+-	struct kernel_cpustat __percpu *cpustat;
+-};
+-
+-extern struct cgroup_subsys cpuacct_subsys;
+-extern struct cpuacct root_cpuacct;
+-
+-/* return cpu accounting group corresponding to this container */
+-static inline struct cpuacct *cgroup_ca(struct cgroup *cgrp)
+-{
+-	return container_of(cgroup_subsys_state(cgrp, cpuacct_subsys_id),
+-			    struct cpuacct, css);
+-}
+-
+-/* return cpu accounting group to which this task belongs */
+-static inline struct cpuacct *task_ca(struct task_struct *tsk)
+-{
+-	return container_of(task_subsys_state(tsk, cpuacct_subsys_id),
+-			    struct cpuacct, css);
+-}
+-
+-static inline struct cpuacct *parent_ca(struct cpuacct *ca)
+-{
+-	if (!ca || !ca->css.cgroup->parent)
+-		return NULL;
+-	return cgroup_ca(ca->css.cgroup->parent);
+-}
+-
+-extern void cpuacct_charge(struct task_struct *tsk, u64 cputime);
+-#else
+-static inline void cpuacct_charge(struct task_struct *tsk, u64 cputime) {}
 -#endif
-+	cpuacct_init();
-+
- 	for_each_possible_cpu(i) {
- 		struct rq *rq;
- 
-diff --git a/kernel/sched/cpuacct.c b/kernel/sched/cpuacct.c
-index 50ec24b..48b5e91 100644
---- a/kernel/sched/cpuacct.c
-+++ b/kernel/sched/cpuacct.c
-@@ -218,6 +218,13 @@ void cpuacct_charge(struct task_struct *tsk, u64 cputime)
- 	rcu_read_unlock();
- }
- 
-+void __init cpuacct_init(void)
-+{
-+	root_cpuacct.cpustat = &kernel_cpustat;
-+	root_cpuacct.cpuusage = alloc_percpu(u64);
-+	BUG_ON(!root_cpuacct.cpuusage); /* Too early, not expected to fail */
-+}
-+
- struct cgroup_subsys cpuacct_subsys = {
- 	.name = "cpuacct",
- 	.css_alloc = cpuacct_css_alloc,
-diff --git a/kernel/sched/cpuacct.h b/kernel/sched/cpuacct.h
-index a7f3d4a..551acd7 100644
---- a/kernel/sched/cpuacct.h
-+++ b/kernel/sched/cpuacct.h
-@@ -41,10 +41,15 @@ static inline struct cpuacct *parent_ca(struct cpuacct *ca)
- 	return cgroup_ca(ca->css.cgroup->parent);
- }
- 
-+extern void cpuacct_init(void);
- extern void cpuacct_charge(struct task_struct *tsk, u64 cputime);
- 
- #else
- 
-+static inline void cpuacct_init(void)
-+{
-+}
-+
- static inline void cpuacct_charge(struct task_struct *tsk, u64 cputime)
+-
+ #ifdef CONFIG_PARAVIRT
+ static inline u64 steal_ticks(u64 steal)
  {
- }
 -- 
 1.8.0.2
