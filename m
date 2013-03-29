@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab3C2O1y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 10:27:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58715 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755184Ab3C2O1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 10:27:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,373,1363158000"; 
-   d="scan'208";a="309147521"
-From: Zhang Rui <rui.zhang@intel.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: amit.daniel@samsung.com, durgadoss.r@intel.com, andi@lisas.de,
-        eduardo.valentin@ti.com, Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH V2 1/3] Thermal: rename thermal_sys.c to thermal_core.c
-Date: Fri, 29 Mar 2013 22:26:34 +0800
-Message-Id: <1364567196-3560-2-git-send-email-rui.zhang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364567196-3560-1-git-send-email-rui.zhang@intel.com>
-References: <1364567196-3560-1-git-send-email-rui.zhang@intel.com>
+	id S1755107Ab3C2O1G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 10:27:06 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:41343 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650Ab3C2O1D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 10:27:03 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl, Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, arvind.chauhan@arm.com, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] tools: cpufreq: Fix cpufreq-info print messages for affected[related]_cpus
+Date: Fri, 29 Mar 2013 19:56:39 +0530
+Message-Id: <8c5305cdbe0fb20730e6b28f79a71d36a472a817.1364567091.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this is the preparation work to build all the thermal core framework
-source file, like governors, cpu cooling, etc, into one module.
+Earlier definitions of affected and related cpus were:
+Related_cpus: CPUs which run at the same hardware frequency.
+Affected_cpus: CPUs which need to have their frequency coordinated by software.
 
-No functional change in this patch.
+These definitions were very confusing as they don't communicate the real
+difference between them.
 
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Following are the new definitions of these variables:
+Related_cpus: All (Online & Offline) CPUs that run at the same hardware frequency.
+Affected_cpus: Online CPUs that run at the same hardware frequency.
+
+Above definitions are more consistent with latest cpufreq core code.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/thermal/Makefile                          |    1 +
- drivers/thermal/{thermal_sys.c => thermal_core.c} |    0
- 2 files changed, 1 insertion(+)
- rename drivers/thermal/{thermal_sys.c => thermal_core.c} (100%)
+ tools/power/cpupower/utils/cpufreq-info.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-index d3a2b38..b2009bd 100644
---- a/drivers/thermal/Makefile
-+++ b/drivers/thermal/Makefile
-@@ -3,6 +3,7 @@
- #
+diff --git a/tools/power/cpupower/utils/cpufreq-info.c b/tools/power/cpupower/utils/cpufreq-info.c
+index 28953c9..a81d4ec 100644
+--- a/tools/power/cpupower/utils/cpufreq-info.c
++++ b/tools/power/cpupower/utils/cpufreq-info.c
+@@ -247,7 +247,7 @@ static void debug_output_one(unsigned int cpu)
  
- obj-$(CONFIG_THERMAL)		+= thermal_sys.o
-+thermal_sys-y			+= thermal_core.o
+ 	cpus = cpufreq_get_related_cpus(cpu);
+ 	if (cpus) {
+-		printf(_("  CPUs which run at the same hardware frequency: "));
++		printf(_("  All (Online & Offline) CPUs that run at the same hardware frequency: "));
+ 		while (cpus->next) {
+ 			printf("%d ", cpus->cpu);
+ 			cpus = cpus->next;
+@@ -258,7 +258,7 @@ static void debug_output_one(unsigned int cpu)
  
- # governors
- obj-$(CONFIG_THERMAL_GOV_FAIR_SHARE)	+= fair_share.o
-diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_core.c
-similarity index 100%
-rename from drivers/thermal/thermal_sys.c
-rename to drivers/thermal/thermal_core.c
+ 	cpus = cpufreq_get_affected_cpus(cpu);
+ 	if (cpus) {
+-		printf(_("  CPUs which need to have their frequency coordinated by software: "));
++		printf(_("  Online CPUs that run at the same hardware frequency: "));
+ 		while (cpus->next) {
+ 			printf("%d ", cpus->cpu);
+ 			cpus = cpus->next;
 -- 
-1.7.9.5
+1.7.12.rc2.18.g61b472e
 
