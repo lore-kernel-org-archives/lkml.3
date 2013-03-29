@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab3C2RZL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 13:25:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62302 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755280Ab3C2RZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 13:25:09 -0400
-Date: Fri, 29 Mar 2013 13:23:38 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        stable@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1364577818-615ipxeo-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130329135730.GB21879@dhcp22.suse.cz>
-References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1364485358-8745-3-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130329135730.GB21879@dhcp22.suse.cz>
-Subject: Re: [PATCH 2/2] hugetlbfs: add swap entry check in
- follow_hugetlb_page()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <20130329135730.GB21879@dhcp22.suse.cz>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1756493Ab3C2RbG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 13:31:06 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:32983 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756262Ab3C2RbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 13:31:05 -0400
+Date: Fri, 29 Mar 2013 13:31:01 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        marc.zyngier@arm.com,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v4 2/2] arm: prefer PSCI for SMP bringup
+In-Reply-To: <1364575371-8926-2-git-send-email-stefano.stabellini@eu.citrix.com>
+Message-ID: <alpine.LFD.2.03.1303291320580.1372@syhkavp.arg>
+References: <1364575371-8926-2-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 29 Mar 2013, Stefano Stabellini wrote:
 
-On Fri, Mar 29, 2013 at 02:57:30PM +0100, Michal Hocko wrote:
-> On Thu 28-03-13 11:42:38, Naoya Horiguchi wrote:
-> [...]
-> > @@ -2968,7 +2968,8 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> >  		 * first, for the page indexing below to work.
-> >  		 */
-> >  		pte = huge_pte_offset(mm, vaddr & huge_page_mask(h));
-> > -		absent = !pte || huge_pte_none(huge_ptep_get(pte));
-> > +		absent = !pte || huge_pte_none(huge_ptep_get(pte)) ||
-> > +			is_swap_pte(huge_ptep_get(pte));
+> If PSCI initializes correctly and PSCI SMP operations are available, use them.
+> This is required for SMP support in Dom0 on Xen.
 > 
-> is_swap_pte doesn't seem right. Shouldn't you use is_hugetlb_entry_hwpoisoned
-> instead?
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> CC: will.deacon@arm.com
+> CC: arnd@arndb.de
+> CC: marc.zyngier@arm.com
+> CC: linux@arm.linux.org.uk
+> CC: nico@linaro.org
 
-I tested only hwpoisoned hugepage, but the same can happen for hugepages
-under migration. So I intended to filter out all types of swap entries.
-The local variable 'absent' seems to mean whether data on the address
-is immediately available, so swap type entry isn't included in it.
+I'd suggest you also include in your series the patch I posted earlier 
+providing a runtime mdesc->smp_init method as well.  This way the 
+priority order would be:
 
-Thanks,
-Naoya
+- If mdesc->smp_init is non null then use that.
+
+- Otherwise, if PSCI is available then use that.
+
+- Otherwise use mdesc->smp.
+
+This way, if the PSCI default has to be overriden (like in the MCPM case 
+because it needs to wrap PSCI itself, or to cover Rob's concern) then 
+this can be achieved at run time on a per mdesc basis.
+
+
+Nicolas
