@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab3C2SC4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 14:02:56 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:37716 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754912Ab3C2SCx (ORCPT
+	id S1756546Ab3C2SEv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 14:04:51 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:43855 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513Ab3C2SEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 14:02:53 -0400
+	Fri, 29 Mar 2013 14:04:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7ChfRiEn0eR1rf-mVheUS9Yf8f+j4n78PJcGYh+yMVgA@mail.gmail.com>
+In-Reply-To: <CAE9FiQXkDg7Y336S=DXoms44=5HLaiUx=sWviupz1fJmaDUEzQ@mail.gmail.com>
 References: <CAE9FiQXmeb66dc8fET0y99BjqpUXp11c7utiQ5keR1Wf+N9xaA@mail.gmail.com>
 	<1363628226-6679-1-git-send-email-yinghai@kernel.org>
 	<CAErSpo6v0mj9=Q13d=G4hho0mb9XTcsmefzke9fROYmZ7oBWxQ@mail.gmail.com>
@@ -19,9 +19,10 @@ References: <CAE9FiQXmeb66dc8fET0y99BjqpUXp11c7utiQ5keR1Wf+N9xaA@mail.gmail.com>
 	<20130329032200.GA11990@google.com>
 	<CAE9FiQVu5QyxaKsYzzQoroQD=TvsziHzDOtoeg=FvhZ8HyN5yw@mail.gmail.com>
 	<CAErSpo7ChfRiEn0eR1rf-mVheUS9Yf8f+j4n78PJcGYh+yMVgA@mail.gmail.com>
-Date: Fri, 29 Mar 2013 11:02:52 -0700
-X-Google-Sender-Auth: tuCUqfT0ZH0LIq32fn_WT63-bfc
-Message-ID: <CAE9FiQXkDg7Y336S=DXoms44=5HLaiUx=sWviupz1fJmaDUEzQ@mail.gmail.com>
+	<CAE9FiQXkDg7Y336S=DXoms44=5HLaiUx=sWviupz1fJmaDUEzQ@mail.gmail.com>
+Date: Fri, 29 Mar 2013 11:04:48 -0700
+X-Google-Sender-Auth: aPo_qaHUdi3PMBzAoC61-OxVZxw
+Message-ID: <CAE9FiQU5c=ztzbskNnYFFKF9V5zO+jnRcMBCivLxA1F3fSfX5w@mail.gmail.com>
 Subject: Re: [PATCH] PCI: Remove not needed check in disable aspm link
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>
@@ -35,55 +36,214 @@ Cc: Roman Yepishev <roman.yepishev@gmail.com>,
         Matthew Garrett <matthew.garrett@nebula.com>,
         "e1000-devel@lists.sourceforge.net" 
 	<e1000-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/mixed; boundary=14dae9340b4966768e04d9141b03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29, 2013 at 5:24 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+--14dae9340b4966768e04d9141b03
+Content-Type: text/plain; charset=ISO-8859-1
+
+attatched -v3 again
+
+On Fri, Mar 29, 2013 at 11:02 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Mar 29, 2013 at 5:24 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>
+>> Half of your v1 patch (removing the pcie_aspm_sanity_check() test)
+>> *might* be the right thing, but only if you can clearly explain why
+>> that will not reintroduce the bug Matthew fixed with c9651e70.
+>>
+>> I think we also need to fix the PCI_FIXUP_FINAL quirk regression, but
+>> that's a separate issue and should be a separate patch.
 >
-> Half of your v1 patch (removing the pcie_aspm_sanity_check() test)
-> *might* be the right thing, but only if you can clearly explain why
-> that will not reintroduce the bug Matthew fixed with c9651e70.
 >
-> I think we also need to fix the PCI_FIXUP_FINAL quirk regression, but
-> that's a separate issue and should be a separate patch.
+> First commit from Matthew
+>  0ae5eaf10     PCI: ignore pre-1.1 ASPM quirking when ASPM is disabled
+>     Right now we won't touch ASPM state if ASPM is disabled, except in the case
+>     where we find a device that appears to be too old to reliably support ASPM.
+>     Right now we'll clear it in that case, which is almost certainly the wrong
+>     thing to do
+>
+> Try to not touch pre-1.1 ASPM for all, and it causes lots of regression.
+>
+> So second commit
+>
+> cdb0f9a1ad2e ASPM: Fix pcie devices with non-pcie children
+>     Since 3.2.12 and 3.3, some systems are failing to boot with a BUG_ON.
+>     Some other systems using the pata_jmicron driver fail to boot because no
+>     disks are detected.  Passing pcie_aspm=force on the kernel command line
+>     works around it.
+>
+> move the check aspm_disabled down.
+>
+> but ath5 and etc (pre-1.1) really need to aspm_disable to change their
+> hw setting.
+>
+> So the right solution would be dropping pcie_aspm_sanity_check()
+> change -in v2 should make all both happy, as quirk and disable that in
+> driver for ath5 are calling
+> pcie_disable_aspm_state explicitly.
+>
+> In v2, we already removed pcie_clear_aspm() that is calling
+> pcie_disable_aspm_state.
+>
+>
+> Please check attached -v3.
+>
+>
+> Thanks
+>
+> Yinghai
 
+--14dae9340b4966768e04d9141b03
+Content-Type: application/octet-stream; name="disable_aspm_3.patch"
+Content-Disposition: attachment; filename="disable_aspm_3.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hevnupzr0
 
-First commit from Matthew
- 0ae5eaf10     PCI: ignore pre-1.1 ASPM quirking when ASPM is disabled
-    Right now we won't touch ASPM state if ASPM is disabled, except in the case
-    where we find a device that appears to be too old to reliably support ASPM.
-    Right now we'll clear it in that case, which is almost certainly the wrong
-    thing to do
-
-Try to not touch pre-1.1 ASPM for all, and it causes lots of regression.
-
-So second commit
-
-cdb0f9a1ad2e ASPM: Fix pcie devices with non-pcie children
-    Since 3.2.12 and 3.3, some systems are failing to boot with a BUG_ON.
-    Some other systems using the pata_jmicron driver fail to boot because no
-    disks are detected.  Passing pcie_aspm=force on the kernel command line
-    works around it.
-
-move the check aspm_disabled down.
-
-but ath5 and etc (pre-1.1) really need to aspm_disable to change their
-hw setting.
-
-So the right solution would be dropping pcie_aspm_sanity_check()
-change -in v2 should make all both happy, as quirk and disable that in
-driver for ath5 are calling
-pcie_disable_aspm_state explicitly.
-
-In v2, we already removed pcie_clear_aspm() that is calling
-pcie_disable_aspm_state.
-
-
-Please check attached -v3.
-
-
-Thanks
-
-Yinghai
+U3ViamVjdDogW1BBVENIXSBQQ0k6IFJlbW92ZSBub3QgbmVlZGVkIGNoZWNrIGluIGRpc2FibGUg
+YXNwbSBsaW5rCgpSb21hbiByZXBvcnRlZCBhdGg1ayBkb2VzIG5vdCB3b3JrIGFueW1vcmUgb24g
+My44LgpCaXNlY3RlZCB0bwp8IGNvbW1pdCA4YzMzZjUxZGY0MDZlMWExZjdmYTRlOWIyNDQ4NDVi
+N2ViZDYxZmE2CnwgQXV0aG9yOiBUYWt1IEl6dW1pIDxpenVtaS50YWt1QGpwLmZ1aml0c3UuY29t
+Pgp8IERhdGU6ICAgVHVlIE9jdCAzMCAxNToyNzoxMyAyMDEyICswOTAwCnwKfCAgICBQQ0kvQUNQ
+STogUmVxdWVzdCBfT1NDIGNvbnRyb2wgYmVmb3JlIHNjYW5uaW5nIFBDSSByb290IGJ1cwp8Cnwg
+ICAgVGhpcyBwYXRjaCBtb3ZlcyB1cCB0aGUgY29kZSBibG9jayB0byByZXF1ZXN0IF9PU0MgY29u
+dHJvbCBpbiBvcmRlciB0bwp8ICAgIHNlcGFyYXRlIEFDUEkgd29yayBhbmQgUENJIHdvcmsgaW4g
+YWNwaV9wY2lfcm9vdF9hZGQoKS4KCkl0IG1ha2UgcGNpZV9hc3BtX3Nhbml0eV9jaGVjayBkb2Vz
+IG5vdCB3b3JrIGFueW1vcmUgYXMgYWNwaV9kaXNhYmxlZAppcyBzZXQgYmVmb3JlIHBjaSByb290
+IGJ1cyBzY2FubmluZy4KCldlIGNvdWxkIHJldmVydCB0byBvbGQgbG9naWMsIGJ1dCB0aGF0IHdp
+bGwgbWFrZSBib290aW5nIHBhdGggYW5kIGhvdHBsdWcKcGF0aCB3aXRoIGRpZmZlcmVudCBhc3Bt
+X2Rpc2FibGVkIGFnYWluLgoKQWNjdHVhbGx5IHdlIGRvbid0IG5lZWQgdG8gY2hlY2sgYXNwbV9k
+aXNhYmxlZCBpbiBwY2lfZGlzYWJsZV9saW5rX3N0YXRlLAphcyB3ZSBhbHJlYWR5IGhhdmUgcHJv
+dGVjdGlvbiBhYm91dCBsaW5rIHN0YXRlIGNoZWNraW5nLgphbmQgcGNpX2Rpc2FibGVfbGlua19z
+dGF0ZSB3aWxsIGJlIG9ubHkgY2FsbGVkIGV4cGxpY3RlZCBmb3IgcXVpcmsKYW5kIGRyaXZlci4K
+ClRoYXQgd2lsbCBrZWVwIHRoZSBsb2dpYyBpbiBwY2llX2FzcG1fc2FuaXR5X2NoZWNrKCkgaW4g
+Y29tbWl0czoKIDBhZTVlYWYxMCAgICAgUENJOiBpZ25vcmUgcHJlLTEuMSBBU1BNIHF1aXJraW5n
+IHdoZW4gQVNQTSBpcyBkaXNhYmxlZAogY2RiMGY5YTFhICAgICBBU1BNOiBGaXggcGNpZSBkZXZp
+Y2VzIHdpdGggbm9uLXBjaWUgY2hpbGRyZW4Kc3RpbGwgd29ya2luZywgQUtBIHN0aWxsIG5vdCB0
+b3VjaCBwcmUtMS4xIEFTUE0gZGV2aWNlLgoKaHR0cHM6Ly9idWd6aWxsYS5rZXJuZWwub3JnL3No
+b3dfYnVnLmNnaT9pZD01NTIxMQpodHRwOi8vYXJ0aWNsZS5nbWFuZS5vcmcvZ21hbmUubGludXgu
+a2VybmVsLnBjaS8yMDY0MAoKTmVlZCBpdCBmb3IgMy44IHN0YWJsZS4KCi12MjogbW9yZSBjbGVh
+bnVwCgkxLiByZW1vdmUgYXNwbV9zdXBwb3J0X2VuYWJsZWQsIGFzIGlmIGl0IGNvbXBpbGVkIGlu
+LCBzdXBwb3J0IGlzIHRoZXJlCgkJc28gZXZlbiB1c2VyIHBhc3MgYXNwbT1vZmYsIGxpbmtfc3Rh
+dGUgc3RpbGwgZ2V0IGFsbG9jYXRlZCwKCQl0aGVuIHdlIHdpbGwgaGF2ZSBjaGFuY2UgdG8gZGlz
+YWJsZSBhc3BtIG9uIGRldmljZXMgZnJvbQoJCWJ1Z2d5IHNldHRpbmcgb2YgQklPUy4KCTIuIG1v
+dmUgcGNpZV9ub19hc3BtKCkgY2FsbGluZyBmb3IgZmFkdCBkaXNhYmxpbmcgYmVmb3JlIHNjYW5u
+aW5nCgkJcmVxdWVzdGVkIGJ5IEJqb3JuLgotdjM6IHJlbW92ZSBjaGFuZ2UgaW4gcGNpZV9hc3Bt
+X3Nhbml0eV9jaGVjaygpCgpSZXBvcnRlZC1ieTogUm9tYW4gWWVwaXNoZXYgPHJvbWFuLnllcGlz
+aGV2QGdtYWlsLmNvbT4KQmlzZWN0ZWQtYnk6IFJvbWFuIFllcGlzaGV2IDxyb21hbi55ZXBpc2hl
+dkBnbWFpbC5jb20+ClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9y
+Zz4KQ2M6IFRha3UgSXp1bWkgPGl6dW1pLnRha3VAanAuZnVqaXRzdS5jb20+CkNjOiBLZW5qaSBL
+YW5lc2hpZ2UgPGthbmVzaGlnZS5rZW5qaUBqcC5mdWppdHN1LmNvbT4KCi0tLQogZHJpdmVycy9h
+Y3BpL3BjaV9yb290LmMgIHwgICAyNSArKysrKysrKystLS0tLS0tLS0tLS0tLS0KIGRyaXZlcnMv
+cGNpL3BjaWUvYXNwbS5jICB8ICAgNDggKystLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0KIGluY2x1ZGUvbGludXgvcGNpLWFzcG0uaCB8ICAgIDQgLS0tCiBpbmNs
+dWRlL2xpbnV4L3BjaS5oICAgICAgfCAgICAyIC0KIDQgZmlsZXMgY2hhbmdlZCwgMTQgaW5zZXJ0
+aW9ucygrKSwgNjUgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvYWNwaS9w
+Y2lfcm9vdC5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvYWNwaS9wY2lf
+cm9vdC5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9hY3BpL3BjaV9yb290LmMKQEAgLTQxNSw3ICs0
+MTUsNiBAQCBzdGF0aWMgaW50IGFjcGlfcGNpX3Jvb3RfYWRkKHN0cnVjdCBhY3BpCiAJc3RydWN0
+IGFjcGlfcGNpX3Jvb3QgKnJvb3Q7CiAJc3RydWN0IGFjcGlfcGNpX2RyaXZlciAqZHJpdmVyOwog
+CXUzMiBmbGFncywgYmFzZV9mbGFnczsKLQlib29sIGlzX29zY19ncmFudGVkID0gZmFsc2U7CiAK
+IAlyb290ID0ga3phbGxvYyhzaXplb2Yoc3RydWN0IGFjcGlfcGNpX3Jvb3QpLCBHRlBfS0VSTkVM
+KTsKIAlpZiAoIXJvb3QpCkBAIC00OTQsNiArNDkzLDExIEBAIHN0YXRpYyBpbnQgYWNwaV9wY2lf
+cm9vdF9hZGQoc3RydWN0IGFjcGkKIAkJCWZsYWdzID0gYmFzZV9mbGFnczsKIAkJfQogCX0KKwor
+CS8qIEFTUE0gc2V0dGluZyAqLworCWlmIChhY3BpX2dibF9GQURULmJvb3RfZmxhZ3MgJiBBQ1BJ
+X0ZBRFRfTk9fQVNQTSkKKwkJcGNpZV9ub19hc3BtKCk7CisKIAlpZiAoIXBjaWVfcG9ydHNfZGlz
+YWJsZWQKIAkgICAgJiYgKGZsYWdzICYgQUNQSV9QQ0lFX1JFUV9TVVBQT1JUKSA9PSBBQ1BJX1BD
+SUVfUkVRX1NVUFBPUlQpIHsKIAkJZmxhZ3MgPSBPU0NfUENJX0VYUFJFU1NfQ0FQX1NUUlVDVFVS
+RV9DT05UUk9MCkBAIC01MTMsMTYgKzUxNywxNyBAQCBzdGF0aWMgaW50IGFjcGlfcGNpX3Jvb3Rf
+YWRkKHN0cnVjdCBhY3BpCiAKIAkJc3RhdHVzID0gYWNwaV9wY2lfb3NjX2NvbnRyb2xfc2V0KGRl
+dmljZS0+aGFuZGxlLCAmZmxhZ3MsCiAJCQkJICAgICAgIE9TQ19QQ0lfRVhQUkVTU19DQVBfU1RS
+VUNUVVJFX0NPTlRST0wpOwotCQlpZiAoQUNQSV9TVUNDRVNTKHN0YXR1cykpIHsKLQkJCWlzX29z
+Y19ncmFudGVkID0gdHJ1ZTsKKwkJaWYgKEFDUElfU1VDQ0VTUyhzdGF0dXMpKQogCQkJZGV2X2lu
+Zm8oJmRldmljZS0+ZGV2LAogCQkJCSJBQ1BJIF9PU0MgY29udHJvbCAoMHglMDJ4KSBncmFudGVk
+XG4iLCBmbGFncyk7Ci0JCX0gZWxzZSB7Ci0JCQlpc19vc2NfZ3JhbnRlZCA9IGZhbHNlOworCQll
+bHNlIHsKIAkJCWRldl9pbmZvKCZkZXZpY2UtPmRldiwKIAkJCQkiQUNQSSBfT1NDIHJlcXVlc3Qg
+ZmFpbGVkICglcyksICIKIAkJCQkicmV0dXJuZWQgY29udHJvbCBtYXNrOiAweCUwMnhcbiIsCiAJ
+CQkJYWNwaV9mb3JtYXRfZXhjZXB0aW9uKHN0YXR1cyksIGZsYWdzKTsKKwkJCXByX2luZm8oIkFD
+UEkgX09TQyBjb250cm9sIGZvciBQQ0llIG5vdCBncmFudGVkLCAiCisJCQkJImRpc2FibGluZyBB
+U1BNXG4iKTsKKwkJCXBjaWVfbm9fYXNwbSgpOwogCQl9CiAJfSBlbHNlIHsKIAkJZGV2X2luZm8o
+JmRldmljZS0+ZGV2LApAQCAtNTU0LDE2ICs1NTksNiBAQCBzdGF0aWMgaW50IGFjcGlfcGNpX3Jv
+b3RfYWRkKHN0cnVjdCBhY3BpCiAJCWdvdG8gb3V0X2RlbF9yb290OwogCX0KIAotCS8qIEFTUE0g
+c2V0dGluZyAqLwotCWlmIChpc19vc2NfZ3JhbnRlZCkgewotCQlpZiAoYWNwaV9nYmxfRkFEVC5i
+b290X2ZsYWdzICYgQUNQSV9GQURUX05PX0FTUE0pCi0JCQlwY2llX2NsZWFyX2FzcG0ocm9vdC0+
+YnVzKTsKLQl9IGVsc2UgewotCQlwcl9pbmZvKCJBQ1BJIF9PU0MgY29udHJvbCBmb3IgUENJZSBu
+b3QgZ3JhbnRlZCwgIgotCQkJImRpc2FibGluZyBBU1BNXG4iKTsKLQkJcGNpZV9ub19hc3BtKCk7
+Ci0JfQotCiAJcGNpX2FjcGlfYWRkX2J1c19wbV9ub3RpZmllcihkZXZpY2UsIHJvb3QtPmJ1cyk7
+CiAJaWYgKGRldmljZS0+d2FrZXVwLmZsYWdzLnJ1bl93YWtlKQogCQlkZXZpY2Vfc2V0X3J1bl93
+YWtlKHJvb3QtPmJ1cy0+YnJpZGdlLCB0cnVlKTsKSW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJzL3Bj
+aS9wY2llL2FzcG0uYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL3BjaS9w
+Y2llL2FzcG0uYworKysgbGludXgtMi42L2RyaXZlcnMvcGNpL3BjaWUvYXNwbS5jCkBAIC02OSw3
+ICs2OSw2IEBAIHN0cnVjdCBwY2llX2xpbmtfc3RhdGUgewogfTsKIAogc3RhdGljIGludCBhc3Bt
+X2Rpc2FibGVkLCBhc3BtX2ZvcmNlOwotc3RhdGljIGJvb2wgYXNwbV9zdXBwb3J0X2VuYWJsZWQg
+PSB0cnVlOwogc3RhdGljIERFRklORV9NVVRFWChhc3BtX2xvY2spOwogc3RhdGljIExJU1RfSEVB
+RChsaW5rX2xpc3QpOwogCkBAIC01NTYsOSArNTQ2LDYgQEAgdm9pZCBwY2llX2FzcG1faW5pdF9s
+aW5rX3N0YXRlKHN0cnVjdCBwYwogCXN0cnVjdCBwY2llX2xpbmtfc3RhdGUgKmxpbms7CiAJaW50
+IGJsYWNrbGlzdCA9ICEhcGNpZV9hc3BtX3Nhbml0eV9jaGVjayhwZGV2KTsKIAotCWlmICghYXNw
+bV9zdXBwb3J0X2VuYWJsZWQpCi0JCXJldHVybjsKLQogCWlmICghcGNpX2lzX3BjaWUocGRldikg
+fHwgcGRldi0+bGlua19zdGF0ZSkKIAkJcmV0dXJuOwogCWlmIChwY2lfcGNpZV90eXBlKHBkZXYp
+ICE9IFBDSV9FWFBfVFlQRV9ST09UX1BPUlQgJiYKQEAgLTcxOCwxNSArNzA1LDExIEBAIHZvaWQg
+cGNpZV9hc3BtX3Bvd2Vyc2F2ZV9jb25maWdfbGluayhzdHIKICAqIHBjaV9kaXNhYmxlX2xpbmtf
+c3RhdGUgLSBkaXNhYmxlIHBjaSBkZXZpY2UncyBsaW5rIHN0YXRlLCBzbyB0aGUgbGluayB3aWxs
+CiAgKiBuZXZlciBlbnRlciBzcGVjaWZpYyBzdGF0ZXMKICAqLwotc3RhdGljIHZvaWQgX19wY2lf
+ZGlzYWJsZV9saW5rX3N0YXRlKHN0cnVjdCBwY2lfZGV2ICpwZGV2LCBpbnQgc3RhdGUsIGJvb2wg
+c2VtLAotCQkJCSAgICAgYm9vbCBmb3JjZSkKK3N0YXRpYyB2b2lkIF9fcGNpX2Rpc2FibGVfbGlu
+a19zdGF0ZShzdHJ1Y3QgcGNpX2RldiAqcGRldiwgaW50IHN0YXRlLCBib29sIHNlbSkKIHsKIAlz
+dHJ1Y3QgcGNpX2RldiAqcGFyZW50ID0gcGRldi0+YnVzLT5zZWxmOwogCXN0cnVjdCBwY2llX2xp
+bmtfc3RhdGUgKmxpbms7CiAKLQlpZiAoYXNwbV9kaXNhYmxlZCAmJiAhZm9yY2UpCi0JCXJldHVy
+bjsKLQogCWlmICghcGNpX2lzX3BjaWUocGRldikpCiAJCXJldHVybjsKIApAQCAtNzU3LDM0ICs3
+NDAsMTYgQEAgc3RhdGljIHZvaWQgX19wY2lfZGlzYWJsZV9saW5rX3N0YXRlKHN0cgogCiB2b2lk
+IHBjaV9kaXNhYmxlX2xpbmtfc3RhdGVfbG9ja2VkKHN0cnVjdCBwY2lfZGV2ICpwZGV2LCBpbnQg
+c3RhdGUpCiB7Ci0JX19wY2lfZGlzYWJsZV9saW5rX3N0YXRlKHBkZXYsIHN0YXRlLCBmYWxzZSwg
+ZmFsc2UpOworCV9fcGNpX2Rpc2FibGVfbGlua19zdGF0ZShwZGV2LCBzdGF0ZSwgZmFsc2UpOwog
+fQogRVhQT1JUX1NZTUJPTChwY2lfZGlzYWJsZV9saW5rX3N0YXRlX2xvY2tlZCk7CiAKIHZvaWQg
+cGNpX2Rpc2FibGVfbGlua19zdGF0ZShzdHJ1Y3QgcGNpX2RldiAqcGRldiwgaW50IHN0YXRlKQog
+ewotCV9fcGNpX2Rpc2FibGVfbGlua19zdGF0ZShwZGV2LCBzdGF0ZSwgdHJ1ZSwgZmFsc2UpOwor
+CV9fcGNpX2Rpc2FibGVfbGlua19zdGF0ZShwZGV2LCBzdGF0ZSwgdHJ1ZSk7CiB9CiBFWFBPUlRf
+U1lNQk9MKHBjaV9kaXNhYmxlX2xpbmtfc3RhdGUpOwogCi12b2lkIHBjaWVfY2xlYXJfYXNwbShz
+dHJ1Y3QgcGNpX2J1cyAqYnVzKQotewotCXN0cnVjdCBwY2lfZGV2ICpjaGlsZDsKLQotCWlmIChh
+c3BtX2ZvcmNlKQotCQlyZXR1cm47Ci0KLQkvKgotCSAqIENsZWFyIGFueSBBU1BNIHNldHVwIHRo
+YXQgdGhlIGZpcm13YXJlIGhhcyBjYXJyaWVkIG91dCBvbiB0aGlzIGJ1cwotCSAqLwotCWxpc3Rf
+Zm9yX2VhY2hfZW50cnkoY2hpbGQsICZidXMtPmRldmljZXMsIGJ1c19saXN0KSB7Ci0JCV9fcGNp
+X2Rpc2FibGVfbGlua19zdGF0ZShjaGlsZCwgUENJRV9MSU5LX1NUQVRFX0wwUyB8Ci0JCQkJCSBQ
+Q0lFX0xJTktfU1RBVEVfTDEgfAotCQkJCQkgUENJRV9MSU5LX1NUQVRFX0NMS1BNLAotCQkJCQkg
+ZmFsc2UsIHRydWUpOwotCX0KLX0KLQogc3RhdGljIGludCBwY2llX2FzcG1fc2V0X3BvbGljeShj
+b25zdCBjaGFyICp2YWwsIHN0cnVjdCBrZXJuZWxfcGFyYW0gKmtwKQogewogCWludCBpOwpAQCAt
+OTQ0LDcgKzkwOSw2IEBAIHN0YXRpYyBpbnQgX19pbml0IHBjaWVfYXNwbV9kaXNhYmxlKGNoYXIK
+IAlpZiAoIXN0cmNtcChzdHIsICJvZmYiKSkgewogCQlhc3BtX3BvbGljeSA9IFBPTElDWV9ERUZB
+VUxUOwogCQlhc3BtX2Rpc2FibGVkID0gMTsKLQkJYXNwbV9zdXBwb3J0X2VuYWJsZWQgPSBmYWxz
+ZTsKIAkJcHJpbnRrKEtFUk5fSU5GTyAiUENJZSBBU1BNIGlzIGRpc2FibGVkXG4iKTsKIAl9IGVs
+c2UgaWYgKCFzdHJjbXAoc3RyLCAiZm9yY2UiKSkgewogCQlhc3BtX2ZvcmNlID0gMTsKQEAgLTk4
+MCw5ICs5NDQsMyBAQCBpbnQgcGNpZV9hc3BtX2VuYWJsZWQodm9pZCkKICAgICAgICByZXR1cm4g
+IWFzcG1fZGlzYWJsZWQ7CiB9CiBFWFBPUlRfU1lNQk9MKHBjaWVfYXNwbV9lbmFibGVkKTsKLQot
+Ym9vbCBwY2llX2FzcG1fc3VwcG9ydF9lbmFibGVkKHZvaWQpCi17Ci0JcmV0dXJuIGFzcG1fc3Vw
+cG9ydF9lbmFibGVkOwotfQotRVhQT1JUX1NZTUJPTChwY2llX2FzcG1fc3VwcG9ydF9lbmFibGVk
+KTsKSW5kZXg6IGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L3BjaS1hc3BtLmgKPT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQot
+LS0gbGludXgtMi42Lm9yaWcvaW5jbHVkZS9saW51eC9wY2ktYXNwbS5oCisrKyBsaW51eC0yLjYv
+aW5jbHVkZS9saW51eC9wY2ktYXNwbS5oCkBAIC0yOSw3ICsyOSw2IEBAIGV4dGVybiB2b2lkIHBj
+aWVfYXNwbV9wbV9zdGF0ZV9jaGFuZ2Uoc3QKIGV4dGVybiB2b2lkIHBjaWVfYXNwbV9wb3dlcnNh
+dmVfY29uZmlnX2xpbmsoc3RydWN0IHBjaV9kZXYgKnBkZXYpOwogZXh0ZXJuIHZvaWQgcGNpX2Rp
+c2FibGVfbGlua19zdGF0ZShzdHJ1Y3QgcGNpX2RldiAqcGRldiwgaW50IHN0YXRlKTsKIGV4dGVy
+biB2b2lkIHBjaV9kaXNhYmxlX2xpbmtfc3RhdGVfbG9ja2VkKHN0cnVjdCBwY2lfZGV2ICpwZGV2
+LCBpbnQgc3RhdGUpOwotZXh0ZXJuIHZvaWQgcGNpZV9jbGVhcl9hc3BtKHN0cnVjdCBwY2lfYnVz
+ICpidXMpOwogZXh0ZXJuIHZvaWQgcGNpZV9ub19hc3BtKHZvaWQpOwogI2Vsc2UKIHN0YXRpYyBp
+bmxpbmUgdm9pZCBwY2llX2FzcG1faW5pdF9saW5rX3N0YXRlKHN0cnVjdCBwY2lfZGV2ICpwZGV2
+KQpAQCAtNDcsOSArNDYsNiBAQCBzdGF0aWMgaW5saW5lIHZvaWQgcGNpZV9hc3BtX3Bvd2Vyc2F2
+ZV9jCiBzdGF0aWMgaW5saW5lIHZvaWQgcGNpX2Rpc2FibGVfbGlua19zdGF0ZShzdHJ1Y3QgcGNp
+X2RldiAqcGRldiwgaW50IHN0YXRlKQogewogfQotc3RhdGljIGlubGluZSB2b2lkIHBjaWVfY2xl
+YXJfYXNwbShzdHJ1Y3QgcGNpX2J1cyAqYnVzKQotewotfQogc3RhdGljIGlubGluZSB2b2lkIHBj
+aWVfbm9fYXNwbSh2b2lkKQogewogfQpJbmRleDogbGludXgtMi42L2luY2x1ZGUvbGludXgvcGNp
+LmgKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvaW5jbHVkZS9saW51eC9wY2kuaAorKysg
+bGludXgtMi42L2luY2x1ZGUvbGludXgvcGNpLmgKQEAgLTExNjgsNyArMTE2OCw3IEBAIHN0YXRp
+YyBpbmxpbmUgaW50IHBjaWVfYXNwbV9lbmFibGVkKHZvaWQKIHN0YXRpYyBpbmxpbmUgYm9vbCBw
+Y2llX2FzcG1fc3VwcG9ydF9lbmFibGVkKHZvaWQpIHsgcmV0dXJuIGZhbHNlOyB9CiAjZWxzZQog
+ZXh0ZXJuIGludCBwY2llX2FzcG1fZW5hYmxlZCh2b2lkKTsKLWV4dGVybiBib29sIHBjaWVfYXNw
+bV9zdXBwb3J0X2VuYWJsZWQodm9pZCk7CitzdGF0aWMgaW5saW5lIGJvb2wgcGNpZV9hc3BtX3N1
+cHBvcnRfZW5hYmxlZCh2b2lkKSB7IHJldHVybiB0cnVlOyB9CiAjZW5kaWYKIAogI2lmZGVmIENP
+TkZJR19QQ0lFQUVSCg==
+--14dae9340b4966768e04d9141b03--
