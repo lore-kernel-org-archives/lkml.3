@@ -1,194 +1,393 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab3C2Cut (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 22:50:49 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:42350 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328Ab3C2Cus (ORCPT
+	id S1754911Ab3C2Cv2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 22:51:28 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:41804 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754764Ab3C2Cv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 22:50:48 -0400
+	Thu, 28 Mar 2013 22:51:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130328162337.3003ccd4@cuia.bos.redhat.com>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	<5150B1C2.8090607@oracle.com>
-	<20130325163844.042a45ba@annuminas.surriel.com>
-	<CANN689FdtXs0-VKxwWHQKgnnSvcvu5hHDMmGOe0H+bdHA4BhXg@mail.gmail.com>
-	<1364303965.5053.29.camel@laptop>
-	<CANN689HCbuVOc73BpVubYy2AjA2mcz_iyTg6Fo2Zz-NGnQ93TA@mail.gmail.com>
-	<1364308023.5053.40.camel@laptop>
-	<5151BC78.3030306@surriel.com>
-	<1364373750.5053.54.camel@laptop>
-	<20130328162337.3003ccd4@cuia.bos.redhat.com>
-Date: Thu, 28 Mar 2013 19:50:47 -0700
-Message-ID: <CANN689GGwztb=beCNtUU8SJp6sfjn_mNTaHQxezt=ehtxvYBAA@mail.gmail.com>
-Subject: Re: [PATCH v2 -mm -next] ipc,sem: fix lockdep false positive
-From: Michel Lespinasse <walken@google.com>
-To: Rik van Riel <riel@surriel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <sasha.levin@oracle.com>, torvalds@linux-foundation.org,
-        davidlohr.bueso@hp.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
-        lwoodman@redhat.com, chegu_vinod@hp.com, Dave Jones <davej@redhat.com>,
-        benisty.e@gmail.com, Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <0000013db20ca149-0064fbb8-2f81-4323-9095-a38f6abb79c5-000000@email.amazonses.com>
+References: <1364010673.6345.156.camel@gandalf.local.home> <0000013da1f93be3-c3d42ae8-ff34-4c63-8094-77a83291ea19-000000@email.amazonses.com>
+ <1364227073.6345.182.camel@gandalf.local.home> <1364228039.6345.183.camel@gandalf.local.home>
+ <0000013da2ace21a-9e87fe8a-75c2-4b7c-b5e1-37ad196ce012-000000@email.amazonses.com>
+ <1364234613.6345.184.camel@gandalf.local.home> <0000013da2ce20f8-0e3a64ef-67ed-4ab4-9f20-b77980c876c3-000000@email.amazonses.com>
+ <1364236355.6345.185.camel@gandalf.local.home> <20130327025957.GA17125@lge.com>
+ <1364355032.6345.200.camel@gandalf.local.home> <20130327061351.GB17125@lge.com>
+ <alpine.DEB.2.02.1303281227520.16200@gentwo.org> <0000013db20ca149-0064fbb8-2f81-4323-9095-a38f6abb79c5-000000@email.amazonses.com>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Thu, 28 Mar 2013 22:43:03 -0400
+X-Google-Sender-Auth: K792FTp9hBRe7KH4jokDr2tIs7M
+Message-ID: <CAP=VYLr4i=39ywFCrmG-XuvUFmmXpyj6dYgG44JJoUJhpN6uuQ@mail.gmail.com>
+Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
+ unfreeze_partials() code.
+To: Christoph Lameter <cl@linux.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <clark@redhat.com>, Pekka Enberg <penberg@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 1:23 PM, Rik van Riel <riel@surriel.com> wrote:
-> Subject: [PATCH -mm -next] ipc,sem: change locking scheme to make lockdep happy
+On Thu, Mar 28, 2013 at 1:30 PM, Christoph Lameter <cl@linux.com> wrote:
+> This patch requires the earlier bug fix.
 >
-> Unfortunately the locking scheme originally proposed has false positives
-> with lockdep.  This can be fixed by changing the code to only ever take
-> one lock, and making sure that other relevant locks are not locked, before
-> entering a critical section.
 >
-> For the "global lock" case, this is done by taking the sem_array lock,
-> and then (potentially) waiting for all the semaphore's spinlocks to be
-> unlocked.
->
-> For the "local lock" case, we wait on the sem_array's lock to be free,
-> before taking the semaphore local lock. To prevent races, we need to
-> check again after we have taken the local lock.
->
-> Suggested-by: Peter Zijlstra <peterz@infradead.org>
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Subject: slub: Make cpu partial slab support configurable
 
-TL;DR: The locking algorithm is not familiar for me, but it seems
-sound. There are some implementation details I don't like. More
-below...
+Hi Christoph,
 
-> ---
->  ipc/sem.c |   55 ++++++++++++++++++++++++++++++++++++++++---------------
->  1 files changed, 40 insertions(+), 15 deletions(-)
+Minor nit:
+
+   Applying: slub: Make cpu partial slab support configurable
+   /home/paul/git/linux-head/.git/rebase-apply/patch:141: space before
+tab in indent.
+		       		{ /* Needs to be taken off a list */
+   warning: 1 line adds whitespace errors.
+
+I've tagged the block below where this happens.
+
+Also I've got a question/comment about the Kconfig addition below...
+
 >
-> diff --git a/ipc/sem.c b/ipc/sem.c
-> index 36500a6..87b74d5 100644
-> --- a/ipc/sem.c
-> +++ b/ipc/sem.c
-> @@ -320,24 +320,39 @@ void __init sem_init (void)
+> cpu partial support can introduce level of indeterminism that is not wanted
+> in certain context (like a realtime kernel). Make it configurable.
+>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+>
+> Index: linux/include/linux/slub_def.h
+> ===================================================================
+> --- linux.orig/include/linux/slub_def.h 2013-03-28 12:14:26.958358688 -0500
+> +++ linux/include/linux/slub_def.h      2013-03-28 12:19:46.275866639 -0500
+> @@ -47,7 +47,9 @@ struct kmem_cache_cpu {
+>         void **freelist;        /* Pointer to next available object */
+>         unsigned long tid;      /* Globally unique transaction id */
+>         struct page *page;      /* The slab from which we are allocating */
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>         struct page *partial;   /* Partially allocated frozen slabs */
+> +#endif
+>  #ifdef CONFIG_SLUB_STATS
+>         unsigned stat[NR_SLUB_STAT_ITEMS];
+>  #endif
+> @@ -84,7 +86,9 @@ struct kmem_cache {
+>         int size;               /* The size of an object including meta data */
+>         int object_size;        /* The size of an object without meta data */
+>         int offset;             /* Free pointer offset. */
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>         int cpu_partial;        /* Number of per cpu partial objects to keep around */
+> +#endif
+>         struct kmem_cache_order_objects oo;
+>
+>         /* Allocation and freeing of slabs */
+> Index: linux/mm/slub.c
+> ===================================================================
+> --- linux.orig/mm/slub.c        2013-03-28 12:18:48.446813991 -0500
+> +++ linux/mm/slub.c     2013-03-28 12:19:46.275866639 -0500
+> @@ -1531,7 +1531,9 @@ static inline void *acquire_slab(struct
+>         return freelist;
 >  }
 >
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>  static int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain);
+> +#endif
+>  static inline bool pfmemalloc_match(struct page *page, gfp_t gfpflags);
+>
 >  /*
-> - * If the sem_array contains just one semaphore, or if multiple
-> - * semops are performed in one syscall, or if there are complex
-> - * operations pending, the whole sem_array is locked.
-> - * If one semop is performed on an array with multiple semaphores,
-> - * get a shared lock on the array, and lock the individual semaphore.
-> + * If the request contains only one semaphore operation, and there are
-> + * no complex transactions pending, lock only the semaphore involved.
-> + * Otherwise, lock the entire semaphore array, since we either have
-> + * multiple semaphores in our own semops, or we need to look at
-> + * semaphores from other pending complex operations.
->   *
->   * Carefully guard against sma->complex_count changing between zero
->   * and non-zero while we are spinning for the lock. The value of
->   * sma->complex_count cannot change while we are holding the lock,
->   * so sem_unlock should be fine.
-> + *
-> + * The global lock path checks that all the local locks have been released,
-> + * checking each local lock once. This means that the local lock paths
-> + * cannot start their critical sections while the global lock is held.
->   */
->  static inline int sem_lock(struct sem_array *sma, struct sembuf *sops,
->                               int nsops)
->  {
->         int locknum;
-> + again:
->         if (nsops == 1 && !sma->complex_count) {
->                 struct sem *sem = sma->sem_base + sops->sem_num;
->
-> +               /*
-> +                * Another process is holding the global lock on the
-> +                * sem_array. Wait for that process to release the lock,
-> +                * before acquiring our lock.
-> +                */
-> +               if (unlikely(spin_is_locked(&sma->sem_perm.lock))) {
-> +                       spin_unlock_wait(&sma->sem_perm.lock);
-> +                       goto again;
-> +               }
-> +
-
-So, there are a few things I don't like about spin_unlock_wait():
-
-1- From a lock ordering point of view, it is strictly equivalent to
-taking the lock and then releasing it - and yet, lockdep won't catch
-any deadlocks that involve spin_unlock_wait. (Not your fault here,
-this should be fixed as a separate change in lockdep. I manually
-looked at the lock ordering here and found it safe).
-
-2- With the current ticket lock implementation, a stream of lockers
-can starve spin_unlock_wait() forever. Once again, not your fault and
-I suspect this could be fixed - I expect spin_unlock_wait() callers
-actually only want to know that the lock has been passed on, not that
-it actually got to an unlocked state.
-
-3- Regarding your actual use here - I find it confusing to call
-spin_unlock_wait() before holding any other lock. The pattern I expect
-to see is that people take one lock, then see that the other lock they
-want is already taken, so they release the first lock and wait on the
-second. So, I'd suggest we remove the sem_perm.lock checks here and
-deal with this in a retry path later down.
-
->                 /* Lock just the semaphore we are interested in. */
->                 spin_lock(&sem->lock);
->
-> @@ -347,17 +362,33 @@ static inline int sem_lock(struct sem_array *sma, struct sembuf *sops,
->                  */
->                 if (unlikely(sma->complex_count)) {
->                         spin_unlock(&sem->lock);
-> -                       goto lock_all;
-> +                       goto lock_array;
-> +               }
-> +
-> +               /*
-> +                * Another process is holding the global lock on the
-> +                * sem_array; we cannot enter our critical section,
-> +                * but have to wait for the global lock to be released.
-> +                */
-> +               if (unlikely(spin_is_locked(&sma->sem_perm.lock))) {
-> +                       spin_unlock(&sem->lock);
-> +                       goto again;
-
-This is IMO where the spin_unlock_wait(&sma->sem_perm.lock) would
-belong - right before the goto again.
-
-Also - I think there is a risk that an endless stream of complex
-semops could starve a simple semop here, as it would always find the
-sem_perm.lock to be locked ??? One easy way to guarantee progress
-would be to goto lock_array instead; however there is then the issue
-that a complex semop could force an endless stream of following simple
-semops to take the lock_array path. I'm not sure which of these
-problems is preferable to have...
-
+> @@ -1570,10 +1572,20 @@ static void *get_partial_node(struct kme
+>                         object = t;
+>                         available =  page->objects - (unsigned long)page->lru.next;
+>                 } else {
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>                         available = put_cpu_partial(s, page, 0);
+>                         stat(s, CPU_PARTIAL_NODE);
+> +#else
+> +                       BUG();
+> +#endif
 >                 }
-> +
->                 locknum = sops->sem_num;
->         } else {
->                 int i;
-> -               /* Lock the sem_array, and all the semaphore locks */
-> - lock_all:
-> +               /*
-> +                * Lock the semaphore array, and wait for all of the
-> +                * individual semaphore locks to go away.  The code
-> +                * above ensures no new single-lock holders will enter
-> +                * their critical section while the array lock is held.
-> +                */
-> + lock_array:
->                 spin_lock(&sma->sem_perm.lock);
->                 for (i = 0; i < sma->sem_nsems; i++) {
->                         struct sem *sem = sma->sem_base + i;
-> -                       spin_lock(&sem->lock);
-> +                       spin_unlock_wait(&sem->lock);
->                 }
->                 locknum = -1;
+> -               if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
+> +               if (kmem_cache_debug(s) ||
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+> +                       available > s->cpu_partial / 2
+> +#else
+> +                       available > 0
+> +#endif
+> +                       )
+>                         break;
+>
 >         }
+> @@ -1874,6 +1886,7 @@ redo:
+>         }
+>  }
+>
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>  /*
+>   * Unfreeze all the cpu partial slabs.
+>   *
+> @@ -1989,6 +2002,7 @@ static int put_cpu_partial(struct kmem_c
+>         } while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
+>         return pobjects;
+>  }
+> +#endif
+>
+>  static inline void flush_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
+>  {
+> @@ -2013,7 +2027,9 @@ static inline void __flush_cpu_slab(stru
+>                 if (c->page)
+>                         flush_slab(s, c);
+>
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>                 unfreeze_partials(s, c);
+> +#endif
+>         }
+>  }
+>
+> @@ -2029,7 +2045,11 @@ static bool has_cpu_slab(int cpu, void *
+>         struct kmem_cache *s = info;
+>         struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
+>
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>         return c->page || c->partial;
+> +#else
+> +       return c->page;
+> +#endif
+>  }
+>
+>  static void flush_all(struct kmem_cache *s)
+> @@ -2225,7 +2245,10 @@ static void *__slab_alloc(struct kmem_ca
+>         page = c->page;
+>         if (!page)
+>                 goto new_slab;
+> +
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>  redo:
+> +#endif
+>
+>         if (unlikely(!node_match(page, node))) {
+>                 stat(s, ALLOC_NODE_MISMATCH);
+> @@ -2278,6 +2301,7 @@ load_freelist:
+>
+>  new_slab:
+>
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>         if (c->partial) {
+>                 page = c->page = c->partial;
+>                 c->partial = page->next;
+> @@ -2285,6 +2309,7 @@ new_slab:
+>                 c->freelist = NULL;
+>                 goto redo;
+>         }
+> +#endif
+>
+>         freelist = new_slab_objects(s, gfpflags, node, &c);
+>
+> @@ -2491,6 +2516,7 @@ static void __slab_free(struct kmem_cach
+>                 new.inuse--;
+>                 if ((!new.inuse || !prior) && !was_frozen) {
+>
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>                         if (!kmem_cache_debug(s) && !prior)
+>
+>                                 /*
+> @@ -2499,7 +2525,9 @@ static void __slab_free(struct kmem_cach
+>                                  */
+>                                 new.frozen = 1;
+>
+> -                       else { /* Needs to be taken off a list */
+> +                       else
+> +#endif
+> +                               { /* Needs to be taken off a list */
 
-Subtle, but it'll work (modulo the starvation issue I mentioned).
+This is the origin of the trivial whitespace nag.
+:se list in vi shows:
 
-Cheers,
+-^I^I^Ielse { /* Needs to be taken off a list */$
++^I^I^Ielse$
++#endif$
++^I^I       ^I^I{ /* Needs to be taken off a list */$
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+>
+>                                 n = get_node(s, page_to_nid(page));
+>                                 /*
+> @@ -2521,6 +2549,7 @@ static void __slab_free(struct kmem_cach
+>                 "__slab_free"));
+>
+>         if (likely(!n)) {
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>
+>                 /*
+>                  * If we just froze the page then put it onto the
+> @@ -2530,6 +2559,7 @@ static void __slab_free(struct kmem_cach
+>                         put_cpu_partial(s, page, 1);
+>                         stat(s, CPU_PARTIAL_FREE);
+>                 }
+> +#endif
+>                 /*
+>                  * The list lock was not taken therefore no list
+>                  * activity can be necessary.
+> @@ -3036,7 +3066,7 @@ static int kmem_cache_open(struct kmem_c
+>          * list to avoid pounding the page allocator excessively.
+>          */
+>         set_min_partial(s, ilog2(s->size) / 2);
+> -
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>         /*
+>          * cpu_partial determined the maximum number of objects kept in the
+>          * per cpu partial lists of a processor.
+> @@ -3064,6 +3094,7 @@ static int kmem_cache_open(struct kmem_c
+>                 s->cpu_partial = 13;
+>         else
+>                 s->cpu_partial = 30;
+> +#endif
+>
+>  #ifdef CONFIG_NUMA
+>         s->remote_node_defrag_ratio = 1000;
+> @@ -4424,13 +4455,14 @@ static ssize_t show_slab_objects(struct
+>                         total += x;
+>                         nodes[node] += x;
+>
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>                         page = ACCESS_ONCE(c->partial);
+>                         if (page) {
+>                                 x = page->pobjects;
+>                                 total += x;
+>                                 nodes[node] += x;
+>                         }
+> -
+> +#endif
+>                         per_cpu[node]++;
+>                 }
+>         }
+> @@ -4583,6 +4615,7 @@ static ssize_t min_partial_store(struct
+>  }
+>  SLAB_ATTR(min_partial);
+>
+> +#ifdef CONFIG_CPU_PARTIAL
+>  static ssize_t cpu_partial_show(struct kmem_cache *s, char *buf)
+>  {
+>         return sprintf(buf, "%u\n", s->cpu_partial);
+> @@ -4605,6 +4638,7 @@ static ssize_t cpu_partial_store(struct
+>         return length;
+>  }
+>  SLAB_ATTR(cpu_partial);
+> +#endif
+>
+>  static ssize_t ctor_show(struct kmem_cache *s, char *buf)
+>  {
+> @@ -4644,6 +4678,7 @@ static ssize_t objects_partial_show(stru
+>  }
+>  SLAB_ATTR_RO(objects_partial);
+>
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>  static ssize_t slabs_cpu_partial_show(struct kmem_cache *s, char *buf)
+>  {
+>         int objects = 0;
+> @@ -4674,6 +4709,7 @@ static ssize_t slabs_cpu_partial_show(st
+>         return len + sprintf(buf + len, "\n");
+>  }
+>  SLAB_ATTR_RO(slabs_cpu_partial);
+> +#endif
+>
+>  static ssize_t reclaim_account_show(struct kmem_cache *s, char *buf)
+>  {
+> @@ -4997,11 +5033,13 @@ STAT_ATTR(DEACTIVATE_BYPASS, deactivate_
+>  STAT_ATTR(ORDER_FALLBACK, order_fallback);
+>  STAT_ATTR(CMPXCHG_DOUBLE_CPU_FAIL, cmpxchg_double_cpu_fail);
+>  STAT_ATTR(CMPXCHG_DOUBLE_FAIL, cmpxchg_double_fail);
+> +#ifdef CONFIG_CPU_PARTIAL
+>  STAT_ATTR(CPU_PARTIAL_ALLOC, cpu_partial_alloc);
+>  STAT_ATTR(CPU_PARTIAL_FREE, cpu_partial_free);
+>  STAT_ATTR(CPU_PARTIAL_NODE, cpu_partial_node);
+>  STAT_ATTR(CPU_PARTIAL_DRAIN, cpu_partial_drain);
+>  #endif
+> +#endif
+>
+>  static struct attribute *slab_attrs[] = {
+>         &slab_size_attr.attr,
+> @@ -5009,7 +5047,9 @@ static struct attribute *slab_attrs[] =
+>         &objs_per_slab_attr.attr,
+>         &order_attr.attr,
+>         &min_partial_attr.attr,
+> +#ifdef CONFIG_CPU_PARTIAL
+>         &cpu_partial_attr.attr,
+> +#endif
+>         &objects_attr.attr,
+>         &objects_partial_attr.attr,
+>         &partial_attr.attr,
+> @@ -5022,7 +5062,9 @@ static struct attribute *slab_attrs[] =
+>         &destroy_by_rcu_attr.attr,
+>         &shrink_attr.attr,
+>         &reserved_attr.attr,
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>         &slabs_cpu_partial_attr.attr,
+> +#endif
+>  #ifdef CONFIG_SLUB_DEBUG
+>         &total_objects_attr.attr,
+>         &slabs_attr.attr,
+> @@ -5064,11 +5106,13 @@ static struct attribute *slab_attrs[] =
+>         &order_fallback_attr.attr,
+>         &cmpxchg_double_fail_attr.attr,
+>         &cmpxchg_double_cpu_fail_attr.attr,
+> +#ifdef CONFIG_SLUB_CPU_PARTIAL
+>         &cpu_partial_alloc_attr.attr,
+>         &cpu_partial_free_attr.attr,
+>         &cpu_partial_node_attr.attr,
+>         &cpu_partial_drain_attr.attr,
+>  #endif
+> +#endif
+>  #ifdef CONFIG_FAILSLAB
+>         &failslab_attr.attr,
+>  #endif
+> Index: linux/init/Kconfig
+> ===================================================================
+> --- linux.orig/init/Kconfig     2013-03-28 12:14:26.958358688 -0500
+> +++ linux/init/Kconfig  2013-03-28 12:19:46.275866639 -0500
+> @@ -1514,6 +1514,14 @@ config SLOB
+>
+>  endchoice
+>
+> +config SLUB_CPU_PARTIAL
+> +       depends on SLUB
+> +       bool "SLUB per cpu partial cache"
+> +       help
+> +         Per cpu partial caches accellerate freeing of objects at the
+> +         price of more indeterminism in the latency of the free.
+> +         Typically one would choose no for a realtime system.
+
+Is "batch" a better description than "accelerate" ?  Something like
+
+     Per cpu partial caches allows batch freeing of objects to maximize
+     throughput.  However, this can increase the length of time spent
+     holding key locks, which can increase latency spikes with respect
+     to responsiveness.  Select yes unless you are tuning for a realtime
+     oriented system.
+
+Also, I believe this will cause a behaviour change for people who
+just run "make oldconfig" -- since there is no default line.  Meaning
+that it used to be unconditionally on, but now I think it will be off
+by default, if people just mindlessly hold down Enter key.
+
+For RT, we'll want default N if RT_FULL (RT_BASE?) but for mainline,
+I expect you'll want default Y in order to be consistent with previous
+behaviour?
+
+I've not built/booted yet, but I'll follow up if I see anything else in doing
+that.
+
+Thanks for the patches, as I'd said to Steve -- I was totally unaware that
+this tuning knob even existed prior to this discussion.
+
+Paul.
+--
+
+> +
+>  config MMAP_ALLOW_UNINITIALIZED
+>         bool "Allow mmapped anonymous memory to be uninitialized"
+>         depends on EXPERT && !MMU
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
