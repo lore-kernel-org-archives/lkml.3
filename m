@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab3C2Ghg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 02:37:36 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:52679 "EHLO
+	id S1754214Ab3C2Ght (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 02:37:49 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:52706 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab3C2GhW (ORCPT
+	with ESMTP id S1753422Ab3C2Ghr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 02:37:22 -0400
-Message-ID: <5155366F.5060404@huawei.com>
-Date: Fri, 29 Mar 2013 14:36:31 +0800
+	Fri, 29 Mar 2013 02:37:47 -0400
+Message-ID: <51553692.9060008@huawei.com>
+Date: Fri, 29 Mar 2013 14:37:06 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
 To: Ingo Molnar <mingo@kernel.org>
 CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 1/7] sched: Split cpuacct code out of core.c
+Subject: [PATCH v2 4/7] cpuacct: Add cpuacct_acount_field()
 References: <5155365F.1010203@huawei.com>
 In-Reply-To: <5155365F.1010203@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -25,487 +25,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+So we can remove open-coded cpuacct code in cputime.c.
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- kernel/sched/Makefile  |   1 +
- kernel/sched/core.c    | 220 -----------------------------------------------
- kernel/sched/cpuacct.c | 227 +++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 228 insertions(+), 220 deletions(-)
- create mode 100644 kernel/sched/cpuacct.c
+ kernel/sched/cpuacct.c | 23 +++++++++++++++++++++++
+ kernel/sched/cpuacct.h |  6 ++++++
+ kernel/sched/cputime.c | 18 +-----------------
+ 3 files changed, 30 insertions(+), 17 deletions(-)
 
-diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
-index f06d249..deaf90e 100644
---- a/kernel/sched/Makefile
-+++ b/kernel/sched/Makefile
-@@ -16,3 +16,4 @@ obj-$(CONFIG_SMP) += cpupri.o
- obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
- obj-$(CONFIG_SCHEDSTATS) += stats.o
- obj-$(CONFIG_SCHED_DEBUG) += debug.o
-+obj-$(CONFIG_CGROUP_CPUACCT) += cpuacct.o
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b36635e..c4e2b81 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -8043,226 +8043,6 @@ struct cgroup_subsys cpu_cgroup_subsys = {
- 
- #endif	/* CONFIG_CGROUP_SCHED */
- 
--#ifdef CONFIG_CGROUP_CPUACCT
--
--/*
-- * CPU accounting code for task groups.
-- *
-- * Based on the work by Paul Menage (menage@google.com) and Balbir Singh
-- * (balbir@in.ibm.com).
-- */
--
--struct cpuacct root_cpuacct;
--
--/* create a new cpu accounting group */
--static struct cgroup_subsys_state *cpuacct_css_alloc(struct cgroup *cgrp)
--{
--	struct cpuacct *ca;
--
--	if (!cgrp->parent)
--		return &root_cpuacct.css;
--
--	ca = kzalloc(sizeof(*ca), GFP_KERNEL);
--	if (!ca)
--		goto out;
--
--	ca->cpuusage = alloc_percpu(u64);
--	if (!ca->cpuusage)
--		goto out_free_ca;
--
--	ca->cpustat = alloc_percpu(struct kernel_cpustat);
--	if (!ca->cpustat)
--		goto out_free_cpuusage;
--
--	return &ca->css;
--
--out_free_cpuusage:
--	free_percpu(ca->cpuusage);
--out_free_ca:
--	kfree(ca);
--out:
--	return ERR_PTR(-ENOMEM);
--}
--
--/* destroy an existing cpu accounting group */
--static void cpuacct_css_free(struct cgroup *cgrp)
--{
--	struct cpuacct *ca = cgroup_ca(cgrp);
--
--	free_percpu(ca->cpustat);
--	free_percpu(ca->cpuusage);
--	kfree(ca);
--}
--
--static u64 cpuacct_cpuusage_read(struct cpuacct *ca, int cpu)
--{
--	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
--	u64 data;
--
--#ifndef CONFIG_64BIT
--	/*
--	 * Take rq->lock to make 64-bit read safe on 32-bit platforms.
--	 */
--	raw_spin_lock_irq(&cpu_rq(cpu)->lock);
--	data = *cpuusage;
--	raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
--#else
--	data = *cpuusage;
--#endif
--
--	return data;
--}
--
--static void cpuacct_cpuusage_write(struct cpuacct *ca, int cpu, u64 val)
--{
--	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
--
--#ifndef CONFIG_64BIT
--	/*
--	 * Take rq->lock to make 64-bit write safe on 32-bit platforms.
--	 */
--	raw_spin_lock_irq(&cpu_rq(cpu)->lock);
--	*cpuusage = val;
--	raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
--#else
--	*cpuusage = val;
--#endif
--}
--
--/* return total cpu usage (in nanoseconds) of a group */
--static u64 cpuusage_read(struct cgroup *cgrp, struct cftype *cft)
--{
--	struct cpuacct *ca = cgroup_ca(cgrp);
--	u64 totalcpuusage = 0;
--	int i;
--
--	for_each_present_cpu(i)
--		totalcpuusage += cpuacct_cpuusage_read(ca, i);
--
--	return totalcpuusage;
--}
--
--static int cpuusage_write(struct cgroup *cgrp, struct cftype *cftype,
--								u64 reset)
--{
--	struct cpuacct *ca = cgroup_ca(cgrp);
--	int err = 0;
--	int i;
--
--	if (reset) {
--		err = -EINVAL;
--		goto out;
--	}
--
--	for_each_present_cpu(i)
--		cpuacct_cpuusage_write(ca, i, 0);
--
--out:
--	return err;
--}
--
--static int cpuacct_percpu_seq_read(struct cgroup *cgroup, struct cftype *cft,
--				   struct seq_file *m)
--{
--	struct cpuacct *ca = cgroup_ca(cgroup);
--	u64 percpu;
--	int i;
--
--	for_each_present_cpu(i) {
--		percpu = cpuacct_cpuusage_read(ca, i);
--		seq_printf(m, "%llu ", (unsigned long long) percpu);
--	}
--	seq_printf(m, "\n");
--	return 0;
--}
--
--static const char *cpuacct_stat_desc[] = {
--	[CPUACCT_STAT_USER] = "user",
--	[CPUACCT_STAT_SYSTEM] = "system",
--};
--
--static int cpuacct_stats_show(struct cgroup *cgrp, struct cftype *cft,
--			      struct cgroup_map_cb *cb)
--{
--	struct cpuacct *ca = cgroup_ca(cgrp);
--	int cpu;
--	s64 val = 0;
--
--	for_each_online_cpu(cpu) {
--		struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
--		val += kcpustat->cpustat[CPUTIME_USER];
--		val += kcpustat->cpustat[CPUTIME_NICE];
--	}
--	val = cputime64_to_clock_t(val);
--	cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_USER], val);
--
--	val = 0;
--	for_each_online_cpu(cpu) {
--		struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
--		val += kcpustat->cpustat[CPUTIME_SYSTEM];
--		val += kcpustat->cpustat[CPUTIME_IRQ];
--		val += kcpustat->cpustat[CPUTIME_SOFTIRQ];
--	}
--
--	val = cputime64_to_clock_t(val);
--	cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_SYSTEM], val);
--
--	return 0;
--}
--
--static struct cftype files[] = {
--	{
--		.name = "usage",
--		.read_u64 = cpuusage_read,
--		.write_u64 = cpuusage_write,
--	},
--	{
--		.name = "usage_percpu",
--		.read_seq_string = cpuacct_percpu_seq_read,
--	},
--	{
--		.name = "stat",
--		.read_map = cpuacct_stats_show,
--	},
--	{ }	/* terminate */
--};
--
--/*
-- * charge this task's execution time to its accounting group.
-- *
-- * called with rq->lock held.
-- */
--void cpuacct_charge(struct task_struct *tsk, u64 cputime)
--{
--	struct cpuacct *ca;
--	int cpu;
--
--	if (unlikely(!cpuacct_subsys.active))
--		return;
--
--	cpu = task_cpu(tsk);
--
--	rcu_read_lock();
--
--	ca = task_ca(tsk);
--
--	for (; ca; ca = parent_ca(ca)) {
--		u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
--		*cpuusage += cputime;
--	}
--
--	rcu_read_unlock();
--}
--
--struct cgroup_subsys cpuacct_subsys = {
--	.name = "cpuacct",
--	.css_alloc = cpuacct_css_alloc,
--	.css_free = cpuacct_css_free,
--	.subsys_id = cpuacct_subsys_id,
--	.base_cftypes = files,
--};
--#endif	/* CONFIG_CGROUP_CPUACCT */
--
- void dump_cpu_task(int cpu)
- {
- 	pr_info("Task dump for CPU %d:\n", cpu);
 diff --git a/kernel/sched/cpuacct.c b/kernel/sched/cpuacct.c
-new file mode 100644
-index 0000000..50ec24b
---- /dev/null
+index 48b5e91..72bd971 100644
+--- a/kernel/sched/cpuacct.c
 +++ b/kernel/sched/cpuacct.c
-@@ -0,0 +1,227 @@
-+#include <linux/cgroup.h>
-+#include <linux/slab.h>
-+#include <linux/percpu.h>
-+#include <linux/spinlock.h>
-+#include <linux/cpumask.h>
-+#include <linux/seq_file.h>
-+#include <linux/rcupdate.h>
-+#include <linux/kernel_stat.h>
-+
-+#include "sched.h"
-+
+@@ -218,6 +218,29 @@ void cpuacct_charge(struct task_struct *tsk, u64 cputime)
+ 	rcu_read_unlock();
+ }
+ 
 +/*
-+ * CPU accounting code for task groups.
++ * Add user/system time to cpuacct.
 + *
-+ * Based on the work by Paul Menage (menage@google.com) and Balbir Singh
-+ * (balbir@in.ibm.com).
++ * Note: it's the caller that updates the account of the root cgroup.
 + */
-+
-+struct cpuacct root_cpuacct;
-+
-+/* create a new cpu accounting group */
-+static struct cgroup_subsys_state *cpuacct_css_alloc(struct cgroup *cgrp)
++void cpuacct_account_field(struct task_struct *p, int index, u64 val)
 +{
++	struct kernel_cpustat *kcpustat;
 +	struct cpuacct *ca;
-+
-+	if (!cgrp->parent)
-+		return &root_cpuacct.css;
-+
-+	ca = kzalloc(sizeof(*ca), GFP_KERNEL);
-+	if (!ca)
-+		goto out;
-+
-+	ca->cpuusage = alloc_percpu(u64);
-+	if (!ca->cpuusage)
-+		goto out_free_ca;
-+
-+	ca->cpustat = alloc_percpu(struct kernel_cpustat);
-+	if (!ca->cpustat)
-+		goto out_free_cpuusage;
-+
-+	return &ca->css;
-+
-+out_free_cpuusage:
-+	free_percpu(ca->cpuusage);
-+out_free_ca:
-+	kfree(ca);
-+out:
-+	return ERR_PTR(-ENOMEM);
-+}
-+
-+/* destroy an existing cpu accounting group */
-+static void cpuacct_css_free(struct cgroup *cgrp)
-+{
-+	struct cpuacct *ca = cgroup_ca(cgrp);
-+
-+	free_percpu(ca->cpustat);
-+	free_percpu(ca->cpuusage);
-+	kfree(ca);
-+}
-+
-+static u64 cpuacct_cpuusage_read(struct cpuacct *ca, int cpu)
-+{
-+	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
-+	u64 data;
-+
-+#ifndef CONFIG_64BIT
-+	/*
-+	 * Take rq->lock to make 64-bit read safe on 32-bit platforms.
-+	 */
-+	raw_spin_lock_irq(&cpu_rq(cpu)->lock);
-+	data = *cpuusage;
-+	raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
-+#else
-+	data = *cpuusage;
-+#endif
-+
-+	return data;
-+}
-+
-+static void cpuacct_cpuusage_write(struct cpuacct *ca, int cpu, u64 val)
-+{
-+	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
-+
-+#ifndef CONFIG_64BIT
-+	/*
-+	 * Take rq->lock to make 64-bit write safe on 32-bit platforms.
-+	 */
-+	raw_spin_lock_irq(&cpu_rq(cpu)->lock);
-+	*cpuusage = val;
-+	raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
-+#else
-+	*cpuusage = val;
-+#endif
-+}
-+
-+/* return total cpu usage (in nanoseconds) of a group */
-+static u64 cpuusage_read(struct cgroup *cgrp, struct cftype *cft)
-+{
-+	struct cpuacct *ca = cgroup_ca(cgrp);
-+	u64 totalcpuusage = 0;
-+	int i;
-+
-+	for_each_present_cpu(i)
-+		totalcpuusage += cpuacct_cpuusage_read(ca, i);
-+
-+	return totalcpuusage;
-+}
-+
-+static int cpuusage_write(struct cgroup *cgrp, struct cftype *cftype,
-+								u64 reset)
-+{
-+	struct cpuacct *ca = cgroup_ca(cgrp);
-+	int err = 0;
-+	int i;
-+
-+	if (reset) {
-+		err = -EINVAL;
-+		goto out;
-+	}
-+
-+	for_each_present_cpu(i)
-+		cpuacct_cpuusage_write(ca, i, 0);
-+
-+out:
-+	return err;
-+}
-+
-+static int cpuacct_percpu_seq_read(struct cgroup *cgroup, struct cftype *cft,
-+				   struct seq_file *m)
-+{
-+	struct cpuacct *ca = cgroup_ca(cgroup);
-+	u64 percpu;
-+	int i;
-+
-+	for_each_present_cpu(i) {
-+		percpu = cpuacct_cpuusage_read(ca, i);
-+		seq_printf(m, "%llu ", (unsigned long long) percpu);
-+	}
-+	seq_printf(m, "\n");
-+	return 0;
-+}
-+
-+static const char * const cpuacct_stat_desc[] = {
-+	[CPUACCT_STAT_USER] = "user",
-+	[CPUACCT_STAT_SYSTEM] = "system",
-+};
-+
-+static int cpuacct_stats_show(struct cgroup *cgrp, struct cftype *cft,
-+			      struct cgroup_map_cb *cb)
-+{
-+	struct cpuacct *ca = cgroup_ca(cgrp);
-+	int cpu;
-+	s64 val = 0;
-+
-+	for_each_online_cpu(cpu) {
-+		struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
-+		val += kcpustat->cpustat[CPUTIME_USER];
-+		val += kcpustat->cpustat[CPUTIME_NICE];
-+	}
-+	val = cputime64_to_clock_t(val);
-+	cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_USER], val);
-+
-+	val = 0;
-+	for_each_online_cpu(cpu) {
-+		struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
-+		val += kcpustat->cpustat[CPUTIME_SYSTEM];
-+		val += kcpustat->cpustat[CPUTIME_IRQ];
-+		val += kcpustat->cpustat[CPUTIME_SOFTIRQ];
-+	}
-+
-+	val = cputime64_to_clock_t(val);
-+	cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_SYSTEM], val);
-+
-+	return 0;
-+}
-+
-+static struct cftype files[] = {
-+	{
-+		.name = "usage",
-+		.read_u64 = cpuusage_read,
-+		.write_u64 = cpuusage_write,
-+	},
-+	{
-+		.name = "usage_percpu",
-+		.read_seq_string = cpuacct_percpu_seq_read,
-+	},
-+	{
-+		.name = "stat",
-+		.read_map = cpuacct_stats_show,
-+	},
-+	{ }	/* terminate */
-+};
-+
-+/*
-+ * charge this task's execution time to its accounting group.
-+ *
-+ * called with rq->lock held.
-+ */
-+void cpuacct_charge(struct task_struct *tsk, u64 cputime)
-+{
-+	struct cpuacct *ca;
-+	int cpu;
 +
 +	if (unlikely(!cpuacct_subsys.active))
 +		return;
 +
-+	cpu = task_cpu(tsk);
-+
 +	rcu_read_lock();
-+
-+	ca = task_ca(tsk);
-+
-+	for (; ca; ca = parent_ca(ca)) {
-+		u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
-+		*cpuusage += cputime;
++	ca = task_ca(p);
++	while (ca && (ca != &root_cpuacct)) {
++		kcpustat = this_cpu_ptr(ca->cpustat);
++		kcpustat->cpustat[index] += val;
++		ca = parent_ca(ca);
 +	}
-+
 +	rcu_read_unlock();
 +}
 +
-+struct cgroup_subsys cpuacct_subsys = {
-+	.name = "cpuacct",
-+	.css_alloc = cpuacct_css_alloc,
-+	.css_free = cpuacct_css_free,
-+	.subsys_id = cpuacct_subsys_id,
-+	.base_cftypes = files,
-+};
+ void __init cpuacct_init(void)
+ {
+ 	root_cpuacct.cpustat = &kernel_cpustat;
+diff --git a/kernel/sched/cpuacct.h b/kernel/sched/cpuacct.h
+index 551acd7..bd0409b 100644
+--- a/kernel/sched/cpuacct.h
++++ b/kernel/sched/cpuacct.h
+@@ -43,6 +43,7 @@ static inline struct cpuacct *parent_ca(struct cpuacct *ca)
+ 
+ extern void cpuacct_init(void);
+ extern void cpuacct_charge(struct task_struct *tsk, u64 cputime);
++extern void cpuacct_account_field(struct task_struct *p, int index, u64 val);
+ 
+ #else
+ 
+@@ -54,4 +55,9 @@ static inline void cpuacct_charge(struct task_struct *tsk, u64 cputime)
+ {
+ }
+ 
++static inline void
++cpuacct_account_field(struct task_struct *p, int index, u64 val)
++{
++}
++
+ #endif
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 024fe19..e82b82e 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -115,10 +115,6 @@ static int irqtime_account_si_update(void)
+ static inline void task_group_account_field(struct task_struct *p, int index,
+ 					    u64 tmp)
+ {
+-#ifdef CONFIG_CGROUP_CPUACCT
+-	struct kernel_cpustat *kcpustat;
+-	struct cpuacct *ca;
+-#endif
+ 	/*
+ 	 * Since all updates are sure to touch the root cgroup, we
+ 	 * get ourselves ahead and touch it first. If the root cgroup
+@@ -127,19 +123,7 @@ static inline void task_group_account_field(struct task_struct *p, int index,
+ 	 */
+ 	__get_cpu_var(kernel_cpustat).cpustat[index] += tmp;
+ 
+-#ifdef CONFIG_CGROUP_CPUACCT
+-	if (unlikely(!cpuacct_subsys.active))
+-		return;
+-
+-	rcu_read_lock();
+-	ca = task_ca(p);
+-	while (ca && (ca != &root_cpuacct)) {
+-		kcpustat = this_cpu_ptr(ca->cpustat);
+-		kcpustat->cpustat[index] += tmp;
+-		ca = parent_ca(ca);
+-	}
+-	rcu_read_unlock();
+-#endif
++	cpuacct_account_field(p, index, tmp);
+ }
+ 
+ /*
 -- 
 1.8.0.2
