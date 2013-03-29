@@ -1,159 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab3C2NRY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 09:17:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20747 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755933Ab3C2NRW (ORCPT
+	id S1755490Ab3C2NSb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 09:18:31 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:59008 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754405Ab3C2NSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 09:17:22 -0400
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=3LqOl0YYlZgA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=txhnahRb9nAA:10 a=1XWaLZrsAAAA:8 a=fh4mg5NFAAAA:8 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=JDfcgBBoLR6WGlcj5c4A:9 a=QEXdDO2ut3YA:10 a=UTB_XpHje0EA:10 a=Im-eZXwrtqoA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1364563039.10629.19.camel@gandalf.local.home>
-Subject: Re: [PATCH] net: add a synchronize_net() in
- netdev_rx_handler_unregister()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jiri Pirko <jpirko@redhat.com>, Andy Gospodarek <andy@greyhouse.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Nicolas de =?ISO-8859-1?Q?Peslo=FCan?= 
-	<nicolas.2p.debian@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Guy Streeter <streeter@redhat.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, stephen@networkplumber.org
-Date: Fri, 29 Mar 2013 09:17:19 -0400
-In-Reply-To: <1364562082.5113.16.camel@edumazet-glaptop>
-References: <1364490997.6345.237.camel@gandalf.local.home>
-	 <1364491792.15753.47.camel@edumazet-glaptop>
-	 <20130329094856.GB1677@minipsycho.orion>
-	 <1364562082.5113.16.camel@edumazet-glaptop>
+	Fri, 29 Mar 2013 09:18:30 -0400
+Message-ID: <1364563104.1345.74.camel@x61.thuisdomein>
+Subject: [PATCH] ARM: Fix typo "CONFIG_LPAE" twice
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Fri, 29 Mar 2013 14:18:24 +0100
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Mar 2013 13:18:25.0177 (UTC) FILETIME=[E4D22890:01CE2C7F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-29 at 06:01 -0700, Eric Dumazet wrote:
-> From: Eric Dumazet <edumazet@google.com>
-> 
-> On Fri, 2013-03-29 at 10:48 +0100, Jiri Pirko wrote:
-> 
-> > Hmm. I think that this might be issue introduced by:
-> > commit a9b3cd7f323b2e57593e7215362a7b02fc933e3a
-> > Author: Stephen Hemminger <shemminger@vyatta.com>
-> > Date:   Mon Aug 1 16:19:00 2011 +0000
-> > 
-> >     rcu: convert uses of rcu_assign_pointer(x, NULL) to RCU_INIT_POINTER
-> > 
-> > 
-> > Because, if rcu_dereference(dev->rx_handler) is null,
-> > rcu_dereference(dev->rx_handler_data) is never done. Therefore I believe
-> > we are hitting following scenario:
-> > 
-> > 
-> >    CPU0				CPU1
-> >    ----				----
-> >   			    dev->rx_handler_data = NULL
-> >  rcu_read_lock()
-> >  			    dev->rx_handler = NULL
-> > 
-> > 
-> > CPU0 will see rx_handler set and yet, rx_handler_data nulled. Write
-> > barrier in rcu_assign_pointer() might prevent this reorder from happening.
-> > Therefore I suggest:
-> > 
-> > diff --git a/net/core/dev.c b/net/core/dev.c
-> > index 0caa38e..c16b829 100644
-> > --- a/net/core/dev.c
-> > +++ b/net/core/dev.c
-> > @@ -3332,8 +3332,8 @@ void netdev_rx_handler_unregister(struct net_device *dev)
-> >  {
-> >  
-> >  	ASSERT_RTNL();
-> > -	RCU_INIT_POINTER(dev->rx_handler, NULL);
-> > -	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
-> > +	rcu_assign_pointer(dev->rx_handler, NULL);
-> > +	rcu_assign_pointer(dev->rx_handler_data, NULL);
-> >  }
-> >  EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
-> >  
-> > 
-> 
-> Nope this changes nothing at all.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Untested.
 
-Exactly! In fact, the bug triggered on an older kernel that had the
-original rcu_assign_pointer()
+1) This typo was first introduced in v3.4: commit
+e5ab85800820edd907d3f43f285e1232f84d5a41 ("ARM: 7382/1: mm: truncate
+memory banks to fit in 4GB space for classic MMU"). The second instance
+was added in v3.9-rc2: commit d61947a164760ac520cb416768afdf38c33d60e7
+(" ARM: 7657/1: head: fix swapper and idmap population with LPAE and
+big-endian"). So testing is really needed here.
 
-> 
-> However, we can fix the bug in a different way, if we want to avoid a
-> test in fast path.
-> 
-> With following patch, we can make sure that a reader seeing a non NULL
-> rx_handler has a guarantee to see a non NULL rx_handler_data
-> 
+2) If this passes (review and) testing, this probably needs to go to
+stable too.
 
-[..]
+ arch/arm/kernel/head.S  | 2 +-
+ arch/arm/kernel/setup.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-> We can fix bug this in two ways. First is adding a test in
-> bond_handle_frame() and others to check if rx_handler_data is NULL.
-> 
-> A second way is adding a synchronize_net() in
-> netdev_rx_handler_unregister() to make sure that a rcu protected reader
-> has the guarantee to see a non NULL rx_handler_data.
-> 
-> The second way is better as it avoids an extra test in fast path.
-> 
-> Reported-by: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
-> Cc: Jiri Pirko <jpirko@redhat.com>
-> Cc: Paul E. McKenney <paulmck@us.ibm.com>
-> ---
->  net/core/dev.c |    6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/net/core/dev.c b/net/core/dev.c
-> index b13e5c7..56932a4 100644
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -3314,6 +3314,7 @@ int netdev_rx_handler_register(struct net_device *dev,
->  	if (dev->rx_handler)
->  		return -EBUSY;
->  
-> +	/* Note: rx_handler_data must be set before rx_handler */
->  	rcu_assign_pointer(dev->rx_handler_data, rx_handler_data);
->  	rcu_assign_pointer(dev->rx_handler, rx_handler);
->  
-> @@ -3334,6 +3335,11 @@ void netdev_rx_handler_unregister(struct net_device *dev)
->  
->  	ASSERT_RTNL();
->  	RCU_INIT_POINTER(dev->rx_handler, NULL);
-> +	/* a reader seeing a non NULL rx_handler in a rcu_read_lock()
-> +	 * section has a guarantee to see a non NULL rx_handler_data
-> +	 * as well.
-> +	 */
-> +	synchronize_net();
-
-I've thought about this too, but I wasn't sure we wanted two
-synchronize_*() functions, as the caller does a synchronize as well.
-That said, I think this is the more robust solution and it lets all
-rx_handler() functions assume that their rx_handler_data is set. And it
-removes the check from the fast path which outweighs an added
-synchronization in the slow path.
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
-Thanks!
-
--- Steve
-
->  	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
->  }
->  EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
-> 
-
+diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+index e0eb9a1..8bac553 100644
+--- a/arch/arm/kernel/head.S
++++ b/arch/arm/kernel/head.S
+@@ -267,7 +267,7 @@ __create_page_tables:
+ 	addne	r6, r6, #1 << SECTION_SHIFT
+ 	strne	r6, [r3]
+ 
+-#if defined(CONFIG_LPAE) && defined(CONFIG_CPU_ENDIAN_BE8)
++#if defined(CONFIG_ARM_LPAE) && defined(CONFIG_CPU_ENDIAN_BE8)
+ 	sub	r4, r4, #4			@ Fixup page table pointer
+ 						@ for 64-bit descriptors
+ #endif
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 3f6cbb2..62ead98 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -524,7 +524,7 @@ int __init arm_add_memory(phys_addr_t start, phys_addr_t size)
+ 	size -= start & ~PAGE_MASK;
+ 	bank->start = PAGE_ALIGN(start);
+ 
+-#ifndef CONFIG_LPAE
++#ifndef CONFIG_ARM_LPAE
+ 	if (bank->start + size < bank->start) {
+ 		printk(KERN_CRIT "Truncating memory at 0x%08llx to fit in "
+ 			"32-bit physical address space\n", (long long)start);
+-- 
+1.7.11.7
 
