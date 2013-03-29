@@ -1,92 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab3C2Rya (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 13:54:30 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:16652 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab3C2Ry3 (ORCPT
+	id S1756623Ab3C2R4I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 13:56:08 -0400
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:40166 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754996Ab3C2R4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 13:54:29 -0400
-Message-ID: <201303291754.r2THsSbP020753@lab-41.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 29 Mar 2013 13:50:21 -0400
-Subject: [PATCH] tile: expect new initramfs name from hypervisor file system
-To: <linux-kernel@vger.kernel.org>
+	Fri, 29 Mar 2013 13:56:06 -0400
+Message-ID: <5155D3FB.6060401@gmail.com>
+Date: Fri, 29 Mar 2013 12:48:43 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: xen-devel@lists.xensource.com, linux@arm.linux.org.uk, arnd@arndb.de,
+        marc.zyngier@arm.com, nico@linaro.org, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 1/2] arm: introduce psci_smp_ops
+References: <1364575371-8926-1-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1364575371-8926-1-git-send-email-stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current Tilera boot infrastructure now provides the initramfs
-to Linux as a Tilera-hypervisor file named "initramfs", rather than
-"initramfs.cpio.gz", as before.  (This makes it reasonable to use
-other compression techniques than gzip on the file without having to
-worry about the name causing confusion.)  Adapt to use the new name,
-but also fall back to checking for the old name.
+On 03/29/2013 11:42 AM, Stefano Stabellini wrote:
+> Rename virt_smp_ops to psci_smp_ops and move them to arch/arm/kernel/psci_smp.c.
+> Remove mach-virt/platsmp.c, now unused.
+> Compile psci_smp if CONFIG_ARM_PSCI and CONFIG_SMP.
+> 
+> Add a cpu_die smp_op based on psci_ops.cpu_off.
+> 
+> Initialize PSCI before setting smp_ops in setup_arch.
+> Use psci_smp_ops if the platform doesn't provide its own smp_ops.
+> 
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> CC: will.deacon@arm.com
+> CC: arnd@arndb.de
+> CC: marc.zyngier@arm.com
+> CC: linux@arm.linux.org.uk
+> CC: nico@linaro.org
+> ---
 
-Cc'ing to stable so that older kernels will remain compatible with
-newer Tilera boot infrastructure.
+Acked-by: Rob Herring <rob.herring@calxeda.com>
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-Cc: stable@vger.kernel.org
----
- arch/tile/kernel/setup.c |   25 ++++++++++++-------------
- 1 file changed, 12 insertions(+), 13 deletions(-)
-
-diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
-index d1e15f7..7a5aa1a 100644
---- a/arch/tile/kernel/setup.c
-+++ b/arch/tile/kernel/setup.c
-@@ -1004,15 +1004,8 @@ void __cpuinit setup_cpu(int boot)
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- 
--/*
-- * Note that the kernel can potentially support other compression
-- * techniques than gz, though we don't do so by default.  If we ever
-- * decide to do so we can either look for other filename extensions,
-- * or just allow a file with this name to be compressed with an
-- * arbitrary compressor (somewhat counterintuitively).
-- */
- static int __initdata set_initramfs_file;
--static char __initdata initramfs_file[128] = "initramfs.cpio.gz";
-+static char __initdata initramfs_file[128] = "initramfs";
- 
- static int __init setup_initramfs_file(char *str)
- {
-@@ -1026,9 +1019,9 @@ static int __init setup_initramfs_file(char *str)
- early_param("initramfs_file", setup_initramfs_file);
- 
- /*
-- * We look for an "initramfs.cpio.gz" file in the hvfs.
-- * If there is one, we allocate some memory for it and it will be
-- * unpacked to the initramfs.
-+ * We look for a file called "initramfs" in the hvfs.  If there is one, we
-+ * allocate some memory for it and it will be unpacked to the initramfs.
-+ * If it's compressed, the initd code will uncompress it first.
-  */
- static void __init load_hv_initrd(void)
- {
-@@ -1038,10 +1031,16 @@ static void __init load_hv_initrd(void)
- 
- 	fd = hv_fs_findfile((HV_VirtAddr) initramfs_file);
- 	if (fd == HV_ENOENT) {
--		if (set_initramfs_file)
-+		if (set_initramfs_file) {
- 			pr_warning("No such hvfs initramfs file '%s'\n",
- 				   initramfs_file);
--		return;
-+			return;
-+		} else {
-+			/* Try old backwards-compatible name. */
-+			fd = hv_fs_findfile((HV_VirtAddr)"initramfs.cpio.gz");
-+			if (fd == HV_ENOENT)
-+				return;
-+		}
- 	}
- 	BUG_ON(fd < 0);
- 	stat = hv_fs_fstat(fd);
--- 
-1.7.10.3
+>  arch/arm/include/asm/psci.h  |    9 +++++
+>  arch/arm/kernel/Makefile     |    5 ++-
+>  arch/arm/kernel/psci.c       |    3 +-
+>  arch/arm/kernel/psci_smp.c   |   67 ++++++++++++++++++++++++++++++++++++++++++
+>  arch/arm/kernel/setup.c      |    7 ++++-
+>  arch/arm/mach-virt/Makefile  |    1 -
+>  arch/arm/mach-virt/platsmp.c |   58 ------------------------------------
+>  arch/arm/mach-virt/virt.c    |    3 --
+>  8 files changed, 87 insertions(+), 66 deletions(-)
+>  create mode 100644 arch/arm/kernel/psci_smp.c
+>  delete mode 100644 arch/arm/mach-virt/platsmp.c
+> 
+> diff --git a/arch/arm/include/asm/psci.h b/arch/arm/include/asm/psci.h
+> index ce0dbe7..4134dda 100644
+> --- a/arch/arm/include/asm/psci.h
+> +++ b/arch/arm/include/asm/psci.h
+> @@ -32,5 +32,14 @@ struct psci_operations {
+>  };
+>  
+>  extern struct psci_operations psci_ops;
+> +extern struct smp_operations psci_smp_ops;
+>  
+> +#ifdef CONFIG_ARM_PSCI
+> +int psci_init(void);
+> +bool psci_smp_available(void);
+> +#else
+> +static inline int psci_init(void) { return -ENODEV; }
+> +static inline bool psci_smp_available(void) { return false; }
+> +#endif
+> + 
+>  #endif /* __ASM_ARM_PSCI_H */
+> diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+> index 5f3338e..dd9d90a 100644
+> --- a/arch/arm/kernel/Makefile
+> +++ b/arch/arm/kernel/Makefile
+> @@ -82,6 +82,9 @@ obj-$(CONFIG_DEBUG_LL)	+= debug.o
+>  obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
+>  
+>  obj-$(CONFIG_ARM_VIRT_EXT)	+= hyp-stub.o
+> -obj-$(CONFIG_ARM_PSCI)		+= psci.o
+> +ifeq ($(CONFIG_ARM_PSCI),y)
+> +obj-y				+= psci.o
+> +obj-$(CONFIG_SMP)		+= psci_smp.o
+> +endif
+>  
+>  extra-y := $(head-y) vmlinux.lds
+> diff --git a/arch/arm/kernel/psci.c b/arch/arm/kernel/psci.c
+> index 3653164..acb968b 100644
+> --- a/arch/arm/kernel/psci.c
+> +++ b/arch/arm/kernel/psci.c
+> @@ -158,7 +158,7 @@ static const struct of_device_id psci_of_match[] __initconst = {
+>  	{},
+>  };
+>  
+> -static int __init psci_init(void)
+> +int __init psci_init(void)
+>  {
+>  	struct device_node *np;
+>  	const char *method;
+> @@ -208,4 +208,3 @@ out_put_node:
+>  	of_node_put(np);
+>  	return 0;
+>  }
+> -early_initcall(psci_init);
+> diff --git a/arch/arm/kernel/psci_smp.c b/arch/arm/kernel/psci_smp.c
+> new file mode 100644
+> index 0000000..66b0f77
+> --- /dev/null
+> +++ b/arch/arm/kernel/psci_smp.c
+> @@ -0,0 +1,67 @@
+> +/*
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * Copyright (C) 2012 ARM Limited
+> + *
+> + * Author: Will Deacon <will.deacon@arm.com>
+> + */
+> +
+> +#include <linux/init.h>
+> +#include <linux/irqchip/arm-gic.h>
+> +#include <linux/smp.h>
+> +#include <linux/of.h>
+> +
+> +#include <asm/psci.h>
+> +#include <asm/smp_plat.h>
+> +
+> +extern void secondary_startup(void);
+> +
+> +static int __cpuinit psci_boot_secondary(unsigned int cpu,
+> +					 struct task_struct *idle)
+> +{
+> +	if (psci_ops.cpu_on)
+> +		return psci_ops.cpu_on(cpu_logical_map(cpu),
+> +				       __pa(secondary_startup));
+> +	return -ENODEV;
+> +}
+> +
+> +static void __cpuinit psci_secondary_init(unsigned int cpu)
+> +{
+> +	gic_secondary_init(0);
+> +}
+> +
+> +#ifdef CONFIG_HOTPLUG_CPU
+> +void __ref psci_cpu_die(unsigned int cpu)
+> +{
+> +       const struct psci_power_state ps = {
+> +               .type = PSCI_POWER_STATE_TYPE_POWER_DOWN,
+> +       };
+> +
+> +       if (psci_ops.cpu_off)
+> +               psci_ops.cpu_off(ps);
+> +
+> +       /* We should never return */
+> +       panic("psci: cpu %d failed to shutdown\n", cpu);
+> +}
+> +#else
+> +#define psci_cpu_die NULL
+> +#endif
+> +
+> +bool __init psci_smp_available(void)
+> +{
+> +	/* is cpu_on available at least? */
+> +	return (psci_ops.cpu_on != NULL);
+> +}
+> +
+> +struct smp_operations __initdata psci_smp_ops = {
+> +	.smp_secondary_init	= psci_secondary_init,
+> +	.smp_boot_secondary	= psci_boot_secondary,
+> +	.cpu_die		= psci_cpu_die,
+> +};
+> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> index 3f6cbb2..341efaa 100644
+> --- a/arch/arm/kernel/setup.c
+> +++ b/arch/arm/kernel/setup.c
+> @@ -36,6 +36,7 @@
+>  #include <asm/cputype.h>
+>  #include <asm/elf.h>
+>  #include <asm/procinfo.h>
+> +#include <asm/psci.h>
+>  #include <asm/sections.h>
+>  #include <asm/setup.h>
+>  #include <asm/smp_plat.h>
+> @@ -766,9 +767,13 @@ void __init setup_arch(char **cmdline_p)
+>  	unflatten_device_tree();
+>  
+>  	arm_dt_init_cpu_maps();
+> +	psci_init();
+>  #ifdef CONFIG_SMP
+>  	if (is_smp()) {
+> -		smp_set_ops(mdesc->smp);
+> +		if (mdesc->smp)
+> +			smp_set_ops(mdesc->smp);
+> +		else if (psci_smp_available())
+> +			smp_set_ops(&psci_smp_ops);
+>  		smp_init_cpus();
+>  	}
+>  #endif
+> diff --git a/arch/arm/mach-virt/Makefile b/arch/arm/mach-virt/Makefile
+> index 042afc1..7ddbfa6 100644
+> --- a/arch/arm/mach-virt/Makefile
+> +++ b/arch/arm/mach-virt/Makefile
+> @@ -3,4 +3,3 @@
+>  #
+>  
+>  obj-y					:= virt.o
+> -obj-$(CONFIG_SMP)			+= platsmp.o
+> diff --git a/arch/arm/mach-virt/platsmp.c b/arch/arm/mach-virt/platsmp.c
+> deleted file mode 100644
+> index 8badaab..0000000
+> --- a/arch/arm/mach-virt/platsmp.c
+> +++ /dev/null
+> @@ -1,58 +0,0 @@
+> -/*
+> - * Dummy Virtual Machine - does what it says on the tin.
+> - *
+> - * Copyright (C) 2012 ARM Ltd
+> - * Author: Will Deacon <will.deacon@arm.com>
+> - *
+> - * This program is free software; you can redistribute it and/or modify
+> - * it under the terms of the GNU General Public License version 2 as
+> - * published by the Free Software Foundation.
+> - *
+> - * This program is distributed in the hope that it will be useful,
+> - * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> - * GNU General Public License for more details.
+> - *
+> - * You should have received a copy of the GNU General Public License
+> - * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> - */
+> -
+> -#include <linux/init.h>
+> -#include <linux/smp.h>
+> -#include <linux/of.h>
+> -
+> -#include <linux/irqchip/arm-gic.h>
+> -
+> -#include <asm/psci.h>
+> -#include <asm/smp_plat.h>
+> -
+> -extern void secondary_startup(void);
+> -
+> -static void __init virt_smp_init_cpus(void)
+> -{
+> -}
+> -
+> -static void __init virt_smp_prepare_cpus(unsigned int max_cpus)
+> -{
+> -}
+> -
+> -static int __cpuinit virt_boot_secondary(unsigned int cpu,
+> -					 struct task_struct *idle)
+> -{
+> -	if (psci_ops.cpu_on)
+> -		return psci_ops.cpu_on(cpu_logical_map(cpu),
+> -				       __pa(secondary_startup));
+> -	return -ENODEV;
+> -}
+> -
+> -static void __cpuinit virt_secondary_init(unsigned int cpu)
+> -{
+> -	gic_secondary_init(0);
+> -}
+> -
+> -struct smp_operations __initdata virt_smp_ops = {
+> -	.smp_init_cpus		= virt_smp_init_cpus,
+> -	.smp_prepare_cpus	= virt_smp_prepare_cpus,
+> -	.smp_secondary_init	= virt_secondary_init,
+> -	.smp_boot_secondary	= virt_boot_secondary,
+> -};
+> diff --git a/arch/arm/mach-virt/virt.c b/arch/arm/mach-virt/virt.c
+> index 528c05e..c417752 100644
+> --- a/arch/arm/mach-virt/virt.c
+> +++ b/arch/arm/mach-virt/virt.c
+> @@ -44,12 +44,9 @@ static const char *virt_dt_match[] = {
+>  	NULL
+>  };
+>  
+> -extern struct smp_operations virt_smp_ops;
+> -
+>  DT_MACHINE_START(VIRT, "Dummy Virtual Machine")
+>  	.init_irq	= irqchip_init,
+>  	.init_time	= virt_timer_init,
+>  	.init_machine	= virt_init,
+> -	.smp		= smp_ops(virt_smp_ops),
+>  	.dt_compat	= virt_dt_match,
+>  MACHINE_END
+> 
 
