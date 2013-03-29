@@ -1,161 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757161Ab3C2WAh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 18:00:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:13464 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755945Ab3C2WAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 18:00:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,375,1363158000"; 
-   d="scan'208";a="220392536"
-Date: Sat, 30 Mar 2013 03:03:50 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
-Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 3/6] dma: acpi-dma: parse CSRT to extract additional
- resources
-Message-ID: <20130329213350.GZ10326@intel.com>
-References: <1364374682-8547-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1364374682-8547-4-git-send-email-andriy.shevchenko@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364374682-8547-4-git-send-email-andriy.shevchenko@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757181Ab3C2WBm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 18:01:42 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:61225 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753713Ab3C2WBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 18:01:41 -0400
+Message-ID: <1364594498.1345.100.camel@x61.thuisdomein>
+Subject: [PATCH] ARM: msm: rename two Kconfig macros
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 29 Mar 2013 23:01:38 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Mar 2013 22:01:38.0915 (UTC) FILETIME=[FCF26B30:01CE2CC8]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 10:57:59AM +0200, Andy Shevchenko wrote:
-> Since we have CSRT only to get additional DMA controller resources, let's get
-> rid of drivers/acpi/csrt.c and move its logic inside ACPI DMA helpers code.
-> 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-for such a patch git format-patch -M is your friend. It generates patch to show
-file movement. It helps review greatly if you just move the file and then do
-additions on second patch, as diffstat tells me some changes have been done.
+Commit 650e3f0d66ade2a614d854765dae3bbc9a87f58d ("ARM: msm: Consolidate
+and move DEBUG_LL to DEBUG_LL choice") renamed the Kconfig symbols
+MSM_DEBUG_UART1, MSM_DEBUG_UART2, and MSM_DEBUG_UART3 to
+DEBUG_MSM_UART1, etc. It also added some references to
+CONFIG_DEBUG_MSM_UART1, etc. It did not, however, rename the two
+existing references to CONFIG_MSM_DEBUG_UART1 and
+CONFIG_MSM_DEBUG_UART3. Do so now.
 
-> @@ -23,6 +25,117 @@ static LIST_HEAD(acpi_dma_list);
->  static DEFINE_MUTEX(acpi_dma_lock);
->  
->  /**
-> + * acpi_dma_parse_resource_group - match device and parse resource group
-> + * @grp:	CSRT resource group
-> + * @adev:	ACPI device to match with
-> + * @adma:	struct acpi_dma of the given DMA controller
-> + *
-> + * Returns 1 on success, 0 when no information is available, or appropriate
-> + * errno value on error.
-> + *
-> + * In order to match a device from DSDT table to the corresponding CSRT device
-> + * we use MMIO address and IRQ.
-> + */
->  
-> +/**
-> + * acpi_dma_update_dma_spec - prepare dma specifier to pass to translation function
-> + * @adma:	struct acpi_dma of DMA controller
-> + * @dma_spec:	dma specifier to update
-> + *
-> + * Returns 0, if no information is avaiable, -1 on mismatch, and 1 otherwise.
-> + *
-> + * Accordingly to ACPI 5.0 Specification Table 6-170 "Fixed DMA Resource
-> + * Descriptor":
-> + *	DMA Request Line bits is a platform-relative number uniquely
-> + *	identifying the request line assigned. Request line-to-Controller
-> + *	mapping is done in a controller-specific OS driver.
-> + * That's why we can safely adjust slave_id when the appropriate controller is
-> + * found.
-> + */
-> +static int acpi_dma_update_dma_spec(struct acpi_dma *adma,
-> +		struct acpi_dma_spec *dma_spec)
-> +{
-> +	/* Set link to the DMA controller device */
-> +	dma_spec->dev = adma->dev;
-> +
-> +	/* Check if the request line range is available */
-> +	if (adma->base_request_line == 0 && adma->end_request_line == 0)
-> +		return 0;
-> +
-> +	/* Check if slave_id falls to the range */
-> +	if (dma_spec->slave_id < adma->base_request_line ||
-> +	    dma_spec->slave_id > adma->end_request_line)
-> +		return -1;
-> +
-> +	/*
-> +	 * Here we adjust slave_id. It should be a relative number to the base
-> +	 * request line.
-> +	 */
-> +	dma_spec->slave_id -= adma->base_request_line;
-where are you getting the base_request_line, i didnt see anything for this in
-ACPI spec?
-> +
-> +	return 1;
-> +}
-> +
->  struct acpi_dma_parser_data {
->  	struct acpi_dma_spec dma_spec;
->  	size_t index;
-> @@ -193,6 +347,7 @@ struct dma_chan *acpi_dma_request_slave_chan_by_index(struct device *dev,
->  	struct acpi_device *adev;
->  	struct acpi_dma *adma;
->  	struct dma_chan *chan;
-> +	int found;
->  
->  	/* Check if the device was enumerated by ACPI */
->  	if (!dev || !ACPI_HANDLE(dev))
-> @@ -219,9 +374,20 @@ struct dma_chan *acpi_dma_request_slave_chan_by_index(struct device *dev,
->  	mutex_lock(&acpi_dma_lock);
->  
->  	list_for_each_entry(adma, &acpi_dma_list, dma_controllers) {
-> -		dma_spec->dev = adma->dev;
-> +		/*
-> +		 * We are not going to call translation function if slave_id
-> +		 * doesn't fall to the request range.
-> +		 */
-> +		found = acpi_dma_update_dma_spec(adma, dma_spec);
-> +		if (found < 0)
-> +			continue;
->  		chan = adma->acpi_dma_xlate(dma_spec, adma);
-> -		if (chan) {
-> +		/*
-> +		 * Try to get a channel only from the DMA controller that
-> +		 * matches the slave_id. See acpi_dma_update_dma_spec()
-> +		 * description for the details.
-> +		 */
-> +		if (found > 0 || chan) {
->  			mutex_unlock(&acpi_dma_lock);
->  			return chan;
->  		}
-> diff --git a/include/linux/acpi_dma.h b/include/linux/acpi_dma.h
-> index d09deab..fb02980 100644
-> --- a/include/linux/acpi_dma.h
-> +++ b/include/linux/acpi_dma.h
-> @@ -37,6 +37,8 @@ struct acpi_dma_spec {
->   * @dev:		struct device of this controller
->   * @acpi_dma_xlate:	callback function to find a suitable channel
->   * @data:		private data used by a callback function
-> + * @base_request_line:	first supported request line (CSRT)
-> + * @end_request_line:	last supported request line (CSRT)
-okay here it is, can you add the width here as well
->   */
->  struct acpi_dma {
->  	struct list_head	dma_controllers;
-> @@ -44,6 +46,8 @@ struct acpi_dma {
->  	struct dma_chan		*(*acpi_dma_xlate)
->  				(struct acpi_dma_spec *, struct acpi_dma *);
->  	void			*data;
-> +	unsigned short		base_request_line;
-> +	unsigned short		end_request_line;
-how do you define these two?
->  };
->  
->  /* Used with acpi_dma_simple_xlate() */
-> -- 
-> 1.8.2.rc0.22.gb3600c3
-> 
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Untested.
+
+1) Would there actually be a readable way to write this commit
+explanation? This explanation even confuses me! I guess it's just a
+confusing matter.
+
+ arch/arm/mach-msm/board-trout-gpio.c | 2 +-
+ arch/arm/mach-msm/board-trout.c      | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-msm/board-trout-gpio.c b/arch/arm/mach-msm/board-trout-gpio.c
+index 87e1d01..a92efc8 100644
+--- a/arch/arm/mach-msm/board-trout-gpio.c
++++ b/arch/arm/mach-msm/board-trout-gpio.c
+@@ -94,7 +94,7 @@ static int trout_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+ 	}
+ 
+ static struct msm_gpio_chip msm_gpio_banks[] = {
+-#if defined(CONFIG_MSM_DEBUG_UART1)
++#if defined(CONFIG_DEBUG_MSM_UART1)
+ 	/* H2W pins <-> UART1 */
+ 	TROUT_GPIO_BANK("MISC2", 0x00,   TROUT_GPIO_MISC2_BASE, 0x40),
+ #else
+diff --git a/arch/arm/mach-msm/board-trout.c b/arch/arm/mach-msm/board-trout.c
+index 919bfa3..02e0dd7 100644
+--- a/arch/arm/mach-msm/board-trout.c
++++ b/arch/arm/mach-msm/board-trout.c
+@@ -89,7 +89,7 @@ static void __init trout_map_io(void)
+ 	msm_map_common_io();
+ 	iotable_init(trout_io_desc, ARRAY_SIZE(trout_io_desc));
+ 
+-#ifdef CONFIG_MSM_DEBUG_UART3
++#ifdef CONFIG_DEBUG_MSM_UART3
+ 	/* route UART3 to the "H2W" extended usb connector */
+ 	writeb(0x80, TROUT_CPLD_BASE + 0x00);
+ #endif
+-- 
+1.7.11.7
+
