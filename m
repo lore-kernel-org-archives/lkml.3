@@ -1,208 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804Ab3C2U3a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 16:29:30 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:17577 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756618Ab3C2U33 (ORCPT
+	id S1756870Ab3C2Uet (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 16:34:49 -0400
+Received: from mtaout03-winn.ispmail.ntl.com ([81.103.221.49]:19187 "EHLO
+	mtaout03-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756610Ab3C2Ues (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 16:29:29 -0400
-Date: Fri, 29 Mar 2013 21:29:26 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] sparc: Use generic idle loop
-Message-ID: <20130329202926.GA9484@merkur.ravnborg.org>
-References: <20130321214930.752934102@linutronix.de> <20130329161905.GC6201@merkur.ravnborg.org>
+	Fri, 29 Mar 2013 16:34:48 -0400
+Date: Fri, 29 Mar 2013 20:34:43 +0000
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: Gwendal Grignou <gwendal@google.com>
+Cc: linux-kernel@vger.kernel.org, jgarzik@redhat.com
+Subject: Re: [PATCH] [libata] Fix HDIO_DRIVE_CMD ioctl sense data check
+Message-ID: <20130329203443.GA30494@milliways>
+References: <CAMHSBOVZ7w51+8B=LyNBdeqP2BEYaNMDX3_WbEzUYqjdn2FZFg@mail.gmail.com>
+ <1364536609-17398-1-git-send-email-gwendal@google.com>
+ <20130329183103.GA27693@milliways>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130329161905.GC6201@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130329183103.GA27693@milliways>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Cloudmark-Analysis: v=1.1 cv=GaEGOwq9FwezmTggA+b6yC6zDZF2HYaK6RN/tSqdnVA= c=1 sm=0 a=wom5GMh1gUkA:10 a=7tItc54Vev4A:10 a=uObrxnre4hsA:10 a=8nJEP1OIZ-IA:10 a=f5hi-1-kVf890MI0abgA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add generic cpu_idle support
+On Fri, Mar 29, 2013 at 06:31:03PM +0000, Ken Moffat wrote:
+> On Thu, Mar 28, 2013 at 10:56:49PM -0700, Gwendal Grignou wrote:
+> 
+>  Hmm, not sure.  Smartd started and was happy to monitor the disk,
+> but I got two new messages between 'found in smartd database' and
+> 'is SMART capable. Adding to "monitor" list' -
+> 
+> Mar 29 17:26:42 ac4tv smartd[2481]: Device: /dev/sda, not capable of
+> SMART Health Status check
+> Mar 29 17:26:42 ac4tv smartd[2481]: Device: /dev/sda, enable SMART
+> Automatic Offline Testing failed.
+> 
+>  I've seen the first (intermittently) when a drive was starting to
+> fail, and apparently there was a taskfile issue in the days of 2.6.22
+> which also caused it to appear.  I don't think I've seen the second
+> of these before.
+> 
+>  After going back and forth between the kernel where I reverted your
+> original patch, and regular rc4 plus this new patch the output from
+> running smartctl as root all seems to be consistent (including
+> 'Passed' for the health check).
+> 
+>  I'm now running with the patch again, and I've started a manual
+> 'long' test (which will take 85 minutes, the default 'offline' is
+> about 150 minutes).
+> 
 
-sparc32:
-- replace call to cpu_idle() with cpu_startup_entry()
-- add arch_cpu_idle()
+ Looks like the problem is confined to smartd, smartctl is
+different and working fine.  The new messages only come from smartd.cpp :
+(sorry, long lines to avoid word wrapping)
 
-sparc64:
-- smp_callin() includes cpu_startup_entry() call so we can
-  skip calling cpu_idle from assembler
-- add arch_cpu_idle_enter() and arch_cpu_idle_dead()
+  // capability check: SMART status
+  if (cfg.smartcheck && ataSmartStatus2(atadev) == -1) {
+    PrintOut(LOG_INFO,"Device: %s, not capable of SMART Health Status check\n",name);
+    cfg.smartcheck = false;
+  }
 
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Cc: David S. Miller <davem@davemloft.net>
+and
 
----
-This patch is on top of smp/testing in the tip tree.
-It is build tested on sparc32 + sparc64
+  // enable/disable automatic on-line testing
+  if (cfg.autoofflinetest) {
+    // is this an enable or disable request?
+    const char *what=(cfg.autoofflinetest==1)?"disable":"enable";
+    if (!smart_val_ok)
+      PrintOut(LOG_INFO,"Device: %s, could not %s SMART Automatic Offline Testing.\n",name, what);
+    else {
+      // if command appears unsupported, issue a warning...
+      if (!isSupportAutomaticTimer(&state.smartval))
+        PrintOut(LOG_INFO,"Device: %s, SMART Automatic Offline Testing unsupported...\n",name);
+      // ... but then try anyway
+      if ((cfg.autoofflinetest==1)?ataDisableAutoOffline(atadev):ataEnableAutoOffline(atadev))
+        PrintOut(LOG_INFO,"Device: %s, %s SMART Automatic Offline Testing failed.\n", name, what);
+      else
+        PrintOut(LOG_INFO,"Device: %s, %sd SMART Automatic Offline Testing.\n", name, what);
+    }
+  }
 
-	Sam
+ I've no idea about the details, but it looks to me as if smartd is
+still getting different values returned to it.  The capability check
+normally was ok (silent), the automatic testing normally showed as
+'enabled'd.
 
-
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 3d361f2..5f22169 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -39,6 +39,7 @@ config SPARC
- 	select GENERIC_CLOCKEVENTS
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
-+	select GENERIC_IDLE_LOOP
- 	select MODULES_USE_ELF_RELA
- 	select ODD_RT_SIGACTION
- 	select OLD_SIGSUSPEND
-diff --git a/arch/sparc/kernel/hvtramp.S b/arch/sparc/kernel/hvtramp.S
-index 9365432..605c960 100644
---- a/arch/sparc/kernel/hvtramp.S
-+++ b/arch/sparc/kernel/hvtramp.S
-@@ -128,8 +128,7 @@ hv_cpu_startup:
- 
- 	call		smp_callin
- 	 nop
--	call		cpu_idle
--	 mov		0, %o0
-+
- 	call		cpu_panic
- 	 nop
- 
-diff --git a/arch/sparc/kernel/process_32.c b/arch/sparc/kernel/process_32.c
-index 62eede1..ec92959 100644
---- a/arch/sparc/kernel/process_32.c
-+++ b/arch/sparc/kernel/process_32.c
-@@ -64,23 +64,13 @@ extern void fpsave(unsigned long *, unsigned long *, void *, unsigned long *);
- struct task_struct *last_task_used_math = NULL;
- struct thread_info *current_set[NR_CPUS];
- 
--/*
-- * the idle loop on a Sparc... ;)
-- */
--void cpu_idle(void)
-+/* the idle loop on a Sparc... ;) */
-+void arch_cpu_idle(void)
- {
--	set_thread_flag(TIF_POLLING_NRFLAG);
--
--	/* endless idle loop with no priority at all */
--	for (;;) {
--		while (!need_resched()) {
--			if (sparc_idle)
--				(*sparc_idle)();
--			else
--				cpu_relax();
--		}
--		schedule_preempt_disabled();
--	}
-+	if (sparc_idle)
-+		(*sparc_idle)();
-+	else
-+		cpu_relax();
- }
- 
- /* XXX cli/sti -> local_irq_xxx here, check this works once SMP is fixed. */
-diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
-index cdb80b2..5ed6b02 100644
---- a/arch/sparc/kernel/process_64.c
-+++ b/arch/sparc/kernel/process_64.c
-@@ -52,8 +52,13 @@
- 
- #include "kstack.h"
- 
--static void sparc64_yield(int cpu)
-+/* The idle loop on sparc64. */
-+void arch_cpu_idle_enter()
- {
-+	int cpu;
-+
-+	cpu = smp_processor_id();
-+
- 	if (tlb_type != hypervisor) {
- 		touch_nmi_watchdog();
- 		return;
-@@ -88,31 +93,10 @@ static void sparc64_yield(int cpu)
- 	set_thread_flag(TIF_POLLING_NRFLAG);
- }
- 
--/* The idle loop on sparc64. */
--void cpu_idle(void)
-+void arch_cpu_idle_dead()
- {
--	int cpu = smp_processor_id();
--
--	set_thread_flag(TIF_POLLING_NRFLAG);
--
--	while(1) {
--		tick_nohz_idle_enter();
--		rcu_idle_enter();
--
--		while (!need_resched() && !cpu_is_offline(cpu))
--			sparc64_yield(cpu);
--
--		rcu_idle_exit();
--		tick_nohz_idle_exit();
--
--#ifdef CONFIG_HOTPLUG_CPU
--		if (cpu_is_offline(cpu)) {
--			sched_preempt_enable_no_resched();
--			cpu_play_dead();
--		}
--#endif
--		schedule_preempt_disabled();
--	}
-+	sched_preempt_enable_no_resched();
-+	cpu_play_dead();
- }
- 
- #ifdef CONFIG_COMPAT
-diff --git a/arch/sparc/kernel/smp_32.c b/arch/sparc/kernel/smp_32.c
-index 9e7e6d7..e3f2b81 100644
---- a/arch/sparc/kernel/smp_32.c
-+++ b/arch/sparc/kernel/smp_32.c
-@@ -369,7 +369,7 @@ void __cpuinit sparc_start_secondary(void *arg)
- 	local_irq_enable();
- 
- 	wmb();
--	cpu_idle();
-+	cpu_startup_entry(CPUHP_ONLINE);
- 
- 	/* We should never reach here! */
- 	BUG();
-diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
-index 537eb66..c025ffc 100644
---- a/arch/sparc/kernel/smp_64.c
-+++ b/arch/sparc/kernel/smp_64.c
-@@ -127,6 +127,8 @@ void __cpuinit smp_callin(void)
- 
- 	/* idle thread is expected to have preempt disabled */
- 	preempt_disable();
-+
-+	cpu_startup_entry(CPUHP_ONLINE);
- }
- 
- void cpu_panic(void)
-diff --git a/arch/sparc/kernel/trampoline_64.S b/arch/sparc/kernel/trampoline_64.S
-index da1b781..2e973a2 100644
---- a/arch/sparc/kernel/trampoline_64.S
-+++ b/arch/sparc/kernel/trampoline_64.S
-@@ -407,8 +407,7 @@ after_lock_tlb:
- 
- 	call		smp_callin
- 	 nop
--	call		cpu_idle
--	 mov		0, %o0
-+
- 	call		cpu_panic
- 	 nop
- 1:	b,a,pt		%xcc, 1b
+ken
+-- 
+das eine Mal als Tragödie, das andere Mal als Farce
