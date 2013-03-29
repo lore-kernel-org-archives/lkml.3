@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878Ab3C2TaJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 15:30:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:56356 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756806Ab3C2TaG (ORCPT
+	id S1756898Ab3C2Tae (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 15:30:34 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:47991 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756886Ab3C2Taa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 15:30:06 -0400
-Date: Fri, 29 Mar 2013 15:30:04 -0400 (EDT)
-Message-Id: <20130329.153004.1825925128455079185.davem@davemloft.net>
-To: robherring2@gmail.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        rob.herring@calxeda.com
-Subject: Re: [PATCH 2/2] net: calxedaxgmac: Wake-on-LAN fixes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1364506365-13689-2-git-send-email-robherring2@gmail.com>
-References: <1364506365-13689-1-git-send-email-robherring2@gmail.com>
-	<1364506365-13689-2-git-send-email-robherring2@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 29 Mar 2013 12:30:05 -0700 (PDT)
+	Fri, 29 Mar 2013 15:30:30 -0400
+Date: Fri, 29 Mar 2013 12:29:50 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] perf: fix bug in isupper() and islower()
+Message-ID: <20130329192950.GA9312@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13032919-2398-0000-0000-000012CCD111
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <robherring2@gmail.com>
-Date: Thu, 28 Mar 2013 16:32:45 -0500
+>From fd349681226bf7b27c9d0f72b0f3941b5aa94f78 Mon Sep 17 00:00:00 2001
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Date: Fri, 29 Mar 2013 12:14:43 -0700
+Subject: [PATCH] perf: fix bug in isupper() and islower()
 
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> WOL is broken because the magic packet status bit is getting set rather
-> than the enable bit. The PMT interrupt is not getting serviced because
-> the PMT interrupt is also enabled on the global interrupt, but not
-> cleared by the global interrupt and the global interrupt is higher
-> priority. This fixes both of these issues to get WOL working.
-> 
-> There's still a problem with receive after resume, but at least now we
-> can wake-up.
-> 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+One of the reasons 'perf test' is failing on Power appears to be due to
+a bug in isupper().
 
-Applied.
+isupper(c) and islower(c) should be checking 'c' against the mask 0x20.
+Instead they are checking sane_ctype[c] which causes isupper() to be true
+for lower case letters.
+
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+---
+ tools/perf/util/util.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 09b4c26..2795ef6 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -219,8 +219,8 @@ extern unsigned char sane_ctype[256];
+ #define isalpha(x) sane_istest(x,GIT_ALPHA)
+ #define isalnum(x) sane_istest(x,GIT_ALPHA | GIT_DIGIT)
+ #define isprint(x) sane_istest(x,GIT_PRINT)
+-#define islower(x) (sane_istest(x,GIT_ALPHA) && sane_istest(x,0x20))
+-#define isupper(x) (sane_istest(x,GIT_ALPHA) && !sane_istest(x,0x20))
++#define islower(x) (sane_istest(x,GIT_ALPHA) && (x & 0x20))
++#define isupper(x) (sane_istest(x,GIT_ALPHA) && !(x & 0x20))
+ #define tolower(x) sane_case((unsigned char)(x), 0x20)
+ #define toupper(x) sane_case((unsigned char)(x), 0)
+ 
+-- 
+1.7.1
+
