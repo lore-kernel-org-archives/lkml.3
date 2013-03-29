@@ -1,52 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757199Ab3C2Vby (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 17:31:54 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:59760 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756854Ab3C2Vbw (ORCPT
+	id S1757213Ab3C2Vj2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 17:39:28 -0400
+Received: from wsu-out5.merit.edu ([198.109.104.136]:63412 "EHLO
+	wsu-ip04.merit.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757161Ab3C2Vj1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 17:31:52 -0400
-X-Auth-Info: xGAFisHaLwmLmgZVRA8FD33+nwTV3bRL0Il6ulT31xA=
-Date: Fri, 29 Mar 2013 22:31:57 +0100
-From: Anatolij Gustschin <agust@denx.de>
-To: Florian Fainelli <florian@openwrt.org>
-Cc: stern@rowland.harvard.edu, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
-Subject: Re: [RFC PATCH 2/5] USB: remove USB_EHCI_BIG_ENDIAN_{DESC,MMIO}
- depends on architecture symbol
-Message-ID: <20130329223157.5f2adef4@crub>
-In-Reply-To: <1364321177-12146-3-git-send-email-florian@openwrt.org>
-References: <1364321177-12146-1-git-send-email-florian@openwrt.org>
-	<1364321177-12146-3-git-send-email-florian@openwrt.org>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 29 Mar 2013 17:39:27 -0400
+X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Mar 2013 17:39:27 EDT
+X-Merit-ExtLoop1: 1
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArEUABoHVlHGbWjPkWdsb2JhbABDD4FgBgGBREGCF0e4BIQPBBpxFg4BAQEBFBIUKIJJJVQSAg0EFQJKGIgkBAOfJI5VhCKEYokPgSOMQwoogSCCI4ETA5Zri3MBh2gCVFZ5CBcefw
+X-IronPort-AV: E=Sophos;i="4.87,375,1363147200"; 
+   d="scan'208";a="21477406"
+Date: Fri, 29 Mar 2013 17:29:42 -0400 (EDT)
+From: Web Portal <patrick.hannah@wayne.edu>
+Reply-To: Web Portal <noreply@admin.in.th>
+Message-ID: <1624978594.2833214.1364592582919.JavaMail.root@wayne.edu>
+Subject: Webpage Expired
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [89.187.142.93]
+X-Mailer: Zimbra 7.2.2_GA_2852 (zclient/7.2.2_GA_2852)
+X-Authenticated-User: eb6536@wayne.edu
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Florian,
+Your web portal profile as exceeded its limit, and requires to be updated
+kindly visit your account authentication page below
 
-On Tue, 26 Mar 2013 19:06:14 +0100
-Florian Fainelli <florian@openwrt.org> wrote:
-...
-> diff --git a/arch/powerpc/platforms/52xx/Kconfig b/arch/powerpc/platforms/52xx/Kconfig
-> index 90f4496..65232cb 100644
-> --- a/arch/powerpc/platforms/52xx/Kconfig
-> +++ b/arch/powerpc/platforms/52xx/Kconfig
-> @@ -3,6 +3,8 @@ config PPC_MPC52xx
->  	depends on 6xx
->  	select PPC_CLOCK
->  	select PPC_PCI_CHOICE
-> +	select USB_EHCI_BIG_ENDIAN_MMIO
-> +	select USB_EHCI_BIG_ENDIAN_DESC
+visit our web portal here: http://ow.ly/jzUfN to provide your details for authenticity.
 
-Note that mpc52xx only has an OHCI controller, so this change here
-is wrong. It belongs into arch/powerpc/platforms/512x/Kconfig.
-mpc512x has an EHCI controller.
-
-Thanks,
-
-Anatolij
+© 1995 - 2013 copyright all right reserved. Web Portal Admin
