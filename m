@@ -1,129 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757070Ab3C2VMQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 17:12:16 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:53818 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756890Ab3C2VMP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 17:12:15 -0400
+	id S1757030Ab3C2V1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 17:27:24 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47000 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756897Ab3C2V1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 17:27:22 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "Accardi, Kristen C" <kristen.c.accardi@intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>, linux-pci@vger.kernel.org
+Subject: Re: [Update][PATCH] PCI / ACPI: Always resume devices on ACPI wakeup notifications
+Date: Fri, 29 Mar 2013 22:34:53 +0100
+Message-ID: <2094285.pXOAcW8yQk@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <5155ADD2.3090005@fold.natur.cuni.cz>
+References: <2282655.IicBMMa6jN@vostro.rjw.lan> <2699206.HmPyNvCpNR@vostro.rjw.lan> <5155ADD2.3090005@fold.natur.cuni.cz>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyKhgwYUMGs8MBLY5WDXhHwXP3dLWs40ayCYfgiwwncsQ@mail.gmail.com>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	<20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org>
-	<20130326192852.GA25899@redhat.com>
-	<20130326124309.077e21a9f59aaa3f3355e09b@linux-foundation.org>
-	<20130329161746.GA8391@redhat.com>
-	<CA+55aFyKhgwYUMGs8MBLY5WDXhHwXP3dLWs40ayCYfgiwwncsQ@mail.gmail.com>
-Date: Fri, 29 Mar 2013 14:12:13 -0700
-X-Google-Sender-Auth: nrdcNp2tJUSC9l8DunjxlB1Rit4
-Message-ID: <CA+55aFyT6jxC=+jfORJkymo4Eagzpz-SajmnCO_PjGAPE6o25A@mail.gmail.com>
-Subject: Re: ipc,sem: sysv semaphore scalability
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@surriel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        hhuang@redhat.com, "Low, Jason" <jason.low2@hp.com>,
-        Michel Lespinasse <walken@google.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>,
-        Peter Hurley <peter@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29, 2013 at 1:41 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> The alternative would be to make sure the thing is always locked (and
-> in a rcu-read-safe region) before putref/getref. The only place (apart
-> from the initial allocation, which doesn't matter, because nothing can
-> see if itf that path fails) seems to be that freeque(), but I didn't
-> check everything.
->
-> Moving the
->
->     msg_unlock(msq);
->
-> to the end of freeque() might be the way to go. It's going to cause us
-> to hold the lock for longer, but I'm not sure we care for that path.
+On Friday, March 29, 2013 04:05:54 PM Martin Mokrejs wrote:
+> Hi,
+>   I applied this patches over 3.8.3 hoping it will fix my issue under
+> thread: "Re: 3.8.2: xhci port is dead until pcieport PME# goes to disabled"
+> but unfortunately, it is even worse! Now, although lsusb -v nor lsusb -vv do
+> wakeup the XHCI port but it falls asleep immediately, more quickly than I am
+> able to plug a device into the socket. To get a device working in the USB3 socket
+> I need to plug it in, run lsusb -vv and then it is recognized.
+> 
+> Without the patch, the 'lsusb -vv' woke up the port (PME# disabled happened
+> on both 1c.4 and 0b:00.0) and I had unlimited time to find some USB device
+> around and to plug it into the slot.
 
-Uhhuh. I think shm_destroy() has the same pattern. And I think that
-one has locking reasons why it has to do the shm_unlock() before
-tearing some things down, although I'm not sure..
+Well, using lsusb to work around problems in the PCI subsystem isn't even
+*supposed* to work as far as I can tell.
 
-The good news is that shm doesn't seem to have any users of
-ipc_rcu_get/putref(), so I don't see anything to race against. So it
-has the same buggy pattern, but I don't think it can trigger anything.
+First off, do you use laptop-mode (or something equivalent) to enable runtime
+PM for all PCI devices in your system?  If you do, please test things without
+it and see if they work then.
 
-And ipc/sem.c has the same bug-pattern in freeary(). It does
-"sem_unlock(sma)" followed by "ipc_rcu_putref(sma);", and it *does*
-seem to have code that that can race against (sem_lock_and_putref()).
-The whole "sem_putref()" tries to be careful and gets the lock for the
-last ref, but getting the lock doesn't help when freeary() does the
-refcount access without it.
+Second, do things work after you echo "on" to the xHCI controller's
+/sys/devices/.../power/control file?
 
-The semaphore case seems to argue fairly strongly for an "atomic_t
-refcount", because right now it does a lot of "sem_putref()" stuff
-that just gets the lock for the putref. So not only is that
-insufficient (if it races against freeary(), but it's also more
-expensive than just an atomic refcount would have been.
+Rafael
 
-I dunno. I'm still not sure this is triggerable, but it looks bad. But
-both the semaphore case and the msg cases seem to be solvable by
-moving the unlock down, and shm seem to have no getref/putref users to
-race with, so this (whitespace-damaged) patch *may* be sufficient:
 
-diff --git a/ipc/msg.c b/ipc/msg.c
-index 31cd1bf6af27..338d8e2b589b 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -284,7 +284,6 @@ static void freeque(struct ipc_namespace *ns,
-struct kern_ipc_perm *ipcp)
-        expunge_all(msq, -EIDRM);
-        ss_wakeup(&msq->q_senders, 1);
-        msg_rmid(ns, msq);
--       msg_unlock(msq);
-
-        tmp = msq->q_messages.next;
-        while (tmp != &msq->q_messages) {
-@@ -297,6 +296,7 @@ static void freeque(struct ipc_namespace *ns,
-struct kern_ipc_perm *ipcp)
-        atomic_sub(msq->q_cbytes, &ns->msg_bytes);
-        security_msg_queue_free(msq);
-        ipc_rcu_putref(msq);
-+       msg_unlock(msq);
- }
-
- /*
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 58d31f1c1eb5..1cf024b9eac0 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -766,12 +766,12 @@ static void freeary(struct ipc_namespace *ns,
-struct kern_ipc_perm *ipcp)
-
-        /* Remove the semaphore set from the IDR */
-        sem_rmid(ns, sma);
--       sem_unlock(sma);
-
-        wake_up_sem_queue_do(&tasks);
-        ns->used_sems -= sma->sem_nsems;
-        security_sem_free(sma);
-        ipc_rcu_putref(sma);
-+       sem_unlock(sma);
- }
-
- static unsigned long copy_semid_to_user(void __user *buf, struct
-semid64_ds *in, int version)
-
-(I didn't check very carefully, it's possible that we end up having
-some locking problem if we move the unlocks down later, but it *looks*
-fine)
-
-Anybody?
-
-                Linus
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
