@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab3C2XeE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 19:34:04 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57463 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757244Ab3C2XeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 19:34:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,375,1363158000"; 
-   d="scan'208";a="277821020"
-Date: Sat, 30 Mar 2013 04:37:18 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Dan Williams <djbw@fb.com>, Jon Hunter <jon-hunter@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dma: of: Remove unnecessary list_empty check
-Message-ID: <20130329230718.GC10326@intel.com>
-References: <1364217862-32677-1-git-send-email-lars@metafoo.de>
+	id S1757357Ab3C2Xff (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 19:35:35 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:56479 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757244Ab3C2Xfd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 19:35:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364217862-32677-1-git-send-email-lars@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1364599219.27102.56.camel@schen9-DESK>
+References: <1364599219.27102.56.camel@schen9-DESK>
+From: Paul Turner <pjt@google.com>
+Date: Fri, 29 Mar 2013 16:35:01 -0700
+Message-ID: <CAPM31RKDt+Xuo4MkmmE+R-AXSjZHGAhOT83vk4d6GrDVZtWUmA@mail.gmail.com>
+Subject: Re: Load balancing behavior for sched autogroup
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@kernel.org>,
+        Alex Shi <alex.shi@intel.com>,
+        Changlong Xie <changlongx.xie@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 02:24:22PM +0100, Lars-Peter Clausen wrote:
-> list_for_each_entry is able to handle empty lists just fine, there is no need
-> to make sure that the list is non empty.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Applied thanks
-> ---
->  drivers/dma/of-dma.c | 5 -----
->  1 file changed, 5 deletions(-)
-> 
-> diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
-> index 7cad4d7..6679020 100644
-> --- a/drivers/dma/of-dma.c
-> +++ b/drivers/dma/of-dma.c
-> @@ -36,11 +36,6 @@ static struct of_dma *of_dma_get_controller(struct of_phandle_args *dma_spec)
->  
->  	spin_lock(&of_dma_lock);
->  
-> -	if (list_empty(&of_dma_list)) {
-> -		spin_unlock(&of_dma_lock);
-> -		return NULL;
-> -	}
-> -
->  	list_for_each_entry(ofdma, &of_dma_list, of_dma_controllers)
->  		if ((ofdma->of_node == dma_spec->np) &&
->  		    (ofdma->of_dma_nbcells == dma_spec->args_count)) {
-> -- 
-> 1.8.0
-> 
+I'm surprised that patch would have much effect in either direction;
+it changes the amortization of accounting, but not the actual numbers
+-- especially for a persistent load.  We'll take a look.
+
+<Resend since gmail "reinterpreted" my plain-text>
+
+On Fri, Mar 29, 2013 at 4:20 PM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> During our testings of 3.8 kernel, we noticed that after the patch
+>
+> Revert "sched: Update_cfs_shares at period edge" (commit 17bc14b7),
+>
+> the load between the sockets or larger system can have
+> large imbalance.  For example, for a 4 socket Westmere-EX
+> (10 cores/socket), we notice the loadings between the sockets
+> can differ by more than a factor of 4.
+>
+> We did a simple experiment that kicks off 29 simple
+> processes that execute a tight loop.  We noticed
+> socket 3 is already starting to schedule on hyperthreaded cpus
+> (13 loaded cpus) while socket 1 still have lots of
+> idle cores (3 loaded cpus).  Before the patch, the
+> load was evenly distributed across sockets.
+> If I turn off CONFIG_SCHED_AUTOGROUP,the loads are also
+> distributed evenly.
+>
+> (load on cpus, running on 4)
+> socket                    0                    1                    2                    3
+> ---------------------------------------------------------------------------------------------
+> cpu:    0-3               0.00                 0.00                 0.00                99.00
+> cpu:    4-7               0.00                 0.00                 0.00                99.20
+> cpu:    8-11              0.00                 0.00                 0.00                99.00
+> cpu:   12-15             99.20                 0.00                 0.00                 0.00
+> cpu:   16-19              0.00                 0.00                 0.00                99.00
+> cpu:   20-23              0.00                 0.00                 0.00                 0.00
+> cpu:   24-27              0.00                 0.00                 0.00                 0.00
+> cpu:   28-31              0.00                 0.00                 0.00                 0.00
+> cpu:   32-35             99.20                 0.00                 0.00                99.00
+> cpu:   36-39             99.20                99.40                99.20                 0.00
+> cpu:   40-43              0.00                99.40                99.40                99.20
+> cpu:   44-47              0.00                99.40                99.40                99.20
+> cpu:   48-51             99.40                 0.00                99.40                99.20
+> cpu:   52-55             99.20                 0.00                99.40                99.20
+> cpu:   56-59              0.00                 0.00                99.40                99.40
+> cpu:   60-63              0.00                 0.00                 0.00                99.00
+> cpu:   64-67              0.00                 0.00                 0.00                99.40
+> cpu:   68-71              0.00                 0.00                 0.00                99.40
+> cpu:   72-75             99.40                 0.00                 0.00                 0.00
+> cpu:   76-79             99.40                 0.00                 0.00                 0.00
+> ---------------------------------------------------------------------------------------------
+> Loaded cpus                  7                    3                    6                   13
+>
+> Is this the intended behavior of sched autogroup? I'm a bit surprised
+> that we are reserving this much cpu bandwidth for very low load
+> processes (or interactive processes) in other groups.
+>
+> So should the sched autogroup config option be turned off by default for server
+> system, when we are not concerned about interactivity but want to maximize
+> throughput by balancing out the load?
+>
+> Thanks for clarifying.
+>
+> Tim
+>
+>
