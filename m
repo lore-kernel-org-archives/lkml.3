@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab3C2QM0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 12:12:26 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:37730 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753754Ab3C2QMY (ORCPT
+	id S1755317Ab3C2QNX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 12:13:23 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:55616 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320Ab3C2QNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 12:12:24 -0400
-Date: Fri, 29 Mar 2013 17:12:19 +0100
-From: Jiri Pirko <jiri@resnulli.us>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ivan Vecera <ivecera@redhat.com>, Jiri Pirko <jpirko@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andy Gospodarek <andy@greyhouse.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Nicolas de =?iso-8859-1?Q?Peslo=FCan?= 
-	<nicolas.2p.debian@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Guy Streeter <streeter@redhat.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, stephen@networkplumber.org
-Subject: Re: [PATCH] net: add a synchronize_net() in
- netdev_rx_handler_unregister()
-Message-ID: <20130329161219.GA1668@minipsycho.orion>
-References: <1364490997.6345.237.camel@gandalf.local.home>
- <1364491792.15753.47.camel@edumazet-glaptop>
- <20130329094856.GB1677@minipsycho.orion>
- <1364562082.5113.16.camel@edumazet-glaptop>
- <5155AF24.3090305@redhat.com>
- <1364571495.5113.23.camel@edumazet-glaptop>
+	Fri, 29 Mar 2013 12:13:22 -0400
+Date: Fri, 29 Mar 2013 17:12:25 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Douglas Gilbert <dgilbert@interlog.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>
+Subject: Re: [RFC 2/5] rtc-at91rm9200: add device-tree support
+Message-ID: <20130329161225.GC1166@localhost>
+References: <1364573029-19346-1-git-send-email-jhovold@gmail.com>
+ <1364573029-19346-2-git-send-email-jhovold@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1364571495.5113.23.camel@edumazet-glaptop>
+In-Reply-To: <1364573029-19346-2-git-send-email-jhovold@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fri, Mar 29, 2013 at 04:38:15PM CET, eric.dumazet@gmail.com wrote:
->On Fri, 2013-03-29 at 16:11 +0100, Ivan Vecera wrote:
->
->> Erik, why doesn't help the write barrier between the assignments. It 
->> should guarantee their orders... or not?
->> 
->
->Its not enough, I wont explain here why as RCU is quite well documented
->in Documentation/RCU
+On Fri, Mar 29, 2013 at 05:03:46PM +0100, Johan Hovold wrote:
+> Add device tree support.
+> ---
+>  drivers/rtc/rtc-at91rm9200.c | 23 +++++++++++++++++++++++
+>  1 file changed, 23 insertions(+)
+> 
+> diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
+> index 5bae0a1..67260f9 100644
+> --- a/drivers/rtc/rtc-at91rm9200.c
+> +++ b/drivers/rtc/rtc-at91rm9200.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/ioctl.h>
+>  #include <linux/completion.h>
+>  #include <linux/io.h>
+> +#include <linux/of.h>
+>  
+>  #include <asm/uaccess.h>
+>  
+> @@ -255,9 +256,30 @@ static irqreturn_t at91_rtc_interrupt(int irq, void *dev_id)
+>  static const struct at91_rtc_config at91rm9200_config = {
+>  };
+>  
+> +#if defined(CONFIG_OF)
+> +static const struct of_device_id at91_rtc_dt_ids[] = {
+> +	{
+> +		.compatible = "atmel,at91rm9200-rtc",
+> +		.data = &at91rm9200_config,
+>+	},
 
-Can you point me exact paragraph? I'm unable to find that :(
+There's a missing brace here. Will fix after any further feedback.
 
->
->
->
->--
->To unsubscribe from this list: send the line "unsubscribe netdev" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> +		/* terminator */
+> +	}
+> +};
+> +MODULE_DEVICE_TABLE(of, at91_rtc_dt_ids);
+> +#endif
