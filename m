@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab3C2F65 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 01:58:57 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:18706 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352Ab3C2F64 (ORCPT
+	id S1754744Ab3C2GVO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 02:21:14 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:54543
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754020Ab3C2GVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 01:58:56 -0400
-Message-ID: <51552CFD.3070704@huawei.com>
-Date: Fri, 29 Mar 2013 13:56:13 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Fri, 29 Mar 2013 02:21:12 -0400
+X-IronPort-AV: E=Sophos;i="4.87,371,1363129200"; 
+   d="scan'208";a="9128268"
+Date: Fri, 29 Mar 2013 07:21:07 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+cc: Julia Lawall <julia.lawall@lip6.fr>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        florianschandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev <linux-fbdev@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org,
+        "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        cocci@systeme.lip6.fr,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rodrigo.vivi" <rodrigo.vivi@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "rafael.j.wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH] compat/compat-drivers/linux-next: fb skip_vt_switch
+In-Reply-To: <CAB=NE6WX5Dv9p2jrNwe9GxfH=EUm596uvSspsLQ5-Uuonc6Fqg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1303290720350.2023@localhost6.localdomain6>
+References: <1364472270-9297-1-git-send-email-mcgrof@do-not-panic.com> <20130328083943.01e61b4b@jbarnes-desktop> <alpine.DEB.2.02.1303281718490.1928@hadrien> <CAB=NE6WbNwPqEPYsASAPaECe4qbAWdd4=eJ402ib+CzZbT69=g@mail.gmail.com> <alpine.DEB.2.02.1303281909570.1928@hadrien>
+ <CAB=NE6VPRu8DvneVdwd=pXF0ngi5OifNTpZtX3pLi50i116_OA@mail.gmail.com> <alpine.DEB.2.02.1303282328200.2022@localhost6.localdomain6> <CAB=NE6WX5Dv9p2jrNwe9GxfH=EUm596uvSspsLQ5-Uuonc6Fqg@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/7] sched: Split cpuacct
-References: <5153C2D6.7050103@huawei.com>
-In-Reply-To: <5153C2D6.7050103@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore this patchset. It's not based on the right kernel
-version..
+> > I looked in today's linux-next, and there seems to be only one
+> > initialization of this field, to true, and one test of this field.  So
+> > perhaps the case for setting the field to false just isn't needed.
+> 
+> Oh sorry now I get what you mean! I thought about this -- and yes I
+> decided to not add a bool false setting for the structure field given
+> that the assumption is this would not be something dynamic, and data
+> structure would be kzalloc()'d so by default they are 0.
 
-On 2013/3/28 12:11, Li Zefan wrote:
-> - This patchset splits cpuacct out of core scheduler code.
-> - Plus two small optimizations.
-> 
-> 0001-sched-Split-cpuacct-code-out-of-core.c.patch
-> 0002-sched-Split-cpuacct-out-of-sched.h.patch
-> 0003-cpuacct-Add-cpuacct_init.patch
-> 0004-cpuacct-Add-cpuacct_acount_field.patch
-> 0005-cpuacct-Remove-redundant-NULL-checks-in-cpuacct_char.patch
-> 0006-cpuacct-Remove-redundant-NULL-checks-in-cpuacct_acou.patch
-> 0007-cpuacct-Clean-up-cpuacct.h.patch
-> 
-> ---
->  kernel/sched/Makefile  |   1 +
->  kernel/sched/core.c    | 228 +----------------------------------------------
->  kernel/sched/cpuacct.c | 303 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  kernel/sched/cpuacct.h |  22 +++++
->  kernel/sched/cputime.c |  18 +---
->  kernel/sched/sched.h   |  49 +----------
->  6 files changed, 330 insertions(+), 291 deletions(-)
-> 
+What do you do about the test, though?
 
+julia
