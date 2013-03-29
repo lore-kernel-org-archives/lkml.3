@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab3C2Md1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 08:33:27 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:51607 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754572Ab3C2Md0 (ORCPT
+	id S1755119Ab3C2MeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 08:34:06 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:57230 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754679Ab3C2MeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 08:33:26 -0400
-Message-ID: <1364560405.1345.67.camel@x61.thuisdomein>
-Subject: Re: [PATCH] ARM: davinci: remove test for undefined Kconfig macro
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Sekhar Nori <nsekhar@ti.com>, Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Fri, 29 Mar 2013 13:33:25 +0100
-In-Reply-To: <1364557655.1345.58.camel@x61.thuisdomein>
-References: <1364557655.1345.58.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Mar 2013 12:33:25.0320 (UTC) FILETIME=[9B94AC80:01CE2C79]
-X-RcptDomain: vger.kernel.org
+	Fri, 29 Mar 2013 08:34:04 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Brett Rudley <brudley@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com
+Subject: [PATCH -mmotm resend] brcm80211: fix the misaligned indentation
+Date: Fri, 29 Mar 2013 21:33:20 +0900
+Message-Id: <1364560400-30242-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Dropped Kevin Hilman, because Kevin's address bounces.]
+This fixes the misaligned indentation introduced by
+drivers-net-rename-random32-to-prandom_u32.patch in the -mm tree.
 
-On Fri, 2013-03-29 at 12:47 +0100, Paul Bolle wrote:
-> The DaVinci debugging macro contains a check for
-> CONFIG_DEBUG_DAVINCI_DA8XX_UART0. But there's corresponding Kconfig
+This also remove unneeded parentheses in order not to cause line over
+80 characters.
 
-                                  [...] there's no corresponding [...]
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Brett Rudley <brudley@broadcom.com>
+Cc: Arend van Spriel <arend@broadcom.com>
+Cc: "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
+Cc: Hante Meuleman <meuleman@broadcom.com>
+Cc: linux-wireless@vger.kernel.org
+Cc: brcm80211-dev-list@broadcom.com
+---
+ drivers/net/wireless/brcm80211/brcmfmac/p2p.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> symbol, so this test will always evaluate to false. That Kconfig symbol
-> is not needed because, as __arch_decomp_setup() shows, there are no
-> DaVinci DA8XX boards that use UART0 for debugging. We can remove two
-> lines of unneeded code.
-
-
-Paul Bolle
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
+index bca31a8..5da1645 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
+@@ -1118,7 +1118,7 @@ static void brcmf_p2p_afx_handler(struct work_struct *work)
+ 	if (afx_hdl->is_listen && afx_hdl->my_listen_chan)
+ 		/* 100ms ~ 300ms */
+ 		err = brcmf_p2p_discover_listen(p2p, afx_hdl->my_listen_chan,
+-					100 * (1 + (prandom_u32() % 3)));
++						100 * (1 + prandom_u32() % 3));
+ 	else
+ 		err = brcmf_p2p_act_frm_search(p2p, afx_hdl->peer_listen_chan);
+ 
+-- 
+1.8.1.4
 
