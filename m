@@ -1,69 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab3C2BSL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 21:18:11 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:33604 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754413Ab3C2BSI (ORCPT
+	id S1754396Ab3C2BSG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 21:18:06 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64512 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754243Ab3C2BSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 21:18:08 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX189m25TSr79gkFrETvrAT2bXuUmi1qfaXU=
-Date: Thu, 28 Mar 2013 21:18:01 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dove: fix Dove cpu type from V7 to PJ4
-Message-ID: <20130329011801.GF13280@titan.lakedaemon.net>
-References: <1364051211-24414-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130328170654.GX13280@titan.lakedaemon.net>
- <20130328181425.GE3368@n2100.arm.linux.org.uk>
- <5154A5B5.7@gmail.com>
- <20130328210412.GG3368@n2100.arm.linux.org.uk>
+	Thu, 28 Mar 2013 21:18:04 -0400
+X-AuditID: 9c93016f-b7b6aae000000e9c-0b-5154ebc871fc
+Date: Fri, 29 Mar 2013 10:18:01 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Bob Liu <bob.liu@oracle.com>
+Subject: Re: [RFC] mm: remove swapcache page early
+Message-ID: <20130329011801.GA32245@blaptop>
+References: <1364350932-12853-1-git-send-email-minchan@kernel.org>
+ <alpine.LNX.2.00.1303271230210.29687@eggly.anvils>
+ <433aaa17-7547-4e39-b472-7060ee15e85f@default>
+ <20130328010706.GB22908@blaptop>
+ <5f1504e7-8b07-4109-8271-b214b496ca61@default>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130328210412.GG3368@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5f1504e7-8b07-4109-8271-b214b496ca61@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 09:04:12PM +0000, Russell King - ARM Linux wrote:
-...
-> From what I could see, there's not much point to pj4-cp0.c without
-> iwmmxt.S also being built.  So, what I'd suggest is this, which will
-> ensure IWMMXT is enabled when PJ4 is set, otherwise giving people the
-> choice as it used to be.
+On Thu, Mar 28, 2013 at 11:19:12AM -0700, Dan Magenheimer wrote:
+> > From: Minchan Kim [mailto:minchan@kernel.org]
+> > Subject: Re: [RFC] mm: remove swapcache page early
+> > 
+> > Hi Dan,
+> > 
+> > On Wed, Mar 27, 2013 at 03:24:00PM -0700, Dan Magenheimer wrote:
+> > > > From: Hugh Dickins [mailto:hughd@google.com]
+> > > > Subject: Re: [RFC] mm: remove swapcache page early
+> > > >
+> > > > I believe the answer is for frontswap/zmem to invalidate the frontswap
+> > > > copy of the page (to free up the compressed memory when possible) and
+> > > > SetPageDirty on the PageUptodate PageSwapCache page when swapping in
+> > > > (setting page dirty so nothing will later go to read it from the
+> > > > unfreed location on backing swap disk, which was never written).
+> > >
+> > > There are two duplication issues:  (1) When can the page be removed
+> > > from the swap cache after a call to frontswap_store; and (2) When
+> > > can the page be removed from the frontswap storage after it
+> > > has been brought back into memory via frontswap_load.
+> > >
+> > > This patch from Minchan addresses (1).  The issue you are raising
+> > 
+> > No. I am addressing (2).
+> > 
+> > > here is (2).  You may not know that (2) has recently been solved
+> > > in frontswap, at least for zcache.  See frontswap_exclusive_gets_enabled.
+> > > If this is enabled (and it is for zcache but not yet for zswap),
+> > > what you suggest (SetPageDirty) is what happens.
+> > 
+> > I am blind on zcache so I didn't see it. Anyway, I'd like to address it
+> > on zram and zswap.
 > 
-
-Russell,
-
-Are you going to take these two patches?  I don't want to assume and
-have them potentially get lost.
-
-thx,
-
-Jason.
-
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 67874b8..ef6733a 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1171,9 +1171,9 @@ config ARM_NR_BANKS
->  	default 8
->  
->  config IWMMXT
-> -	bool "Enable iWMMXt support"
-> +	bool "Enable iWMMXt support" if !CPU_PJ4
->  	depends on CPU_XSCALE || CPU_XSC3 || CPU_MOHAWK || CPU_PJ4
-> -	default y if PXA27x || PXA3xx || ARCH_MMP
-> +	default y if PXA27x || PXA3xx || ARCH_MMP || CPU_PJ4
->  	help
->  	  Enable support for iWMMXt context switching at run time if
->  	  running on a CPU that supports it.
+> Zswap can enable it trivially by adding a function call in init_zswap.
+> (Note that it is not enabled by default for all frontswap backends
+> because it is another complicated tradeoff of cpu time vs memory space
+> that needs more study on a broad set of workloads.)
 > 
+> I wonder if something like this would have a similar result for zram?
+> (Completely untested... snippet stolen from swap_entry_free with
+> SetPageDirty added... doesn't compile yet, but should give you the idea.)
+
+Nice idea!
+
+After I see your patch, I realized it was Hugh's suggestion and
+you implemented it in proper place.
+
+Will resend it after testing. Maybe nextweek.
+Thanks!
+
+> 
+> diff --git a/mm/page_io.c b/mm/page_io.c
+> index 56276fe..2d10988 100644
+> --- a/mm/page_io.c
+> +++ b/mm/page_io.c
+> @@ -81,7 +81,17 @@ void end_swap_bio_read(struct bio *bio, int err)
+>  				iminor(bio->bi_bdev->bd_inode),
+>  				(unsigned long long)bio->bi_sector);
+>  	} else {
+> +		struct swap_info_struct *sis;
+> +
+>  		SetPageUptodate(page);
+> +		sis = page_swap_info(page);
+> +		if (sis->flags & SWP_BLKDEV) {
+> +			struct gendisk *disk = sis->bdev->bd_disk;
+> +			if (disk->fops->swap_slot_free_notify) {
+> +				SetPageDirty(page);
+> +				disk->fops->swap_slot_free_notify(sis->bdev,
+> +								  offset);
+> +			}
+> +		}
+>  	}
+>  	unlock_page(page);
+>  	bio_put(bio);
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
