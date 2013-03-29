@@ -1,46 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab3C2LRR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 07:17:17 -0400
-Received: from sauhun.de ([89.238.76.85]:33915 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753549Ab3C2LRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 07:17:15 -0400
-Date: Fri, 29 Mar 2013 12:17:09 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-Cc: davinci-linux-open-source@linux.davincidsp.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nsekhar@ti.com,
-        khilman@deeprootsystems.com, ben-linux@fluff.org,
-        w.sang@pengutronix.de
-Subject: Re: [PATCH V4] i2c: davinci: update to devm_* API
-Message-ID: <20130329111709.GA6359@the-dreams.de>
-References: <1362483885-16561-1-git-send-email-manishv.b@ti.com>
+	id S1754324Ab3C2LTA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 07:19:00 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:32631 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753982Ab3C2LS6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 07:18:58 -0400
+Date: Fri, 29 Mar 2013 12:18:56 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH v3, part4 38/39] mm/hotplug: prepare for removing
+	num_physpages
+Message-ID: <20130329111856.GA3824@merkur.ravnborg.org>
+References: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com> <1364313298-17336-39-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1362483885-16561-1-git-send-email-manishv.b@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1364313298-17336-39-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 05:14:45PM +0530, Vishwanathrao Badarkhe, Manish wrote:
-> Update the code to use devm_* API so that driver
-> core will manage resources.
+On Tue, Mar 26, 2013 at 11:54:57PM +0800, Jiang Liu wrote:
+> Prepare for removing num_physpages.
 > 
-> Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Wen Congyang <wency@cn.fujitsu.com>
+> Cc: Tang Chen <tangchen@cn.fujitsu.com>
+> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Cc: linux-mm@kvack.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+> Hi all,
+> 	Sorry for my mistake that my previous patch series has been screwed up.
+> So I regenerate a third version and also set up a git tree at:
+> 	git://github.com/jiangliu/linux.git mem_init
+> 	Any help to review and test are welcomed!
+> 
+> 	Regards!
+> 	Gerry
+> ---
+>  mm/memory_hotplug.c |    4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index 97454b3..9b1b494 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -751,10 +751,6 @@ EXPORT_SYMBOL_GPL(restore_online_page_callback);
+>  
+>  void __online_page_set_limits(struct page *page)
+>  {
+> -	unsigned long pfn = page_to_pfn(page);
+> -
+> -	if (pfn >= num_physpages)
+> -		num_physpages = pfn + 1;
+>  }
+>  EXPORT_SYMBOL_GPL(__online_page_set_limits);
 
-Applied the following fix:
+How can this be correct?
+With this change __online_page_set_limits() is now a nop.
 
-> +	dev->base = devm_ioremap_resource(&pdev->dev, mem);
-> +	if (IS_ERR(dev->base)) {
-> +		r = PTR_ERR(dev->base);
-> +		dev_err(&pdev->dev, "I2C region already claimed\n");
-> +		goto err_unuse_clocks;
-
-No dev_err after devm_ioremap_resource. make coccicheck will tell you
-about this.
-
-Otherwise: Applied to for-next, thanks!
-
+	Sam
