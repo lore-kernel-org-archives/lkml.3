@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702Ab3C2Tql (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 15:46:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40648 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756270Ab3C2Tqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 15:46:40 -0400
-Subject: gpio-ucb1400
-From: Jean Delvare <jdelvare@suse.de>
-To: linux-kernel <linux-kernel@vger.kernel.org>,
-        Marek Vasut <marek.vasut@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Fri, 29 Mar 2013 20:46:39 +0100
-Message-ID: <1364586399.4216.312.camel@amber.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	id S1756756Ab3C2Twu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 15:52:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42873 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756485Ab3C2Twt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 15:52:49 -0400
+Message-ID: <5155F107.6050408@canonical.com>
+Date: Fri, 29 Mar 2013 15:52:39 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: phaber@broadcom.com
+CC: arend@broadcom.com, pieterpg@broadcom.com, meuleman@broadcom.com,
+        phaber@broadcom.com, linville@tuxdriver.com,
+        LKML <linux-kernel@vger.kernel.org>, brudley@broadcom.com,
+        frankyl@broadcom.com, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org
+Subject: [v3.8, v3.9] [Regression] brcmsmac: move PHY functions
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi Piotr,
 
-In September 2009, a driver for the GPIO function of the UCB1400 chip
-was added to the kernel tree. The probe function of this driver requires
-ucbdata to be set. The only place where this happens is in function
-ucb1400_gpio_set_data(). This function was never call, and still isn't.
-So this is dead code for 3.5 years as far as the upstream kernel is
-concerned.
+A bug was opened against the Ubuntu kernel[0].  After a kernel
+bisect, it was found that reverting the following commit resolved
+this bug:
 
-To make things worse, this driver can't be built as a module, for no
-good reason that I can see.
+commit b83576341664957978e125f5f5db2f15496980b1
+Author: Piotr Haber <phaber@broadcom.com>
+Date:   Wed Nov 28 21:44:09 2012 +0100
 
-Marek, can you explain what was the point of submitting this driver that
-nobody can use?
+     brcmsmac: move PHY functions
 
-I would like either this driver to be fixed so that it can be used (and
-that would IMHO start with dropping the ugly ucb1400_gpio_set_data hook
-and global variable ucbdata), or this driver to be dropped from the
-kernel tree. If the driver is kept, it should be adjusted so that it can
-be built as a module.
+The regression was introduced as of v3.8-rc1.  The regression still 
+exists in v3.9-rc4.
 
-If I overlooked something, please let me know.
+I see that you are the author of this patch, so I wanted to run this
+by you.  I was thinking of requesting a revert for v3.9, but I
+wanted to get your feedback first.
+
 
 Thanks,
--- 
-Jean Delvare
-Suse L3
 
+Joe
+
+[0] http://pad.lv/1131914
