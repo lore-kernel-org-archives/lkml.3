@@ -1,40 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab3C2JM3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 05:12:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48442 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754069Ab3C2JM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 05:12:27 -0400
-Message-ID: <51555AF9.4020009@suse.cz>
-Date: Fri, 29 Mar 2013 10:12:25 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: liguang <lig.fnst@cn.fujitsu.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][update] Makefile: allow no update .config build
-References: <1364517997-24067-1-git-send-email-lig.fnst@cn.fujitsu.com>
-In-Reply-To: <1364517997-24067-1-git-send-email-lig.fnst@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	id S1754580Ab3C2JO3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 05:14:29 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:59603 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753586Ab3C2JOZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 05:14:25 -0400
+From: Joseph CHANG <josright123@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Matthew Leach <matthew@mattleach.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joseph CHANG <joseph_chang@davicom.com.tw>,
+        Jiri Pirko <jiri@resnulli.us>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Joseph CHANG <josright123@gmail.com>
+Subject: [PATCH 1/1] DM9000B: driver initialization upgrade
+Date: Fri, 29 Mar 2013 17:13:42 +0800
+Message-Id: <1364548422-3051-1-git-send-email-josright123@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.3.2013 01:46, liguang wrote:
-> if we pull some commits from other git repo
-> which bring in a few CONFIG_* options, then
-> we have to build all again, but we do assure
-> these options are not interesting for us,
-> so the long waiting build will be offending.
-> this change help us to avoid all-build.
+Fix bug for DM9000 revision B which contain a DSP PHY
 
-scripts/basic/fixdep makes sure that only the affected parts are rebuild
-when the config changes. Obviously, if a CONFIG_ option appears in a
-widely used header file, the whole kernel is rebuilt. Otherwise object
-files would be built with different versions of the header file. If you
-want to shoot yourself in the foot and override this, then do a 'touch
-include/config/*.conf', but please do not add such a hack to the Makefile.
+DM9000B use DSP PHY instead previouse DM9000 revisions' analog PHY,
+So need extra change in initialization, For
+explicity PHY Reset and PHY init parameter, and
+first DM9000_NCR reset need NCR_MAC_LBK bit by dm9000_probe().
 
-Michal
+Following DM9000_NCR reset cause by dm9000_open() clear the
+NCR_MAC_LBK bit.
+
+Without this fix, Power-up FIFO pointers error happen around 2%
+rate among Davicom's customers' boards. With this fix, All above
+cases can be solved.
+
+Signed-off-by: Joseph CHANG <josright123@gmail.com>
+---
+ drivers/net/ethernet/davicom/dm9000.c |  214 +++++++++++++++++----------------
+ drivers/net/ethernet/davicom/dm9000.h |   11 ++-
+ 2 files changed, 120 insertions(+), 105 deletions(-)
+
+diff --git a/drivers/net/ethernet/davicom/dm9000.c b/drivers/net/ethernet/davicom/dm9000.c
+index 8cdf025..9eada8e 100644
+--- a/drivers/net/ethernet/davicom/dm9000.c
++++ b/drivers/net/ethernet/davicom/dm9000.c
+@@ -257,6 +257,107 @@ static void dm9000_dumpblk_32bit(void __iomem *reg, int count)
+ 		tmp = readl(reg);
+ }
+ 
++/*
++ * Sleep, either by using msleep() or if we are suspending, then
++ * use mdelay() to sleep.
++ */
++static void dm9000_msleep(board_info_t *db, unsigned int ms)
++{
++	if (db->in_suspend)
++		mdelay(ms);
++	else
++		msleep(ms);
++}
++
++/* Read a word from phyxcer */
++static int
++dm9000_phy_read(struct net_device *dev, int phy_reg_unused, int reg)
++{
++	board_info_t *db = netdev_priv(dev);
++	unsigned long flags;
++	unsigned int reg_save;
++	int ret;
++
++	mutex_lock(&db->addr_lock);
++
++	spin_lock_irqsave(&db->lock, flags);
++
++	/* Save previous register address */
++	reg_save = readb(db->io_addr);
++
++	/* Fill the phyxcer register into REG_0C */
++	iow(db, DM9000_EPAR, DM9000_PHY | reg);
++
++	/* Issue phyxcer read command */
++	iow(db, DM9000_EPCR, EPCR_ERPRR | EPCR_EPOS);
++
++	writeb(reg_save, db->io_addr);
++	spin_unlock_irqrestore(&db->lock, flags);
++
++	dm9000_msleep(db, 1);		/* Wait read complete */
++
++	spin_lock_irqsave(&db->lock, flags);
++	reg_save = readb(db->io_addr);
++
++	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer read command */
++
++	/* The read data keeps on REG_0D & REG_0E */
++	ret = (ior(db, DM9000_EPDRH) << 8) | ior(db, DM9000_EPDRL);
++
++	/* restore the previous address */
++	writeb(reg_save, db->io_addr);
++	spin_unlock_irqrestore(&db->lock, flags);
++
++	mutex_unlock(&db->addr_lock);
++
++	dm9000_dbg(db, 5, "phy_read[%02x] -> %04x\n", reg, ret);
++	return ret;
++}
++
++/* Write a word to phyxcer */
++static void
++dm9000_phy_write(struct net_device *dev,
++		 int phyaddr_unused, int reg, int value)
++{
++	board_info_t *db = netdev_priv(dev);
++	unsigned long flags;
++	unsigned long reg_save;
++
++	dm9000_dbg(db, 5, "phy_write[%02x] = %04x\n", reg, value);
++	mutex_lock(&db->addr_lock);
++
++	spin_lock_irqsave(&db->lock, flags);
++
++	/* Save previous register address */
++	reg_save = readb(db->io_addr);
++
++	/* Fill the phyxcer register into REG_0C */
++	iow(db, DM9000_EPAR, DM9000_PHY | reg);
++
++	/* Fill the written data into REG_0D & REG_0E */
++	iow(db, DM9000_EPDRL, value);
++	iow(db, DM9000_EPDRH, value >> 8);
++
++	/* Issue phyxcer write command */
++	iow(db, DM9000_EPCR, EPCR_EPOS | EPCR_ERPRW);
++
++	writeb(reg_save, db->io_addr);
++	spin_unlock_irqrestore(&db->lock, flags);
++
++	dm9000_msleep(db, 1);		/* Wait write complete */
++
++	spin_lock_irqsave(&db->lock, flags);
++	reg_save = readb(db->io_addr);
++
++	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer write command */
++
++	/* restore the previous address */
++	writeb(reg_save, db->io_addr);
++
++	spin_unlock_irqrestore(&db->lock, flags);
++	mutex_unlock(&db->addr_lock);
++}
++
+ /* dm9000_set_io
+  *
+  * select the specified set of io routines to use with the
+@@ -795,6 +896,9 @@ dm9000_init_dm9000(struct net_device *dev)
+ 
+ 	iow(db, DM9000_GPCR, GPCR_GEP_CNTL);	/* Let GPIO0 output */
+ 
++	dm9000_phy_write(dev, 0, MII_BMCR, BMCR_RESET); /* PHY RESET */
++	dm9000_phy_write(dev, 0, MII_DM_DSPCR, DSPCR_INIT_PARAM); /* Init */
++
+ 	ncr = (db->flags & DM9000_PLATF_EXT_PHY) ? NCR_EXT_PHY : 0;
+ 
+ 	/* if wol is needed, then always set NCR_WAKEEN otherwise we end
+@@ -1201,109 +1305,6 @@ dm9000_open(struct net_device *dev)
+ 	return 0;
+ }
+ 
+-/*
+- * Sleep, either by using msleep() or if we are suspending, then
+- * use mdelay() to sleep.
+- */
+-static void dm9000_msleep(board_info_t *db, unsigned int ms)
+-{
+-	if (db->in_suspend)
+-		mdelay(ms);
+-	else
+-		msleep(ms);
+-}
+-
+-/*
+- *   Read a word from phyxcer
+- */
+-static int
+-dm9000_phy_read(struct net_device *dev, int phy_reg_unused, int reg)
+-{
+-	board_info_t *db = netdev_priv(dev);
+-	unsigned long flags;
+-	unsigned int reg_save;
+-	int ret;
+-
+-	mutex_lock(&db->addr_lock);
+-
+-	spin_lock_irqsave(&db->lock,flags);
+-
+-	/* Save previous register address */
+-	reg_save = readb(db->io_addr);
+-
+-	/* Fill the phyxcer register into REG_0C */
+-	iow(db, DM9000_EPAR, DM9000_PHY | reg);
+-
+-	iow(db, DM9000_EPCR, EPCR_ERPRR | EPCR_EPOS);	/* Issue phyxcer read command */
+-
+-	writeb(reg_save, db->io_addr);
+-	spin_unlock_irqrestore(&db->lock,flags);
+-
+-	dm9000_msleep(db, 1);		/* Wait read complete */
+-
+-	spin_lock_irqsave(&db->lock,flags);
+-	reg_save = readb(db->io_addr);
+-
+-	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer read command */
+-
+-	/* The read data keeps on REG_0D & REG_0E */
+-	ret = (ior(db, DM9000_EPDRH) << 8) | ior(db, DM9000_EPDRL);
+-
+-	/* restore the previous address */
+-	writeb(reg_save, db->io_addr);
+-	spin_unlock_irqrestore(&db->lock,flags);
+-
+-	mutex_unlock(&db->addr_lock);
+-
+-	dm9000_dbg(db, 5, "phy_read[%02x] -> %04x\n", reg, ret);
+-	return ret;
+-}
+-
+-/*
+- *   Write a word to phyxcer
+- */
+-static void
+-dm9000_phy_write(struct net_device *dev,
+-		 int phyaddr_unused, int reg, int value)
+-{
+-	board_info_t *db = netdev_priv(dev);
+-	unsigned long flags;
+-	unsigned long reg_save;
+-
+-	dm9000_dbg(db, 5, "phy_write[%02x] = %04x\n", reg, value);
+-	mutex_lock(&db->addr_lock);
+-
+-	spin_lock_irqsave(&db->lock,flags);
+-
+-	/* Save previous register address */
+-	reg_save = readb(db->io_addr);
+-
+-	/* Fill the phyxcer register into REG_0C */
+-	iow(db, DM9000_EPAR, DM9000_PHY | reg);
+-
+-	/* Fill the written data into REG_0D & REG_0E */
+-	iow(db, DM9000_EPDRL, value);
+-	iow(db, DM9000_EPDRH, value >> 8);
+-
+-	iow(db, DM9000_EPCR, EPCR_EPOS | EPCR_ERPRW);	/* Issue phyxcer write command */
+-
+-	writeb(reg_save, db->io_addr);
+-	spin_unlock_irqrestore(&db->lock, flags);
+-
+-	dm9000_msleep(db, 1);		/* Wait write complete */
+-
+-	spin_lock_irqsave(&db->lock,flags);
+-	reg_save = readb(db->io_addr);
+-
+-	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer write command */
+-
+-	/* restore the previous address */
+-	writeb(reg_save, db->io_addr);
+-
+-	spin_unlock_irqrestore(&db->lock, flags);
+-	mutex_unlock(&db->addr_lock);
+-}
+-
+ static void
+ dm9000_shutdown(struct net_device *dev)
+ {
+@@ -1502,7 +1503,12 @@ dm9000_probe(struct platform_device *pdev)
+ 	db->flags |= DM9000_PLATF_SIMPLE_PHY;
+ #endif
+ 
+-	dm9000_reset(db);
++	/* Fixing bug on dm9000_probe, takeover dm9000_reset(db),
++	 * Need 'NCR_MAC_LBK' bit to indeed stable our DM9000 fifo
++	 * while probe stage.
++	 */
++
++	iow(db, DM9000_NCR, NCR_MAC_LBK | NCR_RST);
+ 
+ 	/* try multiple times, DM9000 sometimes gets the read wrong */
+ 	for (i = 0; i < 8; i++) {
+diff --git a/drivers/net/ethernet/davicom/dm9000.h b/drivers/net/ethernet/davicom/dm9000.h
+index 55688bd..9ce058a 100644
+--- a/drivers/net/ethernet/davicom/dm9000.h
++++ b/drivers/net/ethernet/davicom/dm9000.h
+@@ -69,7 +69,9 @@
+ #define NCR_WAKEEN          (1<<6)
+ #define NCR_FCOL            (1<<4)
+ #define NCR_FDX             (1<<3)
+-#define NCR_LBK             (3<<1)
++
++#define NCR_RESERVED        (3<<1)
++#define NCR_MAC_LBK         (1<<1)
+ #define NCR_RST	            (1<<0)
+ 
+ #define NSR_SPEED           (1<<7)
+@@ -167,5 +169,12 @@
+ #define ISR_LNKCHNG		(1<<5)
+ #define ISR_UNDERRUN		(1<<4)
+ 
++/* Davicom MII registers.
++ */
++
++#define MII_DM_DSPCR		0x1b    /* DSP Control Register */
++
++#define DSPCR_INIT_PARAM	0xE100	/* DSP init parameter */
++
+ #endif /* _DM9000X_H_ */
+ 
+-- 
+1.7.1
+
