@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab3C2BBu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 21:01:50 -0400
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:35027 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754169Ab3C2BBt (ORCPT
+	id S1754562Ab3C2BPa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 21:15:30 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:50233 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811Ab3C2BP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 21:01:49 -0400
+	Thu, 28 Mar 2013 21:15:29 -0400
+Message-ID: <5154EAE6.6010106@oracle.com>
+Date: Thu, 28 Mar 2013 21:14:14 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130310 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <1363844081-17182-1-git-send-email-kpark3469@gmail.com>
-References: <1363844081-17182-1-git-send-email-kpark3469@gmail.com>
-Date: Fri, 29 Mar 2013 10:01:48 +0900
-Message-ID: <CA+KhAHbCJY915ARbBsTa3Ud1GD4LOPjHCWXcna69V3JbYLG1OQ@mail.gmail.com>
-Subject: Re: [PATCH v2] tracepoints: prevents null probe from being added
-From: Keun-O Park <kpark3469@gmail.com>
-To: rostedt@goodmis.org
-Cc: keun-o.park@windriver.com, linux-kernel@vger.kernel.org,
-        kpark3469@gmail.com, mathieu.desnoyers@efficios.com
+To: Michel Lespinasse <walken@google.com>
+CC: Rik van Riel <riel@surriel.com>, torvalds@linux-foundation.org,
+        davidlohr.bueso@hp.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
+        lwoodman@redhat.com, chegu_vinod@hp.com,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH -mm -next] ipc,sem: untangle RCU locking with find_alloc_undo
+References: <1363809337-29718-1-git-send-email-riel@surriel.com> <5151DBD3.6080201@oracle.com> <20130328113222.194bbfe8@cuia.bos.redhat.com> <CANN689E30ORoTO75Xr=AknoHy+1ts7awi=4a3Jef31L6M2gMdQ@mail.gmail.com>
+In-Reply-To: <CANN689E30ORoTO75Xr=AknoHy+1ts7awi=4a3Jef31L6M2gMdQ@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 2:34 PM,  <kpark3469@gmail.com> wrote:
-> From: Sahara <keun-o.park@windriver.com>
->
-> Somehow tracepoint_entry_add_probe function allows a null probe function.
-> And, this may lead to unexpected result since the number of probe
-> functions in an entry can be counted by checking whether probe is null
-> or not in for-loop.
-> This patch prevents the null probe from being added.
-> In tracepoint_entry_remove_probe function, checking probe parameter
-> within for-loop is moved out for code efficiency leaving the null probe
-> feature which removes all probe functions in the entry.
->
-> Signed-off-by: Sahara <keun-o.park@windriver.com>
-> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-> Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> ---
->  kernel/tracepoint.c |   18 ++++++++++--------
->  1 files changed, 10 insertions(+), 8 deletions(-)
->
-> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-> index 0c05a45..7d69348 100644
-> --- a/kernel/tracepoint.c
-> +++ b/kernel/tracepoint.c
-> @@ -112,7 +112,8 @@ tracepoint_entry_add_probe(struct tracepoint_entry *entry,
->         int nr_probes = 0;
->         struct tracepoint_func *old, *new;
->
-> -       WARN_ON(!probe);
-> +       if (WARN_ON(!probe))
-> +               return ERR_PTR(-EINVAL);
->
->         debug_print_probes(entry);
->         old = entry->funcs;
-> @@ -152,13 +153,15 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
->
->         debug_print_probes(entry);
->         /* (N -> M), (N > 1, M >= 0) probes */
-> -       for (nr_probes = 0; old[nr_probes].func; nr_probes++) {
-> -               if (!probe ||
-> -                   (old[nr_probes].func == probe &&
-> -                    old[nr_probes].data == data))
-> -                       nr_del++;
-> +       if (probe) {
-> +               for (nr_probes = 0; old[nr_probes].func; nr_probes++) {
-> +                       if (old[nr_probes].func == probe &&
-> +                            old[nr_probes].data == data)
-> +                               nr_del++;
-> +               }
->         }
->
-> +       /* If probe is NULL, all funcs in the entry will be removed. */
->         if (nr_probes - nr_del == 0) {
->                 /* N -> 0, (N > 1) */
->                 entry->funcs = NULL;
-> @@ -173,8 +176,7 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
->                 if (new == NULL)
->                         return ERR_PTR(-ENOMEM);
->                 for (i = 0; old[i].func; i++)
-> -                       if (probe &&
-> -                           (old[i].func != probe || old[i].data != data))
-> +                       if (old[i].func != probe || old[i].data != data)
->                                 new[j++] = old[i];
->                 new[nr_probes - nr_del].func = NULL;
->                 entry->refcount = nr_probes - nr_del;
-> --
-> 1.7.1
->
+On 03/28/2013 09:00 PM, Michel Lespinasse wrote:
+> On Thu, Mar 28, 2013 at 8:32 AM, Rik van Riel <riel@surriel.com> wrote:
+>> The ipc semaphore code has a nasty RCU locking tangle, with both
+>> find_alloc_undo and semtimedop taking the rcu_read_lock(). The
+>> code can be cleaned up somewhat by only taking the rcu_read_lock
+>> once.
+>>
+>> The only caller of find_alloc_undo is in semtimedop.
+>>
+>> This should solve the trinity issue reported by Sasha Levin.
+>>
+>> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+>> Signed-off-by: Rik van Riel <riel@redhat.com>
+> 
+> Looks good^Wbetter. I have nothing specific to say other than I've
+> been staring at it for 10 minutes :)
+> 
+> Reviewed-by: Michel Lespinasse <walken@google.com>
 
-Hi Steve,
-Please check out this v2 patch. Seemingly I got no response from you.
-Thanks.
+And the warnings are gone:
 
--- Kpark
+	Tested-by: Sasha Levin <sasha.levin@oracle.com>
+
+
+Thanks,
+Sasha
