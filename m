@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603Ab3C2R7M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 13:59:12 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:48388 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755927Ab3C2R7K (ORCPT
+	id S1756700Ab3C2SA3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 14:00:29 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:51376 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755604Ab3C2SA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 13:59:10 -0400
-Date: Fri, 29 Mar 2013 13:59:09 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-usb@vger.kernel.org, Manjunath Goudar <manjunath.goudar@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, Deepak Saxena <dsaxena@linaro.org>,
-        Shiraz Hashim <shiraz.hashim@st.com>, <spear-devel@list.st.com>
-Subject: Re: [PATCH v3 2/7] USB: EHCI: make ehci-spear a separate driver
-In-Reply-To: <1364507705-22012-3-git-send-email-arnd@arndb.de>
-Message-ID: <Pine.LNX.4.44L0.1303291353210.1467-100000@iolanthe.rowland.org>
+	Fri, 29 Mar 2013 14:00:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130329161746.GA8391@redhat.com>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+	<20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org>
+	<20130326192852.GA25899@redhat.com>
+	<20130326124309.077e21a9f59aaa3f3355e09b@linux-foundation.org>
+	<20130329161746.GA8391@redhat.com>
+Date: Fri, 29 Mar 2013 11:00:27 -0700
+X-Google-Sender-Auth: n-EjRmdehM6ig4MWLVEMqfzHYuY
+Message-ID: <CA+55aFxbs0=fpFA+rAW-jOD9C8muRfA0otfJ13yhhLMSg7H8bw@mail.gmail.com>
+Subject: Re: ipc,sem: sysv semaphore scalability
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@surriel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        hhuang@redhat.com, "Low, Jason" <jason.low2@hp.com>,
+        Michel Lespinasse <walken@google.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Mar 2013, Arnd Bergmann wrote:
+On Fri, Mar 29, 2013 at 9:17 AM, Dave Jones <davej@redhat.com> wrote:
+>
+> Now that I have that reverted, I'm not seeing msgrcv traces any more, but
+> I've started seeing this..
+>
+> general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>
+> Looks like seg was already kfree'd.
 
-> From: Manjunath Goudar <manjunath.goudar@linaro.org>
-> 
-> Separate the SPEAr host controller driver from ehci-hcd host code
-> so that it can be built as a separate driver module.
-> This work is part of enabling multi-platform kernels on ARM;
-> however, note that other changes are still needed before SPEAr can be
-> booted with a multi-platform kernel, but they are queued in the
-> arm-soc tree for 3.10.
-> 
-> With the infrastructure added by Alan Stern in patch 3e0232039
-> "USB: EHCI: prepare to make ehci-hcd a library module", we can
-> avoid this problem by turning a bus glue into a separate
-> module, as we do here for the SPEAr bus glue.
-> 
-> In V3:
->  -Detailed commit message added here about why this patch is required.
->  -Eliminated ehci_spear_setup routine beacuse hcd registers
->   directly setting in spear_ehci_hcd_drv_probe function.
+Just to clarify: is this you testing -mm that has Davidlohr's and
+Rik's scalability patches? Or mainline?
 
-Fix the grammar, please.
-
->  -spear_overrides struct initialized.
->  -Eliminate struct ehci_hcd ehci from struct spear_ehci,to enable SPEAr clock
->   uses directly usb_hcd *hcd in spear_start_ehci function.
->  -to_spear_ehci() macro modified for spear_ehci.
-> 
-> In V2:
-> Replaced spear as SPEAr everywhere, leaving functions/variables/config options.
-
-...
-
-> @@ -34,49 +45,7 @@ static void spear_stop_ehci(struct spear_ehci *ehci)
->  	clk_disable_unprepare(ehci->clk);
->  }
->  
-> -static int ehci_spear_setup(struct usb_hcd *hcd)
-> -{
-> -	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
-> -
-> -	/* registers start at offset 0x0 */
-> -	ehci->caps = hcd->regs;
-
-This line never got moved into spear_ehci_hcd_drv_probe().
-
-> @@ -161,7 +130,7 @@ static int spear_ehci_hcd_drv_probe(struct platform_device *pdev)
->  		goto err_put_hcd;
->  	}
->  
-> -	ehci = (struct spear_ehci *)hcd_to_ehci(hcd);
-> +	ehci = to_spear_ehci(hcd);
->  	ehci->clk = usbh_clk;
-
-I strongly believe that the name "ehci" should be reserved for
-variables of type struct ehci_hcd.  Here and in the start, stop, and
-remove routines, please use "spear_ehci" as the name for a variable of
-type struct spear_ehci.  Or whatever else you want -- just don't call
-it "ehci" or "ehci_p".
-
-Alan Stern
-
+         Linus
