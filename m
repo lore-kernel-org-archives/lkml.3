@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab3C2KgF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 06:36:05 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:51301
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754298Ab3C2KgD (ORCPT
+	id S1754589Ab3C2KnA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 06:43:00 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:55791 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab3C2Km6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 06:36:03 -0400
-Message-ID: <1364553360.5053.84.camel@laptop>
-Subject: Re: [PATCH v2 0/5] cpuacct, cgroup: Kill cgroup_subsys.active
-From: Peter Zijlstra <peterz@infradead.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Date: Fri, 29 Mar 2013 11:36:00 +0100
-In-Reply-To: <51553813.10004@huawei.com>
-References: <51553813.10004@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	Fri, 29 Mar 2013 06:42:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>
+Subject: Re: Generic syscall ABI support
+Date: Fri, 29 Mar 2013 10:42:52 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+References: <1364532097.18069.7@driftwood> <51551E60.4070708@zytor.com> <1364550599.7481.8.camel@leyfoon-vm>
+In-Reply-To: <1364550599.7481.8.camel@leyfoon-vm>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201303291042.52284.arnd@arndb.de>
+X-Provags-ID: V02:K0:ua5EyTjPlwzLtNMdnrSZRgOEBkH2tZLx7Pbk6aOWPAI
+ s2js7QCRnCEkWm39N4Em8V2kUDHFhdz2ablpq/+VRwzQ1poyR2
+ USfRHPp5wT1sVr4AyaK97vcHsW1VF6N/6yg9JJ1qrOXzacvxM1
+ 9tdRdt/bZQDblvFjwPpuPA5XpymY0pkUc+1vX8oCdsm5FNO+IU
+ r89g0Ff7vzABK8TsGkSW0QZXNsrtaxbAL3E3JbnfMBco1WBrQN
+ 5hkdiTXEVxsTJBrgy33m2NMTmTGYHoBI1GRykaeJv0mt8Xuxo4
+ ozPs0dRETVjbiv1tpGW0NJkY0/WWcXBezuvbMPtvW8gDTeSuBk
+ ou+0VhENwU2mgQsy6OiI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-29 at 14:43 +0800, Li Zefan wrote:
-> cpuacct is the only user of cgroup_subsys.active flag.
+On Friday 29 March 2013, Ley Foon Tan wrote:
+> > 
+> Thanks for the suggestion.
+> Too bad we don't have in-house expert in klibc and musl port. 
 > 
-> The flag is needed because cpuacct_charge() and
-> cpuacct_account_field() can
-> be called when cpuacct hasn't been initialized during system bootup.
+> Hi HPA,
+> I knew you are the developer of klibc. Do you have any documentation to
+> port a new architecture and also how to replace glibc with klibc in
+> build?
 > 
-> This patch initializes cpuacct earlier, and the result is we don't
-> have
-> to check the flag in scheduler hot path.
-> 
-> Note, this patchset is based on "[PATCH v2 0/7] sched: Split cpuacct"
-> 
->         http://lkml.org/lkml/2013/3/28/1
-> 
-> 0001-cpuacct-allocate-per_cpu-cpuusage-for-root-cpuacct-s.patch
-> 0002-cpuacct-Initialize-root-cpuacct-earlier.patch
-> 0003-cpuacct-Initialize-cpuacct-subsystem-earlier.patch
-> 0004-cpuacct-No-need-to-check-subsys-active-state.patch
-> 0005-cgroup-Remove-subsys.active-flag.patch
+> By the way, klibc or musl is easier to port?
 
+I have no experience with musl, but klibc is probably the easiest to
+port that you can find. Doing a new port doesn't require any prior
+knowledge of klibc itself, the code is so small that any experienced
+C programmer can understand it entirely in short time and do a new
+port. However, it is also not meant as a general purpose libc or a
+glibc replacement, as there is a very limited set of code that can use
+it. It's certainly complete enough to test that the ABI itself is
+working.
 
-Seems sane enough
-
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-
+	Arnd
