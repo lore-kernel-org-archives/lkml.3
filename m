@@ -1,123 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab3C2JS0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 05:18:26 -0400
-Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:50445 "EHLO
-	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753320Ab3C2JSY (ORCPT
+	id S1755280Ab3C2J1H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 05:27:07 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:47046 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755094Ab3C2J1E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 05:18:24 -0400
-From: <ning.n.jiang@gmail.com>
-To: <linux@arm.linux.org.uk>, <kgene.kim@samsung.com>, <davidb@codeaurora.org>,
-        <dwalker@fifo99.com>, <bryanh@codeaurora.org>,
-        <john.stultz@linaro.org>, <tglx@linutronix.de>,
-        <linus.walleij@linaro.org>, <shawn.guo@linaro.org>,
-        <rob.herring@calxeda.com>, <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        Ning Jiang <ning.n.jiang@gmail.com>
-Subject: [PATCH] ARM: timer: Shutdown clock event device when stopping local timer
-Date: Fri, 29 Mar 2013 17:24:09 +0800
-Message-ID: <1364549049-29278-1-git-send-email-ning.n.jiang@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 29 Mar 2013 05:27:04 -0400
+Date: Fri, 29 Mar 2013 05:27:02 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
+        linux-ext4@vger.kernel.org
+Message-ID: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com>
+In-Reply-To: <20130328120517.GB5737@thunk.org>
+Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591!
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.66.13.149]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ning Jiang <ning.n.jiang@gmail.com>
 
-Currently there are two problems when we try to stop local timer.
-First, it calls set_mode function directly so mode state is not
-updated for the clock event device. Second, it makes the device
-unused instead of shutdown.
 
-A subtle error will happen because of it. When a cpu is plugged out
-it will stop the local timer. It will call tick_nohz_idle_enter()
-in idle thread afterwards. It will cancel the sched timer and try
-to reprogram the next event. This is wrong since the local timer
-is supposed to be stopped.
+----- Original Message -----
+> From: "Theodore Ts'o" <tytso@mit.edu>
+> To: "CAI Qian" <caiqian@redhat.com>
+> Cc: "LKML" <linux-kernel@vger.kernel.org>, "linux-s390" <linux-s390@vger.kernel.org>, "Steve Best"
+> <sbest@redhat.com>, linux-ext4@vger.kernel.org
+> Sent: Thursday, March 28, 2013 8:05:17 PM
+> Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591!
+> 
+> On Thu, Mar 28, 2013 at 02:40:33AM -0400, CAI Qian wrote:
+> > System hung when running xfstests-dev 013 test case on an s390x
+> > guest. Never saw
+> > this on 3.9-rc3 before but need to double-check. Any idea?
+> > 
+> > Ý 1113.795759¨ ------------Ý cut here ¨------------
+> > Ý 1113.795771¨ kernel BUG at fs/ext4/inode.c:1591!
+> 
+> thanks for the report.  What kernel version did this come from?  Was
+> it 3.9-rc4?  (line 1591 for 3.9-rc3 doesn't contain a BUG_ON).
+Yes, the lastest mainline.
+> 
+> If it is indeed 3.9-rc4, it would be helpful, since you can reproduce
+> the problem, to insert a debugging printk which fires when
+> bh->b_blocknr != pblock before the BUG_ON, and have it print the
+> b_blocknr and pblock values.
+bh->b_blocknr=100346
+pblock=66797
 
-The right way to stop the local timer is to shutdown it by calling
-clockevents_set_mode(). Thus when we try to reprogram the clock
-event device, it will return directly without doing anything since
-the clock mode is CLOCK_EVT_MODE_SHUTDOWN.
-
-Signed-off-by: Ning Jiang <ning.n.jiang@gmail.com>
----
- arch/arm/kernel/smp_twd.c                |    2 +-
- arch/arm/mach-exynos/mct.c               |    2 +-
- arch/arm/mach-msm/timer.c                |    2 +-
- drivers/clocksource/arm_arch_timer.c     |    2 +-
- drivers/clocksource/time-armada-370-xp.c |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-index 3f25650..c1d4ab4 100644
---- a/arch/arm/kernel/smp_twd.c
-+++ b/arch/arm/kernel/smp_twd.c
-@@ -92,7 +92,7 @@ static int twd_timer_ack(void)
- 
- static void twd_timer_stop(struct clock_event_device *clk)
- {
--	twd_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
-+	clockevents_set_mode(clk, CLOCK_EVT_MODE_SHUTDOWN);
- 	disable_percpu_irq(clk->irq);
- }
- 
-diff --git a/arch/arm/mach-exynos/mct.c b/arch/arm/mach-exynos/mct.c
-index c9d6650..b2d0d46 100644
---- a/arch/arm/mach-exynos/mct.c
-+++ b/arch/arm/mach-exynos/mct.c
-@@ -429,7 +429,7 @@ static int __cpuinit exynos4_local_timer_setup(struct clock_event_device *evt)
- static void exynos4_local_timer_stop(struct clock_event_device *evt)
- {
- 	unsigned int cpu = smp_processor_id();
--	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
-+	clockevents_set_mode(evt, CLOCK_EVT_MODE_SHUTDOWN);
- 	if (mct_int_type == MCT_INT_SPI)
- 		if (cpu == 0)
- 			remove_irq(evt->irq, &mct_tick0_event_irq);
-diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
-index 2969027..9b0cc66 100644
---- a/arch/arm/mach-msm/timer.c
-+++ b/arch/arm/mach-msm/timer.c
-@@ -152,7 +152,7 @@ static int __cpuinit msm_local_timer_setup(struct clock_event_device *evt)
- 
- static void msm_local_timer_stop(struct clock_event_device *evt)
- {
--	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
-+	clockevents_set_mode(evt, CLOCK_EVT_MODE_SHUTDOWN);
- 	disable_percpu_irq(evt->irq);
- }
- 
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index d7ad425..beecb26 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -242,7 +242,7 @@ static void __cpuinit arch_timer_stop(struct clock_event_device *clk)
- 			disable_percpu_irq(arch_timer_ppi[PHYS_NONSECURE_PPI]);
- 	}
- 
--	clk->set_mode(CLOCK_EVT_MODE_UNUSED, clk);
-+	clockevents_set_mode(clk, CLOCK_EVT_MODE_SHUTDOWN);
- }
- 
- static int __cpuinit arch_timer_cpu_notify(struct notifier_block *self,
-diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
-index 47a6730..bfb2971 100644
---- a/drivers/clocksource/time-armada-370-xp.c
-+++ b/drivers/clocksource/time-armada-370-xp.c
-@@ -201,7 +201,7 @@ static int __cpuinit armada_370_xp_timer_setup(struct clock_event_device *evt)
- 
- static void  armada_370_xp_timer_stop(struct clock_event_device *evt)
- {
--	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
-+	clockevents_set_mode(evt, CLOCK_EVT_MODE_SHUTDOWN);
- 	disable_percpu_irq(evt->irq);
- }
- 
--- 
-1.7.1
-
+Bisecting results so far,
+git bisect start
+# good: [a937536b868b8369b98967929045f1df54234323] Linux 3.9-rc3
+git bisect good a937536b868b8369b98967929045f1df54234323
+# bad: [9064171268d838b8f283fe111ef086b9479d059a] Merge tag 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/sfr/next-fixes
+git bisect bad 9064171268d838b8f283fe111ef086b9479d059a
+# bad: [38d78e587d4960d0db94add518d27ee74bad2301] mqueue: sys_mq_open: do not call mnt_drop_write() if read-only
+git bisect bad 38d78e587d4960d0db94add518d27ee74bad2301
+# good: [e7489622d3603b7d161b484dcd340d9f678b0c7a] Merge tag 'arm64-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64
+git bisect good e7489622d3603b7d161b484dcd340d9f678b0c7a
+# good: [172a271b5e090da7468c66b9ccbcdb3d929eed75] Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux
+git bisect good 172a271b5e090da7468c66b9ccbcdb3d929eed75
+# good: [0a7e453103b9718d357688b83bb968ee108cc874] Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux
+git bisect good 0a7e453103b9718d357688b83bb968ee108cc874
+# bad: [0e401101db49959f5783f6ee9e676124b5a183ac] ext4: fix memory leakage in mext_check_coverage
+git bisect bad 0e401101db49959f5783f6ee9e676124b5a183ac
+CAI Qian
+> 
+> Thanks,
+> 
+> 						- Ted
+> 
