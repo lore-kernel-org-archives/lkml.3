@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175Ab3C2Nrc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 09:47:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56839 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754109Ab3C2Nrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 09:47:31 -0400
-Date: Fri, 29 Mar 2013 14:47:27 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        stable@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: [PATCH 1/2] hugetlbfs: stop setting VM_DONTDUMP in initializing
- vma(VM_HUGETLB)
-Message-ID: <20130329134727.GA21879@dhcp22.suse.cz>
-References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1364485358-8745-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1755894Ab3C2NvL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 09:51:11 -0400
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:54094 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591Ab3C2NvK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 09:51:10 -0400
+Message-ID: <51559C4A.7060905@acm.org>
+Date: Fri, 29 Mar 2013 08:51:06 -0500
+From: Corey Minyard <tcminyard@gmail.com>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364485358-8745-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chen Gang <gang.chen@asianux.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        openipmi-developer@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/char/ipmi: memcpy, need additional 2 bytes to
+ avoid memory overflow
+References: <51554055.90500@asianux.com>
+In-Reply-To: <51554055.90500@asianux.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 28-03-13 11:42:37, Naoya Horiguchi wrote:
-> Currently we fail to include any data on hugepages into coredump,
-> because VM_DONTDUMP is set on hugetlbfs's vma. This behavior was recently
-> introduced by commit 314e51b98 "mm: kill vma flag VM_RESERVED and
-> mm->reserved_vm counter". This looks to me a serious regression,
-> so let's fix it.
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Yes, this is correct, I've pulled it into my tree.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+-corey
 
+On 03/29/2013 02:18 AM, Chen Gang wrote:
+>    when calling memcpy, read_data and write_data need additional 2 bytes.
+>
+>    write_data:
+>      for checking:  "if (size > IPMI_MAX_MSG_LENGTH)"
+>      for operating: "memcpy(bt->write_data + 3, data + 1, size - 1)"
+>
+>    read_data:
+>      for checking:  "if (msg_len < 3 || msg_len > IPMI_MAX_MSG_LENGTH)"
+>      for operating: "memcpy(data + 2, bt->read_data + 4, msg_len - 2)"
+>
+>
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 > ---
->  fs/hugetlbfs/inode.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git v3.9-rc3.orig/fs/hugetlbfs/inode.c v3.9-rc3/fs/hugetlbfs/inode.c
-> index 84e3d85..523464e 100644
-> --- v3.9-rc3.orig/fs/hugetlbfs/inode.c
-> +++ v3.9-rc3/fs/hugetlbfs/inode.c
-> @@ -110,7 +110,7 @@ static int hugetlbfs_file_mmap(struct file *file, struct vm_area_struct *vma)
->  	 * way when do_mmap_pgoff unwinds (may be important on powerpc
->  	 * and ia64).
->  	 */
-> -	vma->vm_flags |= VM_HUGETLB | VM_DONTEXPAND | VM_DONTDUMP;
-> +	vma->vm_flags |= VM_HUGETLB | VM_DONTEXPAND;
->  	vma->vm_ops = &hugetlb_vm_ops;
->  
->  	if (vma->vm_pgoff & (~huge_page_mask(h) >> PAGE_SHIFT))
-> -- 
-> 1.7.11.7
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>   drivers/char/ipmi/ipmi_bt_sm.c |    4 ++--
+>   1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
+> index cdd4c09f..a22a7a5 100644
+> --- a/drivers/char/ipmi/ipmi_bt_sm.c
+> +++ b/drivers/char/ipmi/ipmi_bt_sm.c
+> @@ -95,9 +95,9 @@ struct si_sm_data {
+>   	enum bt_states	state;
+>   	unsigned char	seq;		/* BT sequence number */
+>   	struct si_sm_io	*io;
+> -	unsigned char	write_data[IPMI_MAX_MSG_LENGTH];
+> +	unsigned char	write_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
+>   	int		write_count;
+> -	unsigned char	read_data[IPMI_MAX_MSG_LENGTH];
+> +	unsigned char	read_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
+>   	int		read_count;
+>   	int		truncated;
+>   	long		timeout;	/* microseconds countdown */
 
--- 
-Michal Hocko
-SUSE Labs
