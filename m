@@ -1,87 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab3C2Qm2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 12:42:28 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:43373 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754928Ab3C2Qm1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 12:42:27 -0400
-Message-ID: <5155C466.9040406@gmail.com>
-Date: Sat, 30 Mar 2013 00:42:14 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1756165Ab3C2QnH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 12:43:07 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:51862 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755015Ab3C2QnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 12:43:03 -0400
+X-IronPort-AV: E=Sophos;i="4.87,373,1363132800"; 
+   d="scan'208";a="16409688"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <Stefano.Stabellini@eu.citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <will.deacon@arm.com>, <arnd@arndb.de>, <marc.zyngier@arm.com>,
+        <linux@arm.linux.org.uk>, <nico@linaro.org>
+Subject: [PATCH v4 1/2] arm: introduce psci_smp_ops
+Date: Fri, 29 Mar 2013 16:42:49 +0000
+Message-ID: <1364575371-8926-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [PATCH v3, part4 38/39] mm/hotplug: prepare for removing num_physpages
-References: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com> <1364313298-17336-39-git-send-email-jiang.liu@huawei.com> <20130329111856.GA3824@merkur.ravnborg.org> <5155B517.3040501@gmail.com> <20130329161700.GA6201@merkur.ravnborg.org> <5155C196.5020909@gmail.com> <20130329164014.GA6266@merkur.ravnborg.org>
-In-Reply-To: <20130329164014.GA6266@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2013 12:40 AM, Sam Ravnborg wrote:
-> On Sat, Mar 30, 2013 at 12:30:14AM +0800, Jiang Liu wrote:
->> On 03/30/2013 12:17 AM, Sam Ravnborg wrote:
->>>>>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->>>>>> index 97454b3..9b1b494 100644
->>>>>> --- a/mm/memory_hotplug.c
->>>>>> +++ b/mm/memory_hotplug.c
->>>>>> @@ -751,10 +751,6 @@ EXPORT_SYMBOL_GPL(restore_online_page_callback);
->>>>>>  
->>>>>>  void __online_page_set_limits(struct page *page)
->>>>>>  {
->>>>>> -	unsigned long pfn = page_to_pfn(page);
->>>>>> -
->>>>>> -	if (pfn >= num_physpages)
->>>>>> -		num_physpages = pfn + 1;
->>>>>>  }
->>>>>>  EXPORT_SYMBOL_GPL(__online_page_set_limits);
->>>>>
->>>>> How can this be correct?
->>>>> With this change __online_page_set_limits() is now a nop.
->>>> Hi Sam,
->>>> 	We will eventually remove the global variable num_physpages in the last patch.
->>>> I kept the nop __online_page_set_limits() because I have a plan to use it to fix other
->>>> bugs in memory hotplug, otherwise it may be killed too.
->>>
->>> The xen ballon driver uses __online_page_set_limits for memory
->>> hotplug - so this will break this driver afaics.
->> Hi Sam,
->> 	I haven't gotten your point yet here. 
->> 	Function __online_page_set_limits() was only used to update the global variable
->> num_physpages, and one of the goals of this patch set is to get rid of num_physpages.
->> So I think it won't break Xen balloon driver.
->> 	Please refer to the patch here, which eventually kills num_physpages.
->> http://marc.info/?l=linux-mm&m=136431387813309&w=2
-> 
-> I assumed that num_physpages was used run-time to check for the
-> available number of pages. And __online_page_set_limits() were used
-> to reduced the number of online pages.
-> 
-> But a quick grep did not reveal any such use.
-> 
-> So it looks OK - thanks for the clarification.
-Yeah, we have a patch to replace num_physpages with totalram_pages for runtime access,
-please refer to:
-http://marc.info/?l=linux-mm&m=136431351413052&w=2
+Rename virt_smp_ops to psci_smp_ops and move them to arch/arm/kernel/psci_smp.c.
+Remove mach-virt/platsmp.c, now unused.
+Compile psci_smp if CONFIG_ARM_PSCI and CONFIG_SMP.
 
-> 
-> 	Sam
-> 
+Add a cpu_die smp_op based on psci_ops.cpu_off.
+
+Initialize PSCI before setting smp_ops in setup_arch.
+Use psci_smp_ops if the platform doesn't provide its own smp_ops.
+
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: will.deacon@arm.com
+CC: arnd@arndb.de
+CC: marc.zyngier@arm.com
+CC: linux@arm.linux.org.uk
+CC: nico@linaro.org
+---
+ arch/arm/include/asm/psci.h  |    9 +++++
+ arch/arm/kernel/Makefile     |    5 ++-
+ arch/arm/kernel/psci.c       |    3 +-
+ arch/arm/kernel/psci_smp.c   |   67 ++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/setup.c      |    7 ++++-
+ arch/arm/mach-virt/Makefile  |    1 -
+ arch/arm/mach-virt/platsmp.c |   58 ------------------------------------
+ arch/arm/mach-virt/virt.c    |    3 --
+ 8 files changed, 87 insertions(+), 66 deletions(-)
+ create mode 100644 arch/arm/kernel/psci_smp.c
+ delete mode 100644 arch/arm/mach-virt/platsmp.c
+
+diff --git a/arch/arm/include/asm/psci.h b/arch/arm/include/asm/psci.h
+index ce0dbe7..4134dda 100644
+--- a/arch/arm/include/asm/psci.h
++++ b/arch/arm/include/asm/psci.h
+@@ -32,5 +32,14 @@ struct psci_operations {
+ };
+ 
+ extern struct psci_operations psci_ops;
++extern struct smp_operations psci_smp_ops;
+ 
++#ifdef CONFIG_ARM_PSCI
++int psci_init(void);
++bool psci_smp_available(void);
++#else
++static inline int psci_init(void) { return -ENODEV; }
++static inline bool psci_smp_available(void) { return false; }
++#endif
++ 
+ #endif /* __ASM_ARM_PSCI_H */
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 5f3338e..dd9d90a 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -82,6 +82,9 @@ obj-$(CONFIG_DEBUG_LL)	+= debug.o
+ obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
+ 
+ obj-$(CONFIG_ARM_VIRT_EXT)	+= hyp-stub.o
+-obj-$(CONFIG_ARM_PSCI)		+= psci.o
++ifeq ($(CONFIG_ARM_PSCI),y)
++obj-y				+= psci.o
++obj-$(CONFIG_SMP)		+= psci_smp.o
++endif
+ 
+ extra-y := $(head-y) vmlinux.lds
+diff --git a/arch/arm/kernel/psci.c b/arch/arm/kernel/psci.c
+index 3653164..acb968b 100644
+--- a/arch/arm/kernel/psci.c
++++ b/arch/arm/kernel/psci.c
+@@ -158,7 +158,7 @@ static const struct of_device_id psci_of_match[] __initconst = {
+ 	{},
+ };
+ 
+-static int __init psci_init(void)
++int __init psci_init(void)
+ {
+ 	struct device_node *np;
+ 	const char *method;
+@@ -208,4 +208,3 @@ out_put_node:
+ 	of_node_put(np);
+ 	return 0;
+ }
+-early_initcall(psci_init);
+diff --git a/arch/arm/kernel/psci_smp.c b/arch/arm/kernel/psci_smp.c
+new file mode 100644
+index 0000000..66b0f77
+--- /dev/null
++++ b/arch/arm/kernel/psci_smp.c
+@@ -0,0 +1,67 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * Copyright (C) 2012 ARM Limited
++ *
++ * Author: Will Deacon <will.deacon@arm.com>
++ */
++
++#include <linux/init.h>
++#include <linux/irqchip/arm-gic.h>
++#include <linux/smp.h>
++#include <linux/of.h>
++
++#include <asm/psci.h>
++#include <asm/smp_plat.h>
++
++extern void secondary_startup(void);
++
++static int __cpuinit psci_boot_secondary(unsigned int cpu,
++					 struct task_struct *idle)
++{
++	if (psci_ops.cpu_on)
++		return psci_ops.cpu_on(cpu_logical_map(cpu),
++				       __pa(secondary_startup));
++	return -ENODEV;
++}
++
++static void __cpuinit psci_secondary_init(unsigned int cpu)
++{
++	gic_secondary_init(0);
++}
++
++#ifdef CONFIG_HOTPLUG_CPU
++void __ref psci_cpu_die(unsigned int cpu)
++{
++       const struct psci_power_state ps = {
++               .type = PSCI_POWER_STATE_TYPE_POWER_DOWN,
++       };
++
++       if (psci_ops.cpu_off)
++               psci_ops.cpu_off(ps);
++
++       /* We should never return */
++       panic("psci: cpu %d failed to shutdown\n", cpu);
++}
++#else
++#define psci_cpu_die NULL
++#endif
++
++bool __init psci_smp_available(void)
++{
++	/* is cpu_on available at least? */
++	return (psci_ops.cpu_on != NULL);
++}
++
++struct smp_operations __initdata psci_smp_ops = {
++	.smp_secondary_init	= psci_secondary_init,
++	.smp_boot_secondary	= psci_boot_secondary,
++	.cpu_die		= psci_cpu_die,
++};
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 3f6cbb2..341efaa 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -36,6 +36,7 @@
+ #include <asm/cputype.h>
+ #include <asm/elf.h>
+ #include <asm/procinfo.h>
++#include <asm/psci.h>
+ #include <asm/sections.h>
+ #include <asm/setup.h>
+ #include <asm/smp_plat.h>
+@@ -766,9 +767,13 @@ void __init setup_arch(char **cmdline_p)
+ 	unflatten_device_tree();
+ 
+ 	arm_dt_init_cpu_maps();
++	psci_init();
+ #ifdef CONFIG_SMP
+ 	if (is_smp()) {
+-		smp_set_ops(mdesc->smp);
++		if (mdesc->smp)
++			smp_set_ops(mdesc->smp);
++		else if (psci_smp_available())
++			smp_set_ops(&psci_smp_ops);
+ 		smp_init_cpus();
+ 	}
+ #endif
+diff --git a/arch/arm/mach-virt/Makefile b/arch/arm/mach-virt/Makefile
+index 042afc1..7ddbfa6 100644
+--- a/arch/arm/mach-virt/Makefile
++++ b/arch/arm/mach-virt/Makefile
+@@ -3,4 +3,3 @@
+ #
+ 
+ obj-y					:= virt.o
+-obj-$(CONFIG_SMP)			+= platsmp.o
+diff --git a/arch/arm/mach-virt/platsmp.c b/arch/arm/mach-virt/platsmp.c
+deleted file mode 100644
+index 8badaab..0000000
+--- a/arch/arm/mach-virt/platsmp.c
++++ /dev/null
+@@ -1,58 +0,0 @@
+-/*
+- * Dummy Virtual Machine - does what it says on the tin.
+- *
+- * Copyright (C) 2012 ARM Ltd
+- * Author: Will Deacon <will.deacon@arm.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+- */
+-
+-#include <linux/init.h>
+-#include <linux/smp.h>
+-#include <linux/of.h>
+-
+-#include <linux/irqchip/arm-gic.h>
+-
+-#include <asm/psci.h>
+-#include <asm/smp_plat.h>
+-
+-extern void secondary_startup(void);
+-
+-static void __init virt_smp_init_cpus(void)
+-{
+-}
+-
+-static void __init virt_smp_prepare_cpus(unsigned int max_cpus)
+-{
+-}
+-
+-static int __cpuinit virt_boot_secondary(unsigned int cpu,
+-					 struct task_struct *idle)
+-{
+-	if (psci_ops.cpu_on)
+-		return psci_ops.cpu_on(cpu_logical_map(cpu),
+-				       __pa(secondary_startup));
+-	return -ENODEV;
+-}
+-
+-static void __cpuinit virt_secondary_init(unsigned int cpu)
+-{
+-	gic_secondary_init(0);
+-}
+-
+-struct smp_operations __initdata virt_smp_ops = {
+-	.smp_init_cpus		= virt_smp_init_cpus,
+-	.smp_prepare_cpus	= virt_smp_prepare_cpus,
+-	.smp_secondary_init	= virt_secondary_init,
+-	.smp_boot_secondary	= virt_boot_secondary,
+-};
+diff --git a/arch/arm/mach-virt/virt.c b/arch/arm/mach-virt/virt.c
+index 528c05e..c417752 100644
+--- a/arch/arm/mach-virt/virt.c
++++ b/arch/arm/mach-virt/virt.c
+@@ -44,12 +44,9 @@ static const char *virt_dt_match[] = {
+ 	NULL
+ };
+ 
+-extern struct smp_operations virt_smp_ops;
+-
+ DT_MACHINE_START(VIRT, "Dummy Virtual Machine")
+ 	.init_irq	= irqchip_init,
+ 	.init_time	= virt_timer_init,
+ 	.init_machine	= virt_init,
+-	.smp		= smp_ops(virt_smp_ops),
+ 	.dt_compat	= virt_dt_match,
+ MACHINE_END
+-- 
+1.7.2.5
 
