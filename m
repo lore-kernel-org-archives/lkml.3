@@ -1,123 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab3C2NyO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 09:54:14 -0400
-Received: from mail-gg0-f181.google.com ([209.85.161.181]:41288 "EHLO
-	mail-gg0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754847Ab3C2NyN (ORCPT
+	id S1755966Ab3C2N4I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 09:56:08 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:42069 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755258Ab3C2N4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 09:54:13 -0400
-Message-ID: <51559D01.9070607@gmail.com>
-Date: Fri, 29 Mar 2013 08:54:09 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3] [RFC] arm: use PSCI if available
-References: <1364388639-11210-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130327133811.GE18429@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1303271610430.4430@kaball.uk.xensource.com> <20130327172306.GB20990@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1303281225050.4430@kaball.uk.xensource.com> <alpine.LFD.2.03.1303281048060.1372@syhkavp.arg> <51545BE4.9050206@gmail.com> <alpine.LFD.2.03.1303281135320.1372@syhkavp.arg> <51548E1C.4070508@gmail.com> <alpine.DEB.2.02.1303291257060.4430@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1303291257060.4430@kaball.uk.xensource.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 29 Mar 2013 09:56:07 -0400
+Date: Fri, 29 Mar 2013 09:55:58 -0400
+From: Rik van Riel <riel@surriel.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>, torvalds@linux-foundation.org,
+        davidlohr.bueso@hp.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
+        lwoodman@redhat.com, chegu_vinod@hp.com, Dave Jones <davej@redhat.com>,
+        benisty.e@gmail.com, Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH v3 -mm -next] ipc,sem: fix lockdep false positive
+Message-ID: <20130329095558.5fffd95f@annuminas.surriel.com>
+In-Reply-To: <CANN689GGwztb=beCNtUU8SJp6sfjn_mNTaHQxezt=ehtxvYBAA@mail.gmail.com>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+	<5150B1C2.8090607@oracle.com>
+	<20130325163844.042a45ba@annuminas.surriel.com>
+	<CANN689FdtXs0-VKxwWHQKgnnSvcvu5hHDMmGOe0H+bdHA4BhXg@mail.gmail.com>
+	<1364303965.5053.29.camel@laptop>
+	<CANN689HCbuVOc73BpVubYy2AjA2mcz_iyTg6Fo2Zz-NGnQ93TA@mail.gmail.com>
+	<1364308023.5053.40.camel@laptop>
+	<5151BC78.3030306@surriel.com>
+	<1364373750.5053.54.camel@laptop>
+	<20130328162337.3003ccd4@cuia.bos.redhat.com>
+	<CANN689GGwztb=beCNtUU8SJp6sfjn_mNTaHQxezt=ehtxvYBAA@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2013 08:22 AM, Stefano Stabellini wrote:
-> On Thu, 28 Mar 2013, Rob Herring wrote:
->> On 03/28/2013 10:39 AM, Nicolas Pitre wrote:
->>> On Thu, 28 Mar 2013, Rob Herring wrote:
->>>
->>>> On 03/28/2013 09:51 AM, Nicolas Pitre wrote:
->>>>> On Thu, 28 Mar 2013, Stefano Stabellini wrote:
->>>>>
->>>>>> - the interface to bring up secondary cpus is different and based on
->>>>>> PSCI, in fact Xen is going to add a PSCI node to the device tree so that
->>>>>> Dom0 can use it.
->>>>>>
->>>>>> Oh wait, Dom0 is not going to use the PSCI interface even if the node is
->>>>>> present on device tree because it's going to prefer the platform smp_ops
->>>>>> instead.
->>>>>
->>>>> Waitaminute...  I must have missed this part.
->>>>>
->>>>> Who said platform specific methods must be used in preference to PSCI?
->>>>
->>>> I did. Specifically, I said the platform should be allowed to provide
->>>> its own smp_ops. A platform may need to do addtional things on top of
->>>> PSCI for example.
->>>
->>> Then the platform should have its special hook that would override the 
->>> default PSCI methods.  But, by *default* the PSCI methods should be used 
->>> if the related DT information is present.
->>
->> Agreed. The special hook to override is setting mach desc smp_ops, right?
-> 
-> If you consider the mach smp_ops a platform specific override, then
-> again PSCI and providing a PSCI node on DT doesn't solve the Xen problem
-> at all.
-> 
-> See above: Xen adds a PSCI node to DT, and Linux still does not use it.
+On Thu, 28 Mar 2013 19:50:47 -0700
+Michel Lespinasse <walken@google.com> wrote:
 
-Okay, I see. I wasn't distinguishing Dom0 vs DomU cases. Is this really
-the only issue with having a platform run in Dom0? We expect all
-platforms to work without any modifications? I would think for more
-complex platforms there would be some other work needed.
+> This is IMO where the spin_unlock_wait(&sma->sem_perm.lock) would
+> belong - right before the goto again.
 
-How is Xen going to really do physical cpu power management if a
-platform does not provide PSCI firmware? Are you going to pull all the
-platform specific code we have in the kernel now into Xen? If you make
-PSCI firmware a requirement for Xen, then you would only be modifying
-existing PSCI data to the DTB and the platform would be converted to use
-PSCI already.
+Here is the slightly more optimistic (and probably more readable)
+version of the patch:
 
->>>>> If DT does provide PSCI description, then PSCI should be used.  Doing 
->>>>> otherwise is senseless.  If PSCI is not to be used, then it should not 
->>>>> be present in DT.
->>>>
->>>> You can't assume the DT and kernel are in-sync. For example, I've added
->>>> PSCI in the firmware and DTB (part of the firmware), but the highbank
->>>> kernel may or may not use it depending if I convert it.
->>>
->>> If the kernel does not understand PSCI bindings in the DT, it naturally 
->>> won't use PSCI, right?  Conversely, if the firmware and therefore 
->>> provided DT don't have PSCI, then the PSCI enabled kernel won't use PSCI 
->>> either. So what is the problem?
->>
->> I'm distinguishing the kernel in general is enabled for PSCI and a
->> platform is enabled. The kernel may have PSCI smp_ops and the DTB may
->> have PSCI data, but that alone should not make a platform use the
->> default PSCI smp_ops. The platform has to make the decision and it
->> cannot be just based on the platform's dtb having PSCI data.
-> 
-> I can see how this would give greater flexibility to firmware
-> developers, but on the other hand it would limit the flexibility of the
-> kernel.
+---8<---
+Unfortunately the locking scheme originally proposed has false positives
+with lockdep.  This can be fixed by changing the code to only ever take
+one lock, and making sure that other relevant locks are not locked, before
+entering a critical section.
 
-It limits the flexibility of the kernel too. If PSCI is present in the
-DTB, then the kernel must use it and the platform has no say? That's not
-flexible.
+For the "global lock" case, this is done by taking the sem_array lock,
+and then (potentially) waiting for all the semaphore's spinlocks to be
+unlocked.
 
-> 
-> In fact, unfortunately, it is diametrically the opposite of what Xen
-> needs.
-> 
-> I would kindly ask the maintainers to let me know what direction I
-> should take to move forward.
+For the "local lock" case, we wait on the sem_array's lock to be free,
+before taking the semaphore local lock. To prevent races, we need to
+check again after we have taken the local lock.
 
-My argument is somewhat academic. I fully expect to convert highbank
-over to PSCI for 3.10 assuming this patch gets sorted out in time. So it
-is not really an issue for me. Adding Nico's smp_init function could
-give the platform flexibility later if needed.
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ ipc/sem.c |   46 +++++++++++++++++++++++++++++++---------------
+ 1 files changed, 31 insertions(+), 15 deletions(-)
 
-We're only talking about the behavior of a small portion of the patch,
-so I would go ahead with implementing the rest of the feedback.
-
-Rob
+diff --git a/ipc/sem.c b/ipc/sem.c
+index 36500a6..5142171 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -320,21 +320,26 @@ void __init sem_init (void)
+ }
+ 
+ /*
+- * If the sem_array contains just one semaphore, or if multiple
+- * semops are performed in one syscall, or if there are complex
+- * operations pending, the whole sem_array is locked.
+- * If one semop is performed on an array with multiple semaphores,
+- * get a shared lock on the array, and lock the individual semaphore.
++ * If the request contains only one semaphore operation, and there are
++ * no complex transactions pending, lock only the semaphore involved.
++ * Otherwise, lock the entire semaphore array, since we either have
++ * multiple semaphores in our own semops, or we need to look at
++ * semaphores from other pending complex operations.
+  *
+  * Carefully guard against sma->complex_count changing between zero
+  * and non-zero while we are spinning for the lock. The value of
+  * sma->complex_count cannot change while we are holding the lock,
+  * so sem_unlock should be fine.
++ *
++ * The global lock path checks that all the local locks have been released,
++ * checking each local lock once. This means that the local lock paths
++ * cannot start their critical sections while the global lock is held.
+  */
+ static inline int sem_lock(struct sem_array *sma, struct sembuf *sops,
+ 			      int nsops)
+ {
+ 	int locknum;
++ again:
+ 	if (nsops == 1 && !sma->complex_count) {
+ 		struct sem *sem = sma->sem_base + sops->sem_num;
+ 
+@@ -347,17 +352,34 @@ static inline int sem_lock(struct sem_array *sma, struct sembuf *sops,
+ 		 */
+ 		if (unlikely(sma->complex_count)) {
+ 			spin_unlock(&sem->lock);
+-			goto lock_all;
++			goto lock_array;
++		}
++
++		/*
++		 * Another process is holding the global lock on the
++		 * sem_array; we cannot enter our critical section,
++		 * but have to wait for the global lock to be released.
++		 */
++		if (unlikely(spin_is_locked(&sma->sem_perm.lock))) {
++			spin_unlock(&sem->lock);
++			spin_unlock_wait(&sma->sem_perm.lock);
++			goto again;
+ 		}
++
+ 		locknum = sops->sem_num;
+ 	} else {
+ 		int i;
+-		/* Lock the sem_array, and all the semaphore locks */
+- lock_all:
++		/*
++		 * Lock the semaphore array, and wait for all of the
++		 * individual semaphore locks to go away.  The code
++		 * above ensures no new single-lock holders will enter
++		 * their critical section while the array lock is held.
++		 */
++ lock_array:
+ 		spin_lock(&sma->sem_perm.lock);
+ 		for (i = 0; i < sma->sem_nsems; i++) {
+ 			struct sem *sem = sma->sem_base + i;
+-			spin_lock(&sem->lock);
++			spin_unlock_wait(&sem->lock);
+ 		}
+ 		locknum = -1;
+ 	}
+@@ -367,11 +389,6 @@ static inline int sem_lock(struct sem_array *sma, struct sembuf *sops,
+ static inline void sem_unlock(struct sem_array *sma, int locknum)
+ {
+ 	if (locknum == -1) {
+-		int i;
+-		for (i = 0; i < sma->sem_nsems; i++) {
+-			struct sem *sem = sma->sem_base + i;
+-			spin_unlock(&sem->lock);
+-		}
+ 		spin_unlock(&sma->sem_perm.lock);
+ 	} else {
+ 		struct sem *sem = sma->sem_base + locknum;
+@@ -558,7 +575,6 @@ static int newary(struct ipc_namespace *ns, struct ipc_params *params)
+ 	for (i = 0; i < nsems; i++) {
+ 		INIT_LIST_HEAD(&sma->sem_base[i].sem_pending);
+ 		spin_lock_init(&sma->sem_base[i].lock);
+-		spin_lock(&sma->sem_base[i].lock);
+ 	}
+ 
+ 	sma->complex_count = 0;
