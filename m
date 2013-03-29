@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab3C2G2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 02:28:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12422 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041Ab3C2G2K (ORCPT
+	id S1753316Ab3C2GhQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 02:37:16 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:61708 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702Ab3C2GhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 02:28:10 -0400
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=mtzxT06hbSuhjF5GPAQA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1364538488.10629.14.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.2.42-rt62
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Fri, 29 Mar 2013 02:28:08 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+	Fri, 29 Mar 2013 02:37:15 -0400
+Message-ID: <5155365F.1010203@huawei.com>
+Date: Fri, 29 Mar 2013 14:36:15 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 0/7] sched: Split cpuacct
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+v2: rebase against tip-tree
 
-Dear RT Folks,
+I don't rebase "[PATCH 0/5] cpuacct, cgroup: Remove cgroup_subsys.active",
+because it can be applied cleanly on top of this patchset.
 
-I'm pleased to announce the 3.2.42-rt62 stable release.
+============================
 
+- This patchset splits cpuacct out of core scheduler code.
+- Plus two small optimizations.
 
-This release is just an update to the new stable 3.2.42 version
-and no RT specific changes have been made.
+0001-sched-Split-cpuacct-code-out-of-core.c.patch
+0002-sched-Split-cpuacct-out-of-sched.h.patch
+0003-cpuacct-Add-cpuacct_init.patch
+0004-cpuacct-Add-cpuacct_acount_field.patch
+0005-cpuacct-Remove-redundant-NULL-checks-in-cpuacct_char.patch
+0006-cpuacct-Remove-redundant-NULL-checks-in-cpuacct_acou.patch
+0007-cpuacct-Clean-up-cpuacct.h.patch
 
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 401f784923d5e2c68a6844aa9d5c5c7faaf523be
-
-
-Or to build 3.2.42-rt62 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.42.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.42-rt62.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+---
+ kernel/sched/Makefile  |   1 +
+ kernel/sched/core.c    | 228 +----------------------------------------------
+ kernel/sched/cpuacct.c | 303 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/cpuacct.h |  22 +++++
+ kernel/sched/cputime.c |  18 +---
+ kernel/sched/sched.h   |  48 +---------
+ 6 files changed, 330 insertions(+), 290 deletions(-)
