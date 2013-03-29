@@ -1,223 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab3C2Wae (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 18:30:34 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:47063 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757084Ab3C2Wad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 18:30:33 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 linux-next] cpufreq: ondemand: Calculate gradient of CPU load to early increase frequency
-Date: Fri, 29 Mar 2013 23:38:03 +0100
-Message-ID: <2826152.N3vY2cE3iV@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51561556.7020904@semaphore.gr>
-References: <51253715.7080600@semaphore.gr> <CAKohpokKCrvMYWQCRWccDJHbBNO7km5-vP=d3TwhDyU7HGX-YA@mail.gmail.com> <51561556.7020904@semaphore.gr>
+	id S1757313Ab3C2Wgb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 18:36:31 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:43825 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757227Ab3C2Wg3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 18:36:29 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VPS-5(zzbb2dI98dI9371Ic89bh936eI146fI1432Idb82hzz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah906i1155h)
+Date: Fri, 29 Mar 2013 15:36:18 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Peter Crosthwaite <pcrost@xilinx.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <git@xilinx.com>,
+        Jan =?utf-8?B?TMO8YmJl?= <jlu@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: Re: RFC v2: Zynq Clock Controller
+References: <27dae808-1d3a-4001-8eb2-b0a6e2a34b8f@AM1EHSMHS013.ehs.local>
+ <515093B4.2090701@wwwdotorg.org>
+ <8fd7278d-37c5-48ff-8d06-edc64d532a96@VA3EHSMHS037.ehs.local>
+ <5150DEB6.7070208@wwwdotorg.org>
+ <b810d127-dad8-447c-bf88-8ac715debbff@CO9EHSMHS026.ehs.local>
+ <20130327021844.4014.43809@quantum>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20130327021844.4014.43809@quantum>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <9b6821a5-8275-427e-a5aa-1bfd8e800d1b@TX2EHSMHS027.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, March 30, 2013 12:27:34 AM Stratos Karafotis wrote:
-> On 02/22/2013 03:56 AM, Viresh Kumar wrote:
-> > On 21 February 2013 23:09, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> >
-> >> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> > 
-> > Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> > 
-> 
-> Hi Rafael,
-> 
-> In case you are interested in this patch I rebased it to the latest linux-pm/bleeding-edge.
+Hi Mike,
 
-Thanks!
+On Tue, Mar 26, 2013 at 07:18:44PM -0700, Mike Turquette wrote:
+> Quoting Sören Brinkmann (2013-03-25 17:03:24)
+> > On Mon, Mar 25, 2013 at 05:33:10PM -0600, Stephen Warren wrote:
+> > > On 03/25/2013 12:27 PM, Sören Brinkmann wrote:
+> > > > Hi Stephen,
+> > > > 
+> > > > On Mon, Mar 25, 2013 at 12:13:08PM -0600, Stephen Warren wrote:
+> > > >> On 03/20/2013 05:56 PM, Sören Brinkmann wrote:
+> > > >>> Hi,
+> > > >>>
+> > > >>> I spent some time working on this and incorporating feedback. Here's an updated proposal for a clock controller for Zynq:
+> > > >>>
+> > > >>> Required properties:
+> > > >>>  - #clock-cells : Must be 1
+> > > >>>  - compatible : "xlnx,ps7-clkc"  (this may become 'xlnx,zynq-clkc' terminology differs a bit between Xilinx internal and mainline)
+> > > >>>  - ps-clk-frequency : Frequency of the oscillator providing ps_clk in HZ
+> > > >>>                      (usually 33 MHz oscillators are used for Zynq platforms)
+> > > >>
+> > > >> This may have been mentioned before, but shouldn't the input clock be
+> > > >> represented as an actual clock in DT, and hence as an entry in this
+> > > >> node's clocks property? The crystal/... itself can be represented in DT
+> > > >> as a fixed-clock.
+> > > > Lars-Peter brought that up, too. Please refer to my answer to him.
+> > > > 
+> > > >>
+> > > >>>  - clock-output-names : List of strings used to name the clock outputs. Shall be a list of the outputs given below.
+> > > >>
+> > > >> That shouldn't be required.
+> > > >
+> > > > When I want to support of_clk_get_parent_name() for my clocks, I think
+> > > > it is. And I'm inclined to not brake this functionality.
+> > > 
+> > > The solution here is to make clock parent names irrelevant.
+> > > 
+> > > Also note that device tree is supposed to describe HW. As such, this
+> > > kind of internal implementation detail of the Linux clock driver should
+> > > have basically zero effect on the DT binding definition.
+> > > 
+> > > >>> Optional properties:
+> > > >>>  - clocks : as described in the clock bindings
+> > > >>>  - clock-names : as described in the clock bindings
+> > > >>
+> > > >> I think clocks should be required, with at least the main crystal clock
+> > > >> input always present, but perhaps having some optional entries for the
+> > > >> (E)MIO feature you mention.
+> > > >
+> > > > This is why I have the xtal separate. This way these props are purely
+> > > > optional and the xtal frequency is obtained separately. It also makes it
+> > > > a little easier internally, because I don't have to cope with a variable
+> > > > name for the xtal this way.
+> > > > 
+> > > > Describing the xtal as fixed clock in DT means a mandatory entry for
+> > > > 'clocks' and 'clock-names' and a variable name for the xtal clock. I
+> > > > wanted to avoid this.
+> > > 
+> > > I don't see any benefit with some properties being purely optional.
+> > > Having optional entries in a property seems just fine to me.
+> > > 
+> > > The name of the crystal clock should be irrelevant; that issue simply
+> > > needs to be fixed. It's driving too much of this discussion, and it will
+> > > be irrelevant once it's fixed.
+> > > 
+> > > >>> Example:
+> > > >>>         clkc: clkc {
+> > > >>>                 #clock-cells = <1>;
+> > > >>>                 compatible = "xlnx,ps7-clkc";
+> > > >>>                 ps-clk-frequency = <33333333>;
+> > > >>>                 clock-output-names = "armpll", "ddrpll", "iopll", "cpu_6or4x", "cpu_3or2x", "cpu_2x", "cpu_1x", "ddr2x", "ddr3x", "dci", "lqspi", "smc", "pcap", "gem0", "gem1", "fclk0", "fclk1", "fclk2", "fclk3", "can0", "can1", "sdio0", "sdio1", "uart0", "uart1", "spi0", "spi1", "dma", "usb0_aper", "usb1_aper", "gem0_aper", "gem1_aper", "sdio0_aper", "sdio1_aper", "spi0_aper", "spi1_aper", "can0_aper", "can1_aper", "i2c0_aper", "i2c1_aper", "uart0_aper", "uart1_aper", "gpio_aper", "lqspi_aper", "smc_aper", "swdt", "dbg_trc", "dbg_apb";  /* long list... explanation below */
+> > > >>>                 /* optional props */
+> > > >>>                 clocks = <&clkc 16>, <&clk_foo>;
+> > > >>>                 clock-names = "gem1_emio_clk", "can_mio_clk_23";
+> > > >>>         };
+> > > >>>
+> > > >>> The downside of supporting this is, that I don't see a way around explicitly listing the clock output names in the DT.
+> > > >>
+> > > >> (Please wrap your emails to ~74 characters or so)
+> > > > I changed my settings.
+> > > > 
+> > > >>
+> > > >> As Mike mentioned off-list, one can create a new clk registration API
+> > > >> that takes a struct clk* as parent rather than a char *clk_name.
+> > > >
+> > > > Then we also have to make sure clocks are probed in a specific order. To
+> > > > obtain a 'struct clk *' through clk_get() the requested clock has to be
+> > > > already been probed. Currently clock probing relies purely on data present
+> > > > in DT. This makes this proposal not that trivial, IMHO.
+> > > 
+> > > Simply use deferred probe.
+> > This would require major changes to the whole clock probing mechanism.
+> 
+> Which mechanism are you referring to?
+of_clk_init()
 
-I have a backlog of cpufreq patches to sort out, so it may take some time till
-I get to this one.
+> 
+> > Currently, clocks can not defer probing. And in case of circular
+> > dependencies in the clock tree, it would rather require a multiple steps
+> > probe. Simply deferring won't be enough.
+> 
+> Circular dependencies in the clock tree?
+Yes, I can route a clock from the processor part into the FPGA and back
+to be used as source for a couple of peripherals. And in the FPGA there
+may be all kinds of logic altering that clock.
 
-Thanks,
-Rafael
+> 
+> Anyways the clock core maintains an orphan list that was originally
+> designed for this problem: registering a clock before that clock's
+> parent is registered.  Just for kicks I have actually registered all of
+> OMAP4's clocks in exactly the opposite order and everything still works.
+> Of course this makes the clock registration parent-discovery code
+> O(n^2), but that is the same worst case for deferred probe.
+> 
+> As long as a key exists to link two clocks together then registration
+> order shouldn't matter.  Originally this key was an immutable clk name
+> string.
+> 
+> If clock parents are specified in DT then that should also suffice, in
+> place of doing string comparisons.
+> 
+> If no key to pair up clocks exists then yes we will have to rely purely
+> on the struct clk *opaque_cookie and register clocks in order.
+Okay, so I guess, the fundamental mechanisms should be in place. What is
+needed, is changing the key from being the clk name to something else.
+And preferably this something else is made up of something available
+through DT, so a child can reference its parent w/o the parent to be
+probed first. E.g. the provider's node name + the index of the clock
+output?
+You mentioned, something like this was supposed to happen anyway, right?
+Do you already have something specific in mind/are working on a
+solution?
+
+	Sören
 
 
-> ------------------------------------------
-> Instead of checking only the absolute value of CPU load_freq to increase
-> frequency, we detect forthcoming CPU load rise and increase frequency
-> earlier.
-> 
-> Every sampling rate, we calculate the gradient of load_freq. If it is
-> too steep we assume that the load most probably will go over
-> up_threshold in next iteration(s) and we increase frequency immediately.
-> 
-> New tuners are introduced:
-> - early_demand: to enable this functionality (disabled by default).
-> - grad_up_threshold: over this gradient of load we will increase
-> frequency immediately.
-> 
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> ---
->  drivers/cpufreq/cpufreq_governor.c |  1 +
->  drivers/cpufreq/cpufreq_governor.h |  3 ++
->  drivers/cpufreq/cpufreq_ondemand.c | 59 +++++++++++++++++++++++++++++++++++++-
->  3 files changed, 62 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-> index 41e5e56..1d9abc4 100644
-> --- a/drivers/cpufreq/cpufreq_governor.c
-> +++ b/drivers/cpufreq/cpufreq_governor.c
-> @@ -328,6 +328,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->  		} else {
->  			od_dbs_info->rate_mult = 1;
->  			od_dbs_info->sample_type = OD_NORMAL_SAMPLE;
-> +			od_dbs_info->prev_load_freq = 0;
->  			od_ops->powersave_bias_init_cpu(cpu);
->  		}
->  
-> diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
-> index 1f7de13..c33b37a 100644
-> --- a/drivers/cpufreq/cpufreq_governor.h
-> +++ b/drivers/cpufreq/cpufreq_governor.h
-> @@ -95,6 +95,7 @@ struct od_cpu_dbs_info_s {
->  	unsigned int freq_hi_jiffies;
->  	unsigned int rate_mult;
->  	unsigned int sample_type:1;
-> +	unsigned int prev_load_freq;
->  };
->  
->  struct cs_cpu_dbs_info_s {
-> @@ -113,6 +114,8 @@ struct od_dbs_tuners {
->  	unsigned int adj_up_threshold;
->  	unsigned int powersave_bias;
->  	unsigned int io_is_busy;
-> +	unsigned int grad_up_threshold;
-> +	unsigned int early_demand;
->  };
->  
->  struct cs_dbs_tuners {
-> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-> index 29ed48a..6cd59a7 100644
-> --- a/drivers/cpufreq/cpufreq_ondemand.c
-> +++ b/drivers/cpufreq/cpufreq_ondemand.c
-> @@ -31,6 +31,7 @@
->  #define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
->  #define DEF_FREQUENCY_UP_THRESHOLD		(80)
->  #define DEF_SAMPLING_DOWN_FACTOR		(1)
-> +#define DEF_GRAD_UP_THRESHOLD			(50)
->  #define MAX_SAMPLING_DOWN_FACTOR		(100000)
->  #define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
->  #define MICRO_FREQUENCY_UP_THRESHOLD		(95)
-> @@ -168,11 +169,26 @@ static void od_check_cpu(int cpu, unsigned int load_freq)
->  	struct cpufreq_policy *policy = dbs_info->cdbs.cur_policy;
->  	struct dbs_data *dbs_data = policy->governor_data;
->  	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
-> +	int boost_freq = 0;
->  
->  	dbs_info->freq_lo = 0;
->  
-> +	/*
-> +	 * Calculate the gradient of load_freq. If it is too steep we assume
-> +	 * that the load will go over up_threshold in next iteration(s) and
-> +	 * we increase the frequency immediately
-> +	 */
-> +	if (od_tuners->early_demand) {
-> +		if (load_freq > dbs_info->prev_load_freq &&
-> +		   (load_freq - dbs_info->prev_load_freq >
-> +		    od_tuners->grad_up_threshold * policy->cur))
-> +			boost_freq = 1;
-> +
-> +		dbs_info->prev_load_freq = load_freq;
-> +	}
-> +
->  	/* Check for frequency increase */
-> -	if (load_freq > od_tuners->up_threshold * policy->cur) {
-> +	if (boost_freq || load_freq > od_tuners->up_threshold * policy->cur) {
->  		/* If switching to max speed, apply sampling_down_factor */
->  		if (policy->cur < policy->max)
->  			dbs_info->rate_mult =
-> @@ -454,12 +470,47 @@ static ssize_t store_powersave_bias(struct cpufreq_policy *policy,
->  	return count;
->  }
->  
-> +static ssize_t store_grad_up_threshold(struct cpufreq_policy *policy,
-> +		const char *buf, size_t count)
-> +{
-> +	struct dbs_data *dbs_data = policy->governor_data;
-> +	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
-> +	unsigned int input;
-> +	int ret;
-> +	ret = sscanf(buf, "%u", &input);
-> +
-> +	if (ret != 1 || input > MAX_FREQUENCY_UP_THRESHOLD ||
-> +			input < MIN_FREQUENCY_UP_THRESHOLD) {
-> +		return -EINVAL;
-> +	}
-> +
-> +	od_tuners->grad_up_threshold = input;
-> +	return count;
-> +}
-> +
-> +static ssize_t store_early_demand(struct cpufreq_policy *policy,
-> +		const char *buf, size_t count)
-> +{
-> +	struct dbs_data *dbs_data = policy->governor_data;
-> +	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
-> +	unsigned int input;
-> +	int ret;
-> +
-> +	ret = sscanf(buf, "%u", &input);
-> +	if (ret != 1)
-> +		return -EINVAL;
-> +	od_tuners->early_demand = !!input;
-> +	return count;
-> +}
-> +
->  show_one(od, sampling_rate, sampling_rate);
->  show_one(od, io_is_busy, io_is_busy);
->  show_one(od, up_threshold, up_threshold);
->  show_one(od, sampling_down_factor, sampling_down_factor);
->  show_one(od, ignore_nice, ignore_nice);
->  show_one(od, powersave_bias, powersave_bias);
-> +show_one(od, grad_up_threshold, grad_up_threshold);
-> +show_one(od, early_demand, early_demand);
->  declare_show_sampling_rate_min();
->  
->  cpufreq_freq_attr_rw(sampling_rate);
-> @@ -468,6 +519,8 @@ cpufreq_freq_attr_rw(up_threshold);
->  cpufreq_freq_attr_rw(sampling_down_factor);
->  cpufreq_freq_attr_rw(ignore_nice);
->  cpufreq_freq_attr_rw(powersave_bias);
-> +cpufreq_freq_attr_rw(grad_up_threshold);
-> +cpufreq_freq_attr_rw(early_demand);
->  cpufreq_freq_attr_ro(sampling_rate_min);
->  
->  static struct attribute *dbs_attributes[] = {
-> @@ -478,6 +531,8 @@ static struct attribute *dbs_attributes[] = {
->  	&ignore_nice.attr,
->  	&powersave_bias.attr,
->  	&io_is_busy.attr,
-> +	&grad_up_threshold.attr,
-> +	&early_demand.attr,
->  	NULL
->  };
->  
-> @@ -525,9 +580,11 @@ static int od_init(struct dbs_data *dbs_data)
->  	}
->  
->  	tuners->sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR;
-> +	tuners->grad_up_threshold = DEF_GRAD_UP_THRESHOLD;
->  	tuners->ignore_nice = 0;
->  	tuners->powersave_bias = 0;
->  	tuners->io_is_busy = should_io_be_busy();
-> +	tuners->early_demand = 0;
->  
->  	dbs_data->tuners = tuners;
->  	mutex_init(&dbs_data->mutex);
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
