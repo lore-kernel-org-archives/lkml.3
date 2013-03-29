@@ -1,49 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab3C2OF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 10:05:56 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:48295 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755536Ab3C2OFz (ORCPT
+	id S1755844Ab3C2OHJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 10:07:09 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:59541 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754892Ab3C2OHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 10:05:55 -0400
-Date: Fri, 29 Mar 2013 10:05:54 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tony Prisk <linux@prisktech.co.nz>
-cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: ehci: mark unlink_empty_async_suspended() as
- __maybe_unused
-In-Reply-To: <5154B436.5080700@prisktech.co.nz>
-Message-ID: <Pine.LNX.4.44L0.1303291005120.1467-100000@iolanthe.rowland.org>
+	Fri, 29 Mar 2013 10:07:06 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [80.85.246.73]
+In-Reply-To: <OF2DFE75BF.1BA5B9C8-ON44257B3D.00492A11-44257B3D.0049472A@gb.elster.com>
+References: <OF2DFE75BF.1BA5B9C8-ON44257B3D.00492A11-44257B3D.0049472A@gb.elster.com>
+Date: Fri, 29 Mar 2013 18:07:05 +0400
+Message-ID: <CAOJe8K1LbPgBN5kgXF5W2Fg_JM0BGp69+auSZ6Nk+3appmXZOg@mail.gmail.com>
+Subject: Re: Fw: Bug in ks8851.c
+From: Denis Kirjanov <kda@linux-powerpc.org>
+To: Max.Nekludov@us.elster.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jiri@resnulli.us>,
+        linus971@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Renzelmann <mjr@cs.wisc.edu>,
+        Network Development <netdev@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Greg Ungerer <gerg@uclinux.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Mar 2013, Tony Prisk wrote:
+please respin this patch with a commit description.
 
-> On 29/03/13 10:16, Arnd Bergmann wrote:
-> > On Thursday 28 March 2013, Arnd Bergmann wrote:
-> >> Patch 4d053fdac3 "usb: ehci: unlink_empty_async_suspended() only used
-> >> with CONFIG_PM" tried to hide the unlink_empty_async_suspended function
-> >> inside of an #ifdef to work around an unused function warning.
-> > Hi Greg,
-> >
-> > Apparently the warning is now also in 3.8.5, so you might want to backport
-> > this fix as well after you send it upstream.
-> >
-> > 	Arnd
-> Grr, my bad - I originally wrote the patch with the forward decl 
-> #ifdef'd as well, but Alan pointed out that it didn't need to be. I 
-> thought I recompiled it after the change, but obviously not.
-
-It's my fault too.  I didn't realize the compiler would issue a warning 
-about a static declaration with no definition.
-
-Alan Stern
-
+On 3/29/13, Max.Nekludov@us.elster.com <Max.Nekludov@us.elster.com> wrote:
+>
+> Linus,
+>
+> I tried to send the mail to 'Ben Dooks <ben@simtec.co.uk>' but the address
+> is dead now.
+>> I assume you've tested it in practice?
+> Yes, I'm running the modified code both in bootloader and Linux kernel on
+> my board.
+>
+> Thanks,
+> Max
+>
+>  Signed-off-by: Max Nekludov <Max.Nekludov@us.elster.com>
+>  ---
+>  drivers/net/ethernet/micrel/ks8851.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/net/ethernet/micrel/ks8851.c
+> b/drivers/net/ethernet/micrel/ks8851.c
+> index 33bcb63d56a2..8fb481252e2c 100644
+> --- a/drivers/net/ethernet/micrel/ks8851.c
+> +++ b/drivers/net/ethernet/micrel/ks8851.c
+> @@ -528,7 +528,7 @@ static void ks8851_rx_pkts(struct ks8851_net *ks)
+>  	for (; rxfc != 0; rxfc--) {
+>  		rxh = ks8851_rdreg32(ks, KS_RXFHSR);
+>  		rxstat = rxh & 0xffff;
+> -		rxlen = rxh >> 16;
+> +		rxlen = (rxh >> 16) & 0xfff;
+>
+>  		netif_dbg(ks, rx_status, ks->netdev,
+>  			  "rx: stat 0x%04x, len 0x%04x\n", rxstat, rxlen);
+>
+>
+>
+>
+> Max,
+>  please cc the actual maintainers of the driver. The patch looks sane,
+> though. I assume you've tested it in practice?
+>
+> You also seem to have based this on an ancient version, the code has
+> long since moved from drivers/net/ks8851.c to
+> drivers/net/ethernet/micrel/ks8851.c (back in June of 2011), and it's
+> missing a sign-off from you.
+>
+> I'm attaching an updated patch for the rename/capitalization issue.
+>
+>      Linus
+>
+> On Thu, Mar 28, 2013 at 11:25 AM,  <Max.Nekludov@us.elster.com> wrote:
+>>
+>> According to the Datasheet (page 52):
+>> 15-12 Reserved
+>> 11-0 RXBC Receive Byte Count
+>> This field indicates the present received frame byte size.
+>>
+>> I suppose the code has a bug:
+>>                 rxh = ks8851_rdreg32(ks, KS_RXFHSR);
+>>                 rxstat = rxh & 0xffff;
+>>                 rxlen = rxh >> 16; // BUG!!! 0xFFF mask should be applied
+>>
+>> P.S.
+>> without bit mask applied I saw rxlen equal to 15360 which is bigger then
+>> entire RX queue size (12KB).
+>>
+>> Thanks,
+>> Max Nekludov
+>>
+>> From cb3199cee4490f98d6062e32a75ca377a32b55bc Mon Sep 17 00:00:00 2001
+>> From: Max Neklyudov <macscomp@gmail.com>
+>> Date: Tue, 26 Mar 2013 11:46:57 +0400
+>> Subject: [PATCH] Fix bug in ks8851 driver
+>>
+>> ---
+>>  drivers/net/ks8851.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/net/ks8851.c b/drivers/net/ks8851.c
+>> index 91a93cb..0dc03da 100644
+>> --- a/drivers/net/ks8851.c
+>> +++ b/drivers/net/ks8851.c
+>> @@ -553,7 +553,7 @@ static void ks8851_rx_pkts(struct ks8851_net *ks)
+>>         for (; rxfc != 0; rxfc--) {
+>>                 rxh = ks8851_rdreg32(ks, KS_RXFHSR);
+>>                 rxstat = rxh & 0xffff;
+>> -               rxlen = rxh >> 16;
+>> +               rxlen = (rxh >> 16) & 0xFFF;
+>>
+>>                 netif_dbg(ks, rx_status, ks->netdev,
+>>                           "rx: stat 0x%04x, len 0x%04x\n", rxstat,
+> rxlen);
+>> --
+>> 1.7.10.4
+>>
+>
+>
+> ______________________________________________________________________
+> This email has been spam and virus checked by Elster IT Services.(See
+> attached file: patch.diff)
