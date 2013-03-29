@@ -1,163 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab3C2FSO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 01:18:14 -0400
-Received: from mail1.bemta8.messagelabs.com ([216.82.243.208]:51274 "EHLO
-	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752794Ab3C2FSN (ORCPT
+	id S1754227Ab3C2F1I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 01:27:08 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:45295 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab3C2F1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 01:18:13 -0400
-X-Greylist: delayed 423 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Mar 2013 01:18:12 EDT
-X-Env-Sender: Max.Nekludov@us.elster.com
-X-Msg-Ref: server-12.tower-192.messagelabs.com!1364533864!11229258!1
-X-Originating-IP: [129.179.1.27]
-X-StarScan-Received: 
-X-StarScan-Version: 6.8.6.1; banners=-,-,-
-X-VirusChecked: Checked
-In-Reply-To: <CA+55aFyAAEvm4KMc2ERGbwUxNH==PJ440nW1aDf3wwxEipXKfw@mail.gmail.com>
-References: <OF7BC8BFEB.18C33C7E-ON44257B3C.0064CB53-44257B3C.00652C31@gb.elster.com> <CA+55aFyAAEvm4KMc2ERGbwUxNH==PJ440nW1aDf3wwxEipXKfw@mail.gmail.com>
-Subject: Re: Bug in ks8851.c
-X-KeepSent: 321F0E30:4321BF47-44257B3D:001A8EF2;
- type=4; name=$KeepSent
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jiri@resnulli.us>,
-        linus971@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Renzelmann <mjr@cs.wisc.edu>,
-        Network Development <netdev@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, trivial@rustcorp.com.au,
-        Greg Ungerer <gerg@uclinux.org>, linux-arm-kernel@lists.infradead.org
-X-Mailer: Lotus Notes Release 8.5.2FP3 July 11, 2011
-Message-ID: <OF321F0E30.4321BF47-ON44257B3D.001A8EF2-44257B3D.001C0F2A@gb.elster.com>
-From: Max.Nekludov@us.elster.com
-Date: Fri, 29 Mar 2013 09:06:28 +0400
-X-MIMETrack: Serialize by Router on US-SMTP01.domino.elster-group.com/RIM-TEMP(Release
- 8.5.2FP3|July 10, 2011) at 03/29/2013 12:59:16 AM
+	Fri, 29 Mar 2013 01:27:05 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/10] soft-offline: use migrate_pages() instead of migrate_huge_page()
+In-Reply-To: <20130327135250.GI16579@dhcp22.suse.cz>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1363983835-20184-4-git-send-email-n-horiguchi@ah.jp.nec.com> <87boa69z6j.fsf@linux.vnet.ibm.com> <20130327135250.GI16579@dhcp22.suse.cz>
+User-Agent: Notmuch/0.15.1+22~gc34effa (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Fri, 29 Mar 2013 10:56:00 +0530
+Message-ID: <87li967p5j.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-type: multipart/mixed; 
-	Boundary="0__=CBBBF1AEDF8908628f9e8a93df938690918cCBBBF1AEDF890862"
-Content-Disposition: inline
+Content-Type: text/plain
+x-cbid: 13032905-6102-0000-0000-0000033BF7FC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0__=CBBBF1AEDF8908628f9e8a93df938690918cCBBBF1AEDF890862
-Content-type: text/plain; charset=US-ASCII
+Michal Hocko <mhocko@suse.cz> writes:
 
-Linus,
-
-I tried to send the mail to 'Ben Dooks <ben@simtec.co.uk>' but the address
-is dead now.
-> I assume you've tested it in practice?
-Yes, I'm running the modified code both in bootloader and Linux kernel on
-my board.
-
-Thanks,
-Max
-
- Signed-off-by: Max Nekludov <Max.Nekludov@us.elster.com>
- ---
- drivers/net/ethernet/micrel/ks8851.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/micrel/ks8851.c
-b/drivers/net/ethernet/micrel/ks8851.c
-index 33bcb63d56a2..8fb481252e2c 100644
---- a/drivers/net/ethernet/micrel/ks8851.c
-+++ b/drivers/net/ethernet/micrel/ks8851.c
-@@ -528,7 +528,7 @@ static void ks8851_rx_pkts(struct ks8851_net *ks)
- 	for (; rxfc != 0; rxfc--) {
- 		rxh = ks8851_rdreg32(ks, KS_RXFHSR);
- 		rxstat = rxh & 0xffff;
--		rxlen = rxh >> 16;
-+		rxlen = (rxh >> 16) & 0xfff;
-
- 		netif_dbg(ks, rx_status, ks->netdev,
- 			  "rx: stat 0x%04x, len 0x%04x\n", rxstat, rxlen);
-
-
-
-
-Max,
- please cc the actual maintainers of the driver. The patch looks sane,
-though. I assume you've tested it in practice?
-
-You also seem to have based this on an ancient version, the code has
-long since moved from drivers/net/ks8851.c to
-drivers/net/ethernet/micrel/ks8851.c (back in June of 2011), and it's
-missing a sign-off from you.
-
-I'm attaching an updated patch for the rename/capitalization issue.
-
-     Linus
-
-On Thu, Mar 28, 2013 at 11:25 AM,  <Max.Nekludov@us.elster.com> wrote:
+> On Tue 26-03-13 16:59:40, Aneesh Kumar K.V wrote:
+>> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
+> [...]
+>> > diff --git v3.9-rc3.orig/mm/memory-failure.c v3.9-rc3/mm/memory-failure.c
+>> > index df0694c..4e01082 100644
+>> > --- v3.9-rc3.orig/mm/memory-failure.c
+>> > +++ v3.9-rc3/mm/memory-failure.c
+>> > @@ -1467,6 +1467,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
+>> >  	int ret;
+>> >  	unsigned long pfn = page_to_pfn(page);
+>> >  	struct page *hpage = compound_head(page);
+>> > +	LIST_HEAD(pagelist);
+>> >
+>> >  	/*
+>> >  	 * This double-check of PageHWPoison is to avoid the race with
+>> > @@ -1482,12 +1483,20 @@ static int soft_offline_huge_page(struct page *page, int flags)
+>> >  	unlock_page(hpage);
+>> >
+>> >  	/* Keep page count to indicate a given hugepage is isolated. */
+>> > -	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL,
+>> > -				MIGRATE_SYNC);
+>> > -	put_page(hpage);
+>> > +	list_move(&hpage->lru, &pagelist);
+>> 
+>> we use hpage->lru to add the hpage to h->hugepage_activelist. This will
+>> break a hugetlb cgroup removal isn't it ?
 >
-> According to the Datasheet (page 52):
-> 15-12 Reserved
-> 11-0 RXBC Receive Byte Count
-> This field indicates the present received frame byte size.
+> This particular part will not break removal because
+> hugetlb_cgroup_css_offline loops until hugetlb_cgroup_have_usage is 0.
 >
-> I suppose the code has a bug:
->                 rxh = ks8851_rdreg32(ks, KS_RXFHSR);
->                 rxstat = rxh & 0xffff;
->                 rxlen = rxh >> 16; // BUG!!! 0xFFF mask should be applied
->
-> P.S.
-> without bit mask applied I saw rxlen equal to 15360 which is bigger then
-> entire RX queue size (12KB).
->
-> Thanks,
-> Max Nekludov
->
-> From cb3199cee4490f98d6062e32a75ca377a32b55bc Mon Sep 17 00:00:00 2001
-> From: Max Neklyudov <macscomp@gmail.com>
-> Date: Tue, 26 Mar 2013 11:46:57 +0400
-> Subject: [PATCH] Fix bug in ks8851 driver
->
-> ---
->  drivers/net/ks8851.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/net/ks8851.c b/drivers/net/ks8851.c
-> index 91a93cb..0dc03da 100644
-> --- a/drivers/net/ks8851.c
-> +++ b/drivers/net/ks8851.c
-> @@ -553,7 +553,7 @@ static void ks8851_rx_pkts(struct ks8851_net *ks)
->         for (; rxfc != 0; rxfc--) {
->                 rxh = ks8851_rdreg32(ks, KS_RXFHSR);
->                 rxstat = rxh & 0xffff;
-> -               rxlen = rxh >> 16;
-> +               rxlen = (rxh >> 16) & 0xFFF;
->
->                 netif_dbg(ks, rx_status, ks->netdev,
->                           "rx: stat 0x%04x, len 0x%04x\n", rxstat,
-rxlen);
-> --
-> 1.7.10.4
->
+> Little bit offtopic:
+> Btw. hugetlb migration breaks to charging even before this patchset
+> AFAICS. The above put_page should remove the last reference and then it
+> will uncharge it but I do not see anything that would charge a new page.
+> This is all because regula LRU pages are uncharged when they are
+> unmapped. But this a different story not related to this series.
 
 
-______________________________________________________________________
-This email has been spam and virus checked by Elster IT Services.(See
-attached file: patch.diff)
---0__=CBBBF1AEDF8908628f9e8a93df938690918cCBBBF1AEDF890862
-Content-type: application/octet-stream; 
-	name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-transfer-encoding: base64
+But when we call that put_page, we would have alreayd move the cgroup
+information to the new page. We have
 
-IGRyaXZlcnMvbmV0L2V0aGVybmV0L21pY3JlbC9rczg4NTEuYyB8IDIgKy0KIDEgZmlsZSBjaGFu
-Z2VkLCAxIGluc2VydGlvbigrKSwgMSBkZWxldGlvbigtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMv
-bmV0L2V0aGVybmV0L21pY3JlbC9rczg4NTEuYyBiL2RyaXZlcnMvbmV0L2V0aGVybmV0L21pY3Jl
-bC9rczg4NTEuYwppbmRleCAzM2JjYjYzZDU2YTIuLjhmYjQ4MTI1MmUyYyAxMDA2NDQKLS0tIGEv
-ZHJpdmVycy9uZXQvZXRoZXJuZXQvbWljcmVsL2tzODg1MS5jCisrKyBiL2RyaXZlcnMvbmV0L2V0
-aGVybmV0L21pY3JlbC9rczg4NTEuYwpAQCAtNTI4LDcgKzUyOCw3IEBAIHN0YXRpYyB2b2lkIGtz
-ODg1MV9yeF9wa3RzKHN0cnVjdCBrczg4NTFfbmV0ICprcykKIAlmb3IgKDsgcnhmYyAhPSAwOyBy
-eGZjLS0pIHsKIAkJcnhoID0ga3M4ODUxX3JkcmVnMzIoa3MsIEtTX1JYRkhTUik7CiAJCXJ4c3Rh
-dCA9IHJ4aCAmIDB4ZmZmZjsKLQkJcnhsZW4gPSByeGggPj4gMTY7CisJCXJ4bGVuID0gKHJ4aCA+
-PiAxNikgJiAweGZmZjsKIAogCQluZXRpZl9kYmcoa3MsIHJ4X3N0YXR1cywga3MtPm5ldGRldiwK
-IAkJCSAgInJ4OiBzdGF0IDB4JTA0eCwgbGVuIDB4JTA0eFxuIiwgcnhzdGF0LCByeGxlbik7Cg==
+	h_cg = hugetlb_cgroup_from_page(oldhpage);
+	set_hugetlb_cgroup(oldhpage, NULL);
 
---0__=CBBBF1AEDF8908628f9e8a93df938690918cCBBBF1AEDF890862--
+	/* move the h_cg details to new cgroup */
+	set_hugetlb_cgroup(newhpage, h_cg);
+
+
+in hugetlb_cgroup_migrate
+
+-aneesh
 
