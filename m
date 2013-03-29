@@ -1,115 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757294Ab3C2XOF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 19:14:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56202 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757238Ab3C2XOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 19:14:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,375,1363158000"; 
-   d="scan'208";a="220407098"
-Date: Sat, 30 Mar 2013 04:17:20 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Dan Williams <djbw@fb.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dma: Make the 'mask' parameter of
- __dma_request_channel const
-Message-ID: <20130329224720.GB10326@intel.com>
-References: <1364214232-30078-1-git-send-email-lars@metafoo.de>
+	id S1757310Ab3C2XQF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 19:16:05 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:41084 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757238Ab3C2XQD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 19:16:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364214232-30078-1-git-send-email-lars@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+55aFyT6jxC=+jfORJkymo4Eagzpz-SajmnCO_PjGAPE6o25A@mail.gmail.com>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+	<20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org>
+	<20130326192852.GA25899@redhat.com>
+	<20130326124309.077e21a9f59aaa3f3355e09b@linux-foundation.org>
+	<20130329161746.GA8391@redhat.com>
+	<CA+55aFyKhgwYUMGs8MBLY5WDXhHwXP3dLWs40ayCYfgiwwncsQ@mail.gmail.com>
+	<CA+55aFyT6jxC=+jfORJkymo4Eagzpz-SajmnCO_PjGAPE6o25A@mail.gmail.com>
+Date: Fri, 29 Mar 2013 16:16:01 -0700
+X-Google-Sender-Auth: moEl-vZ4xaaGLXl2iuvbQ7nHIUk
+Message-ID: <CA+55aFygTH-tqhL1=FY32+HkjfqqpkX-nvb1c5f3V6S-iykS8A@mail.gmail.com>
+Subject: Re: ipc,sem: sysv semaphore scalability
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@surriel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        hhuang@redhat.com, "Low, Jason" <jason.low2@hp.com>,
+        Michel Lespinasse <walken@google.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Emmanuel Benisty <benisty.e@gmail.com>
+Content-Type: multipart/mixed; boundary=047d7b3a805e5fbd3404d9187486
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 01:23:52PM +0100, Lars-Peter Clausen wrote:
-> The 'mask' parameter is not modified in __dma_request_channel and really
-> shouldn't be. Make this explicit by making the parameter const.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Applied thanks.
+--047d7b3a805e5fbd3404d9187486
+Content-Type: text/plain; charset=UTF-8
 
-I manually fixed a conflict in dmaengine.h. Did you generate this on -next?
-> ---
->  drivers/dma/dmaengine.c   |  9 ++++++---
->  include/linux/dmaengine.h | 11 ++++++-----
->  2 files changed, 12 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-> index b2728d6..d07ef7d 100644
-> --- a/drivers/dma/dmaengine.c
-> +++ b/drivers/dma/dmaengine.c
-> @@ -174,7 +174,8 @@ static struct class dma_devclass = {
->  #define dma_device_satisfies_mask(device, mask) \
->  	__dma_device_satisfies_mask((device), &(mask))
->  static int
-> -__dma_device_satisfies_mask(struct dma_device *device, dma_cap_mask_t *want)
-> +__dma_device_satisfies_mask(struct dma_device *device,
-> +			    const dma_cap_mask_t *want)
->  {
->  	dma_cap_mask_t has;
->  
-> @@ -463,7 +464,8 @@ static void dma_channel_rebalance(void)
->  		}
->  }
->  
-> -static struct dma_chan *private_candidate(dma_cap_mask_t *mask, struct dma_device *dev,
-> +static struct dma_chan *private_candidate(const dma_cap_mask_t *mask,
-> +					  struct dma_device *dev,
->  					  dma_filter_fn fn, void *fn_param)
->  {
->  	struct dma_chan *chan;
-> @@ -505,7 +507,8 @@ static struct dma_chan *private_candidate(dma_cap_mask_t *mask, struct dma_devic
->   * @fn: optional callback to disposition available channels
->   * @fn_param: opaque parameter to pass to dma_filter_fn
->   */
-> -struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask, dma_filter_fn fn, void *fn_param)
-> +struct dma_chan *__dma_request_channel(const dma_cap_mask_t *mask,
-> +				       dma_filter_fn fn, void *fn_param)
->  {
->  	struct dma_device *device, *_d;
->  	struct dma_chan *chan = NULL;
-> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> index 91ac8da..2511742 100644
-> --- a/include/linux/dmaengine.h
-> +++ b/include/linux/dmaengine.h
-> @@ -967,8 +967,9 @@ enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
->  #ifdef CONFIG_DMA_ENGINE
->  enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
->  void dma_issue_pending_all(void);
-> -struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask, dma_filter_fn fn, void *fn_param);
->  struct dma_chan *dma_request_slave_channel(struct device *dev, char *name);
-> +struct dma_chan *__dma_request_channel(const dma_cap_mask_t *mask,
-> +				       dma_filter_fn fn, void *fn_param);
->  void dma_release_channel(struct dma_chan *chan);
->  #else
->  static inline enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx)
-> @@ -978,7 +979,7 @@ static inline enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descript
->  static inline void dma_issue_pending_all(void)
->  {
->  }
-> -static inline struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask,
-> +static inline struct dma_chan *__dma_request_channel(const dma_cap_mask_t *mask,
->  					      dma_filter_fn fn, void *fn_param)
->  {
->  	return NULL;
-> @@ -1005,9 +1006,9 @@ struct dma_chan *net_dma_find_channel(void);
->  	__dma_request_slave_channel_compat(&(mask), x, y, dev, name)
->  
->  static inline struct dma_chan
-> -*__dma_request_slave_channel_compat(dma_cap_mask_t *mask, dma_filter_fn fn,
-> -				  void *fn_param, struct device *dev,
-> -				  char *name)
-> +*__dma_request_slave_channel_compat(const dma_cap_mask_t *mask,
-> +				  dma_filter_fn fn, void *fn_param,
-> +				  struct device *dev, char *name)
->  {
->  	struct dma_chan *chan;
->  
-> -- 
-> 1.8.0
-> 
+On Fri, Mar 29, 2013 at 2:12 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> I dunno. I'm still not sure this is triggerable, but it looks bad. But
+> both the semaphore case and the msg cases seem to be solvable by
+> moving the unlock down, and shm seem to have no getref/putref users to
+> race with, so this (whitespace-damaged) patch *may* be sufficient:
+
+Well, the patch doesn't seem to cause any problems, at least neither
+lockdep nor spinlock sleep debugging complains. I have no idea whether
+it actually fixes any problems, though.
+
+I do wonder if this might explain the problem Emmanuel saw. A double
+free of a RCU-freeable object would possibly result in exactly the
+kind of mess that Emmanuel reported with the semaphore scalability
+patches.
+
+Emmanuel, can you try the attached patch? I think it applies cleanly
+on top of the scalability series too without any changes, but I didn't
+check if the patches perhaps changed some of the naming or something.
+
+              Linus
+
+--047d7b3a805e5fbd3404d9187486
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hevyypa01
+
+IGlwYy9tc2cuYyB8IDIgKy0KIGlwYy9zZW0uYyB8IDIgKy0KIDIgZmlsZXMgY2hhbmdlZCwgMiBp
+bnNlcnRpb25zKCspLCAyIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2lwYy9tc2cuYyBiL2lw
+Yy9tc2cuYwppbmRleCAzMWNkMWJmNmFmMjcuLjMzOGQ4ZTJiNTg5YiAxMDA2NDQKLS0tIGEvaXBj
+L21zZy5jCisrKyBiL2lwYy9tc2cuYwpAQCAtMjg0LDcgKzI4NCw2IEBAIHN0YXRpYyB2b2lkIGZy
+ZWVxdWUoc3RydWN0IGlwY19uYW1lc3BhY2UgKm5zLCBzdHJ1Y3Qga2Vybl9pcGNfcGVybSAqaXBj
+cCkKIAlleHB1bmdlX2FsbChtc3EsIC1FSURSTSk7CiAJc3Nfd2FrZXVwKCZtc3EtPnFfc2VuZGVy
+cywgMSk7CiAJbXNnX3JtaWQobnMsIG1zcSk7Ci0JbXNnX3VubG9jayhtc3EpOwogCiAJdG1wID0g
+bXNxLT5xX21lc3NhZ2VzLm5leHQ7CiAJd2hpbGUgKHRtcCAhPSAmbXNxLT5xX21lc3NhZ2VzKSB7
+CkBAIC0yOTcsNiArMjk2LDcgQEAgc3RhdGljIHZvaWQgZnJlZXF1ZShzdHJ1Y3QgaXBjX25hbWVz
+cGFjZSAqbnMsIHN0cnVjdCBrZXJuX2lwY19wZXJtICppcGNwKQogCWF0b21pY19zdWIobXNxLT5x
+X2NieXRlcywgJm5zLT5tc2dfYnl0ZXMpOwogCXNlY3VyaXR5X21zZ19xdWV1ZV9mcmVlKG1zcSk7
+CiAJaXBjX3JjdV9wdXRyZWYobXNxKTsKKwltc2dfdW5sb2NrKG1zcSk7CiB9CiAKIC8qCmRpZmYg
+LS1naXQgYS9pcGMvc2VtLmMgYi9pcGMvc2VtLmMKaW5kZXggNThkMzFmMWMxZWI1Li4xY2YwMjRi
+OWVhYzAgMTAwNjQ0Ci0tLSBhL2lwYy9zZW0uYworKysgYi9pcGMvc2VtLmMKQEAgLTc2NiwxMiAr
+NzY2LDEyIEBAIHN0YXRpYyB2b2lkIGZyZWVhcnkoc3RydWN0IGlwY19uYW1lc3BhY2UgKm5zLCBz
+dHJ1Y3Qga2Vybl9pcGNfcGVybSAqaXBjcCkKIAogCS8qIFJlbW92ZSB0aGUgc2VtYXBob3JlIHNl
+dCBmcm9tIHRoZSBJRFIgKi8KIAlzZW1fcm1pZChucywgc21hKTsKLQlzZW1fdW5sb2NrKHNtYSk7
+CiAKIAl3YWtlX3VwX3NlbV9xdWV1ZV9kbygmdGFza3MpOwogCW5zLT51c2VkX3NlbXMgLT0gc21h
+LT5zZW1fbnNlbXM7CiAJc2VjdXJpdHlfc2VtX2ZyZWUoc21hKTsKIAlpcGNfcmN1X3B1dHJlZihz
+bWEpOworCXNlbV91bmxvY2soc21hKTsKIH0KIAogc3RhdGljIHVuc2lnbmVkIGxvbmcgY29weV9z
+ZW1pZF90b191c2VyKHZvaWQgX191c2VyICpidWYsIHN0cnVjdCBzZW1pZDY0X2RzICppbiwgaW50
+IHZlcnNpb24pCg==
+--047d7b3a805e5fbd3404d9187486--
