@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab3C2NjG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 09:39:06 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:60208 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754847Ab3C2NjD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 09:39:03 -0400
-Message-ID: <1364564339.5113.19.camel@edumazet-glaptop>
-Subject: Re: [PATCH] net: add a synchronize_net() in
- netdev_rx_handler_unregister()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jiri Pirko <jpirko@redhat.com>, Andy Gospodarek <andy@greyhouse.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Nicolas de =?ISO-8859-1?Q?Peslo=FCan?= 
-	<nicolas.2p.debian@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Guy Streeter <streeter@redhat.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, stephen@networkplumber.org
-Date: Fri, 29 Mar 2013 06:38:59 -0700
-In-Reply-To: <1364563039.10629.19.camel@gandalf.local.home>
-References: <1364490997.6345.237.camel@gandalf.local.home>
-	 <1364491792.15753.47.camel@edumazet-glaptop>
-	 <20130329094856.GB1677@minipsycho.orion>
-	 <1364562082.5113.16.camel@edumazet-glaptop>
-	 <1364563039.10629.19.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1756032Ab3C2NkO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 09:40:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18514 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755241Ab3C2NkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 09:40:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,373,1363158000"; 
+   d="scan'208";a="309131576"
+Message-ID: <515599AD.5090901@intel.com>
+Date: Fri, 29 Mar 2013 21:39:57 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Subject: Re: [patch v5 14/15] sched: power aware load balance
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-15-git-send-email-alex.shi@intel.com> <514941C5.6080007@linux.vnet.ibm.com> <514ABA19.1080807@intel.com> <514AC7B2.7030400@linux.vnet.ibm.com> <514AD26F.9010905@intel.com> <514AE07A.10100@linux.vnet.ibm.com> <514BB452.2070906@intel.com> <514BE8AC.6000607@linux.vnet.ibm.com> <514FD801.8070403@intel.com> <51558C31.1060605@linux.vnet.ibm.com>
+In-Reply-To: <51558C31.1060605@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-29 at 09:17 -0400, Steven Rostedt wrote:
+On 03/29/2013 08:42 PM, Preeti U Murthy wrote:
+>> > did you try the simplest benchmark: while true; do :; done
+> Yeah I tried out this while true; do :; done benchmark on a vm which ran
 
-> I've thought about this too, but I wasn't sure we wanted two
-> synchronize_*() functions, as the caller does a synchronize as well.
-> That said, I think this is the more robust solution and it lets all
-> rx_handler() functions assume that their rx_handler_data is set. And it
-> removes the check from the fast path which outweighs an added
-> synchronization in the slow path.
+Thanks a lot for trying!
+
+What's do you mean 'vm'? Virtual machine?
+
+> on 2 socket, 2 cores each socket and 2 threads each core emulation.
+> I ran two instances of this loop with balance policy on, and it was
+> found that there was one instance running on each socket, rather than
+> both instances getting consolidated on one socket.
+> 
+> But when I apply the change where we do not consider rq->util if it has
+> no nr_running on the rq,the two instances of the above benchmark get
+> consolidated onto one socket.
+> 
 > 
 
-Note that I used synchronize_net(), which does a
-synchronize_rcu_expedited() when RTNL is locked, so its normally quite
-fast.
+I don't know much of virtual machine, guess the unstable VCPU to CPU pin
+cause rq->util keep large? Did you try to pin VCPU to physical CPU?
 
-> Acked-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> Thanks!
+I still give the rq->util weight even the nr_running is 0, because some
+transitory tasks may actived on the cpu, but just missed on balancing point.
 
-Thanks a lot for your very detailed report and analysis !
+I just wondering that forgetting rq->util when nr_running = 0 is the
+real root cause if your finding is just on VM and without fixed VCPU to
+CPU pin.
 
 
+-- 
+Thanks
+    Alex
