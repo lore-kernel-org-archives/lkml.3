@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab3C2Tae (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 15:30:34 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:47991 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756886Ab3C2Taa (ORCPT
+	id S1756922Ab3C2Tb4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 15:31:56 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:63042 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756235Ab3C2Tby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 15:30:30 -0400
-Date: Fri, 29 Mar 2013 12:29:50 -0700
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] perf: fix bug in isupper() and islower()
-Message-ID: <20130329192950.GA9312@us.ibm.com>
+	Fri, 29 Mar 2013 15:31:54 -0400
+Message-ID: <5155EC28.8050608@gmail.com>
+Date: Fri, 29 Mar 2013 14:31:52 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032919-2398-0000-0000-000012CCD111
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 2/2] arm: prefer PSCI for SMP bringup
+References: <1364575371-8926-2-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.LFD.2.03.1303291320580.1372@syhkavp.arg> <alpine.DEB.2.02.1303291735080.4430@kaball.uk.xensource.com> <alpine.LFD.2.03.1303291349150.1372@syhkavp.arg>
+In-Reply-To: <alpine.LFD.2.03.1303291349150.1372@syhkavp.arg>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From fd349681226bf7b27c9d0f72b0f3941b5aa94f78 Mon Sep 17 00:00:00 2001
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Date: Fri, 29 Mar 2013 12:14:43 -0700
-Subject: [PATCH] perf: fix bug in isupper() and islower()
+On 03/29/2013 12:53 PM, Nicolas Pitre wrote:
+> On Fri, 29 Mar 2013, Stefano Stabellini wrote:
+> 
+>> On Fri, 29 Mar 2013, Nicolas Pitre wrote:
+>>> On Fri, 29 Mar 2013, Stefano Stabellini wrote:
+>>>
+>>>> If PSCI initializes correctly and PSCI SMP operations are available, use them.
+>>>> This is required for SMP support in Dom0 on Xen.
+>>>>
+>>>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>>>> CC: will.deacon@arm.com
+>>>> CC: arnd@arndb.de
+>>>> CC: marc.zyngier@arm.com
+>>>> CC: linux@arm.linux.org.uk
+>>>> CC: nico@linaro.org
+>>>
+>>> I'd suggest you also include in your series the patch I posted earlier 
+>>> providing a runtime mdesc->smp_init method as well.
+>>
+>> OK.
+>>
+>>
+>>> This way the 
+>>> priority order would be:
+>>>
+>>> - If mdesc->smp_init is non null then use that.
+>>>
+>>> - Otherwise, if PSCI is available then use that.
+>>>
+>>> - Otherwise use mdesc->smp.
+>>>
+>>> This way, if the PSCI default has to be overriden (like in the MCPM case 
+>>> because it needs to wrap PSCI itself, or to cover Rob's concern) then 
+>>> this can be achieved at run time on a per mdesc basis.
+>>
+>> Actually that's not a bad idea, it could make everybody happy.
+>> What about the following, in this precise order:
+>>
+>> - if a xen hypervisor node is present on device tree, use PSCI;
+>> - otherwise if mdesc->smp_init is non null then use it;
+>> - otherwise if PSCI is available then use it;
+>> - otherwise use mdesc->smp.
+>>
+>> It's the most practical solution to satisfy everybody's needs.
+> 
+> Maybe I'm missing something obvious, but why can't xen declare a mdesc 
+> of its own?  Given it is going to tweak the DT passed to the kernel 
+> anyway that shouldn't be a problem.
 
-One of the reasons 'perf test' is failing on Power appears to be due to
-a bug in isupper().
+Xen does have it's own mdesc. It is (or will be) mach-virt, but that is
+only for DomU guests. For Dom0, you still need all the platform specific
+code except smp_ops. However, I'm doubtful this would work without other
+changes on more complicated platforms like OMAP.
 
-isupper(c) and islower(c) should be checking 'c' against the mask 0x20.
-Instead they are checking sane_ctype[c] which causes isupper() to be true
-for lower case letters.
+I would say wait to add this until you have platforms that actually need
+the first case.
 
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
----
- tools/perf/util/util.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Rob
 
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 09b4c26..2795ef6 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -219,8 +219,8 @@ extern unsigned char sane_ctype[256];
- #define isalpha(x) sane_istest(x,GIT_ALPHA)
- #define isalnum(x) sane_istest(x,GIT_ALPHA | GIT_DIGIT)
- #define isprint(x) sane_istest(x,GIT_PRINT)
--#define islower(x) (sane_istest(x,GIT_ALPHA) && sane_istest(x,0x20))
--#define isupper(x) (sane_istest(x,GIT_ALPHA) && !sane_istest(x,0x20))
-+#define islower(x) (sane_istest(x,GIT_ALPHA) && (x & 0x20))
-+#define isupper(x) (sane_istest(x,GIT_ALPHA) && !(x & 0x20))
- #define tolower(x) sane_case((unsigned char)(x), 0x20)
- #define toupper(x) sane_case((unsigned char)(x), 0)
- 
--- 
-1.7.1
+> 
+> That would be more eleguant than adding xen exception hooks in generic 
+> code.
+> 
+> 
+> Nicolas
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
