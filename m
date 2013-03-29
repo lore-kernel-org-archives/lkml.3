@@ -1,85 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab3C2Mn6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 08:43:58 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:34036 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754913Ab3C2Mn5 (ORCPT
+	id S1755412Ab3C2NB3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 09:01:29 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:46142 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754433Ab3C2NB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 08:43:57 -0400
-Message-ID: <51558C31.1060605@linux.vnet.ibm.com>
-Date: Fri, 29 Mar 2013 18:12:25 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 14/15] sched: power aware load balance
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-15-git-send-email-alex.shi@intel.com> <514941C5.6080007@linux.vnet.ibm.com> <514ABA19.1080807@intel.com> <514AC7B2.7030400@linux.vnet.ibm.com> <514AD26F.9010905@intel.com> <514AE07A.10100@linux.vnet.ibm.com> <514BB452.2070906@intel.com> <514BE8AC.6000607@linux.vnet.ibm.com> <514FD801.8070403@intel.com>
-In-Reply-To: <514FD801.8070403@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 29 Mar 2013 09:01:26 -0400
+Message-ID: <1364562082.5113.16.camel@edumazet-glaptop>
+Subject: [PATCH] net: add a synchronize_net() in
+ netdev_rx_handler_unregister()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jiri Pirko <jpirko@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Andy Gospodarek <andy@greyhouse.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        Nicolas de =?ISO-8859-1?Q?Peslo=FCan?= 
+	<nicolas.2p.debian@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Guy Streeter <streeter@redhat.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>, stephen@networkplumber.org
+Date: Fri, 29 Mar 2013 06:01:22 -0700
+In-Reply-To: <20130329094856.GB1677@minipsycho.orion>
+References: <1364490997.6345.237.camel@gandalf.local.home>
+	 <1364491792.15753.47.camel@edumazet-glaptop>
+	 <20130329094856.GB1677@minipsycho.orion>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13032912-5564-0000-0000-000007495A82
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+From: Eric Dumazet <edumazet@google.com>
 
-On 03/25/2013 10:22 AM, Alex Shi wrote:
-> On 03/22/2013 01:14 PM, Preeti U Murthy wrote:
->>>>
->>>> the value get from decay_load():
->>>>  sa->runnable_avg_sum = decay_load(sa->runnable_avg_sum,
->>>> in decay_load it is possible to be set zero.
->> Yes you are right, it is possible to be set to 0, but after a very long
->> time, to be more precise, nearly 2 seconds. If you look at decay_load(),
->> if the period between last update and now has crossed (32*63),only then
->> will the runnable_avg_sum become 0, else it will simply decay.
->>
->> This means that for nearly 2seconds,consolidation of loads may not be
->> possible even after the runqueues have finished executing tasks running
->> on them.
+On Fri, 2013-03-29 at 10:48 +0100, Jiri Pirko wrote:
+
+> Hmm. I think that this might be issue introduced by:
+> commit a9b3cd7f323b2e57593e7215362a7b02fc933e3a
+> Author: Stephen Hemminger <shemminger@vyatta.com>
+> Date:   Mon Aug 1 16:19:00 2011 +0000
 > 
-> Look into the decay_load(), since the LOAD_AVG_MAX is about 47742, so
-> after 16 * 32ms, the maximum avg sum will be decay to zero. 2^16 = 65536
+>     rcu: convert uses of rcu_assign_pointer(x, NULL) to RCU_INIT_POINTER
 > 
-> Yes, compare to accumulate time 345ms, the decay is not symmetry, and
-> not precise, seems it has space to tune well. But it is acceptable now.
->>
->> The exact experiment that I performed was running ebizzy, with just two
->> threads. My setup was 2 socket,2 cores each,4 threads each core. So a 16
->> logical cpu machine.When I begin running ebizzy with balance policy, the
->> 2 threads of ebizzy are found one on each socket, while I would expect
->> them to be on the same socket. All other cpus, except the ones running
->> ebizzy threads are idle and not running anything on either socket.
->> I am not running any other processes.
 > 
-> did you try the simplest benchmark: while true; do :; done
+> Because, if rcu_dereference(dev->rx_handler) is null,
+> rcu_dereference(dev->rx_handler_data) is never done. Therefore I believe
+> we are hitting following scenario:
+> 
+> 
+>    CPU0				CPU1
+>    ----				----
+>   			    dev->rx_handler_data = NULL
+>  rcu_read_lock()
+>  			    dev->rx_handler = NULL
+> 
+> 
+> CPU0 will see rx_handler set and yet, rx_handler_data nulled. Write
+> barrier in rcu_assign_pointer() might prevent this reorder from happening.
+> Therefore I suggest:
+> 
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index 0caa38e..c16b829 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -3332,8 +3332,8 @@ void netdev_rx_handler_unregister(struct net_device *dev)
+>  {
+>  
+>  	ASSERT_RTNL();
+> -	RCU_INIT_POINTER(dev->rx_handler, NULL);
+> -	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
+> +	rcu_assign_pointer(dev->rx_handler, NULL);
+> +	rcu_assign_pointer(dev->rx_handler_data, NULL);
+>  }
+>  EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
+>  
+> 
 
-Yeah I tried out this while true; do :; done benchmark on a vm which ran
-on 2 socket, 2 cores each socket and 2 threads each core emulation.
-I ran two instances of this loop with balance policy on, and it was
-found that there was one instance running on each socket, rather than
-both instances getting consolidated on one socket.
+Nope this changes nothing at all.
 
-But when I apply the change where we do not consider rq->util if it has
-no nr_running on the rq,the two instances of the above benchmark get
-consolidated onto one socket.
+However, we can fix the bug in a different way, if we want to avoid a
+test in fast path.
+
+With following patch, we can make sure that a reader seeing a non NULL
+rx_handler has a guarantee to see a non NULL rx_handler_data
+
+Thanks
+
+[PATCH] net: add a synchronize_net() in netdev_rx_handler_unregister()
+
+commit 35d48903e97819 (bonding: fix rx_handler locking) added a race
+in bonding driver, reported by Steven Rostedt who did a very good
+diagnosis :
+
+<quoting Steven>
+
+I'm currently debugging a crash in an old 3.0-rt kernel that one of our
+customers is seeing. The bug happens with a stress test that loads and
+unloads the bonding module in a loop (I don't know all the details as
+I'm not the one that is directly interacting with the customer). But the
+bug looks to be something that may still be present and possibly present
+in mainline too. It will just be much harder to trigger it in mainline.
+
+In -rt, interrupts are threads, and can schedule in and out just like
+any other thread. Note, mainline now supports interrupt threads so this
+may be easily reproducible in mainline as well. I don't have the ability
+to tell the customer to try mainline or other kernels, so my hands are
+somewhat tied to what I can do.
+
+But according to a core dump, I tracked down that the eth irq thread
+crashed in bond_handle_frame() here:
+
+        slave = bond_slave_get_rcu(skb->dev);
+        bond = slave->bond; <--- BUG
 
 
-> I am writing the v6 version which include rt_util etc. you may test on
-> it after I send out. :)
+the slave returned was NULL and accessing slave->bond caused a NULL
+pointer dereference.
 
-Sure will do so.
+Looking at the code that unregisters the handler:
 
-Regards
-Preeti U Murthy
+void netdev_rx_handler_unregister(struct net_device *dev)
+{
+
+        ASSERT_RTNL();
+        RCU_INIT_POINTER(dev->rx_handler, NULL);
+        RCU_INIT_POINTER(dev->rx_handler_data, NULL);
+}
+
+Which is basically:
+        dev->rx_handler = NULL;
+        dev->rx_handler_data = NULL;
+
+And looking at __netif_receive_skb() we have:
+
+        rx_handler = rcu_dereference(skb->dev->rx_handler);
+        if (rx_handler) {
+                if (pt_prev) {
+                        ret = deliver_skb(skb, pt_prev, orig_dev);
+                        pt_prev = NULL;
+                }
+                switch (rx_handler(&skb)) {
+
+My question to all of you is, what stops this interrupt from happening
+while the bonding module is unloading?  What happens if the interrupt
+triggers and we have this:
+
+
+        CPU0                    CPU1
+        ----                    ----
+  rx_handler = skb->dev->rx_handler
+
+                        netdev_rx_handler_unregister() {
+                           dev->rx_handler = NULL;
+                           dev->rx_handler_data = NULL;
+
+  rx_handler()
+   bond_handle_frame() {
+    slave = skb->dev->rx_handler;
+    bond = slave->bond; <-- NULL pointer dereference!!!
+
+
+What protection am I missing in the bond release handler that would
+prevent the above from happening?
+
+</quoting Steven>
+
+We can fix bug this in two ways. First is adding a test in
+bond_handle_frame() and others to check if rx_handler_data is NULL.
+
+A second way is adding a synchronize_net() in
+netdev_rx_handler_unregister() to make sure that a rcu protected reader
+has the guarantee to see a non NULL rx_handler_data.
+
+The second way is better as it avoids an extra test in fast path.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Jiri Pirko <jpirko@redhat.com>
+Cc: Paul E. McKenney <paulmck@us.ibm.com>
+---
+ net/core/dev.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index b13e5c7..56932a4 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3314,6 +3314,7 @@ int netdev_rx_handler_register(struct net_device *dev,
+ 	if (dev->rx_handler)
+ 		return -EBUSY;
+ 
++	/* Note: rx_handler_data must be set before rx_handler */
+ 	rcu_assign_pointer(dev->rx_handler_data, rx_handler_data);
+ 	rcu_assign_pointer(dev->rx_handler, rx_handler);
+ 
+@@ -3334,6 +3335,11 @@ void netdev_rx_handler_unregister(struct net_device *dev)
+ 
+ 	ASSERT_RTNL();
+ 	RCU_INIT_POINTER(dev->rx_handler, NULL);
++	/* a reader seeing a non NULL rx_handler in a rcu_read_lock()
++	 * section has a guarantee to see a non NULL rx_handler_data
++	 * as well.
++	 */
++	synchronize_net();
+ 	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
+ }
+ EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
+
 
