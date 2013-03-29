@@ -1,99 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845Ab3C2NIk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 09:08:40 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:65039 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755760Ab3C2NIi (ORCPT
+	id S1755992Ab3C2NRY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 09:17:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20747 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755933Ab3C2NRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 09:08:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <51558407.5040005@surriel.com>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	<5150B1C2.8090607@oracle.com>
-	<20130325163844.042a45ba@annuminas.surriel.com>
-	<CANN689FdtXs0-VKxwWHQKgnnSvcvu5hHDMmGOe0H+bdHA4BhXg@mail.gmail.com>
-	<1364303965.5053.29.camel@laptop>
-	<CANN689HCbuVOc73BpVubYy2AjA2mcz_iyTg6Fo2Zz-NGnQ93TA@mail.gmail.com>
-	<1364308023.5053.40.camel@laptop>
-	<5151BC78.3030306@surriel.com>
-	<1364373750.5053.54.camel@laptop>
-	<20130328162337.3003ccd4@cuia.bos.redhat.com>
-	<CANN689GGwztb=beCNtUU8SJp6sfjn_mNTaHQxezt=ehtxvYBAA@mail.gmail.com>
-	<51558407.5040005@surriel.com>
-Date: Fri, 29 Mar 2013 06:08:37 -0700
-Message-ID: <CANN689FGoTF=5sbYSE7JyyS9CyyYTLrjHq5B0O23tFuCh550qg@mail.gmail.com>
-Subject: Re: [PATCH v2 -mm -next] ipc,sem: fix lockdep false positive
-From: Michel Lespinasse <walken@google.com>
-To: Rik van Riel <riel@surriel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <sasha.levin@oracle.com>, torvalds@linux-foundation.org,
-        davidlohr.bueso@hp.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
-        lwoodman@redhat.com, chegu_vinod@hp.com, Dave Jones <davej@redhat.com>,
-        benisty.e@gmail.com, Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 29 Mar 2013 09:17:22 -0400
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=3LqOl0YYlZgA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=txhnahRb9nAA:10 a=1XWaLZrsAAAA:8 a=fh4mg5NFAAAA:8 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=JDfcgBBoLR6WGlcj5c4A:9 a=QEXdDO2ut3YA:10 a=UTB_XpHje0EA:10 a=Im-eZXwrtqoA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1364563039.10629.19.camel@gandalf.local.home>
+Subject: Re: [PATCH] net: add a synchronize_net() in
+ netdev_rx_handler_unregister()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jiri Pirko <jpirko@redhat.com>, Andy Gospodarek <andy@greyhouse.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        Nicolas de =?ISO-8859-1?Q?Peslo=FCan?= 
+	<nicolas.2p.debian@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Guy Streeter <streeter@redhat.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>, stephen@networkplumber.org
+Date: Fri, 29 Mar 2013 09:17:19 -0400
+In-Reply-To: <1364562082.5113.16.camel@edumazet-glaptop>
+References: <1364490997.6345.237.camel@gandalf.local.home>
+	 <1364491792.15753.47.camel@edumazet-glaptop>
+	 <20130329094856.GB1677@minipsycho.orion>
+	 <1364562082.5113.16.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29, 2013 at 5:07 AM, Rik van Riel <riel@surriel.com> wrote:
-> On 03/28/2013 10:50 PM, Michel Lespinasse wrote:
->> On Thu, Mar 28, 2013 at 1:23 PM, Rik van Riel <riel@surriel.com> wrote:
->>>                  if (unlikely(sma->complex_count)) {
->>>                          spin_unlock(&sem->lock);
->>> -                       goto lock_all;
->>> +                       goto lock_array;
->>> +               }
->>> +
->>> +               /*
->>> +                * Another process is holding the global lock on the
->>> +                * sem_array; we cannot enter our critical section,
->>> +                * but have to wait for the global lock to be released.
->>> +                */
->>> +               if (unlikely(spin_is_locked(&sma->sem_perm.lock))) {
->>> +                       spin_unlock(&sem->lock);
->>> +                       goto again;
->>
->> This is IMO where the spin_unlock_wait(&sma->sem_perm.lock) would
->> belong - right before the goto again.
->
-> That is where I had it initially. I may have gotten too clever
-> and worked on keeping more accesses read-only. If you want, I
-> can move it back here and re-submit the patch :)
+On Fri, 2013-03-29 at 06:01 -0700, Eric Dumazet wrote:
+> From: Eric Dumazet <edumazet@google.com>
+> 
+> On Fri, 2013-03-29 at 10:48 +0100, Jiri Pirko wrote:
+> 
+> > Hmm. I think that this might be issue introduced by:
+> > commit a9b3cd7f323b2e57593e7215362a7b02fc933e3a
+> > Author: Stephen Hemminger <shemminger@vyatta.com>
+> > Date:   Mon Aug 1 16:19:00 2011 +0000
+> > 
+> >     rcu: convert uses of rcu_assign_pointer(x, NULL) to RCU_INIT_POINTER
+> > 
+> > 
+> > Because, if rcu_dereference(dev->rx_handler) is null,
+> > rcu_dereference(dev->rx_handler_data) is never done. Therefore I believe
+> > we are hitting following scenario:
+> > 
+> > 
+> >    CPU0				CPU1
+> >    ----				----
+> >   			    dev->rx_handler_data = NULL
+> >  rcu_read_lock()
+> >  			    dev->rx_handler = NULL
+> > 
+> > 
+> > CPU0 will see rx_handler set and yet, rx_handler_data nulled. Write
+> > barrier in rcu_assign_pointer() might prevent this reorder from happening.
+> > Therefore I suggest:
+> > 
+> > diff --git a/net/core/dev.c b/net/core/dev.c
+> > index 0caa38e..c16b829 100644
+> > --- a/net/core/dev.c
+> > +++ b/net/core/dev.c
+> > @@ -3332,8 +3332,8 @@ void netdev_rx_handler_unregister(struct net_device *dev)
+> >  {
+> >  
+> >  	ASSERT_RTNL();
+> > -	RCU_INIT_POINTER(dev->rx_handler, NULL);
+> > -	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
+> > +	rcu_assign_pointer(dev->rx_handler, NULL);
+> > +	rcu_assign_pointer(dev->rx_handler_data, NULL);
+> >  }
+> >  EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
+> >  
+> > 
+> 
+> Nope this changes nothing at all.
 
-I think I would prefer that - I feel having it upper serves little
-purpose, as you still need to check it here, so we might as well be
-optimistic and check it only here. Or maybe I've missed the benefit of
-having it earlier - I just don't see it.
+Exactly! In fact, the bug triggered on an older kernel that had the
+original rcu_assign_pointer()
 
->> Also - I think there is a risk that an endless stream of complex
->> semops could starve a simple semop here, as it would always find the
->> sem_perm.lock to be locked ??? One easy way to guarantee progress
->> would be to goto lock_array instead; however there is then the issue
->> that a complex semop could force an endless stream of following simple
->> semops to take the lock_array path. I'm not sure which of these
->> problems is preferable to have...
->
-> If starvation turns out to be an issue, there is an even
-> simpler solution:
->
->         if (unlikely(spin_is_locked(&sma->sem_perm.lock))) {
->                 spin_unlock(&sem->lock);
->                 spin_lock(&sma->sem_perm.lock);
->                 spin_lock(&sem->lock);
->                 spin_unlock(&sma->sem_perm.lock);
->         }
+> 
+> However, we can fix the bug in a different way, if we want to avoid a
+> test in fast path.
+> 
+> With following patch, we can make sure that a reader seeing a non NULL
+> rx_handler has a guarantee to see a non NULL rx_handler_data
+> 
 
-This is kinda nice - certainly nicer than falling back to the lock_array case.
+[..]
 
-It still makes it possible (though less likely) that each simple semop
-taking this path might make the next one take it too, though. So, I'm
-not sure how to balance that against the starvation possibility. I'll
-leave it up to you then :)
+> We can fix bug this in two ways. First is adding a test in
+> bond_handle_frame() and others to check if rx_handler_data is NULL.
+> 
+> A second way is adding a synchronize_net() in
+> netdev_rx_handler_unregister() to make sure that a rcu protected reader
+> has the guarantee to see a non NULL rx_handler_data.
+> 
+> The second way is better as it avoids an extra test in fast path.
+> 
+> Reported-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> Cc: Jiri Pirko <jpirko@redhat.com>
+> Cc: Paul E. McKenney <paulmck@us.ibm.com>
+> ---
+>  net/core/dev.c |    6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index b13e5c7..56932a4 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -3314,6 +3314,7 @@ int netdev_rx_handler_register(struct net_device *dev,
+>  	if (dev->rx_handler)
+>  		return -EBUSY;
+>  
+> +	/* Note: rx_handler_data must be set before rx_handler */
+>  	rcu_assign_pointer(dev->rx_handler_data, rx_handler_data);
+>  	rcu_assign_pointer(dev->rx_handler, rx_handler);
+>  
+> @@ -3334,6 +3335,11 @@ void netdev_rx_handler_unregister(struct net_device *dev)
+>  
+>  	ASSERT_RTNL();
+>  	RCU_INIT_POINTER(dev->rx_handler, NULL);
+> +	/* a reader seeing a non NULL rx_handler in a rcu_read_lock()
+> +	 * section has a guarantee to see a non NULL rx_handler_data
+> +	 * as well.
+> +	 */
+> +	synchronize_net();
 
-Cheers,
+I've thought about this too, but I wasn't sure we wanted two
+synchronize_*() functions, as the caller does a synchronize as well.
+That said, I think this is the more robust solution and it lets all
+rx_handler() functions assume that their rx_handler_data is set. And it
+removes the check from the fast path which outweighs an added
+synchronization in the slow path.
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+Thanks!
+
+-- Steve
+
+>  	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
+>  }
+>  EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
+> 
+
+
