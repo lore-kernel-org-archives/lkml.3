@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab3C2AKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 20:10:50 -0400
-Received: from mga02.intel.com ([134.134.136.20]:17570 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753076Ab3C2AKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 20:10:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,369,1363158000"; 
-   d="scan'208";a="308924766"
-Date: Thu, 28 Mar 2013 17:10:48 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] xhci: Rename SEGMENT_SIZE and SEGMENT_SHIFT as the
- former is used in a.out.h
-Message-ID: <20130329001048.GK5995@xanatos>
-References: <20130328201505.GC5995@xanatos>
- <20130328184827.29679.62426.stgit@warthog.procyon.org.uk>
- <20130328184835.29679.62285.stgit@warthog.procyon.org.uk>
- <32349.1364509973@warthog.procyon.org.uk>
+	id S1754022Ab3C2A0Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 20:26:16 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:37273 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753725Ab3C2A0O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 20:26:14 -0400
+Date: Thu, 28 Mar 2013 20:25:56 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/4] nohz: Print final full dynticks CPUs range on boot
+Message-ID: <20130329002555.GA3444@windriver.com>
+References: <1364398359-21990-1-git-send-email-fweisbec@gmail.com>
+ <1364398359-21990-3-git-send-email-fweisbec@gmail.com>
+ <20130328074045.GB24433@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <32349.1364509973@warthog.procyon.org.uk>
+In-Reply-To: <20130328074045.GB24433@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 10:32:53PM +0000, David Howells wrote:
-> Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
+[Re: [PATCH 2/4] nohz: Print final full dynticks CPUs range on boot] On 28/03/2013 (Thu 08:40) Ingo Molnar wrote:
+
 > 
-> > I'm a little bit confused about your description for the second one.
-> > Did you need to change the #defines names because they could conflict
-> > with other drivers when the xHCI driver is built in?  Or is there some
-> > other point I'm missing?
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
 > 
-> Sorry, I should say.  I'm trying to clean up the UAPI headers and I noticed
-> that the xHCI SEGMENT_SIZE macro is named the same as one defined by a.out.h
-> that cannot be changed as it is seen by userspace.  Although it's unlikely
-> that within the kernel they are unlikely to collide, one cannot be entirely
-> sure that will stay true as new arches get added (hopefully no one will add
-> new arches that use a.out format).  It seems best that the xHCI one be renamed
-> if possible.
+> > +	cpulist_scnprintf(nohz_ext_buf, sizeof(nohz_ext_buf), nohz_extended_mask);
+> > +	pr_info("NO_HZ: Experimental full dynticks CPUs: %s.\n", nohz_ext_buf);
+> 
+> I'd suggest removing the 'experimental' word. We are not sending anything 
+> experimental to Linus: we'll send something that is tested and that we 
+> expect to not break anything. (and which we'll fix if it does)
 
-I guess my question is a deeper one: do we need to rename all the xHCI
-macros to have the XHCI_ prefix, in order to avoid future collision?
-For example, one of the macros is MAX_HC_PORTS, which could possibly be
-used by other host drivers in the future.
+In that case, should we vector a patch through PaulM to clobber these too?
 
-Note that I'm not asking you to do this, just if it needs to be done.
+$ git grep xperiment |grep rcu
+kernel/rcutree_plugin.h: printk(KERN_INFO "\tExperimental boot-time adjustment of leaf fanout to %d.\n", rcu_fanout_leaf);
+kernel/rcutree_plugin.h: pr_info("\tExperimental no-CBs CPUs: %s.\n", nocb_buf);
+kernel/rcutree_plugin.h: pr_info("\tExperimental polled no-CBs CPUs.\n");
 
-Sarah Sharp
+Paul.
