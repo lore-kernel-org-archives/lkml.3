@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab3C2LTA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 07:19:00 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:32631 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753982Ab3C2LS6 (ORCPT
+	id S1754314Ab3C2LUy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 07:20:54 -0400
+Received: from smtp-vbr7.xs4all.nl ([194.109.24.27]:3415 "EHLO
+	smtp-vbr7.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753549Ab3C2LUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 07:18:58 -0400
-Date: Fri, 29 Mar 2013 12:18:56 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [PATCH v3, part4 38/39] mm/hotplug: prepare for removing
-	num_physpages
-Message-ID: <20130329111856.GA3824@merkur.ravnborg.org>
-References: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com> <1364313298-17336-39-git-send-email-jiang.liu@huawei.com>
+	Fri, 29 Mar 2013 07:20:53 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: "linux-media" <linux-media@vger.kernel.org>
+Subject: [PATCH] solo6x10: The size of the thresholds ioctls was too large.
+Date: Fri, 29 Mar 2013 12:20:36 +0100
+User-Agent: KMail/1.13.7 (Linux/3.9.0-rc1-durdane; KDE/4.8.4; x86_64; ; )
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364313298-17336-39-git-send-email-jiang.liu@huawei.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303291220.36090.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 11:54:57PM +0800, Jiang Liu wrote:
-> Prepare for removing num_physpages.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Cc: Wen Congyang <wency@cn.fujitsu.com>
-> Cc: Tang Chen <tangchen@cn.fujitsu.com>
-> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Cc: linux-mm@kvack.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
-> Hi all,
-> 	Sorry for my mistake that my previous patch series has been screwed up.
-> So I regenerate a third version and also set up a git tree at:
-> 	git://github.com/jiangliu/linux.git mem_init
-> 	Any help to review and test are welcomed!
-> 
-> 	Regards!
-> 	Gerry
-> ---
->  mm/memory_hotplug.c |    4 ----
->  1 file changed, 4 deletions(-)
-> 
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index 97454b3..9b1b494 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -751,10 +751,6 @@ EXPORT_SYMBOL_GPL(restore_online_page_callback);
->  
->  void __online_page_set_limits(struct page *page)
->  {
-> -	unsigned long pfn = page_to_pfn(page);
-> -
-> -	if (pfn >= num_physpages)
-> -		num_physpages = pfn + 1;
->  }
->  EXPORT_SYMBOL_GPL(__online_page_set_limits);
+This should fix the build failure in linux-next.
 
-How can this be correct?
-With this change __online_page_set_limits() is now a nop.
+[PATCH] solo6x10: The size of the thresholds ioctls was too large.
 
-	Sam
+On powerpc the maximum size for the ioctl argument is 8191, and it was
+8192. However, the 64x64 array of threshold values is more than is actually
+needed in practice for PAL and NTSC formats. A 45x45 array will do just fine.
+
+So change the size accordingly to fix this problem.
+
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+---
+ drivers/staging/media/solo6x10/solo6x10-disp.c |    3 ++-
+ drivers/staging/media/solo6x10/solo6x10.h      |    8 +++++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/media/solo6x10/solo6x10-disp.c b/drivers/staging/media/solo6x10/solo6x10-disp.c
+index 78070c8..32d9953 100644
+--- a/drivers/staging/media/solo6x10/solo6x10-disp.c
++++ b/drivers/staging/media/solo6x10/solo6x10-disp.c
+@@ -205,10 +205,11 @@ int solo_set_motion_block(struct solo_dev *solo_dev, u8 ch,
+ 		const struct solo_motion_thresholds *thresholds)
+ {
+ 	u32 off = SOLO_MOT_FLAG_AREA + ch * SOLO_MOT_THRESH_SIZE * 2;
+-	u16 buf[SOLO_MOTION_SZ];
++	u16 buf[64];
+ 	int x, y;
+ 	int ret = 0;
+ 
++	memset(buf, 0, sizeof(buf));
+ 	for (y = 0; y < SOLO_MOTION_SZ; y++) {
+ 		for (x = 0; x < SOLO_MOTION_SZ; x++)
+ 			buf[x] = cpu_to_le16(thresholds->thresholds[y][x]);
+diff --git a/drivers/staging/media/solo6x10/solo6x10.h b/drivers/staging/media/solo6x10/solo6x10.h
+index 3526d6b..6f91d2e 100644
+--- a/drivers/staging/media/solo6x10/solo6x10.h
++++ b/drivers/staging/media/solo6x10/solo6x10.h
+@@ -113,8 +113,14 @@
+  * each sample representing 16x16 pixels of the source. In
+  * effect, 44x30 samples are used for NTSC, and 44x36 for PAL.
+  * The 5th sample on the 10th row is (10*64)+5 = 645.
++ *
++ * Using a 64x64 array will result in a problem on some architectures like
++ * the powerpc where the size of the argument is limited to 13 bits.
++ * Since both PAL and NTSC do not use the full table anyway I've chosen
++ * to limit the array to 45x45 (45*16 = 720, which is the maximum PAL/NTSC
++ * width).
+  */
+-#define SOLO_MOTION_SZ (64)
++#define SOLO_MOTION_SZ (45)
+ struct solo_motion_thresholds {
+ 	__u16	thresholds[SOLO_MOTION_SZ][SOLO_MOTION_SZ];
+ };
+-- 
+1.7.10.4
+
