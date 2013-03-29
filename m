@@ -1,68 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624Ab3C2BoK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 21:44:10 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:40613 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab3C2BoI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 21:44:08 -0400
-Message-ID: <5154F1D3.6050600@huawei.com>
-Date: Fri, 29 Mar 2013 09:43:47 +0800
-From: Xie XiuQi <xiexiuqi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1754322Ab3C2Bsv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 21:48:51 -0400
+Received: from relay00.pair.com ([209.68.5.9]:4771 "HELO relay00.pair.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754146Ab3C2Bsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 21:48:50 -0400
+X-pair-Authenticated: 108.45.91.222
+Message-ID: <5154F300.6050606@flaterco.com>
+Date: Thu, 28 Mar 2013 21:48:48 -0400
+From: David Flater <vger@flaterco.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Tony Luck <tony.luck@intel.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] ia64: Fix example error_injection_tool
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: perex@perex.cz, bhelgaas@google.com
+Subject: [PATCH v2] pnp: restore automatic resolution of DMA conflicts
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.18]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got a "sched_setaffinity:: Invalid argument" error when using
-err_injection_tool to inject error on a system with over 32 cpus.
+From: David Flater <dave@flaterco.com>
 
-Error information when injecting an error on a system with over 32 cpus:
-$ ./err_injection_tool -i
-/sys/devices/system/cpu/cpu0/err_inject//err_type_info
-Begine at Tue Mar 26 11:20:08 2013
-Configurations:
-On cpu32: loop=10, interval=5(s) err_type_info=4101,err_struct_info=95
-Error sched_setaffinity:: Invalid argument
-All done
+To fix a 5-year-old regression, reverse the changes made in the
+following commit:
 
-This because there is overflow when calculating the cpumask: the
-type of (1<<k) is int, while mask[j] is unsigned long. When k > 31,
-(1<<k) is truncated to ZERO, resulting in a unexpected cpumask.
+commit 7ef36390fabe2168fe31f245e49eb4e5f3762622
+Author: Jan Beulich <jbeulich@novell.com>
+Date:   Tue Oct 16 23:31:07 2007 -0700
 
-v2:
- - use "1UL" to avoid the verbose cast suggested by Tony.
+    PNP: don't fail device init if no DMA channel available
+    
+    Most drivers for devices supporting ISA DMA can operate without
+    DMA as well (falling back zo PIO).  Thus it seems inappropriate
+    for PNP to fail device initialization in case none of the possible
+    DMA channels are available.  Instead, it should be left to the
+    driver to decide what to do if request_dma() fails.
+    
+    The patch at once adjusts the code to account for the fact that
+    pnp_assign_dma() now doesn't need to report failure anymore.
 
-Suggested-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
+As an example to show the problem, my sound card provides a
+prioritized list of PnP "dependent sets" of requested resources:
+
+  dependent set 0 (preferred) wants DMA 5.
+  dependent set 1 (acceptable) will take DMA 5, 6, or 7.
+  ...
+  dependent set 4 (acceptable) doesn't request a high DMA.
+
+If DMA 5 is not available, pnp_assign_dma has to fail on set 0 so that
+pnp_auto_config_dev will move on to set 1 and get DMA 6 or 7.
+Instead, pnp_assign_dma adds the resource with flags |=
+IORESOURCE_DISABLED and returns success.  pnp_auto_config_dev just
+sees success and therefore chooses set 0 with a disabled DMA and never
+tries the sets that would have resolved the conflict.
+
+Furthermore, this mode of "success" is unexpected and unhandled in
+sound/isa/sb and probably other drivers.  sb assumes that the returned
+DMA is enabled and obliviously uses the invalid DMA number.  Observed
+consequences were sb successfully grabbing a DMA that was expressly
+forbidden by the kernel parameter pnp_reserve_dma.
+
+The only upside to the original change would be as a kludge for
+devices that can operate in degraded mode without a DMA but that don't
+provide the corresponding non-preferred dependent set.  The right
+workaround for those devices is to synthesize the missing set in
+quirks.c; otherwise, you're reinventing PnP fallback functionality at
+the driver level for that device and all others.
+
+Signed-off-by: David Flater <dave@flaterco.com>
 ---
- Documentation/ia64/err_inject.txt |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+v2: missed a spot (add back handling of empty map as really disabled).
+Note that address abelay@mit.edu from MAINTAINERS is bouncing.
 
-diff --git a/Documentation/ia64/err_inject.txt b/Documentation/ia64/err_inject.txt
-index 223e4f0..9f651c1 100644
---- a/Documentation/ia64/err_inject.txt
-+++ b/Documentation/ia64/err_inject.txt
-@@ -882,7 +882,7 @@ int err_inj()
- 			cpu=parameters[i].cpu;
- 			k = cpu%64;
- 			j = cpu/64;
--			mask[j]=1<<k;
-+			mask[j] = 1UL << k;
+ drivers/pnp/manager.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
- 			if (sched_setaffinity(0, MASK_SIZE*8, mask)==-1) {
- 				perror("Error sched_setaffinity:");
--- 
-1.6.0.2
-
+diff --git a/drivers/pnp/manager.c b/drivers/pnp/manager.c
+index 95cebf0..9357aa7 100644
+--- a/drivers/pnp/manager.c
++++ b/drivers/pnp/manager.c
+@@ -211,6 +211,12 @@ static int pnp_assign_dma(struct pnp_dev *dev, struct pnp_dma *rule, int idx)
+ 	res->start = -1;
+ 	res->end = -1;
+ 
++	if (!rule->map) {
++		res->flags |= IORESOURCE_DISABLED;
++		pnp_dbg(&dev->dev, "  dma %d disabled\n", idx);
++		goto __add;
++	}
++
+ 	for (i = 0; i < 8; i++) {
+ 		if (rule->map & (1 << xtab[i])) {
+ 			res->start = res->end = xtab[i];
+@@ -218,11 +224,9 @@ static int pnp_assign_dma(struct pnp_dev *dev, struct pnp_dma *rule, int idx)
+ 				goto __add;
+ 		}
+ 	}
+-#ifdef MAX_DMA_CHANNELS
+-	res->start = res->end = MAX_DMA_CHANNELS;
+-#endif
+-	res->flags |= IORESOURCE_DISABLED;
+-	pnp_dbg(&dev->dev, "  disable dma %d\n", idx);
++
++	pnp_dbg(&dev->dev, "  couldn't assign dma %d\n", idx);
++	return -EBUSY;
+ 
+ __add:
+ 	pnp_add_dma_resource(dev, res->start, res->flags);
