@@ -1,96 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab3C2AoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 20:44:12 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:35035 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754099Ab3C2AoJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 20:44:09 -0400
-X-IronPort-AV: E=Sophos;i="4.87,370,1363104000"; 
-   d="scan'208";a="6965379"
-Subject: Re: [PATCH] Makefile: allow no update .config build
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <51547A4E.4010600@infradead.org>
-References: <1364455686-18930-1-git-send-email-lig.fnst@cn.fujitsu.com>
-	 <51547A4E.4010600@infradead.org>
-Date: Fri, 29 Mar 2013 08:41:49 +0800
-Message-ID: <1364517710.31713.60.camel@liguang.fnst.cn.fujitsu.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/29 08:43:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/29 08:43:17,
-	Serialize complete at 2013/03/29 08:43:17
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+	id S1754335Ab3C2Aq7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 20:46:59 -0400
+Received: from relay03.pair.com ([209.68.5.17]:4098 "HELO relay03.pair.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753779Ab3C2Aq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 20:46:58 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Mar 2013 20:46:57 EDT
+X-pair-Authenticated: 108.45.91.222
+Message-ID: <5154E2EF.70404@flaterco.com>
+Date: Thu, 28 Mar 2013 20:40:15 -0400
+From: David Flater <vger@flaterco.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: perex@perex.cz, abelay@mit.edu, bhelgaas@google.com
+Subject: [PATCH] pnp: restore automatic resolution of DMA conflicts
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2013-03-28四的 10:13 -0700，Randy Dunlap写道：
-> On 03/28/13 00:28, liguang wrote:
-> > if we pull some commits from other git repo
-> > which bring in a few CONFIG_* options, then
-> > we have to build all again, but we do assure
-> > these options are not interesting for us,
-> > so the long waiting build will be offending.
-> > this change help us to avoid all-build.
-> > 
-> > Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-> > ---
-> >  Makefile |    9 +++++++++
-> >  1 files changed, 9 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/Makefile b/Makefile
-> > index 54d2b2a..d10e505 100644
-> > --- a/Makefile
-> > +++ b/Makefile
-> > @@ -106,6 +106,12 @@ ifeq ("$(origin W)", "command line")
-> >    export KBUILD_ENABLE_EXTRA_GCC_CHECKS := $(W)
-> >  endif
-> >  
-> > +# KBUILD_NCU is set to do not update .config even
-> > +# a few new CONFIG_* options appeared
-> > +ifeq ("$(origin NCU)", "command line")
-> > +  KBUILD_NCU := $(NCU)
-> > +endif
-> > +
-> >  # That's our default target when none is given on the command line
-> >  PHONY := _all
-> >  _all:
-> > @@ -540,8 +546,10 @@ $(KCONFIG_CONFIG) include/config/auto.conf.cmd: ;
-> >  # with it and forgot to run make oldconfig.
-> >  # if auto.conf.cmd is missing then we are probably in a cleaned tree so
-> >  # we execute the config step to be sure to catch updated Kconfig files
-> > +ifneq ($(KBUILD_NCU), 1)
-> >  include/config/%.conf: $(KCONFIG_CONFIG) include/config/auto.conf.cmd
-> >  	$(Q)$(MAKE) -f $(srctree)/Makefile silentoldconfig
-> > +endif # $(KBUILD_NCU)
-> >  else
-> >  # external modules needs include/generated/autoconf.h and include/config/auto.conf
-> >  # but do not care if they are up-to-date. Use auto.conf to trigger the test
-> > @@ -1157,6 +1165,7 @@ help:
-> >  	@echo  '		2: warnings which occur quite often but may still be relevant'
-> >  	@echo  '		3: more obscure warnings, can most likely be ignored'
-> >  	@echo  '		Multiple levels can be combined with W=12 or W=123'
-> > +	@echo  '  make NCU=1 [targets] no .config udate'
-> 
-> 	                                          update
+From: David Flater <dave@flaterco.com>
 
-OK, I'll update.
+To fix a 5-year-old regression, reverse the changes made in the
+following commit:
 
-Thanks!
+commit 7ef36390fabe2168fe31f245e49eb4e5f3762622
+Author: Jan Beulich <jbeulich@novell.com>
+Date:   Tue Oct 16 23:31:07 2007 -0700
 
-> 
-> >  	@echo  ''
-> >  	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
-> >  	@echo  'For further info see the ./README file'
-> > 
-> 
-> 
+    PNP: don't fail device init if no DMA channel available
+    
+    Most drivers for devices supporting ISA DMA can operate without
+    DMA as well (falling back zo PIO).  Thus it seems inappropriate
+    for PNP to fail device initialization in case none of the possible
+    DMA channels are available.  Instead, it should be left to the
+    driver to decide what to do if request_dma() fails.
+    
+    The patch at once adjusts the code to account for the fact that
+    pnp_assign_dma() now doesn't need to report failure anymore.
 
+As an example to show the problem, my sound card provides a
+prioritized list of PnP "dependent sets" of requested resources:
 
+  dependent set 0 (preferred) wants DMA 5.
+  dependent set 1 (acceptable) will take DMA 5, 6, or 7.
+  ...
+  dependent set 4 (acceptable) doesn't request a high DMA.
+
+If DMA 5 is not available, pnp_assign_dma has to fail on set 0 so that
+pnp_auto_config_dev will move on to set 1 and get DMA 6 or 7.
+Instead, pnp_assign_dma adds the resource with flags |=
+IORESOURCE_DISABLED and returns success.  pnp_auto_config_dev just
+sees success and therefore chooses set 0 with a disabled DMA and never
+tries the sets that would have resolved the conflict.
+
+Furthermore, this mode of "success" is unexpected and unhandled in
+sound/isa/sb and probably other drivers.  sb assumes that the returned
+DMA is enabled and obliviously uses the invalid DMA number.  Observed
+consequences were sb successfully grabbing a DMA that was expressly
+forbidden by the kernel parameter pnp_reserve_dma.
+
+The only upside to the original change would be as a kludge for
+devices that can operate in degraded mode without a DMA but that don't
+provide the corresponding non-preferred dependent set.  The right
+workaround for those devices is to synthesize the missing set in
+quirks.c; otherwise, you're reinventing PnP fallback functionality at
+the driver level for that device and all others.
+
+Signed-off-by: David Flater <dave@flaterco.com>
+---
+ drivers/pnp/manager.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/pnp/manager.c b/drivers/pnp/manager.c
+index 95cebf0..1c25959 100644
+--- a/drivers/pnp/manager.c
++++ b/drivers/pnp/manager.c
+@@ -218,11 +218,9 @@ static int pnp_assign_dma(struct pnp_dev *dev, struct pnp_dma *rule, int idx)
+ 				goto __add;
+ 		}
+ 	}
+-#ifdef MAX_DMA_CHANNELS
+-	res->start = res->end = MAX_DMA_CHANNELS;
+-#endif
+-	res->flags |= IORESOURCE_DISABLED;
+-	pnp_dbg(&dev->dev, "  disable dma %d\n", idx);
++
++	pnp_dbg(&dev->dev, "  couldn't assign dma %d\n", idx);
++	return -EBUSY;
+ 
+ __add:
+ 	pnp_add_dma_resource(dev, res->start, res->flags);
