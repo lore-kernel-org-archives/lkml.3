@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696Ab3C2OsX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 10:48:23 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:60059 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754937Ab3C2OsV (ORCPT
+	id S1755836Ab3C2Ozb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 10:55:31 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:59891 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754423Ab3C2Oz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 10:48:21 -0400
-Message-ID: <1364568500.1345.78.camel@x61.thuisdomein>
-Subject: [PATCH] [TRIVIAL] Remove obsolete, iSeries specific, Makefile lines
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 29 Mar 2013 15:48:20 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Mar 2013 14:48:20.0176 (UTC) FILETIME=[747DAD00:01CE2C8C]
-X-RcptDomain: vger.kernel.org
+	Fri, 29 Mar 2013 10:55:29 -0400
+Message-ID: <5155AB11.60009@cogentembedded.com>
+Date: Fri, 29 Mar 2013 18:54:09 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Alexandru Copot <alex.mihai.c@gmail.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
+        honkiko@gmail.com, tgraf@suug.ch
+Subject: Re: [PATCH net-next] audit: pass int* to nlmsg_next
+References: <1364506289-9146-1-git-send-email-alex.mihai.c@gmail.com>
+In-Reply-To: <1364506289-9146-1-git-send-email-alex.mihai.c@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Entirely untested.
+Hello.
 
-1) See commit 3d066d77cf464ea1e47808f95243301fd2175a7f ("powerpc: remove
-CONFIG_PPC_ISERIES from the architecture Kconfig files") and commit
-ba7a4822b48fbc7afd6b567c18e316a03f46684d ("powerpc: Remove some of the
-legacy iSeries specific device drivers").
+On 29-03-2013 1:31, Alexandru Copot wrote:
 
- drivers/block/Makefile | 1 -
- drivers/cdrom/Makefile | 1 -
- drivers/char/Makefile  | 1 -
- 3 files changed, 3 deletions(-)
+> Commit 941912133025926307c7a65b203fa38403b1063a
 
-diff --git a/drivers/block/Makefile b/drivers/block/Makefile
-index a3b4023..ebb3a61 100644
---- a/drivers/block/Makefile
-+++ b/drivers/block/Makefile
-@@ -30,7 +30,6 @@ obj-$(CONFIG_BLK_DEV_NBD)	+= nbd.o
- obj-$(CONFIG_BLK_DEV_CRYPTOLOOP) += cryptoloop.o
- obj-$(CONFIG_VIRTIO_BLK)	+= virtio_blk.o
- 
--obj-$(CONFIG_VIODASD)		+= viodasd.o
- obj-$(CONFIG_BLK_DEV_SX8)	+= sx8.o
- obj-$(CONFIG_BLK_DEV_HD)	+= hd.o
- 
-diff --git a/drivers/cdrom/Makefile b/drivers/cdrom/Makefile
-index ecf85fd..8ffde4f 100644
---- a/drivers/cdrom/Makefile
-+++ b/drivers/cdrom/Makefile
-@@ -10,5 +10,4 @@ obj-$(CONFIG_BLK_DEV_SR)	+=              cdrom.o
- obj-$(CONFIG_PARIDE_PCD)	+=		cdrom.o
- obj-$(CONFIG_CDROM_PKTCDVD)	+=		cdrom.o
- 
--obj-$(CONFIG_VIOCD)		+= viocd.o      cdrom.o
- obj-$(CONFIG_GDROM)		+= gdrom.o      cdrom.o
-diff --git a/drivers/char/Makefile b/drivers/char/Makefile
-index 7ff1d0d..290fe5b 100644
---- a/drivers/char/Makefile
-+++ b/drivers/char/Makefile
-@@ -13,7 +13,6 @@ obj-$(CONFIG_MSM_SMD_PKT)	+= msm_smd_pkt.o
- obj-$(CONFIG_MSPEC)		+= mspec.o
- obj-$(CONFIG_MMTIMER)		+= mmtimer.o
- obj-$(CONFIG_UV_MMTIMER)	+= uv_mmtimer.o
--obj-$(CONFIG_VIOTAPE)		+= viotape.o
- obj-$(CONFIG_IBM_BSR)		+= bsr.o
- obj-$(CONFIG_SGI_MBCS)		+= mbcs.o
- obj-$(CONFIG_BFIN_OTP)		+= bfin-otp.o
--- 
-1.7.11.7
+    Please also specify the summary line of that commit in parens (or however 
+you like).
+    With that, you can add my:
+
+Acked-by: Sergei Shtylyov <segei.shtylyov@cogentembedded.com>
+
+> replaced the macros
+> NLMSG_NEXT with calls to nlmsg_next which produces this warning:
+
+> kernel/audit.c: In function ‘audit_receive_skb’:
+> kernel/audit.c:928:3: warning: passing argument 2 of ‘nlmsg_next’ makes pointer from integer without a cast
+> In file included from include/net/rtnetlink.h:5:0,
+>                   from include/net/neighbour.h:28,
+>                   from include/net/dst.h:17,
+>                   from include/net/sock.h:68,
+>                   from kernel/audit.c:55:
+> include/net/netlink.h:359:1: note: expected ‘int *’ but argument is of type ‘int’
+
+> Fix this by sending the intended pointer.
+
+> Signed-off-by: Alexandru Copot <alex.mihai.c@gmail.com>
+
+WBR, Sergei
 
