@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab3C2RFS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 13:05:18 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53722 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab3C2RFQ (ORCPT
+	id S1756197Ab3C2RGT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 13:06:19 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:49760 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756100Ab3C2RGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 13:05:16 -0400
-Message-ID: <5155C9C6.4070702@wwwdotorg.org>
-Date: Fri, 29 Mar 2013 11:05:10 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 29 Mar 2013 13:06:17 -0400
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Pavel Machek <pavel@ucw.cz>, Grant Likely <grant.likely@secretlab.ca>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: 3.9-rc1 regression in arm dtb build
-References: <20130306193332.GA6022@amd.pavel.ucw.cz> <5137C404.9060902@wwwdotorg.org> <20130307144506.GB7344@amd.pavel.ucw.cz> <5138FDAE.8060202@wwwdotorg.org> <20130311050546.GA21863@quad.lixom.net> <CACxGe6vkC7fjzf1-+K8O81+w=jQ63PvuTEhSPyitEBA9XiKYnw@mail.gmail.com> <20130328092916.GA11187@amd.pavel.ucw.cz> <51545870.4010209@wwwdotorg.org> <20130328193323.GA25166@amd.pavel.ucw.cz> <20130328195456.GA22527@quad.lixom.net>
-In-Reply-To: <20130328195456.GA22527@quad.lixom.net>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <20130329161056.GA9322@shrek.podlesie.net>
+References: <CAF1_xX3Ox6=fKomLpvrDxMZ9edB0=2SrVDDPrU0nivD_Yj6KHw@mail.gmail.com>
+	<1364570801-6515-1-git-send-email-gwendal@google.com>
+	<20130329161056.GA9322@shrek.podlesie.net>
+Date: Fri, 29 Mar 2013 10:06:15 -0700
+Message-ID: <CAMHSBOXOrxihwBNuA=uN+SKifzZx8UR40=gNnxbkRpk92FQjKg@mail.gmail.com>
+Subject: Re: [PATCH] [libata] Fix HDIO_DRIVE_CMD ioctl sense data check
+From: Gwendal Grignou <gwendal@google.com>
+To: Krzysztof Mazur <krzysiek@podlesie.net>
+Cc: ronald645@gmail.com,
+        "IDE/ATA development list" <linux-ide@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2013 01:54 PM, Olof Johansson wrote:
-> On Thu, Mar 28, 2013 at 08:33:23PM +0100, Pavel Machek wrote:
->> On Thu 2013-03-28 08:49:20, Stephen Warren wrote:
->>> On 03/28/2013 03:29 AM, Pavel Machek wrote:
->>> ...
->>>> There's change that makes it pretty much impossible to build dtbs
->>>> reliably between different kernel versions, because it leaves old dtbs
->>>> around, and they survive even make clean.
->>>
->>> One question here: Presumably the dtbs don't survive "make clean" if you
->>> run that right after building the dtbs, but only if you check out a new
->>> kernel version before running clean? Or is that not the case?
+Yours work.
+
+On Fri, Mar 29, 2013 at 9:10 AM, Krzysztof Mazur <krzysiek@podlesie.net> wrote:
+> On Fri, Mar 29, 2013 at 08:26:41AM -0700, Gwendal Grignou wrote:
+>> commit 84a9a8cd9d0aa93c17e5815ab8a9cc4c0a765c63 changed the sense key
+>> used for returning task registers, but HDIO_DRIVE_CMD ioctl was
+>> not changed accordingly.
 >>
->> That was the case I seen, yes.
+>> Tested: check that SMART ENABLE sent using HDIO_DRIVE_CMD returns 0
+>> instead of EIO.
 >>
->> Have old kernel running, dtbs building. Apply a patch. It starts
->> behaving weird. You do make clean... but you still get old dtbs.
+>> Signed-off-by: Gwendal Grignou <gwendal@google.com>
+>> ---
+>>  drivers/ata/libata-scsi.c | 4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
 >>
->> (It would be nice if make socfpga_cyclone5.dtb would magically remove
->> all the dtbs from old location; make dtbs does that if I understand
->> stuff correctly).
-> 
-> 
-> This takes care of the "make dtbs" case (or just "make" case), but not
-> when you build a specific target.
-
-I guess to really solve this, we need the following changes:
-
-In the all kernels:
-
-For both arch/*/boot and arch/*/boot/dts: clean removes *.dtb
-
-In kernels that build *.dtb in the new location:
-
-make dtbs and make foo.dtb both rm ../*.dtb
-
-In kernels that build *.dtb in the old location:
-
-make dtbs and make foo.dtb both rm dts/*.dtb
-
-Is that too much to retrofit into all the stable kernels?
+>> diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+>> index 318b413..e05bf4c 100644
+>> --- a/drivers/ata/libata-scsi.c
+>> +++ b/drivers/ata/libata-scsi.c
+>> @@ -532,8 +532,8 @@ int ata_cmd_ioctl(struct scsi_device *scsidev, void __user *arg)
+>>                       struct scsi_sense_hdr sshdr;
+>>                       scsi_normalize_sense(sensebuf, SCSI_SENSE_BUFFERSIZE,
+>>                                            &sshdr);
+>> -                     if (sshdr.sense_key == 0 &&
+>> -                         sshdr.asc == 0 && sshdr.ascq == 0)
+>> +                     if (sshdr.sense_key == RECOVERED_ERROR &&
+>> +                         sshdr.asc == 0 && sshdr.ascq == 0x1D)
+>>                               cmd_result &= ~SAM_STAT_CHECK_CONDITION;
+>>               }
+>>
+>> --
+>> 1.8.1.3
+>
+> I did not test your patch, but I think that you missed the second
+> test in ata_task_ioctl() and the kernel will still return -EIO
+> in case of HDIO_DRIVE_TASK (0x31e) ioctl.
+> See http://marc.info/?l=linux-kernel&m=136438868606981&w=2.
+> The version I've sent fixes the problem for me.
+>
+> Krzysiek
