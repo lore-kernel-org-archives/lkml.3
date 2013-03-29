@@ -1,166 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab3C2Kve (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 06:51:34 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:64214 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754056Ab3C2Kvc (ORCPT
+	id S1754334Ab3C2LBm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 07:01:42 -0400
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:58797 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab3C2LBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 06:51:32 -0400
-Message-ID: <1364554290.1345.52.camel@x61.thuisdomein>
-Subject: [PATCH] cirrus: cs89x0: remove two obsolete Kconfig macros
-From: Paul Bolle <pebolle@tiscali.nl>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 29 Mar 2013 11:51:30 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Fri, 29 Mar 2013 07:01:41 -0400
+Message-ID: <51557482.5030007@synopsys.com>
+Date: Fri, 29 Mar 2013 16:31:22 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/arc fixes for 3.9
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Mar 2013 10:51:30.0494 (UTC) FILETIME=[5EDC45E0:01CE2C6B]
-X-RcptDomain: vger.kernel.org
+X-Originating-IP: [10.12.197.157]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CONFIG_ARCH_IXDP2X01 and CONFIG_MACH_IXDP2351 Kconfig macros are
-unused since the ixp23xx and ixp2000 platforms were removed in v3.5. So
-remove the last code still depending on these macros. And since
-CS89x0_NONISA_IRQ was only set if either of these two macros was defined
-we can also remove that macro and the code depending on it.
+Hi Linus,
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Compile tested only, for 32 bit x86. (Which was slightly more work than
-I expected, since Fedora - which I happen to run - has ISA disabled as
-of Fedora 17. And I use their configuration as base for my local setups.
-Do other distributions also disable ISA by default?)
+This pull request contains ARC fixes for 3.9 cycle.
 
- drivers/net/ethernet/cirrus/cs89x0.c | 54 +-----------------------------------
- 1 file changed, 1 insertion(+), 53 deletions(-)
+It includes fix for a serious bug in DMA mapping API, make allyesconfig wreckage,
+removal of bogus email-list placeholder in MAINTAINERS, a typo in ptrace helper
+code and last remaining changes for syscall ABI v3 which we are finally starting
+to transition-to internally.
 
-diff --git a/drivers/net/ethernet/cirrus/cs89x0.c b/drivers/net/ethernet/cirrus/cs89x0.c
-index 1384469..8f90eca 100644
---- a/drivers/net/ethernet/cirrus/cs89x0.c
-+++ b/drivers/net/ethernet/cirrus/cs89x0.c
-@@ -101,23 +101,6 @@ static char version[] __initdata =
-  * them to system IRQ numbers. This mapping is card specific and is set to
-  * the configuration of the Cirrus Eval board for this chip.
-  */
--#if defined(CONFIG_MACH_IXDP2351)
--#define CS89x0_NONISA_IRQ
--static unsigned int netcard_portlist[] __used __initdata = {
--	IXDP2351_VIRT_CS8900_BASE, 0
--};
--static unsigned int cs8900_irq_map[] = {
--	IRQ_IXDP2351_CS8900, 0, 0, 0
--};
--#elif defined(CONFIG_ARCH_IXDP2X01)
--#define CS89x0_NONISA_IRQ
--static unsigned int netcard_portlist[] __used __initdata = {
--	IXDP2X01_CS8900_VIRT_BASE, 0
--};
--static unsigned int cs8900_irq_map[] = {
--	IRQ_IXDP2X01_CS8900, 0, 0, 0
--};
--#else
- #ifndef CONFIG_CS89x0_PLATFORM
- static unsigned int netcard_portlist[] __used __initdata = {
- 	0x300, 0x320, 0x340, 0x360, 0x200, 0x220, 0x240,
-@@ -127,7 +110,6 @@ static unsigned int cs8900_irq_map[] = {
- 	10, 11, 12, 5
- };
- #endif
--#endif
- 
- #if DEBUGGING
- static unsigned int net_debug = DEBUGGING;
-@@ -210,32 +192,6 @@ static int __init media_fn(char *str)
- __setup("cs89x0_media=", media_fn);
- #endif
- 
--#if defined(CONFIG_MACH_IXDP2351)
--static u16
--readword(unsigned long base_addr, int portno)
--{
--	return __raw_readw(base_addr + (portno << 1));
--}
--
--static void
--writeword(unsigned long base_addr, int portno, u16 value)
--{
--	__raw_writew(value, base_addr + (portno << 1));
--}
--#elif defined(CONFIG_ARCH_IXDP2X01)
--static u16
--readword(unsigned long base_addr, int portno)
--{
--	return __raw_readl(base_addr + (portno << 1));
--}
--
--static void
--writeword(unsigned long base_addr, int portno, u16 value)
--{
--	__raw_writel(value, base_addr + (portno << 1));
--}
--#endif
--
- static void readwords(struct net_local *lp, int portno, void *buf, int length)
- {
- 	u8 *buf8 = (u8 *)buf;
-@@ -908,7 +864,7 @@ net_open(struct net_device *dev)
- 			goto bad_out;
- 		}
- 	} else {
--#if !defined(CS89x0_NONISA_IRQ) && !defined(CONFIG_CS89x0_PLATFORM)
-+#if !defined(CONFIG_CS89x0_PLATFORM)
- 		if (((1 << dev->irq) & lp->irq_map) == 0) {
- 			pr_err("%s: IRQ %d is not in our map of allowable IRQs, which is %x\n",
- 			       dev->name, dev->irq, lp->irq_map);
-@@ -1321,9 +1277,7 @@ static const struct net_device_ops net_ops = {
- static void __init reset_chip(struct net_device *dev)
- {
- #if !defined(CONFIG_MACH_MX31ADS)
--#if !defined(CS89x0_NONISA_IRQ)
- 	struct net_local *lp = netdev_priv(dev);
--#endif /* CS89x0_NONISA_IRQ */
- 	int reset_start_time;
- 
- 	writereg(dev, PP_SelfCTL, readreg(dev, PP_SelfCTL) | POWER_ON_RESET);
-@@ -1331,7 +1285,6 @@ static void __init reset_chip(struct net_device *dev)
- 	/* wait 30 ms */
- 	msleep(30);
- 
--#if !defined(CS89x0_NONISA_IRQ)
- 	if (lp->chip_type != CS8900) {
- 		/* Hardware problem requires PNP registers to be reconfigured after a reset */
- 		iowrite16(PP_CS8920_ISAINT, lp->virt_addr + ADD_PORT);
-@@ -1344,7 +1297,6 @@ static void __init reset_chip(struct net_device *dev)
- 		iowrite8((dev->mem_start >> 8) & 0xff,
- 			 lp->virt_addr + DATA_PORT + 1);
- 	}
--#endif /* CS89x0_NONISA_IRQ */
- 
- 	/* Wait until the chip is reset */
- 	reset_start_time = jiffies;
-@@ -1579,9 +1531,6 @@ cs89x0_probe1(struct net_device *dev, void __iomem *ioaddr, int modular)
- 		i = lp->isa_config & INT_NO_MASK;
- #ifndef CONFIG_CS89x0_PLATFORM
- 		if (lp->chip_type == CS8900) {
--#ifdef CS89x0_NONISA_IRQ
--			i = cs8900_irq_map[0];
--#else
- 			/* Translate the IRQ using the IRQ mapping table. */
- 			if (i >= ARRAY_SIZE(cs8900_irq_map))
- 				pr_err("invalid ISA interrupt number %d\n", i);
-@@ -1599,7 +1548,6 @@ cs89x0_probe1(struct net_device *dev, void __iomem *ioaddr, int modular)
- 					lp->irq_map = ((irq_map_buff[0] >> 8) |
- 						       (irq_map_buff[1] << 8));
- 			}
--#endif
- 		}
- #endif
- 		if (!dev->irq)
--- 
-1.7.11.7
+The request is late than I intended to - but I was held up with debugging a timer
+link list corruption, for which a proposed fix to generic timer code was sent out
+to lkml/tglx earlier today.
 
+Please consider pulling.
+
+Thanks,
+Vineet
+
+The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
+
+  Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/vgupta/arc.git/ for-curr
+
+for you to fetch changes up to 367f3fcd9296977bc4689546f55c5f4a9c680e8d:
+
+  ARC: Fix the typo in event identifier flags used by ptrace (2013-03-20 18:45:45
++0530)
+
+----------------------------------------------------------------
+ARC fixes for 3.9 cycle
+
+----------------------------------------------------------------
+Pierrick Hascoet (1):
+      arc: fix dma_address assignment during dma_map_sg()
+
+Vineet Gupta (6):
+      ARC: MAINTAINERS update for ARC
+      ARC: make allyesconfig build breakages
+      ARC: ABIv3: Print the correct ABI ver
+      ARC: ABIv3: fork/vfork wrappers not needed in "no-legacy-syscall" ABI
+      ARC: Remove SET_PERSONALITY (tracks cross-arch change)
+      ARC: Fix the typo in event identifier flags used by ptrace
+
+ MAINTAINERS                        |    3 ++-
+ arch/arc/include/asm/dma-mapping.h |    2 +-
+ arch/arc/include/asm/elf.h         |    3 ---
+ arch/arc/include/asm/entry.h       |    2 +-
+ arch/arc/include/asm/kgdb.h        |    6 ++----
+ arch/arc/include/asm/ptrace.h      |    2 +-
+ arch/arc/include/asm/syscalls.h    |    2 --
+ arch/arc/include/uapi/asm/ptrace.h |    4 ++--
+ arch/arc/kernel/entry.S            |   27 +--------------------------
+ arch/arc/kernel/kgdb.c             |    1 +
+ arch/arc/kernel/setup.c            |    4 +---
+ arch/arc/kernel/sys.c              |    2 --
+ 12 files changed, 12 insertions(+), 46 deletions(-)
