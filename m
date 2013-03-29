@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611Ab3C2RtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 13:49:17 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:48375 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756092Ab3C2RtQ (ORCPT
+	id S1756388Ab3C2RtU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 13:49:20 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45413 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756092Ab3C2RtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 13:49:16 -0400
-Date: Fri, 29 Mar 2013 13:49:15 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-usb@vger.kernel.org, Manjunath Goudar <manjunath.goudar@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 1/7] USB: EHCI: make ehci-orion a separate driver
-In-Reply-To: <1364507705-22012-2-git-send-email-arnd@arndb.de>
-Message-ID: <Pine.LNX.4.44L0.1303291342540.1467-100000@iolanthe.rowland.org>
+	Fri, 29 Mar 2013 13:49:18 -0400
+Date: Fri, 29 Mar 2013 17:49:16 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/33] regulator: ab8500-ext: New driver to control
+ external regulators
+Message-ID: <20130329174916.GG18316@opensource.wolfsonmicro.com>
+References: <1364487093-19551-1-git-send-email-lee.jones@linaro.org>
+ <1364487093-19551-2-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cotvrx6Jh20JAKQm"
+Content-Disposition: inline
+In-Reply-To: <1364487093-19551-2-git-send-email-lee.jones@linaro.org>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Mar 2013, Arnd Bergmann wrote:
 
-> From: Manjunath Goudar <manjunath.goudar@linaro.org>
-> 
-> Separate the Orion host controller driver from ehci-hcd host
-> code into its own driver module because of following reason.
-...
+--cotvrx6Jh20JAKQm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On the whole this patch is good.
+On Thu, Mar 28, 2013 at 04:11:01PM +0000, Lee Jones wrote:
+> The ABx500 is capable of controlling three external regulator supplies.
+> Most commonly on and off are supported, but if an external regulator
+> chipset or power supply supports high-power and low-power mode settings,
+> we can control those too.
 
-> --- a/drivers/usb/host/Kconfig
-> +++ b/drivers/usb/host/Kconfig
-> @@ -163,6 +163,16 @@ config USB_EHCI_HCD_OMAP
->  	  Enables support for the on-chip EHCI controller on
->  	  OMAP3 and later chips.
->  
-> +config USB_EHCI_HCD_ORION
-> +	tristate  "Support for Marvell EBU on-chip EHCI USB controller"
-> +	depends on USB_EHCI_HCD && PLAT_ORION
-> +	default y
-> +	---help---
-> +	  Enables support for the on-chip EHCI controller on Marvell's
-> +	  embedded ARM SoCs, including Orion, Kirkwood, Dove, Armada XP,
-> +	  Armada 370.  This is different from the EHCI implementation
-> +	  on Marvell's mobile PXA and MMP SoC, see USB_EHCI_MV for those.
+Hrm, this seems like a *lot* of code for simple external enable control
+- from the changelog in previous versions and a quick glance at the code
+I'd thought it was doing more than that but now I read it properly it's
+really just simple enables.  Is there really no sharing with the normal
+regulators?
 
-I don't know about this last phrase.  When someone is running "make 
-menuconfig", for example, what shows up is the symbol's description, 
-not the symbol's name.  That person would see "EHCI support for Marvell 
-on-chip controller", not "USB_EHCI_MV".
+Anyway, I applied 1-6.
 
-In fact, shouldn't the description for USB_EHCI_MV be changed too, to 
-make it more distinct from this one?
+--cotvrx6Jh20JAKQm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-All the code changes are fine.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Alan Stern
+iQIcBAEBAgAGBQJRVdQJAAoJELSic+t+oim9FJYP/1VR5RPAmgdk6hsZqC9OyFuY
+/0Kt9wMG7sZ2TsHFaC6BRLyJVfiUDnM9lpOfnFBRqFr0Njw1J8NdUSHVA6vbnrHW
+Wg7VNpskUXGAoyQ+A3TFJy8okgb9F0s9Pd0xZlytd51VcqdpsPBPd2HLVgY/Z8gA
+kFlniS65QVCgZmX9mdAKS3RghmLRrj7sJe69YT4TiIw/uw10PawufXEWaxFh3XN+
+FEyhSDeE5QCAP2F64eByvD7QZ/X4F5swLpa3f+V5Xzry+Jy8om5SYCeou2y+RD9Z
+rvHllxkpUTCJqYbAEWO1G2quHpymtRnAOgQ9OaOk+61Hhqel6cRXXTgio0/vrO+2
+pbdtmg1TRmMh0yCyE6xUNcFiu2Lgk1YGwtaL9dSlX+x295pjuLurdrXD67+jvFja
+ccWmlsqzGF4zQebwmePGEO7vk+YsTNeqnr8q89dQhrakn4expig+a+/Xn3gMgAJ3
+mFK7+EYF5N/yQR1NZrGyVRQCOh0vlNS4LySxxdw/OXZ/7wQ9p1/aE20eSq2eueYS
+IghZxA414w3GfybKeFYoYRE78vMJMSzrtbSI65ItigkiLGjl0B2q2fNjKqzNac5Z
+wiab79IC/dxyZtbdrAPtnOau4WrdI2Tif7eIxEbfT81pSxR0tL33CHeQXjroIpSM
+zQMH5YzGRmpTN8E41mvw
+=c4At
+-----END PGP SIGNATURE-----
 
+--cotvrx6Jh20JAKQm--
