@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab3C2HTS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 03:19:18 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:17535 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994Ab3C2HTQ (ORCPT
+	id S1753959Ab3C2HVG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 03:21:06 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:59778 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab3C2HVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 03:19:16 -0400
-X-Spam-Score: -100.7
-Message-ID: <51554055.90500@asianux.com>
-Date: Fri, 29 Mar 2013 15:18:45 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 29 Mar 2013 03:21:05 -0400
+Date: Fri, 29 Mar 2013 08:20:56 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: hayeswang <hayeswang@realtek.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, bowgotsai@google.com,
+        "'Ryankao'" <ryankao@realtek.com>
+Subject: Re: r8169 auto speed down issue
+Message-ID: <20130329072056.GA31269@electric-eye.fr.zoreil.com>
+References: <4EECA12DD88643FD9006350514D96C8E@realtek.com.tw>
+ <20130328231955.GA26182@electric-eye.fr.zoreil.com>
+ <83FC3118294143DC81063B29EF570FC1@realtek.com.tw>
 MIME-Version: 1.0
-To: minyard@acm.org
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        openipmi-developer@lists.sourceforge.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drivers/char/ipmi: memcpy, need additional 2 bytes to avoid
- memory overflow
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <83FC3118294143DC81063B29EF570FC1@realtek.com.tw>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+hayeswang <hayeswang@realtek.com> :
+> Francois Romieu [mailto:romieu@fr.zoreil.com] 
+> [...]
+> > Your description suggests that testing against the link 
+> > partner ability to work at 10M instead of testing for
+                                   ^^^^^^^^^^ -> "and"
+> > tp->link_ok could be good enough.
 
-  when calling memcpy, read_data and write_data need additional 2 bytes.
+As a policy we may assume that capabilities of the link partner won't
+change after a link loss event - and there is currently no way we can
+change this policy - but it won't always work as expected (especially
+if "expected == automagically").
 
-  write_data:
-    for checking:  "if (size > IPMI_MAX_MSG_LENGTH)" 
-    for operating: "memcpy(bt->write_data + 3, data + 1, size - 1)"
+[...]
+> Furthermore, should it not speed down without linking, even though the cable
+> would be plugged after suspending or shutdowning?
 
-  read_data:
-    for checking:  "if (msg_len < 3 || msg_len > IPMI_MAX_MSG_LENGTH)"
-    for operating: "memcpy(data + 2, bt->read_data + 4, msg_len - 2)"
+I don't get your point. Can you reformulate ?
 
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- drivers/char/ipmi/ipmi_bt_sm.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
-index cdd4c09f..a22a7a5 100644
---- a/drivers/char/ipmi/ipmi_bt_sm.c
-+++ b/drivers/char/ipmi/ipmi_bt_sm.c
-@@ -95,9 +95,9 @@ struct si_sm_data {
- 	enum bt_states	state;
- 	unsigned char	seq;		/* BT sequence number */
- 	struct si_sm_io	*io;
--	unsigned char	write_data[IPMI_MAX_MSG_LENGTH];
-+	unsigned char	write_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
- 	int		write_count;
--	unsigned char	read_data[IPMI_MAX_MSG_LENGTH];
-+	unsigned char	read_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
- 	int		read_count;
- 	int		truncated;
- 	long		timeout;	/* microseconds countdown */
 -- 
-1.7.7.6
+Ueimor
