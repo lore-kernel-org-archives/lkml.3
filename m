@@ -1,121 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab3C2WQj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 18:16:39 -0400
-Received: from mga03.intel.com ([143.182.124.21]:37280 "EHLO mga03.intel.com"
+	id S1757246Ab3C2WTK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 18:19:10 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47049 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756793Ab3C2WQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 18:16:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,375,1363158000"; 
-   d="scan'208";a="277800896"
-Date: Sat, 30 Mar 2013 03:19:51 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>
-Cc: Dan Williams <djbw@fb.com>, Jon Hunter <jon-hunter@ti.com>,
-        Padmavathi Venna <padma.v@samsung.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] dma: of: Add generic xlate function for matching
- by channel id
-Message-ID: <20130329214951.GA10326@intel.com>
-References: <1364217412-31905-1-git-send-email-lars@metafoo.de>
+	id S1757134Ab3C2WTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 18:19:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 5/6] ACPI / LPSS: return no error from register_device_clock in special cases
+Date: Fri, 29 Mar 2013 23:26:38 +0100
+Message-ID: <5510153.6xBDfboAWZ@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1364374682-8547-6-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1364374682-8547-1-git-send-email-andriy.shevchenko@linux.intel.com> <1364374682-8547-6-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364217412-31905-1-git-send-email-lars@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 02:16:51PM +0100, Lars-Peter Clausen wrote:
-> This patch adds a new generic of dma xlate callback function which will match a
-> channel by its id.
-how will the client know which "id" to request? 
-
+On Wednesday, March 27, 2013 10:58:01 AM Andy Shevchenko wrote:
+> When device uses the fixed clock and has no private space of LTR, we have to
+> create main LPSS clock and register platform device. This is normally a case
+> for LPSS DMA controller.
 > 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 > ---
->  drivers/dma/of-dma.c   | 47 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/of_dma.h |  4 ++++
->  2 files changed, 51 insertions(+)
+>  drivers/acpi/acpi_lpss.c | 4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
-> index 00db454..7cad4d7 100644
-> --- a/drivers/dma/of-dma.c
-> +++ b/drivers/dma/of-dma.c
-> @@ -269,3 +269,50 @@ struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
->  			&dma_spec->args[0]);
->  }
->  EXPORT_SYMBOL_GPL(of_dma_simple_xlate);
-> +
-> +struct of_dma_filter_by_chan_id_args {
-> +	struct dma_device *dev;
-> +	unsigned int chan_id;
-> +};
-> +
-> +static bool of_dma_filter_by_chan_id(struct dma_chan *chan, void *params)
-> +{
-> +	struct of_dma_filter_by_chan_id_args *args = params;
-> +
-> +	return chan->device == args->dev && chan->chan_id == args->chan_id;
-> +}
-> +
-> +/**
-> + * of_dma_xlate_by_chan_id - Translate dt property to DMA channel by channel id
-> + * @dma_spec:	pointer to DMA specifier as found in the device tree
-> + * @of_dma:	pointer to DMA controller data
-> + *
-> + * This function can be used as the of xlate callback for DMA driver which want
-> + * to match the channel based on the channel id. When using this xlate function
-> + * the #dma-cells propety of the DMA controller dt node needs to be set to 1.
-> + * The data parameter of of_dma_controller_register must be a pointer to the
-> + * dma_device struct the function should match uppon.
-> + *
-> + * Returns pointer to appropriate dma channel on success or NULL on error.
-> + */
-> +struct dma_chan *of_dma_xlate_by_chan_id(struct of_phandle_args *dma_spec,
-> +					 struct of_dma *ofdma)
-> +{
-> +	struct of_dma_filter_by_chan_id_args args;
-> +	dma_cap_mask_t cap;
-> +
-> +	args.dev = ofdma->of_dma_data;
-> +	if (!args.dev)
-> +		return NULL;
-> +
-> +	if (dma_spec->args_count != 1)
-> +		return NULL;
-> +
-> +	dma_cap_zero(cap);
-> +	dma_cap_set(DMA_SLAVE, cap);
-> +
-> +	args.chan_id = dma_spec->args[0];
-> +
-> +	return dma_request_channel(cap, of_dma_filter_by_chan_id, &args);
-> +}
-> +EXPORT_SYMBOL_GPL(of_dma_xlate_by_chan_id);
-> diff --git a/include/linux/of_dma.h b/include/linux/of_dma.h
-> index ce6a8ab..46732d3 100644
-> --- a/include/linux/of_dma.h
-> +++ b/include/linux/of_dma.h
-> @@ -43,6 +43,8 @@ extern struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
->  						     const char *name);
->  extern struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
->  		struct of_dma *ofdma);
-> +extern struct dma_chan *of_dma_xlate_by_chan_id(struct of_phandle_args *dma_spec,
-> +		struct of_dma *ofdma);
->  #else
->  static inline int of_dma_controller_register(struct device_node *np,
->  		struct dma_chan *(*of_dma_xlate)
-> @@ -69,6 +71,8 @@ static inline struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_s
->  	return NULL;
->  }
+> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+> index b1c9542..4015929 100644
+> --- a/drivers/acpi/acpi_lpss.c
+> +++ b/drivers/acpi/acpi_lpss.c
+> @@ -95,6 +95,10 @@ static int register_device_clock(struct acpi_device *adev,
+>  	if (!lpss_clk_dev)
+>  		lpt_register_clock_device();
 >  
-> +#define of_dma_xlate_by_chan_id NULL
+> +	if (!dev_desc->prv_offset && dev_desc->clk_required)
+
+If clk_required is not set, register_device_clock() won't be called at all for
+the device.  Moreover, prv_offset may be zero in principle.
+
+You'd need to add support for shared clocks for that to really work.  I have code
+for that, please ping me off-list.
+
+> +		/* There is no error when device uses fixed clock */
+> +		return 0;
 > +
->  #endif
->  
->  #endif /* __LINUX_OF_DMA_H */
-> -- 
-> 1.8.0
-> 
+>  	if (!dev_desc->clk_parent || !pdata->mmio_base
+>  	    || pdata->mmio_size < dev_desc->prv_offset + LPSS_CLK_SIZE)
+>  		return -ENODATA;
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
