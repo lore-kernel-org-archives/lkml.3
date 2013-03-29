@@ -1,123 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842Ab3C2UBm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 16:01:42 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:48831 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756616Ab3C2UBk (ORCPT
+	id S1756905Ab3C2UCI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 16:02:08 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:48444 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756255Ab3C2UCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 16:01:40 -0400
-Date: Fri, 29 Mar 2013 13:01:14 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Minchan Kim <minchan@kernel.org>
-cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Bob Liu <bob.liu@oracle.com>
-Subject: Re: [RFC] mm: remove swapcache page early
-In-Reply-To: <20130329011801.GA32245@blaptop>
-Message-ID: <alpine.LNX.2.00.1303291250160.3741@eggly.anvils>
-References: <1364350932-12853-1-git-send-email-minchan@kernel.org> <alpine.LNX.2.00.1303271230210.29687@eggly.anvils> <433aaa17-7547-4e39-b472-7060ee15e85f@default> <20130328010706.GB22908@blaptop> <5f1504e7-8b07-4109-8271-b214b496ca61@default>
- <20130329011801.GA32245@blaptop>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 29 Mar 2013 16:02:07 -0400
+Date: Fri, 29 Mar 2013 16:02:06 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-usb@vger.kernel.org, Manjunath Goudar <manjunath.goudar@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Greg KH <greg@kroah.com>, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH v3 5/7] USB: EHCI: make ehci-atmel a separate driver
+In-Reply-To: <1364507705-22012-6-git-send-email-arnd@arndb.de>
+Message-ID: <Pine.LNX.4.44L0.1303291600080.1467-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Mar 2013, Minchan Kim wrote:
-> On Thu, Mar 28, 2013 at 11:19:12AM -0700, Dan Magenheimer wrote:
-> > > From: Minchan Kim [mailto:minchan@kernel.org]
-> > > On Wed, Mar 27, 2013 at 03:24:00PM -0700, Dan Magenheimer wrote:
-> > > > > From: Hugh Dickins [mailto:hughd@google.com]
-> > > > > Subject: Re: [RFC] mm: remove swapcache page early
-> > > > >
-> > > > > I believe the answer is for frontswap/zmem to invalidate the frontswap
-> > > > > copy of the page (to free up the compressed memory when possible) and
-> > > > > SetPageDirty on the PageUptodate PageSwapCache page when swapping in
-> > > > > (setting page dirty so nothing will later go to read it from the
-> > > > > unfreed location on backing swap disk, which was never written).
-> > > >
-> > > > There are two duplication issues:  (1) When can the page be removed
-> > > > from the swap cache after a call to frontswap_store; and (2) When
-> > > > can the page be removed from the frontswap storage after it
-> > > > has been brought back into memory via frontswap_load.
-> > > >
-> > > > This patch from Minchan addresses (1).  The issue you are raising
-> > > 
-> > > No. I am addressing (2).
-> > > 
-> > > > here is (2).  You may not know that (2) has recently been solved
-> > > > in frontswap, at least for zcache.  See frontswap_exclusive_gets_enabled.
-> > > > If this is enabled (and it is for zcache but not yet for zswap),
-> > > > what you suggest (SetPageDirty) is what happens.
-> > > 
-> > > I am blind on zcache so I didn't see it. Anyway, I'd like to address it
-> > > on zram and zswap.
-> > 
-> > Zswap can enable it trivially by adding a function call in init_zswap.
-> > (Note that it is not enabled by default for all frontswap backends
-> > because it is another complicated tradeoff of cpu time vs memory space
-> > that needs more study on a broad set of workloads.)
-> > 
-> > I wonder if something like this would have a similar result for zram?
-> > (Completely untested... snippet stolen from swap_entry_free with
-> > SetPageDirty added... doesn't compile yet, but should give you the idea.)
+On Thu, 28 Mar 2013, Arnd Bergmann wrote:
 
-Thanks for correcting me on zram (in earlier mail of this thread), yes,
-I was forgetting about the swap_slot_free_notify entry point which lets
-that memory be freed.
-
+> From: Manjunath Goudar <manjunath.goudar@linaro.org>
 > 
-> Nice idea!
+> Separate the Atmel host controller driver from ehci-hcd host code
+> so that it can be built as a separate driver module.
+> This work is part of enabling multi-platform kernels on ARM;
+> however, note that other changes are still needed before Atmel can be
+> booted with a multi-platform kernel. This is currently planned for
+> Linux-3.11.
 > 
-> After I see your patch, I realized it was Hugh's suggestion and
-> you implemented it in proper place.
-> 
-> Will resend it after testing. Maybe nextweek.
-> Thanks!
+> With the infrastructure added by Alan Stern in patch 3e0232039
+> "USB: EHCI: prepare to make ehci-hcd a library module", we can
+> avoid this problem by turning a bus glue into a separate
+> module, as we do here for the Atmel bus glue.
 
-Be careful, although Dan is right that something like this can be
-done for zram, I believe you will find that it needs a little more:
-either a separate new entry point (not my preference) or a flags arg
-(or boolean) added to swap_slot_free_notify.
+Generally okay.
 
-Because this is a different operation: end_swap_bio_read() wants
-to free up zram's compressed copy of the page, but the swp_entry_t
-must remain valid until swap_entry_free() can clear up the rest.
-Precisely how much of the work each should do, you will discover.
+> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+> index 01c1acb..8c564aa 100644
+> --- a/drivers/usb/host/ehci-atmel.c
+> +++ b/drivers/usb/host/ehci-atmel.c
+> @@ -15,6 +15,19 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/of.h>
+>  #include <linux/of_platform.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/usb.h>
+> +#include <linux/usb/hcd.h>
+> +#include <linux/io.h>
+> +#include <linux/dma-mapping.h>
 
-Hugh
+While not absolutely necessary, it would be nice to have the #include 
+files in alphabetical order.
 
-> 
-> > 
-> > diff --git a/mm/page_io.c b/mm/page_io.c
-> > index 56276fe..2d10988 100644
-> > --- a/mm/page_io.c
-> > +++ b/mm/page_io.c
-> > @@ -81,7 +81,17 @@ void end_swap_bio_read(struct bio *bio, int err)
-> >  				iminor(bio->bi_bdev->bd_inode),
-> >  				(unsigned long long)bio->bi_sector);
-> >  	} else {
-> > +		struct swap_info_struct *sis;
-> > +
-> >  		SetPageUptodate(page);
-> > +		sis = page_swap_info(page);
-> > +		if (sis->flags & SWP_BLKDEV) {
-> > +			struct gendisk *disk = sis->bdev->bd_disk;
-> > +			if (disk->fops->swap_slot_free_notify) {
-> > +				SetPageDirty(page);
-> > +				disk->fops->swap_slot_free_notify(sis->bdev,
-> > +								  offset);
-> > +			}
-> > +		}
-> >  	}
-> >  	unlock_page(page);
-> >  	bio_put(bio);
+> +
+> +#include "ehci.h"
+> +
+> +#define DRIVER_DESC "EHCI atmel driver"
+
+"atmel" should have a capital 'A'.
+
+Alan Stern
+
