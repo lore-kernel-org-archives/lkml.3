@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab3C2SFT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 14:05:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4784 "EHLO mga01.intel.com"
+	id S1756647Ab3C2SGg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 14:06:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30813 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756310Ab3C2SFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 14:05:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,374,1363158000"; 
-   d="scan'208";a="313765873"
-From: "Allan, Bruce W" <bruce.w.allan@intel.com>
-To: Jiri Slaby <jslaby@suse.cz>, Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Borislav Petkov <bp@alien8.de>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        "x86@kernel.org" <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-Subject: RE: e1000e + suspend, 3.9-rc2
-Thread-Topic: e1000e + suspend, 3.9-rc2
-Thread-Index: AQHOHo1yPcCqC9Kgs0+/ioixgRgrdpihW2oAgAAKAoCAAV3XgIAKisEAgAADDgCAACAiAIAPn7WQ
-Date: Fri, 29 Mar 2013 18:04:42 +0000
-Message-ID: <804857E1F29AAC47BF68C404FC60A1844D9F3062@ORSMSX103.amr.corp.intel.com>
-References: <20130311191936.GD5000@pd.tnic> <513E355C.4000204@gmail.com>
- <20130311202537.GF5000@pd.tnic> <20130312171745.GE5370@pd.tnic>
- <51483B1A.9090704@suse.cz> <51483DAA.7060806@openvz.org>
- <5148589E.8030509@suse.cz>
-In-Reply-To: <5148589E.8030509@suse.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1755884Ab3C2SGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 14:06:34 -0400
+Date: Fri, 29 Mar 2013 14:04:55 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@surriel.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        hhuang@redhat.com, "Low, Jason" <jason.low2@hp.com>,
+        Michel Lespinasse <walken@google.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: Re: ipc,sem: sysv semaphore scalability
+Message-ID: <20130329180455.GA22395@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Rik van Riel <riel@surriel.com>,
+	Davidlohr Bueso <davidlohr.bueso@hp.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	hhuang@redhat.com, "Low, Jason" <jason.low2@hp.com>,
+	Michel Lespinasse <walken@google.com>,
+	Larry Woodman <lwoodman@redhat.com>,
+	"Vinod, Chegu" <chegu_vinod@hp.com>,
+	Peter Hurley <peter@hurleysoftware.com>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+ <20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org>
+ <20130326192852.GA25899@redhat.com>
+ <20130326124309.077e21a9f59aaa3f3355e09b@linux-foundation.org>
+ <20130329161746.GA8391@redhat.com>
+ <CA+55aFxbs0=fpFA+rAW-jOD9C8muRfA0otfJ13yhhLMSg7H8bw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxbs0=fpFA+rAW-jOD9C8muRfA0otfJ13yhhLMSg7H8bw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2TI5KOJ030036
 
-> -----Original Message-----
-> From: Jiri Slaby [mailto:jirislaby@gmail.com] On Behalf Of Jiri Slaby
-> Sent: Tuesday, March 19, 2013 5:23 AM
-> To: Konstantin Khlebnikov
-> Cc: Borislav Petkov; Kirsher, Jeffrey T; Rafael J. Wysocki; Bjorn Helgaas;
-> x86@kernel.org; lkml; e1000-devel@lists.sourceforge.net; Allan, Bruce W
-> Subject: Re: e1000e + suspend, 3.9-rc2
-> 
-> >>> Ok, I can still see the hardware error message when suspending:
-> >>
-> >> And with 3.8 plus these:
-> >>      PCI/PM: Clear state_saved during suspend
-> >>      e1000e: fix pci-device enable-counter balance
-> >>      e1000e: fix runtime power management transitions
-> >>      e1000e: fix accessing to suspended device
-> >>
-> >> I sometimes see this:
-> >> pci_pm_suspend():e1000_suspend +0x0/0x10 [e1000e] returns -2
-> >> dpm_run_callback(): pci_pm_suspend+0x0/0x140 returns -2
-> >> PM: Device 0000:00:19.0 failed to suspend async: error -2
-> >>
-> >> Any ideas? Am I missing some patch still?
-> >
-> > Try this:
-> > "PCI: Don't try to disable Bus Master on disconnected PCI devices"
-> > https://patchwork.kernel.org/patch/2271641/
-> >
-> > But I'm not sure, probably it is unrelated because this code works only (?)
-> > during shutdown/kexec sequences.
-> 
-> I don't think it will help either. -2 here is -E1000_ERR_PHY from
-> e1000e_write_phy_reg_mdic if I'm looking correctly. I.e. MDIC not ready
-> or unlike MDIC_ERROR.
-> 
-> I think this happened after I put the link down and tried to suspend.
-> 
-> --
-> js
-> suse labs
+On Fri, Mar 29, 2013 at 11:00:27AM -0700, Linus Torvalds wrote:
+ > On Fri, Mar 29, 2013 at 9:17 AM, Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > Now that I have that reverted, I'm not seeing msgrcv traces any more, but
+ > > I've started seeing this..
+ > >
+ > > general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+ > >
+ > > Looks like seg was already kfree'd.
+ > 
+ > Just to clarify: is this you testing -mm that has Davidlohr's and
+ > Rik's scalability patches? Or mainline?
 
-Sorry for not replying sooner, for some reason some of this thread was filtered
-to my junk folder and I didnâ€™t see it until now.
+mainline. Your current tree.
 
-Jiri, can you provide the output of 'lspci -s 00:19.0 -n -vv' and confirm the scenario
-in which the problem occurs?  Is this easily reproduced?
-
-Thanks,
-Bruce.
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	Dave
