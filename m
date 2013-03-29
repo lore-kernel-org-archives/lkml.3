@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417Ab3C2Ro3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 13:44:29 -0400
-Received: from mail-lb0-f202.google.com ([209.85.217.202]:52935 "EHLO
-	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476Ab3C2Ro2 (ORCPT
+	id S1756502Ab3C2RpD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 13:45:03 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42532 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756454Ab3C2RpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 13:44:28 -0400
-X-Greylist: delayed 1402 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Mar 2013 13:44:28 EDT
-From: Gwendal Grignou <gwendal@google.com>
-To: ronald645@gmail.com
-Cc: krzysiek@podlesie.net, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Gwendal Grignou <gwendal@google.com>
-Subject: [PATCH v2] [libata] Fix HDIO_DRIVE_CMD ioctl sense data check
-Date: Fri, 29 Mar 2013 10:12:46 -0700
-Message-Id: <1364577166-17930-1-git-send-email-gwendal@google.com>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1364576992-17598-1-git-send-email-gwendal@google.com>
-References: <1364576992-17598-1-git-send-email-gwendal@google.com>
+	Fri, 29 Mar 2013 13:45:00 -0400
+Date: Fri, 29 Mar 2013 17:44:58 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Subject: Re: [PATCH 07/33] regulator: ab8500-ext: Add suspend support
+Message-ID: <20130329174458.GF18316@opensource.wolfsonmicro.com>
+References: <1364487093-19551-1-git-send-email-lee.jones@linaro.org>
+ <1364487093-19551-8-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KooJrfvDkviRNGvv"
+Content-Disposition: inline
+In-Reply-To: <1364487093-19551-8-git-send-email-lee.jones@linaro.org>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 84a9a8cd9d0aa93c17e5815ab8a9cc4c0a765c63 changed the sense key
-used for returning task registers, but HDIO_DRIVE_CMD ioctl was
-not changed accordingly.
 
-Tested: check that SMART ENABLE sent using HDIO_DRIVE_CMD returns 0
-instead of EIO.
+--KooJrfvDkviRNGvv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Gwendal Grignou <gwendal@google.com>
----
- drivers/ata/libata-scsi.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+On Thu, Mar 28, 2013 at 04:11:07PM +0000, Lee Jones wrote:
 
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 318b413..5eae74b 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -532,8 +532,8 @@ int ata_cmd_ioctl(struct scsi_device *scsidev, void __user *arg)
- 			struct scsi_sense_hdr sshdr;
- 			scsi_normalize_sense(sensebuf, SCSI_SENSE_BUFFERSIZE,
- 					     &sshdr);
--			if (sshdr.sense_key == 0 &&
--			    sshdr.asc == 0 && sshdr.ascq == 0)
-+			if (sshdr.sense_key == RECOVERED_ERROR &&
-+			    sshdr.asc == 0 && sshdr.ascq == 0x1D)
- 				cmd_result &= ~SAM_STAT_CHECK_CONDITION;
- 		}
- 
-@@ -618,8 +618,8 @@ int ata_task_ioctl(struct scsi_device *scsidev, void __user *arg)
- 			struct scsi_sense_hdr sshdr;
- 			scsi_normalize_sense(sensebuf, SCSI_SENSE_BUFFERSIZE,
- 						&sshdr);
--			if (sshdr.sense_key == 0 &&
--				sshdr.asc == 0 && sshdr.ascq == 0)
-+			if (sshdr.sense_key == RECOVERED_ERROR &&
-+			    sshdr.asc == 0 && sshdr.ascq == 0x1D)
- 				cmd_result &= ~SAM_STAT_CHECK_CONDITION;
- 		}
- 
--- 
-1.8.1.3
+> +static int ab8500_ext_regulator_set_suspend_enable(struct regulator_dev *rdev)
+> +{
+> +	dev_dbg(rdev_get_dev(rdev), "suspend: ");
 
+It's kind of a general problem with the AB8500 code but there's an awful
+lot of content free trace like this, if there's not adequate trace in
+the core for things like that we should add it there.
+
+> +
+> +	return ab8500_ext_regulator_enable(rdev);
+> +}
+> +
+
+This looks broken - it's going to interfere with the normal runtime
+operation of the device as it's using exactly the same operation to
+change the device state.  If the hardware doesn't have any support for
+suspend mode then the driver shouldn't be implementing this function.
+
+--KooJrfvDkviRNGvv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRVdMTAAoJELSic+t+oim9agwP/A4L3Fyet4vTVHCc0nE/PJGu
+OXwKcnIJii3rE5R2rYVzbecexSg3qc8FKYT/1vTaGlgWpRB7fGGGGbijbdbhX1uS
+wiwWUGf0LsS+uY6VlXO21HUVVSgAbVyWHMQMrbEximKRIiiac/9AWGrzcnd4qMlF
+zYR17JQK0v9jZ0zbxQniAzBP9I+3ym/FvA4R7Q217nF1gMVfnTkBldU9efQpJQWK
+U1JSAO7w34LI34mwiQtZ8DMzQulYptErdi46E+qaaY2TEKU9Ef1jQkKrYKxLO4Oq
+rpD9ZBS073yEkc/Y85jBi6OUT3eBFckgeqMjwYDnweUe0vr0OMi1FYjmilzfUaxV
+c6h1V/jkjUWly4GT1eoh1Dl86PJ+mtI1BCiK+rJubgqSKbXC+egMHA//1n18QosE
+BY1p69uHjnOjWn2nIqmuKb5rWXbDlxcZJRGc1LKMroaxU6uoiHUsUopcxq9dlJ+d
+jnw70M6KODjK0CqU1XylW3WSjp6ZfikIWsxLJqMOXASHIZclI7bDs8X7M2qPfIiO
++TXFvZJU2DoXh6LaGI1xApjyFWfy0LFPOAvNJqt6V5WZK/3pzaP9lFHDkLVCpfnc
+YjViUECDetM7fTKzQhbMyIk+rFMwoS8uibZk850pMMhSt7R8xoXvHU6bc2KzfnDJ
+sW/wogEH/z9baEKHPb+A
+=vuYH
+-----END PGP SIGNATURE-----
+
+--KooJrfvDkviRNGvv--
