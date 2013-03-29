@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895Ab3C2Nqp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 09:46:45 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:33137 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754790Ab3C2Nqn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 09:46:43 -0400
-Date: Fri, 29 Mar 2013 09:46:40 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Feng Jin <joe.jin@oracle.com>, Tamon Shiose <tamon.shiose@oracle.com>
-Subject: Re: [PATCH] xen: Don't call arch_trigger_all_cpu_backtrace in
- dom0(pvm)
-Message-ID: <20130329134640.GG31356@phenom.dumpdata.com>
-References: <5155413E.6090002@oracle.com>
+	id S1756175Ab3C2Nrc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 09:47:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56839 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754109Ab3C2Nrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 09:47:31 -0400
+Date: Fri, 29 Mar 2013 14:47:27 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        stable@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: Re: [PATCH 1/2] hugetlbfs: stop setting VM_DONTDUMP in initializing
+ vma(VM_HUGETLB)
+Message-ID: <20130329134727.GA21879@dhcp22.suse.cz>
+References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1364485358-8745-2-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5155413E.6090002@oracle.com>
+In-Reply-To: <1364485358-8745-2-git-send-email-n-horiguchi@ah.jp.nec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29, 2013 at 03:22:38PM +0800, Zhenzhong Duan wrote:
-> nmi isn't supported in dom0, fallback to general all cpu backtrace code.
+On Thu 28-03-13 11:42:37, Naoya Horiguchi wrote:
+> Currently we fail to include any data on hugepages into coredump,
+> because VM_DONTDUMP is set on hugetlbfs's vma. This behavior was recently
+> introduced by commit 314e51b98 "mm: kill vma flag VM_RESERVED and
+> mm->reserved_vm counter". This looks to me a serious regression,
+> so let's fix it.
 > 
-> Without fix, on xapic system, sysrq+l, no backtrace is showed.
-> On x2apic enabled system, got NULL pointer dereference as below.
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-Why would the x2APIC or xAPIC make a difference here? The Linux dom0
-is not fiddling with the APIC - that is the hypervisor job.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Can you explain to me why x2apic_send_IPI_mask is even set? Wouldn't
-the Xen version of send_IPI be present? (See xen_smp_ops)
-
-Perhaps it is missing an over-write for the send_IPI_all?
-
-> 
->     SysRq : Show backtrace of all active CPUs
->     BUG: unable to handle kernel NULL pointer dereference at           (null)
->     IP: [<ffffffff8125e3cb>] memcpy+0xb/0x120
->     Call Trace:
->      [<ffffffff81039633>] ? __x2apic_send_IPI_mask+0x73/0x160
->      [<ffffffff8103973e>] x2apic_send_IPI_all+0x1e/0x20
->      [<ffffffff8103498c>] arch_trigger_all_cpu_backtrace+0x6c/0xb0
->      [<ffffffff81501be4>] ? _raw_spin_lock_irqsave+0x34/0x50
->      [<ffffffff8131654e>] sysrq_handle_showallcpus+0xe/0x10
->      [<ffffffff8131616d>] __handle_sysrq+0x7d/0x140
->      [<ffffffff81316230>] ? __handle_sysrq+0x140/0x140
->      [<ffffffff81316287>] write_sysrq_trigger+0x57/0x60
->      [<ffffffff811ca996>] proc_reg_write+0x86/0xc0
->      [<ffffffff8116dd8e>] vfs_write+0xce/0x190
->      [<ffffffff8116e3e5>] sys_write+0x55/0x90
->      [<ffffffff8150a242>] system_call_fastpath+0x16/0x1b
-> 
-> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-> Tested-by: Tamon Shiose <tamon.shiose@oracle.com>
 > ---
->  include/linux/nmi.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+>  fs/hugetlbfs/inode.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/include/linux/nmi.h b/include/linux/nmi.h
-> index db50840..b845757 100644
-> --- a/include/linux/nmi.h
-> +++ b/include/linux/nmi.h
-> @@ -32,6 +32,8 @@ static inline void touch_nmi_watchdog(void)
->  #ifdef arch_trigger_all_cpu_backtrace
->  static inline bool trigger_all_cpu_backtrace(void)
->  {
-> +	if (xen_domain())
-> +		return false;
->  	arch_trigger_all_cpu_backtrace();
+> diff --git v3.9-rc3.orig/fs/hugetlbfs/inode.c v3.9-rc3/fs/hugetlbfs/inode.c
+> index 84e3d85..523464e 100644
+> --- v3.9-rc3.orig/fs/hugetlbfs/inode.c
+> +++ v3.9-rc3/fs/hugetlbfs/inode.c
+> @@ -110,7 +110,7 @@ static int hugetlbfs_file_mmap(struct file *file, struct vm_area_struct *vma)
+>  	 * way when do_mmap_pgoff unwinds (may be important on powerpc
+>  	 * and ia64).
+>  	 */
+> -	vma->vm_flags |= VM_HUGETLB | VM_DONTEXPAND | VM_DONTDUMP;
+> +	vma->vm_flags |= VM_HUGETLB | VM_DONTEXPAND;
+>  	vma->vm_ops = &hugetlb_vm_ops;
 >  
->  	return true;
+>  	if (vma->vm_pgoff & (~huge_page_mask(h) >> PAGE_SHIFT))
 > -- 
-> 1.7.3
+> 1.7.11.7
 > 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Michal Hocko
+SUSE Labs
