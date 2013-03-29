@@ -1,117 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab3C2HWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 03:22:25 -0400
-Received: from fallback6.mail.ru ([94.100.176.134]:36563 "EHLO
-	fallback6.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab3C2HWW (ORCPT
+	id S1755987Ab3C2H10 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 03:27:26 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:64297 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320Ab3C2H1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 03:22:22 -0400
-From: Kirill Kapranov <kapranoff@inbox.ru>
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, bhutchings@solarflare.com, peppe.cavallaro@st.com,
-        joe@perches.com, bruce.w.allan@intel.com, linux-kernel@vger.kernel.org,
-        Kirill Kapranov <kapranoff@inbox.ru>
-Subject: [PATCH] phy: Elimination the forced speed reduction algorithm.
-Date: Tue, 26 Mar 2013 17:34:32 +0400
-Message-Id: <1364304872-6408-1-git-send-email-kapranoff@inbox.ru>
-X-Mailer: git-send-email 1.7.2.5
-X-Spam: Not detected
-X-Mras: Ok
+	Fri, 29 Mar 2013 03:27:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130328181332.GD14088@htj.dyndns.org>
+References: <cover.1363617402.git.viresh.kumar@linaro.org>
+	<fb2e721fc43fbc3517a7ebb905aa573b12bb83a5.1363617402.git.viresh.kumar@linaro.org>
+	<20130321001211.GC31256@htj.dyndns.org>
+	<CAKohponKUGbwEZ_edu353Y7YVZKgFOhZunTSUi04FGYWveftkw@mail.gmail.com>
+	<20130321182937.GB20500@htj.dyndns.org>
+	<20130328181332.GD14088@htj.dyndns.org>
+Date: Fri, 29 Mar 2013 12:57:23 +0530
+Message-ID: <CAKohpomkGxUy6-7tByBjQvAGSUn4EdVCpGo+94fn7vF8YgKRLQ@mail.gmail.com>
+Subject: Re: [PATCH V3 3/7] workqueue: Add helpers to schedule work on any cpu
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
+        mingo@redhat.com, peterz@infradead.org, rostedt@goodmis.org,
+        linaro-kernel@lists.linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, Arvind.Chauhan@arm.com,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of fixed speed set up for a NIC (e.g. ethtool -s eth0 autoneg off speed
-100 duplex full) with an ethernet cable plugged off, the mentioned algorithm
-slows down a NIC speed, so further cable hook-up leads to nonoperable link state.
+On 28 March 2013 23:43, Tejun Heo <tj@kernel.org> wrote:
+> Viresh, would it be difficult to make another measurement of the same
+> workload with the said workqueues converted to unbound?  I think that
+> would at least provide a nice reference point.
 
-Signed-off-by: Kirill Kapranov <kapranoff@inbox.ru>
----
- drivers/net/phy/phy.c |   50 +------------------------------------------------
- 1 files changed, 1 insertions(+), 49 deletions(-)
+My heart is shattered after getting the results :)
 
-diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
-index ef9ea92..fc2dd94 100644
---- a/drivers/net/phy/phy.c
-+++ b/drivers/net/phy/phy.c
-@@ -463,33 +463,6 @@ void phy_stop_machine(struct phy_device *phydev)
- }
- 
- /**
-- * phy_force_reduction - reduce PHY speed/duplex settings by one step
-- * @phydev: target phy_device struct
-- *
-- * Description: Reduces the speed/duplex settings by one notch,
-- *   in this order--
-- *   1000/FULL, 1000/HALF, 100/FULL, 100/HALF, 10/FULL, 10/HALF.
-- *   The function bottoms out at 10/HALF.
-- */
--static void phy_force_reduction(struct phy_device *phydev)
--{
--	int idx;
--
--	idx = phy_find_setting(phydev->speed, phydev->duplex);
--	
--	idx++;
--
--	idx = phy_find_valid(idx, phydev->supported);
--
--	phydev->speed = settings[idx].speed;
--	phydev->duplex = settings[idx].duplex;
--
--	pr_info("Trying %d/%s\n",
--		phydev->speed, DUPLEX_FULL == phydev->duplex ? "FULL" : "HALF");
--}
--
--
--/**
-  * phy_error - enter HALTED state for this PHY device
-  * @phydev: target phy_device struct
-  *
-@@ -818,30 +791,11 @@ void phy_state_machine(struct work_struct *work)
- 				phydev->adjust_link(phydev->attached_dev);
- 
- 			} else if (0 == phydev->link_timeout--) {
--				int idx;
--
- 				needs_aneg = 1;
- 				/* If we have the magic_aneg bit,
- 				 * we try again */
- 				if (phydev->drv->flags & PHY_HAS_MAGICANEG)
- 					break;
--
--				/* The timer expired, and we still
--				 * don't have a setting, so we try
--				 * forcing it until we find one that
--				 * works, starting from the fastest speed,
--				 * and working our way down */
--				idx = phy_find_valid(0, phydev->supported);
--
--				phydev->speed = settings[idx].speed;
--				phydev->duplex = settings[idx].duplex;
--
--				phydev->autoneg = AUTONEG_DISABLE;
--
--				pr_info("Trying %d/%s\n",
--					phydev->speed,
--					DUPLEX_FULL == phydev->duplex ?
--					"FULL" : "HALF");
- 			}
- 			break;
- 		case PHY_NOLINK:
-@@ -866,10 +820,8 @@ void phy_state_machine(struct work_struct *work)
- 				phydev->state = PHY_RUNNING;
- 				netif_carrier_on(phydev->attached_dev);
- 			} else {
--				if (0 == phydev->link_timeout--) {
--					phy_force_reduction(phydev);
-+				if (0 == phydev->link_timeout--) 
- 					needs_aneg = 1;
--				}
- 			}
- 
- 			phydev->adjust_link(phydev->attached_dev);
--- 
-1.7.2.5
 
+Cluster A15 Energy      Cluster A7 Energy       Total
+-------------------------      -----------------------       ------
+
+Without this patchset (Energy in Joules):
+---------------------------------------------------
+
+0.151162                2.183545                2.334707
+0.223730                2.687067                2.910797
+0.289687                2.732702                3.022389
+0.454198                2.745908                3.200106
+0.495552                2.746465                3.242017
+
+Average:
+0.322866                2.619137                2.942003
+
+
+With this patchset (Energy in Joules):
+-----------------------------------------------
+
+0.133361                2.267822                2.401183
+0.260626                2.833389                3.094015
+0.142365                2.277929                2.420294
+0.246793                2.582550                2.829343
+0.130462                2.257033                2.387495
+
+Average:
+0.182721                2.443745                2.626466
+
+
+With WQ Unbound (Energy in Joules):
+-----------------------------------------------
+
+0.226421                2.283658                2.510079
+0.151361                2.236656                2.388017
+0.197726                2.249849                2.447575
+0.221915                2.229446                2.451361
+0.347098                2.257707                2.604805
+
+Average:
+0.2289042              2.2514632              2.4803674
+
+PS: I have to add another generic workqueue for these tests:
+system_unbound_freezable_wq as block layer was using
+system_freezable_wq.
+
+--
+viresh
