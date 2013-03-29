@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052Ab3C2N1r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 09:27:47 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:49784 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755485Ab3C2N1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 09:27:45 -0400
-From: Gene Heskett <gheskett@wdtv.com>
-To: ubuntu-users@lists.ubuntu.com
-Subject: Re: 3.8.3 build error, compiler segfault
-Date: Fri, 29 Mar 2013 09:27:43 -0400
-References: <201303231334.54169.gheskett@wdtv.com> <104966318.mxHzboO7mH@p5915> <CAOdo=SwVaBKx2WMmB_t2f47hSNHtH_2mufFUuTYM0gWaXF4wgw@mail.gmail.com>
-In-Reply-To: <CAOdo=SwVaBKx2WMmB_t2f47hSNHtH_2mufFUuTYM0gWaXF4wgw@mail.gmail.com>
-Cc: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
+	id S1756124Ab3C2NjG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 09:39:06 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:60208 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754847Ab3C2NjD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 09:39:03 -0400
+Message-ID: <1364564339.5113.19.camel@edumazet-glaptop>
+Subject: Re: [PATCH] net: add a synchronize_net() in
+ netdev_rx_handler_unregister()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jiri Pirko <jpirko@redhat.com>, Andy Gospodarek <andy@greyhouse.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        Nicolas de =?ISO-8859-1?Q?Peslo=FCan?= 
+	<nicolas.2p.debian@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Guy Streeter <streeter@redhat.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>, stephen@networkplumber.org
+Date: Fri, 29 Mar 2013 06:38:59 -0700
+In-Reply-To: <1364563039.10629.19.camel@gandalf.local.home>
+References: <1364490997.6345.237.camel@gandalf.local.home>
+	 <1364491792.15753.47.camel@edumazet-glaptop>
+	 <20130329094856.GB1677@minipsycho.orion>
+	 <1364562082.5113.16.camel@edumazet-glaptop>
+	 <1364563039.10629.19.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303290927.43394.gheskett@wdtv.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 29 March 2013 09:08:27 Tom H did opine:
+On Fri, 2013-03-29 at 09:17 -0400, Steven Rostedt wrote:
 
-CCing the lkml too.
-
-> On Thu, Mar 28, 2013 at 10:49 AM, Nils Kassube <kassube@gmx.net> wrote:
-> > I don't know of a particilar tool to extract that info. I can't tell
-> > you for your -rtai kernel but the standard Ubuntu kernels come with a
-> > file /boot/config-$(uname -r) which is the .config from the kernel
-> > build. There you could search for '=y', but it would list more than
-> > only parts which can be compiled either as module or built-in. I
-> > checked the contents of the initrd and it seems the file /etc/modules
-> > isn't included there. Obviously it is run later in the boot sequence,
-> > not from the initrd. Sorry for that misleading suggestion.
-> >
-> >...
-> >
-> > While it looks right, I don't think it will help because the contents
-> > of /etc/modules doesn't seem to be included in the initrd anyway (see
-> > above).
+> I've thought about this too, but I wasn't sure we wanted two
+> synchronize_*() functions, as the caller does a synchronize as well.
+> That said, I think this is the more robust solution and it lets all
+> rx_handler() functions assume that their rx_handler_data is set. And it
+> removes the check from the fast path which outweighs an added
+> synchronization in the slow path.
 > 
-> /etc/initramfs-tools/modules
 
-And that brings up a chicken/egg problem, as in if it can't access that 
-UUID containing /etc/modules, how does it read it to find out its supposed 
-to do early early loads of sata_nv, and possibly i2c_nforce even if they 
-are in the generated initrd?
+Note that I used synchronize_net(), which does a
+synchronize_rcu_expedited() when RTNL is locked, so its normally quite
+fast.
 
-Either way I'm screwed.
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> Thanks!
 
-When I installed 10.04-4 LTS, it had no complaints about my telling it to 
-format / as ext4.  But now the newer kernels seem to have thrown away that 
-capability by some sort of tom-foolery.
+Thanks a lot for your very detailed report and analysis !
 
-To bring the lkml up to speed on this, it seems that I can set 
-CONFIG_SATA_NV=y in the .config file for a later kernel all I want, but 
-then touching that file with either a 'make menuconfig' or a 'make xconfig' 
-automatically nukes it, so I'm building kernels here that can't find the 
-UUID of the / partition formatted as ext4, about 5 secs into the boot.  
-Reset and go back to the only kernel I have that boots, 2.6.32-122.rtai.
 
-Thanks to anyone who has a fix.  Perhaps an option passed to make I can put 
-in my makeit script to build SATA_NV as part of vmlinuz anyway?  I'm not 
-familiar enough with makefile arguments to have a clue what that syntax 
-might look like. :(
-
-Cheers, Gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-My web page: <http://coyoteden.dyndns-free.com:85/gene> is up!
-My views 
-<http://www.armchairpatriot.com/What%20Has%20America%20Become.shtml>
-I can't understand why a person will take a year or two to write a
-novel when he can easily buy one for a few dollars.
-		-- Fred Allen
-I was taught to respect my elders, but its getting 
-harder and harder to find any...
