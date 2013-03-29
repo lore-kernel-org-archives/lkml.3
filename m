@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab3C2SKz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 14:10:55 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:47266 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756522Ab3C2SKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 14:10:54 -0400
-X-IronPort-AV: E=Sophos;i="4.87,374,1363132800"; 
-   d="scan'208";a="16428519"
-Date: Fri, 29 Mar 2013 18:10:48 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v4 2/2] arm: prefer PSCI for SMP bringup
-In-Reply-To: <alpine.LFD.2.03.1303291400190.1372@syhkavp.arg>
-Message-ID: <alpine.DEB.2.02.1303291807270.4430@kaball.uk.xensource.com>
-References: <1364575371-8926-2-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.LFD.2.03.1303291320580.1372@syhkavp.arg> <alpine.DEB.2.02.1303291735080.4430@kaball.uk.xensource.com> <alpine.LFD.2.03.1303291400190.1372@syhkavp.arg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756788Ab3C2SLf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 14:11:35 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:58586 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755604Ab3C2SLc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 14:11:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <20130329032200.GA11990@google.com>
+References: <CAE9FiQXmeb66dc8fET0y99BjqpUXp11c7utiQ5keR1Wf+N9xaA@mail.gmail.com>
+	<1363628226-6679-1-git-send-email-yinghai@kernel.org>
+	<CAErSpo6v0mj9=Q13d=G4hho0mb9XTcsmefzke9fROYmZ7oBWxQ@mail.gmail.com>
+	<CAE9FiQU7cDzJdHxmqhJNgc9UCsRLgvCFQpv8+fLxD79pLEUC5A@mail.gmail.com>
+	<CAErSpo4ncW8rkcpDiccORZedj30m7jRmpXK+amfDGn_wjwt7EA@mail.gmail.com>
+	<CAE9FiQVqKag2TGah7x_1MAJ+c0UWgywgM_jKUoOnh+rq3bwBhg@mail.gmail.com>
+	<CAE9FiQVMgdj5edbR4qZny29fV9-bW_We_G4Wpn_yruDLQZiQiQ@mail.gmail.com>
+	<20130329032200.GA11990@google.com>
+Date: Fri, 29 Mar 2013 20:11:31 +0200
+Message-ID: <CAPTwTV9eXDUcr_4HyGFJ1aHkT-rB5jXcQVEKeJScasmUcUu6XQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Remove not needed check in disable aspm link
+From: Roman Yepishev <roman.yepishev@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        e1000-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Mar 2013, Nicolas Pitre wrote:
-> On Fri, 29 Mar 2013, Stefano Stabellini wrote:
-> 
-> > On Fri, 29 Mar 2013, Nicolas Pitre wrote:
-> > > This way the 
-> > > priority order would be:
-> > > 
-> > > - If mdesc->smp_init is non null then use that.
-> > > 
-> > > - Otherwise, if PSCI is available then use that.
-> > > 
-> > > - Otherwise use mdesc->smp.
-> > > 
-> > > This way, if the PSCI default has to be overriden (like in the MCPM case 
-> > > because it needs to wrap PSCI itself, or to cover Rob's concern) then 
-> > > this can be achieved at run time on a per mdesc basis.
-> > 
-> > Actually that's not a bad idea, it could make everybody happy.
-> > What about the following, in this precise order:
-> > 
-> > - if a xen hypervisor node is present on device tree, use PSCI;
-> > - otherwise if mdesc->smp_init is non null then use it;
-> > - otherwise if PSCI is available then use it;
-> > - otherwise use mdesc->smp.
-> > 
-> > It's the most practical solution to satisfy everybody's needs.
-> 
-> Regardless of my previous email suggesting a mdesc for xen, I still 
-> don't understand why you need this absolute priority for Xen.  Isn't my 
-> original suggestion sufficient?
-> 
-> The likely reason why mdesc->smp_init might be needed is to provide an 
-> extra encapsulation layer before actually using PSCI instead of using it 
-> directly.  Why would you need to bypass that?
+On Fri, Mar 29, 2013 at 5:22 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [+cc Matthew]
+> [+cc e1000-devel@lists.sourceforge.net for suspected 82575/82598 regression]
+>
+> I think this regression has nothing to do with pci_disable_link_state().
+>
+> ...
+>
+> There are also PCI_FIXUP_FINAL quirks for 82575 and 82598 NICs that call
+> pci_disable_link_state().  In 3.7, these quirks are run before
+> aspm_disabled is set, but 8c33f51d moved the pcie_no_aspm() call up
+> before we start scanning the bus, so in 3.8, aspm_disabled is set
+> *before* we run them.  I think that means 8c33f51d broke all these
+> quirks.  That's also a problem, of course, but this isn't the one Roman
+> is seeing either.
+I have to say that my iwlwifi device (Intel Corporation Centrino
+Wireless-N 1000 [Condor Peak] [8086:0084] also appears to be affected
+- it calls pci_disable_link_state too and in current 3.8 that does not
+do anything. It looks like it affects something when the system is
+resumed from suspend, but I was not able to confirm that yet (but
+there's a thread about removing the code since it did not appear to
+work - http://thread.gmane.org/gmane.linux.kernel.pci/20628/focus=20640)
 
-Uhm.. maybe I wouldn't, I am not 100% sure TBH.
+> I think the problem Roman is seeing happens when
+> pcie_aspm_init_link_state() calls pcie_aspm_sanity_check() during device
+> enumeration.  In 3.8, the fact that aspm_disabled is already set by the
+> time we get here means we skip the check for pre-1.1 PCIe devices, and
+> I think *this* is what Roman is seeing.
+>
+> I suspect the following hunk of your patch is enough to fix things for
+> Roman:
+>
+>> --- linux-2.6.orig/drivers/pci/pcie/aspm.c
+>> +++ linux-2.6/drivers/pci/pcie/aspm.c
+>> @@ -493,15 +492,6 @@ static int pcie_aspm_sanity_check(struct
+>>                       return -EINVAL;
+>>
+>>               /*
+>> -              * If ASPM is disabled then we're not going to change
+>> -              * the BIOS state. It's safe to continue even if it's a
+>> -              * pre-1.1 device
+>> -              */
+>> -
+>> -             if (aspm_disabled)
+>> -                     continue;
+>> -
+>> -             /*
+>>                * Disable ASPM for pre-1.1 PCIe device, we follow MS to use
+>>                * RBER bit to determine if a function is 1.1 version device
+>>                */
+>
+> However, this test was added by Matthew in c9651e70, and I can't remove
+> it unless we have an explanation of why removing it will not reintroduce
+> the bug he was fixing.
+>
+> This code is such a terrible mess that it's not surprising at all that
+> we have all these issues.  But there's too much to untangle in v3.9; all
+> we can hope for is to fix the regressions in v3.9 and clean it up later.
+>
+I have removed the check and indeed it allowed ASPM to become disabled
+during the ath5k driver load.
 
-I am expecting that this "extra encapsulation layer" would read/write
-some platform specific registers that Xen doesn't export.
-If this is the case, then we would need to bypass it.
-
-But if it's just to mangle parameters, then it should be OK.
+--
+Regards, Roman Yepishev
