@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628Ab3C2Tny (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 15:43:54 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:56543 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754251Ab3C2Tnw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 15:43:52 -0400
-Date: Fri, 29 Mar 2013 15:43:48 -0400 (EDT)
-Message-Id: <20130329.154348.1417472944436998499.davem@davemloft.net>
-To: Max.Nekludov@us.elster.com
-Cc: kda@linux-powerpc.org, gerg@uclinux.org, jiri@resnulli.us,
-        linus971@gmail.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, mjr@cs.wisc.edu, netdev@vger.kernel.org,
-        sboyd@codeaurora.org, torvalds@linux-foundation.org
-Subject: Re: Bug in ks8851.c
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <OF95B2AB6A.BE754AB4-ON44257B3D.00544464-44257B3D.0054ECCB@gb.elster.com>
-References: <OF2DFE75BF.1BA5B9C8-ON44257B3D.00492A11-44257B3D.0049472A@gb.elster.com>
-	<CAOJe8K1LbPgBN5kgXF5W2Fg_JM0BGp69+auSZ6Nk+3appmXZOg@mail.gmail.com>
-	<OF95B2AB6A.BE754AB4-ON44257B3D.00544464-44257B3D.0054ECCB@gb.elster.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1756702Ab3C2Tql (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 15:46:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40648 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756270Ab3C2Tqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Mar 2013 15:46:40 -0400
+Subject: gpio-ucb1400
+From: Jean Delvare <jdelvare@suse.de>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        Marek Vasut <marek.vasut@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Fri, 29 Mar 2013 20:46:39 +0100
+Message-ID: <1364586399.4216.312.camel@amber.site>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 29 Mar 2013 12:43:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Max.Nekludov@us.elster.com
-Date: Fri, 29 Mar 2013 19:27:36 +0400
+Hi all,
 
-> Denis,
-> here is patch with commit message:
-> 
-> Subject: [PATCH] Fix bug in ks8851 driver
-> 
-> According to the Datasheet (page 52):
-> 15-12 Reserved
-> 11-0 RXBC Receive Byte Count
-> This field indicates the present received frame byte size.
-> 
-> The code has a bug:
->                  rxh = ks8851_rdreg32(ks, KS_RXFHSR);
->                  rxstat = rxh & 0xffff;
->                  rxlen = rxh >> 16; // BUG!!! 0xFFF mask should be applied
-> 
-> Signed-off-by: Max Nekludov <Max.Nekludov@us.elster.com>
+In September 2009, a driver for the GPIO function of the UCB1400 chip
+was added to the kernel tree. The probe function of this driver requires
+ucbdata to be set. The only place where this happens is in function
+ucb1400_gpio_set_data(). This function was never call, and still isn't.
+So this is dead code for 3.5 years as far as the upstream kernel is
+concerned.
 
-Applied and queued up for -stable, thanks.
+To make things worse, this driver can't be built as a module, for no
+good reason that I can see.
+
+Marek, can you explain what was the point of submitting this driver that
+nobody can use?
+
+I would like either this driver to be fixed so that it can be used (and
+that would IMHO start with dropping the ugly ucb1400_gpio_set_data hook
+and global variable ucbdata), or this driver to be dropped from the
+kernel tree. If the driver is kept, it should be adjusted so that it can
+be built as a module.
+
+If I overlooked something, please let me know.
+
+Thanks,
+-- 
+Jean Delvare
+Suse L3
+
