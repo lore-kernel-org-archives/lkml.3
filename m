@@ -1,162 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab3C2Ppj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 11:45:39 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:30167 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755956Ab3C2Ppi (ORCPT
+	id S1756222Ab3C2Pqr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 11:46:47 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:50044 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756187Ab3C2Pqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 11:45:38 -0400
-Message-ID: <5155B716.10902@atmel.com>
-Date: Fri, 29 Mar 2013 16:45:26 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: <dgilbert@interlog.com>, Johan Hovold <jhovold@gmail.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rtc: rtc-at91rm9200: use a variable for storing IMR
-References: <1363369032-12639-1-git-send-email-nicolas.ferre@atmel.com> <20130326192713.GA31628@localhost> <51520EA7.8090808@interlog.com> <20130328095718.GA30276@localhost> <515489E1.6050603@interlog.com>
-In-Reply-To: <515489E1.6050603@interlog.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
+	Fri, 29 Mar 2013 11:46:46 -0400
+Date: Fri, 29 Mar 2013 08:46:32 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: Jiri Pirko <jpirko@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andy Gospodarek <andy@greyhouse.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        Nicolas de =?ISO-8859-1?B?UGVzbG/8YW4=?= 
+	<nicolas.2p.debian@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Guy Streeter <streeter@redhat.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>
+Subject: Re: [BUG] Crash with NULL pointer dereference in bond_handle_frame
+ in -rt (possibly mainline)
+Message-ID: <20130329084632.469ec44d@nehalam.linuxnetplumber.net>
+In-Reply-To: <20130329094856.GB1677@minipsycho.orion>
+References: <1364490997.6345.237.camel@gandalf.local.home>
+	<1364491792.15753.47.camel@edumazet-glaptop>
+	<20130329094856.GB1677@minipsycho.orion>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2013 07:20 PM, Douglas Gilbert :
-> On 13-03-28 05:57 AM, Johan Hovold wrote:
->> On Tue, Mar 26, 2013 at 05:09:59PM -0400, Douglas Gilbert wrote:
->>> On 13-03-26 03:27 PM, Johan Hovold wrote:
->>>> On Fri, Mar 15, 2013 at 06:37:12PM +0100, Nicolas Ferre wrote:
->>>>> On some revisions of AT91 SoCs, the RTC IMR register is not working.
->>>>> Instead of elaborating a workaround for that specific SoC or IP
->>>>> version,
->>>>> we simply use a software variable to store the Interrupt Mask
->>>>> Register and
->>>>> modify it for each enabling/disabling of an interrupt. The overhead
->>>>> of this
->>>>> is negligible anyway.
->>>>
->>>> The patch does not add any memory barriers or register read-backs when
->>>> manipulating the interrupt-mask variable. This could possibly lead to
->>>> spurious interrupts both when enabling and disabling the various
->>>> RTC-interrupts due to write reordering and bus latencies.
->>>>
->>>> Has this been considered? And is this reason enough for a more targeted
->>>> work-around so that the SOCs with functional RTC_IMR are not affected?
->>>
->>> The SoCs in question use a single embedded ARM926EJ-S and
->>> according to the Atmel documentation, that CPU's instruction
->>> set contains no barrier (or related) instructions.
->>
->> The ARM926EJ-S actually does have a Drain Write Buffer instruction but
->> it's not used by the ARM barrier-implementation unless
->> CONFIG_ARM_DMA_MEM_BUFFERABLE or CONFIG_SMP is set.
-> 
-> The ARM926EJ-S is ARMv5 so CONFIG_ARM_DMA_MEM_BUFFERABLE is not
-> available. SMP is not an option for arm/mach-at91.
-> 
->> However, wmb() always implies a compiler barrier which is what is needed
->> in this case.
-> 
-> Even if wmb() did anything, would it make this case "safe"?
-> 
->>> In the arch/arm/mach-at91 sub-tree of the kernel source
->>> I can find no use of the wmb() call. Also checked all drivers
->>> in the kernel containing "at91" and none called wmb().
->>
->> I/O-operations are normally not reordered, but this patch is faking a
->> hardware register and thus extra care needs to be taken.
->>
->> To repeat:
->>
->>> @@ -198,9 +203,12 @@ static int at91_rtc_alarm_irq_enable(struct
->>> device *dev, unsigned int enabled)
->>>
->>>        if (enabled) {
->>>                at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_ALARM);
->>> +             at91_rtc_imr |= AT91_RTC_ALARM;
->>
->> Here a barrier is needed to prevent the compiler from reordering the two
->> writes (i.e., mask update and interrupt enable).
-> 
-> Isn't either order potentially unsafe? So even if the compiler
-> did foolishly re-order them, the sequence is still unsafe when
-> a SYS interrupt splits those two lines (since the SYS interrupt
-> is shared, it can occur at any time).
+On Fri, 29 Mar 2013 10:48:56 +0100
+Jiri Pirko <jpirko@redhat.com> wrote:
 
-Absolutely: I think it has to be protected by the proper
-spin_lock_(irqsave)() functions, each time we:
-- modify an interrupt + updated the shadow register
-- read the shadow register
-
-Note, on our current UP, it is the "irqsave" part that makes the
-difference tough...
-
->>>                at91_rtc_write(AT91_RTC_IER, AT91_RTC_ALARM);
->>> -     } else
->>> +     } else {
->>>                at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ALARM);
->>
->> Here a barrier is again needed to prevent the compiler from reordering,
->> but we also need a register read back (of some RTC-register) before
->> updating the mask. Without the register read back, there could be a
->> window where the mask does not match the hardware state due to bus
->> latencies.
->>
->> Note that even with a register read back there is a (theoretical)
->> possibility that the interrupts have not yet been disabled when the fake
->> mask is updated. The only way to know for sure is to poll RTC_IMR but
->> that is the very register you're trying to emulate.
->>
->>> +             at91_rtc_imr &= ~AT91_RTC_ALARM;
->>> +     }
->>>
->>>        return 0;
->>> }
->>
->> In the worst-case scenario ignoring the shared RTC-interrupt could lead
->> to the disabling of the system interrupt and thus also PIT, DBGU, ...
-> 
-> And how often does the AT91_RTC_ALARM alarm interrupt fire?
-> 
->> I think this patch should be reverted and a fix for the broken SoCs be
->> implemented which does not penalise the other SoCs. That is, only
->> fall-back to faking IMR on the SoCs where it is actually broken.
-> 
-> Even though I sent a patch to fix this problem to Nicolas,
-> what was presented is not my version. In mine I added DT
-> support:
-> 
-> #ifdef CONFIG_OF
-> static const struct of_device_id at91rm9200_rtc_dt_ids[] = {
->        { .compatible = "atmel,at91rm9200-rtc", .data =
-> &at91rm9200_config },
->        { .compatible = "atmel,at91sam9x5-rtc", .data =
-> &at91sam9x5_config },
->        { /* sentinel */ }
-> };
-> MODULE_DEVICE_TABLE(of, at91rm9200_rtc_dt_ids);
-> #else
-> #define at91rm9200_rtc_dt_ids NULL
-> #endif /* CONFIG_OF */
-> 
-> 
-> The shadow IMR variable was only active in the
->      .compatible = "atmel,at91sam9x5-rtc"
-> case. That protected all existing users from any problems
-> that might be introduced.
-
-Indeed. But I am trying to build a patch that take the "broken/not
-broken" information out of the IP revision number.
-
-I try to write it and post it for your reviewing quickly.
-
-Best regards,
--- 
-Nicolas Ferre
+> index 0caa38e..c16b829 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -3332,8 +3332,8 @@ void netdev_rx_handler_unregister(struct net_device *dev)
+>  {
+>  
+>  	ASSERT_RTNL();
+> -	RCU_INIT_POINTER(dev->rx_handler, NULL);
+> -	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
+> +	rcu_assign_pointer(dev->rx_handler, NULL);
+> +	rcu_assign_pointer(dev->rx_handler_data, NULL);
+>  }
+>  EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
+It is worth noting that at the time rcu_assign_pointer() had a special
+case tat if the value was NULL it would compile into RCU_INIT_POINTER without
+the barrier.
