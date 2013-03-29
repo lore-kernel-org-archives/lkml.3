@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab3C2GqA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 02:46:00 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:43894 "EHLO
+	id S1755527Ab3C2GqV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 02:46:21 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:43460 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755348Ab3C2Gp2 (ORCPT
+	with ESMTP id S1754355Ab3C2GpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 02:45:28 -0400
-Message-ID: <51553822.5000403@huawei.com>
-Date: Fri, 29 Mar 2013 14:43:46 +0800
+	Fri, 29 Mar 2013 02:45:08 -0400
+Message-ID: <51553813.10004@huawei.com>
+Date: Fri, 29 Mar 2013 14:43:31 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
 To: Ingo Molnar <mingo@kernel.org>
 CC: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v2 1/5] cpuacct: allocate per_cpu cpuusage for root cpuacct
- statically
-References: <51553813.10004@huawei.com>
-In-Reply-To: <51553813.10004@huawei.com>
+Subject: [PATCH v2 0/5] cpuacct, cgroup: Kill cgroup_subsys.active
 Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.68.215]
@@ -27,34 +24,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a preparation, so later we can initialize cpuacct earlier.
+v2:
+- rebase against tip-tree
+- add acked-by
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/sched/cpuacct.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I said this patchset needn't to be rebased, which is wrong. The last patch
+needs rebasing.
 
-diff --git a/kernel/sched/cpuacct.c b/kernel/sched/cpuacct.c
-index 9305fd2..a691c4d 100644
---- a/kernel/sched/cpuacct.c
-+++ b/kernel/sched/cpuacct.c
-@@ -58,6 +58,7 @@ static inline struct cpuacct *parent_ca(struct cpuacct *ca)
- 	return cgroup_ca(ca->css.cgroup->parent);
- }
- 
-+static DEFINE_PER_CPU(u64, root_cpuacct_cpuusage);
- static struct cpuacct root_cpuacct;
- 
- /* create a new cpu accounting group */
-@@ -290,8 +291,7 @@ void cpuacct_account_field(struct task_struct *p, int index, u64 val)
- void __init cpuacct_init(void)
- {
- 	root_cpuacct.cpustat = &kernel_cpustat;
--	root_cpuacct.cpuusage = alloc_percpu(u64);
--	BUG_ON(!root_cpuacct.cpuusage); /* Too early, not expected to fail */
-+	root_cpuacct.cpuusage = &root_cpuacct_cpuusage;
- }
- 
- struct cgroup_subsys cpuacct_subsys = {
--- 
-1.8.0.2
+===================================
+
+cpuacct is the only user of cgroup_subsys.active flag.
+
+The flag is needed because cpuacct_charge() and cpuacct_account_field() can
+be called when cpuacct hasn't been initialized during system bootup.
+
+This patch initializes cpuacct earlier, and the result is we don't have
+to check the flag in scheduler hot path.
+
+Note, this patchset is based on "[PATCH v2 0/7] sched: Split cpuacct"
+
+	http://lkml.org/lkml/2013/3/28/1
+
+0001-cpuacct-allocate-per_cpu-cpuusage-for-root-cpuacct-s.patch
+0002-cpuacct-Initialize-root-cpuacct-earlier.patch
+0003-cpuacct-Initialize-cpuacct-subsystem-earlier.patch
+0004-cpuacct-No-need-to-check-subsys-active-state.patch
+0005-cgroup-Remove-subsys.active-flag.patch
+
+--
+ include/linux/cgroup.h |  1 -
+ kernel/cgroup.c        |  3 ---
+ kernel/sched/core.c    |  2 --
+ kernel/sched/cpuacct.c | 30 +++++++++++-------------------
+ kernel/sched/cpuacct.h |  5 -----
+ 5 files changed, 11 insertions(+), 30 deletions(-)
