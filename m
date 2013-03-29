@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab3C2RtU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 13:49:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45413 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756092Ab3C2RtS (ORCPT
+	id S1756398Ab3C2RuS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 13:50:18 -0400
+Received: from mail-da0-f48.google.com ([209.85.210.48]:46968 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755116Ab3C2RuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 13:49:18 -0400
-Date: Fri, 29 Mar 2013 17:49:16 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/33] regulator: ab8500-ext: New driver to control
- external regulators
-Message-ID: <20130329174916.GG18316@opensource.wolfsonmicro.com>
-References: <1364487093-19551-1-git-send-email-lee.jones@linaro.org>
- <1364487093-19551-2-git-send-email-lee.jones@linaro.org>
+	Fri, 29 Mar 2013 13:50:16 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Dmitry Pervushin <dmitry.pervushin@linaro.org>,
+        Erik Gilling <konkers@android.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        =?UTF-8?q?Bernhard=20Rosenkr=C3=A4nzer?= 
+	<Bernhard.Rosenkranzer@linaro.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH] staging: sync: Add compat_ioctl handlers to sync drivers
+Date: Fri, 29 Mar 2013 10:50:02 -0700
+Message-Id: <1364579403-28621-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cotvrx6Jh20JAKQm"
-Content-Disposition: inline
-In-Reply-To: <1364487093-19551-2-git-send-email-lee.jones@linaro.org>
-X-Cookie: Your aim is high and to the right.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Dmitry Pervushin <dmitry.pervushin@linaro.org>
 
---cotvrx6Jh20JAKQm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The sync drivers are missing compat_ioctl handlers, so this
+patch adds them.
 
-On Thu, Mar 28, 2013 at 04:11:01PM +0000, Lee Jones wrote:
-> The ABx500 is capable of controlling three external regulator supplies.
-> Most commonly on and off are supported, but if an external regulator
-> chipset or power supply supports high-power and low-power mode settings,
-> we can control those too.
+Cc: Erik Gilling <konkers@android.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: Dmitry Pervushin <dmitry.pervushin@linaro.org>
+Cc: Bernhard Rosenkränzer <Bernhard.Rosenkranzer@linaro.org>
+Cc: Android Kernel Team <kernel-team@android.com>
+Signed-off-by: Dmitry Pervushin <dmitry.pervushin@linaro.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+This applies against staging-next.
+The same change has been submitted to AOSP:
+        https://android-review.googlesource.com/#/c/54901/
+        Change-Id: If1a1ecc3952b321c8d64c6a8b050104859efc4b1
 
-Hrm, this seems like a *lot* of code for simple external enable control
-- from the changelog in previous versions and a quick glance at the code
-I'd thought it was doing more than that but now I read it properly it's
-really just simple enables.  Is there really no sharing with the normal
-regulators?
+ drivers/staging/android/sw_sync.c |    1 +
+ drivers/staging/android/sync.c    |    1 +
+ 2 files changed, 2 insertions(+)
 
-Anyway, I applied 1-6.
+diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
+index ec7de30..4928f93 100644
+--- a/drivers/staging/android/sw_sync.c
++++ b/drivers/staging/android/sw_sync.c
+@@ -239,6 +239,7 @@ static const struct file_operations sw_sync_fops = {
+ 	.open = sw_sync_open,
+ 	.release = sw_sync_release,
+ 	.unlocked_ioctl = sw_sync_ioctl,
++	.compat_ioctl = sw_sync_ioctl,
+ };
+ 
+ static struct miscdevice sw_sync_dev = {
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index bf66c19..3893a35 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -248,6 +248,7 @@ static const struct file_operations sync_fence_fops = {
+ 	.release = sync_fence_release,
+ 	.poll = sync_fence_poll,
+ 	.unlocked_ioctl = sync_fence_ioctl,
++	.compat_ioctl = sync_fence_ioctl,
+ };
+ 
+ static struct sync_fence *sync_fence_alloc(const char *name)
+-- 
+1.7.10.4
 
---cotvrx6Jh20JAKQm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRVdQJAAoJELSic+t+oim9FJYP/1VR5RPAmgdk6hsZqC9OyFuY
-/0Kt9wMG7sZ2TsHFaC6BRLyJVfiUDnM9lpOfnFBRqFr0Njw1J8NdUSHVA6vbnrHW
-Wg7VNpskUXGAoyQ+A3TFJy8okgb9F0s9Pd0xZlytd51VcqdpsPBPd2HLVgY/Z8gA
-kFlniS65QVCgZmX9mdAKS3RghmLRrj7sJe69YT4TiIw/uw10PawufXEWaxFh3XN+
-FEyhSDeE5QCAP2F64eByvD7QZ/X4F5swLpa3f+V5Xzry+Jy8om5SYCeou2y+RD9Z
-rvHllxkpUTCJqYbAEWO1G2quHpymtRnAOgQ9OaOk+61Hhqel6cRXXTgio0/vrO+2
-pbdtmg1TRmMh0yCyE6xUNcFiu2Lgk1YGwtaL9dSlX+x295pjuLurdrXD67+jvFja
-ccWmlsqzGF4zQebwmePGEO7vk+YsTNeqnr8q89dQhrakn4expig+a+/Xn3gMgAJ3
-mFK7+EYF5N/yQR1NZrGyVRQCOh0vlNS4LySxxdw/OXZ/7wQ9p1/aE20eSq2eueYS
-IghZxA414w3GfybKeFYoYRE78vMJMSzrtbSI65ItigkiLGjl0B2q2fNjKqzNac5Z
-wiab79IC/dxyZtbdrAPtnOau4WrdI2Tif7eIxEbfT81pSxR0tL33CHeQXjroIpSM
-zQMH5YzGRmpTN8E41mvw
-=c4At
------END PGP SIGNATURE-----
-
---cotvrx6Jh20JAKQm--
