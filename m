@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756244Ab3C2Pts (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 11:49:48 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:43672 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755661Ab3C2Ptr (ORCPT
+	id S1756284Ab3C2PyJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 11:54:09 -0400
+Received: from mail-wg0-f73.google.com ([74.125.82.73]:62686 "EHLO
+	mail-wg0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755064Ab3C2PyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 11:49:47 -0400
-Date: Fri, 29 Mar 2013 08:49:45 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [char-misc-next 08/11 V5] mei: nfc: Initial nfc implementation
-Message-ID: <20130329154945.GB21990@kroah.com>
-References: <1364398203-11159-1-git-send-email-tomas.winkler@intel.com>
- <1364398203-11159-9-git-send-email-tomas.winkler@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364398203-11159-9-git-send-email-tomas.winkler@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 29 Mar 2013 11:54:07 -0400
+X-Greylist: delayed 1283 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Mar 2013 11:54:07 EDT
+From: Gwendal Grignou <gwendal@google.com>
+To: ronald645@gmail.com
+Cc: krzysiek@podlesie.net, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Gwendal Grignou <gwendal@google.com>
+Subject: [PATCH] [libata] Fix HDIO_DRIVE_CMD ioctl sense data check
+Date: Fri, 29 Mar 2013 08:26:41 -0700
+Message-Id: <1364570801-6515-1-git-send-email-gwendal@google.com>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <CAF1_xX3Ox6=fKomLpvrDxMZ9edB0=2SrVDDPrU0nivD_Yj6KHw@mail.gmail.com>
+References: <CAF1_xX3Ox6=fKomLpvrDxMZ9edB0=2SrVDDPrU0nivD_Yj6KHw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 05:30:00PM +0200, Tomas Winkler wrote:
-> --- a/drivers/misc/mei/mei_dev.h
-> +++ b/drivers/misc/mei/mei_dev.h
-> @@ -498,6 +498,34 @@ struct mei_cl_cb *mei_amthif_find_read_list_entry(struct mei_device *dev,
->  
->  void mei_amthif_run_next_cmd(struct mei_device *dev);
->  
-> +#ifdef CONFIG_INTEL_MEI_BUS_NFC
-> +/*
-> + * NFC functions
-> + */
-> +int mei_nfc_host_init(struct mei_device *dev);
-> +void mei_nfc_host_exit(void);
-> +
-> +/*
-> + * NFC Client UUID
-> + */
-> +extern const uuid_le mei_nfc_guid;
-> +
-> +#else /* CONFIG_INTEL_MEI_BUS_NFC */
-> +
-> +static inline int mei_nfc_host_init(struct mei_device *dev)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline void mei_nfc_host_exit(void)
-> +{
-> +	return;
-> +}
-> +
-> +static const uuid_le mei_nfc_guid = UUID_LE(0x0bb17a78, 0x2a8e, 0x4c50,
-> +					    0x94, 0xd4, 0x50, 0x26,
-> +					    0x67, 0x23, 0x77, 0x5c);
-> +#endif /* CONFIG_INTEL_MEI_BUS_NFC */
+commit 84a9a8cd9d0aa93c17e5815ab8a9cc4c0a765c63 changed the sense key
+used for returning task registers, but HDIO_DRIVE_CMD ioctl was
+not changed accordingly.
 
+Tested: check that SMART ENABLE sent using HDIO_DRIVE_CMD returns 0
+instead of EIO.
 
-As you are using the bus model, why do you need "fake" init and exit
-functions at all?  Your core shouldn't care about if the nfc code is
-build or not, that's why we have driver model in the first place...
+Signed-off-by: Gwendal Grignou <gwendal@google.com>
+---
+ drivers/ata/libata-scsi.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-greg k-h
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index 318b413..e05bf4c 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -532,8 +532,8 @@ int ata_cmd_ioctl(struct scsi_device *scsidev, void __user *arg)
+ 			struct scsi_sense_hdr sshdr;
+ 			scsi_normalize_sense(sensebuf, SCSI_SENSE_BUFFERSIZE,
+ 					     &sshdr);
+-			if (sshdr.sense_key == 0 &&
+-			    sshdr.asc == 0 && sshdr.ascq == 0)
++			if (sshdr.sense_key == RECOVERED_ERROR &&
++			    sshdr.asc == 0 && sshdr.ascq == 0x1D)
+ 				cmd_result &= ~SAM_STAT_CHECK_CONDITION;
+ 		}
+ 
+-- 
+1.8.1.3
+
