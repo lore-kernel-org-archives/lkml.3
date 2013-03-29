@@ -1,77 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab3C2As6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 20:48:58 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:1119 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753570Ab3C2As5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 20:48:57 -0400
-X-IronPort-AV: E=Sophos;i="4.87,370,1363104000"; 
-   d="scan'208";a="6965405"
-From: liguang <lig.fnst@cn.fujitsu.com>
-To: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: liguang <lig.fnst@cn.fujitsu.com>
-Subject: [PATCH][update] Makefile: allow no update .config build
-Date: Fri, 29 Mar 2013 08:46:37 +0800
-Message-Id: <1364517997-24067-1-git-send-email-lig.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.2.5
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/29 08:48:05,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/29 08:48:05,
-	Serialize complete at 2013/03/29 08:48:05
+	id S1754342Ab3C2A4Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 20:56:24 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:64043 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753623Ab3C2A4W convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Mar 2013 20:56:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130328205916.GA18846@milliways>
+References: <20130328010148.GB25406@milliways>
+	<20130328205916.GA18846@milliways>
+Date: Thu, 28 Mar 2013 17:56:21 -0700
+Message-ID: <CAMHSBOVZ7w51+8B=LyNBdeqP2BEYaNMDX3_WbEzUYqjdn2FZFg@mail.gmail.com>
+Subject: Re: smartd broken in 3.9.0-rc4 : bisected
+From: Gwendal Grignou <gwendal@google.com>
+To: Ken Moffat <zarniwhoop@ntlworld.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-if we pull some commits from other git repo
-which bring in a few CONFIG_* options, then
-we have to build all again, but we do assure
-these options are not interesting for us,
-so the long waiting build will be offending.
-this change help us to avoid all-build.
+My mistake.
+In ata_cmd_ioctl(), we clean the results and remove CHECK_CONDITION
+when necessary. I did not update that code for the new Sense Key:
+                if (cmd_result & SAM_STAT_CHECK_CONDITION) {
+                        struct scsi_sense_hdr sshdr;
+                        scsi_normalize_sense(sensebuf, SCSI_SENSE_BUFFERSIZE,
+                                             &sshdr);
+                        if (sshdr.sense_key == 0 &&
+                            sshdr.asc == 0 && sshdr.ascq == 0)
+                                cmd_result &= ~SAM_STAT_CHECK_CONDITION;
+                }
 
-Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
----
- Makefile |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+A patch in progress.
+Gwendal.
 
-diff --git a/Makefile b/Makefile
-index 54d2b2a..d10e505 100644
---- a/Makefile
-+++ b/Makefile
-@@ -106,6 +106,12 @@ ifeq ("$(origin W)", "command line")
-   export KBUILD_ENABLE_EXTRA_GCC_CHECKS := $(W)
- endif
- 
-+# KBUILD_NCU is set to do not update .config even
-+# a few new CONFIG_* options appeared
-+ifeq ("$(origin NCU)", "command line")
-+  KBUILD_NCU := $(NCU)
-+endif
-+
- # That's our default target when none is given on the command line
- PHONY := _all
- _all:
-@@ -540,8 +546,10 @@ $(KCONFIG_CONFIG) include/config/auto.conf.cmd: ;
- # with it and forgot to run make oldconfig.
- # if auto.conf.cmd is missing then we are probably in a cleaned tree so
- # we execute the config step to be sure to catch updated Kconfig files
-+ifneq ($(KBUILD_NCU), 1)
- include/config/%.conf: $(KCONFIG_CONFIG) include/config/auto.conf.cmd
- 	$(Q)$(MAKE) -f $(srctree)/Makefile silentoldconfig
-+endif # $(KBUILD_NCU)
- else
- # external modules needs include/generated/autoconf.h and include/config/auto.conf
- # but do not care if they are up-to-date. Use auto.conf to trigger the test
-@@ -1157,6 +1165,7 @@ help:
- 	@echo  '		2: warnings which occur quite often but may still be relevant'
- 	@echo  '		3: more obscure warnings, can most likely be ignored'
- 	@echo  '		Multiple levels can be combined with W=12 or W=123'
-+	@echo  '  make NCU=1 [targets] no .config update'
- 	@echo  ''
- 	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
- 	@echo  'For further info see the ./README file'
--- 
-1.7.2.5
-
+On Thu, Mar 28, 2013 at 1:59 PM, Ken Moffat <zarniwhoop@ntlworld.com> wrote:
+> On Thu, Mar 28, 2013 at 01:01:48AM +0000, Ken Moffat wrote:
+>
+> Adding Cc:s, further details at the end.
+>> Hi,
+>>
+>>  just tested my first 3.9 kernel today.  During boot, smartd (from
+>> smartmontools-6.0) fails to start.  Works fine in 3.8.4.
+>>
+>>  In 3.8.4 I get messages like this :
+>>
+>> Mar 27 22:02:02 ac4tv smartd[3981]: smartd 6.0 2012-10-10 r3643
+>> [x86_64-linux-3.8.4] (local build)
+>> Mar 27 22:02:02 ac4tv smartd[3981]: Copyright (C) 2002-12, Bruce
+>> Allen, Christian Franke, www.smartmontools.org
+>> Mar 27 22:02:02 ac4tv smartd[3981]: Opened configuration file
+>> /etc/smartd.conf
+>> Mar 27 22:02:02 ac4tv smartd[3981]: Configuration file
+>> /etc/smartd.conf parsed.
+>> Mar 27 22:02:02 ac4tv smartd[3981]: Device: /dev/sda, opened
+>> Mar 27 22:02:02 ac4tv smartd[3981]: Device: /dev/sda, WDC
+>> WD5000AAKX-001CA0, S/N:WD-WMAYU6818967, WWN:5-0014ee-0ad9caed4,
+>> FW:15.01H15, 500 GB
+>> Mar 27 22:02:02 ac4tv smartd[3981]: Device: /dev/sda, found in
+>> smartd database: Western Digital Caviar Blue Serial ATA
+>> Mar 27 22:02:02 ac4tv smartd[3981]: Device: /dev/sda, enabled SMART
+>> Automatic Offline Testing.
+>> Mar 27 22:02:02 ac4tv smartd[3981]: Device: /dev/sda, is SMART
+>> capable. Adding to "monitor" list.
+>> Mar 27 22:02:02 ac4tv smartd[3981]: Monitoring 1 ATA and 0 SCSI
+>> devices
+>>
+>>  but in 3.9.0-rc4 all I get is
+>> Mar 28 00:39:32 ac4tv smartd[2487]: Copyright (C) 2002-12, Bruce
+>> Allen, Christian Franke, www.smartmontools.org
+>> Mar 28 00:39:32 ac4tv smartd[2487]: Opened configuration file
+>> /etc/smartd.conf
+>> Mar 28 00:39:32 ac4tv smartd[2487]: Configuration file
+>> /etc/smartd.conf parsed.
+>> Mar 28 00:39:32 ac4tv smartd[2487]: Device: /dev/sda, opened
+>> Mar 28 00:39:32 ac4tv smartd[2487]: Device: /dev/sda, WDC
+>> WD5000AAKX-001CA0, S/N:WD-WMAYU6818967, WWN:5-0014ee-0ad9caed4,
+>> FW:15.01H15, 500 GB
+>> Mar 28 00:39:32 ac4tv smartd[2487]: Device: /dev/sda, found in
+>> smartd database: Western Digital Caviar Blue Serial ATA
+>> Mar 28 00:39:32 ac4tv smartd[2487]: Device: /dev/sda, could not
+>> enable SMART capability
+>> Mar 28 00:39:32 ac4tv smartd[2487]: Unable to register ATA device
+>> /dev/sda at line 1 of file /etc/smartd.conf
+>> Mar 28 00:39:32 ac4tv smartd[2487]: Unable to register device
+>> /dev/sda (no Directive -d removable). Exiting.
+>>
+>>  Using strace, in the failing version I get
+>> 2643  ioctl(3, HDIO_DRIVE_CMD, 0x7fff53288a60) = -1 EIO (Input/output error)
+>>
+>> instead of the normal
+>> 3981  ioctl(3, HDIO_DRIVE_CMD, 0x7fff04437340) = 0
+>> 3981  ioctl(3, HDIO_DRIVE_TASK, 0x7fff04437350) = 0
+>> 3981  ioctl(3, HDIO_DRIVE_CMD, 0x7fff04437330) = 0
+>> 3981  ioctl(3, HDIO_DRIVE_CMD, 0x7fff04437330) = 0
+>> 3981  ioctl(3, HDIO_DRIVE_TASK, 0x7fff04437340) = 0
+>>
+>>  Looks like I'll be bisecting.
+>>
+>> ken
+>  Bisection blames :
+>
+> commit 84a9a8cd9d0aa93c17e5815ab8a9cc4c0a765c63
+> Author: Gwendal Grignou <gwendal@google.com>
+> Date:   Fri Jan 18 10:56:43 2013 -0800
+>
+>     [libata] Set proper SK when CK_COND is set.
+>
+>     When the user application sends a ATA_12 or ATA_16 PASSTHROUGH
+>     scsi command, put the task file register in the sense data with the
+>     proper Sense Key. Instead of NO SENSE, set RECOVERED, as
+>     specified in [SAT2]12.2.5 Table 92.
+>
+>  That reverts cleanly from 3.9.0-rc4, and with it reverted smartd
+> works again.  Obviously that does nothing to fix whatever problem
+> this was supposed to fix.  I can test any follow-up patches if
+> needed.
+>
+> ken
+> --
+> das eine Mal als Tragödie, das andere Mal als Farce
