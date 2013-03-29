@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab3C2DDK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Mar 2013 23:03:10 -0400
-Received: from mail-da0-f43.google.com ([209.85.210.43]:62352 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753773Ab3C2DDI (ORCPT
+	id S1754797Ab3C2DNZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Mar 2013 23:13:25 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:59777 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019Ab3C2DNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Mar 2013 23:03:08 -0400
-Message-ID: <51550460.6050408@gmail.com>
-Date: Fri, 29 Mar 2013 11:02:56 +0800
-From: majianpeng <majianpeng@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Thu, 28 Mar 2013 23:13:24 -0400
+X-Spam-Score: -100.8
+Message-ID: <5154EAB9.2080108@asianux.com>
+Date: Fri, 29 Mar 2013 09:13:29 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: miklos@szeredi.hu
-CC: fuse-devel@lists.sourceforge.net,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] fuse: Don't do file_update_time for write_operation.
+To: David Miller <davem@davemloft.net>
+CC: edumazet@google.com, dborkman@redhat.com, wad@chromium.org,
+        eparis@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] include/linux: printk is needed in filter.h when CONFIG_BPF_JIT
+ is defined
+References: <5153DC24.4010104@asianux.com> <20130328.143158.157689302620030740.davem@davemloft.net>
+In-Reply-To: <20130328.143158.157689302620030740.davem@davemloft.net>
 Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For direct-write and normal-write operations, after write they will call fuse_invalidate_attr.
-So it's make no sense to call file_update_time before writing.
+On 2013Äê03ÔÂ29ÈÕ 02:31, David Miller wrote:
+> Please post networking patches to netdev@vger.kernel.org, thanks.
 
-In function file_update_time, there is other thing which update version of
-inode.For this i am not sure.
+  ok, thanks, it is my fault.
+    originally, I get the mail addresses from ./scripts/get_maintainer.pl.
+    it is a useful tool to help members to find mail addresses.
+    I should fully use it, but should not depend on it.
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
----
-fs/fuse/file.c | 4 ----
-1 file changed, 4 deletions(-)
+  next time, I should think of the mail addresses, after get them from the tool.
 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 34b80ba..214279c 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -988,10 +988,6 @@ static ssize_t fuse_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
-if (err)
-goto out;
+  thanks.
 
-- err = file_update_time(file);
-- if (err)
-- goto out;
--
-if (file->f_flags & O_DIRECT) {
-written = generic_file_direct_write(iocb, iov, &nr_segs,
-pos, &iocb->ki_pos,
 -- 
-1.8.2.rc2.4.g7799588
+Chen Gang
 
+Asianux Corporation
