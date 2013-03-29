@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab3C2TAV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 15:00:21 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53216
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754251Ab3C2TAU (ORCPT
+	id S1756553Ab3C2TCN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 15:02:13 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:36230 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756235Ab3C2TCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 15:00:20 -0400
-Date: Fri, 29 Mar 2013 13:00:17 -0600
-From: Jens Axboe <axboe@kernel.dk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] block fixes for 3.9-rc
-Message-ID: <20130329190017.GE2567@kernel.dk>
-References: <20130329153831.GQ19488@kernel.dk>
- <CA+55aFwoj=g0YrFOrpoKNY43o8qDAhDEHSP-zrtpWCXciwz_-Q@mail.gmail.com>
- <20130329182411.GD2567@kernel.dk>
- <CA+55aFwWFma7qK3v7QtxRqp=GHnON8DF0kO84yDvsxu3nkb-xA@mail.gmail.com>
+	Fri, 29 Mar 2013 15:02:11 -0400
+Message-ID: <5155F320.2020004@cogentembedded.com>
+Date: Fri, 29 Mar 2013 23:01:36 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwWFma7qK3v7QtxRqp=GHnON8DF0kO84yDvsxu3nkb-xA@mail.gmail.com>
+To: Gwendal Grignou <gwendal@google.com>
+CC: ronald645@gmail.com, krzysiek@podlesie.net, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [libata] Fix HDIO_DRIVE_CMD ioctl sense data check
+References: <1364576992-17598-1-git-send-email-gwendal@google.com> <1364577166-17930-1-git-send-email-gwendal@google.com>
+In-Reply-To: <1364577166-17930-1-git-send-email-gwendal@google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29 2013, Linus Torvalds wrote:
-> On Fri, Mar 29, 2013 at 11:24 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> >
-> >> Don't do this kind of thing. That branch is pointless, and just
-> >> confused you.
-> >
-> > Tag, you mean?
-> 
-> No. Branch. Why would you have a public branch called "for-linus",
-> when you intend to tag the end result before sending it to me?
+Hello.
 
-Outside of "that's what I have always done", the intent was for others
-that send patches through me to know what to base it off, if not
-previous release. All those folks know that for-3.x/drivers is for the
-next x release, and that for-linus is for the existing tree.
+On 03/29/2013 08:12 PM, Gwendal Grignou wrote:
 
-> It would make much more sense if you just did your development in your
-> "master" branch, perhaps with a separate branch for fixes during
-> stabilization (so that you don't mix up fixes with your future
-> development. Call it "fixes" or "stable" or whatever. No "for-linus"
-> branches anywhere. After all, the branch isn't for me at all. It's for
-> me only once you're ready. And at that point you tag it, so having a
-> *tag* called for-linus makes sense and gives us the nice signing etc.
+> commit 84a9a8cd9d0aa93c17e5815ab8a9cc4c0a765c63
 
-I see your point, it's not for you YET but it will be soon. I'd rather
-just keep that naming to avoid confusion with others, but tag it
-appropriately (for-linus-<date>?) when it's headed your way. Then use
-that proper signed tag name as the reference to you.
+    Please, also specify that commit's summary line in parens
+(or however you like).
 
-I prefer keeping 'master' pristine.
+>   changed the sense key
+> used for returning task registers, but HDIO_DRIVE_CMD ioctl was
+> not changed accordingly.
+>
+> Tested: check that SMART ENABLE sent using HDIO_DRIVE_CMD returns 0
+> instead of EIO.
+>
+> Signed-off-by: Gwendal Grignou <gwendal@google.com>
+>
 
--- 
-Jens Axboe
+MBR, Sergei
 
