@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab3C3Pd3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 11:33:29 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:54741 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755620Ab3C3Pd2 (ORCPT
+	id S1756897Ab3C3QFh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 12:05:37 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:41782 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756609Ab3C3QFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 11:33:28 -0400
-Message-ID: <5157056C.5000705@linux.vnet.ibm.com>
-Date: Sat, 30 Mar 2013 21:01:56 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 14/15] sched: power aware load balance
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-15-git-send-email-alex.shi@intel.com> <514941C5.6080007@linux.vnet.ibm.com> <514ABA19.1080807@intel.com> <514AC7B2.7030400@linux.vnet.ibm.com> <514AD26F.9010905@intel.com> <514AE07A.10100@linux.vnet.ibm.com> <514BB452.2070906@intel.com> <514BE8AC.6000607@linux.vnet.ibm.com> <514FD801.8070403@intel.com> <51558C31.1060605@linux.vnet.ibm.com> <515599AD.5090901@intel.com> <5156CB90.5060209@linux.vnet.ibm.com> <5156F103.6000508@intel.com>
-In-Reply-To: <5156F103.6000508@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 30 Mar 2013 12:05:36 -0400
+Message-ID: <1364659529.15109.4.camel@phoenix>
+Subject: [RFT][PATCH 1/2] pwm: lpc32xx: Properly set PWM_ENABLE bit in
+ lpc32xx_pwm_[enable|disable]
+From: Axel Lin <axel.lin@ingics.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Roland Stigge <stigge@antcom.de>, linux-kernel@vger.kernel.org
+Date: Sun, 31 Mar 2013 00:05:29 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13033015-9574-0000-0000-00000743B412
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+According to the LPC32x0 User Manual [1]:
+
+PWMx Control Registers:
+BIT 31 (PWMx_EN):
+0 = PWM disabled. (Default)
+1 = PWM enabled
+
+In lpc32xx_pwm_enable(), we should set PWM_ENABLE bit.
+In lpc32xx_pwm_disable(), we should just clear PWM_ENABLE bit rather than
+write 0 to the register which will also clear PWMx_RELOADV and PWMx_DUTY bits.
+
+[1] http://www.nxp.com/documents/user_manual/UM10326.pdf
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
 Hi,
+I don't have this hardware handy so I'd appreciate if someone can test this
+patch serial.
 
-On 03/30/2013 07:34 PM, Alex Shi wrote:
-> On 03/30/2013 07:25 PM, Preeti U Murthy wrote:
->>>> I still give the rq->util weight even the nr_running is 0, because some
->>>> transitory tasks may actived on the cpu, but just missed on balancing point.
->>>>
->>>> I just wondering that forgetting rq->util when nr_running = 0 is the
->>>> real root cause if your finding is just on VM and without fixed VCPU to
->>>> CPU pin.
->> I find the same situation on a physical machine too. On a 2 socket, 4
->> core machine as well. In fact, using trace_printks in the load balancing
->> part, I could find that the reason that the load was not getting
->> consolidated onto a socket was because the rq->util of a run-queue with
->> no processes on it, had not decayed to 0, which is why it would consider
->> the socket as overloaded and would  rule out power aware balancing.All
->> this was on a physical machine.
-> 
-> Consider of this situation, we may stop account the rq->util when
-> nr_running is zero. Tasks will be a bit more compact. but anyway, that's
-> powersaving policy.
-> 
-True, the tasks will be packed a bit more compactly, but we can expect
-the behaviour of your patchset *defaulting to performance policy when
-overloaded*, to come to the rescue of such a situation.
+Thanks,
+Axel
 
-Regards
-Preeti U Murthy
+ drivers/pwm/pwm-lpc32xx.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
+index b3f0d0d..1a5075e 100644
+--- a/drivers/pwm/pwm-lpc32xx.c
++++ b/drivers/pwm/pwm-lpc32xx.c
+@@ -77,15 +77,29 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ static int lpc32xx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
+ 	struct lpc32xx_pwm_chip *lpc32xx = to_lpc32xx_pwm_chip(chip);
++	u32 val;
++	int ret;
++
++	ret = clk_enable(lpc32xx->clk);
++	if (ret)
++		return ret;
+ 
+-	return clk_enable(lpc32xx->clk);
++	val = readl(lpc32xx->base + (pwm->hwpwm << 2));
++	val |= PWM_ENABLE;
++	writel(val, lpc32xx->base + (pwm->hwpwm << 2));
++
++	return 0;
+ }
+ 
+ static void lpc32xx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
+ 	struct lpc32xx_pwm_chip *lpc32xx = to_lpc32xx_pwm_chip(chip);
++	u32 val;
++
++	val = readl(lpc32xx->base + (pwm->hwpwm << 2));
++	val &= ~PWM_ENABLE;
++	writel(val, lpc32xx->base + (pwm->hwpwm << 2));
+ 
+-	writel(0, lpc32xx->base + (pwm->hwpwm << 2));
+ 	clk_disable(lpc32xx->clk);
+ }
+ 
+-- 
+1.7.10.4
+
+
 
