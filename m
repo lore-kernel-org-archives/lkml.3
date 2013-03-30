@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab3C3KGI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 06:06:08 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48500 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599Ab3C3KGG (ORCPT
+	id S1754860Ab3C3KZv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 06:25:51 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:37304 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab3C3KZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 06:06:06 -0400
-Date: Sat, 30 Mar 2013 10:04:08 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ning Jiang <ning.n.jiang@gmail.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, kgene.kim@samsung.com,
-        davidb@codeaurora.org, dwalker@fifo99.com, bryanh@codeaurora.org,
-        john.stultz@linaro.org, tglx@linutronix.de, linus.walleij@linaro.org,
-        shawn.guo@linaro.org, rob.herring@calxeda.com, arnd@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] ARM: timer: Shutdown clock event device when stopping
-	local timer
-Message-ID: <20130330100408.GA17995@n2100.arm.linux.org.uk>
-References: <1364549049-29278-1-git-send-email-ning.n.jiang@gmail.com> <5155DE43.4000601@codeaurora.org> <CAH3Oq6QA0DCEDc-Yh+k=3bgUH7xzKxHSC1aWSoL4NzaYCZZHbg@mail.gmail.com>
+	Sat, 30 Mar 2013 06:25:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAH3Oq6QA0DCEDc-Yh+k=3bgUH7xzKxHSC1aWSoL4NzaYCZZHbg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <201303290927.43394.gheskett@wdtv.com>
+References: <201303231334.54169.gheskett@wdtv.com>
+	<104966318.mxHzboO7mH@p5915>
+	<CAOdo=SwVaBKx2WMmB_t2f47hSNHtH_2mufFUuTYM0gWaXF4wgw@mail.gmail.com>
+	<201303290927.43394.gheskett@wdtv.com>
+Date: Sat, 30 Mar 2013 06:25:49 -0400
+Message-ID: <CAOdo=Sw6ymsEQbf6=3ePv-MbG29PVSXYnBD1Uzf9q3EDA_CdHQ@mail.gmail.com>
+Subject: Re: 3.8.3 build error, compiler segfault
+From: Tom H <tomh0665@gmail.com>
+To: Ubuntu Users <ubuntu-users@lists.ubuntu.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 30, 2013 at 05:57:38PM +0800, Ning Jiang wrote:
-> 2013/3/30 Stephen Boyd <sboyd@codeaurora.org>:
-> > On 03/29/13 02:24, ning.n.jiang@gmail.com wrote:
-> >> From: Ning Jiang <ning.n.jiang@gmail.com>
-> >>
-> >> Currently there are two problems when we try to stop local timer.
-> >> First, it calls set_mode function directly so mode state is not
-> >> updated for the clock event device. Second, it makes the device
-> >> unused instead of shutdown.
-> >
-> > What device is this a problem on? I believe this only matters to drivers
-> > which enable their timer in their set_next_event() callback? But even
-> > then, does anything actually happen because the interrupt should have
-> > been disabled in the local timer stop callback.
-> >
-> 
-> Right. Drivers which enable timer in set_next_event() will have this problem.
-> It will not have functional problem in my case. But my device cannot enter
-> low power mode with a pending interrupt even if it is disabled.
+On Fri, Mar 29, 2013 at 9:27 AM, Gene Heskett <gheskett@wdtv.com> wrote:
+> On Friday 29 March 2013 09:08:27 Tom H did opine:
+>
+> CCing the lkml too.
+>
+>> On Thu, Mar 28, 2013 at 10:49 AM, Nils Kassube <kassube@gmx.net> wrote:
+>>> I don't know of a particilar tool to extract that info. I can't tell
+>>> you for your -rtai kernel but the standard Ubuntu kernels come with a
+>>> file /boot/config-$(uname -r) which is the .config from the kernel
+>>> build. There you could search for '=y', but it would list more than
+>>> only parts which can be compiled either as module or built-in. I
+>>> checked the contents of the initrd and it seems the file /etc/modules
+>>> isn't included there. Obviously it is run later in the boot sequence,
+>>> not from the initrd. Sorry for that misleading suggestion.
+>>>
+>>>...
+>>>
+>>> While it looks right, I don't think it will help because the contents
+>>> of /etc/modules doesn't seem to be included in the initrd anyway (see
+>>> above).
+>>
+>> /etc/initramfs-tools/modules
+>
+> And that brings up a chicken/egg problem, as in if it can't access that
+> UUID containing /etc/modules, how does it read it to find out its supposed
+> to do early early loads of sata_nv, and possibly i2c_nforce even if they
+> are in the generated initrd?
 
-You're not telling us what you have discovered.  How does set_next_event()
-get called after we've set the mode to UNUSED in the current code?
+There's no chicken and egg. "/etc/initramfs-tools/modules" isn't
+"/etc/modules". Having your module listed there'll ensure that it's
+loaded in the initrd once you re-run mkinitramfs or update-initramfs.
