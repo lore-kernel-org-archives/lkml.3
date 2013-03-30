@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534Ab3C3VpM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 17:45:12 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57517 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679Ab3C3VpK (ORCPT
+	id S1754793Ab3C3VtY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 17:49:24 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:63714 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754341Ab3C3VtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 17:45:10 -0400
-Date: Sat, 30 Mar 2013 22:45:09 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-        Andy Lutomirski <luto@amacapital.net>, Zach Brown <zab@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chris L. Mason" <clmason@fusionio.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
-        Hannes Reinecke <hare@suse.de>, Joel Becker <jlbec@evilplan.org>
-Subject: Re: New copyfile system call - discuss before LSF?
-Message-ID: <20130330214509.GB4322@amd.pavel.ucw.cz>
-References: <512606DF.5050706@redhat.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9235D998C@SACEXCMBX04-PRD.hq.netapp.com>
- <512635D2.4090207@redhat.com>
- <51267CEB.8070805@redhat.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com>
- <20130221222449.GY22221@lenny.home.zabbo.net>
- <512BD44C.40907@amacapital.net>
- <20130226210232.GA19510@logfs.org>
- <20130330194933.GB1005@amd.pavel.ucw.cz>
- <08D26E22-3856-43A4-8835-48C86CC5F71C@dilger.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <08D26E22-3856-43A4-8835-48C86CC5F71C@dilger.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 30 Mar 2013 17:49:23 -0400
+From: Gwendal Grignou <gwendal@google.com>
+To: ronald645@gmail.com
+Cc: krzysiek@podlesie.net, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sergei.shtylyov@cogentembedded.com,
+        Gwendal Grignou <gwendal@google.com>
+Subject: [PATCH v3] [libata] Fix HDIO_DRIVE_CMD ioctl sense data check
+Date: Sat, 30 Mar 2013 14:43:49 -0700
+Message-Id: <1364679829-13607-1-git-send-email-gwendal@google.com>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <5155F320.2020004@cogentembedded.com>
+References: <5155F320.2020004@cogentembedded.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2013-03-30 13:08:39, Andreas Dilger wrote:
-> On 2013-03-30, at 12:49 PM, Pavel Machek wrote:
-> > Hmm, really? AFAICT it would be simple to provide an
-> > open_deleted_file("directory") syscall. You'd open_deleted_file(),
-> > copy source file into it, then fsync(), then link it into filesystem.
-> > 
-> > That should have atomicity properties reflected.
-> 
-> Actually, the open_deleted_file() syscall is quite useful for many
-> different things all by itself.  Lots of applications need to create
-> temporary files that are unlinked at application failure (without a
-> race if app crashes after creating the file, but before unlinking).
-> It also avoids exposing temporary files into the namespace if other
-> applications are accessing the directory.
+commit 84a9a8 "Set proper SK when CK_COND is set" changed the sense key
+used for returning task registers, but HDIO_DRIVE_CMD ioctl was
+not changed accordingly.
 
-Hmm. open_deleted_file() will still need to get a directory... so it
-will still need a path. Perhaps open("/foo/bar/mnt", O_DELETED) would
-be acceptable interface?
-									Pavel
+Tested: check that SMART ENABLE sent using HDIO_DRIVE_CMD returns 0
+instead of EIO.
+
+Signed-off-by: Gwendal Grignou <gwendal@google.com>
+---
+ drivers/ata/libata-scsi.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index 318b413..5eae74b 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -532,8 +532,8 @@ int ata_cmd_ioctl(struct scsi_device *scsidev, void __user *arg)
+ 			struct scsi_sense_hdr sshdr;
+ 			scsi_normalize_sense(sensebuf, SCSI_SENSE_BUFFERSIZE,
+ 					     &sshdr);
+-			if (sshdr.sense_key == 0 &&
+-			    sshdr.asc == 0 && sshdr.ascq == 0)
++			if (sshdr.sense_key == RECOVERED_ERROR &&
++			    sshdr.asc == 0 && sshdr.ascq == 0x1D)
+ 				cmd_result &= ~SAM_STAT_CHECK_CONDITION;
+ 		}
+ 
+@@ -618,8 +618,8 @@ int ata_task_ioctl(struct scsi_device *scsidev, void __user *arg)
+ 			struct scsi_sense_hdr sshdr;
+ 			scsi_normalize_sense(sensebuf, SCSI_SENSE_BUFFERSIZE,
+ 						&sshdr);
+-			if (sshdr.sense_key == 0 &&
+-				sshdr.asc == 0 && sshdr.ascq == 0)
++			if (sshdr.sense_key == RECOVERED_ERROR &&
++			    sshdr.asc == 0 && sshdr.ascq == 0x1D)
+ 				cmd_result &= ~SAM_STAT_CHECK_CONDITION;
+ 		}
+ 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.1.3
+
