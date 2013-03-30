@@ -1,39 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab3C3VMu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 17:12:50 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:39843 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754337Ab3C3VMs (ORCPT
+	id S1756379Ab3C3VQq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 17:16:46 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:54441 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755303Ab3C3VQp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 17:12:48 -0400
-Date: Sat, 30 Mar 2013 17:12:46 -0400 (EDT)
-Message-Id: <20130330.171246.1914117581717713508.davem@davemloft.net>
-To: artem.savkov@gmail.com
-Cc: johannes.berg@intel.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net/wireless/sme: sched_scan_mtx lock in
- cfg80211_conn_work()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1364664014-12304-1-git-send-email-artem.savkov@gmail.com>
-References: <1364664014-12304-1-git-send-email-artem.savkov@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sat, 30 Mar 2013 14:12:48 -0700 (PDT)
+	Sat, 30 Mar 2013 17:16:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130330175628.GA28947@amd.pavel.ucw.cz>
+References: <20130108230954.GN2044@merlins.org>
+	<20130109023643.GA7066@mobil.systemanalysen.net>
+	<20130322223141.GQ12428@merlins.org>
+	<20130330175628.GA28947@amd.pavel.ucw.cz>
+Date: Sat, 30 Mar 2013 14:16:43 -0700
+Message-ID: <CAKbGBLg+yp7gAj36EuxCTT5-e4TpBK4MfWxSA-dfnL_LDn7_cQ@mail.gmail.com>
+Subject: Re: Supporting SYSRQ on broken laptops like the thinkpad T530
+From: Steven Noonan <steven@uplinklabs.net>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Marc MERLIN <marc@merlins.org>,
+        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
+        edvx1@systemanalysen.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Savkov <artem.savkov@gmail.com>
-Date: Sat, 30 Mar 2013 21:20:14 +0400
+On Sat, Mar 30, 2013 at 10:56 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> On Fri 2013-03-22 15:31:41, Marc MERLIN wrote:
+>> On Wed, Jan 09, 2013 at 03:36:44AM +0100, Roland Eggner wrote:
+>> > On 2013-01-08 Tuesday at 15:09 -0800 Marc MERLIN wrote:
+>> > > In its infinite wisdom, lenovo has removed the sysrq key on the latest
+>> > > thinkpads, and replaced it with a stupid ALT+FN+S key combination, which
+>> > > doesn't really work for doing sysrq from the console (nor do I know how the
+>> > > genius who did that intended for SYSRQ-S to work).
+>> > > http://forums.lenovo.com/t5/T400-T500-and-newer-T-series/T430-s-T530-Where-are-the-shortcut-function-keys-break-Pause-etc/ta-p/781749
+>> > >
+>> > > I realize that one solution is to throw my laptop window at a suitable high
+>> > > floorand replace it with one from a vendor that doesn't randomly remove keys
+>> > > from the keyboard.
+>> > > That said, I was wondering if there were other solutions, especially
+>> > > considering that thinkpads used to be the better linux laptops.
+>> >
+>> > My Dell “Precision M4500” notebook suffers similar (same?) problem.  So far
+>> > I could not find a solution better than this:  e.g. Alt-Fn-SysRq-s
+>> >
+>> > press and hold Alt
+>> > press and hold Fn
+>> > press and leave F10|SysRq
+>> > leave Fn
+>> > press and leave s
+>> > leave Alt
+>>
+>> Just for the sake of the archives, turns out that on the lenovo T430 and T530
+>> you should ignore the Lenovo documentation I quoted above, and you can
+>> indeed use the PrtSc key between Right Alt and Right Ctrl, that key works
+>> just fine for Sysrq.
+>>
+>> I have no idea why Lenovo felt they had to document some complicated
+>> alternate software sysrq with Fn+S
+>
+> Well... I feel resposible for sysrq stuff... I wanted it to be
+> non-intrusive. But it might have been bad choice - sysrq was not meant
+> to be used as a shift.
+>
+> Sometimes it works, sometimes it does not. Don't blame lenovo for
+> that.
+>
+> Maybe it should be modified to take sysrq and _then_ key?
+>
+> Or maybe we should use something like lshift+rshift+lalt+ralt+key?
+>
 
-> Introduced in f9f475292dbb0e7035fb6661d1524761ea0888d9
-
-When referencing commits, always provide the commit message header
-line, in parenthesis and double quotes, so that it is unambiguous.
-
-Otherwise, when changes are backported into -stable trees, the commit
-ID changes and the commit in question can no longer be indentified
-easily for the reader.
+I vote for "something like". Some keyboards (such as my Thinkpad X230
+with UK layout) have lshift, lalt, rshift, but no ralt. the ralt is
+replaced by AltGr.
