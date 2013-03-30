@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757876Ab3C3DBg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 23:01:36 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:64367 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757622Ab3C3DBJ (ORCPT
+	id S1757890Ab3C3DCc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 23:02:32 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:55226 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757594Ab3C3DCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 23:01:09 -0400
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk, akpm@linux-foundation.org
-Cc: jack@suse.cz, david@fromorbit.com, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/3] writeback: set worker desc to identify writeback workers in task dumps
-Date: Fri, 29 Mar 2013 20:00:47 -0700
-Message-Id: <1364612447-6810-4-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1364612447-6810-1-git-send-email-tj@kernel.org>
-References: <1364612447-6810-1-git-send-email-tj@kernel.org>
+	Fri, 29 Mar 2013 23:02:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <1364609309.1818.8.camel@buesod1.americas.hpqcorp.net>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+	<20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org>
+	<20130326192852.GA25899@redhat.com>
+	<20130326124309.077e21a9f59aaa3f3355e09b@linux-foundation.org>
+	<20130329161746.GA8391@redhat.com>
+	<CA+55aFyKhgwYUMGs8MBLY5WDXhHwXP3dLWs40ayCYfgiwwncsQ@mail.gmail.com>
+	<CA+55aFyT6jxC=+jfORJkymo4Eagzpz-SajmnCO_PjGAPE6o25A@mail.gmail.com>
+	<CA+55aFygTH-tqhL1=FY32+HkjfqqpkX-nvb1c5f3V6S-iykS8A@mail.gmail.com>
+	<CA+i8gK+NTCK6OUzobvxPj+UaCO-iit-ww9VGNzmdqDfRC_+SuA@mail.gmail.com>
+	<1364609309.1818.8.camel@buesod1.americas.hpqcorp.net>
+Date: Sat, 30 Mar 2013 10:02:29 +0700
+Message-ID: <CA+i8gK+LP_4SU8GwLMau0QvyGswZ5sKqOYnJVPZNWXZY_W9dEA@mail.gmail.com>
+Subject: Re: ipc,sem: sysv semaphore scalability
+From: Emmanuel Benisty <benisty.e@gmail.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@surriel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        hhuang@redhat.com, "Low, Jason" <jason.low2@hp.com>,
+        Michel Lespinasse <walken@google.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Writeback has been recently converted to use workqueue instead of its
-private thread pool implementation.  One negative side effect of this
-conversion is that there's no easy to tell which backing device a
-writeback work item was working on at the time of task dump, be it
-sysrq-t, BUG, WARN or whatever, which, according to our writeback
-brethren, is important in tracking down issues with a lot of mounted
-file systems on a lot of different devices.
+Hi Davidlohr,
 
-This patch restores that information using the new worker description
-facility.  bdi_writeback_workfn() calls set_work_desc() to identify
-which bdi it's working on.  The description is printed out together
-with the worqueue name and worker function as in the following example
-dump.
+On Sat, Mar 30, 2013 at 9:08 AM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
+> Not sure which one liner you refer to, but, if you haven't already done
+> so, please try with these fixes (queued in linux-next):
+>
+> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=a9cead0347283f3e72a39e7b76a3cc479b048e51
+> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=4db64b89525ac357cba754c3120065adddd9ec31
+>
+> I've been trying to reproduce your twilight zone problem on five
+> different machines now without any luck. Is there anything you're doing
+> to trigger the issue? Does the machine boot ok and then do weird things,
+> say after X starts, open some program, etc?
 
- WARNING: at /work/os/work/fs/fs-writeback.c:1015 bdi_writeback_workfn+0x2b4/0x3c0()
- Modules linked in:
- Pid: 28, comm: kworker/u18:0 Not tainted 3.9.0-rc1-work+ #24 empty empty/S3992
- Workqueue: writeback bdi_writeback_workfn (flush-8:16)
-  ffffffff820a3a98 ffff88015b927cb8 ffffffff81c61855 ffff88015b927cf8
-  ffffffff8108f500 0000000000000000 ffff88007a171948 ffff88007a1716b0
-  ffff88015b49df00 ffff88015b8d3940 0000000000000000 ffff88015b927d08
- Call Trace:
-  [<ffffffff81c61855>] dump_stack+0x19/0x1b
-  [<ffffffff8108f500>] warn_slowpath_common+0x70/0xa0
-  [<ffffffff8108f54a>] warn_slowpath_null+0x1a/0x20
-  [<ffffffff81200144>] bdi_writeback_workfn+0x2b4/0x3c0
-  [<ffffffff810b4c87>] process_one_work+0x1d7/0x660
-  [<ffffffff810b5c72>] worker_thread+0x122/0x380
-  [<ffffffff810bdfea>] kthread+0xea/0xf0
-  [<ffffffff81c6cedc>] ret_from_fork+0x7c/0xb0
+I was missing a9cead0, thanks. What I usually do is starting a
+standard session, which looks like this:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Jens Axboe <axboe@kernel.dk>
----
- fs/fs-writeback.c | 1 +
- 1 file changed, 1 insertion(+)
+init-+-5*[agetty]
+     |-bash---startx---xinit-+-X---2*[{X}]
+     |                       `-dwm---sh---sleep
+     |-bash---chromium-+-chromium
+     |                 |-chromium-+-chromium
+     |                 |          `-2*[{chromium}]
+     |
+|-chromium-sandbo---chromium---chromium---4*[chromium---4*[{chromium}]]
+     |                 `-65*[{chromium}]
+     |-crond
+     |-dbus-daemon
+     |-klogd
+     |-syslogd
+     |-tmux-+-alsamixer
+     |      |-bash---bash
+     |      |-bash
+     |      |-htop
+     |      `-newsbeuter---{newsbeuter}
+     |-udevd
+     |-urxvtd-+-bash---pstree
+     |        `-bash---tmux
+     `-wpa_supplicant
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 8067d37..3be5718 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -1009,6 +1009,7 @@ void bdi_writeback_workfn(struct work_struct *work)
- 	struct backing_dev_info *bdi = wb->bdi;
- 	long pages_written;
- 
-+	set_worker_desc("flush-%s", dev_name(bdi->dev));
- 	current->flags |= PF_SWAPWRITE;
- 
- 	if (likely(!current_is_workqueue_rescuer() ||
--- 
-1.8.1.4
+Then I start building a random package and the problems start. They
+may also happen without compiling but this seems to trigger the bug
+quite quickly. Anyway, some progress here, I hope: dmesg seems to be
+willing to reveal some secrets (using some pastebin service since this
+is pretty big):
 
+https://gist.github.com/anonymous/5275120
+
+Thanks.
