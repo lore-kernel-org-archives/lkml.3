@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407Ab3C3Vmc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 17:42:32 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57221 "EHLO
+	id S1754534Ab3C3VpM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 17:45:12 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57517 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679Ab3C3Vmb (ORCPT
+	with ESMTP id S1752679Ab3C3VpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 17:42:31 -0400
-Date: Sat, 30 Mar 2013 22:42:29 +0100
+	Sat, 30 Mar 2013 17:45:10 -0400
+Date: Sat, 30 Mar 2013 22:45:09 +0100
 From: Pavel Machek <pavel@ucw.cz>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        Joerg Reisenweber <joerg@openmoko.org>,
-        Ivaylo Dimitrov <freemangordon@abv.bg>
-Subject: Re: [PATCH v2] New Nokia RX-51 power supply battery driver
-Message-ID: <20130330214229.GA4322@amd.pavel.ucw.cz>
-References: <19040462.WFXWijAIDd@pali>
- <20121030223922.GA29061@lizard>
- <2562836.SjVVyiPAk1@pali>
- <20130330180705.GE28947@amd.pavel.ucw.cz>
- <20130330183526.GA21198@lizard>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+        Andy Lutomirski <luto@amacapital.net>, Zach Brown <zab@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chris L. Mason" <clmason@fusionio.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
+        Hannes Reinecke <hare@suse.de>, Joel Becker <jlbec@evilplan.org>
+Subject: Re: New copyfile system call - discuss before LSF?
+Message-ID: <20130330214509.GB4322@amd.pavel.ucw.cz>
+References: <512606DF.5050706@redhat.com>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA9235D998C@SACEXCMBX04-PRD.hq.netapp.com>
+ <512635D2.4090207@redhat.com>
+ <51267CEB.8070805@redhat.com>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com>
+ <20130221222449.GY22221@lenny.home.zabbo.net>
+ <512BD44C.40907@amacapital.net>
+ <20130226210232.GA19510@logfs.org>
+ <20130330194933.GB1005@amd.pavel.ucw.cz>
+ <08D26E22-3856-43A4-8835-48C86CC5F71C@dilger.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130330183526.GA21198@lizard>
+In-Reply-To: <08D26E22-3856-43A4-8835-48C86CC5F71C@dilger.ca>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2013-03-30 11:35:26, Anton Vorontsov wrote:
-> On Sat, Mar 30, 2013 at 07:07:05PM +0100, Pavel Machek wrote:
-> > On Wed 2012-10-31 10:48:40, Pali Rohár wrote:
-> > > Hello, I fixed style issues and added it to Makefile and Kconfig.
-> > > 
-> > > power_supply: Add Nokia RX-51 battery driver
-> > > 
-> > > This driver exporting battery design capacity, temperature and voltage
-> > > for battery in Nokia RX-51. This driver is needed for open source
-> > > battery management on Nokia RX-51 (N900).
-> > > 
-> > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+On Sat 2013-03-30 13:08:39, Andreas Dilger wrote:
+> On 2013-03-30, at 12:49 PM, Pavel Machek wrote:
+> > Hmm, really? AFAICT it would be simple to provide an
+> > open_deleted_file("directory") syscall. You'd open_deleted_file(),
+> > copy source file into it, then fsync(), then link it into filesystem.
 > > 
-> > Reviewed-by: Pavel Machek <pavel@ucw.cz>
+> > That should have atomicity properties reflected.
 > 
-> Thanks for the review, Pavel! Although, the patch is in Linus' tree long
-> ago. ;-)
+> Actually, the open_deleted_file() syscall is quite useful for many
+> different things all by itself.  Lots of applications need to create
+> temporary files that are unlinked at application failure (without a
+> race if app crashes after creating the file, but before unlinking).
+> It also avoids exposing temporary files into the namespace if other
+> applications are accessing the directory.
 
-Yeah... I did a bit of history-digging ;-). Now, I should figure out
-how to put custom kernel on n900 _and_ keep it in working state at the
-same time.
-
-(I installed some kind of multiboot, then, apt decided to install some
-u-boot extension. Then it got interesting. I never got my own kernel
-to work, and u-boot magically disappeared, but I still have working
-phone :-).
-
+Hmm. open_deleted_file() will still need to get a directory... so it
+will still need a path. Perhaps open("/foo/bar/mnt", O_DELETED) would
+be acceptable interface?
 									Pavel
 -- 
 (english) http://www.livejournal.com/~pavelmachek
