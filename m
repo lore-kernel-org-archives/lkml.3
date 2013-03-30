@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab3C3K3b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 06:29:31 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:11612 "EHLO
+	id S1754780Ab3C3Kbi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 06:31:38 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:11955 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753260Ab3C3K3a (ORCPT
+	with ESMTP id S1753260Ab3C3Kbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 06:29:30 -0400
-Message-ID: <5156BE4A.2030400@huawei.com>
-Date: Sat, 30 Mar 2013 18:28:26 +0800
-From: Kefeng Wang <wangkefeng.wang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
+	Sat, 30 Mar 2013 06:31:36 -0400
+Message-ID: <5156BECE.9070701@huawei.com>
+Date: Sat, 30 Mar 2013 18:30:38 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: <sam@ravnborg.org>, <davem@davemloft.net>
-CC: <sparclinux@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Guohanjun (Hanjun Guo)" <guohanjun@huawei.com>,
-        <wangyijing@huawei.com>
-Subject: [PATCH] sparc:cleanup unused code in smp_32.h
+To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] checkpatch: do not exit in main process subroutine
+References: <5153BC45.807@huawei.com>
+In-Reply-To: <5153BC45.807@huawei.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.221]
+X-Originating-IP: [10.66.58.241]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After genirq and generic clockevent support at sparc32,
-smp4m_irq_rotate(), prof_multiplier() and prof_counter()
-are no longer used and should be removed.
+On 2013/3/28 11:43, zhangwei(Jovi) wrote:
+> Currently checkpatch program exit when process empty file,
+> This will cause issue when @ARGV include many files ready to check.
+> 
+> For example, there may have Module.symvers empty file in kernel directory.
+> 
+> [root@jovi ~]# scripts/checkpatch.pl -f kernel/*
+> 
+> then many file "after" empty file will not be check by script.
+> so disallow exit in main process subroutine.
+> 
+> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Joe, Ping?
 
-Find more info from commit 6baa9b20 & 62f08283.
+> ---
+>  scripts/checkpatch.pl |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index b28cc38..6924733 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -3634,19 +3634,19 @@ sub process {
+>  	# If we have no input at all, then there is nothing to report on
+>  	# so just keep quiet.
+>  	if ($#rawlines == -1) {
+> -		exit(0);
+> +		return $clean;
+>  	}
+> 
+>  	# In mailback mode only produce a report in the negative, for
+>  	# things that appear to be patches.
+>  	if ($mailback && ($clean == 1 || !$is_patch)) {
+> -		exit(0);
+> +		return $clean;
+>  	}
+> 
+>  	# This is not a patch, and we are are in 'no-patch' mode so
+>  	# just keep quiet.
+>  	if (!$chk_patch && !$is_patch) {
+> -		exit(0);
+> +		return $clean;
+>  	}
+> 
+>  	if (!$is_patch) {
+> 
 
-Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
----
- arch/sparc/include/asm/smp_32.h |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
-
-diff --git a/arch/sparc/include/asm/smp_32.h b/arch/sparc/include/asm/smp_32.h
-index 68503d3..3c8917f 100644
---- a/arch/sparc/include/asm/smp_32.h
-+++ b/arch/sparc/include/asm/smp_32.h
-@@ -36,7 +36,6 @@ typedef void (*smpfunc_t)(unsigned long, unsigned long, unsigned long,
- 		       unsigned long, unsigned long);
-
- void cpu_panic(void);
--extern void smp4m_irq_rotate(int cpu);
-
- /*
-  *	General functions that each host system must provide.
-@@ -106,9 +105,6 @@ extern int hard_smp_processor_id(void);
-
- #define raw_smp_processor_id()		(current_thread_info()->cpu)
-
--#define prof_multiplier(__cpu)		cpu_data(__cpu).multiplier
--#define prof_counter(__cpu)		cpu_data(__cpu).counter
--
- void smp_setup_cpu_possible_map(void);
-
- #endif /* !(__ASSEMBLY__) */
--- 
-1.6.0.2
 
