@@ -1,47 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756437Ab3C3NB5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 09:01:57 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:62632 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754756Ab3C3NB4 (ORCPT
+	id S1756416Ab3C3NEL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 09:04:11 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:58710 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755309Ab3C3NEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 09:01:56 -0400
-From: Artem Savkov <artem.savkov@gmail.com>
-To: dannybaumann@web.de
-Cc: aaron.lu@intel.com, rafael.j.wysocki@intel.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Artem Savkov <artem.savkov@gmail.com>
-Subject: [PATCH] acpi/video: lcd_get_level_current doen't return current level
-Date: Sat, 30 Mar 2013 17:01:41 +0400
-Message-Id: <1364648501-5127-1-git-send-email-artem.savkov@gmail.com>
-X-Mailer: git-send-email 1.8.2
+	Sat, 30 Mar 2013 09:04:09 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, Manjunath Goudar <manjunath.goudar@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v4 1/6] USB: EHCI: make ehci-orion a separate driver
+Date: Sat, 30 Mar 2013 14:04:18 +0100
+Message-Id: <1364648663-29296-2-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1364648663-29296-1-git-send-email-arnd@arndb.de>
+References: <1364648663-29296-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:FYWUuGuwIMriWWN5y2bX0cm3mg0C4rtuaZdkzaXTnol
+ KzoalwsuOf79prbdWfYn9nfAXEKwIwQgmAqgHjZ410NW30qzNZ
+ jaYHg5+hYONIoFpbyELeJtbFmP2oQ+X+ZuWXXX+niIgyLwd9+l
+ tvMg7RKvM+HIvfzYeA+x/wXLPhlzvAZ5O3MuI/cnM4OktAUM7c
+ ZexHGJySlAEdYEITewbtLokTn6bRbusGn5VFhNcoPoxUW4rtZq
+ p81U19kRXg3ILH19se41wkRcmjMFBmm5ASgpvWqjgr5JeUXwN2
+ ZSCGMQ157oS5jnTp1+HeONhM/6n5cBZ86M3lsyjCMJaQGaowXO
+ 37MKpCM4CQSCDgIhUkMIO4XFfkzopEWvzgWDOgiKTX5lke1+d0
+ 5jRenX+Dy1vdw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acpi_video_device_lcd_get_level_current() called acpi_video_bqc_value_to_level()
-with "*level" as a second argument, resulting in level being returned based on
-initial input, not current brightness, breaking backlight controls.
+From: Manjunath Goudar <manjunath.goudar@linaro.org>
 
-Signed-off-by: Artem Savkov <artem.savkov@gmail.com>
+Separate the Orion host controller driver from ehci-hcd host
+code into its own driver module because of following reason.
+
+With the multiplatform changes in arm-soc tree, it becomes
+possible to enable the mvebu platform (which uses
+ehci-orion) at the same time as other platforms that require
+a conflicting EHCI bus glue. At the moment, this results
+in a warning like
+
+drivers/usb/host/ehci-hcd.c:1297:0: warning: "PLATFORM_DRIVER" redefined [enabled by default]
+drivers/usb/host/ehci-hcd.c:1277:0: note: this is the location of the previous definition
+drivers/usb/host/ehci-orion.c:334:31: warning: 'ehci_orion_driver' defined but not used [-Wunused-variable]
+
+and an ehci driver that only works on one of them.
+
+With the infrastructure added by Alan Stern in patch 3e0232039
+"USB: EHCI: prepare to make ehci-hcd a library module", we can
+avoid this problem by turning a bus glue into a separate
+module, as we do here for the orion bus glue.
+
+An earlier version of this patch was included in 3.9 but caused
+a regression there, which has subsequently been fixed.
+
+While we are here, use the opportunity to disabiguate the two
+Marvell EHCI controller implementations in Kconfig.
+
+In V3:
+1.More detail provided in commit message regarding this patch.
+2.Replaced hcd_name string "ehci-orion" into "orion-ehci".
+3.MODULE_LICENSE is GPL v2.
+4.In ehci_init_driver calling second argument passed  as NULL instead of
+   ehci_orion_overrides because ehci_orion_overrides is removed.
+
+In V2:
+Tegra patch related changes removed from this patch.
+
+Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Tested-by: Andrew Lunn <andrew@lunn.ch>
+Cc: Greg KH <greg@kroah.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
 ---
- drivers/acpi/video.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/host/Kconfig      | 17 ++++++++-
+ drivers/usb/host/Makefile     |  1 +
+ drivers/usb/host/ehci-hcd.c   |  6 +---
+ drivers/usb/host/ehci-orion.c | 82 ++++++++++++++++++-------------------------
+ 4 files changed, 53 insertions(+), 53 deletions(-)
 
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index 3cdd047..68a777b 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -505,7 +505,8 @@ acpi_video_device_lcd_get_level_current(struct acpi_video_device *device,
- 				return 0;
- 			}
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 2f68221..e5649c1 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -163,6 +163,17 @@ config USB_EHCI_HCD_OMAP
+ 	  Enables support for the on-chip EHCI controller on
+ 	  OMAP3 and later chips.
  
--			*level = acpi_video_bqc_value_to_level(device, *level);
-+			*level = acpi_video_bqc_value_to_level(device,
-+					device->brightness->curr);
++config USB_EHCI_HCD_ORION
++	tristate  "Support for Marvell EBU on-chip EHCI USB controller"
++	depends on USB_EHCI_HCD && PLAT_ORION
++	default y
++	---help---
++	  Enables support for the on-chip EHCI controller on Marvell's
++	  embedded ARM SoCs, including Orion, Kirkwood, Dove, Armada XP,
++	  Armada 370.  This is different from the EHCI implementation
++	  on Marvell's mobile PXA and MMP SoC, see "EHCI support for
++	  Marvell PXA/MMP USB controller" for those.
++
+ config USB_EHCI_MSM
+ 	bool "Support for MSM on-chip EHCI USB controller"
+ 	depends on USB_EHCI_HCD && ARCH_MSM
+@@ -206,13 +217,17 @@ config USB_EHCI_S5P
+ 	 Enable support for the S5P SOC's on-chip EHCI controller.
  
- 			for (i = 2; i < device->brightness->count; i++)
- 				if (device->brightness->levels[i] == *level) {
+ config USB_EHCI_MV
+-	bool "EHCI support for Marvell on-chip controller"
++	bool "EHCI support for Marvell PXA/MMP USB controller"
+ 	depends on USB_EHCI_HCD && (ARCH_PXA || ARCH_MMP)
+ 	select USB_EHCI_ROOT_HUB_TT
+ 	---help---
+ 	  Enables support for Marvell (including PXA and MMP series) on-chip
+ 	  USB SPH and OTG controller. SPH is a single port host, and it can
+ 	  only be EHCI host. OTG is controller that can switch to host mode.
++	  Note that this driver will not work on Marvell's other EHCI
++	  controller used by the EBU-type SoCs including Orion, Kirkwood,
++	  Dova, Armada 370 and Armada XP. See "Support for Marvell EBU
++	  on-chip EHCI USB controller" for those.
+ 
+ config USB_W90X900_EHCI
+ 	bool "W90X900(W90P910) EHCI support"
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index 56de410..9492f50 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -28,6 +28,7 @@ obj-$(CONFIG_USB_EHCI_PCI)	+= ehci-pci.o
+ obj-$(CONFIG_USB_EHCI_HCD_PLATFORM)	+= ehci-platform.o
+ obj-$(CONFIG_USB_EHCI_MXC)	+= ehci-mxc.o
+ obj-$(CONFIG_USB_EHCI_HCD_OMAP)	+= ehci-omap.o
++obj-$(CONFIG_USB_EHCI_HCD_ORION)	+= ehci-orion.o
+ 
+ obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
+ obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index b12b97d..1f97268 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1249,11 +1249,6 @@ MODULE_LICENSE ("GPL");
+ #define XILINX_OF_PLATFORM_DRIVER	ehci_hcd_xilinx_of_driver
+ #endif
+ 
+-#ifdef CONFIG_PLAT_ORION
+-#include "ehci-orion.c"
+-#define	PLATFORM_DRIVER		ehci_orion_driver
+-#endif
+-
+ #ifdef CONFIG_USB_W90X900_EHCI
+ #include "ehci-w90x900.c"
+ #define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
+@@ -1319,6 +1314,7 @@ MODULE_LICENSE ("GPL");
+ 	!IS_ENABLED(CONFIG_USB_CHIPIDEA_HOST) && \
+ 	!IS_ENABLED(CONFIG_USB_EHCI_MXC) && \
+ 	!IS_ENABLED(CONFIG_USB_EHCI_HCD_OMAP) && \
++	!IS_ENABLED(CONFIG_USB_EHCI_HCD_ORION) && \
+ 	!defined(PLATFORM_DRIVER) && \
+ 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
+ 	!defined(OF_PLATFORM_DRIVER) && \
+diff --git a/drivers/usb/host/ehci-orion.c b/drivers/usb/host/ehci-orion.c
+index 38c45fb..54c5794 100644
+--- a/drivers/usb/host/ehci-orion.c
++++ b/drivers/usb/host/ehci-orion.c
+@@ -17,6 +17,12 @@
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+ #include <linux/of_irq.h>
++#include <linux/usb.h>
++#include <linux/usb/hcd.h>
++#include <linux/io.h>
++#include <linux/dma-mapping.h>
++
++#include "ehci.h"
+ 
+ #define rdl(off)	__raw_readl(hcd->regs + (off))
+ #define wrl(off, val)	__raw_writel((val), hcd->regs + (off))
+@@ -34,6 +40,12 @@
+ #define USB_PHY_IVREF_CTRL	0x440
+ #define USB_PHY_TST_GRP_CTRL	0x450
+ 
++#define DRIVER_DESC "EHCI orion driver"
++
++static const char hcd_name[] = "ehci-orion";
++
++static struct hc_driver __read_mostly ehci_orion_hc_driver;
++
+ /*
+  * Implement Orion USB controller specification guidelines
+  */
+@@ -104,51 +116,6 @@ static void orion_usb_phy_v1_setup(struct usb_hcd *hcd)
+ 	wrl(USB_MODE, 0x13);
+ }
+ 
+-static const struct hc_driver ehci_orion_hc_driver = {
+-	.description = hcd_name,
+-	.product_desc = "Marvell Orion EHCI",
+-	.hcd_priv_size = sizeof(struct ehci_hcd),
+-
+-	/*
+-	 * generic hardware linkage
+-	 */
+-	.irq = ehci_irq,
+-	.flags = HCD_MEMORY | HCD_USB2,
+-
+-	/*
+-	 * basic lifecycle operations
+-	 */
+-	.reset = ehci_setup,
+-	.start = ehci_run,
+-	.stop = ehci_stop,
+-	.shutdown = ehci_shutdown,
+-
+-	/*
+-	 * managing i/o requests and associated device resources
+-	 */
+-	.urb_enqueue = ehci_urb_enqueue,
+-	.urb_dequeue = ehci_urb_dequeue,
+-	.endpoint_disable = ehci_endpoint_disable,
+-	.endpoint_reset = ehci_endpoint_reset,
+-
+-	/*
+-	 * scheduling support
+-	 */
+-	.get_frame_number = ehci_get_frame,
+-
+-	/*
+-	 * root hub support
+-	 */
+-	.hub_status_data = ehci_hub_status_data,
+-	.hub_control = ehci_hub_control,
+-	.bus_suspend = ehci_bus_suspend,
+-	.bus_resume = ehci_bus_resume,
+-	.relinquish_port = ehci_relinquish_port,
+-	.port_handed_over = ehci_port_handed_over,
+-
+-	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
+-};
+-
+ static void
+ ehci_orion_conf_mbus_windows(struct usb_hcd *hcd,
+ 			     const struct mbus_dram_target_info *dram)
+@@ -323,8 +290,6 @@ static int ehci_orion_drv_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-MODULE_ALIAS("platform:orion-ehci");
+-
+ static const struct of_device_id ehci_orion_dt_ids[] = {
+ 	{ .compatible = "marvell,orion-ehci", },
+ 	{},
+@@ -341,3 +306,26 @@ static struct platform_driver ehci_orion_driver = {
+ 		.of_match_table = of_match_ptr(ehci_orion_dt_ids),
+ 	},
+ };
++
++static int __init ehci_orion_init(void)
++{
++	if (usb_disabled())
++		return -ENODEV;
++
++	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
++
++	ehci_init_driver(&ehci_orion_hc_driver, NULL);
++	return platform_driver_register(&ehci_orion_driver);
++}
++module_init(ehci_orion_init);
++
++static void __exit ehci_orion_cleanup(void)
++{
++	platform_driver_unregister(&ehci_orion_driver);
++}
++module_exit(ehci_orion_cleanup);
++
++MODULE_DESCRIPTION(DRIVER_DESC);
++MODULE_ALIAS("platform:orion-ehci");
++MODULE_AUTHOR("Tzachi Perelstein");
++MODULE_LICENSE("GPL v2");
 -- 
-1.8.2
+1.8.1.2
 
