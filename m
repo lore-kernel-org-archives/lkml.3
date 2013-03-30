@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab3C3Mn3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 08:43:29 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:33670 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756639Ab3C3Mn0 (ORCPT
+	id S1756634Ab3C3Mnl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 08:43:41 -0400
+Received: from mail-da0-f41.google.com ([209.85.210.41]:39675 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756685Ab3C3Mn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 08:43:26 -0400
-Date: Sat, 30 Mar 2013 13:43:19 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, bowgotsai@google.com
-Subject: Re: [PATCH] r8169: fix auto speed down issue
-Message-ID: <20130330124319.GB19236@electric-eye.fr.zoreil.com>
-References: <1364541062-9024-1-git-send-email-hayeswang@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364541062-9024-1-git-send-email-hayeswang@realtek.com>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 30 Mar 2013 08:43:28 -0400
+Message-ID: <1364647402.3822.1.camel@phoenix>
+Subject: [PATCH] pwm: spear: Fix checking return value of clk_enable() and
+ clk_prepare()
+From: Axel Lin <axel.lin@ingics.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Shiraz Hashim <shiraz.hashim@st.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Date: Sat, 30 Mar 2013 20:43:22 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hayes Wang <hayeswang@realtek.com> :
-[...]
-> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-> index 28fb50a..a9eedf7 100644
-> --- a/drivers/net/ethernet/realtek/r8169.c
-> +++ b/drivers/net/ethernet/realtek/r8169.c
-> @@ -3818,6 +3818,21 @@ static void rtl_init_mdio_ops(struct rtl8169_private *tp)
->  	}
->  }
->  
-> +static void rtl_speed_down(struct rtl8169_private *tp)
-> +{
-> +	u32	adv;
-> +	int	lpa;
-> +
-> +	rtl_writephy(tp, 0x1f, 0x0000);
-> +	lpa = rtl_readphy(tp, MII_LPA);
-> +
-> +	adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full;
-> +	if (!(lpa & (ADVERTISE_10HALF | ADVERTISE_10FULL)))
+The logic to check return value of clk_enable() and clk_prepare() is reversed,
+fix it.
 
-You may use the LPA_* #defines here.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Cc: <stable@vger.kernel.org>
+---
+This is v3 of "pwm: spear: Fix enable pwm output".
+I change the subject line because it also fixes checking return value of
+clk_prepare().
+Also add cc stable.
 
+Axel
+
+ drivers/pwm/pwm-spear.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pwm/pwm-spear.c b/drivers/pwm/pwm-spear.c
+index 69a2d9e..3223b57 100644
+--- a/drivers/pwm/pwm-spear.c
++++ b/drivers/pwm/pwm-spear.c
+@@ -143,7 +143,7 @@ static int spear_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 	u32 val;
+ 
+ 	rc = clk_enable(pc->clk);
+-	if (!rc)
++	if (rc)
+ 		return rc;
+ 
+ 	val = spear_pwm_readl(pc, pwm->hwpwm, PWMCR);
+@@ -209,12 +209,12 @@ static int spear_pwm_probe(struct platform_device *pdev)
+ 	pc->chip.npwm = NUM_PWM;
+ 
+ 	ret = clk_prepare(pc->clk);
+-	if (!ret)
++	if (ret)
+ 		return ret;
+ 
+ 	if (of_device_is_compatible(np, "st,spear1340-pwm")) {
+ 		ret = clk_enable(pc->clk);
+-		if (!ret) {
++		if (ret) {
+ 			clk_unprepare(pc->clk);
+ 			return ret;
+ 		}
 -- 
-Ueimor
+1.7.10.4
+
+
+
