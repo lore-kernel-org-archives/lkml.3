@@ -1,100 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab3C3WbW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 18:31:22 -0400
-Received: from smtp-out.abv.bg ([194.153.145.70]:34978 "EHLO smtp-out.abv.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754092Ab3C3WbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 18:31:21 -0400
-DomainKey-Signature: a=rsa-sha1; s=smtp-out; d=abv.bg; c=simple; q=dns;
-	b=jwDLR7e3bBo5Tv7cjNL/lhYjachy2Qg4IMXHfa/6gbmuThz/JnD1tmjGIXWTBmS2K
-	w+HcG7zvbLQqhWmfflt7P0TE01gTzArJ78mz+STCnRCcF75BpQngshMp55JFMLDbXnf
-	ff8YML06Dq9bWWzbdnRpS1nMsZFZOaj5Hl10zWc=
-Date: Sun, 31 Mar 2013 00:31:18 +0200 (EET)
-From: =?UTF-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: pali.rohar@gmail.com, tony@atomide.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1838509461.25809.1364682678664.JavaMail.apache@mail83.abv.bg>
-Subject: Re: [PATCH] arm: omap: RX-51: ARM errata 430973 workaround
+	id S1754693Ab3C3WlT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 18:41:19 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:48420 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754334Ab3C3WlQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Mar 2013 18:41:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Priority: 3
-X-Mailer: AbvMail 1.0
-X-Originating-IP: 130.204.50.168
+In-Reply-To: <20130330194933.GB1005@amd.pavel.ucw.cz>
+References: <512606DF.5050706@redhat.com> <4FA345DA4F4AE44899BD2B03EEEC2FA9235D998C@SACEXCMBX04-PRD.hq.netapp.com>
+ <512635D2.4090207@redhat.com> <51267CEB.8070805@redhat.com>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com>
+ <20130221222449.GY22221@lenny.home.zabbo.net> <512BD44C.40907@amacapital.net>
+ <20130226210232.GA19510@logfs.org> <20130330194933.GB1005@amd.pavel.ucw.cz>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 30 Mar 2013 15:40:55 -0700
+Message-ID: <CALCETrVB_6V8nqKJ_moRN4VnV=pHRJen2iSLybAc39XbjyBFdg@mail.gmail.com>
+Subject: Re: New copyfile system call - discuss before LSF?
+To: Pavel Machek <pavel@ucw.cz>
+Cc: =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>,
+        Zach Brown <zab@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chris L. Mason" <clmason@fusionio.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
+        Hannes Reinecke <hare@suse.de>, Joel Becker <jlbec@evilplan.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-Hi,
+On Sat, Mar 30, 2013 at 12:49 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+>> > I thought the first thing people would ask for is to atomically create a
+>> > new file and copy the old file into it (at least on local file systems).
+>> >  The idea is that nothing should see an empty destination file, either
+>> > by race or by crash.  (This feature would perhaps be described as a
+>> > pony, but it should be implementable.)
+>>
+>> Having already wasted many week trying to implement your pony, I would
+>> consider it about as possible as winning the lottery three times in a
+>> row.  It clearly is in theory and yet,...
+>
+> Hmm, really? AFAICT it would be simple to provide open_deleted_file("directory")
+> syscall. You'd open_deleted_file(), copy source file into it, then
+> fsync(), then link it into filesystem.
 
- >-------- Оригинално писмо --------
- >От:  Pavel Machek 
- >Относно: Re: [PATCH] arm: omap: RX-51: ARM errata 430973 workaround
- >До: Pali Rohár 
- >Изпратено на: Събота, 2013, Март 30 20:36:54 EET
- >
- >
- >Hi!
- >
- >> +u32 rx51_secure_dispatcher(u32 idx, u32 flag, u32 nargs, u32 arg1, u32 arg2,
- >> +			   u32 arg3, u32 arg4)
- >> +{
- >> +	u32 ret;
- >> +	u32 param[5];
- >> +
- >> +	param[0] = nargs+1;
- >> +	param[1] = arg1;
- >> +	param[2] = arg2;
- >> +	param[3] = arg3;
- >> +	param[4] = arg4;
- >> +
- >> +	/*
- >> +	 * Secure API needs physical address
- >> +	 * pointer for the parameters
- >> +	 */
- >> +	flush_cache_all();
- >> +	outer_clean_range(__pa(param), __pa(param + 5));
- >> +	ret = rx51_ppa_smc(idx, flag, __pa(param));
- >> +
- >> +	return ret;
- >> +}
- >
- >You can do without ret variable... Also more detailed changelog would
- >be nice... like what exact problem this works around.
- >
+Isn't linking a deleted file back into the filesystem explicitly
+forbidden?  I'm pretty sure that linking from /proc/fd/whatever
+doesn't work.  (I've often wanted a flink system call that takes a
+file descriptor and links it somewhere.  If it came with an option to
+control whether it would overwrite an existing file, even better.)
 
-Sure i can, but I don't see a reason to ignore SM's return value. Changelog of what?
- >
- >
- >So... some CPU errata where code sharing virtual addresses could be
- >executed improperly?
- >								
- >> @@ -103,6 +104,12 @@ static void __init rx51_init(void)
- >>  	rx51_peripherals_init();
- >>  	rx51_camera_init();
- >>  
- >> +#ifdef CONFIG_ARM_ERRATA_430973
- >> +	printk(KERN_INFO &quot;Enabling ARM errata 430973 workaround.&#92;n&quot;);
- >> +	/* set IBE to 1 */
- >> +	rx51_secure_update_aux_cr(1 << 6, 0);
- >> +#endif
- >> +
- >
- >Thanks,
- >								Pavel
- >
- >-- 
- >(english) http://www.livejournal.com/~pavelmachek
- >(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
- >
-
-I guess if you read the thread over the ML you'll have your questions already answered. 
-Or google for "ARM errata 430973 workaround" :).
-
-Regards,
-Ivo
+--Andy
