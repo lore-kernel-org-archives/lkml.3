@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757058Ab3C3OgH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 10:36:07 -0400
+	id S1757187Ab3C3Oiq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 10:38:46 -0400
 Received: from mga14.intel.com ([143.182.124.37]:36513 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756868Ab3C3Ofw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 10:35:52 -0400
+	id S1756861Ab3C3OgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Mar 2013 10:36:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,378,1363158000"; 
-   d="scan'208";a="220568221"
+   d="scan'208";a="220568286"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
@@ -16,9 +16,9 @@ To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
 Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
         linux-kernel@vger.kernel.org, alex.shi@intel.com
-Subject: [patch v6 07/21] sched: add new sg/sd_lb_stats fields for incoming fork/exec/wake balancing
-Date: Sat, 30 Mar 2013 22:34:54 +0800
-Message-Id: <1364654108-16307-8-git-send-email-alex.shi@intel.com>
+Subject: [patch v6 12/21] sched: add power aware scheduling in fork/exec/wake
+Date: Sat, 30 Mar 2013 22:34:59 +0800
+Message-Id: <1364654108-16307-13-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
 References: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
@@ -26,40 +26,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For power aware balancing, we care the sched domain/group's utilization.
-So add: sd_lb_stats.sd_util and sg_lb_stats.group_util.
+This patch add power aware scheduling in fork/exec/wake. It try to
+select cpu from the busiest while still has utilization group. That's
+will save power since it leaves more groups idle in system.
 
-And want to know which group is busiest but still has capability to
-handle more tasks, so add: sd_lb_stats.group_leader
+The trade off is adding a power aware statistics collection in group
+seeking. But since the collection just happened in power scheduling
+eligible condition, the worst case of hackbench testing just drops
+about 2% with powersaving policy. No clear change for performance
+policy.
+
+The main function in this patch is get_cpu_for_power_policy(), that
+will try to get a idlest cpu from the busiest while still has
+utilization group, if the system is using power aware policy and
+has such group.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ kernel/sched/fair.c | 109 +++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 103 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index a165f52..dda6809 100644
+index 8ac021f..83b2c39 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -4203,6 +4203,10 @@ struct sd_lb_stats {
- 	unsigned int  busiest_group_weight;
- 
- 	int group_imb; /* Is there imbalance in this sd */
-+
-+	/* Varibles of power awaring scheduling */
-+	unsigned int  sd_util;	/* sum utilization of this domain */
-+	struct sched_group *group_leader; /* Group which relieves group_min */
- };
+@@ -3368,25 +3368,113 @@ static unsigned int max_rq_util(int cpu)
+ }
  
  /*
-@@ -4218,6 +4222,7 @@ struct sg_lb_stats {
- 	unsigned long group_weight;
- 	int group_imb; /* Is there an imbalance in the group ? */
- 	int group_has_capacity; /* Is there extra capacity in the group? */
-+	unsigned int group_util;	/* sum utilization of group */
- };
+- * sched_balance_self: balance the current task (running on cpu) in domains
++ * Try to collect the task running number and capacity of the group.
++ */
++static void get_sg_power_stats(struct sched_group *group,
++	struct sched_domain *sd, struct sg_lb_stats *sgs)
++{
++	int i;
++
++	for_each_cpu(i, sched_group_cpus(group))
++		sgs->group_util += max_rq_util(i);
++
++	sgs->group_weight = group->group_weight;
++}
++
++/*
++ * Is this domain full of utilization with the task?
++ */
++static int is_sd_full(struct sched_domain *sd,
++		struct task_struct *p, struct sd_lb_stats *sds)
++{
++	struct sched_group *group;
++	struct sg_lb_stats sgs;
++	long sd_min_delta = LONG_MAX;
++	unsigned int putil;
++
++	if (p->se.load.weight == p->se.avg.load_avg_contrib)
++		/* p maybe a new forked task */
++		putil = FULL_UTIL;
++	else
++		putil = (u64)(p->se.avg.runnable_avg_sum << SCHED_POWER_SHIFT)
++				/ (p->se.avg.runnable_avg_period + 1);
++
++	/* Try to collect the domain's utilization */
++	group = sd->groups;
++	do {
++		long g_delta;
++
++		memset(&sgs, 0, sizeof(sgs));
++		get_sg_power_stats(group, sd, &sgs);
++
++		g_delta = sgs.group_weight * FULL_UTIL - sgs.group_util;
++
++		if (g_delta > 0 && g_delta < sd_min_delta) {
++			sd_min_delta = g_delta;
++			sds->group_leader = group;
++		}
++
++		sds->sd_util += sgs.group_util;
++	} while  (group = group->next, group != sd->groups);
++
++	if (sds->sd_util + putil < sd->span_weight * FULL_UTIL)
++		return 0;
++
++	/* can not hold one more task in this domain */
++	return 1;
++}
++
++/*
++ * Execute power policy if this domain is not full.
++ */
++static inline int get_sd_sched_balance_policy(struct sched_domain *sd,
++	int cpu, struct task_struct *p, struct sd_lb_stats *sds)
++{
++	if (sched_balance_policy == SCHED_POLICY_PERFORMANCE)
++		return SCHED_POLICY_PERFORMANCE;
++
++	memset(sds, 0, sizeof(*sds));
++	if (is_sd_full(sd, p, sds))
++		return SCHED_POLICY_PERFORMANCE;
++	return sched_balance_policy;
++}
++
++/*
++ * If power policy is eligible for this domain, and it has task allowed cpu.
++ * we will select CPU from this domain.
++ */
++static int get_cpu_for_power_policy(struct sched_domain *sd, int cpu,
++		struct task_struct *p, struct sd_lb_stats *sds)
++{
++	int policy;
++	int new_cpu = -1;
++
++	policy = get_sd_sched_balance_policy(sd, cpu, p, sds);
++	if (policy != SCHED_POLICY_PERFORMANCE && sds->group_leader)
++		new_cpu = find_idlest_cpu(sds->group_leader, p, cpu);
++
++	return new_cpu;
++}
++
++/*
++ * select_task_rq_fair: balance the current task (running on cpu) in domains
+  * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
+  * SD_BALANCE_EXEC.
+  *
+- * Balance, ie. select the least loaded group.
+- *
+  * Returns the target CPU number, or the same CPU if no balancing is needed.
+  *
+  * preempt must be disabled.
+  */
+ static int
+-select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
++select_task_rq_fair(struct task_struct *p, int sd_flag, int flags)
+ {
+ 	struct sched_domain *tmp, *affine_sd = NULL, *sd = NULL;
+ 	int cpu = smp_processor_id();
+ 	int prev_cpu = task_cpu(p);
+ 	int new_cpu = cpu;
+ 	int want_affine = 0;
+-	int sync = wake_flags & WF_SYNC;
++	int sync = flags & WF_SYNC;
++	struct sd_lb_stats sds;
  
- /**
+ 	if (p->nr_cpus_allowed == 1)
+ 		return prev_cpu;
+@@ -3412,11 +3500,20 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 			break;
+ 		}
+ 
+-		if (tmp->flags & sd_flag)
++		if (tmp->flags & sd_flag) {
+ 			sd = tmp;
++
++			new_cpu = get_cpu_for_power_policy(sd, cpu, p, &sds);
++			if (new_cpu != -1)
++				goto unlock;
++		}
+ 	}
+ 
+ 	if (affine_sd) {
++		new_cpu = get_cpu_for_power_policy(affine_sd, cpu, p, &sds);
++		if (new_cpu != -1)
++			goto unlock;
++
+ 		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
+ 			prev_cpu = cpu;
+ 
 -- 
 1.7.12
 
