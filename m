@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab3C3WB0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 18:01:26 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:48064 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752679Ab3C3WBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 18:01:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, arvind.chauhan@arm.com, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, jacob.shin@amd.com
-Subject: Re: [PATCH V4 0/2] Implement per policy instance of governor
-Date: Sat, 30 Mar 2013 23:08:56 +0100
-Message-ID: <1656173.qmCdUDP7Pu@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpon_C3LYe++cOb_9fgtz=DfQV_vWRNuH=UVXcKOO14GUhQ@mail.gmail.com>
-References: <cover.1364398686.git.viresh.kumar@linaro.org> <2566297.LngxUqUYMZ@vostro.rjw.lan> <CAKohpon_C3LYe++cOb_9fgtz=DfQV_vWRNuH=UVXcKOO14GUhQ@mail.gmail.com>
+	id S1754549Ab3C3WHK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 18:07:10 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:32877 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754259Ab3C3WHI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Mar 2013 18:07:08 -0400
+Message-ID: <51576207.4090607@suse.cz>
+Date: Sat, 30 Mar 2013 23:07:03 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Michal Hocko <mhocko@suse.cz>
+CC: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd reclaims
+ at each priority
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-2-git-send-email-mgorman@suse.de> <20130325090758.GO2154@dhcp22.suse.cz> <51501545.50908@suse.cz> <5154C4B6.102@suse.cz> <20130329082257.GB21227@dhcp22.suse.cz>
+In-Reply-To: <20130329082257.GB21227@dhcp22.suse.cz>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, March 30, 2013 09:06:37 AM Viresh Kumar wrote:
-> On 30 March 2013 07:47, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Wednesday, March 27, 2013 09:28:56 PM Viresh Kumar wrote:
+On 03/29/2013 09:22 AM, Michal Hocko wrote:
+> On Thu 28-03-13 23:31:18, Jiri Slaby wrote:
+>> On 03/25/2013 10:13 AM, Jiri Slaby wrote:
+>>> BTW I very pray this will fix also the issue I have when I run ltp tests
+>>> (highly I/O intensive, esp. `growfiles') in a VM while playing a movie
+>>> on the host resulting in a stuttered playback ;).
+>>
+>> No, this is still terrible. I was now updating a kernel in a VM and had
+>> problems to even move with cursor.
 > 
-> >> To test these over linux-next you need to revert following first:
-> >> db9baec cpufreq: Get rid of "struct global_attr"
-> >> 86bd6f0 cpufreq: governor: Implement per policy instances of governors
-> >> 8ae67b1 cpufreq: Add per policy governor-init/exit infrastructure
+> :/
 > 
-> > I've applied these two patches and re-applied the queue on top of them.
-> >
-> > All is in my linux-next branch now.
+>> There was still 1.2G used by I/O cache.
 > 
-> You were supposed to remove below patch too, which you missed :)
-> 
-> c7baa5e cpufreq: Get rid of "struct global_attr"
+> Could you collect /proc/zoneinfo and /proc/vmstat (say in 1 or 2s
+> intervals)?
 
-OK, I'll remove it.
+Sure:
+http://www.fi.muni.cz/~xslaby/sklad/zoneinfos.tar.xz
 
-And by the way, I'm no longer amused with the mess going on in the cpufreq land.
+I ran the update like 10 s after I started taking snapshots. Mplayer
+immediately started complaining:
 
-Please send me *patches*.  I'm not interested in git pointers.
+           ************************************************
+           **** Your system is too SLOW to play this!  ****
+           ************************************************
+etc.
 
-Moreover, please send those patches in a way allowing me to figure out the
-ordering without looking into your git tree.
-
-If you have a number of outstanding cpufreq patches for me to apply, please
-create a patch series out of them and send it.
-
-Thanks,
-Rafael
-
-
+thanks,
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+js
+suse labs
