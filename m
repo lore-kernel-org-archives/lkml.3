@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab3C3Kbi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 06:31:38 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:11955 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753260Ab3C3Kbg (ORCPT
+	id S1755400Ab3C3L1k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 07:27:40 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:38249 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754155Ab3C3L1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 06:31:36 -0400
-Message-ID: <5156BECE.9070701@huawei.com>
-Date: Sat, 30 Mar 2013 18:30:38 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Sat, 30 Mar 2013 07:27:39 -0400
+Message-ID: <5156CB90.5060209@linux.vnet.ibm.com>
+Date: Sat, 30 Mar 2013 16:55:04 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] checkpatch: do not exit in main process subroutine
-References: <5153BC45.807@huawei.com>
-In-Reply-To: <5153BC45.807@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Alex Shi <alex.shi@intel.com>
+CC: mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Subject: Re: [patch v5 14/15] sched: power aware load balance
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-15-git-send-email-alex.shi@intel.com> <514941C5.6080007@linux.vnet.ibm.com> <514ABA19.1080807@intel.com> <514AC7B2.7030400@linux.vnet.ibm.com> <514AD26F.9010905@intel.com> <514AE07A.10100@linux.vnet.ibm.com> <514BB452.2070906@intel.com> <514BE8AC.6000607@linux.vnet.ibm.com> <514FD801.8070403@intel.com> <51558C31.1060605@linux.vnet.ibm.com> <515599AD.5090901@intel.com>
+In-Reply-To: <515599AD.5090901@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+x-cbid: 13033011-6102-0000-0000-0000033D1C75
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/3/28 11:43, zhangwei(Jovi) wrote:
-> Currently checkpatch program exit when process empty file,
-> This will cause issue when @ARGV include many files ready to check.
+On 03/29/2013 07:09 PM, Alex Shi wrote:
+> On 03/29/2013 08:42 PM, Preeti U Murthy wrote:
+>>>> did you try the simplest benchmark: while true; do :; done
+>> Yeah I tried out this while true; do :; done benchmark on a vm which ran
 > 
-> For example, there may have Module.symvers empty file in kernel directory.
+> Thanks a lot for trying!
 > 
-> [root@jovi ~]# scripts/checkpatch.pl -f kernel/*
-> 
-> then many file "after" empty file will not be check by script.
-> so disallow exit in main process subroutine.
-> 
-> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Joe, Ping?
+> What's do you mean 'vm'? Virtual machine?
 
-> ---
->  scripts/checkpatch.pl |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index b28cc38..6924733 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -3634,19 +3634,19 @@ sub process {
->  	# If we have no input at all, then there is nothing to report on
->  	# so just keep quiet.
->  	if ($#rawlines == -1) {
-> -		exit(0);
-> +		return $clean;
->  	}
-> 
->  	# In mailback mode only produce a report in the negative, for
->  	# things that appear to be patches.
->  	if ($mailback && ($clean == 1 || !$is_patch)) {
-> -		exit(0);
-> +		return $clean;
->  	}
-> 
->  	# This is not a patch, and we are are in 'no-patch' mode so
->  	# just keep quiet.
->  	if (!$chk_patch && !$is_patch) {
-> -		exit(0);
-> +		return $clean;
->  	}
-> 
->  	if (!$is_patch) {
-> 
+Yes.
 
+> 
+>> on 2 socket, 2 cores each socket and 2 threads each core emulation.
+>> I ran two instances of this loop with balance policy on, and it was
+>> found that there was one instance running on each socket, rather than
+>> both instances getting consolidated on one socket.
+>>
+>> But when I apply the change where we do not consider rq->util if it has
+>> no nr_running on the rq,the two instances of the above benchmark get
+>> consolidated onto one socket.
+>>
+>>
+> 
+> I don't know much of virtual machine, guess the unstable VCPU to CPU pin
+> cause rq->util keep large? Did you try to pin VCPU to physical CPU?
+
+No I hadn't done any vcpu to cpu pinning but why did the situation
+drastically alter to consolidate the load when the rq->util for the
+runqueues with 0 tasks on them was not considered as part of sgs->utils?
+
+> 
+> I still give the rq->util weight even the nr_running is 0, because some
+> transitory tasks may actived on the cpu, but just missed on balancing point.
+> 
+> I just wondering that forgetting rq->util when nr_running = 0 is the
+> real root cause if your finding is just on VM and without fixed VCPU to
+> CPU pin.
+
+I find the same situation on a physical machine too. On a 2 socket, 4
+core machine as well. In fact, using trace_printks in the load balancing
+part, I could find that the reason that the load was not getting
+consolidated onto a socket was because the rq->util of a run-queue with
+no processes on it, had not decayed to 0, which is why it would consider
+the socket as overloaded and would  rule out power aware balancing.All
+this was on a physical machine.
+
+Regards
+Preeti U Murthy
+
+
+> 
+> 
 
