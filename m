@@ -1,145 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab3C3WpT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 18:45:19 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:36769 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754420Ab3C3WpQ (ORCPT
+	id S1754651Ab3C3WvN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 18:51:13 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:41906 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951Ab3C3WvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 18:45:16 -0400
-Date: Sat, 30 Mar 2013 15:41:17 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        David Woodhouse <dwmw2@infradead.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [REPOST Patch v1 3/3] power: power_supply_core: Add support for
- supplied_from
-Message-ID: <20130330224117.GA24610@lizard>
-References: <1364264690-2124-1-git-send-email-rklein@nvidia.com>
- <1364264690-2124-4-git-send-email-rklein@nvidia.com>
+	Sat, 30 Mar 2013 18:51:12 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH v2] New Nokia RX-51 power supply battery driver
+Date: Sat, 30 Mar 2013 23:51:05 +0100
+User-Agent: KMail/1.13.7 (Linux/3.5.0-27-generic; KDE/4.10.1; x86_64; ; )
+Cc: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
+        linux-kernel@vger.kernel.org, Joerg Reisenweber <joerg@openmoko.org>,
+        Ivaylo Dimitrov <freemangordon@abv.bg>
+References: <19040462.WFXWijAIDd@pali> <20130330183526.GA21198@lizard> <20130330214229.GA4322@amd.pavel.ucw.cz>
+In-Reply-To: <20130330214229.GA4322@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1364264690-2124-4-git-send-email-rklein@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart9163613.goIJd1fXvr";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303302351.06611@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 10:24:50PM -0400, Rhyland Klein wrote:
-[...]
-> +int power_supply_find_supply_from_node(struct device_node *supply_node)
-> +{
-> +	int error;
-> +	struct device *dev;
-> +	struct class_dev_iter iter;
-> +
-> +	/* Use iterator to see if any other device is registered.
-> +	 * This is required since class_for_each_device returns 0
-> +	 * if there are no devices registered.
-> +	 */
+--nextPart9163613.goIJd1fXvr
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Minor nit: can you please adhere to the canonical style for the multiline
-comments?
+On Saturday 30 March 2013 22:42:29 Pavel Machek wrote:
+> On Sat 2013-03-30 11:35:26, Anton Vorontsov wrote:
+> > On Sat, Mar 30, 2013 at 07:07:05PM +0100, Pavel Machek wrote:
+> > > On Wed 2012-10-31 10:48:40, Pali Roh=C3=A1r wrote:
+> > > > Hello, I fixed style issues and added it to Makefile and
+> > > > Kconfig.
+> > > >=20
+> > > > power_supply: Add Nokia RX-51 battery driver
+> > > >=20
+> > > > This driver exporting battery design capacity,
+> > > > temperature and voltage for battery in Nokia RX-51.
+> > > > This driver is needed for open source battery
+> > > > management on Nokia RX-51 (N900).
+> > > >=20
+> > > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > >=20
+> > > Reviewed-by: Pavel Machek <pavel@ucw.cz>
+> >=20
+> > Thanks for the review, Pavel! Although, the patch is in
+> > Linus' tree long ago. ;-)
+>=20
+> Yeah... I did a bit of history-digging ;-). Now, I should
+> figure out how to put custom kernel on n900 _and_ keep it in
+> working state at the same time.
+>=20
+> (I installed some kind of multiboot, then, apt decided to
+> install some u-boot extension. Then it got interesting. I
+> never got my own kernel to work, and u-boot magically
+> disappeared, but I still have working phone :-).
+>=20
+> 									Pavel
 
-> +	class_dev_iter_init(&iter, power_supply_class, NULL, NULL);
-> +	dev = class_dev_iter_next(&iter);
-> +
-> +	if (!dev)
-> +		return -EPROBE_DEFER;
-> +
-> +	/* we have to treat the return value as inverted, because if
-> +	 * we return error on not found, then it won't continue looking.
-> +	 * So we trick it by returning error on success to stop looking
-> +	 * once the matching device is found.
-> +	 */
+Hello Pavel,
 
-Ditto.
+here are some hints for booting 3.8+ kernel on n900:
 
-> +	error = class_for_each_device(power_supply_class, NULL, supply_node,
-> +				       __power_supply_find_supply_from_node);
-> +
-> +	return error ? 0 : -EPROBE_DEFER;
-> +}
-> +
-> +int power_supply_check_supplies(struct power_supply *psy)
-> +{
-> +	struct device_node *np;
-> +	int cnt = 0;
-> +	int ret = 0;
-> +
-> +	/* If there is already a list honor it */
-> +	if (psy->supplied_from && psy->num_supplies > 0)
-> +		return 0;
-> +
-> +	/* No device node found, nothing to do */
-> +	if (!psy->of_node)
-> +		return 0;
-> +
-> +	do {
+"multiboot" package from Maemo Extras is horrible hack which can=20
+be used only for booting maemo 2.6.28 kernel. it flashing new=20
+kernel to n900 nand, then reboot device, start maemo init and=20
+mount/chroot into new os dir... after reboot it erasing kernel=20
+nand area where is normaly uboot placed, so do not install it!
 
-You can move 'int ret;' here (without initializer).
+uboot in Maemo Extras cannot boot 3.x kernels because autobuilder=20
+(Extras server app for buidling packages) has very old gcc which=20
+produced semi-(non)working uboot (can boot some 2.6 kernels).
 
-> +		np = of_parse_phandle(psy->of_node, "power-supplies", cnt++);
-> +		if (!np)
-> +			continue;
-> +
-> +		ret = power_supply_find_supply_from_node(np);
-> +		if (ret) {
-> +			dev_dbg(psy->dev, "Failed to find supply, defer!\n");
-> +			return -EPROBE_DEFER;
-> +		}
-> +	} while (np);
-> +
-> +	/* All supplies found, allocate char ** array for filling */
-> +	psy->supplied_from = devm_kzalloc(psy->dev, sizeof(psy->supplied_from),
-> +					  GFP_KERNEL);
-> +	if (!psy->supplied_from) {
-> +		dev_err(psy->dev, "Couldn't allocate memory for supply list\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	*psy->supplied_from = devm_kzalloc(psy->dev, sizeof(char *) * cnt,
-> +					   GFP_KERNEL);
-> +	if (!*psy->supplied_from) {
-> +		dev_err(psy->dev, "Couldn't allocate memory for supply list\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	ret = power_supply_populate_supplied_from(psy);
-> +
-> +	return ret;
+my uboot builds compiled by gcc 4.7 (which can boot 3.8 kernel):=20
+http://atrey.karlin.mff.cuni.cz/~pali/u-boot/
 
-can be just 'return power_supply_populate_supplied_from(psy);'
+info thread about uboot on n900:
+http://talk.maemo.org/showthread.php?t=3D81613
 
-> +}
-> +#endif
-> +
->  static int __power_supply_am_i_supplied(struct device *dev, void *data)
->  {
->  	union power_supply_propval ret = {0,};
-> @@ -359,6 +486,14 @@ int power_supply_register(struct device *parent, struct power_supply *psy)
->  
->  	INIT_WORK(&psy->changed_work, power_supply_changed_work);
->  
-> +#ifdef CONFIG_OF
-> +	rc = power_supply_check_supplies(psy);
-> +	if (rc) {
-> +		dev_info(dev, "Not all required supplies found, defer probe\n");
-> +		goto check_supplies_failed;
-> +	}
-> +#endif
-[...]
-> +#ifdef CONFIG_OF
-> +check_supplies_failed:
-> +#endif
+kernel git repository with n900 patches (now based on v3.8-rc3):
+https://gitorious.org/linux-n900/linux-n900
 
-Can you make an empty, static inline stub for
-power_supply_check_supplies() for !CONFIG_OF case, so that we won't need
-#ifdefs inside this function?
+open source flasher 0xFFFF (working on x86-64 too) which can load=20
+kernel and initfs via usb to n900 RAM without flashing nand:
+https://gitorious.org/0xffff/0xffff
 
-Otherwise it looks great, thanks a lot!
+rescueOS - minimalistic n900 initrams distribution with usb mass=20
+storage (eMMC and SD) and usb cdc ether for telnet console
+http://206.253.166.96/N900/rescueOS/
 
-Anton
+If you need help with booting some upstream kernel on n900 join=20
+to freenode #maemo-alternatives channel :-)
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart9163613.goIJd1fXvr
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlFXbFoACgkQi/DJPQPkQ1KCfQCdHaHVcqe8Opu0hs5Kht3Hmxzk
+/hcAnjl3KJXtkYzUPZDaUgSz1qEZ9WxZ
+=kSmo
+-----END PGP SIGNATURE-----
+
+--nextPart9163613.goIJd1fXvr--
