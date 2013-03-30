@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab3C3Ldy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 07:33:54 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:47659 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665Ab3C3Ldw (ORCPT
+	id S1755249Ab3C3Lh2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 07:37:28 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:54182 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754155Ab3C3Lh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 07:33:52 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, robin.randhawa@arm.com, Steve.Bannister@arm.com,
-        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
-        arvind.chauhan@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] cpufreq: Documentation: Fix cpufreq_frequency_table name
-Date: Sat, 30 Mar 2013 17:03:42 +0530
-Message-Id: <31fdc77dace301ffe3f71a258a8e0f1b013fb5df.1364643195.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Sat, 30 Mar 2013 07:37:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH v3 1/7] USB: EHCI: make ehci-orion a separate driver
+Date: Sat, 30 Mar 2013 11:37:20 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-usb@vger.kernel.org, Manjunath Goudar <manjunath.goudar@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>, Russell King <linux@arm.linux.org.uk>
+References: <Pine.LNX.4.44L0.1303291342540.1467-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1303291342540.1467-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303301137.21039.arnd@arndb.de>
+X-Provags-ID: V02:K0:YxWsbQccyUkbUKnBqtjZRl3USjq3LqZswyKl6GFop/r
+ P0CfHv9bqNmdBfCawyJLis6GsGNJm3R5ugeYnwVYlRHk+/4qtD
+ JIi0xXe1Qya158uE+Q7qoiJQM0SuK8Nyx6JF95gxLs7dmByHnE
+ a3Q5WF20X7yH6OVMGtdCfZw5JW1rVlgfNT+u80pbXDTXUME4/P
+ OSiMd8dzCgu2kK4+9ELh5YaijcUcNfLilDfImSeCm2C3y7eLtU
+ sc84W6FFwnPnY+WJDiDItalgZRm5fHNtWa6aaemlletmgez2zo
+ oComX3eWV0vfUFdIPxuGtAXcvxoUkMzOMubKvqLprj51hEukIp
+ 0+mEHh74iT0XNReDSjrk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At few places in documentation cpufreq_frequency_table is written as
-cpufreq_freq_table. Fix these.
+On Friday 29 March 2013, Alan Stern wrote:
+> I don't know about this last phrase.  When someone is running "make 
+> menuconfig", for example, what shows up is the symbol's description, 
+> not the symbol's name.  That person would see "EHCI support for Marvell 
+> on-chip controller", not "USB_EHCI_MV".
+> 
+> In fact, shouldn't the description for USB_EHCI_MV be changed too, to 
+> make it more distinct from this one?
+> 
+> All the code changes are fine.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- Documentation/cpu-freq/cpu-drivers.txt | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Ok, I've included these Kconfig changes. Originally, the text change
+for PXA/MMP was included in the patch for ehci-mv, but that one is
+deferred to 3.11 now because of dependencies for the platform code that
+we want to first merge in 3.10.
 
-diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
-index c94383f..a3585ea 100644
---- a/Documentation/cpu-freq/cpu-drivers.txt
-+++ b/Documentation/cpu-freq/cpu-drivers.txt
-@@ -185,10 +185,10 @@ the reference implementation in drivers/cpufreq/longrun.c
- As most cpufreq processors only allow for being set to a few specific
- frequencies, a "frequency table" with some functions might assist in
- some work of the processor driver. Such a "frequency table" consists
--of an array of struct cpufreq_freq_table entries, with any value in
-+of an array of struct cpufreq_frequency_table entries, with any value in
- "index" you want to use, and the corresponding frequency in
- "frequency". At the end of the table, you need to add a
--cpufreq_freq_table entry with frequency set to CPUFREQ_TABLE_END. And
-+cpufreq_frequency_table entry with frequency set to CPUFREQ_TABLE_END. And
- if you want to skip one entry in the table, set the frequency to 
- CPUFREQ_ENTRY_INVALID. The entries don't need to be in ascending
- order.
--- 
-1.7.12.rc2.18.g61b472e
-
+	Arnd
