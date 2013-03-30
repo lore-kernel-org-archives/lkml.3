@@ -1,379 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040Ab3C3GeR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 02:34:17 -0400
-Received: from sauhun.de ([89.238.76.85]:49076 "EHLO pokefinder.org"
+	id S1755284Ab3C3Gs6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 02:48:58 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29577 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754721Ab3C3GeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 02:34:15 -0400
-Date: Sat, 30 Mar 2013 07:34:05 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ben Dooks <ben-linux@fluff.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Shawn Guo <shawn.guo@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Lars Poeschel <poeschel@lemonage.de>
-Subject: Re: [PATCH 3/6] i2c: Ignore return value of i2c_del_adapter()
-Message-ID: <20130330063405.GB3469@the-dreams.de>
-References: <1362853009-20789-1-git-send-email-lars@metafoo.de>
- <1362853009-20789-4-git-send-email-lars@metafoo.de>
+	id S1755057Ab3C3Gsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Mar 2013 02:48:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,377,1363158000"; 
+   d="scan'208";a="313991870"
+Date: Sat, 30 Mar 2013 08:53:03 +0200
+From: Mika Westerberg <mika.westerberg@intel.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 1/6] dma: acpi-dma: introduce ACPI DMA helpers
+Message-ID: <20130330065303.GD21804@intel.com>
+References: <1364374682-8547-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1364374682-8547-2-git-send-email-andriy.shevchenko@linux.intel.com>
+ <20130329203543.GY10326@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1362853009-20789-4-git-send-email-lars@metafoo.de>
+In-Reply-To: <20130329203543.GY10326@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 09, 2013 at 07:16:46PM +0100, Lars-Peter Clausen wrote:
-> i2c_del_adapter() always returns 0. So all checks testing whether it will be
-> non zero will always evaluate to false and the conditional code is dead code.
-> This patch updates all callers of i2c_del_mux_adapter() to ignore the return
-> value and assume that it will always succeed (which it will). In a subsequent
-> patch the return type of i2c_del_adapter() will be made void.
+On Sat, Mar 30, 2013 at 02:05:43AM +0530, Vinod Koul wrote:
+> On Wed, Mar 27, 2013 at 10:57:57AM +0200, Andy Shevchenko wrote:
+> > + * @dev:	struct device to get DMA request from
+> > + * @index:	index of FixedDMA descriptor for @dev
+> > + *
+> > + * Returns pointer to appropriate dma channel on success or NULL on error.
+> > + */
+> > +struct dma_chan *acpi_dma_request_slave_chan_by_index(struct device *dev,
+> > +		size_t index)
+> > +{
+> So i think this will be called by client driver to request a channel right?
 > 
-> Cc: Jean Delvare <khali@linux-fr.org>
-> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Cc: Ben Hutchings <bhutchings@solarflare.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Alan Cox <alan@linux.intel.com>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
-> Cc: Marek Vasut <marex@denx.de> (commit_signer:11/20=55%)
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Lars Poeschel <poeschel@lemonage.de>
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> If so how does client find the device pointer for dma controller.
 
-Ping for more acks outside the i2c realm.
+It doesn't have to. the client passes pointer to it's own device to this
+function.
 
-> ---
->  drivers/gpu/drm/gma500/oaktrail_hdmi_i2c.c   |  3 +--
->  drivers/i2c/busses/i2c-amd756-s4882.c        |  6 +-----
->  drivers/i2c/busses/i2c-at91.c                |  5 ++---
->  drivers/i2c/busses/i2c-cbus-gpio.c           |  4 +++-
->  drivers/i2c/busses/i2c-intel-mid.c           |  3 +--
->  drivers/i2c/busses/i2c-mv64xxx.c             |  5 ++---
->  drivers/i2c/busses/i2c-mxs.c                 |  5 +----
->  drivers/i2c/busses/i2c-nforce2-s4985.c       |  6 +-----
->  drivers/i2c/busses/i2c-powermac.c            | 10 ++--------
->  drivers/i2c/busses/i2c-puv3.c                | 10 ++--------
->  drivers/i2c/busses/i2c-viperboard.c          |  5 ++---
->  drivers/i2c/i2c-mux.c                        |  5 +----
->  drivers/media/pci/bt8xx/bttv-input.c         |  6 +++---
->  drivers/media/pci/mantis/mantis_i2c.c        |  4 +++-
->  drivers/net/ethernet/sfc/falcon.c            |  6 ++----
->  drivers/staging/media/go7007/go7007-driver.c |  7 ++-----
->  16 files changed, 29 insertions(+), 61 deletions(-)
+> And index is a global one, right? What is it use ?
+
+It is the index in the client device's ACPI DMA resources. It is explained
+in the documentation but it refers to something like:
+
+	Device (SPI0) 
+	{
+		Method (_CRS, 0, NotSerialized)
+		{
+			Name (RBUF, ResourceTemplate ()
+			{
+				// Bunch of resources...
+				FixedDMA(...)	// This will be index 0
+				FixedDMA(...)	// and this is 1
+				// More resources..
+			}
+
+			Return (RBUF)
+		}
+	}
+
+So we use the index to refer the correct DMA resource in the resource list.
+
+> > +	struct acpi_dma_parser_data pdata;
+> > +	struct acpi_dma_spec *dma_spec = &pdata.dma_spec;
+> > +	struct list_head resource_list;
+> > +	struct acpi_device *adev;
+> > +	struct acpi_dma *adma;
+> > +	struct dma_chan *chan;
+> > +
+> > +	/* Check if the device was enumerated by ACPI */
+> > +	if (!dev || !ACPI_HANDLE(dev))
+> > +		return NULL;
+> > +
+> > +	if (acpi_bus_get_device(ACPI_HANDLE(dev), &adev))
+> > +		return NULL;
+> > +
+> > +	memset(&pdata, 0, sizeof(pdata));
+> > +	pdata.index = index;
+> > +
+> > +	/* Initial values for the request line and channel */
+> > +	dma_spec->chan_id = -1;
+> > +	dma_spec->slave_id = -1;
+> > +
+> > +	INIT_LIST_HEAD(&resource_list);
+> > +	acpi_dev_get_resources(adev, &resource_list,
+> > +			acpi_dma_parse_fixed_dma, &pdata);
+> > +	acpi_dev_free_resource_list(&resource_list);
+> > +
+> > +	if (dma_spec->slave_id < 0 || dma_spec->chan_id < 0)
+> > +		return NULL;
+> > +
+> > +	mutex_lock(&acpi_dma_lock);
+> > +
+> > +	list_for_each_entry(adma, &acpi_dma_list, dma_controllers) {
+> > +		dma_spec->dev = adma->dev;
+> > +		chan = adma->acpi_dma_xlate(dma_spec, adma);
+> > +		if (chan) {
+> > +			mutex_unlock(&acpi_dma_lock);
+> > +			return chan;
+> > +		}
+> > +	}
+> > +
+> > +	mutex_unlock(&acpi_dma_lock);
+> > +	return NULL;
+> in this and error handling you are not doing anything different so why code
+> duplication?
+
+There is no specific reason for that. We can change it to goto + return
+chan in the next revision.
+
 > 
-> diff --git a/drivers/gpu/drm/gma500/oaktrail_hdmi_i2c.c b/drivers/gpu/drm/gma500/oaktrail_hdmi_i2c.c
-> index 88627e3..1eb86c7 100644
-> --- a/drivers/gpu/drm/gma500/oaktrail_hdmi_i2c.c
-> +++ b/drivers/gpu/drm/gma500/oaktrail_hdmi_i2c.c
-> @@ -319,8 +319,7 @@ void oaktrail_hdmi_i2c_exit(struct pci_dev *dev)
->  	struct hdmi_i2c_dev *i2c_dev;
->  
->  	hdmi_dev = pci_get_drvdata(dev);
-> -	if (i2c_del_adapter(&oaktrail_hdmi_i2c_adapter))
-> -		DRM_DEBUG_DRIVER("Failed to delete hdmi-i2c adapter\n");
-> +	i2c_del_adapter(&oaktrail_hdmi_i2c_adapter);
->  
->  	i2c_dev = hdmi_dev->i2c_dev;
->  	kfree(i2c_dev);
-> diff --git a/drivers/i2c/busses/i2c-amd756-s4882.c b/drivers/i2c/busses/i2c-amd756-s4882.c
-> index 378fcb5..07f01ac 100644
-> --- a/drivers/i2c/busses/i2c-amd756-s4882.c
-> +++ b/drivers/i2c/busses/i2c-amd756-s4882.c
-> @@ -169,11 +169,7 @@ static int __init amd756_s4882_init(void)
->  	}
->  
->  	/* Unregister physical bus */
-> -	error = i2c_del_adapter(&amd756_smbus);
-> -	if (error) {
-> -		dev_err(&amd756_smbus.dev, "Physical bus removal failed\n");
-> -		goto ERROR0;
-> -	}
-> +	i2c_del_adapter(&amd756_smbus);
->  
->  	printk(KERN_INFO "Enabling SMBus multiplexing for Tyan S4882\n");
->  	/* Define the 5 virtual adapters and algorithms structures */
-> diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-> index 75195e3..6604587 100644
-> --- a/drivers/i2c/busses/i2c-at91.c
-> +++ b/drivers/i2c/busses/i2c-at91.c
-> @@ -785,12 +785,11 @@ static int at91_twi_probe(struct platform_device *pdev)
->  static int at91_twi_remove(struct platform_device *pdev)
->  {
->  	struct at91_twi_dev *dev = platform_get_drvdata(pdev);
-> -	int rc;
->  
-> -	rc = i2c_del_adapter(&dev->adapter);
-> +	i2c_del_adapter(&dev->adapter);
->  	clk_disable_unprepare(dev->clk);
->  
-> -	return rc;
-> +	return 0;
->  }
->  
->  #ifdef CONFIG_PM
-> diff --git a/drivers/i2c/busses/i2c-cbus-gpio.c b/drivers/i2c/busses/i2c-cbus-gpio.c
-> index 98386d6..1be13ac 100644
-> --- a/drivers/i2c/busses/i2c-cbus-gpio.c
-> +++ b/drivers/i2c/busses/i2c-cbus-gpio.c
-> @@ -206,7 +206,9 @@ static int cbus_i2c_remove(struct platform_device *pdev)
->  {
->  	struct i2c_adapter *adapter = platform_get_drvdata(pdev);
->  
-> -	return i2c_del_adapter(adapter);
-> +	i2c_del_adapter(adapter);
-> +
-> +	return 0;
->  }
->  
->  static int cbus_i2c_probe(struct platform_device *pdev)
-> diff --git a/drivers/i2c/busses/i2c-intel-mid.c b/drivers/i2c/busses/i2c-intel-mid.c
-> index 323fa01..0fb6597 100644
-> --- a/drivers/i2c/busses/i2c-intel-mid.c
-> +++ b/drivers/i2c/busses/i2c-intel-mid.c
-> @@ -1082,8 +1082,7 @@ static void intel_mid_i2c_remove(struct pci_dev *dev)
->  {
->  	struct intel_mid_i2c_private *mrst = pci_get_drvdata(dev);
->  	intel_mid_i2c_disable(&mrst->adap);
-> -	if (i2c_del_adapter(&mrst->adap))
-> -		dev_err(&dev->dev, "Failed to delete i2c adapter");
-> +	i2c_del_adapter(&mrst->adap);
->  
->  	free_irq(dev->irq, mrst);
->  	iounmap(mrst->base);
-> diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
-> index 8b20ef8..3bbd65d 100644
-> --- a/drivers/i2c/busses/i2c-mv64xxx.c
-> +++ b/drivers/i2c/busses/i2c-mv64xxx.c
-> @@ -701,9 +701,8 @@ static int
->  mv64xxx_i2c_remove(struct platform_device *dev)
->  {
->  	struct mv64xxx_i2c_data		*drv_data = platform_get_drvdata(dev);
-> -	int	rc;
->  
-> -	rc = i2c_del_adapter(&drv_data->adapter);
-> +	i2c_del_adapter(&drv_data->adapter);
->  	free_irq(drv_data->irq, drv_data);
->  	mv64xxx_i2c_unmap_regs(drv_data);
->  #if defined(CONFIG_HAVE_CLK)
-> @@ -715,7 +714,7 @@ mv64xxx_i2c_remove(struct platform_device *dev)
->  #endif
->  	kfree(drv_data);
->  
-> -	return rc;
-> +	return 0;
->  }
->  
->  static const struct of_device_id mv64xxx_i2c_of_match_table[] = {
-> diff --git a/drivers/i2c/busses/i2c-mxs.c b/drivers/i2c/busses/i2c-mxs.c
-> index 120f246..804eb6b 100644
-> --- a/drivers/i2c/busses/i2c-mxs.c
-> +++ b/drivers/i2c/busses/i2c-mxs.c
-> @@ -686,11 +686,8 @@ static int mxs_i2c_probe(struct platform_device *pdev)
->  static int mxs_i2c_remove(struct platform_device *pdev)
->  {
->  	struct mxs_i2c_dev *i2c = platform_get_drvdata(pdev);
-> -	int ret;
->  
-> -	ret = i2c_del_adapter(&i2c->adapter);
-> -	if (ret)
-> -		return -EBUSY;
-> +	i2c_del_adapter(&i2c->adapter);
->  
->  	if (i2c->dmach)
->  		dma_release_channel(i2c->dmach);
-> diff --git a/drivers/i2c/busses/i2c-nforce2-s4985.c b/drivers/i2c/busses/i2c-nforce2-s4985.c
-> index 29015eb..2ca268d 100644
-> --- a/drivers/i2c/busses/i2c-nforce2-s4985.c
-> +++ b/drivers/i2c/busses/i2c-nforce2-s4985.c
-> @@ -164,11 +164,7 @@ static int __init nforce2_s4985_init(void)
->  	}
->  
->  	/* Unregister physical bus */
-> -	error = i2c_del_adapter(nforce2_smbus);
-> -	if (error) {
-> -		dev_err(&nforce2_smbus->dev, "Physical bus removal failed\n");
-> -		goto ERROR0;
-> -	}
-> +	i2c_del_adapter(nforce2_smbus);
->  
->  	printk(KERN_INFO "Enabling SMBus multiplexing for Tyan S4985\n");
->  	/* Define the 5 virtual adapters and algorithms structures */
-> diff --git a/drivers/i2c/busses/i2c-powermac.c b/drivers/i2c/busses/i2c-powermac.c
-> index da54e67..8dc90da 100644
-> --- a/drivers/i2c/busses/i2c-powermac.c
-> +++ b/drivers/i2c/busses/i2c-powermac.c
-> @@ -213,14 +213,8 @@ static const struct i2c_algorithm i2c_powermac_algorithm = {
->  static int i2c_powermac_remove(struct platform_device *dev)
->  {
->  	struct i2c_adapter	*adapter = platform_get_drvdata(dev);
-> -	int			rc;
-> -
-> -	rc = i2c_del_adapter(adapter);
-> -	/* We aren't that prepared to deal with this... */
-> -	if (rc)
-> -		printk(KERN_WARNING
-> -		       "i2c-powermac.c: Failed to remove bus %s !\n",
-> -		       adapter->name);
-> +
-> +	i2c_del_adapter(adapter);
->  	memset(adapter, 0, sizeof(*adapter));
->  
->  	return 0;
-> diff --git a/drivers/i2c/busses/i2c-puv3.c b/drivers/i2c/busses/i2c-puv3.c
-> index 261d7db..4fd47bc 100644
-> --- a/drivers/i2c/busses/i2c-puv3.c
-> +++ b/drivers/i2c/busses/i2c-puv3.c
-> @@ -234,21 +234,15 @@ static int puv3_i2c_remove(struct platform_device *pdev)
->  {
->  	struct i2c_adapter *adapter = platform_get_drvdata(pdev);
->  	struct resource *mem;
-> -	int rc;
->  
-> -	rc = i2c_del_adapter(adapter);
-> -	if (rc) {
-> -		dev_err(&pdev->dev, "Adapter '%s' delete fail\n",
-> -				adapter->name);
-> -		return rc;
-> -	}
-> +	i2c_del_adapter(adapter);
->  
->  	put_device(&pdev->dev);
->  
->  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	release_mem_region(mem->start, resource_size(mem));
->  
-> -	return rc;
-> +	return 0;
->  }
->  
->  #ifdef CONFIG_PM
-> diff --git a/drivers/i2c/busses/i2c-viperboard.c b/drivers/i2c/busses/i2c-viperboard.c
-> index f45c32c..c68450c 100644
-> --- a/drivers/i2c/busses/i2c-viperboard.c
-> +++ b/drivers/i2c/busses/i2c-viperboard.c
-> @@ -421,11 +421,10 @@ error:
->  static int vprbrd_i2c_remove(struct platform_device *pdev)
->  {
->  	struct vprbrd_i2c *vb_i2c = platform_get_drvdata(pdev);
-> -	int ret;
->  
-> -	ret = i2c_del_adapter(&vb_i2c->i2c);
-> +	i2c_del_adapter(&vb_i2c->i2c);
->  
-> -	return ret;
-> +	return 0;
->  }
->  
->  static struct platform_driver vprbrd_i2c_driver = {
-> diff --git a/drivers/i2c/i2c-mux.c b/drivers/i2c/i2c-mux.c
-> index d94e0ce..361b78d 100644
-> --- a/drivers/i2c/i2c-mux.c
-> +++ b/drivers/i2c/i2c-mux.c
-> @@ -194,11 +194,8 @@ EXPORT_SYMBOL_GPL(i2c_add_mux_adapter);
->  int i2c_del_mux_adapter(struct i2c_adapter *adap)
->  {
->  	struct i2c_mux_priv *priv = adap->algo_data;
-> -	int ret;
->  
-> -	ret = i2c_del_adapter(adap);
-> -	if (ret < 0)
-> -		return ret;
-> +	i2c_del_adapter(adap);
->  	kfree(priv);
->  
->  	return 0;
-> diff --git a/drivers/media/pci/bt8xx/bttv-input.c b/drivers/media/pci/bt8xx/bttv-input.c
-> index 04207a7..f42d26d 100644
-> --- a/drivers/media/pci/bt8xx/bttv-input.c
-> +++ b/drivers/media/pci/bt8xx/bttv-input.c
-> @@ -413,10 +413,10 @@ void init_bttv_i2c_ir(struct bttv *btv)
->  
->  int fini_bttv_i2c(struct bttv *btv)
->  {
-> -	if (0 != btv->i2c_rc)
-> -		return 0;
-> +	if (btv->i2c_rc == 0)
-> +		i2c_del_adapter(&btv->c.i2c_adap);
->  
-> -	return i2c_del_adapter(&btv->c.i2c_adap);
-> +	return 0;
->  }
->  
->  int bttv_input_init(struct bttv *btv)
-> diff --git a/drivers/media/pci/mantis/mantis_i2c.c b/drivers/media/pci/mantis/mantis_i2c.c
-> index 937fb9d..895ddba 100644
-> --- a/drivers/media/pci/mantis/mantis_i2c.c
-> +++ b/drivers/media/pci/mantis/mantis_i2c.c
-> @@ -261,6 +261,8 @@ int mantis_i2c_exit(struct mantis_pci *mantis)
->  	mmwrite((intmask & ~MANTIS_INT_I2CDONE), MANTIS_INT_MASK);
->  
->  	dprintk(MANTIS_DEBUG, 1, "Removing I2C adapter");
-> -	return i2c_del_adapter(&mantis->adapter);
-> +	i2c_del_adapter(&mantis->adapter);
-> +
-> +	return 0;
->  }
->  EXPORT_SYMBOL_GPL(mantis_i2c_exit);
-> diff --git a/drivers/net/ethernet/sfc/falcon.c b/drivers/net/ethernet/sfc/falcon.c
-> index 49bcd19..defed0e 100644
-> --- a/drivers/net/ethernet/sfc/falcon.c
-> +++ b/drivers/net/ethernet/sfc/falcon.c
-> @@ -1528,7 +1528,7 @@ static int falcon_probe_nic(struct efx_nic *efx)
->  	return 0;
->  
->   fail6:
-> -	BUG_ON(i2c_del_adapter(&board->i2c_adap));
-> +	i2c_del_adapter(&board->i2c_adap);
->  	memset(&board->i2c_adap, 0, sizeof(board->i2c_adap));
->   fail5:
->  	efx_nic_free_buffer(efx, &efx->irq_status);
-> @@ -1665,13 +1665,11 @@ static void falcon_remove_nic(struct efx_nic *efx)
->  {
->  	struct falcon_nic_data *nic_data = efx->nic_data;
->  	struct falcon_board *board = falcon_board(efx);
-> -	int rc;
->  
->  	board->type->fini(efx);
->  
->  	/* Remove I2C adapter and clear it in preparation for a retry */
-> -	rc = i2c_del_adapter(&board->i2c_adap);
-> -	BUG_ON(rc);
-> +	i2c_del_adapter(&board->i2c_adap);
->  	memset(&board->i2c_adap, 0, sizeof(board->i2c_adap));
->  
->  	efx_nic_free_buffer(efx, &efx->irq_status);
-> diff --git a/drivers/staging/media/go7007/go7007-driver.c b/drivers/staging/media/go7007/go7007-driver.c
-> index 6695091..6f83c52 100644
-> --- a/drivers/staging/media/go7007/go7007-driver.c
-> +++ b/drivers/staging/media/go7007/go7007-driver.c
-> @@ -647,11 +647,8 @@ EXPORT_SYMBOL(go7007_alloc);
->  void go7007_remove(struct go7007 *go)
->  {
->  	if (go->i2c_adapter_online) {
-> -		if (i2c_del_adapter(&go->i2c_adapter) == 0)
-> -			go->i2c_adapter_online = 0;
-> -		else
-> -			v4l2_err(&go->v4l2_dev,
-> -				"error removing I2C adapter!\n");
-> +		i2c_del_adapter(&go->i2c_adapter);
-> +		go->i2c_adapter_online = 0;
->  	}
->  
->  	if (go->audio_enabled)
-> -- 
-> 1.8.0
-> 
+> > +}
+> > +EXPORT_SYMBOL_GPL(acpi_dma_request_slave_chan_by_index);
+> > +
+> > +/**
+> > + * acpi_dma_request_slave_chan_by_name - Get the DMA slave channel
+> > + * @dev:	struct device to get DMA request from
+> > + * @name:	represents corresponding FixedDMA descriptor for @dev
+> > + *
+> > + * In order to support both Device Tree and ACPI in a single driver we
+> > + * translate the names "tx" and "rx" here based on the most common case where
+> > + * the first FixedDMA descriptor is TX and second is RX.
+> > + *
+> > + * Returns pointer to appropriate dma channel on success or NULL on error.
+> > + */
+> > +struct dma_chan *acpi_dma_request_slave_chan_by_name(struct device *dev,
+> > +		const char *name)
+> > +{
+> > +	size_t index;
+> > +
+> > +	if (!strcmp(name, "tx"))
+> > +		index = 0;
+> > +	else if (!strcmp(name, "rx"))
+> > +		index = 1;
+> > +	else
+> > +		return NULL;
+> > +
+> > +	return acpi_dma_request_slave_chan_by_index(dev, index);
+> are you going to a have a different descriptor for tx and rx? Is index only for
+> tx = 0 and rx =1 always. How would a controller be represented which has 8
+> channels, each channel can do DMA in either direction
+
+This is a special case so that we can cope with
+dma_request_slave_channel().
+
+But this has nothing to do with the controller. This is a client API and
+the FixedDMA descriptors are only associated with clients.
+
+For example on Lynxpoint we have a DMA controller you describe above and we
+can use dma_request_slave_channel() with that for each client device
+(HSUART, SPI and I2C) without problems.
+
+> > +}
+> > +EXPORT_SYMBOL_GPL(acpi_dma_request_slave_chan_by_name);
+> > +
+> > +/**
+> > + * acpi_dma_simple_xlate - Simple ACPI DMA engine translation helper
+> > + * @dma_spec: pointer to ACPI DMA specifier
+> > + * @adma: pointer to ACPI DMA controller data
+> > + *
+> > + * A simple translation function for ACPI based devices. Passes &struct
+> > + * dma_spec to the DMA controller driver provided filter function. Returns
+> > + * pointer to the channel if found or %NULL otherwise.
+> > + */
+> > +struct dma_chan *acpi_dma_simple_xlate(struct acpi_dma_spec *dma_spec,
+> > +		struct acpi_dma *adma)
+> > +{
+> > +	struct acpi_dma_filter_info *info = adma->data;
+> what is the purpose of filter here?
+
+It is pretty much the same as with DeviceTree version. There is an example
+of that in the dw_dmac ACPI support patch include in this series.
+
+Basically the controller driver passes the filter (well the
+acpi_dma_filter_info) structure to acpi_dma_controller_register(). It can
+then do the requred setup for the channel once it is found.
+
+> > +
+> > +	if (!info || !info->filter_fn)
+> > +		return NULL;
+> > +
+> > +	return dma_request_channel(info->dma_cap, info->filter_fn, dma_spec);
+> > +}
+> > +EXPORT_SYMBOL_GPL(acpi_dma_simple_xlate);
+> > diff --git a/include/linux/acpi_dma.h b/include/linux/acpi_dma.h
+> > new file mode 100644
+> > index 0000000..d09deab
+> > --- /dev/null
+> > +++ b/include/linux/acpi_dma.h
+> > @@ -0,0 +1,116 @@
+> > +/*
+> > + * ACPI helpers for DMA request / controller
+> > + *
+> > + * Based on of_dma.h
+> > + *
+> > + * Copyright (C) 2013, Intel Corporation
+> > + * Author: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + */
+> > +
+> > +#ifndef __LINUX_ACPI_DMA_H
+> > +#define __LINUX_ACPI_DMA_H
+> > +
+> > +#include <linux/list.h>
+> > +#include <linux/device.h>
+> > +#include <linux/dmaengine.h>
+> > +
+> > +/**
+> > + * struct acpi_dma_spec - slave device DMA resources
+> > + * @chan_id:	channel unique id
+> > + * @slave_id:	request line unique id
+> > + * @dev:	struct device of the DMA controller to be used in the filter
+> > + *		function
+> > + */
+> > +struct acpi_dma_spec {
+> > +	int		chan_id;
+> > +	int		slave_id;
+> > +	struct device	*dev;
+> > +};
+> is this the representation of Fixed DMA, if so why have you omitted transfer widths?
+> I can see obvious benefits of using that 
+
+It is, yes. But we haven't been using the widths with our hardware. BIOS
+seems to set it always 32-bit even though we should access the peripheral
+FIFO using 8-bit transfers for example.
+
+The client never sees these when it uses dma_request_slave_channel() API.
