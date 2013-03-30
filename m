@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757417Ab3C3A3z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 20:29:55 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41410 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757380Ab3C3A3x (ORCPT
+	id S1757434Ab3C3Afn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 20:35:43 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:39661 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757339Ab3C3Afl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 20:29:53 -0400
-Message-ID: <1364603383.16937.60.camel@smoke>
-Subject: Re: [PATCH v3 4/7] USB: EHCI: export ehci_shutdown
-From: Geoff Levand <geoff@infradead.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        Manjunath Goudar <manjunath.goudar@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>
-Date: Fri, 29 Mar 2013 17:29:43 -0700
-In-Reply-To: <Pine.LNX.4.44L0.1303291541460.1467-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1303291541460.1467-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Fri, 29 Mar 2013 20:35:41 -0400
+Message-ID: <51563336.701@huawei.com>
+Date: Sat, 30 Mar 2013 08:35:02 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Glauber Costa <glommer@parallels.com>
+CC: Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] memcg: take reference before releasing rcu_read_lock
+References: <51556CE9.9060000@huawei.com> <5155718A.90108@parallels.com>
+In-Reply-To: <5155718A.90108@parallels.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On 2013/3/29 18:48, Glauber Costa wrote:
+> On 03/29/2013 02:28 PM, Li Zefan wrote:
+>> The memcg is not referenced, so it can be destroyed at anytime right
+>> after we exit rcu read section, so it's not safe to access it.
+>>
+>> To fix this, we call css_tryget() to get a reference while we're still
+>> in rcu read section.
+>>
+>> This also removes a bogus comment above __memcg_create_cache_enqueue().
+>>
+> Out of curiosity, did you see that happening ?
+> 
 
-> Actually, I think this is not necessary.  Instead those three glue
-> files ought to be changed.  They should not need to call
-> ehci_shutdown() directly.
+Just by code inspection. This is not the only place you use RCU in this
+wrong way. Remember the last patch I sent? ;)
 
-I sent out a separate patch that removes the ehci_shutdown()
-call in ps3_ehci_remove().  I tested it by removing and
-installing the ehci_hcd module and it seems to work OK.
-
--Geoff
+> Theoretically, the race you describe seem real, and the fix is sound.
+> 
 
