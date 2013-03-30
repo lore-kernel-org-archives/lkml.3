@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab3C3H4E (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 03:56:04 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:30726 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755170Ab3C3H4C (ORCPT
+	id S1755332Ab3C3IFh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 04:05:37 -0400
+Received: from mail-da0-f53.google.com ([209.85.210.53]:56416 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753611Ab3C3IFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 03:56:02 -0400
-Date: Sat, 30 Mar 2013 08:55:39 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Shawn Guo <shawn.guo@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Lars Poeschel <poeschel@lemonage.de>
-Subject: Re: [PATCH 3/6] i2c: Ignore return value of i2c_del_adapter()
-Message-ID: <20130330085539.442321fa@endymion.delvare>
-In-Reply-To: <1362853009-20789-4-git-send-email-lars@metafoo.de>
-References: <1362853009-20789-1-git-send-email-lars@metafoo.de>
-	<1362853009-20789-4-git-send-email-lars@metafoo.de>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 30 Mar 2013 04:05:32 -0400
+From: Frankie Lin <frankiefrankie.lin@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: open <linux-kernel@vger.kernel.org>,
+        Frankie Lin <frankiefrankie.lin@gmail.com>
+Subject: [PATCH 1/1] TTY Fix NULL pointer error in tty_wakeup
+Date: Sat, 30 Mar 2013 15:58:43 +0800
+Message-Id: <1364630323-3078-1-git-send-email-frankiefrankie.lin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lars-Peter,
+When calling tty_wakeup and the parameter is NULL,the oops will happen.
+The virtual address &tty->flags can not be handled in the kernel space,
+while PC goto test_bit(TTY_DO_WRITE_WAKEUP, &tty->flags).
 
-On Sat,  9 Mar 2013 19:16:46 +0100, Lars-Peter Clausen wrote:
-> i2c_del_adapter() always returns 0.
+Tested on ARM Machine msm8625.
 
-I beg you pardon? i2c_del_adapter() starts with:
+Signed-off-by: Frankie Lin <frankiefrankie.lin@gmail.com>
+---
+ drivers/tty/tty_io.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-int i2c_del_adapter(struct i2c_adapter *adap)
-{
-	int res = 0;
-	struct i2c_adapter *found;
-	struct i2c_client *client, *next;
-
-	/* First make sure that this adapter was ever added */
-	mutex_lock(&core_lock);
-	found = idr_find(&i2c_adapter_idr, adap->nr);
-	mutex_unlock(&core_lock);
-	if (found != adap) {
-		pr_debug("i2c-core: attempting to delete unregistered "
-			 "adapter [%s]\n", adap->name);
-		return -EINVAL;
-	}
-
-	/* Tell drivers about this removal */
-	mutex_lock(&core_lock);
-	res = bus_for_each_drv(&i2c_bus_type, NULL, adap,
-			       __process_removed_adapter);
-	mutex_unlock(&core_lock);
-	if (res)
-		return res;
-(...)
-
-So, no, it doesn't "always return 0".
-
-Thus nack from me.
-
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 05400ac..9c4fb2e 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -519,6 +519,11 @@ void tty_wakeup(struct tty_struct *tty)
+ {
+ 	struct tty_ldisc *ld;
+ 
++	if (!tty) {
++		pr_err("tty is null in function: %s.\n", __func__);
++		return;
++	}
++
+ 	if (test_bit(TTY_DO_WRITE_WAKEUP, &tty->flags)) {
+ 		ld = tty_ldisc_ref(tty);
+ 		if (ld) {
 -- 
-Jean Delvare
+1.7.9.5
+
