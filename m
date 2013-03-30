@@ -1,58 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165Ab3C3SOz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 14:14:55 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35357 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756928Ab3C3SOy (ORCPT
+	id S1757203Ab3C3SRe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 14:17:34 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:15208 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757059Ab3C3SRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 14:14:54 -0400
-Date: Sat, 30 Mar 2013 19:14:51 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Feng Tang <feng.tang@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/5] Add support for S3 non-stop TSC support.
-Message-ID: <20130330181451.GF28947@amd.pavel.ucw.cz>
-References: <1358750325-21217-1-git-send-email-feng.tang@intel.com>
- <50FD48B6.9010202@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50FD48B6.9010202@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 30 Mar 2013 14:17:33 -0400
+Date: Sat, 30 Mar 2013 19:17:20 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] i2c: i2c_del_adapter: Don't treat removing a
+ non-registered adapter as error
+Message-ID: <20130330191720.0134ee7e@endymion.delvare>
+In-Reply-To: <1362853009-20789-3-git-send-email-lars@metafoo.de>
+References: <1362853009-20789-1-git-send-email-lars@metafoo.de>
+	<1362853009-20789-3-git-send-email-lars@metafoo.de>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Sat,  9 Mar 2013 19:16:45 +0100, Lars-Peter Clausen wrote:
+> Currently i2c_del_adapter() returns -EINVAL when it gets an adapter which is not
+> registered. But none of the users of i2c_del_adapter() depend on this behavior,
 
-> >On some new Intel Atom processors (Penwell and Cloverview), there is
-> >a feature that the TSC won't stop S3, say the TSC value won't be
-> >reset to 0 after resume. This feature makes TSC a more reliable
-> >clocksource and could benefit the timekeeping code during system
-> >suspend/resume cycles.
-> >
-> >The enabling efforts include adding new flags for this feature,
-> >modifying clocksource.c and timekeeping.c to support and utilizing
-> >it.
-> >
-> >One remaining question is inside the timekeeping_resume(), we don't
-> >know if it is called by resuming from suspend(s2ram) or from
-> >hibernate(s2disk), as there is no easy way to check it currently.
-> >But it doesn't hurt as these Penwell/Cloverview platforms only have
-> >S3 state, and no S4.
-> >
-> >Please help to review them, thanks!
+At least two used to depend on it actually, and this is even why this
+code was added in the first place. See:
+  http://lists.lm-sensors.org/pipermail/lm-sensors/2004-November/009350.html
+The check was added for the i2c-amd756-s4882 and i2c-nforce2-s4985
+old-style SMBus multiplexing drivers.
+
+Meanwhile a safer check was added:
+
+commit 399d6b26539d83dd734746dc2292d53fbc5807b2
+Author: Jean Delvare <khali@linux-fr.org>
+Date:   Sun Aug 10 22:56:15 2008 +0200
+
+    i2c: Fix oops on bus multiplexer driver loading
+    
+    The two I2C bus multiplexer drivers (i2c-amd756-s4882 and
+    i2c-nforce2-s4985) make use of the bus they want to multiplex before
+    checking if it is really present. Swap the instructions to test for
+    presence first. This fixes a oops reported by Ingo Molnar.
+    
+So these drivers indeed no longer depend on i2c_del_adapter() to detect
+whether their parent I2C adapter has been added or not.
+
+These two drivers should be removed and replaced with code using the
+standard I2C multiplexing infrastructure anyway, but it's not clear
+when anyone will find the time to actually do that.
+
+> so for the sake of being able to sanitize the return type of i2c_del_adapter
+> argue, that the purpose of i2c_del_adapter() is to remove an I2C adapter from
+> the system. If the adapter is not registered in the first place this becomes a
+> no-op. So we can return success without having to do anything.
 > 
-> The patches look reasonable to me.
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> ---
+>  drivers/i2c/i2c-core.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index a853cb3..7727d33 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -1072,7 +1072,7 @@ int i2c_del_adapter(struct i2c_adapter *adap)
+>  	if (found != adap) {
+>  		pr_debug("i2c-core: attempting to delete unregistered "
+>  			 "adapter [%s]\n", adap->name);
+> -		return -EINVAL;
+> +		return 0;
+>  	}
+>  
+>  	/* Tell drivers about this removal */
 
-Not sure... what are advantages? TSC is high resolution, but not
-exactly precise time source... and this only makes resume more
-complex.
+Reviewed-by: Jean Delvare <khali@linux-fr.org>
+
+A more radical approach would be to say that you are simply not
+supposed to try and remove an adapter that was never added, so the
+whole check is pointless and should be removed. After all,
+i2c_unregister_device() and i2c_del_driver() do not have such a check.
+I don't know how cautious other subsystems are but I suspect most don't
+have such a check either.
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Jean Delvare
