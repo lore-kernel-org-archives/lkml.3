@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab3C3Upd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 16:45:33 -0400
-Received: from magic.merlins.org ([209.81.13.136]:36649 "EHLO
-	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752972Ab3C3Upc (ORCPT
+	id S1756410Ab3C3Uu6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 16:50:58 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:31999 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755750Ab3C3Uu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 16:45:32 -0400
-Date: Sat, 30 Mar 2013 13:45:30 -0700
-From: Marc MERLIN <marc@merlins.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
-        edvx1@systemanalysen.net
-Subject: Re: Supporting SYSRQ on broken laptops like the thinkpad T530
-Message-ID: <20130330204530.GF6093@merlins.org>
-References: <20130108230954.GN2044@merlins.org>
- <20130109023643.GA7066@mobil.systemanalysen.net>
- <20130322223141.GQ12428@merlins.org>
- <20130330175628.GA28947@amd.pavel.ucw.cz>
+	Sat, 30 Mar 2013 16:50:57 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18hdvcgQOilBo9uUZBGDPem0SIMB4y+1aA=
+Date: Sat, 30 Mar 2013 16:50:30 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Soeren Moch <smoch@web.de>,
+        Willy Tarreau <w@1wt.eu>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: kirkwood: make use of DT mvsdio on guruplug board
+Message-ID: <20130330205030.GX13280@titan.lakedaemon.net>
+References: <1364043489-17683-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130330175628.GA28947@amd.pavel.ucw.cz>
-X-Sysadmin: BOFH
-X-URL: http://marc.merlins.org/
-X-Operating-System: Proudly running Linux
- 3.7.8-amd64-preempt-20121226-fixwd/Debian wheezy/sid
-X-Mailer: Some Outlooks can't quote properly without this header
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-No-Run: Yes
-X-Broken-Reverse-DNS: no host name for IP address 173.11.111.150
-X-SA-Exim-Connect-IP: 173.11.111.150
-X-SA-Exim-Mail-From: merlin@merlins.org
+In-Reply-To: <1364043489-17683-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 30, 2013 at 06:56:28PM +0100, Pavel Machek wrote:
-> Sometimes it works, sometimes it does not. Don't blame lenovo for
-> that.
+On Sat, Mar 23, 2013 at 01:58:09PM +0100, Sebastian Hesselbarth wrote:
+> Device tree based guruplug boards still use mvsdio platform_data and
+> kirkwood_sdio_init to enable sdio. DT support for sdio is already there,
+> so make use of it.
 > 
-> Maybe it should be modified to take sysrq and _then_ key?
+> This also fixes mvsdio accidentially breaking nand by configuring mpp0
+> to gpio, while used also by nand (nand_io2 on mpp0).
 > 
-> Or maybe we should use something like lshift+rshift+lalt+ralt+key?
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Tested-by: Soeren Moch <smoch@web.de>
+> ---
+> Cc: Soeren Moch <smoch@web.de>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Willy Tarreau <w@1wt.eu>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts |    4 ++++
+>  arch/arm/mach-kirkwood/board-guruplug.c             |    6 ------
+>  2 files changed, 4 insertions(+), 6 deletions(-)
 
-It can't hurt to add alternatives like the one you suggested. They don't
-have to be convenient, although the one you suggest takes 5 fingers at
-the same time :)
+Applied to mvebu/dt
 
-Is there anything that uses
-shift+ctrl+alt + key 
-in userspace?
+thx,
 
-I checked enlightenment 17, they have crazy key bindings, but nothing
-that uses all 3 modifier keys at the same time.
-If that's not safe, feel free to add one or 2 more just to be safe.
-
-Thanks for suggesting this.
-
-Marc
--- 
-"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-Microsoft is to operating systems ....
-                                      .... what McDonalds is to gourmet cooking
-Home page: http://marc.merlins.org/
+Jason.
