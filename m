@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757736Ab3C3C2C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 22:28:02 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:51294 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757721Ab3C3C17 (ORCPT
+	id S1757719Ab3C3C16 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 22:27:58 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:55491 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757651Ab3C3C1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 22:27:59 -0400
+	Fri, 29 Mar 2013 22:27:52 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
         akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org
@@ -18,10 +18,12 @@ Cc: rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
         liqin.chen@sunplusct.com, davem@davemloft.net, lethal@linux-sh.org,
         vgupta@synopsys.com, chris@zankel.net, cmetcalf@tilera.com,
         ysato@users.sourceforge.jp, gxt@mprc.pku.edu.cn, jdike@addtoit.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/5] dump_stack: implement arch-specific hardware description in task dumps
-Date: Fri, 29 Mar 2013 19:27:07 -0700
-Message-Id: <1364610428-2074-5-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>, Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-s390@vger.kernel.org, Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Subject: [PATCH 3/5] dump_stack: consolidate dump_stack() implementations and unify their behaviors
+Date: Fri, 29 Mar 2013 19:27:06 -0700
+Message-Id: <1364610428-2074-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1364610428-2074-1-git-send-email-tj@kernel.org>
 References: <1364610428-2074-1-git-send-email-tj@kernel.org>
@@ -29,229 +31,707 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86 and ia64 can acquire extra hardware identification information
-from DMI and print it along with task dumps; however, the usage isn't
-consistent.
+Both dump_stack() and show_stack() are currently implemented by each
+architecture.  show_stack(NULL, NULL) dumps the backtrace for the
+current task as does dump_stack().  On some archs, dump_stack() prints
+extra information - pid, utsname and so on - in addition to the
+backtrace while the two are identical on other archs.
 
-* x86 show_regs() collects vendor, product and board strings and print
-  them out with PID, comm and utsname.  Some of the information is
-  printed again later in the same dump.
+The usages in arch-independent code of the two functions indicate
+show_stack(NULL, NULL) should print out bare backtrace while
+dump_stack() is used for debugging purposes when something went wrong,
+so it does make sense to print additional information on the task
+which triggered dump_stack().
 
-* warn_slowpath_common() explicitly accesses the DMI board and prints
-  it out with "Hardware name:" label.  This applies to both x86 and
-  ia64 but is irrelevant on all other archs.
+There's no reason to require archs to implement two separate but
+mostly identical functions.  It leads to unnecessary subtle
+differences among archs and makes it very tedius to add generic debug
+information.
 
-* ia64 doesn't show DMI information on other non-WARN dumps.
+This patch expands the dummy fallback dump_stack() implementation in
+lib/dump_stack.c such that it prints out debug information (taken from
+x86) and invokes show_stack(NULL, NULL) and drops arch-specific
+dump_stack() implementations in all archs except blackfin and s390.
+Blackfin's dump_stack() does something wonky that I don't understand
+and s390 prints its own debug information which includes fields which
+aren't accessible from arch-indepdent code.
 
-This patch introduces arch-specific hardware description used by
-dump_stack().  It can be set by calling dump_stack_set_arch_desc()
-during boot and printed out along with utsname.
+Debug information can be printed separately by calling
+dump_stack_print_info() so that arch-specific dump_stack()
+implementation can still emit the same debug information.  This is
+used in blackfin.
 
-dmi_set_dump_stack_arch_desc() is added which sets arch-specific
-description from DMI data.  It uses the same information and
-formatting as x86 show_regs() is using.  The function is called from
-x86 and ia64 boot code right after dmi_scan_machine().
+This patch brings the following behavior changes.
 
-This makes the explicit DMI handling in warn_slowpath_common()
-unnecessary.  Removed.
+* On some archs, an extra level in backtrace for show_stack() could be
+  printed.  This is because the top frame was determined in
+  dump_stack() on those archs while generic dump_stack() can't do that
+  reliably.  It can be compensated by inlining dump_stack() but not
+  sure whether that'd be necessary.
 
-show_regs() isn't yet converted to use generic debug information
-printing and this patch doesn't remove the duplicate DMI handling in
-x86 show_regs().  The next patch will unify show_regs() handling and
-remove the duplication.
+* Most archs didn't use to print debug info on dump_stack().  They do
+  now.
 
 An example WARN dump follows.
 
  WARNING: at /work/os/work/kernel/workqueue.c:4840 init_workqueues+0x35/0x505()
+ Hardware name: empty
  Modules linked in:
- Pid: 1, comm: swapper/0 Not tainted 3.9.0-rc1-work+ #18 empty empty/S3992
-  0000000000000009 ffff88007c861e08 ffffffff81c61525 ffff88007c861e48
-  ffffffff8108f500 ffffffff82228240 0000000000000040 ffffffff8234a041
+ Pid: 1, comm: swapper/0 Not tainted 3.9.0-rc1-work+ #17
+  0000000000000009 ffff88007c861e08 ffffffff81c61545 ffff88007c861e48
+  ffffffff8108f50f ffffffff82228240 0000000000000040 ffffffff8234a03c
   0000000000000000 0000000000000000 0000000000000000 ffff88007c861e58
  Call Trace:
-  [<ffffffff81c61525>] dump_stack+0x19/0x1b
-  [<ffffffff8108f500>] warn_slowpath_common+0x70/0xa0
-  [<ffffffff8108f54a>] warn_slowpath_null+0x1a/0x20
-  [<ffffffff8234a076>] init_workqueues+0x35/0x505
+  [<ffffffff81c61545>] dump_stack+0x19/0x1b
+  [<ffffffff8108f50f>] warn_slowpath_common+0x7f/0xc0
+  [<ffffffff8108f56a>] warn_slowpath_null+0x1a/0x20
+  [<ffffffff8234a071>] init_workqueues+0x35/0x505
   ...
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-s390@vger.kernel.org
+Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: uclinux-dist-devel@blackfin.uclinux.org
 ---
- arch/ia64/kernel/setup.c    |  1 +
- arch/x86/kernel/setup.c     |  1 +
- drivers/firmware/dmi_scan.c | 26 ++++++++++++++++++++++++++
- include/linux/dmi.h         |  2 ++
- include/linux/printk.h      |  1 +
- kernel/panic.c              |  6 ------
- lib/dump_stack.c            | 26 ++++++++++++++++++++++++--
- 7 files changed, 55 insertions(+), 8 deletions(-)
+ arch/alpha/kernel/traps.c        |  7 -------
+ arch/arc/kernel/stacktrace.c     |  7 -------
+ arch/arm/kernel/traps.c          |  7 -------
+ arch/arm64/kernel/traps.c        |  7 -------
+ arch/avr32/kernel/process.c      |  8 --------
+ arch/blackfin/kernel/dumpstack.c |  1 +
+ arch/c6x/kernel/traps.c          |  9 ---------
+ arch/cris/kernel/traps.c         |  7 -------
+ arch/frv/kernel/traps.c          | 11 -----------
+ arch/h8300/kernel/traps.c        |  7 -------
+ arch/hexagon/kernel/traps.c      |  8 --------
+ arch/ia64/kernel/process.c       |  8 --------
+ arch/m32r/kernel/traps.c         |  9 ---------
+ arch/m68k/kernel/traps.c         | 12 ------------
+ arch/metag/kernel/traps.c        |  6 ------
+ arch/microblaze/kernel/traps.c   |  6 ------
+ arch/mips/kernel/traps.c         | 13 -------------
+ arch/mn10300/kernel/traps.c      | 11 -----------
+ arch/openrisc/kernel/traps.c     | 11 -----------
+ arch/parisc/kernel/traps.c       |  8 --------
+ arch/powerpc/kernel/process.c    |  6 ------
+ arch/score/kernel/traps.c        | 10 ----------
+ arch/sh/kernel/dumpstack.c       |  6 ------
+ arch/sparc/kernel/process_32.c   |  7 -------
+ arch/sparc/kernel/traps_64.c     |  7 -------
+ arch/um/kernel/sysrq.c           | 12 ------------
+ arch/unicore32/kernel/traps.c    |  6 ------
+ arch/x86/kernel/dumpstack.c      | 18 ------------------
+ arch/xtensa/kernel/traps.c       |  8 --------
+ include/linux/printk.h           |  1 +
+ lib/dump_stack.c                 | 28 +++++++++++++++++++++++++---
+ 31 files changed, 27 insertions(+), 245 deletions(-)
 
-diff --git a/arch/ia64/kernel/setup.c b/arch/ia64/kernel/setup.c
-index 2029cc0..13bfdd2 100644
---- a/arch/ia64/kernel/setup.c
-+++ b/arch/ia64/kernel/setup.c
-@@ -1063,6 +1063,7 @@ check_bugs (void)
- static int __init run_dmi_scan(void)
+diff --git a/arch/alpha/kernel/traps.c b/arch/alpha/kernel/traps.c
+index 4037461..affccb9 100644
+--- a/arch/alpha/kernel/traps.c
++++ b/arch/alpha/kernel/traps.c
+@@ -169,13 +169,6 @@ void show_stack(struct task_struct *task, unsigned long *sp)
+ 	dik_show_trace(sp);
+ }
+ 
+-void dump_stack(void)
+-{
+-	show_stack(NULL, NULL);
+-}
+-
+-EXPORT_SYMBOL(dump_stack);
+-
+ void
+ die_if_kernel(char * str, struct pt_regs *regs, long err, unsigned long *r9_15)
  {
- 	dmi_scan_machine();
-+	dmi_set_dump_stack_arch_desc();
- 	return 0;
- }
- core_initcall(run_dmi_scan);
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 90d8cc9..91b9e7c 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -970,6 +970,7 @@ void __init setup_arch(char **cmdline_p)
- 		efi_init();
- 
- 	dmi_scan_machine();
-+	dmi_set_dump_stack_arch_desc();
- 
- 	/*
- 	 * VMware detection requires dmi to be available, so this
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index 4cd392d..9e7766b 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -521,6 +521,32 @@ void __init dmi_scan_machine(void)
+diff --git a/arch/arc/kernel/stacktrace.c b/arch/arc/kernel/stacktrace.c
+index a63ff84..ca0207b 100644
+--- a/arch/arc/kernel/stacktrace.c
++++ b/arch/arc/kernel/stacktrace.c
+@@ -220,13 +220,6 @@ void show_stack(struct task_struct *tsk, unsigned long *sp)
+ 	show_stacktrace(tsk, NULL);
  }
  
- /**
-+ * dmi_set_dump_stack_arch_desc - set arch description for dump_stack()
-+ *
-+ * Invoke dump_stack_set_arch_desc() with DMI system information so that
-+ * DMI identifiers are printed out on task dumps.  Arch boot code should
-+ * call this function after dmi_scan_machine() if it wants to print out DMI
-+ * identifiers on task dumps.
-+ */
-+void __init dmi_set_dump_stack_arch_desc(void)
-+{
-+	const char *vendor, *product, *board;
-+
-+	vendor = dmi_get_system_info(DMI_SYS_VENDOR);
-+	if (!vendor)
-+		vendor = "";
-+	product = dmi_get_system_info(DMI_PRODUCT_NAME);
-+	if (!product)
-+		product = "";
-+
-+	/* Board Name is optional */
-+	board = dmi_get_system_info(DMI_BOARD_NAME);
-+
-+	dump_stack_set_arch_desc("%s %s%s%s", vendor, product,
-+				 board ? "/" : "", board ? board : "");
-+}
-+
-+/**
-  *	dmi_matches - check if dmi_system_id structure matches system DMI data
-  *	@dmi: pointer to the dmi_system_id structure to check
+-/* Expected by Rest of kernel code */
+-void dump_stack(void)
+-{
+-	show_stacktrace(NULL, NULL);
+-}
+-EXPORT_SYMBOL(dump_stack);
+-
+ /* Another API expected by schedular, shows up in "ps" as Wait Channel
+  * Ofcourse just returning schedule( ) would be pointless so unwind until
+  * the function is not in schedular code
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 1c08911..18b32e8 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -204,13 +204,6 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
+ }
+ #endif
+ 
+-void dump_stack(void)
+-{
+-	dump_backtrace(NULL, NULL);
+-}
+-
+-EXPORT_SYMBOL(dump_stack);
+-
+ void show_stack(struct task_struct *tsk, unsigned long *sp)
+ {
+ 	dump_backtrace(NULL, tsk);
+diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
+index b3c5f62..61d7dd2 100644
+--- a/arch/arm64/kernel/traps.c
++++ b/arch/arm64/kernel/traps.c
+@@ -167,13 +167,6 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
+ 	}
+ }
+ 
+-void dump_stack(void)
+-{
+-	dump_backtrace(NULL, NULL);
+-}
+-
+-EXPORT_SYMBOL(dump_stack);
+-
+ void show_stack(struct task_struct *tsk, unsigned long *sp)
+ {
+ 	dump_backtrace(NULL, tsk);
+diff --git a/arch/avr32/kernel/process.c b/arch/avr32/kernel/process.c
+index fd78f58..c1cafdb 100644
+--- a/arch/avr32/kernel/process.c
++++ b/arch/avr32/kernel/process.c
+@@ -213,14 +213,6 @@ void show_stack(struct task_struct *tsk, unsigned long *stack)
+ 	show_stack_log_lvl(tsk, (unsigned long)stack, NULL, "");
+ }
+ 
+-void dump_stack(void)
+-{
+-	unsigned long stack;
+-
+-	show_trace_log_lvl(current, &stack, NULL, "");
+-}
+-EXPORT_SYMBOL(dump_stack);
+-
+ static const char *cpu_modes[] = {
+ 	"Application", "Supervisor", "Interrupt level 0", "Interrupt level 1",
+ 	"Interrupt level 2", "Interrupt level 3", "Exception", "NMI"
+diff --git a/arch/blackfin/kernel/dumpstack.c b/arch/blackfin/kernel/dumpstack.c
+index 5cfbaa2..95ba6d9 100644
+--- a/arch/blackfin/kernel/dumpstack.c
++++ b/arch/blackfin/kernel/dumpstack.c
+@@ -168,6 +168,7 @@ void dump_stack(void)
+ #endif
+ 	trace_buffer_save(tflags);
+ 	dump_bfin_trace_buffer();
++	dump_stack_print_info(KERN_DEFAULT);
+ 	show_stack(current, &stack);
+ 	trace_buffer_restore(tflags);
+ }
+diff --git a/arch/c6x/kernel/traps.c b/arch/c6x/kernel/traps.c
+index 1be74e5..d0b96ef 100644
+--- a/arch/c6x/kernel/traps.c
++++ b/arch/c6x/kernel/traps.c
+@@ -67,15 +67,6 @@ void show_regs(struct pt_regs *regs)
+ 	pr_err("A31: %08lx  B31: %08lx\n", regs->a31, regs->b31);
+ }
+ 
+-void dump_stack(void)
+-{
+-	unsigned long stack;
+-
+-	show_stack(current, &stack);
+-}
+-EXPORT_SYMBOL(dump_stack);
+-
+-
+ void die(char *str, struct pt_regs *fp, int nr)
+ {
+ 	console_verbose();
+diff --git a/arch/cris/kernel/traps.c b/arch/cris/kernel/traps.c
+index a11ad32..0ffda73 100644
+--- a/arch/cris/kernel/traps.c
++++ b/arch/cris/kernel/traps.c
+@@ -147,13 +147,6 @@ show_stack(void)
+ #endif
+ 
+ void
+-dump_stack(void)
+-{
+-	show_stack(NULL, NULL);
+-}
+-EXPORT_SYMBOL(dump_stack);
+-
+-void
+ set_nmi_handler(void (*handler)(struct pt_regs *))
+ {
+ 	nmi_handler = handler;
+diff --git a/arch/frv/kernel/traps.c b/arch/frv/kernel/traps.c
+index 5cfd142..cfcd802 100644
+--- a/arch/frv/kernel/traps.c
++++ b/arch/frv/kernel/traps.c
+@@ -466,17 +466,6 @@ asmlinkage void compound_exception(unsigned long esfr1,
+ 	BUG();
+ } /* end compound_exception() */
+ 
+-/*****************************************************************************/
+-/*
+- * The architecture-independent backtrace generator
+- */
+-void dump_stack(void)
+-{
+-	show_stack(NULL, NULL);
+-}
+-
+-EXPORT_SYMBOL(dump_stack);
+-
+ void show_stack(struct task_struct *task, unsigned long *sp)
+ {
+ }
+diff --git a/arch/h8300/kernel/traps.c b/arch/h8300/kernel/traps.c
+index 7833aa3..cfe494d 100644
+--- a/arch/h8300/kernel/traps.c
++++ b/arch/h8300/kernel/traps.c
+@@ -164,10 +164,3 @@ void show_trace_task(struct task_struct *tsk)
+ {
+ 	show_stack(tsk,(unsigned long *)tsk->thread.esp0);
+ }
+-
+-void dump_stack(void)
+-{
+-	show_stack(NULL,NULL);
+-}
+-
+-EXPORT_SYMBOL(dump_stack);
+diff --git a/arch/hexagon/kernel/traps.c b/arch/hexagon/kernel/traps.c
+index be5e2dd..cc2171b 100644
+--- a/arch/hexagon/kernel/traps.c
++++ b/arch/hexagon/kernel/traps.c
+@@ -191,14 +191,6 @@ void show_stack(struct task_struct *task, unsigned long *fp)
+ 	do_show_stack(task, fp, 0);
+ }
+ 
+-void dump_stack(void)
+-{
+-	unsigned long *fp;
+-	asm("%0 = r30" : "=r" (fp));
+-	show_stack(current, fp);
+-}
+-EXPORT_SYMBOL(dump_stack);
+-
+ int die(const char *str, struct pt_regs *regs, long err)
+ {
+ 	static struct {
+diff --git a/arch/ia64/kernel/process.c b/arch/ia64/kernel/process.c
+index e34f565..29fb256 100644
+--- a/arch/ia64/kernel/process.c
++++ b/arch/ia64/kernel/process.c
+@@ -96,14 +96,6 @@ show_stack (struct task_struct *task, unsigned long *sp)
+ }
+ 
+ void
+-dump_stack (void)
+-{
+-	show_stack(NULL, NULL);
+-}
+-
+-EXPORT_SYMBOL(dump_stack);
+-
+-void
+ show_regs (struct pt_regs *regs)
+ {
+ 	unsigned long ip = regs->cr_iip + ia64_psr(regs)->ri;
+diff --git a/arch/m32r/kernel/traps.c b/arch/m32r/kernel/traps.c
+index 3bcb207..5623ea3 100644
+--- a/arch/m32r/kernel/traps.c
++++ b/arch/m32r/kernel/traps.c
+@@ -169,15 +169,6 @@ void show_stack(struct task_struct *task, unsigned long *sp)
+ 	show_trace(task, sp);
+ }
+ 
+-void dump_stack(void)
+-{
+-	unsigned long stack;
+-
+-	show_trace(current, &stack);
+-}
+-
+-EXPORT_SYMBOL(dump_stack);
+-
+ static void show_registers(struct pt_regs *regs)
+ {
+ 	int i = 0;
+diff --git a/arch/m68k/kernel/traps.c b/arch/m68k/kernel/traps.c
+index f32ab22..88fcd8c 100644
+--- a/arch/m68k/kernel/traps.c
++++ b/arch/m68k/kernel/traps.c
+@@ -992,18 +992,6 @@ void show_stack(struct task_struct *task, unsigned long *stack)
+ }
+ 
+ /*
+- * The architecture-independent backtrace generator
+- */
+-void dump_stack(void)
+-{
+-	unsigned long stack;
+-
+-	show_trace(&stack);
+-}
+-
+-EXPORT_SYMBOL(dump_stack);
+-
+-/*
+  * The vector number returned in the frame pointer may also contain
+  * the "fs" (Fault Status) bits on ColdFire. These are in the bottom
+  * 2 bits, and upper 2 bits. So we need to mask out the real vector
+diff --git a/arch/metag/kernel/traps.c b/arch/metag/kernel/traps.c
+index 8961f24..2ceeaae 100644
+--- a/arch/metag/kernel/traps.c
++++ b/arch/metag/kernel/traps.c
+@@ -987,9 +987,3 @@ void show_stack(struct task_struct *tsk, unsigned long *sp)
+ 
+ 	show_trace(tsk, sp, NULL);
+ }
+-
+-void dump_stack(void)
+-{
+-	show_stack(NULL, NULL);
+-}
+-EXPORT_SYMBOL(dump_stack);
+diff --git a/arch/microblaze/kernel/traps.c b/arch/microblaze/kernel/traps.c
+index 30e6b50..cb61953 100644
+--- a/arch/microblaze/kernel/traps.c
++++ b/arch/microblaze/kernel/traps.c
+@@ -75,9 +75,3 @@ void show_stack(struct task_struct *task, unsigned long *sp)
+ 
+ 	debug_show_held_locks(task);
+ }
+-
+-void dump_stack(void)
+-{
+-	show_stack(NULL, NULL);
+-}
+-EXPORT_SYMBOL(dump_stack);
+diff --git a/arch/mips/kernel/traps.c b/arch/mips/kernel/traps.c
+index a200b5b..93f9b26 100644
+--- a/arch/mips/kernel/traps.c
++++ b/arch/mips/kernel/traps.c
+@@ -206,19 +206,6 @@ void show_stack(struct task_struct *task, unsigned long *sp)
+ 	show_stacktrace(task, &regs);
+ }
+ 
+-/*
+- * The architecture-independent dump_stack generator
+- */
+-void dump_stack(void)
+-{
+-	struct pt_regs regs;
+-
+-	prepare_frametrace(&regs);
+-	show_backtrace(current, &regs);
+-}
+-
+-EXPORT_SYMBOL(dump_stack);
+-
+ static void show_code(unsigned int __user *pc)
+ {
+ 	long i;
+diff --git a/arch/mn10300/kernel/traps.c b/arch/mn10300/kernel/traps.c
+index b900e5a..a7a987c 100644
+--- a/arch/mn10300/kernel/traps.c
++++ b/arch/mn10300/kernel/traps.c
+@@ -294,17 +294,6 @@ void show_stack(struct task_struct *task, unsigned long *sp)
+ }
+ 
+ /*
+- * the architecture-independent dump_stack generator
+- */
+-void dump_stack(void)
+-{
+-	unsigned long stack;
+-
+-	show_stack(current, &stack);
+-}
+-EXPORT_SYMBOL(dump_stack);
+-
+-/*
+  * dump the register file in the specified exception frame
   */
-diff --git a/include/linux/dmi.h b/include/linux/dmi.h
-index f156cca..b6eb7a0 100644
---- a/include/linux/dmi.h
-+++ b/include/linux/dmi.h
-@@ -99,6 +99,7 @@ extern const char * dmi_get_system_info(int field);
- extern const struct dmi_device * dmi_find_device(int type, const char *name,
- 	const struct dmi_device *from);
- extern void dmi_scan_machine(void);
-+extern void dmi_set_dump_stack_arch_desc(void);
- extern bool dmi_get_date(int field, int *yearp, int *monthp, int *dayp);
- extern int dmi_name_in_vendors(const char *str);
- extern int dmi_name_in_serial(const char *str);
-@@ -114,6 +115,7 @@ static inline const char * dmi_get_system_info(int field) { return NULL; }
- static inline const struct dmi_device * dmi_find_device(int type, const char *name,
- 	const struct dmi_device *from) { return NULL; }
- static inline void dmi_scan_machine(void) { return; }
-+static inline void dmi_set_dump_stack_arch_desc(void) { }
- static inline bool dmi_get_date(int field, int *yearp, int *monthp, int *dayp)
+ void show_registers_only(struct pt_regs *regs)
+diff --git a/arch/openrisc/kernel/traps.c b/arch/openrisc/kernel/traps.c
+index 5cce396..3d3f606 100644
+--- a/arch/openrisc/kernel/traps.c
++++ b/arch/openrisc/kernel/traps.c
+@@ -105,17 +105,6 @@ void show_trace_task(struct task_struct *tsk)
+ 	 */
+ }
+ 
+-/*
+- * The architecture-independent backtrace generator
+- */
+-void dump_stack(void)
+-{
+-	unsigned long stack;
+-
+-	show_stack(current, &stack);
+-}
+-EXPORT_SYMBOL(dump_stack);
+-
+ void show_registers(struct pt_regs *regs)
  {
- 	if (yearp)
+ 	int i;
+diff --git a/arch/parisc/kernel/traps.c b/arch/parisc/kernel/traps.c
+index aeb8f8f..e64cf5f 100644
+--- a/arch/parisc/kernel/traps.c
++++ b/arch/parisc/kernel/traps.c
+@@ -158,14 +158,6 @@ void show_regs(struct pt_regs *regs)
+ 	}
+ }
+ 
+-
+-void dump_stack(void)
+-{
+-	show_stack(NULL, NULL);
+-}
+-
+-EXPORT_SYMBOL(dump_stack);
+-
+ static void do_show_stack(struct unwind_frame_info *info)
+ {
+ 	int i = 1;
+diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+index 59dd545..2e6f83a 100644
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -1360,12 +1360,6 @@ void show_stack(struct task_struct *tsk, unsigned long *stack)
+ 	} while (count++ < kstack_depth_to_print);
+ }
+ 
+-void dump_stack(void)
+-{
+-	show_stack(current, NULL);
+-}
+-EXPORT_SYMBOL(dump_stack);
+-
+ #ifdef CONFIG_PPC64
+ /* Called with hard IRQs off */
+ void __ppc64_runlatch_on(void)
+diff --git a/arch/score/kernel/traps.c b/arch/score/kernel/traps.c
+index 0e46fb1..a38f435 100644
+--- a/arch/score/kernel/traps.c
++++ b/arch/score/kernel/traps.c
+@@ -149,16 +149,6 @@ static void show_registers(struct pt_regs *regs)
+ 	printk(KERN_NOTICE "\n");
+ }
+ 
+-/*
+- * The architecture-independent dump_stack generator
+- */
+-void dump_stack(void)
+-{
+-	show_stack(current_thread_info()->task,
+-		   (long *) get_irq_regs()->regs[0]);
+-}
+-EXPORT_SYMBOL(dump_stack);
+-
+ void __die(const char *str, struct pt_regs *regs, const char *file,
+ 	const char *func, unsigned long line)
+ {
+diff --git a/arch/sh/kernel/dumpstack.c b/arch/sh/kernel/dumpstack.c
+index 7617dc4..b959f55 100644
+--- a/arch/sh/kernel/dumpstack.c
++++ b/arch/sh/kernel/dumpstack.c
+@@ -158,9 +158,3 @@ void show_stack(struct task_struct *tsk, unsigned long *sp)
+ 		 (unsigned long)task_stack_page(tsk));
+ 	show_trace(tsk, sp, NULL);
+ }
+-
+-void dump_stack(void)
+-{
+-	show_stack(NULL, NULL);
+-}
+-EXPORT_SYMBOL(dump_stack);
+diff --git a/arch/sparc/kernel/process_32.c b/arch/sparc/kernel/process_32.c
+index 0d57b24..fe99fbd 100644
+--- a/arch/sparc/kernel/process_32.c
++++ b/arch/sparc/kernel/process_32.c
+@@ -175,13 +175,6 @@ void show_stack(struct task_struct *tsk, unsigned long *_ksp)
+ 	printk("\n");
+ }
+ 
+-void dump_stack(void)
+-{
+-	show_stack(current, NULL);
+-}
+-
+-EXPORT_SYMBOL(dump_stack);
+-
+ /*
+  * Note: sparc64 has a pretty intricated thread_saved_pc, check it out.
+  */
+diff --git a/arch/sparc/kernel/traps_64.c b/arch/sparc/kernel/traps_64.c
+index 8d38ca9..b3f833a 100644
+--- a/arch/sparc/kernel/traps_64.c
++++ b/arch/sparc/kernel/traps_64.c
+@@ -2350,13 +2350,6 @@ void show_stack(struct task_struct *tsk, unsigned long *_ksp)
+ 	} while (++count < 16);
+ }
+ 
+-void dump_stack(void)
+-{
+-	show_stack(current, NULL);
+-}
+-
+-EXPORT_SYMBOL(dump_stack);
+-
+ static inline struct reg_window *kernel_stack_up(struct reg_window *rw)
+ {
+ 	unsigned long fp = rw->ins[6];
+diff --git a/arch/um/kernel/sysrq.c b/arch/um/kernel/sysrq.c
+index e562ff8..7d101a2 100644
+--- a/arch/um/kernel/sysrq.c
++++ b/arch/um/kernel/sysrq.c
+@@ -35,18 +35,6 @@ void show_trace(struct task_struct *task, unsigned long * stack)
+ }
+ #endif
+ 
+-/*
+- * stack dumps generator - this is used by arch-independent code.
+- * And this is identical to i386 currently.
+- */
+-void dump_stack(void)
+-{
+-	unsigned long stack;
+-
+-	show_trace(current, &stack);
+-}
+-EXPORT_SYMBOL(dump_stack);
+-
+ /*Stolen from arch/i386/kernel/traps.c */
+ static const int kstack_depth_to_print = 24;
+ 
+diff --git a/arch/unicore32/kernel/traps.c b/arch/unicore32/kernel/traps.c
+index 0870b68..c54e324 100644
+--- a/arch/unicore32/kernel/traps.c
++++ b/arch/unicore32/kernel/traps.c
+@@ -170,12 +170,6 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
+ 		c_backtrace(fp, mode);
+ }
+ 
+-void dump_stack(void)
+-{
+-	dump_backtrace(NULL, NULL);
+-}
+-EXPORT_SYMBOL(dump_stack);
+-
+ void show_stack(struct task_struct *tsk, unsigned long *sp)
+ {
+ 	dump_backtrace(NULL, tsk);
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index dd1a7c3..deb6421 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -191,24 +191,6 @@ void show_stack(struct task_struct *task, unsigned long *sp)
+ 	show_stack_log_lvl(task, NULL, sp, bp, "");
+ }
+ 
+-/*
+- * The architecture-independent dump_stack generator
+- */
+-void dump_stack(void)
+-{
+-	unsigned long bp;
+-	unsigned long stack;
+-
+-	bp = stack_frame(current, NULL);
+-	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
+-		current->pid, current->comm, print_tainted(),
+-		init_utsname()->release,
+-		(int)strcspn(init_utsname()->version, " "),
+-		init_utsname()->version);
+-	show_trace(NULL, NULL, &stack, bp);
+-}
+-EXPORT_SYMBOL(dump_stack);
+-
+ static arch_spinlock_t die_lock = __ARCH_SPIN_LOCK_UNLOCKED;
+ static int die_owner = -1;
+ static unsigned int die_nest_count;
+diff --git a/arch/xtensa/kernel/traps.c b/arch/xtensa/kernel/traps.c
+index 923db5c..384b7c7 100644
+--- a/arch/xtensa/kernel/traps.c
++++ b/arch/xtensa/kernel/traps.c
+@@ -481,14 +481,6 @@ void show_stack(struct task_struct *task, unsigned long *sp)
+ 	show_trace(task, stack);
+ }
+ 
+-void dump_stack(void)
+-{
+-	show_stack(current, NULL);
+-}
+-
+-EXPORT_SYMBOL(dump_stack);
+-
+-
+ void show_code(unsigned int *pc)
+ {
+ 	long i;
 diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 952c1b2..73788ff 100644
+index 822171f..952c1b2 100644
 --- a/include/linux/printk.h
 +++ b/include/linux/printk.h
 @@ -177,6 +177,7 @@ static inline void setup_log_buf(int early)
  }
  #endif
  
-+extern void dump_stack_set_arch_desc(const char *fmt, ...);
- extern void dump_stack_print_info(const char *log_lvl);
++extern void dump_stack_print_info(const char *log_lvl);
  extern void dump_stack(void) __cold;
  
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 7c57cc9..167ec09 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -22,7 +22,6 @@
- #include <linux/sysrq.h>
- #include <linux/init.h>
- #include <linux/nmi.h>
--#include <linux/dmi.h>
- 
- #define PANIC_TIMER_STEP 100
- #define PANIC_BLINK_SPD 18
-@@ -400,13 +399,8 @@ struct slowpath_args {
- static void warn_slowpath_common(const char *file, int line, void *caller,
- 				 unsigned taint, struct slowpath_args *args)
- {
--	const char *board;
--
- 	printk(KERN_WARNING "------------[ cut here ]------------\n");
- 	printk(KERN_WARNING "WARNING: at %s:%d %pS()\n", file, line, caller);
--	board = dmi_get_system_info(DMI_PRODUCT_NAME);
--	if (board)
--		printk(KERN_WARNING "Hardware name: %s\n", board);
- 
- 	if (args)
- 		vprintk(args->fmt, args->args);
+ #ifndef pr_fmt
 diff --git a/lib/dump_stack.c b/lib/dump_stack.c
-index 5a67cfc..93573ec 100644
+index 42f4f55..5a67cfc 100644
 --- a/lib/dump_stack.c
 +++ b/lib/dump_stack.c
-@@ -8,6 +8,28 @@
- #include <linux/utsname.h>
+@@ -4,12 +4,34 @@
+  */
+ 
+ #include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/utsname.h>
  #include <linux/export.h>
  
-+static char dump_stack_arch_desc_str[128];
-+
+-void dump_stack(void)
 +/**
-+ * dump_stack_set_arch_desc - set arch-specific str to show with task dumps
-+ * @fmt: printf-style format string
-+ * @...: arguments for the format string
++ * dump_stack_print_info - print generic debug info for dump_stack()
++ * @log_lvl: log level
 + *
-+ * The configured string will be printed right after utsname during task
-+ * dumps.  Usually used to add arch-specific system identifiers.  If an
-+ * arch wants to make use of such an ID string, it should initialize this
-+ * as soon as possible during boot.
++ * Arch-specific dump_stack() implementations can use this function to
++ * print out the same debug information as the generic dump_stack().
 + */
-+void __init dump_stack_set_arch_desc(const char *fmt, ...)
-+{
-+	va_list args;
-+
-+	va_start(args, fmt);
-+	vsnprintf(dump_stack_arch_desc_str, sizeof(dump_stack_arch_desc_str),
-+		  fmt, args);
-+	va_end(args);
-+}
-+
- /**
-  * dump_stack_print_info - print generic debug info for dump_stack()
-  * @log_lvl: log level
-@@ -17,11 +39,11 @@
-  */
- void dump_stack_print_info(const char *log_lvl)
++void dump_stack_print_info(const char *log_lvl)
  {
--	printk("%sPid: %d, comm: %.20s %s %s %.*s\n",
-+	printk("%sPid: %d, comm: %.20s %s %s %.*s %s\n",
- 	       log_lvl, current->pid, current->comm, print_tainted(),
- 	       init_utsname()->release,
- 	       (int)strcspn(init_utsname()->version, " "),
--	       init_utsname()->version);
-+	       init_utsname()->version, dump_stack_arch_desc_str);
+-	printk(KERN_NOTICE
+-		"This architecture does not implement dump_stack()\n");
++	printk("%sPid: %d, comm: %.20s %s %s %.*s\n",
++	       log_lvl, current->pid, current->comm, print_tainted(),
++	       init_utsname()->release,
++	       (int)strcspn(init_utsname()->version, " "),
++	       init_utsname()->version);
  }
  
- /**
++/**
++ * dump_stack - dump the current task information and its stack trace
++ *
++ * Architectures can override this implementation by implementing its own.
++ */
++void dump_stack(void)
++{
++	dump_stack_print_info(KERN_DEFAULT);
++	show_stack(NULL, NULL);
++}
+ EXPORT_SYMBOL(dump_stack);
 -- 
 1.8.1.4
 
