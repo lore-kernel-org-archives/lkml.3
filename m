@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab3C3Ul2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 16:41:28 -0400
-Received: from smtp-out-090.synserver.de ([212.40.185.90]:1073 "EHLO
-	smtp-out-090.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756916Ab3C3UlV (ORCPT
+	id S1756188Ab3C3Upd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 16:45:33 -0400
+Received: from magic.merlins.org ([209.81.13.136]:36649 "EHLO
+	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752972Ab3C3Upc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 16:41:21 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 25491
-Message-ID: <51574E71.7010403@metafoo.de>
-Date: Sat, 30 Mar 2013 21:43:29 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Sat, 30 Mar 2013 16:45:32 -0400
+Date: Sat, 30 Mar 2013 13:45:30 -0700
+From: Marc MERLIN <marc@merlins.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
+        edvx1@systemanalysen.net
+Subject: Re: Supporting SYSRQ on broken laptops like the thinkpad T530
+Message-ID: <20130330204530.GF6093@merlins.org>
+References: <20130108230954.GN2044@merlins.org>
+ <20130109023643.GA7066@mobil.systemanalysen.net>
+ <20130322223141.GQ12428@merlins.org>
+ <20130330175628.GA28947@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6]  Make return type of i2c_del_adapter() (and i2c_del_mux_adapter())
- void
-References: <1362853009-20789-1-git-send-email-lars@metafoo.de> <20130330211352.07530db7@endymion.delvare>
-In-Reply-To: <20130330211352.07530db7@endymion.delvare>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130330175628.GA28947@amd.pavel.ucw.cz>
+X-Sysadmin: BOFH
+X-URL: http://marc.merlins.org/
+X-Operating-System: Proudly running Linux
+ 3.7.8-amd64-preempt-20121226-fixwd/Debian wheezy/sid
+X-Mailer: Some Outlooks can't quote properly without this header
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-No-Run: Yes
+X-Broken-Reverse-DNS: no host name for IP address 173.11.111.150
+X-SA-Exim-Connect-IP: 173.11.111.150
+X-SA-Exim-Mail-From: merlin@merlins.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2013 09:13 PM, Jean Delvare wrote:
-> Hi Lars,
+On Sat, Mar 30, 2013 at 06:56:28PM +0100, Pavel Machek wrote:
+> Sometimes it works, sometimes it does not. Don't blame lenovo for
+> that.
 > 
-> On Sat,  9 Mar 2013 19:16:43 +0100, Lars-Peter Clausen wrote:
->> Currently i2c_del_adapter() returns 0 on success and potentially an error code
->> on failure. Unfortunately this doesn't mix too well with the Linux device driver
->> model. (...)
+> Maybe it should be modified to take sysrq and _then_ key?
 > 
-> I see:
-> 
-> struct device_driver {
-> 	(...)
-> 	int (*probe) (struct device *dev);
-> 	int (*remove) (struct device *dev);
->
-> So the driver core does allow remove functions to return an error.
+> Or maybe we should use something like lshift+rshift+lalt+ralt+key?
 
-Well, the return type is int, but the return value is never checked. So you
-can return an error value, but the device driver core is going to care and
-the device is still removed. So any code which does return an error in it's
-probe function in the assumption that this means the device will still be
-present is broken and leaves the system in an undefined state. So if that
-happens the kernel will probably crash sooner or later, or if you are lucky
-you only created a few resources leaks.
+It can't hurt to add alternatives like the one you suggested. They don't
+have to be convenient, although the one you suggest takes 5 fingers at
+the same time :)
 
-And no we can't change the core to handle errors from a drivers remove
-callback. It's a basic inherent property of the Linux device driver model
-that any device can be removed at any time.
+Is there anything that uses
+shift+ctrl+alt + key 
+in userspace?
 
-> Are you going to fix all subsystems as you are doing for i2c now, and then
-> change device_driver.remove to return void? If not, I don't see the
-> point of changing it in i2c.
-> 
+I checked enlightenment 17, they have crazy key bindings, but nothing
+that uses all 3 modifier keys at the same time.
+If that's not safe, feel free to add one or 2 more just to be safe.
 
-As I said it's a bug if a driver returns an error in its remove function.
-And the fact that the return type of the remove callback is int is pretty
-much misleading in this regard, so the long term goal is to make the return
-type void. But that's a long way to go until we get there, fixing the return
-type of i2c_del_adapter() is kind of the low hanging fruit.
+Thanks for suggesting this.
 
-- Lars
+Marc
+-- 
+"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
+Microsoft is to operating systems ....
+                                      .... what McDonalds is to gourmet cooking
+Home page: http://marc.merlins.org/
