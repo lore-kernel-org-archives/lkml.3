@@ -1,84 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab3C3L1k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 07:27:40 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:38249 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155Ab3C3L1j (ORCPT
+	id S1755197Ab3C3Ldy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 07:33:54 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:47659 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665Ab3C3Ldw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 07:27:39 -0400
-Message-ID: <5156CB90.5060209@linux.vnet.ibm.com>
-Date: Sat, 30 Mar 2013 16:55:04 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 14/15] sched: power aware load balance
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-15-git-send-email-alex.shi@intel.com> <514941C5.6080007@linux.vnet.ibm.com> <514ABA19.1080807@intel.com> <514AC7B2.7030400@linux.vnet.ibm.com> <514AD26F.9010905@intel.com> <514AE07A.10100@linux.vnet.ibm.com> <514BB452.2070906@intel.com> <514BE8AC.6000607@linux.vnet.ibm.com> <514FD801.8070403@intel.com> <51558C31.1060605@linux.vnet.ibm.com> <515599AD.5090901@intel.com>
-In-Reply-To: <515599AD.5090901@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 13033011-6102-0000-0000-0000033D1C75
+	Sat, 30 Mar 2013 07:33:52 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
+        arvind.chauhan@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: Documentation: Fix cpufreq_frequency_table name
+Date: Sat, 30 Mar 2013 17:03:42 +0530
+Message-Id: <31fdc77dace301ffe3f71a258a8e0f1b013fb5df.1364643195.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2013 07:09 PM, Alex Shi wrote:
-> On 03/29/2013 08:42 PM, Preeti U Murthy wrote:
->>>> did you try the simplest benchmark: while true; do :; done
->> Yeah I tried out this while true; do :; done benchmark on a vm which ran
-> 
-> Thanks a lot for trying!
-> 
-> What's do you mean 'vm'? Virtual machine?
+At few places in documentation cpufreq_frequency_table is written as
+cpufreq_freq_table. Fix these.
 
-Yes.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ Documentation/cpu-freq/cpu-drivers.txt | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> 
->> on 2 socket, 2 cores each socket and 2 threads each core emulation.
->> I ran two instances of this loop with balance policy on, and it was
->> found that there was one instance running on each socket, rather than
->> both instances getting consolidated on one socket.
->>
->> But when I apply the change where we do not consider rq->util if it has
->> no nr_running on the rq,the two instances of the above benchmark get
->> consolidated onto one socket.
->>
->>
-> 
-> I don't know much of virtual machine, guess the unstable VCPU to CPU pin
-> cause rq->util keep large? Did you try to pin VCPU to physical CPU?
-
-No I hadn't done any vcpu to cpu pinning but why did the situation
-drastically alter to consolidate the load when the rq->util for the
-runqueues with 0 tasks on them was not considered as part of sgs->utils?
-
-> 
-> I still give the rq->util weight even the nr_running is 0, because some
-> transitory tasks may actived on the cpu, but just missed on balancing point.
-> 
-> I just wondering that forgetting rq->util when nr_running = 0 is the
-> real root cause if your finding is just on VM and without fixed VCPU to
-> CPU pin.
-
-I find the same situation on a physical machine too. On a 2 socket, 4
-core machine as well. In fact, using trace_printks in the load balancing
-part, I could find that the reason that the load was not getting
-consolidated onto a socket was because the rq->util of a run-queue with
-no processes on it, had not decayed to 0, which is why it would consider
-the socket as overloaded and would  rule out power aware balancing.All
-this was on a physical machine.
-
-Regards
-Preeti U Murthy
-
-
-> 
-> 
+diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
+index c94383f..a3585ea 100644
+--- a/Documentation/cpu-freq/cpu-drivers.txt
++++ b/Documentation/cpu-freq/cpu-drivers.txt
+@@ -185,10 +185,10 @@ the reference implementation in drivers/cpufreq/longrun.c
+ As most cpufreq processors only allow for being set to a few specific
+ frequencies, a "frequency table" with some functions might assist in
+ some work of the processor driver. Such a "frequency table" consists
+-of an array of struct cpufreq_freq_table entries, with any value in
++of an array of struct cpufreq_frequency_table entries, with any value in
+ "index" you want to use, and the corresponding frequency in
+ "frequency". At the end of the table, you need to add a
+-cpufreq_freq_table entry with frequency set to CPUFREQ_TABLE_END. And
++cpufreq_frequency_table entry with frequency set to CPUFREQ_TABLE_END. And
+ if you want to skip one entry in the table, set the frequency to 
+ CPUFREQ_ENTRY_INVALID. The entries don't need to be in ascending
+ order.
+-- 
+1.7.12.rc2.18.g61b472e
 
