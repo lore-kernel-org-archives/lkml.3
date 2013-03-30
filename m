@@ -1,52 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab3C3XWT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 19:22:19 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:36213 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754562Ab3C3XWS (ORCPT
+	id S1755482Ab3C3XWi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 19:22:38 -0400
+Received: from 220.94.136.219.broad.gz.gd.dynamic.163data.com.cn ([219.136.94.220]:46052
+	"HELO dbgarments.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with SMTP id S1755008Ab3C3XW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 19:22:18 -0400
-Date: Sat, 30 Mar 2013 16:18:18 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
-Cc: Hongbo Zhang <hongbo.zhang@linaro.org>, lm-sensors@lm-sensors.org,
-        dwmw2@infradead.org, linaro-kernel@lists.linaro.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@linaro.org,
-        lee.jones@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 5/5] hwmon: add ST-Ericsson ABX500 hwmon driver
-Message-ID: <20130330231818.GA30901@lizard>
-References: <1364368412-12810-1-git-send-email-hongbo.zhang@linaro.org>
- <1364368412-12810-6-git-send-email-hongbo.zhang@linaro.org>
- <20130327194807.GB11086@roeck-us.net>
+	Sat, 30 Mar 2013 19:22:28 -0400
+X-Greylist: delayed 76056 seconds by postgrey-1.27 at vger.kernel.org; Sat, 30 Mar 2013 19:22:28 EDT
+Date: Sun, 31 Mar 2013 07:22:22 +0800
+From: "debao" <vinny_debao@yahoo.cn>
+Reply-To: vinny_debao@yahoo.cn
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: New garment supplier from China
+Message-ID: <201303310722222547932@dbgarments.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130327194807.GB11086@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="GB2312"
+Content-Transfer-Encoding: base6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 12:48:07PM -0700, Guenter Roeck wrote:
-> On Wed, Mar 27, 2013 at 03:13:32PM +0800, Hongbo Zhang wrote:
-> > Each of ST-Ericsson X500 chip set series consists of both ABX500 and DBX500
-> > chips. This is ABX500 hwmon driver, where the abx500.c is a common layer for
-> > all ABX500s, and the ab8500.c is specific for AB8500 chip. Under this designed
-> > structure, other chip specific files can be added simply using the same common
-> > layer abx500.c.
-> > 
-> > Signed-off-by: Hongbo Zhang <hongbo.zhang@linaro.org>
-> 
-> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-
-Thanks a lot for your reviews, Guenter!
-
-Guenter, Jean,
-
-As the driver depends on the battery driver changes, do you mind if I take
-it via battery-2.6.git tree?
-
-Thanks!
-
-Anton
