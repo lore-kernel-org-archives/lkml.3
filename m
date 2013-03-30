@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189Ab3C3Sj0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 14:39:26 -0400
-Received: from mail-da0-f49.google.com ([209.85.210.49]:62112 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757021Ab3C3SjZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 14:39:25 -0400
-Date: Sat, 30 Mar 2013 11:35:26 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        Joerg Reisenweber <joerg@openmoko.org>,
-        Ivaylo Dimitrov <freemangordon@abv.bg>
-Subject: Re: [PATCH v2] New Nokia RX-51 power supply battery driver
-Message-ID: <20130330183526.GA21198@lizard>
-References: <19040462.WFXWijAIDd@pali>
- <20121030223922.GA29061@lizard>
- <2562836.SjVVyiPAk1@pali>
- <20130330180705.GE28947@amd.pavel.ucw.cz>
+	id S1757134Ab3C3TP3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 15:15:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57465 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756292Ab3C3TP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Mar 2013 15:15:28 -0400
+Date: Sat, 30 Mar 2013 20:12:22 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, david@fromorbit.com,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] kthread: implement probe_kthread_data()
+Message-ID: <20130330191222.GA31531@redhat.com>
+References: <1364612447-6810-1-git-send-email-tj@kernel.org> <1364612447-6810-2-git-send-email-tj@kernel.org> <20130330143600.GA8650@redhat.com> <CAOS58YNOGggVmTazN86HHO7p7uNn78O19AOp0_9NmhjaZheXCg@mail.gmail.com> <20130330170023.GA30835@redhat.com> <CAOS58YNMbTY2fZzUXeyLwuA+nowW2AhgLvQwKf_0jWXDen6HzQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130330180705.GE28947@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOS58YNMbTY2fZzUXeyLwuA+nowW2AhgLvQwKf_0jWXDen6HzQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 30, 2013 at 07:07:05PM +0100, Pavel Machek wrote:
-> On Wed 2012-10-31 10:48:40, Pali Rohár wrote:
-> > Hello, I fixed style issues and added it to Makefile and Kconfig.
-> > 
-> > power_supply: Add Nokia RX-51 battery driver
-> > 
-> > This driver exporting battery design capacity, temperature and voltage
-> > for battery in Nokia RX-51. This driver is needed for open source
-> > battery management on Nokia RX-51 (N900).
-> > 
-> > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> 
-> Reviewed-by: Pavel Machek <pavel@ucw.cz>
+On 03/30, Tejun Heo wrote:
+>
+> On Sat, Mar 30, 2013 at 10:00 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > But I guess I missed the fact that this helper should be safe even this
+> > @task can be the a vfork'ed user-space process, yes?
+> >
+>
+> Yeap, we really don't know what to expect.
 
-Thanks for the review, Pavel! Although, the patch is in Linus' tree long
-ago. ;-)
+OK,
 
-Anton
+> > Or we can add to_live_kthread_safe() which checks "parent == kthreadd_task"
+> > instead.
+>
+> But that would be more fragile than probe_read. I  mean, this thing will be
+> called on BUGs and oopses.
+
+OK, I agree.
+
+Sorry for noise and thanks for your explanations, I really missed
+the intent.
+
+Oleg.
+
