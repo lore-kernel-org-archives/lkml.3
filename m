@@ -1,128 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869Ab3C3Igk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 04:36:40 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:38297 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751343Ab3C3Igi (ORCPT
+	id S1756215Ab3C3Inm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 04:43:42 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:3032 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755211Ab3C3Ink (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 04:36:38 -0400
-Message-ID: <5156A49E.5030901@metafoo.de>
-Date: Sat, 30 Mar 2013 09:38:54 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
-MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
-        Jon Hunter <jon-hunter@ti.com>, Padmavathi Venna <padma.v@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] dma: of: Add generic xlate function for matching
- by channel id
-References: <1364217412-31905-1-git-send-email-lars@metafoo.de> <20130329214951.GA10326@intel.com>
-In-Reply-To: <20130329214951.GA10326@intel.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 30 Mar 2013 04:43:40 -0400
+Date: Sat, 30 Mar 2013 09:43:26 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Shawn Guo <shawn.guo@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Lars Poeschel <poeschel@lemonage.de>
+Subject: Re: [PATCH 3/6] i2c: Ignore return value of i2c_del_adapter()
+Message-ID: <20130330094326.63d7e2a0@endymion.delvare>
+In-Reply-To: <51569E4A.2080006@metafoo.de>
+References: <1362853009-20789-1-git-send-email-lars@metafoo.de>
+	<1362853009-20789-4-git-send-email-lars@metafoo.de>
+	<20130330085539.442321fa@endymion.delvare>
+	<51569E4A.2080006@metafoo.de>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2013 10:49 PM, Vinod Koul wrote:
-> On Mon, Mar 25, 2013 at 02:16:51PM +0100, Lars-Peter Clausen wrote:
->> This patch adds a new generic of dma xlate callback function which will match a
->> channel by its id.
-> how will the client know which "id" to request? 
-
-The devicetree tells it, or what exactly do you mean?
-
-- Lars
-
+On Sat, 30 Mar 2013 09:11:54 +0100, Lars-Peter Clausen wrote:
+> Hi Jean,
 > 
->>
->> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->> ---
->>  drivers/dma/of-dma.c   | 47 +++++++++++++++++++++++++++++++++++++++++++++++
->>  include/linux/of_dma.h |  4 ++++
->>  2 files changed, 51 insertions(+)
->>
->> diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
->> index 00db454..7cad4d7 100644
->> --- a/drivers/dma/of-dma.c
->> +++ b/drivers/dma/of-dma.c
->> @@ -269,3 +269,50 @@ struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
->>  			&dma_spec->args[0]);
->>  }
->>  EXPORT_SYMBOL_GPL(of_dma_simple_xlate);
->> +
->> +struct of_dma_filter_by_chan_id_args {
->> +	struct dma_device *dev;
->> +	unsigned int chan_id;
->> +};
->> +
->> +static bool of_dma_filter_by_chan_id(struct dma_chan *chan, void *params)
->> +{
->> +	struct of_dma_filter_by_chan_id_args *args = params;
->> +
->> +	return chan->device == args->dev && chan->chan_id == args->chan_id;
->> +}
->> +
->> +/**
->> + * of_dma_xlate_by_chan_id - Translate dt property to DMA channel by channel id
->> + * @dma_spec:	pointer to DMA specifier as found in the device tree
->> + * @of_dma:	pointer to DMA controller data
->> + *
->> + * This function can be used as the of xlate callback for DMA driver which want
->> + * to match the channel based on the channel id. When using this xlate function
->> + * the #dma-cells propety of the DMA controller dt node needs to be set to 1.
->> + * The data parameter of of_dma_controller_register must be a pointer to the
->> + * dma_device struct the function should match uppon.
->> + *
->> + * Returns pointer to appropriate dma channel on success or NULL on error.
->> + */
->> +struct dma_chan *of_dma_xlate_by_chan_id(struct of_phandle_args *dma_spec,
->> +					 struct of_dma *ofdma)
->> +{
->> +	struct of_dma_filter_by_chan_id_args args;
->> +	dma_cap_mask_t cap;
->> +
->> +	args.dev = ofdma->of_dma_data;
->> +	if (!args.dev)
->> +		return NULL;
->> +
->> +	if (dma_spec->args_count != 1)
->> +		return NULL;
->> +
->> +	dma_cap_zero(cap);
->> +	dma_cap_set(DMA_SLAVE, cap);
->> +
->> +	args.chan_id = dma_spec->args[0];
->> +
->> +	return dma_request_channel(cap, of_dma_filter_by_chan_id, &args);
->> +}
->> +EXPORT_SYMBOL_GPL(of_dma_xlate_by_chan_id);
->> diff --git a/include/linux/of_dma.h b/include/linux/of_dma.h
->> index ce6a8ab..46732d3 100644
->> --- a/include/linux/of_dma.h
->> +++ b/include/linux/of_dma.h
->> @@ -43,6 +43,8 @@ extern struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
->>  						     const char *name);
->>  extern struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
->>  		struct of_dma *ofdma);
->> +extern struct dma_chan *of_dma_xlate_by_chan_id(struct of_phandle_args *dma_spec,
->> +		struct of_dma *ofdma);
->>  #else
->>  static inline int of_dma_controller_register(struct device_node *np,
->>  		struct dma_chan *(*of_dma_xlate)
->> @@ -69,6 +71,8 @@ static inline struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_s
->>  	return NULL;
->>  }
->>  
->> +#define of_dma_xlate_by_chan_id NULL
->> +
->>  #endif
->>  
->>  #endif /* __LINUX_OF_DMA_H */
->> -- 
->> 1.8.0
->>
+> On 03/30/2013 08:55 AM, Jean Delvare wrote:
+> > Hi Lars-Peter,
+> > 
+> > On Sat,  9 Mar 2013 19:16:46 +0100, Lars-Peter Clausen wrote:
+> >> i2c_del_adapter() always returns 0.
+> > 
+> > I beg you pardon? i2c_del_adapter() starts with:
+> > 
+> > int i2c_del_adapter(struct i2c_adapter *adap)
+> > {
+> > 	int res = 0;
+> > 	struct i2c_adapter *found;
+> > 	struct i2c_client *client, *next;
+> > 
+> > 	/* First make sure that this adapter was ever added */
+> > 	mutex_lock(&core_lock);
+> > 	found = idr_find(&i2c_adapter_idr, adap->nr);
+> > 	mutex_unlock(&core_lock);
+> > 	if (found != adap) {
+> > 		pr_debug("i2c-core: attempting to delete unregistered "
+> > 			 "adapter [%s]\n", adap->name);
+> > 		return -EINVAL;
+> > 	}
+> > 
+> > 	/* Tell drivers about this removal */
+> > 	mutex_lock(&core_lock);
+> > 	res = bus_for_each_drv(&i2c_bus_type, NULL, adap,
+> > 			       __process_removed_adapter);
+> > 	mutex_unlock(&core_lock);
+> > 	if (res)
+> > 		return res;
+> > (...)
+> > 
+> > So, no, it doesn't "always return 0".
+> > 
+> 
+> Patch 1 and 2 in this series remove those two instances:
+> https://lkml.org/lkml/2013/3/9/72
+> https://lkml.org/lkml/2013/3/9/86
+> 
+> For an explanation why this should be done please take a look at the cover
+> letter to this patch series https://lkml.org/lkml/2013/3/9/73
 
+Well well... Either you think this must be done and isn't questionable,
+and you shouldn't bother Cc'ing a dozen driver maintainers and waiting
+for them to ack. Or you think this is something for discussion and you
+should consistently Cc all interested parties on the whole patch
+series. If you send me one random patch in the middle of a series and
+expect me to go fish for the missing parts so that I can make sense of
+it all and make sane and useful comments, well this isn't going to
+happen, sorry.
+
+Now with the above pointers, I can actually make useful comments, and I
+will.
+
+-- 
+Jean Delvare
