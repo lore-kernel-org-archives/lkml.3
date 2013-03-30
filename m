@@ -1,98 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab3C3Inm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 04:43:42 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:3032 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755211Ab3C3Ink (ORCPT
+	id S1755444Ab3C3JGK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 05:06:10 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:55383 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753611Ab3C3JGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 04:43:40 -0400
-Date: Sat, 30 Mar 2013 09:43:26 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Shawn Guo <shawn.guo@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Lars Poeschel <poeschel@lemonage.de>
-Subject: Re: [PATCH 3/6] i2c: Ignore return value of i2c_del_adapter()
-Message-ID: <20130330094326.63d7e2a0@endymion.delvare>
-In-Reply-To: <51569E4A.2080006@metafoo.de>
-References: <1362853009-20789-1-git-send-email-lars@metafoo.de>
-	<1362853009-20789-4-git-send-email-lars@metafoo.de>
-	<20130330085539.442321fa@endymion.delvare>
-	<51569E4A.2080006@metafoo.de>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
+	Sat, 30 Mar 2013 05:06:08 -0400
+Message-ID: <1364634366.1345.111.camel@x61.thuisdomein>
+Subject: [PATCH] [RESEND] arch: remove CONFIG_GENERIC_FIND_NEXT_BIT again
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Richard Kuo <rkuo@codeaurora.org>, Jonas Bonn <jonas@southpole.se>
+Cc: linux-hexagon@vger.kernel.org, linux@openrisc.net,
+        linux-kernel@vger.kernel.org
+Date: Sat, 30 Mar 2013 10:06:06 +0100
+In-Reply-To: <51545BFB.9010806@southpole.se>
+References: <1363872898.1390.143.camel@x61.thuisdomein>
+	 <ed19f23c22d5a92cda8e3622060bed61.squirrel@www.codeaurora.org>
+	 <51545BFB.9010806@southpole.se>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 30 Mar 2013 09:06:06.0120 (UTC) FILETIME=[CFA72280:01CE2D25]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Mar 2013 09:11:54 +0100, Lars-Peter Clausen wrote:
-> Hi Jean,
-> 
-> On 03/30/2013 08:55 AM, Jean Delvare wrote:
-> > Hi Lars-Peter,
-> > 
-> > On Sat,  9 Mar 2013 19:16:46 +0100, Lars-Peter Clausen wrote:
-> >> i2c_del_adapter() always returns 0.
-> > 
-> > I beg you pardon? i2c_del_adapter() starts with:
-> > 
-> > int i2c_del_adapter(struct i2c_adapter *adap)
-> > {
-> > 	int res = 0;
-> > 	struct i2c_adapter *found;
-> > 	struct i2c_client *client, *next;
-> > 
-> > 	/* First make sure that this adapter was ever added */
-> > 	mutex_lock(&core_lock);
-> > 	found = idr_find(&i2c_adapter_idr, adap->nr);
-> > 	mutex_unlock(&core_lock);
-> > 	if (found != adap) {
-> > 		pr_debug("i2c-core: attempting to delete unregistered "
-> > 			 "adapter [%s]\n", adap->name);
-> > 		return -EINVAL;
-> > 	}
-> > 
-> > 	/* Tell drivers about this removal */
-> > 	mutex_lock(&core_lock);
-> > 	res = bus_for_each_drv(&i2c_bus_type, NULL, adap,
-> > 			       __process_removed_adapter);
-> > 	mutex_unlock(&core_lock);
-> > 	if (res)
-> > 		return res;
-> > (...)
-> > 
-> > So, no, it doesn't "always return 0".
-> > 
-> 
-> Patch 1 and 2 in this series remove those two instances:
-> https://lkml.org/lkml/2013/3/9/72
-> https://lkml.org/lkml/2013/3/9/86
-> 
-> For an explanation why this should be done please take a look at the cover
-> letter to this patch series https://lkml.org/lkml/2013/3/9/73
+CONFIG_GENERIC_FIND_NEXT_BIT was removed in v3.0, but reappeared in two
+architectures. Remove it again.
 
-Well well... Either you think this must be done and isn't questionable,
-and you shouldn't bother Cc'ing a dozen driver maintainers and waiting
-for them to ack. Or you think this is something for discussion and you
-should consistently Cc all interested parties on the whole patch
-series. If you send me one random patch in the middle of a series and
-expect me to go fish for the missing parts so that I can make sense of
-it all and make sane and useful comments, well this isn't going to
-happen, sorry.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Acked-by: Jonas Bonn <jonas@southpole.se>
+---
+0) Richard asked (off list) to resend. There appear to be problems
+locating the patch in the archives for LKML and/or linux-hexagon.
 
-Now with the above pointers, I can actually make useful comments, and I
-will.
+1) Added Jonas' ACK. Richard will pull the patch in a hexagon tree and
+handle it from there.
 
+ arch/hexagon/Kconfig  | 3 ---
+ arch/openrisc/Kconfig | 3 ---
+ 2 files changed, 6 deletions(-)
+
+diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
+index 48130eb..650ef81 100644
+--- a/arch/hexagon/Kconfig
++++ b/arch/hexagon/Kconfig
+@@ -81,9 +81,6 @@ config RWSEM_GENERIC_SPINLOCK
+ config RWSEM_XCHGADD_ALGORITHM
+ 	def_bool y
+ 
+-config GENERIC_FIND_NEXT_BIT
+-	def_bool y
+-
+ config GENERIC_HWEIGHT
+ 	def_bool y
+ 
+diff --git a/arch/openrisc/Kconfig b/arch/openrisc/Kconfig
+index 9ab3bf2..81b9ddb 100644
+--- a/arch/openrisc/Kconfig
++++ b/arch/openrisc/Kconfig
+@@ -55,9 +55,6 @@ config TRACE_IRQFLAGS_SUPPORT
+ config GENERIC_CSUM
+         def_bool y
+ 
+-config GENERIC_FIND_NEXT_BIT
+-	def_bool y
+-
+ source "init/Kconfig"
+ 
+ 
 -- 
-Jean Delvare
+1.7.11.7
+
