@@ -1,99 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757815Ab3C3DBD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 23:01:03 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:64282 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755534Ab3C3DBB (ORCPT
+	id S1757852Ab3C3DBN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 23:01:13 -0400
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:33821 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755534Ab3C3DBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 23:01:01 -0400
+	Fri, 29 Mar 2013 23:01:04 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, akpm@linux-foundation.org
-Cc: jack@suse.cz, david@fromorbit.com, linux-kernel@vger.kernel.org
-Subject: [PATCHSET] workqueue, writeback: better worker information in task dumps
-Date: Fri, 29 Mar 2013 20:00:44 -0700
-Message-Id: <1364612447-6810-1-git-send-email-tj@kernel.org>
+Cc: jack@suse.cz, david@fromorbit.com, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH 1/3] kthread: implement probe_kthread_data()
+Date: Fri, 29 Mar 2013 20:00:45 -0700
+Message-Id: <1364612447-6810-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1364612447-6810-1-git-send-email-tj@kernel.org>
+References: <1364612447-6810-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Implement probe_kthread_data() which returns kthread_data if
+accessible.  The function is equivalent to kthread_data() except that
+the specified @task may not be a kthread or its vfork_done is already
+cleared rendering struct kthread inaccessible.  In the former case,
+probe_kthread_data() may return any value.  In the latter, NULL.
 
-One of the problems that arise when converting dedicated custom
-threadpool to workqueue is that the shared worker pool used by
-workqueue anonimizes each worker making it more difficult to identify
-what the worker was doing on which target from the output of sysrq-t
-or debug dump from oops, BUG() and friends.
+This will be used to safely print debug information without affecting
+synchronization in the normal paths.  Workqueue debug info printing on
+dump_stack() and friends will make use of it.
 
-For example, after writeback is converted to use workqueue instead of
-priviate thread pool, there's no easy to tell which backing device a
-writeback work item was working on at the time of task dump, which,
-according to our writeback brethren, is important in tracking down
-issues with a lot of mounted file systems on a lot of different
-devices.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ include/linux/kthread.h |  1 +
+ kernel/kthread.c        | 19 +++++++++++++++++++
+ 2 files changed, 20 insertions(+)
 
-This patchset implements a way for a work function to mark its
-execution instance so that task dump of the worker task includes
-information to indicate what the work item was doing.
+diff --git a/include/linux/kthread.h b/include/linux/kthread.h
+index 8d81664..7dcef33 100644
+--- a/include/linux/kthread.h
++++ b/include/linux/kthread.h
+@@ -43,6 +43,7 @@ bool kthread_should_stop(void);
+ bool kthread_should_park(void);
+ bool kthread_freezable_should_stop(bool *was_frozen);
+ void *kthread_data(struct task_struct *k);
++void *probe_kthread_data(struct task_struct *k);
+ int kthread_park(struct task_struct *k);
+ void kthread_unpark(struct task_struct *k);
+ void kthread_parkme(void);
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index a2fbbb7..31696c8 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -17,6 +17,7 @@
+ #include <linux/slab.h>
+ #include <linux/freezer.h>
+ #include <linux/ptrace.h>
++#include <linux/uaccess.h>
+ #include <trace/events/sched.h>
+ 
+ static DEFINE_SPINLOCK(kthread_create_lock);
+@@ -122,6 +123,24 @@ void *kthread_data(struct task_struct *task)
+ 	return to_kthread(task)->data;
+ }
+ 
++/**
++ * probe_kthread_data - speculatively version of kthread_data()
++ * @task: possible kthread task in question
++ *
++ * @task could be a kthread task.  Return the data value specified when it
++ * was created if accessible.  If @task isn't a kthread task or its data is
++ * inaccessible for any reason, %NULL is returned.  This function requires
++ * that @task itself is safe to dereference.
++ */
++void *probe_kthread_data(struct task_struct *task)
++{
++	struct kthread *kthread = to_kthread(task);
++	void *data = NULL;
++
++	probe_kernel_read(&data, &kthread->data, sizeof(data));
++	return data;
++}
++
+ static void __kthread_parkme(struct kthread *self)
+ {
+ 	__set_current_state(TASK_INTERRUPTIBLE);
+-- 
+1.8.1.4
 
-An example WARN dump would look like the following.
-
- WARNING: at /work/os/work/fs/fs-writeback.c:1015 bdi_writeback_workfn+0x2b4/0x3c0()
- Modules linked in:
- Pid: 28, comm: kworker/u18:0 Not tainted 3.9.0-rc1-work+ #24 empty empty/S3992
- Workqueue: writeback bdi_writeback_workfn (flush-8:16)
-  ffffffff820a3a98 ffff88015b927cb8 ffffffff81c61855 ffff88015b927cf8
-  ffffffff8108f500 0000000000000000 ffff88007a171948 ffff88007a1716b0
-  ffff88015b49df00 ffff88015b8d3940 0000000000000000 ffff88015b927d08
- Call Trace:
-  [<ffffffff81c61855>] dump_stack+0x19/0x1b
-  [<ffffffff8108f500>] warn_slowpath_common+0x70/0xa0
-  ...
-
-This patchset contains the following three patches.
-
- 0001-kthread-implement-probe_kthread_data.patch
- 0002-workqueue-include-workqueue-info-when-printing-debug.patch
- 0003-writeback-set-worker-desc-to-identify-writeback-work.patch
-
-0001 adds a speculative accessor for kthread_data.
-
-0002 implements worker description.
-
-0003 updates writeback to set its flusher name as worker description.
-
-This patchset is on top of
-
-  [1] workqueue: NUMA affinity for unbound workqueues
-+ [2] writeback: convert writeback to unbound workqueue
-+ [3] arch: unify task dump debug info
-
-and available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-better-dbg
-
-Due to the dependencies, routing this set would be a bit complicated.
-I think it would be best to first pull wq/for-3.10 to block tree and
-apply workqueue conversion patchset.  The patches in this series then
-can go through -mm on top of all three pieces - workqueue, block and
-archs.
-
-diffstat follows.  Thanks.
-
- fs/fs-writeback.c           |    1 
- include/linux/kthread.h     |    1 
- include/linux/workqueue.h   |    5 ++
- kernel/kthread.c            |   19 ++++++++++
- kernel/sched/core.c         |    1 
- kernel/workqueue.c          |   79 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/workqueue_internal.h |   12 ++++++
- lib/dump_stack.c            |    2 +
- 8 files changed, 119 insertions(+), 1 deletion(-)
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1465626
-[2] http://thread.gmane.org/gmane.linux.kernel/1453006
-[3] https://lkml.org/lkml/2013/3/29/354
