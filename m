@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab3C3HQA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 03:16:00 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:27098 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243Ab3C3HP7 (ORCPT
+	id S1755296Ab3C3H4E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 03:56:04 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:30726 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755170Ab3C3H4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 03:15:59 -0400
-Message-ID: <51569129.8020106@atmel.com>
-Date: Sat, 30 Mar 2013 08:15:53 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-usb@vger.kernel.org>,
-        Manjunath Goudar <manjunath.goudar@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, Andrew Victor <linux@maxim.org.za>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH v3 5/7] USB: EHCI: make ehci-atmel a separate driver
-References: <Pine.LNX.4.44L0.1303291600080.1467-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1303291600080.1467-100000@iolanthe.rowland.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
+	Sat, 30 Mar 2013 03:56:02 -0400
+Date: Sat, 30 Mar 2013 08:55:39 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Shawn Guo <shawn.guo@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Lars Poeschel <poeschel@lemonage.de>
+Subject: Re: [PATCH 3/6] i2c: Ignore return value of i2c_del_adapter()
+Message-ID: <20130330085539.442321fa@endymion.delvare>
+In-Reply-To: <1362853009-20789-4-git-send-email-lars@metafoo.de>
+References: <1362853009-20789-1-git-send-email-lars@metafoo.de>
+	<1362853009-20789-4-git-send-email-lars@metafoo.de>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2013 09:02 PM, Alan Stern :
-> On Thu, 28 Mar 2013, Arnd Bergmann wrote:
-> 
->> From: Manjunath Goudar <manjunath.goudar@linaro.org>
->>
->> Separate the Atmel host controller driver from ehci-hcd host code
->> so that it can be built as a separate driver module.
->> This work is part of enabling multi-platform kernels on ARM;
->> however, note that other changes are still needed before Atmel can be
->> booted with a multi-platform kernel. This is currently planned for
->> Linux-3.11.
->>
->> With the infrastructure added by Alan Stern in patch 3e0232039
->> "USB: EHCI: prepare to make ehci-hcd a library module", we can
->> avoid this problem by turning a bus glue into a separate
->> module, as we do here for the Atmel bus glue.
-> 
-> Generally okay.
-> 
->> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
->> index 01c1acb..8c564aa 100644
->> --- a/drivers/usb/host/ehci-atmel.c
->> +++ b/drivers/usb/host/ehci-atmel.c
+Hi Lars-Peter,
 
+On Sat,  9 Mar 2013 19:16:46 +0100, Lars-Peter Clausen wrote:
+> i2c_del_adapter() always returns 0.
 
-I missed the patch itself but I reviewed it on the mailing-list archive.
-So, here is my:
+I beg you pardon? i2c_del_adapter() starts with:
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+int i2c_del_adapter(struct i2c_adapter *adap)
+{
+	int res = 0;
+	struct i2c_adapter *found;
+	struct i2c_client *client, *next;
 
-Thanks a lot for having taking care of this driver.
+	/* First make sure that this adapter was ever added */
+	mutex_lock(&core_lock);
+	found = idr_find(&i2c_adapter_idr, adap->nr);
+	mutex_unlock(&core_lock);
+	if (found != adap) {
+		pr_debug("i2c-core: attempting to delete unregistered "
+			 "adapter [%s]\n", adap->name);
+		return -EINVAL;
+	}
 
-Best regards,
+	/* Tell drivers about this removal */
+	mutex_lock(&core_lock);
+	res = bus_for_each_drv(&i2c_bus_type, NULL, adap,
+			       __process_removed_adapter);
+	mutex_unlock(&core_lock);
+	if (res)
+		return res;
+(...)
 
+So, no, it doesn't "always return 0".
 
->> @@ -15,6 +15,19 @@
->>  #include <linux/platform_device.h>
->>  #include <linux/of.h>
->>  #include <linux/of_platform.h>
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +#include <linux/usb.h>
->> +#include <linux/usb/hcd.h>
->> +#include <linux/io.h>
->> +#include <linux/dma-mapping.h>
-> 
-> While not absolutely necessary, it would be nice to have the #include 
-> files in alphabetical order.
-> 
->> +
->> +#include "ehci.h"
->> +
->> +#define DRIVER_DESC "EHCI atmel driver"
-> 
-> "atmel" should have a capital 'A'.
-> 
-> Alan Stern
-> 
-> 
-> 
-
+Thus nack from me.
 
 -- 
-Nicolas Ferre
+Jean Delvare
