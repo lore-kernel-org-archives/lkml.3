@@ -1,118 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757028Ab3C3OgF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 10:36:05 -0400
-Received: from mga14.intel.com ([143.182.124.37]:36513 "EHLO mga14.intel.com"
+	id S1757071Ab3C3OjT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 10:39:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31849 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756861Ab3C3Oft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 10:35:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,378,1363158000"; 
-   d="scan'208";a="220568210"
-From: Alex Shi <alex.shi@intel.com>
-To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de
-Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, alex.shi@intel.com
-Subject: [patch v6 06/21] sched: log the cpu utilization at rq
-Date: Sat, 30 Mar 2013 22:34:53 +0800
-Message-Id: <1364654108-16307-7-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
-References: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
+	id S1756835Ab3C3OjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Mar 2013 10:39:16 -0400
+Date: Sat, 30 Mar 2013 15:36:00 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, akpm@linux-foundation.org, jack@suse.cz,
+        david@fromorbit.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] kthread: implement probe_kthread_data()
+Message-ID: <20130330143600.GA8650@redhat.com>
+References: <1364612447-6810-1-git-send-email-tj@kernel.org> <1364612447-6810-2-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364612447-6810-2-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpu's utilization is to measure how busy is the cpu.
-        util = cpu_rq(cpu)->avg.runnable_avg_sum * SCHED_POEWR_SCALE
-                / cpu_rq(cpu)->avg.runnable_avg_period;
+On 03/29, Tejun Heo wrote:
+>
+> Implement probe_kthread_data() which returns kthread_data if
+> accessible.  The function is equivalent to kthread_data() except that
+> the specified @task may not be a kthread
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since the util is no more than 1, we scale its value with 1024, same as
-SCHED_POWER_SCALE and set the FULL_UTIL as 1024.
+This doesn't necessarily mean its ->vfork_done != NULL... but I guess
+the "false positive" is fine for your purpose.
 
-In later power aware scheduling, we are sensitive for how busy of the
-cpu. Since as to power consuming, it is tight related with cpu busy
-time.
+> or its vfork_done is already
+> cleared rendering struct kthread inaccessible.
+> ...
 
-BTW, rq->util can be used for any purposes if needed, not only power
-scheduling.
+> +/**
+> + * probe_kthread_data - speculatively version of kthread_data()
+> + * @task: possible kthread task in question
+> + *
+> + * @task could be a kthread task.  Return the data value specified when it
+> + * was created if accessible.  If @task isn't a kthread task or its data is
+> + * inaccessible for any reason, %NULL is returned.  This function requires
+> + * that @task itself is safe to dereference.
+> + */
+> +void *probe_kthread_data(struct task_struct *task)
+> +{
+> +	struct kthread *kthread = to_kthread(task);
+> +	void *data = NULL;
+> +
+> +	probe_kernel_read(&data, &kthread->data, sizeof(data));
+> +	return data;
+> +}
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- include/linux/sched.h | 2 +-
- kernel/sched/debug.c  | 1 +
- kernel/sched/fair.c   | 5 +++++
- kernel/sched/sched.h  | 4 ++++
- 4 files changed, 11 insertions(+), 1 deletion(-)
+OK, but we can simply check ->vfork_done != NULL ?
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 5a4cf37..226a515 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -793,7 +793,7 @@ enum cpu_idle_type {
- #define SCHED_LOAD_SCALE	(1L << SCHED_LOAD_SHIFT)
- 
- /*
-- * Increase resolution of cpu_power calculations
-+ * Increase resolution of cpu_power and rq->util calculations
-  */
- #define SCHED_POWER_SHIFT	10
- #define SCHED_POWER_SCALE	(1L << SCHED_POWER_SHIFT)
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 75024a6..f5db759 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -311,6 +311,7 @@ do {									\
- 
- 	P(ttwu_count);
- 	P(ttwu_local);
-+	P(util);
- 
- #undef P
- #undef P64
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 90106ad..a165f52 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1495,8 +1495,13 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
- 
- static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
- {
-+	u32 period;
- 	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
- 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
-+
-+	period = rq->avg.runnable_avg_period ? rq->avg.runnable_avg_period : 1;
-+	rq->util = (u64)(rq->avg.runnable_avg_sum << SCHED_POWER_SHIFT)
-+				/ period;
- }
- 
- /* Add the load generated by se into cfs_rq's child load-average */
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 804ee41..8682110 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -351,6 +351,9 @@ extern struct root_domain def_root_domain;
- 
- #endif /* CONFIG_SMP */
- 
-+/* full cpu utilization */
-+#define FULL_UTIL	SCHED_POWER_SCALE
-+
- /*
-  * This is the main, per-CPU runqueue data structure.
-  *
-@@ -482,6 +485,7 @@ struct rq {
- #endif
- 
- 	struct sched_avg avg;
-+	unsigned int util;
- };
- 
- static inline int cpu_of(struct rq *rq)
--- 
-1.7.12
+We do not care if we race with the exiting thread which can clear
+its ->vfork_done. If it is safe to dereference this @task then
+kthread is also safe.
+
+kthread-introduce-to_live_kthread.patch in -mm adds the trivial
+helper,
+
+	static inline struct kthread *to_kthread(struct task_struct *k)
+	{
+	       return __to_kthread(k->vfork_done);
+	}
+
+	static struct kthread *to_live_kthread(struct task_struct *k)
+	{
+	       struct completion *vfork = ACCESS_ONCE(k->vfork_done);
+	       if (likely(vfork))
+		       return __to_kthread(vfork);
+	       return NULL;
+	}
+
+So, perhaps,
+
+	voif *kthread_data_safe(struct task_struct *task)
+	{
+		struct kthread *kthread = to_live_kthread(task);
+		return kthread ? kthread->data : NULL;
+	}
+
+?
+
+Oleg.
 
