@@ -1,152 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107Ab3C3RLu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 13:11:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:32289 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756888Ab3C3RLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 13:11:42 -0400
-X-IronPort-AV: E=Sophos;i="4.87,379,1363104000"; 
-   d="scan'208";a="6974907"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 1/2 tj/for-3.10] workqueue: add wq->freezing and remove POOL_FREEZING
-Date: Sun, 31 Mar 2013 00:29:14 +0800
-Message-Id: <1364660955-5217-1-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.6
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/31 00:28:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/31 00:28:44,
-	Serialize complete at 2013/03/31 00:28:44
+	id S1757048Ab3C3RUx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 13:20:53 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:59788 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756877Ab3C3RUw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Mar 2013 13:20:52 -0400
+From: Artem Savkov <artem.savkov@gmail.com>
+To: johannes.berg@intel.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Artem Savkov <artem.savkov@gmail.com>
+Subject: [PATCH] net/wireless/sme: sched_scan_mtx lock in cfg80211_conn_work()
+Date: Sat, 30 Mar 2013 21:20:14 +0400
+Message-Id: <1364664014-12304-1-git-send-email-artem.savkov@gmail.com>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-freezing is nothing related to pools, but POOL_FREEZING adds a connection,
-and causes freeze_workqueues_begin() and thaw_workqueues() complicated.
+Introduced in f9f475292dbb0e7035fb6661d1524761ea0888d9
 
-Since freezing is workqueue instance attribute, so we introduce wq->freezing
-instead and remove POOL_FREEZING.
+cfg80211_conn_scan() which requires sched_scan_mtx to be held can be called
+from cfg80211_conn_work(). Without this we are hitting multiple warnings like
+the following:
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+[   51.996440] ------------[ cut here ]------------
+[   51.996484] WARNING: at net/wireless/sme.c:88 cfg80211_conn_scan+0x1dc/0x3a0 [cfg80211]()
+[   51.996489] Hardware name: 0578A21
+[   51.996492] Modules linked in: iwldvm mac80211 uvcvideo videobuf2_vmalloc
+videobuf2_memops iwlwifi videobuf2_core videodev media cfg80211 ums_realtek
+kvm_intel kvm intel_ips r8169 lpc_ich joydev crc32c_intel acpi_cpufreq mperf thinkpad_acpi
+[   51.996533] Pid: 620, comm: kworker/3:1 Not tainted 3.9.0-rc4-next-20130328+ #326
+[   51.996537] Call Trace:
+[   51.996550]  [<c1036992>] warn_slowpath_common+0x72/0xa0
+[   51.996583]  [<faa4b0ec>] ? cfg80211_conn_scan+0x1dc/0x3a0 [cfg80211]
+[   51.996615]  [<faa4b0ec>] ? cfg80211_conn_scan+0x1dc/0x3a0 [cfg80211]
+[   51.996622]  [<c10369e2>] warn_slowpath_null+0x22/0x30
+[   51.996654]  [<faa4b0ec>] cfg80211_conn_scan+0x1dc/0x3a0 [cfg80211]
+[   51.996662]  [<c109076c>] ? __lock_is_held+0x3c/0x60
+[   51.996694]  [<faa4b344>] cfg80211_conn_do_work+0x94/0x380 [cfg80211]
+[   51.996700]  [<c109175a>] ? __lock_acquire.isra.25+0x38a/0xc80
+[   51.996711]  [<c109e679>] ? is_module_text_address+0x19/0x30
+[   51.996720]  [<c10577cf>] ? __kernel_text_address+0x4f/0x70
+[   51.996728]  [<c10052b1>] ? print_context_stack+0x41/0xd0
+[   51.996763]  [<faa4c3b2>] cfg80211_conn_work+0xa2/0x130 [cfg80211]
+[   51.996771]  [<c1051858>] process_one_work+0x198/0x450
+[   51.996779]  [<c10517d0>] ? process_one_work+0x110/0x450
+[   51.996787]  [<c10527c9>] worker_thread+0xf9/0x320
+[   51.996795]  [<c10526d0>] ? manage_workers.isra.17+0x260/0x260
+[   51.996803]  [<c105a3c4>] kthread+0x94/0xa0
+[   51.996812]  [<c1060000>] ? profiling_show+0x10/0x30
+[   51.996823]  [<c170c277>] ret_from_kernel_thread+0x1b/0x28
+[   51.996830]  [<c105a330>] ? __init_kthread_worker+0x60/0x60
+[   51.996835] ---[ end trace 6c56f7f4ff21820b ]---
+
+Signed-off-by: Artem Savkov <artem.savkov@gmail.com>
 ---
- kernel/workqueue.c |   33 +++++++--------------------------
- 1 files changed, 7 insertions(+), 26 deletions(-)
+ net/wireless/sme.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 04a8b98..6b7e5a4 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -66,7 +66,6 @@ enum {
- 	 */
- 	POOL_MANAGE_WORKERS	= 1 << 0,	/* need to manage workers */
- 	POOL_DISASSOCIATED	= 1 << 2,	/* cpu can't serve workers */
--	POOL_FREEZING		= 1 << 3,	/* freeze in progress */
+diff --git a/net/wireless/sme.c b/net/wireless/sme.c
+index 818ad63..a9dc5c7 100644
+--- a/net/wireless/sme.c
++++ b/net/wireless/sme.c
+@@ -228,6 +228,7 @@ void cfg80211_conn_work(struct work_struct *work)
+ 	rtnl_lock();
+ 	cfg80211_lock_rdev(rdev);
+ 	mutex_lock(&rdev->devlist_mtx);
++	mutex_lock(&rdev->sched_scan_mtx);
  
- 	/* worker flags */
- 	WORKER_STARTED		= 1 << 0,	/* started */
-@@ -241,6 +240,7 @@ struct workqueue_struct {
+ 	list_for_each_entry(wdev, &rdev->wdev_list, list) {
+ 		wdev_lock(wdev);
+@@ -252,6 +253,7 @@ void cfg80211_conn_work(struct work_struct *work)
+ 		wdev_unlock(wdev);
+ 	}
  
- 	int			nr_drainers;	/* WQ: drain in progress */
- 	int			saved_max_active; /* WQ: saved pwq max_active */
-+	bool			freezing;	/* WQ: the wq is freezing */
- 
- #ifdef CONFIG_SYSFS
- 	struct wq_device	*wq_dev;	/* I: for sysfs interface */
-@@ -3493,9 +3493,6 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
- 	if (!pool || init_worker_pool(pool) < 0)
- 		goto fail;
- 
--	if (workqueue_freezing)
--		pool->flags |= POOL_FREEZING;
--
- 	lockdep_set_subclass(&pool->lock, 1);	/* see put_pwq() */
- 	copy_workqueue_attrs(pool->attrs, attrs);
- 
-@@ -3571,7 +3568,7 @@ static void pwq_adjust_max_active(struct pool_workqueue *pwq)
- 	struct workqueue_struct *wq = pwq->wq;
- 	bool freezable = wq->flags & WQ_FREEZABLE;
- 
--	/* for @wq->saved_max_active */
-+	/* for @wq->saved_max_active and @wq->freezing */
- 	lockdep_assert_held(&wq->mutex);
- 
- 	/* fast exit for non-freezable wqs */
-@@ -3580,7 +3577,7 @@ static void pwq_adjust_max_active(struct pool_workqueue *pwq)
- 
- 	spin_lock_irq(&pwq->pool->lock);
- 
--	if (!freezable || !(pwq->pool->flags & POOL_FREEZING)) {
-+	if (!freezable || !wq->freezing) {
- 		pwq->max_active = wq->saved_max_active;
- 
- 		while (!list_empty(&pwq->delayed_works) &&
-@@ -3795,6 +3792,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
- 	mutex_lock(&wq_pool_mutex);
- 
- 	mutex_lock(&wq->mutex);
-+	wq->freezing = workqueue_freezing;
- 	for_each_pwq(pwq, wq)
- 		pwq_adjust_max_active(pwq);
- 	mutex_unlock(&wq->mutex);
-@@ -4282,26 +4280,18 @@ EXPORT_SYMBOL_GPL(work_on_cpu);
-  */
- void freeze_workqueues_begin(void)
- {
--	struct worker_pool *pool;
- 	struct workqueue_struct *wq;
- 	struct pool_workqueue *pwq;
--	int pi;
- 
- 	mutex_lock(&wq_pool_mutex);
- 
- 	WARN_ON_ONCE(workqueue_freezing);
- 	workqueue_freezing = true;
- 
--	/* set FREEZING */
--	for_each_pool(pool, pi) {
--		spin_lock_irq(&pool->lock);
--		WARN_ON_ONCE(pool->flags & POOL_FREEZING);
--		pool->flags |= POOL_FREEZING;
--		spin_unlock_irq(&pool->lock);
--	}
--
- 	list_for_each_entry(wq, &workqueues, list) {
- 		mutex_lock(&wq->mutex);
-+		WARN_ON_ONCE(wq->freezing);
-+		wq->freezing = true;
- 		for_each_pwq(pwq, wq)
- 			pwq_adjust_max_active(pwq);
- 		mutex_unlock(&wq->mutex);
-@@ -4369,25 +4359,16 @@ void thaw_workqueues(void)
- {
- 	struct workqueue_struct *wq;
- 	struct pool_workqueue *pwq;
--	struct worker_pool *pool;
--	int pi;
- 
- 	mutex_lock(&wq_pool_mutex);
- 
- 	if (!workqueue_freezing)
- 		goto out_unlock;
- 
--	/* clear FREEZING */
--	for_each_pool(pool, pi) {
--		spin_lock_irq(&pool->lock);
--		WARN_ON_ONCE(!(pool->flags & POOL_FREEZING));
--		pool->flags &= ~POOL_FREEZING;
--		spin_unlock_irq(&pool->lock);
--	}
--
- 	/* restore max_active and repopulate worklist */
- 	list_for_each_entry(wq, &workqueues, list) {
- 		mutex_lock(&wq->mutex);
-+		wq->freezing = false;
- 		for_each_pwq(pwq, wq)
- 			pwq_adjust_max_active(pwq);
- 		mutex_unlock(&wq->mutex);
++	mutex_unlock(&rdev->sched_scan_mtx);
+ 	mutex_unlock(&rdev->devlist_mtx);
+ 	cfg80211_unlock_rdev(rdev);
+ 	rtnl_unlock();
 -- 
-1.7.7.6
+1.8.2
 
