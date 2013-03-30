@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab3C3XZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 19:25:58 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:55322 "EHLO
+	id S1754785Ab3C3X1Z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 19:27:25 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:49482 "EHLO
 	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538Ab3C3XZ5 (ORCPT
+	with ESMTP id S1754412Ab3C3X1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 19:25:57 -0400
+	Sat, 30 Mar 2013 19:27:24 -0400
 X-Originating-IP: 108.223.40.66
-Date: Sat, 30 Mar 2013 16:25:59 -0700
+Date: Sat, 30 Mar 2013 16:27:26 -0700
 From: Guenter Roeck <linux@roeck-us.net>
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: Jean Delvare <jdelvare@suse.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: gpio-ucb1400
-Message-ID: <20130330232559.GA12864@roeck-us.net>
-References: <1364586399.4216.312.camel@amber.site>
- <20130330151037.GA359@roeck-us.net>
- <201303302020.44584.marek.vasut@gmail.com>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: Jean Delvare <khali@linux-fr.org>, Hongbo Zhang <hongbo.zhang@linaro.org>,
+        lm-sensors@lm-sensors.org, dwmw2@infradead.org,
+        linaro-kernel@lists.linaro.org, STEricsson_nomadik_linux@list.st.com,
+        linus.walleij@linaro.org, lee.jones@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 5/5] hwmon: add ST-Ericsson ABX500 hwmon driver
+Message-ID: <20130330232726.GB12864@roeck-us.net>
+References: <1364368412-12810-1-git-send-email-hongbo.zhang@linaro.org>
+ <1364368412-12810-6-git-send-email-hongbo.zhang@linaro.org>
+ <20130327194807.GB11086@roeck-us.net>
+ <20130330231818.GA30901@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201303302020.44584.marek.vasut@gmail.com>
+In-Reply-To: <20130330231818.GA30901@lizard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 30, 2013 at 08:20:44PM +0100, Marek Vasut wrote:
-> Dear Guenter Roeck,
-> 
-> > On Fri, Mar 29, 2013 at 08:46:39PM +0100, Jean Delvare wrote:
-> > > Hi all,
+On Sat, Mar 30, 2013 at 04:18:18PM -0700, Anton Vorontsov wrote:
+> On Wed, Mar 27, 2013 at 12:48:07PM -0700, Guenter Roeck wrote:
+> > On Wed, Mar 27, 2013 at 03:13:32PM +0800, Hongbo Zhang wrote:
+> > > Each of ST-Ericsson X500 chip set series consists of both ABX500 and DBX500
+> > > chips. This is ABX500 hwmon driver, where the abx500.c is a common layer for
+> > > all ABX500s, and the ab8500.c is specific for AB8500 chip. Under this designed
+> > > structure, other chip specific files can be added simply using the same common
+> > > layer abx500.c.
 > > > 
-> > > In September 2009, a driver for the GPIO function of the UCB1400 chip
-> > > was added to the kernel tree. The probe function of this driver requires
-> > > ucbdata to be set. The only place where this happens is in function
-> > > ucb1400_gpio_set_data(). This function was never call, and still isn't.
-> > > So this is dead code for 3.5 years as far as the upstream kernel is
-> > > concerned.
-> > > 
-> > > To make things worse, this driver can't be built as a module, for no
-> > > good reason that I can see.
-> > > 
-> > > Marek, can you explain what was the point of submitting this driver that
-> > > nobody can use?
-> > > 
-> > > I would like either this driver to be fixed so that it can be used (and
-> > > that would IMHO start with dropping the ugly ucb1400_gpio_set_data hook
-> > > and global variable ucbdata), or this driver to be dropped from the
-> > > kernel tree. If the driver is kept, it should be adjusted so that it can
-> > > be built as a module.
-> > > 
-> > > If I overlooked something, please let me know.
+> > > Signed-off-by: Hongbo Zhang <hongbo.zhang@linaro.org>
 > > 
-> > Interestingly, the author made an attempt to fix that with [1]. It looks
-> > like the rest of that series was merged, but this patch wasn't, though I
-> > don't find any information about the reason.
+> > Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 > 
-> It's been a while. Guenter, thanks for finding that link, but I suspect the 
-> patch is heavily obsolete by now.
+> Thanks a lot for your reviews, Guenter!
 > 
-Oh, it most definitely is, starting with the gpio driver name. Just wonder
-why it was never applied, and why no one seems to have noticed or cared.
-
-Jean is absolutely right - it should get fixed, or the driver should be dropped
-if no one is using it anyway.
+> Guenter, Jean,
+> 
+> As the driver depends on the battery driver changes, do you mind if I take
+> it via battery-2.6.git tree?
+> 
+Ok with me. I actually assumed it would be merged through another tree because
+of its dependencies.
 
 Guenter
