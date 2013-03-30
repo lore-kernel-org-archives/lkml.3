@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757518Ab3C3BIi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 21:08:38 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:51353 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127Ab3C3BIg (ORCPT
+	id S1757531Ab3C3BLm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 21:11:42 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35105 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757373Ab3C3BLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 21:08:36 -0400
+	Fri, 29 Mar 2013 21:11:41 -0400
+Date: Sat, 30 Mar 2013 01:11:37 +0000
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] regmap: cache: Factor out reg_present support from
+	rbtree cache
+Message-ID: <20130330011137.GA26560@opensource.wolfsonmicro.com>
+References: <1364591025-18525-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <11307583.LtSeEfeXbs@vostro.rjw.lan>
-References: <1364444938-19801-1-git-send-email-yinghai@kernel.org>
-	<2045510.EK2WTuFZxV@vostro.rjw.lan>
-	<CAE9FiQWM=egh3OPcWMD+bJv2FtSsGopk_Pq0JUpQCy+pvja-6A@mail.gmail.com>
-	<11307583.LtSeEfeXbs@vostro.rjw.lan>
-Date: Fri, 29 Mar 2013 18:08:35 -0700
-X-Google-Sender-Auth: GbQ5J8gNIbOjYRyLYUmc4-Jp9_w
-Message-ID: <CAE9FiQV+zic-pi4yomQDoy-Rc0u1_+s4KbXJZKf9i_9xkvaknA@mail.gmail.com>
-Subject: Re: [PATCH] PCI, ACPI: Don't query OSC support with all possible controls
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364591025-18525-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29, 2013 at 6:12 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Friday, March 29, 2013 06:02:45 PM Yinghai Lu wrote:
->> On Fri, Mar 29, 2013 at 5:36 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >> -             /* Run _OSC query for all possible controls. */
->> >> -             capbuf[OSC_CONTROL_TYPE] = OSC_PCI_CONTROL_MASKS;
->> >> +             /* Run _OSC query only with existing controls. */
->> >> +             capbuf[OSC_CONTROL_TYPE] = root->osc_control_set;
->> >
->> > I suppose we can do that, but then why this should be root->osc_control_set and
->> > not just 0?
->>
->> in case query support and set control are called in mixed sequence.
->
-> OK, that's a good enough reason I think.
->
-> I'm kind of afarid of regressions that may result from this, though, so I'm
-> going to queue it up for 3.10.
+On Fri, Mar 29, 2013 at 09:03:42PM +0000, Mark Brown wrote:
+> The idea of maintaining a bitmap of present registers is something that
+> can usefully be used by other cache types that maintain blocks of cached
+> registers so move the code out of the rbtree cache and into the generic
+> regcache code.
+> 
+> Refactor the interface slightly as we go to wrap the set bit and enlarge
+> bitmap operations (since we never do one without the other) and make it
+> more robust for reads of uncached registers by bounds checking before we
+> look at the bitmap.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Ok,
+Looks good.
 
-Thanks
+Reviewed-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
