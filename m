@@ -1,85 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048Ab3C3RUx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 13:20:53 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:59788 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756877Ab3C3RUw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 13:20:52 -0400
-From: Artem Savkov <artem.savkov@gmail.com>
-To: johannes.berg@intel.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Artem Savkov <artem.savkov@gmail.com>
-Subject: [PATCH] net/wireless/sme: sched_scan_mtx lock in cfg80211_conn_work()
-Date: Sat, 30 Mar 2013 21:20:14 +0400
-Message-Id: <1364664014-12304-1-git-send-email-artem.savkov@gmail.com>
-X-Mailer: git-send-email 1.8.2
+	id S1757175Ab3C3RVR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 13:21:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:42832 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757089Ab3C3RVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Mar 2013 13:21:05 -0400
+X-IronPort-AV: E=Sophos;i="4.87,379,1363104000"; 
+   d="scan'208";a="6974949"
+Message-ID: <51571FA2.2050804@cn.fujitsu.com>
+Date: Sun, 31 Mar 2013 01:23:46 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Lai Jiangshan <eag0628@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        Jan Kara <jack@suse.cz>, fengguang.wu@intel.com, jmoyer@redhat.com,
+        zab@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: [PATCH v4 13/14] workqueue: implement NUMA affinity for unbound
+ workqueues
+References: <1364453020-2829-1-git-send-email-tj@kernel.org>	<1364453020-2829-14-git-send-email-tj@kernel.org>	<20130329224434.GC9862@htj.dyndns.org>	<CACvQF50c3m3eMiGKctagoOe6s3uhehfFy733imBfnLKTXSqZ4A@mail.gmail.com> <CAOS58YOgwB4s4-2e528T6SV36pDxLS3Zx+b5eR0L2kQjiZBEnw@mail.gmail.com>
+In-Reply-To: <CAOS58YOgwB4s4-2e528T6SV36pDxLS3Zx+b5eR0L2kQjiZBEnw@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/31 01:20:09,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/31 01:20:09,
+	Serialize complete at 2013/03/31 01:20:09
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduced in f9f475292dbb0e7035fb6661d1524761ea0888d9
+On 31/03/13 00:32, Tejun Heo wrote:
+> Hello, Lai.
+> 
+> 
+> On Sat, Mar 30, 2013 at 9:13 AM, Lai Jiangshan <eag0628@gmail.com <mailto:eag0628@gmail.com>> wrote:
+> 
+> 
+>         +       /* all pwqs have been created successfully, let's install'em */
+>                 mutex_lock(&wq->mutex);
+> 
+>                 copy_workqueue_attrs(wq->unbound_attrs, new_attrs);
+>         +
+>         +       /* save the previous pwq and install the new one */
+>                 for_each_node(node)
+>         -               last_pwq = numa_pwq_tbl_install(wq, node, pwq);
+>         +               pwq_tbl[node] = numa_pwq_tbl_install(wq, node, pwq_tbl[node]);
+>         +
+>         +       /* @dfl_pwq might not have been used, ensure it's linked */
+>         +       link_pwq(dfl_pwq);
+>         +       swap(wq->dfl_pwq, dfl_pwq);
+> 
+>                 mutex_unlock(&wq->mutex);
+> 
+>         -       put_pwq_unlocked(last_pwq);
+>         +       /* put the old pwqs */
+>         +       for_each_node(node)
+>         +               put_pwq_unlocked(pwq_tbl[node]);
+>         +       put_pwq_unlocked(dfl_pwq);
+>         +
+>         +       put_online_cpus();
+>                 return 0;
+> 
+> 
+> 
+>     Forgot to free new_attrs in previous patch
+>     (workqueue: fix unbound workqueue attrs hashing / comparison).
+> 
+>     Forgot to free tmp_attrs, pwq_tbl in this patch.
+> 
+> 
+> Right, will fix. 
+> 
+>         +retry:
+>         +       mutex_lock(&wq->mutex);
+>         +
+>         +       copy_workqueue_attrs(target_attrs, wq->unbound_attrs);
+>         +       pwq = unbound_pwq_by_node(wq, node);
+>         +
+>         +       /*
+>         +        * Let's determine what needs to be done.  If the target cpumask is
+>         +        * different from wq's, we need to compare it to @pwq's and create
+>         +        * a new one if they don't match.  If the target cpumask equals
+>         +        * wq's, the default pwq should be used.  If @pwq is already the
+>         +        * default one, nothing to do; otherwise, install the default one.
+>         +        */
+>         +       if (wq_calc_node_cpumask(wq->unbound_attrs, node, cpu_off, cpumask)) {
+>         +               if (cpumask_equal(cpumask, pwq->pool->attrs->cpumask))
+>         +                       goto out_unlock;
+>         +       } else if (pwq != wq->dfl_pwq) {
+>         +               goto use_dfl_pwq;
+>         +       } else {
+>         +               goto out_unlock;
+>         +       }
+>         +
+>         +       /*
+>         +        * Have we already created a new pwq?  As we could have raced with
+>         +        * apply_workqueue_attrs(), verify that its attrs match the desired
+>         +        * one before installing.
+>         +        */
+> 
+> 
+>     I don't see any race since there is get/put_online_cpu() in apply_workqueue_attrs().
+> 
+> 
+> I don't know. I kinda want wq exclusion to be self-contained, but yeah the hotplug exclusion here is *almost* explicit so maybe it would be better to depend on it. Will think about it.
+> 
+>         +       mutex_unlock(&wq->mutex);
+>         +       put_pwq_unlocked(old_pwq);
+>         +       free_unbound_pwq(new_pwq);
+>         +}
+> 
+> 
+>     OK, your solution is what I suggested: swapping dfl_pwq <-> node pwq.
+>     But when the last cpu of the node(of the wq) is trying to offline.
+>     you need to handle the work items of node pwq(old_pwq in the code).
+> 
+>     you may handle the works which are still queued by migrating, OR by
+>     flushing the works.
+>     and you may handle busy works by temporary changing the cpumask of
+>     the workers, OR by flushing the busy works.
+> 
+> 
+> I don't think that's necessary.
 
-cfg80211_conn_scan() which requires sched_scan_mtx to be held can be called
-from cfg80211_conn_work(). Without this we are hitting multiple warnings like
-the following:
+Please document it.
 
-[   51.996440] ------------[ cut here ]------------
-[   51.996484] WARNING: at net/wireless/sme.c:88 cfg80211_conn_scan+0x1dc/0x3a0 [cfg80211]()
-[   51.996489] Hardware name: 0578A21
-[   51.996492] Modules linked in: iwldvm mac80211 uvcvideo videobuf2_vmalloc
-videobuf2_memops iwlwifi videobuf2_core videodev media cfg80211 ums_realtek
-kvm_intel kvm intel_ips r8169 lpc_ich joydev crc32c_intel acpi_cpufreq mperf thinkpad_acpi
-[   51.996533] Pid: 620, comm: kworker/3:1 Not tainted 3.9.0-rc4-next-20130328+ #326
-[   51.996537] Call Trace:
-[   51.996550]  [<c1036992>] warn_slowpath_common+0x72/0xa0
-[   51.996583]  [<faa4b0ec>] ? cfg80211_conn_scan+0x1dc/0x3a0 [cfg80211]
-[   51.996615]  [<faa4b0ec>] ? cfg80211_conn_scan+0x1dc/0x3a0 [cfg80211]
-[   51.996622]  [<c10369e2>] warn_slowpath_null+0x22/0x30
-[   51.996654]  [<faa4b0ec>] cfg80211_conn_scan+0x1dc/0x3a0 [cfg80211]
-[   51.996662]  [<c109076c>] ? __lock_is_held+0x3c/0x60
-[   51.996694]  [<faa4b344>] cfg80211_conn_do_work+0x94/0x380 [cfg80211]
-[   51.996700]  [<c109175a>] ? __lock_acquire.isra.25+0x38a/0xc80
-[   51.996711]  [<c109e679>] ? is_module_text_address+0x19/0x30
-[   51.996720]  [<c10577cf>] ? __kernel_text_address+0x4f/0x70
-[   51.996728]  [<c10052b1>] ? print_context_stack+0x41/0xd0
-[   51.996763]  [<faa4c3b2>] cfg80211_conn_work+0xa2/0x130 [cfg80211]
-[   51.996771]  [<c1051858>] process_one_work+0x198/0x450
-[   51.996779]  [<c10517d0>] ? process_one_work+0x110/0x450
-[   51.996787]  [<c10527c9>] worker_thread+0xf9/0x320
-[   51.996795]  [<c10526d0>] ? manage_workers.isra.17+0x260/0x260
-[   51.996803]  [<c105a3c4>] kthread+0x94/0xa0
-[   51.996812]  [<c1060000>] ? profiling_show+0x10/0x30
-[   51.996823]  [<c170c277>] ret_from_kernel_thread+0x1b/0x28
-[   51.996830]  [<c105a330>] ? __init_kthread_worker+0x60/0x60
-[   51.996835] ---[ end trace 6c56f7f4ff21820b ]---
+> It's not like we have hard guarantee on attr changes anyway.
+> Self-requeueing work items can get stuck with old attributes for quite a while,
 
-Signed-off-by: Artem Savkov <artem.savkov@gmail.com>
----
- net/wireless/sme.c | 2 ++
- 1 file changed, 2 insertions(+)
+It is OK for it is documented.
 
-diff --git a/net/wireless/sme.c b/net/wireless/sme.c
-index 818ad63..a9dc5c7 100644
---- a/net/wireless/sme.c
-+++ b/net/wireless/sme.c
-@@ -228,6 +228,7 @@ void cfg80211_conn_work(struct work_struct *work)
- 	rtnl_lock();
- 	cfg80211_lock_rdev(rdev);
- 	mutex_lock(&rdev->devlist_mtx);
-+	mutex_lock(&rdev->sched_scan_mtx);
- 
- 	list_for_each_entry(wdev, &rdev->wdev_list, list) {
- 		wdev_lock(wdev);
-@@ -252,6 +253,7 @@ void cfg80211_conn_work(struct work_struct *work)
- 		wdev_unlock(wdev);
- 	}
- 
-+	mutex_unlock(&rdev->sched_scan_mtx);
- 	mutex_unlock(&rdev->devlist_mtx);
- 	cfg80211_unlock_rdev(rdev);
- 	rtnl_unlock();
--- 
-1.8.2
+> and even per-cpu work items get migrated to other CPUs on CPU DOWN.
+
+It is expected.
+
+But for unbound wq when cpuhotplug
+w/o NUMA affinity, works are    always   in the cpus  if   there is online cpu in wq's cpumask
+w/ NUMA affinity, .........   NOT always ........     even ....................................
+
+> Workqueue's affinity guarantee is very specific - the work item owner is
+> responsible for flushing the work item during CPU DOWN if it wants
+> to guarantee affinity over full execution. 
+
+Could you add the comments and add Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+for the patchset?
+
+Thanks,
+Lai
 
