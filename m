@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379Ab3C3VQq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 17:16:46 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:54441 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755303Ab3C3VQp convert rfc822-to-8bit (ORCPT
+	id S1756093Ab3C3V1D (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 17:27:03 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:46999 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754412Ab3C3V1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 17:16:45 -0400
+	Sat, 30 Mar 2013 17:27:00 -0400
+From: Marek Vasut <marek.vasut@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Subject: Re: gpio-ucb1400
+Date: Sat, 30 Mar 2013 20:20:44 +0100
+User-Agent: KMail/1.13.7 (Linux/3.8-trunk-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Jean Delvare <jdelvare@suse.de>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+References: <1364586399.4216.312.camel@amber.site> <20130330151037.GA359@roeck-us.net>
+In-Reply-To: <20130330151037.GA359@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <20130330175628.GA28947@amd.pavel.ucw.cz>
-References: <20130108230954.GN2044@merlins.org>
-	<20130109023643.GA7066@mobil.systemanalysen.net>
-	<20130322223141.GQ12428@merlins.org>
-	<20130330175628.GA28947@amd.pavel.ucw.cz>
-Date: Sat, 30 Mar 2013 14:16:43 -0700
-Message-ID: <CAKbGBLg+yp7gAj36EuxCTT5-e4TpBK4MfWxSA-dfnL_LDn7_cQ@mail.gmail.com>
-Subject: Re: Supporting SYSRQ on broken laptops like the thinkpad T530
-From: Steven Noonan <steven@uplinklabs.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Marc MERLIN <marc@merlins.org>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
-        edvx1@systemanalysen.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303302020.44584.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 30, 2013 at 10:56 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> On Fri 2013-03-22 15:31:41, Marc MERLIN wrote:
->> On Wed, Jan 09, 2013 at 03:36:44AM +0100, Roland Eggner wrote:
->> > On 2013-01-08 Tuesday at 15:09 -0800 Marc MERLIN wrote:
->> > > In its infinite wisdom, lenovo has removed the sysrq key on the latest
->> > > thinkpads, and replaced it with a stupid ALT+FN+S key combination, which
->> > > doesn't really work for doing sysrq from the console (nor do I know how the
->> > > genius who did that intended for SYSRQ-S to work).
->> > > http://forums.lenovo.com/t5/T400-T500-and-newer-T-series/T430-s-T530-Where-are-the-shortcut-function-keys-break-Pause-etc/ta-p/781749
->> > >
->> > > I realize that one solution is to throw my laptop window at a suitable high
->> > > floorand replace it with one from a vendor that doesn't randomly remove keys
->> > > from the keyboard.
->> > > That said, I was wondering if there were other solutions, especially
->> > > considering that thinkpads used to be the better linux laptops.
->> >
->> > My Dell “Precision M4500” notebook suffers similar (same?) problem.  So far
->> > I could not find a solution better than this:  e.g. Alt-Fn-SysRq-s
->> >
->> > press and hold Alt
->> > press and hold Fn
->> > press and leave F10|SysRq
->> > leave Fn
->> > press and leave s
->> > leave Alt
->>
->> Just for the sake of the archives, turns out that on the lenovo T430 and T530
->> you should ignore the Lenovo documentation I quoted above, and you can
->> indeed use the PrtSc key between Right Alt and Right Ctrl, that key works
->> just fine for Sysrq.
->>
->> I have no idea why Lenovo felt they had to document some complicated
->> alternate software sysrq with Fn+S
->
-> Well... I feel resposible for sysrq stuff... I wanted it to be
-> non-intrusive. But it might have been bad choice - sysrq was not meant
-> to be used as a shift.
->
-> Sometimes it works, sometimes it does not. Don't blame lenovo for
-> that.
->
-> Maybe it should be modified to take sysrq and _then_ key?
->
-> Or maybe we should use something like lshift+rshift+lalt+ralt+key?
->
+Dear Guenter Roeck,
 
-I vote for "something like". Some keyboards (such as my Thinkpad X230
-with UK layout) have lshift, lalt, rshift, but no ralt. the ralt is
-replaced by AltGr.
+> On Fri, Mar 29, 2013 at 08:46:39PM +0100, Jean Delvare wrote:
+> > Hi all,
+> > 
+> > In September 2009, a driver for the GPIO function of the UCB1400 chip
+> > was added to the kernel tree. The probe function of this driver requires
+> > ucbdata to be set. The only place where this happens is in function
+> > ucb1400_gpio_set_data(). This function was never call, and still isn't.
+> > So this is dead code for 3.5 years as far as the upstream kernel is
+> > concerned.
+> > 
+> > To make things worse, this driver can't be built as a module, for no
+> > good reason that I can see.
+> > 
+> > Marek, can you explain what was the point of submitting this driver that
+> > nobody can use?
+> > 
+> > I would like either this driver to be fixed so that it can be used (and
+> > that would IMHO start with dropping the ugly ucb1400_gpio_set_data hook
+> > and global variable ucbdata), or this driver to be dropped from the
+> > kernel tree. If the driver is kept, it should be adjusted so that it can
+> > be built as a module.
+> > 
+> > If I overlooked something, please let me know.
+> 
+> Interestingly, the author made an attempt to fix that with [1]. It looks
+> like the rest of that series was merged, but this patch wasn't, though I
+> don't find any information about the reason.
+
+It's been a while. Guenter, thanks for finding that link, but I suspect the 
+patch is heavily obsolete by now.
+
+Best regards,
+Marek Vasut
