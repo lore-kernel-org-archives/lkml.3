@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab3C3Bg1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Mar 2013 21:36:27 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:35102 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757529Ab3C3Bg0 (ORCPT
+	id S1757613Ab3C3Bgs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Mar 2013 21:36:48 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:64408 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757594Ab3C3Bgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Mar 2013 21:36:26 -0400
-Date: Fri, 29 Mar 2013 21:36:25 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Geoff Levand <geoff@infradead.org>
-cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        Manjunath Goudar <manjunath.goudar@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATCH v3 4/7] USB: EHCI: export ehci_shutdown
-In-Reply-To: <1364603383.16937.60.camel@smoke>
-Message-ID: <Pine.LNX.4.44L0.1303292135300.26395-100000@netrider.rowland.org>
+	Fri, 29 Mar 2013 21:36:40 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CA+55aFygTH-tqhL1=FY32+HkjfqqpkX-nvb1c5f3V6S-iykS8A@mail.gmail.com>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+	<20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org>
+	<20130326192852.GA25899@redhat.com>
+	<20130326124309.077e21a9f59aaa3f3355e09b@linux-foundation.org>
+	<20130329161746.GA8391@redhat.com>
+	<CA+55aFyKhgwYUMGs8MBLY5WDXhHwXP3dLWs40ayCYfgiwwncsQ@mail.gmail.com>
+	<CA+55aFyT6jxC=+jfORJkymo4Eagzpz-SajmnCO_PjGAPE6o25A@mail.gmail.com>
+	<CA+55aFygTH-tqhL1=FY32+HkjfqqpkX-nvb1c5f3V6S-iykS8A@mail.gmail.com>
+Date: Sat, 30 Mar 2013 08:36:39 +0700
+Message-ID: <CA+i8gK+NTCK6OUzobvxPj+UaCO-iit-ww9VGNzmdqDfRC_+SuA@mail.gmail.com>
+Subject: Re: ipc,sem: sysv semaphore scalability
+From: Emmanuel Benisty <benisty.e@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@surriel.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        hhuang@redhat.com, "Low, Jason" <jason.low2@hp.com>,
+        Michel Lespinasse <walken@google.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Mar 2013, Geoff Levand wrote:
+Hi Linus,
 
-> Hi Alan,
-> 
-> > Actually, I think this is not necessary.  Instead those three glue
-> > files ought to be changed.  They should not need to call
-> > ehci_shutdown() directly.
-> 
-> I sent out a separate patch that removes the ehci_shutdown()
-> call in ps3_ehci_remove().  I tested it by removing and
-> installing the ehci_hcd module and it seems to work OK.
+On Sat, Mar 30, 2013 at 6:16 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> Emmanuel, can you try the attached patch? I think it applies cleanly
+> on top of the scalability series too without any changes, but I didn't
+> check if the patches perhaps changed some of the naming or something.
 
-Thanks!  I'll send it on up.
-
-Alan Stern
-
+I had to slightly modify the patch since it wouldn't match the changes
+introduced by 7-7-ipc-sem-fine-grained-locking-for-semtimedop.patch,
+hope that was the right thing to do. So, what I tried was: original 7
+patches + the one liner + your patch blindly modified by me on the top
+of 3.9-rc4 and I'm still having twilight zone issues.
