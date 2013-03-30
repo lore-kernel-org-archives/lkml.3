@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756990Ab3C3QZF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 12:25:05 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:43545 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756790Ab3C3QZD (ORCPT
+	id S1757006Ab3C3Qih (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 12:38:37 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58008 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756777Ab3C3Qig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 12:25:03 -0400
-Message-ID: <1364660697.17470.1.camel@phoenix>
-Subject: [RFT][PATCH v2 2/2] pwm: lpc32xx: Don't change PWM_ENABLE bit in
- lpc32xx_pwm_config
-From: Axel Lin <axel.lin@ingics.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Roland Stigge <stigge@antcom.de>, linux-kernel@vger.kernel.org
-Date: Sun, 31 Mar 2013 00:24:57 +0800
-In-Reply-To: <1364659529.15109.4.camel@phoenix>
-References: <1364659529.15109.4.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 30 Mar 2013 12:38:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <1772625.se04ulK18U@vostro.rjw.lan>
+References: <1772625.se04ulK18U@vostro.rjw.lan>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sat, 30 Mar 2013 10:38:15 -0600
+Message-ID: <CAErSpo5SFeUJz+w6WWjgU0FQt4VBWXAbsH1b68yzF4y-4Q+siQ@mail.gmail.com>
+Subject: Re: PNP: List Rafael Wysocki as a maintainer
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lpc32xx_pwm_config() is supposed to set duty_ns and period_ns,
-it should not change PWM_ENABLE and other bits.
+On Fri, Mar 29, 2013 at 3:59 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> The Adam Belay's e-mail address in MAINTAINERS under PNP SUPPORT
+> is not valid any more and I started to maintain that code in the
+> meantime as a matter of fact, so list myself as a maintainer of it
+> along with Bjorn and remove the Adam's entry from it.
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/pwm/pwm-lpc32xx.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
-index 1a5075e..e936202 100644
---- a/drivers/pwm/pwm-lpc32xx.c
-+++ b/drivers/pwm/pwm-lpc32xx.c
-@@ -37,6 +37,7 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 	struct lpc32xx_pwm_chip *lpc32xx = to_lpc32xx_pwm_chip(chip);
- 	unsigned long long c;
- 	int period_cycles, duty_cycles;
-+	u32 val;
- 
- 	c = clk_get_rate(lpc32xx->clk) / 256;
- 	c = c * period_ns;
-@@ -68,8 +69,10 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 		c = 255;
- 	duty_cycles = 256 - c;
- 
--	writel(PWM_ENABLE | PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles),
--		lpc32xx->base + (pwm->hwpwm << 2));
-+	val = readl(lpc32xx->base + (pwm->hwpwm << 2));
-+	val &= ~0xFFFF;
-+	val |= PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles);
-+	writel(val, lpc32xx->base + (pwm->hwpwm << 2));
- 
- 	return 0;
- }
--- 
-1.7.10.4
+I poked around a bit and it looks like Adam is in the Stanford Ph.D.
+program, but I couldn't find a newer email address for him.
 
-
-
+> ---
+>  MAINTAINERS |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> Index: linux-pm/MAINTAINERS
+> ===================================================================
+> --- linux-pm.orig/MAINTAINERS
+> +++ linux-pm/MAINTAINERS
+> @@ -6209,7 +6209,7 @@ F:        include/linux/power_supply.h
+>  F:     drivers/power/
+>
+>  PNP SUPPORT
+> -M:     Adam Belay <abelay@mit.edu>
+> +M:     Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>  M:     Bjorn Helgaas <bhelgaas@google.com>
+>  S:     Maintained
+>  F:     drivers/pnp/
+>
