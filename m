@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab3C3Of7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 10:35:59 -0400
+	id S1756929Ab3C3Okw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 10:40:52 -0400
 Received: from mga14.intel.com ([143.182.124.37]:36513 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755620Ab3C3Ofi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 10:35:38 -0400
+	id S1756143Ab3C3Of6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Mar 2013 10:35:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,378,1363158000"; 
-   d="scan'208";a="220568182"
+   d="scan'208";a="220568239"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
@@ -16,9 +16,9 @@ To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
 Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
         linux-kernel@vger.kernel.org, alex.shi@intel.com
-Subject: [patch v6 02/21] sched: set initial value of runnable avg for new forked task
-Date: Sat, 30 Mar 2013 22:34:49 +0800
-Message-Id: <1364654108-16307-3-git-send-email-alex.shi@intel.com>
+Subject: [patch v6 09/21] sched: scale_rt_power rename and meaning change
+Date: Sat, 30 Mar 2013 22:34:56 +0800
+Message-Id: <1364654108-16307-10-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
 References: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
@@ -26,64 +26,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need initialize the se.avg.{decay_count, load_avg_contrib} for a
-new forked task.
-Otherwise random values of above variables cause mess when do new task
-enqueue:
-    enqueue_task_fair
-        enqueue_entity
-            enqueue_entity_load_avg
+The scale_rt_power() used to represent the left CPU utilization
+after reduce rt utilization. so named it as scale_rt_power has a bit
+inappropriate.
 
-and make forking balancing imbalance since incorrect load_avg_contrib.
-
-set avg.decay_count = 0, and avg.load_avg_contrib = se->load.weight to
-resolve such issues.
+Since we need to use the rt utilization in some incoming patches, we
+just change return value of this function to rt utilization, and
+rename it as scale_rt_util(). Then, its usage is changed in
+update_cpu_power() accordingly.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/core.c | 6 ++++++
- kernel/sched/fair.c | 4 ++++
- 2 files changed, 10 insertions(+)
+ kernel/sched/fair.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 54eaaa2..8843cd3 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1564,6 +1564,7 @@ static void __sched_fork(struct task_struct *p)
- #ifdef CONFIG_SMP
- 	p->se.avg.runnable_avg_period = 0;
- 	p->se.avg.runnable_avg_sum = 0;
-+	p->se.avg.decay_count = 0;
- #endif
- #ifdef CONFIG_SCHEDSTATS
- 	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
-@@ -1651,6 +1652,11 @@ void sched_fork(struct task_struct *p)
- 		p->sched_reset_on_fork = 0;
- 	}
- 
-+	/* New forked task assumed with full utilization */
-+#if defined(CONFIG_SMP)
-+	p->se.avg.load_avg_contrib = p->se.load.weight;
-+#endif
-+
- 	if (!rt_prio(p->prio))
- 		p->sched_class = &fair_sched_class;
- 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9c2f726..2881d42 100644
+index 28bff43..ae87dab 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1508,6 +1508,10 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
- 	 * We track migrations using entity decay_count <= 0, on a wake-up
- 	 * migration we use a negative decay count to track the remote decays
- 	 * accumulated while sleeping.
-+	 *
-+	 * When enqueue a new forked task, the se->avg.decay_count == 0, so
-+	 * we bypass update_entity_load_avg(), use avg.load_avg_contrib initial
-+	 * value: se->load.weight.
- 	 */
- 	if (unlikely(se->avg.decay_count <= 0)) {
- 		se->avg.last_runnable_update = rq_of(cfs_rq)->clock_task;
+@@ -4277,10 +4277,10 @@ unsigned long __weak arch_scale_smt_power(struct sched_domain *sd, int cpu)
+ 	return default_scale_smt_power(sd, cpu);
+ }
+ 
+-unsigned long scale_rt_power(int cpu)
++unsigned long scale_rt_util(int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+-	u64 total, available, age_stamp, avg;
++	u64 total, age_stamp, avg;
+ 
+ 	/*
+ 	 * Since we're reading these variables without serialization make sure
+@@ -4292,10 +4292,8 @@ unsigned long scale_rt_power(int cpu)
+ 	total = sched_avg_period() + (rq->clock - age_stamp);
+ 
+ 	if (unlikely(total < avg)) {
+-		/* Ensures that power won't end up being negative */
+-		available = 0;
+-	} else {
+-		available = total - avg;
++		/* Ensures rt utilization won't beyond full scaled value */
++		return SCHED_POWER_SCALE;
+ 	}
+ 
+ 	if (unlikely((s64)total < SCHED_POWER_SCALE))
+@@ -4303,7 +4301,7 @@ unsigned long scale_rt_power(int cpu)
+ 
+ 	total >>= SCHED_POWER_SHIFT;
+ 
+-	return div_u64(available, total);
++	return div_u64(avg, total);
+ }
+ 
+ static void update_cpu_power(struct sched_domain *sd, int cpu)
+@@ -4330,7 +4328,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
+ 
+ 	power >>= SCHED_POWER_SHIFT;
+ 
+-	power *= scale_rt_power(cpu);
++	power *= SCHED_POWER_SCALE - scale_rt_util(cpu);
+ 	power >>= SCHED_POWER_SHIFT;
+ 
+ 	if (!power)
 -- 
 1.7.12
 
