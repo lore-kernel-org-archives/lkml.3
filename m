@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757150Ab3C3OgR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 10:36:17 -0400
+	id S1756950Ab3C3Ohy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 10:37:54 -0400
 Received: from mga14.intel.com ([143.182.124.37]:36513 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756802Ab3C3OgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 10:36:15 -0400
+	id S1757159Ab3C3OgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Mar 2013 10:36:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,378,1363158000"; 
-   d="scan'208";a="220568326"
+   d="scan'208";a="220568337"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
@@ -16,9 +16,9 @@ To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
 Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
         linux-kernel@vger.kernel.org, alex.shi@intel.com
-Subject: [patch v6 15/21] sched: add power/performance balance allow flag
-Date: Sat, 30 Mar 2013 22:35:02 +0800
-Message-Id: <1364654108-16307-16-git-send-email-alex.shi@intel.com>
+Subject: [patch v6 16/21] sched: pull all tasks from source group
+Date: Sat, 30 Mar 2013 22:35:03 +0800
+Message-Id: <1364654108-16307-17-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
 References: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
@@ -26,44 +26,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a sched domain is idle enough for regular power balance, LBF_POWER_BAL
-will be set, LBF_PERF_BAL will be clean. If a sched domain is busy,
-their value will be set oppositely.
-
-If the domain is suitable for power balance, but balance should not
-be down by this cpu(this cpu is already idle or full), both of flags
-are cleared to wait a suitable cpu to do power balance.
-That mean no any balance, neither power balance nor performance balance
-will be done on this cpu.
-
-Above logical will be implemented by incoming patches.
+In power balance, we hope some sched groups are fully empty to save
+CPU power of them. So, we want to move any tasks from them.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c | 3 +++
- 1 file changed, 3 insertions(+)
+ kernel/sched/fair.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0e48e55..adccdb8 100644
+index adccdb8..d25fb3b 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -4023,6 +4023,8 @@ static unsigned long __read_mostly max_load_balance_interval = HZ/10;
- #define LBF_ALL_PINNED	0x01
- #define LBF_NEED_BREAK	0x02
- #define LBF_SOME_PINNED 0x04
-+#define LBF_POWER_BAL	0x08	/* if power balance allowed */
-+#define LBF_PERF_BAL	0x10	/* if performance balance allowed */
+@@ -5115,7 +5115,9 @@ static struct rq *find_busiest_queue(struct lb_env *env,
+ 		 * When comparing with imbalance, use weighted_cpuload()
+ 		 * which is not scaled with the cpu power.
+ 		 */
+-		if (capacity && rq->nr_running == 1 && wl > env->imbalance)
++		if (rq->nr_running == 0 ||
++			(!(env->flags & LBF_POWER_BAL) && capacity &&
++				rq->nr_running == 1 && wl > env->imbalance))
+ 			continue;
  
- struct lb_env {
- 	struct sched_domain	*sd;
-@@ -5185,6 +5187,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 		.idle		= idle,
- 		.loop_break	= sched_nr_migrate_break,
- 		.cpus		= cpus,
-+		.flags		= LBF_PERF_BAL,
- 	};
+ 		/*
+@@ -5218,7 +5220,8 @@ redo:
  
- 	cpumask_copy(cpus, cpu_active_mask);
+ 	ld_moved = 0;
+ 	lb_iterations = 1;
+-	if (busiest->nr_running > 1) {
++	if (busiest->nr_running > 1 ||
++		(busiest->nr_running == 1 && env.flags & LBF_POWER_BAL)) {
+ 		/*
+ 		 * Attempt to move tasks. If find_busiest_group has found
+ 		 * an imbalance but busiest->nr_running <= 1, the group is
 -- 
 1.7.12
 
