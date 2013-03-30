@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914Ab3C3QGl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 12:06:41 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:36023 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756609Ab3C3QGk (ORCPT
+	id S1756926Ab3C3QRx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 12:17:53 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:63899 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756779Ab3C3QRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 12:06:40 -0400
-Message-ID: <1364659590.15109.5.camel@phoenix>
-Subject: [RFT][PATCH 2/2] pwm: lpc32xx: Don't change PWM_ENABLE bit in
- lpc32xx_pwm_config
-From: Axel Lin <axel.lin@ingics.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Roland Stigge <stigge@antcom.de>, linux-kernel@vger.kernel.org
-Date: Sun, 31 Mar 2013 00:06:30 +0800
-In-Reply-To: <1364659529.15109.4.camel@phoenix>
-References: <1364659529.15109.4.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 30 Mar 2013 12:17:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130330143600.GA8650@redhat.com>
+References: <1364612447-6810-1-git-send-email-tj@kernel.org>
+	<1364612447-6810-2-git-send-email-tj@kernel.org>
+	<20130330143600.GA8650@redhat.com>
+Date: Sat, 30 Mar 2013 09:17:51 -0700
+X-Google-Sender-Auth: ZQ7dryjzAxSK-pLRMKcIHhWECCc
+Message-ID: <CAOS58YNOGggVmTazN86HHO7p7uNn78O19AOp0_9NmhjaZheXCg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] kthread: implement probe_kthread_data()
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, david@fromorbit.com,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lpc32xx_pwm_config() is supposed to set duty_ns and period_ns,
-it should not change PWM_ENABLE bit.
+Hello, Oleg.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/pwm/pwm-lpc32xx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Sat, Mar 30, 2013 at 7:36 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > +void *probe_kthread_data(struct task_struct *task)
+> > +{
+> > +     struct kthread *kthread = to_kthread(task);
+> > +     void *data = NULL;
+> > +
+> > +     probe_kernel_read(&data, &kthread->data, sizeof(data));
+> > +     return data;
+> > +}
+>
+> OK, but we can simply check ->vfork_done != NULL ?
 
-diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
-index 1a5075e..ac4d28d 100644
---- a/drivers/pwm/pwm-lpc32xx.c
-+++ b/drivers/pwm/pwm-lpc32xx.c
-@@ -68,7 +68,7 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 		c = 255;
- 	duty_cycles = 256 - c;
- 
--	writel(PWM_ENABLE | PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles),
-+	writel(PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles),
- 		lpc32xx->base + (pwm->hwpwm << 2));
- 
- 	return 0;
--- 
-1.7.10.4
+Hmm... what if ->vfork_done is pointing to some weird place?
 
+Thanks.
 
-
+--
+tejun
