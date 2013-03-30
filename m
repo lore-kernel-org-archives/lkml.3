@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627Ab3C3OFJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 10:05:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3056 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755314Ab3C3OFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 10:05:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,378,1363158000"; 
-   d="scan'208";a="220560347"
-Message-ID: <5156F103.6000508@intel.com>
-Date: Sat, 30 Mar 2013 22:04:51 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-CC: mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 14/15] sched: power aware load balance
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-15-git-send-email-alex.shi@intel.com> <514941C5.6080007@linux.vnet.ibm.com> <514ABA19.1080807@intel.com> <514AC7B2.7030400@linux.vnet.ibm.com> <514AD26F.9010905@intel.com> <514AE07A.10100@linux.vnet.ibm.com> <514BB452.2070906@intel.com> <514BE8AC.6000607@linux.vnet.ibm.com> <514FD801.8070403@intel.com> <51558C31.1060605@linux.vnet.ibm.com> <515599AD.5090901@intel.com> <5156CB90.5060209@linux.vnet.ibm.com>
-In-Reply-To: <5156CB90.5060209@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756747Ab3C3OSS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 10:18:18 -0400
+Received: from mail-da0-f52.google.com ([209.85.210.52]:63893 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756543Ab3C3OSQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Mar 2013 10:18:16 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl, shawn.guo@linaro.org
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
+        arvind.chauhan@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: cpufreq-cpu0: Call CPUFREQ_POSTCHANGE notifier for failure cases too
+Date: Sat, 30 Mar 2013 19:48:07 +0530
+Message-Id: <cbaaebaef94c13405888bc150e12d62754fc266d.1364653063.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2013 07:25 PM, Preeti U Murthy wrote:
->> > I still give the rq->util weight even the nr_running is 0, because some
->> > transitory tasks may actived on the cpu, but just missed on balancing point.
->> > 
->> > I just wondering that forgetting rq->util when nr_running = 0 is the
->> > real root cause if your finding is just on VM and without fixed VCPU to
->> > CPU pin.
-> I find the same situation on a physical machine too. On a 2 socket, 4
-> core machine as well. In fact, using trace_printks in the load balancing
-> part, I could find that the reason that the load was not getting
-> consolidated onto a socket was because the rq->util of a run-queue with
-> no processes on it, had not decayed to 0, which is why it would consider
-> the socket as overloaded and would  rule out power aware balancing.All
-> this was on a physical machine.
+Currently we are simply returning from target() if we encounter some error after
+broadcasting CPUFREQ_PRECHANGE notifier. Which looks to be wrong as others might
+depend on POSTCHANGE notifier for their functioning.
 
-Consider of this situation, we may stop account the rq->util when
-nr_running is zero. Tasks will be a bit more compact. but anyway, that's
-powersaving policy.
+So, better broadcast CPUFREQ_POSTCHANGE notifier for these failure cases too,
+but with old frequency.
 
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/cpufreq-cpu0.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+index 1cab820..6561853 100644
+--- a/drivers/cpufreq/cpufreq-cpu0.c
++++ b/drivers/cpufreq/cpufreq-cpu0.c
+@@ -74,7 +74,9 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+ 		if (IS_ERR(opp)) {
+ 			rcu_read_unlock();
+ 			pr_err("failed to find OPP for %ld\n", freq_Hz);
+-			return PTR_ERR(opp);
++			freqs.new = freqs.old;
++			ret = PTR_ERR(opp);
++			goto post_notify;
+ 		}
+ 		volt = opp_get_voltage(opp);
+ 		rcu_read_unlock();
+@@ -92,7 +94,7 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+ 		if (ret) {
+ 			pr_err("failed to scale voltage up: %d\n", ret);
+ 			freqs.new = freqs.old;
+-			return ret;
++			goto post_notify;
+ 		}
+ 	}
+ 
+@@ -101,7 +103,8 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+ 		pr_err("failed to set clock rate: %d\n", ret);
+ 		if (cpu_reg)
+ 			regulator_set_voltage_tol(cpu_reg, volt_old, tol);
+-		return ret;
++		freqs.new = freqs.old;
++		goto post_notify;
+ 	}
+ 
+ 	/* scaling down?  scale voltage after frequency */
+@@ -111,13 +114,13 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+ 			pr_err("failed to scale voltage down: %d\n", ret);
+ 			clk_set_rate(cpu_clk, freqs.old * 1000);
+ 			freqs.new = freqs.old;
+-			return ret;
+ 		}
+ 	}
+ 
++post_notify:
+ 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static int cpu0_cpufreq_init(struct cpufreq_policy *policy)
 -- 
-Thanks
-    Alex
+1.7.12.rc2.18.g61b472e
+
