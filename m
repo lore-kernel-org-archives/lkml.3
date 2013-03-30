@@ -1,89 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470Ab3C3Wad (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 18:30:33 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:48096 "EHLO hydra.sisk.pl"
+	id S1754589Ab3C3WbW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 18:31:22 -0400
+Received: from smtp-out.abv.bg ([194.153.145.70]:34978 "EHLO smtp-out.abv.bg"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753951Ab3C3Wab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 18:30:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
-Subject: [Update][PATCH] PCI / PM: Disable runtime PM of PCIe ports
-Date: Sat, 30 Mar 2013 23:38:02 +0100
-Message-ID: <1378320.ernsY1JWPv@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <2990024.LMTIBUbM3d@vostro.rjw.lan>
-References: <2282655.IicBMMa6jN@vostro.rjw.lan> <51548C9E.9090703@fold.natur.cuni.cz> <2990024.LMTIBUbM3d@vostro.rjw.lan>
+	id S1754092Ab3C3WbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Mar 2013 18:31:21 -0400
+DomainKey-Signature: a=rsa-sha1; s=smtp-out; d=abv.bg; c=simple; q=dns;
+	b=jwDLR7e3bBo5Tv7cjNL/lhYjachy2Qg4IMXHfa/6gbmuThz/JnD1tmjGIXWTBmS2K
+	w+HcG7zvbLQqhWmfflt7P0TE01gTzArJ78mz+STCnRCcF75BpQngshMp55JFMLDbXnf
+	ff8YML06Dq9bWWzbdnRpS1nMsZFZOaj5Hl10zWc=
+Date: Sun, 31 Mar 2013 00:31:18 +0200 (EET)
+From: =?UTF-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: pali.rohar@gmail.com, tony@atomide.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <1838509461.25809.1364682678664.JavaMail.apache@mail83.abv.bg>
+Subject: Re: [PATCH] arm: omap: RX-51: ARM errata 430973 workaround
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Priority: 3
+X-Mailer: AbvMail 1.0
+X-Originating-IP: 130.204.50.168
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-
-The runtime PM of PCIe ports turns out to be quite fragile, as in
-some cases things work while in some other cases they don't and we
-don't seem to have a good way to determine whether or not they are
-going to work in advance.
-
-For this reason, avoid enabling runtime PM for PCIe ports by
-keeping their runtime PM reference counters always above 0 for the
-time being.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
-
-This version also removes the no longer necessary (and empty anyway)
-port_runtime_pm_black_list[] table.
-
-Thanks,
-Rafael
-
----
- drivers/pci/pcie/portdrv_pci.c |   13 -------------
- 1 file changed, 13 deletions(-)
-
-Index: linux-pm/drivers/pci/pcie/portdrv_pci.c
-===================================================================
---- linux-pm.orig/drivers/pci/pcie/portdrv_pci.c
-+++ linux-pm/drivers/pci/pcie/portdrv_pci.c
-@@ -185,14 +185,6 @@ static const struct dev_pm_ops pcie_port
- #endif /* !PM */
  
- /*
-- * PCIe port runtime suspend is broken for some chipsets, so use a
-- * black list to disable runtime PM for these chipsets.
-- */
--static const struct pci_device_id port_runtime_pm_black_list[] = {
--	{ /* end: all zeroes */ }
--};
--
--/*
-  * pcie_portdrv_probe - Probe PCI-Express port devices
-  * @dev: PCI-Express port device being probed
-  *
-@@ -225,16 +217,11 @@ static int pcie_portdrv_probe(struct pci
- 	 * it by default.
- 	 */
- 	dev->d3cold_allowed = false;
--	if (!pci_match_id(port_runtime_pm_black_list, dev))
--		pm_runtime_put_noidle(&dev->dev);
--
- 	return 0;
- }
- 
- static void pcie_portdrv_remove(struct pci_dev *dev)
- {
--	if (!pci_match_id(port_runtime_pm_black_list, dev))
--		pm_runtime_get_noresume(&dev->dev);
- 	pcie_port_device_remove(dev);
- 	pci_disable_device(dev);
- }
+Hi,
 
+ >-------- Оригинално писмо --------
+ >От:  Pavel Machek 
+ >Относно: Re: [PATCH] arm: omap: RX-51: ARM errata 430973 workaround
+ >До: Pali Rohár 
+ >Изпратено на: Събота, 2013, Март 30 20:36:54 EET
+ >
+ >
+ >Hi!
+ >
+ >> +u32 rx51_secure_dispatcher(u32 idx, u32 flag, u32 nargs, u32 arg1, u32 arg2,
+ >> +			   u32 arg3, u32 arg4)
+ >> +{
+ >> +	u32 ret;
+ >> +	u32 param[5];
+ >> +
+ >> +	param[0] = nargs+1;
+ >> +	param[1] = arg1;
+ >> +	param[2] = arg2;
+ >> +	param[3] = arg3;
+ >> +	param[4] = arg4;
+ >> +
+ >> +	/*
+ >> +	 * Secure API needs physical address
+ >> +	 * pointer for the parameters
+ >> +	 */
+ >> +	flush_cache_all();
+ >> +	outer_clean_range(__pa(param), __pa(param + 5));
+ >> +	ret = rx51_ppa_smc(idx, flag, __pa(param));
+ >> +
+ >> +	return ret;
+ >> +}
+ >
+ >You can do without ret variable... Also more detailed changelog would
+ >be nice... like what exact problem this works around.
+ >
+
+Sure i can, but I don't see a reason to ignore SM's return value. Changelog of what?
+ >
+ >
+ >So... some CPU errata where code sharing virtual addresses could be
+ >executed improperly?
+ >								
+ >> @@ -103,6 +104,12 @@ static void __init rx51_init(void)
+ >>  	rx51_peripherals_init();
+ >>  	rx51_camera_init();
+ >>  
+ >> +#ifdef CONFIG_ARM_ERRATA_430973
+ >> +	printk(KERN_INFO &quot;Enabling ARM errata 430973 workaround.&#92;n&quot;);
+ >> +	/* set IBE to 1 */
+ >> +	rx51_secure_update_aux_cr(1 << 6, 0);
+ >> +#endif
+ >> +
+ >
+ >Thanks,
+ >								Pavel
+ >
+ >-- 
+ >(english) http://www.livejournal.com/~pavelmachek
+ >(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+ >
+
+I guess if you read the thread over the ML you'll have your questions already answered. 
+Or google for "ARM errata 430973 workaround" :).
+
+Regards,
+Ivo
