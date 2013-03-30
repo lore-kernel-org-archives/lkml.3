@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857Ab3C3Ojg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 10:39:36 -0400
+	id S1756986Ab3C3OgD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 10:36:03 -0400
 Received: from mga14.intel.com ([143.182.124.37]:36513 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756969Ab3C3OgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 10:36:03 -0400
+	id S1756764Ab3C3Ofn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Mar 2013 10:35:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,378,1363158000"; 
-   d="scan'208";a="220568271"
+   d="scan'208";a="220568190"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
@@ -16,9 +16,9 @@ To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
 Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
         linux-kernel@vger.kernel.org, alex.shi@intel.com
-Subject: [patch v6 11/21] sched: detect wakeup burst with rq->avg_idle
-Date: Sat, 30 Mar 2013 22:34:58 +0800
-Message-Id: <1364654108-16307-12-git-send-email-alex.shi@intel.com>
+Subject: [patch v6 04/21] sched: add sched balance policies in kernel
+Date: Sat, 30 Mar 2013 22:34:51 +0800
+Message-Id: <1364654108-16307-5-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
 References: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
@@ -26,64 +26,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rq->avg_idle is 'to used to accommodate bursty loads in a dirt simple
-dirt cheap manner' -- Mike Galbraith.
+Current scheduler behavior is just consider for larger performance
+of system. So it try to spread tasks on more cpu sockets and cpu cores
 
-With this cheap and smart bursty indicator, we can find the wake up
-burst, and just use nr_running as instant utilization only.
+To adding the consideration of power awareness, the patchset adds
+a powersaving scheduler policy. It will use runnable load util in
+scheduler balancing. The current scheduling is taken as performance
+policy.
 
-The 'sysctl_sched_burst_threshold' used for wakeup burst, set it as
-double of sysctl_sched_migration_cost.
+performance: the current scheduling behaviour, try to spread tasks
+                on more CPU sockets or cores. performance oriented.
+powersaving: will pack tasks into few sched group until all LCPU in the
+                group is full, power oriented.
+
+The incoming patches will enable powersaving scheduling in CFS.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- include/linux/sched/sysctl.h | 1 +
- kernel/sched/fair.c          | 1 +
- kernel/sysctl.c              | 7 +++++++
- 3 files changed, 9 insertions(+)
+ kernel/sched/fair.c  | 3 +++
+ kernel/sched/sched.h | 5 +++++
+ 2 files changed, 8 insertions(+)
 
-diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
-index bf8086b..a3c3d43 100644
---- a/include/linux/sched/sysctl.h
-+++ b/include/linux/sched/sysctl.h
-@@ -53,6 +53,7 @@ extern unsigned int sysctl_numa_balancing_settle_count;
- 
- #ifdef CONFIG_SCHED_DEBUG
- extern unsigned int sysctl_sched_migration_cost;
-+extern unsigned int sysctl_sched_burst_threshold;
- extern unsigned int sysctl_sched_nr_migrate;
- extern unsigned int sysctl_sched_time_avg;
- extern unsigned int sysctl_timer_migration;
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0feeaee..8ac021f 100644
+index 026e959..61ee178 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -91,6 +91,7 @@ unsigned int sysctl_sched_wakeup_granularity = 1000000UL;
- unsigned int normalized_sysctl_sched_wakeup_granularity = 1000000UL;
+@@ -6093,6 +6093,9 @@ static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task
+ 	return rr_interval;
+ }
  
- const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
-+const_debug unsigned int sysctl_sched_burst_threshold = 1000000UL;
- 
++/* The default scheduler policy is 'performance'. */
++int __read_mostly sched_balance_policy = SCHED_POLICY_PERFORMANCE;
++
  /*
-  * The exponential sliding  window over which load is averaged for shares
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index afc1dc6..1f23457 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -327,6 +327,13 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- 	{
-+		.procname	= "sched_burst_threshold_ns",
-+		.data		= &sysctl_sched_burst_threshold,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
- 		.procname	= "sched_nr_migrate",
- 		.data		= &sysctl_sched_nr_migrate,
- 		.maxlen		= sizeof(unsigned int),
+  * All the scheduling class methods:
+  */
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 7f36024f..804ee41 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -10,6 +10,11 @@
+ 
+ extern __read_mostly int scheduler_running;
+ 
++#define SCHED_POLICY_PERFORMANCE	(0x1)
++#define SCHED_POLICY_POWERSAVING	(0x2)
++
++extern int __read_mostly sched_balance_policy;
++
+ /*
+  * Convert user-nice values [ -20 ... 0 ... 19 ]
+  * to static priority [ MAX_RT_PRIO..MAX_PRIO-1 ],
 -- 
 1.7.12
 
