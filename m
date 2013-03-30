@@ -1,156 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757175Ab3C3RVR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 13:21:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:42832 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757089Ab3C3RVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 13:21:05 -0400
-X-IronPort-AV: E=Sophos;i="4.87,379,1363104000"; 
-   d="scan'208";a="6974949"
-Message-ID: <51571FA2.2050804@cn.fujitsu.com>
-Date: Sun, 31 Mar 2013 01:23:46 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1757046Ab3C3RWw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 13:22:52 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:35337 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756888Ab3C3RWu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Mar 2013 13:22:50 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Lai Jiangshan <eag0628@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        Jan Kara <jack@suse.cz>, fengguang.wu@intel.com, jmoyer@redhat.com,
-        zab@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [PATCH v4 13/14] workqueue: implement NUMA affinity for unbound
- workqueues
-References: <1364453020-2829-1-git-send-email-tj@kernel.org>	<1364453020-2829-14-git-send-email-tj@kernel.org>	<20130329224434.GC9862@htj.dyndns.org>	<CACvQF50c3m3eMiGKctagoOe6s3uhehfFy733imBfnLKTXSqZ4A@mail.gmail.com> <CAOS58YOgwB4s4-2e528T6SV36pDxLS3Zx+b5eR0L2kQjiZBEnw@mail.gmail.com>
-In-Reply-To: <CAOS58YOgwB4s4-2e528T6SV36pDxLS3Zx+b5eR0L2kQjiZBEnw@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/31 01:20:09,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/31 01:20:09,
-	Serialize complete at 2013/03/31 01:20:09
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CA+i8gKKNf2105vi93t=KBs5fVRUcaD6BP5hhYE-8cwy2OBAx8w@mail.gmail.com>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+	<20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org>
+	<20130326192852.GA25899@redhat.com>
+	<20130326124309.077e21a9f59aaa3f3355e09b@linux-foundation.org>
+	<20130329161746.GA8391@redhat.com>
+	<CA+55aFyKhgwYUMGs8MBLY5WDXhHwXP3dLWs40ayCYfgiwwncsQ@mail.gmail.com>
+	<CA+55aFyT6jxC=+jfORJkymo4Eagzpz-SajmnCO_PjGAPE6o25A@mail.gmail.com>
+	<CA+55aFygTH-tqhL1=FY32+HkjfqqpkX-nvb1c5f3V6S-iykS8A@mail.gmail.com>
+	<CA+i8gK+NTCK6OUzobvxPj+UaCO-iit-ww9VGNzmdqDfRC_+SuA@mail.gmail.com>
+	<1364609309.1818.8.camel@buesod1.americas.hpqcorp.net>
+	<CA+i8gK+LP_4SU8GwLMau0QvyGswZ5sKqOYnJVPZNWXZY_W9dEA@mail.gmail.com>
+	<CA+55aFzqzHa_6bHrqaa+6k3PZiibuJuDd1VwVD7jL047BjR=hA@mail.gmail.com>
+	<CA+i8gKL3PCBW_KxkYSOKE7-PHdHVsP6eLUBTuYRtunBheALJMg@mail.gmail.com>
+	<CA+55aFy7OtkWiqO+CxmDgkyfR_58=hdkc-VoaqWCngETw19Euw@mail.gmail.com>
+	<CA+i8gKKNf2105vi93t=KBs5fVRUcaD6BP5hhYE-8cwy2OBAx8w@mail.gmail.com>
+Date: Sat, 30 Mar 2013 10:22:49 -0700
+X-Google-Sender-Auth: ZEdYstq2PNBQPjWEXZxtnmfHqTc
+Message-ID: <CA+55aFyqhacFz9xc3igO2mpmwFHdMKGGMVbbrUiOOrkyjVxMXg@mail.gmail.com>
+Subject: Re: ipc,sem: sysv semaphore scalability
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Emmanuel Benisty <benisty.e@gmail.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@surriel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        hhuang@redhat.com, "Low, Jason" <jason.low2@hp.com>,
+        Michel Lespinasse <walken@google.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Content-Type: multipart/mixed; boundary=089e0158b3aa187c6e04d927a358
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/03/13 00:32, Tejun Heo wrote:
-> Hello, Lai.
-> 
-> 
-> On Sat, Mar 30, 2013 at 9:13 AM, Lai Jiangshan <eag0628@gmail.com <mailto:eag0628@gmail.com>> wrote:
-> 
-> 
->         +       /* all pwqs have been created successfully, let's install'em */
->                 mutex_lock(&wq->mutex);
-> 
->                 copy_workqueue_attrs(wq->unbound_attrs, new_attrs);
->         +
->         +       /* save the previous pwq and install the new one */
->                 for_each_node(node)
->         -               last_pwq = numa_pwq_tbl_install(wq, node, pwq);
->         +               pwq_tbl[node] = numa_pwq_tbl_install(wq, node, pwq_tbl[node]);
->         +
->         +       /* @dfl_pwq might not have been used, ensure it's linked */
->         +       link_pwq(dfl_pwq);
->         +       swap(wq->dfl_pwq, dfl_pwq);
-> 
->                 mutex_unlock(&wq->mutex);
-> 
->         -       put_pwq_unlocked(last_pwq);
->         +       /* put the old pwqs */
->         +       for_each_node(node)
->         +               put_pwq_unlocked(pwq_tbl[node]);
->         +       put_pwq_unlocked(dfl_pwq);
->         +
->         +       put_online_cpus();
->                 return 0;
-> 
-> 
-> 
->     Forgot to free new_attrs in previous patch
->     (workqueue: fix unbound workqueue attrs hashing / comparison).
-> 
->     Forgot to free tmp_attrs, pwq_tbl in this patch.
-> 
-> 
-> Right, will fix. 
-> 
->         +retry:
->         +       mutex_lock(&wq->mutex);
->         +
->         +       copy_workqueue_attrs(target_attrs, wq->unbound_attrs);
->         +       pwq = unbound_pwq_by_node(wq, node);
->         +
->         +       /*
->         +        * Let's determine what needs to be done.  If the target cpumask is
->         +        * different from wq's, we need to compare it to @pwq's and create
->         +        * a new one if they don't match.  If the target cpumask equals
->         +        * wq's, the default pwq should be used.  If @pwq is already the
->         +        * default one, nothing to do; otherwise, install the default one.
->         +        */
->         +       if (wq_calc_node_cpumask(wq->unbound_attrs, node, cpu_off, cpumask)) {
->         +               if (cpumask_equal(cpumask, pwq->pool->attrs->cpumask))
->         +                       goto out_unlock;
->         +       } else if (pwq != wq->dfl_pwq) {
->         +               goto use_dfl_pwq;
->         +       } else {
->         +               goto out_unlock;
->         +       }
->         +
->         +       /*
->         +        * Have we already created a new pwq?  As we could have raced with
->         +        * apply_workqueue_attrs(), verify that its attrs match the desired
->         +        * one before installing.
->         +        */
-> 
-> 
->     I don't see any race since there is get/put_online_cpu() in apply_workqueue_attrs().
-> 
-> 
-> I don't know. I kinda want wq exclusion to be self-contained, but yeah the hotplug exclusion here is *almost* explicit so maybe it would be better to depend on it. Will think about it.
-> 
->         +       mutex_unlock(&wq->mutex);
->         +       put_pwq_unlocked(old_pwq);
->         +       free_unbound_pwq(new_pwq);
->         +}
-> 
-> 
->     OK, your solution is what I suggested: swapping dfl_pwq <-> node pwq.
->     But when the last cpu of the node(of the wq) is trying to offline.
->     you need to handle the work items of node pwq(old_pwq in the code).
-> 
->     you may handle the works which are still queued by migrating, OR by
->     flushing the works.
->     and you may handle busy works by temporary changing the cpumask of
->     the workers, OR by flushing the busy works.
-> 
-> 
-> I don't think that's necessary.
+--089e0158b3aa187c6e04d927a358
+Content-Type: text/plain; charset=UTF-8
 
-Please document it.
+On Fri, Mar 29, 2013 at 10:57 PM, Emmanuel Benisty <benisty.e@gmail.com> wrote:
+> On Sat, Mar 30, 2013 at 12:10 PM, Linus Torvalds
+>>
+>> This came from the gcc build?
+>
+> yes, very early in the build process, IIRC this line was repeated a
+> few times and the build just stalled.
 
-> It's not like we have hard guarantee on attr changes anyway.
-> Self-requeueing work items can get stuck with old attributes for quite a while,
+Ok, we're bringing out the crazy hacks now.
 
-It is OK for it is documented.
+The attached patch is just insane, doesn't really even work in
+general, and only even compiles on 64-bit. But it should work in
+*practice* to find if somebody adds the same RCU head to the RCU lists
+twice, and ignore the second time it happens (and give a warning that
+hopefully pinpoints the backtrace).
 
-> and even per-cpu work items get migrated to other CPUs on CPU DOWN.
+It's ugly. It's broken. It may not work. In other words, I'm not proud
+of it. But you seem to be the only one able to trigger the issue
+easily, willing to try crazy crap, so "tag, you're it". Maybe this
+gives us more information. And maybe it doesn't, and I'm totally wrong
+about the whole "rcu head added twice" theory.
 
-It is expected.
+                        Linus
 
-But for unbound wq when cpuhotplug
-w/o NUMA affinity, works are    always   in the cpus  if   there is online cpu in wq's cpumask
-w/ NUMA affinity, .........   NOT always ........     even ....................................
+--089e0158b3aa187c6e04d927a358
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hex1sypn0
 
-> Workqueue's affinity guarantee is very specific - the work item owner is
-> responsible for flushing the work item during CPU DOWN if it wants
-> to guarantee affinity over full execution. 
-
-Could you add the comments and add Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-for the patchset?
-
-Thanks,
-Lai
-
+IGluY2x1ZGUvbGludXgvdHlwZXMuaCB8IDEgKwogaW5jbHVkZS9uZXQvZHN0LmggICAgIHwgMiAr
+LQoga2VybmVsL3JjdS5oICAgICAgICAgIHwgMSArCiBrZXJuZWwvcmN1dHJlZS5jICAgICAgfCA2
+ICsrKysrKwogNCBmaWxlcyBjaGFuZ2VkLCA5IGluc2VydGlvbnMoKyksIDEgZGVsZXRpb24oLSkK
+CmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L3R5cGVzLmggYi9pbmNsdWRlL2xpbnV4L3R5cGVz
+LmgKaW5kZXggNGQxMThiYTExMzQ5Li4zZjBkOWRhZmY5MDYgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUv
+bGludXgvdHlwZXMuaAorKysgYi9pbmNsdWRlL2xpbnV4L3R5cGVzLmgKQEAgLTIwOSw2ICsyMDks
+NyBAQCBzdHJ1Y3QgdXN0YXQgewogc3RydWN0IGNhbGxiYWNrX2hlYWQgewogCXN0cnVjdCBjYWxs
+YmFja19oZWFkICpuZXh0OwogCXZvaWQgKCpmdW5jKShzdHJ1Y3QgY2FsbGJhY2tfaGVhZCAqaGVh
+ZCk7CisJdW5zaWduZWQgbG9uZyBtYWdpYzsKIH07CiAjZGVmaW5lIHJjdV9oZWFkIGNhbGxiYWNr
+X2hlYWQKIApkaWZmIC0tZ2l0IGEvaW5jbHVkZS9uZXQvZHN0LmggYi9pbmNsdWRlL25ldC9kc3Qu
+aAppbmRleCAxZjhmZDEwOWUyMjUuLjZmOGFjZDAzMTk0OCAxMDA2NDQKLS0tIGEvaW5jbHVkZS9u
+ZXQvZHN0LmgKKysrIGIvaW5jbHVkZS9uZXQvZHN0LmgKQEAgLTg5LDcgKzg5LDcgQEAgc3RydWN0
+IGRzdF9lbnRyeSB7CiAJICogKEwxX0NBQ0hFX1NJWkUgd291bGQgYmUgdG9vIG11Y2gpCiAJICov
+CiAjaWZkZWYgQ09ORklHXzY0QklUCi0JbG9uZwkJCV9fcGFkX3RvX2FsaWduX3JlZmNudFsyXTsK
+Kwlsb25nCQkJX19wYWRfdG9fYWxpZ25fcmVmY250WzFdOwogI2VuZGlmCiAJLyoKIAkgKiBfX3Jl
+ZmNudCB3YW50cyB0byBiZSBvbiBhIGRpZmZlcmVudCBjYWNoZSBsaW5lIGZyb20KZGlmZiAtLWdp
+dCBhL2tlcm5lbC9yY3UuaCBiL2tlcm5lbC9yY3UuaAppbmRleCA3ZjhlNzU5MGUzZTUuLjAzODFl
+ZDM3MjFiYiAxMDA2NDQKLS0tIGEva2VybmVsL3JjdS5oCisrKyBiL2tlcm5lbC9yY3UuaApAQCAt
+OTgsNiArOTgsNyBAQCBzdGF0aWMgaW5saW5lIGJvb2wgX19yY3VfcmVjbGFpbShjaGFyICpybiwg
+c3RydWN0IHJjdV9oZWFkICpoZWFkKQogewogCXVuc2lnbmVkIGxvbmcgb2Zmc2V0ID0gKHVuc2ln
+bmVkIGxvbmcpaGVhZC0+ZnVuYzsKIAorCWhlYWQtPm1hZ2ljID0gMDsKIAlpZiAoX19pc19rZnJl
+ZV9yY3Vfb2Zmc2V0KG9mZnNldCkpIHsKIAkJUkNVX1RSQUNFKHRyYWNlX3JjdV9pbnZva2Vfa2Zy
+ZWVfY2FsbGJhY2socm4sIGhlYWQsIG9mZnNldCkpOwogCQlrZnJlZSgodm9pZCAqKWhlYWQgLSBv
+ZmZzZXQpOwpkaWZmIC0tZ2l0IGEva2VybmVsL3JjdXRyZWUuYyBiL2tlcm5lbC9yY3V0cmVlLmMK
+aW5kZXggNWI4YWQ4MjdmZDg2Li44MGY5Y2ZiNjM3NDggMTAwNjQ0Ci0tLSBhL2tlcm5lbC9yY3V0
+cmVlLmMKKysrIGIva2VybmVsL3JjdXRyZWUuYwpAQCAtMjIyMSw2ICsyMjIxLDkgQEAgc3RhdGlj
+IHZvaWQgX19jYWxsX3JjdV9jb3JlKHN0cnVjdCByY3Vfc3RhdGUgKnJzcCwgc3RydWN0IHJjdV9k
+YXRhICpyZHAsCiAJfQogfQogCisvKiBVbmxpa2VseSBiaXQtcGF0dGVybiB0byBjaGVjayBkb3Vi
+bGUgUkNVIGNhbGxzISAqLworI2RlZmluZSBSQ1VfSEVBRF9NQUdJQyAoKHVuc2lnbmVkIGxvbmcp
+KDB4ZmVlZGRlYWQxYWNlZjhlZGxsKSkKKwogLyoKICAqIEhlbHBlciBmdW5jdGlvbiBmb3IgY2Fs
+bF9yY3UoKSBhbmQgZnJpZW5kcy4gIFRoZSBjcHUgYXJndW1lbnQgd2lsbAogICogbm9ybWFsbHkg
+YmUgLTEsIGluZGljYXRpbmcgImN1cnJlbnRseSBydW5uaW5nIENQVSIuICBJdCBtYXkgc3BlY2lm
+eQpAQCAtMjIzNSw5ICsyMjM4LDEyIEBAIF9fY2FsbF9yY3Uoc3RydWN0IHJjdV9oZWFkICpoZWFk
+LCB2b2lkICgqZnVuYykoc3RydWN0IHJjdV9oZWFkICpyY3UpLAogCXN0cnVjdCByY3VfZGF0YSAq
+cmRwOwogCiAJV0FSTl9PTl9PTkNFKCh1bnNpZ25lZCBsb25nKWhlYWQgJiAweDMpOyAvKiBNaXNh
+bGlnbmVkIHJjdV9oZWFkISAqLworCWlmIChXQVJOX09OX09OQ0UoaGVhZC0+bWFnaWMgPT0gUkNV
+X0hFQURfTUFHSUMpKQorCQlyZXR1cm47CiAJZGVidWdfcmN1X2hlYWRfcXVldWUoaGVhZCk7CiAJ
+aGVhZC0+ZnVuYyA9IGZ1bmM7CiAJaGVhZC0+bmV4dCA9IE5VTEw7CisJaGVhZC0+bWFnaWMgPSBS
+Q1VfSEVBRF9NQUdJQzsKIAogCS8qCiAJICogT3Bwb3J0dW5pc3RpY2FsbHkgbm90ZSBncmFjZS1w
+ZXJpb2QgZW5kaW5ncyBhbmQgYmVnaW5uaW5ncy4K
+--089e0158b3aa187c6e04d927a358--
