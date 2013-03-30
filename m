@@ -1,150 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756470Ab3C3LyO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 07:54:14 -0400
-Received: from contumacia.investici.org ([178.255.144.35]:21499 "EHLO
-	contumacia.investici.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754462Ab3C3LyM (ORCPT
+	id S1755528Ab3C3L4j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 07:56:39 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:45473 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754315Ab3C3L4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 07:54:12 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 contumacia.investici.org 45316E881D
-Date: Sat, 30 Mar 2013 12:52:45 +0100
-From: Antonio Quartulli <ordex@autistici.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Pravin B Shelar <pshelar@nicira.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: WARNING: at net/batman-adv/hard-interface.c:92
- batadv_is_on_batman_iface()
-Message-ID: <20130330115245.GA4024@ritirata.org>
-References: <20130330093635.GA31605@localhost>
+	Sat, 30 Mar 2013 07:56:37 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
-Content-Disposition: inline
-In-Reply-To: <20130330093635.GA31605@localhost>
+In-Reply-To: <20130330100408.GA17995@n2100.arm.linux.org.uk>
+References: <1364549049-29278-1-git-send-email-ning.n.jiang@gmail.com>
+	<5155DE43.4000601@codeaurora.org>
+	<CAH3Oq6QA0DCEDc-Yh+k=3bgUH7xzKxHSC1aWSoL4NzaYCZZHbg@mail.gmail.com>
+	<20130330100408.GA17995@n2100.arm.linux.org.uk>
+Date: Sat, 30 Mar 2013 19:56:36 +0800
+Message-ID: <CAH3Oq6RMWy=+JtPEt7Kpm83wdyyQfzfKSB2+ji2Mforoaar_8g@mail.gmail.com>
+Subject: Re: [PATCH] ARM: timer: Shutdown clock event device when stopping
+ local timer
+From: Ning Jiang <ning.n.jiang@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, kgene.kim@samsung.com,
+        davidb@codeaurora.org, dwalker@fifo99.com, bryanh@codeaurora.org,
+        john.stultz@linaro.org, tglx@linutronix.de, linus.walleij@linaro.org,
+        shawn.guo@linaro.org, rob.herring@calxeda.com, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013/3/30 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> On Sat, Mar 30, 2013 at 05:57:38PM +0800, Ning Jiang wrote:
+>> 2013/3/30 Stephen Boyd <sboyd@codeaurora.org>:
+>> > On 03/29/13 02:24, ning.n.jiang@gmail.com wrote:
+>> >> From: Ning Jiang <ning.n.jiang@gmail.com>
+>> >>
+>> >> Currently there are two problems when we try to stop local timer.
+>> >> First, it calls set_mode function directly so mode state is not
+>> >> updated for the clock event device. Second, it makes the device
+>> >> unused instead of shutdown.
+>> >
+>> > What device is this a problem on? I believe this only matters to drivers
+>> > which enable their timer in their set_next_event() callback? But even
+>> > then, does anything actually happen because the interrupt should have
+>> > been disabled in the local timer stop callback.
+>> >
+>>
+>> Right. Drivers which enable timer in set_next_event() will have this problem.
+>> It will not have functional problem in my case. But my device cannot enter
+>> low power mode with a pending interrupt even if it is disabled.
+>
+> You're not telling us what you have discovered.  How does set_next_event()
+> get called after we've set the mode to UNUSED in the current code?
 
---lrZ03NoBR/3+SXJZ
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In the current code we did not set the mode to UNUSED but only call
+set_mode callback function for the clock event device. This normally
+disables current clock event device. The dying CPU eventually will
+switch to idle thread, call tick_nohz_idle_enter(), try to cancel the
+sched_timer and reprogram the next event. Then set_next_event() gets
+called. The call stack will be like:
 
-Hello all,
+tick_nohz_idle_enter
+  -> __tick_nohz_idle_enter
+    -> tick_nohz_stop_sched_tick
+      -> hrtimer_cancel
+        -> hrtimer_try_to_cancel
+          -> remove_hrtimer
+            -> __remove_hrtimer
+              -> hrtimer_force_reprogram
+                -> tick_program_event
+                  -> clockevents_program_event
+                    -> set_next_event
 
-On Sat, Mar 30, 2013 at 05:36:35PM +0800, Fengguang Wu wrote:
-> Greetings,
->=20
-> I got the below WARNING in net-next/master (head commit f498354793d5)
-> and the first bad commit is
->=20
-> commit c54419321455631079c7d6e60bc732dd0c5914c5
-> Author: Pravin B Shelar <pshelar@nicira.com>
-> Date:   Mon Mar 25 14:49:35 2013 +0000
->=20
->     GRE: Refactor GRE tunneling code.
->    =20
->     Following patch refactors GRE code into ip tunneling code and GRE
->     specific code. Common tunneling code is moved to ip_tunnel module.
->     ip_tunnel module is written as generic library which can be used
->     by different tunneling implementations.
->    =20
->     ip_tunnel module contains following components:
->      - packet xmit and rcv generic code. xmit flow looks like
->        (gre_xmit/ipip_xmit)->ip_tunnel_xmit->ip_local_out.
->      - hash table of all devices.
->      - lookup for tunnel devices.
->      - control plane operations like device create, destroy, ioctl, netli=
-nk
->        operations code.
->      - registration for tunneling modules, like gre, ipip etc.
->      - define single pcpu_tstats dev->tstats.
->      - struct tnl_ptk_info added to pass parsed tunnel packet parameters.
->    =20
->     ipip.h header is renamed to ip_tunnel.h
->    =20
->     Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
->     Signed-off-by: David S. Miller <davem@davemloft.net>
->=20
-> [   27.507156] libceph: loaded (mon/osd proto 15/24)
-> [   27.515409] ------------[ cut here ]------------
-> [   27.518917] WARNING: at /c/kernel-tests/src/stable/net/batman-adv/hard=
--interface.c:92 batadv_is_on_batman_iface+0x5c/0x7a()
-> [   27.521935] Hardware name: Bochs
-> [   27.525356] Cannot find parent device
-> [   27.528296] Modules linked in:
-> [   27.529923] Pid: 1, comm: swapper/0 Not tainted 3.9.0-rc4-00896-g03ba9=
-10 #794
-> [   27.531747] Call Trace:
-> [   27.534683]  [<ffffffff81098ab4>] warn_slowpath_common+0x83/0x9e
-> [   27.536338]  [<ffffffff81098b72>] warn_slowpath_fmt+0x46/0x48
-> [   27.537872]  [<ffffffff828e6402>] ? rcu_read_unlock+0x1c/0x2d
-> [   27.539441]  [<ffffffff810ca498>] ? local_clock+0x19/0x52
-> [   27.541023]  [<ffffffff82c0e796>] batadv_is_on_batman_iface+0x5c/0x7a
-> [   27.542803]  [<ffffffff82c0efe2>] batadv_hard_if_event+0x8f/0x285
-> [   27.544551]  [<ffffffff828e4ff0>] register_netdevice_notifier+0x71/0x1=
-7e
-> [   27.550617]  [<ffffffff8420a030>] ? batadv_iv_init+0x3f/0x3f
-> [   27.552248]  [<ffffffff8420a114>] batadv_init+0xe4/0x104
-> [   27.553770]  [<ffffffff810020be>] do_one_initcall+0x7f/0x13d
-> [   27.555386]  [<ffffffff84177eb0>] kernel_init_freeable+0x141/0x1d0
-> [   27.557177]  [<ffffffff84177734>] ? do_early_param+0x8c/0x8c
-> [   27.558813]  [<ffffffff82c1f146>] ? rest_init+0xda/0xda
-> [   27.560348]  [<ffffffff82c1f154>] kernel_init+0xe/0xdb
-> [   27.561813]  [<ffffffff82c694ac>] ret_from_fork+0x7c/0xb0
-> [   27.563356]  [<ffffffff82c1f146>] ? rest_init+0xda/0xda
-> [   27.564974] ---[ end trace f78f9f0651ffcb0b ]---
->=20
-
-The reason why batman-adv it raising this warning is because this call is
-returning NULL:
-
-dev_get_by_index(&init_net, net_dev->iflink);
-
-net_dev is an interface that has been registered now and batman-adv is tryi=
-ng to
-analyse it to decide if it is a potential candidate for its virtual device =
-or
-not.
-
-To the best of my knowledge, if the function above is returning NULL, it me=
-ans
-that the iflink attribute contains a broken value.
-
-Am I wrong or iflink should never contain 0? If there is no parent device it
-should contain the same value of ifindex. Right?
-
-
-Regards,
-
---=20
-Antonio Quartulli
-
-=2E.each of us alone is worth nothing..
-Ernesto "Che" Guevara
-
---lrZ03NoBR/3+SXJZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRVtINAAoJEADl0hg6qKeO5RQP/RxAikx4oL8Gvsw39nuUhy0t
-T6bxiVB6p/aHwsZMNZMtYYVggTwAu6HDey7/xluAeu7xjz+alzUvEagA6TnGCSVw
-I4h2TkR7xXSD2czaskmhLAzqS3AHqPV14MYdKxsCnaPV50S364qRy3/n54YOUcOY
-+yhKNP3hqciXp9ke7vP4RGX0IYJRbYE8baHeBb3qzvp8f8DUOJF8CjpNNl4BFOdD
-cFAVbwgsRJQZpf9b06zmzVu/tza2hxgosudV0OS+5xTSAvxrZQSQHRQs1SA7Zryh
-ShSrzfR1eaLMj9ksW0YtJ2KZVbhboSlso+aI/ezvOKq2QmLTNvp6HCpVdRfYt9gS
-/gxsUcZmHiQBaSMjVwxYRNF+thzyca3s3aFmQt5vjdJPVKbQAMW9KzWqbKDL6MJl
-ZOQH+VzISrKHGSJP6+J6/gFNOm+7EotixsCGTzGe2zW99D7pFBbJww5Io7OIUvc9
-ZKTqUvFx8fsqOe9/0NTJvrGsDlIxdoRvU74NEokNPbOjh6qQTBgXskccJCTkb2xh
-wliEz1plABpblu4Sd3xAW7PLVpFcA+LtSM1+KCCnfO2f4l06nbnlsX7baSkupgq9
-jITJzxUNJHVuVBx6vQxKDuiQo2UtAcqmxu/1kYpWIaid+OAy92a1SUruGkQpiNIV
-j/cvPiePrYs6G6//PQ2L
-=Gx0q
------END PGP SIGNATURE-----
-
---lrZ03NoBR/3+SXJZ--
+In set_next_event() we'll re-enable and re-program the clock event device.
