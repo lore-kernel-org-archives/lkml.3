@@ -1,113 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab3C3JKn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 05:10:43 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:42171 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755285Ab3C3JKl (ORCPT
+	id S1755290Ab3C3JTb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 05:19:31 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:42843 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753625Ab3C3JT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 05:10:41 -0400
-Date: Sat, 30 Mar 2013 10:10:37 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 4/4] nohz: New option to force all CPUs in full dynticks
- range
-Message-ID: <20130330091037.GA31743@gmail.com>
-References: <1364398359-21990-1-git-send-email-fweisbec@gmail.com>
- <1364398359-21990-5-git-send-email-fweisbec@gmail.com>
- <20130328074507.GC24433@gmail.com>
- <CAFTL4hzQfodVP4O+nir1XwQ2QkUUqrfr_dBpWL0635f0u4oRBA@mail.gmail.com>
+	Sat, 30 Mar 2013 05:19:29 -0400
+Date: Sat, 30 Mar 2013 10:19:21 +0100
+From: Jiri Pirko <jiri@resnulli.us>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jiri Pirko <jpirko@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Andy Gospodarek <andy@greyhouse.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        Nicolas de =?iso-8859-1?Q?Peslo=FCan?= 
+	<nicolas.2p.debian@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Guy Streeter <streeter@redhat.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>, stephen@networkplumber.org
+Subject: Re: [BUG] Crash with NULL pointer dereference in bond_handle_frame
+ in -rt (possibly mainline)
+Message-ID: <20130330091921.GB1544@minipsycho.orion>
+References: <1364490997.6345.237.camel@gandalf.local.home>
+ <1364491792.15753.47.camel@edumazet-glaptop>
+ <20130329094856.GB1677@minipsycho.orion>
+ <1364582184.10629.34.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAFTL4hzQfodVP4O+nir1XwQ2QkUUqrfr_dBpWL0635f0u4oRBA@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1364582184.10629.34.camel@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fri, Mar 29, 2013 at 07:36:24PM CET, rostedt@goodmis.org wrote:
+>On Fri, 2013-03-29 at 10:48 +0100, Jiri Pirko wrote:
+>
+>> Because, if rcu_dereference(dev->rx_handler) is null,
+>> rcu_dereference(dev->rx_handler_data) is never done. Therefore I believe
+>> we are hitting following scenario:
+>> 
+>> 
+>>    CPU0				CPU1
+>>    ----				----
+>>   			    dev->rx_handler_data = NULL
+>>  rcu_read_lock()
+>>  			    dev->rx_handler = NULL
+>> 
+>> 
+>
+>That is not what is happening and that is not how RCU works. That is,
+>rcu_read_lock() does not block nor does it really do much with ordering
+>at all.
+>
+>The problem is totally contained within the rcu_read_lock() as well:
+>
+>
+>If you have:
+>
+>	rcu_read_lock();
+>	rx_handler = dev->rx_handler;
+>	rx_handler();
+>	rcu_read_unlock();
+>
+>where rx_handler references rx->rx_handler_data you need much more than
+>making sure that rx->handler is set to null before rx_handler_data.
+>
+>The way RCU works is it lets things exist in a "dual state". Kind of
+>like a Schödinger's cat. The solution Eric posted is a classic RCU
+>example of how this works.
+>
+>When you set dev->rx_handler to NULL, there's two states that currently
+>exist in the system. Those that still see dev->rx_handler set to
+>something and those that see it set to NULL. You could put in memory
+>barriers to your hearts content, but you will still have a system that
+>sees things in a dual state. If you set dev->rx_handler_data to NULL,
+>you risk those that see rx_handler as a function can still reference the
+>rx_handler_data when it is NULL.
+>
+>Think of it this way:
+>
+>	dev->rx_handler() {
+>
+>Once the function has been called, even if you set rx_handler() to NULL
+>at this point, it makes no difference, even with memory barriers. This
+>CPU is about to execute the previous value of rx_handler and there's
+>nothing you can do to stop it. Setting rx_handler_data to NULL now can
+>cause that CPU to reference the NULL pointer. There isn't a ordering
+>problem where rx_handler_data got set to NULL first.
+>
+>But the beauty about RCU is the synchronize_*() functions, because that
+>puts the system back into a single state. After the synchronization is
+>complete, the entire system sees rx_handler() as NULL. There is no worry
+>about setting rx_handler_data to NULL now because nothing will be
+>referencing the previous value of rx_handler because that value no
+>longer exists in the system.
+>
+>That means Eric's solution fits perfectly well here.
+>
+>	< system in single state : everyone sees rx_handler = function() >
+>
+>	rx_handler = NULL;
+>
+>	< system in dual state : new calls see rx_handler = NULL, but
+>	  current calls see rx_handler = function >
+>
+>	synchronize_net();
+>
+>	< system is back to single state: everyone sees rx_handler = NULL >
+>
+>	rx_handler_data = NULL;
+>
+>no problem ;-)
+>
+>-- Steve
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> 2013/3/28 Ingo Molnar <mingo@kernel.org>:
-> >
-> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >
-> >> +config NO_HZ_EXTENDED_ALL
-> >> +       bool "Full dynticks system on all CPUs"
-> >> +       depends on NO_HZ_EXTENDED
-> >> +       help
-> >> +      Force all CPUs to be full dynticks. The range specified in the
-> >> +      nohz_extended boot option will then be ignored.
-> >> +
-> >> +      Note the boot CPU will still be kept outside the range to handle
-> >> +      the timekeeping duty.
-> >
-> > In most cases this will be the first time users doing 'make oldconfig'
-> > will hear about this feature, so I'd not mention noh_extended in such a
-> > primary way at all.
-> >
-> > Instead I'd suggest to explain, in a few simple sentences, what 'full
-> > dynticks' _is_. Then maybe mention this near the end of the next:
-> >
-> >    ( Alternatively this feature can also be enabled via the
-> >      nohz_extended=<cpulist> boot option. If this kernel config option is
-> >      enabled then the nohz_extended boot parameter is ignored. )
-> 
-> Ok. Hmm, concerning what full dynticks is, those who run make oldconfig 
-> should have passed through CONFIG_NO_HZ_EXTENDED help first so they 
-> should know what this is all about, right? I can improve its help text 
-> if you think something need more details. Or you think I should add some 
-> more reminder in the new config? Also nohz_extended is not mentioned 
-> there so I indeed need to fix that. And then do a reminder in the new 
-> config. I'll reuse a bit your above sentence.
+I think I understand now. I was under false impression that when rcu_read_lock()
+is held, rcu_dereference(pointer) value is predetermined (for that
+single run I mean).
 
-Kconfig option + boot parameter, or kconfig option + kconfig option, just 
-to get a feature to activate, is usability madness.
+Thank you very much for explanation!
 
-I think we need _one_ config knob to configure, which, if selected, 
-activates all of this feature. Preferably this would be similar to the 
-preempt options, like CONFIG_PREEMPT is the most advanced preemption 
-model:
+Jiri
 
-          ( ) No Forced Preemption (Server)
-          (X) Voluntary Kernel Preemption (Desktop)
-          ( ) Preemptible Kernel (Low-Latency Desktop)
-
-NO_HZ_EXTENDED or NO_HZ_FULL could be a third variant to:
-
-          ( ) Periodic Timer Ticks
-          (X) Tickless Idle (Dynamic Ticks)
-          ( ) Full Tickless (Extended Dynamic Ticks)
-
-or so - instead of this somewhat confusing hierarchy of config and boot 
-options. Good help text would explain the differences between then.
-
-Internally, the 'Tickless Idle' option would cause NO_HZ to be set, while 
-'Full Tickless' would also set NO_HZ, but would also set NO_HZ_EXTENDED.
-
-Furthermore, right now it's hard to enable NO_HZ_EXTENDED, because it 
-depends on so many other options. The option is just hidden unless the 
-user knows about it and enables 5 other kernel options. Instead the tick 
-mode selected should enable (select) any required features - it should 
-drive things, not the other way around.
-
-(After all that is done, the boot option is something that augments this 
-existing, kconfig driven mechanism.)
-
-Thanks,
-
-	Ingo
+>
+>
+>
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe netdev" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
