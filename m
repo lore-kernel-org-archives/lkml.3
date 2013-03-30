@@ -1,86 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab3C3NGu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 09:06:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51816 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756223Ab3C3NGp (ORCPT
+	id S1756816Ab3C3NPv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 09:15:51 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:53048 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756615Ab3C3NPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 09:06:45 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, Manjunath Goudar <manjunath.goudar@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com
-Subject: [PATCH v4 0/6] USB EHCI multiplatform conversion
-Date: Sat, 30 Mar 2013 14:04:17 +0100
-Message-Id: <1364648663-29296-1-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.1.2
-X-Provags-ID: V02:K0:S8YNE/+IJ2UsIqPgL/KjNILjbVMWZ+xlPS2cij+V+XB
- JVO8hzYXf26PdFeCOzAHxs7rNcPDJSjsJAreuaButJlKpUPLPW
- M7pvKbZmZ3pUcW5vyfdTr1a4CMl1aQ3tnMa60tA17m68YU81jl
- xKKVMVqWEA5yxTpwN4l4lRlqUZ82Vrw8KUl2dIb2vDaqeE9yMm
- we+jLzzLQ03jW2zj8VLpEUDx3o9c0BzrFC4DEUUqN64t4fN8Gs
- JUeMH3O4zXcvZnY1x/rDIvlu5OWzTOhrS92XxBwzdLkAmIYm6y
- 01EInlpNNloziu+fm/JDWy4IriBHKLRrFRMPlptwqg5C5AnyZI
- 1c8IdJnXLczs4SRIXRe1QXl+F/pFuE3dj5Pg9evuiAKoApFwCH
- Ch6M3rG07cM+Q==
+	Sat, 30 Mar 2013 09:15:42 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH 2/3] posix_timers: Fix racy timer delta caching on task exit
+Date: Sat, 30 Mar 2013 14:15:30 +0100
+Message-Id: <1364649331-30940-3-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1364649331-30940-1-git-send-email-fweisbec@gmail.com>
+References: <1364649331-30940-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+When a task exits, we perform a caching of the remaining
+cputime delta before expiring of its timers.
 
-This is a quick update to v3, addressing all issues you pointed in
-yesterday's review. Thanks for taking a thorough look on short notice
-on a public holiday!
+This is done from the following places:
 
-	Arnd
+* When the task is reaped. We iterate through its list of
+  posix cpu timers and store the remaining timer delta to
+  the timer struct instead of the absolute value.
+  (See posix_cpu_timers_exit() / posix_cpu_timers_exit_group() )
 
-Arnd Bergmann (1):
-  USB: OHCI: avoid conflicting platform drivers
+* When we call posix_cpu_timer_get() or posix_cpu_timer_schedule().
+  If the timer's task is considered dying when watched from these
+  places, the same conversion from absolute to relative expiry time
+  is performed. Then the given task's reference is released.
+  (See clear_dead_task() ).
 
-Manjunath Goudar (5):
-  USB: EHCI: make ehci-orion a separate driver
-  USB: EHCI: make ehci-spear a separate driver
-  USB: EHCI: make ehci-s5p a separate driver
-  USB: EHCI: make ehci-atmel a separate driver
-  USB: EHCI: make ehci-msm a separate driver
+The relevance of this caching is questionable but this is another
+and deeper debate.
 
- drivers/usb/host/Kconfig      |  40 +++++++++--
- drivers/usb/host/Makefile     |   5 ++
- drivers/usb/host/ehci-atmel.c |  88 +++++++++++------------
- drivers/usb/host/ehci-hcd.c   |  30 ++------
- drivers/usb/host/ehci-msm.c   |  85 ++++++++++------------
- drivers/usb/host/ehci-orion.c |  82 +++++++++------------
- drivers/usb/host/ehci-s5p.c   | 164 +++++++++++++++++++++---------------------
- drivers/usb/host/ehci-spear.c | 115 +++++++++++++----------------
- drivers/usb/host/ohci-hcd.c   | 136 ++++++++++++++++++++++++++++++-----
- 9 files changed, 408 insertions(+), 337 deletions(-)
+The big issue here is that these two sources of caching don't mix
+up very well together.
 
+More specifically, the caching can easily be done twice, resulting
+in a wrong delta as it gets spuriously substracted a second time by
+the elapsed clock. This can happen in the following scenario:
+
+The task exits and gets reaped: we call posix_cpu_timers_exit()
+and the absolute timer expiry values are converted to a relative
+delta.
+
+timer_gettime() -> posix_cpu_timer_get() is called and relies on
+clear_dead_task() because  tsk->exit_state == EXIT_DEAD.
+The delta gets substracted again by the elapsed clock and we return
+a wrong result.
+
+To fix this, just remove the caching done on task reaping time.
+It doesn't bring much value on its own. The caching done from
+posix_cpu_timer_get/schedule is enough.
+
+And it would also be hard to get it really right: we could make it
+put and clear the target task in the timer struct so that readers
+know if they are dealing with a relative cached of absolute value.
+But it would be racy. The only safe way to do it would be to lock
+the itimer->it_lock so that we know nobody reads the cputime expiry
+value while we modify it and its target task reference. Doing so
+would involve some funny workarounds to avoid circular lock against
+the sighand lock. There is just no reason to maintain this.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/posix-cpu-timers.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index afd79a9..877439b 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -387,14 +387,8 @@ static void cleanup_timers_list(struct list_head *head,
+ {
+ 	struct cpu_timer_list *timer, *next;
+ 
+-	list_for_each_entry_safe(timer, next, head, entry) {
++	list_for_each_entry_safe(timer, next, head, entry)
+ 		list_del_init(&timer->entry);
+-		if (timer->expires < curr) {
+-			timer->expires = 0;
+-		} else {
+-			timer->expires -= curr;
+-		}
+-	}
+ }
+ 
+ /*
+@@ -442,15 +436,21 @@ void posix_cpu_timers_exit_group(struct task_struct *tsk)
+ 		       tsk->se.sum_exec_runtime + sig->sum_sched_runtime);
+ }
+ 
+-static void clear_dead_task(struct k_itimer *timer, unsigned long long now)
++static void clear_dead_task(struct k_itimer *itimer, unsigned long long now)
+ {
++	struct cpu_timer_list *timer = &itimer->it.cpu;
++
+ 	/*
+ 	 * That's all for this thread or process.
+ 	 * We leave our residual in expires to be reported.
+ 	 */
+-	put_task_struct(timer->it.cpu.task);
+-	timer->it.cpu.task = NULL;
+-	timer->it.cpu.expires -= now;
++	put_task_struct(timer->task);
++	timer->task = NULL;
++	if (timer->expires < now) {
++		timer->expires = 0;
++	} else {
++		timer->expires -= now;
++	}
+ }
+ 
+ static inline int expires_gt(cputime_t expires, cputime_t new_exp)
 -- 
-1.8.1.2
-
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Bryan Huntsman <bryanh@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>
-Cc: Greg KH <greg@kroah.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Manjunath Goudar <manjunath.goudar@linaro.org>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Shiraz Hashim <shiraz.hashim@st.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
-Cc: spear-devel@list.st.com
-
+1.7.5.4
 
