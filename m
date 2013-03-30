@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757182Ab3C3SN0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 14:13:26 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:50538 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757011Ab3C3SNY (ORCPT
+	id S1757165Ab3C3SOz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 14:14:55 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35357 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756928Ab3C3SOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 14:13:24 -0400
-Message-ID: <1364667185.8398.1.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH] net/wireless/sme: sched_scan_mtx lock in
- cfg80211_conn_work()
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Artem Savkov <artem.savkov@gmail.com>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 30 Mar 2013 19:13:05 +0100
-In-Reply-To: <1364664014-12304-1-git-send-email-artem.savkov@gmail.com> (sfid-20130330_182140_133456_75DB275A)
-References: <1364664014-12304-1-git-send-email-artem.savkov@gmail.com>
-	 (sfid-20130330_182140_133456_75DB275A)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 30 Mar 2013 14:14:54 -0400
+Date: Sat, 30 Mar 2013 19:14:51 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Feng Tang <feng.tang@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/5] Add support for S3 non-stop TSC support.
+Message-ID: <20130330181451.GF28947@amd.pavel.ucw.cz>
+References: <1358750325-21217-1-git-send-email-feng.tang@intel.com>
+ <50FD48B6.9010202@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50FD48B6.9010202@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-30 at 21:20 +0400, Artem Savkov wrote:
-> Introduced in f9f475292dbb0e7035fb6661d1524761ea0888d9
+Hi!
+
+> >On some new Intel Atom processors (Penwell and Cloverview), there is
+> >a feature that the TSC won't stop S3, say the TSC value won't be
+> >reset to 0 after resume. This feature makes TSC a more reliable
+> >clocksource and could benefit the timekeeping code during system
+> >suspend/resume cycles.
+> >
+> >The enabling efforts include adding new flags for this feature,
+> >modifying clocksource.c and timekeeping.c to support and utilizing
+> >it.
+> >
+> >One remaining question is inside the timekeeping_resume(), we don't
+> >know if it is called by resuming from suspend(s2ram) or from
+> >hibernate(s2disk), as there is no easy way to check it currently.
+> >But it doesn't hurt as these Penwell/Cloverview platforms only have
+> >S3 state, and no S4.
+> >
+> >Please help to review them, thanks!
 > 
-> cfg80211_conn_scan() which requires sched_scan_mtx to be held can be called
-> from cfg80211_conn_work(). Without this we are hitting multiple warnings like
-> the following:
-> 
-> [   51.996440] ------------[ cut here ]------------
-> [   51.996484] WARNING: at net/wireless/sme.c:88 cfg80211_conn_scan+0x1dc/0x3a0 [cfg80211]()
+> The patches look reasonable to me.
 
-Applied, thanks. I guess I need to add
+Not sure... what are advantages? TSC is high resolution, but not
+exactly precise time source... and this only makes resume more
+complex.
 
-iw wlan0 scan trigger ; iw wlan0 connect -w NO_SUCH_SSID
-
-to my tests ...
-
-johannes
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
