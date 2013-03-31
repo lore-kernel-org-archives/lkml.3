@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab3CaAHG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 20:07:06 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:35698 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754711Ab3CaAHC (ORCPT
+	id S1755571Ab3CaBaT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 21:30:19 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:58686 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755296Ab3CaBaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 20:07:02 -0400
-Date: Sun, 31 Mar 2013 00:07:01 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Jeff Layton <jlayton@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-cifs@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-In-Reply-To: <20130313111727.63391672@tlielax.poochiereds.net>
-Message-ID: <alpine.DEB.2.00.1303310004550.6436@utopia.booyaka.com>
-References: <20130305140312.243cb094@tlielax.poochiereds.net> <20130305190923.GI12795@htj.dyndns.org> <20130305183941.19ff39ce@tlielax.poochiereds.net> <20130305234700.GE1227@htj.dyndns.org> <20130306181608.GA18687@redhat.com> <20130306185304.GM1227@htj.dyndns.org>
- <CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com> <20130306212452.GO1227@htj.dyndns.org> <CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com> <20130306213636.GP1227@htj.dyndns.org> <20130306214016.GQ1227@htj.dyndns.org>
- <20130313111727.63391672@tlielax.poochiereds.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sat, 30 Mar 2013 21:30:17 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1656173.qmCdUDP7Pu@vostro.rjw.lan>
+References: <cover.1364398686.git.viresh.kumar@linaro.org>
+	<2566297.LngxUqUYMZ@vostro.rjw.lan>
+	<CAKohpon_C3LYe++cOb_9fgtz=DfQV_vWRNuH=UVXcKOO14GUhQ@mail.gmail.com>
+	<1656173.qmCdUDP7Pu@vostro.rjw.lan>
+Date: Sun, 31 Mar 2013 07:00:16 +0530
+Message-ID: <CAKohponaAyo2BL3X+rxNTO9-u88dfj7Vho6zRyUmvct6XyHyVw@mail.gmail.com>
+Subject: Re: [PATCH V4 0/2] Implement per policy instance of governor
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, arvind.chauhan@arm.com, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, jacob.shin@amd.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Mar 2013, Jeff Layton wrote:
+On 31 March 2013 03:38, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> OK, I'll remove it.
 
-> Of course, this is all a lot of work, and not something we can shove
-> into the kernel for 3.9 at this point. In the meantime, while Mandeep's
-> warning is correctly pointing out a problem, I think we ought to back
-> it out until we can fix this properly.
+Thanks.
 
-Revert posted at:
+> And by the way, I'm no longer amused with the mess going on in the cpufreq land.
+>
+> Please send me *patches*.  I'm not interested in git pointers.
 
-http://marc.info/?l=linux-kernel&m=136468829626184&w=2
+Hmm.
 
-Andrew or Linus, care to pick this up before for 3.9-rc?
+> Moreover, please send those patches in a way allowing me to figure out the
+> ordering without looking into your git tree.
 
+Yes, i was planning to do so.
 
-- Paul
+> If you have a number of outstanding cpufreq patches for me to apply, please
+> create a patch series out of them and send it.
+
+Do you mean, i should merge all stuff i have queued up for 3.10 in a
+single patchset?
+Like for-3.10? Will do.
