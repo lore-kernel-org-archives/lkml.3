@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab3CaDRM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 23:17:12 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:33700 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756432Ab3CaDRK (ORCPT
+	id S1756546Ab3CaDqq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 23:46:46 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:53116 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab3CaDqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 23:17:10 -0400
-Message-ID: <1364699825.7876.5.camel@phoenix>
-Subject: [PATCH 4/4] pwm: twl: Add .owner to struct pwm_ops
-From: Axel Lin <axel.lin@ingics.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-kernel@vger.kernel.org
-Date: Sun, 31 Mar 2013 11:17:05 +0800
-In-Reply-To: <1364699642.7876.1.camel@phoenix>
-References: <1364699642.7876.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 30 Mar 2013 23:46:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <6766028.RBJyPM3lJj@vostro.rjw.lan>
+References: <03ca6f17860d290cfc67e51969062612f0ab26ab.1364643234.git.viresh.kumar@linaro.org>
+	<2835305.o7Hvg1cesG@vostro.rjw.lan>
+	<CAKohpo=vorTDONBR2czcZpP64sCfv1Qa-u8zGkHys9miwQrURw@mail.gmail.com>
+	<6766028.RBJyPM3lJj@vostro.rjw.lan>
+Date: Sun, 31 Mar 2013 09:16:42 +0530
+Message-ID: <CAKohpo=wNHsV0vFhcTWg0g7=Wtbdx=g2wqpNPfidQfGhhK9Cig@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: Raname index as data in cpufreq_frequency_table
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
+        arvind.chauhan@arm.com, Sekhar Nori <nsekhar@ti.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing .owner of struct pwm_ops. This prevents the module from being
-removed from underneath its users.
+On 31 March 2013 07:16, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Sunday, March 31, 2013 07:03:04 AM Viresh Kumar wrote:
+>> On 31 March 2013 03:31, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > Sorry, I won't apply this.  It changes too much stuff at a time and I'm not
+>> > really sure if the change being made is necessary.
+>>
+>> Hmm.. I thought it is important  as it puts the real meaning of "index" in the
+>> code.
+>
+> And what does that change, really?  What about documenting the meaning of
+> "index" instead?
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/pwm/pwm-twl.c |    2 ++
- 1 file changed, 2 insertions(+)
+Probably not the logic but perception. People don't necessarily go through
+Documentation but code for writing new stuff. And so code should reflect the
+real meaning.
 
-diff --git a/drivers/pwm/pwm-twl.c b/drivers/pwm/pwm-twl.c
-index bf3fda2..ee7fa5d 100644
---- a/drivers/pwm/pwm-twl.c
-+++ b/drivers/pwm/pwm-twl.c
-@@ -287,12 +287,14 @@ static const struct pwm_ops twl4030_pwm_ops = {
- 	.disable = twl4030_pwm_disable,
- 	.request = twl4030_pwm_request,
- 	.free = twl4030_pwm_free,
-+	.owner = THIS_MODULE,
- };
- 
- static const struct pwm_ops twl6030_pwm_ops = {
- 	.config = twl_pwm_config,
- 	.enable = twl6030_pwm_enable,
- 	.disable = twl6030_pwm_disable,
-+	.owner = THIS_MODULE,
- };
- 
- static int twl_pwm_probe(struct platform_device *pdev)
--- 
-1.7.10.4
+In case we write something like following in documentation:
+"Index: This is driver specific data for each frequency. Core doesn't use it."
 
-
-
+Then "Index" looks even more wrong. Its not the right name for any such
+variable. And so it should be fixed.
