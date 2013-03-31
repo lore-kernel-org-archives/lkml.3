@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab3CaSTj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 14:19:39 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:49790 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323Ab3CaSTi (ORCPT
+	id S1755687Ab3CaS1i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 14:27:38 -0400
+Received: from mx12.netapp.com ([216.240.18.77]:42410 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752696Ab3CaS1h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 14:19:38 -0400
-Date: Sun, 31 Mar 2013 11:19:31 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        davem@davemloft.net, airlied@redhat.com, axboe@kernel.dk,
-        tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com,
-        rostedt@goodmis.org, linux-rt-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4 3/4] block: queue work on unbound wq
-Message-ID: <20130331181931.GA7533@htj.dyndns.org>
-References: <cover.1364740180.git.viresh.kumar@linaro.org>
- <91239cde99aaba2715f63db1f88241d9f4a36e13.1364740180.git.viresh.kumar@linaro.org>
+	Sun, 31 Mar 2013 14:27:37 -0400
+X-IronPort-AV: E=Sophos;i="4.87,383,1363158000"; 
+   d="scan'208";a="35736349"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Pavel Machek <pavel@ucw.cz>
+CC: Andreas Dilger <adilger@dilger.ca>,
+        =?iso-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>,
+        Andy Lutomirski <luto@amacapital.net>, Zach Brown <zab@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chris L. Mason" <clmason@fusionio.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
+        "Hannes Reinecke" <hare@suse.de>, Joel Becker <jlbec@evilplan.org>
+Subject: Re: New copyfile system call - discuss before LSF?
+Thread-Topic: New copyfile system call - discuss before LSF?
+Thread-Index: AQHOECfzherspfmEjEqBTzfvhb3EUJiE2wAAgAASTQCAAFTBgIAADekAgAAaWoCABjXIAIABjuMAgDIlc4CAAAVWgIAAGvaAgAADUYCAAKHMgIAAtgEA
+Date: Sun, 31 Mar 2013 18:27:32 +0000
+Message-ID: <1364754452.4771.10.camel@leira.trondhjem.org>
+References: <512635D2.4090207@redhat.com> <51267CEB.8070805@redhat.com>
+	 <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com>
+	 <20130221222449.GY22221@lenny.home.zabbo.net>
+	 <512BD44C.40907@amacapital.net> <20130226210232.GA19510@logfs.org>
+	 <20130330194933.GB1005@amd.pavel.ucw.cz>
+	 <08D26E22-3856-43A4-8835-48C86CC5F71C@dilger.ca>
+	 <20130330214509.GB4322@amd.pavel.ucw.cz>
+	 <925D663D-D8F8-4297-A642-33C732354701@netapp.com>
+	 <20130331073604.GA13159@amd.pavel.ucw.cz>
+In-Reply-To: <20130331073604.GA13159@amd.pavel.ucw.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.114]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <222CF3D290D3764EA36868FD8CC03AFC@tahoe.netapp.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <91239cde99aaba2715f63db1f88241d9f4a36e13.1364740180.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Viresh.
-
-On Sun, Mar 31, 2013 at 08:01:46PM +0530, Viresh Kumar wrote:
-> Block layer uses workqueues for multiple purposes. There is no real dependency
-> of scheduling these on the cpu which scheduled them.
+On Sun, 2013-03-31 at 09:36 +0200, Pavel Machek wrote:
+> Hi!
 > 
-> On a idle system, it is observed that and idle cpu wakes up many times just to
-> service this work. It would be better if we can schedule it on a cpu which the
-> scheduler believes to be the most appropriate one.
+> > >>> Hmm, really? AFAICT it would be simple to provide an
+> > >>> open_deleted_file("directory") syscall. You'd open_deleted_file(),
+> > >>> copy source file into it, then fsync(), then link it into filesystem.
+> > >>> 
+> > >>> That should have atomicity properties reflected.
+> > >> 
+> > >> Actually, the open_deleted_file() syscall is quite useful for many
+> > >> different things all by itself.  Lots of applications need to create
+> > >> temporary files that are unlinked at application failure (without a
+> > >> race if app crashes after creating the file, but before unlinking).
+> > >> It also avoids exposing temporary files into the namespace if other
+> > >> applications are accessing the directory.
+> > > 
+> > > Hmm. open_deleted_file() will still need to get a directory... so it
+> > > will still need a path. Perhaps open("/foo/bar/mnt", O_DELETED) would
+> > > be acceptable interface?
+> > 
+> > ...and what's the big plan to make this work on anything other than ext4 and btrfs?
 > 
-> This patch replaces normal workqueues with UNBOUND versions.
+> Deleted but open files are from original unix, so it should work on
+> anything unixy (minix, ext, ext2, ...).
+> 								Pavel
 
-Hmm.... so, we really don't want to unconditionally convert workqueues
-to unbound.  Especially not kblockd.  On configurations with multiple
-high iops devices with IRQ routing, having request completion runinng
-on the same CPU has significant performance advantages.  We can't
-simply switch it to an unbound wokrqueue because it saves power on
-small arm configuration.
+minix, ext, ext2... are not under active development and haven't been
+for more than a decade.
 
-Plus, I'd much prefer to be clearly marking the workqueues which would
-contribute to powersaving when converted to unbound at least until we
-can come up with a no-compromise solution which doesn't need to trade
-off between cache locality and powersaving.
-
-So, let's please introduce a new flag to mark these workqueues, say,
-WQ_UNBOUND_FOR_POWER_SAVE or whatever (please come up with a better
-name) and provide a compile time switch with boot time override.
-
-Thanks.
+Take a look at how many actively used filesystems out there that have
+some variant of sillyrename(), and explain what you want to do in those
+cases.
 
 -- 
-tejun
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
