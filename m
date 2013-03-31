@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab3CaUDn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 16:03:43 -0400
-Received: from mail-da0-f44.google.com ([209.85.210.44]:43970 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755741Ab3CaUDm (ORCPT
+	id S1755718Ab3CaVGI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 17:06:08 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56579 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421Ab3CaVGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 16:03:42 -0400
-Date: Sun, 31 Mar 2013 12:59:42 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Guenter Roeck <linux@roeck-us.net>, Hongbo Zhang <hongbo.zhang@linaro.org>
-Cc: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
-        dwmw2@infradead.org, linaro-kernel@lists.linaro.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@linaro.org,
-        lee.jones@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 5/5] hwmon: add ST-Ericsson ABX500 hwmon driver
-Message-ID: <20130331195940.GA12849@lizard>
-References: <1364368412-12810-1-git-send-email-hongbo.zhang@linaro.org>
- <1364368412-12810-6-git-send-email-hongbo.zhang@linaro.org>
- <20130327194807.GB11086@roeck-us.net>
- <20130330231818.GA30901@lizard>
- <20130330232726.GB12864@roeck-us.net>
+	Sun, 31 Mar 2013 17:06:07 -0400
+Date: Sun, 31 Mar 2013 23:06:05 +0200
+From: Pavel Machek <pavel@denx.de>
+To: kernel list <linux-kernel@vger.kernel.org>, fabio.estevam@freescale.com,
+        l.stach@pengutronix.de, Frank.Li@freescale.com, netdev@vger.kernel.org
+Subject: Freescale FEC: fall back to random address
+Message-ID: <20130331210605.GA29191@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130330232726.GB12864@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 30, 2013 at 04:27:26PM -0700, Guenter Roeck wrote:
-> > > > Each of ST-Ericsson X500 chip set series consists of both ABX500 and DBX500
-> > > > chips. This is ABX500 hwmon driver, where the abx500.c is a common layer for
-> > > > all ABX500s, and the ab8500.c is specific for AB8500 chip. Under this designed
-> > > > structure, other chip specific files can be added simply using the same common
-> > > > layer abx500.c.
-> > > > 
-> > > > Signed-off-by: Hongbo Zhang <hongbo.zhang@linaro.org>
-> > > 
-> > > Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-> > 
-> > Thanks a lot for your reviews, Guenter!
-> > 
-> > Guenter, Jean,
-> > 
-> > As the driver depends on the battery driver changes, do you mind if I take
-> > it via battery-2.6.git tree?
->
-> Ok with me. I actually assumed it would be merged through another tree because
-> of its dependencies.
+If there's no valid ethernet address, fall back to randomly generated
+one.
 
-Great, thanks a lot!
+(Yes, I need to get newer u-boot for the board, but as the only
+available one is from 2009... this might be good idea).
 
-Hongbo, so can you please rebase the patches onto battery-2.6.git[1] tree so
-that I could apply them?
+Signed-off-by: Pavel Machek <pavel@denx.de>
 
-Thanks,
 
-Anton
+index e3f3937..5a7d1e1 100644
+pp--- a/drivers/net/ethernet/freescale/fec.c
++++ b/drivers/net/ethernet/freescale/fec.c
+@@ -906,6 +914,16 @@ static void fec_get_mac(struct net_device *ndev)
+ 		iap = &tmpaddr[0];
+ 	}
+ 
++	/*
++	 * 5) random mac address
++	 */
++	if (!is_valid_ether_addr(iap)) {
++		/* Report it and use a random ethernet address instead */
++		netdev_err(ndev, "Invalid MAC address: %pM\n", iap);
++		random_ether_addr(iap);
++		netdev_info(ndev, "Using random MAC address: %pM\n", iap);
++	}
++
+ 	memcpy(ndev->dev_addr, iap, ETH_ALEN);
+ 
+ 	/* Adjust MAC if using macaddr */
 
-[1] http://git.infradead.org/battery-2.6.git
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
