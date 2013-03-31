@@ -1,74 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab3CaLZa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 07:25:30 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:54903 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754983Ab3CaLZ3 (ORCPT
+	id S1755057Ab3CaLae (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 07:30:34 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:15290 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab3CaLad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 07:25:29 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Sebastian Reichel <sre@debian.org>
-Subject: Re: [PATCH] RX-51: Fix probe order of SPI devices
-Date: Sun, 31 Mar 2013 13:18:41 +0200
-User-Agent: KMail/1.13.7 (Linux/3.5.0-27-generic; KDE/4.10.1; x86_64; ; )
-Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-References: <1364724561-18045-1-git-send-email-pali.rohar@gmail.com> <20130331105222.GA22426@earth.universe>
-In-Reply-To: <20130331105222.GA22426@earth.universe>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2903223.bUCHxYMm0J";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	Sun, 31 Mar 2013 07:30:33 -0400
+Date: Sun, 31 Mar 2013 13:30:24 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6]  Make return type of i2c_del_adapter() (and
+ i2c_del_mux_adapter()) void
+Message-ID: <20130331133024.786d6c33@endymion.delvare>
+In-Reply-To: <1362853009-20789-1-git-send-email-lars@metafoo.de>
+References: <1362853009-20789-1-git-send-email-lars@metafoo.de>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303311318.41846@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2903223.bUCHxYMm0J
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Sat,  9 Mar 2013 19:16:43 +0100, Lars-Peter Clausen wrote:
+> Lars-Peter Clausen (6):
+>   i2c: Remove detach_adapter
+>   i2c: i2c_del_adapter: Don't treat removing a non-registered adapter
+>     as error
+>   i2c: Ignore return value of i2c_del_adapter()
+>   i2c: Make return type of i2c_del_adapter() void
+>   i2c: Ignore the return value of i2c_del_mux_adapter()
+>   i2c: Make the return type of i2c_del_mux_adapter() void
 
-On Sunday 31 March 2013 12:52:23 Sebastian Reichel wrote:
-> On Sun, Mar 31, 2013 at 12:09:21PM +0200, Pali Roh=C3=A1r wrote:
-> > From: Joni Lapilainen <joni.lapilainen@gmail.com>
-> >=20
-> > Without this patch LCD panel on Nokia RX-51 is still black
-> >=20
-> > Signed-off-by: Joni Lapilainen <joni.lapilainen@gmail.com>
-> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
->=20
-> Tested-by: Sebastian Reichel <sre@debian.org>
->=20
-> Please note, that this patch has actually been proposed by
-> Aaro Koskinen <aaro.koskinen@iki.fi> quite some time ago [0].
->=20
-> [0]
-> http://permalink.gmane.org/gmane.linux.ports.arm.omap/81729
->=20
-> -- Sebastian
+FWIW I tested the whole series successfully on my Asus Z8NA-D6 board.
 
-CCing Aaro.
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart2903223.bUCHxYMm0J
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlFYG5EACgkQi/DJPQPkQ1KxfACgoKHBpejLKOC8PdgvOaQe6rwC
-UcMAnR+I8O57CohHzkvkmR2XFJ99aj+n
-=nHEL
------END PGP SIGNATURE-----
-
---nextPart2903223.bUCHxYMm0J--
+-- 
+Jean Delvare
