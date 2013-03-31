@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008Ab3CaLe4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 07:34:56 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:45921 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753045Ab3CaLey (ORCPT
+	id S1755057Ab3CaLsm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 07:48:42 -0400
+Received: from mail3.vodafone.ie ([213.233.128.45]:63473 "EHLO
+	mail3.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753690Ab3CaLsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 07:34:54 -0400
+	Sun, 31 Mar 2013 07:48:41 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: At0EAMohWFFtTP75/2dsb2JhbAANNoM7v2YDAYEfeIIbAQEBBDIBRhALDQEKCRYPCQMCAQIBRQYNAQcBAYgcrTSSRY1lbV8Hg0ADmAqFBY1zgWkJGw
+Message-ID: <51582294.1000806@draigBrady.com>
+Date: Sun, 31 Mar 2013 12:48:36 +0100
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <CAKohpok6vQtbHC0u+XCbPLyJf3w=v=LUNqZB2eJ5msy7=3zWgA@mail.gmail.com>
-References: <cover.1364205812.git.viresh.kumar@linaro.org> <2aa937c3d81776f01c2c1d6fcfcb08ba74163b53.1364205812.git.viresh.kumar@linaro.org>
- <CAKohpokq+JJF2Ec3=_QF5dk_w9tMuKZ0trtcgXbC1if=HXEBRg@mail.gmail.com>
- <CAMPhdO9WbCdJq8NdoOjW2Jreka2dSRrNyit_7xrAbX_haEqNGQ@mail.gmail.com> <CAKohpok6vQtbHC0u+XCbPLyJf3w=v=LUNqZB2eJ5msy7=3zWgA@mail.gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Sun, 31 Mar 2013 19:34:34 +0800
-Message-ID: <CAMPhdO_ix16iy+KX+pXwhpO4u3Lx_eL3vVCyf+Lu4HthodekRA@mail.gmail.com>
-Subject: Re: [PATCH 6/9] cpufreq: pxa3xx: move cpufreq driver to drivers/cpufreq
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "arvind.chauhan" <arvind.chauhan@arm.com>,
-        "robin.randhawa" <robin.randhawa@arm.com>,
-        "steve.bannister" <Steve.Bannister@arm.com>,
-        "liviu.dudau" <Liviu.Dudau@arm.com>,
-        "charles.garcia-tobin" <charles.garcia-tobin@arm.com>,
-        cpufreq <cpufreq@vger.kernel.org>, linux-pm <linux-pm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linaro-kernel@lists.linaro.org,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
+To: Andreas Dilger <adilger@dilger.ca>
+CC: Pavel Machek <pavel@ucw.cz>,
+        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>,
+        Andy Lutomirski <luto@amacapital.net>, Zach Brown <zab@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chris L. Mason" <clmason@fusionio.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
+        Hannes Reinecke <hare@suse.de>, Joel Becker <jlbec@evilplan.org>
+Subject: Re: New copyfile system call - discuss before LSF?
+References: <512606DF.5050706@redhat.com> <4FA345DA4F4AE44899BD2B03EEEC2FA9235D998C@SACEXCMBX04-PRD.hq.netapp.com> <512635D2.4090207@redhat.com> <51267CEB.8070805@redhat.com> <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com> <20130221222449.GY22221@lenny.home.zabbo.net> <512BD44C.40907@amacapital.net> <20130226210232.GA19510@logfs.org> <20130330194933.GB1005@amd.pavel.ucw.cz> <08D26E22-3856-43A4-8835-48C86CC5F71C@dilger.ca>
+In-Reply-To: <08D26E22-3856-43A4-8835-48C86CC5F71C@dilger.ca>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 31, 2013 at 2:45 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 31 March 2013 10:54, Eric Miao <eric.y.miao@gmail.com> wrote:
->> On Sun, Mar 31, 2013 at 11:52 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>> Eric/Haojian,
->>>
->>> On 25 March 2013 15:41, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>>> This patch moves cpufreq driver of ARM based pxa3xx platform to drivers/cpufreq.
->>>>
->>>> Cc: Eric Miao <eric.y.miao@gmail.com>
+On 03/30/2013 08:08 PM, Andreas Dilger wrote:
+> On 2013-03-30, at 12:49 PM, Pavel Machek wrote:
+>> Hmm, really? AFAICT it would be simple to provide an
+>> open_deleted_file("directory") syscall. You'd open_deleted_file(),
+>> copy source file into it, then fsync(), then link it into filesystem.
 >>
->> Acked-by: Eric Miao <eric.y.miao@gmail.com>
->>
->>>> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
->>>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
->>>> ---
->>>>  arch/arm/mach-pxa/Makefile                                           | 1 -
->>>>  arch/arm/mach-pxa/include/mach/generic.h                             | 1 +
->>>>  drivers/cpufreq/Makefile                                             | 1 +
->>>>  .../mach-pxa/cpufreq-pxa3xx.c => drivers/cpufreq/pxa3xx-cpufreq.c    | 5 +----
->>>>  4 files changed, 3 insertions(+), 5 deletions(-)
->>>>  create mode 100644 arch/arm/mach-pxa/include/mach/generic.h
->>>>  rename arch/arm/mach-pxa/cpufreq-pxa3xx.c => drivers/cpufreq/pxa3xx-cpufreq.c (98%)
->>>
->>> Can i have your Ack or views about 6/9 and 7/9 Patch?
->
-> Is this for both the patches??
+>> That should have atomicity properties reflected.
+> 
+> Actually, the open_deleted_file() syscall is quite useful for many
+> different things all by itself.  Lots of applications need to create
+> temporary files that are unlinked at application failure (without a
+> race if app crashes after creating the file, but before unlinking).
+> It also avoids exposing temporary files into the namespace if other
+> applications are accessing the directory.
+> 
+> We've added a library routine that does this for Lustre in a hackish
+> way (magical filename created in target directory) for being able to
+> migrate files between data servers, HSM, defragmentation, rsync, etc.
+> 
+> Cheers, Andreas
 
-Yes. Take the Ack for both, those two should really belong to drivers/cpufreq.
+This reminds me of the flink() discussion:
+http://marc.info/?l=linux-kernel&m=104965452917349
+
+Also kinda related is the exchangedata() OSX system call to
+"atomically exchange data between two files"
+
+thanks,
+Pádraig.
