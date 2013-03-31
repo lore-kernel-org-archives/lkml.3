@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab3CaXpF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 19:45:05 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49902 "EHLO
+	id S1756374Ab3CaXqT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 19:46:19 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:49936 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754874Ab3CaXpD (ORCPT
+	with ESMTP id S1756214Ab3CaXqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 19:45:03 -0400
-Date: Sun, 31 Mar 2013 19:45:01 -0400 (EDT)
-Message-Id: <20130331.194501.2152753313602353257.davem@davemloft.net>
-To: josright123@gmail.com
-Cc: wfp5p@virginia.edu, matthew@mattleach.net, gregkh@linuxfoundation.org,
-        joseph_chang@davicom.com.tw, jiri@resnulli.us, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] DM9000B: driver initialization upgrade
+	Sun, 31 Mar 2013 19:46:18 -0400
+Date: Sun, 31 Mar 2013 19:46:16 -0400 (EDT)
+Message-Id: <20130331.194616.1802921705658512929.davem@davemloft.net>
+To: sam@ravnborg.org
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, rusty@rustcorp.com.au,
+        paulmck@linux.vnet.ibm.com, mingo@elte.hu, peterz@infradead.org,
+        srivatsa.bhat@linux.vnet.ibm.com, magnus.damm@gmail.com
+Subject: Re: [PATCH] sparc: Use generic idle loop
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1364548422-3051-1-git-send-email-josright123@gmail.com>
-References: <1364548422-3051-1-git-send-email-josright123@gmail.com>
+In-Reply-To: <20130329202926.GA9484@merkur.ravnborg.org>
+References: <20130321214930.752934102@linutronix.de>
+	<20130329161905.GC6201@merkur.ravnborg.org>
+	<20130329202926.GA9484@merkur.ravnborg.org>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sun, 31 Mar 2013 16:45:02 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sun, 31 Mar 2013 16:46:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joseph CHANG <josright123@gmail.com>
-Date: Fri, 29 Mar 2013 17:13:42 +0800
+From: Sam Ravnborg <sam@ravnborg.org>
+Date: Fri, 29 Mar 2013 21:29:26 +0100
 
-> Fix bug for DM9000 revision B which contain a DSP PHY
+> Add generic cpu_idle support
 > 
-> DM9000B use DSP PHY instead previouse DM9000 revisions' analog PHY,
-> So need extra change in initialization, For
-> explicity PHY Reset and PHY init parameter, and
-> first DM9000_NCR reset need NCR_MAC_LBK bit by dm9000_probe().
+> sparc32:
+> - replace call to cpu_idle() with cpu_startup_entry()
+> - add arch_cpu_idle()
 > 
-> Following DM9000_NCR reset cause by dm9000_open() clear the
-> NCR_MAC_LBK bit.
+> sparc64:
+> - smp_callin() includes cpu_startup_entry() call so we can
+>   skip calling cpu_idle from assembler
+> - add arch_cpu_idle_enter() and arch_cpu_idle_dead()
 > 
-> Without this fix, Power-up FIFO pointers error happen around 2%
-> rate among Davicom's customers' boards. With this fix, All above
-> cases can be solved.
-> 
-> Signed-off-by: Joseph CHANG <josright123@gmail.com>
+> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
 
-Applied.
+Acked-by: David S. Miller <davem@davemloft.net>
