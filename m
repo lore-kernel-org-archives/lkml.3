@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab3CaSO3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 14:14:29 -0400
-Received: from mga14.intel.com ([143.182.124.37]:40393 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752586Ab3CaSO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 14:14:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,383,1363158000"; 
-   d="asc'?scan'208";a="220977349"
-Date: Sun, 31 Mar 2013 23:17:23 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Dan Williams <djbw@fb.com>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: [GIT PULL] slave-dmaengine fixes
-Message-ID: <20130331174723.GE10326@intel.com>
+	id S1755564Ab3CaSTj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 14:19:39 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:49790 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752323Ab3CaSTi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Mar 2013 14:19:38 -0400
+Date: Sun, 31 Mar 2013 11:19:31 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        davem@davemloft.net, airlied@redhat.com, axboe@kernel.dk,
+        tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com,
+        rostedt@goodmis.org, linux-rt-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4 3/4] block: queue work on unbound wq
+Message-ID: <20130331181931.GA7533@htj.dyndns.org>
+References: <cover.1364740180.git.viresh.kumar@linaro.org>
+ <91239cde99aaba2715f63db1f88241d9f4a36e13.1364740180.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mvpLiMfbWzRoNl4x"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <91239cde99aaba2715f63db1f88241d9f4a36e13.1364740180.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Viresh.
 
---mvpLiMfbWzRoNl4x
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Sun, Mar 31, 2013 at 08:01:46PM +0530, Viresh Kumar wrote:
+> Block layer uses workqueues for multiple purposes. There is no real dependency
+> of scheduling these on the cpu which scheduled them.
+> 
+> On a idle system, it is observed that and idle cpu wakes up many times just to
+> service this work. It would be better if we can schedule it on a cpu which the
+> scheduler believes to be the most appropriate one.
+> 
+> This patch replaces normal workqueues with UNBOUND versions.
 
+Hmm.... so, we really don't want to unconditionally convert workqueues
+to unbound.  Especially not kblockd.  On configurations with multiple
+high iops devices with IRQ routing, having request completion runinng
+on the same CPU has significant performance advantages.  We can't
+simply switch it to an unbound wokrqueue because it saves power on
+small arm configuration.
 
-Hi Linus,
+Plus, I'd much prefer to be clearly marking the workqueues which would
+contribute to powersaving when converted to unbound at least until we
+can come up with a no-compromise solution which doesn't need to trade
+off between cache locality and powersaving.
 
-Please pull the following two patches to recive the fixes for slave-dmaengine.
-The first one is for making slave_id value correct for dw_dmac and send one
-fixes the endieness in DT parsing
+So, let's please introduce a new flag to mark these workqueues, say,
+WQ_UNBOUND_FOR_POWER_SAVE or whatever (please come up with a better
+name) and provide a compile time switch with boot time override.
 
-The following changes since commit 8bb9660418e05bb1845ac1a2428444d78e322cc7:
+Thanks.
 
-are available in the git repository at:
-
-  git://git.infradead.org/users/vkoul/slave-dma.git fixes
-
-Andy Shevchenko (1):
-      dw_dmac: adjust slave_id accordingly to request line base
-
-Arnd Bergmann (1):
-      dmaengine: dw_dma: fix endianess for DT xlate function
-
- drivers/dma/dw_dmac.c      |   23 +++++++++++++++++++----
- drivers/dma/dw_dmac_regs.h |    1 +
- 2 files changed, 20 insertions(+), 4 deletions(-)
-
---
-~Vinod
-
---mvpLiMfbWzRoNl4x
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRWHarAAoJEHwUBw8lI4NHMawP/029RFILsUeZE9ZHEvvnKbNw
-XwIXq2nXoy2fGBoyv0G7Y6W6ZYRFrrguqgh2eZJIwdnyJND/fbb/JuNwdayAsEtF
-K7XGnwnSuH5dwG8yfLFygSCb+S93i0H5aF8kzcwknsaI1Xc5cWZr7iFKtl/M+q+n
-IglwzuA6phJAYImxEl0rfIJOafkmiZG9j5Igo6lcQJ+fgIlnVHtx2ZgV4kh7WmAC
-KWPSEgYbaJfLPL/8y3hSEtLrE2GPO+ymaddqmAQGSoIDn9KvlVoOJ0tIetbPB3S5
-4mpeOonmJuhBvS8aLYWewn9H9aF+nac7Su0tHSCrUAKh4rt7T/c3Wf+yc1svh8ov
-QqUOqLtIV2vGAjM5/9LjcS6xOS+mgd00UnedM/Ra3rVqAivDzD9KlELFuMmiC7O3
-8DrSr4qZJiEg5bHHL4RinMOesdsmIdAeBrlY8WlgqMNqPqLyuXrNPRCQOlB+HI12
-Q0AhVJOzMsojpgmLuK4nUVnmhflxmk5lVyvJDlSK/TEbEHvlt0PB2cyH9tKFNWXL
-XnQ1b+euPh98Z/KUuy5bVDn19xR5t5+bKveYvGIqnGRp6/4JLlxP2lsiKvFAPIpx
-ii7Zu+jWAjkRhOP+P0PiOzebSphOFk11M1mqv468n1tW04leZUsv1MCr1miu0vcx
-fuJ5ZDucpvcmd7DruZJM
-=v7yk
------END PGP SIGNATURE-----
-
---mvpLiMfbWzRoNl4x--
+-- 
+tejun
