@@ -1,132 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab3CaJ2S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 05:28:18 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:44234 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab3CaJ2Q (ORCPT
+	id S1754836Ab3CaKII (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 06:08:08 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:39646 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980Ab3CaKIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 05:28:16 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] OMAP3 ROM Random Number Generator support
-Date: Sun, 31 Mar 2013 11:28:12 +0200
-User-Agent: KMail/1.13.7 (Linux/3.5.0-27-generic; KDE/4.10.1; x86_64; ; )
-Cc: Juha Yrjola <juha.yrjola@solidboot.com>,
-        Russell King <linux@arm.linux.org.uk>, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?utf-8?q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE?=
-	 =?utf-8?q?_=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
-	<freemangordon@abv.bg>
-References: <201302281905.48546@pali> <201303281854.02847@pali> <20130328214411.GZ10155@atomide.com>
-In-Reply-To: <20130328214411.GZ10155@atomide.com>
+	Sun, 31 Mar 2013 06:08:06 -0400
+Message-ID: <51580AFD.4000809@intel.com>
+Date: Sun, 31 Mar 2013 18:07:57 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart4508047.TXkkfaCaca";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Artem Savkov <artem.savkov@gmail.com>
+CC: Danny Baumann <dannybaumann@web.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] acpi/video: lcd_get_level_current doen't return current
+ level
+References: <1364648501-5127-1-git-send-email-artem.savkov@gmail.com> <3fb82299-bdb9-4842-bd55-f3b87d2d789e@email.android.com> <20130331064619.GA11544@thinkpad.lan> <800799d9-f1ea-48ab-b565-4bd3ca230300@email.android.com> <20130331081600.GA4549@thinkpad.lan>
+In-Reply-To: <20130331081600.GA4549@thinkpad.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303311128.12698@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart4508047.TXkkfaCaca
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On 03/31/2013 04:16 PM, Artem Savkov wrote:
+> On Sun, Mar 31, 2013 at 09:04:21AM +0200, Danny Baumann wrote:
+>> Hi,
+>>
+>> Artem Savkov <artem.savkov@gmail.com> schrieb:
+>>
+>>> On Sun, Mar 31, 2013 at 08:15:14AM +0200, Danny Baumann wrote:
+>>>> Artem Savkov <artem.savkov@gmail.com> schrieb:
+>>>>> acpi_video_device_lcd_get_level_current() called
+>>>>> acpi_video_bqc_value_to_level()
+>>>>> with "*level" as a second argument, resulting in level being
+>>> returned
+>>>>> based on
+>>>>> initial input, not current brightness, breaking backlight controls.
+>>>> I don't think this change is correct. As level was passed as
+>>> parameter into the evaluation of _BQC, *level contains the AML returned
+>>> brightness level afterwards, so it's correct to use it as an input to
+>>> acpi_video_bqc_value_to_level(). Actually, the whole point of
+>>> acpi_video_device_lcd_get_level_current() is to update
+>>> device->brightness->curr, so it doesn't make sense to me to use it in
+>>> that function.
+>>>>
+>>>> What's the exact problem this patch tries to solve?
+>>>
+>>> I'm running a -next kernel on my laptop and couple of days ago keyboard
+>>> backlight controls stopped working: only 2 lower brightness levels.
+>>> I've
+>>> debugged it a bit and found out that acpi_video_switch_brightness()
+>>> calls
+>>> acpi_video_device_lcd_get_level_current() with level uninitialized and
+>>> always gets lowest posible value.
+>>
+>> The point is: after the acpi_evaluate_object call, *level must contain the current brightness level, otherwise your BIOS is broken (this happens: e.g. my laptop always returns 100 from _BQC in Windows 8 mode). You can verify this easily by initializing level_current to some invalid value and checking it again after the call to _get_level_current. I'd be pretty surprised if the value didn't change. Also, if you look at [1], you'll see that the code operated on *level before as well.
+>> This problem may have been obscured by the fact that the brightness device wasn't initialized properly before my patches went in. Does acpi_video_switch_brightness actually do anything for you when reverting the 3 newest commits of video.c?
+>
+> Yes, you are right. Both my patch and the version before your patches
+> result in initial acpi_video_device_lcd_get_level_current call ending
+> with invalid level being returned and bqc disabled, so they both just
+> use *level = brightness->curr after that.
+>
 
-On Thursday 28 March 2013 22:44:11 Tony Lindgren wrote:
-> * Pali Roh=C3=A1r <pali.rohar@gmail.com> [130328 10:58]:
-> > Here is new version of patch:
-> >=20
-> > --- a/arch/arm/mach-omap2/devices.c
-> > +++ b/arch/arm/mach-omap2/devices.c
-> > @@ -486,6 +486,23 @@ static void omap_init_mcspi(void)
-> >=20
-> >  static inline void omap_init_mcspi(void) {}
-> >  #endif
-> >=20
-> > +extern u32 *omap3_rom_rng_call(u32 id, u32 proc, u32 flags,
-> > u32 va_ptr); +
-> > +static struct platform_device omap3_rom_rng_device =3D {
-> > +	.name		=3D "omap3-rom-rng",
-> > +	.id		=3D -1,
-> > +	.dev	=3D {
-> > +		.platform_data	=3D omap3_rom_rng_call,
-> > +	},
-> > +};
-> > +
-> > +static void omap_init_rom_rng(void)
-> > +{
-> > +	if (!cpu_is_omap34xx() || omap_type() =3D=3D
-> > OMAP2_DEVICE_TYPE_GP) +		return;
-> > +	platform_device_register(&omap3_rom_rng_device);
-> > +}
-> > +
-> >=20
-> >  /**
-> > =20
-> >   * omap_init_rng - bind the RNG hwmod to the RNG
-> >   omap_device *
->=20
-> This driver probably only works on Nokia boards because of the
-> different SMC call numbering. Until it's been verified on some
-> other HS omap34xx, I'd probably register this only from the
-> Nokia board-*.c file.
->=20
+OK, this suggests the _BQC control method of your system is broken.
+Please kindly file a bug in bugzilla.kernel.org, against
+ACPI/Power-Video and attach the output of acpidump and dmidecode there,
+I want to take a look, thanks.
 
-=46reemangordon, can you look at this smc and errara 430973 code if=20
-they could be merged? Really omap3_rom_rng_call function looks=20
-like n900 specific.
-
-Link: https://lkml.org/lkml/2013/3/28/398
-
-> > --- /dev/null
-> > +++ b/drivers/char/hw_random/omap3-rom-rng.c
-> > +static int omap3_rom_rng_probe(struct platform_device
-> > *pdev) +{
-> > +	printk(KERN_INFO "%s: initializing\n",
-> > omap3_rom_rng_name); +
-> > +	omap3_rom_rng_call =3D pdev->dev.platform_data;
-> > +	if (!omap3_rom_rng_call) {
-> > +		printk(KERN_ERR "%s: omap3_rom_rng_call is NULL\n",
-> > +		       omap3_rom_rng_name);
-> > +		return -EINVAL;
-> > +	}
-> > +
-> > +	setup_timer(&idle_timer, omap3_rom_idle_rng, 0);
-> > +	rng_clk =3D clk_get_sys("omap_rng", "ick");
-> > +	if (IS_ERR(rng_clk)) {
-> > +		printk(KERN_ERR "%s: unable to get RNG clock\n",
-> > +		       omap3_rom_rng_name);
-> > +		return IS_ERR(rng_clk);
-> > +	}
->=20
-> You can use regular clk_get if you add the alias to
-> struct omap_clk omap3xxx_clks table.
->=20
-> Regards,
->=20
-> Tony
-
-Tony, can you show me how?
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart4508047.TXkkfaCaca
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlFYAawACgkQi/DJPQPkQ1J4eACgj3BxpHuap4RtxayaL9La1C9y
-8vkAn1WzN6qDwLLOlk4ZvwJTweq/KnOT
-=2mr3
------END PGP SIGNATURE-----
-
---nextPart4508047.TXkkfaCaca--
+-Aaron
