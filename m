@@ -1,31 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab3CaI0Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 04:26:16 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:46428 "EHLO
+	id S1755702Ab3CaJE0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 05:04:26 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:42485 "EHLO
 	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301Ab3CaI0L (ORCPT
+	with ESMTP id S1755248Ab3CaJEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 04:26:11 -0400
-Date: Sun, 31 Mar 2013 10:25:47 +0200
+	Sun, 31 Mar 2013 05:04:24 -0400
+Date: Sun, 31 Mar 2013 11:04:13 +0200
 From: Jean Delvare <khali@linux-fr.org>
 To: Lars-Peter Clausen <lars@metafoo.de>
 Cc: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Shawn Guo <shawn.guo@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Lars Poeschel <poeschel@lemonage.de>
-Subject: Re: [PATCH 3/6] i2c: Ignore return value of i2c_del_adapter()
-Message-ID: <20130331102547.4d5d2e4c@endymion.delvare>
-In-Reply-To: <1362853009-20789-4-git-send-email-lars@metafoo.de>
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] i2c: Make return type of i2c_del_adapter() void
+Message-ID: <20130331110413.5c055485@endymion.delvare>
+In-Reply-To: <1362853009-20789-5-git-send-email-lars@metafoo.de>
 References: <1362853009-20789-1-git-send-email-lars@metafoo.de>
-	<1362853009-20789-4-git-send-email-lars@metafoo.de>
+	<1362853009-20789-5-git-send-email-lars@metafoo.de>
 X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -34,47 +25,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  9 Mar 2013 19:16:46 +0100, Lars-Peter Clausen wrote:
-> i2c_del_adapter() always returns 0. So all checks testing whether it will be
-> non zero will always evaluate to false and the conditional code is dead code.
-> This patch updates all callers of i2c_del_mux_adapter() to ignore the return
-> value and assume that it will always succeed (which it will). In a subsequent
-> patch the return type of i2c_del_adapter() will be made void.
+On Sat,  9 Mar 2013 19:16:47 +0100, Lars-Peter Clausen wrote:
+> i2c_del_adapter() is usually called from a drivers remove callback. The Linux
+> device driver model does not allow the remove callback to fail and all resources
+> allocated in the probe callback need to be freed, as well as all resources which
+> have been provided to the rest of the kernel(for example a I2C adapter) need to
+> be revoked. So any function revoking such resources isn't allowed to fail
+> either. i2c_del_adapter() adheres to this requirement and will never fail. But
+> i2c_del_adapter()'s return type is int, which may cause driver authors to think
+> that it can fail. This led to code constructs like:
 > 
-> Cc: Jean Delvare <khali@linux-fr.org>
-> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Cc: Ben Hutchings <bhutchings@solarflare.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Alan Cox <alan@linux.intel.com>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
-> Cc: Marek Vasut <marex@denx.de> (commit_signer:11/20=55%)
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Lars Poeschel <poeschel@lemonage.de>
+> 	ret = i2c_del_adapter(...);
+> 	BUG_ON(ret);
+> 
+> Since i2c_del_adapter() always returns 0 the BUG_ON is never hit and essentially
+> becomes dead code, which means it can be removed. Making the return type of
+> i2c_del_adapter() void makes it explicit that the function will never fail and
+> should prevent constructs like the above from re-appearing in the kernel code.
+> 
+> All callers of i2c_del_adapter() have already been updated in a previous patch
+> to ignore the return value, so the conversion of the return type from int to
+> void can be done without causing any build failures.
+> 
 > Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 > ---
->  drivers/gpu/drm/gma500/oaktrail_hdmi_i2c.c   |  3 +--
->  drivers/i2c/busses/i2c-amd756-s4882.c        |  6 +-----
->  drivers/i2c/busses/i2c-at91.c                |  5 ++---
->  drivers/i2c/busses/i2c-cbus-gpio.c           |  4 +++-
->  drivers/i2c/busses/i2c-intel-mid.c           |  3 +--
->  drivers/i2c/busses/i2c-mv64xxx.c             |  5 ++---
->  drivers/i2c/busses/i2c-mxs.c                 |  5 +----
->  drivers/i2c/busses/i2c-nforce2-s4985.c       |  6 +-----
->  drivers/i2c/busses/i2c-powermac.c            | 10 ++--------
->  drivers/i2c/busses/i2c-puv3.c                | 10 ++--------
->  drivers/i2c/busses/i2c-viperboard.c          |  5 ++---
->  drivers/i2c/i2c-mux.c                        |  5 +----
->  drivers/media/pci/bt8xx/bttv-input.c         |  6 +++---
->  drivers/media/pci/mantis/mantis_i2c.c        |  4 +++-
->  drivers/net/ethernet/sfc/falcon.c            |  6 ++----
->  drivers/staging/media/go7007/go7007-driver.c |  7 ++-----
->  16 files changed, 29 insertions(+), 61 deletions(-)
-> (...)
-
-For i2c-amd756-s4882, i2c-nforce2-s4985 and i2c-mux:
+>  drivers/i2c/i2c-core.c | 6 ++----
+>  include/linux/i2c.h    | 2 +-
+>  2 files changed, 3 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index 7727d33..838d030 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -1060,7 +1060,7 @@ static int __process_removed_adapter(struct device_driver *d, void *data)
+>   * This unregisters an I2C adapter which was previously registered
+>   * by @i2c_add_adapter or @i2c_add_numbered_adapter.
+>   */
+> -int i2c_del_adapter(struct i2c_adapter *adap)
+> +void i2c_del_adapter(struct i2c_adapter *adap)
+>  {
+>  	struct i2c_adapter *found;
+>  	struct i2c_client *client, *next;
+> @@ -1072,7 +1072,7 @@ int i2c_del_adapter(struct i2c_adapter *adap)
+>  	if (found != adap) {
+>  		pr_debug("i2c-core: attempting to delete unregistered "
+>  			 "adapter [%s]\n", adap->name);
+> -		return 0;
+> +		return;
+>  	}
+>  
+>  	/* Tell drivers about this removal */
+> @@ -1124,8 +1124,6 @@ int i2c_del_adapter(struct i2c_adapter *adap)
+>  	/* Clear the device structure in case this adapter is ever going to be
+>  	   added again */
+>  	memset(&adap->dev, 0, sizeof(adap->dev));
+> -
+> -	return 0;
+>  }
+>  EXPORT_SYMBOL(i2c_del_adapter);
+>  
+> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+> index 8ffab3f..dec1702 100644
+> --- a/include/linux/i2c.h
+> +++ b/include/linux/i2c.h
+> @@ -447,7 +447,7 @@ void i2c_unlock_adapter(struct i2c_adapter *);
+>   */
+>  #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+>  extern int i2c_add_adapter(struct i2c_adapter *);
+> -extern int i2c_del_adapter(struct i2c_adapter *);
+> +extern void i2c_del_adapter(struct i2c_adapter *);
+>  extern int i2c_add_numbered_adapter(struct i2c_adapter *);
+>  
+>  extern int i2c_register_driver(struct module *, struct i2c_driver *);
 
 Reviewed-by: Jean Delvare <khali@linux-fr.org>
 
