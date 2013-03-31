@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab3CaWu1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 18:50:27 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39089 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857Ab3CaWuY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 18:50:24 -0400
-Date: Mon, 1 Apr 2013 00:50:22 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Andreas Dilger <adilger@dilger.ca>,
-        =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-        Andy Lutomirski <luto@amacapital.net>, Zach Brown <zab@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chris L. Mason" <clmason@fusionio.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
-        Hannes Reinecke <hare@suse.de>, Joel Becker <jlbec@evilplan.org>
-Subject: Re: openat(..., AT_UNLINKED) was Re: New copyfile system call -
- discuss before LSF?
-Message-ID: <20130331225022.GA31552@amd.pavel.ucw.cz>
-References: <512BD44C.40907@amacapital.net>
- <20130226210232.GA19510@logfs.org>
- <20130330194933.GB1005@amd.pavel.ucw.cz>
- <08D26E22-3856-43A4-8835-48C86CC5F71C@dilger.ca>
- <20130330214509.GB4322@amd.pavel.ucw.cz>
- <925D663D-D8F8-4297-A642-33C732354701@netapp.com>
- <20130331073604.GA13159@amd.pavel.ucw.cz>
- <1364754452.4771.10.camel@leira.trondhjem.org>
- <20130331183238.GA25751@amd.pavel.ucw.cz>
- <1364755493.4771.14.camel@leira.trondhjem.org>
+	id S1756294Ab3CaWvB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 18:51:01 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:48981 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755894Ab3CaWu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Mar 2013 18:50:57 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tejun Heo <tj@kernel.org>, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Lan Tianyu <tianyu.lan@intel.com>
+Subject: [PATCH 0/2] USB PM and PM QoS fixes (Re: gpf in pm_qos_remote_wakeup_show)
+Date: Mon, 01 Apr 2013 00:56:31 +0200
+Message-ID: <1876128.a4gSDF7byc@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <2829731.BFs3ri3Eud@vostro.rjw.lan>
+References: <512F8980.4040809@oracle.com> <51576A0C.5030907@oracle.com> <2829731.BFs3ri3Eud@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364755493.4771.14.camel@leira.trondhjem.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2013-03-31 18:44:53, Myklebust, Trond wrote:
-> On Sun, 2013-03-31 at 20:32 +0200, Pavel Machek wrote:
-> > > > > > Hmm. open_deleted_file() will still need to get a directory... so it
-> > > > > > will still need a path. Perhaps open("/foo/bar/mnt", O_DELETED) would
-> > > > > > be acceptable interface?
-> > > > > 
-> > > > > ...and what's the big plan to make this work on anything other than ext4 and btrfs?
-> > > > 
-> > > > Deleted but open files are from original unix, so it should work on
-> > > > anything unixy (minix, ext, ext2, ...).
-> > > 
-> > > minix, ext, ext2... are not under active development and haven't been
-> > > for more than a decade.
-> > > 
-> > > Take a look at how many actively used filesystems out there that have
-> > > some variant of sillyrename(), and explain what you want to do in those
-> > > cases.
-> > 
-> > Well. Yes, there are non-unix filesystems around. You have to deal
-> > with silly files on them, and this will not be different.
+On Sunday, March 31, 2013 03:41:11 AM Rafael J. Wysocki wrote:
+> [Moving the thread to the LKML.]
 > 
-> So this would be a local POSIX filesystem only solution to a problem
-> that has yet to be formulated?
+> On Saturday, March 30, 2013 06:41:16 PM Sasha Levin wrote:
+> > On 03/15/2013 01:06 PM, Rafael J. Wysocki wrote:
+> [...]
+> > >> Rafael, Is there anything you would like me to test?
+> > > 
+> > > Please just test 3.9-rc2 (or later).
+> > 
+> > Hi Rafael,
+> 
+> Hi,
+> 
+> > I got this after a bit of fuzzing, it looks related to the fix:
+> 
+> So the complaint is that we shouldn't call pm_qos_sysfs_remove_flags() under
+> dev_pm_qos_mtx, because then it may deadlock with dev_pm_qos_update_flags()
+> called from pm_qos_remote_wakeup_store(), for example.  This appears to be a
+> valid one.
+> 
+> To avoid that, we can use a separate mutex for exposing/hiding the flags
+> (and the latency limit too) that won't be acquired by dev_pm_qos_update_flags()
+> or dev_pm_qos_update_request().
+> 
+> Can you please try the patch below?
 
-Problem is "clasical create temp file then delete it" is racy. See the
-archives. That is useful & common operation.
+Never mind, I have reproduced the lockdep splat and the patch fixes it for me.
 
-Problem is "atomicaly create file at target location with guaranteed
-right content". That's also in the archives. Looks useful if someone
-does rsync from your directory.
+Moreover, I've discovered that we call dev_pm_qos_hide_flags() from
+usb_port_device_release(), which is totally incorrect.
 
-Non-POSIX filesystems have problems handling deleted files, but that
-was always the case. That's one of the reasons they are seldomly used
-for root filesystems.
+So, I have two patches (on top of the Linus' tree) that will follow shortly:
 
-									Pavel
+[1/2] USB / PM: Don't try to hide PM QoS flags from usb_port_device_release()
+[2/2] PM / QoS: Avoid possible deadlock related to sysfs access
+
+Thanks,
+Rafael
+
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
