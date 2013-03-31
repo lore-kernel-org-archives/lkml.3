@@ -1,72 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156Ab3CaCxN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 22:53:13 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:48248 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755481Ab3CaCxL convert rfc822-to-8bit (ORCPT
+	id S1756192Ab3CaCz1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 22:55:27 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:41181 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755468Ab3CaCz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 22:53:11 -0400
-References: <512606DF.5050706@redhat.com> <4FA345DA4F4AE44899BD2B03EEEC2FA9235D998C@SACEXCMBX04-PRD.hq.netapp.com> <512635D2.4090207@redhat.com> <51267CEB.8070805@redhat.com> <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com> <20130221222449.GY22221@lenny.home.zabbo.net> <512BD44C.40907@amacapital.net> <20130226210232.GA19510@logfs.org> <20130330194933.GB1005@amd.pavel.ucw.cz> <08D26E22-3856-43A4-8835-48C86CC5F71C@dilger.ca> <20130330214509.GB4322@amd.pavel.ucw.cz> <925D663D-D8F8-4297-A642-33C732354701@netapp.com> <51577363.9060201@redhat.com>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <51577363.9060201@redhat.com>
-Content-Type: text/plain;
-	charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Message-Id: <21F42B67-1C8B-444A-899A-AE649D4043C3@dilger.ca>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Pavel Machek <pavel@ucw.cz>,
-        =?utf-8?Q?J=C3=B6rn_Engel?= <joern@logfs.org>,
-        Andy Lutomirski <luto@amacapital.net>, Zach Brown <zab@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chris L. Mason" <clmason@fusionio.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
-        Hannes Reinecke <hare@suse.de>, Joel Becker <jlbec@evilplan.org>
-X-Mailer: iPhone Mail (10B146)
-From: Andreas Dilger <adilger@dilger.ca>
-Subject: Re: New copyfile system call - discuss before LSF?
-Date: Sat, 30 Mar 2013 19:53:06 -0700
-To: Ric Wheeler <rwheeler@redhat.com>
+	Sat, 30 Mar 2013 22:55:26 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: rob@landley.net, axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH] Documentation: cfq-iosched: update documentation help for cfq tunnables
+Date: Sun, 31 Mar 2013 11:55:04 +0900
+Message-Id: <1364698505-22236-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-03-30, at 16:21, Ric Wheeler <rwheeler@redhat.com> wrote:
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-> On 03/30/2013 05:57 PM, Myklebust, Trond wrote:
->> On Mar 30, 2013, at 5:45 PM, Pavel Machek <pavel@ucw.cz>
->>  wrote:
->> 
->>> On Sat 2013-03-30 13:08:39, Andreas Dilger wrote:
->>>> On 2013-03-30, at 12:49 PM, Pavel Machek wrote:
->>>>> Hmm, really? AFAICT it would be simple to provide an
->>>>> open_deleted_file("directory") syscall. You'd open_deleted_file(),
->>>>> copy source file into it, then fsync(), then link it into filesystem.
->>>>> 
->>>>> That should have atomicity properties reflected.
->>>> Actually, the open_deleted_file() syscall is quite useful for many
->>>> different things all by itself.  Lots of applications need to create
->>>> temporary files that are unlinked at application failure (without a
->>>> race if app crashes after creating the file, but before unlinking).
->>>> It also avoids exposing temporary files into the namespace if other
->>>> applications are accessing the directory.
->>> Hmm. open_deleted_file() will still need to get a directory... so it
->>> will still need a path. Perhaps open("/foo/bar/mnt", O_DELETED) would
->>> be acceptable interface?
->>>                                    Pavel
->> ...and what's the big plan to make this work on anything other than ext4 and btrfs?
->> 
->> Cheers,
->>   Trond
-> 
-> I know that change can be a good thing, but are we really solving a pressing problem given that application developers have dealt with open/rename as the way to get "atomic" file creation for several decades now ?
+Add the documentation text for latency, target_latency & group_idle
+tunnable parameters in the block/cfq-iosched.txt.
+Also fix few typo(spelling) mistakes.
 
-Using open()+rename() has side effects:
-- changes ctime/mtime on parent directory
-- leaves temporary file in path during creation
-- leaves temporary file in namespace during operations, and after crash
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+---
+ Documentation/block/cfq-iosched.txt |   47 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 44 insertions(+), 3 deletions(-)
 
-Cheers, Andreas
+diff --git a/Documentation/block/cfq-iosched.txt b/Documentation/block/cfq-iosched.txt
+index a5eb7d1..4d02bca 100644
+--- a/Documentation/block/cfq-iosched.txt
++++ b/Documentation/block/cfq-iosched.txt
+@@ -5,7 +5,7 @@ The main aim of CFQ scheduler is to provide a fair allocation of the disk
+ I/O bandwidth for all the processes which requests an I/O operation.
+ 
+ CFQ maintains the per process queue for the processes which request I/O
+-operation(syncronous requests). In case of asynchronous requests, all the
++operation(synchronous requests). In case of asynchronous requests, all the
+ requests from all the processes are batched together according to their
+ process's I/O priority.
+ 
+@@ -66,6 +66,47 @@ This parameter is used to set the timeout of synchronous requests. Default
+ value of this is 124ms. In case to favor synchronous requests over asynchronous
+ one, this value should be decreased relative to fifo_expire_async.
+ 
++group_idle
++-----------
++This parameter forces idling at the CFQ group level instead of CFQ
++queue level. This is introduced after after a bottleneck was observed
++in higher end storage due to idle on sequential queuee and allow dispatch
++from a single queue. The idea with this parameter is that it be be run with
++slice_idle=0 and group_idle=8, so that idling does not happen on individual
++queues in the group but happens overall on the group and still keep the IO
++controller working.
++Not idling on individual queues in the group will dispatch requests from
++multiple queues in the group at the same time and achieve higher throughput
++on higher end storage.
++
++Default value for this parameter is 8ms.
++
++latency
++-------
++This parameter is used to enable/disable the latency mode of the CFQ
++scheduler. So if latency mode (called low_latency) is enabled, then CFQ tries
++to recompute the slice time for each process based on the target_latency set
++for the system. This favors the fairness over throughput. Disabling low
++latency (setting it to 0) ignores target latency, allowing each process in the
++system to get a full time slice.
++
++By default low latency mode is enabled.
++
++target_latency
++--------------
++This parameter is used to calculate the time slice for a process if cfq's
++latency mode is enabled. It will ensure that sync requests have an estimated
++latency. But sometime if sequential workload is more (e.g. sequential read),
++then to meet the latency constraints, throughput may decrease because of less
++time for each process to issue I/O request before the cfq queue is switched.
++
++Though this can be overcome by disabling the latency_mode, but it may increase
++the read latency for some applications. So, this parameter allows for changing
++target_latency through sysfs interface which can provide the balanced
++throughput and read latency.
++
++Default value for target_latency is 300ms.
++
+ slice_async
+ -----------
+ This parameter is same as of slice_sync but for asynchronous queue. The
+@@ -98,8 +139,8 @@ in the device exceeds this parameter. This parameter is used for synchronous
+ request.
+ 
+ In case of storage with several disk, this setting can limit the parallel
+-processing of request. Therefore, increasing the value can imporve the
+-performace although this can cause the latency of some I/O to increase due
++processing of request. Therefore, increasing the value can improve the
++performance although this can cause the latency of some I/O to increase due
+ to more number of requests.
+ 
+ CFQ Group scheduling
+-- 
+1.7.9.5
+
