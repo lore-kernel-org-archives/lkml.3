@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab3CaKKA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 06:10:00 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:64403 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935Ab3CaKJ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 06:09:59 -0400
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-Subject: [PATCH] RX-51: Fix probe order of SPI devices
-Date: Sun, 31 Mar 2013 12:09:21 +0200
-Message-Id: <1364724561-18045-1-git-send-email-pali.rohar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755008Ab3CaKYG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 06:24:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37883 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754043Ab3CaKYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Mar 2013 06:24:04 -0400
+Date: Sun, 31 Mar 2013 06:23:38 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, tj@kernel.org,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Sridhar Samudrala <sri@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v2 6/6] sctp: convert sctp_assoc_set_id to use
+ idr_alloc_cyclic
+Message-ID: <20130331062338.6c80022a@tlielax.poochiereds.net>
+In-Reply-To: <20130328140406.GB14489@neilslaptop.think-freely.org>
+References: <1364412578-7462-1-git-send-email-jlayton@redhat.com>
+	<1364412578-7462-7-git-send-email-jlayton@redhat.com>
+	<20130328135308.GA14489@neilslaptop.think-freely.org>
+	<20130328140406.GB14489@neilslaptop.think-freely.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joni Lapilainen <joni.lapilainen@gmail.com>
+On Thu, 28 Mar 2013 10:04:06 -0400
+Neil Horman <nhorman@tuxdriver.com> wrote:
 
-Without this patch LCD panel on Nokia RX-51 is still black
+> On Thu, Mar 28, 2013 at 09:53:08AM -0400, Neil Horman wrote:
+> > On Wed, Mar 27, 2013 at 03:29:38PM -0400, Jeff Layton wrote:
+> > > (Note: compile-tested only)
+> > > 
+> > > Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> > > Cc: Vlad Yasevich <vyasevich@gmail.com>
+> > > Cc: Sridhar Samudrala <sri@us.ibm.com>
+> > > Cc: Neil Horman <nhorman@tuxdriver.com>
+> > > Cc: "David S. Miller" <davem@davemloft.net>
+> > > Cc: linux-sctp@vger.kernel.org
+> > > Cc: netdev@vger.kernel.org
+> > > ---
+> > >  net/sctp/associola.c | 16 ++--------------
+> > >  1 file changed, 2 insertions(+), 14 deletions(-)
+> > > 
+> > I don't see anything wrong with this patch per-se, but the idr_alloc_cyclic call
+> > isn't integrated with net/net-next or Linus' tree yet.  If we don't gate this
+> > patch on that integration, we'll break the build.
+> > Neil
+> > 
+> Actually, I just noticed that you only sent us 6/6 here, I'm assuming a prior
+> patch in the series adds the idr_alloc_cyclic code?  if so, I've seen the prior
+> version
 
-Signed-off-by: Joni Lapilainen <joni.lapilainen@gmail.com>
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
----
- arch/arm/mach-omap2/board-rx51-peripherals.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
-index b09b5da..03290b9 100644
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@ -91,8 +91,8 @@
- /* list all spi devices here */
- enum {
- 	RX51_SPI_WL1251,
--	RX51_SPI_MIPID,		/* LCD panel */
- 	RX51_SPI_TSC2005,	/* Touch Controller */
-+	RX51_SPI_MIPID,		/* LCD panel */
- };
- 
- static struct wl12xx_platform_data wl1251_pdata;
+Yes, idr_alloc_cyclic is added in patch #1. v2 has some slight changes
+from v1 but it's essentially the same concept.
+
+> 
+> Acked-by: Neil Horman <nhorman@tuxdriver.com>
+> 
+
+Thanks!
 -- 
-1.7.10.4
-
+Jeff Layton <jlayton@redhat.com>
