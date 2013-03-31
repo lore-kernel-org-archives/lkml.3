@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826Ab3CaTkI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 15:40:08 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:43140 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755564Ab3CaTkG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 15:40:06 -0400
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Subject: Re: gpio-ucb1400
-Date: Sun, 31 Mar 2013 19:19:05 +0200
-User-Agent: KMail/1.13.7 (Linux/3.8-trunk-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Jean Delvare <jdelvare@suse.de>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-References: <1364586399.4216.312.camel@amber.site> <201303302020.44584.marek.vasut@gmail.com> <20130330232559.GA12864@roeck-us.net>
-In-Reply-To: <20130330232559.GA12864@roeck-us.net>
+	id S1755936Ab3CaTzX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 15:55:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44567 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753067Ab3CaTzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Mar 2013 15:55:22 -0400
+Date: Sun, 31 Mar 2013 21:55:14 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Greg KH <greg@kroah.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Harald Arnesen <skogtun.linux@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Thomas Meyer <thomas@m3y3r.de>, Shawn Starr <shawn.starr@rogers.com>,
+        USB list <linux-usb@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Imre Deak <imre.deak@intel.com>,
+        Daniel Kurtz <djkurtz@chromium.org>, dri-devel@lists.freedesktop.org,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+Subject: Re: [PATCH] dummy-irq: introduce a dummy IRQ handler driver (was
+ Re: gm45 intel gfx can generate non-MSI irq# in MSI mode (was Re: [PATCH]
+ drm/i915: stop using GMBUS IRQs on Gen4 chips (was Re: [3.9-rc1] irq 16:
+ nobody cared (was [3.9-rc1] very poor interrupt respo))
+In-Reply-To: <20130321144526.GR9021@phenom.ffwll.local>
+Message-ID: <alpine.LNX.2.00.1303312153520.22069@pobox.suse.cz>
+References: <Pine.LNX.4.44L0.1303201319190.1208-100000@iolanthe.rowland.org> <alpine.LNX.2.00.1303210018430.16237@pobox.suse.cz> <20130321144526.GR9021@phenom.ffwll.local>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303311919.06030.marek.vasut@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Guenter Roeck,
+On Thu, 21 Mar 2013, Daniel Vetter wrote:
 
-> On Sat, Mar 30, 2013 at 08:20:44PM +0100, Marek Vasut wrote:
-> > Dear Guenter Roeck,
-> > 
-> > > On Fri, Mar 29, 2013 at 08:46:39PM +0100, Jean Delvare wrote:
-> > > > Hi all,
-> > > > 
-> > > > In September 2009, a driver for the GPIO function of the UCB1400 chip
-> > > > was added to the kernel tree. The probe function of this driver
-> > > > requires ucbdata to be set. The only place where this happens is in
-> > > > function ucb1400_gpio_set_data(). This function was never call, and
-> > > > still isn't. So this is dead code for 3.5 years as far as the
-> > > > upstream kernel is concerned.
-> > > > 
-> > > > To make things worse, this driver can't be built as a module, for no
-> > > > good reason that I can see.
-> > > > 
-> > > > Marek, can you explain what was the point of submitting this driver
-> > > > that nobody can use?
-> > > > 
-> > > > I would like either this driver to be fixed so that it can be used
-> > > > (and that would IMHO start with dropping the ugly
-> > > > ucb1400_gpio_set_data hook and global variable ucbdata), or this
-> > > > driver to be dropped from the kernel tree. If the driver is kept, it
-> > > > should be adjusted so that it can be built as a module.
-> > > > 
-> > > > If I overlooked something, please let me know.
-> > > 
-> > > Interestingly, the author made an attempt to fix that with [1]. It
-> > > looks like the rest of that series was merged, but this patch wasn't,
-> > > though I don't find any information about the reason.
-> > 
-> > It's been a while. Guenter, thanks for finding that link, but I suspect
-> > the patch is heavily obsolete by now.
-> 
-> Oh, it most definitely is, starting with the gpio driver name. Just wonder
-> why it was never applied, and why no one seems to have noticed or cared.
-> 
-> Jean is absolutely right - it should get fixed, or the driver should be
-> dropped if no one is using it anyway.
+> Indeed, this is pretty useful and allowed me to quickly reproduce that
+> phantom irq on my gm45. Thanks to module reloading we can even reset the
+> kernel's irq disabling logic and so test different tricks quickly without
+> rebooting. Really useful.
 
-I think ARM/palmtc was using this.
+Daniel,
 
-Best regards,
-Marek Vasut
+out of curiosity, have you been able to make some sense of the phantom 
+legacy IRQs on GM45 systems, or are we just staying with my original 
+bandaid (disabling GMBUS IRQs), declaring GM45 broken in this respect?
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
