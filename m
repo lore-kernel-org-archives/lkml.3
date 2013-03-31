@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722Ab3CaTGk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 15:06:40 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:48101 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869Ab3CaTGi (ORCPT
+	id S1755826Ab3CaTkI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 15:40:08 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:43140 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755564Ab3CaTkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 15:06:38 -0400
-Date: Sun, 31 Mar 2013 12:06:33 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Lai Jiangshan <eag0628@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        Jan Kara <jack@suse.cz>, fengguang.wu@intel.com, jmoyer@redhat.com,
-        zab@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH v4 13/14] workqueue: implement NUMA affinity for unbound
- workqueues
-Message-ID: <20130331190633.GC7533@htj.dyndns.org>
-References: <1364453020-2829-1-git-send-email-tj@kernel.org>
- <1364453020-2829-14-git-send-email-tj@kernel.org>
- <20130329224434.GC9862@htj.dyndns.org>
- <CACvQF50c3m3eMiGKctagoOe6s3uhehfFy733imBfnLKTXSqZ4A@mail.gmail.com>
- <CAOS58YOgwB4s4-2e528T6SV36pDxLS3Zx+b5eR0L2kQjiZBEnw@mail.gmail.com>
- <51571FA2.2050804@cn.fujitsu.com>
+	Sun, 31 Mar 2013 15:40:06 -0400
+From: Marek Vasut <marek.vasut@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Subject: Re: gpio-ucb1400
+Date: Sun, 31 Mar 2013 19:19:05 +0200
+User-Agent: KMail/1.13.7 (Linux/3.8-trunk-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Jean Delvare <jdelvare@suse.de>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+References: <1364586399.4216.312.camel@amber.site> <201303302020.44584.marek.vasut@gmail.com> <20130330232559.GA12864@roeck-us.net>
+In-Reply-To: <20130330232559.GA12864@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51571FA2.2050804@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303311919.06030.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+Dear Guenter Roeck,
 
-On Sun, Mar 31, 2013 at 01:23:46AM +0800, Lai Jiangshan wrote:
-> But for unbound wq when cpuhotplug
-> w/o NUMA affinity, works are    always   in the cpus  if   there is online cpu in wq's cpumask
-> w/ NUMA affinity, .........   NOT always ........     even ....................................
-
-Yeah, this is rather unfortunate but cpumask for unbound workqueue is
-a completely new thing anyway and I think providing a similar
-guarantee as per-cpu should be enough.  Things are much simpler that
-way and requiring users which depend on hard affinity to take care of
-flushing is reasonable enough and in line with how workqueue has
-traditionally been working.
-
-> > Workqueue's affinity guarantee is very specific - the work item owner is
-> > responsible for flushing the work item during CPU DOWN if it wants
-> > to guarantee affinity over full execution. 
+> On Sat, Mar 30, 2013 at 08:20:44PM +0100, Marek Vasut wrote:
+> > Dear Guenter Roeck,
+> > 
+> > > On Fri, Mar 29, 2013 at 08:46:39PM +0100, Jean Delvare wrote:
+> > > > Hi all,
+> > > > 
+> > > > In September 2009, a driver for the GPIO function of the UCB1400 chip
+> > > > was added to the kernel tree. The probe function of this driver
+> > > > requires ucbdata to be set. The only place where this happens is in
+> > > > function ucb1400_gpio_set_data(). This function was never call, and
+> > > > still isn't. So this is dead code for 3.5 years as far as the
+> > > > upstream kernel is concerned.
+> > > > 
+> > > > To make things worse, this driver can't be built as a module, for no
+> > > > good reason that I can see.
+> > > > 
+> > > > Marek, can you explain what was the point of submitting this driver
+> > > > that nobody can use?
+> > > > 
+> > > > I would like either this driver to be fixed so that it can be used
+> > > > (and that would IMHO start with dropping the ugly
+> > > > ucb1400_gpio_set_data hook and global variable ucbdata), or this
+> > > > driver to be dropped from the kernel tree. If the driver is kept, it
+> > > > should be adjusted so that it can be built as a module.
+> > > > 
+> > > > If I overlooked something, please let me know.
+> > > 
+> > > Interestingly, the author made an attempt to fix that with [1]. It
+> > > looks like the rest of that series was merged, but this patch wasn't,
+> > > though I don't find any information about the reason.
+> > 
+> > It's been a while. Guenter, thanks for finding that link, but I suspect
+> > the patch is heavily obsolete by now.
 > 
-> Could you add the comments and add Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> for the patchset?
+> Oh, it most definitely is, starting with the gpio driver name. Just wonder
+> why it was never applied, and why no one seems to have noticed or cared.
+> 
+> Jean is absolutely right - it should get fixed, or the driver should be
+> dropped if no one is using it anyway.
 
-Sure thing.
+I think ARM/palmtc was using this.
 
-Thanks.
-
--- 
-tejun
+Best regards,
+Marek Vasut
