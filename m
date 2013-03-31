@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab3CaHEa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 03:04:30 -0400
-Received: from nick.hrz.tu-chemnitz.de ([134.109.228.11]:39691 "EHLO
-	nick.hrz.tu-chemnitz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754865Ab3CaHE3 (ORCPT
+	id S1755666Ab3CaHZM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 03:25:12 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:63151 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755523Ab3CaHZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 03:04:29 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130331064619.GA11544@thinkpad.lan>
-References: <1364648501-5127-1-git-send-email-artem.savkov@gmail.com> <3fb82299-bdb9-4842-bd55-f3b87d2d789e@email.android.com> <20130331064619.GA11544@thinkpad.lan>
+	Sun, 31 Mar 2013 03:25:10 -0400
+Date: Sun, 31 Mar 2013 00:25:06 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Sebastien Royen <sebastien.royen@gmail.com>
+Cc: Bill Pemberton <wfp5p@virginia.edu>, linux-kernel@vger.kernel.org,
+        seb <sebastien.royen@armadeus.com>
+Subject: Re: [PATCH 1/1] Input: mma8450 - fix signed 12bits to 32bits
+ conversion
+Message-ID: <20130331072506.GA7919@core.coreip.homeip.net>
+References: <1364480189-15062-1-git-send-email-sebastien.royen@armadeus.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] acpi/video: lcd_get_level_current doen't return current level
-From: Danny Baumann <dannybaumann@web.de>
-Date: Sun, 31 Mar 2013 09:04:21 +0200
-To: Artem Savkov <artem.savkov@gmail.com>
-CC: aaron.lu@intel.com, rafael.j.wysocki@intel.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <800799d9-f1ea-48ab-b565-4bd3ca230300@email.android.com>
-X-purgate: clean.bounce
-X-purgate-type: clean.bounce
-X-purgate-ID: 154106::1364713465-000004D6-6A36A9D6/0-0/0-18
-X-Scan-AV: nick.hrz.tu-chemnitz.de;2013-03-31 09:04:25;2958ea57577a420ac546739ef491fec7
-X-Scan-SA: nick.hrz.tu-chemnitz.de;2013-03-31 09:04:25;749093f1233530b1ada4728f3773976c
-X-Spam-Score: -1.0 (-)
-X-Spam-Report: --- Textanalyse SpamAssassin 3.3.1 (-1.0 Punkte)
- Fragen an/questions to:  Postmaster TU Chemnitz <postmaster@tu-chemnitz.de>
- * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
- *  0.0 FREEMAIL_FROM Sender email is commonly abused enduser mail provider
- *      (dannybaumann[at]web.de)
- --- Ende Textanalyse
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364480189-15062-1-git-send-email-sebastien.royen@armadeus.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Mar 28, 2013 at 03:16:29PM +0100, Sebastien Royen wrote:
+> From: seb <sebastien.royen@armadeus.com>
+> 
+> Event value is wrong. Should be in range -2048 to 2047, but is in range 0 to 4095.
+> Use s8 to int conversion and remove 0xfff mask.
+> 
+> Signed-off-by: Sebastien Royen <sebastien.royen@armadeus.com>
 
-Artem Savkov <artem.savkov@gmail.com> schrieb:
+Applied, thank you Sebastien.
 
->On Sun, Mar 31, 2013 at 08:15:14AM +0200, Danny Baumann wrote:
->> Artem Savkov <artem.savkov@gmail.com> schrieb:
->> >acpi_video_device_lcd_get_level_current() called
->> >acpi_video_bqc_value_to_level()
->> >with "*level" as a second argument, resulting in level being
->returned
->> >based on
->> >initial input, not current brightness, breaking backlight controls.
->> I don't think this change is correct. As level was passed as
->parameter into the evaluation of _BQC, *level contains the AML returned
->brightness level afterwards, so it's correct to use it as an input to
->acpi_video_bqc_value_to_level(). Actually, the whole point of
->acpi_video_device_lcd_get_level_current() is to update
->device->brightness->curr, so it doesn't make sense to me to use it in
->that function.
->> 
->> What's the exact problem this patch tries to solve?
->
->I'm running a -next kernel on my laptop and couple of days ago keyboard
->backlight controls stopped working: only 2 lower brightness levels.
->I've
->debugged it a bit and found out that acpi_video_switch_brightness()
->calls
->acpi_video_device_lcd_get_level_current() with level uninitialized and
->always gets lowest posible value.
+> ---
+>  drivers/input/misc/mma8450.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/input/misc/mma8450.c b/drivers/input/misc/mma8450.c
+> index 480557f..f330969 100644
+> --- a/drivers/input/misc/mma8450.c
+> +++ b/drivers/input/misc/mma8450.c
+> @@ -123,9 +123,9 @@ static void mma8450_poll(struct input_polled_dev *dev)
+>  	if (ret < 0)
+>  		return;
+>  
+> -	x = ((buf[1] << 4) & 0xff0) | (buf[0] & 0xf);
+> -	y = ((buf[3] << 4) & 0xff0) | (buf[2] & 0xf);
+> -	z = ((buf[5] << 4) & 0xff0) | (buf[4] & 0xf);
+> +	x = ((int)(s8)buf[1] << 4) | (buf[0] & 0xf);
+> +	y = ((int)(s8)buf[3] << 4) | (buf[2] & 0xf);
+> +	z = ((int)(s8)buf[5] << 4) | (buf[4] & 0xf);
+>  
+>  	input_report_abs(dev->input, ABS_X, x);
+>  	input_report_abs(dev->input, ABS_Y, y);
+> -- 
+> 1.7.9.5
+> 
 
-The point is: after the acpi_evaluate_object call, *level must contain the current brightness level, otherwise your BIOS is broken (this happens: e.g. my laptop always returns 100 from _BQC in Windows 8 mode). You can verify this easily by initializing level_current to some invalid value and checking it again after the call to _get_level_current. I'd be pretty surprised if the value didn't change. Also, if you look at [1], you'll see that the code operated on *level before as well.
-This problem may have been obscured by the fact that the brightness device wasn't initialized properly before my patches went in. Does acpi_video_switch_brightness actually do anything for you when reverting the 3 newest commits of video.c?
-
-Regards,
-
-Danny
-
-[1] https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/drivers/acpi/video.c?h=linux-next&id=994fa63c5b126df6e9f31ef4e09000e2e243234b
-
+-- 
+Dmitry
