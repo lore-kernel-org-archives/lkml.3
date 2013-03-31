@@ -1,59 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab3CaDqq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 23:46:46 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:53116 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755497Ab3CaDqn (ORCPT
+	id S1756647Ab3CaDry (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 23:47:54 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:59783 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756174Ab3CaDrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 23:46:43 -0400
+	Sat, 30 Mar 2013 23:47:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <6766028.RBJyPM3lJj@vostro.rjw.lan>
-References: <03ca6f17860d290cfc67e51969062612f0ab26ab.1364643234.git.viresh.kumar@linaro.org>
-	<2835305.o7Hvg1cesG@vostro.rjw.lan>
-	<CAKohpo=vorTDONBR2czcZpP64sCfv1Qa-u8zGkHys9miwQrURw@mail.gmail.com>
-	<6766028.RBJyPM3lJj@vostro.rjw.lan>
-Date: Sun, 31 Mar 2013 09:16:42 +0530
-Message-ID: <CAKohpo=wNHsV0vFhcTWg0g7=Wtbdx=g2wqpNPfidQfGhhK9Cig@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: Raname index as data in cpufreq_frequency_table
+In-Reply-To: <4183493.GBcPoVddxx@vostro.rjw.lan>
+References: <cover.1364398686.git.viresh.kumar@linaro.org>
+	<1656173.qmCdUDP7Pu@vostro.rjw.lan>
+	<CAKohponaAyo2BL3X+rxNTO9-u88dfj7Vho6zRyUmvct6XyHyVw@mail.gmail.com>
+	<4183493.GBcPoVddxx@vostro.rjw.lan>
+Date: Sun, 31 Mar 2013 09:17:52 +0530
+Message-ID: <CAKohpo=AKcuJBxv+6aDOoZ9QYjPj4SqckFPaf-P06hvsCDZ=ig@mail.gmail.com>
+Subject: Re: [PATCH V4 0/2] Implement per policy instance of governor
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, robin.randhawa@arm.com, Steve.Bannister@arm.com,
-        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
-        arvind.chauhan@arm.com, Sekhar Nori <nsekhar@ti.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
+        patches@linaro.org, arvind.chauhan@arm.com, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, jacob.shin@amd.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 March 2013 07:16, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Sunday, March 31, 2013 07:03:04 AM Viresh Kumar wrote:
->> On 31 March 2013 03:31, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > Sorry, I won't apply this.  It changes too much stuff at a time and I'm not
->> > really sure if the change being made is necessary.
->>
->> Hmm.. I thought it is important  as it puts the real meaning of "index" in the
->> code.
+On 31 March 2013 07:19, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> Yes, thanks.
 >
-> And what does that change, really?  What about documenting the meaning of
-> "index" instead?
+> But the patches moving cpufreq drivers into drivers/cpufreq from somewhere else
+> need each an ACK from the maintainer of that other place.  I won't take any
+> patches like that without AKCs.
 
-Probably not the logic but perception. People don't necessarily go through
-Documentation but code for writing new stuff. And so code should reflect the
-real meaning.
-
-In case we write something like following in documentation:
-"Index: This is driver specific data for each frequency. Core doesn't use it."
-
-Then "Index" looks even more wrong. Its not the right name for any such
-variable. And so it should be fixed.
+Okay. I will ask respective maintainers (Who haven't acked until now)
+to provide one.
