@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab3CaDry (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Mar 2013 23:47:54 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:59783 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756174Ab3CaDrw (ORCPT
+	id S1756705Ab3CaDvZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Mar 2013 23:51:25 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:38550 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755599Ab3CaDvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Mar 2013 23:47:52 -0400
+	Sat, 30 Mar 2013 23:51:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <4183493.GBcPoVddxx@vostro.rjw.lan>
-References: <cover.1364398686.git.viresh.kumar@linaro.org>
-	<1656173.qmCdUDP7Pu@vostro.rjw.lan>
-	<CAKohponaAyo2BL3X+rxNTO9-u88dfj7Vho6zRyUmvct6XyHyVw@mail.gmail.com>
-	<4183493.GBcPoVddxx@vostro.rjw.lan>
-Date: Sun, 31 Mar 2013 09:17:52 +0530
-Message-ID: <CAKohpo=AKcuJBxv+6aDOoZ9QYjPj4SqckFPaf-P06hvsCDZ=ig@mail.gmail.com>
-Subject: Re: [PATCH V4 0/2] Implement per policy instance of governor
+In-Reply-To: <fae1030e861c5dfd00df8f03526b0bdc5156de4d.1364205812.git.viresh.kumar@linaro.org>
+References: <cover.1364205812.git.viresh.kumar@linaro.org>
+	<fae1030e861c5dfd00df8f03526b0bdc5156de4d.1364205812.git.viresh.kumar@linaro.org>
+Date: Sun, 31 Mar 2013 09:21:23 +0530
+Message-ID: <CAKohpommmFkaEtq6beKJpfH8JSov=dZGy=H_GJzLOr0kc3AJQQ@mail.gmail.com>
+Subject: Re: [PATCH 5/9] cpufreq: integrator: move cpufreq driver to drivers/cpufreq
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+To: linux@arm.linux.org.uk
+Cc: arvind.chauhan@arm.com, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, arvind.chauhan@arm.com, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, jacob.shin@amd.com
+        arnd.bergmann@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 March 2013 07:19, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Yes, thanks.
->
-> But the patches moving cpufreq drivers into drivers/cpufreq from somewhere else
-> need each an ACK from the maintainer of that other place.  I won't take any
-> patches like that without AKCs.
+Russell,
 
-Okay. I will ask respective maintainers (Who haven't acked until now)
-to provide one.
+On 25 March 2013 15:41, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> This patch moves cpufreq driver of ARM based integrator platform to
+> drivers/cpufreq.
+>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  arch/arm/Kconfig                                              | 11 -----------
+>  arch/arm/mach-integrator/Makefile                             |  1 -
+>  drivers/cpufreq/Kconfig.arm                                   |  8 ++++++++
+>  drivers/cpufreq/Makefile                                      |  1 +
+>  .../cpu.c => drivers/cpufreq/integrator-cpufreq.c             |  2 --
+>  5 files changed, 9 insertions(+), 14 deletions(-)
+>  rename arch/arm/mach-integrator/cpu.c => drivers/cpufreq/integrator-cpufreq.c (99%)
+
+Can i have your Ack or views about this Patch?
