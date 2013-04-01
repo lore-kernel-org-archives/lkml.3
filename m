@@ -1,75 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759345Ab3DAW6K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 18:58:10 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:38504 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756976Ab3DAW6I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 18:58:08 -0400
+	id S1758963Ab3DAXHS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 19:07:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57814 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756976Ab3DAXHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 19:07:17 -0400
+Date: Tue, 2 Apr 2013 01:06:27 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Borislav Petkov <bp@alien8.de>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 05/27] perf tools: Move compiler and linker flags check
+ into config/Makefile
+Message-ID: <20130401230627.GD20943@krava.redhat.com>
+References: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
+ <1364843930-17974-6-git-send-email-jolsa@redhat.com>
+ <1364854825.1728.19.camel@leonhard>
 MIME-Version: 1.0
-In-Reply-To: <20130401223500.GB2487@htj.dyndns.org>
-References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
- <CAAAKZwv9=NFmt6xj1KF2va1i6=UCvka0YkmdOY9JNUMHDOWpGw@mail.gmail.com>
- <20130401184617.GB31435@htj.dyndns.org> <CAAAKZwvemKDLeuKr6wWMUSVczkRVDZKSzYrXXEMcZ8qvcFR0zQ@mail.gmail.com>
- <20130401202943.GC31435@htj.dyndns.org> <CAAAKZwuZwN68vtk1qO08GXB_OnQNVtqqp+v_NQfP27W0P_aWZw@mail.gmail.com>
- <20130401220309.GA2487@htj.dyndns.org> <CAAAKZwuev7Y58ZQNtG+XdFRt0=NedD7zbYTAZbJ95ahBKLVhKA@mail.gmail.com>
- <20130401223500.GB2487@htj.dyndns.org>
-From: Tim Hockin <thockin@hockin.org>
-Date: Mon, 1 Apr 2013 15:57:46 -0700
-X-Google-Sender-Auth: lqER9lCUyxEb1tTqpS5Wvl6Hz-U
-Message-ID: <CAAAKZwvdMUAZ+N5d-cdCJbKUq=t9M6BbCxzOTWnVQQBrg55vhw@mail.gmail.com>
-Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
-To: Tejun Heo <tj@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <paul@paulmenage.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
-        Daniel J Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Max Kellermann <mk@cm4all.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1364854825.1728.19.camel@leonhard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 1, 2013 at 3:35 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hey,
->
-> On Mon, Apr 01, 2013 at 03:20:47PM -0700, Tim Hockin wrote:
->> > Ummmm.... so that's why you guys can't use kernel memory limit? :(
->>
->> Because it is completely non-obvious how to map between the two in a
->> way that is safe across kernel versions and not likely to blow up in
->> our faces.  It's a hack, in other words.
->
-> Now we're repeating the argument Frederic and Johannes had, so I'd
-> suggest going back the thread and reading the discussion and if you
-> still think using kmemcg is a bad idea, please explain why that is so.
-> For the specific point that you just raised, the scale tilted toward
-> thread/process count is a hacky and unreliable representation of
-> kernel memory resource than the other way around, at least back then.
+On Tue, Apr 02, 2013 at 07:20:25AM +0900, Namhyung Kim wrote:
+> 2013-04-01 (월), 21:18 +0200, Jiri Olsa:
+> > Moving compiler and linker flags check into config/Makefile.
+> 
+> [SNIP]
+> 
+> > diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> > index 8dd3320..dcae71b 100644
+> > --- a/tools/perf/Makefile
+> > +++ b/tools/perf/Makefile
+> > @@ -52,6 +52,20 @@ include config/utilities.mak
+> >  #
+> >  # Define NO_LIBNUMA if you do not want numa perf benchmark
+> >  
+> > +ifeq ($(srctree),)
+> > +srctree := $(patsubst %/,%,$(dir $(shell pwd)))
+> > +srctree := $(patsubst %/,%,$(dir $(srctree)))
+> > +#$(info Determined 'srctree' to be $(srctree))
+> > +endif
+> > +
+> > +ifneq ($(objtree),)
+> > +#$(info Determined 'objtree' to be $(objtree))
+> > +endif
+> > +
+> > +ifneq ($(OUTPUT),)
+> > +#$(info Determined 'OUTPUT' to be $(OUTPUT))
+> > +endif
+> > +
+> 
+> Question, what's the difference between objtree and OUTPUT?
 
-I am not limited by kernel memory, I am limited by PIDs, and I need to
-be able to manage them.  memory.kmem.usage_in_bytes seems to be far
-too noisy to be useful for this purpose.  It may work fine for "just
-stop a fork bomb" but not for any sort of finer-grained control.
+check top stuff at 'tools/scripts/Makefile.include'
 
-> If you think you can tilt it the other way, please feel free to try.
+OUTPUT ties with $(subdir), while objtree is pure $(O)
 
-Just because others caved, doesn't make it less of a hack.  And I will
-cave, too, because I don't have time to bang my head against a wall,
-especially when I can see the remnants of other people who have tried.
+I didn't use the 'tools/scripts/Makefile.include' include
+the Makefile.kbuild, just defined OUTPUT variable
 
-We'll work around it, or we'll hack around it, or we'll carry this
-patch in our own tree and just grumble about ridiculous hacks every
-time we have to forward port it.
+The Makefile.kbuild processing is allways based on git tree root,
+and all binaries are prefixed $(objtree) or $(obj-perf) and all
+source code is prefixed with $(srctree) or $(src-perf)
 
-I was just hoping that things had worked themselves out in the last year.
+> 
+> 
+> > +ifndef PERF_DEBUG
+> > +	CFLAGS_OPTIMIZE = -O6
+> > +endif
+> 
+> Is this -O6 really supported by gcc?
+
+hmm, no doc.. and quick google found just your question ;)
+
+> 
+> > +
+> > +ifdef PARSER_DEBUG
+> > +	PARSER_DEBUG_BISON  := -t
+> > +	PARSER_DEBUG_FLEX   := -d
+> > +	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
+> > +endif
+> > +
+> > +CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
+> 
+> Please break this line into multiple CFLAGS += ... lines as Sam said.
+> 
+
+ok
+
+SNIP
+
+> > +
+> > +BASIC_CFLAGS = \
+> > +	-Iutil/include \
+> > +	-Iarch/$(ARCH)/include \
+> > +	$(if $(objtree),-I$(objtree)/arch/$(ARCH)/include/generated/uapi) \
+> > +	-I$(srctree)/arch/$(ARCH)/include/uapi \
+> > +	-I$(srctree)/arch/$(ARCH)/include \
+> > +	$(if $(objtree),-I$(objtree)/include/generated/uapi) \
+> > +	-I$(srctree)/include/uapi \
+> > +	-I$(srctree)/include \
+> > +	-I$(OUTPUT)util \
+> > +	-Iutil \
+> > +	-I. \
+> > +	-I$(TRACE_EVENT_DIR) \
+> > +	-I../lib/ \mktemp
+> > +	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+> 
+> And this too.  Btw do we really need this many include directories?
+> 
+ok, I tried to sort it out in another patch:
+    perf tools: Switch to full patch C include directories
+
+thanks,
+jirka
