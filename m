@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758739Ab3DAVVt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 17:21:49 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39951 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758587Ab3DAVVp (ORCPT
+	id S1758774Ab3DAVWZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 17:22:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43538 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756876Ab3DAVWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 17:21:45 -0400
-Date: Mon, 1 Apr 2013 22:21:42 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Yet another pipe related oops.
-Message-ID: <20130401212142.GD21522@ZenIV.linux.org.uk>
-References: <20130312130614.GA32237@ZenIV.linux.org.uk>
- <CA+55aFyPUYiFoiLrMCzeHpbAgAignCe_awU7SbvPh+T6eHeqng@mail.gmail.com>
- <20130312194353.GI21522@ZenIV.linux.org.uk>
- <CA+55aFx-8TrSSJZM-WTDN4Hc3pESLXBsGC9x3xVaxuwxnGKqpA@mail.gmail.com>
- <20130327135127.GB1738@redhat.com>
- <20130327152030.GY21522@ZenIV.linux.org.uk>
- <CA+55aFx=BPQ2empEahqCs2hQ=sRaw3OjJotrS6OMT3e6tUVMLQ@mail.gmail.com>
- <20130327174506.GZ21522@ZenIV.linux.org.uk>
- <20130401203445.GA20862@ZenIV.linux.org.uk>
- <20130401210029.GA3245@kroah.com>
+	Mon, 1 Apr 2013 17:22:24 -0400
+Date: Mon, 1 Apr 2013 22:22:17 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: codecs: remove hidden prompt
+Message-ID: <20130401212213.GA23065@opensource.wolfsonmicro.com>
+References: <1363118918.3137.143.camel@x61.thuisdomein>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6c2NcOVqGQ03X4Wi"
 Content-Disposition: inline
-In-Reply-To: <20130401210029.GA3245@kroah.com>
+In-Reply-To: <1363118918.3137.143.camel@x61.thuisdomein>
+X-Cookie: Today is what happened to yesterday.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 01, 2013 at 02:00:29PM -0700, Greg Kroah-Hartman wrote:
 
-> > IOW, how do we deal with a race between attempt to open a debugfs file and
-> > its removal on driver unload?  Greg?
-> 
-> Hm, I thought the i_fop->owner thing would be the needed protection, but
+--6c2NcOVqGQ03X4Wi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-It will be, if you manage to fetch it...
+On Tue, Mar 12, 2013 at 09:08:38PM +0100, Paul Bolle wrote:
+> The Kconfig symbol SND_SOC_OF_SIMPLE got removed in commit
+> f0fba2ad1b6b53d5360125c41953b7afcd6deff0 ("ASoC: multi-component - ASoC
+> Multi-Component Support"). But that commit missed one instance. Remove
+> it now, together with the prompt it has effectively hidden ever since.
 
-> I guess you are right, it will not.  I guess we need to do what
-> character devices do and have an "intermediate" fops in order to protect
-> this.  Would that work?
+Applied, thanks.
 
-You mean, with reassigning ->f_op in ->open()?  That'll work, as long as
-we have exclusion between removal and fetching the sucker in primary
-->open()...  Where would you prefer to stash fops?
+--6c2NcOVqGQ03X4Wi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRWfptAAoJELSic+t+oim9hVsP/1im8Tjraf8Wt62eDJi4p1TQ
+20bCaz6gmf8Kw1640gSazCjMuTyOnfTR9XhZkYd8MEGZgXHlH5k0hY4JmdzNSHnj
+pdoy28IKeb6tnAQ+xKXolKGoHqcgqJt4OMLsKlb3yLx0oxot3cB16CwJwONQxUPs
+jCkofJqqblSECFWGXLUULB9E3KpslDNYRHWK1JxQMqs9GMFmXwD1hIKPnIaldZS5
+vtN48dVnjrl25no+u+/UKlyWrE4HrFrdePAbjnM2npqCYPk8clwrpZ0y8PWodfNz
+adj8Gz+ow8o9hgHVLuz4qboKZEgj9C/JHFUMuFjQxZ8AUu7/KVt+IrLeU7QzWFk4
+FqY9BzxQVGHvtovs6bZGb60geE/CKTOJzkLi4su02nbwoYcyKccFGapeG3K/SWU/
+aBoUhnkgWhFwBmz9CKB8o2QEmb2fnPEnWN/mCTXnOc+Cwt8Ht6Tha/Aaub89K6DU
+/izq2vXF7j4FxkJtjx69LyXhogBie3SD3DVUSKKB/uvbRFrrco3Uy1kDhumzYIdk
+0YOppSblfwX1/ZFiK7mshbOvH8l2z1iNap2S9lgCsOmU+tSnBjCduqTVT3zxEfo7
+SifQkfXVs+9JUHBZScTgNTyxsSnsaOYOE7qzhLjGI2i5G/kL++9YgR2UnMkDVD+o
+tmVkrwL7rwOLtRatk/fE
+=gUcG
+-----END PGP SIGNATURE-----
+
+--6c2NcOVqGQ03X4Wi--
