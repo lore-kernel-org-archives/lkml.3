@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759085Ab3DAWXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 18:23:44 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:37003 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757895Ab3DAWXl (ORCPT
+	id S1759225Ab3DAWYC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 18:24:02 -0400
+Received: from mail-da0-f53.google.com ([209.85.210.53]:65025 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758530Ab3DAWXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 18:23:41 -0400
-Date: Tue, 2 Apr 2013 00:23:35 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 6/7] r8169: add a new chip for RTL8106E
-Message-ID: <20130401222335.GC19335@electric-eye.fr.zoreil.com>
-References: <1364824539-4156-1-git-send-email-hayeswang@realtek.com>
- <1364824539-4156-6-git-send-email-hayeswang@realtek.com>
+	Mon, 1 Apr 2013 18:23:36 -0400
+Date: Mon, 1 Apr 2013 15:23:33 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Zhouping Liu <zliu@redhat.com>
+cc: Andrea Arcangeli <aarcange@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Amos Kong <akong@redhat.com>
+Subject: Re: THP: AnonHugePages in /proc/[pid]/smaps is correct or not?
+In-Reply-To: <383590596.664138.1364803227470.JavaMail.root@redhat.com>
+Message-ID: <alpine.DEB.2.02.1304011512490.17714@chino.kir.corp.google.com>
+References: <383590596.664138.1364803227470.JavaMail.root@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364824539-4156-6-git-send-email-hayeswang@realtek.com>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hayes Wang <hayeswang@realtek.com> :
-[...]
-> - move rtl_set_rx_tx_desc_registers to avoid the tx/rx are enabled
->   before setting desc registers.
+On Mon, 1 Apr 2013, Zhouping Liu wrote:
 
-This is a wholesale change for the 810x family.
-
-Please explain why issuing rtl_set_rx_tx_desc_registers before writing
-ChipCmd is not enough and feed it through a standalone commit.
-
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-> ---
->  drivers/net/ethernet/realtek/r8169.c | 25 +++++++++++++++++++++++--
->  1 file changed, 23 insertions(+), 2 deletions(-)
+> Hi all,
 > 
-> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-> index 8d41508..876e088 100644
-> --- a/drivers/net/ethernet/realtek/r8169.c
-> +++ b/drivers/net/ethernet/realtek/r8169.c
-> @@ -49,6 +49,7 @@
->  #define FIRMWARE_8106E_1	"rtl_nic/rtl8106e-1.fw"
->  #define FIRMWARE_8168G_2	"rtl_nic/rtl8168g-2.fw"
->  #define FIRMWARE_8168G_3	"rtl_nic/rtl8168g-3.fw"
-> +#define FIRMWARE_8106E_2	"rtl_nic/rtl8106e-2.fw"
+> I found THP can't correctly distinguish one anonymous hugepage map.
+> 
+> 1. when /sys/kernel/mm/transparent_hugepage/enabled is 'always', the
+>    amount of THP always is one less.
+> 
 
-I'd rather keep those sorted.
+It's not a problem with identifying an anonymous mapping as a hugepage, 
+setting thp enabled to "always" does not guarantee that they will always 
+be allocatable or that your mmap() will be 2MB aligned.  Your sample code 
+is using mmap() instead of posix_memalign() so you'll probably only get 
+100% hugepages only 1/512th of the time.
 
-[...]
-> @@ -824,6 +829,7 @@ MODULE_FIRMWARE(FIRMWARE_8411_1);
->  MODULE_FIRMWARE(FIRMWARE_8106E_1);
->  MODULE_FIRMWARE(FIRMWARE_8168G_2);
->  MODULE_FIRMWARE(FIRMWARE_8168G_3);
-> +MODULE_FIRMWARE(FIRMWARE_8106E_2);
+> 2. when /sys/kernel/mm/transparent_hugepage/enabled is 'madvise', THP can't
+>    distinguish any one anonymous hugepage size:
+> 
+>    Testing code:
+> -------- snip --------
+> unsigned long hugepagesize = (1UL << 21);
+> 
+> int main()
+> {
+> 	void *addr;
+> 	int i;
+> 
+> 	printf("pid is %d\n", getpid());
+> 
+> 	for (i = 0; i < 5; i++) {
+> 		addr = mmap(NULL, hugepagesize, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+> 
+> 		if (addr == MAP_FAILED) {
+> 			perror("mmap");
+> 			return -1;
+> 		}
+> 
+> 		if (madvise(addr, hugepagesize, MADV_HUGEPAGE) == -1) {
+> 			perror("madvise");
+> 			return -1;
+> 		}
+> 
+> 		memset(addr, i, hugepagesize);
+> 	}
+> 
+> 	sleep(50);
+> 
+> 	return 0;
+> }
+> --------- snip ----------
+> 
+> The result is that it can't find any AnonHugePages from /proc/[pid]/smaps :
+> -------------- snip -------
+> 7f0b38cd0000-7f0b396d0000 rw-p 00000000 00:00 0
+> Size:              10240 kB
+> Rss:               10240 kB
+> Pss:               10240 kB
+> Shared_Clean:          0 kB
+> Shared_Dirty:          0 kB
+> Private_Clean:         0 kB
+> Private_Dirty:     10240 kB
+> Referenced:        10240 kB
+> Anonymous:         10240 kB
+> AnonHugePages:         0 kB
+> Swap:                  0 kB
+> KernelPageSize:        4 kB
+> MMUPageSize:           4 kB
+> Locked:                0 kB
+> VmFlags: rd wr mr mw me ac
 
-Same thing as above.
-
--- 
-Ueimor
+"hg" would be shown in VmFlags if your MADV_HUGEPAGE was successful, are 
+you sure this is the right vma?
