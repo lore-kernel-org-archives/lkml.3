@@ -1,86 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507Ab3DAGHn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 02:07:43 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:38937 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756885Ab3DAGHl convert rfc822-to-8bit (ORCPT
+	id S1757547Ab3DAGJr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 02:09:47 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:64400 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757181Ab3DAGJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 02:07:41 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: CAI Qian <caiqian@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
-        linux-ext4@vger.kernel.org
-Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591!
-In-Reply-To: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com>
-References: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Mon, 01 Apr 2013 10:07:35 +0400
-Message-ID: <87ip46ss0o.fsf@openvz.org>
+	Mon, 1 Apr 2013 02:09:46 -0400
+Date: Sun, 31 Mar 2013 23:05:48 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'David Woodhouse'" <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] twl4030_charger: use module_platform_driver_probe()
+Message-ID: <20130401060547.GC25376@lizard>
+References: <005a01ce1956$21f306a0$65d913e0$%han@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+In-Reply-To: <005a01ce1956$21f306a0$65d913e0$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Mar 2013 05:27:02 -0400 (EDT), CAI Qian <caiqian@redhat.com> wrote:
+On Tue, Mar 05, 2013 at 01:01:36PM +0900, Jingoo Han wrote:
+> This patch uses module_platform_driver_probe() macro which makes
+> the code smaller and simpler.
 > 
-I've spent a half of weekend by trying to create s390x guest image,
-without any success. Can you please share it.
-> 
-> ----- Original Message -----
-> > From: "Theodore Ts'o" <tytso@mit.edu>
-> > To: "CAI Qian" <caiqian@redhat.com>
-> > Cc: "LKML" <linux-kernel@vger.kernel.org>, "linux-s390" <linux-s390@vger.kernel.org>, "Steve Best"
-> > <sbest@redhat.com>, linux-ext4@vger.kernel.org
-> > Sent: Thursday, March 28, 2013 8:05:17 PM
-> > Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591!
-> > 
-> > On Thu, Mar 28, 2013 at 02:40:33AM -0400, CAI Qian wrote:
-> > > System hung when running xfstests-dev 013 test case on an s390x
-> > > guest. Never saw
-> > > this on 3.9-rc3 before but need to double-check. Any idea?
-> > > 
-> > > Ý 1113.795759¨ ------------Ý cut here ¨------------
-> > > Ý 1113.795771¨ kernel BUG at fs/ext4/inode.c:1591!
-> > 
-> > thanks for the report.  What kernel version did this come from?  Was
-> > it 3.9-rc4?  (line 1591 for 3.9-rc3 doesn't contain a BUG_ON).
-> Yes, the lastest mainline.
-> > 
-> > If it is indeed 3.9-rc4, it would be helpful, since you can reproduce
-> > the problem, to insert a debugging printk which fires when
-> > bh->b_blocknr != pblock before the BUG_ON, and have it print the
-> > b_blocknr and pblock values.
-> bh->b_blocknr=100346
-> pblock=66797
-> 
-> Bisecting results so far,
-> git bisect start
-> # good: [a937536b868b8369b98967929045f1df54234323] Linux 3.9-rc3
-> git bisect good a937536b868b8369b98967929045f1df54234323
-> # bad: [9064171268d838b8f283fe111ef086b9479d059a] Merge tag 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/sfr/next-fixes
-> git bisect bad 9064171268d838b8f283fe111ef086b9479d059a
-> # bad: [38d78e587d4960d0db94add518d27ee74bad2301] mqueue: sys_mq_open: do not call mnt_drop_write() if read-only
-> git bisect bad 38d78e587d4960d0db94add518d27ee74bad2301
-> # good: [e7489622d3603b7d161b484dcd340d9f678b0c7a] Merge tag 'arm64-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64
-> git bisect good e7489622d3603b7d161b484dcd340d9f678b0c7a
-> # good: [172a271b5e090da7468c66b9ccbcdb3d929eed75] Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux
-> git bisect good 172a271b5e090da7468c66b9ccbcdb3d929eed75
-> # good: [0a7e453103b9718d357688b83bb968ee108cc874] Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux
-> git bisect good 0a7e453103b9718d357688b83bb968ee108cc874
-> # bad: [0e401101db49959f5783f6ee9e676124b5a183ac] ext4: fix memory leakage in mext_check_coverage
-> git bisect bad 0e401101db49959f5783f6ee9e676124b5a183ac
-> CAI Qian
-> > 
-> > Thanks,
-> > 
-> > 						- Ted
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+
+Applied, thanks!
+
+Anton
