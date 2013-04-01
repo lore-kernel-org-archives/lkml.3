@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758671Ab3DASDK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 14:03:10 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:52170 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756294Ab3DASDI (ORCPT
+	id S1758696Ab3DASIe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 14:08:34 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:35958 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757640Ab3DASId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 14:03:08 -0400
-Message-ID: <1364839386.21627.71.camel@x61.thuisdomein>
-Subject: [PATCH 8/8] cris: do not export "u8" and friends to userspace
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org
-Date: Mon, 01 Apr 2013 20:03:06 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Apr 2013 18:03:07.0018 (UTC) FILETIME=[29A17EA0:01CE2F03]
-X-RcptDomain: vger.kernel.org
+	Mon, 1 Apr 2013 14:08:33 -0400
+Date: Mon, 1 Apr 2013 14:08:32 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Theodore Ts'o" <tytso@alum.mit.edu>
+cc: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Files are created with the wrong permissions
+Message-ID: <Pine.LNX.4.44L0.1304011352420.1036-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sv_addr_ag.h exports "u8" and friends to userspace. Use "__u8" and
-friends instead.
+Ted or anybody else:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+In preparation for a software upgrade, I just repartitioned and
+reformmated my server.  After restoring the contents from a backup and
+booting, I find that new files are not being created with the right
+permissions, which obviously causes lots of problems.
 
- arch/cris/include/uapi/arch-v10/arch/sv_addr_ag.h | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+Here's an example of a simple test program:
 
-diff --git a/arch/cris/include/uapi/arch-v10/arch/sv_addr_ag.h b/arch/cris/include/uapi/arch-v10/arch/sv_addr_ag.h
-index 5517f04..199d053 100644
---- a/arch/cris/include/uapi/arch-v10/arch/sv_addr_ag.h
-+++ b/arch/cris/include/uapi/arch-v10/arch/sv_addr_ag.h
-@@ -64,10 +64,10 @@
- /*--- Obsolete. Kept for backw compatibility. ---*/
- /* Reads (or writes) a byte/uword/udword from the specified mode
-    register. */
--#define IO_RD(reg) (*(volatile u32*)(reg))
--#define IO_RD_B(reg) (*(volatile u8*)(reg))
--#define IO_RD_W(reg) (*(volatile u16*)(reg))
--#define IO_RD_D(reg) (*(volatile u32*)(reg))
-+#define IO_RD(reg) (*(volatile __u32*)(reg))
-+#define IO_RD_B(reg) (*(volatile __u8*)(reg))
-+#define IO_RD_W(reg) (*(volatile __u16*)(reg))
-+#define IO_RD_D(reg) (*(volatile __u32*)(reg))
- 
- /*------------------------------------------------------------
- !* Start addresses of the different memory areas.
-@@ -97,12 +97,12 @@
- !*-----------------------------------------------------------*/
- 
- #ifndef __ASSEMBLER__
--# define  IO_TYPECAST_UDWORD  (volatile u32*)
--# define  IO_TYPECAST_RO_UDWORD  (const volatile u32*)
--# define  IO_TYPECAST_UWORD  (volatile u16*)
--# define  IO_TYPECAST_RO_UWORD  (const volatile u16*)
--# define  IO_TYPECAST_BYTE  (volatile u8*)
--# define  IO_TYPECAST_RO_BYTE  (const volatile u8*)
-+# define  IO_TYPECAST_UDWORD  (volatile __u32*)
-+# define  IO_TYPECAST_RO_UDWORD  (const volatile __u32*)
-+# define  IO_TYPECAST_UWORD  (volatile __u16*)
-+# define  IO_TYPECAST_RO_UWORD  (const volatile __u16*)
-+# define  IO_TYPECAST_BYTE  (volatile __u8*)
-+# define  IO_TYPECAST_RO_BYTE  (const volatile __u8*)
- #else
- # define  IO_TYPECAST_UDWORD
- # define  IO_TYPECAST_RO_UDWORD
--- 
-1.7.11.7
+
+#include <stdio.h>
+#include <fcntl.h>
+
+int main()
+{
+	unsigned	m;
+	int		fd;
+
+	m = umask(0);
+	printf("Original umask: %03o\n", m);
+
+	fd = open("b", O_RDWR | O_CREAT | O_EXCL, 0777);
+	printf("fd: %d\n", fd);
+	if (fd != -1)
+		close(fd);
+
+	return 0;
+}
+
+
+Since the umask is set to 0, the "b" file should be created with its 
+permissions set to -rwxrwxrwx.  That's not what happens.
+
+The results vary as I run the program in different directories.  For
+example, running as root in /root, I get:
+
+	-r-xr-x--- 1 root root 0 Apr  1 13:56 b
+
+But in /var, I get:
+
+	-rwxr-xr-x 1 root root 0 Apr  1 14:05 b
+
+In other places I get:
+
+	-rwx------ 1 root root 0 Apr  1 13:57 b
+
+or
+
+	-rwxr-x--- 1 root root 0 Apr  1 14:00 b
+
+or
+
+	-rwxr-xr-x 1 root root 0 Apr  1 13:58 b
+
+or even the expected result:
+
+	-rwxrwxrwx 1 root root 0 Apr  1 13:42 b
+
+Can anybody suggest the reason for this and how to fix it?
+
+One fact that might be relevant: The original filesystems were ext3, 
+but I reformatted the partitions as ext4.  The restore was done using 
+tar with the --xattrs option.  Could that be responsible?  lsattr shows 
+only:
+
+# lsattr -d /root
+-------------e- /root
+
+Note: This happens under both the 3.6 and 3.8 kernels.
+
+Thanks for any help.
+
+Alan Stern
 
