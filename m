@@ -1,91 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab3DAD3u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 23:29:50 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:45432 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755674Ab3DAD3t (ORCPT
+	id S1756800Ab3DADdR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 23:33:17 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51449 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756234Ab3DADdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 23:29:49 -0400
-Date: Sun, 31 Mar 2013 20:25:48 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: linux-kernel@vger.kernel.org
-Cc: Tony Luck <tony.luck@intel.com>, Kees Cook <keescook@chromium.org>,
-        Colin Cross <ccross@android.com>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 3/3] pstore/ram: Restore ecc information block
-Message-ID: <20130401032548.GC17424@lizard>
-References: <20130401032256.GA13801@lizard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	Sun, 31 Mar 2013 23:33:15 -0400
+Date: Sun, 31 Mar 2013 23:33:11 -0400 (EDT)
+Message-Id: <20130331.233311.2279935752360417908.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=euc-kr
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130401032256.GA13801@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sun, 31 Mar 2013 20:33:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arve Hj√∏nnev√•g <arve@android.com>
 
-This was lost when proc/last_kmsg moved to pstore/console-ramoops.
+1) sadb_msg prepared for IPSEC userspace forgets to initialize the
+   satype field, fix from Nicolas Dichtel.
 
-Signed-off-by: Arve Hj√∏nnev√•g <arve@android.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Anton Vorontsov <anton@enomsg.org>
----
- fs/pstore/ram.c      | 12 ++++++++++--
- fs/pstore/ram_core.c |  3 +++
- 2 files changed, 13 insertions(+), 2 deletions(-)
+2) Fix mac80211 synchronization during station removal, from Johannes
+   Berg.
 
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index a5ee252..32cbd7c 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -136,6 +136,7 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 				   char **buf, struct pstore_info *psi)
- {
- 	ssize_t size;
-+	ssize_t ecc_notice_size;
- 	struct ramoops_context *cxt = psi->data;
- 	struct persistent_ram_zone *prz;
- 
-@@ -156,11 +157,18 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 	time->tv_nsec = 0;
- 
- 	size = persistent_ram_old_size(prz);
--	*buf = kmemdup(persistent_ram_old(prz), size, GFP_KERNEL);
-+
-+	/* ECC correction notice */
-+	ecc_notice_size = persistent_ram_ecc_string(prz, NULL, 0);
-+
-+	*buf = kmalloc(size + ecc_notice_size + 1, GFP_KERNEL);
- 	if (*buf == NULL)
- 		return -ENOMEM;
- 
--	return size;
-+	memcpy(*buf, persistent_ram_old(prz), size);
-+	persistent_ram_ecc_string(prz, *buf + size, ecc_notice_size + 1);
-+
-+	return size + ecc_notice_size;
- }
- 
- static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
-diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
-index c6f641c..5933732 100644
---- a/fs/pstore/ram_core.c
-+++ b/fs/pstore/ram_core.c
-@@ -235,6 +235,9 @@ ssize_t persistent_ram_ecc_string(struct persistent_ram_zone *prz,
- {
- 	ssize_t ret;
- 
-+	if (!prz->ecc_info.ecc_size)
-+		return 0;
-+
- 	if (prz->corrected_bytes || prz->bad_blocks)
- 		ret = snprintf(str, len, ""
- 			"\n%d Corrected bytes, %d unrecoverable blocks\n",
--- 
-1.8.1.4
+3) Fix IPSEC sequence number notifications when they wrap, from
+   Steffen Klassert.
+
+4) Fix cfg80211 wdev tracing crashes when add_virtual_intf() returns
+   an error pointer, from Johannes Berg.
+
+5) In mac80211, don't call into the channel context code with the
+   interface list mutex held.  From Johannes Berg.
+
+6) In mac80211, if we don't actually associate, do not restart the STA
+   timer, otherwise we can crash.  From Ben Greear.
+
+7) Missing dma_mapping_error() check in e1000, ixgb, and e1000e.  From
+   Christoph Paasch.
+
+8) Fix sja1000 driver defines to not conflict with SH port, from
+   Marc Kleine-Budde.
+
+9) Don't call il4965_rs_use_green with a NULL station, from Colin Ian
+   King.
+
+10) Suspend/Resume in the FEC driver fail because the buffer descriptors
+    are not initialized at all the moments in which they should.  Fix
+    from Frank Li.
+
+11) cpsw and davinci_emac drivers both use the wrong interface to restart
+    a stopped TX queue.  Use netif_wake_queue not netif_start_queue,
+    the latter is for initialization/bringup not active management of
+    the queue.  From Mugunthan V N.
+
+12) Fix regression in rate calculations done by psched_ratecfg_precompute(),
+    missing u64 type promotion.  From Sergey Popovich.
+
+13) Fix length overflow in tg3 VPD parsing, from Kees Cook.
+
+14) AOE driver fails to allocate enough headroom, resulting in crashes.
+    Fix from Eric Dumazet.
+
+15) RX overflow happens too quickly in sky2 driver because pause packet
+    thresholds are not programmed correctly.  From Mirko Lindner.
+
+16) Bonding driver manages arp_interval and miimon settings incorrectly,
+    disabling one unintentionally disables both.  Fix from Nikolay
+    Aleksandrov.
+
+17) smsc75xx drivers don't program the RX mac properly for jumbo frames.
+    Fix from Steve Glendinning.
+
+18) Fix off-by-one in Codel packet scheduler.  From Vijay Subramanian.
+
+19) Fix packet corruption in atl1c by disabling MSI support, from
+    Hannes Frederic Sowa.
+
+20) netdev_rx_handler_unregister() needs a synchronize_net() to fix crashes
+    in bonding driver unload stress tests.  From Eric Dumazet.
+
+21) rxlen field of ks8851 RX packet descriptors not interpreted
+    correctly (it is 12 bits not 16 bits, so needs to be masked after
+    shifting the 32-bit value down 16 bits).  Fix from Max Nekludov.
+
+22) Fix missed RX/TX enable in sh_eth driver due to mishandling of link
+    change indications.  From Sergei Shtylyov.
+
+23) Fix crashes during spurious ECI interrupts in sh_eth driver, also from
+    Sergei Shtylyov.
+
+24) dm9000 driver initialization is done wrong for revision B devices
+    with DSP PHY, from Joseph CHANG.
+
+Please pull, thanks a lot!
+
+The following changes since commit a8c45289f215e137825bf9630d0abb41c1dc41ff:
+
+  Merge tag 'iommu-fixes-v3.9-rc4' of git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu (2013-03-27 09:25:11 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to 6741f40d198c6a5feb23653a1efd4ca47f93d83d:
+
+  DM9000B: driver initialization upgrade (2013-03-31 19:43:23 -0400)
+
+----------------------------------------------------------------
+Avinash Patil (1):
+      mwifiex: reset skb->data after processing PCIe sleep confirm cmd respose
+
+Ben Greear (1):
+      mac80211: Don't restart sta-timer if not associated.
+
+Christoph Paasch (3):
+      e1000: ethtool: Add missing dma_mapping_error-call in e1000_setup_desc_rings
+      ixgb: Add missing dma_mapping_error-call in ixgb_alloc_rx_buffers
+      e1000e: Add missing dma_mapping_error-call in e1000_alloc_jumbo_rx_buffers
+
+Colin Ian King (1):
+      iwlegacy: 4965-rs: avoid null pointer dereference error
+
+Dan Williams (1):
+      libertas: drop maintainership
+
+David S. Miller (4):
+      Merge branch 'master' of git://git.kernel.org/.../klassert/ipsec
+      Merge branch 'master' of git://git.kernel.org/.../jkirsher/net
+      Merge branch 'fixes-for-3.9' of git://gitorious.org/linux-can/linux-can
+      Merge branch 'wireless'
+
+Dmitry Kravkov (1):
+      line up comment for ndo_bridge_getlink
+
+Emmanuel Grumbach (3):
+      iwlwifi: fix length check in multi-TB HCMD
+      iwlwifi: set rfkill in internal state of the transport
+      iwlwifi: dvm: don't send HCMD in restart flow
+
+Eric Dumazet (2):
+      aoe: reserve enough headroom on skbs
+      net: add a synchronize_net() in netdev_rx_handler_unregister()
+
+Frank Li (1):
+      enet: fec: fix fail resume from suspend state
+
+Hannes Frederic Sowa (2):
+      ipv6: don't accept node local multicast traffic from the wire
+      atl1e: drop pci-msi support because of packet corruption
+
+Iestyn C. Elfick (1):
+      b43: A fix for DMA transmission sequence errors
+
+Johannes Berg (6):
+      mac80211: always synchronize_net() during station removal
+      cfg80211: fix potential BSS memory leak and update
+      mac80211: fix crash with P2P Device returning action frames
+      cfg80211: fix wdev tracing crash
+      mac80211: fix virtual monitor interface locking
+      cfg80211: always check for scan end on P2P device
+
+John W. Linville (4):
+      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
+      Revert "brcmsmac: support 4313iPA"
+      Merge branch 'for-john' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Joseph CHANG (1):
+      DM9000B: driver initialization upgrade
+
+Kees Cook (1):
+      tg3: fix length overflow in VPD firmware parsing
+
+Li RongQing (1):
+      net: fix the use of this_cpu_ptr
+
+Luis R. Rodriguez (1):
+      ath9k: avoid queueing hw check work when suspended
+
+Manish Chopra (1):
+      MAINTAINERS: Update netxen_nic maintainers list
+
+Marc Kleine-Budde (2):
+      can: sja1000: fix define conflict on SH
+      can: sja1000: limit PEAK PCAN-PC Card to HAS_IOPORT
+
+Mathias Krause (1):
+      xfrm: Fix esn sequence number diff calculation in xfrm_replay_notify_esn()
+
+Max.Nekludov@us.elster.com (1):
+      ks8851: Fix interpretation of rxlen field.
+
+Mirko Lindner (2):
+      sky2: Receive Overflows not counted
+      sky2: Threshold for Pause Packet is set wrong
+
+Mugunthan V N (2):
+      drivers: net: ethernet: cpsw: use netif_wake_queue() while restarting tx queue
+      drivers: net: ethernet: davinci_emac: use netif_wake_queue() while restarting tx queue
+
+Nicolas Dichtel (1):
+      af_key: initialize satype in key_notify_policy_flush()
+
+Rafa©© Mi©©ecki (2):
+      b43: N-PHY: increase initial value of "mind" in RSSI calibration
+      b43: N-PHY: use more bits for offset in RSSI calibration
+
+Rob Herring (2):
+      net: calxedaxgmac: fix rx ring handling when OOM
+      net: calxedaxgmac: Wake-on-LAN fixes
+
+Sergei Shtylyov (3):
+      sh_eth: fix handling of no LINK signal
+      sh_eth: workaround for spurious ECI interrupt
+      sh_eth: make 'link' field of 'struct sh_eth_private' *int*
+
+Sergey Popovich (1):
+      sch: add missing u64 in psched_ratecfg_precompute()
+
+Shmulik Ladkani (1):
+      net: core: Remove redundant call to 'nf_reset' in 'dev_forward_skb'
+
+Steffen Klassert (1):
+      xfrm: Fix replay notification for esn.
+
+Steve Glendinning (1):
+      smsc75xx: fix jumbo frame support
+
+Vijay Subramanian (1):
+      net: fq_codel: Fix off-by-one error
+
+Vladimir Kondratiev (1):
+      cfg80211: fix inconsistency in trace for rdev_set_mac_acl
+
+Wei Yongjun (1):
+      rtnetlink: fix error return code in rtnl_link_fill()
+
+nikolay@redhat.com (1):
+      bonding: fix disabling of arp_interval and miimon
+
+ MAINTAINERS                                              |   4 +-
+ drivers/block/aoe/aoecmd.c                               |   3 +-
+ drivers/net/bonding/bond_sysfs.c                         |  92 ++++++------
+ drivers/net/can/sja1000/Kconfig                          |   1 +
+ drivers/net/can/sja1000/plx_pci.c                        |   4 +-
+ drivers/net/can/sja1000/sja1000.c                        |   6 +-
+ drivers/net/can/sja1000/sja1000.h                        |   2 +-
+ drivers/net/ethernet/atheros/atl1e/atl1e.h               |   1 -
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c          |  19 +--
+ drivers/net/ethernet/broadcom/tg3.c                      |   7 +-
+ drivers/net/ethernet/calxeda/xgmac.c                     |   9 +-
+ drivers/net/ethernet/davicom/dm9000.c                    | 214 ++++++++++++++--------------
+ drivers/net/ethernet/davicom/dm9000.h                    |  11 +-
+ drivers/net/ethernet/freescale/fec.c                     |  82 ++++++-----
+ drivers/net/ethernet/intel/e1000/e1000_ethtool.c         |  14 +-
+ drivers/net/ethernet/intel/e1000e/netdev.c               |   7 +-
+ drivers/net/ethernet/intel/ixgb/ixgb_main.c              |   7 +-
+ drivers/net/ethernet/marvell/sky2.c                      |   2 +-
+ drivers/net/ethernet/marvell/sky2.h                      |   2 +-
+ drivers/net/ethernet/micrel/ks8851.c                     |   2 +-
+ drivers/net/ethernet/renesas/sh_eth.c                    |  28 ++--
+ drivers/net/ethernet/renesas/sh_eth.h                    |   2 +-
+ drivers/net/ethernet/ti/cpsw.c                           |   2 +-
+ drivers/net/ethernet/ti/davinci_emac.c                   |   2 +-
+ drivers/net/usb/smsc75xx.c                               |  12 +-
+ drivers/net/wireless/ath/ath9k/link.c                    |   3 +-
+ drivers/net/wireless/b43/dma.c                           |  65 +++++++--
+ drivers/net/wireless/b43/phy_n.c                         |   8 +-
+ drivers/net/wireless/brcm80211/brcmsmac/phy/phy_lcn.c    | 369 +++++++++++++++++--------------------------------
+ drivers/net/wireless/brcm80211/brcmsmac/phy/phytbl_lcn.c |  64 ++++-----
+ drivers/net/wireless/iwlegacy/4965-rs.c                  |   3 +-
+ drivers/net/wireless/iwlwifi/dvm/lib.c                   |   9 ++
+ drivers/net/wireless/iwlwifi/dvm/ucode.c                 |   4 +-
+ drivers/net/wireless/iwlwifi/pcie/trans.c                |  13 ++
+ drivers/net/wireless/iwlwifi/pcie/tx.c                   |   2 +-
+ drivers/net/wireless/mwifiex/pcie.c                      |   1 +
+ include/linux/netdevice.h                                |   2 +-
+ net/core/dev.c                                           |   7 +-
+ net/core/flow.c                                          |   2 +-
+ net/core/rtnetlink.c                                     |   4 +-
+ net/ipv6/ip6_input.c                                     |  12 ++
+ net/key/af_key.c                                         |   1 +
+ net/mac80211/iface.c                                     |  35 ++---
+ net/mac80211/mesh.c                                      |   3 +-
+ net/mac80211/mlme.c                                      |   6 +-
+ net/mac80211/rx.c                                        |  14 +-
+ net/mac80211/sta_info.c                                  |  12 +-
+ net/sched/sch_fq_codel.c                                 |   2 +-
+ net/sched/sch_generic.c                                  |   2 +-
+ net/wireless/core.c                                      |  64 ++++++---
+ net/wireless/core.h                                      |   3 +
+ net/wireless/nl80211.c                                   |  52 +++----
+ net/wireless/scan.c                                      |  24 ++--
+ net/wireless/sme.c                                       |   6 +-
+ net/wireless/trace.h                                     |   5 +-
+ net/wireless/wext-sme.c                                  |   6 +
+ net/xfrm/xfrm_replay.c                                   |  66 ++++++++-
+ 57 files changed, 793 insertions(+), 611 deletions(-)
