@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757980Ab3DAUhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 16:37:16 -0400
-Received: from smtp-out.abv.bg ([194.153.145.99]:40414 "EHLO smtp-out.abv.bg"
+	id S1757832Ab3DAUko (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 16:40:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2485 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757230Ab3DAUhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 16:37:13 -0400
-DomainKey-Signature: a=rsa-sha1; s=smtp-out; d=abv.bg; c=simple; q=dns;
-	b=Dg+eQl2tWKu1BALdrvHwawjmbnZPt5ImrlpesRJPYP4aDdcoVg5zJ1D9T27xk6ziZ
-	qdmQMVUfGtIx3C5btTVLpI7m93AkTm1ArgLhZgMvaTj9DhLoSx4fVS7W5JBxELMFZIW
-	YQ1wECcGYitb5XFTOQT223DuvuI3zst1HujvZyY=
-Date: Mon, 1 Apr 2013 23:37:11 +0300 (EEST)
-From: =?UTF-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>
-To: Tony Lindgren <tony@atomide.com>
-Cc: pali.rohar@gmail.com, juha.yrjola@solidboot.com, linux@arm.linux.org.uk,
-        mpm@selenic.com, herbert@gondor.hengli.com.au,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <414980284.76676.1364848631348.JavaMail.apache@mail82.abv.bg>
-Subject: Re: [PATCH] OMAP3 ROM Random Number Generator support
+	id S1757501Ab3DAUkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 16:40:43 -0400
+Date: Mon, 1 Apr 2013 22:40:23 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 6/9] perf sort: Add 'addr' sort key
+Message-ID: <20130401204022.GB1022@krava.redhat.com>
+References: <1364816125-12212-1-git-send-email-namhyung@kernel.org>
+ <1364816125-12212-7-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Priority: 3
-X-Mailer: AbvMail 1.0
-X-Originating-IP: 130.204.50.168
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364816125-12212-7-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- It could be that I am misreading something, but RX51 is OMAP3.
+On Mon, Apr 01, 2013 at 08:35:22PM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> New addr sort key provides a way to sort the entries by the symbol
+> addresses.  It can be helpful to figure out symbol resolution problem
+> when a dso cannot do it properly as well as finding hotpath in a dso
+> and/or a function.
 
-Regards,
-Ivo
+maybe it's just the recent mem profiling patches, but wouldn't
+it be better to use 'ip' instead of 'addr'?
 
+also it's following code getting the data:
+...
+        if (sample_type & PERF_SAMPLE_IP)
+                data->ip = perf_instruction_pointer(regs);
+...
 
- >-------- Оригинално писмо --------
- >От:  Tony Lindgren 
- >Относно: Re: [PATCH] OMAP3 ROM Random Number Generator support
- >До: Ивайло Димитров 
- >Изпратено на: Понеделник, 2013, Април 1 19:59:50 EEST
- >
- >
- >* Ивайло Димитров  [130331 05:10]:
- >>  
- >> Hi Pali,
- >> 
- >> Yep, the code looks almost identical, I guess with some tweaks all SMC code from that patch could be removed and instead used the one from SMC PPA API. 
- >> 
- >> What I don't get, is why one needs to disable/enable fiqs/irqs:
- >> 
- >> +static int call_sec_rom(u32 appl_id, u32 proc_id, u32 flag, ...)
- >> +{
- >> +	va_list ap;
- >> +	u32 ret;
- >> +	u32 val;
- >> +
- >> +	va_start(ap, flag);
- >> +	val = *(u32 *) &amp;ap;
- >> +	local_irq_disable();
- >> +	local_fiq_disable();
- >> +	ret = omap3_rom_rng_call(appl_id, proc_id, flag,
- >> +				 (u32) virt_to_phys((void *) val));
- >> +	local_fiq_enable();
- >> +	local_irq_enable();
- >> +	va_end(ap);
- >> +
- >> +	return ret;
- >> +}
- >> 
- >> Do you have any idea why is that needed? Any other code I've ever seen to call SM, does not disable fiqs/irqs, is RNG SMC somehow special? I know this is Nokia's code, but still, if we can get some understanding...
- >
- >Sounds like the fiq handling can be dropped based on what
- >the TI guys posted recently about FIQs only be available in
- >the secure mode starting with omap2.
- >
- >Regards,
- >
- >Tony
- >
+same for the "perf sort: Add 'addr_to/from' sort key" patch
+
+jirka
