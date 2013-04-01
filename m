@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757068Ab3DAGMf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 02:12:35 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46217 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756909Ab3DAGMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 02:12:34 -0400
-Message-ID: <51592541.5080903@ti.com>
-Date: Mon, 1 Apr 2013 11:42:17 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1757204Ab3DAGNT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 02:13:19 -0400
+Received: from nasmtp01.atmel.com ([192.199.1.245]:50780 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750833Ab3DAGNS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 02:13:18 -0400
+Message-ID: <51592560.3030609@atmel.com>
+Date: Mon, 1 Apr 2013 14:12:48 +0800
+From: Josh Wu <josh.wu@atmel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] ARM: davinci: use is IS_ENABLED macro
-References: <1364210495-7938-1-git-send-email-prabhakar.csengg@gmail.com> <20130327214347.f2a573510416b86223c58be1@canb.auug.org.au> <CA+V-a8urWyzaU-nKh7sumr3tbmswixzWsumVHMpis6=fgD3Z+g@mail.gmail.com>
-In-Reply-To: <CA+V-a8urWyzaU-nKh7sumr3tbmswixzWsumVHMpis6=fgD3Z+g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+To: Josh Wu <josh.wu@atmel.com>
+CC: <linux-kernel@vger.kernel.org>, <hskinnemoen@gmail.com>,
+        <egtvedt@samfundet.no>, <linux-mtd@lists.infradead.org>,
+        <dedekind1@gmail.com>, <fengguang.wu@intel.com>
+Subject: Re: avr32: fix build error in atstk1006_defconfig
+References: <1350371967-8914-1-git-send-email-josh.wu@atmel.com>
+In-Reply-To: <1350371967-8914-1-git-send-email-josh.wu@atmel.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/28/2013 10:07 AM, Prabhakar Lad wrote:
-> Hi Sekhar,
-> 
-> On Wed, Mar 27, 2013 at 4:13 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> Hi,
->>
->> On Mon, 25 Mar 2013 16:51:35 +0530 Prabhakar lad <prabhakar.csengg@gmail.com> wrote:
->>>
->>> --- a/arch/arm/mach-davinci/board-da830-evm.c
->>> +++ b/arch/arm/mach-davinci/board-da830-evm.c
->>> @@ -298,7 +298,7 @@ static const short da830_evm_emif25_pins[] = {
->>>       -1
->>>  };
->>>
->>> -#if defined(CONFIG_MMC_DAVINCI) || defined(CONFIG_MMC_DAVINCI_MODULE)
->>> +#if IS_ENABLED(CONFIG_MMC_DAVINCI)
->>>  #define HAS_MMC      1
->>>  #else
->>>  #define HAS_MMC      0
->>
->> Why not
->>
->> #define HAS_MMC         IS_ENABLED(CONFIG_MMC_DAVINCI)
->>
->> and similarly in the rest?
->>
-> Stephen's suggestion looks good to me, if you haven’t queued it i'll post a v2,
-> or if you have already queued it I'll create a patch on top of the
-> same patch fixing it.
-> lemme know how would you want it.
 
-Please post a v2. I will take that instead.
+Sorry, please drop this email. I will send out another one to include 
+akpm@linux-foundation.org
 
-Thanks,
-Sekhar
+Best Regards,
+Josh Wu
+
+On 4/1/2013 1:58 PM, Josh Wu wrote:
+> fixed the following compile error when use avr32 atstk1006_defconfig:
+>    drivers/mtd/nand/atmel_nand.c: In function 'pmecc_err_location':
+>    drivers/mtd/nand/atmel_nand.c:639: error: implicit declaration of function 'writel_relaxed'
+>
+> which was introduced by commit 1c7b874d33b463 ("mtd: at91: atmel_nand: add Programmable Multibit ECC controller support").
+> The PMECC for nand flash code uses writel_relaxed(). But in avr32, there is no macro "writel_relaxed" defined. This patch add writex_relaxed macro definitions.
+>
+> Signed-off-by: Josh Wu <josh.wu@atmel.com>
+> Acked-by: Havard Skinnemoen <havard@skinnemoen.net>
+> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+>
+> ---
+> arch/avr32/include/asm/io.h |    4 ++++
+>   1 file changed, 4 insertions(+)
+>
+> diff --git a/arch/avr32/include/asm/io.h b/arch/avr32/include/asm/io.h
+> index cf60d0a..fc6483f 100644
+> --- a/arch/avr32/include/asm/io.h
+> +++ b/arch/avr32/include/asm/io.h
+> @@ -165,6 +165,10 @@ BUILDIO_IOPORT(l, u32)
+>   #define readw_be			__raw_readw
+>   #define readl_be			__raw_readl
+>   
+> +#define writeb_relaxed			writeb
+> +#define writew_relaxed			writew
+> +#define writel_relaxed			writel
+> +
+>   #define writeb_be			__raw_writeb
+>   #define writew_be			__raw_writew
+>   #define writel_be			__raw_writel
+
