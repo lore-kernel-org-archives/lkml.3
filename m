@@ -1,66 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab3DAHJA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 03:09:00 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:54246 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757058Ab3DAHI7 (ORCPT
+	id S1758125Ab3DAHN6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 03:13:58 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:50884 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757124Ab3DAHN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 03:08:59 -0400
-Message-ID: <5159320C.4050903@linux.vnet.ibm.com>
-Date: Mon, 01 Apr 2013 12:36:52 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 4/5] sched: don't consider upper se in sched_slice()
-References: <1364457537-15114-1-git-send-email-iamjoonsoo.kim@lge.com> <1364457537-15114-5-git-send-email-iamjoonsoo.kim@lge.com> <51553EF5.90702@linux.vnet.ibm.com> <20130401040820.GA12015@lge.com>
-In-Reply-To: <20130401040820.GA12015@lge.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 13040107-0260-0000-0000-000002BEC9BA
+	Mon, 1 Apr 2013 03:13:57 -0400
+From: Prabhakar lad <prabhakar.csengg@gmail.com>
+To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Sekhar Nori <nsekhar@ti.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: [PATCH v2] ARM: davinci: use is IS_ENABLED macro
+Date: Mon,  1 Apr 2013 12:43:44 +0530
+Message-Id: <1364800424-4239-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joonsoo,
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-On 04/01/2013 09:38 AM, Joonsoo Kim wrote:
-> Hello, Preeti.
-> 
+This patches replaces #if defined() by IS_ENABLED macro, which provides
+better readability.
 
->>
->> Ideally the children's cpu share must add upto the parent's share.
->>
-> 
-> I don't think so.
-> 
-> We should schedule out the parent tg if 5ms is over. As we do so, we can
-> fairly distribute time slice to every tg within short term. If we add
-> the children's cpu share upto the parent's, the parent tg may have
-> large time slice, so it cannot be preempted easily. There may be a latency
-> problem if there are many tgs.
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Cc: Sekhar Nori <nsekhar@ti.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+---
+ Changes for V2:
+ 1: Fixed review comments pointed by Stephen
+    (https://patchwork.kernel.org/patch/2330531/)
 
-In the case where the #running < sched_nr_latency, the children's
-sched_slices add up to the parent's.
+ arch/arm/mach-davinci/board-da830-evm.c   |    6 +-----
+ arch/arm/mach-davinci/board-da850-evm.c   |    7 +------
+ arch/arm/mach-davinci/board-dm644x-evm.c  |   25 +++++--------------------
+ arch/arm/mach-davinci/board-dm646x-evm.c  |    7 +------
+ arch/arm/mach-davinci/board-neuros-osd2.c |   15 ++-------------
+ arch/arm/mach-davinci/devices.c           |    2 +-
+ arch/arm/mach-davinci/usb.c               |    2 +-
+ 7 files changed, 12 insertions(+), 52 deletions(-)
 
-A rq with two tgs,each with 3 tasks.
-
-Each of these tasks have a sched slice of
-[(sysctl_sched_latency / 3) / 2] as of the present implementation.
-
-The sum of the above sched_slice of all tasks of a tg will lead to the
-sched_slice of its parent: sysctl_sched_latency / 2
-
-This breaks when the nr_running on each tg > sched_nr_latency. However I
-don't know if this is a good thing or a bad thing.
-
-Regards
-Preeti U Murthy
+diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
+index 6da25ee..b348e44 100644
+--- a/arch/arm/mach-davinci/board-da830-evm.c
++++ b/arch/arm/mach-davinci/board-da830-evm.c
+@@ -298,11 +298,7 @@ static const short da830_evm_emif25_pins[] = {
+ 	-1
+ };
+ 
+-#if defined(CONFIG_MMC_DAVINCI) || defined(CONFIG_MMC_DAVINCI_MODULE)
+-#define HAS_MMC	1
+-#else
+-#define HAS_MMC	0
+-#endif
++#define HAS_MMC		IS_ENABLED(CONFIG_MMC_DAVINCI)
+ 
+ #ifdef CONFIG_DA830_UI_NAND
+ static struct mtd_partition da830_evm_nand_partitions[] = {
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index c2dfe06..a74dec7 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -335,12 +335,7 @@ static const short da850_evm_nor_pins[] = {
+ 	-1
+ };
+ 
+-#if defined(CONFIG_MMC_DAVINCI) || \
+-    defined(CONFIG_MMC_DAVINCI_MODULE)
+-#define HAS_MMC 1
+-#else
+-#define HAS_MMC 0
+-#endif
++#define HAS_MMC		IS_ENABLED(CONFIG_MMC_DAVINCI)
+ 
+ static inline void da850_evm_setup_nor_nand(void)
+ {
+diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
+index 71735e7..a042f27 100644
+--- a/arch/arm/mach-davinci/board-dm644x-evm.c
++++ b/arch/arm/mach-davinci/board-dm644x-evm.c
+@@ -750,26 +750,11 @@ static int davinci_phy_fixup(struct phy_device *phydev)
+ 	return 0;
+ }
+ 
+-#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
+-    defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
+-#define HAS_ATA 1
+-#else
+-#define HAS_ATA 0
+-#endif
+-
+-#if defined(CONFIG_MTD_PHYSMAP) || \
+-    defined(CONFIG_MTD_PHYSMAP_MODULE)
+-#define HAS_NOR 1
+-#else
+-#define HAS_NOR 0
+-#endif
+-
+-#if defined(CONFIG_MTD_NAND_DAVINCI) || \
+-    defined(CONFIG_MTD_NAND_DAVINCI_MODULE)
+-#define HAS_NAND 1
+-#else
+-#define HAS_NAND 0
+-#endif
++#define HAS_ATA		IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
++
++#define HAS_NOR		IS_ENABLED(CONFIG_MTD_PHYSMAP)
++
++#define HAS_NAND	IS_ENABLED(CONFIG_MTD_NAND_DAVINCI)
+ 
+ static __init void davinci_evm_init(void)
+ {
+diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
+index de7adff..03785e0 100644
+--- a/arch/arm/mach-davinci/board-dm646x-evm.c
++++ b/arch/arm/mach-davinci/board-dm646x-evm.c
+@@ -117,12 +117,7 @@ static struct platform_device davinci_nand_device = {
+ 	},
+ };
+ 
+-#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
+-    defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
+-#define HAS_ATA 1
+-#else
+-#define HAS_ATA 0
+-#endif
++#define HAS_ATA		IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
+ 
+ /* CPLD Register 0 bits to control ATA */
+ #define DM646X_EVM_ATA_RST		BIT(0)
+diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
+index 1c98107..ea6728b 100644
+--- a/arch/arm/mach-davinci/board-neuros-osd2.c
++++ b/arch/arm/mach-davinci/board-neuros-osd2.c
+@@ -167,20 +167,9 @@ static struct davinci_mmc_config davinci_ntosd2_mmc_config = {
+ 	.version	= MMC_CTLR_VERSION_1
+ };
+ 
++#define HAS_ATA		IS_ENABLED(CONFIG_BLK_DEV_PALMCHIP_BK3710)
+ 
+-#if defined(CONFIG_BLK_DEV_PALMCHIP_BK3710) || \
+-	defined(CONFIG_BLK_DEV_PALMCHIP_BK3710_MODULE)
+-#define HAS_ATA 1
+-#else
+-#define HAS_ATA 0
+-#endif
+-
+-#if defined(CONFIG_MTD_NAND_DAVINCI) || \
+-	defined(CONFIG_MTD_NAND_DAVINCI_MODULE)
+-#define HAS_NAND 1
+-#else
+-#define HAS_NAND 0
+-#endif
++#define HAS_NAND	IS_ENABLED(CONFIG_MTD_NAND_DAVINCI)
+ 
+ static __init void davinci_ntosd2_init(void)
+ {
+diff --git a/arch/arm/mach-davinci/devices.c b/arch/arm/mach-davinci/devices.c
+index 4c48a36..df135de 100644
+--- a/arch/arm/mach-davinci/devices.c
++++ b/arch/arm/mach-davinci/devices.c
+@@ -119,7 +119,7 @@ void __init davinci_init_ide(void)
+ 	platform_device_register(&ide_device);
+ }
+ 
+-#if	defined(CONFIG_MMC_DAVINCI) || defined(CONFIG_MMC_DAVINCI_MODULE)
++#if IS_ENABLED(CONFIG_MMC_DAVINCI)
+ 
+ static u64 mmcsd0_dma_mask = DMA_BIT_MASK(32);
+ 
+diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
+index 34509ff..5764d65 100644
+--- a/arch/arm/mach-davinci/usb.c
++++ b/arch/arm/mach-davinci/usb.c
+@@ -17,7 +17,7 @@
+ #define DA8XX_USB0_BASE 	0x01e00000
+ #define DA8XX_USB1_BASE 	0x01e25000
+ 
+-#if defined(CONFIG_USB_MUSB_HDRC) || defined(CONFIG_USB_MUSB_HDRC_MODULE)
++#if IS_ENABLED(CONFIG_USB_MUSB_HDRC)
+ static struct musb_hdrc_eps_bits musb_eps[] = {
+ 	{ "ep1_tx", 8, },
+ 	{ "ep1_rx", 8, },
+-- 
+1.7.4.1
 
