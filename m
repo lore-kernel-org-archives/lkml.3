@@ -1,139 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759401Ab3DAXWt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 19:22:49 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59040 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757248Ab3DAXWr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 19:22:47 -0400
-Date: Tue, 2 Apr 2013 10:22:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kent Overstreet <koverstreet@google.com>
-Subject: Re: linux-next: build failure after merge of the final tree (block
- tree related)
-Message-Id: <20130402102236.9a597c047fbf8d09038bc989@canb.auug.org.au>
-In-Reply-To: <20130326173159.09dad51a1b8825a264f3171f@canb.auug.org.au>
-References: <20130326173159.09dad51a1b8825a264f3171f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__2_Apr_2013_10_22_36_+1100_RdaSoNRo_H_auoFA"
+	id S1759454Ab3DAXYT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 19:24:19 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:43135
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758057Ab3DAXYS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 19:24:18 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dIc89bh936eI1432I1521Idb82hzz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah906i1155h)
+Date: Mon, 1 Apr 2013 16:24:12 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clk: divider: Use DIV_ROUND_CLOSEST
+References: <20130320001609.8663.21043@quantum>
+ <f3ff0545-52cd-4b7b-967e-f81324ba0152@CH1EHSMHS040.ehs.local>
+ <20130320185051.GA28349@pengutronix.de>
+ <20130321091531.GN20530@pengutronix.de>
+ <cffdea50-cadf-4662-a4fb-c61ab853fc4c@VA3EHSMHS014.ehs.local>
+ <20130327013703.4014.45615@quantum>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20130327013703.4014.45615@quantum>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <4b6b9df8-e221-4e52-82d3-efdcd5de9bd1@AM1EHSMHS021.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Apr_2013_10_22_36_+1100_RdaSoNRo_H_auoFA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Mar 26, 2013 at 06:37:03PM -0700, Mike Turquette wrote:
+> Quoting Sören Brinkmann (2013-03-26 15:45:22)
+> > On Thu, Mar 21, 2013 at 10:15:31AM +0100, Uwe Kleine-König wrote:
+> > > Hello,
+> > > 
+> > > On Wed, Mar 20, 2013 at 07:50:51PM +0100, Sascha Hauer wrote:
+> > > > On Wed, Mar 20, 2013 at 09:32:51AM -0700, Sören Brinkmann wrote:
+> > > > > If the caller
+> > > > > doesn't like the returned frequency he can request a different one.
+> > > > > And he's eventually happy with the return value he calls
+> > > > > clk_set_rate() requesting the frequency clk_round_rate() returned.
+> > > > > Always rounding down seems a bit odd to me.
+> > > > > 
+> > > > > Another issue with the current implmentation:
+> > > > > clk_divider_round_rate() calls clk_divider_bestdiv(), which uses the ROUND_UP macro, returning a rather low frequency.
+> > > > 
+> > > > And that is correct. clk_divider_bestdiv is used to calculate the
+> > > > maximum parent frequency for which a given divider value does not
+> > > > exceed the desired rate.
+> > > The reason for that is that the (more?) usual constraint is like: This
+> > > mmc card can handle up to 100 MHz. Or this i2c device can handle up to
+> > > this and that frequency. Of course there are different constraints, e.g.
+> > > for a UART if the target baud speed is 38400 you better run at 38402
+> > > than at 19201.
+> > > 
+> > > I wonder if it depends on the clock if you want "best approximation <=
+> > > requested value" or "best approximation" or on the caller. In the former
+> > > case a flag for the clock would be the right thing (as suggested in this
+> > > thread). If however it's the caller of round_rate who knows better which
+> > > rounding is preferred than better extend the clk API.
+> > > 
+> > > Extending the API could just be a convenience function that doesn't
+> > > affect the implementations of the clk API. E.g.:
+> > > 
+> > >       long clk_round_rate_nearest(struct clk *clk, unsigned long rate)
+> > >       {
+> > >               long lower_limit = clk_round_rate(clk, rate);
+> > >               long upper_limit = clk_round_rate(clk, rate + (rate - lower_limit));
+> > > 
+> > >               if (rate - lower_limit < upper_limit - rate)
+> > >                       return lower_limit;
+> > >               else
+> > >                       return upper_limit;
+> > >       }
+> > > 
+> > I guess both approaches may work. Anybody has a preference?
+> > 
+> 
+> A dedicated function like the one Uwe defined is better than adding
+> subtlety to the existing clk_round_rate via a flag in a clock driver.
+I looked at my problem again.
 
-Hi Jens,
+A new API function is probably fine for UART, ethernet drivers and
+similar. Although, compared to a flag it would add some redundant
+rounding, since clk_set_rate() implicitly also rounds the rate.
+	clk_set_rate()
+		clk_calc_new_rates()
+			clk_round_rate()
+But that is true for every driver which doesn't blindly call
+clk_set_rate() and checks upfront through clk_round_rate() what
+the actual frequency would look like.
 
-On Tue, 26 Mar 2013 17:31:59 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> After merging the final tree, today's linux-next build (powerpc allyescon=
-fig)
-> failed like this:
->=20
-> drivers/built-in.o: In function `bio_alloc_pages':
-> (.opd+0x2364a8): multiple definition of `bio_alloc_pages'
-> fs/built-in.o:(.opd+0x7188): first defined here
->=20
-> Caused by an interaction between commits a07876064a0b ("block: Add
-> bio_alloc_pages()") and commit cafe56359144 ("bcache: A block layer
-> cache") from the block tree.
->=20
-> I have applied the following fix patch (this should have happened in
-> merge commit 12f45f28441e "Merge branch 'for-3.10/drivers' into
-> for-next"):
->=20
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 26 Mar 2013 17:26:45 +1100
-> Subject: [PATCH] block: remove the extra copy of bio_alloc_pages
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/md/bcache/util.c | 18 ------------------
->  drivers/md/bcache/util.h |  2 --
->  2 files changed, 20 deletions(-)
->=20
-> diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
-> index dcec2e4..671a55d 100644
-> --- a/drivers/md/bcache/util.c
-> +++ b/drivers/md/bcache/util.c
-> @@ -237,24 +237,6 @@ start:		bv->bv_len	=3D min_t(size_t, PAGE_SIZE - bv-=
->bv_offset,
->  }
->  EXPORT_SYMBOL_GPL(bio_map);
-> =20
-> -int bio_alloc_pages(struct bio *bio, gfp_t gfp)
-> -{
-> -	int i;
-> -	struct bio_vec *bv;
-> -
-> -	bio_for_each_segment(bv, bio, i) {
-> -		bv->bv_page =3D alloc_page(gfp);
-> -		if (!bv->bv_page) {
-> -			while (bv-- !=3D bio->bi_io_vec + bio->bi_idx)
-> -				__free_page(bv->bv_page);
-> -			return -ENOMEM;
-> -		}
-> -	}
-> -
-> -	return 0;
-> -}
-> -EXPORT_SYMBOL_GPL(bio_alloc_pages);
-> -
->  /*
->   * Portions Copyright (c) 1996-2001, PostgreSQL Global Development Group=
- (Any
->   * use permitted, subject to terms of PostgreSQL license; see.)
-> diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
-> index 56705fd..499d746 100644
-> --- a/drivers/md/bcache/util.h
-> +++ b/drivers/md/bcache/util.h
-> @@ -570,8 +570,6 @@ static inline unsigned fract_exp_two(unsigned x, unsi=
-gned fract_bits)
-> =20
->  void bio_map(struct bio *bio, void *base);
-> =20
-> -int bio_alloc_pages(struct bio *bio, gfp_t gfp);
-> -
->  static inline sector_t bdev_sectors(struct block_device *bdev)
->  {
->  	return bdev->bd_inode->i_size >> 9;
-> --=20
-> 1.8.1
+So, do we agree to add this additional clk_round_rate_nearest()
+function?
+And if, should I just make Uwe's proposal another patch, additionally to
+the other clk-divider change I'm working on?
+Or Uwe, do you prefer to submit it yourself?
 
-Ping?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Tue__2_Apr_2013_10_22_36_+1100_RdaSoNRo_H_auoFA
-Content-Type: application/pgp-signature
+For my original problem, though, this is only part of a solution. It
+appeared to be a rounding issue, but the actual root cause is the loss
+of resolution when OPPs are converted to a frequency table for cpufreq.
+I'm not sure how this can be resolved, yet.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJRWha8AAoJEECxmPOUX5FEEGEP/Re050H6OsZMocEbnbqpI6qP
-4zIkJFaJ98Yfz2jjXGUxd0vTshntITg8weCkIrDfQlTNCuSowYW+uSg/2npsQw07
-iboMemhcFpR1qXNuBeC3IHjPin3rfIWQJ91Z6+z5Y2GMLqbnTox5/nUDDQTTn73l
-b8IN4LGE+GMOkLyJiunrD1R4Wamyi7EW77zYcD4V2et9rqgS6wfUMO/mEwSbCsoL
-0cacFwmPdp/iX67hbsX2M32x7pTBEMdLqcaX7Jyj6XJfpYsq7MHHE3SFaDk2CGAU
-oPvL/gLswD0XLwloA49yjZD/tCbyMoiNXOBaZ/t67u3Ux3P0h/p+K+qN9Bf1HIJ7
-ZdLrhC259F+aWqvggrJnIdoJhkt+E2bQ8JPVCuMEqulVSafZjYY7zobLkjh36gGo
-5ZjhB5SXfADMjgIYXhiNuYoMGhMCeJMAFQ/D0N3KhDu07yjw6V21hoRFtzhcm1iH
-/ttx/14tNAZfnTv777ydJJZiuNGH81KTYjWyIeS/K7nNi6HQawn1hj3JUuK7ysIw
-pmBkc48CV/VWPlO3jQ2Jq/kWuYcINubphahZBOUC55GLYDr2FqS4i/xA2RWbM3Am
-OkyirM5Ji5SrOrVX4ZEDUMkQt2PcAObhJ1cZNfBIxBabI4rND/KAVDqdqv1hj5kK
-k7kWGlli7fjAoz3/OEZM
-=kuhw
------END PGP SIGNATURE-----
+	Sören
 
---Signature=_Tue__2_Apr_2013_10_22_36_+1100_RdaSoNRo_H_auoFA--
+
