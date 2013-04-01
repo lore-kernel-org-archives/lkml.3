@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758394Ab3DALfi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 07:35:38 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60002 "EHLO
+	id S1758343Ab3DALfh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 07:35:37 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44674 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757873Ab3DALf3 (ORCPT
+	with ESMTP id S1757890Ab3DALf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Apr 2013 07:35:29 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-89-515970fe4436
+X-AuditID: 9c930179-b7c78ae000000e4b-8b-515970fe8d10
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>,
         Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 4/9] perf sort: Introduce sort__mode variable
-Date: Mon,  1 Apr 2013 20:35:20 +0900
-Message-Id: <1364816125-12212-5-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 5/9] perf sort: Separate out memory-specific sort keys
+Date: Mon,  1 Apr 2013 20:35:21 +0900
+Message-Id: <1364816125-12212-6-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1364816125-12212-1-git-send-email-namhyung@kernel.org>
 References: <1364816125-12212-1-git-send-email-namhyung@kernel.org>
@@ -29,172 +29,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-It's used for determining current sort mode which can be one of
-NORMAL, BRANCH and new MEMORY.
+Since they're used only for perf mem, separate out them to a different
+dimension so that normal user cannot access them by any chance.
 
+For global/local weights, I'm not entirely sure to place them into the
+memory dimension.  But it's the only user at this time.
+
+Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c    | 23 +++++++++++++----------
- tools/perf/ui/browsers/hists.c |  4 ++--
- tools/perf/util/sort.c         |  4 ++--
- tools/perf/util/sort.h         |  8 +++++++-
- 4 files changed, 24 insertions(+), 15 deletions(-)
+ tools/perf/builtin-report.c |  2 ++
+ tools/perf/util/sort.c      | 50 +++++++++++++++++++++++++++++++++++++--------
+ tools/perf/util/sort.h      | 19 +++++++++--------
+ 3 files changed, 55 insertions(+), 16 deletions(-)
 
 diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index d9f2de3e81fe..c877982a64d3 100644
+index c877982a64d3..669405c9b8a2 100644
 --- a/tools/perf/builtin-report.c
 +++ b/tools/perf/builtin-report.c
-@@ -311,7 +311,7 @@ static int process_sample_event(struct perf_tool *tool,
- 	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
- 		return 0;
- 
--	if (sort__branch_mode == 1) {
-+	if (sort__mode == SORT_MODE__BRANCH) {
- 		if (perf_report__add_branch_hist_entry(tool, &al, sample,
- 						       evsel, machine)) {
- 			pr_debug("problem adding lbr entry, skipping event\n");
-@@ -387,7 +387,7 @@ static int perf_report__setup_sample_type(struct perf_report *rep)
- 			}
- 	}
- 
--	if (sort__branch_mode == 1) {
-+	if (sort__mode == SORT_MODE__BRANCH) {
- 		if (!self->fd_pipe &&
- 		    !(sample_type & PERF_SAMPLE_BRANCH_STACK)) {
- 			ui__error("Selected -b but no branch data. "
-@@ -694,7 +694,9 @@ static int
- parse_branch_mode(const struct option *opt __maybe_unused,
- 		  const char *str __maybe_unused, int unset)
- {
--	sort__branch_mode = !unset;
-+	int *branch_mode = opt->value;
-+
-+	*branch_mode = !unset;
- 	return 0;
- }
- 
-@@ -703,6 +705,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	struct perf_session *session;
- 	struct stat st;
- 	bool has_br_stack = false;
-+	int branch_mode = -1;
- 	int ret = -1;
- 	char callchain_default_opt[] = "fractal,0.5,callee";
- 	const char * const report_usage[] = {
-@@ -799,7 +802,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "Show a column with the sum of periods"),
- 	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
- 		    "Show event group information together"),
--	OPT_CALLBACK_NOOPT('b', "branch-stack", &sort__branch_mode, "",
-+	OPT_CALLBACK_NOOPT('b', "branch-stack", &branch_mode, "",
- 		    "use branch records for histogram filling", parse_branch_mode),
- 	OPT_STRING(0, "objdump", &objdump_path, "path",
- 		   "objdump binary to use for disassembly and annotations"),
-@@ -849,11 +852,11 @@ repeat:
- 	has_br_stack = perf_header__has_feat(&session->header,
- 					     HEADER_BRANCH_STACK);
- 
--	if (sort__branch_mode == -1 && has_br_stack)
--		sort__branch_mode = 1;
-+	if (branch_mode == -1 && has_br_stack)
-+		sort__mode = SORT_MODE__BRANCH;
- 
--	/* sort__branch_mode could be 0 if --no-branch-stack */
--	if (sort__branch_mode == 1) {
-+	/* sort__mode could be NORMAL if --no-branch-stack */
-+	if (sort__mode == SORT_MODE__BRANCH) {
- 		/*
- 		 * if no sort_order is provided, then specify
- 		 * branch-mode specific order
-@@ -864,7 +867,7 @@ repeat:
- 
- 	}
- 	if (report.mem_mode) {
--		if (sort__branch_mode == 1) {
-+		if (sort__mode == SORT_MODE__BRANCH) {
+@@ -871,6 +871,8 @@ repeat:
  			fprintf(stderr, "branch and mem mode incompatible\n");
  			goto error;
  		}
-@@ -934,7 +937,7 @@ repeat:
- 
- 	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
- 
--	if (sort__branch_mode == 1) {
-+	if (sort__mode == SORT_MODE__BRANCH) {
- 		sort_entry__setup_elide(&sort_dso_from, symbol_conf.dso_from_list, "dso_from", stdout);
- 		sort_entry__setup_elide(&sort_dso_to, symbol_conf.dso_to_list, "dso_to", stdout);
- 		sort_entry__setup_elide(&sort_sym_from, symbol_conf.sym_from_list, "sym_from", stdout);
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 0cada654d387..cea7ef969cbc 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1155,7 +1155,7 @@ static struct hist_browser *hist_browser__new(struct hists *hists)
- 		browser->b.refresh = hist_browser__refresh;
- 		browser->b.seek = ui_browser__hists_seek;
- 		browser->b.use_navkeypressed = true;
--		if (sort__branch_mode == 1)
-+		if (sort__mode == SORT_MODE__BRANCH)
- 			browser->has_symbols = sort_sym_from.list.next != NULL;
- 		else
- 			browser->has_symbols = sort_sym.list.next != NULL;
-@@ -1487,7 +1487,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 		if (!browser->has_symbols)
- 			goto add_exit_option;
- 
--		if (sort__branch_mode == 1) {
-+		if (sort__mode == SORT_MODE__BRANCH) {
- 			bi = browser->he_selection->branch_info;
- 			if (browser->selection != NULL &&
- 			    bi &&
++		sort__mode = SORT_MODE__MEMORY;
++
+ 		/*
+ 		 * if no sort_order is provided, then specify
+ 		 * branch-mode specific order
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 16d5e38befe5..a6ddad41d57a 100644
+index a6ddad41d57a..c19bf213cc86 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -9,7 +9,7 @@ const char	*sort_order = default_sort_order;
- int		sort__need_collapse = 0;
- int		sort__has_parent = 0;
- int		sort__has_sym = 0;
--int		sort__branch_mode = -1; /* -1 = means not set */
-+enum sort_mode	sort__mode = SORT_MODE__NORMAL;
+@@ -871,14 +871,6 @@ static struct sort_dimension common_sort_dimensions[] = {
+ 	DIM(SORT_PARENT, "parent", sort_parent),
+ 	DIM(SORT_CPU, "cpu", sort_cpu),
+ 	DIM(SORT_SRCLINE, "srcline", sort_srcline),
+-	DIM(SORT_LOCAL_WEIGHT, "local_weight", sort_local_weight),
+-	DIM(SORT_GLOBAL_WEIGHT, "weight", sort_global_weight),
+-	DIM(SORT_MEM_DADDR_SYMBOL, "symbol_daddr", sort_mem_daddr_sym),
+-	DIM(SORT_MEM_DADDR_DSO, "dso_daddr", sort_mem_daddr_dso),
+-	DIM(SORT_MEM_LOCKED, "locked", sort_mem_locked),
+-	DIM(SORT_MEM_TLB, "tlb", sort_mem_tlb),
+-	DIM(SORT_MEM_LVL, "mem", sort_mem_lvl),
+-	DIM(SORT_MEM_SNOOP, "snoop", sort_mem_snoop),
+ };
  
- enum sort_type	sort__first_dimension;
+ #undef DIM
+@@ -895,6 +887,21 @@ static struct sort_dimension bstack_sort_dimensions[] = {
  
-@@ -943,7 +943,7 @@ int sort_dimension__add(const char *tok)
- 		if (strncasecmp(tok, sd->name, strlen(tok)))
- 			continue;
+ #undef DIM
  
--		if (sort__branch_mode != 1)
-+		if (sort__mode != SORT_MODE__BRANCH)
- 			return -EINVAL;
- 
- 		if (sd->entry == &sort_sym_from || sd->entry == &sort_sym_to)
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index f24bdf64238c..39ff4b86ae84 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -32,7 +32,7 @@ extern const char default_sort_order[];
- extern int sort__need_collapse;
- extern int sort__has_parent;
- extern int sort__has_sym;
--extern int sort__branch_mode;
-+extern enum sort_mode sort__mode;
- extern struct sort_entry sort_comm;
- extern struct sort_entry sort_dso;
- extern struct sort_entry sort_sym;
-@@ -123,6 +123,12 @@ static inline void hist_entry__add_pair(struct hist_entry *he,
- 	list_add_tail(&he->pairs.head, &pair->pairs.node);
- }
- 
-+enum sort_mode {
-+	SORT_MODE__NORMAL,
-+	SORT_MODE__BRANCH,
-+	SORT_MODE__MEMORY,
++#define DIM(d, n, func) [d - __SORT_MEMORY_MODE] = { .name = n, .entry = &(func) }
++
++static struct sort_dimension memory_sort_dimensions[] = {
++	DIM(SORT_LOCAL_WEIGHT, "local_weight", sort_local_weight),
++	DIM(SORT_GLOBAL_WEIGHT, "weight", sort_global_weight),
++	DIM(SORT_MEM_DADDR_SYMBOL, "symbol_daddr", sort_mem_daddr_sym),
++	DIM(SORT_MEM_DADDR_DSO, "dso_daddr", sort_mem_daddr_dso),
++	DIM(SORT_MEM_LOCKED, "locked", sort_mem_locked),
++	DIM(SORT_MEM_TLB, "tlb", sort_mem_tlb),
++	DIM(SORT_MEM_LVL, "mem", sort_mem_lvl),
++	DIM(SORT_MEM_SNOOP, "snoop", sort_mem_snoop),
 +};
 +
- enum sort_type {
- 	/* common sort keys */
- 	SORT_PID,
++#undef DIM
++
+ int sort_dimension__add(const char *tok)
+ {
+ 	unsigned int i;
+@@ -964,6 +971,33 @@ int sort_dimension__add(const char *tok)
+ 		return 0;
+ 	}
+ 
++	for (i = 0; i < ARRAY_SIZE(memory_sort_dimensions); i++) {
++		struct sort_dimension *sd = &memory_sort_dimensions[i];
++
++		if (strncasecmp(tok, sd->name, strlen(tok)))
++			continue;
++
++		if (sort__mode != SORT_MODE__MEMORY)
++			return -EINVAL;
++
++		if (sd->entry == &sort_mem_daddr_sym)
++			sort__has_sym = 1;
++
++		if (sd->taken)
++			return 0;
++
++		if (sd->entry->se_collapse)
++			sort__need_collapse = 1;
++
++		if (list_empty(&hist_entry__sort_list))
++			sort__first_dimension = i + __SORT_MEMORY_MODE;
++
++		list_add_tail(&sd->entry->list, &hist_entry__sort_list);
++		sd->taken = 1;
++
++		return 0;
++	}
++
+ 	return -ESRCH;
+ }
+ 
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 39ff4b86ae84..0232d476da87 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -138,14 +138,6 @@ enum sort_type {
+ 	SORT_PARENT,
+ 	SORT_CPU,
+ 	SORT_SRCLINE,
+-	SORT_LOCAL_WEIGHT,
+-	SORT_GLOBAL_WEIGHT,
+-	SORT_MEM_DADDR_SYMBOL,
+-	SORT_MEM_DADDR_DSO,
+-	SORT_MEM_LOCKED,
+-	SORT_MEM_TLB,
+-	SORT_MEM_LVL,
+-	SORT_MEM_SNOOP,
+ 
+ 	/* branch stack specific sort keys */
+ 	__SORT_BRANCH_STACK,
+@@ -154,6 +146,17 @@ enum sort_type {
+ 	SORT_SYM_FROM,
+ 	SORT_SYM_TO,
+ 	SORT_MISPREDICT,
++
++	/* memory mode specific sort keys */
++	__SORT_MEMORY_MODE,
++	SORT_LOCAL_WEIGHT = __SORT_MEMORY_MODE,
++	SORT_GLOBAL_WEIGHT,
++	SORT_MEM_DADDR_SYMBOL,
++	SORT_MEM_DADDR_DSO,
++	SORT_MEM_LOCKED,
++	SORT_MEM_TLB,
++	SORT_MEM_LVL,
++	SORT_MEM_SNOOP,
+ };
+ 
+ /*
 -- 
 1.7.11.7
 
