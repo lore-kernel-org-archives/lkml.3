@@ -1,281 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758555Ab3DAN5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 09:57:43 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:38819 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757966Ab3DAN4a (ORCPT
+	id S1758589Ab3DAN5t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 09:57:49 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:25155 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758529Ab3DAN5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 09:56:30 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r31DuQnf009620, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 5/7] r8169: add a new chip for RTL8111G
-Date: Mon, 1 Apr 2013 21:55:37 +0800
-Message-ID: <1364824539-4156-5-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1364824539-4156-1-git-send-email-hayeswang@realtek.com>
-References: <1364824539-4156-1-git-send-email-hayeswang@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 1 Apr 2013 09:57:43 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-9f-515992558ce0
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, balbi@ti.com,
+        stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com,
+        rob.herring@calxeda.com, kgene.kim@samsung.com, kishon@ti.com,
+        dianders@chromium.org, t.figa@samsung.com, p.paneri@samsung.com
+Subject: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
+Date: Mon, 01 Apr 2013 19:24:00 +0530
+Message-id: <1364824448-14732-2-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.6.5
+In-reply-to: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
+References: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCIsWRmVeSWpSXmKPExsWyRsSkWjd0UmSgwcfXEhYH79dbnF12kM2i
+	efF6NoveBVfZLC487WGzuLxrDpvF7CX9LBYzzu9jsli0rJXZ4vyWTiaLwysOMFk0nzjFbDHh
+	9wU2i/UzXrM48Hks+HyF3WN2w0UWj3knAz32z10D5N39wejRt2UVo8fxG9uZPD5vkgvgiOKy
+	SUnNySxLLdK3S+DK+L9uLkvBetmKzz0zGRsYH4l3MXJySAiYSEz92sIOYYtJXLi3nq2LkYtD
+	SGApo8SSRceZYIq2b93ICpFYxCgxra+PHcKZwiTxbPZURpAqNgFdiaa3u4BsDg4RgTiJzROE
+	QcLMAl1MEkuPgm0TFvCU2PlnDlgJi4CqRN/lPJAwr4CHRF/vGhaIXQoSb24/YwaxOYHKP2xd
+	DHaDEFBN+9UTrBA199gllh2qBrFZBAQkvk0+xAIyUkJAVmLTAWaIEkmJgytusExgFF7AyLCK
+	UTS1ILmgOCm9yFivODG3uDQvXS85P3cTIzCGTv971r+D8e4B60OMyUDjJjJLiSbnA2MwryTe
+	0NjMyMLUxNTYyNzSjDRhJXFetRbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2M+rVFDhUv
+	7Bf+6+t0NVizgtPkpdBVX2X5DjeHBjcu3sPaO63vclict6jtlSqesUbFfdrRA0HCd05KeDzT
+	D/3U+ECKa8q/k2EFhqw265Zpn1ATWDd39r3enBVpMyrn3fdadCx/xe1JK1VMXurEPXIpPpHi
+	x31Rc4bDkvKW6BMWM+/zxWYsWeigxFKckWioxVxUnAgA9jkIKbcCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+xgG7opMhAg2V3eC0O3q+3OLvsIJtF
+	8+L1bBa9C66yWVx42sNmcXnXHDaL2Uv6WSxmnN/HZLFoWSuzxfktnUwWh1ccYLJoPnGK2WLC
+	7wtsFutnvGZx4PNY8PkKu8fshossHvNOBnrsn7sGyLv7g9Gjb8sqRo/jN7YzeXzeJBfAEdXA
+	aJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdLeSQlli
+	TilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMeP/urksBetlKz73zGRsYHwk3sXI
+	ySEhYCKxfetGVghbTOLCvfVsXYxcHEICixglpvX1sUM4U5gkns2eyghSxSagK9H0dheQzcEh
+	IhAnsXmCMEiYWaCLSWLpUbChwgKeEjv/zAErYRFQlei7nAcS5hXwkOjrXcMCsUtB4s3tZ8wg
+	NidQ+Yeti5lAbCGgmvarJ1gnMPIuYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREco8+k
+	dzCuarA4xCjAwajEwxtxISJQiDWxrLgy9xCjBAezkgjviszIQCHelMTKqtSi/Pii0pzU4kOM
+	yUBHTWSWEk3OB6aPvJJ4Q2MTc1NjU0sTCxMzS9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLg
+	lGpgtLQzt1PjjJ0g9eWzuuODwxXlajYVLLNS8+ev+rRU3EhxwdKWUN3fCYI1RgLdD303may/
+	U6OwxePCqvO9m++I5J+5rr6szXB9yUcjmeLaz1NEr29mOpTfOKnz9aKzMl+nrVi50zzXZvG/
+	fT+v9FWqCVd73HvwMvfTvr6ket7M7V5us44VPy7sVWIpzkg01GIuKk4EAN4rngMVAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new chip for RTL8111G series.
+Adding  APIs to handle runtime power management on PHY
+devices. PHY consumers may need to wake-up/suspend PHYs
+when they work across autosuspend.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 ---
- drivers/net/ethernet/realtek/r8169.c | 115 +++++++++++++++++++++++++++++++++++
- 1 file changed, 115 insertions(+)
+ include/linux/usb/phy.h |  141 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 141 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 0211836..8d41508 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -48,6 +48,7 @@
- #define FIRMWARE_8411_1		"rtl_nic/rtl8411-1.fw"
- #define FIRMWARE_8106E_1	"rtl_nic/rtl8106e-1.fw"
- #define FIRMWARE_8168G_2	"rtl_nic/rtl8168g-2.fw"
-+#define FIRMWARE_8168G_3	"rtl_nic/rtl8168g-3.fw"
- 
- #ifdef RTL8169_DEBUG
- #define assert(expr) \
-@@ -140,6 +141,7 @@ enum mac_version {
- 	RTL_GIGA_MAC_VER_39,
- 	RTL_GIGA_MAC_VER_40,
- 	RTL_GIGA_MAC_VER_41,
-+	RTL_GIGA_MAC_VER_42,
- 	RTL_GIGA_MAC_NONE   = 0xff,
- };
- 
-@@ -266,6 +268,9 @@ static const struct {
- 							JUMBO_9K, false),
- 	[RTL_GIGA_MAC_VER_41] =
- 		_R("RTL8168g/8111g",	RTL_TD_1, NULL, JUMBO_9K, false),
-+	[RTL_GIGA_MAC_VER_42] =
-+		_R("RTL8168g/8111g",	RTL_TD_1, FIRMWARE_8168G_3,
-+							JUMBO_9K, false),
- };
- #undef _R
- 
-@@ -514,6 +519,7 @@ enum rtl_register_content {
- 	PMEnable	= (1 << 0),	/* Power Management Enable */
- 
- 	/* Config2 register p. 25 */
-+	ClkReqEn	= (1 << 7),	/* Clock Request Enable */
- 	MSIEnable	= (1 << 5),	/* 8169 only. Reserved in the 8168. */
- 	PCI_Clock_66MHz = 0x01,
- 	PCI_Clock_33MHz = 0x00,
-@@ -534,6 +540,7 @@ enum rtl_register_content {
- 	Spi_en		= (1 << 3),
- 	LanWake		= (1 << 1),	/* LanWake enable/disable */
- 	PMEStatus	= (1 << 0),	/* PME status can be reset by PCI RST# */
-+	ASPM_en		= (1 << 0),	/* ASPM enable */
- 
- 	/* TBICSR p.28 */
- 	TBIReset	= 0x80000000,
-@@ -816,6 +823,7 @@ MODULE_FIRMWARE(FIRMWARE_8402_1);
- MODULE_FIRMWARE(FIRMWARE_8411_1);
- MODULE_FIRMWARE(FIRMWARE_8106E_1);
- MODULE_FIRMWARE(FIRMWARE_8168G_2);
-+MODULE_FIRMWARE(FIRMWARE_8168G_3);
- 
- static void rtl_lock_work(struct rtl8169_private *tp)
- {
-@@ -2036,6 +2044,7 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
- 		int mac_version;
- 	} mac_info[] = {
- 		/* 8168G family. */
-+		{ 0x7cf00000, 0x50900000,	RTL_GIGA_MAC_VER_42 },
- 		{ 0x7cf00000, 0x4c100000,	RTL_GIGA_MAC_VER_41 },
- 		{ 0x7cf00000, 0x4c000000,	RTL_GIGA_MAC_VER_40 },
- 
-@@ -3439,6 +3448,81 @@ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x1f, 0x0000);
+diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+index 6b5978f..01bf9c1 100644
+--- a/include/linux/usb/phy.h
++++ b/include/linux/usb/phy.h
+@@ -297,4 +297,145 @@ static inline const char *usb_phy_type_string(enum usb_phy_type type)
+ 		return "UNKNOWN PHY TYPE";
+ 	}
  }
- 
-+static void rtl8168g_2_hw_phy_config(struct rtl8169_private *tp)
++
++static inline void usb_phy_autopm_enable(struct usb_phy *x)
 +{
-+	rtl_apply_firmware(tp);
++	if (!x || !x->dev) {
++		dev_err(x->dev, "no PHY or attached device available\n");
++		return;
++		}
 +
-+	rtl_writephy(tp, 0x1f, 0x0bcc);
-+	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x0100);
-+	rtl_writephy(tp, 0x1f, 0x0a44);
-+	rtl_w1w0_phy(tp, 0x11, 0x00c0, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0a43);
-+	rtl_writephy(tp, 0x13, 0x8084);
-+	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x6000);
-+	rtl_w1w0_phy(tp, 0x10, 0x1003, 0x0000);
-+
-+	/* Enable UC LPF tune function */
-+	rtl_writephy(tp, 0x1f, 0x0a43);
-+	rtl_writephy(tp, 0x13, 0x8012);
-+	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
-+
-+	rtl_writephy(tp, 0x1f, 0x0bce);
-+	rtl_writephy(tp, 0x12, 0x8860);
-+
-+	/* Channel Estimation: master */
-+	rtl_writephy(tp, 0x1f, 0x0a43);
-+	rtl_writephy(tp, 0x13, 0x80f3);
-+	rtl_w1w0_phy(tp, 0x14, 0x8b00, 0x7400);
-+	rtl_writephy(tp, 0x13, 0x80f0);
-+	rtl_w1w0_phy(tp, 0x14, 0x3a00, 0xc500);
-+	rtl_writephy(tp, 0x13, 0x80ef);
-+	rtl_w1w0_phy(tp, 0x14, 0x0500, 0xfa00);
-+	rtl_writephy(tp, 0x13, 0x80f6);
-+	rtl_w1w0_phy(tp, 0x14, 0x6e00, 0x9100);
-+	rtl_writephy(tp, 0x13, 0x80ec);
-+	rtl_w1w0_phy(tp, 0x14, 0x6800, 0x9700);
-+	rtl_writephy(tp, 0x13, 0x80ed);
-+	rtl_w1w0_phy(tp, 0x14, 0x7c00, 0x8300);
-+	rtl_writephy(tp, 0x13, 0x80f2);
-+	rtl_w1w0_phy(tp, 0x14, 0xf400, 0x0b00);
-+	rtl_writephy(tp, 0x13, 0x80f4);
-+	rtl_w1w0_phy(tp, 0x14, 0x8500, 0x7a00);
-+
-+	/* Channel Estimation: slave */
-+	rtl_writephy(tp, 0x1f, 0x0a43);
-+	rtl_writephy(tp, 0x13, 0x8110);
-+	rtl_w1w0_phy(tp, 0x14, 0xa800, 0x5700);
-+	rtl_writephy(tp, 0x13, 0x810f);
-+	rtl_w1w0_phy(tp, 0x14, 0x1d00, 0xe200);
-+	rtl_writephy(tp, 0x13, 0x8111);
-+	rtl_w1w0_phy(tp, 0x14, 0xf500, 0x0a00);
-+	rtl_writephy(tp, 0x13, 0x8113);
-+	rtl_w1w0_phy(tp, 0x14, 0x6100, 0x9e00);
-+	rtl_writephy(tp, 0x13, 0x8115);
-+	rtl_w1w0_phy(tp, 0x14, 0x9200, 0x6d00);
-+	rtl_writephy(tp, 0x13, 0x810e);
-+	rtl_w1w0_phy(tp, 0x14, 0x0400, 0xfb00);
-+	rtl_writephy(tp, 0x13, 0x810c);
-+	rtl_w1w0_phy(tp, 0x14, 0x7c00, 0x8300);
-+	rtl_writephy(tp, 0x13, 0x810b);
-+	rtl_w1w0_phy(tp, 0x14, 0x5a00, 0xa500);
-+
-+	/* Channel Estimation: 100 */
-+	rtl_writephy(tp, 0x1f, 0x0a43);
-+	rtl_writephy(tp, 0x13, 0x80d1);
-+	rtl_w1w0_phy(tp, 0x14, 0xff00, 0x0000);
-+	rtl_writephy(tp, 0x13, 0x80cd);
-+	rtl_w1w0_phy(tp, 0x14, 0x9e00, 0x6100);
-+	rtl_writephy(tp, 0x13, 0x80d3);
-+	rtl_w1w0_phy(tp, 0x14, 0x0e00, 0xf100);
-+	rtl_writephy(tp, 0x13, 0x80d5);
-+	rtl_w1w0_phy(tp, 0x14, 0xca00, 0x3500);
-+	rtl_writephy(tp, 0x13, 0x80d7);
-+	rtl_w1w0_phy(tp, 0x14, 0x8400, 0x7b00);
-+
-+	rtl_writephy(tp, 0x1f, 0x0000);
++	pm_runtime_enable(x->dev);
 +}
 +
- static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
- {
- 	static const struct phy_reg phy_reg_init[] = {
-@@ -3624,6 +3708,9 @@ static void rtl_hw_phy_config(struct net_device *dev)
- 	case RTL_GIGA_MAC_VER_40:
- 		rtl8168g_1_hw_phy_config(tp);
- 		break;
-+	case RTL_GIGA_MAC_VER_42:
-+		rtl8168g_2_hw_phy_config(tp);
-+		break;
- 
- 	case RTL_GIGA_MAC_VER_41:
- 	default:
-@@ -3832,6 +3919,7 @@ static void rtl_init_mdio_ops(struct rtl8169_private *tp)
- 		break;
- 	case RTL_GIGA_MAC_VER_40:
- 	case RTL_GIGA_MAC_VER_41:
-+	case RTL_GIGA_MAC_VER_42:
- 		ops->write	= r8168g_mdio_write;
- 		ops->read	= r8168g_mdio_read;
- 		break;
-@@ -3859,6 +3947,7 @@ static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_39:
- 	case RTL_GIGA_MAC_VER_40:
- 	case RTL_GIGA_MAC_VER_41:
-+	case RTL_GIGA_MAC_VER_42:
- 		RTL_W32(RxConfig, RTL_R32(RxConfig) |
- 			AcceptBroadcast | AcceptMulticast | AcceptMyPhys);
- 		break;
-@@ -4121,6 +4210,7 @@ static void rtl_init_pll_power_ops(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_38:
- 	case RTL_GIGA_MAC_VER_40:
- 	case RTL_GIGA_MAC_VER_41:
-+	case RTL_GIGA_MAC_VER_42:
- 		ops->down	= r8168_pll_power_down;
- 		ops->up		= r8168_pll_power_up;
- 		break;
-@@ -4165,6 +4255,7 @@ static void rtl_init_rxcfg(struct rtl8169_private *tp)
- 		break;
- 	case RTL_GIGA_MAC_VER_40:
- 	case RTL_GIGA_MAC_VER_41:
-+	case RTL_GIGA_MAC_VER_42:
- 		RTL_W32(RxConfig, RX128_INT_EN | RX_DMA_BURST | RX_EARLY_OFF);
- 		break;
- 	default:
-@@ -4323,6 +4414,7 @@ static void rtl_init_jumbo_ops(struct rtl8169_private *tp)
- 	 */
- 	case RTL_GIGA_MAC_VER_40:
- 	case RTL_GIGA_MAC_VER_41:
-+	case RTL_GIGA_MAC_VER_42:
- 	default:
- 		ops->disable	= NULL;
- 		ops->enable	= NULL;
-@@ -4430,6 +4522,7 @@ static void rtl8169_hw_reset(struct rtl8169_private *tp)
- 	           tp->mac_version == RTL_GIGA_MAC_VER_37 ||
- 	           tp->mac_version == RTL_GIGA_MAC_VER_40 ||
- 	           tp->mac_version == RTL_GIGA_MAC_VER_41 ||
-+	           tp->mac_version == RTL_GIGA_MAC_VER_42 ||
- 	           tp->mac_version == RTL_GIGA_MAC_VER_38) {
- 		RTL_W8(ChipCmd, RTL_R8(ChipCmd) | StopReq);
- 		rtl_udelay_loop_wait_high(tp, &rtl_txcfg_empty_cond, 100, 666);
-@@ -5174,6 +5267,24 @@ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
- 	rtl_w1w0_eri(tp, 0x1b0, ERIAR_MASK_0011, 0x0000, 0x1000, ERIAR_EXGMAC);
- }
- 
-+static void rtl_hw_start_8168g_2(struct rtl8169_private *tp)
++static inline void usb_phy_autopm_disable(struct usb_phy *x)
 +{
-+	void __iomem *ioaddr = tp->mmio_addr;
-+	static const struct ephy_info e_info_8168g_2[] = {
-+		{ 0x00, 0x0000,	0x0008 },
-+		{ 0x0c, 0x3df0,	0x0200 },
-+		{ 0x19, 0xffff,	0xfc00 },
-+		{ 0x1e, 0xffff,	0x20eb }
-+	};
++	if (!x || !x->dev) {
++		dev_err(x->dev, "no PHY or attached device available\n");
++		return;
++	}
 +
-+	rtl_hw_start_8168g_1(tp);
-+
-+	/* disable aspm and clock request before access ephy */
-+	RTL_W8(Config2, RTL_R8(Config2) & ~ClkReqEn);
-+	RTL_W8(Config5, RTL_R8(Config5) & ~ASPM_en);
-+	rtl_ephy_init(tp, e_info_8168g_2, ARRAY_SIZE(e_info_8168g_2));
++	pm_runtime_disable(x->dev);
 +}
 +
- static void rtl_hw_start_8168(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
-@@ -5279,6 +5390,9 @@ static void rtl_hw_start_8168(struct net_device *dev)
- 	case RTL_GIGA_MAC_VER_41:
- 		rtl_hw_start_8168g_1(tp);
- 		break;
-+	case RTL_GIGA_MAC_VER_42:
-+		rtl_hw_start_8168g_2(tp);
-+		break;
- 
- 	default:
- 		printk(KERN_ERR PFX "%s: unknown chipset (mac_version = %d).\n",
-@@ -6766,6 +6880,7 @@ static void rtl_hw_initialize(struct rtl8169_private *tp)
- 	switch (tp->mac_version) {
- 	case RTL_GIGA_MAC_VER_40:
- 	case RTL_GIGA_MAC_VER_41:
-+	case RTL_GIGA_MAC_VER_42:
- 		rtl_hw_init_8168g(tp);
- 		break;
- 
++static inline int usb_phy_autopm_get(struct usb_phy *x)
++{
++	if (!x || !x->dev) {
++		dev_err(x->dev, "no PHY or attached device available\n");
++		return -ENODEV;
++	}
++
++	return pm_runtime_get(x->dev);
++}
++
++static inline int usb_phy_autopm_get_sync(struct usb_phy *x)
++{
++	if (!x || !x->dev) {
++		dev_err(x->dev, "no PHY or attached device available\n");
++		return -ENODEV;
++	}
++
++	return pm_runtime_get_sync(x->dev);
++}
++
++static inline int usb_phy_autopm_put(struct usb_phy *x)
++{
++	if (!x || !x->dev) {
++		dev_err(x->dev, "no PHY or attached device available\n");
++		return -ENODEV;
++	}
++
++	return pm_runtime_put(x->dev);
++}
++
++static inline int usb_phy_autopm_put_sync(struct usb_phy *x)
++{
++	if (!x || !x->dev) {
++		dev_err(x->dev, "no PHY or attached device available\n");
++		return -ENODEV;
++	}
++
++	return pm_runtime_put_sync(x->dev);
++}
++
++static inline void usb_phy_autopm_allow(struct usb_phy *x)
++{
++	if (!x || !x->dev) {
++		dev_err(x->dev, "no PHY or attached device available\n");
++		return;
++	}
++
++	pm_runtime_allow(x->dev);
++}
++
++static inline void usb_phy_autopm_forbid(struct usb_phy *x)
++{
++	if (!x || !x->dev) {
++		dev_err(x->dev, "no PHY or attached device available\n");
++		return;
++	}
++
++	pm_runtime_forbid(x->dev);
++}
++
++static inline int usb_phy_autopm_set_active(struct usb_phy *x)
++{
++	if (!x || !x->dev) {
++		dev_err(x->dev, "no PHY or attached device available\n");
++		return -ENODEV;
++	}
++
++	return pm_runtime_set_active(x->dev);
++}
++
++static inline void usb_phy_autopm_set_suspended(struct usb_phy *x)
++{
++	if (!x || !x->dev) {
++		dev_err(x->dev, "no PHY or attached device available\n");
++		return;
++	}
++
++	pm_runtime_set_suspended(x->dev);
++}
++
++static inline bool usb_phy_autopm_suspended(struct usb_phy *x)
++{
++	if (!x || !x->dev) {
++		dev_err(x->dev, "no PHY or attached device available\n");
++		return 0;
++	}
++
++	return pm_runtime_suspended(x->dev);
++}
++
++static inline bool usb_phy_autopm_active(struct usb_phy *x)
++{
++	if (!x || !x->dev) {
++		dev_err(x->dev, "no PHY or attached device available\n");
++		return 0;
++	}
++
++	return pm_runtime_active(x->dev);
++}
++
++static inline int usb_phy_autopm_suspend(struct usb_phy *x)
++{
++	if (!x || !x->dev) {
++		dev_err(x->dev, "no PHY or attached device available\n");
++		return -ENODEV;
++	}
++
++	return pm_runtime_suspend(x->dev);
++}
++
++static inline int usb_phy_autopm_resume(struct usb_phy *x)
++{
++	if (!x || !x->dev) {
++		dev_err(x->dev, "no PHY or attached device available\n");
++		return -ENODEV;
++	}
++
++	return pm_runtime_resume(x->dev);
++}
++
+ #endif /* __LINUX_USB_PHY_H */
 -- 
-1.8.1
+1.7.6.5
 
