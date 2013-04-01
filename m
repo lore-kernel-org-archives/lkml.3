@@ -1,150 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897Ab3DAIBN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 04:01:13 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:41513 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab3DAIBM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 04:01:12 -0400
-Date: Mon, 1 Apr 2013 04:00:27 -0400 (EDT)
-From: Zhouping Liu <zliu@redhat.com>
-To: Andrea Arcangeli <aarcange@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Amos Kong <akong@redhat.com>
-Message-ID: <383590596.664138.1364803227470.JavaMail.root@redhat.com>
-In-Reply-To: <1207916095.642011.1364800448075.JavaMail.root@redhat.com>
-Subject: THP: AnonHugePages in /proc/[pid]/smaps is correct or not?
+	id S1758289Ab3DAIXI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 04:23:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61577 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757787Ab3DAIXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 04:23:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,385,1363158000"; 
+   d="scan'208";a="310414691"
+Date: Mon, 1 Apr 2013 11:27:17 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, grant.likely@secretlab.ca,
+        broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] ACPI / SPI: Use parent's ACPI_HANDLE() in
+ acpi_register_spi_devices()
+Message-ID: <20130401082717.GK21804@intel.com>
+References: <2747891.0orCNBJG8v@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF17 (Linux)/8.0.3_GA_5664)
-Thread-Topic: AnonHugePages in /proc/[pid]/smaps is correct or not?
-Thread-Index: XwswPDG4DyQ4aShL0QozGDI+OoiLOQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2747891.0orCNBJG8v@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, Apr 01, 2013 at 02:21:08AM +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> The ACPI handle of struct spi_master's dev member should not be
+> set, because this causes that struct spi_master to be associated
+> with the ACPI device node corresponding to its parent as the
+> second "physical_device", which is incorrect (this happens during
+> the registration of struct spi_master).  Consequently,
+> acpi_register_spi_devices() should use the ACPI handle of the
+> parent of the struct spi_master it is called for rather than that
+> struct spi_master's ACPI handle (which should be NULL).
+> 
+> Make that happen and modify the spi-pxa2xx driver, which currently is
+> the only driver for ACPI-enumerated SPI controller chips, not to set
+> the ACPI handle for the struct spi_master it creates.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-I found THP can't correctly distinguish one anonymous hugepage map.
-
-1. when /sys/kernel/mm/transparent_hugepage/enabled is 'always', the
-   amount of THP always is one less.
-
-   Testing code:
----- snip --------
-unsigned long hugepagesize = (1UL << 21);
-
-int main()
-{
-	void *addr;
-	int i;
-
-	printf("pid is %d\n", getpid());
-
-	for (i = 0; i < 5; i++) {
-		addr = mmap(NULL, hugepagesize, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
-
-		if (addr == MAP_FAILED) {
-			perror("mmap");
-			return -1;
-		}
-
-		memset(addr, i, hugepagesize);
-	}
-
-	sleep(50);
-
-	return 0;
-}
------- snip ----------
-
-the /proc/[pid]/smaps show that Anonymous is 10240kB but AnonHugePages is 8192Kb, one THP less:
------ snip --------
-7f59ccc01000-7f59cd601000 rw-p 00000000 00:00 0
-Size:              10240 kB
-Rss:               10240 kB
-Pss:               10240 kB
-Shared_Clean:          0 kB
-Shared_Dirty:          0 kB
-Private_Clean:         0 kB
-Private_Dirty:     10240 kB
-Referenced:        10240 kB
-Anonymous:         10240 kB
-AnonHugePages:      8192 kB
-Swap:                  0 kB
-KernelPageSize:        4 kB
-MMUPageSize:           4 kB
-Locked:                0 kB
-VmFlags: rd wr mr mw me ac hg
-------- sinp ---------
-
-2. when /sys/kernel/mm/transparent_hugepage/enabled is 'madvise', THP can't
-   distinguish any one anonymous hugepage size:
-
-   Testing code:
--------- snip --------
-unsigned long hugepagesize = (1UL << 21);
-
-int main()
-{
-	void *addr;
-	int i;
-
-	printf("pid is %d\n", getpid());
-
-	for (i = 0; i < 5; i++) {
-		addr = mmap(NULL, hugepagesize, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
-
-		if (addr == MAP_FAILED) {
-			perror("mmap");
-			return -1;
-		}
-
-		if (madvise(addr, hugepagesize, MADV_HUGEPAGE) == -1) {
-			perror("madvise");
-			return -1;
-		}
-
-		memset(addr, i, hugepagesize);
-	}
-
-	sleep(50);
-
-	return 0;
-}
---------- snip ----------
-
-The result is that it can't find any AnonHugePages from /proc/[pid]/smaps :
--------------- snip -------
-7f0b38cd0000-7f0b396d0000 rw-p 00000000 00:00 0
-Size:              10240 kB
-Rss:               10240 kB
-Pss:               10240 kB
-Shared_Clean:          0 kB
-Shared_Dirty:          0 kB
-Private_Clean:         0 kB
-Private_Dirty:     10240 kB
-Referenced:        10240 kB
-Anonymous:         10240 kB
-AnonHugePages:         0 kB
-Swap:                  0 kB
-KernelPageSize:        4 kB
-MMUPageSize:           4 kB
-Locked:                0 kB
-VmFlags: rd wr mr mw me ac
------------ snip ----------
-
-3. when I made the address aligned with HUGEPAGESIZE using 'posix_memalign()' instead of mmap(),
-   THP perform good, and can distinguish all anonymous huge pages.
-
-my question is:
-1. all the above behaviour is right?
-2. why THP can't distinguish one naturally aligned huge page(generated by mmap())?
-
--- 
-Thanks,
-Zhouping
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
