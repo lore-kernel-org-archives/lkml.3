@@ -1,93 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759121Ab3DAJ5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 05:57:22 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:46785 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759098Ab3DAJ5S (ORCPT
+	id S1757630Ab3DAJ5e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 05:57:34 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:59658 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759136Ab3DAJ5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 05:57:18 -0400
+	Mon, 1 Apr 2013 05:57:31 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 To: mtosatti@redhat.com
 Cc: gleb@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH v2 6/6] KVM: MMU: init kvm generation close to mmio wrap-around value
-Date: Mon,  1 Apr 2013 17:56:49 +0800
-Message-Id: <1364810209-25954-7-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v2 1/6] KVM: MMU: retain more available bits on mmio spte
+Date: Mon,  1 Apr 2013 17:56:44 +0800
+Message-Id: <1364810209-25954-2-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1364810209-25954-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 References: <1364810209-25954-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040109-2000-0000-0000-00000B90A924
+x-cbid: 13040109-1618-0000-0000-0000039B290E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Then it has chance to trigger mmio generation number wrap-around
+Let mmio spte only use bit62 and bit63 on upper 32 bits, then bit 52 ~ bit 61
+can be used for other purposes
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/mmu.c              |    8 ++++++++
- virt/kvm/kvm_main.c             |    6 ++++++
- 3 files changed, 15 insertions(+), 0 deletions(-)
+ arch/x86/kvm/vmx.c |    4 ++--
+ arch/x86/kvm/x86.c |    8 +++++++-
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 6c1e642..4e1f7cb 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -767,6 +767,7 @@ void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
- 				     struct kvm_memory_slot *slot,
- 				     gfn_t gfn_offset, unsigned long mask);
- void kvm_mmu_zap_all(struct kvm *kvm);
-+void kvm_arch_init_generation(struct kvm *kvm);
- void kvm_mmu_invalid_mmio_sptes(struct kvm *kvm);
- unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm);
- void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages);
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index d314e21..dcc059c 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -4279,6 +4279,14 @@ restart:
- 	spin_unlock(&kvm->mmu_lock);
- }
- 
-+void kvm_arch_init_generation(struct kvm *kvm)
-+{
-+	mutex_lock(&kvm->slots_lock);
-+	/* It is easier to trigger mmio generation-number wrap-around. */
-+	kvm_memslots(kvm)->generation = MMIO_MAX_GEN - 13;
-+	mutex_unlock(&kvm->slots_lock);
-+}
-+
- void kvm_mmu_invalid_mmio_sptes(struct kvm *kvm)
- {
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 03f5746..915ef56 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -3983,10 +3983,10 @@ static void ept_set_mmio_spte_mask(void)
  	/*
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index ff71541..d21694a 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -459,6 +459,10 @@ static void kvm_init_memslots_id(struct kvm *kvm)
- 		slots->id_to_index[i] = slots->memslots[i].id = i;
+ 	 * EPT Misconfigurations can be generated if the value of bits 2:0
+ 	 * of an EPT paging-structure entry is 110b (write/execute).
+-	 * Also, magic bits (0xffull << 49) is set to quickly identify mmio
++	 * Also, magic bits (0x3ull << 62) is set to quickly identify mmio
+ 	 * spte.
+ 	 */
+-	kvm_mmu_set_mmio_spte_mask(0xffull << 49 | 0x6ull);
++	kvm_mmu_set_mmio_spte_mask((0x3ull << 62) | 0x6ull);
  }
  
-+void __attribute__((weak)) kvm_arch_init_generation(struct kvm *kvm)
-+{
-+}
+ /*
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 9ce99ed..12ad5b5 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5194,7 +5194,13 @@ static void kvm_set_mmio_spte_mask(void)
+ 	 * Set the reserved bits and the present bit of an paging-structure
+ 	 * entry to generate page fault with PFER.RSV = 1.
+ 	 */
+-	mask = ((1ull << (62 - maxphyaddr + 1)) - 1) << maxphyaddr;
++	 /* Mask the reserved physical address bits. */
++	mask = ((1ull << (51 - maxphyaddr + 1)) - 1) << maxphyaddr;
 +
- static struct kvm *kvm_create_vm(unsigned long type)
- {
- 	int r, i;
-@@ -505,6 +509,8 @@ static struct kvm *kvm_create_vm(unsigned long type)
- 	mutex_init(&kvm->slots_lock);
- 	atomic_set(&kvm->users_count, 1);
++	/* Bit 62 is always reserved for 32bit host. */
++	mask |= 0x3ull << 62;
++
++	/* Set the present bit. */
+ 	mask |= 1ull;
  
-+	kvm_arch_init_generation(kvm);
-+
- 	r = kvm_init_mmu_notifier(kvm);
- 	if (r)
- 		goto out_err;
+ #ifdef CONFIG_X86_64
 -- 
 1.7.7.6
 
