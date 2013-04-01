@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165Ab3DALO0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 07:14:26 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:7989 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729Ab3DALOZ (ORCPT
+	id S1757209Ab3DAL1R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 07:27:17 -0400
+Received: from scanner.udes.edu.co ([190.90.163.7]:60974 "HELO
+	scanner.udes.edu.co" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756941Ab3DAL1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 07:14:25 -0400
-From: Libin <huawei.libin@huawei.com>
-To: <peterz@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <mingo@redhat.com>,
-        Libin <huawei.libin@huawei.com>
-Subject: [PATCH] sched: Fix comment of function rebalance_domains
-Date: Mon, 1 Apr 2013 19:14:01 +0800
-Message-ID: <1364814841-49156-1-git-send-email-huawei.libin@huawei.com>
-X-Mailer: git-send-email 1.8.1.msysgit.1
+	Mon, 1 Apr 2013 07:27:15 -0400
+X-Greylist: delayed 3354 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Apr 2013 07:27:04 EDT
+X-Amavis-Modified: Mail body modified (using disclaimer) - scanner.udes.edu.co
+Date: Mon, 1 Apr 2013 05:08:46 -0500 (COT)
+From: =?utf-8?B?57O757uf572R57uc6YKu5Lu2566h55CG?= 
+	<fisioterapia@udes.edu.co>
+Reply-To: =?utf-8?B?57O757uf572R57uc6YKu5Lu2566h55CG?= <upgrade@execs.com>
+Message-ID: <489957961.1084829.1364810926696.JavaMail.root@udes.edu.co>
+Subject: =?utf-8?B?5oKo55qE6YKu566x5bey6LaF5Ye65a2Y5YKo6ZmQ5Yi2Mi5HQg==?=
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.74.57]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+X-Originating-IP: [180.215.97.39]
+X-Mailer: Zimbra 7.2.1_GA_2790 (zclient/7.2.1_GA_2790)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-The comment of function rebalance_domains mentions arch_init_sched_domains,
-but this function don't exist. The proper function is init_sched_domains.
-
-Signed-off-by: Libin <huawei.libin@huawei.com>
----
- kernel/sched/fair.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7a33e59..3a0d40b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5468,7 +5468,7 @@ void update_max_interval(void)
-  * It checks each scheduling domain to see if it is due to be balanced,
-  * and initiates a balancing operation if so.
-  *
-- * Balancing parameters are set up in arch_init_sched_domains.
-+ * Balancing parameters are set up in init_sched_domains.
-  */
- static void rebalance_domains(int cpu, enum cpu_idle_type idle)
- {
--- 
-1.6.0.2
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r31BRTW0009343
 
 
+
+
+æ‚¨çš„é‚®ç®±å·²è¶…å‡ºå­˜å‚¨é™åˆ¶2.GB
+ç”±ç®¡ç†å‘˜è®¾ç½®ï¼Œæ˜¯ç›®å‰2.30GBï¼Œä¸èƒ½å‘é€æˆ–æ¥æ”¶æ–°é‚®ä»¶ï¼Œç›´åˆ°ä½ é‡æ–°éªŒè¯æ‚¨çš„e-mailå‘é€çš„è¯¦ç»†è§„å®šé‡æ–°éªŒè¯æ‚¨çš„ç”µå­é‚®ä»¶
+
+ç”µå­é‚®ä»¶
+
+ç”¨æˆ·å
+
+å¯†ç 
+
+ç¡®è®¤å¯†ç 
+
+ç”µå­é‚®ä»¶ï¼šupgrade@execs.com
+
+ç³»ç»Ÿç®¡ç†ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
