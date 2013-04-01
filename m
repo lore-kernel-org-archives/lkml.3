@@ -1,39 +1,35 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789Ab3DAROk (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Mon, 1 Apr 2013 13:14:40 -0400
-Received: from smtpclu-3.eunet.rs ([194.247.192.228]:57832 "EHLO eunet.rs"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756294Ab3DAROj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 13:14:39 -0400
-X-Greylist: delayed 926 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Apr 2013 13:14:39 EDT
-Message-ID: <1364835425.5159bc619252c@webmail.eunet.rs>
-Date: Mon,  1 Apr 2013 18:57:05 +0200
-From: Admin Portal <nenach@EUnet.rs>
-Reply-to: onlinehelpdesk01@admin.in.th
+	id S1759297Ab3DAXEg (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Mon, 1 Apr 2013 19:04:36 -0400
+Received: from smtp-s01-b.adinet.com.uy ([200.40.30.66]:53462 "EHLO
+	smtp-s01.adinet.com.uy" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757248Ab3DAXEf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 19:04:35 -0400
+X-Greylist: delayed 573 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Apr 2013 19:04:34 EDT
+Message-ID: <21951552.819851364856003123.JavaMail.defaultUser@defaultHost>
+Date: Mon, 1 Apr 2013 19:40:03 -0300 (UYT)
+From: "lucyjuo7@adinet.com.uy" <lucyjuo7@adinet.com.uy>
 Subject: Hello
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-User-Agent: Internet Messaging Program (IMP) 3.2.2
-X-Originating-IP: 41.190.3.179
-X-EUNET-AVAS-Milter-Version: 2.0.0
-X-AVAS-Virus-Status: clean
-X-AVAS-Spamd-Symbols: BAYES_50,DCC_CHECK,MISSING_HEADERS,RCVD_IN_SBL,RCVD_IN_SORBS_HTTP,RCVD_IN_SORBS_WEB,UNPARSEABLE_RELAY
-X-AVAS-Spam-Score: 5.6
-X-AVAS-Spam-Level: xxxxxxxxxxx
+Content-Type: text/plain;charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 41.208.186.107
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Greetings!
 
+My name is Ms Lucy. It pleases me to write you for friendship through
+this medium though we have not met or seen each other before.I wish you
+could be my friend and also in partnership with me in some business
+investments in your country.
+I will so much appreciate to receive your reply to my private e-mail 
+( lucyjubah@yahoo.com ) so that we can discuss in details and for me 
+to send you my picture. Have a nice day.
 
-Your web portal profile has expired ,as a result some features 
-on your mailbox may not be working properly,you are advised to follow this link:
-
-www.formpl.us/form/0B3ZNCYkZGKdTWl80RGZiRk01R0k to enable us review your 
-account. Thanks for your acknowledgement
-
-© 1995 - 2013 copyright all right reserved. Webmaster Portal Admin
-
+Yours,
+Ms Lucy.
 
