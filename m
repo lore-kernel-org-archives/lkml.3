@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372Ab3DAMq7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 08:46:59 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52041 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756417Ab3DAMqj (ORCPT
+	id S1757401Ab3DAMyM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 08:54:12 -0400
+Received: from mga14.intel.com ([143.182.124.37]:59477 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757197Ab3DAMyK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 08:46:39 -0400
-X-AuditID: 9c93016f-b7b6aae000000e9c-20-515981adaed1
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 2/3] tracing: Fix off-by-one on allocating stat->pages
-Date: Mon,  1 Apr 2013 21:46:24 +0900
-Message-Id: <1364820385-32027-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1364820385-32027-1-git-send-email-namhyung@kernel.org>
-References: <1364820385-32027-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 1 Apr 2013 08:54:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,387,1363158000"; 
+   d="scan'208";a="221350615"
+From: "Du, ChangbinX" <changbinx.du@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+CC: "Du, ChangbinX" <changbinx.du@intel.com>
+Subject: question: will irq abort suspend process during pm is calling
+ suspend() funtion of device driver?
+Thread-Topic: question: will irq abort suspend process during pm is calling
+ suspend() funtion of device driver?
+Thread-Index: Ac4u1/3SkWQiYcJ3Srycc3Bnf5uxXA==
+Date: Mon, 1 Apr 2013 12:54:06 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563AAF47F2@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hello, everyone:
+I am not familiar with PM module. I know if a device cannot enter suspend state, suspend will be aborted. 
+But as the title descripted, Can anyone tell me if any interrupt event can make suspend process aborted?
+I have analysis a piece of log and it seems the irq doesn't abort the process.
 
-The first page was allocated separately, so no need to start from 0.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- kernel/trace/ftrace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 65bc47472b1b..d38ad7145f2f 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -676,7 +676,7 @@ int ftrace_profile_pages_init(struct ftrace_profile_stat *stat)
- 
- 	pages = DIV_ROUND_UP(functions, PROFILES_PER_PAGE);
- 
--	for (i = 0; i < pages; i++) {
-+	for (i = 1; i < pages; i++) {
- 		pg->next = (void *)get_zeroed_page(GFP_KERNEL);
- 		if (!pg->next)
- 			goto out_free;
--- 
-1.7.11.7
+Thanks!
+Du, Changbin
 
