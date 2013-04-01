@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759353Ab3DAXH6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 19:07:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36150 "EHLO bear.ext.ti.com"
+	id S1759382Ab3DAXKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 19:10:40 -0400
+Received: from ozlabs.org ([203.10.76.45]:36687 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757870Ab3DAXH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 19:07:57 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Axel Lin <axel.lin@ingics.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/2] regulator: lp8788: Remove lp8788_dldo_id and
- lp8788_aldo_id arrays
-Thread-Topic: [PATCH 1/2] regulator: lp8788: Remove lp8788_dldo_id and
- lp8788_aldo_id arrays
-Thread-Index: AQHOLu1Ti11+EiY3ekGAq3BoioYuqpjB/CbQ
-Date: Mon, 1 Apr 2013 23:07:45 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E4A7BB@DQHE02.ent.ti.com>
-References: <1364829984.17176.1.camel@phoenix>
-In-Reply-To: <1364829984.17176.1.camel@phoenix>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.185.62]
-Content-Type: text/plain; charset="utf-8"
+	id S1757700Ab3DAXKj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 19:10:39 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: <torvalds@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>
+Cc: Amit Shah <amit.shah@redhat.com>
+Cc: Asias He <asias@redhat.com>
+Cc: FuXiangChun <xfu@redhat.com>
+Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Cc: Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PULL] virtio fixes
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 02 Apr 2013 09:38:27 +1030
+Message-ID: <871uat7st0.fsf@rustcorp.com.au>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r31N7xfr013554
 
-> The id for DLDOx matches the entries in enum lp8788_ldo_id and it's
-> easy to
-> calculate the id for ALDOx. Thus remove lp8788_dldo_id and
-> lp8788_aldo_id
-> arrays.
+The following changes since commit e84e7a56a3aa2963db506299e29a5f3f09377f9b:
 
-Both patches look good, thanks!
+  virtio: rng: disallow multiple device registrations, fixes crashes (2013-03-08 11:30:43 +1100)
 
-Acked-by: Milo Kim <milo.kim@ti.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/fixes-for-linus
+
+for you to fetch changes up to 9ba5c80b1aea8648a3efe5f22dc1f7cacdfbeeb8:
+
+  virtio: console: add locking around c_ovq operations (2013-03-30 14:25:46 +1030)
+
+----------------------------------------------------------------
+One reversion, a tiny leak fix, and a cc:stable locking fix, in two parts.
+
+Thanks,
+Rusty.
+
+----------------------------------------------------------------
+Amit Shah (2):
+      virtio: console: rename cvq_lock to c_ivq_lock
+      virtio: console: add locking around c_ovq operations
+
+Satoru Takeuchi (1):
+      hw_random: free rng_buffer at module exit
+
+Sjur BrÃƒÂ¦ndeland (1):
+      Revert "virtio_console: Initialize guest_connected=true for rproc_serial"
+
+ drivers/char/hw_random/core.c |    9 +++++++++
+ drivers/char/virtio_console.c |   44 ++++++++++++++++++++++++++++-------------
+ 2 files changed, 39 insertions(+), 14 deletions(-)
