@@ -1,41 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758687Ab3DAPQV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 11:16:21 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:60077 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758434Ab3DAPQT (ORCPT
+	id S1758710Ab3DAPS6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 11:18:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50433 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758471Ab3DAPS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 11:16:19 -0400
+	Mon, 1 Apr 2013 11:18:57 -0400
+Message-ID: <5159A559.4000808@canonical.com>
+Date: Mon, 01 Apr 2013 11:18:49 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <1364817485-19676-1-git-send-email-anatol.pomozov@gmail.com>
-References: <1364817485-19676-1-git-send-email-anatol.pomozov@gmail.com>
-Date: Mon, 1 Apr 2013 08:16:17 -0700
-X-Google-Sender-Auth: KjmD7zJM19zYUQirr3bnOlZqd1M
-Message-ID: <CA+55aFzqYkX27E8R7Bu8pvn3xO+hKrgMEC7ec5gDz4kr1JbVtQ@mail.gmail.com>
-Subject: Re: [PATCH] loop: prevent bdev freeing while device in use
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Anatol Pomozov <anatol.pomozov@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Salman Qazi <sqazi@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, yan@linux.vnet.ibm.com
-Content-Type: text/plain; charset=UTF-8
+To: "John W. Linville" <linville@tuxdriver.com>
+CC: phaber@broadcom.com, arend@broadcom.com, pieterpg@broadcom.com,
+        meuleman@broadcom.com, LKML <linux-kernel@vger.kernel.org>,
+        brudley@broadcom.com, frankyl@broadcom.com,
+        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org
+Subject: Re: [v3.8, v3.9] [Regression] brcmsmac: move PHY functions
+References: <5155F107.6050408@canonical.com> <20130401144225.GC21859@tuxdriver.com>
+In-Reply-To: <20130401144225.GC21859@tuxdriver.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 1, 2013 at 4:58 AM, Anatol Pomozov <anatol.pomozov@gmail.com> wrote:
+On 04/01/2013 10:42 AM, John W. Linville wrote:
+> On Fri, Mar 29, 2013 at 03:52:39PM -0400, Joseph Salisbury wrote:
+>> Hi Piotr,
+>>
+>> A bug was opened against the Ubuntu kernel[0].  After a kernel
+>> bisect, it was found that reverting the following commit resolved
+>> this bug:
+>>
+>> commit b83576341664957978e125f5f5db2f15496980b1
+>> Author: Piotr Haber <phaber@broadcom.com>
+>> Date:   Wed Nov 28 21:44:09 2012 +0100
+>>
+>>      brcmsmac: move PHY functions
+>>
+>> The regression was introduced as of v3.8-rc1.  The regression still
+>> exists in v3.9-rc4.
+>>
+>> I see that you are the author of this patch, so I wanted to run this
+>> by you.  I was thinking of requesting a revert for v3.9, but I
+>> wanted to get your feedback first.
+>>
+>>
+>> Thanks,
+>>
+>> Joe
+>>
+>> [0] http://pad.lv/1131914
+> I recently reverted b6fc28a1, which is the follow-on to that patch.
+> The revert is _not_ in 3.9-rc5.
 >
-> To prevent use-after-free we need to hold device inode in loop_set_fd()
-> and put it later in loop_clr_fd().
+> Could you try reverting that patch instead?  Does that fix the issue
+> for you?
+>
+> John
 
-Is there something that guarantees that there's only one loop_set_fd()
-and one paired loop_clr_fd()?
+Hi John,
 
-IOW, what protects us from somebody doing loop_clr_fd() on a device
-that hasn't been set up yet, or doing multiple loop_set_fd calls?
+Thanks for the response.
 
-I suspect the "lo->lo_state" is part of the answer, but it's very much
-not obvious, and I'd want this to be explicitly explained.
+Yes, reverting commit b6fc28a1 does resolve this bug.  That is the 
+appropriate fix for this issue.  Thanks for the assistance.
 
-              Linus
+Thanks,
+
+Joe
+
+
+
