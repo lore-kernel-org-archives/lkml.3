@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759488Ab3DATUL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 15:20:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51582 "EHLO mx1.redhat.com"
+	id S1759509Ab3DATUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 15:20:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38736 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759372Ab3DATUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 15:20:06 -0400
+	id S1759370Ab3DATUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 15:20:33 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -16,16 +16,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 04/27] perf tools: Move programs check into config/Makefile
-Date: Mon,  1 Apr 2013 21:18:27 +0200
-Message-Id: <1364843930-17974-5-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 12/27] perf tools: Move libperl check config into config/Makefile
+Date: Mon,  1 Apr 2013 21:18:35 +0200
+Message-Id: <1364843930-17974-13-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
 References: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving programs check into config/Makefile.
+Moving libperl check config into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -38,83 +38,69 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile        | 24 ++++++++----------------
- tools/perf/config/Makefile | 10 ++++++++++
- 2 files changed, 18 insertions(+), 16 deletions(-)
+ tools/perf/Makefile        | 20 +++-----------------
+ tools/perf/config/Makefile | 21 +++++++++++++++++++++
+ 2 files changed, 24 insertions(+), 17 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 032e099..8dd3320 100644
+index 8d3dd8e..972aa94 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -58,6 +58,14 @@ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
- 
-+RM      = rm -f
-+MKDIR   = mkdir
-+FIND    = find
-+INSTALL = install
-+FLEX    = flex
-+BISON   = bison
-+STRIP  ?= strip
-+
- ifeq ($(filter clean tags,$(MAKECMDGOALS)),)
- include config/Makefile
+@@ -518,23 +518,9 @@ ifndef NO_GTK2
+ 	LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
  endif
-@@ -88,7 +96,6 @@ CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- ALL_LDFLAGS = $(LDFLAGS)
--STRIP ?= strip
  
- # Among the variables below, these:
- #   perfexecdir
-@@ -125,13 +132,6 @@ lib = lib
- 
- export prefix bindir sharedir sysconfdir
- 
--RM = rm -f
--MKDIR = mkdir
--FIND = find
--INSTALL = install
--FLEX = flex
--BISON= bison
+-ifdef NO_LIBPERL
+-	BASIC_CFLAGS += -DNO_LIBPERL
+-else
+-       PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
+-       PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
+-       PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
+-	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
+-	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
 -
- # sparse is architecture-neutral, which means that we need to tell it
- # explicitly what architecture to check for. Fix this up for yours..
- SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
-@@ -140,14 +140,6 @@ ifneq ($(MAKECMDGOALS),clean)
- ifneq ($(MAKECMDGOALS),tags)
- -include config/feature-tests.mak
- 
--ifeq ($(call get-executable,$(FLEX)),)
--	dummy := $(error Error: $(FLEX) is missing on this system, please install it)
--endif
--
--ifeq ($(call get-executable,$(BISON)),)
--	dummy := $(error Error: $(BISON) is missing on this system, please install it)
--endif
--
- ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
- 	CFLAGS := $(CFLAGS) -fstack-protector-all
+-	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
+-		BASIC_CFLAGS += -DNO_LIBPERL
+-	else
+-               ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
+-               EXTLIBS += $(PERL_EMBED_LIBADD)
+-		LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
+-		LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
+-	endif
++ifndef NO_LIBPERL
++	LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
++	LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
  endif
+ 
+ disable-python = $(eval $(disable-python_code))
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index fe317c2..04bf8ac 100644
+index 6fc2089..2c9e0a5 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -32,3 +32,13 @@ endif
- ifeq ($(NO_PERF_REGS),0)
-         BASIC_CFLAGS += -DHAVE_PERF_REGS
+@@ -240,3 +240,24 @@ ifndef NO_GTK2
+ 		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
+ 	endif
  endif
 +
-+-include config/feature-tests.mak
++grep-libs  = $(filter -l%,$(1))
++strip-libs = $(filter-out -l%,$(1))
 +
-+ifeq ($(call get-executable,$(FLEX)),)
-+	dummy := $(error Error: $(FLEX) is missing on this system, please install it)
-+endif
++ifdef NO_LIBPERL
++	BASIC_CFLAGS += -DNO_LIBPERL
++else
++	PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
++	PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
++	PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
++	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
++	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
 +
-+ifeq ($(call get-executable,$(BISON)),)
-+	dummy := $(error Error: $(BISON) is missing on this system, please install it)
++	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
++		BASIC_CFLAGS += -DNO_LIBPERL
++		NO_LIBPERL := 1
++	else
++		ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
++		EXTLIBS += $(PERL_EMBED_LIBADD)
++	endif
 +endif
 -- 
 1.7.11.7
