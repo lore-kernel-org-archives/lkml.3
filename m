@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759449Ab3DAThY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 15:37:24 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:57103 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758763Ab3DAThX (ORCPT
+	id S1759467Ab3DATiv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 15:38:51 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:1455 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758854Ab3DATit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 15:37:23 -0400
-Date: Mon, 1 Apr 2013 12:37:21 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: jhovold@gmail.com, Jiri Slaby <jslaby@suse.cz>, mferrell@uplogix.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: USB: mos7840: looping issue: avoid the return value overriden by
- looping
-Message-ID: <20130401193721.GA13712@kroah.com>
-References: <5158F689.5040406@asianux.com>
- <20130401030555.GA21113@kroah.com>
- <5159041F.7020608@asianux.com>
+	Mon, 1 Apr 2013 15:38:49 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VPS-5(zz98dI103dK1432Izz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dh8275bhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-WSS-ID: 0MKLD8H-02-2Z5-02
+X-M-MSG: 
+Date: Mon, 1 Apr 2013 14:38:39 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>
+CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 0/2] cpufreq: ondemand: add AMD specific powersave bias
+Message-ID: <20130401193839.GA15738@jshin-Toonie>
+References: <1364495057-14939-1-git-send-email-jacob.shin@amd.com>
+ <CAKohpokHs3pxnYx3QraEYhxqGs8KdTiomPpcbEDNgChaZDWK4A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <5159041F.7020608@asianux.com>
+In-Reply-To: <CAKohpokHs3pxnYx3QraEYhxqGs8KdTiomPpcbEDNgChaZDWK4A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 01, 2013 at 11:50:55AM +0800, Chen Gang wrote:
+On Fri, Mar 29, 2013 at 08:18:54AM +0530, Viresh Kumar wrote:
+> On 28 March 2013 23:54, Jacob Shin <jacob.shin@amd.com> wrote:
+> > This patchset adds AMD specific powersave bias function to the ondemand
+> > governor; which can be used to help ondemand governor make more power conscious
+> > frequency change decisions based on feedback from hardware (availble on AMD
+> > Family 16h and above).
+> >
+> > Hardware feedback tells software how "sensitive" to frequency changes the
+> > workloads are. CPU-bound workloads will be more sensitive -- they will
+> > perform better as frequency increases. Memory/IO-bound workloads will be less
+> > sensitive -- they will not necessarily perform better as frequnecy increases.
+> >
+> > This patchset was compared against ondemand governor without powersave bias
+> > and did not show any performance degradation on CPU-bound workloads such as
+> > kernbench and unixbench. While saving power on Memory-bound workloads such as
+> > stream.
+> >
+> > This applies to linux-pm's linux-next branch, on top of Viresh's 'Implement
+> > per policy instance of governor' V4 patchset:
+> >
+> > https://lkml.org/lkml/2013/3/27/348
+> >
+> > V2:
+> > * Added proper include files to amd_freq_sensitivity.c
+> > * Only register powersave_bias_target function pointer and not the entire
+> >   od_ops.
+> >
+> > Jacob Shin (2):
+> >   cpufreq: ondemand: allow custom powersave_bias_target function to be
+> >     registered
+> >   cpufreq: AMD "frequency sensitivity feedback" powersave bias for
+> >     ondemand governor
+> >
+> >  arch/x86/include/uapi/asm/msr-index.h  |    1 +
+> >  drivers/cpufreq/Kconfig.x86            |   10 +++
+> >  drivers/cpufreq/Makefile               |    1 +
+> >  drivers/cpufreq/amd_freq_sensitivity.c |  147 ++++++++++++++++++++++++++++++++
+> >  drivers/cpufreq/cpufreq_governor.h     |    3 +
+> >  drivers/cpufreq/cpufreq_ondemand.c     |   22 ++++-
+> >  6 files changed, 181 insertions(+), 3 deletions(-)
+> >  create mode 100644 drivers/cpufreq/amd_freq_sensitivity.c
 > 
->   inside the 'for' looping:
->     the return value 'rv' may override if not have a check in time.
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 > 
->   next checking, outside the 'for' looping:
->     can not find failure which generated during the 'for' looping
-> 
->   so need let outside know about the failure.
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  drivers/usb/serial/mos7840.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-> index a0d5ea5..13aae1e 100644
-> --- a/drivers/usb/serial/mos7840.c
-> +++ b/drivers/usb/serial/mos7840.c
-> @@ -651,7 +651,9 @@ static void mos7840_interrupt_callback(struct urb *urb)
->  					wreg = MODEM_STATUS_REGISTER;
->  					break;
->  				}
-> -				rv = mos7840_get_reg(mos7840_port, wval, wreg, &Data);
-> +				if (mos7840_get_reg(mos7840_port, wval,
-> +				    wreg, &Data) < 0)
-> +					rv = -1;
 
-Please use a "real" error value, or even better yet, use the error value
-returned from the call here.
+Hi Rafael,
 
-And please identify the driver you are modifying in the Subject: line,
-like I have changed this one to.
+If this looks okay to you,
+please commit to linux-next when you get the chance.
 
-thanks,
+Thanks!
 
-greg k-h
