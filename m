@@ -1,92 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758849Ab3DAPhN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 11:37:13 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:41351 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758667Ab3DAPhJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 11:37:09 -0400
+	id S1758844Ab3DAPir (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 11:38:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31406 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758119Ab3DAPiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 11:38:46 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, "Alasdair G. Kergon" <agk@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Mike Snitzer <msnitzer@redhat.com>,
+        Christoph Hellwig <chellwig@redhat.com>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Track block device users that created dirty pages
+References: <Pine.LNX.4.64.1303291042100.23238@file.rdu.redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 01 Apr 2013 11:38:36 -0400
+In-Reply-To: <Pine.LNX.4.64.1303291042100.23238@file.rdu.redhat.com> (Mikulas
+	Patocka's message of "Fri, 29 Mar 2013 12:08:34 -0400 (EDT)")
+Message-ID: <x491uau1csj.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1364804657-16590-1-git-send-email-jonghwa3.lee@samsung.com>
-References: <1364804657-16590-1-git-send-email-jonghwa3.lee@samsung.com>
-Date: Mon, 1 Apr 2013 21:07:08 +0530
-X-Google-Sender-Auth: 819GElSb_6xdwhMv9aKUTJexwcA
-Message-ID: <CAOh2x=nPJa0GReiN=OHLG=m4Gq51F=4VppdaQL20xi-aUa8x2Q@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/2] cpufreq: Introduce LAB cpufreq governor.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, sw0312.kim@samsung.com,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 1, 2013 at 1:54 PM, Jonghwa Lee <jonghwa3.lee@samsung.com> wrote:
-> <<Purpose>>
->  One of the problem of ondemand is that it considers the most busy
-> cpu only while doesn't care how many cpu is in busy state at the
-> moment. This may results in unnecessary power consumption, and it'll
-> be critical for the system having limited power source.
->
->  To get the best energy efficiency, LAB governor considers not only
-> idle time but also the number of idle cpus. It primarily focuses on
-> supplying adequate performance to users within the limited resource.
-> It checks the number of idle cpus then controls the maximum frequency
-> dynamically. And it also applies different frequency increasing level
-> depends on that information. In simple terms the less the number of
-> busy cpus, the better performance will be given.
->  In addition, stable system's power consumption in the busy state can
-> be achieved also with using LAB governor. This will help to manage and
-> estimate power consumption in certain system.
+Mikulas Patocka <mpatocka@redhat.com> writes:
 
-Hi Jonghwa,
+> The new semantics is: if a process did some buffered writes to the block
+> device (with write or mmap), the cache is flushed when the process
+> closes the block device. Processes that didn't do any buffered writes to
+> the device don't cause cache flush. It has these advantages:
+> * processes that don't do buffered writes (such as "lvm") don't flush
+>   other process's data.
+> * if the user runs "dd" on a block device, it is actually guaranteed
+>   that the data is flushed when "dd" exits.
 
-First of all, i should accept that i haven't got to the minute details
-about your
-patch until now but have done a broad review of it.
+Why don't applications that want data to go to disk just call fsync
+instead of relying on being the last process to have had the device
+open?
 
-There are many things that i am concerned about:
-- I don't want an additional governor to be added to cpufreq unless there is a
-very very strong reason for it. See what happened to earlier attempts:
-
-https://lkml.org/lkml/2012/2/7/504
-
-But it doesn't mean you can't get it in. :)
-
-- What the real logic behind your patchset: I haven't got it
-completely with your
-mails. So what you said is:
-
-  - The lesser the number of busy cpus: you want to run at higher freqs
-  - The more the number of busy cpus: you want to run at lower freqs
-
-But the basic idea i had about this stuff was: The more the number of
-busy cpus, the more loaded the system is, otherwise scheduler wouldn't
-have used so many cpus and so there is need to run at higher frequency
-rather than a lower one. Which would save power in a sense.. Finish work
-early and let most of the cpus enter idle state as early as possible. But
-with your solution we would run at lower frequencies and so these cpus
-will take longer to get into idle state again. This will really kill
-lot of power.
-
-Think about it.
-
-- In case you need some sort of support on this use case, why replicate ondemand
-governor again by creating another governor. I have had some hard time removing
-the amount of redundancy inside governors and you are again going towards that
-direction. Modifying ondemand governor for this response would be a
-better option.
-
-- You haven't rebased of latest code from linux-next :)
-
---
-viresh
+Cheers,
+Jeff
