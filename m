@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758578Ab3DAPQP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 11:16:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29068 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758362Ab3DAPQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 11:16:13 -0400
-Message-ID: <1364829361.2882.26.camel@bling.home>
-Subject: Re: [PATCH] PCI/VFIO: use pcie_flags_reg instead of access PCI-E
- Capabilities Register
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Hanjun Guo <guohanjun@huawei.com>, jiang.liu@huawei.com
-Date: Mon, 01 Apr 2013 09:16:01 -0600
-In-Reply-To: <1364375140-6388-1-git-send-email-wangyijing@huawei.com>
-References: <1364375140-6388-1-git-send-email-wangyijing@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758687Ab3DAPQV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 11:16:21 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:60077 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758434Ab3DAPQT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 11:16:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <1364817485-19676-1-git-send-email-anatol.pomozov@gmail.com>
+References: <1364817485-19676-1-git-send-email-anatol.pomozov@gmail.com>
+Date: Mon, 1 Apr 2013 08:16:17 -0700
+X-Google-Sender-Auth: KjmD7zJM19zYUQirr3bnOlZqd1M
+Message-ID: <CA+55aFzqYkX27E8R7Bu8pvn3xO+hKrgMEC7ec5gDz4kr1JbVtQ@mail.gmail.com>
+Subject: Re: [PATCH] loop: prevent bdev freeing while device in use
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Salman Qazi <sqazi@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, yan@linux.vnet.ibm.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-27 at 17:05 +0800, Yijing Wang wrote:
-> Currently, we use pcie_flags_reg to cache PCI-E Capabilities Register,
-> because PCI-E Capabilities Register bits are almost read-only. This patch
-> use pcie_flags_reg instead of another access PCI-E Capabilities Register.
-> 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> ---
->  drivers/vfio/pci/vfio_pci_config.c |    6 +-----
->  1 files changed, 1 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
-> index aeb00fc..afc6ca4 100644
-> --- a/drivers/vfio/pci/vfio_pci_config.c
-> +++ b/drivers/vfio/pci/vfio_pci_config.c
-> @@ -1017,13 +1017,9 @@ static int vfio_cap_len(struct vfio_pci_device *vdev, u8 cap, u8 pos)
->  		return byte;
->  	case PCI_CAP_ID_EXP:
->  		/* length based on version */
-> -		ret = pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &word);
-> -		if (ret)
-> -			return pcibios_err_to_errno(ret);
-> -
->  		vdev->extended_caps = true;
->  
-> -		if ((word & PCI_EXP_FLAGS_VERS) == 1)
-> +		if ((pdev->pcie_flags_reg & PCI_EXP_FLAGS_VERS) == 1)
+On Mon, Apr 1, 2013 at 4:58 AM, Anatol Pomozov <anatol.pomozov@gmail.com> wrote:
+>
+> To prevent use-after-free we need to hold device inode in loop_set_fd()
+> and put it later in loop_clr_fd().
 
-It looks like we should be using pcie_caps_reg(pdev) here instead of
-directly accessing pcie_flags_reg.  Thanks,
+Is there something that guarantees that there's only one loop_set_fd()
+and one paired loop_clr_fd()?
 
-Alex
+IOW, what protects us from somebody doing loop_clr_fd() on a device
+that hasn't been set up yet, or doing multiple loop_set_fd calls?
 
->  			return PCI_CAP_EXP_ENDPOINT_SIZEOF_V1;
->  		else
->  			return PCI_CAP_EXP_ENDPOINT_SIZEOF_V2;
+I suspect the "lo->lo_state" is part of the answer, but it's very much
+not obvious, and I'd want this to be explicitly explained.
 
-
-
+              Linus
