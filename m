@@ -1,72 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab3DAIAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 04:00:08 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:57324 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab3DAIAG (ORCPT
+	id S1756897Ab3DAIBN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 04:01:13 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:41513 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab3DAIBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 04:00:06 -0400
-Message-ID: <51593E81.3030800@openvz.org>
-Date: Mon, 01 Apr 2013 12:00:01 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
+	Mon, 1 Apr 2013 04:01:12 -0400
+Date: Mon, 1 Apr 2013 04:00:27 -0400 (EDT)
+From: Zhouping Liu <zliu@redhat.com>
+To: Andrea Arcangeli <aarcange@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Amos Kong <akong@redhat.com>
+Message-ID: <383590596.664138.1364803227470.JavaMail.root@redhat.com>
+In-Reply-To: <1207916095.642011.1364800448075.JavaMail.root@redhat.com>
+Subject: THP: AnonHugePages in /proc/[pid]/smaps is correct or not?
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH bugfix 3.9] PCI: Don't try to disable Bus Master on disconnected
- PCI devices
-References: <20130314144936.10073.2403.stgit@zurg>
-In-Reply-To: <20130314144936.10073.2403.stgit@zurg>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF17 (Linux)/8.0.3_GA_5664)
+Thread-Topic: AnonHugePages in /proc/[pid]/smaps is correct or not?
+Thread-Index: XwswPDG4DyQ4aShL0QozGDI+OoiLOQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BUMP. This is degradation from 3.8, so this patch must be in 3.9.
+Hi all,
 
-I still don't like this forced clearing bus-master bit. But this hack
-definitely fixes problems in kexec, so there is reason to keep it here.
+I found THP can't correctly distinguish one anonymous hugepage map.
 
-Konstantin Khlebnikov wrote:
-> This is fix for commit 7897e6022761ace7377f0f784fca059da55f5d71 from v3.9-rc1
-> ("PCI: Disable Bus Master unconditionally in pci_device_shutdown()")
-> in turn that was fix for b566a22c23327f18ce941ffad0ca907e50a53d41 from v3.5-rc1
-> ("PCI: disable Bus Master on PCI device shutdown")
->
-> Unfortunately fixing one bug uncovers another:
-> ->shutdown() callback might switch device to deep sleep state.
-> PCI config space no longer available after that.
->
-> Link: https://lkml.org/lkml/2013/3/12/529
-> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> Reported-and-Tested-by: Vivek Goyal<vgoyal@redhat.com>
-> Cc: Bjorn Helgaas<bhelgaas@google.com>
-> Cc: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
-> ---
->   drivers/pci/pci-driver.c |    5 +++--
->   1 file changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-> index 1fa1e48..79277fb 100644
-> --- a/drivers/pci/pci-driver.c
-> +++ b/drivers/pci/pci-driver.c
-> @@ -390,9 +390,10 @@ static void pci_device_shutdown(struct device *dev)
->
->   	/*
->   	 * Turn off Bus Master bit on the device to tell it to not
-> -	 * continue to do DMA
-> +	 * continue to do DMA. Don't touch devices in D3cold or unknown states.
->   	 */
-> -	pci_clear_master(pci_dev);
-> +	if (pci_dev->current_state <= PCI_D3hot)
-> +		pci_clear_master(pci_dev);
->   }
->
->   #ifdef CONFIG_PM
->
+1. when /sys/kernel/mm/transparent_hugepage/enabled is 'always', the
+   amount of THP always is one less.
 
+   Testing code:
+---- snip --------
+unsigned long hugepagesize = (1UL << 21);
+
+int main()
+{
+	void *addr;
+	int i;
+
+	printf("pid is %d\n", getpid());
+
+	for (i = 0; i < 5; i++) {
+		addr = mmap(NULL, hugepagesize, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+
+		if (addr == MAP_FAILED) {
+			perror("mmap");
+			return -1;
+		}
+
+		memset(addr, i, hugepagesize);
+	}
+
+	sleep(50);
+
+	return 0;
+}
+------ snip ----------
+
+the /proc/[pid]/smaps show that Anonymous is 10240kB but AnonHugePages is 8192Kb, one THP less:
+----- snip --------
+7f59ccc01000-7f59cd601000 rw-p 00000000 00:00 0
+Size:              10240 kB
+Rss:               10240 kB
+Pss:               10240 kB
+Shared_Clean:          0 kB
+Shared_Dirty:          0 kB
+Private_Clean:         0 kB
+Private_Dirty:     10240 kB
+Referenced:        10240 kB
+Anonymous:         10240 kB
+AnonHugePages:      8192 kB
+Swap:                  0 kB
+KernelPageSize:        4 kB
+MMUPageSize:           4 kB
+Locked:                0 kB
+VmFlags: rd wr mr mw me ac hg
+------- sinp ---------
+
+2. when /sys/kernel/mm/transparent_hugepage/enabled is 'madvise', THP can't
+   distinguish any one anonymous hugepage size:
+
+   Testing code:
+-------- snip --------
+unsigned long hugepagesize = (1UL << 21);
+
+int main()
+{
+	void *addr;
+	int i;
+
+	printf("pid is %d\n", getpid());
+
+	for (i = 0; i < 5; i++) {
+		addr = mmap(NULL, hugepagesize, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+
+		if (addr == MAP_FAILED) {
+			perror("mmap");
+			return -1;
+		}
+
+		if (madvise(addr, hugepagesize, MADV_HUGEPAGE) == -1) {
+			perror("madvise");
+			return -1;
+		}
+
+		memset(addr, i, hugepagesize);
+	}
+
+	sleep(50);
+
+	return 0;
+}
+--------- snip ----------
+
+The result is that it can't find any AnonHugePages from /proc/[pid]/smaps :
+-------------- snip -------
+7f0b38cd0000-7f0b396d0000 rw-p 00000000 00:00 0
+Size:              10240 kB
+Rss:               10240 kB
+Pss:               10240 kB
+Shared_Clean:          0 kB
+Shared_Dirty:          0 kB
+Private_Clean:         0 kB
+Private_Dirty:     10240 kB
+Referenced:        10240 kB
+Anonymous:         10240 kB
+AnonHugePages:         0 kB
+Swap:                  0 kB
+KernelPageSize:        4 kB
+MMUPageSize:           4 kB
+Locked:                0 kB
+VmFlags: rd wr mr mw me ac
+----------- snip ----------
+
+3. when I made the address aligned with HUGEPAGESIZE using 'posix_memalign()' instead of mmap(),
+   THP perform good, and can distinguish all anonymous huge pages.
+
+my question is:
+1. all the above behaviour is right?
+2. why THP can't distinguish one naturally aligned huge page(generated by mmap())?
+
+-- 
+Thanks,
+Zhouping
