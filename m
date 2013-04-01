@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab3DAJpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 05:45:15 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:35042 "EHLO
+	id S1758824Ab3DAJpk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 05:45:40 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:35104 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758726Ab3DAJpM (ORCPT
+	with ESMTP id S1758726Ab3DAJpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 05:45:12 -0400
-X-AuditID: cbfee690-b7f656d0000007e3-e3-515957267b9f
+	Mon, 1 Apr 2013 05:45:36 -0400
+X-AuditID: cbfee690-b7f656d0000007e3-ef-5159573a9a72
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <000c01ce2ebd$2a1307f0$7e3917d0$%han@samsung.com>
 In-reply-to: <000c01ce2ebd$2a1307f0$7e3917d0$%han@samsung.com>
-Subject: [PATCH 09/27] rtc: rtc-fm3130: use devm_*() functions
-Date: Mon, 01 Apr 2013 18:45:10 +0900
-Message-id: <001401ce2ebd$99ed3780$cdc7a680$%han@samsung.com>
+Subject: [PATCH 10/27] rtc: rtc-isl12022: use devm_*() functions
+Date: Mon, 01 Apr 2013 18:45:30 +0900
+Message-id: <001501ce2ebd$a5d37b40$f17a71c0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4uvSmu8Ej3RSKpRZmzfFm2iz9KEwAAGURA
+Thread-index: Ac4uvSmu8Ej3RSKpRZmzfFm2iz9KEwAAHFLw
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t8zfV218MhAg5tHLSyWXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
-	LdK3S+DKmLv2G0vBK66Klf9XsDYwvuToYuTkkBAwkbj68S8zhC0mceHeerYuRi4OIYFljBKv
-	juxkgynqevqHBSIxnVFiyo9eZgjnF6NE96FHjCBVbAJqEl++HGbvYuTgEBHQl2hr0QCpYRbo
-	ZZQ407ubHaRGSMBW4sfZ72DrOAXsJN4snAfWKwxkH9s8jQXEZhFQlWg9+BrM5gWqP7DpGDuE
-	LSjxY/I9sDizgJbE+p3HmSBseYnNa94yg+yVEFCXePRXFyQsImAksWD3BVaIEhGJfS/eMYLc
-	IyFwj11iyrl+qF0CEt8mH2KB6JWV2HQAGhKSEgdX3GCZwCgxC8nmWUg2z0KyeRaSFQsYWVYx
-	iqYWJBcUJ6UXmegVJ+YWl+al6yXn525ihMTqhB2M9w5YH2JMBlo/kVlKNDkfGOt5JfGGxmZG
-	FqYmpsZG5pZmpAkrifOqt1gHCgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamBk+8zHz3Hc/5ah
-	x8nPD67ynqkxEK97MFMk6L3v2ns/Hyn2r9zYEq94/qBhTPO6r9t8+06ad2w9+OE158I/2R/N
-	Fls/7u196b+wZM0UAUb1c0eOVui+u222yPzmifXX/i63nLkrbRmz9Esjm8oI+5+OZfG/WVbc
-	WBm2NfOmUNLzLHeT3byKOWqdSizFGYmGWsxFxYkA1XDywusCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t9jQV218MhAg2vtJhZLLl5lt5izfg2b
-	xeWFl1gtLu+aw2axv7OD0YHVY8/Ek2weJ2b8ZvHo27KK0WP6vJ9MHp83yQWwRjUw2mSkJqak
-	Fimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVdSKEvMKQUKBSQW
-	Fyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYxZsxd+42l4BVXxcr/K1gbGF9ydDFyckgImEh0
-	Pf3DAmGLSVy4t56ti5GLQ0hgOqPElB+9zBDOL0aJ7kOPGEGq2ATUJL58OczexcjBISKgL9HW
-	ogFSwyzQyyhxpnc3O0iNkICtxI+z35lBbE4BO4k3C+eB9QoD2cc2TwPbxiKgKtF68DWYzQtU
-	f2DTMXYIW1Dix+R7YHFmAS2J9TuPM0HY8hKb17xlBtkrIaAu8eivLkhYRMBIYsHuC6wQJSIS
-	+168Y5zAKDQLyaRZSCbNQjJpFpKWBYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCE8Ez
-	6R2MqxosDjEKcDAq8fBGXIgIFGJNLCuuzD3EKMHBrCTC6/MNKMSbklhZlVqUH19UmpNafIgx
-	GejRicxSosn5wCSVVxJvaGxiZmRpZGZhZGJuTpqwkjjvwVbrQCGB9MSS1OzU1ILUIpgtTByc
-	Ug2MzatnyNaXXw3W2KWU+kxmL1ed82HRXe9MKqvmVPz0c+uVP/OFx1vr3yJXg17XghALjciZ
-	/8q6Cxze+Hu8UChxbzzw64nFhPPXsjP2f/Oqj3fpuP1c/sI/8z0B+t32U9xNzzrNdO+PMFs2
-	ezJfX+KXQxG63+2bkwXuz72254zQ+wvp9rcjnbOUWIozEg21mIuKEwG6trk9SAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t8zI12r8MhAgwWtZhZLLl5lt5izfg2b
+	xeWFl1gtLu+aw2axv7OD0YHVY8/Ek2weJ2b8ZvHo27KK0WP6vJ9MHp83yQWwRnHZpKTmZJal
+	FunbJXBlPN/Yyl7QwVux4c9OtgbGc1xdjJwcEgImEmcblrJD2GISF+6tZ+ti5OIQEljGKDHz
+	7wU2mKIf/26yQiSmM0qsmvGTCcL5xSgx9fZdsHY2ATWJL18OA9kcHCIC+hJtLRogNcwCvYwS
+	Z3p3g9UICdhK/Dj7nRnE5hSwk3izcB4jiC0s4CDx4shLsBoWAVWJjuUTWEBsXqD6d3/eskPY
+	ghI/Jt8DizMLaEms33mcCcKWl9i85i0zyF4JAXWJR391QcIiAkYSX7a8ZIMoEZHY9+IdI8g9
+	EgKP2CWm75vACrFLQOLb5EMsEL2yEpsOMEM8LClxcMUNlgmMErOQbJ6FZPMsJJtnIVmxgJFl
+	FaNoakFyQXFSepGJXnFibnFpXrpecn7uJkZIrE7YwXjvgPUhxmSg9ROZpUST84GxnlcSb2hs
+	ZmRhamJqbGRuaUaasJI4r3qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxv4rlk6Bii08
+	dQLm7Ufv67TKaz0zPuiS9Pm9RN+GKamq4vf55dd22IVv37Twk1SSgVqqw8QPze84fog2me3w
+	fWTDcrJvX6UH81Pt+JVF7DsZX072yvy0tyXheGu7d4Sf/d1nLhPm/q9V/dU2iWtWd7/Ls7gH
+	3qoXIwLbPiU84fmfsPzYzFVKSizFGYmGWsxFxYkA5AYGVOsCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t9jQV2r8MhAg5ezjCyWXLzKbjFn/Ro2
+	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
+	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
+	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzHi+sZW9oIO3YsOfnWwNjOe4uhg5OSQETCR+
+	/LvJCmGLSVy4t56ti5GLQ0hgOqPEqhk/mSCcX4wSU2/fZQepYhNQk/jy5TCQzcEhIqAv0dai
+	AVLDLNDLKHGmdzdYjZCArcSPs9+ZQWxOATuJNwvnMYLYwgIOEi+OvASrYRFQlehYPoEFxOYF
+	qn/35y07hC0o8WPyPbA4s4CWxPqdx5kgbHmJzWveMoPslRBQl3j0VxckLCJgJPFly0s2iBIR
+	iX0v3jFOYBSahWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwYng
+	mfQOxlUNFocYBTgYlXh4Iy5EBAqxJpYVV+YeYpTgYFYS4fX5BhTiTUmsrEotyo8vKs1JLT7E
+	mAz06ERmKdHkfGCSyiuJNzQ2MTOyNDKzMDIxNydNWEmc92CrdaCQQHpiSWp2ampBahHMFiYO
+	TqkGRsH/wV9Oek5/8UG+eMGBY1Xz9taUfvu1a+r8/+JnZqWaiDlI/P7EvTxKcVPy617nvr3p
+	9xc9nXfl+7xKm0cL7t+a6/Ts3iy+lI54ixSBe0rlZjc8zl3iFlvyvvJ5feUCi5KEb++Xtkiz
+	zzof46X6+2q4mrvqxdPBm/bdDNKrdj545PX5G39O1ggosRRnJBpqMRcVJwIAyT0XDEgDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,45 +59,62 @@ Use devm_*() functions to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-fm3130.c |    9 ++-------
- 1 files changed, 2 insertions(+), 7 deletions(-)
+ drivers/rtc/rtc-isl12022.c |   29 +++++++----------------------
+ 1 files changed, 7 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/rtc/rtc-fm3130.c b/drivers/rtc/rtc-fm3130.c
-index 4d4ad3f..2835fb6 100644
---- a/drivers/rtc/rtc-fm3130.c
-+++ b/drivers/rtc/rtc-fm3130.c
-@@ -358,7 +358,7 @@ static int fm3130_probe(struct i2c_client *client,
- 			I2C_FUNC_I2C | I2C_FUNC_SMBUS_WRITE_BYTE_DATA))
- 		return -EIO;
+diff --git a/drivers/rtc/rtc-isl12022.c b/drivers/rtc/rtc-isl12022.c
+index 6b4298e..1af0aa5 100644
+--- a/drivers/rtc/rtc-isl12022.c
++++ b/drivers/rtc/rtc-isl12022.c
+@@ -252,12 +252,11 @@ static int isl12022_probe(struct i2c_client *client,
+ {
+ 	struct isl12022 *isl12022;
  
--	fm3130 = kzalloc(sizeof(struct fm3130), GFP_KERNEL);
-+	fm3130 = devm_kzalloc(&client->dev, sizeof(struct fm3130), GFP_KERNEL);
+-	int ret = 0;
+-
+ 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
+ 		return -ENODEV;
  
- 	if (!fm3130)
+-	isl12022 = kzalloc(sizeof(struct isl12022), GFP_KERNEL);
++	isl12022 = devm_kzalloc(&client->dev, sizeof(struct isl12022),
++				GFP_KERNEL);
+ 	if (!isl12022)
  		return -ENOMEM;
-@@ -507,7 +507,7 @@ bad_clock:
  
- 	/* We won't bail out here because we just got invalid data.
- 	   Time setting from u-boot doesn't work anyway */
--	fm3130->rtc = rtc_device_register(client->name, &client->dev,
-+	fm3130->rtc = devm_rtc_device_register(&client->dev, client->name,
- 				&fm3130_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(fm3130->rtc)) {
- 		err = PTR_ERR(fm3130->rtc);
-@@ -517,16 +517,11 @@ bad_clock:
- 	}
+@@ -265,31 +264,17 @@ static int isl12022_probe(struct i2c_client *client,
+ 
+ 	i2c_set_clientdata(client, isl12022);
+ 
+-	isl12022->rtc = rtc_device_register(isl12022_driver.driver.name,
+-					    &client->dev,
+-					    &isl12022_rtc_ops,
+-					    THIS_MODULE);
+-
+-	if (IS_ERR(isl12022->rtc)) {
+-		ret = PTR_ERR(isl12022->rtc);
+-		goto exit_kfree;
+-	}
++	isl12022->rtc = devm_rtc_device_register(&client->dev,
++					isl12022_driver.driver.name,
++					&isl12022_rtc_ops, THIS_MODULE);
++	if (IS_ERR(isl12022->rtc))
++		return PTR_ERR(isl12022->rtc);
+ 
  	return 0;
- exit_free:
--	kfree(fm3130);
- 	return err;
+-
+-exit_kfree:
+-	kfree(isl12022);
+-
+-	return ret;
  }
  
- static int fm3130_remove(struct i2c_client *client)
+ static int isl12022_remove(struct i2c_client *client)
  {
--	struct fm3130 *fm3130 = i2c_get_clientdata(client);
+-	struct isl12022 *isl12022 = i2c_get_clientdata(client);
 -
--	rtc_device_unregister(fm3130->rtc);
--	kfree(fm3130);
+-	rtc_device_unregister(isl12022->rtc);
+-	kfree(isl12022);
+-
  	return 0;
  }
  
