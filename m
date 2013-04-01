@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757862Ab3DAM67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 08:58:59 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:54102 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757819Ab3DAM6z (ORCPT
+	id S1757983Ab3DAM7K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 08:59:10 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:40545 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757909Ab3DAM7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 08:58:55 -0400
+	Mon, 1 Apr 2013 08:59:07 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Thomas Renninger <trenn@suse.de>, Borislav Petkov <bp@alien8.de>,
-        linux-mips@linux-mips.org, linux-sh@vger.kernel.org,
-        sparclinux@vger.kernel.org
-Subject: [PATCH 6/9] cpufreq: Don't check if cpu is online/offline for cpufreq callbacks
-Date: Mon,  1 Apr 2013 18:27:46 +0530
-Message-Id: <cd771cb37feb4e79172548ed342ad194ee31a384.1364820620.git.viresh.kumar@linaro.org>
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 8/9] cpufreq: drivers: Remove unnecessary assignments of policy-> members
+Date: Mon,  1 Apr 2013 18:27:48 +0530
+Message-Id: <589c264e34b383a44940ad84e2f79c28c0f78404.1364820621.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1364820620.git.viresh.kumar@linaro.org>
 References: <cover.1364820620.git.viresh.kumar@linaro.org>
@@ -28,170 +23,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpufreq layer doesn't call cpufreq driver's callback for any offline cpu and so
-checking that isn't useful.
+Some assignments of policy-> min/max/cur/cpuinfo.min_freq/cpuinfo.max_freq
+aren't required as part of it is done by cpufreq driver or cpufreq core.
 
-Lets get rid of it.
+Remove them.
+
+At some places we merge multiple lines together too.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Thomas Renninger <trenn@suse.de>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: linux-mips@linux-mips.org
-Cc: linux-sh@vger.kernel.org
-Cc: sparclinux@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+Acked-by: Sekhar Nori <nsekhar@ti.com>
 ---
- arch/mips/kernel/cpufreq/loongson2_cpufreq.c | 6 ------
- arch/sh/kernel/cpufreq.c                     | 6 ------
- arch/sparc/kernel/us2e_cpufreq.c             | 6 ------
- arch/sparc/kernel/us3_cpufreq.c              | 6 ------
- drivers/cpufreq/p4-clockmod.c                | 3 +--
- drivers/cpufreq/powernow-k8.c                | 3 ---
- drivers/cpufreq/speedstep-centrino.c         | 4 ----
- 7 files changed, 1 insertion(+), 33 deletions(-)
+ Documentation/cpu-freq/cpu-drivers.txt |  5 +++--
+ arch/arm/mach-davinci/cpufreq.c        | 21 ++++++++-------------
+ arch/arm/mach-imx/cpufreq.c            |  3 ---
+ arch/sh/kernel/cpufreq.c               |  9 +++------
+ drivers/cpufreq/cpufreq-nforce2.c      |  6 ++----
+ drivers/cpufreq/omap-cpufreq.c         |  4 +---
+ 6 files changed, 17 insertions(+), 31 deletions(-)
 
-diff --git a/arch/mips/kernel/cpufreq/loongson2_cpufreq.c b/arch/mips/kernel/cpufreq/loongson2_cpufreq.c
-index bafda70..8488957 100644
---- a/arch/mips/kernel/cpufreq/loongson2_cpufreq.c
-+++ b/arch/mips/kernel/cpufreq/loongson2_cpufreq.c
-@@ -61,9 +61,6 @@ static int loongson2_cpufreq_target(struct cpufreq_policy *policy,
- 	struct cpufreq_freqs freqs;
- 	unsigned int freq;
+diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
+index 7c7721d..a3585ea 100644
+--- a/Documentation/cpu-freq/cpu-drivers.txt
++++ b/Documentation/cpu-freq/cpu-drivers.txt
+@@ -108,8 +108,9 @@ policy->governor		must contain the "default policy" for
+ 				cpufreq_driver.target is called with
+ 				these values.
  
--	if (!cpu_online(cpu))
--		return -ENODEV;
+-For setting some of these values, the frequency table helpers might be
+-helpful. See the section 2 for more information on them.
++For setting some of these values (cpuinfo.min[max]_freq, policy->min[max]), the
++frequency table helpers might be helpful. See the section 2 for more information
++on them.
+ 
+ SMP systems normally have same clock source for a group of cpus. For these the
+ .init() would be called only once for the first online cpu. Here the .init()
+diff --git a/arch/arm/mach-davinci/cpufreq.c b/arch/arm/mach-davinci/cpufreq.c
+index 8fb0c2a..7c2e943 100644
+--- a/arch/arm/mach-davinci/cpufreq.c
++++ b/arch/arm/mach-davinci/cpufreq.c
+@@ -137,21 +137,16 @@ static int davinci_cpu_init(struct cpufreq_policy *policy)
+ 			return result;
+ 	}
+ 
+-	policy->cur = policy->min = policy->max = davinci_getspeed(0);
 -
- 	cpus_allowed = current->cpus_allowed;
- 	set_cpus_allowed_ptr(current, cpumask_of(cpu));
+-	if (freq_table) {
+-		result = cpufreq_frequency_table_cpuinfo(policy, freq_table);
+-		if (!result)
+-			cpufreq_frequency_table_get_attr(freq_table,
+-							policy->cpu);
+-	} else {
+-		policy->cpuinfo.min_freq = policy->min;
+-		policy->cpuinfo.max_freq = policy->max;
++	policy->cur = davinci_getspeed(0);
++
++	result = cpufreq_frequency_table_cpuinfo(policy, freq_table);
++	if (result) {
++		pr_err("%s: cpufreq_frequency_table_cpuinfo() failed",
++				__func__);
++		return result;
+ 	}
  
-@@ -109,9 +106,6 @@ static int loongson2_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	unsigned long rate;
- 	int ret;
+-	policy->min = policy->cpuinfo.min_freq;
+-	policy->max = policy->cpuinfo.max_freq;
+-	policy->cur = davinci_getspeed(0);
++	cpufreq_frequency_table_get_attr(freq_table, policy->cpu);
  
--	if (!cpu_online(policy->cpu))
--		return -ENODEV;
+ 	/*
+ 	 * Time measurement across the target() function yields ~1500-1800us
+diff --git a/arch/arm/mach-imx/cpufreq.c b/arch/arm/mach-imx/cpufreq.c
+index cfce5e3..387dc4c 100644
+--- a/arch/arm/mach-imx/cpufreq.c
++++ b/arch/arm/mach-imx/cpufreq.c
+@@ -144,14 +144,11 @@ static int mxc_cpufreq_init(struct cpufreq_policy *policy)
+ 	imx_freq_table[i].frequency = CPUFREQ_TABLE_END;
+ 
+ 	policy->cur = clk_get_rate(cpu_clk) / 1000;
+-	policy->min = policy->cpuinfo.min_freq = cpu_freq_khz_min;
+-	policy->max = policy->cpuinfo.max_freq = cpu_freq_khz_max;
+ 
+ 	/* Manual states, that PLL stabilizes in two CLK32 periods */
+ 	policy->cpuinfo.transition_latency = 2 * NANOSECOND / CLK32_FREQ;
+ 
+ 	ret = cpufreq_frequency_table_cpuinfo(policy, imx_freq_table);
 -
- 	cpuclk = clk_get(NULL, "cpu_clk");
- 	if (IS_ERR(cpuclk)) {
- 		printk(KERN_ERR "cpufreq: couldn't get CPU clk\n");
+ 	if (ret < 0) {
+ 		printk(KERN_ERR "%s: failed to register i.MXC CPUfreq with error code %d\n",
+ 		       __func__, ret);
 diff --git a/arch/sh/kernel/cpufreq.c b/arch/sh/kernel/cpufreq.c
-index 2c7bd94..0fdf64b 100644
+index 0fdf64b..88c8fee 100644
 --- a/arch/sh/kernel/cpufreq.c
 +++ b/arch/sh/kernel/cpufreq.c
-@@ -51,9 +51,6 @@ static int sh_cpufreq_target(struct cpufreq_policy *policy,
- 	struct device *dev;
- 	long freq;
+@@ -116,7 +116,7 @@ static int sh_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 		return PTR_ERR(cpuclk);
+ 	}
  
--	if (!cpu_online(cpu))
--		return -ENODEV;
+-	policy->cur = policy->min = policy->max = sh_cpufreq_get(cpu);
++	policy->cur = sh_cpufreq_get(cpu);
+ 
+ 	freq_table = cpuclk->nr_freqs ? cpuclk->freq_table : NULL;
+ 	if (freq_table) {
+@@ -129,15 +129,12 @@ static int sh_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 		dev_notice(dev, "no frequency table found, falling back "
+ 			   "to rate rounding.\n");
+ 
+-		policy->cpuinfo.min_freq =
++		policy->min = policy->cpuinfo.min_freq =
+ 			(clk_round_rate(cpuclk, 1) + 500) / 1000;
+-		policy->cpuinfo.max_freq =
++		policy->max = policy->cpuinfo.max_freq =
+ 			(clk_round_rate(cpuclk, ~0UL) + 500) / 1000;
+ 	}
+ 
+-	policy->min = policy->cpuinfo.min_freq;
+-	policy->max = policy->cpuinfo.max_freq;
 -
- 	cpus_allowed = current->cpus_allowed;
- 	set_cpus_allowed_ptr(current, cpumask_of(cpu));
+ 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
  
-@@ -111,9 +108,6 @@ static int sh_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	struct cpufreq_frequency_table *freq_table;
- 	struct device *dev;
+ 	dev_info(dev, "CPU Frequencies - Minimum %u.%03u MHz, "
+diff --git a/drivers/cpufreq/cpufreq-nforce2.c b/drivers/cpufreq/cpufreq-nforce2.c
+index 224a478..af1542d 100644
+--- a/drivers/cpufreq/cpufreq-nforce2.c
++++ b/drivers/cpufreq/cpufreq-nforce2.c
+@@ -359,12 +359,10 @@ static int nforce2_cpu_init(struct cpufreq_policy *policy)
+ 		min_fsb = NFORCE2_MIN_FSB;
  
--	if (!cpu_online(cpu))
--		return -ENODEV;
--
- 	dev = get_cpu_device(cpu);
+ 	/* cpuinfo and default policy values */
+-	policy->cpuinfo.min_freq = min_fsb * fid * 100;
+-	policy->cpuinfo.max_freq = max_fsb * fid * 100;
++	policy->min = policy->cpuinfo.min_freq = min_fsb * fid * 100;
++	policy->max = policy->cpuinfo.max_freq = max_fsb * fid * 100;
+ 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
+ 	policy->cur = nforce2_get(policy->cpu);
+-	policy->min = policy->cpuinfo.min_freq;
+-	policy->max = policy->cpuinfo.max_freq;
  
- 	cpuclk = clk_get(dev, "cpu_clk");
-diff --git a/arch/sparc/kernel/us2e_cpufreq.c b/arch/sparc/kernel/us2e_cpufreq.c
-index abe963d..306ae46 100644
---- a/arch/sparc/kernel/us2e_cpufreq.c
-+++ b/arch/sparc/kernel/us2e_cpufreq.c
-@@ -234,9 +234,6 @@ static unsigned int us2e_freq_get(unsigned int cpu)
- 	cpumask_t cpus_allowed;
- 	unsigned long clock_tick, estar;
+ 	return 0;
+ }
+diff --git a/drivers/cpufreq/omap-cpufreq.c b/drivers/cpufreq/omap-cpufreq.c
+index b610edd..ad7549c 100644
+--- a/drivers/cpufreq/omap-cpufreq.c
++++ b/drivers/cpufreq/omap-cpufreq.c
+@@ -177,7 +177,7 @@ static int __cpuinit omap_cpu_init(struct cpufreq_policy *policy)
+ 		goto fail_ck;
+ 	}
  
--	if (!cpu_online(cpu))
--		return 0;
--
- 	cpumask_copy(&cpus_allowed, tsk_cpus_allowed(current));
- 	set_cpus_allowed_ptr(current, cpumask_of(cpu));
+-	policy->cur = policy->min = policy->max = omap_getspeed(policy->cpu);
++	policy->cur = omap_getspeed(policy->cpu);
  
-@@ -257,9 +254,6 @@ static void us2e_set_cpu_divider_index(struct cpufreq_policy *policy,
- 	cpumask_t cpus_allowed;
- 	struct cpufreq_freqs freqs;
+ 	if (!freq_table)
+ 		result = opp_init_cpufreq_table(mpu_dev, &freq_table);
+@@ -196,8 +196,6 @@ static int __cpuinit omap_cpu_init(struct cpufreq_policy *policy)
  
--	if (!cpu_online(cpu))
--		return;
--
- 	cpumask_copy(&cpus_allowed, tsk_cpus_allowed(current));
- 	set_cpus_allowed_ptr(current, cpumask_of(cpu));
+ 	cpufreq_frequency_table_get_attr(freq_table, policy->cpu);
  
-diff --git a/arch/sparc/kernel/us3_cpufreq.c b/arch/sparc/kernel/us3_cpufreq.c
-index 7ceb9c8..c71ee14 100644
---- a/arch/sparc/kernel/us3_cpufreq.c
-+++ b/arch/sparc/kernel/us3_cpufreq.c
-@@ -82,9 +82,6 @@ static unsigned int us3_freq_get(unsigned int cpu)
- 	unsigned long reg;
- 	unsigned int ret;
+-	policy->min = policy->cpuinfo.min_freq;
+-	policy->max = policy->cpuinfo.max_freq;
+ 	policy->cur = omap_getspeed(policy->cpu);
  
--	if (!cpu_online(cpu))
--		return 0;
--
- 	cpumask_copy(&cpus_allowed, tsk_cpus_allowed(current));
- 	set_cpus_allowed_ptr(current, cpumask_of(cpu));
- 
-@@ -104,9 +101,6 @@ static void us3_set_cpu_divider_index(struct cpufreq_policy *policy,
- 	cpumask_t cpus_allowed;
- 	struct cpufreq_freqs freqs;
- 
--	if (!cpu_online(cpu))
--		return;
--
- 	cpumask_copy(&cpus_allowed, tsk_cpus_allowed(current));
- 	set_cpus_allowed_ptr(current, cpumask_of(cpu));
- 
-diff --git a/drivers/cpufreq/p4-clockmod.c b/drivers/cpufreq/p4-clockmod.c
-index 4b2e773..421ef37 100644
---- a/drivers/cpufreq/p4-clockmod.c
-+++ b/drivers/cpufreq/p4-clockmod.c
-@@ -58,8 +58,7 @@ static int cpufreq_p4_setdc(unsigned int cpu, unsigned int newstate)
- {
- 	u32 l, h;
- 
--	if (!cpu_online(cpu) ||
--	    (newstate > DC_DISABLE) || (newstate == DC_RESV))
-+	if ((newstate > DC_DISABLE) || (newstate == DC_RESV))
- 		return -EINVAL;
- 
- 	rdmsr_on_cpu(cpu, MSR_IA32_THERM_STATUS, &l, &h);
-diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-index 52137a3..b828efe 100644
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -1102,9 +1102,6 @@ static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
- 	struct init_on_cpu init_on_cpu;
- 	int rc;
- 
--	if (!cpu_online(pol->cpu))
--		return -ENODEV;
--
- 	smp_call_function_single(pol->cpu, check_supported_cpu, &rc, 1);
- 	if (rc)
- 		return -ENODEV;
-diff --git a/drivers/cpufreq/speedstep-centrino.c b/drivers/cpufreq/speedstep-centrino.c
-index 3dbbcc3..618e6f4 100644
---- a/drivers/cpufreq/speedstep-centrino.c
-+++ b/drivers/cpufreq/speedstep-centrino.c
-@@ -481,10 +481,6 @@ static int centrino_target (struct cpufreq_policy *policy,
- 	for_each_cpu(j, policy->cpus) {
- 		int good_cpu;
- 
--		/* cpufreq holds the hotplug lock, so we are safe here */
--		if (!cpu_online(j))
--			continue;
--
- 		/*
- 		 * Support for SMP systems.
- 		 * Make sure we are running on CPU that wants to change freq
+ 	/*
 -- 
 1.7.12.rc2.18.g61b472e
 
