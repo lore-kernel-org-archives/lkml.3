@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759193Ab3DAKkv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 06:40:51 -0400
-Received: from relay.parallels.com ([195.214.232.42]:54511 "EHLO
+	id S1759209Ab3DAKlF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 06:41:05 -0400
+Received: from relay.parallels.com ([195.214.232.42]:54546 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758218Ab3DAKkt (ORCPT
+	with ESMTP id S1758215Ab3DAKlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 06:40:49 -0400
-Subject: [PATCH 05/14] fuse: Connection bit for enabling writeback
+	Mon, 1 Apr 2013 06:41:02 -0400
+Subject: [PATCH 06/14] fuse: Trust kernel i_size only - v3
 To: miklos@szeredi.hu
 From: "Maxim V. Patlasov" <MPatlasov@parallels.com>
 Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
         linux-kernel@vger.kernel.org, jbottomley@parallels.com,
         viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
         devel@openvz.org
-Date: Mon, 01 Apr 2013 14:41:24 +0400
-Message-ID: <20130401104121.19027.82841.stgit@maximpc.sw.ru>
+Date: Mon, 01 Apr 2013 14:41:33 +0400
+Message-ID: <20130401104129.19027.66720.stgit@maximpc.sw.ru>
 In-Reply-To: <20130401103749.19027.89833.stgit@maximpc.sw.ru>
 References: <20130401103749.19027.89833.stgit@maximpc.sw.ru>
 User-Agent: StGit/0.15
@@ -26,27 +26,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Off (0) by default. Will be used in the next patches and will be turned
-on at the very end.
+Make fuse think that when writeback is on the inode's i_size is always
+up-to-date and not update it with the value received from the userspace.
+This is done because the page cache code may update i_size without letting
+the FS know.
 
-Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
-Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
+This assumption implies fixing the previously introduced short-read helper --
+when a short read occurs the 'hole' is filled with zeroes.
+
+fuse_file_fallocate() is also fixed because now we should keep i_size up to
+date, so it must be updated if FUSE_FALLOCATE request succeeded.
+
+Changed in v2:
+ - improved comment in fuse_short_read()
+ - fixed fuse_file_fallocate() for KEEP_SIZE mode
+
+Changed in v3:
+ - fixed fuse_fillattr() not to use local i_size if writeback-cache is off
+ - added a comment explaining why we cannot trust attr.size from server
+
+Original patch by: Pavel Emelyanov <xemul@openvz.org>
+Signed-off-by: Maxim V. Patlasov <MPatlasov@parallels.com>
 ---
- fs/fuse/fuse_i.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ fs/fuse/dir.c   |   13 +++++++++++--
+ fs/fuse/file.c  |   43 +++++++++++++++++++++++++++++++++++++++++--
+ fs/fuse/inode.c |   11 +++++++++--
+ 3 files changed, 61 insertions(+), 6 deletions(-)
 
-diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
-index 6aeba86..09c3139 100644
---- a/fs/fuse/fuse_i.h
-+++ b/fs/fuse/fuse_i.h
-@@ -455,6 +455,9 @@ struct fuse_conn {
- 	/** Set if bdi is valid */
- 	unsigned bdi_initialized:1;
- 
-+	/** write-back cache policy (default is write-through) */
-+	unsigned writeback_cache:1;
+diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+index 8506522..8672ee4 100644
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -845,6 +845,11 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
+ 			  struct kstat *stat)
+ {
+ 	unsigned int blkbits;
++	struct fuse_conn *fc = get_fuse_conn(inode);
 +
- 	/*
- 	 * The following bitfields are only for optimization purposes
- 	 * and hence races in setting them will not cause malfunction
++	/* see the comment in fuse_change_attributes() */
++	if (fc->writeback_cache && S_ISREG(inode->i_mode))
++		attr->size = i_size_read(inode);
+ 
+ 	stat->dev = inode->i_sb->s_dev;
+ 	stat->ino = attr->ino;
+@@ -1571,6 +1576,7 @@ static int fuse_do_setattr(struct dentry *entry, struct iattr *attr,
+ 	struct fuse_setattr_in inarg;
+ 	struct fuse_attr_out outarg;
+ 	bool is_truncate = false;
++	bool is_wb = fc->writeback_cache;
+ 	loff_t oldsize;
+ 	int err;
+ 
+@@ -1643,7 +1649,9 @@ static int fuse_do_setattr(struct dentry *entry, struct iattr *attr,
+ 	fuse_change_attributes_common(inode, &outarg.attr,
+ 				      attr_timeout(&outarg));
+ 	oldsize = inode->i_size;
+-	i_size_write(inode, outarg.attr.size);
++	/* see the comment in fuse_change_attributes() */
++	if (!is_wb || is_truncate || !S_ISREG(inode->i_mode))
++		i_size_write(inode, outarg.attr.size);
+ 
+ 	if (is_truncate) {
+ 		/* NOTE: this may release/reacquire fc->lock */
+@@ -1655,7 +1663,8 @@ static int fuse_do_setattr(struct dentry *entry, struct iattr *attr,
+ 	 * Only call invalidate_inode_pages2() after removing
+ 	 * FUSE_NOWRITE, otherwise fuse_launder_page() would deadlock.
+ 	 */
+-	if (S_ISREG(inode->i_mode) && oldsize != outarg.attr.size) {
++	if ((is_truncate || !is_wb) &&
++			S_ISREG(inode->i_mode) && oldsize != outarg.attr.size) {
+ 		truncate_pagecache(inode, oldsize, outarg.attr.size);
+ 		invalidate_inode_pages2(inode->i_mapping);
+ 	}
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index ee44b24..af58bbf 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -15,6 +15,7 @@
+ #include <linux/module.h>
+ #include <linux/compat.h>
+ #include <linux/swap.h>
++#include <linux/falloc.h>
+ 
+ static const struct file_operations fuse_direct_io_file_operations;
+ 
+@@ -543,9 +544,31 @@ static void fuse_short_read(struct fuse_req *req, struct inode *inode,
+ 			    u64 attr_ver)
+ {
+ 	size_t num_read = req->out.args[0].size;
++	struct fuse_conn *fc = get_fuse_conn(inode);
++
++	if (fc->writeback_cache) {
++		/*
++		 * A hole in a file. Some data after the hole are in page cache,
++		 * but have not reached the client fs yet. So, the hole is not
++		 * present there.
++		 */
++		int i;
++		int start_idx = num_read >> PAGE_CACHE_SHIFT;
++		size_t off = num_read & (PAGE_CACHE_SIZE - 1);
+ 
+-	loff_t pos = page_offset(req->pages[0]) + num_read;
+-	fuse_read_update_size(inode, pos, attr_ver);
++		for (i = start_idx; i < req->num_pages; i++) {
++			struct page *page = req->pages[i];
++			void *mapaddr = kmap_atomic(page);
++
++			memset(mapaddr + off, 0, PAGE_CACHE_SIZE - off);
++
++			kunmap_atomic(mapaddr);
++			off = 0;
++		}
++	} else {
++		loff_t pos = page_offset(req->pages[0]) + num_read;
++		fuse_read_update_size(inode, pos, attr_ver);
++	}
+ }
+ 
+ static int fuse_readpage(struct file *file, struct page *page)
+@@ -2286,6 +2309,8 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
+ 		.mode = mode
+ 	};
+ 	int err;
++	bool change_i_size = fc->writeback_cache &&
++		!(mode & FALLOC_FL_KEEP_SIZE);
+ 
+ 	if (fc->no_fallocate)
+ 		return -EOPNOTSUPP;
+@@ -2294,6 +2319,11 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
+ 	if (IS_ERR(req))
+ 		return PTR_ERR(req);
+ 
++	if (change_i_size) {
++		struct inode *inode = file->f_mapping->host;
++		mutex_lock(&inode->i_mutex);
++	}
++
+ 	req->in.h.opcode = FUSE_FALLOCATE;
+ 	req->in.h.nodeid = ff->nodeid;
+ 	req->in.numargs = 1;
+@@ -2307,6 +2337,15 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
+ 	}
+ 	fuse_put_request(fc, req);
+ 
++	if (change_i_size) {
++		struct inode *inode = file->f_mapping->host;
++
++		if (!err)
++			fuse_write_update_size(inode, offset + length);
++
++		mutex_unlock(&inode->i_mutex);
++	}
++
+ 	return err;
+ }
+ 
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index 01353ed..94319e6 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -197,6 +197,7 @@ void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
+ {
+ 	struct fuse_conn *fc = get_fuse_conn(inode);
+ 	struct fuse_inode *fi = get_fuse_inode(inode);
++	bool is_wb = fc->writeback_cache;
+ 	loff_t oldsize;
+ 	struct timespec old_mtime;
+ 
+@@ -210,10 +211,16 @@ void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
+ 	fuse_change_attributes_common(inode, attr, attr_valid);
+ 
+ 	oldsize = inode->i_size;
+-	i_size_write(inode, attr->size);
++        /*
++	 * In case of writeback_cache enabled, the cached writes beyond EOF
++	 * extend local i_size without keeping userspace server in sync. So,
++	 * attr->size coming from server can be stale. We cannot trust it.
++	 */
++	if (!is_wb || !S_ISREG(inode->i_mode))
++		i_size_write(inode, attr->size);
+ 	spin_unlock(&fc->lock);
+ 
+-	if (S_ISREG(inode->i_mode)) {
++	if (!is_wb && S_ISREG(inode->i_mode)) {
+ 		bool inval = false;
+ 
+ 		if (oldsize != attr->size) {
 
