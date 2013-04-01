@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758607Ab3DASB7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 14:01:59 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:61590 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758168Ab3DASB5 (ORCPT
+	id S1758566Ab3DASCg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 14:02:36 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:64537 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756294Ab3DASCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 14:01:57 -0400
-Message-ID: <1364839315.21627.69.camel@x61.thuisdomein>
-Subject: [PATCH 6/8] nfsd4: do not export "u64" to userspace
+	Mon, 1 Apr 2013 14:02:35 -0400
+Message-ID: <1364839353.21627.70.camel@x61.thuisdomein>
+Subject: [PATCH 7/8] virtio_console: do not export "u32" to userspace
 From: Paul Bolle <pebolle@tiscali.nl>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 01 Apr 2013 20:01:55 +0200
+To: Amit Shah <amit.shah@redhat.com>
+Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Date: Mon, 01 Apr 2013 20:02:33 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Apr 2013 18:01:55.0672 (UTC) FILETIME=[FF1AF580:01CE2F02]
+X-OriginalArrivalTime: 01 Apr 2013 18:02:33.0632 (UTC) FILETIME=[15BB3200:01CE2F03]
 X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nfs4.h exports "u64" to userspace. Use "__u64" instead.
+virtio_console.h exports "u32" to userspace. Use "__u32" instead.
 
 Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
 0) Tested with a kernel build.
 
-1) I'm guessing userspace doesn't actually use NFS4_MAX_UINT64.
+1) Again. I'm guessing userspace doesn't use VIRTIO_CONSOLE_BAD_ID.
 
- include/uapi/linux/nfs4.h | 2 +-
+ include/uapi/linux/virtio_console.h | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/uapi/linux/nfs4.h b/include/uapi/linux/nfs4.h
-index 788128e..35f5f4c 100644
---- a/include/uapi/linux/nfs4.h
-+++ b/include/uapi/linux/nfs4.h
-@@ -150,7 +150,7 @@
- #define NFS4_SECINFO_STYLE4_CURRENT_FH	0
- #define NFS4_SECINFO_STYLE4_PARENT	1
+diff --git a/include/uapi/linux/virtio_console.h b/include/uapi/linux/virtio_console.h
+index ee13ab6..c312f16 100644
+--- a/include/uapi/linux/virtio_console.h
++++ b/include/uapi/linux/virtio_console.h
+@@ -39,7 +39,7 @@
+ #define VIRTIO_CONSOLE_F_SIZE	0	/* Does host provide console size? */
+ #define VIRTIO_CONSOLE_F_MULTIPORT 1	/* Does host provide multiple ports? */
  
--#define NFS4_MAX_UINT64	(~(u64)0)
-+#define NFS4_MAX_UINT64	(~(__u64)0)
+-#define VIRTIO_CONSOLE_BAD_ID		(~(u32)0)
++#define VIRTIO_CONSOLE_BAD_ID		(~(__u32)0)
  
- /* An NFS4 sessions server must support at least NFS4_MAX_OPS operations.
-  * If a compound requires more operations, adjust NFS4_MAX_OPS accordingly.
+ struct virtio_console_config {
+ 	/* colums of the screens */
 -- 
 1.7.11.7
 
