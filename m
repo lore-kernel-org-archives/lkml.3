@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758621Ab3DAN57 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 09:57:59 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:57878 "EHLO
+	id S1758681Ab3DAN6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 09:58:05 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:57893 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758529Ab3DAN5w (ORCPT
+	with ESMTP id S1758529Ab3DAN6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 09:57:52 -0400
-X-AuditID: cbfee68e-b7f946d000001e37-10-5159925e0f6c
+	Mon, 1 Apr 2013 09:58:00 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-01-51599266fefe
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         linux-omap@vger.kernel.org
@@ -15,37 +15,37 @@ Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, balbi@ti.com,
         stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com,
         rob.herring@calxeda.com, kgene.kim@samsung.com, kishon@ti.com,
         dianders@chromium.org, t.figa@samsung.com, p.paneri@samsung.com
-Subject: [PATCH v3 04/11] usb: dwc3: Add runtime power management callbacks
-Date: Mon, 01 Apr 2013 19:24:03 +0530
-Message-id: <1364824448-14732-5-git-send-email-gautam.vivek@samsung.com>
+Subject: [PATCH v3 05/11] usb: dwc3: exynos: Enable runtime power management
+Date: Mon, 01 Apr 2013 19:24:04 +0530
+Message-id: <1364824448-14732-6-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.6.5
 In-reply-to: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
 References: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCIsWRmVeSWpSXmKPExsWyRsSkTjduUmSgQeN+C4uD9+stzi47yGbR
-	vHg9m0XvgqtsFhee9rBZXN41h81i9pJ+FosZ5/cxWSxa1spscX5LJ5PF4RUHmCyaT5xitpjw
-	+wKbxfoZr1kc+DwWfL7C7jG74SKLx7yTgR77564B8u7+YPTo27KK0eP4je1MHp83yQVwRHHZ
-	pKTmZJalFunbJXBlfHz+lrVgI1/Fpu1T2BsY33J3MXJySAiYSMz5cosZwhaTuHBvPVsXIxeH
-	kMBSRomzrf+ZYIp+TD/ICGILCSxilLj7QwmiaAqTxPZDC9hBEmwCuhJNb3cBFXFwiAjESWye
-	IAwSZhboYpJYelQcxBYW8JZYt/so2BwWAVWJ+VcvMIGU8wp4SNw7WASxSkHize1nYPdwCnhK
-	fNi6mAlirYdE+9UTrCBrJQQesUts3XqcBWKOgMS3yYdYQOZICMhKbDoA9YukxMEVN1gmMAov
-	YGRYxSiaWpBcUJyUXmSkV5yYW1yal66XnJ+7iREYQ6f/PevbwXjzgPUhxmSgcROZpUST84Ex
-	mFcSb2hsZmRhamJqbGRuaUaasJI4r1qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxpiW
-	L7HPt8canTjIF72xUUZ98rUJ3C0a194L7py8+Ni6TWkuE7Z4e/05Eb9db+amoq2fDd4pbHP+
-	6r9O9424+iGT+N+lV2uXv/k4/9hV2fBkucWrJnnbrtU7cfSB9aFyK1Ypl8DNKgvulcl3z/zU
-	MmWLW1auWuys86++mexmjFwoEhJ/T+vuh7tKLMUZiYZazEXFiQAh2HavtwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+xgG7cpMhAg5OX9SwO3q+3OLvsIJtF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsWyRsSkWjdtUmSgwbl3NhYH79dbnF12kM2i
+	efF6NoveBVfZLC487WGzuLxrDpvF7CX9LBYzzu9jsli0rJXZ4vyWTiaLwysOMFk0nzjFbDHh
+	9wU2i/UzXrM48Hks+HyF3WN2w0UWj3knAz32z10D5N39wejRt2UVo8fxG9uZPD5vkgvgiOKy
+	SUnNySxLLdK3S+DKOPJuInNBL2/Fvzk32BoYu7i7GDk5JARMJO5cPMwEYYtJXLi3nq2LkYtD
+	SGApo8TFjlvsMEWTr89lhEgsYpTYOXcNlDOFSWLNoWNsIFVsAroSTW93ASU4OEQE4iQ2TxAG
+	CTMLdDFJLD0qDmILC/hI/Ph1Emwoi4CqxO57z8BaeQU8JE6+/coKsUxB4s3tZ8wgNqeAp8SH
+	rYvBrhMCqmm/eoIVZK+EwCN2iadzfzJBDBKQ+Db5EAvIXgkBWYlNB5gh5khKHFxxg2UCo/AC
+	RoZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmbGIFxdPrfs/4djHcPWB9iTAYaN5FZSjQ5HxiH
+	eSXxhsZmRhamJqbGRuaWZqQJK4nzqrVYBwoJpCeWpGanphakFsUXleakFh9iZOLglGpglN1w
+	asaXuxmRZ0TSHLZEbbn6UVre9tX+9qe/pxgedVmXsLJ8+9QlLrH8ttcUp2+2eia1LsWwx8+Y
+	9fqaC3Z2sxusDW1X7lBoPj5/dsqrNK1t9dyhjCadLiliX5Zf+iK5zvr9gg86d5Zk6YrcTr18
+	50fCpZ9PDyxUedb48Xwqd8r5F0/+LDr3KlKJpTgj0VCLuag4EQB+FOnnuQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmleLIzCtJLcpLzFFi42I5/e+xgG7apMhAg3fHjC0O3q+3OLvsIJtF
 	8+L1bBa9C66yWVx42sNmcXnXHDaL2Uv6WSxmnN/HZLFoWSuzxfktnUwWh1ccYLJoPnGK2WLC
 	7wtsFutnvGZx4PNY8PkKu8fshossHvNOBnrsn7sGyLv7g9Gjb8sqRo/jN7YzeXzeJBfAEdXA
 	aJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdLeSQlli
-	TilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMePj87esBRv5KjZtn8LewPiWu4uR
-	k0NCwETix/SDjBC2mMSFe+vZQGwhgUWMEnd/KHUxcgHZU5gkth9awA6SYBPQlWh6uwuogYND
-	RCBOYvMEYZAws0AXk8TSo+IgtrCAt8S63UfBZrIIqErMv3qBCaScV8BD4t7BIohVChJvbj9j
-	BrE5BTwlPmxdzASx1kOi/eoJ1gmMvAsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEfo
-	M6kdjCsbLA4xCnAwKvHwRlyICBRiTSwrrsw9xCjBwawkwrsiMzJQiDclsbIqtSg/vqg0J7X4
-	EGMy0FETmaVEk/OBySOvJN7Q2MTc1NjU0sTCxMySNGElcd4DrdaBQgLpiSWp2ampBalFMFuY
-	ODilGhh9/+07G10963DZBzWNtbn7Xx9ZvXjRkYOODcU9a8+eEF70hjvL/2lk0cILtXNcVnF8
-	yC5fGDq34zP/om5bx7Nst3Om+DckmS1aZiCb6FN0gI+7g9fy7/UjQc4/GGokuuZ//ra8+sS7
-	pUVTf8Q73Cn/WW9g5DY3ae5pwcJwkUl3l9ip1DwsVt2txFKckWioxVxUnAgAOIzHjRQDAAA=
+	TilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMePIu4nMBb28Ff/m3GBrYOzi7mLk
+	5JAQMJGYfH0uI4QtJnHh3nq2LkYuDiGBRYwSO+euYYRwpjBJrDl0jA2kik1AV6Lp7S6gBAeH
+	iECcxOYJwiBhZoEuJomlR8VBbGEBH4kfv06yg9gsAqoSu+89A2vlFfCQOPn2KyvEMgWJN7ef
+	MYPYnAKeEh+2LmYCsYWAatqvnmCdwMi7gJFhFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZw
+	lD6T2sG4ssHiEKMAB6MSD2/EhYhAIdbEsuLK3EOMEhzMSiK8KzIjA4V4UxIrq1KL8uOLSnNS
+	iw8xJgNdNZFZSjQ5H5hA8kriDY1NzE2NTS1NLEzMLEkTVhLnPdBqHSgkkJ5YkpqdmlqQWgSz
+	hYmDU6qB0U0rNvZ9yj2/WXn/mVt350afTutV/qPFLzLZ/Pltk7vhYiKuCnaHyuYdmfymaMvC
+	Y2s+H5rLEGBTxNG0XMuuWc7rr/A3vRcVPyU9vQ2/5qR8rhTeyXhoeV1RQ8LJlh3X+8XK6nge
+	MkqutLFfE6rN0HXBSvP5xC/HN945H3zYZ9LMT+2qqjwsSizFGYmGWsxFxYkA5VvHAxYDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,74 +53,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now it doesn't handle full runtime suspend/resume
-functionality. However it allows to handle PHYs' sleep
-and wakeup across runtime suspend/resume.
+Enabling runtime power management on dwc3-exynos
+letting dwc3 controller to be autosuspended on exynos
+platform when not in use.
 
 Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 ---
- drivers/usb/dwc3/core.c |   43 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 43 insertions(+), 0 deletions(-)
+ drivers/usb/dwc3/dwc3-exynos.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index e250828..65a3adf 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -745,11 +745,54 @@ static int dwc3_resume(struct device *dev)
+diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
+index 1ea7bd8..1ae81a0 100644
+--- a/drivers/usb/dwc3/dwc3-exynos.c
++++ b/drivers/usb/dwc3/dwc3-exynos.c
+@@ -19,6 +19,7 @@
+ #include <linux/platform_data/dwc3-exynos.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/clk.h>
++#include <linux/pm_runtime.h>
+ #include <linux/usb/otg.h>
+ #include <linux/usb/nop-usb-xceiv.h>
+ #include <linux/of.h>
+@@ -138,6 +139,11 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
+ 	exynos->dev	= dev;
+ 	exynos->clk	= clk;
+ 
++	pm_runtime_set_active(dev);
++	pm_runtime_enable(dev);
++	pm_runtime_get_sync(dev);
++	pm_runtime_forbid(dev);
++
+ 	clk_prepare_enable(exynos->clk);
+ 
+ 	if (node) {
+@@ -152,10 +158,14 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
+ 		goto err2;
+ 	}
+ 
++	pm_runtime_put_sync(dev);
++	pm_runtime_allow(dev);
++
  	return 0;
+ 
+ err2:
+ 	clk_disable_unprepare(clk);
++	pm_runtime_disable(dev);
+ err1:
+ 	return ret;
  }
+@@ -164,6 +174,8 @@ static int dwc3_exynos_remove(struct platform_device *pdev)
+ {
+ 	struct dwc3_exynos	*exynos = platform_get_drvdata(pdev);
  
-+#ifdef CONFIG_PM_RUNTIME
-+static int dwc3_runtime_suspend(struct device *dev)
-+{
-+	struct dwc3	*dwc = dev_get_drvdata(dev);
-+	int ret = 0;
++	pm_runtime_disable(&pdev->dev);
 +
-+	ret = usb_phy_autopm_put_sync(dwc->usb2_phy);
-+	if (ret)
-+		dev_warn(dev, "Can't autosuspend usb2-phy\n");
-+
-+	ret = usb_phy_autopm_put_sync(dwc->usb3_phy);
-+	if (ret)
-+		dev_warn(dev, "Can't autosuspend usb3-phy\n");
-+
-+	return ret;
-+}
-+
-+static int dwc3_runtime_resume(struct device *dev)
-+{
-+	struct dwc3	*dwc = dev_get_drvdata(dev);
-+	int ret = 0;
-+
-+	ret = usb_phy_autopm_get_sync(dwc->usb2_phy);
-+	if (ret) {
-+		dev_err(dev, "usb2-phy: get sync failed with err %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = usb_phy_autopm_get_sync(dwc->usb3_phy);
-+	if (ret) {
-+		dev_err(dev, "usb3-phy: get sync failed with err %d\n", ret);
-+		return ret;
-+	}
-+
-+	return ret;
-+}
-+#else
-+#define dwc3_runtime_suspend		NULL
-+#define dwc3_runtime_resume		NULL
-+#endif
-+
- static const struct dev_pm_ops dwc3_dev_pm_ops = {
- 	.prepare	= dwc3_prepare,
- 	.complete	= dwc3_complete,
- 
- 	SET_SYSTEM_SLEEP_PM_OPS(dwc3_suspend, dwc3_resume)
-+	SET_RUNTIME_PM_OPS(dwc3_runtime_suspend,
-+				dwc3_runtime_resume, NULL)
- };
- 
- #define DWC3_PM_OPS	&(dwc3_dev_pm_ops)
+ 	platform_device_unregister(exynos->usb2_phy);
+ 	platform_device_unregister(exynos->usb3_phy);
+ 	device_for_each_child(&pdev->dev, NULL, dwc3_exynos_remove_child);
 -- 
 1.7.6.5
 
