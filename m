@@ -1,70 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159Ab3DAVAd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 17:00:33 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:54372 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757630Ab3DAVAc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 17:00:32 -0400
-Date: Mon, 1 Apr 2013 14:00:29 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Yet another pipe related oops.
-Message-ID: <20130401210029.GA3245@kroah.com>
-References: <20130311180543.GF21522@ZenIV.linux.org.uk>
- <20130312130614.GA32237@ZenIV.linux.org.uk>
- <CA+55aFyPUYiFoiLrMCzeHpbAgAignCe_awU7SbvPh+T6eHeqng@mail.gmail.com>
- <20130312194353.GI21522@ZenIV.linux.org.uk>
- <CA+55aFx-8TrSSJZM-WTDN4Hc3pESLXBsGC9x3xVaxuwxnGKqpA@mail.gmail.com>
- <20130327135127.GB1738@redhat.com>
- <20130327152030.GY21522@ZenIV.linux.org.uk>
- <CA+55aFx=BPQ2empEahqCs2hQ=sRaw3OjJotrS6OMT3e6tUVMLQ@mail.gmail.com>
- <20130327174506.GZ21522@ZenIV.linux.org.uk>
- <20130401203445.GA20862@ZenIV.linux.org.uk>
+	id S1758237Ab3DAVBX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 17:01:23 -0400
+Received: from smtp1.nethome.no ([92.62.33.11]:51378 "EHLO smtp1.nethome.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757692Ab3DAVBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 17:01:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130401203445.GA20862@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Mon, 01 Apr 2013 23:01:19 +0200
+From: peterasplund@gentoo.se
+To: <Peter.Huewe@infineon.com>
+Cc: <aaron.lu@intel.com>, <mail@srajiv.net>,
+        <tpmdd-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
+        <key@linux.vnet.ibm.com>
+Subject: RE: [tpmdd-devel] =?UTF-8?Q?tpm=5Ftis=20driver=20failed=20to=20su?=
+ =?UTF-8?Q?spend=2C=20error=20-=36=32?=
+In-Reply-To: <74A44E99E3274B4CB570415926B37D4414B14E@MUCSE501.eu.infineon.com>
+References: <20130319023440.GA12425@aaronlu.sh.intel.com>
+ <CAA25o9RJJ5Rkti9_fTJz2ieaHvrtSp5mE_2LTW_t16_cf_TNcg@mail.gmail.com>
+ <ed364e68730267510d49b2bdc38679a0@gentoo.se>
+ <CAEQAOwpmnLXBCJQTf_xU-oSKvAtmpQjHWwMYDm_QOsP+1Kd_aQ@mail.gmail.com>
+ <CAEQAOwqWL=WekQqg5WY8TGxzB3x9nB9MVj_UTAVK0ro7TqB2WQ@mail.gmail.com>
+ <51540408.3000702@intel.com>
+ <74A44E99E3274B4CB570415926B37D4414B14E@MUCSE501.eu.infineon.com>
+Message-ID: <9f68a46fb9ec6012668db36b7f7eff03@gentoo.se>
+User-Agent: Roundcube Webmail/0.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 01, 2013 at 09:34:46PM +0100, Al Viro wrote:
-> On Wed, Mar 27, 2013 at 05:45:06PM +0000, Al Viro wrote:
-> > We shouldn't, at least not for something that has been successfully
-> > opened.  I've a patch series cleaning that up a bit in the local
-> > queue; will check for bitrot and throw into for-next.
-> 
-> Egads...  OK, that has gone more than slightly out of control - right now
-> vfs.git#for-next is at 106 commits, -3.6KLoC balance and *still* hadn't
-> reached the ->f_op part of that work ;-/  OTOH, procfs-related code got
-> a lot cleaner and we actually have a chance to make the guts of proc_dir_entry
-> private to fs/proc now...  I'll cull the outright bug fixes into for-linus
-> and push it your way...
-> 
-> The thing that really worries me is debugfs; that fscker sets whatever
-> file_operations it's got from the driver that registered a file there
-> and sticks that into ->i_fop.  When we try to open() that, we get
-> try_module_get() ->i_fop->owner; so far, so good, but what if the driver
-> has just been removed *and* file_operations instance we are looking at
-> has already been freed?
-> 
-> IOW, how do we deal with a race between attempt to open a debugfs file and
-> its removal on driver unload?  Greg?
+2013-03-28 14:12 skrev Peter.Huewe@infineon.com:
+> Hi Aaron, Rajob, PeterA and everybody else
+>
+> @PeterA:
+> Can you perhaps try find out the exact tpm version?
+> 1) Install trousers and tpm_tools (emerge app-crypt/trousers
+> app-crypt/tpm-tools)
+> 2) Kill the tcsd and run it in the foreground
+> # pkill -9 tcsd
+> # tcsd -f
+> (if it says up and running you can send it to background)
 
-Hm, I thought the i_fop->owner thing would be the needed protection, but
-I guess you are right, it will not.  I guess we need to do what
-character devices do and have an "intermediate" fops in order to protect
-this.  Would that work?
+root@zepto:/home/peter# tcsd -f
+TCSD TDDL ioctl: (25) Inappropriate ioctl for device
+TCSD TDDL Falling back to Read/Write device support.
+TCSD TDDL ERROR: write to device /dev/tpm0 failed: Timer expired
+TCSD TCS ERROR: TCS GetCapability failed with result = 0x1087
 
-As module removal never happens unless an admin does it by hand, it's
-not a "real" issue that can be triggered by anyone easily, thankfully.
+> 3) Run
+> #tpm_version and post the output.
+root@zepto:/home/peter# tpm_version
+Tspi_Context_Connect failed: 0x00003011 - layer=tsp, code=0011 (17), 
+Communication failure
 
-thanks,
+I will try to restart the laptop, as well as check the bios settings, 
+and get back to you on this one.
 
-greg k-h
+>
+>
+> Also the flags etc would perhaps be handy, they can be retrieved via
+> sysfs - on you machine it _should_ be
+> # cat /sys/devices/pnp0/00:0a/*
+> and also post the output.
+root@zepto:/home/peter# ls /sys/devices/pnp0/00\:0a/
+driver/        id             power/         subsystem/
+firmware_node/ options        resources      uevent
+root@zepto:/home/peter# cat /sys/devices/pnp0/00\:0a/options
+root@zepto:/home/peter# cat /sys/devices/pnp0/00\:0a/resources
+state = active
+irq 12
+root@zepto:/home/peter# cat /sys/devices/pnp0/00\:0a/id
+SYN1902
+SYN1900
+SYN0002
+PNP0f13
+root@zepto:/home/peter# cat /sys/devices/pnp0/00\:0a/uevent
+DRIVER=i8042 aux
+
+Cheers,
+Peter A
+
+>
+>
+> What also might be worth a look - in your bugzilla it states:
+> [ 0.225891] pnp 00:0a: Plug and Play ACPI device, IDs IFX0102 PNP0c31 
+> (active)
+> [ 9.150673] tpm_tis 00:0a: 1.2 TPM (device-id 0xB, rev-id 16)
+> [ 9.292148] tpm_tis 00:0a: Adjusting TPM timeout parameters.
+> [ 10.084067] tpm_tis 00:0a: A TPM error (7) occurred attempting to 
+> read a pcr
+> value
+> [ 10.084077] tpm_tis 00:0a: TPM is disabled/deactivated (0x7)
+>
+>
+> Can you perhaps try to enable your TPM in the BIOS? It's quite often
+> hidden under "embedded security device" or "system security".
+> Quite often you have to have a bios password set to access these 
+> settings.
+> If your system does not have bios support for TPMs, please tell me so
+> and I'll try to help you out.
+>
+> Thanks,
+> PeterH
