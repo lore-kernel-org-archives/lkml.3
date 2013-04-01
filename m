@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab3DARLA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 13:11:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49401 "EHLO
+	id S1756593Ab3DARLg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 13:11:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49407 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab3DARK7 (ORCPT
+	with ESMTP id S1752989Ab3DARLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 13:10:59 -0400
-Message-ID: <5159B196.10005@infradead.org>
-Date: Mon, 01 Apr 2013 09:11:02 -0700
+	Mon, 1 Apr 2013 13:11:35 -0400
+Message-ID: <5159B1BD.50703@infradead.org>
+Date: Mon, 01 Apr 2013 09:11:41 -0700
 From: Randy Dunlap <rdunlap@infradead.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: linux-kernel@vger.kernel.org, Andy King <acking@vmware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dtor@vmware.com>
-Subject: Re: [PATCH] misc/vmw_vmci: VMWARE_VMCI depends on NET
-References: <1364791439-28396-1-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1364791439-28396-1-git-send-email-linux@roeck-us.net>
+To: Kyle McMartin <kyle@mcmartin.ca>
+CC: linux-kernel@vger.kernel.org, jforbes@redhat.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] DocBook/device-drivers.tmpl: fix 8250.c reference
+References: <20130401164230.GO12938@bombadil.infradead.org>
+In-Reply-To: <20130401164230.GO12938@bombadil.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/13 21:43, Guenter Roeck wrote:
-> Fix:
+On 04/01/13 09:42, Kyle McMartin wrote:
+> htmldocs will fail, because device-drivers.tmpl references the
+> non-existant file 8250.c (which got renamed to 8250_core.c)
 > 
-> ERROR: "memcpy_toiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
-> ERROR: "memcpy_fromiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
-> 
-> Both functions are defined in the core networking code.
-> 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+
+This is a fatal docbook error.
+
+> Signed-off-by: Kyle McMartin <kyle@redhat.com>
+
+Yes, I was about to make this same patch.  Thanks.
 
 Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-Thanks.
-
-> ---
->  drivers/misc/vmw_vmci/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/misc/vmw_vmci/Kconfig b/drivers/misc/vmw_vmci/Kconfig
-> index 39c2eca..ea98f7e 100644
-> --- a/drivers/misc/vmw_vmci/Kconfig
-> +++ b/drivers/misc/vmw_vmci/Kconfig
-> @@ -4,7 +4,7 @@
+> --- a/Documentation/DocBook/device-drivers.tmpl
+> +++ b/Documentation/DocBook/device-drivers.tmpl
+> @@ -227,7 +227,7 @@ X!Isound/sound_firmware.c
+>    <chapter id="uart16x50">
+>       <title>16x50 UART Driver</title>
+>  !Edrivers/tty/serial/serial_core.c
+> -!Edrivers/tty/serial/8250/8250.c
+> +!Edrivers/tty/serial/8250/8250_core.c
+>    </chapter>
 >  
->  config VMWARE_VMCI
->  	tristate "VMware VMCI Driver"
-> -	depends on X86 && PCI
-> +	depends on X86 && PCI && NET
->  	help
->  	  This is VMware's Virtual Machine Communication Interface.  It enables
->  	  high-speed communication between host and guest in a virtual
-> 
+>    <chapter id="fbdev">
+> --
 
 
 -- 
