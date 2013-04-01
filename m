@@ -1,140 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759413Ab3DAT0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 15:26:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64806 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758774Ab3DAT0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 15:26:22 -0400
-Date: Mon, 1 Apr 2013 15:26:06 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH] kexec: use Crash kernel for Crash kernel low
-Message-ID: <20130401192606.GA17951@redhat.com>
-References: <20130320163131.GE2273@redhat.com>
- <1363807329-24975-1-git-send-email-yinghai@kernel.org>
- <20130325194245.GA7357@redhat.com>
- <CAE9FiQU6bGSAODX_-Vir6D-LyY-9Sm84rYzq=gNhDZ5whbia_w@mail.gmail.com>
- <20130326181418.GA6775@redhat.com>
- <20130401133428.GA13499@redhat.com>
- <5159D2E9.7080707@zytor.com>
-MIME-Version: 1.0
+	id S1759396Ab3DAT1Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 15:27:24 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:40595 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753696Ab3DAT1X convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 15:27:23 -0400
+Subject: Re: mkfs.f2fs gets stuck with "blk_update_request: bio idx 0 >= vcnt 0" on 3.8
+Mime-Version: 1.0 (Apple Message framework v1085)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5159D2E9.7080707@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
+In-Reply-To: <CAMo8BfLusS_vT4LWU93iCXpVSgN_Uvi1mBvLUVx+892V67X1JQ@mail.gmail.com>
+Date: Mon, 1 Apr 2013 23:27:10 +0400
+Cc: LKML <linux-kernel@vger.kernel.org>, Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        Jens Axboe <axboe@kernel.dk>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <254789F5-7950-4239-AB7B-2DB9DC73565F@dubeyko.com>
+References: <CAMo8BfLusS_vT4LWU93iCXpVSgN_Uvi1mBvLUVx+892V67X1JQ@mail.gmail.com>
+To: Max Filippov <jcmvbkbc@gmail.com>
+X-Mailer: Apple Mail (2.1085)
+X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.28 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 01, 2013 at 11:33:13AM -0700, H. Peter Anvin wrote:
-> On 04/01/2013 06:34 AM, Vivek Goyal wrote:
-> > On Tue, Mar 26, 2013 at 02:14:18PM -0400, Vivek Goyal wrote:
-> >> On Mon, Mar 25, 2013 at 02:50:18PM -0700, Yinghai Lu wrote:
-> >>> On Mon, Mar 25, 2013 at 12:42 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> >>>> So it is a forgone conclusion that these new kernel changes to
-> >>>> crashkernel=X in 3.9 are incompatible with older kexec-tools and one
-> >>>> needs to upgrade kexec-tools.
-> >>>
-> >>> I thought that you and hpa all agreed that user need to update kexec-tools with
-> >>> new kernel v3.9. It that still right?
-> >>
-> >> I can update kexec-tools and I don't have problems with that. I am only
-> >> concerned about some xyz user complaining that new kernel stopped working
-> >> with old kexec-tools and then possibly face the rant from Linus about
-> >> breaking user space. :-)
-> >>
-> >> To me we could maintain backward compatibility by retaining the existing
-> >> behavior of crashkernle=X. That is  look for specificied memory below
-> >> 896M first and then go higher.
-> >>
-> >> And hide new semantics behind new kernel parameters or by extending
-> >> existing parameter (say crashkernel=X:search_high_first) to specify how
-> >> to search for reserved memory.
-> >>
-> >> In both the cases we should probably retain the logic of auto reserving
-> >> low memory for software iotlb and let user opt out if there is no need.
-> >>
-> >> So we don't have a strong reason that why we should break existing
-> >> kexec-tools. So I would prefer not to break it.
-> >>
-> >> But I think this is hpa's decision.
-> > 
-> > hpa,
-> > 
-> > ping. Any thoughts on this?
+
+On Apr 1, 2013, at 9:19 PM, Max Filippov wrote:
+
+> Hi,
 > 
-> Pardon me while I retch.  The whole kdump dependency mess is making me
-> sick to my stomach.
+> I'm trying to create f2fs filesystem on SD card on pandaboard using
+> f2fs-tools v1.0.0.
+> It works fine on Linus' v3.6, but fails on both v3.8 and stable v3.8.5:
 > 
-> The fundamental problem you have is that the user has to take an action
-> that doesn't make any sense, because there isn't any sane method to
-> backflow the requirements from the crashkernel to the command line.
+> # mkfs.f2fs /dev/mmcblk0p3
+> Info: sector size = 512
+> Info: total sectors = 11370496 (in 512bytes)
+> Info: zone aligned segment0 blkaddr: 512
+> [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
 > 
-> The only way I can think how to deal with that in a sane way that
-> doesn't require that the user has to understand a whole bunch of things
-> about their system that no user should ever have to be burdened with is
-> to have the packaging system feed back information about the crashkernel
-> and kexec-tools that will be used.  That interface probably needs
-> serious architecting.
+> mkfs process gets stuck in D state and I see the following in the dmesg:
 > 
-> I wouldn't object to crashkernel=<size>,<option>,<option>... being the
-> format for that and it has the plus that it doesn't break less.  So
-> something like "crashkernel=800M,high" (:search_high_first is
-> inconsistent with other options and completely pointlessly wordy... this
-> isn't Multics, and the command line space is a limited resource) would
-> make sense.
+> [  257.789733] __end_that: dev mmcblk0: type=1, flags=122c8081
+> [  257.789764]   sector 4194304, nr/cnr 2981888/4294959104
+> [  257.789764]   bio df3840c0, biotail df3848c0, buffer   (null), len 1526726656
+> [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
+> [  257.794921] request botched: dev mmcblk0: type=1, flags=122c8081
+> [  257.794921]   sector 4194304, nr/cnr 2981888/4294959104
+> [  257.794921]   bio df3840c0, biotail df3848c0, buffer   (null), len 1526726656
 > 
-> However, I really strongly suggest you work on a mechanism to take the
-> information about the crashkernel and utilities that the kernel can't
-> know and feed it into the bootloader configuration.  This can be as
-> simple as a set of scripts.
+> I'd appreciate any suggestion on what to try before I try to bisect it.
+> 
 
-Hi Peter,
+Could you share "cat /proc/partitions" and "strace mkfs.f2fs /dev/mmcblk0p3" outputs? I think that these outputs can be very useful for issue analysis.
 
-I agree that this dependency on crashkernel is creating lots of problems
-and there should be a better way to manage it.
+By the way, can you reproduce the issue on another SD-card? Do you reproduce the issue only under pandaboard?
 
-Sorry, but I did not fully understand your suggestion on how to handle the
-problem. IIUC, you are suggesting that kexec-tools has the memory
-requirements and when that package installs, it should automatically
-update boot loader command line to communicate that requirement to kernel?
-Or are you suggesting something else entirely.
+Thanks,
+Vyacheslav Dubeyko.
 
-Where to reserve is not entirely tied to kexec-tools version. It also
-depends on the environment and run time user options. 
+> -- 
+> Thanks.
+> -- Max
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-For example kernel image being loaded and entry point selected. So if one
-decides to load take 32bit entry point of bzImage then memory has to be
-reserved in first 4G (despite the fact that kexec-tools is able to load 64bit
-bzImage and handle higher reserved ranges).
-
-Also whether to reserve memory for software iotlb will depend on whether
-we have chosen to enable iommu in second kernel or not.
-
-So sorting out all the memory reservation requirements based on
-kexec-tools version and during installation time alone might not work.
-
-To make user's life easier, we can probably modify "kdump" service and
-provide another option which can calculate the right crashkernel= command
-line option based on user selected option and system environment and
-display it to user (or possibly propogate to bootloader command line and
-system is rebooted).
-
-All this will only address the issue of where to reserve memory. It will
-still not solve the issue of how much memory to reserve. We have no way
-to know. It is all heuristics.
-
-crashkernel=<size>,<option>,<option>.. and crashkernel=800M,high sound
-good to me. 
-
-So atleast for 3.9 kernel, shall we hide new semantics behind
-crashkernel=XM,high and by default crashkernel=XM tries to emulate
-crashkernel=XM,low to retain backward compatibility?
-
-Thanks
-Vivek
