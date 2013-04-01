@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757046Ab3DAFBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 01:01:53 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:53193 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757025Ab3DAFBt (ORCPT
+	id S1757097Ab3DAFDv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 01:03:51 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51327 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757063Ab3DAFDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 01:01:49 -0400
+	Mon, 1 Apr 2013 01:03:50 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <5159151E.9070204@jp.fujitsu.com>
+Date: Mon, 01 Apr 2013 14:03:26 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <CAKohponax2iDZeA-WG_L2XVHU5GGJB2nSPWVoVxbZUoez1ZpDw@mail.gmail.com>
-References: <cover.1364229828.git.viresh.kumar@linaro.org>
-	<afc636963b63becccf34d092203c53369bd1b735.1364229828.git.viresh.kumar@linaro.org>
-	<CAKohponax2iDZeA-WG_L2XVHU5GGJB2nSPWVoVxbZUoez1ZpDw@mail.gmail.com>
-Date: Mon, 1 Apr 2013 10:31:48 +0530
-Message-ID: <CAKohpokkyQK+650aPLtdXJ0wHWupR=-bcTM_eCoZRDy3N47HJQ@mail.gmail.com>
-Subject: Re: [PATCH 4/9] ia64: cpufreq: move cpufreq driver to drivers/cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org
-Cc: arvind.chauhan@arm.com, robin.randhawa@arm.com, Steve.Bannister@arm.com,
-        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        arnd.bergmann@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Li Zefan <lizefan@huawei.com>
+CC: Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] memcg: take reference before releasing rcu_read_lock
+References: <51556CE9.9060000@huawei.com>
+In-Reply-To: <51556CE9.9060000@huawei.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 March 2013 15:21, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Fixup:
->
-> commit 509bc3c30aff65045918f69f750d8845f004cc0a
-> Author: Viresh Kumar <viresh.kumar@linaro.org>
-> Date:   Sat Mar 30 15:20:41 2013 +0530
->
->     fixup! ia64: cpufreq:  move cpufreq driver to drivers/cpufreq
-> ---
->  arch/ia64/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-> index dd59848..152b5f2 100644
-> --- a/arch/ia64/Kconfig
-> +++ b/arch/ia64/Kconfig
-> @@ -593,6 +593,7 @@ source "drivers/acpi/Kconfig"
->  if PM
->  menu "CPU Frequency scaling"
->  source "drivers/cpufreq/Kconfig"
-> +endmenu
->  endif
->
->  endmenu
+(2013/03/29 19:28), Li Zefan wrote:
+> The memcg is not referenced, so it can be destroyed at anytime right
+> after we exit rcu read section, so it's not safe to access it.
+> 
+> To fix this, we call css_tryget() to get a reference while we're still
+> in rcu read section.
+> 
+> This also removes a bogus comment above __memcg_create_cache_enqueue().
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-Hi Tony/Fenghua,
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Any comments on this patch?
+
