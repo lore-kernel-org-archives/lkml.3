@@ -1,85 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759467Ab3DATiv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 15:38:51 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:1455 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758854Ab3DATit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 15:38:49 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zz98dI103dK1432Izz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dh8275bhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-WSS-ID: 0MKLD8H-02-2Z5-02
-X-M-MSG: 
-Date: Mon, 1 Apr 2013 14:38:39 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>
-CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 0/2] cpufreq: ondemand: add AMD specific powersave bias
-Message-ID: <20130401193839.GA15738@jshin-Toonie>
-References: <1364495057-14939-1-git-send-email-jacob.shin@amd.com>
- <CAKohpokHs3pxnYx3QraEYhxqGs8KdTiomPpcbEDNgChaZDWK4A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAKohpokHs3pxnYx3QraEYhxqGs8KdTiomPpcbEDNgChaZDWK4A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	id S1759479Ab3DATqx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 15:46:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53977 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759419Ab3DATqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 15:46:52 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 20/27] perf tools: Merge all *LDFLAGS* make variable into LDFLAGS
+Date: Mon,  1 Apr 2013 21:18:43 +0200
+Message-Id: <1364843930-17974-21-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
+References: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29, 2013 at 08:18:54AM +0530, Viresh Kumar wrote:
-> On 28 March 2013 23:54, Jacob Shin <jacob.shin@amd.com> wrote:
-> > This patchset adds AMD specific powersave bias function to the ondemand
-> > governor; which can be used to help ondemand governor make more power conscious
-> > frequency change decisions based on feedback from hardware (availble on AMD
-> > Family 16h and above).
-> >
-> > Hardware feedback tells software how "sensitive" to frequency changes the
-> > workloads are. CPU-bound workloads will be more sensitive -- they will
-> > perform better as frequency increases. Memory/IO-bound workloads will be less
-> > sensitive -- they will not necessarily perform better as frequnecy increases.
-> >
-> > This patchset was compared against ondemand governor without powersave bias
-> > and did not show any performance degradation on CPU-bound workloads such as
-> > kernbench and unixbench. While saving power on Memory-bound workloads such as
-> > stream.
-> >
-> > This applies to linux-pm's linux-next branch, on top of Viresh's 'Implement
-> > per policy instance of governor' V4 patchset:
-> >
-> > https://lkml.org/lkml/2013/3/27/348
-> >
-> > V2:
-> > * Added proper include files to amd_freq_sensitivity.c
-> > * Only register powersave_bias_target function pointer and not the entire
-> >   od_ops.
-> >
-> > Jacob Shin (2):
-> >   cpufreq: ondemand: allow custom powersave_bias_target function to be
-> >     registered
-> >   cpufreq: AMD "frequency sensitivity feedback" powersave bias for
-> >     ondemand governor
-> >
-> >  arch/x86/include/uapi/asm/msr-index.h  |    1 +
-> >  drivers/cpufreq/Kconfig.x86            |   10 +++
-> >  drivers/cpufreq/Makefile               |    1 +
-> >  drivers/cpufreq/amd_freq_sensitivity.c |  147 ++++++++++++++++++++++++++++++++
-> >  drivers/cpufreq/cpufreq_governor.h     |    3 +
-> >  drivers/cpufreq/cpufreq_ondemand.c     |   22 ++++-
-> >  6 files changed, 181 insertions(+), 3 deletions(-)
-> >  create mode 100644 drivers/cpufreq/amd_freq_sensitivity.c
-> 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> 
+Merging all *LDFLAGS* make variable into LDFLAGS to eliminate
+all special *LDFLAGS* variables and make the setup clear.
 
-Hi Rafael,
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Stephane Eranian <eranian@google.com>
+---
+ tools/perf/Makefile        |  6 ++----
+ tools/perf/config/Makefile | 41 +++++++++++++++++++++++------------------
+ 2 files changed, 25 insertions(+), 22 deletions(-)
 
-If this looks okay to you,
-please commit to linux-next when you get the chance.
-
-Thanks!
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index d467820..a1170a1 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -501,8 +501,6 @@ endif
+ 
+ LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive -Wl,--start-group $(EXTLIBS) -Wl,--end-group
+ 
+-ALL_LDFLAGS += $(BASIC_LDFLAGS)
+-
+ export INSTALL SHELL_PATH
+ 
+ ### Build rules
+@@ -525,7 +523,7 @@ $(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+ 		$(CFLAGS) -c $(filter %.c,$^) -o $@
+ 
+ $(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
+-	$(QUIET_LINK)$(CC) $(CFLAGS) $(ALL_LDFLAGS) $(OUTPUT)perf.o \
++	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUT)perf.o \
+                $(BUILTIN_OBJS) $(LIBS) -o $@
+ 
+ $(OUTPUT)builtin-help.o: builtin-help.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+@@ -630,7 +628,7 @@ $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: scripts/python/Perf-Trace-Uti
+ 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs $<
+ 
+ $(OUTPUT)perf-%: %.o $(PERFLIBS)
+-	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) $(LIBS)
++	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $(filter %.o,$^) $(LIBS)
+ 
+ $(LIB_OBJS) $(BUILTIN_OBJS): $(LIB_H)
+ $(patsubst perf-%,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index a53d2b3..c6e4902 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -71,7 +71,6 @@ CFLAGS += \
+ 	-std=gnu99
+ 
+ EXTLIBS = -lpthread -lrt -lelf -lm
+-ALL_LDFLAGS = $(LDFLAGS)
+ 
+ ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
+ 	CFLAGS += -fstack-protector-all
+@@ -107,8 +106,6 @@ CFLAGS += \
+ 	-I../lib/ \
+ 	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ 
+-BASIC_LDFLAGS =
+-
+ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
+ 	BIONIC := 1
+ 	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
+@@ -120,9 +117,9 @@ ifdef NO_LIBELF
+ 	NO_DEMANGLE := 1
+ 	NO_LIBUNWIND := 1
+ else
+-FLAGS_LIBELF=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
++FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
+ ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
+-	FLAGS_GLIBC=$(CFLAGS) $(ALL_LDFLAGS)
++	FLAGS_GLIBC=$(CFLAGS) $(LDFLAGS)
+ 	ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
+ 		LIBC_SUPPORT := 1
+ 	endif
+@@ -146,7 +143,7 @@ else
+ 		LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
+ 	endif
+ 
+-	FLAGS_DWARF=$(CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
++	FLAGS_DWARF=$(CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(LDFLAGS) $(EXTLIBS)
+ 	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
+ 		msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
+ 		NO_DWARF := 1
+@@ -156,7 +153,7 @@ endif # NO_LIBELF
+ 
+ ifndef NO_LIBELF
+ CFLAGS += -DLIBELF_SUPPORT
+-FLAGS_LIBELF=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
++FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
+ ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
+ 	CFLAGS += -DLIBELF_MMAP
+ endif
+@@ -170,13 +167,21 @@ ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
+ 	NO_DWARF := 1
+ else
+ 	CFLAGS += -DDWARF_SUPPORT $(LIBDW_CFLAGS)
+-	BASIC_LDFLAGS := $(LIBDW_LDFLAGS) $(BASIC_LDFLAGS)
++	LDFLAGS += $(LIBDW_LDFLAGS)
+ 	EXTLIBS += -lelf -ldw
+ endif # PERF_HAVE_DWARF_REGS
+ endif # NO_DWARF
+ 
+ endif # NO_LIBELF
+ 
++ifndef NO_LIBELF
++CFLAGS += -DLIBELF_SUPPORT
++FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
++ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
++	CFLAGS += -DLIBELF_MMAP
++endif # try-cc
++endif # NO_LIBELF
++
+ # There's only x86 (both 32 and 64) support for CFI unwind so far
+ ifneq ($(ARCH),x86)
+ 	NO_LIBUNWIND := 1
+@@ -190,7 +195,7 @@ ifdef LIBUNWIND_DIR
+ 	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
+ endif
+ 
+-FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
++FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(CFLAGS) $(LIBUNWIND_LDFLAGS) $(LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
+ ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
+ 	msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
+ 	NO_LIBUNWIND := 1
+@@ -201,11 +206,11 @@ ifndef NO_LIBUNWIND
+ 	CFLAGS += -DLIBUNWIND_SUPPORT
+ 	EXTLIBS += $(LIBUNWIND_LIBS)
+ 	CFLAGS += $(LIBUNWIND_CFLAGS)
+-	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
++	LDFLAGS += $(LIBUNWIND_LDFLAGS)
+ endif # NO_LIBUNWIND
+ 
+ ifndef NO_LIBAUDIT
+-	FLAGS_LIBAUDIT = $(CFLAGS) $(ALL_LDFLAGS) -laudit
++	FLAGS_LIBAUDIT = $(CFLAGS) $(LDFLAGS) -laudit
+ 	ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
+ 		msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
+ 		NO_LIBAUDIT := 1
+@@ -220,7 +225,7 @@ ifdef NO_NEWT
+ endif
+ 
+ ifndef NO_SLANG
+-	FLAGS_SLANG=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
++	FLAGS_SLANG=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
+ 	ifneq ($(call try-cc,$(SOURCE_SLANG),$(FLAGS_SLANG),libslang),y)
+ 		msg := $(warning slang not found, disables TUI support. Please install slang-devel or libslang-dev);
+ 		NO_SLANG := 1
+@@ -233,7 +238,7 @@ ifndef NO_SLANG
+ endif
+ 
+ ifndef NO_GTK2
+-	FLAGS_GTK2=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
++	FLAGS_GTK2=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
+ 	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
+ 		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
+ 		NO_GTK2 := 1
+@@ -263,7 +268,7 @@ else
+ 		CFLAGS += -DNO_LIBPERL
+ 		NO_LIBPERL := 1
+ 	else
+-		ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
++		LDFLAGS += $(PERL_EMBED_LDFLAGS)
+ 		EXTLIBS += $(PERL_EMBED_LIBADD)
+ 	endif
+ endif
+@@ -322,7 +327,7 @@ else
+           $(warning $(and ,))
+           $(error   $(and ,))
+         else
+-          ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
++          LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
+           EXTLIBS += $(PYTHON_EMBED_LIBADD)
+           LANG_BINDINGS += $(OUTPUT)python/perf.so
+         endif
+@@ -338,7 +343,7 @@ else
+ 		EXTLIBS += -liberty
+ 		CFLAGS += -DHAVE_CPLUS_DEMANGLE
+ 	else
+-		FLAGS_BFD=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
++		FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+ 		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+ 		ifeq ($(has_bfd),y)
+ 			EXTLIBS += -lbfd
+@@ -353,7 +358,7 @@ else
+ 				ifeq ($(has_bfd_iberty_z),y)
+ 					EXTLIBS += -lbfd -liberty -lz
+ 				else
+-					FLAGS_CPLUS_DEMANGLE=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
++					FLAGS_CPLUS_DEMANGLE=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -liberty
+ 					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
+ 					ifeq ($(has_cplus_demangle),y)
+ 						EXTLIBS += -liberty
+@@ -387,7 +392,7 @@ ifndef NO_BACKTRACE
+ endif
+ 
+ ifndef NO_LIBNUMA
+-	FLAGS_LIBNUMA = $(CFLAGS) $(ALL_LDFLAGS) -lnuma
++	FLAGS_LIBNUMA = $(CFLAGS) $(LDFLAGS) -lnuma
+ 	ifneq ($(call try-cc,$(SOURCE_LIBNUMA),$(FLAGS_LIBNUMA),libnuma),y)
+ 		msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev);
+ 		NO_LIBNUMA := 1
+-- 
+1.7.11.7
 
