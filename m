@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758034Ab3DAG5s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 02:57:48 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:62386 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757982Ab3DAG5D (ORCPT
+	id S1758047Ab3DAG6L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 02:58:11 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:45882 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757979Ab3DAG5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 02:57:03 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-a6-51592fb994ea
+	Mon, 1 Apr 2013 02:57:01 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-a3-51592fb9d897
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 8/9] f2fs: avoid race for summary information
-Date: Mon, 01 Apr 2013 15:55:59 +0900
-Message-id: <1364799360-23145-8-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 7/9] f2fs: allocate remained free segments in the LFS mode
+Date: Mon, 01 Apr 2013 15:55:58 +0900
+Message-id: <1364799360-23145-7-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.1.3.566.gaa39828
 In-reply-to: <1364799360-23145-1-git-send-email-jaegeuk.kim@samsung.com>
 References: <1364799360-23145-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t8zfd2d+pGBBr8faFhc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXHn6RfmggsCFccb
-	XrE2MB7m7WLk5JAQMJE4cGk9G4QtJnHhHojNxSEksIxR4t3dvUwwRQ2nzkAlFjFKfH/YxALh
-	tDFJrLhwn72LkYODTUBbYvN+A5AGEQFmiQVTzzOC1DALTGCU+L/oPQtIQljAVqLl9k2wdSwC
-	qhJ/2puYQWxeAXeJjb0boLbpSqz+/5wdxOYU8JD43PYRrFcIqObUvtVgV0gIfGeTWN3RyQ4x
-	SEDi2+RDLCBHSAjISmw6wAwxR1Li4IobLBMYhRcwMqxiFE0tSC4oTkovMtYrTswtLs1L10vO
-	z93ECAna/h2Mdw9YH2JMBho3kVlKNDkfGPR5JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgHCgmk
-	J5akZqemFqQWxReV5qQWH2Jk4uCUamC0OnDPfT2zpvTJ+EilpsiH3kt2sU6tbPe3Uak7s79C
-	wsPs3c3jTk/uMm7/sm/DjRc7FvbHtmsFbX/UwDYz9oaUfkH1xBLGWVO10r6GmjHPTXq28mas
-	2U1XX5uyj7dEpA/9mPOU41bAP0XWCx+bpiet31D4dHn2xz9f6i/09V6dOL936oVzhS9WKLEU
-	ZyQaajEXFScCAF6RCUdwAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jAd2d+pGBBg8PqVhc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
-	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5hx5+kX5oILAhXHG16xNjAe5u1i5OSQEDCRaDh1hg3CFpO4cG89kM3FISSw
-	iFHi+8MmFginjUlixYX77F2MHBxsAtoSm/cbgDSICDBLLJh6nhGkhllgAqPE/0XvWUASwgK2
-	Ei23b4JNZRFQlfjT3sQMYvMKuEts7N3ABLFNV2L1/+fsIDangIfE57aPYL1CQDWn9q1mm8DI
-	u4CRYRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcEw8k97BuKrB4hCjAAejEg9vxIWIQCHW
-	xLLiytxDjBIczEoivD7fgEK8KYmVValF+fFFpTmpxYcYk4GumsgsJZqcD4zXvJJ4Q2MTMyNL
-	IzMLIxNzc9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLglGpgnHkx/0nfa69tW/QSyqYekl6r
-	Kxjc/TGoov1GxOwpPuF1zxMevvw16/xepcAdNdv2zVme0s/zaFPx3Ehx600mar/SU3IYc7b3
-	vejsVznIJ1L7tuUi4+R1pYvrvkfab17Z9aA9o7r7yQmnuBnrFB8Jz80T4kjq0mL6/vLkk/hT
-	vZs3z2HK6giSUmIpzkg01GIuKk4EALoMzK7NAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t8zfd2d+pGBBqcWKVpc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXH84gXGgkvcFXsm
+	3mduYDzO2cXIySEhYCLx7NwCNghbTOLCvfVANheHkMAyRomm47fZYIpenv0GlVjEKHF5yTZm
+	CKeNSWLFhfvsXYwcHGwC2hKb9xuANIgIMEssmHqeEaSGWWACo8T/Re9ZQGqEBbwkZjz3A6lh
+	EVCV+PS+kwnE5hVwl1i58iQLxDJdidX/n7OD2JwCHhKf2z6CxYWAak7tWw110Hc2iXO3TSHm
+	CEh8m3wIbLyEgKzEpgPMECWSEgdX3GCZwCi8gJFhFaNoakFyQXFSepGxXnFibnFpXrpecn7u
+	JkZIwPbvYLx7wPoQYzLQuInMUqLJ+cCAzyuJNzQ2M7IwNTE1NjK3NCNNWEmcV63FOlBIID2x
+	JDU7NbUgtSi+qDQntfgQIxMHp1QD4wnTFwavZxgYS/1ncjYpjV/ErXdiLn+2SsCVeU+b9WJW
+	plRM9HK2KQhWiDmrVVi69o6mh4fa9h92njIS6Yw7/1suUd6iwh9cwdNWKiJzaWPguoOfyplF
+	HN996F7QvuiEEd/3R7nyKo8ir5tMKxO807f+ygVeuacx5v8Do7+fMD260WLrp2+2SizFGYmG
+	WsxFxYkAyMOFBW4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jAd2d+pGBBp0rZC2u7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
+	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
+	JAiux8gADSSsY8w4fvECY8El7oo9E+8zNzAe5+xi5OSQEDCReHn2GxuELSZx4d56IJuLQ0hg
+	EaPE5SXbmCGcNiaJFRfus3cxcnCwCWhLbN5vANIgIsAssWDqeUaQGmaBCYwS/xe9ZwGpERbw
+	kpjx3A+khkVAVeLT+04mEJtXwF1i5cqTLBDLdCVW/3/ODmJzCnhIfG77CBYXAqo5tW812wRG
+	3gWMDKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgiPimfQOxlUNFocYBTgYlXh4Iy5EBAqx
+	JpYVV+YeYpTgYFYS4fX5BhTiTUmsrEotyo8vKs1JLT7EmAx01URmKdHkfGC05pXEGxqbmBlZ
+	GplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QD4+JP3VYK5e/kn00LiXJPWmzX
+	pPP1LIOCyArzSZeflb1337OB/fG8WqP+w7GBd3W3ur24zyVz5KXIlQvXApPmmT88zH+8TT4k
+	w/dkz/ynOf0RN3Wn7LlTk59stf15J6doc+jnY7Mm3uG29dCYUfLS6tme1bWO4p7l0lURNtf2
+	x4Q2cy7JfFXSrsRSnJFoqMVcVJwIAHuTb+bMAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -48,75 +48,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to do GC more reliably, I'd like to lock the vicitm summary page
-until its GC is completed, and also prevent any checkpoint process.
+This patch adds a new condition that allocates free segments in the current
+active section even if SSR is needed.
+Otherwise, f2fs cannot allocate remained free segments in the section since
+SSR finds dirty segments only.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/gc.c    | 8 +-------
- fs/f2fs/node.c  | 2 +-
- fs/f2fs/super.c | 7 +++++--
- 3 files changed, 7 insertions(+), 10 deletions(-)
+ fs/f2fs/segment.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index 54aceb2..54ac13d 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -641,12 +641,6 @@ static void do_garbage_collect(struct f2fs_sb_info *sbi, unsigned int segno,
- 	if (IS_ERR(sum_page))
- 		return;
- 
--	/*
--	 * CP needs to lock sum_page. In this time, we don't need
--	 * to lock this page, because this summary page is not gone anywhere.
--	 * Also, this page is not gonna be updated before GC is done.
--	 */
--	unlock_page(sum_page);
- 	sum = page_address(sum_page);
- 
- 	switch (GET_SUM_TYPE((&sum->footer))) {
-@@ -660,7 +654,7 @@ static void do_garbage_collect(struct f2fs_sb_info *sbi, unsigned int segno,
- 	stat_inc_seg_count(sbi, GET_SUM_TYPE((&sum->footer)));
- 	stat_inc_call_count(sbi->stat_info);
- 
--	f2fs_put_page(sum_page, 0);
-+	f2fs_put_page(sum_page, 1);
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index d5244f6..fe520d3 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -347,6 +347,17 @@ next:
+ 	return NULL_SEGNO;
  }
  
- int f2fs_gc(struct f2fs_sb_info *sbi)
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index c5360b7..7555fb7 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1148,7 +1148,7 @@ static int f2fs_write_node_pages(struct address_space *mapping,
- 
- 	/* First check balancing cached NAT entries */
- 	if (try_to_free_nats(sbi, NAT_ENTRY_PER_BLOCK)) {
--		write_checkpoint(sbi, false);
-+		f2fs_sync_fs(sbi->sb, true);
- 		return 0;
- 	}
- 
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index ea325c8..161e6c6 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -137,10 +137,13 @@ int f2fs_sync_fs(struct super_block *sb, int sync)
- 	if (!sbi->s_dirty && !get_pages(sbi, F2FS_DIRTY_NODES))
- 		return 0;
- 
--	if (sync)
-+	if (sync) {
-+		mutex_lock(&sbi->gc_mutex);
- 		write_checkpoint(sbi, false);
--	else
-+		mutex_unlock(&sbi->gc_mutex);
-+	} else {
- 		f2fs_balance_fs(sbi);
-+	}
- 
- 	return 0;
- }
++static int is_next_segment_free(struct f2fs_sb_info *sbi, int type)
++{
++	struct curseg_info *curseg = CURSEG_I(sbi, type);
++	unsigned int segno = curseg->segno;
++	struct free_segmap_info *free_i = FREE_I(sbi);
++
++	if (segno + 1 < TOTAL_SEGS(sbi) && (segno + 1) % sbi->segs_per_sec)
++		return !test_bit(segno + 1, free_i->free_segmap);
++	return 0;
++}
++
+ /*
+  * Find a new segment from the free segments bitmap to right order
+  * This function should be returned with success, otherwise BUG
+@@ -580,6 +591,8 @@ static void allocate_segment_by_default(struct f2fs_sb_info *sbi,
+ 		change_curseg(sbi, type, false);
+ 	else if (type == CURSEG_WARM_NODE)
+ 		new_curseg(sbi, type, false);
++	else if (curseg->alloc_type == LFS && is_next_segment_free(sbi, type))
++		new_curseg(sbi, type, false);
+ 	else if (need_SSR(sbi) && get_ssr_segment(sbi, type))
+ 		change_curseg(sbi, type, true);
+ 	else
 -- 
 1.8.1.3.566.gaa39828
 
