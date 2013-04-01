@@ -1,120 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab3DALhk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 07:37:40 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60002 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757741Ab3DALf1 (ORCPT
+	id S1758671Ab3DALo2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 07:44:28 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34183 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758645Ab3DALo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 07:35:27 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-85-515970fe91c3
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+	Mon, 1 Apr 2013 07:44:27 -0400
+Date: Mon, 1 Apr 2013 12:44:23 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH 1/9] perf hists: Fix an invalid memory free on he->branch_info
-Date: Mon,  1 Apr 2013 20:35:17 +0900
-Message-Id: <1364816125-12212-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1364816125-12212-1-git-send-email-namhyung@kernel.org>
-References: <1364816125-12212-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        grant.likely@secretlab.ca
+Subject: Re: [PATCH] ACPI / SPI: Use parent's ACPI_HANDLE() in
+ acpi_register_spi_devices()
+Message-ID: <20130401114422.GA18636@opensource.wolfsonmicro.com>
+References: <2747891.0orCNBJG8v@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8t9RHnE3ZwKMSgU+"
+Content-Disposition: inline
+In-Reply-To: <2747891.0orCNBJG8v@vostro.rjw.lan>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
 
-The branch info was allocated for the whole stack and passed matching
-hist entry for each level during processing samples.  Thus when a hist
-entry tries to free its branch info like in hists__collapse_insert_entry
-it'll face following error.
+--8t9RHnE3ZwKMSgU+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  *** glibc detected *** perf: munmap_chunk(): invalid pointer: 0x00000000014e9d20 ***
-  ======= Backtrace: =========
-  /lib64/libc.so.6[0x387d47ae16]
-  perf[0x4923bd]
-  perf(cmd_report+0xd68)[0x432a08]
-  perf[0x41a663]
-  perf(main+0x58f)[0x419eaf]
-  /lib64/libc.so.6(__libc_start_main+0xf5)[0x387d421735]
-  perf[0x419f95]
+On Mon, Apr 01, 2013 at 02:21:08AM +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>=20
+> The ACPI handle of struct spi_master's dev member should not be
+> set, because this causes that struct spi_master to be associated
+> with the ACPI device node corresponding to its parent as the
+> second "physical_device", which is incorrect (this happens during
+> the registration of struct spi_master).  Consequently,
+> acpi_register_spi_devices() should use the ACPI handle of the
+> parent of the struct spi_master it is called for rather than that
+> struct spi_master's ACPI handle (which should be NULL).
 
-Fix it by allocating and copying branch info for each new hist entry.
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-report.c |  9 ++++++---
- tools/perf/util/hist.c      | 14 ++++++++++++++
- 2 files changed, 20 insertions(+), 3 deletions(-)
+or does this need to be applied to the SPI tree?
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index bd0ca81eeaca..d9f2de3e81fe 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -187,6 +187,9 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 	for (i = 0; i < sample->branch_stack->nr; i++) {
- 		if (rep->hide_unresolved && !(bi[i].from.sym && bi[i].to.sym))
- 			continue;
-+
-+		err = -ENOMEM;
-+
- 		/*
- 		 * The report shows the percentage of total branches captured
- 		 * and not events sampled. Thus we use a pseudo period of 1.
-@@ -195,7 +198,6 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 				&bi[i], 1, 1);
- 		if (he) {
- 			struct annotation *notes;
--			err = -ENOMEM;
- 			bx = he->branch_info;
- 			if (bx->from.sym && use_browser == 1 && sort__has_sym) {
- 				notes = symbol__annotation(bx->from.sym);
-@@ -226,11 +228,12 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 			}
- 			evsel->hists.stats.total_period += 1;
- 			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
--			err = 0;
- 		} else
--			return -ENOMEM;
-+			goto out;
- 	}
-+	err = 0;
- out:
-+	free(bi);
- 	return err;
- }
- 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 6b32721f829a..9438d576459d 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -292,6 +292,20 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 			he->ms.map->referenced = true;
- 
- 		if (he->branch_info) {
-+			/*
-+			 * This branch info is (a part of) allocated from
-+			 * machine__resolve_bstack() and will be freed after
-+			 * adding new entries.  So we need to save a copy.
-+			 */
-+			he->branch_info = malloc(sizeof(*he->branch_info));
-+			if (he->branch_info == NULL) {
-+				free(he);
-+				return NULL;
-+			}
-+
-+			memcpy(he->branch_info, template->branch_info,
-+			       sizeof(*he->branch_info));
-+
- 			if (he->branch_info->from.map)
- 				he->branch_info->from.map->referenced = true;
- 			if (he->branch_info->to.map)
--- 
-1.7.11.7
+--8t9RHnE3ZwKMSgU+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRWXMMAAoJELSic+t+oim9UpAP/3fAVVMFf1gcc6udLLFSNezK
+CCDQQoKrBZPPG75XVDNn5esc3PNAmVoT4V8CSuZItFvoDVXkstlA/WPlYvi8nY/m
+1MRYUJnLq3ZfxoOoYz1UKViNU/QJ8nxHG9s+DgqH/TXJTU4uTGFkI29xC2CjzRzT
+cid0OT97W8wSjea4hjBVUH94Crdrjdb8Fz/Kl76oxA2PT9YNHR/f6T4HDuQFUXfG
+z86rxHj/E8IG1hpXEVq3L/9poc56JiJAtOnqzDAY1YU85sip3CHy+P/ud8jHgRHg
+e14TcVroAP0MAp0gK7j6b1a3WrunEN3+M+R666iEXSzDhZdO0Mpv/G7+KikG5NY5
+2IrrPrNgclb3i00hgJu+JRjT0GrAB3DL07DBFGfXPYs6oDDXmMvzzSuNXaD2ouMw
+upQ1khBqOKwPIlYelmar0ELjhOz7xR1/LmQQl8KOuXro0486e9lZDxOEL2J6fM1Q
+GVds+XJa4f4As8Aq2veUol1hG2GN0WegHmrtZvK5UGDBf5rrLLAHOc0Xpi6t+dSl
+A5y/Yw7XTwQOjwv8tcMgJbkJQ5H+3WyDuMSzRToNEFyTccB7lC8jMCYPgvH6Zyzt
++WyrbB5rZdpwZoKW+M4mdHjOai/FYN+w3/P3KLjECMLj6pFBasUrPcLMWlHKIWf8
+jlJS5+ikB/tPL4cXgffJ
+=vPnE
+-----END PGP SIGNATURE-----
+
+--8t9RHnE3ZwKMSgU+--
