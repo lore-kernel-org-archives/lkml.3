@@ -1,84 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab3DAMGX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 08:06:23 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:54284 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab3DAMGV (ORCPT
+	id S1757056Ab3DAMG4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 08:06:56 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:41127 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756767Ab3DAMGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 08:06:21 -0400
+	Mon, 1 Apr 2013 08:06:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <31775765.508251364807825241.JavaMail.weblogic@epml02>
-References: <31775765.508251364807825241.JavaMail.weblogic@epml02>
-Date: Mon, 1 Apr 2013 05:06:20 -0700
-Message-ID: <CAOMFOmUjjwXg1utrfnGty+LF--ad=85AQtJ57k3jJwL1yN954Q@mail.gmail.com>
-Subject: Re: [3.9-rc5] INFO: task umount:29671 blocked for more than 120 seconds
+In-Reply-To: <1349254268.16946.35.camel@wall-e>
+References: <1349254268.16946.35.camel@wall-e>
+Date: Mon, 1 Apr 2013 05:06:53 -0700
+Message-ID: <CAOMFOmWxeYfavKMagPv5w1OjQL5Ng3JgGUw-bJjw-9w-r2wEVg@mail.gmail.com>
+Subject: Re: losetup kernel crash in drivers/block/loop.c kernel 3.4.11
 From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: jongman.heo@samsung.com, Guo Chao <yan@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Monakhov <dmonakhov@openvz.org>, Dave Young <dyoung@redhat.com>,
+        JeffMoyer <jmoyer@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+Guo Chao  who fixed similar bug recently
+Hi
 
-On Mon, Apr 1, 2013 at 2:17 AM, Jongman Heo <jongman.heo@samsung.com> wrote:
+On Wed, Oct 3, 2012 at 1:51 AM, Stefani Seibold <stefani@seibold.net> wrote:
+> Hi,
 >
-> Hi guys,
+> i am faced with a strange kernel crash while removing a loopback device
+> with losetup, during a software update of my embedded device, which was
+> introduced between 3.0 and 3.4. All other used kernels 2.6.39, 2.6.35,
+> 2.6.33, 2.6.29, 2.6.27 and 2.6.20 works well.
 >
-> I hit following warning with 3.9-rc5, during unmount (the device was mounted via loop device, in case it matters).
+> BUG: unable to handle kernel NULL pointer derference at 00000041
+> IP: [<c019faef>] invalidate_bdev+0x4/0x26
+> *pde = 00000000
+> Ooops: 0000 I#11 PREEMNT SMP
+> Modules linked in: vfat fat i915 drm_kms_helper drm intel_agp i2c_algo_bit intel_gtt agpgart video backlight e1000e usb_storage
 >
-> Jongman.
+> Pid: 869, comm: losetup Tainted G            8.3.4
+> EIP: 0060:[<c0194aef>] EFLAGS: 00010282 CPU: 1
+> EIP is at invalidate_bdev+0x4/0x26
+> EAX: 00000029 EBX: f63c1c00 ECX: 00000000 EDX: f63c1e20
+> ESI: f5c6bc80 EDI: f63c1c60 EBP: f596e500 ESP: f5053e54
+>  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+> CR0: 8005003b CR2: 00000041 CR3: 324ae000 CR4: 000407d0
+> DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+> DR6: ffff0ff0 DR7: 00000400
+> Process losetup (pid: 869, ti=f5052000 task=f616c0c0 task.ti=f5052000)
+> Stack:
+>  f63c1c00 c0277449 000200da f63c1c00 ffffffe7 00004c01 f5c39900 c02784d0
+>  f5d750a4 00000000 f5053efc f5d750a4 f5269900 c017dda6 0000001d 00008000
+>  f63c1cfc c027897b ffffffe7 00004c01 f5053f10 c0202021 00000000 f5c39900
+> Call Trace:
+>  [<c0277449>] ? loop_clr_fd+0x11/0x1d6
+>  [<c02784d0>] ? lo_ioctl+0x455/0x62b
+>  [<c017dda6>] ? do_last.clone.32+0x55b/0x5d5
+>  [<c027807b>] ? loop_switch.clone.13+0x67/0x67
+>  [<c0202021>] ? __blkdev_driver_ioctl+0x1d/0x25
+>  [<c0202905>] ? blkdev_ioctl+0x6a3/0x6c2
+>  [<c016800d>] ? handle_pte_fault+0x21d/0x7ad
+>  [<c017e19b>] ? do_file_open+0x21/0x5d
+>  [<c019425b>] ? block_ioctl+0x2f/0x34
+>  [<c019425b>] ? block_ioctl+0x2f/0x34
+>  [<c019422c>] ? bd_set_size+0x60/0x60
+>  [<c017fe00>] ? do_vfs_ioctl+0x455/0x492
+>  [<c01181d3>] ? do_page_fault+0x30f/0x32c
+>  [<c017293a>] ? fd_install+0x1e/0x3d
+>  [<c0173865>] ? do_sys_open+0x17e/0x188
+>  [<c017feea>] ? sys_ioctl+0x2d/0x47
+>  [<c033f7c1>] ? syscall+0x7/0xb
+> Code: 00 89 f0 5b 5e 5f c3 53 8b 40 08 8b 58 18 83 7b 3c 00 74 11 e8 3f b9 ff ff 89 d8 31 d2 31 c9 5b e9 ba 8e fc ff 5b c3 53 8b 40 08 (8b) 58 18 83 7b 3c 00 74 17 e8  1f b9 ff ff e8 4e 88 fc ff 89 d8
+> EIP: [<c019eaef>] invalidate_bdev+0x4/0x26 SS:ESP 0068:f5053e54
+> CR2: 0000000000000041
 >
-> [ 3600.583547] INFO: task umount:29671 blocked for more than 120 seconds.
-> [ 3600.583552] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [ 3600.583555] umount          D 0000000000000001     0 29671  29632 0x00000000
-> [ 3600.583561]  ffff88011ecb5c98 0000000000000086 ffff880130ccade0 0000000000013e40
-> [ 3600.583566]  ffff88011ecb5fd8 ffff88011ecb4010 0000000000013e40 0000000000013e40
-> [ 3600.583571]  ffff88011ecb5fd8 0000000000013e40 ffff880132518000 ffff880130ccade0
-> [ 3600.583575] Call Trace:
-> [ 3600.583583]  [<ffffffff816fb669>] schedule+0x29/0x70
-> [ 3600.583589]  [<ffffffff816fb98e>] schedule_preempt_disabled+0xe/0x10
-> [ 3600.583593]  [<ffffffff816fa0af>] __mutex_lock_slowpath+0xdf/0x160
-> [ 3600.583598]  [<ffffffff811e433e>] ? release_sysfs_dirent+0x7e/0x100
-> [ 3600.583603]  [<ffffffff816f9fab>] mutex_lock+0x2b/0x50
-> [ 3600.583607]  [<ffffffff8149a8aa>] loop_clr_fd+0x24a/0x2e0
-> [ 3600.583612]  [<ffffffff816fce3e>] ? _raw_spin_lock+0xe/0x20
-> [ 3600.583617]  [<ffffffff8149a9b8>] lo_release+0x78/0x90
-> [ 3600.583622]  [<ffffffff811a94e4>] __blkdev_put+0x194/0x1d0
-> [ 3600.583628]  [<ffffffff811a957d>] blkdev_put+0x5d/0x160
-> [ 3600.583633]  [<ffffffff811719bd>] kill_block_super+0x4d/0x80
-> [ 3600.583638]  [<ffffffff81171f35>] deactivate_locked_super+0x45/0x70
-> [ 3600.583643]  [<ffffffff81172dda>] deactivate_super+0x4a/0x70
-> [ 3600.583648]  [<ffffffff8118e538>] mntput_no_expire+0xf8/0x150
-> [ 3600.583653]  [<ffffffff8118eded>] sys_umount+0xcd/0x3e0
-> [ 3600.583659]  [<ffffffff817058d9>] system_call_fastpath+0x16/0x1b
-> [ 3600.583663] INFO: task blkid:29673 blocked for more than 120 seconds.
-> [ 3600.583665] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [ 3600.583667] blkid           D ffffffff81807f20     0 29673      1 0x00000000
-> [ 3600.583672]  ffff88011338fa88 0000000000000082 ffff880130ccc4d0 0000000000013e40
-> [ 3600.583677]  ffff88011338ffd8 ffff88011338e010 0000000000013e40 0000000000013e40
-> [ 3600.583681]  ffff88011338ffd8 0000000000013e40 ffff880132b416f0 ffff880130ccc4d0
-> [ 3600.583686] Call Trace:
-> [ 3600.583691]  [<ffffffff816fb669>] schedule+0x29/0x70
-> [ 3600.583695]  [<ffffffff816fb98e>] schedule_preempt_disabled+0xe/0x10
-> [ 3600.583700]  [<ffffffff816fa0af>] __mutex_lock_slowpath+0xdf/0x160
-> [ 3600.583704]  [<ffffffff816f9fab>] mutex_lock+0x2b/0x50
-> [ 3600.583709]  [<ffffffff811a9723>] __blkdev_get+0x73/0x480
-> [ 3600.583714]  [<ffffffff811a9e90>] ? blkdev_get+0x360/0x360
-> [ 3600.583719]  [<ffffffff811a9b81>] blkdev_get+0x51/0x360
-> [ 3600.583724]  [<ffffffff816fce3e>] ? _raw_spin_lock+0xe/0x20
-> [ 3600.583729]  [<ffffffff811a9e90>] ? blkdev_get+0x360/0x360
-> [ 3600.583734]  [<ffffffff811a9ef2>] blkdev_open+0x62/0x80
-> [ 3600.583739]  [<ffffffff8116d82e>] do_dentry_open+0x23e/0x2c0
-> [ 3600.583743]  [<ffffffff8116d9c5>] finish_open+0x35/0x50
-> [ 3600.583748]  [<ffffffff8117c7b6>] do_last+0x696/0xe50
-> [ 3600.583752]  [<ffffffff81166984>] ? kmem_cache_alloc_trace+0xc4/0x120
-> [ 3600.583757]  [<ffffffff8117f7c8>] path_openat+0xb8/0x490
-> [ 3600.583762]  [<ffffffff8117fcd9>] do_filp_open+0x49/0xa0
-> [ 3600.583767]  [<ffffffff816fce3e>] ? _raw_spin_lock+0xe/0x20
-> [ 3600.583772]  [<ffffffff8118c4e5>] ? __alloc_fd+0xb5/0x160
-> [ 3600.583777]  [<ffffffff8116d498>] do_sys_open+0x108/0x1f0
-> [ 3600.583781]  [<ffffffff8116d5c1>] sys_open+0x21/0x30
-> [ 3600.583786]  [<ffffffff817058d9>] system_call_fastpath+0x16/0x1b
+> This dump was copied by hand from a smart phone screenshot, i hope there
+> are no typos.
+>
+> It is not possible to write a demo program which reproduce this bug due
+> the complexity, so i will explain what going on.
+>
+> First mount a kernel which include a initramfs doing the following:
+>
+> /bin/mount -t proc none /proc
+> /bin/mount -o rw,data=journal,barrier=1,errors=remount-ro /dev/sda3 /mnt
+> /bin/mount -o loop /mnt/rootfs.squashfs /rootfs
+> /bin/mount -o loop modules.squashfs /rootfs/lib/modules
+> /bin/mount -o move /mnt /rootfs/rw
+> /bin/umount /proc
+> exec /rootfs/bin/sh -c 'exec /sbin/switch_root -c /dev/console /rootfs /sbin/init'
+> exec /bin/sh
+>
+> The Squashfs-Image will be mounted and will be the new root filesystem,
+> the file system of /dev/sda3 will be then mounted under /rw.
+>
+> The reason to do this is, that is is very easy to exchange the root
+> filesystem, since it it only a plain image file. And there is no extra
+> partition necessary which can be to small in the future.
+>
+> Also the kernel modules will be a squashfs image as a part of the
+> initramfs. This make it safe to exchange the kernel, because it will
+> change togehter with the modules.
+>
+> After starting the new init process of the rootfs.squashfs the firmware
+> image opfs.squashfs will be mounted also via loopback block device
+> at /opt.
+>
+> When the user decide to do an update, a new rootfs.squashf will be
+> copied into a ramdisk and the following script (snippet) will be
+> executed:
+>
+> cat <<EOF >/tmp/init
+> #!/bin/sh
+> exec </dev/console
+> exec >/dev/console
+> exec 2>/dev/console
+> umount /init/opt
+> umount -l -r /init/rw
+> umount -l -r /init
+> umount /etc
+> rm -rf /tmp/etc
+> sync
+> for i in /dev/loop*
+> do
+>         losetup -d $i 2>/dev/null
+> done
+> rm \$0
+> exec /tmp/update.sh "$1" "$2"
+> reboot -f
+> EOF
+>         chmod a+x /tmp/init
+>
+>         echo "::restart:/tmp/init" >/tmp/etc/inittab
+>
+>         mount -o ro /dev/ramdisk /mnt
+>         cd /mnt
+>         /sbin/pivot_root . init
+>
+>         mount -o move /init/tmp /tmp
+>         mount -o move /init/proc /proc
+>         mount -o move /init/sys /sys
+>         mount -o move /init/dev/pts /dev/pts
+>         mount -o move /init/dev/shm /dev/shm
+>         mount -o bind /tmp/etc /etc
+>
+>         init -q
+>         sleep 1
+>         kill -SIGQUIT 1
+>         exit
+>
+> Now the update.sh script has the control over the system, no more
+> application or daemons will running and all mass storages should be
+> unmounted.
+>
+> Till this everything is working fine, than the update.sh will execute
+> the following code:
+>
+> rm -f /rw/optfs.squashfs
+>
+> for i in /dev/loop*
+> do
+>         losetup -d $i 2>/dev/null
+> done
+>
+> This will remove the old firmware and all possible loopback devices.
+> Executing the losetup will crash the kernel and will produce the Oops
+> above.
+>
+> This is independent to the underlying file system or the processor
+> architecture, it will happen on x86 or ppc and ext3fs and yaffs2 as
+> well.
+>
+> Any idea?
+
+Here is proposed fix http://marc.info/?l=linux-kernel&m=136481752606623&w=2
