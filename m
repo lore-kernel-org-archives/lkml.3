@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757201Ab3DAU34 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 16:29:56 -0400
-Received: from mail-da0-f48.google.com ([209.85.210.48]:51906 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756696Ab3DAU3y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 16:29:54 -0400
-Date: Mon, 1 Apr 2013 13:29:43 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Tim Hockin <thockin@hockin.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <paul@paulmenage.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
-        Daniel J Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Max Kellermann <mk@cm4all.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
-Message-ID: <20130401202943.GC31435@htj.dyndns.org>
-References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
- <CAAAKZwv9=NFmt6xj1KF2va1i6=UCvka0YkmdOY9JNUMHDOWpGw@mail.gmail.com>
- <20130401184617.GB31435@htj.dyndns.org>
- <CAAAKZwvemKDLeuKr6wWMUSVczkRVDZKSzYrXXEMcZ8qvcFR0zQ@mail.gmail.com>
+	id S1757383Ab3DAUaA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 16:30:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55938 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757231Ab3DAU35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 16:29:57 -0400
+Date: Mon, 1 Apr 2013 22:29:37 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 5/9] perf sort: Separate out memory-specific sort keys
+Message-ID: <20130401202937.GA1022@krava.redhat.com>
+References: <1364816125-12212-1-git-send-email-namhyung@kernel.org>
+ <1364816125-12212-6-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAAKZwvemKDLeuKr6wWMUSVczkRVDZKSzYrXXEMcZ8qvcFR0zQ@mail.gmail.com>
+In-Reply-To: <1364816125-12212-6-git-send-email-namhyung@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 01, 2013 at 01:09:09PM -0700, Tim Hockin wrote:
-> Pardon my ignorance, but... what?  Use kernel memory limits as a proxy
-> for process/thread counts?  That sounds terrible - I hope I am
+On Mon, Apr 01, 2013 at 08:35:21PM +0900, Namhyung Kim wrote:
 
-Well, the argument was that process / thread counts were a poor and
-unnecessary proxy for kernel memory consumption limit.  IIRC, Johannes
-put it as (I'm paraphrasing) "you can't go to Fry's and buy 4k thread
-worth of component".
+SNIP
 
-> misunderstanding?  This task counter patch had several properties that
-> mapped very well to what we want.
-> 
-> Is it dead in the water?
+> +
+>  int sort_dimension__add(const char *tok)
+>  {
+>  	unsigned int i;
+> @@ -964,6 +971,33 @@ int sort_dimension__add(const char *tok)
+>  		return 0;
+>  	}
+>  
+> +	for (i = 0; i < ARRAY_SIZE(memory_sort_dimensions); i++) {
+> +		struct sort_dimension *sd = &memory_sort_dimensions[i];
+> +
+> +		if (strncasecmp(tok, sd->name, strlen(tok)))
+> +			continue;
+> +
+> +		if (sort__mode != SORT_MODE__MEMORY)
+> +			return -EINVAL;
+> +
+> +		if (sd->entry == &sort_mem_daddr_sym)
+> +			sort__has_sym = 1;
+> +
+> +		if (sd->taken)
+> +			return 0;
+> +
+> +		if (sd->entry->se_collapse)
+> +			sort__need_collapse = 1;
+> +
+> +		if (list_empty(&hist_entry__sort_list))
+> +			sort__first_dimension = i + __SORT_MEMORY_MODE;
+> +
+> +		list_add_tail(&sd->entry->list, &hist_entry__sort_list);
+> +		sd->taken = 1;
+> +
+> +		return 0;
 
-After some discussion, Frederic agreed that at least his use case can
-be served well by kmemcg, maybe even better - IIRC it was container
-fork bomb scenario, so you'll have to argue your way in why kmemcg
-isn't a suitable solution for your use case if you wanna revive this.
+nice idea, I wonder some of the above code be put into function
+and used also in previous loop, no big deal though
 
-Thanks.
-
--- 
-tejun
+jirka
