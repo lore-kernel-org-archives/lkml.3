@@ -1,111 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab3DACFI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 22:05:08 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:56471 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754983Ab3DACFF (ORCPT
+	id S1756294Ab3DACQb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 22:16:31 -0400
+Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:40111
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755688Ab3DACQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 22:05:05 -0400
+	Sun, 31 Mar 2013 22:16:30 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 1 Apr 2013 10:16:39 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pinctrl: pinctrl-mxs: document the missing pull-ups
+Message-ID: <20130401021637.GA1693@S2101-09.ap.freescale.net>
+References: <1364601072-30226-1-git-send-email-alexandre.belloni@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <5158CF79.2060702@linaro.org>
-References: <1364549049-29278-1-git-send-email-ning.n.jiang@gmail.com>
-	<5158CF79.2060702@linaro.org>
-Date: Mon, 1 Apr 2013 10:05:03 +0800
-Message-ID: <CAH3Oq6ThE1RevjWsiWvApi9Z2vvcA9A8utX6LjEWcm=uMPx2jw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: timer: Shutdown clock event device when stopping
- local timer
-From: Ning Jiang <ning.n.jiang@gmail.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux@arm.linux.org.uk, kgene.kim@samsung.com, davidb@codeaurora.org,
-        dwalker@fifo99.com, bryanh@codeaurora.org, john.stultz@linaro.org,
-        tglx@linutronix.de, linus.walleij@linaro.org, shawn.guo@linaro.org,
-        rob.herring@calxeda.com, arnd@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1364601072-30226-1-git-send-email-alexandre.belloni@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/1 Daniel Lezcano <daniel.lezcano@linaro.org>:
-> On 03/29/2013 10:24 AM, ning.n.jiang@gmail.com wrote:
->> From: Ning Jiang <ning.n.jiang@gmail.com>
->>
->> Currently there are two problems when we try to stop local timer.
->> First, it calls set_mode function directly so mode state is not
->> updated for the clock event device. Second, it makes the device
->> unused instead of shutdown.
->>
->> A subtle error will happen because of it. When a cpu is plugged out
->> it will stop the local timer. It will call tick_nohz_idle_enter()
->> in idle thread afterwards. It will cancel the sched timer and try
->> to reprogram the next event. This is wrong since the local timer
->> is supposed to be stopped.
->>
->> The right way to stop the local timer is to shutdown it by calling
->> clockevents_set_mode(). Thus when we try to reprogram the clock
->> event device, it will return directly without doing anything since
->> the clock mode is CLOCK_EVT_MODE_SHUTDOWN.
->>
->> Signed-off-by: Ning Jiang <ning.n.jiang@gmail.com>
->> ---
->
->
-> Don't you see a kernel BUG with this patch ?
->
-> In the clockevents code, there is:
->
-> /**
->  * clockevents_notify - notification about relevant events
->  */
-> void clockevents_notify(unsigned long reason, void *arg)
-> {
->         ...
->         case CLOCK_EVT_NOTIFY_CPU_DEAD:
->         ...
->                 cpu = *((int *)arg);
->                 list_for_each_entry_safe(dev, tmp, &clockevent_devices,
->                                         list) {
->                        if (cpumask_test_cpu(cpu, dev->cpumask) &&
->                             cpumask_weight(dev->cpumask) == 1 &&
->                             !tick_is_broadcast_device(dev)) {
->                                 BUG_ON(dev->mode !=
->                                         CLOCK_EVT_MODE_UNUSED);
->
->                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->
->                                 list_del(&dev->list);
->                         }
->                 }
->                 break;
->         ...
-> }
->
-> This is called triggered from hrtimer_cpu_notify with the CPU_DEAD event.
->
+On Sat, Mar 30, 2013 at 12:51:12AM +0100, Alexandre Belloni wrote:
+> Some pins on the i.mx23 and i.mx28 are missing pull-ups, document that
+> oddity because it was difficult to know the expected behaviour.
+> 
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-The clockevents_do_notify() in clockevents_notify() will call
-tick_notify() which will call tick_shutdown() in turn. tick_shutdown()
-will set clock event device mode to UNUSED. So no panic afterwards.
+Applied, thanks.
 
-void clockevents_notify(unsigned long reason, void *arg)
-{
-        ...
-        clockevents_do_notify(reason, arg);
+> ---
+> 
+> I don't think it is necessary to list the pins with the missing pull ups in
+> that file but we may want to explicitly direct to the datasheet as even with
+> the same chip, it can depend on the package (BGA or QFP for example).
+> 
+>  Documentation/devicetree/bindings/pinctrl/fsl,mxs-pinctrl.txt |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/pinctrl/fsl,mxs-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/fsl,mxs-pinctrl.txt
+> index f7e8e8f..3077370 100644
+> --- a/Documentation/devicetree/bindings/pinctrl/fsl,mxs-pinctrl.txt
+> +++ b/Documentation/devicetree/bindings/pinctrl/fsl,mxs-pinctrl.txt
+> @@ -70,6 +70,10 @@ Optional subnode-properties:
+>      0: Disable the internal pull-up
+>      1: Enable the internal pull-up
+>  
+> +Note that when enabling the pull-up, the internal pad keeper gets disabled.
+> +Also, some pins doesn't have a pull up, in that case, setting the fsl,pull-up
+> +will only disable the internal pad keeper.
+> +
+>  Examples:
+>  
+>  pinctrl@80018000 {
+> -- 
+> 1.7.10.4
+> 
 
-        switch (reason) {
-        case CLOCK_EVT_NOTIFY_CPU_DEAD:
-                ...
-                list_for_each_entry_safe(dev, tmp, &clockevent_devices, list) {
-                        if (cpumask_test_cpu(cpu, dev->cpumask) &&
-                            cpumask_weight(dev->cpumask) == 1 &&
-                            !tick_is_broadcast_device(dev)) {
-                                BUG_ON(dev->mode != CLOCK_EVT_MODE_UNUSED);
-                                list_del(&dev->list);
-                        }
-                }
-                ....
-        }
-        raw_spin_unlock_irqrestore(&clockevents_lock, flags);
-}
