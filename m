@@ -1,95 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759346Ab3DATOQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 15:14:16 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:60836 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759311Ab3DATOO (ORCPT
+	id S1759358Ab3DATQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 15:16:59 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:43876 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759302Ab3DATQ5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 15:14:14 -0400
-Message-ID: <5159DC82.3050804@gmail.com>
-Date: Mon, 01 Apr 2013 14:14:10 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Mon, 1 Apr 2013 15:16:57 -0400
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Rob Herring <rob.herring@calxeda.com>,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH] of_net.h: Provide dummy functions if OF_NET is not configured
-References: <1364840349-10696-1-git-send-email-linux@roeck-us.net> <5159D588.5070603@gmail.com> <20130401190100.GA1042@roeck-us.net>
-In-Reply-To: <20130401190100.GA1042@roeck-us.net>
+In-Reply-To: <20130401032256.GA13801@lizard>
+References: <20130401032256.GA13801@lizard>
+Date: Mon, 1 Apr 2013 12:16:57 -0700
+X-Google-Sender-Auth: CCiN4mpeYe7JVTTXd6NJqdaH6XU
+Message-ID: <CAGXu5j+CgsSaz-Mmtvr1TqzRf+1D7U1jCkAYmV=0ALLEFH1=Og@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Sync Android pstore updates
+From: Kees Cook <keescook@chromium.org>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Colin Cross <ccross@android.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2013 02:01 PM, Guenter Roeck wrote:
-> On Mon, Apr 01, 2013 at 01:44:24PM -0500, Rob Herring wrote:
->> On 04/01/2013 01:19 PM, Guenter Roeck wrote:
->>> of_get_mac_address() and of_get_phy_mode() are only provided if OF_NET
->>> is configured. While most callers check for the define, not all do, and those
->>> who do require #ifdef around the code. For those who don't, the missing check
->>> can result in errors such as
->>
->> How about removing the ifdef from those callers?
->>
-> That would be the next step, after/if this one is accepted.
-> If not, it doesn't make sense to waste my time.
+On Sun, Mar 31, 2013 at 8:22 PM, Anton Vorontsov <anton@enomsg.org> wrote:
+> Hi all,
+>
+> Here are a few updates from the Android dev tree. Thanks to Arve Hjønnevåg
+> for the code, and John Stultz for actually preparing commits for
+> submission.
+>
+> Unless there are objections, I'll push these updates to linux-pstore.git.
 
-Assuming that is done:
+These look good; thanks. Feel free to add my ack if you want:
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+Acked-by: Kees Cook <keescook@chromium.org>
 
-Presumably with the follow-on patches, this can go in thru the net tree.
+Thanks!
 
-Rob
+-Kees
 
-> Thanks,
-> Guenter
-> 
->> Rob
->>
->>>
->>> arch/powerpc/sysdev/tsi108_dev.c:107:3: error: implicit declaration of
->>> 	function 'of_get_mac_address' [-Werror=implicit-function-declaration]
->>> arch/powerpc/sysdev/mv64x60_dev.c:253:2: error: implicit declaration of
->>> 	function 'of_get_mac_address' [-Werror=implicit-function-declaration]
->>>
->>> Provide dummy function declarations if OF_NET is not configured. This is safe
->>> because all callers do check the return values. If desired, at least some of
->>> the #ifdefs in the code can subsequently be removed.
->>>
->>> Cc: David Daney <david.daney@cavium.com>
->>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->>> ---
->>>  include/linux/of_net.h |   10 ++++++++++
->>>  1 file changed, 10 insertions(+)
->>>
->>> diff --git a/include/linux/of_net.h b/include/linux/of_net.h
->>> index f474641..61bf53b 100644
->>> --- a/include/linux/of_net.h
->>> +++ b/include/linux/of_net.h
->>> @@ -11,6 +11,16 @@
->>>  #include <linux/of.h>
->>>  extern const int of_get_phy_mode(struct device_node *np);
->>>  extern const void *of_get_mac_address(struct device_node *np);
->>> +#else
->>> +static inline const int of_get_phy_mode(struct device_node *np)
->>> +{
->>> +	return -ENODEV;
->>> +}
->>> +
->>> +static inline const void *of_get_mac_address(struct device_node *np)
->>> +{
->>> +	return NULL;
->>> +}
->>>  #endif
->>>  
->>>  #endif /* __LINUX_OF_NET_H */
->>>
->>
->>
-
+--
+Kees Cook
+Chrome OS Security
