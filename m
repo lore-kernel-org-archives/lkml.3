@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632Ab3DADDX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 23:03:23 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:37379 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755766Ab3DADDW (ORCPT
+	id S1756654Ab3DADDw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 23:03:52 -0400
+Received: from mail-da0-f54.google.com ([209.85.210.54]:49719 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755766Ab3DADDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 23:03:22 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r313393U000463, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <bowgotsai@google.com>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH v2] r8169: fix auto speed down issue
-Date: Mon, 1 Apr 2013 11:02:04 +0800
-Message-ID: <1364785324-1604-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1364541062-9024-1-git-send-email-hayeswang@realtek.com>
-References: <1364541062-9024-1-git-send-email-hayeswang@realtek.com>
+	Sun, 31 Mar 2013 23:03:50 -0400
+Date: Sun, 31 Mar 2013 20:03:47 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Lan Tianyu <tianyu.lan@intel.com>
+Subject: Re: [PATCH 1/2] USB / PM: Don't try to hide PM QoS flags from
+ usb_port_device_release()
+Message-ID: <20130401030347.GC20857@kroah.com>
+References: <512F8980.4040809@oracle.com>
+ <2829731.BFs3ri3Eud@vostro.rjw.lan>
+ <1876128.a4gSDF7byc@vostro.rjw.lan>
+ <1651223.ep7oZJM5CX@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1651223.ep7oZJM5CX@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It would cause no link after suspending or shutdowning when the
-nic changes the speed to 10M and connects to a link partner which
-forces the speed to 100M.
+On Mon, Apr 01, 2013 at 12:57:21AM +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Remove the call to dev_pm_qos_hide_flags(), added by commit 6e30d7cb
+> "usb: Add driver/usb/core/(port.c,hub.h) files", from
+> usb_port_device_release(), because (1) it is completely unnecessary
+> (the flags have been removed already by the PM core during the
+> unregistration of the device object) and (2) it triggers a NULL
+> pointer dereference in sysfs_find_dirent() (dev->kobj->sd is NULL at
+> this point).
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Check the link partner ability to determine which speed to set.
-
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 28 +++++++++++++++++++++++++---
- 1 file changed, 25 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 28fb50a..bdc03a9 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -3818,6 +3818,30 @@ static void rtl_init_mdio_ops(struct rtl8169_private *tp)
- 	}
- }
- 
-+static void rtl_speed_down(struct rtl8169_private *tp)
-+{
-+	u32	adv;
-+	int	lpa;
-+
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	lpa = rtl_readphy(tp, MII_LPA);
-+
-+	if (lpa & (LPA_10HALF | LPA_10FULL))
-+		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full;
-+	else if (lpa & (LPA_100HALF | LPA_100FULL))
-+		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full |
-+		      ADVERTISED_100baseT_Half | ADVERTISED_100baseT_Full;
-+	else
-+		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full |
-+		      ADVERTISED_100baseT_Half | ADVERTISED_100baseT_Full |
-+		      (tp->mii.supports_gmii ?
-+		       ADVERTISED_1000baseT_Half |
-+		       ADVERTISED_1000baseT_Full : 0);
-+
-+	rtl8169_set_speed(tp->dev, AUTONEG_ENABLE, SPEED_1000, DUPLEX_FULL,
-+			  adv);
-+}
-+
- static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
- {
- 	void __iomem *ioaddr = tp->mmio_addr;
-@@ -3848,9 +3872,7 @@ static bool rtl_wol_pll_power_down(struct rtl8169_private *tp)
- 	if (!(__rtl8169_get_wol(tp) & WAKE_ANY))
- 		return false;
- 
--	rtl_writephy(tp, 0x1f, 0x0000);
--	rtl_writephy(tp, MII_BMCR, 0x0000);
--
-+	rtl_speed_down(tp);
- 	rtl_wol_suspend_quirk(tp);
- 
- 	return true;
--- 
-1.8.1
-
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
