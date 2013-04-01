@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758774Ab3DAVWZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 17:22:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43538 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756876Ab3DAVWY (ORCPT
+	id S1758692Ab3DAVW4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 17:22:56 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:62890 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755972Ab3DAVWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 17:22:24 -0400
-Date: Mon, 1 Apr 2013 22:22:17 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: codecs: remove hidden prompt
-Message-ID: <20130401212213.GA23065@opensource.wolfsonmicro.com>
-References: <1363118918.3137.143.camel@x61.thuisdomein>
+	Mon, 1 Apr 2013 17:22:54 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6c2NcOVqGQ03X4Wi"
-Content-Disposition: inline
-In-Reply-To: <1363118918.3137.143.camel@x61.thuisdomein>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKohpokkyQK+650aPLtdXJ0wHWupR=-bcTM_eCoZRDy3N47HJQ@mail.gmail.com>
+References: <cover.1364229828.git.viresh.kumar@linaro.org>
+	<afc636963b63becccf34d092203c53369bd1b735.1364229828.git.viresh.kumar@linaro.org>
+	<CAKohponax2iDZeA-WG_L2XVHU5GGJB2nSPWVoVxbZUoez1ZpDw@mail.gmail.com>
+	<CAKohpokkyQK+650aPLtdXJ0wHWupR=-bcTM_eCoZRDy3N47HJQ@mail.gmail.com>
+Date: Mon, 1 Apr 2013 14:22:53 -0700
+Message-ID: <CA+8MBbLwxiPPvyKyQNEDSbNKthpAmooKVe7b+pg-NCETOkSLPA@mail.gmail.com>
+Subject: Re: [PATCH 4/9] ia64: cpufreq: move cpufreq driver to drivers/cpufreq
+From: Tony Luck <tony.luck@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Fenghua Yu <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        arvind.chauhan@arm.com, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, cpufreq@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linaro-kernel@lists.linaro.org, arnd.bergmann@linaro.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[Repost in plain text so the lists don't bounce it - curse you Gmail
+for switching to HTML]
 
---6c2NcOVqGQ03X4Wi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Any comments on this patch?
 
-On Tue, Mar 12, 2013 at 09:08:38PM +0100, Paul Bolle wrote:
-> The Kconfig symbol SND_SOC_OF_SIMPLE got removed in commit
-> f0fba2ad1b6b53d5360125c41953b7afcd6deff0 ("ASoC: multi-component - ASoC
-> Multi-Component Support"). But that commit missed one instance. Remove
-> it now, together with the prompt it has effectively hidden ever since.
+This part looks OK ... But is there a big finish later in the patch series where
+you unify some/all of the cpufreq code across architectures?  By
+itself just moving
+bits from arch/ia64/kernel/cpufreq to drivers/cpufreq/ doesn't look to add
+much value.
 
-Applied, thanks.
-
---6c2NcOVqGQ03X4Wi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRWfptAAoJELSic+t+oim9hVsP/1im8Tjraf8Wt62eDJi4p1TQ
-20bCaz6gmf8Kw1640gSazCjMuTyOnfTR9XhZkYd8MEGZgXHlH5k0hY4JmdzNSHnj
-pdoy28IKeb6tnAQ+xKXolKGoHqcgqJt4OMLsKlb3yLx0oxot3cB16CwJwONQxUPs
-jCkofJqqblSECFWGXLUULB9E3KpslDNYRHWK1JxQMqs9GMFmXwD1hIKPnIaldZS5
-vtN48dVnjrl25no+u+/UKlyWrE4HrFrdePAbjnM2npqCYPk8clwrpZ0y8PWodfNz
-adj8Gz+ow8o9hgHVLuz4qboKZEgj9C/JHFUMuFjQxZ8AUu7/KVt+IrLeU7QzWFk4
-FqY9BzxQVGHvtovs6bZGb60geE/CKTOJzkLi4su02nbwoYcyKccFGapeG3K/SWU/
-aBoUhnkgWhFwBmz9CKB8o2QEmb2fnPEnWN/mCTXnOc+Cwt8Ht6Tha/Aaub89K6DU
-/izq2vXF7j4FxkJtjx69LyXhogBie3SD3DVUSKKB/uvbRFrrco3Uy1kDhumzYIdk
-0YOppSblfwX1/ZFiK7mshbOvH8l2z1iNap2S9lgCsOmU+tSnBjCduqTVT3zxEfo7
-SifQkfXVs+9JUHBZScTgNTyxsSnsaOYOE7qzhLjGI2i5G/kL++9YgR2UnMkDVD+o
-tmVkrwL7rwOLtRatk/fE
-=gUcG
------END PGP SIGNATURE-----
-
---6c2NcOVqGQ03X4Wi--
+-Tony
