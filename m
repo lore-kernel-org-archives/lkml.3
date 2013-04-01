@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758023Ab3DAG5b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 02:57:31 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:45882 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757988Ab3DAG5D (ORCPT
+	id S1758034Ab3DAG5s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 02:57:48 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:62386 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757982Ab3DAG5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Apr 2013 02:57:03 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-a7-51592fb94d1a
+X-AuditID: cbfee68f-b7f4a6d000001436-a6-51592fb994ea
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 9/9] f2fs: fix the bitmap consistency of dirty segments
-Date: Mon, 01 Apr 2013 15:56:00 +0900
-Message-id: <1364799360-23145-9-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 8/9] f2fs: avoid race for summary information
+Date: Mon, 01 Apr 2013 15:55:59 +0900
+Message-id: <1364799360-23145-8-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.1.3.566.gaa39828
 In-reply-to: <1364799360-23145-1-git-send-email-jaegeuk.kim@samsung.com>
 References: <1364799360-23145-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t8zfd2d+pGBBntv61tc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXH4bCtbwXOxikM/
-	HzA1MG4Q6mLk4JAQMJHoby/qYuQEMsUkLtxbz9bFyMUhJLCMUeLol+ssEAkTibNvdrBCJBYx
-	SuyevJAZwmljklhx4T47yCQ2AW2JzfsNQBpEBJglFkw9zwhSwywwgVHi/6L3YJOEBdwldj5u
-	ZQaxWQRUJV4fXM8OYvMCxc8vOwW1TVdi9f/nYHFOAQ+Jz20fweJCQDWn9q0GO09C4DubxM8b
-	u9khBglIfJt8iAXiHVmJTQeYIeZIShxccYNlAqPwAkaGVYyiqQXJBcVJ6UXGesWJucWleel6
-	yfm5mxghIdu/g/HuAetDjMlA4yYyS4km5wNDPq8k3tDYzMjC1MTU2Mjc0ow0YSVxXrUW60Ah
-	gfTEktTs1NSC1KL4otKc1OJDjEwcnFINjNvs+U4cf5E6VeSzzz+thrY33F52XJ9upyZ0a3yP
-	bflxYZ35al3fkFX3qxjmbvI8uEOAf/feK6lquxeds3y/y82v/tTxkjcd3Ye3TzlddI3DIqiN
-	60f55CWTH0xby+r27dXGYuHTIb+/sCpnXPy4ablfXPVtj7nyjMk77vUwLbJJEK1e8/fqbCsl
-	luKMREMt5qLiRAAV1gqjbwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jAd2d+pGBBjPWa1tc3/WXyeLSIneL
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t8zfd2d+pGBBr8faFhc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXHn6RfmggsCFccb
+	XrE2MB7m7WLk5JAQMJE4cGk9G4QtJnHhHojNxSEksIxR4t3dvUwwRQ2nzkAlFjFKfH/YxALh
+	tDFJrLhwn72LkYODTUBbYvN+A5AGEQFmiQVTzzOC1DALTGCU+L/oPQtIQljAVqLl9k2wdSwC
+	qhJ/2puYQWxeAXeJjb0boLbpSqz+/5wdxOYU8JD43PYRrFcIqObUvtVgV0gIfGeTWN3RyQ4x
+	SEDi2+RDLCBHSAjISmw6wAwxR1Li4IobLBMYhRcwMqxiFE0tSC4oTkovMtYrTswtLs1L10vO
+	z93ECAna/h2Mdw9YH2JMBho3kVlKNDkfGPR5JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgHCgmk
+	J5akZqemFqQWxReV5qQWH2Jk4uCUamC0OnDPfT2zpvTJ+EilpsiH3kt2sU6tbPe3Uak7s79C
+	wsPs3c3jTk/uMm7/sm/DjRc7FvbHtmsFbX/UwDYz9oaUfkH1xBLGWVO10r6GmjHPTXq28mas
+	2U1XX5uyj7dEpA/9mPOU41bAP0XWCx+bpiet31D4dHn2xz9f6i/09V6dOL936oVzhS9WKLEU
+	ZyQaajEXFScCAF6RCUdwAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jAd2d+pGBBg8PqVhc3/WXyeLSIneL
 	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
 	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5hx+GwrW8FzsYpDPx8wNTBuEOpi5OSQEDCROPtmByuELSZx4d56ti5GLg4h
-	gUWMErsnL2SGcNqYJFZcuM/excjBwSagLbF5vwFIg4gAs8SCqecZQWqYBSYwSvxf9J4FJCEs
-	4C6x83ErM4jNIqAq8frgenYQmxcofn7ZKRaIbboSq/8/B4tzCnhIfG77CBYXAqo5tW812wRG
-	3gWMDKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgmPimfQOxlUNFocYBTgYlXh4Iy5EBAqx
-	JpYVV+YeYpTgYFYS4fX5BhTiTUmsrEotyo8vKs1JLT7EmAx01URmKdHkfGC85pXEGxqbmBlZ
-	GplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QDY3H0wm8zo3hDz1cu4V4ev918
-	W1nm8SIz9/2reZ8/fZVVlp/zQHLyvMpVchqMN2+yZM9/0fDwLfN38RrWfYU7Wk/yzax/MOns
-	9wPiB5/oRH36/rBtxo5DEoqH5pSV6xpOsxJrOfNGpOn55shrCdqzdmyL2l6kVMA87/393yqn
-	Y3uUGXMquSTj3ZRYijMSDbWYi4oTARYMInXNAgAA
+	SBBcj5EBGkhYx5hx5+kX5oILAhXHG16xNjAe5u1i5OSQEDCRaDh1hg3CFpO4cG89kM3FISSw
+	iFHi+8MmFginjUlixYX77F2MHBxsAtoSm/cbgDSICDBLLJh6nhGkhllgAqPE/0XvWUASwgK2
+	Ei23b4JNZRFQlfjT3sQMYvMKuEts7N3ABLFNV2L1/+fsIDangIfE57aPYL1CQDWn9q1mm8DI
+	u4CRYRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcEw8k97BuKrB4hCjAAejEg9vxIWIQCHW
+	xLLiytxDjBIczEoivD7fgEK8KYmVValF+fFFpTmpxYcYk4GumsgsJZqcD4zXvJJ4Q2MTMyNL
+	IzMLIxNzc9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLglGpgnHkx/0nfa69tW/QSyqYekl6r
+	Kxjc/TGoov1GxOwpPuF1zxMevvw16/xepcAdNdv2zVme0s/zaFPx3Ehx600mar/SU3IYc7b3
+	vejsVznIJ1L7tuUi4+R1pYvrvkfab17Z9aA9o7r7yQmnuBnrFB8Jz80T4kjq0mL6/vLkk/hT
+	vZs3z2HK6giSUmIpzkg01GIuKk4EALoMzK7NAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -48,90 +48,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Like below, there are 8 segment bitmaps for SSR victim candidates.
-
-enum dirty_type {
-	DIRTY_HOT_DATA,		/* dirty segments assigned as hot data logs */
-	DIRTY_WARM_DATA,	/* dirty segments assigned as warm data logs */
-	DIRTY_COLD_DATA,	/* dirty segments assigned as cold data logs */
-	DIRTY_HOT_NODE,		/* dirty segments assigned as hot node logs */
-	DIRTY_WARM_NODE,	/* dirty segments assigned as warm node logs */
-	DIRTY_COLD_NODE,	/* dirty segments assigned as cold node logs */
-	DIRTY,			/* to count # of dirty segments */
-	PRE,			/* to count # of entirely obsolete segments */
-	NR_DIRTY_TYPE
-};
-
-The upper 6 bitmaps indicates segments dirtied by active log areas respectively.
-And, the DIRTY bitmap integrates all the 6 bitmaps.
-
-For example,
- o DIRTY_HOT_DATA : 1010000
- o DIRTY_WARM_DATA: 0100000
- o DIRTY_COLD_DATA: 0001000
- o DIRTY_HOT_NODE : 0000010
- o DIRTY_WARM_NODE: 0000001
- o DIRTY_COLD_NODE: 0000000
-In this case,
- o DIRTY          : 1111011,
-
- which means that we should guarantee the consistency between DIRTY and other
- bitmaps concreately.
-
-However, the SSR mode selects victims freely from any log types, which can set
-multiple bits across the various bitmap types.
-
-So, this patch eliminates this inconsistency.
+In order to do GC more reliably, I'd like to lock the vicitm summary page
+until its GC is completed, and also prevent any checkpoint process.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/segment.c | 23 ++++++++++++++++++-----
- 1 file changed, 18 insertions(+), 5 deletions(-)
+ fs/f2fs/gc.c    | 8 +-------
+ fs/f2fs/node.c  | 2 +-
+ fs/f2fs/super.c | 7 +++++--
+ 3 files changed, 7 insertions(+), 10 deletions(-)
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index fe520d3..7c67ec2 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -49,9 +49,20 @@ static void __locate_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno,
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+index 54aceb2..54ac13d 100644
+--- a/fs/f2fs/gc.c
++++ b/fs/f2fs/gc.c
+@@ -641,12 +641,6 @@ static void do_garbage_collect(struct f2fs_sb_info *sbi, unsigned int segno,
+ 	if (IS_ERR(sum_page))
+ 		return;
  
- 	if (dirty_type == DIRTY) {
- 		struct seg_entry *sentry = get_seg_entry(sbi, segno);
-+		enum dirty_type t = DIRTY_HOT_DATA;
-+
- 		dirty_type = sentry->type;
-+
- 		if (!test_and_set_bit(segno, dirty_i->dirty_segmap[dirty_type]))
- 			dirty_i->nr_dirty[dirty_type]++;
-+
-+		/* Only one bitmap should be set */
-+		for (; t <= DIRTY_COLD_NODE; t++) {
-+			if (t == dirty_type)
-+				continue;
-+			if (test_and_clear_bit(segno, dirty_i->dirty_segmap[t]))
-+				dirty_i->nr_dirty[t]--;
-+		}
- 	}
+-	/*
+-	 * CP needs to lock sum_page. In this time, we don't need
+-	 * to lock this page, because this summary page is not gone anywhere.
+-	 * Also, this page is not gonna be updated before GC is done.
+-	 */
+-	unlock_page(sum_page);
+ 	sum = page_address(sum_page);
+ 
+ 	switch (GET_SUM_TYPE((&sum->footer))) {
+@@ -660,7 +654,7 @@ static void do_garbage_collect(struct f2fs_sb_info *sbi, unsigned int segno,
+ 	stat_inc_seg_count(sbi, GET_SUM_TYPE((&sum->footer)));
+ 	stat_inc_call_count(sbi->stat_info);
+ 
+-	f2fs_put_page(sum_page, 0);
++	f2fs_put_page(sum_page, 1);
  }
  
-@@ -64,11 +75,13 @@ static void __remove_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno,
- 		dirty_i->nr_dirty[dirty_type]--;
+ int f2fs_gc(struct f2fs_sb_info *sbi)
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index c5360b7..7555fb7 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1148,7 +1148,7 @@ static int f2fs_write_node_pages(struct address_space *mapping,
  
- 	if (dirty_type == DIRTY) {
--		struct seg_entry *sentry = get_seg_entry(sbi, segno);
--		dirty_type = sentry->type;
--		if (test_and_clear_bit(segno,
--					dirty_i->dirty_segmap[dirty_type]))
--			dirty_i->nr_dirty[dirty_type]--;
-+		enum dirty_type t = DIRTY_HOT_DATA;
-+
-+		/* clear all the bitmaps */
-+		for (; t <= DIRTY_COLD_NODE; t++)
-+			if (test_and_clear_bit(segno, dirty_i->dirty_segmap[t]))
-+				dirty_i->nr_dirty[t]--;
-+
- 		if (get_valid_blocks(sbi, segno, sbi->segs_per_sec) == 0)
- 			clear_bit(GET_SECNO(sbi, segno),
- 						dirty_i->victim_secmap);
+ 	/* First check balancing cached NAT entries */
+ 	if (try_to_free_nats(sbi, NAT_ENTRY_PER_BLOCK)) {
+-		write_checkpoint(sbi, false);
++		f2fs_sync_fs(sbi->sb, true);
+ 		return 0;
+ 	}
+ 
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index ea325c8..161e6c6 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -137,10 +137,13 @@ int f2fs_sync_fs(struct super_block *sb, int sync)
+ 	if (!sbi->s_dirty && !get_pages(sbi, F2FS_DIRTY_NODES))
+ 		return 0;
+ 
+-	if (sync)
++	if (sync) {
++		mutex_lock(&sbi->gc_mutex);
+ 		write_checkpoint(sbi, false);
+-	else
++		mutex_unlock(&sbi->gc_mutex);
++	} else {
+ 		f2fs_balance_fs(sbi);
++	}
+ 
+ 	return 0;
+ }
 -- 
 1.8.1.3.566.gaa39828
 
