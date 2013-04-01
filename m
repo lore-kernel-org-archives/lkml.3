@@ -1,84 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343Ab3DAFh4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 01:37:56 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38121 "EHLO
+	id S1757363Ab3DAFqA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 01:46:00 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43352 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab3DAFhz (ORCPT
+	with ESMTP id S1756611Ab3DAFp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 01:37:55 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <51591D21.8090401@jp.fujitsu.com>
-Date: Mon, 01 Apr 2013 14:37:37 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Mon, 1 Apr 2013 01:45:59 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <51591EEE.60401@jp.fujitsu.com>
+Date: Mon, 01 Apr 2013 14:45:18 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm, memcg: give exiting processes access to memory reserves
-References: <alpine.DEB.2.02.1303271821120.5005@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1303271821120.5005@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: joro@8bytes.org
+CC: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        dwmw2@infradead.org, kexec@lists.infradead.org
+Subject: Re: [PATCH] intel-iommu: Synchronize gcmd value with global command
+ register
+References: <1363829556-2128-1-git-send-email-indou.takao@jp.fujitsu.com> <20130326144629.GB2727@8bytes.org> <51527D74.9080209@jp.fujitsu.com> <20130327103122.GK30540@8bytes.org>
+In-Reply-To: <20130327103122.GK30540@8bytes.org>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/03/28 10:22), David Rientjes wrote:
-> A memcg may livelock when oom if the process that grabs the hierarchy's
-> oom lock is never the first process with PF_EXITING set in the memcg's
-> task iteration.
->
-> The oom killer, both global and memcg, will defer if it finds an eligible
-> process that is in the process of exiting and it is not being ptraced.
-> The idea is to allow it to exit without using memory reserves before
-> needlessly killing another process.
->
-> This normally works fine except in the memcg case with a large number of
-> threads attached to the oom memcg.  In this case, the memcg oom killer
-> only gets called for the process that grabs the hierarchy's oom lock; all
-> others end up blocked on the memcg's oom waitqueue.  Thus, if the process
-> that grabs the hierarchy's oom lock is never the first PF_EXITING process
-> in the memcg's task iteration, the oom killer is constantly deferred
-> without anything making progress.
->
-> The fix is to give PF_EXITING processes access to memory reserves so that
-> we've marked them as oom killed without any iteration.  This allows
-> __mem_cgroup_try_charge() to succeed so that the process may exit.  This
-> makes the memcg oom killer exemption for TIF_MEMDIE tasks, now
-> immediately granted for processes with pending SIGKILLs and those in the
-> exit path, to be equivalent to what is done for the global oom killer.
->
-> Signed-off-by: David Rientjes <rientjes@google.com>
+(2013/03/27 19:31), Joerg Roedel wrote:
+> On Wed, Mar 27, 2013 at 02:02:44PM +0900, Takao Indoh wrote:
+>> The root cause of this problem is mismatch between iommu->gcmd and
+>> global command register in the case of kdump. At boot time, initial
+>> value of iommu->gcmd is zero as I wrote above, but actual global command
+>> register is *not* zero because some bits like IRE/TE/QIE are already set
+>> in *first* kernel. Therefore this patch synchronize them to fix this
+>> problem.
+> 
+> Ok, I understand, but I still don't see why this is a problem. There is
+> no point for the kdump kernel to preserve hardware state from the
+> previous kernel. So I think the way it is implemented is correct.
+
+Sorry, my explanation was misleading. The purpose is not preserving
+hardware state, but cleaning up hardware status at appropriate place.
+
+kdump kernel boots up without power-on-reset, so we have to disable
+hardware functions like DMAR before initializing them.
+
+<Current flow on kdump boot>
+enable_IR
+  intel_enable_irq_remapping
+    iommu_disable_irq_remapping  <== IRES/QIES/TES disabled here
+    dmar_disable_qi              <== do nothing
+    dmar_enable_qi               <== QIES enabled
+    intel_setup_irq_remapping    <== IRES enabled
+
+intel_iommu_init
+  init_dmars
+    iommu_enable_translation     <== TES enabled
 
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+<New flow on kdump boot after applying patch>
+enable_IR
+  intel_enable_irq_remapping
+    iommu_disable_irq_remapping  <== IRES disabled
+    dmar_disable_qi              <== QIES disabled
+    dmar_enable_qi               <== QIES enabled
+    intel_setup_irq_remapping    <== IRES enabled
 
-> ---
->   mm/memcontrol.c | 8 ++++----
->   1 file changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1686,11 +1686,11 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
->   	struct task_struct *chosen = NULL;
->
->   	/*
-> -	 * If current has a pending SIGKILL, then automatically select it.  The
-> -	 * goal is to allow it to allocate so that it may quickly exit and free
-> -	 * its memory.
-> +	 * If current has a pending SIGKILL or is exiting, then automatically
-> +	 * select it.  The goal is to allow it to allocate so that it may
-> +	 * quickly exit and free its memory.
->   	 */
-> -	if (fatal_signal_pending(current)) {
-> +	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
->   		set_thread_flag(TIF_MEMDIE);
->   		return;
->   	}
->
+intel_iommu_init
+  init_dmars
+    iommu_disable_translation    <== TES disabled (added by patch)
+    iommu_enable_translation     <== TES enabled
 
+I want to change flow like this to avoid misunderstanding. In that sense,
+this patch is a kind of cleanup rather than fixing problem.
+
+Backgroud:
+I'm working on kdump problem with iommu and investigated when DMAR and
+IR are disabled in kdump kernel boot. As for IR, I can easily find the
+code in intel_enable_irq_remapping() since there is good comment for
+that.
+
+                /*
+                 * Disable intr remapping and queued invalidation, if already
+                 * enabled prior to OS handover.
+                 */
+                iommu_disable_irq_remapping(iommu);
+
+                dmar_disable_qi(iommu);
+
+However, there is no code to disable DMAR on startup, but it is actually
+disabled somewhere during bootup. And finally I found out is is done in
+intel_enable_irq_remapping(). This is very misleading. Why
+"iommu_disable_irq_remapping" is disabling bits other than IR? After
+applying patch, it is easy to understand because it disables only IR, as
+the name suggests.
+
+Thanks,
+Takao Indoh
 
