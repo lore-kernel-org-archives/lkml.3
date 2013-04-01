@@ -1,126 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab3DAMHf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 08:07:35 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:49303 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab3DAMHe convert rfc822-to-8bit (ORCPT
+	id S1755656Ab3DAMMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 08:12:22 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:43188 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656Ab3DAMMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 08:07:34 -0400
+	Mon, 1 Apr 2013 08:12:20 -0400
+Date: Mon, 1 Apr 2013 14:12:18 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Subject: Re: host gcc 4.7 warning when generating defconfig
+Message-ID: <20130401121218.GA4409@merkur.ravnborg.org>
+References: <514AADAD.1060503@synopsys.com>
 MIME-Version: 1.0
-In-Reply-To: <20120806020245.GA7130@kosh.dhis.org>
-References: <20120806020245.GA7130@kosh.dhis.org>
-Date: Mon, 1 Apr 2013 05:07:32 -0700
-Message-ID: <CAOMFOmVq1VknxHsEMGo3+QRreCSA1v2DARg2E2yTT+yg2h3XMg@mail.gmail.com>
-Subject: Re: Oops in loop_clr_fd => bd_set_size
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: Alan Curry <pacman@kosh.dhis.org>
-Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <514AADAD.1060503@synopsys.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Thu, Mar 21, 2013 at 12:20:21PM +0530, Vineet Gupta wrote:
+> Hi,
+> 
+> We do cross compile builds for ARC Linux. To avoid the env var set, we have a
+> defconfig entry for CONFIG_CROSS_COMPILE.
+> This worked fine so far (host gcc 4.4 i.e.). When switched to a new host distro
+> (gcc 4.7), a defconfig build spews out the warning.
+> 
+> ------------------->8--------------------------
+> mymake defconfig
+> gcc: error: unrecognized command line option '-marc600'
+> gcc: error: unrecognized command line option '-mA7'
+> gcc: error: unrecognized command line option '-mno-sdata'
+> gcc: error: unrecognized command line option '-mno-mpy'
+> *** Default configuration is based on 'fpga_defconfig'
+> #
+> # configuration written to .config
+> ------------------->8--------------------------
+> 
+> While the following trivial fix seems to fix this, it seems that the spew is
+> coming due to LIBGCC definition line, which is strange to be called for defconfig
+> generation. Any thoughts ?
+> 
+> ---------------->
+> diff --git a/arch/arc/Makefile b/arch/arc/Makefile
+> index 4232d4e..97e6c20 100644
+> --- a/arch/arc/Makefile
+> +++ b/arch/arc/Makefile
+> @@ -8,6 +8,10 @@
+>  
+>  UTS_MACHINE := arc
+>  
+> +ifeq ($(CROSS_COMPILE),)
+> +#CROSS_COMPILE := arc-elf32-
+> +endif
+> +
+>  KBUILD_DEFCONFIG := fpga_defconfig
 
-On Sun, Aug 5, 2012 at 7:02 PM, Alan Curry <pacman@kosh.dhis.org> wrote:
-> I got an Oops from running "losetup -d /dev/loop2". The trace shows
-> loop_clr_fd calling bd_set_size, and the parameter bdev appears to have a
-> NULL in its bd_disk field.
->
-> The losetup command was run as part of a script that did this:
->   losetup -d /dev/loop5
->   losetup -d /dev/loop4
->   losetup -d /dev/loop3
->   losetup -d /dev/loop2
->   losetup -d /dev/loop1
-> The kernel was processing a lot of loop_clr_fd's in a quick sequence. The
-> first three worked, and the loop2 Oopsed.
->
-> After that I ran the losetup -d /dev/loop1 separately and it worked. The
-> process that caused the Oops didn't die:
->   PID TTY      STAT   TIME COMMAND
->  5055 pts/1    D      0:00 [losetup]
->
-> I also tried to query the current state of the device with "losetup loop2"
-> after the Oops. That gave me a second stuck process:
->   PID TTY      STAT   TIME COMMAND
->  5059 pts/1    D+     0:00 losetup /dev/loop2
->
-> These processes are still alive, in their permanent D state. The rest of
-> the system is still functional. I'll try to keep it that way for now, in
-> case anyone wants to suggest some debugging actions that I can take.
->
-> The loop devices were set up to handle an unusual situation: I have a whole
-> hard drive image contained within a partition on another hard drive. Each
-> loop device corresponds to a partition of the imaged drive. They were set
-> up like this, with numbers taken from its partition table:
->
-> cyl=516096
-> losetup -o $((1*$cyl)) --sizelimit $(((2080-1+1)*$cyl)) /dev/loop1 /dev/sda6
-> losetup -o $((2081*$cyl)) --sizelimit $(((4160-2081+1)*$cyl)) /dev/loop2 /dev/sda6
-> losetup -o $((4161*$cyl)) --sizelimit $(((24965-4161+1)*$cyl)) /dev/loop3 /dev/sda6
-> losetup -o $((24966*$cyl)) --sizelimit $(((45770-24966+1)*$cyl)) /dev/loop4 /dev/sda6
-> losetup -o $((45771*$cyl)) --sizelimit $(((158815-45771+1)*$cyl)) /dev/loop5 /dev/sda6
->
-> So all the loop devices were referencing the same backing device, with
-> different (adjacent but non-overlapping) offsets.
->
-> I had also done blockdev --setro on sda6 and all of the loop devices as
-> soon as they were created. The devices were successfully dm_snapshot'ed,
-> fscked, mounted, and all data was copied off of them before I did the
-> losetup -d that caused the oops. The one that failed, loop2, actually
-> corresponded to the swap partition of the imaged drive so I didn't copy
-> anything off of it, but I know it was working because I used "strings
-> /dev/loop2" to figure out what it was.
->
-> That's all the information I can think of that might be relevant. I'm
-> willing to dig deeper if there's anything that can be retrieved from the
-> two stuck processes, or I could reboot and try to repeat the incident.
->
-> Here is the Oops:
->
-> BUG: unable to handle kernel NULL pointer dereference at 0000000000000328
-> IP: [<ffffffff8110ffed>] bd_set_size+0x7/0x5e
-> PGD 156eb067 PUD 102aa067 PMD 0
-> Oops: 0000 [#1] SMP
-> CPU 1
-> Modules linked in: dm_snapshot ext3 jbd ext2 snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd soundcore snd_page_alloc arc4 carl9170 ehci_hcd mac80211 usbcore usb_common led_class ath cfg80211 rfkill sha256_generic aes_x86_64 aes_generic cbc crc32c_intel loop dm_crypt dm_mod sd_mod crc_t10dif ata_piix libata scsi_mod
->
-> Pid: 5055, comm: losetup Not tainted 3.5.0 #17 BIOSTAR Group TH61 ITX/TH61 ITX
-> RIP: 0010:[<ffffffff8110ffed>]  [<ffffffff8110ffed>] bd_set_size+0x7/0x5e
-> RSP: 0018:ffff88001113ddd0  EFLAGS: 00010246
-> RAX: 0000000000000000 RBX: ffff8800721b4a00 RCX: 0000000180240011
-> RDX: 0000000180240012 RSI: 0000000000000000 RDI: ffff880100385d40
-> RBP: ffff880100385d40 R08: ffff880072dcb8c0 R09: 0000000180240011
-> R10: 0000000080240011 R11: 0000000000000000 R12: ffff880073712300
-> R13: 0000000000020010 R14: ffff8800721b4b14 R15: 0000000000000000
-> FS:  00007f98183ba700(0000) GS:ffff880100300000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000000000000328 CR3: 000000001adcb000 CR4: 00000000000407e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process losetup (pid: 5055, threadinfo ffff88001113c000, task ffff8800732c8640)
-> Stack:
->  ffffffffa00b251c ffff8800721b4a00 ffff8800739ec9c0 0000000000004c01
->  0000000000000000 ffff8800721b4b30 ffffffffa00b315d ffff880072209c20
->  ffff88000f9f6900 00007f9817f09430 000000000000001d ffff880031878840
-> Call Trace:
->  [<ffffffffa00b251c>] ? loop_clr_fd+0x154/0x1f5 [loop]
->  [<ffffffffa00b315d>] ? lo_ioctl+0x4af/0x657 [loop]
->  [<ffffffff811a38f4>] ? blkdev_ioctl+0x632/0x666
->  [<ffffffff811100de>] ? block_ioctl+0x32/0x36
->  [<ffffffff810f54f0>] ? do_vfs_ioctl+0x44b/0x490
->  [<ffffffff810df6b7>] ? virt_to_head_page+0x9/0x2c
->  [<ffffffff810e1814>] ? kmem_cache_free+0x12/0x9e
->  [<ffffffff810f5571>] ? sys_ioctl+0x3c/0x5f
->  [<ffffffff81346422>] ? system_call_fastpath+0x16/0x1b
-> Code: 20 31 c0 48 85 c9 75 1b 48 39 7f 70 74 13 48 8b 46 50 48 3d ba ff 10 81 74 07 48 85 c0 0f 94 c0 c3 b0 01 c3 48 8b 87 90 00 00 00 <48> 8b 80 28 03 00 00 48 85 c0 74 0e 8b 90 d0 04 00 00 66 85 d2
-> RIP  [<ffffffff8110ffed>] bd_set_size+0x7/0x5e
->  RSP <ffff88001113ddd0>
-> CR2: 0000000000000328
-> ---[ end trace 149557d36d01641b ]---
 
-Here is proposed fix http://marc.info/?l=linux-kernel&m=136481752606623&w=2
+You could try to use LIBGCC = $(shell ... for assignment.
+Use "=" and not ":=".
+
+Like this:
+
+-LIBGCC := $(shell $(CC) $(ARC_LIBGCC) $(cflags-y) --print-libgcc-file-name)
++LIBGCC = $(shell $(CC) $(ARC_LIBGCC) $(cflags-y) --print-libgcc-file-name)
+
+This would defer the evaluation until we actually reference the variable,
+and thus I think it will not trigger for a defconfig build.
+
+I could not reproduce the problem here so I am not sure this has any effect though...
+
+	Sam
