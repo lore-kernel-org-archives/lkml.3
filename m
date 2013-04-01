@@ -1,201 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759363Ab3DATTe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 15:19:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27081 "EHLO mx1.redhat.com"
+	id S1759413Ab3DAT0X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 15:26:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64806 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759302Ab3DATTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 15:19:33 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 01/27] perf tools: Add automated make test suite
-Date: Mon,  1 Apr 2013 21:18:24 +0200
-Message-Id: <1364843930-17974-2-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
-References: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
+	id S1758774Ab3DAT0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 15:26:22 -0400
+Date: Mon, 1 Apr 2013 15:26:06 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] kexec: use Crash kernel for Crash kernel low
+Message-ID: <20130401192606.GA17951@redhat.com>
+References: <20130320163131.GE2273@redhat.com>
+ <1363807329-24975-1-git-send-email-yinghai@kernel.org>
+ <20130325194245.GA7357@redhat.com>
+ <CAE9FiQU6bGSAODX_-Vir6D-LyY-9Sm84rYzq=gNhDZ5whbia_w@mail.gmail.com>
+ <20130326181418.GA6775@redhat.com>
+ <20130401133428.GA13499@redhat.com>
+ <5159D2E9.7080707@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5159D2E9.7080707@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding automatd test for testing the build process.
-To run it you needto be in perf directory or specify
-one with PERF variable. It's also possible to specify
-optional Makefile to test via MK variable.
+On Mon, Apr 01, 2013 at 11:33:13AM -0700, H. Peter Anvin wrote:
+> On 04/01/2013 06:34 AM, Vivek Goyal wrote:
+> > On Tue, Mar 26, 2013 at 02:14:18PM -0400, Vivek Goyal wrote:
+> >> On Mon, Mar 25, 2013 at 02:50:18PM -0700, Yinghai Lu wrote:
+> >>> On Mon, Mar 25, 2013 at 12:42 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> >>>> So it is a forgone conclusion that these new kernel changes to
+> >>>> crashkernel=X in 3.9 are incompatible with older kexec-tools and one
+> >>>> needs to upgrade kexec-tools.
+> >>>
+> >>> I thought that you and hpa all agreed that user need to update kexec-tools with
+> >>> new kernel v3.9. It that still right?
+> >>
+> >> I can update kexec-tools and I don't have problems with that. I am only
+> >> concerned about some xyz user complaining that new kernel stopped working
+> >> with old kexec-tools and then possibly face the rant from Linus about
+> >> breaking user space. :-)
+> >>
+> >> To me we could maintain backward compatibility by retaining the existing
+> >> behavior of crashkernle=X. That is  look for specificied memory below
+> >> 896M first and then go higher.
+> >>
+> >> And hide new semantics behind new kernel parameters or by extending
+> >> existing parameter (say crashkernel=X:search_high_first) to specify how
+> >> to search for reserved memory.
+> >>
+> >> In both the cases we should probably retain the logic of auto reserving
+> >> low memory for software iotlb and let user opt out if there is no need.
+> >>
+> >> So we don't have a strong reason that why we should break existing
+> >> kexec-tools. So I would prefer not to break it.
+> >>
+> >> But I think this is hpa's decision.
+> > 
+> > hpa,
+> > 
+> > ping. Any thoughts on this?
+> 
+> Pardon me while I retch.  The whole kdump dependency mess is making me
+> sick to my stomach.
+> 
+> The fundamental problem you have is that the user has to take an action
+> that doesn't make any sense, because there isn't any sane method to
+> backflow the requirements from the crashkernel to the command line.
+> 
+> The only way I can think how to deal with that in a sane way that
+> doesn't require that the user has to understand a whole bunch of things
+> about their system that no user should ever have to be burdened with is
+> to have the packaging system feed back information about the crashkernel
+> and kexec-tools that will be used.  That interface probably needs
+> serious architecting.
+> 
+> I wouldn't object to crashkernel=<size>,<option>,<option>... being the
+> format for that and it has the plus that it doesn't break less.  So
+> something like "crashkernel=800M,high" (:search_high_first is
+> inconsistent with other options and completely pointlessly wordy... this
+> isn't Multics, and the command line space is a limited resource) would
+> make sense.
+> 
+> However, I really strongly suggest you work on a mechanism to take the
+> information about the crashkernel and utilities that the kernel can't
+> know and feed it into the bootloader configuration.  This can be as
+> simple as a set of scripts.
 
-Whole suite is executed twice, the second time with
-O=/tmp/xxx option added.
+Hi Peter,
 
-To run the whole suite:
-  $ make -f tests/make
-  MAKE_PURE: cd . && make -f Makefile
-  TEST: test -x ./perf
-  MAKE_DEBUG: cd . && make -f Makefile DEBUG=1
-  TEST: test -x ./perf
-  ...
+I agree that this dependency on crashkernel is creating lots of problems
+and there should be a better way to manage it.
 
-You see command line for 'MAKE_PURE' test right away,
-and the output is stored into MAKE_PURE file.
+Sorry, but I did not fully understand your suggestion on how to handle the
+problem. IIUC, you are suggesting that kexec-tools has the memory
+requirements and when that package installs, it should automatically
+update boot loader command line to communicate that requirement to kernel?
+Or are you suggesting something else entirely.
 
-To run simple test:
-  $ make -f tests/make MAKE_DEBUG
-  MAKE_DEBUG: cd . && make -f Makefile DEBUG=1
-  TEST: test -x ./perf
+Where to reserve is not entirely tied to kexec-tools version. It also
+depends on the environment and run time user options. 
 
-At this moment tests checks for succesfull build
-and for existence of several built files. Additional
-after-build checks could be added.
+For example kernel image being loaded and entry point selected. So if one
+decides to load take 32bit entry point of bzImage then memory has to be
+reserved in first 4G (despite the fact that kexec-tools is able to load 64bit
+bzImage and handle higher reserved ranges).
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/tests/make | 122 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 122 insertions(+)
- create mode 100644 tools/perf/tests/make
+Also whether to reserve memory for software iotlb will depend on whether
+we have chosen to enable iommu in second kernel or not.
 
-diff --git a/tools/perf/tests/make b/tools/perf/tests/make
-new file mode 100644
-index 0000000..0cc64ea
---- /dev/null
-+++ b/tools/perf/tests/make
-@@ -0,0 +1,122 @@
-+ifndef PERF
-+PERF := .
-+endif
-+
-+ifndef MK
-+MK := Makefile
-+endif
-+
-+MAKE_DEBUG          := DEBUG=1
-+MAKE_NO_LIBPERL     := NO_LIBPERL=1
-+MAKE_NO_LIBPYTHON   := NO_LIBPYTHON=1
-+MAKE_NO_SCRIPTS     := NO_LIBPYTHON=1 NO_LIBPERL=1
-+MAKE_NO_NEWT        := NO_NEWT=1
-+MAKE_NO_SLANG       := NO_SLANG=1
-+MAKE_NO_GTK2        := NO_GTK2=1
-+MAKE_NO_UI          := NO_NEWT=1 NO_SLANG=1 NO_GTK2=1
-+MAKE_NO_DEMANGLE    := NO_DEMANGLE=1
-+MAKE_NO_LIBELF      := NO_LIBELF=1
-+MAKE_NO_LIBUNWIND   := NO_LIBUNWIND=1
-+MAKE_NO_BACKTRACE   := NO_BACKTRACE=1
-+MAKE_NO_LIBNUMA     := NO_LIBNUMA=1
-+MAKE_NO_LIBAUDIT    := NO_LIBAUDIT=1
-+MAKE_NO_LIBBIONIC   := NO_LIBBIONIC=1
-+MAKE_MINIMAL        := NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1 NO_DEMANGLE=1 NO_LIBELF=1 NO_LIBUNWIND=1 NO_BACKTRACE=1 NO_LIBNUMA=1 NO_LIBAUDIT=1 NO_LIBBIONIC=1
-+MAKE_TAGS           := tags
-+MAKE_CSCOPE         := cscope
-+MAKE_HELP           := help
-+MAKE_DOC            := doc
-+MAKE_PERF_O         := perf.o
-+MAKE_UTIL_MAP_O     := util/map.o
-+
-+RUN := \
-+	MAKE_PURE \
-+	MAKE_DEBUG \
-+	MAKE_NO_LIBPERL \
-+	MAKE_NO_LIBPYTHON \
-+	MAKE_NO_SCRIPTS \
-+	MAKE_NO_NEWT \
-+	MAKE_NO_SLANG \
-+	MAKE_NO_GTK2 \
-+	MAKE_NO_UI \
-+	MAKE_NO_DEMANGLE \
-+	MAKE_NO_LIBELF \
-+	MAKE_NO_LIBUNWIND \
-+	MAKE_NO_BACKTRACE \
-+	MAKE_NO_LIBNUMA \
-+	MAKE_NO_LIBAUDIT \
-+	MAKE_NO_LIBBIONIC \
-+	MAKE_MINIMAL \
-+	MAKE_TAGS \
-+	MAKE_CSCOPE \
-+	MAKE_HELP \
-+	MAKE_DOC \
-+	MAKE_PERF_O \
-+	MAKE_UTIL_MAP_O
-+
-+RUN_O := $(addsuffix _O,$(RUN))
-+
-+TEST_MAKE_TAGS   = test -f tags
-+TEST_MAKE_CSCOPE = test -f cscope.out
-+
-+TEST_MAKE_TAGS_O   := $(TEST_MAKE_TAGS)
-+TEST_MAKE_CSCOPE_O := $(TEST_MAKE_CSCOPE)
-+
-+TEST_OK := true
-+TEST_MAKE_HELP   := $(TEST_OK)
-+TEST_MAKE_DOC    := $(TEST_OK)
-+TEST_MAKE_HELP_O := $(TEST_OK)
-+TEST_MAKE_DOC_O  := $(TEST_OK)
-+
-+TEST_MAKE_PERF_O     := test -f $(PERF)/perf.o
-+TEST_MAKE_UTIL_MAP_O := test -f $(PERF)/util/map.o
-+
-+# Kbuild tests only
-+#TEST_MAKE_PERF_O_O     := test -f $$TMP/tools/perf/perf.o
-+#TEST_MAKE_UTIL_MAP_O_O := test -f $$TMP/tools/perf/util/map.o
-+
-+TEST_MAKE_PERF_O_O     := true
-+TEST_MAKE_UTIL_MAP_O_O := true
-+
-+TEST_DEFAULT = test -x $(PERF)/perf
-+test = $(if $(TEST_$1),$(TEST_$1),$(TEST_DEFAULT))
-+
-+TEST_DEFAULT_O = test -x $$TMP/perf
-+test_o = $(if $(TEST_$1),$(TEST_$1),$(TEST_DEFAULT_O))
-+
-+all:
-+
-+ifdef DEBUG
-+d := $(info RUN   $(RUN))
-+d := $(info RUN_O $(RUN_O))
-+endif
-+
-+MAKEFLAGS := --no-print-directory
-+
-+clean := @cd $(PERF); make -s -f $(MK) clean >/dev/null
-+
-+$(RUN):
-+	$(call clean) && \
-+	cmd="cd $(PERF) && make -f $(MK) $($@)"; \
-+	echo "$@: $$cmd" && echo $$cmd > $@ && \
-+	( eval $$cmd ) >> $@ 2>&1; \
-+	echo "TEST: $(call test,$@)"; \
-+	$(call test,$@)
-+
-+$(RUN_O):
-+	$(call clean) && \
-+	TMP=$$(mktemp -d); \
-+	cmd="cd $(PERF) && make -f $(MK) $($(patsubst %_O,%,$@)) O=$$TMP"; \
-+	echo "$@: $$cmd" && echo $$cmd > $@ && \
-+	( eval $$cmd ) >> $@ 2>&1 && \
-+	echo "TEST: $(call test_o,$@)"; \
-+	$(call test_o,$@) && \
-+	rm -rf $$TMP
-+
-+all: $(RUN) $(RUN_O)
-+	@echo OK
-+
-+out: $(RUN_O)
-+	@echo OK
-+
-+.PHONY: all $(RUN) $(RUN_O) clean
--- 
-1.7.11.7
+So sorting out all the memory reservation requirements based on
+kexec-tools version and during installation time alone might not work.
 
+To make user's life easier, we can probably modify "kdump" service and
+provide another option which can calculate the right crashkernel= command
+line option based on user selected option and system environment and
+display it to user (or possibly propogate to bootloader command line and
+system is rebooted).
+
+All this will only address the issue of where to reserve memory. It will
+still not solve the issue of how much memory to reserve. We have no way
+to know. It is all heuristics.
+
+crashkernel=<size>,<option>,<option>.. and crashkernel=800M,high sound
+good to me. 
+
+So atleast for 3.9 kernel, shall we hide new semantics behind
+crashkernel=XM,high and by default crashkernel=XM tries to emulate
+crashkernel=XM,low to retain backward compatibility?
+
+Thanks
+Vivek
