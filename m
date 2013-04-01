@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758745Ab3DAWKA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 18:10:00 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:63786 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758601Ab3DAWJ5 (ORCPT
+	id S1758428Ab3DAWQQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 18:16:16 -0400
+Received: from mail-da0-f51.google.com ([209.85.210.51]:46463 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756511Ab3DAWQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 18:09:57 -0400
-Subject: Re: [PATCH 04/27] perf tools: Move programs check into
- config/Makefile
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, Stephane Eranian <eranian@google.com>
-In-Reply-To: <1364843930-17974-5-git-send-email-jolsa@redhat.com>
-References: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
-	 <1364843930-17974-5-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 02 Apr 2013 07:09:50 +0900
-Message-ID: <1364854190.1728.12.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 8bit
+	Mon, 1 Apr 2013 18:16:15 -0400
+Message-ID: <515A072A.3080307@linaro.org>
+Date: Mon, 01 Apr 2013 15:16:10 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: David Ahern <dsahern@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] timekeeping: Add tracepoints for xtime changes - v2
+References: <1363710477-4203-1-git-send-email-dsahern@gmail.com> <CANcMJZCJK_8r6y0MbhhgyTkk=7dMOFZO-KkeVy4MLE5PZxEZqg@mail.gmail.com> <515A0317.1070800@gmail.com>
+In-Reply-To: <515A0317.1070800@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-04-01 (월), 21:18 +0200, Jiri Olsa:
-> Moving programs check into config/Makefile.
+On 04/01/2013 02:58 PM, David Ahern wrote:
+> On 4/1/13 12:55 PM, John Stultz wrote:
+>
+>> This all looks reasonable. Though do we need to be more explicit in what
+>> we're tracing here? ie: CLOCK_REALTIME timestamps?
+>
+> The tracepoints don't care about the what and the tp names follow the 
+> convention of trace_<function_name> so you know where it is triggering.
+>
+>>
+>> I'd someday eventually like to rework the timekeeping core to be mostly
+>> ktime_t based, building time in a more logical method up from
+>> CLOCK_MONOTONIC rather then using CLOCK_REALTIME as our base and
+>> subtracting time from that. I'm just worried about what sort of
+>> constraints these tracepoints may put on a larger rework in the future.
+>
+> Understood. And my comment above is not going to help -- ie., telling 
+> perf specific tracepoints which include function names. Should I 
+> consolidate this into a single trace_tod_update() that gets invoked in 
+> various places? The locations can move without affecting perf. I just 
+> want the tod update; where it happens should not matter.
+>
 
-[SNIP]
+I guess what I'm getting at is: What ABI are we creating here?  Can 
+these tracepoints come and go without any consequence? Or would changing 
+them in the future cause application breakage?
 
-> +RM      = rm -f
-> +MKDIR   = mkdir
-> +FIND    = find
-> +INSTALL = install
-> +FLEX    = flex
-> +BISON   = bison
-> +STRIP  ?= strip
+I'm somewhat worried even trace_tod_update() is maybe too vague (again 
+not that the name specifically is critical, but that the semantics we're 
+specifying are clear). In other words, I think you're wanting a 
+tracepoint at any time CLOCK_REALTIME is updated by anything other then 
+the normal progression of time? Is that right?
 
-Why does STRIP use "?=" form?
+You may want to also include the leapsecond modification in the tracing 
+as well.
 
-I know you just moved the line, but AFAICS it can be converted to a
-normal variable assignment, right?
-
-
-> @@ -140,14 +140,6 @@ ifneq ($(MAKECMDGOALS),clean)
->  ifneq ($(MAKECMDGOALS),tags)
->  -include config/feature-tests.mak
->  
-> -ifeq ($(call get-executable,$(FLEX)),)
-> -	dummy := $(error Error: $(FLEX) is missing on this system, please install it)
-> -endif
-> -
-> -ifeq ($(call get-executable,$(BISON)),)
-> -	dummy := $(error Error: $(BISON) is missing on this system, please install it)
-> -endif
-> -
->  ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
->  	CFLAGS := $(CFLAGS) -fstack-protector-all
->  endif
-> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> index fe317c2..04bf8ac 100644
-> --- a/tools/perf/config/Makefile
-> +++ b/tools/perf/config/Makefile
-> @@ -32,3 +32,13 @@ endif
->  ifeq ($(NO_PERF_REGS),0)
->          BASIC_CFLAGS += -DHAVE_PERF_REGS
->  endif
-> +
-> +-include config/feature-tests.mak
-
-It seems now it's redundant to include this file?
-
-Thanks,
-Namhyung
-
-
+thanks
+-john
