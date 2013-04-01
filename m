@@ -1,178 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757056Ab3DAMG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 08:06:56 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:41127 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756767Ab3DAMGy (ORCPT
+	id S1756854Ab3DAMHf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 08:07:35 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:49303 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395Ab3DAMHe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 08:06:54 -0400
+	Mon, 1 Apr 2013 08:07:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <1349254268.16946.35.camel@wall-e>
-References: <1349254268.16946.35.camel@wall-e>
-Date: Mon, 1 Apr 2013 05:06:53 -0700
-Message-ID: <CAOMFOmWxeYfavKMagPv5w1OjQL5Ng3JgGUw-bJjw-9w-r2wEVg@mail.gmail.com>
-Subject: Re: losetup kernel crash in drivers/block/loop.c kernel 3.4.11
+In-Reply-To: <20120806020245.GA7130@kosh.dhis.org>
+References: <20120806020245.GA7130@kosh.dhis.org>
+Date: Mon, 1 Apr 2013 05:07:32 -0700
+Message-ID: <CAOMFOmVq1VknxHsEMGo3+QRreCSA1v2DARg2E2yTT+yg2h3XMg@mail.gmail.com>
+Subject: Re: Oops in loop_clr_fd => bd_set_size
 From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Monakhov <dmonakhov@openvz.org>, Dave Young <dyoung@redhat.com>,
-        JeffMoyer <jmoyer@redhat.com>
+To: Alan Curry <pacman@kosh.dhis.org>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi
 
-On Wed, Oct 3, 2012 at 1:51 AM, Stefani Seibold <stefani@seibold.net> wrote:
-> Hi,
+On Sun, Aug 5, 2012 at 7:02 PM, Alan Curry <pacman@kosh.dhis.org> wrote:
+> I got an Oops from running "losetup -d /dev/loop2". The trace shows
+> loop_clr_fd calling bd_set_size, and the parameter bdev appears to have a
+> NULL in its bd_disk field.
 >
-> i am faced with a strange kernel crash while removing a loopback device
-> with losetup, during a software update of my embedded device, which was
-> introduced between 3.0 and 3.4. All other used kernels 2.6.39, 2.6.35,
-> 2.6.33, 2.6.29, 2.6.27 and 2.6.20 works well.
+> The losetup command was run as part of a script that did this:
+>   losetup -d /dev/loop5
+>   losetup -d /dev/loop4
+>   losetup -d /dev/loop3
+>   losetup -d /dev/loop2
+>   losetup -d /dev/loop1
+> The kernel was processing a lot of loop_clr_fd's in a quick sequence. The
+> first three worked, and the loop2 Oopsed.
 >
-> BUG: unable to handle kernel NULL pointer derference at 00000041
-> IP: [<c019faef>] invalidate_bdev+0x4/0x26
-> *pde = 00000000
-> Ooops: 0000 I#11 PREEMNT SMP
-> Modules linked in: vfat fat i915 drm_kms_helper drm intel_agp i2c_algo_bit intel_gtt agpgart video backlight e1000e usb_storage
+> After that I ran the losetup -d /dev/loop1 separately and it worked. The
+> process that caused the Oops didn't die:
+>   PID TTY      STAT   TIME COMMAND
+>  5055 pts/1    D      0:00 [losetup]
 >
-> Pid: 869, comm: losetup Tainted G            8.3.4
-> EIP: 0060:[<c0194aef>] EFLAGS: 00010282 CPU: 1
-> EIP is at invalidate_bdev+0x4/0x26
-> EAX: 00000029 EBX: f63c1c00 ECX: 00000000 EDX: f63c1e20
-> ESI: f5c6bc80 EDI: f63c1c60 EBP: f596e500 ESP: f5053e54
->  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-> CR0: 8005003b CR2: 00000041 CR3: 324ae000 CR4: 000407d0
-> DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-> DR6: ffff0ff0 DR7: 00000400
-> Process losetup (pid: 869, ti=f5052000 task=f616c0c0 task.ti=f5052000)
+> I also tried to query the current state of the device with "losetup loop2"
+> after the Oops. That gave me a second stuck process:
+>   PID TTY      STAT   TIME COMMAND
+>  5059 pts/1    D+     0:00 losetup /dev/loop2
+>
+> These processes are still alive, in their permanent D state. The rest of
+> the system is still functional. I'll try to keep it that way for now, in
+> case anyone wants to suggest some debugging actions that I can take.
+>
+> The loop devices were set up to handle an unusual situation: I have a whole
+> hard drive image contained within a partition on another hard drive. Each
+> loop device corresponds to a partition of the imaged drive. They were set
+> up like this, with numbers taken from its partition table:
+>
+> cyl=516096
+> losetup -o $((1*$cyl)) --sizelimit $(((2080-1+1)*$cyl)) /dev/loop1 /dev/sda6
+> losetup -o $((2081*$cyl)) --sizelimit $(((4160-2081+1)*$cyl)) /dev/loop2 /dev/sda6
+> losetup -o $((4161*$cyl)) --sizelimit $(((24965-4161+1)*$cyl)) /dev/loop3 /dev/sda6
+> losetup -o $((24966*$cyl)) --sizelimit $(((45770-24966+1)*$cyl)) /dev/loop4 /dev/sda6
+> losetup -o $((45771*$cyl)) --sizelimit $(((158815-45771+1)*$cyl)) /dev/loop5 /dev/sda6
+>
+> So all the loop devices were referencing the same backing device, with
+> different (adjacent but non-overlapping) offsets.
+>
+> I had also done blockdev --setro on sda6 and all of the loop devices as
+> soon as they were created. The devices were successfully dm_snapshot'ed,
+> fscked, mounted, and all data was copied off of them before I did the
+> losetup -d that caused the oops. The one that failed, loop2, actually
+> corresponded to the swap partition of the imaged drive so I didn't copy
+> anything off of it, but I know it was working because I used "strings
+> /dev/loop2" to figure out what it was.
+>
+> That's all the information I can think of that might be relevant. I'm
+> willing to dig deeper if there's anything that can be retrieved from the
+> two stuck processes, or I could reboot and try to repeat the incident.
+>
+> Here is the Oops:
+>
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000328
+> IP: [<ffffffff8110ffed>] bd_set_size+0x7/0x5e
+> PGD 156eb067 PUD 102aa067 PMD 0
+> Oops: 0000 [#1] SMP
+> CPU 1
+> Modules linked in: dm_snapshot ext3 jbd ext2 snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd soundcore snd_page_alloc arc4 carl9170 ehci_hcd mac80211 usbcore usb_common led_class ath cfg80211 rfkill sha256_generic aes_x86_64 aes_generic cbc crc32c_intel loop dm_crypt dm_mod sd_mod crc_t10dif ata_piix libata scsi_mod
+>
+> Pid: 5055, comm: losetup Not tainted 3.5.0 #17 BIOSTAR Group TH61 ITX/TH61 ITX
+> RIP: 0010:[<ffffffff8110ffed>]  [<ffffffff8110ffed>] bd_set_size+0x7/0x5e
+> RSP: 0018:ffff88001113ddd0  EFLAGS: 00010246
+> RAX: 0000000000000000 RBX: ffff8800721b4a00 RCX: 0000000180240011
+> RDX: 0000000180240012 RSI: 0000000000000000 RDI: ffff880100385d40
+> RBP: ffff880100385d40 R08: ffff880072dcb8c0 R09: 0000000180240011
+> R10: 0000000080240011 R11: 0000000000000000 R12: ffff880073712300
+> R13: 0000000000020010 R14: ffff8800721b4b14 R15: 0000000000000000
+> FS:  00007f98183ba700(0000) GS:ffff880100300000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 0000000000000328 CR3: 000000001adcb000 CR4: 00000000000407e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process losetup (pid: 5055, threadinfo ffff88001113c000, task ffff8800732c8640)
 > Stack:
->  f63c1c00 c0277449 000200da f63c1c00 ffffffe7 00004c01 f5c39900 c02784d0
->  f5d750a4 00000000 f5053efc f5d750a4 f5269900 c017dda6 0000001d 00008000
->  f63c1cfc c027897b ffffffe7 00004c01 f5053f10 c0202021 00000000 f5c39900
+>  ffffffffa00b251c ffff8800721b4a00 ffff8800739ec9c0 0000000000004c01
+>  0000000000000000 ffff8800721b4b30 ffffffffa00b315d ffff880072209c20
+>  ffff88000f9f6900 00007f9817f09430 000000000000001d ffff880031878840
 > Call Trace:
->  [<c0277449>] ? loop_clr_fd+0x11/0x1d6
->  [<c02784d0>] ? lo_ioctl+0x455/0x62b
->  [<c017dda6>] ? do_last.clone.32+0x55b/0x5d5
->  [<c027807b>] ? loop_switch.clone.13+0x67/0x67
->  [<c0202021>] ? __blkdev_driver_ioctl+0x1d/0x25
->  [<c0202905>] ? blkdev_ioctl+0x6a3/0x6c2
->  [<c016800d>] ? handle_pte_fault+0x21d/0x7ad
->  [<c017e19b>] ? do_file_open+0x21/0x5d
->  [<c019425b>] ? block_ioctl+0x2f/0x34
->  [<c019425b>] ? block_ioctl+0x2f/0x34
->  [<c019422c>] ? bd_set_size+0x60/0x60
->  [<c017fe00>] ? do_vfs_ioctl+0x455/0x492
->  [<c01181d3>] ? do_page_fault+0x30f/0x32c
->  [<c017293a>] ? fd_install+0x1e/0x3d
->  [<c0173865>] ? do_sys_open+0x17e/0x188
->  [<c017feea>] ? sys_ioctl+0x2d/0x47
->  [<c033f7c1>] ? syscall+0x7/0xb
-> Code: 00 89 f0 5b 5e 5f c3 53 8b 40 08 8b 58 18 83 7b 3c 00 74 11 e8 3f b9 ff ff 89 d8 31 d2 31 c9 5b e9 ba 8e fc ff 5b c3 53 8b 40 08 (8b) 58 18 83 7b 3c 00 74 17 e8  1f b9 ff ff e8 4e 88 fc ff 89 d8
-> EIP: [<c019eaef>] invalidate_bdev+0x4/0x26 SS:ESP 0068:f5053e54
-> CR2: 0000000000000041
->
-> This dump was copied by hand from a smart phone screenshot, i hope there
-> are no typos.
->
-> It is not possible to write a demo program which reproduce this bug due
-> the complexity, so i will explain what going on.
->
-> First mount a kernel which include a initramfs doing the following:
->
-> /bin/mount -t proc none /proc
-> /bin/mount -o rw,data=journal,barrier=1,errors=remount-ro /dev/sda3 /mnt
-> /bin/mount -o loop /mnt/rootfs.squashfs /rootfs
-> /bin/mount -o loop modules.squashfs /rootfs/lib/modules
-> /bin/mount -o move /mnt /rootfs/rw
-> /bin/umount /proc
-> exec /rootfs/bin/sh -c 'exec /sbin/switch_root -c /dev/console /rootfs /sbin/init'
-> exec /bin/sh
->
-> The Squashfs-Image will be mounted and will be the new root filesystem,
-> the file system of /dev/sda3 will be then mounted under /rw.
->
-> The reason to do this is, that is is very easy to exchange the root
-> filesystem, since it it only a plain image file. And there is no extra
-> partition necessary which can be to small in the future.
->
-> Also the kernel modules will be a squashfs image as a part of the
-> initramfs. This make it safe to exchange the kernel, because it will
-> change togehter with the modules.
->
-> After starting the new init process of the rootfs.squashfs the firmware
-> image opfs.squashfs will be mounted also via loopback block device
-> at /opt.
->
-> When the user decide to do an update, a new rootfs.squashf will be
-> copied into a ramdisk and the following script (snippet) will be
-> executed:
->
-> cat <<EOF >/tmp/init
-> #!/bin/sh
-> exec </dev/console
-> exec >/dev/console
-> exec 2>/dev/console
-> umount /init/opt
-> umount -l -r /init/rw
-> umount -l -r /init
-> umount /etc
-> rm -rf /tmp/etc
-> sync
-> for i in /dev/loop*
-> do
->         losetup -d $i 2>/dev/null
-> done
-> rm \$0
-> exec /tmp/update.sh "$1" "$2"
-> reboot -f
-> EOF
->         chmod a+x /tmp/init
->
->         echo "::restart:/tmp/init" >/tmp/etc/inittab
->
->         mount -o ro /dev/ramdisk /mnt
->         cd /mnt
->         /sbin/pivot_root . init
->
->         mount -o move /init/tmp /tmp
->         mount -o move /init/proc /proc
->         mount -o move /init/sys /sys
->         mount -o move /init/dev/pts /dev/pts
->         mount -o move /init/dev/shm /dev/shm
->         mount -o bind /tmp/etc /etc
->
->         init -q
->         sleep 1
->         kill -SIGQUIT 1
->         exit
->
-> Now the update.sh script has the control over the system, no more
-> application or daemons will running and all mass storages should be
-> unmounted.
->
-> Till this everything is working fine, than the update.sh will execute
-> the following code:
->
-> rm -f /rw/optfs.squashfs
->
-> for i in /dev/loop*
-> do
->         losetup -d $i 2>/dev/null
-> done
->
-> This will remove the old firmware and all possible loopback devices.
-> Executing the losetup will crash the kernel and will produce the Oops
-> above.
->
-> This is independent to the underlying file system or the processor
-> architecture, it will happen on x86 or ppc and ext3fs and yaffs2 as
-> well.
->
-> Any idea?
+>  [<ffffffffa00b251c>] ? loop_clr_fd+0x154/0x1f5 [loop]
+>  [<ffffffffa00b315d>] ? lo_ioctl+0x4af/0x657 [loop]
+>  [<ffffffff811a38f4>] ? blkdev_ioctl+0x632/0x666
+>  [<ffffffff811100de>] ? block_ioctl+0x32/0x36
+>  [<ffffffff810f54f0>] ? do_vfs_ioctl+0x44b/0x490
+>  [<ffffffff810df6b7>] ? virt_to_head_page+0x9/0x2c
+>  [<ffffffff810e1814>] ? kmem_cache_free+0x12/0x9e
+>  [<ffffffff810f5571>] ? sys_ioctl+0x3c/0x5f
+>  [<ffffffff81346422>] ? system_call_fastpath+0x16/0x1b
+> Code: 20 31 c0 48 85 c9 75 1b 48 39 7f 70 74 13 48 8b 46 50 48 3d ba ff 10 81 74 07 48 85 c0 0f 94 c0 c3 b0 01 c3 48 8b 87 90 00 00 00 <48> 8b 80 28 03 00 00 48 85 c0 74 0e 8b 90 d0 04 00 00 66 85 d2
+> RIP  [<ffffffff8110ffed>] bd_set_size+0x7/0x5e
+>  RSP <ffff88001113ddd0>
+> CR2: 0000000000000328
+> ---[ end trace 149557d36d01641b ]---
 
 Here is proposed fix http://marc.info/?l=linux-kernel&m=136481752606623&w=2
