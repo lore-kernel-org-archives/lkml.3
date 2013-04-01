@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756988Ab3DAU0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 16:26:35 -0400
-Received: from mout.gmx.net ([212.227.15.15]:62896 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756328Ab3DAU0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 16:26:34 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1+VIUJHty2VKZGcyhyhXwJVgGGhDo2wmErt21tvX0
-	EGcHFZMxEpyRvl
-Message-ID: <5159ED75.4020709@gmx.de>
-Date: Mon, 01 Apr 2013 22:26:29 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130309 Thunderbird/17.0.4
+	id S1757201Ab3DAU34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 16:29:56 -0400
+Received: from mail-da0-f48.google.com ([209.85.210.48]:51906 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756696Ab3DAU3y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 16:29:54 -0400
+Date: Mon, 1 Apr 2013 13:29:43 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Tim Hockin <thockin@hockin.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <paul@paulmenage.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
+        Daniel J Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Max Kellermann <mk@cm4all.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
+Message-ID: <20130401202943.GC31435@htj.dyndns.org>
+References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
+ <CAAAKZwv9=NFmt6xj1KF2va1i6=UCvka0YkmdOY9JNUMHDOWpGw@mail.gmail.com>
+ <20130401184617.GB31435@htj.dyndns.org>
+ <CAAAKZwvemKDLeuKr6wWMUSVczkRVDZKSzYrXXEMcZ8qvcFR0zQ@mail.gmail.com>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: kernel 3.8.4 : kernel BUG at fs/locks.c:2093!   part #2
-References: <514F31AF.3080709@gmx.de> <20130325220143.GD10887@fieldses.org> <20130326144640.GB3353@fieldses.org> <51536610.7010809@gmx.de> <20130327215727.GB27426@fieldses.org> <20130329184331.GH22307@fieldses.org>
-In-Reply-To: <20130329184331.GH22307@fieldses.org>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAAKZwvemKDLeuKr6wWMUSVczkRVDZKSzYrXXEMcZ8qvcFR0zQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2013 07:43 PM, J. Bruce Fields wrote:
-> For now, though, this should fix the bug.
-> 
-> Thanks again for this testing.
-With this patch applied on top of 3.8.5 the bug could not be reproduced
-any longer (till now).
+On Mon, Apr 01, 2013 at 01:09:09PM -0700, Tim Hockin wrote:
+> Pardon my ignorance, but... what?  Use kernel memory limits as a proxy
+> for process/thread counts?  That sounds terrible - I hope I am
 
-@Dave
-Just Cc:'ed you for your trinity score card
-:-)
+Well, the argument was that process / thread counts were a poor and
+unnecessary proxy for kernel memory consumption limit.  IIRC, Johannes
+put it as (I'm paraphrasing) "you can't go to Fry's and buy 4k thread
+worth of component".
+
+> misunderstanding?  This task counter patch had several properties that
+> mapped very well to what we want.
+> 
+> Is it dead in the water?
+
+After some discussion, Frederic agreed that at least his use case can
+be served well by kmemcg, maybe even better - IIRC it was container
+fork bomb scenario, so you'll have to argue your way in why kmemcg
+isn't a suitable solution for your use case if you wanna revive this.
+
+Thanks.
 
 -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+tejun
