@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab3DAF0M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 01:26:12 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:34836 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756205Ab3DAF0K (ORCPT
+	id S1757343Ab3DAFh4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 01:37:56 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38121 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab3DAFhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 01:26:10 -0400
-Message-ID: <51591A8A.1060904@oracle.com>
-Date: Mon, 01 Apr 2013 13:26:34 +0800
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Mon, 1 Apr 2013 01:37:55 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <51591D21.8090401@jp.fujitsu.com>
+Date: Mon, 01 Apr 2013 14:37:37 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Feng Jin <joe.jin@oracle.com>, Tamon Shiose <tamon.shiose@oracle.com>
-Subject: Re: [PATCH] xen: Don't call arch_trigger_all_cpu_backtrace in dom0(pvm)
-References: <5155413E.6090002@oracle.com> <20130329134640.GG31356@phenom.dumpdata.com>
-In-Reply-To: <20130329134640.GG31356@phenom.dumpdata.com>
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm, memcg: give exiting processes access to memory reserves
+References: <alpine.DEB.2.02.1303271821120.5005@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1303271821120.5005@chino.kir.corp.google.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2013/03/28 10:22), David Rientjes wrote:
+> A memcg may livelock when oom if the process that grabs the hierarchy's
+> oom lock is never the first process with PF_EXITING set in the memcg's
+> task iteration.
+>
+> The oom killer, both global and memcg, will defer if it finds an eligible
+> process that is in the process of exiting and it is not being ptraced.
+> The idea is to allow it to exit without using memory reserves before
+> needlessly killing another process.
+>
+> This normally works fine except in the memcg case with a large number of
+> threads attached to the oom memcg.  In this case, the memcg oom killer
+> only gets called for the process that grabs the hierarchy's oom lock; all
+> others end up blocked on the memcg's oom waitqueue.  Thus, if the process
+> that grabs the hierarchy's oom lock is never the first PF_EXITING process
+> in the memcg's task iteration, the oom killer is constantly deferred
+> without anything making progress.
+>
+> The fix is to give PF_EXITING processes access to memory reserves so that
+> we've marked them as oom killed without any iteration.  This allows
+> __mem_cgroup_try_charge() to succeed so that the process may exit.  This
+> makes the memcg oom killer exemption for TIF_MEMDIE tasks, now
+> immediately granted for processes with pending SIGKILLs and those in the
+> exit path, to be equivalent to what is done for the global oom killer.
+>
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-On 2013-03-29 21:46, Konrad Rzeszutek Wilk wrote:
-> On Fri, Mar 29, 2013 at 03:22:38PM +0800, Zhenzhong Duan wrote:
->> nmi isn't supported in dom0, fallback to general all cpu backtrace code.
->>
->> Without fix, on xapic system, sysrq+l, no backtrace is showed.
->> On x2apic enabled system, got NULL pointer dereference as below.
-> Why would the x2APIC or xAPIC make a difference here? The Linux dom0
-> is not fiddling with the APIC - that is the hypervisor job.
-In x2apic enabled system, dom0 kernel set apic pointer to 
-apic_x2apic_cluster or apic_x2apic_phys.
-When sending nmi, apic->send_IPI_all copy cpumask which isn't initialized.
-For xapic system, apic->send_IPI_all=xen_send_IPI_all apic, this func 
-does nothing for nmi, so no backtrace.
-> Can you explain to me why x2apic_send_IPI_mask is even set? Wouldn't
-> the Xen version of send_IPI be present? (See xen_smp_ops)
-It's overwrited by x2apic initialization.
-The problem is even without overwrite, like xapic system, 
-xen_send_IPI_all doesn't work for nmi vector.
-zduan
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+> ---
+>   mm/memcontrol.c | 8 ++++----
+>   1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1686,11 +1686,11 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>   	struct task_struct *chosen = NULL;
+>
+>   	/*
+> -	 * If current has a pending SIGKILL, then automatically select it.  The
+> -	 * goal is to allow it to allocate so that it may quickly exit and free
+> -	 * its memory.
+> +	 * If current has a pending SIGKILL or is exiting, then automatically
+> +	 * select it.  The goal is to allow it to allocate so that it may
+> +	 * quickly exit and free its memory.
+>   	 */
+> -	if (fatal_signal_pending(current)) {
+> +	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
+>   		set_thread_flag(TIF_MEMDIE);
+>   		return;
+>   	}
+>
+
+
