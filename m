@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab3DAG6x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 02:58:53 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:45882 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757962Ab3DAG47 (ORCPT
+	id S1758094Ab3DAG7M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 02:59:12 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:62386 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757942Ab3DAG47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Apr 2013 02:56:59 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-a0-51592fb9fe8b
+X-AuditID: cbfee68f-b7f4a6d000001436-9c-51592fb9a702
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 5/9] f2fs: change GC bitmaps to apply the section granularity
-Date: Mon, 01 Apr 2013 15:55:56 +0900
-Message-id: <1364799360-23145-5-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 3/9] f2fs: remove redundant lock_page calls
+Date: Mon, 01 Apr 2013 15:55:54 +0900
+Message-id: <1364799360-23145-3-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.1.3.566.gaa39828
 In-reply-to: <1364799360-23145-1-git-send-email-jaegeuk.kim@samsung.com>
 References: <1364799360-23145-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t8zfd2d+pGBBgvnyVhc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAldG3+ixbwfGkinML
-	pzM1MC4O6GLk5JAQMJHYefoIE4QtJnHh3nq2LkYuDiGBZYwSa56fZoYp+j3/I1RiEaPEsguf
-	oZw2JolLVzcBORwcbALaEpv3G4A0iAgwSyyYep4RpIZZYAKjxP9F71lAEsICvhI71/xgB7FZ
-	BFQlpvfcZwWxeQXcJR7NnAh1hq7E6v/PwWo4BTwkPrd9BOsVAqo5tW812GIJge9sEusezGOB
-	GCQg8W3yIRaQIyQEZCU2HYC6WlLi4IobLBMYhRcwMqxiFE0tSC4oTkovMtYrTswtLs1L10vO
-	z93ECAna/h2Mdw9YH2JMBho3kVlKNDkfGPR5JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgHCgmk
-	J5akZqemFqQWxReV5qQWH2Jk4uCUamCUd1jVmhDz/PrWqptH9DJFWDIrV7Zu0Px765+supLH
-	rfXRG+ffYlKvdX72nPPLGynf2vb4xJ6rEzb8/lKXyZEScm5eaeTjjyGrLj67X3u83+Jz2beF
-	dTxLFLZduz+jR2zTtaZbPybanf+4u2R1rJQ1h3pO+cKbys+n7/nGJL6PWf740QC/DQpBSizF
-	GYmGWsxFxYkAWh7g83ACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jAd2d+pGBBo2tYhbXd/1lsri0yN1i
-	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
-	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
-	EgTXY2SABhLWMWb0rT7LVnA8qeLcwulMDYyLA7oYOTkkBEwkfs//yAZhi0lcuLceyObiEBJY
-	xCix7MJnKKeNSeLS1U1ADgcHm4C2xOb9BiANIgLMEgumnmcEqWEWmMAo8X/RexaQhLCAr8TO
-	NT/YQWwWAVWJ6T33WUFsXgF3iUczJzJBbNOVWP3/OVgNp4CHxOe2j2C9QkA1p/atZpvAyLuA
-	kWEVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnBMPJPewbiqweIQowAHoxIPb8SFiEAh1sSy
-	4srcQ4wSHMxKIrw+34BCvCmJlVWpRfnxRaU5qcWHGJOBrprILCWanA+M17ySeENjEzMjSyMz
-	CyMTc3PShJXEeQ+2WgcKCaQnlqRmp6YWpBbBbGHi4JRqYKyKjXD5k7B88pUZcn9WsBQtub10
-	4ZcXX93NwoOms83piJi2e/tRE7Ejgooxz6uztz/nvV4UVXdv7vMlvbu9yub1q4co57xtnFui
-	fUffQ/OYxM9HbpvTNufdPBP8I6+JtYFhm/K8ADOt7GN9t726Pz5KWWqyzcn5ocj6rTv5N88q
-	tjzMXlk+S02JpTgj0VCLuag4EQB9YDjxzQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t8zfd2d+pGBBh/vcVtc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAldG7awJLwUWZirtr
+	pzI1MH4T62Lk5JAQMJF48nMnO4QtJnHh3nq2LkYuDiGBZYwSf48sZYEp+r7xIjNEYhGjxLaz
+	K9khnDYmiUtXNwG1cHCwCWhLbN5vANIgIsAssWDqeUaQGmaBCYwS/xe9B5skLGAtcX5pMxuI
+	zSKgKvF0/TKw1bwC7hK/H8xghNimK7H6/3OwOKeAh8Tnto9gvUJANaf2rQY7T0LgO5vEk92/
+	mSAGCUh8m3yIBeQICQFZiU0HmCHmSEocXHGDZQKj8AJGhlWMoqkFyQXFSelFxnrFibnFpXnp
+	esn5uZsYIUHbv4Px7gHrQ4zJQOMmMkuJJucDgz6vJN7Q2MzIwtTE1NjI3NKMNGElcV61FutA
+	IYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYyL7zLe91TZ6ro4KjAitTHhobedDWfetH/zqhu3
+	zAs6fnTZlQCj02nvW1bMKHMxvh27SVXvsMoZ12e399ry2grcf/HIheHCRF+rsEw3s0N/7x5f
+	u9RgyrfJ9x98eJotX/JBM26ryoL6vPa7sx5/+PJ6plTE9Qs7BT5yTt5htzEza2rUWetGg2uV
+	SizFGYmGWsxFxYkAoRGLoXACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jAd2d+pGBBuvWsFtc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
+	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
+	SBBcj5EBGkhYx5jRu2sCS8FFmYq7a6cyNTB+E+ti5OSQEDCR+L7xIjOELSZx4d56ti5GLg4h
+	gUWMEtvOrmSHcNqYJC5d3QSU4eBgE9CW2LzfAKRBRIBZYsHU84wgNcwCExgl/i96zwKSEBaw
+	lji/tJkNxGYRUJV4un4ZO4jNK+Au8fvBDEaIbboSq/8/B4tzCnhIfG77CNYrBFRzat9qtgmM
+	vAsYGVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBMfEM+kdjKsaLA4xCnAwKvHwRlyICBRi
+	TSwrrsw9xCjBwawkwuvzDSjEm5JYWZValB9fVJqTWnyIMRnoqonMUqLJ+cB4zSuJNzQ2MTOy
+	NDKzMDIxNydNWEmc92CrdaCQQHpiSWp2ampBahHMFiYOTqkGxt5QN/s52edPJxt2zPde+SVT
+	9dfzKcf6k3+l7PHllyzo37NcPPWH++2zc6cyx1roW7KKuGo5r3uY1HJX5/////KGP1wjatj5
+	NF/UaUrvX5/xv8D674z1qUdmSGpPTGd8US7sXfxy8pVHQj92FS/lXFWT82neDeG7x3/fEMx5
+	ZPxE7GyiQH9KjRJLcUaioRZzUXEiAElhSPXNAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -48,373 +48,150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes a bitmap for victim segments selected by foreground GC, and
-modifies the other bitmap for victim segments selected by background GC.
+In get_node_page, we do not need to call lock_page all the time.
 
-1) foreground GC bitmap
- : We don't need to manage this, since we just only one previous victim section
-   number instead of the whole victim history.
-   The f2fs uses the victim section number in order not to allocate currently
-   GC'ed section to current active logs.
+If the node page is cached as uptodate,
 
-2) background GC bitmap
- : This bitmap is used to avoid selecting victims repeatedly by background GCs.
-   In addition, the victims are able to be selected by foreground GCs, since
-   there is no need to read victim blocks during foreground GCs.
+1. grab_cache_page locks the page,
+2. read_node_page unlocks the page, and
+3. lock_page is called for further process.
 
-   By the fact that the foreground GC reclaims segments in a section unit, it'd
-   be better to manage this bitmap based on the section granularity.
+Let's avoid this.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/checkpoint.c |  2 --
- fs/f2fs/debug.c      |  2 +-
- fs/f2fs/f2fs.h       |  2 +-
- fs/f2fs/gc.c         | 42 ++++++++++++++++++---------------
- fs/f2fs/segment.c    | 66 ++++++++++++++++++++++++----------------------------
- fs/f2fs/segment.h    | 11 ++++++++-
- fs/f2fs/super.c      |  2 ++
- 7 files changed, 68 insertions(+), 59 deletions(-)
+ fs/f2fs/node.c | 63 +++++++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 36 insertions(+), 27 deletions(-)
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index d947e66..93fd57d 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -748,8 +748,6 @@ void write_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
- 	flush_nat_entries(sbi);
- 	flush_sit_entries(sbi);
- 
--	reset_victim_segmap(sbi);
--
- 	/* unlock all the fs_lock[] in do_checkpoint() */
- 	do_checkpoint(sbi, is_umount);
- 
-diff --git a/fs/f2fs/debug.c b/fs/f2fs/debug.c
-index 20b8794..c3bf343 100644
---- a/fs/f2fs/debug.c
-+++ b/fs/f2fs/debug.c
-@@ -153,7 +153,7 @@ static void update_mem_info(struct f2fs_sb_info *sbi)
- 	/* build dirty segmap */
- 	si->base_mem += sizeof(struct dirty_seglist_info);
- 	si->base_mem += NR_DIRTY_TYPE * f2fs_bitmap_size(TOTAL_SEGS(sbi));
--	si->base_mem += 2 * f2fs_bitmap_size(TOTAL_SEGS(sbi));
-+	si->base_mem += f2fs_bitmap_size(TOTAL_SECS(sbi));
- 
- 	/* buld nm */
- 	si->base_mem += sizeof(struct f2fs_nm_info);
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 77e2eb0..71eacd3 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -410,6 +410,7 @@ struct f2fs_sb_info {
- 	/* for cleaning operations */
- 	struct mutex gc_mutex;			/* mutex for GC */
- 	struct f2fs_gc_kthread	*gc_thread;	/* GC thread */
-+	unsigned int cur_victim_sec;		/* current victim section num */
- 
- 	/*
- 	 * for stat information.
-@@ -979,7 +980,6 @@ int lookup_journal_in_cursum(struct f2fs_summary_block *,
- 					int, unsigned int, int);
- void flush_sit_entries(struct f2fs_sb_info *);
- int build_segment_manager(struct f2fs_sb_info *);
--void reset_victim_segmap(struct f2fs_sb_info *);
- void destroy_segment_manager(struct f2fs_sb_info *);
- 
- /*
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index 2e3eb2d..01a1d60 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -160,18 +160,21 @@ static unsigned int get_max_cost(struct f2fs_sb_info *sbi,
- static unsigned int check_bg_victims(struct f2fs_sb_info *sbi)
- {
- 	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
--	unsigned int segno;
-+	unsigned int hint = 0;
-+	unsigned int secno;
- 
- 	/*
- 	 * If the gc_type is FG_GC, we can select victim segments
- 	 * selected by background GC before.
- 	 * Those segments guarantee they have small valid blocks.
- 	 */
--	segno = find_next_bit(dirty_i->victim_segmap[BG_GC],
--						TOTAL_SEGS(sbi), 0);
--	if (segno < TOTAL_SEGS(sbi)) {
--		clear_bit(segno, dirty_i->victim_segmap[BG_GC]);
--		return segno;
-+next:
-+	secno = find_next_bit(dirty_i->victim_secmap, TOTAL_SECS(sbi), hint++);
-+	if (secno < TOTAL_SECS(sbi)) {
-+		if (sec_usage_check(sbi, secno))
-+			goto next;
-+		clear_bit(secno, dirty_i->victim_secmap);
-+		return secno * sbi->segs_per_sec;
- 	}
- 	return NULL_SEGNO;
- }
-@@ -234,7 +237,6 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
- {
- 	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
- 	struct victim_sel_policy p;
--	unsigned int segno;
- 	int nsearched = 0;
- 
- 	p.alloc_mode = alloc_mode;
-@@ -253,6 +255,7 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
- 
- 	while (1) {
- 		unsigned long cost;
-+		unsigned int segno, secno;
- 
- 		segno = find_next_bit(p.dirty_segmap,
- 						TOTAL_SEGS(sbi), p.offset);
-@@ -265,13 +268,11 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
- 			break;
- 		}
- 		p.offset = ((segno / p.ofs_unit) * p.ofs_unit) + p.ofs_unit;
-+		secno = GET_SECNO(sbi, segno);
- 
--		if (test_bit(segno, dirty_i->victim_segmap[FG_GC]))
-+		if (sec_usage_check(sbi, secno))
- 			continue;
--		if (gc_type == BG_GC &&
--				test_bit(segno, dirty_i->victim_segmap[BG_GC]))
--			continue;
--		if (IS_CURSEC(sbi, GET_SECNO(sbi, segno)))
-+		if (gc_type == BG_GC && test_bit(secno, dirty_i->victim_secmap))
- 			continue;
- 
- 		cost = get_gc_cost(sbi, segno, &p);
-@@ -291,13 +292,14 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
- 	}
- got_it:
- 	if (p.min_segno != NULL_SEGNO) {
--		*result = (p.min_segno / p.ofs_unit) * p.ofs_unit;
- 		if (p.alloc_mode == LFS) {
--			int i;
--			for (i = 0; i < p.ofs_unit; i++)
--				set_bit(*result + i,
--					dirty_i->victim_segmap[gc_type]);
-+			unsigned int secno = GET_SECNO(sbi, p.min_segno);
-+			if (gc_type == FG_GC)
-+				sbi->cur_victim_sec = secno;
-+			else
-+				set_bit(secno, dirty_i->victim_secmap);
- 		}
-+		*result = (p.min_segno / p.ofs_unit) * p.ofs_unit;
- 	}
- 	mutex_unlock(&dirty_i->seglist_lock);
- 
-@@ -662,9 +664,11 @@ gc_more:
- 	for (i = 0; i < sbi->segs_per_sec; i++)
- 		do_garbage_collect(sbi, segno + i, &ilist, gc_type);
- 
--	if (gc_type == FG_GC &&
--			get_valid_blocks(sbi, segno, sbi->segs_per_sec) == 0)
-+	if (gc_type == FG_GC) {
-+		sbi->cur_victim_sec = NULL_SEGNO;
- 		nfree++;
-+		WARN_ON(get_valid_blocks(sbi, segno, sbi->segs_per_sec));
-+	}
- 
- 	if (has_not_enough_free_secs(sbi, nfree))
- 		goto gc_more;
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index b3486f3..d5244f6 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -69,8 +69,9 @@ static void __remove_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno,
- 		if (test_and_clear_bit(segno,
- 					dirty_i->dirty_segmap[dirty_type]))
- 			dirty_i->nr_dirty[dirty_type]--;
--		clear_bit(segno, dirty_i->victim_segmap[FG_GC]);
--		clear_bit(segno, dirty_i->victim_segmap[BG_GC]);
-+		if (get_valid_blocks(sbi, segno, sbi->segs_per_sec) == 0)
-+			clear_bit(GET_SECNO(sbi, segno),
-+						dirty_i->victim_secmap);
- 	}
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index 10cbee9..c5360b7 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -847,32 +847,13 @@ fail:
+ 	return ERR_PTR(err);
  }
  
-@@ -296,13 +297,12 @@ static void write_sum_page(struct f2fs_sb_info *sbi,
- 	f2fs_put_page(page, 1);
- }
- 
--static unsigned int check_prefree_segments(struct f2fs_sb_info *sbi,
--					int ofs_unit, int type)
-+static unsigned int check_prefree_segments(struct f2fs_sb_info *sbi, int type)
- {
- 	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
- 	unsigned long *prefree_segmap = dirty_i->dirty_segmap[PRE];
--	unsigned int segno, next_segno, i;
--	int ofs = 0;
-+	unsigned int segno;
-+	unsigned int ofs = 0;
- 
- 	/*
- 	 * If there is not enough reserved sections,
-@@ -318,23 +318,30 @@ static unsigned int check_prefree_segments(struct f2fs_sb_info *sbi,
- 	if (IS_NODESEG(type))
- 		return NULL_SEGNO;
- next:
--	segno = find_next_bit(prefree_segmap, TOTAL_SEGS(sbi), ofs++);
--	ofs = ((segno / ofs_unit) * ofs_unit) + ofs_unit;
-+	segno = find_next_bit(prefree_segmap, TOTAL_SEGS(sbi), ofs);
-+	ofs += sbi->segs_per_sec;
-+
- 	if (segno < TOTAL_SEGS(sbi)) {
-+		int i;
-+
- 		/* skip intermediate segments in a section */
--		if (segno % ofs_unit)
-+		if (segno % sbi->segs_per_sec)
- 			goto next;
- 
--		/* skip if whole section is not prefree */
--		next_segno = find_next_zero_bit(prefree_segmap,
--						TOTAL_SEGS(sbi), segno + 1);
--		if (next_segno - segno < ofs_unit)
-+		/* skip if the section is currently used */
-+		if (sec_usage_check(sbi, GET_SECNO(sbi, segno)))
- 			goto next;
- 
-+		/* skip if whole section is not prefree */
-+		for (i = 1; i < sbi->segs_per_sec; i++)
-+			if (!test_bit(segno + i, prefree_segmap))
-+				goto next;
-+
- 		/* skip if whole section was not free at the last checkpoint */
--		for (i = 0; i < ofs_unit; i++)
--			if (get_seg_entry(sbi, segno)->ckpt_valid_blocks)
-+		for (i = 0; i < sbi->segs_per_sec; i++)
-+			if (get_seg_entry(sbi, segno + i)->ckpt_valid_blocks)
- 				goto next;
-+
- 		return segno;
- 	}
- 	return NULL_SEGNO;
-@@ -561,15 +568,13 @@ static void allocate_segment_by_default(struct f2fs_sb_info *sbi,
- 						int type, bool force)
- {
- 	struct curseg_info *curseg = CURSEG_I(sbi, type);
--	unsigned int ofs_unit;
- 
- 	if (force) {
- 		new_curseg(sbi, type, true);
- 		goto out;
- 	}
- 
--	ofs_unit = need_SSR(sbi) ? 1 : sbi->segs_per_sec;
--	curseg->next_segno = check_prefree_segments(sbi, ofs_unit, type);
-+	curseg->next_segno = check_prefree_segments(sbi, type);
- 
- 	if (curseg->next_segno != NULL_SEGNO)
- 		change_curseg(sbi, type, false);
-@@ -1558,14 +1563,13 @@ static void init_dirty_segmap(struct f2fs_sb_info *sbi)
- 	}
- }
- 
--static int init_victim_segmap(struct f2fs_sb_info *sbi)
-+static int init_victim_secmap(struct f2fs_sb_info *sbi)
- {
- 	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
--	unsigned int bitmap_size = f2fs_bitmap_size(TOTAL_SEGS(sbi));
-+	unsigned int bitmap_size = f2fs_bitmap_size(TOTAL_SECS(sbi));
- 
--	dirty_i->victim_segmap[FG_GC] = kzalloc(bitmap_size, GFP_KERNEL);
--	dirty_i->victim_segmap[BG_GC] = kzalloc(bitmap_size, GFP_KERNEL);
--	if (!dirty_i->victim_segmap[FG_GC] || !dirty_i->victim_segmap[BG_GC])
-+	dirty_i->victim_secmap = kzalloc(bitmap_size, GFP_KERNEL);
-+	if (!dirty_i->victim_secmap)
- 		return -ENOMEM;
- 	return 0;
- }
-@@ -1592,7 +1596,7 @@ static int build_dirty_segmap(struct f2fs_sb_info *sbi)
- 	}
- 
- 	init_dirty_segmap(sbi);
--	return init_victim_segmap(sbi);
-+	return init_victim_secmap(sbi);
- }
- 
- /*
-@@ -1679,18 +1683,10 @@ static void discard_dirty_segmap(struct f2fs_sb_info *sbi,
- 	mutex_unlock(&dirty_i->seglist_lock);
- }
- 
--void reset_victim_segmap(struct f2fs_sb_info *sbi)
+-static int read_node_page(struct page *page, int type)
 -{
--	unsigned int bitmap_size = f2fs_bitmap_size(TOTAL_SEGS(sbi));
--	memset(DIRTY_I(sbi)->victim_segmap[FG_GC], 0, bitmap_size);
+-	struct f2fs_sb_info *sbi = F2FS_SB(page->mapping->host->i_sb);
+-	struct node_info ni;
+-
+-	get_node_info(sbi, page->index, &ni);
+-
+-	if (ni.blk_addr == NULL_ADDR) {
+-		f2fs_put_page(page, 1);
+-		return -ENOENT;
+-	}
+-
+-	if (PageUptodate(page)) {
+-		unlock_page(page);
+-		return 0;
+-	}
+-
+-	return f2fs_readpage(sbi, page, ni.blk_addr, type);
 -}
 -
--static void destroy_victim_segmap(struct f2fs_sb_info *sbi)
-+static void destroy_victim_secmap(struct f2fs_sb_info *sbi)
+ /*
+  * Readahead a node page
+  */
+ void ra_node_page(struct f2fs_sb_info *sbi, nid_t nid)
  {
- 	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
--
--	kfree(dirty_i->victim_segmap[FG_GC]);
--	kfree(dirty_i->victim_segmap[BG_GC]);
-+	kfree(dirty_i->victim_secmap);
- }
+ 	struct address_space *mapping = sbi->node_inode->i_mapping;
++	struct node_info ni;
+ 	struct page *apage;
  
- static void destroy_dirty_segmap(struct f2fs_sb_info *sbi)
-@@ -1705,7 +1701,7 @@ static void destroy_dirty_segmap(struct f2fs_sb_info *sbi)
- 	for (i = 0; i < NR_DIRTY_TYPE; i++)
- 		discard_dirty_segmap(sbi, i);
+ 	apage = find_get_page(mapping, nid);
+@@ -886,22 +867,40 @@ void ra_node_page(struct f2fs_sb_info *sbi, nid_t nid)
+ 	if (!apage)
+ 		return;
  
--	destroy_victim_segmap(sbi);
-+	destroy_victim_secmap(sbi);
- 	SM_I(sbi)->dirty_info = NULL;
- 	kfree(dirty_i);
- }
-diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
-index fea9245..4c2cd9e 100644
---- a/fs/f2fs/segment.h
-+++ b/fs/f2fs/segment.h
-@@ -214,7 +214,7 @@ struct dirty_seglist_info {
- 	unsigned long *dirty_segmap[NR_DIRTY_TYPE];
- 	struct mutex seglist_lock;		/* lock for segment bitmaps */
- 	int nr_dirty[NR_DIRTY_TYPE];		/* # of dirty segments */
--	unsigned long *victim_segmap[2];	/* BG_GC, FG_GC */
-+	unsigned long *victim_secmap;		/* background GC victims */
- };
- 
- /* victim selection function for cleaning and SSR */
-@@ -616,3 +616,12 @@ static inline block_t sum_blk_addr(struct f2fs_sb_info *sbi, int base, int type)
- 		le32_to_cpu(F2FS_CKPT(sbi)->cp_pack_total_block_count)
- 				- (base + 1) + type;
- }
+-	if (read_node_page(apage, READA) == 0)
++	get_node_info(sbi, nid, &ni);
 +
-+static inline int sec_usage_check(struct f2fs_sb_info *sbi, unsigned int secno)
-+{
-+	if (IS_CURSEC(sbi, secno))
-+		return -1;
-+	if (sbi->cur_victim_sec == secno)
-+		return -1;
-+	return 0;
-+}
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 252890e..ea325c8 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -26,6 +26,7 @@
++	if (ni.blk_addr == NULL_ADDR || PageUptodate(apage)) {
++		f2fs_put_page(apage, 1);
++		return;
++	}
++
++	if (f2fs_readpage(sbi, apage, ni.blk_addr, READA) == 0)
+ 		f2fs_put_page(apage, 0);
+ 	return;
+ }
  
- #include "f2fs.h"
- #include "node.h"
-+#include "segment.h"
- #include "xattr.h"
+ struct page *get_node_page(struct f2fs_sb_info *sbi, pgoff_t nid)
+ {
+-	int err;
+-	struct page *page;
+ 	struct address_space *mapping = sbi->node_inode->i_mapping;
++	struct page *page;
++	struct node_info ni;
++	int err;
  
- static struct kmem_cache *f2fs_inode_cachep;
-@@ -458,6 +459,7 @@ static void init_sb_info(struct f2fs_sb_info *sbi)
- 	sbi->root_ino_num = le32_to_cpu(raw_super->root_ino);
- 	sbi->node_ino_num = le32_to_cpu(raw_super->node_ino);
- 	sbi->meta_ino_num = le32_to_cpu(raw_super->meta_ino);
-+	sbi->cur_victim_sec = NULL_SEGNO;
+ 	page = grab_cache_page(mapping, nid);
+ 	if (!page)
+ 		return ERR_PTR(-ENOMEM);
  
- 	for (i = 0; i < NR_COUNT_TYPE; i++)
- 		atomic_set(&sbi->nr_pages[i], 0);
+-	err = read_node_page(page, READ_SYNC);
++	get_node_info(sbi, nid, &ni);
++
++	if (ni.blk_addr == NULL_ADDR) {
++		f2fs_put_page(page, 1);
++		return ERR_PTR(-ENOENT);
++	}
++
++	if (PageUptodate(page))
++		goto got_it;
++
++	err = f2fs_readpage(sbi, page, ni.blk_addr, READ_SYNC);
+ 	if (err)
+ 		return ERR_PTR(err);
+ 
+@@ -910,6 +909,7 @@ struct page *get_node_page(struct f2fs_sb_info *sbi, pgoff_t nid)
+ 		f2fs_put_page(page, 1);
+ 		return ERR_PTR(-EIO);
+ 	}
++got_it:
+ 	BUG_ON(nid != nid_of_node(page));
+ 	mark_page_accessed(page);
+ 	return page;
+@@ -923,6 +923,7 @@ struct page *get_node_page_ra(struct page *parent, int start)
+ {
+ 	struct f2fs_sb_info *sbi = F2FS_SB(parent->mapping->host->i_sb);
+ 	struct address_space *mapping = sbi->node_inode->i_mapping;
++	struct node_info ni;
+ 	int i, end;
+ 	int err = 0;
+ 	nid_t nid;
+@@ -936,10 +937,18 @@ struct page *get_node_page_ra(struct page *parent, int start)
+ 	page = grab_cache_page(mapping, nid);
+ 	if (!page)
+ 		return ERR_PTR(-ENOMEM);
+-	else if (PageUptodate(page))
++
++	get_node_info(sbi, nid, &ni);
++
++	if (ni.blk_addr == NULL_ADDR) {
++		f2fs_put_page(page, 1);
++		return ERR_PTR(-ENOENT);
++	}
++
++	if (PageUptodate(page))
+ 		goto page_hit;
+ 
+-	err = read_node_page(page, READ_SYNC);
++	err = f2fs_readpage(sbi, page, ni.blk_addr, READ_SYNC);
+ 	if (err)
+ 		return ERR_PTR(err);
+ 
+@@ -956,7 +965,7 @@ struct page *get_node_page_ra(struct page *parent, int start)
+ 	lock_page(page);
+ 
+ page_hit:
+-	if (PageError(page)) {
++	if (!PageUptodate(page)) {
+ 		f2fs_put_page(page, 1);
+ 		return ERR_PTR(-EIO);
+ 	}
 -- 
 1.8.1.3.566.gaa39828
 
