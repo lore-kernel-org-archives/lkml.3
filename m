@@ -1,135 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758513Ab3DAVRI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 17:17:08 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:49621 "EHLO hydra.sisk.pl"
+	id S1758366Ab3DAVRH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 17:17:07 -0400
+Received: from smtp1.nethome.no ([92.62.33.11]:52497 "EHLO smtp1.nethome.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757478Ab3DAVRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757383Ab3DAVRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Apr 2013 17:17:04 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Zheng Yan <zheng.z.yan@intel.com>
-Subject: Re: [Update][PATCH] PCI / PM: Disable runtime PM of PCIe ports
-Date: Mon, 01 Apr 2013 23:24:37 +0200
-Message-ID: <25773480.yrESpQY9Iv@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAErSpo5iyziiGDKiy-416UQ2xr+2hvcHz6do+ueMmnPM5oy6Cw@mail.gmail.com>
-References: <2282655.IicBMMa6jN@vostro.rjw.lan> <3943547.m5K1tfygWn@vostro.rjw.lan> <CAErSpo5iyziiGDKiy-416UQ2xr+2hvcHz6do+ueMmnPM5oy6Cw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Mon, 01 Apr 2013 23:17:00 +0200
+From: peterasplund@gentoo.se
+To: <Peter.Huewe@infineon.com>
+Cc: <aaron.lu@intel.com>, <mail@srajiv.net>,
+        <tpmdd-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
+        <key@linux.vnet.ibm.com>
+Subject: RE: [tpmdd-devel] =?UTF-8?Q?tpm=5Ftis=20driver=20failed=20to=20su?=
+ =?UTF-8?Q?spend=2C=20error=20-=36=32?=
+In-Reply-To: <74A44E99E3274B4CB570415926B37D4414B14E@MUCSE501.eu.infineon.com>
+References: <20130319023440.GA12425@aaronlu.sh.intel.com>
+ <CAA25o9RJJ5Rkti9_fTJz2ieaHvrtSp5mE_2LTW_t16_cf_TNcg@mail.gmail.com>
+ <ed364e68730267510d49b2bdc38679a0@gentoo.se>
+ <CAEQAOwpmnLXBCJQTf_xU-oSKvAtmpQjHWwMYDm_QOsP+1Kd_aQ@mail.gmail.com>
+ <CAEQAOwqWL=WekQqg5WY8TGxzB3x9nB9MVj_UTAVK0ro7TqB2WQ@mail.gmail.com>
+ <51540408.3000702@intel.com>
+ <74A44E99E3274B4CB570415926B37D4414B14E@MUCSE501.eu.infineon.com>
+Message-ID: <733a6b303b7e9a3c4fb396acad9d9c5c@gentoo.se>
+User-Agent: Roundcube Webmail/0.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 01, 2013 02:53:12 PM Bjorn Helgaas wrote:
-> On Mon, Apr 1, 2013 at 2:51 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Monday, April 01, 2013 11:34:46 AM Bjorn Helgaas wrote:
-> >> [+cc Zheng, who added this with 71a83bd727]
-> >>
-> >> On Sat, Mar 30, 2013 at 4:38 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> >
-> >> > The runtime PM of PCIe ports turns out to be quite fragile, as in
-> >> > some cases things work while in some other cases they don't and we
-> >> > don't seem to have a good way to determine whether or not they are
-> >> > going to work in advance.
-> >>
-> >> Do you have any references to problems encountered when enabling
-> >> runtime PM for PCIe ports?  That information will be useful to anybody
-> >> who wants to take another crack at getting this working.
-> >
-> > Well, bug 53811 is one example and problems recently reported by
-> > Martin are another.  Do you want me to dig deeper?
-> 
-> OK, I got this one:
-> 
->   https://bugzilla.kernel.org/show_bug.cgi?id=53811
-> 
-> Martin has reported a lot of problems lately, and I don't know which
-> are related to runtime PM for PCIe ports.  I was hoping for a couple
-> URLs to put in the changelog so that when somebody gets the itch to
-> make this work, they have some useful info to start from.  If you
-> point me at a specific message, I'll dig up an archive URL for it.
+2013-03-28 14:12 skrev Peter.Huewe@infineon.com:
+> What also might be worth a look - in your bugzilla it states:
+> [ 0.225891] pnp 00:0a: Plug and Play ACPI device, IDs IFX0102 PNP0c31 
+> (active)
+> [ 9.150673] tpm_tis 00:0a: 1.2 TPM (device-id 0xB, rev-id 16)
+> [ 9.292148] tpm_tis 00:0a: Adjusting TPM timeout parameters.
+> [ 10.084067] tpm_tis 00:0a: A TPM error (7) occurred attempting to 
+> read a pcr
+> value
+> [ 10.084077] tpm_tis 00:0a: TPM is disabled/deactivated (0x7)
+>
+>
+> Can you perhaps try to enable your TPM in the BIOS? It's quite often
+> hidden under "embedded security device" or "system security".
+> Quite often you have to have a bios password set to access these 
+> settings.
+> If your system does not have bios support for TPMs, please tell me so
+> and I'll try to help you out.
+>
 
-This is the message in which Martin confirmed that the previous version of
-the $subject patch made insert/removal of devices into xHCI ports on his
-system work again.
+I've enabled it in BIOS now, and the output seems to be a bit 
+different. Not too uplifting though...
 
-> Otherwise, I'm afraid we'll just oscillate between "enable PM, find
-> bug, disable PM, enable PM, find same bug, disable PM, etc..."
+root@zepto:/home/peter# dmesg | grep tpm
+[   14.631662] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+[   14.748276] tpm_tis 00:08: Adjusting TPM timeout parameters.
+[   34.908128] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+[  125.992108] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+[  212.908502] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+root@zepto:/home/peter# tpm_version
+Tspi_Context_Connect failed: 0x00003011 - layer=tsp, code=0011 (17), 
+Communication failure
+root@zepto:/home/peter# tcsd -f
+TCSD TDDL ioctl: (25) Inappropriate ioctl for device
+TCSD TDDL Falling back to Read/Write device support.
+TCSD TDDL ERROR: write to device /dev/tpm0 failed: Timer expired
+TCSD TCS ERROR: TCS GetCapability failed with result = 0x1087
 
-That's a valid concern, but I think we have an idea about what kind of problems
-the runtime PM of PCIe ports may cause to happen (generally, PME and hotplug
-notifications may not work as expected).
-
-Thanks,
-Rafael
-
-
-> >> > For this reason, avoid enabling runtime PM for PCIe ports by
-> >> > keeping their runtime PM reference counters always above 0 for the
-> >> > time being.
-> >> >
-> >> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> > ---
-> >> >
-> >> > This version also removes the no longer necessary (and empty anyway)
-> >> > port_runtime_pm_black_list[] table.
-> >> >
-> >> > Thanks,
-> >> > Rafael
-> >> >
-> >> > ---
-> >> >  drivers/pci/pcie/portdrv_pci.c |   13 -------------
-> >> >  1 file changed, 13 deletions(-)
-> >> >
-> >> > Index: linux-pm/drivers/pci/pcie/portdrv_pci.c
-> >> > ===================================================================
-> >> > --- linux-pm.orig/drivers/pci/pcie/portdrv_pci.c
-> >> > +++ linux-pm/drivers/pci/pcie/portdrv_pci.c
-> >> > @@ -185,14 +185,6 @@ static const struct dev_pm_ops pcie_port
-> >> >  #endif /* !PM */
-> >> >
-> >> >  /*
-> >> > - * PCIe port runtime suspend is broken for some chipsets, so use a
-> >> > - * black list to disable runtime PM for these chipsets.
-> >> > - */
-> >> > -static const struct pci_device_id port_runtime_pm_black_list[] = {
-> >> > -       { /* end: all zeroes */ }
-> >> > -};
-> >> > -
-> >> > -/*
-> >> >   * pcie_portdrv_probe - Probe PCI-Express port devices
-> >> >   * @dev: PCI-Express port device being probed
-> >> >   *
-> >> > @@ -225,16 +217,11 @@ static int pcie_portdrv_probe(struct pci
-> >> >          * it by default.
-> >> >          */
-> >> >         dev->d3cold_allowed = false;
-> >> > -       if (!pci_match_id(port_runtime_pm_black_list, dev))
-> >> > -               pm_runtime_put_noidle(&dev->dev);
-> >> > -
-> >> >         return 0;
-> >> >  }
-> >> >
-> >> >  static void pcie_portdrv_remove(struct pci_dev *dev)
-> >> >  {
-> >> > -       if (!pci_match_id(port_runtime_pm_black_list, dev))
-> >> > -               pm_runtime_get_noresume(&dev->dev);
-> >> >         pcie_port_device_remove(dev);
-> >> >         pci_disable_device(dev);
-> >> >  }
-> >> >
-> > --
-> > I speak only for myself.
-> > Rafael J. Wysocki, Intel Open Source Technology Center.
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+/Peter A
