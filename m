@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758701Ab3DAN6Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 09:58:16 -0400
-Received: from alvesta.synopsys.com ([198.182.60.77]:56255 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758647Ab3DAN6E (ORCPT
+	id S1758761Ab3DAN6b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 09:58:31 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:12220 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758585Ab3DAN60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 09:58:04 -0400
-Message-ID: <5159925B.5050806@synopsys.com>
-Date: Mon, 1 Apr 2013 19:27:47 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-Newsgroups: gmane.linux.serial,gmane.linux.kernel
-To: lkml <linux-kernel@vger.kernel.org>
-CC: <linux-serial@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        "Peter Zijlstra" <peterz@infradead.org>, Jiri Slaby <jslaby@suse.cz>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: Re: n_tty_write() going into schedule but NOT coming out
-References: <5156DC21.20901@synopsys.com>
-In-Reply-To: <5156DC21.20901@synopsys.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.41]
+	Mon, 1 Apr 2013 09:58:26 -0400
+X-AuditID: cbfee691-b7f5f6d000002fda-c4-515992803f0f
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, balbi@ti.com,
+        stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com,
+        rob.herring@calxeda.com, kgene.kim@samsung.com, kishon@ti.com,
+        dianders@chromium.org, t.figa@samsung.com, p.paneri@samsung.com
+Subject: [PATCH v3 07/11] usb: phy: samsung: Enable runtime power management on
+ usb2phy
+Date: Mon, 01 Apr 2013 19:24:06 +0530
+Message-id: <1364824448-14732-8-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.6.5
+In-reply-to: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
+References: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsWyRsSkWrdhUmSgwfaHZhYH79dbnF12kM2i
+	efF6NoveBVfZLC487WGzuLxrDpvF7CX9LBYzzu9jsli0rJXZ4vyWTiaLwysOMFk0nzjFbDHh
+	9wU2i/UzXrM48Hks+HyF3WN2w0UWj3knAz32z10D5N39wejRt2UVo8fxG9uZPD5vkgvgiOKy
+	SUnNySxLLdK3S+DK2LryAVvBLPaKO8cPMDUw9rN1MXJySAiYSNw48AHKFpO4cG89kM3FISSw
+	lFFi0cIjjDBF/e/Ws0AkFjFKvFh8DapqCpPEhGc/mUCq2AR0JZre7gLq4OAQEYiT2DxBGCTM
+	LNDFJLH0qDiILSwQKbH48V92EJtFQFXifH8fWCuvgIfEixv/WSGWKUi8uf2MGcTmFPCU+LB1
+	MViNEFBN+9UTrCB7JQTusUtcmr6bCWKQgMS3yYdYQPZKCMhKbDrADDFHUuLgihssExiFFzAy
+	rGIUTS1ILihOSi8y1StOzC0uzUvXS87P3cQIjKPT/55N3MF4/4D1IcZkoHETmaVEk/OBcZhX
+	Em9obGZkYWpiamxkbmlGmrCSOK96i3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkYuJocD
+	zx8qySnvtLz89Mqlt8kLb5r8mLJ3IS+nPQ9vROdlW4sbC7qaVt6rEa8oWnVVKCT1lrGbxu1/
+	jX82s1hP5Bd2fS038/eaTxEG3R+7r4iwvNJy1vdQvCH0rOJ/hLhq9SrPOduaZlrwH/DYuLPE
+	PT69NzHwxbFCmS8bblSZtX17Xb7Ob5oSS3FGoqEWc1FxIgBvPtw1uQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmleLIzCtJLcpLzFFi42I5/e+xgG7DpMhAg7ntehYH79dbnF12kM2i
+	efF6NoveBVfZLC487WGzuLxrDpvF7CX9LBYzzu9jsli0rJXZ4vyWTiaLwysOMFk0nzjFbDHh
+	9wU2i/UzXrM48Hks+HyF3WN2w0UWj3knAz32z10D5N39wejRt2UVo8fxG9uZPD5vkgvgiGpg
+	tMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBultJoSwx
+	pxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmLF15QO2glnsFXeOH2BqYOxn62Lk
+	5JAQMJHof7eeBcIWk7hwbz1QnItDSGARo8SLxdegnClMEhOe/WQCqWIT0JVoeruLsYuRg0NE
+	IE5i8wRhkDCzQBeTxNKj4iC2sECkxOLHf9lBbBYBVYnz/X1grbwCHhIvbvxnhVimIPHm9jNm
+	EJtTwFPiw9bFYDVCQDXtV0+wTmDkXcDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOEqf
+	Se1gXNlgcYhRgINRiYc34kJEoBBrYllxZe4hRgkOZiUR3hWZkYFCvCmJlVWpRfnxRaU5qcWH
+	GJOBrprILCWanA9MIHkl8YbGJuamxqaWJhYmZpakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLE
+	wSnVwNhjxPGx5gFXv+6Khz0WrrbfVFjay9e6S+sHHp1WuuOK3NXeiQGmMyb+7P7ZLXvml/at
+	w9M4FXsXqS17W+bk7nJhmsMn68Cen0asCQdmNPtYO3OzvpjgU6nWYhNvc6Dslvvb29f/OLrb
+	WMxtbHkvuTrnwcqTbI8kDCeYLIi297y1+a7k+5TjzkosxRmJhlrMRcWJAG1LaDsWAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Enable autosuspending of Samsung usb2.0 PHY
 
-Any thoughts: I observe the same issue even with CONFIG_PREEMPT and
-CONFIG_PREEMPT_COUNT
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+---
+ drivers/usb/phy/phy-samsung-usb2.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
--Vineet
-
-On 03/30/2013 06:05 PM, Vineet Gupta wrote:
-> Hi,
-> 
-> I've been stress testing ARC Linux 3.8 (same happens for 3.9-rc3 as well). The
-> setup has 3 telnet sessions, each running find . -name "*" in a loop.
-> The platform is a FPGA @ 80 MHz, running a single core ARC700 so kernel .config
-> has !SMP and PREEMPT_NONE.
-> 
-> After ~10 mins of run, I see that one of the telnet session gets stuck (and later
-> the 2nd one as well), while system is still alive, 3rd telnet is running find merrily.
-> 
-> [ARCLinux]$ ps
-> ....
->     7 root       0:00 inetd
->    62 root       0:00 -/bin/sh
->    64 root       1:34 telnetd -i -l /bin/sh
->    65 root       0:00 /bin/sh
->    75 root       1:47 telnetd -i -l /bin/sh
->    76 root       0:00 /bin/sh
->    79 root       0:53 telnetd -i -l /bin/sh
->    80 root       0:00 /bin/sh
->   281 root       0:00 find / -name *	<--- stuck
->   358 root       0:03 find / -name *	<--- stuck
->   377 root       0:00 find / -name *
->   378 root       0:00 ps
-> 
-> Hung find task is sitting in the schedule() call in n_tty_write()
-> 
-> [ARCLinux]$ cat /proc/281/stack
-> [<8065945e>] n_tty_write+0x23a/0x424
-> [<80655cd4>] tty_write+0x1ac/0x2d4
-> [<805976ba>] vfs_write+0x92/0x110
-> [<80597816>] sys_write+0x4e/0x88
-> [<8050e780>] ret_from_system_call+0x0/0x4
-> 
-> This task never resumes out of schedule() - verified by putting a hardware
-> breakpoint on next insn - using a JTAG host debugger.
-> 
-> Attached are .config, /proc/281/sched, /proc/schedstat, /proc/sched_debug
-> 
-> My knowledge of schedular is close to none, hence any tips to debug this further
-> would be much appreciated.
-> 
-> 
-> TIA,
-> -Vineet
-> 
+diff --git a/drivers/usb/phy/phy-samsung-usb2.c b/drivers/usb/phy/phy-samsung-usb2.c
+index 45ffe03..d378fe9 100644
+--- a/drivers/usb/phy/phy-samsung-usb2.c
++++ b/drivers/usb/phy/phy-samsung-usb2.c
+@@ -423,6 +423,9 @@ static int samsung_usb2phy_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, sphy);
+ 
++	pm_runtime_set_active(&pdev->dev);
++	pm_runtime_enable(&pdev->dev);
++
+ 	return usb_add_phy(&sphy->phy, USB_PHY_TYPE_USB2);
+ }
+ 
+@@ -432,6 +435,8 @@ static int samsung_usb2phy_remove(struct platform_device *pdev)
+ 
+ 	usb_remove_phy(&sphy->phy);
+ 
++	pm_runtime_disable(&pdev->dev);
++
+ 	if (sphy->pmuregs)
+ 		iounmap(sphy->pmuregs);
+ 	if (sphy->sysreg)
+-- 
+1.7.6.5
 
