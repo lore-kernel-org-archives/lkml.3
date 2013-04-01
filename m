@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756900Ab3DADyK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 23:54:10 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:46301 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756242Ab3DADyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 23:54:09 -0400
-Date: Mon, 1 Apr 2013 09:22:10 +0530
-From: Shiraz Hashim <shiraz.hashim@st.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
+	id S1756929Ab3DADzn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 23:55:43 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60640 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756242Ab3DADzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Mar 2013 23:55:42 -0400
+Message-ID: <1364788537.8705.10.camel@ubuntu>
+Subject: Re: [PATCH] checkpatch: do not exit in main process subroutine
+From: Joe Perches <joe@perches.com>
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: Andy Whitcroft <apw@canonical.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] pwm: mxs: Remove unused *dev from struct
- spear_pwm_chip
-Message-ID: <20130401035210.GB21313@localhost.localdomain>
-References: <1364784493.7725.1.camel@phoenix>
- <1364784565.7725.2.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1364784565.7725.2.camel@phoenix>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Sun, 31 Mar 2013 21:55:37 -0600
+In-Reply-To: <5156BECE.9070701@huawei.com>
+References: <5153BC45.807@huawei.com> <5156BECE.9070701@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+On Sat, 2013-03-30 at 18:30 +0800, zhangwei(Jovi) wrote:
+> On 2013/3/28 11:43, zhangwei(Jovi) wrote:
+> > Currently checkpatch program exit when process empty file,
+> > This will cause issue when @ARGV include many files ready to check.
+[]
+> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> > @@ -3634,19 +3634,19 @@ sub process {
+> >  	# If we have no input at all, then there is nothing to report on
+> >  	# so just keep quiet.
+> >  	if ($#rawlines == -1) {
+> > -		exit(0);
+> > +		return $clean;
+> >  	}
 
-Perhaps you meant pwm: spear: (instead of pwm: mxs) in the subject
-line.
+I think instead this should be something like adding
 
-On Mon, Apr 01, 2013 at 10:49:25AM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/pwm/pwm-spear.c |    3 ---
->  1 file changed, 3 deletions(-)
-> 
-> diff --git a/drivers/pwm/pwm-spear.c b/drivers/pwm/pwm-spear.c
-> index 3223b57..9563599 100644
-> --- a/drivers/pwm/pwm-spear.c
-> +++ b/drivers/pwm/pwm-spear.c
-> @@ -49,13 +49,11 @@
->   * @mmio_base: base address of pwm chip
->   * @clk: pointer to clk structure of pwm chip
->   * @chip: linux pwm chip representation
-> - * @dev: pointer to device structure of pwm chip
->   */
->  struct spear_pwm_chip {
->  	void __iomem *mmio_base;
->  	struct clk *clk;
->  	struct pwm_chip chip;
-> -	struct device *dev;
->  };
->  
->  static inline struct spear_pwm_chip *to_spear_pwm_chip(struct pwm_chip *chip)
-> @@ -200,7 +198,6 @@ static int spear_pwm_probe(struct platform_device *pdev)
->  	if (IS_ERR(pc->clk))
->  		return PTR_ERR(pc->clk);
->  
-> -	pc->dev = &pdev->dev;
->  	platform_set_drvdata(pdev, pc);
->  
->  	pc->chip.dev = &pdev->dev;
-> -- 
-> 1.7.10.4
+	if (!is_patch && $#rawlines == -1) {
+		return $clean;
+	}
+
+though maybe expecting checkpatch to avoid empty files
+when fed a directory list is unrealistic.
 
 
-otherwise,
-Acked-by: Shiraz Hashim <shiraz.hashim@st.com>
