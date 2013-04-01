@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758494Ab3DAI2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 04:28:40 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60085 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757271Ab3DAI2j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 04:28:39 -0400
-X-AuditID: 9c930197-b7c9dae000006959-b0-51594536106d
-Date: Mon, 1 Apr 2013 17:28:49 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>
-Subject: Re: [RFC PATCH 5/6] ARM, mm: change meaning of max_low_pfn to
- maximum pfn for nobootmem
-Message-ID: <20130401082849.GE12015@lge.com>
-References: <1364184674-13798-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1364184674-13798-6-git-send-email-iamjoonsoo.kim@lge.com>
- <20130325094816.GO4977@n2100.arm.linux.org.uk>
+	id S1758514Ab3DAIcO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 04:32:14 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52989 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752400Ab3DAIcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 04:32:13 -0400
+Message-ID: <51594665.1090903@ti.com>
+Date: Mon, 1 Apr 2013 14:03:41 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130325094816.GO4977@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: Tony Lindgren <tony@atomide.com>, Nishanth Menon <nm@ti.com>,
+        <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Ivaylo Dimitrov <freemangordon@abv.bg>
+Subject: Re: [PATCH] RX-51: ARM errata 430973 workaround
+References: <20130328155803.GT10155@atomide.com> <1364738063-23868-1-git-send-email-pali.rohar@gmail.com>
+In-Reply-To: <1364738063-23868-1-git-send-email-pali.rohar@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Russell.
-
-On Mon, Mar 25, 2013 at 09:48:16AM +0000, Russell King - ARM Linux wrote:
-> On Mon, Mar 25, 2013 at 01:11:13PM +0900, Joonsoo Kim wrote:
-> > nobootmem use max_low_pfn for computing boundary in free_all_bootmem()
-> > So we need proper value to max_low_pfn.
-> > 
-> > But, there is some difficulty related to max_low_pfn. max_low_pfn is used
-> > for two meanings in various architectures. One is for number of pages
-> > in lowmem and the other is for maximum lowmem pfn. Now, in ARM, it is used
-> > as number of pages in lowmem. You can get more information in below link.
-> > http://lwn.net/Articles/543408/
-> > http://lwn.net/Articles/543424/
-> > 
-> > As I investigated, architectures which use max_low_pfn as maximum pfn are
-> > more than others, so to change meaning of max_low_pfn to maximum pfn
-> > is preferable solution to me. This patch change max_low_pfn as maximum
-> > lowmem pfn in ARM. In addition, min_low_pfn, max_pfn is assigned according
-> > to this criteria.
-> > 
-> > There is no real user for max_low_pfn except block/blk-setting.c and
-> > blk-setting.c assume that max_low_pfn is maximum lowmem pfn,
-> > so this patch may not harm anything.
+On Sunday 31 March 2013 07:24 PM, Pali Rohár wrote:
+> Closed and signed Nokia X-Loader bootloader stored in RX-51 nand does not set
+> IBE bit in ACTLR and starting kernel in non-secure mode. So direct write to
+> ACTLR by our kernel does not working and the code for ARM errata 430973 in
+> commit 7ce236fcd6fd45b0441a2d49acb2ceb2de2e8a47 that sets IBE bit is a noop.
 > 
-> This will need some very rigorous testing before it can go into mainline.
+> In order to have workaround for ARM errata 430973 from non-secure world on
+> RX-51 we needs Secure Monitor Call to set IBE BIT in ACTLR.
+> 
+> This patch adds RX-51 specific SMC support and sets IBE bit in ACTLR during
+> board init code for ARM errata 430973 workaround.
+> 
+> Because all the setup and what arguments are required for SMC are completely
+> different from SoC to SoC it is not possible to create generic SMC handling.
+> Code in omap-smc.S looks identical but it is not. So RX-51 needs another code.
+> 
+> ARM errata 430973 workaround is needed for thumb-2 ISA compiled userspace
+> binaries. Without this workaround thumb-2 binaries crashing. So with this
+> patch it is possible to recompile and run applications/binaries with thumb-2
+> ISA on RX-51.
+> 
+> Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> ---
+>  arch/arm/mach-omap2/Makefile            |    1 +
+>  arch/arm/mach-omap2/board-rx51-secure.c |   66 +++++++++++++++++++++++++++++++
+>  arch/arm/mach-omap2/board-rx51-secure.h |   36 +++++++++++++++++
+>  arch/arm/mach-omap2/board-rx51-smc.S    |   34 ++++++++++++++++
+>  arch/arm/mach-omap2/board-rx51.c        |    7 ++++
+>  5 files changed, 144 insertions(+)
+>  create mode 100644 arch/arm/mach-omap2/board-rx51-secure.c
+>  create mode 100644 arch/arm/mach-omap2/board-rx51-secure.h
+>  create mode 100644 arch/arm/mach-omap2/board-rx51-smc.S
+> 
+> diff --git a/arch/arm/mach-omap2/board-rx51-smc.S b/arch/arm/mach-omap2/board-rx51-smc.S
+> new file mode 100644
+> index 0000000..70e2eb7
+> --- /dev/null
+> +++ b/arch/arm/mach-omap2/board-rx51-smc.S
+> @@ -0,0 +1,34 @@
+You can avoid creating board-rx51-smc.S by having rx51_ppa_smc()
+part of board-rx51-secure.c using inline asm. You can avoid the
+board-rx51-secure.h as well considering the usage is limited to
+the rx51 board.
 
-There is no attention from others to this patchset. :)
-Do you have any plan to test this?
-What I can do best is just to run this patchset on my platform.
-
-Would you guide me how to go into mainline for this patchset.
-
-Thanks.
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Regards,
+Santosh
