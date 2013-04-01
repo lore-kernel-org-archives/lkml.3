@@ -1,109 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759167Ab3DASnZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 14:43:25 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:54382 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757876Ab3DASnY (ORCPT
+	id S1759216Ab3DASoI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 14:44:08 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:61360 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758944Ab3DASoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 14:43:24 -0400
+	Mon, 1 Apr 2013 14:44:07 -0400
+Date: Mon, 1 Apr 2013 11:44:02 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2 tj/for-3.10] workqueue: add wq->freezing and remove
+ POOL_FREEZING
+Message-ID: <20130401184402.GA31435@htj.dyndns.org>
+References: <1364660955-5217-1-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
-References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
-From: Tim Hockin <thockin@hockin.org>
-Date: Mon, 1 Apr 2013 11:43:03 -0700
-X-Google-Sender-Auth: uR6P9Jq4kUy5tDSrFmAjB6I8-Qs
-Message-ID: <CAAAKZwv9=NFmt6xj1KF2va1i6=UCvka0YkmdOY9JNUMHDOWpGw@mail.gmail.com>
-Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <paul@paulmenage.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
-        Daniel J Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Max Kellermann <mk@cm4all.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364660955-5217-1-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A year later - what ever happened with this?  I want it more than ever
-for Google's use.
+On Sun, Mar 31, 2013 at 12:29:14AM +0800, Lai Jiangshan wrote:
+> freezing is nothing related to pools, but POOL_FREEZING adds a connection,
+> and causes freeze_workqueues_begin() and thaw_workqueues() complicated.
+> 
+> Since freezing is workqueue instance attribute, so we introduce wq->freezing
+> instead and remove POOL_FREEZING.
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  kernel/workqueue.c |   33 +++++++--------------------------
+>  1 files changed, 7 insertions(+), 26 deletions(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 04a8b98..6b7e5a4 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -66,7 +66,6 @@ enum {
+>  	 */
+>  	POOL_MANAGE_WORKERS	= 1 << 0,	/* need to manage workers */
+>  	POOL_DISASSOCIATED	= 1 << 2,	/* cpu can't serve workers */
+> -	POOL_FREEZING		= 1 << 3,	/* freeze in progress */
+>  
+>  	/* worker flags */
+>  	WORKER_STARTED		= 1 << 0,	/* started */
+> @@ -241,6 +240,7 @@ struct workqueue_struct {
+>  
+>  	int			nr_drainers;	/* WQ: drain in progress */
+>  	int			saved_max_active; /* WQ: saved pwq max_active */
+> +	bool			freezing;	/* WQ: the wq is freezing */
 
-On Tue, Jan 31, 2012 at 7:37 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> Hi,
->
-> Changes In this version:
->
-> - Split 32/64 bits version of res_counter_write_u64() [1/10]
->   Courtesy of Kirill A. Shutemov
->
-> - Added Kirill's ack [8/10]
->
-> - Added selftests [9/10], [10/10]
->
-> Please consider for merging. At least two users want this feature:
-> https://lkml.org/lkml/2011/12/13/309
-> https://lkml.org/lkml/2011/12/13/364
->
-> More general details provided in the last version posting:
-> https://lkml.org/lkml/2012/1/13/230
->
-> Thanks!
->
->
-> Frederic Weisbecker (9):
->   cgroups: add res_counter_write_u64() API
->   cgroups: new resource counter inheritance API
->   cgroups: ability to stop res charge propagation on bounded ancestor
->   res_counter: allow charge failure pointer to be null
->   cgroups: pull up res counter charge failure interpretation to caller
->   cgroups: allow subsystems to cancel a fork
->   cgroups: Add a task counter subsystem
->   selftests: Enter each directories before executing selftests
->   selftests: Add a new task counter selftest
->
-> Kirill A. Shutemov (1):
->   cgroups: add res counter common ancestor searching
->
->  Documentation/cgroups/resource_counter.txt         |   20 ++-
->  Documentation/cgroups/task_counter.txt             |  153 +++++++++++
->  include/linux/cgroup.h                             |   20 +-
->  include/linux/cgroup_subsys.h                      |    5 +
->  include/linux/res_counter.h                        |   27 ++-
->  init/Kconfig                                       |    9 +
->  kernel/Makefile                                    |    1 +
->  kernel/cgroup.c                                    |   23 ++-
->  kernel/cgroup_freezer.c                            |    6 +-
->  kernel/cgroup_task_counter.c                       |  272 ++++++++++++++++++++
->  kernel/exit.c                                      |    2 +-
->  kernel/fork.c                                      |    7 +-
->  kernel/res_counter.c                               |  103 +++++++-
->  tools/testing/selftests/Makefile                   |    2 +-
->  tools/testing/selftests/run_tests                  |    6 +-
->  tools/testing/selftests/task_counter/Makefile      |    8 +
->  tools/testing/selftests/task_counter/fork.c        |   40 +++
->  tools/testing/selftests/task_counter/forkbomb.c    |   40 +++
->  tools/testing/selftests/task_counter/multithread.c |   68 +++++
->  tools/testing/selftests/task_counter/run_test      |  198 ++++++++++++++
->  .../selftests/task_counter/spread_thread_group.c   |   82 ++++++
->  21 files changed, 1056 insertions(+), 36 deletions(-)
->  create mode 100644 Documentation/cgroups/task_counter.txt
->  create mode 100644 kernel/cgroup_task_counter.c
->  create mode 100644 tools/testing/selftests/task_counter/Makefile
->  create mode 100644 tools/testing/selftests/task_counter/fork.c
->  create mode 100644 tools/testing/selftests/task_counter/forkbomb.c
->  create mode 100644 tools/testing/selftests/task_counter/multithread.c
->  create mode 100755 tools/testing/selftests/task_counter/run_test
->  create mode 100644 tools/testing/selftests/task_counter/spread_thread_group.c
->
-> --
-> 1.7.5.4
->
+Why not use another internal flag?  There already are __WQ_DRAINING
+and __WQ_ORDERED.  Can't we just add __WQ_FREEZING?
+
+Thanks.
+
+-- 
+tejun
