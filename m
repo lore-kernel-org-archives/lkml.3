@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758237Ab3DAVBX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 17:01:23 -0400
-Received: from smtp1.nethome.no ([92.62.33.11]:51378 "EHLO smtp1.nethome.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757692Ab3DAVBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 17:01:22 -0400
+	id S1758256Ab3DAVC3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 17:02:29 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:41643 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757909Ab3DAVC1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 17:02:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Mon, 01 Apr 2013 23:01:19 +0200
-From: peterasplund@gentoo.se
-To: <Peter.Huewe@infineon.com>
-Cc: <aaron.lu@intel.com>, <mail@srajiv.net>,
-        <tpmdd-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
-        <key@linux.vnet.ibm.com>
-Subject: RE: [tpmdd-devel] =?UTF-8?Q?tpm=5Ftis=20driver=20failed=20to=20su?=
- =?UTF-8?Q?spend=2C=20error=20-=36=32?=
-In-Reply-To: <74A44E99E3274B4CB570415926B37D4414B14E@MUCSE501.eu.infineon.com>
-References: <20130319023440.GA12425@aaronlu.sh.intel.com>
- <CAA25o9RJJ5Rkti9_fTJz2ieaHvrtSp5mE_2LTW_t16_cf_TNcg@mail.gmail.com>
- <ed364e68730267510d49b2bdc38679a0@gentoo.se>
- <CAEQAOwpmnLXBCJQTf_xU-oSKvAtmpQjHWwMYDm_QOsP+1Kd_aQ@mail.gmail.com>
- <CAEQAOwqWL=WekQqg5WY8TGxzB3x9nB9MVj_UTAVK0ro7TqB2WQ@mail.gmail.com>
- <51540408.3000702@intel.com>
- <74A44E99E3274B4CB570415926B37D4414B14E@MUCSE501.eu.infineon.com>
-Message-ID: <9f68a46fb9ec6012668db36b7f7eff03@gentoo.se>
-User-Agent: Roundcube Webmail/0.8.0
+In-Reply-To: <20130401202943.GC31435@htj.dyndns.org>
+References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
+ <CAAAKZwv9=NFmt6xj1KF2va1i6=UCvka0YkmdOY9JNUMHDOWpGw@mail.gmail.com>
+ <20130401184617.GB31435@htj.dyndns.org> <CAAAKZwvemKDLeuKr6wWMUSVczkRVDZKSzYrXXEMcZ8qvcFR0zQ@mail.gmail.com>
+ <20130401202943.GC31435@htj.dyndns.org>
+From: Tim Hockin <thockin@hockin.org>
+Date: Mon, 1 Apr 2013 14:02:06 -0700
+X-Google-Sender-Auth: DAVyLEijPzxOUJsyqRYEEwmoMKM
+Message-ID: <CAAAKZwuZwN68vtk1qO08GXB_OnQNVtqqp+v_NQfP27W0P_aWZw@mail.gmail.com>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
+To: Tejun Heo <tj@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <paul@paulmenage.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
+        Daniel J Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Max Kellermann <mk@cm4all.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-03-28 14:12 skrev Peter.Huewe@infineon.com:
-> Hi Aaron, Rajob, PeterA and everybody else
+On Mon, Apr 1, 2013 at 1:29 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Mon, Apr 01, 2013 at 01:09:09PM -0700, Tim Hockin wrote:
+>> Pardon my ignorance, but... what?  Use kernel memory limits as a proxy
+>> for process/thread counts?  That sounds terrible - I hope I am
 >
-> @PeterA:
-> Can you perhaps try find out the exact tpm version?
-> 1) Install trousers and tpm_tools (emerge app-crypt/trousers
-> app-crypt/tpm-tools)
-> 2) Kill the tcsd and run it in the foreground
-> # pkill -9 tcsd
-> # tcsd -f
-> (if it says up and running you can send it to background)
+> Well, the argument was that process / thread counts were a poor and
+> unnecessary proxy for kernel memory consumption limit.  IIRC, Johannes
+> put it as (I'm paraphrasing) "you can't go to Fry's and buy 4k thread
+> worth of component".
+>
+>> misunderstanding?  This task counter patch had several properties that
+>> mapped very well to what we want.
+>>
+>> Is it dead in the water?
+>
+> After some discussion, Frederic agreed that at least his use case can
+> be served well by kmemcg, maybe even better - IIRC it was container
+> fork bomb scenario, so you'll have to argue your way in why kmemcg
+> isn't a suitable solution for your use case if you wanna revive this.
 
-root@zepto:/home/peter# tcsd -f
-TCSD TDDL ioctl: (25) Inappropriate ioctl for device
-TCSD TDDL Falling back to Read/Write device support.
-TCSD TDDL ERROR: write to device /dev/tpm0 failed: Timer expired
-TCSD TCS ERROR: TCS GetCapability failed with result = 0x1087
+We run dozens of jobs from dozens users on a single machine.  We
+regularly experience users who leak threads, running into the tens of
+thousands.  We are unable to raise the PID_MAX significantly due to
+some bad, but really thoroughly baked-in decisions that were made a
+long time ago.  What we experience on a daily basis is users
+complaining about getting a "pthread_create(): resource unavailable"
+error because someone on the machine has leaked.
 
-> 3) Run
-> #tpm_version and post the output.
-root@zepto:/home/peter# tpm_version
-Tspi_Context_Connect failed: 0x00003011 - layer=tsp, code=0011 (17), 
-Communication failure
+Today we use RLIMIT_NPROC to lock most users down to a smaller max.
+But this is a per-user setting, not a per-container setting, and users
+do not control where their jobs land.  Scheduling decisions often put
+multiple thread-heavy but non-leaking jobs from one user onto the same
+machine, which again causes problems.  Further, it does not help for
+some of our use cases where a logical job can run as multiple UIDs for
+different processes within.
 
-I will try to restart the laptop, as well as check the bios settings, 
-and get back to you on this one.
+>From the end-user point of view this is an isolation leak which is
+totally non-deterministic for them.  They can not know what to plan
+for.  Getting cgroup-level control of this limit is important for a
+saner SLA for our users.
 
->
->
-> Also the flags etc would perhaps be handy, they can be retrieved via
-> sysfs - on you machine it _should_ be
-> # cat /sys/devices/pnp0/00:0a/*
-> and also post the output.
-root@zepto:/home/peter# ls /sys/devices/pnp0/00\:0a/
-driver/        id             power/         subsystem/
-firmware_node/ options        resources      uevent
-root@zepto:/home/peter# cat /sys/devices/pnp0/00\:0a/options
-root@zepto:/home/peter# cat /sys/devices/pnp0/00\:0a/resources
-state = active
-irq 12
-root@zepto:/home/peter# cat /sys/devices/pnp0/00\:0a/id
-SYN1902
-SYN1900
-SYN0002
-PNP0f13
-root@zepto:/home/peter# cat /sys/devices/pnp0/00\:0a/uevent
-DRIVER=i8042 aux
+In addition, the behavior around locking-out new tasks seems like a
+nice way to simplify and clean up end-life work for the administrative
+system.  Admittedly, we can mostly work around this with freezer
+instead.
 
-Cheers,
-Peter A
+What I really don't understand is why so much push back?  We have this
+nicely structured cgroup system.  Each cgroup controller's code is
+pretty well partitioned - why would we not want more complete
+functionality built around it?  We accept device drivers for the most
+random, useless crap on the assertion that "if you don't need it,
+don't compile it in".  I can think of a half dozen more really useful,
+cool things we can do with cgroups, but I know the pushback will be
+tremendous, and I just don't grok why.
 
->
->
-> What also might be worth a look - in your bugzilla it states:
-> [ 0.225891] pnp 00:0a: Plug and Play ACPI device, IDs IFX0102 PNP0c31 
-> (active)
-> [ 9.150673] tpm_tis 00:0a: 1.2 TPM (device-id 0xB, rev-id 16)
-> [ 9.292148] tpm_tis 00:0a: Adjusting TPM timeout parameters.
-> [ 10.084067] tpm_tis 00:0a: A TPM error (7) occurred attempting to 
-> read a pcr
-> value
-> [ 10.084077] tpm_tis 00:0a: TPM is disabled/deactivated (0x7)
->
->
-> Can you perhaps try to enable your TPM in the BIOS? It's quite often
-> hidden under "embedded security device" or "system security".
-> Quite often you have to have a bios password set to access these 
-> settings.
-> If your system does not have bios support for TPMs, please tell me so
-> and I'll try to help you out.
->
-> Thanks,
-> PeterH
+Tim
