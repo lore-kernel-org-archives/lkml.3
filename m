@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab3DAEn5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 00:43:57 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:52610 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756588Ab3DAEn4 (ORCPT
+	id S1756868Ab3DAEpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 00:45:19 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50007 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756553Ab3DAEpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 00:43:56 -0400
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Sun, 31 Mar 2013 23:43:56 -0500
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: Andy King <acking@vmware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dtor@vmware.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] misc/vmw_vmci: VMWARE_VMCI depends on NET
-Date: Sun, 31 Mar 2013 21:43:59 -0700
-Message-Id: <1364791439-28396-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Mon, 1 Apr 2013 00:45:18 -0400
+X-AuditID: 9c93016f-b7b6aae000000e9c-f5-515910da1d65
+Date: Mon, 1 Apr 2013 13:45:14 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] THP: Use explicit memory barrier
+Message-ID: <20130401044514.GC26497@blaptop>
+References: <1364773535-26264-1-git-send-email-minchan@kernel.org>
+ <5158DC7D.2040607@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5158DC7D.2040607@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix:
+Hey Kame,
 
-ERROR: "memcpy_toiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
-ERROR: "memcpy_fromiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
+On Mon, Apr 01, 2013 at 10:01:49AM +0900, Kamezawa Hiroyuki wrote:
+> (2013/04/01 8:45), Minchan Kim wrote:
+> > __do_huge_pmd_anonymous_page depends on page_add_new_anon_rmap's
+> > spinlock for making sure that clear_huge_page write become visible
+> > after set set_pmd_at() write.
+> > 
+> > But lru_cache_add_lru uses pagevec so it could miss spinlock
+> > easily so above rule was broken so user may see inconsistent data.
+> > This patch fixes it with using explict barrier rather than depending
+> > on lru spinlock.
+> > 
+> 
+> Hmm...how about do_anonymous_page() ? there are no comments/locks/barriers.
+> Users can see non-zero value after page fault in theory ?
 
-Both functions are defined in the core networking code.
+Maybe, but as you know well, we didn't see any report about that until now
+so I'm not sure. Ccing people in this thread could have clear answer rather
+than me.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/misc/vmw_vmci/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+In THP, I just found inconsistency between Andrea's comment and code.
+That's why I sent a patch.
 
-diff --git a/drivers/misc/vmw_vmci/Kconfig b/drivers/misc/vmw_vmci/Kconfig
-index 39c2eca..ea98f7e 100644
---- a/drivers/misc/vmw_vmci/Kconfig
-+++ b/drivers/misc/vmw_vmci/Kconfig
-@@ -4,7 +4,7 @@
- 
- config VMWARE_VMCI
- 	tristate "VMware VMCI Driver"
--	depends on X86 && PCI
-+	depends on X86 && PCI && NET
- 	help
- 	  This is VMware's Virtual Machine Communication Interface.  It enables
- 	  high-speed communication between host and guest in a virtual
+If your concern turns out truth, Ya, you might find ancient bug. :)
+Thanks.
+
+> 
+> Thanks,
+> -Kame
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.7.9.7
-
+Kind regards,
+Minchan Kim
