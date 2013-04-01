@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759728Ab3DAUDp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 16:03:45 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:24127 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759696Ab3DAUDn (ORCPT
+	id S1759777Ab3DAUJc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 16:09:32 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:57414 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756699Ab3DAUJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 16:03:43 -0400
-Date: Mon, 1 Apr 2013 22:03:42 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 27/27] perf tools: Add kbuild support into
-	Makefile.kbuild
-Message-ID: <20130401200342.GD5744@merkur.ravnborg.org>
-References: <1364843930-17974-1-git-send-email-jolsa@redhat.com> <1364843930-17974-28-git-send-email-jolsa@redhat.com>
+	Mon, 1 Apr 2013 16:09:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364843930-17974-28-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130401184617.GB31435@htj.dyndns.org>
+References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
+ <CAAAKZwv9=NFmt6xj1KF2va1i6=UCvka0YkmdOY9JNUMHDOWpGw@mail.gmail.com> <20130401184617.GB31435@htj.dyndns.org>
+From: Tim Hockin <thockin@hockin.org>
+Date: Mon, 1 Apr 2013 13:09:09 -0700
+X-Google-Sender-Auth: kNG_TNgIE4MerVPq4bvcbrzOTV8
+Message-ID: <CAAAKZwvemKDLeuKr6wWMUSVczkRVDZKSzYrXXEMcZ8qvcFR0zQ@mail.gmail.com>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
+To: Tejun Heo <tj@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <paul@paulmenage.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
+        Daniel J Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Max Kellermann <mk@cm4all.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 01, 2013 at 09:18:50PM +0200, Jiri Olsa wrote:
-> Adding kbuild support into Makefile.kbuild. The 'legacy'
-> Makefile still stays untouched as it was.
+On Mon, Apr 1, 2013 at 11:46 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Mon, Apr 01, 2013 at 11:43:03AM -0700, Tim Hockin wrote:
+>> A year later - what ever happened with this?  I want it more than ever
+>> for Google's use.
+>
+> I think the conclusion was "use kmemcg instead".
 
-When readign the Kbuild file I get confused.
-the obj-y syntax is used for kernel built-in stuff,
-and obj-m for modules.
-I had expected either a perf specific syntax or something like the
-syntax used for host programs.
+Pardon my ignorance, but... what?  Use kernel memory limits as a proxy
+for process/thread counts?  That sounds terrible - I hope I am
+misunderstanding?  This task counter patch had several properties that
+mapped very well to what we want.
 
-	Sam
+Is it dead in the water?
