@@ -1,50 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758289Ab3DAIXI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 04:23:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61577 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757787Ab3DAIXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 04:23:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,385,1363158000"; 
-   d="scan'208";a="310414691"
-Date: Mon, 1 Apr 2013 11:27:17 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, grant.likely@secretlab.ca,
-        broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] ACPI / SPI: Use parent's ACPI_HANDLE() in
- acpi_register_spi_devices()
-Message-ID: <20130401082717.GK21804@intel.com>
-References: <2747891.0orCNBJG8v@vostro.rjw.lan>
+	id S1758322Ab3DAIX0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 04:23:26 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:41318 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758308Ab3DAIXW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 04:23:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2747891.0orCNBJG8v@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+Z25wXJt=vZnZ-ba+zkOWMgx0AjfnZT1JyHbaF4nuQ8MLvaKg@mail.gmail.com>
+References: <1364798210-31517-1-git-send-email-prabhakar.csengg@gmail.com> <CA+Z25wXJt=vZnZ-ba+zkOWMgx0AjfnZT1JyHbaF4nuQ8MLvaKg@mail.gmail.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Mon, 1 Apr 2013 13:53:01 +0530
+Message-ID: <CA+V-a8vFrom92g4CE-Kc2gjK8HSo4xkFwMgfmycSJQib0AF+aQ@mail.gmail.com>
+Subject: Re: [PATCH v2] davinci: vpif: add pm_runtime support
+To: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LMML <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>, Sekhar Nori <nsekhar@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 01, 2013 at 02:21:08AM +0200, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> The ACPI handle of struct spi_master's dev member should not be
-> set, because this causes that struct spi_master to be associated
-> with the ACPI device node corresponding to its parent as the
-> second "physical_device", which is incorrect (this happens during
-> the registration of struct spi_master).  Consequently,
-> acpi_register_spi_devices() should use the ACPI handle of the
-> parent of the struct spi_master it is called for rather than that
-> struct spi_master's ACPI handle (which should be NULL).
-> 
-> Make that happen and modify the spi-pxa2xx driver, which currently is
-> the only driver for ACPI-enumerated SPI controller chips, not to set
-> the ACPI handle for the struct spi_master it creates.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Mon, Apr 1, 2013 at 12:47 PM, Rajagopal Venkat
+<rajagopal.venkat@linaro.org> wrote:
+> On 1 April 2013 12:06, Prabhakar lad <prabhakar.csengg@gmail.com> wrote:
+>> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>
+>> Add pm_runtime support to the TI Davinci VPIF driver.
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+>> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+>> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+>> Cc: Sekhar Nori <nsekhar@ti.com>
+>> ---
+>>  Changes for v2:
+>>  1: Removed use of clk API as pointed by Laurent and Sekhar.
+>>
+>>  drivers/media/platform/davinci/vpif.c |   24 +++++++-----------------
+>>  1 files changed, 7 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/drivers/media/platform/davinci/vpif.c b/drivers/media/platform/davinci/vpif.c
+>> index 28638a8..599cabb 100644
+>> --- a/drivers/media/platform/davinci/vpif.c
+>> +++ b/drivers/media/platform/davinci/vpif.c
+>> @@ -23,8 +23,8 @@
+>>  #include <linux/spinlock.h>
+>>  #include <linux/kernel.h>
+>>  #include <linux/io.h>
+>> -#include <linux/clk.h>
+>>  #include <linux/err.h>
+>> +#include <linux/pm_runtime.h>
+>>  #include <linux/v4l2-dv-timings.h>
+>>
+>>  #include <mach/hardware.h>
+>> @@ -44,7 +44,6 @@ static struct resource        *res;
+>>  spinlock_t vpif_lock;
+>>
+>>  void __iomem *vpif_base;
+>> -struct clk *vpif_clk;
+>>
+>>  /**
+>>   * ch_params: video standard configuration parameters for vpif
+>> @@ -439,19 +438,15 @@ static int vpif_probe(struct platform_device *pdev)
+>>                 goto fail;
+>>         }
+>>
+>> -       vpif_clk = clk_get(&pdev->dev, "vpif");
+>> -       if (IS_ERR(vpif_clk)) {
+>> -               status = PTR_ERR(vpif_clk);
+>> -               goto clk_fail;
+>> -       }
+>> -       clk_prepare_enable(vpif_clk);
+>> +       pm_runtime_enable(&pdev->dev);
+>> +       pm_runtime_resume(&pdev->dev);
+>> +
+>> +       pm_runtime_get(&pdev->dev);
+>
+> I don't see runtime-pm ops being registered. Can you explain how clock
+> prepare/unprepare is taken care by runtime-pm?
+>
+The pm_runtime API handles the clock management for you.
+For Davinci platform runtime PM support for clock management has
+been added (You can find it in  arch/arm/mach-davinci/pm_domain.c)
+When runtime PM is enabled, the davinci runtime PM implementation will
+use the pm_clk layer to enable/disable clocks on demand.
 
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+For more/detailed understanding you can go through the pm_runtime framework.
+
+Regards,
+--Prabhakar
