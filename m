@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758774Ab3DAJoy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 05:44:54 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:20007 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758726Ab3DAJow (ORCPT
+	id S1758789Ab3DAJpG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 05:45:06 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:47385 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758726Ab3DAJpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 05:44:52 -0400
-X-AuditID: cbfee691-b7f5f6d000002fda-34-51595713b06a
+	Mon, 1 Apr 2013 05:45:01 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-f4-515956ffca98
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <000c01ce2ebd$2a1307f0$7e3917d0$%han@samsung.com>
 In-reply-to: <000c01ce2ebd$2a1307f0$7e3917d0$%han@samsung.com>
-Subject: [PATCH 08/27] rtc: rtc-ds2404: use devm_*() functions
-Date: Mon, 01 Apr 2013 18:44:50 +0900
-Message-id: <001301ce2ebd$8e279b20$aa76d160$%han@samsung.com>
+Subject: [PATCH 07/27] rtc: rtc-ds1390: use devm_*() functions
+Date: Mon, 01 Apr 2013 18:44:31 +0900
+Message-id: <001201ce2ebd$82ac7540$88055fc0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4uvSmu8Ej3RSKpRZmzfFm2iz9KEwAAFoQQ
+Thread-index: Ac4uvSmu8Ej3RSKpRZmzfFm2iz9KEwAAE4fQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zY13h8MhAg0ldXBZLLl5lt5izfg2b
-	xeWFl1gtLu+aw2axv7OD0YHVY8/Ek2weJ2b8ZvHo27KK0WP6vJ9MHp83yQWwRnHZpKTmZJal
-	FunbJXBlzJ79l7ngKnfF5i9nGBsYj3B2MXJySAiYSDRtn80IYYtJXLi3nq2LkYtDSGAZo8TD
-	11PZYYrOb7kFlZjOKNG6dQI7hPOLUWJx51GwKjYBNYkvXw4D2RwcIgL6Em0tGiA1zAK9jBJn
-	eneD1QgJ2Er8OPudGcTmFLCTeLNwHthqYSD7/rUNLCC9LAKqEl/+qYGEeYHKHy7bywphC0r8
-	mHyPBcRmFtCSWL/zOBOELS+xec1bZpBWCQF1iUd/dUHCIgJGEjfmLGWEKBGR2PfiHdST99gl
-	5j4JALFZBAQkvk0+xALRKiux6QAzRImkxMEVN1gmMErMQrJ4FpLFs5AsnoVkwwJGllWMoqkF
-	yQXFSelFpnrFibnFpXnpesn5uZsYIXE6cQfj/QPWhxiTgdZPZJYSTc4HxnleSbyhsZmRhamJ
-	qbGRuaUZacJK4rzqLdaBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhg7mBZPT7Mz3bZqh+sE
-	93+VM9W1tx58OM9Y/9it5n+cJQ63jX8eCH/Qb2mUc0rjP2NH7oP2yIMxedXfHVcq/47msX9S
-	q1iyeM3ExDXXWup/Gl6cXlo+k/XAzgvnGY9kuHPpbTFf9c8nXP2VY+PLK/x5AQvb5gt//LPl
-	VJ/fno+VZbm77kS+5T6pxFKckWioxVxUnAgAf//4LOkCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQV3h8MhAg/UXWC2WXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
-	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
-	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzJg9+y9zwVXuis1fzjA2MB7h7GLk5JAQMJE4
-	v+UWG4QtJnHh3nogm4tDSGA6o0Tr1gnsEM4vRonFnUfZQarYBNQkvnw5DGRzcIgI6Eu0tWiA
-	1DAL9DJKnOndDVYjJGAr8ePsd2YQm1PATuLNwnmMILYwkH3/2gYWkF4WAVWJL//UQMK8QOUP
-	l+1lhbAFJX5MvscCYjMLaEms33mcCcKWl9i85i0zSKuEgLrEo7+6IGERASOJG3OWMkKUiEjs
-	e/GOcQKj0Cwkk2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAhOA8+k
-	djCubLA4xCjAwajEwxtxISJQiDWxrLgy9xCjBAezkgivzzegEG9KYmVValF+fFFpTmrxIcZk
-	oD8nMkuJJucDU1ReSbyhsYmZkaWRmYWRibk5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBK
-	NTCG6r3f4+KcpXba8PQuF/VHyxJSz30WmbhN7WWh6bqoaTJTE2uUdOa8ElHQMKgNFhU2cDxx
-	5eQmtqVlnE+/h4cssDjG1Lxrh+S2yf5mH5Qz5gol/GtedffEjzcKnVu++q5teqHl1j5/UeAx
-	jSrTAPcry//7fFc+KLEk+n1/ybLE3XOmbGvT7tRTYinOSDTUYi4qTgQAYK+A7kcDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t8zY93/YZGBBk9mWFosuXiV3WLO+jVs
+	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGsVlk5Kak1mW
+	WqRvl8CVMfXqZpaCaTwVj9rPsDUwfuPsYuTkkBAwkdja1skIYYtJXLi3nq2LkYtDSGAZo8Tq
+	zm52mKKzm9ayQCQWMUr8mr+HGcL5xShx9OchsHY2ATWJL18OA3VwcIgI6Eu0tWiA1DAL9DJK
+	nOndDTZJSMBW4sfZ78wgNqeAncSbhfPAeoWB7HPT97CA2CwCqhIXll9hArF5geqfffwEZQtK
+	/Jh8D6yGWUBLYv3O40wQtrzE5jVvmUH2SgioSzz6qwsSFhEwktjRu5oRokREYt+Ld4wg90gI
+	3GOXePN3GSvELgGJb5MPsUD0ykpsOsAM8bCkxMEVN1gmMErMQrJ5FpLNs5BsnoVkxQJGllWM
+	oqkFyQXFSelFRnrFibnFpXnpesn5uZsYIbHat4Px5gHrQ4zJQOsnMkuJJucDYz2vJN7Q2MzI
+	wtTE1NjI3NKMNGElcV61FutAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYyKASdvsjYGLl9g
+	G913OeRLvYzVJyu7ifE3vqvrF6Xb2O18Wpl8betNzy5G+z2+/Tt2CFYfkWpJrPJslOypPnZ3
+	Sb8Dy+IPkhv3buLXuT/Hg1FWwKusTvnh2/MVdrmsBsbLXZO5M9ZprXMqEKgV4NxyeZbuC0Eu
+	38ePbF21fu++2MDbuHWmgxJLcUaioRZzUXEiABGXt9nrAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t9jAd3/YZGBBkuvmlgsuXiV3WLO+jVs
+	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
+	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmDH16maWgmk8FY/az7A1MH7j7GLk5JAQMJE4
+	u2ktC4QtJnHh3nq2LkYuDiGBRYwSv+bvYYZwfjFKHP15iBGkik1ATeLLl8PsXYwcHCIC+hJt
+	LRogNcwCvYwSZ3p3s4PUCAnYSvw4+50ZxOYUsJN4s3AeWK8wkH1u+h6wbSwCqhIXll9hArF5
+	geqfffwEZQtK/Jh8D6yGWUBLYv3O40wQtrzE5jVvmUH2SgioSzz6qwsSFhEwktjRu5oRokRE
+	Yt+Ld4wTGIVmIZk0C8mkWUgmzULSsoCRZRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcCJ4
+	JrWDcWWDxSFGAQ5GJR7eiAsRgUKsiWXFlbmHGCU4mJVEeH2+AYV4UxIrq1KL8uOLSnNSiw8x
+	JgM9OpFZSjQ5H5ik8kriDY1NzIwsjcwsjEzMzUkTVhLnPdBqHSgkkJ5YkpqdmlqQWgSzhYmD
+	U6qBUUKVyy8g36fvc0l1+dQL51Uv8PPPuTBbZvKEmp07D5Suv5ceoPVPwfhb0o695e02cTWH
+	3lz6ZSF0ijXgSLybWk7sp6q1J6ev8HCV2a5yVffeuYMTjQ5KrAtJOlCRcb5g64HDQp8esMeH
+	HJ3B4HL9Ca+ItEjaieqCStU22QPHA0TvT9bv/eY2TYmlOCPRUIu5qDgRAPcDDM5IAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,54 +59,53 @@ Use devm_*() functions to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-ds2404.c |   12 +++---------
- 1 files changed, 3 insertions(+), 9 deletions(-)
+ drivers/rtc/rtc-ds1390.c |   13 +++----------
+ 1 files changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/rtc/rtc-ds2404.c b/drivers/rtc/rtc-ds2404.c
-index b04fc42..2ca5a23 100644
---- a/drivers/rtc/rtc-ds2404.c
-+++ b/drivers/rtc/rtc-ds2404.c
-@@ -228,7 +228,7 @@ static int rtc_probe(struct platform_device *pdev)
- 	struct ds2404 *chip;
- 	int retval = -EBUSY;
+diff --git a/drivers/rtc/rtc-ds1390.c b/drivers/rtc/rtc-ds1390.c
+index f994257..33e51c6 100644
+--- a/drivers/rtc/rtc-ds1390.c
++++ b/drivers/rtc/rtc-ds1390.c
+@@ -131,7 +131,7 @@ static int ds1390_probe(struct spi_device *spi)
+ 	spi->bits_per_word = 8;
+ 	spi_setup(spi);
  
--	chip = kzalloc(sizeof(struct ds2404), GFP_KERNEL);
-+	chip = devm_kzalloc(&pdev->dev, sizeof(struct ds2404), GFP_KERNEL);
- 	if (!chip)
+-	chip = kzalloc(sizeof *chip, GFP_KERNEL);
++	chip = devm_kzalloc(&spi->dev, sizeof(*chip), GFP_KERNEL);
+ 	if (!chip) {
+ 		dev_err(&spi->dev, "unable to allocate device memory\n");
  		return -ENOMEM;
+@@ -141,16 +141,14 @@ static int ds1390_probe(struct spi_device *spi)
+ 	res = ds1390_get_reg(&spi->dev, DS1390_REG_SECONDS, &tmp);
+ 	if (res != 0) {
+ 		dev_err(&spi->dev, "unable to read device\n");
+-		kfree(chip);
+ 		return res;
+ 	}
  
-@@ -244,8 +244,8 @@ static int rtc_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, chip);
- 
--	chip->rtc = rtc_device_register("ds2404",
--				&pdev->dev, &ds2404_rtc_ops, THIS_MODULE);
-+	chip->rtc = devm_rtc_device_register(&pdev->dev, "ds2404",
-+					&ds2404_rtc_ops, THIS_MODULE);
+-	chip->rtc = rtc_device_register("ds1390",
+-				&spi->dev, &ds1390_rtc_ops, THIS_MODULE);
++	chip->rtc = devm_rtc_device_register(&spi->dev, "ds1390",
++					&ds1390_rtc_ops, THIS_MODULE);
  	if (IS_ERR(chip->rtc)) {
- 		retval = PTR_ERR(chip->rtc);
- 		goto err_io;
-@@ -257,20 +257,14 @@ static int rtc_probe(struct platform_device *pdev)
- err_io:
- 	chip->ops->unmap_io(chip);
- err_chip:
--	kfree(chip);
- 	return retval;
- }
+ 		dev_err(&spi->dev, "unable to register device\n");
+ 		res = PTR_ERR(chip->rtc);
+-		kfree(chip);
+ 	}
  
- static int rtc_remove(struct platform_device *dev)
+ 	return res;
+@@ -158,11 +156,6 @@ static int ds1390_probe(struct spi_device *spi)
+ 
+ static int ds1390_remove(struct spi_device *spi)
  {
- 	struct ds2404 *chip = platform_get_drvdata(dev);
--	struct rtc_device *rtc = chip->rtc;
+-	struct ds1390 *chip = spi_get_drvdata(spi);
 -
--	if (rtc)
--		rtc_device_unregister(rtc);
- 
- 	chip->ops->unmap_io(chip);
+-	rtc_device_unregister(chip->rtc);
 -	kfree(chip);
- 
+-
  	return 0;
  }
+ 
 -- 
 1.7.2.5
 
