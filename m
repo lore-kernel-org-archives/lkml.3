@@ -1,168 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759115Ab3DASmf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 14:42:35 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:37926 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758566Ab3DASmc (ORCPT
+	id S1759167Ab3DASnZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 14:43:25 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:54382 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757876Ab3DASnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 14:42:32 -0400
-From: Reilly Grant <grantr@vmware.com>
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, linux-kernel@vger.kernel.org, pv-drivers@vmware.com,
-        Reilly Grant <grantr@vmware.com>
-Subject: [PATCH] VSOCK: Handle changes to the VMCI context ID.
-Date: Mon,  1 Apr 2013 11:41:52 -0700
-Message-Id: <1364841712-22810-1-git-send-email-grantr@vmware.com>
-X-Mailer: git-send-email 1.8.1.5
+	Mon, 1 Apr 2013 14:43:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
+References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
+From: Tim Hockin <thockin@hockin.org>
+Date: Mon, 1 Apr 2013 11:43:03 -0700
+X-Google-Sender-Auth: uR6P9Jq4kUy5tDSrFmAjB6I8-Qs
+Message-ID: <CAAAKZwv9=NFmt6xj1KF2va1i6=UCvka0YkmdOY9JNUMHDOWpGw@mail.gmail.com>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <paul@paulmenage.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
+        Daniel J Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Max Kellermann <mk@cm4all.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The VMCI context ID of a virtual machine may change at any time. There
-is a VMCI event which signals this but datagrams may be processed before
-this is handled. It is therefore necessary to be flexible about the
-destination context ID of any datagrams received. (It can be assumed to
-be correct because it is provided by the hypervisor.) The context ID on
-existing sockets should be updated to reflect how the hypervisor is
-currently referring to the system.
+A year later - what ever happened with this?  I want it more than ever
+for Google's use.
 
-Signed-off-by: Reilly Grant <grantr@vmware.com>
-Acked-by: Andy King <acking@vmware.com>
----
- net/vmw_vsock/af_vsock.c       |  6 +++---
- net/vmw_vsock/vmci_transport.c | 31 ++++++++++++++++++++-----------
- net/vmw_vsock/vsock_addr.c     | 10 ----------
- net/vmw_vsock/vsock_addr.h     |  2 --
- 4 files changed, 23 insertions(+), 26 deletions(-)
-
-diff --git a/net/vmw_vsock/af_vsock.c b/net/vmw_vsock/af_vsock.c
-index ca511c4..d8079da 100644
---- a/net/vmw_vsock/af_vsock.c
-+++ b/net/vmw_vsock/af_vsock.c
-@@ -207,7 +207,7 @@ static struct sock *__vsock_find_bound_socket(struct sockaddr_vm *addr)
- 	struct vsock_sock *vsk;
- 
- 	list_for_each_entry(vsk, vsock_bound_sockets(addr), bound_table)
--		if (vsock_addr_equals_addr_any(addr, &vsk->local_addr))
-+		if (addr->svm_port == vsk->local_addr.svm_port)
- 			return sk_vsock(vsk);
- 
- 	return NULL;
-@@ -220,8 +220,8 @@ static struct sock *__vsock_find_connected_socket(struct sockaddr_vm *src,
- 
- 	list_for_each_entry(vsk, vsock_connected_sockets(src, dst),
- 			    connected_table) {
--		if (vsock_addr_equals_addr(src, &vsk->remote_addr)
--		    && vsock_addr_equals_addr(dst, &vsk->local_addr)) {
-+		if (vsock_addr_equals_addr(src, &vsk->remote_addr) &&
-+		    dst->svm_port == vsk->local_addr.svm_port) {
- 			return sk_vsock(vsk);
- 		}
- 	}
-diff --git a/net/vmw_vsock/vmci_transport.c b/net/vmw_vsock/vmci_transport.c
-index faf81b8..9caa91c 100644
---- a/net/vmw_vsock/vmci_transport.c
-+++ b/net/vmw_vsock/vmci_transport.c
-@@ -472,19 +472,16 @@ static struct sock *vmci_transport_get_pending(
- 	struct vsock_sock *vlistener;
- 	struct vsock_sock *vpending;
- 	struct sock *pending;
-+	struct sockaddr_vm src;
-+
-+	vsock_addr_init(&src, pkt->dg.src.context, pkt->src_port);
- 
- 	vlistener = vsock_sk(listener);
- 
- 	list_for_each_entry(vpending, &vlistener->pending_links,
- 			    pending_links) {
--		struct sockaddr_vm src;
--		struct sockaddr_vm dst;
--
--		vsock_addr_init(&src, pkt->dg.src.context, pkt->src_port);
--		vsock_addr_init(&dst, pkt->dg.dst.context, pkt->dst_port);
--
- 		if (vsock_addr_equals_addr(&src, &vpending->remote_addr) &&
--		    vsock_addr_equals_addr(&dst, &vpending->local_addr)) {
-+		    pkt->dst_port == vpending->local_addr.svm_port) {
- 			pending = sk_vsock(vpending);
- 			sock_hold(pending);
- 			goto found;
-@@ -749,10 +746,15 @@ static int vmci_transport_recv_stream_cb(void *data, struct vmci_datagram *dg)
- 	 */
- 	bh_lock_sock(sk);
- 
--	if (!sock_owned_by_user(sk) && sk->sk_state == SS_CONNECTED)
--		vmci_trans(vsk)->notify_ops->handle_notify_pkt(
--				sk, pkt, true, &dst, &src,
--				&bh_process_pkt);
-+	if (!sock_owned_by_user(sk)) {
-+		/* The local context ID may be out of date, update it. */
-+		vsk->local_addr.svm_cid = dst.svm_cid;
-+
-+		if (sk->sk_state == SS_CONNECTED)
-+			vmci_trans(vsk)->notify_ops->handle_notify_pkt(
-+					sk, pkt, true, &dst, &src,
-+					&bh_process_pkt);
-+	}
- 
- 	bh_unlock_sock(sk);
- 
-@@ -912,6 +914,9 @@ static void vmci_transport_recv_pkt_work(struct work_struct *work)
- 
- 	lock_sock(sk);
- 
-+	/* The local context ID may be out of date. */
-+	vsock_sk(sk)->local_addr.svm_cid = pkt->dg.dst.context;
-+
- 	switch (sk->sk_state) {
- 	case SS_LISTEN:
- 		vmci_transport_recv_listen(sk, pkt);
-@@ -968,6 +973,10 @@ static int vmci_transport_recv_listen(struct sock *sk,
- 	pending = vmci_transport_get_pending(sk, pkt);
- 	if (pending) {
- 		lock_sock(pending);
-+
-+		/* The local context ID may be out of date. */
-+		vsock_sk(pending)->local_addr.svm_cid = pkt->dg.dst.context;
-+
- 		switch (pending->sk_state) {
- 		case SS_CONNECTING:
- 			err = vmci_transport_recv_connecting_server(sk,
-diff --git a/net/vmw_vsock/vsock_addr.c b/net/vmw_vsock/vsock_addr.c
-index b7df1ae..ec2611b 100644
---- a/net/vmw_vsock/vsock_addr.c
-+++ b/net/vmw_vsock/vsock_addr.c
-@@ -64,16 +64,6 @@ bool vsock_addr_equals_addr(const struct sockaddr_vm *addr,
- }
- EXPORT_SYMBOL_GPL(vsock_addr_equals_addr);
- 
--bool vsock_addr_equals_addr_any(const struct sockaddr_vm *addr,
--				const struct sockaddr_vm *other)
--{
--	return (addr->svm_cid == VMADDR_CID_ANY ||
--		other->svm_cid == VMADDR_CID_ANY ||
--		addr->svm_cid == other->svm_cid) &&
--	       addr->svm_port == other->svm_port;
--}
--EXPORT_SYMBOL_GPL(vsock_addr_equals_addr_any);
--
- int vsock_addr_cast(const struct sockaddr *addr,
- 		    size_t len, struct sockaddr_vm **out_addr)
- {
-diff --git a/net/vmw_vsock/vsock_addr.h b/net/vmw_vsock/vsock_addr.h
-index cdfbcef..9ccd531 100644
---- a/net/vmw_vsock/vsock_addr.h
-+++ b/net/vmw_vsock/vsock_addr.h
-@@ -24,8 +24,6 @@ bool vsock_addr_bound(const struct sockaddr_vm *addr);
- void vsock_addr_unbind(struct sockaddr_vm *addr);
- bool vsock_addr_equals_addr(const struct sockaddr_vm *addr,
- 			    const struct sockaddr_vm *other);
--bool vsock_addr_equals_addr_any(const struct sockaddr_vm *addr,
--				const struct sockaddr_vm *other);
- int vsock_addr_cast(const struct sockaddr *addr, size_t len,
- 		    struct sockaddr_vm **out_addr);
- 
--- 
-1.8.1.5
-
+On Tue, Jan 31, 2012 at 7:37 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> Hi,
+>
+> Changes In this version:
+>
+> - Split 32/64 bits version of res_counter_write_u64() [1/10]
+>   Courtesy of Kirill A. Shutemov
+>
+> - Added Kirill's ack [8/10]
+>
+> - Added selftests [9/10], [10/10]
+>
+> Please consider for merging. At least two users want this feature:
+> https://lkml.org/lkml/2011/12/13/309
+> https://lkml.org/lkml/2011/12/13/364
+>
+> More general details provided in the last version posting:
+> https://lkml.org/lkml/2012/1/13/230
+>
+> Thanks!
+>
+>
+> Frederic Weisbecker (9):
+>   cgroups: add res_counter_write_u64() API
+>   cgroups: new resource counter inheritance API
+>   cgroups: ability to stop res charge propagation on bounded ancestor
+>   res_counter: allow charge failure pointer to be null
+>   cgroups: pull up res counter charge failure interpretation to caller
+>   cgroups: allow subsystems to cancel a fork
+>   cgroups: Add a task counter subsystem
+>   selftests: Enter each directories before executing selftests
+>   selftests: Add a new task counter selftest
+>
+> Kirill A. Shutemov (1):
+>   cgroups: add res counter common ancestor searching
+>
+>  Documentation/cgroups/resource_counter.txt         |   20 ++-
+>  Documentation/cgroups/task_counter.txt             |  153 +++++++++++
+>  include/linux/cgroup.h                             |   20 +-
+>  include/linux/cgroup_subsys.h                      |    5 +
+>  include/linux/res_counter.h                        |   27 ++-
+>  init/Kconfig                                       |    9 +
+>  kernel/Makefile                                    |    1 +
+>  kernel/cgroup.c                                    |   23 ++-
+>  kernel/cgroup_freezer.c                            |    6 +-
+>  kernel/cgroup_task_counter.c                       |  272 ++++++++++++++++++++
+>  kernel/exit.c                                      |    2 +-
+>  kernel/fork.c                                      |    7 +-
+>  kernel/res_counter.c                               |  103 +++++++-
+>  tools/testing/selftests/Makefile                   |    2 +-
+>  tools/testing/selftests/run_tests                  |    6 +-
+>  tools/testing/selftests/task_counter/Makefile      |    8 +
+>  tools/testing/selftests/task_counter/fork.c        |   40 +++
+>  tools/testing/selftests/task_counter/forkbomb.c    |   40 +++
+>  tools/testing/selftests/task_counter/multithread.c |   68 +++++
+>  tools/testing/selftests/task_counter/run_test      |  198 ++++++++++++++
+>  .../selftests/task_counter/spread_thread_group.c   |   82 ++++++
+>  21 files changed, 1056 insertions(+), 36 deletions(-)
+>  create mode 100644 Documentation/cgroups/task_counter.txt
+>  create mode 100644 kernel/cgroup_task_counter.c
+>  create mode 100644 tools/testing/selftests/task_counter/Makefile
+>  create mode 100644 tools/testing/selftests/task_counter/fork.c
+>  create mode 100644 tools/testing/selftests/task_counter/forkbomb.c
+>  create mode 100644 tools/testing/selftests/task_counter/multithread.c
+>  create mode 100755 tools/testing/selftests/task_counter/run_test
+>  create mode 100644 tools/testing/selftests/task_counter/spread_thread_group.c
+>
+> --
+> 1.7.5.4
+>
