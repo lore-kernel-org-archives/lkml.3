@@ -1,174 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759065Ab3DAW1p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 18:27:45 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:46737 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360Ab3DAW1n (ORCPT
+	id S1759184Ab3DAW3U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 18:29:20 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:58699 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753840Ab3DAW3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 18:27:43 -0400
-Message-ID: <515A09D8.7040703@gmail.com>
-Date: Tue, 02 Apr 2013 00:27:36 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Mon, 1 Apr 2013 18:29:19 -0400
+Message-ID: <515A0A3A.2040105@gmail.com>
+Date: Mon, 01 Apr 2013 16:29:14 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: balbi@ti.com, gregkh@linuxfoundation.org, arnd@arndb.de,
-        akpm@linux-foundation.org, rob@landley.net, swarren@wwwdotorg.org,
-        davem@davemloft.net, cesarb@cesarb.net, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tony@atomide.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        b-cousson@ti.com, linux@arm.linux.org.uk, eballetbo@gmail.com,
-        javier@dowhile0.org, mchehab@redhat.com, santosh.shilimkar@ti.com,
-        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/6] drivers: phy: add generic PHY framework
-References: <1364449408-9510-1-git-send-email-kishon@ti.com> <1364449408-9510-2-git-send-email-kishon@ti.com>
-In-Reply-To: <1364449408-9510-2-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: John Stultz <john.stultz@linaro.org>
+CC: Pawel Moll <pawel.moll@arm.com>, Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [RFC] perf: need to expose sched_clock to correlate user samples
+ with kernel samples
+References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>  <1350408232.2336.42.camel@laptop>	<1359728280.8360.15.camel@hornet>  <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>  <51118797.9080800@linaro.org>	<alpine.LFD.2.02.1302182132230.22263@ionos>  <5123C3AF.8060100@linaro.org>	<1361356160.10155.22.camel@laptop>  <51285BF1.2090208@linaro.org>	<1361801441.4007.40.camel@laptop>  <CABPqkBS4TELhoUGrO+moca2fPUoqGjiYCdHJc=H8CjLomPWWDQ@mail.gmail.com> <1363291021.3100.144.camel@hornet> <51586315.7080006@gmail.com> <5159D221.70304@linaro.org>
+In-Reply-To: <5159D221.70304@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2013 06:43 AM, Kishon Vijay Abraham I wrote:
-> diff --git a/Documentation/devicetree/bindings/phy/phy-bindings.txt
->b/Documentation/devicetree/bindings/phy/phy-bindings.txt
-> new file mode 100644
-> index 0000000..35696b2
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/phy/phy-bindings.txt
-> @@ -0,0 +1,76 @@
-> +This document explains only the dt data binding. For general information about
-> +PHY subsystem refer Documentation/phy.txt
-> +
-> +PHY device node
-> +===============
-> +
-> +Optional Properties:
-> +#phy-cells:	Number of cells in a PHY specifier;  The meaning of all those
-> +		cells is defined by the binding for the phy node. However
-> +		in-order to return the correct PHY, the PHY susbsystem
-> +		requires the first cell always refers to the port.
-> +
-> +This property is optional because it is needed only for the case where a
-> +single IP implements multiple PHYs.
-> +
-> +For example:
-> +
-> +phys: phy {
-> +    compatible = "xxx";
-> +    reg1 =<...>;
-> +    reg2 =<...>;
-> +    reg3 =<...>;
-> +    .
-> +    .
-> +    #phy-cells =<1>;
-> +    .
-> +    .
-> +};
-> +
-> +That node describes an IP block that implements 3 different PHYs. In order to
-> +differentiate between these 3 PHYs, an additonal specifier should be given
-> +while trying to get a reference to it. (The PHY subsystem assumes the
-> +specifier is port id).
-> +
-> +PHY user node
-> +=============
-> +
-> +Required Properties:
-> +phys : the phandle for the PHY device (used by the PHY subsystem)
-> +
-> +Optional properties:
-> +phy-names : the names of the PHY corresponding to the PHYs present in the
-> +	    *phys* phandle
-> +
-> +example1:
-> +phys: phy {
-> +    compatible = "xxx";
-> +    reg =<...>;
-> +    .
-> +    .
-> +    phys =<&usb2_phy>,<&usb3_phy>;
-> +    phy-names = "usb2phy", "usb3phy";
-> +    .
-> +    .
-> +};
-> +This node represents a controller that uses two PHYs one for usb2 and one for
-> +usb3. The controller driver can get the appropriate PHY either by using
-> +devm_of_phy_get/of_phy_get by passing the correct index or by using
-> +of_phy_get_byname/devm_of_phy_get_byname by passing the names given in
-> +*phy-names*.
-> +
-> +example2:
-> +phys: phy {
-> +    compatible = "xxx";
-> +    reg =<...>;
-> +    .
-> +    .
-> +    phys =<&phys 1>;
-> +    .
-> +    .
-> +};
-> +
-> +This node represents a controller that uses one of the PHYs which is defined
-> +previously. Note that the phy handle has an additional specifier "1" to
-> +differentiate between the three PHYs. For this case, the controller driver
-> +should use of_phy_get_with_args/devm_of_phy_get_with_args.
+On 4/1/13 12:29 PM, John Stultz wrote:
+>> Any chance a decision can be reached in time for 3.10? Seems like the
+>> simplest option is the perf event based ioctl.
+>
+> I'm still not sold on the CLOCK_PERF posix clock. The semantics are
+> still too hand-wavy and implementation specific.
+>
+> While I'd prefer perf to export some existing semi-sane time domain
+> (using interpolation if necessary), I realize the hardware constraints
+> and performance optimizations make this unlikely (though I'm
+> disappointed I've not seen any attempt or proof point that it won't work).
+>
+> Thus if we must expose this kernel detail to userland, I think we should
+> be careful about how publicly we expose such an interface, as it has the
+> potential for misuse and eventual user-land breakage.
 
-This means a PHY user needs to know indexes at the PHY driver ?
+But perf_clock timestamps are already exposed to userland. This new API 
+-- be it a posix clock or an ioctl -- just allows retrieval of a 
+timestamp outside of a generated event.
 
-I have been thinking of using this for an IP which has 4 video PHYs: 2 MIPI
-CSI-2 and 2 MIPI DSI. The IP has just 2 registers, each of which is shared
-between one MIPI CSI-2 DPHY and one MIPI DSI DPHY. So I thought about 
-creating
-a single device node for this IP and using 4 indexes for the PHYs, e.g. 
-0...3.
-Then users of each PHY type would use only indexes 0..1 (to select their
-corresponding port).
+>
+> So while having a perf specific ioctl is still exposing what I expect
+> will be non-static kernel internal behavior to userland, it at least it
+> exposes it in a less generic fashion, which is preferable to me.
+>
+>
+>
+> The next point of conflict is likely if the ioctl method will be
+> sufficient given performance concerns. Something I'd be interested in
+> hearing about from the folks pushing this. Right now it seems any method
+> is preferable then not having an interface - but I want to make sure
+> that's really true.
+>
+> For example, if the ioctl interface is really too slow, its likely folks
+> will end up using periodic perf ioctl samples and interpolating using
+> normal vdso clock_gettime() timestamps.
 
-However I fail to see how this could now be represented in the bindings.
+The performance/speed depends on how often is called. I have no idea 
+what Stephane's use case is but for me it is to correlate perf_clock 
+timestamps to timeofday. In my perf-based daemon that tracks process 
+schedulings, I update the correlation every 5-10 minutes.
 
-I assume struct phy::type could be used to differentiate between CSI-2 
-and DSI.
-And struct phy::port could be used to select specific CSI-2 or DSI channel
-(0, 1). Ideally the phy users should not care about index of a PHY at 
-the PHY
-device tree node. E.g. there are 2 MIPI CSI-2 receivers and each has only
-one PHY assigned to it. I'm just wondering how the binding should look like,
-so a PHY could be associated with a receiver automatically by the phy-core,
-e.g.
+>
+> If that is acceptable, then why not invert the solution and just have
+> perf injecting periodic CLOCK_MONOTONIC timestamps into the log, then
+> have perf report fast, but less-accurate sched_clock deltas from that
+> CLOCK_MONOTONIC boundary.
 
-/* DPHY IP node */
-video-phy {
-	  reg = <0x10000000 8>;
-};
+Something similar to that approach has been discussed as well. i.e, add 
+a realtime clock event and have it injected into the stream e.g.,
+https://lkml.org/lkml/2011/2/27/158
 
-/* MIPI DSI nodes */
-dsi_0 {
-      phys = <&video-phy 0>;
-};
+But there are cons to this approach -- e.g, you need that first event 
+generated that tells you realtime to perf_clock correlation and you 
+don't want to have to scan an unknown length of events looking for the 
+first one to get the correlation only to backup and process the events.
 
-dsi_1 {
-      phys = <&video-phy 1>;
-};
+And an ioctl to generate that first event was shot down as well...
+   https://lkml.org/lkml/2011/3/1/174
+   https://lkml.org/lkml/2011/3/2/186
 
-/* MIPI CSI-2 nodes */
-csi_0 {
-      phys = <&video-phy 2>;
-};
+David
 
-csi_1 {
-      phys = <&video-phy 3>;
-};
+>
+> Another alternative that might be a reasonable compromise: have perf
+> register a dynamic posix clock id, which would be a driver specific,
+> less public interface. That would provide the initial method to access
+> the perf time domain. Then when it came time to optimize further,
+> someone would have to sort out the difficulties of creating a vdso
+> method for accessing dynamic posix clocks. It wouldn't be easy, but it
+> wouldn't be impossible to do.
+>
+>
+>> Converting/correlating perf_clock timestamps to time-of-day is a
+>> feature I have been trying to get into perf for over 2 years. This is
+>> a big piece needed for that goal -- along with the xtime tracepoints:
+>>   https://lkml.org/lkml/2013/3/19/433
+>
+> I sympathize with how long this process can take.  Having maintainers
+> disagree without resolution can be a tar-pit. That said, its only been a
+> few months where this has had proper visibility, and the discussion has
+> paused for months at a time. Despite how long and slow this probably
+> feels, the idea of maintaining a bad interface for the next decade seems
+> much longer. ;)  So don't get discouraged yet.
+>
+> thanks
+> -john
 
-I'm not sure if it is not an overkill to use this the PHY framework with
-a device which has only 2 registers. Perhaps something less heavy could
-be designed for it. However, if the PHY framework is commonly used there
-should be no issue wrt enabling the whole big infrastructure for a simple
-device like this.
-
-
-Thanks,
-Sylwester
