@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705Ab3DADtk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 23:49:40 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:34731 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756242Ab3DADtj (ORCPT
+	id S1756789Ab3DADv0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 23:51:26 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:62038 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756242Ab3DADvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 23:49:39 -0400
-Date: Mon, 1 Apr 2013 09:19:25 +0530
-From: Shiraz Hashim <shiraz.hashim@st.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Axel Lin <axel.lin@ingics.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] pwm: spear: Fix enable pwm output
-Message-ID: <20130401034925.GA21313@localhost.localdomain>
-References: <1364621848.3568.0.camel@phoenix>
- <CAKohpo=xQC_pzc19RP1TncO3XJLj7k-_JyvT3n9UZFTEjYOizw@mail.gmail.com>
+	Sun, 31 Mar 2013 23:51:25 -0400
+X-Spam-Score: -100.8
+Message-ID: <5159041F.7020608@asianux.com>
+Date: Mon, 01 Apr 2013 11:50:55 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAKohpo=xQC_pzc19RP1TncO3XJLj7k-_JyvT3n9UZFTEjYOizw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: jhovold@gmail.com, Jiri Slaby <jslaby@suse.cz>, mferrell@uplogix.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drivers/usb/serial: looping issue: avoid the return value
+ overriden by looping
+References: <5158F689.5040406@asianux.com> <20130401030555.GA21113@kroah.com>
+In-Reply-To: <20130401030555.GA21113@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 30, 2013 at 05:55:41PM +0800, Viresh Kumar wrote:
-> On 30 March 2013 11:07, Axel Lin <axel.lin@ingics.com> wrote:
-> > The logic to check return value of clk_enable() is reversed, thus
-> > when clk_enable() passes PWMCR_PWM_ENABLE bit is not set. Fix it.
-> >
-> > Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> > ---
-> >  drivers/pwm/pwm-spear.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> I am so sorry. clk_prepare also has the same issue :(
-> Please fix that too and i will ack it ASAP.
-> 
-> @Shiraz: Any idea how they went through?
 
-I don't remember how :(, surely a mistake which escaped tests also.
+  inside the 'for' looping:
+    the return value 'rv' may override if not have a check in time.
 
---
-regards
-Shiraz
+  next checking, outside the 'for' looping:
+    can not find failure which generated during the 'for' looping
+
+  so need let outside know about the failure.
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ drivers/usb/serial/mos7840.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index a0d5ea5..13aae1e 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -651,7 +651,9 @@ static void mos7840_interrupt_callback(struct urb *urb)
+ 					wreg = MODEM_STATUS_REGISTER;
+ 					break;
+ 				}
+-				rv = mos7840_get_reg(mos7840_port, wval, wreg, &Data);
++				if (mos7840_get_reg(mos7840_port, wval,
++				    wreg, &Data) < 0)
++					rv = -1;
+ 			}
+ 		}
+ 	}
+-- 
+1.7.7.6
